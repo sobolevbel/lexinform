@@ -119,6 +119,13 @@ class DocumentSelection(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     question: str = "bill_text"
+    policy_version: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=128,
+        pattern=r"^\S+$",
+        exclude_if=lambda value: value is None,
+    )
     state: SelectionState = "unverified"
     belonging: tuple[str, ...] = ()
     role: tuple[str, ...] = ()

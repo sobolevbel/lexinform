@@ -1,0 +1,200 @@
+{
+  "version": 1,
+  "stage": "J092",
+  "baseline": "e554f1e7bea4fcdddb9f90d9a7d152684040a33d",
+  "scope": "Reader-first optional bounded opaque selection policy_version. Missing values remain unknown/omitted; no producer/backfill or new policy is activated.",
+  "checks": {
+    "focused": {
+      "sha256": "c4b98771de4c07eb929d7ea8d17c8ccfbab86104a1e5daf50feeee276f467d38",
+      "tests": 107,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.321
+    },
+    "full": {
+      "sha256": "64319a5c2513789050ca13ee7e4881f05b5fdf3d74b953fa60606ecee4ccfff7",
+      "tests": 4811,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 611.361
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 439 source files",
+    "ruff": "All checks passed!",
+    "format": "440 files left unchanged"
+  },
+  "structural": {
+    "existing_src_files": 151,
+    "changed_src_files": [
+      "src/lexinform/models/documents.py"
+    ],
+    "entire_model_module_ast_equal_after_removing_new_optional_field": true,
+    "all_services_adapters_pure_policies_migrations_unchanged": true,
+    "runtime_policy_writer_added": false,
+    "source_sha256": "60134a6a091dc941541e4c8c9177eb5a16bee0b155659bf003b502b91abef6dd"
+  },
+  "reader": {
+    "bills": 457,
+    "analyses": 166,
+    "schema": 51,
+    "production_pin": "9e836a90023fdd40e7b56499fce4ad99daf78198",
+    "source_sha256": "62ad39b4ac022306981b5436a24cece039be98d89192f48b935dd94d72633ae5",
+    "legacy_dump_exact": true,
+    "no_policy_backfill": true,
+    "future_fixture": {
+      "policy_preserved_after_save_restore_resave": true,
+      "analysis_fields_unchanged_except_explicit_policy_metadata": true,
+      "scope": "One explicitly future-populated isolated scratch fixture. No production write or claim of actual old policy."
+    }
+  },
+  "native": {
+    "cases": 168,
+    "all_profiles_and_exact_sql_dumps_equal": true,
+    "all_requests_usage_receipts_contexts_reader_messages_equal": true
+  },
+  "baseline_provenance": {
+    "baseline_commit": "e554f1e7bea4fcdddb9f90d9a7d152684040a33d",
+    "qualified_source": "J091 current native outputs",
+    "all_151_src_files_equal_baseline": true,
+    "native_flows": 168
+  },
+  "candidates": {
+    "cases": 4276,
+    "counts": {
+      "ambiguous": 123,
+      "no_candidate": 205,
+      "selected": 2273,
+      "unsupported": 669,
+      "unverified": 925,
+      "waiting": 81
+    },
+    "missing_inputs": 1383,
+    "all_decisions_fields_and_input_hashes_equal": true,
+    "scope": "Actual cached RCL candidate replay; current policy remains unknown/omitted. No historical-version backfill or legal gold-standard claim."
+  },
+  "corpus": {
+    "ci": {
+      "observations": 7,
+      "manifest": {
+        "path": "out/corpus/runs/j092-ci/manifest.json",
+        "sha256": "866e07321b40a8a30c3bcd604d8cb221c66b3e95dd2ecde84b3e8089644ce8fc"
+      },
+      "diff": {
+        "after_manifest_sha256": "866e07321b40a8a30c3bcd604d8cb221c66b3e95dd2ecde84b3e8089644ce8fc",
+        "before_manifest_sha256": "3918e7b2cb4842a3641be7803664e0e69e0d24fa9c9c27575ea53aa3cb34ea2e",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "ci",
+        "summary_changes": {},
+        "version": 1
+      },
+      "verified": true
+    },
+    "process": {
+      "observations": 3294,
+      "manifest": {
+        "path": "out/corpus/runs/j092-process/manifest.json",
+        "sha256": "c44be2051b887edfcff569adb83a2b437800e5dc8ca23f2a88c3f32ec134e2e3"
+      },
+      "diff": {
+        "after_manifest_sha256": "c44be2051b887edfcff569adb83a2b437800e5dc8ca23f2a88c3f32ec134e2e3",
+        "before_manifest_sha256": "52cfe2812f37dc9337eab9ab44453aae1d9833fe2c682ae484961b55d8d6952b",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "process",
+        "summary_changes": {},
+        "version": 1
+      },
+      "verified": true
+    }
+  },
+  "source": [
+    {
+      "path": "src/lexinform/models/documents.py",
+      "sha256": "60134a6a091dc941541e4c8c9177eb5a16bee0b155659bf003b502b91abef6dd"
+    },
+    {
+      "path": "tests/unit/test_selection_policy_version.py",
+      "sha256": "fb83d9548bc34010ca64dfee5a24c4b3dc3bd1a6abbfe83beb3fbd70fbb88588"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "out/corpus/j092/reader_profile.py",
+      "sha256": "02f8640ac5b6d2d35b0629172ce4547920f7fa27aea4c0e6134b27ac42a95406"
+    },
+    {
+      "path": "out/corpus/j092/reader-baseline.json",
+      "sha256": "e56a120b4bb5799a609d2f22708a3f3e971bdb86a898fe50ea600b44a6325c9d"
+    },
+    {
+      "path": "out/corpus/j092/reader-current.json",
+      "sha256": "d57068f7a7706339d29a55a9c47b32fae8d248440d5af5c4f05e7b674c4be4be"
+    },
+    {
+      "path": "out/corpus/j092/structural_parity.py",
+      "sha256": "a5fb2c0306af6d2b7737c7ad1e39c680ef438b989b38375cf3809201a1e7272c"
+    },
+    {
+      "path": "out/corpus/j092/structural-parity.json",
+      "sha256": "fad34bb3e3ff12bc79dd6b0e4e7482a1953fe108d5a62961eb770524fae93d5d"
+    },
+    {
+      "path": "out/corpus/j092/candidate_profile.py",
+      "sha256": "f128338108879eb7de1026fa24f8c51cd5e687a44dcf131a810d465f33d96716"
+    },
+    {
+      "path": "out/corpus/j092/candidates-baseline.json",
+      "sha256": "8e01d719c45cbb0da8ca65b275ada6b6e08e656942fff6010dff5a9af6467264"
+    },
+    {
+      "path": "out/corpus/j092/candidates-current.json",
+      "sha256": "7e297389b23e2f06a49076294261802ea05bb5455078ffde7ac7362b10883b78"
+    },
+    {
+      "path": "out/corpus/j092/native_profiles.py",
+      "sha256": "14423935136788e8f8845d28eb3defb5491039aa379a50569d743966a828fc9e"
+    },
+    {
+      "path": "out/corpus/j092/native-parity.json",
+      "sha256": "36f42153a5ab7ab661c646a7bfe7956113b5f5c592791583432a1e76e2fa927c"
+    }
+  ],
+  "state": {
+    "schema": 51,
+    "migrations_unchanged": true,
+    "legacy_dump_and_all_457_bill_models_equal": true,
+    "production_storage_delta": 0,
+    "runtime_writer": false
+  },
+  "rollback": {
+    "code": "J091",
+    "state_conversion": false,
+    "future_writer_rollback_floor": "J092 reader must be available before writer activation"
+  },
+  "exclusions": [
+    "This is a reader, not a claim of implemented full decision provenance or DocumentEdition.",
+    "One future-version fixture is explicitly synthetic, not a historical policy backfill.",
+    "Pinned production snapshot is 9e836a9 from J083, not a live state assertion.",
+    "Cached candidate replay retains 1383 missing inputs and is not a legal gold standard.",
+    "Raw reparsing is not repeated: all extraction/selection/service code is byte-identical.",
+    "No provider, Telegram or manually started production processing.",
+    "Local HTTP not repeated: no CLI/network wiring or transports change."
+  ],
+  "reproduction": [
+    "uv run pytest -q tests/unit/test_selection_policy_version.py tests/unit/test_document_selection_contract.py tests/unit/test_document_candidates.py tests/scenario/test_document_selection_contract.py",
+    "uv run pytest -q && uv run mypy && uv run ruff check src tests tools",
+    "Run reader_profile.py with baseline/current PYTHONPATH and DA_READER_MODE, using new output paths.",
+    "Run candidate_profile.py with baseline/current src/tools PYTHONPATH and DA_SELECTION_MODE; inputs are the declared read-only external corpus.",
+    "python out/corpus/j092/structural_parity.py",
+    "uv run python out/corpus/j092/native_profiles.py",
+    "Use new output paths; recorded evidence is immutable."
+  ]
+}

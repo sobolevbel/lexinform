@@ -546,7 +546,7 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
 - [x] DA4.3. **Принято: [J087](2026-10-22-document-architecture-progress.md#j087)/[J088](2026-10-22-document-architecture-progress.md#j088), raw/cached parity и meaningful mutations; изменения эвристик не включены и требуют отдельной приёмки.** Сначала сохранить текущие outcomes. Затем отдельно рассматривать равенство дат
   загрузки, folder-family и имя как эвристики кандидатов: расширение пула/смена выбора —
   поведенческое изменение с отдельным replay и записью принятого расхождения.
-- [ ] DA4.4. Решение включает question/policy version, membership, role, version, completeness,
+- [ ] DA4.4. **Частично: [J092](2026-10-22-document-architecture-progress.md#j092), совместимый optional policy-version reader, legacy остаётся unknown; producer и полная decision provenance открыты.** Решение включает question/policy version, membership, role, version, completeness,
   facts/quotes, нормативные связи, support applicability и причины ожидания/конфликта.
   Минимальная дата или PDF preference не заменяют доказательство последней полной редакции.
 - [x] DA4.5. **Принято: [J089](2026-10-22-document-architecture-progress.md#j089)/[J090](2026-10-22-document-architecture-progress.md#j090) — prefilter/analysis; [J091](2026-10-22-document-architecture-progress.md#j091) — review policy и [матрица операций](../reviews/2026-10-27-document-admission.md).** Ввести чистую operation-specific admissibility рядом с selection. Не требовать

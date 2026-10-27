@@ -5,7 +5,8 @@
 - [Установка, тесты, миграции и правила изменений](https://github.com/sobolevbel/lexinform/blob/main/CONTRIBUTING.md) — канонический файл `CONTRIBUTING.md` в корне репозитория; доступен локально в редакторе.
 - [Наблюдения и планы доставки](../process-plans.md) — транзакции, сохранённые факты и повторная отправка.
 - [Выбор текста](../text-selection.md) — какой документ анализируется и когда.
-- [Аудит архитектуры документов](../reviews/2026-10-22-document-architecture.md) и [план развития](../plans/2026-10-22-document-architecture.md) — проверка 22.10 и предлагаемые этапы; новая архитектура ещё не реализована.
+- [Аудит архитектуры документов](../reviews/2026-10-22-document-architecture.md) и [план развития](../plans/2026-10-22-document-architecture.md) — проверка 22.10 и постепенная реализация; принятые этапы и открытые задачи отмечены в [журнале](../plans/2026-10-22-document-architecture-progress.md).
+- [Допуск документов по вопросу](../reviews/2026-10-27-document-admission.md) — принятые различия prefilter, analysis, comparison, amendments и reviews.
 - [Незавершённая работа](../reviews/2026-10-27-unfinished-work.md) — сравнение Senate/review и решение DA8 против универсального scheduler.
 - [Сравнение изменений на корпусе](../reviews/2026-10-03-law-comparison.md) — проверенные гипотезы и защита значимых изменений.
 - [Короткие названия в Telegram](../reviews/2026-10-11-publication-titles.md) — варианты префиксов на корпусе и границы сокращения.

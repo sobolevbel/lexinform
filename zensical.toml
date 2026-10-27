@@ -67,6 +67,7 @@ nav = [
   ] },
   { "Аудиты" = [
     { "Обзор" = "reviews/index.md" },
+    { "Допуск документов · 27.10" = "reviews/2026-10-27-document-admission.md" },
     { "GPT‑6.1 Terra · 27.10" = "reviews/2026-10-27-terra-evaluation.md" },
     { "Незавершённая работа · 27.10" = "reviews/2026-10-27-unfinished-work.md" },
     { "Корпус: рабочий процесс · 25.10" = "reviews/2026-10-25-corpus-workflow.md" },

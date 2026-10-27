@@ -4678,3 +4678,55 @@ DA4.5/DA4.6 отмечены выполненными: pure admission/matrix п�
 Raw ZIP reparsing и local HTTP не повторены: physical extraction/file choice, CLI/network
 wiring/transports прежние. Schema **51**, production storage delta **0**.
 План **74 задачи, 17 выполнены, 57 unchecked** (DA8.3 неприменим); goal active.
+
+
+<a id="j092"></a>
+### J092. DA4.4: compatible selection-policy version reader
+
+Дата: 27 октября 2026. База: J091 (`e554f1e`). Статус: принято локально; deployment проверяется отдельно.
+
+`DocumentSelection.policy_version` — optional bounded opaque identifier; отсутствующий legacy
+version остаётся None и не добавляется в JSON. Неизвестные будущие версии читаются без
+догадок об их алгоритме. Метка не заменяет facts и не повышает selected; without_text
+сохраняет её. Producer, backfill, migration и новые policy decisions не включены.
+Совместимый reader выпускается перед будущим metadata writer.
+
+Focused **107 passed**, strict mypy **439** файлов, Ruff/format green; **11** новых контрактных
+cases проверяют legacy shape, roundtrip/text removal, unknown versions, state/evidence и bounds.
+На изолированном pinned state **9e836a9** сравниваются **457 Bill / 166 analyses**: все model
+JSON hashes baseline/current прежние, dump побайтно прежний, source не менялся. Будущая version
+явно добавлена только в один scratch fixture; save/restore/resave и text removal сохраняют её,
+остальные analysis fields прежние. Это не утверждение о версии исторического анализа.
+
+**168 native flows** совпали по всем profiles и exact SQL dumps, requests, usage, receipts,
+contexts и reader messages. Qualified J091 current использован после сверки SHA всех
+**151 src files** с git archive J091. Corpus candidate replay принят.
+Schema **51**, legacy state storage delta **0**, runtime source flags прежние.
+
+Новая J091 matrix добавлена в nav и тематические обзоры по docs/authoring.md; статус/commit
+указаны явно. Устаревшее «архитектура ещё не реализована» в development overview заменено
+ссылкой на фактически поэтапную реализацию и журнал. Не заявляется завершение всего плана.
+
+
+J091 release проверен по `e554f1e7bea4fcdddb9f90d9a7d152684040a33d`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40540766269) — **4800 passed**,
+strict mypy 438 файлов, Ruff, docs/web success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40542000049) — exact COMMIT,
+`c14d3f4fc84c -> e554f1e7bea4`, listener up 45 s. Отдельный live processing вручную не запускался.
+
+Corpus final J092: **4276 candidate cases** baseline/current, **1383 missing inputs** сохранены;
+все decisions/fields/read inputs/counts прежние. CI **7** / process **3294** совпали, manifests
+verified. Structural AST proof: после удаления нового optional field весь models/documents.py
+равен baseline; остальные **150 src files**, включая adapters/services/pure policies/migrations,
+побайтно прежние. Новых consumers этого metadata поля нет.
+
+
+Final acceptance J092: full **4811 passed**, failures/errors/skips 0,
+**611.361 s**; focused **107 passed**, strict mypy **439** файлов, Ruff/format/docs/diff green.
+[Acceptance evidence](../assets/audits/2026-10-27-selection-policy-reader/validation.json)
+содержит XML/source hashes, structural proof, legacy/future scratch reader checks,
+168 native flows, 4276 candidate cases и reproduction. Runtime writer не включён;
+legacy policy unknown не backfilled. Schema **51**, storage delta **0**; rollback J091
+без state conversion. Будущий writer откатывается не ниже J092 compatible reader.
+Raw parsing/local HTTP не повторены: physical selection code и network CLI/transport прежние.
+План **74 задачи, 17 выполнены, 57 unchecked** (DA8.3 неприменим); goal active.
