@@ -9,9 +9,11 @@ from tools.source_history_doctor import audit, run
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import (
+    ArtifactMetadata,
     DocumentPart,
     DocumentSelection,
     DocumentSelectionRecord,
+    SelectionArtifactReference,
     SourceObservation,
     TextDocument,
 )
@@ -83,7 +85,7 @@ def test_corruption_is_reported_without_fetching_or_reconstructing_a_source(
     assert MARKER not in json.dumps(report)
 
 
-@pytest.mark.parametrize("schema", [51, 52])
+@pytest.mark.parametrize("schema", [51, 52, 53])
 def test_legacy_absence_and_damage_to_the_current_schema_are_distinct(
     tmp_path: Path, schema: int
 ) -> None:
@@ -94,7 +96,7 @@ def test_legacy_absence_and_damage_to_the_current_schema_are_distinct(
     report = audit(path)
 
     assert report["status"] == ("not_run" if schema == 51 else "failed")
-    assert report["summary"]["errors"] == (0 if schema == 51 else 2)
+    assert report["summary"]["errors"] == {51: 0, 52: 2, 53: 4}[schema]
 
 
 def test_unreferenced_metadata_is_inventory_and_does_not_authorize_deletion(tmp_path: Path) -> None:
@@ -119,3 +121,67 @@ def test_source_history_outputs_cannot_replace_inputs_or_existing_evidence(tmp_p
     with pytest.raises(FileExistsError):
         run(path, output)
     assert output.read_bytes() == before
+
+
+def linked_database(tmp_path: Path) -> Path:
+    path = database(tmp_path)
+    repo = SqliteBillRepository(path)
+    observed = repo.list_source_observations(10, "historical-owner")[0]
+    repo.save_artifact_metadata(
+        ArtifactMetadata(sha256="a" * 64, byte_size=20, recorded_at=observed.recorded_at)
+    )
+    repo.save_selection_artifact(
+        SelectionArtifactReference(
+            selection_id=observed.selection_id,
+            part_scope="parts",
+            part_index=0,
+            artifact_sha256="a" * 64,
+        )
+    )
+    repo.close()
+    return path
+
+
+def test_known_artifact_graph_is_read_only_and_does_not_claim_body_retention(
+    tmp_path: Path,
+) -> None:
+    path = linked_database(tmp_path)
+    before = path.read_bytes()
+
+    result = audit(path)
+
+    assert result["status"] == "recorded" and not result["findings"]
+    assert result["summary"]["artifact_rows"] == result["summary"]["artifact_link_rows"] == 1
+    assert result["summary"]["unlinked_artifact_rows"] == 0
+    assert path.read_bytes() == before and MARKER not in json.dumps(result)
+
+
+@pytest.mark.parametrize(
+    ("statement", "code"),
+    [
+        ("UPDATE artifacts SET recorded_at='2026-10-27'", "invalid_artifact_metadata"),
+        ("DELETE FROM artifacts", "artifact_metadata_unavailable"),
+        ("UPDATE selection_artifacts SET part_index=1", "artifact_part_out_of_scope"),
+        (
+            "UPDATE selection_artifacts SET artifact_sha256='" + "b" * 64 + "'",
+            "artifact_outer_source_mismatch",
+        ),
+        (
+            "UPDATE selection_artifacts SET selection_id='selection-v1:" + "c" * 64 + "'",
+            "artifact_selection_unavailable",
+        ),
+        ("DROP TABLE artifacts", "artifact_metadata_table_unavailable"),
+    ],
+)
+def test_artifact_damage_is_reported_without_a_source_fetch(
+    tmp_path: Path, statement: str, code: str
+) -> None:
+    path = linked_database(tmp_path)
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute(statement)
+
+    result = audit(path)
+
+    assert result["status"] == "failed"
+    assert code in {item["code"] for item in result["findings"]}
+    assert MARKER not in json.dumps(result)

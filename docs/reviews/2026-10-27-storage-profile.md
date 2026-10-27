@@ -134,3 +134,14 @@ pipeline finish-run checkpoint. Failed/over-limit download не получает
 нечитаемый body может иметь physical metadata без нормативного verdict. Capture не объявлен
 crash-complete до final checkpoint; standalone analysis/review CLI и остальные observation
 consumers остаются открыты. Архив raw/backend не выбирается, старые размеры не backfilled.
+
+## Обновление диагностики J101
+
+Read-only tools различают per-run demand и каталог известных complete-body identities.
+Каталог показывает global unique bytes и UTC день первой записи, без обещания retained files
+или реконструкции даты скачивания. В exact natural state `dc97f63814eaa967287e7f8c834798d86b88888e`
+(schema 52, без миграции) artifact tables ещё отсутствуют: это unavailable, не ноль.
+Один новый run report содержит измеренный нулевой поток; 379 старых reports остаются unknown,
+одна run row ещё без готового report. Это наблюдение quiet run, не оценка обычной нагрузки.
+Source history содержит две selections/observations без ошибок. Подробности и acceptance —
+[J101](../plans/2026-10-22-document-architecture-progress.md#j101).

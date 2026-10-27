@@ -6,18 +6,22 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from lexinform.models import DocumentSelectionRecord, SourceObservation
+from lexinform.models import DocumentSelectionRecord, SelectionArtifactReference, SourceObservation
+from tools.artifact_metadata import ArtifactMetadataIssue, recorded_artifacts
 from tools.corpus_artifacts import write_json
 from tools.sqlite_snapshot import open_snapshot
 
 _TABLES = {"document_selections", "source_observations"}
+_ARTIFACT_TABLES = {"artifacts", "selection_artifacts"}
 
 
 def audit(database: Path) -> dict[str, Any]:
     counts: Counter[str] = Counter()
     findings: list[dict[str, str]] = []
-    selections: set[str] = set()
+    selections: dict[str, DocumentSelectionRecord] = {}
     referenced: set[str] = set()
+    artifacts: set[str] = set()
+    linked_artifacts: set[str] = set()
 
     def issue(code: str, ref: str) -> None:
         findings.append({"code": code, "ref": ref, "level": "error"})
@@ -33,6 +37,10 @@ def audit(database: Path) -> dict[str, Any]:
         if schema >= 52 or _TABLES.intersection(tables):
             for name in missing:
                 issue("source_history_table_unavailable", name)
+        missing_artifacts = sorted(_ARTIFACT_TABLES - tables)
+        if schema >= 53 or _ARTIFACT_TABLES.intersection(tables):
+            for name in missing_artifacts:
+                issue("artifact_metadata_table_unavailable", name)
         if "document_selections" in tables:
             for row in connection.execute(
                 "SELECT rowid AS audit_id, * FROM document_selections ORDER BY rowid"
@@ -54,7 +62,7 @@ def audit(database: Path) -> dict[str, Any]:
                     row[key] for key in ("selection_id", "question", "policy_version", "state")
                 ):
                     issue("document_selection_columns_mismatch", ref)
-                selections.add(row["selection_id"])
+                selections[row["selection_id"]] = record
                 counts[
                     "policy_unknown"
                     if record.selection.policy_version is None
@@ -96,20 +104,69 @@ def audit(database: Path) -> dict[str, Any]:
                 counts["purpose/" + observation.purpose] += 1
                 if observation.selection_id not in selections:
                     issue("source_selection_unavailable", ref)
+        if "artifacts" in tables:
+            for artifact in recorded_artifacts(connection):
+                counts["artifact_rows"] += 1
+                if isinstance(artifact, ArtifactMetadataIssue):
+                    issue("invalid_artifact_metadata", artifact.ref)
+                    continue
+                artifacts.add(artifact.sha256)
+        if "selection_artifacts" in tables:
+            for row in connection.execute(
+                "SELECT rowid AS audit_id, * FROM selection_artifacts ORDER BY rowid"
+            ):
+                counts["artifact_link_rows"] += 1
+                ref = f"selection_artifacts/{row['audit_id']}"
+                try:
+                    link = SelectionArtifactReference.model_validate(
+                        {
+                            name: row[name]
+                            for name in (
+                                "selection_id",
+                                "part_scope",
+                                "part_index",
+                                "artifact_sha256",
+                            )
+                        }
+                    )
+                except ValueError, TypeError:
+                    issue("invalid_artifact_link", ref)
+                    continue
+                linked_artifacts.add(link.artifact_sha256)
+                if link.artifact_sha256 not in artifacts:
+                    issue("artifact_metadata_unavailable", ref)
+                selected = selections.get(link.selection_id)
+                if selected is None:
+                    issue("artifact_selection_unavailable", ref)
+                    continue
+                parts = (
+                    selected.selection.parts
+                    if link.part_scope == "parts"
+                    else selected.selection.observed_parts
+                )
+                if link.part_index >= len(parts):
+                    issue("artifact_part_out_of_scope", ref)
+                elif parts[link.part_index].source_sha256 != link.artifact_sha256:
+                    issue("artifact_outer_source_mismatch", ref)
         if not snapshot.unchanged():
             issue("database_changed_during_audit", "database")
-    counts["unreferenced_selection_rows"] = len(selections - referenced)
+    counts["unreferenced_selection_rows"] = len(set(selections) - referenced)
+    counts["unlinked_artifact_rows"] = len(artifacts - linked_artifacts)
     counts["errors"] = len(findings)
-    observed = counts["selection_rows"] + counts["observation_rows"]
+    observed = sum(
+        counts[name]
+        for name in ("selection_rows", "observation_rows", "artifact_rows", "artifact_link_rows")
+    )
     return {
         "version": 1,
         "status": "failed" if findings else "recorded" if observed else "not_run",
         "database_sha256": snapshot.sha256,
         "schema_version": schema,
         "missing_tables": missing,
+        "missing_artifact_tables": missing_artifacts,
         "summary": dict(sorted(counts.items())),
         "findings": findings,
-        "scope": "Recorded source decisions, SQL identity columns and selection references.",
+        "scope": "Recorded source/artifact identities, SQL columns and outer-part references.",
         "exclusions": [
             "Current owner/source contents do not revalidate historical decisions.",
             "Unreferenced metadata is an inventory observation, not permission to delete it.",

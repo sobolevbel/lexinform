@@ -414,6 +414,8 @@ uv run --offline --frozen python -m tools.source_history_doctor \
 ```
 
 Checks canonical selection/observation IDs, SQL identity columns and the recorded selection refs.
+Schema-53 artifact metadata is checked for valid identity/size/time and exact outer-body part links;
+missing artifact tables are damage only from schema 53 onward. Unlinked artifacts are counted.
 Schema 51 may lack these tables; missing schema-52 tables are damage. Historical observations do
 not require a current Bill or a fresh source fetch. Unreferenced metadata is an inventory count,
 not a GC decision. No bodies, source URLs or evidence quotes are emitted. Exit codes: 0 for recorded
@@ -432,6 +434,10 @@ absent report payloads, unsupported metric versions and measured zero remain dis
 missing recording date is grouped as unknown. Incomplete metric objects fail rather than receive
 zero defaults; reports contain no source bodies or URLs. Exit codes: 0 for measured scope, 1 for
 invalid data, 2 for no supported measurements.
+
+A separate artifact catalogue reports known unique complete-body bytes and the UTC day of first
+recording. Missing tables remain unavailable; an existing empty catalogue is measured zero. These
+metadata do not establish retained bytes, original download dates or historical download demand.
 
 Completed-response bytes exclude wire overhead and unknown partial/refused bytes. Summed per-run
 distinct bytes cannot establish cross-run distinct archive size. Direct gateway reads and

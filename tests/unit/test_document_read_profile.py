@@ -128,3 +128,64 @@ def test_profile_outputs_are_separate_and_immutable(tmp_path: Path) -> None:
     with pytest.raises(FileExistsError):
         run(path, output)
     assert output.read_bytes() == before
+
+
+def test_unique_body_catalogue_is_separate_from_download_demand_and_raw_retention(
+    tmp_path: Path,
+) -> None:
+    path = database(tmp_path, [report(metrics().model_dump()), report(metrics().model_dump())])
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute(
+            "CREATE TABLE artifacts (sha256 TEXT PRIMARY KEY, byte_size INTEGER, recorded_at TEXT)"
+        )
+        db.executemany(
+            "INSERT INTO artifacts VALUES (?, ?, ?)",
+            [("a" * 64, 20, "2026-10-27T00:30:00+02:00"), ("b" * 64, 30, "2026-10-28T00:00:00Z")],
+        )
+    before = path.read_bytes()
+
+    result = audit(path)
+
+    assert result["status"] == "recorded" and not result["findings"]
+    assert result["totals"]["completed_body_bytes"] == 20
+    catalogue = result["artifact_catalogue"]
+    assert catalogue["available"]
+    assert catalogue["summary"] == {"known_unique_bodies": 2, "known_unique_body_bytes": 50}
+    assert set(catalogue["by_first_recorded_day_utc"]) == {"2026-10-26", "2026-10-28"}
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize("available", [False, True])
+def test_missing_catalogue_is_distinct_from_a_known_empty_metadata_table(
+    tmp_path: Path, available: bool
+) -> None:
+    path = database(tmp_path, [report(None)])
+    if available:
+        with closing(sqlite3.connect(path)) as db, db:
+            db.execute(
+                "CREATE TABLE artifacts (sha256 TEXT PRIMARY KEY, byte_size INTEGER, recorded_at TEXT)"
+            )
+
+    result = audit(path)
+
+    assert result["status"] == "not_run"
+    assert result["artifact_catalogue"]["available"] == available
+    assert result["artifact_catalogue"]["summary"].get("known_unique_bodies") == (
+        0 if available else None
+    )
+
+
+def test_corrupt_artifact_metadata_does_not_become_a_plausible_byte_estimate(
+    tmp_path: Path,
+) -> None:
+    path = database(tmp_path, [report(metrics().model_dump())])
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute(
+            "CREATE TABLE artifacts (sha256 TEXT PRIMARY KEY, byte_size INTEGER, recorded_at TEXT)"
+        )
+        db.execute("INSERT INTO artifacts VALUES (?, ?, ?)", ("a" * 64, -1, "2026-10-27T00:00:00Z"))
+
+    result = audit(path)
+
+    assert result["status"] == "failed"
+    assert result["findings"][0]["code"] == "invalid_artifact_metadata"

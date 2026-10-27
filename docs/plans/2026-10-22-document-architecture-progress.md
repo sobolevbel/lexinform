@@ -5178,3 +5178,35 @@ exact COMMIT `8f86c1b6d443f6d509d90d57255553111473fd53`, listener up **45 s**. J
 
 [Acceptance asset](../assets/audits/2026-10-27-artifact-metadata-capture/validation.json) пинует
 source/evidence, gates, native/raw parity и ограничения metadata capture/retention.
+
+
+<a id="j101"></a>
+### J101. Artifact metadata diagnostics и отдельный size catalogue
+
+Статус: **завершён**, baseline `cd9b7f3a5e9f8c7f5defc4c31e455bfe8a4a3604`.
+Общий typed reader валидирует recorded artifact identity/size/time. Source doctor проверяет
+schema-53 tables, FK targets, part scope/index и exact outer-body SHA; schema 52 не объявляется
+повреждённой из-за отсутствия будущих tables. Unlinked rows — inventory, не разрешение GC.
+Download profile отдельно показывает global known unique bytes и UTC день первой записи.
+Unavailable catalogue и существующий empty catalogue различаются; first recording не выдаётся
+за дату скачивания, а metadata за retained bytes. Runtime: **155 src files byte-identical J100**,
+схема/flags/ports/services не менялись. Четыре typed tool modules явно включены в mypy.
+
+**35 focused / 4919 full**, 0 failures/errors/skips; strict mypy **457** files с/без PYTHONPATH,
+Ruff/format green. **168 native snapshots / 324 measured report views / 32 source observations**:
+оба doctors без ошибок/warnings, input SQL unchanged. Cached RCL graph **3139 selections/observations**
+без ошибок; это fixture metadata, не independent raw/legal acceptance. Corpus CI **7** и process
+**3294** verified, observations/input hashes same.
+
+Exact natural state `dc97f63814eaa967287e7f8c834798d86b88888e` восстановлен standard SQLite без
+current migrations: schema **52**, DB SHA `154d52897f68672453931cebb16c3ef3cdf5e674cc7b418e6d2ba63aca64fe8c`,
+unchanged. Source history **2/2**, errors **0**. IO: **1 measured quiet-zero report**, **379 unknown**,
+**1 row without saved report**; artifact catalogue unavailable. Не утверждаем production empty
+catalogue или обычную download нагрузку. Production processing, source fetch, paid calls и sends
+вручную не запускались.
+
+J100 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40574136223): **4907 passed**, mypy456,
+Ruff/docs/web success. [Relay deployment](https://github.com/sobolevbel/lexinform/actions/runs/40575257249):
+exact COMMIT `cd9b7f3a5e9f8c7f5defc4c31e455bfe8a4a3604`, `8f86c1b6d443 -> cd9b7f3a5e9f`, up **45 s**.
+[Acceptance asset](../assets/audits/2026-10-27-artifact-diagnostics/validation.json) содержит hashes,
+gates, scope и qualified snapshots. DA2/DA10 остаются частичными в явно перечисленных границах.

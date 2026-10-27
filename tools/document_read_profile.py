@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from lexinform.models import DocumentReadMetrics
+from tools.artifact_metadata import ArtifactMetadataIssue, recorded_artifacts
 from tools.corpus_artifacts import write_json
 from tools.saved_records import SavedTable, saved_columns
 from tools.sqlite_snapshot import open_snapshot
@@ -56,6 +57,8 @@ def audit(database: Path) -> dict[str, Any]:
     days: dict[str, Counter[str]] = defaultdict(Counter)
     hosts: dict[str, Counter[str]] = defaultdict(Counter)
     findings: list[dict[str, str]] = []
+    catalogue: Counter[str] = Counter()
+    catalogue_days: dict[str, Counter[str]] = defaultdict(Counter)
 
     def issue(code: str, ref: str, *, level: str = "error") -> None:
         findings.append({"code": code, "ref": ref, "level": level})
@@ -127,6 +130,17 @@ def audit(database: Path) -> dict[str, Any]:
         if "runs" in tables:
             rows = connection.execute("SELECT count(*) FROM runs").fetchone()[0]
             counts["rows_without_saved_report"] = rows - counts["saved_reports"]
+        if "artifacts" in tables:
+            catalogue.update({"known_unique_bodies": 0, "known_unique_body_bytes": 0})
+            for artifact in recorded_artifacts(connection):
+                if isinstance(artifact, ArtifactMetadataIssue):
+                    issue("invalid_artifact_metadata", artifact.ref)
+                    continue
+                catalogue["known_unique_bodies"] += 1
+                catalogue["known_unique_body_bytes"] += artifact.byte_size
+                day = artifact.recorded_at.astimezone(dt.UTC).date().isoformat()
+                catalogue_days[day]["first_recorded_bodies"] += 1
+                catalogue_days[day]["first_recorded_body_bytes"] += artifact.byte_size
         if not snapshot.unchanged():
             issue("database_changed_during_audit", "database")
     counts["errors"] = sum(row["level"] == "error" for row in findings)
@@ -146,6 +160,14 @@ def audit(database: Path) -> dict[str, Any]:
         },
         "by_host": {host: dict(sorted(row.items())) for host, row in sorted(hosts.items())},
         "findings": findings,
+        "artifact_catalogue": {
+            "available": "artifacts" in tables,
+            "summary": dict(sorted(catalogue.items())),
+            "by_first_recorded_day_utc": {
+                day: dict(sorted(values.items())) for day, values in sorted(catalogue_days.items())
+            },
+            "scope": "Known complete-body identities; retention and past demand remain separate.",
+        },
         "scope": "Known shared TextLoader observations in saved pipeline run reports.",
         "exclusions": [
             "Unmeasured is not zero; standalone CLI/direct gateway reads are outside scope.",
@@ -153,6 +175,7 @@ def audit(database: Path) -> dict[str, Any]:
             "Summed per-run distinct bytes are not distinct archive storage across runs.",
             "Run-start day is our recording day, not the source publication or source latency.",
             "No file bodies, URLs, individual SHA, retention/backend choice or work execution.",
+            "Artifact first-recording day is not the first download or source publication day.",
         ],
     }
 
