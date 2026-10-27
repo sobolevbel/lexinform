@@ -30,6 +30,18 @@ RESULT_TABLES = {
     "publications": SavedTable(("id",), ("delivery_json",)),
     "analysis_memo": SavedTable(("key",), ("record_json",)),
 }
+CONTEXT_RESULT_TABLES = {
+    **RESULT_TABLES,
+    "bills": SavedTable(
+        RESULT_TABLES["bills"].keys, (*RESULT_TABLES["bills"].columns, "review_work_json")
+    ),
+    "document_work": SavedTable(("key",), ("work_json",)),
+    "llm_batch_items": SavedTable(("batch_id", "custom_id"), ("meta_json",)),
+    "llm_batch_intents": SavedTable(("custom_id",), ("meta_json",)),
+}
+BILL_SNAPSHOT_FIELDS = frozenset(
+    {"bill_json", "change_json", "input_bill_json", "source_bill_json"}
+)
 _ANSWERS = {"analysis", "amendments", "digest", "comparison", "proposal", "review"}
 
 
@@ -49,6 +61,10 @@ class SavedRecord:
 class SavedRecordIssue:
     code: str
     ref: str
+
+
+def has_answer_payload(value: Mapping[str, object]) -> bool:
+    return any(value.get(key) is not None for key in _ANSWERS)
 
 
 def is_saved_answer(value: Mapping[str, object]) -> bool:

@@ -341,3 +341,19 @@ role, file validity or scan/text coverage. Research derivatives, cached text, th
 Senate HTML and ELI metadata are outside this raw-file measurement. Retention, raw compression,
 backup replication, daily growth and backend cost need separate measurements. No archive is
 created, no storage policy changes, and no network, model or production database is used.
+
+## Legacy history inventory
+
+```bash
+uv run --offline --frozen python -m tools.legacy_history \
+  --database /path/to/checkpointed-copy.db --output "$PWD/out/doctor/legacy-history.json"
+```
+
+This reads the shared saved-record catalogue, including frozen work and batch input snapshots.
+It groups exact JSON values, preserving unknown fields and the distinction between absent/null
+values, and measures canonical JSON/gzip sizes. Only hashes, sizes and source refs are reported;
+answer bodies are not emitted or imported. Recorded computation refs are observed without assuming
+paid origin. Batch receipt presence does not imply that its answer body survives, and memo keys
+are not joined to receipts to guess that identity. Missing source tables remain explicit.
+Exit codes are 0 for recorded inventory, 1 for invalid data/change during reading, 2 for no records
+or batch receipts. This is a storage measurement, not a selected archive or deletion policy.

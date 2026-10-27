@@ -196,6 +196,13 @@ a missing schema-51 table is reported as damage. Historical associations do not 
 current Bill or revalidate its present source. Source metadata is not echoed in the report.
 See [J085](plans/2026-10-22-document-architecture-progress.md#j085).
 
+The [legacy inventory](https://github.com/sobolevbel/lexinform/blob/main/tools/README.md#legacy-history-inventory)
+uses the same saved-record catalogue and reports exact duplicate JSON values and their sizes.
+It preserves unknown fields without adding current model defaults; its report contains no answer
+bodies. Batch receipts and memo keys do not establish a missing paid result identity, and this
+read-only inventory does not import or remove data. See
+[J086](plans/2026-10-22-document-architecture-progress.md#j086).
+
 A document review whose batch failed at every allowed submission keeps only its keys and a
 limitation (`ReviewWork.abandoned`): its documents go, and the same source is not asked again.
 A review the provider refused for its length keeps its documents for the overflow model.

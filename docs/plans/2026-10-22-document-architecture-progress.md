@@ -4341,3 +4341,53 @@ state delta **0**; rollback J084 не требует изменения данн
 новых сетевых CLI/wiring/transports нет. DA10.2 остаётся частичным для deferred blob coverage
 и полной dependency validation. План **74 задачи, 14 выполнены, 60 unchecked**
 (DA8.3 неприменим); goal active.
+
+<a id="j086"></a>
+### J086. DA6.5: exact legacy inventory and shared context catalogue
+
+Дата: 27 октября 2026. База: J085 (`21d6ea180b9682906dc266aebcf89a7813e18879`). Статус: принято локально; deployment проверяется отдельно.
+
+Новая optional offline CLI `tools.legacy_history` считает сохранённые JSON values и точные
+дубли без model defaults, изменения строк/неизвестных fields или назначения paid identity.
+Report содержит SHA/size/source refs, без answer bodies; storage policy, import и deletion
+не включаются. Наличие receipt и совпадение memo key не доказывают происхождение ответа.
+Общий catalogue и encoded snapshot fields вынесены из computation doctor в saved_records;
+его существующие решения прежние, узкий default request-doctor catalogue сохранён.
+
+Targeted **60 passed** (16 новых cases + 44 прежних), strict mypy **432** файлов,
+Ruff/format green. Первый запуск выявил отсутствие zero counter для пустого inventory и E501;
+исправлены output contract/формулировка, первые XML/log сохранены. Проверены unknown fields,
+absent vs null, canonical key order, placeholders, receipt-vs-answer, invalid/embedded JSON,
+non-finite values, frozen batch inputs, read-only input и CLI output/overwrite guard.
+Новая CLI не существовала раньше; import failure не выдаётся за before regression.
+
+На том же production pin `9e836a9`: **408 occurrences / 321 unique JSON records / 87 duplicates**,
+все **408 без computation ref**; **638 saved columns**. Occurrence bytes **3,410,164**,
+unique values **2,504,003**, canonical array **2,504,325 bytes**, gzip **614,010**.
+Все **109 batch rows** содержат только receipts без answer bodies. Это точный inventory
+сохранённых values, не 408 независимых paid calls, не подтверждённая provenance или raw archive.
+Узкий draft до общего context catalogue (399/318, 517 columns) сохранён отдельно и не принят.
+
+Computation doctor на **116 snapshots** сохранил весь прежний report; request doctor —
+**побайтно на 29** normal/negative inputs. Первое сравнение ошибочно взяло старый 13-case
+report; переключено на существующий qualified 29-case baseline, все старые fields совпали.
+Input DB hashes прежние, runtime **148 src files** byte-identical J085, schema **51**.
+Новый inventory также проверен на 116 native snapshots; пустые источники остаются `not_run`.
+Corpus CI **7 passed**, process **3294 observations**, zero changed inputs/decisions,
+qualified manifests verified. Full gate выполняется; stage state delta **0**.
+
+J085 release проверен по `21d6ea180b9682906dc266aebcf89a7813e18879`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40511928671) — **4748 passed**,
+strict mypy 431 файлов, Ruff, docs/web success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40513350632) — exact COMMIT,
+`77a86df8b35e -> 21d6ea180b96`, listener up 45 s. Live processing не запускался.
+
+Final acceptance J086: **4764 passed**, failures/errors/skips/xfails 0, **591.566 s**;
+focused **60 passed**, strict mypy **432** файлов, Ruff src/tests/tools, format и docs/diff green.
+[Acceptance evidence](../assets/audits/2026-10-27-legacy-history-inventory/validation.json)
+содержит XML/source hashes, qualified inventory, old-doctor compatibility и corpus manifests.
+Все **148 src files** byte-identical J085; schema/migrations/default flags прежние,
+state delta **0**. Rollback J085 не меняет state. Local HTTP не повторён: offline CLI покрыта
+subprocess test, сетевые transports/wiring прежние. Legacy import ещё не включён;
+ответы не связываются с receipts по предположению. План **74 задачи, 14 выполнены, 60 unchecked**
+(DA8.3 неприменим); goal active. Далее — DA3/DA4, перенос selection policy из physical extractor.

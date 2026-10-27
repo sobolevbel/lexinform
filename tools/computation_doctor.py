@@ -13,9 +13,10 @@ from lexinform.models import ComputationResult, ResultApplicabilityObservation, 
 from tools.application_targets import application_target
 from tools.corpus_artifacts import write_json
 from tools.saved_records import (
+    BILL_SNAPSHOT_FIELDS,
+    CONTEXT_RESULT_TABLES,
     RESULT_TABLES,
     SavedRecordIssue,
-    SavedTable,
     is_saved_answer,
     saved_columns,
     saved_records,
@@ -23,16 +24,6 @@ from tools.saved_records import (
 from tools.sqlite_snapshot import open_snapshot
 
 _RESULT_ID = re.compile(r"result-v1:[0-9a-f]{64}")
-_TABLES = {
-    **RESULT_TABLES,
-    "bills": SavedTable(
-        RESULT_TABLES["bills"].keys, (*RESULT_TABLES["bills"].columns, "review_work_json")
-    ),
-    "document_work": SavedTable(("key",), ("work_json",)),
-    "llm_batch_items": SavedTable(("batch_id", "custom_id"), ("meta_json",)),
-    "llm_batch_intents": SavedTable(("custom_id",), ("meta_json",)),
-}
-_ENCODED = frozenset({"bill_json", "change_json", "input_bill_json", "source_bill_json"})
 _REQUIRED = {*RESULT_TABLES, "computation_results", "result_applications"}
 
 
@@ -171,7 +162,7 @@ class ComputationAudit:
             self.refs.setdefault(observation.result_id, []).append(ref)
 
     def projections(self, connection: sqlite3.Connection, tables: set[str]) -> None:
-        for column in saved_columns(connection, tables, catalogue=_TABLES):
+        for column in saved_columns(connection, tables, catalogue=CONTEXT_RESULT_TABLES):
             self.counts["saved_columns"] += 1
             if not isinstance(column.raw, str):
                 self.issue("invalid_json", column.ref)
@@ -181,7 +172,7 @@ class ComputationAudit:
             except ValueError, RecursionError:
                 self.issue("invalid_json", column.ref)
                 continue
-            for item in saved_records(value, column.ref, encoded_fields=_ENCODED):
+            for item in saved_records(value, column.ref, encoded_fields=BILL_SNAPSHOT_FIELDS):
                 if isinstance(item, SavedRecordIssue):
                     self.issue(item.code, item.ref)
                 elif "computation_id" in item.value or is_saved_answer(item.value):

@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "stage": "J086",
+  "baseline": "21d6ea180b9682906dc266aebcf89a7813e18879",
+  "scope": "Read-only inventory of exact saved JSON values and receipt shapes. Shared context catalogue; no default injection, paid identity inference, archive or import.",
+  "checks": {
+    "focused": {
+      "sha256": "6b877be071d10ea6684261c02cfc769af4be53e7f5e080e17ec4f59834bf1b98",
+      "tests": 60,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 2.996
+    },
+    "full": {
+      "sha256": "02b83ce2a2435e768febd5e96ffbadae24cd237e100a8073d2fce80a1ed53932",
+      "tests": 4764,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 591.566
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 432 source files",
+    "ruff": "All checks passed!",
+    "format": "2 files reformatted, 434 files left unchanged",
+    "docs": "Documentation links, anchors, resources and build contents: OK"
+  },
+  "source": [
+    {
+      "path": "tools/legacy_history.py",
+      "sha256": "898ce463c62fd0d131c4b7c0a894ce27d627ad419841dd5a647159fa48c6373a"
+    },
+    {
+      "path": "tools/saved_records.py",
+      "sha256": "0eef36f2df82bdb690b2d26215b77b63ea0c73aeff928a5027f336210bb0eae0"
+    },
+    {
+      "path": "tools/computation_doctor.py",
+      "sha256": "f0e9925650d3418804dc0c6844def44fee1cc0677057114fe2bd10994cf1293e"
+    },
+    {
+      "path": "tests/unit/test_legacy_history.py",
+      "sha256": "4c05485ef0c7c154557a1db5d6d77c6351b558dbf4c2f1ed2f7e5038fa105737"
+    }
+  ],
+  "production_pin": {
+    "state_ref": "9e836a90023fdd40e7b56499fce4ad99daf78198",
+    "state_sql_sha256": "b2c05613b361d87331203aaf4aec232428075bc7b31eb2cbfdc1bfc90cb78b47",
+    "database_sha256": "348da5f7f39d8aefa06750edd75ba336bff1443f17bffcfa96e8a2492e16b5f8",
+    "inventory_sha256": "48b5dcbc1ed58ee90b476e38247783fb8c81dd9d896daa50c873c433a0efc726",
+    "summary": {
+      "batch_item_rows": 109,
+      "batch_receipt_only": 109,
+      "canonical_occurrence_bytes": 3410164,
+      "duplicate_occurrences": 87,
+      "record_occurrences": 408,
+      "recorded_ref_occurrences": 0,
+      "saved_columns": 638,
+      "unbound_occurrences": 408,
+      "unique_canonical_bytes": 2504003,
+      "unique_records": 321
+    },
+    "unique_json_array_bytes": 2504325,
+    "unique_json_array_gzip_bytes": 614010,
+    "missing_source_tables": [],
+    "answer_bodies_emitted": false,
+    "input_unchanged": true,
+    "state_delta": 0
+  },
+  "compatibility": {
+    "native_cases": 116,
+    "all_previous_computation_reports_equal": true,
+    "request_reports_byte_identical": 29,
+    "runtime_files": 148,
+    "runtime_unchanged": true,
+    "schema": 51,
+    "profiles_sha256": "735d32aa9fb578e14ce1982c8deff3f65e341e99b00c82434003ac301db5a914",
+    "request_report_sha256": "0f28a3f096a89dd25b8a277a4bfe08af9a22f645a54285bc30445fff348ab4fd"
+  },
+  "corpus": {
+    "ci_observations": 7,
+    "process_observations": 3294,
+    "process_diff": {
+      "after_manifest_sha256": "cdb3fc137faece845b60a5ec6084ff4f474029723c5daa80c7f8f138d13eae47",
+      "before_manifest_sha256": "19f5a8a086d94cc9c96ebffac8f29e38a680e070ed6ef7e6aebc850f6511ff5f",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "process",
+      "summary_changes": {},
+      "version": 1
+    },
+    "qualified_manifests_verified": true,
+    "external_inputs_labels_unchanged": true
+  },
+  "observers": [
+    {
+      "path": "out/corpus/j086/qualify_profiles.py",
+      "sha256": "48de18fe8f502a96f8c6227f88b36fa4339f572ed6008ab64c0f10d3c1b41347"
+    },
+    {
+      "path": "out/corpus/j081/request_profile.py",
+      "sha256": "220af5a84effb8d0c1b8ff07b11beabb458d8b8f35632b29961f6785fdf4d62c"
+    }
+  ],
+  "rollback": {
+    "code": "J085",
+    "state_changes": false,
+    "migration": false
+  },
+  "exclusions": [
+    "Saved answer shapes and recorded refs do not prove paid origin or legal validity.",
+    "Memo keys are not joined to batch receipts to invent result identities.",
+    "No raw input, historical source bytes or missing request is reconstructed.",
+    "Canonical sizes are a measurement, not a selected production storage policy.",
+    "JSON key order is canonical; strings and stored fields stay unchanged.",
+    "No answer content is emitted, imported, archived or removed.",
+    "Narrow draft 399/318 excluded; qualified catalogue covers frozen work/batch snapshots.",
+    "No paid/production processing or Telegram calls.",
+    "No independent legal applicability or full source coverage verdict.",
+    "Local HTTP not repeated: new CLI is offline and no network wiring changed."
+  ],
+  "reproduction": [
+    "git show 9e836a90023fdd40e7b56499fce4ad99daf78198:lexinform.sql > /private/tmp/legacy-state.sql",
+    "Restore the pinned SQL with SqliteBillRepository in an isolated database; no Settings/pipeline required.",
+    "uv run python -m tools.legacy_history --database /path/to/checkpointed-copy.db --output /path/to/new-report.json",
+    "uv run pytest -q tests/unit/test_legacy_history.py tests/scenario/test_computation_doctor.py tests/scenario/test_request_doctor.py",
+    "uv run pytest -q && uv run mypy && uv run ruff check src tests tools",
+    "PYTHONPATH=src:. uv run python out/corpus/j086/qualify_profiles.py"
+  ]
+}
