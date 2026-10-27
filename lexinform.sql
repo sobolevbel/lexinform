@@ -764,7 +764,7 @@ INSERT INTO "commands" VALUES(79370149,'-1004460742180',679,'/amendments 1929 pu
 INSERT INTO "commands" VALUES(79370150,'-1004460742180',683,'/amendments 1929 publication=172','2026-10-21T21:17:56+00:00','2026-10-21T21:22:38+00:00','1929 queued: Поправки для публикации 172 ожидают batch с 2026-10-21T21:22:35+00:00. После получения результата бот обновит прежнее сообщение.','2026-10-21T21:22:35+00:00');
 INSERT INTO "commands" VALUES(79370151,'-1004460742180',686,'/refresh RCL/12409404','2026-10-21T21:41:22+00:00','2026-10-21T21:44:23+00:00','RCL/12409404 refreshed: card refreshed','2026-10-21T21:44:19+00:00');
 INSERT INTO "commands" VALUES(79370153,'-1004460742180',703,'/digest publish ref=2026-W43','2026-10-25T11:51:55+00:00','2026-10-25T11:54:35+00:00','digest (message 139): 2026-W43 posted to the channel','2026-10-25T11:54:31+00:00');
-INSERT INTO "commands" VALUES(79370154,'-1004460742180',711,'/analyze UD491 force','2026-10-27T15:59:32+00:00',NULL,'WPL/UD491 queued: queued to the batch; the result is applied when the batch completes','2026-10-27T16:00:51+00:00');
+INSERT INTO "commands" VALUES(79370154,'-1004460742180',711,'/analyze UD491 force','2026-10-27T15:59:32+00:00','2026-10-27T16:01:00+00:00','WPL/UD491 queued: queued to the batch; the result is applied when the batch completes','2026-10-27T16:00:51+00:00');
 CREATE TABLE computation_results (
         result_id TEXT PRIMARY KEY,
         provider TEXT NOT NULL,
