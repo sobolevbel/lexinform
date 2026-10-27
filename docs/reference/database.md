@@ -84,9 +84,11 @@ Projection receipts добавлены без новой SQL-миграции в
 identity relocation при rollover остаётся открытым.
 [J066](../plans/2026-10-22-document-architecture-progress.md#j066) сохраняет secondary
 amendments/supplement/joint/name/explanation в той же таблице без новой SQL-миграции, schema v2
-в JSON и без primary generation. Secondary application receipts и compact review history открыты.
+в JSON и без primary generation. Secondary application receipts открыты.
 [J067](../plans/2026-10-22-document-architecture-progress.md#j067) добавляет reader review JSON v3
-с отдельными input refs и normalized answer; runtime review writer остаётся выключенным.
+с отдельными input refs и normalized answer;
+[J068](../plans/2026-10-22-document-architecture-progress.md#j068) включает их запись в review
+collection checkpoint без source text, новой SQL-миграции или изменения submit/pause settings.
 
 ## Снимки и обработанное состояние
 

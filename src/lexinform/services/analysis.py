@@ -84,7 +84,9 @@ from lexinform.models import (
     ResultApplication,
     ReviewContext,
     ReviewDocument,
+    ReviewInputReference,
     ReviewPurpose,
+    ReviewResultRecord,
     ReviewSource,
     ScannedDocument,
     Stage,
@@ -1003,13 +1005,16 @@ class AnalysisService:
         record: ComputationRecord | None,
         provider: BatchProvider,
         now: datetime,
+        *,
+        review_input: ReviewInputReference | None = None,
     ) -> ComputationResult:
         assert item.call_kind not in ("triage", "change_review"), (
             "only batch purposes produce durable computation items"
         )
         primary = isinstance(item.meta, BatchItemMeta)
+        review = item.call_kind in ("consultation_review", "commission_review", "act_application")
         result = ComputationResult(
-            schema_version=1 if primary else 2,
+            schema_version=1 if primary else 3 if review else 2,
             provider=provider,
             batch_id=item.batch_id,
             custom_id=item.custom_id,
@@ -1018,6 +1023,7 @@ class AnalysisService:
             number=item.number,
             generation=item.meta.generation if isinstance(item.meta, BatchItemMeta) else None,
             collected_at=now,
+            review_input=review_input,
             request_sha256=item.meta.request_sha256,
             validation="validated" if record is not None else "error",
             record=record,
@@ -1042,7 +1048,14 @@ class AnalysisService:
         provider: BatchProvider,
     ) -> None:
         now = self._clock.now()
-        retain = item.call_kind in ("amendments", "supplement", "joint", "name", "explanation")
+        review = item.call_kind in ("consultation_review", "commission_review", "act_application")
+        retain = review or item.call_kind in (
+            "amendments",
+            "supplement",
+            "joint",
+            "name",
+            "explanation",
+        )
         records = _batch_records(
             result,
             meta.prompt_version,
@@ -1136,7 +1149,19 @@ class AnalysisService:
                         used_at=now,
                     )
             if retain:
-                self._retain_computation(item, result, record, provider, now)
+                normalized = (
+                    ReviewResultRecord.from_record(record)
+                    if isinstance(record, DocumentReviewRecord)
+                    else record
+                )
+                review_input = (
+                    ReviewInputReference.from_context(meta.review_context, term=item.term)
+                    if review and meta.review_context is not None
+                    else None
+                )
+                self._retain_computation(
+                    item, result, normalized, provider, now, review_input=review_input
+                )
             self._repo.mark_llm_batch_item_consumed(
                 item.batch_id, item.custom_id, consumed_at=now, result=result
             )

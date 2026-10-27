@@ -3400,3 +3400,64 @@ v1 совпал побайтово; 141 runtime file прежний, AST provide
 production/previous-snapshot checks и повторяемый synthetic size observer с ограничениями.
 Локальные outputs: `out/corpus/j067`, registry runs `j067-*`. Следующий этап — review writer
 с сохранением known input и при failure; цель всего плана остаётся active.
+
+J067 выпущен: `d4da77430316a7937157ff03afebfcaf15bee882`,
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40441924776) success:
+**4341 passed / 32 deselected**, strict mypy 406 файлов, lint green; web/docs jobs success.
+[Deploy relay](https://github.com/sobolevbel/lexinform/actions/runs/40442408900) success:
+exact COMMIT, `0799a9242b9f → d4da77430316`, сервис up 45 s после restart.
+Evidence: `out/corpus/j067/release.json`. Ручной production pipeline не запускался.
+
+<a id="j068"></a>
+### J068. DA6: compact review history в collection checkpoint
+
+Дата: 27 октября 2026. База: `d4da77430316a7937157ff03afebfcaf15bee882`.
+Статус: реализован и принят локально; выпуск проверяется отдельно.
+
+Collection consultation_review/commission_review/act_application сохраняет compact answer и
+отдельный input ref в immutable history schema v3. Полный источник и raw response body в новую
+таблицу не копируются; detailed record остаётся в прежнем memo для действующих consumers.
+Новый result ref проходит через memo reuse, исходные paid tokens/model/prompt/request SHA не
+обнуляются в history. Current API возвращает detailed record с нулевыми новыми токенами.
+
+Input строится из frozen item metadata, независимо от валидности answer. Known source refs
+сохраняются при failure; отсутствие legacy review_context остаётся None. History, memo и
+consumed checkpoint — одна existing transaction; network, token acknowledgement и provider
+cleanup сохраняют свои границы. Primary schema v1 и пять secondary v2 прежние. Secondary
+application receipts не добавлены: запись memo не объявляется применением к Bill/публикации.
+
+Настройки reviews, submit/pause policy, LLM schema/payload/model/pricing и citation validation
+не менялись. Новые act submissions по-прежнему остановлены; тесты отдельно seed уже отправленный
+fake legacy job через public repository/backend APIs и проверяют collect без act/effective-rule
+публикаций. Новой SQL-миграции и legacy backfill нет. Rollback reader — J067.
+
+Qualified before: **21 failures**; targeted **145 passed**. Новые сценарии: оба providers,
+workers=1/4, repeated collect, dump/restore, original paid usage при memo reuse/cleanup, known и
+unknown input при failed answer, три места обрыва checkpoint. Existing review/citation/pause и
+non-review secondary history scenarios включены.
+
+Шесть World before/after cases: одинаковые frozen requests/custom IDs/cost, validated answers,
+report usage, current Bill и submit counts. Source refs сохранили исходные metadata, а
+normalized history не имеет full-context/text полей. Прирост SQL на collect **2410–4323 bytes**,
+gzip **227–273 bytes**, SQLite **0–4096 bytes**. После memo cleanup SQL **2316–4229 bytes**,
+gzip **571–1116 bytes**, SQLite **0–4096 bytes**. Это небольшие fixtures с meaningful citations,
+не прогноз production growth; script replay timings не измеряют network checkpoint latency.
+
+J067 reader восстановил **18** новых pending/settled/cleaned snapshots с v3 history, memo refs
+и pending items; каждый повторный dump побайтово одинаков. Pipeline/provider/Telegram против
+production copy не запускались.
+
+Acceptance: full **4362 passed**, errors/failures/skips/xfails 0, 581,895 s; strict mypy
+407 файлов, Ruff src/tests/tools, format, strict docs/links и diff check green. Local HTTP не
+нужен: CLI/wiring/network adapters прежние. Production snapshot J064: идентичные SQL,
+projection/memo hashes, размеры и schema49, integrity ok/FK 0. Legacy JSON десяти records и
+primary computation v1 совпал побайтово. Corpus CI **7 passed**, process **3294 observations**,
+zero changed decisions/inputs, missing inputs 0; оба manifests проверены. Profiles имеют
+прежние metadata/cached/synthetic exclusions и не добавляют human labels.
+
+[Acceptance evidence](../assets/audits/2026-10-27-review-computation-history/validation.json)
+содержит XML/source/serialization hashes, six-flow metrics и observer, rollback snapshots hashes,
+corpus manifests и production profiles. 142 runtime files прежние; AST provider answer/context
+schemas не менялся. Локальные outputs: `out/corpus/j068`, registry runs `j068-*`.
+Следующие части DA6 — secondary application targets/receipts, rollover и остальные consumers;
+цель всего плана остаётся active.
