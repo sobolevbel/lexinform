@@ -379,3 +379,28 @@ historical source roles or claim legal completeness. Expected-digest, oversize a
 conditions are qualified separately by unit/public-consumer cases. See the
 [operation matrix](../docs/reviews/2026-10-27-document-admission.md) and
 [J091](../docs/plans/2026-10-22-document-architecture-progress.md#j091).
+
+## Recorded physical source footprint
+
+```bash
+uv run --offline --frozen python -m tools.measure_referenced_files \
+  --database /path/to/checkpointed-copy.db \
+  --inventory /path/to/available-raw-inventory.json \
+  --output "$PWD/out/referenced-files.json"
+```
+
+The input inventory is a version-1 `measure_corpus_files` manifest, with exact SHA/size/path/family
+rows. The J094 measurement adds catalogued Senate originals with the existing `senate_sources`,
+`digest_file` and `totals` helpers; it preserves the five-family inventory separately.
+This reader uses the shared saved-record walker and immutable SQLite snapshot guard, including
+encoded bill snapshots and known computation records. It counts explicit physical fields, uses
+outer-container SHA for archive members, and keeps text/law/legacy scan digests out of raw identity.
+Source/inventory checksums and code fingerprints are preserved; bodies/URLs are not emitted.
+
+An inventory match is availability at its measurement time, not a production archive, complete
+download log or legal completeness verdict. Unknown/unmatched references stay explicit. Scan
+manifests account for source and input sizes separately without claiming retained bytes. Empty
+scope returns `not_run`; size conflicts or malformed saved data fail the report. Outputs cannot
+replace earlier artifacts or enter the declared corpus. See the
+[storage profile](../docs/reviews/2026-10-27-storage-profile.md) and
+[J094](../docs/plans/2026-10-22-document-architecture-progress.md#j094).

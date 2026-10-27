@@ -13,6 +13,9 @@ this changes storage, not stage fingerprints or reader-visible values.
 Cleanup runs at the start of pipeline phases using the injected clock. In dry runs it belongs
 to the transaction that rolls back. All cutoffs are configurable in days:
 
+The [2026-10-27 storage profile](reviews/2026-10-27-storage-profile.md) measures a pinned copy,
+recorded physical refs and Git checkpoints; it does not enable a raw archive or change cutoffs.
+
 | Data | Default | Rule |
 |---|---:|---|
 | Run reports | 90 | Delete old runs, retaining the latest successful discovery watermark even after a long pause. |

@@ -4789,3 +4789,91 @@ Final acceptance J093: full **4818 passed**, failures/errors/skips 0,
 actual J092 rollback, corpus replay и размер metadata. Сначала подготовлен/выпущен совместимый
 reader, затем producer. Полная decision history/DocumentEdition и необъявленные scopes остаются
 открытыми. План **74 задачи, 17 выполнены, 57 unchecked** (DA8.3 неприменим); goal active.
+
+
+<a id="j094"></a>
+### J094. DA2.1/DA10: source footprint, current storage profile and a recorded production cycle
+
+Дата: 27 октября 2026. База: J093 (`83eadcf`). Статус: в работе.
+
+Read-only `measure_referenced_files` сопоставляет explicit physical fingerprints в сохранённых
+selection/scan/review metadata с version-1 inventory. Общие saved_records/encoded snapshot
+walker, SqliteSnapshot и artifact/code guards используются без копии parser logic.
+Outer archive container считается один раз; text/law SHA и unscoped legacy scan digest не
+выдаются за raw identity. Source/input scan bytes учитываются раздельно; manifest не означает
+retention. Unknowns, missing hash matches, malformed data и empty scope различаются.
+Output не содержит bodies/URLs, не перезаписывает inputs/evidence и не входит в corpus.
+
+Первые E501 исправлены сокращением report strings. Первые **29 focused** прошли; по реальным
+данным обнаружен недосчёт legacy scans: selection не равен source/input manifest. Добавлен
+case с непустым selection без scan_input, счётчик исправлен, code fingerprint/guard добавлен.
+Первый full gate остановлен SIGINT перед изменением, partial XML/log сохранены; accepted
+repeat — **30 focused**, strict mypy **441** файлов, Ruff/format green, full выполняется.
+Первоначальный tool и reports сохранены отдельно; итоговый `referenced-files-qualified.json`
+пинует исправленный producer. Runtime src, schema и настройки хранения не меняются.
+
+Новый state pin **e3e262b841805ee549f1d3dcdcbba2a77d1f6ee6** (27.10 16:51:55 UTC): SQL
+**19751140 bytes**, SHA `babfb88f163cfe2823256684d09561f13ae23e5840fa5b711d3d444a9d2edec5`.
+Восстановлена изолированная `/private/tmp/lexinform-j094/production.db`: **20758528 bytes**,
+SHA `b49b2a24c7c6b390fcc928b48c73a4d0fd32d7c3cbb6f58641baa3ca603c2cfa`.
+**458 bills / 378 runs**, source/SQLite неизменны. Никаких pipeline/paid/reader вызовов вручную.
+
+Fresh five-family inventory: **14516 files / 11593280468 bytes**, **12366 unique / 11107528218**.
+С J039 +12 files / +8754532 bytes; duplicate bytes прежние **485752250**. Для полной заявленной
+страты добавлены actual catalogued Senate originals через existing senate_sources/digest/totals:
+**1825 files / 479946679 bytes**, missing **0**. Six-family total **16341 / 12073227147 bytes**,
+**14191 unique / 11587474897**, duplicates **2150 files / 485752250 bytes**. Это available
+research inventory, не объём реально потреблённого production raw или прогноз архива.
+Index SHA прежний `2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666`.
+
+**651 saved columns / 416 saved answer occurrences / 141 selections**: **437 raw reference
+occurrences / 44 unique SHA**, из них inventory matches **13 / 9585013 bytes**, unmatched **31**.
+У **5 saved scan occurrences** нет source/input manifest. Они не восстановлены по text_sha/URL.
+Ноль retained scan manifests в этой выборке не доказывает полный zero input footprint.
+Legacy exact inventory: **415 occurrences / 325 unique / 90 duplicates**, **3434138 occurrence
+bytes / 2512584 unique**, canonical unique array gzip **616106 bytes**. Known result refs **3**,
+unbound **412**; новый immutable computation учитывается footprint отдельно, не создаёт paid IDs
+для старых memo. Полный исторический поток скачиваний из таких сохранённых данных неизвестен.
+
+Actual first-parent state history с 13.10: **261 commits / 261 SQL blobs**, endpoint SQL
+**15258350 → 19751140 bytes**, внутри периода **14513298–46427458**. Daily gzip endpoints
+измерены отдельно; спад 23→24.10 исключает линейный daily-growth прогноз. Локальная существующая
+раскладка диапазона **811 objects / 1790413580 disk bytes**. В отдельном temporary non-thin pack
+те же **811 objects**: **38411619 pack + 23780 index bytes**, **41.688 s**, SHA
+`791809b13f8c0513074fe86455fd2818064a657304b9a08ce133ed5ddc7ad07c`.
+Source Git store/refs/config не перепаковывались; temporary files удалены. Это не GitHub network,
+remote storage или self-contained backup всей истории; packing dependencies описаны в report.
+
+Fresh local checkpoint benchmark: restore **0.269059 s**, dump **0.104655 s**, eight checkpoints /
+seven commits, changed **0.995456–1.202567 s**, unchanged **0.240596 s**. Три synthetic report
+pairs: +**5178 SQL / 175 gzip bytes**. Temporary local objects **36752402 → 4049834 bytes**
+after local GC; remote local-test objects **36752402 → 4050316**. Транспорт filesystem-only,
+не production latency; pre-send/receipt checkpoints не объединялись.
+
+В реальном сохранённом **WPL/UD491**: validated metadata-only analysis, known input binding/
+request checksum, immutable result, collection ready, projection applied, тот же computation ID
+в Bill и frozen new_bill snapshot. В БД sent/message ID **141**, publication **217**; channel
+content независимо не читался. Result ID
+`result-v1:072ab7e466c32fa05951bd10df3703bbdeb52cbf7892fa81b71c49f282914e77`.
+Computation/request doctors — **0 errors / 0 warnings**; work doctor — **3 old warnings**
+publication unavailable, точное совпадение с 9e836a9. Work rows не удалялись. Это bounded
+history acceptance, не file extraction, legal accuracy или остальных purposes/families.
+
+[Профиль хранения](../reviews/2026-10-27-storage-profile.md) фиксирует текущую SQLite, pending
+обязательства, unknown legacy границы, измерения и дальнейшие metadata/retention действия.
+S3/backend/raw retention не выбираются. DA2.1 остаётся частичным для полного наблюдаемого спроса;
+DA2.3/DA2.5 metadata и DA3–DA7 можно продолжать на этом профиле.
+
+J093 release проверен по `83eadcf87c71fb3d5aa26f6378aebddb3e51bcaf`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40546706506) — **4818 passed**,
+strict mypy 440 файлов, Ruff, docs/web success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40548007636) — exact COMMIT,
+`d99702cedfc4 -> 83eadcf87c71`, listener up 45 s. Отдельный live processing вручную не запускался.
+
+J094 завершён. Финальный guard отвергает неверную форму inventory до чтения DB; отдельный test
+добавлен после полного промежуточного gate (4827). Accepted final: **31 focused / 4828 full**,
+**0 failures/errors/skips**, full **607.871 s**, strict mypy **441**, Ruff/format green.
+Final footprint metrics совпали с qualified report; runtime **151 src files byte-identical**.
+Corpus CI **7** и process **3294**: manifests verified, observations/inputs unchanged versus J093.
+[Acceptance asset](../assets/audits/2026-10-27-storage-profile/validation.json) пинует producer,
+данные и проверки; interrupted/промежуточные evidence сохранены, не выданы за final.
