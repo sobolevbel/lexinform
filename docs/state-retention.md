@@ -162,6 +162,11 @@ legacy checksum stays unknown; cleanup and reuse never derive it from a fresh co
 does not pin or archive the request body and does not extend memo retention.
 The offline [request doctor](https://github.com/sobolevbel/lexinform/blob/main/tools/README.md#request-provenance-doctor) inventories these refs
 on a checkpointed copy and reports corruption/unknowns without modifying state or retrying work.
+The [unfinished-work doctor](https://github.com/sobolevbel/lexinform/blob/main/tools/README.md#unfinished-work-doctor)
+uses the same snapshot reader to inventory document/review owners and saved dependencies.
+Its overlapping memo counts describe existing guards; they do not authorize deletion or establish
+that a historical publication can be edited. See
+[J080](plans/2026-10-22-document-architecture-progress.md#j080).
 
 A document review whose batch failed at every allowed submission keeps only its keys and a
 limitation (`ReviewWork.abandoned`): its documents go, and the same source is not asked again.

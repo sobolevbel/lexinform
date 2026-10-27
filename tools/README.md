@@ -74,6 +74,26 @@ arguments/input. `recorded` is not a full-state health verdict. Blob coverage, s
 generation ownership and immutable result/application history remain outside this first doctor.
 Payload and legal text are not copied into the report.
 
+## Unfinished-work doctor
+
+```bash
+uv run --offline --frozen python -m tools.work_doctor \
+  --database /path/to/checkpointed-copy.db --output "$PWD/out/doctor/work.json"
+```
+
+Both doctors use `tools.sqlite_snapshot` for the same immutable reader, journal refusal and
+before/after checksum check. The work report lists document/review owners, recorded times,
+attempts, frozen-input availability, linked publication states and owner memo counts. It detects
+missing bill/change dependencies, conflicting owners/schedules, invalid saved JSON and duplicate
+review identities. Missing legacy snapshots or publication links are warnings; keys and inputs
+are never reconstructed. Empty legacy review ownership remains visible because it can still
+protect memos under the current retention rules.
+
+The report contains no legal context or provider payload. It does not refresh sources, evaluate
+current ELI applicability, repair state or submit work. Linked publications do not prove the
+configured channel or revision eligibility. Owner memo counts overlap and cannot be added or
+used as a deletion list. Exit codes match the request doctor; no saved owner rows means `not_run`.
+
 ## Exact scan-input windows
 
 ```bash

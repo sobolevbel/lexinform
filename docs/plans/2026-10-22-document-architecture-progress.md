@@ -4022,3 +4022,60 @@ Implementation commit ещё не создан; rollback к J078 не требу
 План: **74 задачи, 14 выполнены, 60 unchecked**, среди них DA8.3 явно неприменим; goal active.
 Следующий фрагмент DA10 — общий безопасный reader SQLite snapshots и диагностика ownership
 незавершённой работы без repair/submit/send.
+
+<a id="j080"></a>
+### J080. DA10: shared checkpointed snapshot reader and work ownership doctor
+
+Дата: 27 октября 2026. База: J079 (`0b59289`). Статус: принято локально, deployment проверяется отдельно.
+
+`tools.sqlite_snapshot` выносит из request doctor чтение immutable checkpointed copy,
+WAL/journal refusal и SHA race check. `tools.work_doctor` проверяет реальные document/review
+owners, matching change/bill, duplicate review identity и синтаксис frozen snapshots. Вывод
+содержит metadata/counters и flags неизвестного legacy, без legal context, реконструкции
+recorded keys, repair или исполнения work. Memo counts могут пересекаться; publication linkage
+не доказывает channel/edit eligibility. Production CLI/pipeline не меняются.
+
+Первый fixture draft ошибочно считал `add_bill` записью в БД и использовал несуществующий enum;
+**22 setup errors**, mypy error. Fixture теперь проходит реальные fake production collect/apply,
+использует STATUS_UPDATE и existing paid memo. Runtime guards не ослаблены. Новый targeted
+**42 passed**, strict mypy **424** файла. Идёт дальнейшая qualification и проверка legacy inputs.
+
+Final targeted **45 passed** включает 27 новых work/snapshot guards и прежние 18 request-doctor
+checks. Добавлены physical schedule/JSON mismatch и empty legacy review ownership: данные не
+пересчитываются и не удаляются. Strict mypy **424** файла, Ruff src/tests/tools, format green;
+full gate запущен. После выноса reader **13** complete request-doctor reports (12 normal fake
+snapshots и pinned production) совпали с J079 целиком; входные DB hashes не изменены.
+
+На state pin `f34e63e7` новый doctor показывает 3 waiting DocumentWork/9 ReviewWork, без errors,
+с 3 warning `document_publication_unavailable`. Это literal missing linkage в этом историческом
+pin, не автоматический verdict о возможности revision или необходимости удаления. Full legal
+context, opaque question keys и provider payload в report не копируются. Идёт qualification.
+
+J078 release проверен по `4ed9a94403a78f0ffe1f5dea540bf3d53b5558af`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40487303528) — **4624 passed**,
+strict mypy 423 файла, Ruff, docs/web jobs success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40488259345) — exact COMMIT,
+`9e3d891691e6 -> 4ed9a94403a7`, listener up 45 s. Это не live history-cycle proof.
+J079 implementation `0b59289521971acd3b11c16d8408fab2c341ae3d` pushed; его CI/deploy
+проверяются отдельно. Незавершённая J080 work в этот push не включалась.
+
+J079 release проверен по `0b59289521971acd3b11c16d8408fab2c341ae3d`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40488439465) — **4624 passed**,
+strict mypy 423 файла, Ruff, docs/web jobs success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40489420492) — exact COMMIT,
+`4ed9a94403a7 -> 0b5928952197`, listener up 45 s. Отдельного production processing не было.
+
+Final acceptance: **4651 passed**, failures/errors/skips/xfails 0, 656.314 s. Targeted
+**45 passed**, strict mypy **424** файла, Ruff src/tests/tools, format, docs/links и diff check
+green. Corpus CI **7 passed**, process **3294 observations**, zero changed inputs/decisions;
+qualified source/tests/tools manifests проверены. Все runtime `src` files byte-identical J079,
+поэтому схема **50**, migrations, provider/reader effects, default flags и state writers прежние.
+**13 complete request-doctor reports byte-identical** baseline/current, все input DB hashes
+сохранены. Новый work report не добавляет raw/context copies в state; delta state 0.
+[Acceptance evidence](../assets/audits/2026-10-27-work-ownership-doctor/validation.json)
+содержит XML/source hashes, сравнительные profiles, pinned inventory и observer.
+Implementation commit ещё не создан; rollback J079 не требует миграции. Local HTTP не повторён:
+сетевой CLI/wiring/transports прежние, новая offline CLI покрыта subprocess tests.
+DA10.2 остаётся частичным: application/projection graph и blobs вне этого doctor. План:
+**74 задачи, 14 выполнены, 60 unchecked** (DA8.3 неприменим); goal active. Следующий фрагмент
+проверяет computation/application refs на тех же immutable snapshots без выполнения work.

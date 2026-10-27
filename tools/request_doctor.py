@@ -6,12 +6,12 @@ import json
 import re
 import sqlite3
 from collections import Counter
-from contextlib import closing
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from tools.corpus_artifacts import digest, read_artifact, write_json
+from tools.corpus_artifacts import write_json
+from tools.sqlite_snapshot import open_snapshot
 
 _SHA = re.compile(r"[0-9a-f]{64}")
 _REQUIRED = {"llm_batch_intents", "llm_batch_items", "llm_batches", "bills", "analysis_memo"}
@@ -187,21 +187,10 @@ def _rows(connection: sqlite3.Connection, audit: RequestAudit, tables: set[str])
                     audit.result(audit.load(row[column], f"{ref}/{column}"), f"{ref}/{column}")
 
 
-def live_journal(path: Path) -> bool:
-    return any(
-        sidecar.exists() and sidecar.stat().st_size > 0
-        for sidecar in (Path(str(path) + suffix) for suffix in ("-wal", "-journal"))
-    )
-
-
 def audit(database: Path) -> dict[str, Any]:
-    path = database.resolve(strict=True)
-    if live_journal(path):
-        raise ValueError("Use a checkpointed SQLite snapshot without a live WAL/journal")
-    before = digest(read_artifact(path))
     result = RequestAudit()
-    with closing(sqlite3.connect(path.as_uri() + "?mode=ro&immutable=1", uri=True)) as connection:
-        connection.row_factory = sqlite3.Row
+    with open_snapshot(database) as snapshot:
+        connection = snapshot.connection
         schema = connection.execute("PRAGMA user_version").fetchone()[0]
         tables = {
             row["name"]
@@ -210,8 +199,8 @@ def audit(database: Path) -> dict[str, Any]:
         missing = sorted(_REQUIRED - tables)
         if not missing:
             _rows(connection, result, tables)
-    if digest(read_artifact(path)) != before or live_journal(path):
-        result.issue("database_changed_during_audit", "database")
+        if not snapshot.unchanged():
+            result.issue("database_changed_during_audit", "database")
     result.finish()
     observed = sum(result.counts[key] for key in ("intents", "items", "results"))
     status = (
@@ -224,7 +213,7 @@ def audit(database: Path) -> dict[str, Any]:
     return {
         "version": 1,
         "status": status,
-        "database_sha256": before,
+        "database_sha256": snapshot.sha256,
         "schema_version": schema,
         "missing_tables": missing,
         "summary": dict(sorted(result.counts.items())),
