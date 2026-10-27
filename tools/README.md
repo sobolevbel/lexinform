@@ -108,11 +108,16 @@ document work and batch metadata. Missing results, inconsistent recorded request
 a failed result are errors. It preserves the distinction between original input, collection owner
 and application target, including term/generation changes and free reuse.
 
-Legacy refs/checksums stay unknown. Application target kinds/refs remain opaque; this report does
-not execute or resolve them, compare old receipts to today's generation, or establish legal
-applicability, billing or complete state health. It contains identities and links without copying
-answers or legal context. Exit codes match the other doctors; absent history tables or no observed
-records produce `not_run`.
+Known status-change/publication/command targets get a read-only row-presence observation by their
+recorded ID. A missing row/table is a warning. Joint, mnemonic and review targets show current
+owner presence; a missing historical owner does not invalidate the old receipt. Current slot
+contents are not compared to historical applications. Unsupported kinds/ref formats remain
+opaque, and opaque refs are not echoed into the report.
+
+Legacy refs/checksums stay unknown. These observations do not execute work, compare receipts to
+today's generation, or establish legal applicability, billing or complete state health. The report
+contains identities and links without copying answers or legal context. Exit codes match the
+other doctors; absent required tables or no observed records produce `not_run`.
 
 ## Exact scan-input windows
 

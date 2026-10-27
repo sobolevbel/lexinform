@@ -4133,3 +4133,50 @@ Implementation commit ещё не создан; rollback J080 не требуе�
 не повторён: сетевой CLI/wiring/transports прежние, новая offline CLI покрыта subprocess tests.
 DA10.2 остаётся частичным: application target/dependency resolution и blobs не заявлены этим
 reader. План: **74 задачи, 14 выполнены, 60 unchecked** (DA8.3 неприменим); goal active.
+
+<a id="j082"></a>
+### J082. DA10: read-only application target linkage
+
+Дата: 27 октября 2026. База: J081 (`3d9c420bf9ace07bfed777617e59d5bdd90e2831`). Статус: принято локально, deployment проверяется отдельно.
+
+Проверяется наличие физических status-change/publication/command targets в их собственных
+таблицах по записанным IDs. Logical bill/editorial/review targets показывают только наличие
+текущего owner; старый receipt не сравнивается с нынешним содержанием slot. Unsupported kinds
+и нераспознанные refs остаются opaque. Наличие/отсутствие target не исполняет application,
+не меняет результат исторического применения и не разрешает повторить команду или доставку.
+
+Targeted **90 passed** (19 новых target checks + прежние 71), strict mypy **426** файлов,
+Ruff/format green; full gate выполняется. Физические refs принимаются только в exact canonical
+signed SQLite-integer representation; командный ID 0 сохраняется. Нераспознанные codecs
+остаются opaque, без переписывания refs или вывода их содержимого. Missing row/table даёт
+warning/recorded, не команду к retry. Старый outcome и paid result остаются прежними.
+
+На **112** прежних graph snapshots все прежние данные совпали после исключения только
+новых target observations/counters и поясняющих exclusions; старые findings/status/refs/usage
+сохранились. Новых warnings на этих fixtures **0**, все DB hashes прежние. Дополнительно
+**4 RCL name-rollover flows** (providers=2/workers=1,4, existing batch-only fake helpers)
+подтверждают `historical_owner_absent` после переноса Bill в term 11: старый editorial receipt
+сохраняется, новый paid name не заказывается, corruption не объявляется. Это отдельный fake
+config slice, не production cycle или независимая legal разметка.
+
+J081 release проверен по `3d9c420bf9ace07bfed777617e59d5bdd90e2831`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40494087240) — **4677 passed**,
+strict mypy 425 файлов, Ruff, docs/web jobs success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40495029224) — exact COMMIT,
+`795083fc2351 -> 3d9c420bf9ac`, listener up 45 s. Live processing этим не подтверждён.
+
+Final acceptance: **4696 passed**, failures/errors/skips/xfails 0, 622.855 s; targeted
+**90 passed**, strict mypy **426** файлов, Ruff src/tests/tools, format, docs/links и diff check
+green. Corpus CI **7 passed**, process **3294 observations**, zero changed inputs/decisions;
+qualified source/tests/tools hashes проверены. Runtime `src` byte-identical J081, схема **50**,
+migrations/default flags/state writers прежние. Request/work doctors, checkpointed reader и
+saved-record walker byte-identical J081. **116 target configuration flows** приняты; на прежних
+112 graph fields прежние, разрешены только новые observations/counters и пояснения. Все входные
+DB hashes сохранены, warning count на native fixtures 0. Source pin `f34e63e7`: 408 unknown refs,
+638 columns, target links 0, errors/warnings 0; это inventory исторического pin, не live cycle.
+[Acceptance evidence](../assets/audits/2026-10-27-application-target-linkage/validation.json)
+содержит XML/source hashes, profiles, observers и reproduction. State delta 0; raw/context архив
+не создаётся. Implementation commit ещё не создан; rollback J081 не требует state migration.
+Local HTTP не повторён: network CLI/wiring/transports прежние. План: **74 задачи, 14 выполнены,
+60 unchecked** (DA8.3 неприменим); goal active. Следующий фрагмент — DA6.4 applicability
+observations, с отделением known current fingerprints от original paid-input provenance.

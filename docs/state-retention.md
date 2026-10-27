@@ -172,6 +172,10 @@ checks saved result/application identities and known result refs across projecti
 input, collection owner and application target retain their separate meanings; unknown legacy
 refs remain unknown. It shares recorded JSON traversal with request doctor. See
 [J081](plans/2026-10-22-document-architecture-progress.md#j081).
+Known physical application targets have a row-presence inventory; missing rows/tables are
+warnings. Logical targets show owner presence without comparing today's slot contents with a
+historical receipt. An absent historical owner remains an observation, and unsupported reference
+formats stay opaque. See [J082](plans/2026-10-22-document-architecture-progress.md#j082).
 
 A document review whose batch failed at every allowed submission keeps only its keys and a
 limitation (`ReviewWork.abandoned`): its documents go, and the same source is not asked again.

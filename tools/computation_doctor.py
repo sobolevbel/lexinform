@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from lexinform.models import ComputationResult, ResultApplication
+from tools.application_targets import application_target
 from tools.corpus_artifacts import write_json
 from tools.saved_records import (
     RESULT_TABLES,
@@ -48,9 +49,10 @@ class ComputationAudit:
     results: dict[str, ResultIdentity] = field(default_factory=dict)
     refs: dict[str, list[str]] = field(default_factory=dict)
     application_targets: Counter[str] = field(default_factory=Counter)
+    target_links: list[dict[str, Any]] = field(default_factory=list)
 
-    def issue(self, code: str, ref: str) -> None:
-        self.findings.append({"code": code, "ref": ref, "level": "error"})
+    def issue(self, code: str, ref: str, *, level: str = "error") -> None:
+        self.findings.append({"code": code, "ref": ref, "level": level})
 
     def computations(self, connection: sqlite3.Connection) -> None:
         for row in connection.execute("SELECT * FROM computation_results ORDER BY result_id"):
@@ -87,7 +89,7 @@ class ComputationAudit:
                 "request_sha_known" if result.request_sha256 else "request_sha_unknown"
             ] += 1
 
-    def applications(self, connection: sqlite3.Connection) -> None:
+    def applications(self, connection: sqlite3.Connection, tables: set[str]) -> None:
         for row in connection.execute(
             "SELECT rowid AS audit_id, * FROM result_applications ORDER BY rowid"
         ):
@@ -124,6 +126,12 @@ class ComputationAudit:
             self.counts[f"application_outcome_{application.outcome}"] += 1
             if application.target is not None:
                 self.application_targets[application.target.kind] += 1
+            target = application_target(connection, application, tables)
+            if target is not None:
+                self.target_links.append({"application": ref, **target})
+                self.counts[f"target_{target['status']}"] += 1
+                if target["status"] in ("row_unavailable", "table_unavailable"):
+                    self.issue("application_target_unavailable", ref, level="warning")
 
     def projections(self, connection: sqlite3.Connection, tables: set[str]) -> None:
         for column in saved_columns(connection, tables, catalogue=_TABLES):
@@ -179,12 +187,13 @@ def audit(database: Path) -> dict[str, Any]:
         missing = sorted(_REQUIRED - tables)
         if not missing:
             result.computations(connection)
-            result.applications(connection)
+            result.applications(connection, tables)
             result.projections(connection, tables)
         if not snapshot.unchanged():
             result.issue("database_changed_during_audit", "database")
     result.findings.sort(key=lambda item: (item["code"], item["ref"]))
-    result.counts["errors"] = len(result.findings)
+    result.counts["errors"] = sum(item["level"] == "error" for item in result.findings)
+    result.counts["warnings"] = sum(item["level"] == "warning" for item in result.findings)
     observed = sum(
         result.counts[key]
         for key in (
@@ -194,7 +203,13 @@ def audit(database: Path) -> dict[str, Any]:
             "projection_refs_unknown",
         )
     )
-    status = "failed" if result.findings else "not_run" if missing or not observed else "recorded"
+    status = (
+        "failed"
+        if result.counts["errors"]
+        else "not_run"
+        if missing or not observed
+        else "recorded"
+    )
     return {
         "version": 1,
         "status": status,
@@ -205,12 +220,14 @@ def audit(database: Path) -> dict[str, Any]:
         "findings": result.findings,
         "references": {key: sorted(refs) for key, refs in sorted(result.refs.items())},
         "application_targets": dict(sorted(result.application_targets.items())),
+        "target_links": result.target_links,
         "scope": "Recorded computation/application identities and saved result references.",
         "exclusions": [
             "Unknown legacy IDs, keys and request checksums are not reconstructed.",
             "Input scope, collection owner and application target may legitimately differ.",
             "Current generation/status is not compared with immutable historical receipts.",
-            "Application target kinds/refs remain opaque; no target is executed or reinterpreted.",
+            "Unsupported target kinds/refs remain opaque; no target is executed.",
+            "Target presence does not revalidate historical application or present slot contents.",
             "No blob coverage, legal applicability, billing or full-state health verdict.",
         ],
     }
