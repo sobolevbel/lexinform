@@ -2089,14 +2089,24 @@ INSERT INTO "rcl_wykaz_numbers" VALUES('UD309',12353250,'2021-11-12');
 INSERT INTO "rcl_wykaz_numbers" VALUES('UD294',12352867,'2021-10-29');
 INSERT INTO "rcl_wykaz_numbers" VALUES('UD242',12348751,'2021-07-07');
 INSERT INTO "rcl_wykaz_numbers" VALUES('UD203',12345356,'2021-04-02');
-CREATE TABLE result_applications (
+CREATE TABLE "result_applications" (
+        id INTEGER PRIMARY KEY,
         result_id TEXT NOT NULL REFERENCES computation_results(result_id),
         term INTEGER NOT NULL,
         number TEXT NOT NULL,
-        generation INTEGER NOT NULL,
+        generation INTEGER,
         phase TEXT NOT NULL,
         application_json TEXT NOT NULL,
-        PRIMARY KEY (result_id, term, number, generation, phase)
+        CHECK (
+            (generation IS NOT NULL
+             AND COALESCE(json_type(application_json, '$.target'), 'null') = 'null')
+            OR (generation IS NULL AND phase = 'projection'
+                AND json_type(application_json, '$.target') IS 'object'
+                AND json_type(application_json, '$.target.kind') IS 'text'
+                AND length(json_extract(application_json, '$.target.kind')) > 0
+                AND json_type(application_json, '$.target.ref') IS 'text'
+                AND length(json_extract(application_json, '$.target.ref')) > 0)
+        )
     );
 CREATE TABLE runs (
         id INTEGER PRIMARY KEY,
@@ -2479,6 +2489,7 @@ INSERT INTO "runs" VALUES(369,'2026-10-26T19:23:49+00:00','2026-10-26T19:29:18+0
 INSERT INTO "runs" VALUES(370,'2026-10-26T19:32:46+00:00','2026-10-26T19:35:54+00:00','2026-10-25T19:23:49+00:00','collect',1,'{"started_at":"2026-10-26T19:32:46Z","finished_at":"2026-10-26T19:35:54Z","since":"2026-10-25T19:23:49Z","mode":"collect","term":10,"discovery_ok":false,"discovered":0,"pre_print_discovered":0,"rcl_discovered":0,"rcl_prefilter_hits":0,"wykaz_discovered":0,"over_on_arrival":0,"linked":0,"prefilter_hits":0,"prefilter_rejected":[],"prefilter_details":[],"text_prefilter_checked":0,"text_prefilter_hits":0,"text_prefilter_scans":0,"text_prefilter_unreadable":0,"text_prefilter_unanswered":0,"acts_published":0,"in_force_posted":0,"consultation_reminders":0,"hearing_reminders":0,"decision_reminders":0,"held":0,"cards_refreshed":1,"digest_drafted":false,"digest_reader_parts":0,"digest_events_covered":0,"consultation_results_posted":0,"consultation_reviews_posted":0,"commission_reviews_posted":0,"act_reviews_posted":0,"effective_rule_messages":0,"amendment_messages_updated":0,"message_parts_sent":0,"agenda_posted":0,"agenda_cancelled":0,"discontinued":0,"rehomed":0,"analyzed":0,"triaged_out":0,"analysis_failures":0,"analysis_skipped_cost":0,"analysis_unanswered":0,"joint_revived":0,"notes":[],"rejected":[],"commands_handled":0,"commands_failed":0,"commands":[],"published":0,"joint_published":0,"updates":1,"update_events":1,"attention":{"events":1,"important":1,"reason/substantive_content":1,"messages":1,"continuation_messages":0,"digest_queued_events":4,"digest_awaiting_approval":4,"digest_oldest_minutes":17788},"reanalyzed":1,"tracked":35,"batch_waiting":0,"batch_requests_submitted":0,"batch_requests_pending":0,"batch_requests_queued":0,"batch_requests_uncertain":0,"errors":[],"llm_input_tokens":142158,"llm_output_tokens":2273,"llm_usage":{"gpt-5.1-2025-11-13":{"input":0,"output":0,"cache_read":0,"cache_creation":0,"batch_input":142158,"batch_output":2273,"batch_cache_read":0,"batch_cache_creation":0}},"llm_calls":[{"number":"RCL/12398102","kind":"reanalysis","model":"gpt-5.1-2025-11-13","input_tokens":142158,"output_tokens":2273,"cache_read_input_tokens":0,"cache_creation_input_tokens":0,"batched":true}],"phase_seconds":{"collect batches":5.9,"commands":0.0,"text prefilter":0.0,"analysis":0.0,"publishing":0.0,"tracking":180.5,"submit batches":0.0,"batch status":0.0}}',0);
 INSERT INTO "runs" VALUES(371,'2026-10-26T20:08:21+00:00','2026-10-26T20:08:21+00:00','2026-10-26T20:08:21+00:00','deliveries',1,'{"started_at":"2026-10-26T20:08:21Z","finished_at":"2026-10-26T20:08:21Z","since":"2026-10-26T20:08:21Z","mode":"deliveries","term":null,"discovery_ok":false,"discovered":0,"pre_print_discovered":0,"rcl_discovered":0,"rcl_prefilter_hits":0,"wykaz_discovered":0,"over_on_arrival":0,"linked":0,"prefilter_hits":0,"prefilter_rejected":null,"prefilter_details":[],"text_prefilter_checked":0,"text_prefilter_hits":0,"text_prefilter_scans":0,"text_prefilter_unreadable":0,"text_prefilter_unanswered":0,"acts_published":0,"in_force_posted":0,"consultation_reminders":0,"hearing_reminders":0,"decision_reminders":0,"held":0,"cards_refreshed":0,"digest_drafted":false,"digest_reader_parts":0,"digest_events_covered":0,"consultation_results_posted":0,"consultation_reviews_posted":0,"commission_reviews_posted":0,"act_reviews_posted":0,"effective_rule_messages":0,"amendment_messages_updated":0,"message_parts_sent":0,"agenda_posted":0,"agenda_cancelled":0,"discontinued":0,"rehomed":0,"analyzed":0,"triaged_out":0,"analysis_failures":0,"analysis_skipped_cost":0,"analysis_unanswered":0,"joint_revived":0,"notes":[],"rejected":[],"commands_handled":0,"commands_failed":0,"commands":[],"published":0,"joint_published":0,"updates":0,"update_events":0,"attention":{"digest_queued_events":4,"digest_awaiting_approval":4,"digest_oldest_minutes":17821},"reanalyzed":0,"tracked":0,"batch_waiting":0,"batch_requests_submitted":0,"batch_requests_pending":0,"batch_requests_queued":0,"batch_requests_uncertain":0,"errors":[],"llm_input_tokens":0,"llm_output_tokens":0,"llm_usage":{},"llm_calls":[],"phase_seconds":{}}',0);
 INSERT INTO "runs" VALUES(372,'2026-10-27T00:04:39+00:00','2026-10-27T00:04:39+00:00','2026-10-27T00:04:39+00:00','deliveries',1,'{"started_at":"2026-10-27T00:04:39Z","finished_at":"2026-10-27T00:04:39Z","since":"2026-10-27T00:04:39Z","mode":"deliveries","term":null,"discovery_ok":false,"discovered":0,"pre_print_discovered":0,"rcl_discovered":0,"rcl_prefilter_hits":0,"wykaz_discovered":0,"over_on_arrival":0,"linked":0,"prefilter_hits":0,"prefilter_rejected":null,"prefilter_details":[],"text_prefilter_checked":0,"text_prefilter_hits":0,"text_prefilter_scans":0,"text_prefilter_unreadable":0,"text_prefilter_unanswered":0,"acts_published":0,"in_force_posted":0,"consultation_reminders":0,"hearing_reminders":0,"decision_reminders":0,"held":0,"cards_refreshed":0,"digest_drafted":false,"digest_reader_parts":0,"digest_events_covered":0,"consultation_results_posted":0,"consultation_reviews_posted":0,"commission_reviews_posted":0,"act_reviews_posted":0,"effective_rule_messages":0,"amendment_messages_updated":0,"message_parts_sent":0,"agenda_posted":0,"agenda_cancelled":0,"discontinued":0,"rehomed":0,"analyzed":0,"triaged_out":0,"analysis_failures":0,"analysis_skipped_cost":0,"analysis_unanswered":0,"joint_revived":0,"notes":[],"rejected":[],"commands_handled":0,"commands_failed":0,"commands":[],"published":0,"joint_published":0,"updates":0,"update_events":0,"attention":{"digest_queued_events":4,"digest_awaiting_approval":4,"digest_oldest_minutes":18057},"reanalyzed":0,"tracked":0,"batch_waiting":0,"batch_requests_submitted":0,"batch_requests_pending":0,"batch_requests_queued":0,"batch_requests_uncertain":0,"errors":[],"llm_input_tokens":0,"llm_output_tokens":0,"llm_usage":{},"llm_calls":[],"phase_seconds":{}}',0);
+INSERT INTO "runs" VALUES(373,'2026-10-27T05:34:35+00:00','2026-10-27T05:34:35+00:00','2026-10-27T05:34:35+00:00','deliveries',1,'{"started_at":"2026-10-27T05:34:35Z","finished_at":"2026-10-27T05:34:35Z","since":"2026-10-27T05:34:35Z","mode":"deliveries","term":null,"discovery_ok":false,"discovered":0,"pre_print_discovered":0,"rcl_discovered":0,"rcl_prefilter_hits":0,"wykaz_discovered":0,"over_on_arrival":0,"linked":0,"prefilter_hits":0,"prefilter_rejected":null,"prefilter_details":[],"text_prefilter_checked":0,"text_prefilter_hits":0,"text_prefilter_scans":0,"text_prefilter_unreadable":0,"text_prefilter_unanswered":0,"acts_published":0,"in_force_posted":0,"consultation_reminders":0,"hearing_reminders":0,"decision_reminders":0,"held":0,"cards_refreshed":0,"digest_drafted":false,"digest_reader_parts":0,"digest_events_covered":0,"consultation_results_posted":0,"consultation_reviews_posted":0,"commission_reviews_posted":0,"act_reviews_posted":0,"effective_rule_messages":0,"amendment_messages_updated":0,"message_parts_sent":0,"agenda_posted":0,"agenda_cancelled":0,"discontinued":0,"rehomed":0,"analyzed":0,"triaged_out":0,"analysis_failures":0,"analysis_skipped_cost":0,"analysis_unanswered":0,"joint_revived":0,"notes":[],"rejected":[],"commands_handled":0,"commands_failed":0,"commands":[],"published":0,"joint_published":0,"updates":0,"update_events":0,"attention":{"digest_queued_events":4,"digest_awaiting_approval":4,"digest_oldest_minutes":18387},"reanalyzed":0,"tracked":0,"batch_waiting":0,"batch_requests_submitted":0,"batch_requests_pending":0,"batch_requests_queued":0,"batch_requests_uncertain":0,"errors":[],"llm_input_tokens":0,"llm_output_tokens":0,"llm_usage":{},"llm_calls":[],"phase_seconds":{}}',0);
 CREATE TABLE source_checks (
         term INTEGER NOT NULL,
         number TEXT NOT NULL,
@@ -2914,6 +2925,14 @@ CREATE INDEX ix_document_work_due ON document_work(state, next_at);
 CREATE UNIQUE INDEX ux_pub_commission_review ON publications(term, number, channel_id, ref)
       WHERE kind = 'commission_review';
 CREATE INDEX ix_computation_owner ON computation_results(term, number);
+CREATE UNIQUE INDEX ux_result_application_generation
+      ON result_applications(result_id, term, number, generation, phase)
+      WHERE generation IS NOT NULL;
+CREATE UNIQUE INDEX ux_result_application_target
+      ON result_applications(result_id, term, number, phase,
+          json_extract(application_json, '$.target.kind'),
+          json_extract(application_json, '$.target.ref'))
+      WHERE generation IS NULL;
 CREATE INDEX ix_result_application_owner ON result_applications(term, number, generation);
 COMMIT;
-PRAGMA user_version = 49;
+PRAGMA user_version = 50;
