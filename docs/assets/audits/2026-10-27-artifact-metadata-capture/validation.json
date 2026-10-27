@@ -1,0 +1,238 @@
+{
+  "version": 1,
+  "stage": "J100",
+  "baseline": "8f86c1b6d443f6d509d90d57255553111473fd53",
+  "scope": "Capture known full-body identities/sizes without retaining bytes; prefilter records known source-part links and pipeline persists other known bodies at finalization.",
+  "checks": {
+    "focused": {
+      "path": "out/corpus/j100/focused-final.xml",
+      "sha256": "a285f2a2dff8b107013c34a8be124039115e384f51b2b77084341f9e1279d4c5",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "43",
+      "time": "1.090",
+      "timestamp": "2026-10-27T20:43:24.561236+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j100/full.xml",
+      "sha256": "192037ac3c547b09d6042413293a318b1b3fc0eda9a38695bd70d845852890ac",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "4907",
+      "time": "590.253",
+      "timestamp": "2026-10-27T20:43:26.338842+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 456 source files",
+    "ruff": "All checks passed!",
+    "format": "515 files left unchanged"
+  },
+  "ci_equivalent_mypy": "Success: no issues found in 456 source files",
+  "native": {
+    "cases": 168,
+    "all_profiles_except_new_metadata_and_storage_metrics_exact": true,
+    "all_requests_and_rendered_messages_exact": true,
+    "all_22_old_tables_exact": true,
+    "artifact_row_views": 194,
+    "selection_link_views": 28,
+    "snapshots_with_metadata": 168,
+    "all_artifact_models_and_exact_outer_source_links_valid": true,
+    "sql_delta": {
+      "min": 130,
+      "max": 539
+    },
+    "gzip_delta": {
+      "min": 11,
+      "max": 77
+    }
+  },
+  "raw": {
+    "cases": 36,
+    "all_raw_read_and_selection_fields_exact": true,
+    "input_hashes_equal": true,
+    "link_views": 140,
+    "unlinked_fingerprint_views": 0,
+    "formats": {
+      ".zip": 11,
+      ".doc": 5,
+      ".docm": 2,
+      ".docx": 6,
+      ".pdf": 9,
+      ".xml": 2,
+      ".odt": 1
+    },
+    "families": {
+      "rcl": 21,
+      "sejm_print": 6,
+      "sejm_filing": 2,
+      "sejm_self_amendment": 5,
+      "rpw": 2
+    },
+    "error_cases": 0,
+    "scope": "Stratified real raw bodies below bounded limits, surrogate source URLs, actual parser/loader and metadata writes. No source download, body export or independent legal-selection acceptance."
+  },
+  "rollback": {
+    "reader": "J099 8f86c1b6d443f6d509d90d57255553111473fd53",
+    "cases": 168,
+    "legacy_report_views_read": 324,
+    "all_populated_sql_dumps_preserved_exact": true,
+    "schema_conversion": false
+  },
+  "structural": {
+    "document_part_serialized_fields_and_validators_unchanged": true,
+    "all_old_loader_methods_unchanged_except_known_identity_memory": true,
+    "download_body_processing_equal_after_removing_known_map_update": true,
+    "all_repository_methods_equal_after_expanding_the_same_source_hash_property": true,
+    "no_new_migration": true,
+    "no_parser_or_source_policy_change": true
+  },
+  "corpus": {
+    "ci": {
+      "observations": 7,
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "da5a2d4973aecc9e15a12ee536eef20f092612bc28af4ba7b0de74902d204518",
+        "before_manifest_sha256": "14d009ec9e2d10a89c1c43a316abb71752474c545378727276da5e04be731a0b",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "ci",
+        "summary_changes": {},
+        "version": 1
+      }
+    },
+    "process": {
+      "observations": 3294,
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "922980abfb4e47feb878f85e1aca50e9540763867e458c57dd4441279d4bf720",
+        "before_manifest_sha256": "c525c03ed82b606c71e6bef7c6c261acd366a255bb79426f43c4b909a01c0478",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "process",
+        "summary_changes": {},
+        "version": 1
+      }
+    }
+  },
+  "source": [
+    {
+      "path": "src/lexinform/models/documents.py",
+      "sha256": "a1a1b937f616607c425fe50d66ada0667c4087521b0b356a2634a236a733af1e"
+    },
+    {
+      "path": "src/lexinform/models/artifacts.py",
+      "sha256": "3e015ac0b4e48f67c670076a451970ba1d28f9968038edd9e371b0a2bd57808d"
+    },
+    {
+      "path": "src/lexinform/ports.py",
+      "sha256": "63e5ecad52e31e7d7c53fc2e2dc0bacd60e58a024832577338fd7265e1193237"
+    },
+    {
+      "path": "src/lexinform/services/documents.py",
+      "sha256": "4e1cafeabd0a96e73c0bc3ee5b9c22e1bec3237f4786044d3f95bbd116c7bf36"
+    },
+    {
+      "path": "src/lexinform/services/document_history.py",
+      "sha256": "bb703a2ec6f2f517f5db585982a15d752f741d883bb5e00146c243c60ab19794"
+    },
+    {
+      "path": "src/lexinform/services/text_prefilter.py",
+      "sha256": "ae07e833f0308692322e5d5c25664d48edcdd8f2d64288ec2d655e4d257e8672"
+    },
+    {
+      "path": "src/lexinform/services/pipeline.py",
+      "sha256": "8689a88ea55af0a62aaae8c90544e0485b30d2a3e0af4a956546f3b5470fac09"
+    },
+    {
+      "path": "src/lexinform/container.py",
+      "sha256": "b45ea6ad0cbc8ab7a3472439a35ee024d95a58da0b14cf5bbda792f85ad8db89"
+    },
+    {
+      "path": "src/lexinform/adapters/sqlite_repo.py",
+      "sha256": "45cd91583d47844c81ad66e5d9fc8c8aaa63c43c1755f454c15a99540565d658"
+    },
+    {
+      "path": "tests/scenario/test_artifact_capture.py",
+      "sha256": "7000db1cacd47649609ee0c3a61409432077a5e3c55a7e853b056dbe81d7ad79"
+    },
+    {
+      "path": "tests/unit/test_document_read_metrics.py",
+      "sha256": "802d412e4685bf249f0e1b21cbd902a0aee621d9248d612af28dffad46766b8c"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "out/corpus/j100/native_profiles.py",
+      "sha256": "5fe8bdef017aa2f43d0e8a3155e194d5e090aa0f00c17afea82babfd1d5a244e"
+    },
+    {
+      "path": "out/corpus/j100/compare_native.py",
+      "sha256": "33cf77838ce4574741bac63059ff42aeaf43efd5a98aaa058b89bc14dd1bf950"
+    },
+    {
+      "path": "out/corpus/j100/native-parity.json",
+      "sha256": "bea971bb2615136cfbc582c178cddbc86d62b08df7f925cc041f556d8ec950a1"
+    },
+    {
+      "path": "out/corpus/j100/raw_metadata.py",
+      "sha256": "1cf68a999c3c214800833f6728b3d3235e4dffc1e56f2e961eeef45be07a8dbd"
+    },
+    {
+      "path": "out/corpus/j100/raw-metadata-baseline.json",
+      "sha256": "b76e4acd1e293a418208c0ffaee6fa9da0c693baa8a57df338c50bd48d6a3128"
+    },
+    {
+      "path": "out/corpus/j100/raw-metadata-current.json",
+      "sha256": "d4b4a234fc01efad16a24724ac7d6c92c32efbc31aa1bba8d9ce0c9b9fb30056"
+    },
+    {
+      "path": "out/corpus/j100/raw-parity.json",
+      "sha256": "30f5acfb52129b93ac269d8824bcc08b024e17ecc267cf4daa4b139f86e3127b"
+    },
+    {
+      "path": "out/corpus/j100/rollback_profile.py",
+      "sha256": "14cf569d4bbefbbe7cf256d90aef457f777395c2e5d2f7c3beb2f72bccb3da23"
+    },
+    {
+      "path": "out/corpus/j100/rollback.json",
+      "sha256": "e0ee4091448d70f21169cfdf6558ed7c8bb010759aa7f10839f14dff9f334274"
+    },
+    {
+      "path": "out/corpus/j100/structural_profile.py",
+      "sha256": "adffe29d319069bd5f72f1a580e834fe75f6a77213b3e807c1afbb3aa713d350"
+    },
+    {
+      "path": "out/corpus/j100/structural-parity.json",
+      "sha256": "fecdcfa964f90c188014308af39fdd5d12e79449624111700f6f07f12c716dfd"
+    }
+  ],
+  "exclusions": [
+    "Metadata is not retained raw bytes, a locator, a GC pin or a legal edition; no backend decision.",
+    "First recorded time is not the original source/download/paid time.",
+    "Known identities may survive a dry-run/cache reset while current-run completed bytes remain zero; these facts have different scope.",
+    "Source capture is scoped to prefilter and ordinary pipeline finalization; standalone consumers and crash-complete capture before finalization remain open.",
+    "Native row counts are repeated fixture views, not production traffic or new independent sources.",
+    "Real raw sample is bounded/stratified with surrogate URLs; Senate and larger files are excluded, without legal gold acceptance.",
+    "No extra source/provider/Telegram requests, raw export, legacy size inference or new schema."
+  ],
+  "reproduction": [
+    "uv run pytest -q tests/scenario/test_artifact_capture.py tests/unit/test_artifact_metadata.py tests/scenario/test_prefilter_source_history.py tests/scenario/test_document_read_metrics.py tests/unit/test_document_read_metrics.py",
+    "uv run mypy --no-incremental && env -u PYTHONPATH uv run mypy --no-incremental",
+    "uv run ruff check src tests tools && uv run pytest -q",
+    "Run native_profiles.py/compare_native.py with qualified J099 baseline and fresh output paths.",
+    "Run raw_metadata.py with baseline/current source PYTHONPATH and DA_ARTIFACT_MODE; use fresh evidence paths.",
+    "Run rollback_profile.py with J099 source PYTHONPATH.",
+    "python out/corpus/j100/structural_profile.py"
+  ]
+}

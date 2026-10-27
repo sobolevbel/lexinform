@@ -118,3 +118,19 @@ windows не считаются новым скачиванием; самост�
 runs, без новой SQL schema, raw archive или backend. Dry run возвращает измерение и откатывает
 DB. Исторический raw demand остаётся неизвестным, а production daily profile можно будет
 построить после естественных runs; вручную production ради измерения не запускался.
+
+
+## Metadata capture после J100
+
+[J100](../plans/2026-10-22-document-architecture-progress.md#j100) сохраняет individual SHA/size
+в `artifacts`, отдельно от aggregate run report. Это метаданные известного полного body, без body,
+locator или гарантии retention. Source refs связывают точный outer body с immutable part slot;
+member SHA не подставляется вместо container. Известные SHA/size остаются в RAM до закрытия loader,
+в том числе при reset счётчиков/dry-run/cache reuse. First recorded_at относится к записи metadata,
+а не к первому скачиванию файла в истории. Повтор не меняет первое время и не копирует содержимое.
+
+Text prefilter сохраняет metadata/refs с решением и status; прочие известные bodies — при обычном
+pipeline finish-run checkpoint. Failed/over-limit download не получает guessed bytes; completed
+нечитаемый body может иметь physical metadata без нормативного verdict. Capture не объявлен
+crash-complete до final checkpoint; standalone analysis/review CLI и остальные observation
+consumers остаются открыты. Архив raw/backend не выбирается, старые размеры не backfilled.

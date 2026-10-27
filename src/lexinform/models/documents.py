@@ -40,6 +40,10 @@ class DocumentPart(BaseModel):
     text_sha256: str = ""
     losses: tuple[str, ...] = ()
 
+    @property
+    def source_sha256(self) -> str:
+        return self.container_sha256 if self.members else self.sha256
+
 
 FactKind = Literal[
     "official_link",

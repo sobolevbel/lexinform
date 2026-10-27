@@ -11,6 +11,7 @@ from lexinform.models import (
     AmendmentsContext,
     AmendmentsRecord,
     AnalysisRecord,
+    ArtifactIdentity,
     ArtifactMetadata,
     BackfillReport,
     BatchIntent,
@@ -109,6 +110,10 @@ class DocumentReadMonitor(Protocol):
     def reset_read_metrics(self) -> None: ...
 
     def read_metrics(self) -> DocumentReadMetrics: ...
+
+
+class DocumentArtifactObserver(Protocol):
+    def read_artifacts(self) -> tuple[ArtifactIdentity, ...]: ...
 
 
 class SejmGateway(Protocol):

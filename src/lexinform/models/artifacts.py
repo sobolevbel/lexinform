@@ -5,6 +5,8 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+SelectionPartScope = Literal["parts", "observed_parts"]
+
 
 class ArtifactIdentity(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -27,6 +29,6 @@ class SelectionArtifactReference(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     selection_id: str = Field(pattern=r"^selection-v1:[0-9a-f]{64}$")
-    part_scope: Literal["parts", "observed_parts"]
+    part_scope: SelectionPartScope
     part_index: int = Field(ge=0)
     artifact_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")

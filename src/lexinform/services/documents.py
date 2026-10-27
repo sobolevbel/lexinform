@@ -35,6 +35,7 @@ from lexinform.document_versions import (
 )
 from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
 from lexinform.models import (
+    ArtifactIdentity,
     DocumentPart,
     DocumentReadMetrics,
     DocumentSelection,
@@ -108,6 +109,24 @@ class TextLoader:
         self._read_cache_hits = 0
         self._download_metrics: dict[str, Counter[str]] = {}
         self._seen_bodies: dict[str, int] = {}
+        self._known_bodies: dict[str, int] = {}
+
+    def read_artifacts(self) -> tuple[ArtifactIdentity, ...]:
+        """Known body identities survive a counter reset without retaining body bytes."""
+        with self._lock:
+            return tuple(
+                ArtifactIdentity(sha256=sha, byte_size=size)
+                for sha, size in sorted(self._known_bodies.items())
+            )
+
+    def artifacts_for_selection(self, selection: DocumentSelection) -> tuple[ArtifactIdentity, ...]:
+        sources = {part.source_sha256 for part in (*selection.parts, *selection.observed_parts)}
+        with self._lock:
+            return tuple(
+                ArtifactIdentity(sha256=sha, byte_size=self._known_bodies[sha])
+                for sha in sorted(sources)
+                if sha in self._known_bodies
+            )
 
     def reset_read_metrics(self) -> None:
         """The caller resets observation before starting run work without clearing cached files."""
@@ -510,6 +529,7 @@ class TextLoader:
             self._download_metrics[host]["completed"] += 1
             self._download_metrics[host]["body_bytes"] += len(data)
             self._seen_bodies.setdefault(digest, len(data))
+            self._known_bodies.setdefault(digest, len(data))
         log.info(
             "%s: %d KB downloaded in %.1fs",
             url,

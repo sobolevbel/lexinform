@@ -424,3 +424,11 @@ Production producers пока не включены. Fresh state `dc97f63814eaa9
 все прежние rows и **462 Bill JSON** exact; пустая схема +709 SQL / 173 gzip bytes. J098 reader
 сохраняет populated v53 dump без schema conversion. См.
 [J099](../plans/2026-10-22-document-architecture-progress.md#j099).
+
+[J100](../plans/2026-10-22-document-architecture-progress.md#j100) включает metadata capture:
+TextLoader отдаёт уже известные complete-body SHA/size без дополнительных скачиваний. Text
+prefilter пишет metadata/refs вместе с source decision/status; pipeline добавляет остальные
+известные bodies в finish-run transaction. Metadata survive counter reset/cache reuse, без raw
+bytes; первое время сохраняется. `DocumentPart.source_sha256` — тот же outer-container/member
+выбор, без нового serialized field. Неполные/failed responses не получают guessed SHA/size.
+Standalone analysis/review CLI без pipeline и остальные source-observation producers ещё открыты.

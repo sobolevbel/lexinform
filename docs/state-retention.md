@@ -256,3 +256,11 @@ row is neither retained bytes nor a GC pin; the chosen storage profile and any r
 payload remain separate. Repeated metadata keeps the first UTC recording time; historical file
 sizes/dates are never inferred from text hashes or aggregate download counters. See
 [J099](plans/2026-10-22-document-architecture-progress.md#j099).
+
+The shared loader now exposes known complete-body identities for metadata capture. Text prefilter
+records matching outer-body refs with its source/status transaction; pipeline finalization records
+other known bodies with the run checkpoint. Known identities survive counter resets and warm-cache
+reuse, including after a dry-run rollback; body bytes do not. First recording time is not the
+original download time. New rows neither retain raw bytes nor pin them for GC; standalone consumers
+outside these capture paths remain outside scope. See
+[J100](plans/2026-10-22-document-architecture-progress.md#j100).

@@ -17,6 +17,7 @@ from lexinform.document_admissibility import prefilter_admission
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
 from lexinform.keywords import WEAK_PATTERNS, KeywordPrefilter, accept_text_hits
 from lexinform.models import (
+    ArtifactIdentity,
     Bill,
     BillStatus,
     DocumentSelectionRecord,
@@ -24,6 +25,7 @@ from lexinform.models import (
     TextDocument,
 )
 from lexinform.ports import BillRepository, Clock, TextSource
+from lexinform.services.document_history import record_document_source
 from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
 
 log = logging.getLogger(__name__)
@@ -69,12 +71,15 @@ class PrefilterLoad:
     selection_state: str = ""
     source_document: TextDocument | None = None
     source_selection: DocumentSelectionRecord | None = None
+    source_artifacts: tuple[ArtifactIdentity, ...] = ()
 
     def __post_init__(self) -> None:
         if (self.source_document is None) != (self.source_selection is None):
             raise ValueError(
                 "source observation requires both catalog relations and selection metadata"
             )
+        if self.source_artifacts and self.source_selection is None:
+            raise ValueError("artifact observations require the source selection")
 
     @property
     def is_scan(self) -> bool:
@@ -179,7 +184,9 @@ class TextPrefilterService:
                     selection_id=loaded.source_selection.selection_id,
                     recorded_at=self._clock.now(),
                 )
-                self._repo.save_source_observation(loaded.source_selection, observation)
+                record_document_source(
+                    self._repo, loaded.source_selection, observation, loaded.source_artifacts
+                )
             return self._decide(bill, loaded)
 
     def _decide(self, bill: Bill, loaded: PrefilterLoad) -> bool:
@@ -277,6 +284,7 @@ class TextPrefilterService:
             self._read(file),
             source_document=located.document,
             source_selection=DocumentSelectionRecord.from_selection(file.selection),
+            source_artifacts=self._loader.artifacts_for_selection(file.selection),
         )
 
     def _read(self, file: LoadedFile) -> PrefilterLoad:

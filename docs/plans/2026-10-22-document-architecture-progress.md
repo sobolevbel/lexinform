@@ -5130,3 +5130,51 @@ J099 accepted qualified gate: **110 focused / 4899 full**, **0 failures/errors/s
 **593.533 s**. Mypy с explicit tools **454** files проходит с/без PYTHONPATH; Ruff/format
 green. [Acceptance asset](../assets/audits/2026-10-27-artifact-metadata-reader/validation.json)
 пинует код/данные/проверки, совместимость и границы первого recording time/нехранения raw.
+
+
+<a id="j100"></a>
+### J100. Capture known complete-body metadata без сохранения файлов
+
+Статус: **завершён**, baseline `8f86c1b6d443f6d509d90d57255553111473fd53`.
+Shared loader возвращает `ArtifactIdentity` уже завершённых downloader bodies; повторного
+скачивания/hash calculation нет. Отдельный `DocumentArtifactObserver` port передаётся pipeline.
+Known SHA/size хранятся в RAM без bytes и переживают counter reset/cache reuse, включая dry run.
+Run IO counters сохраняют прежнюю per-run семантику. `DocumentPart.source_sha256` централизует
+тот же container-if-members выбор, не добавляя поля в сериализованный manifest.
+
+Caller-owned `services.document_history` пишет metadata с caller Clock и exact outer-body refs.
+Prefilter source decision/refs/status — одна transaction; прочие known bodies — finish-run
+transaction с report/учётом batch costs. Archive member не выдаётся за outer source. Размеры
+legacy/partial/failed bytes не угадываются. Completed unsupported body сохраняет physical metadata,
+не становясь нормативным текстом. Current/unknown source policy и paid input IDs не меняются.
+Standalone consumers и crash-complete capture до final checkpoint ещё не заявлены.
+
+**43 focused / 4907 full**, **0 failures/errors/skips**, full **590.253 s**; mypy **456**
+с/без PYTHONPATH, Ruff/format green. Tests покрывают prefilter miss до paid result, title hits,
+first recording, warm-cache/dry-run rollback, complete unreadable vs failed fetch, workers 1/4,
+outer/member identity и неизменность serialized fields. Старый status-failure test также
+проверяет rollback новых metadata/refs через ту же transaction.
+
+**168 native flows**: все requests/rendered messages, остальные profiles и **22 прежних SQL
+tables exact**. **194 artifact-row views / 28 links**, все models/outer refs valid; повторные views
+не считаются independent sources. SQL delta **130–539 bytes**, gzip **11–77**. J099 reader:
+**168 populated snapshots / 324 report views**, SQL exact без schema conversion. AST qualification:
+старое download processing после снятия одного known-map update exact; прежние loader/repo
+methods сохранены, serialized DocumentPart fields и validators прежние, migration не добавлялась.
+
+Real raw corpus: **36 unique files**, ZIP **11**, DOC **5**, DOCM **2**, DOCX **6**, PDF **9**,
+XML **2**, ODT **1**; RCL **21**, prints **6**, filings **2**, self-amendments **5**, RPW **2**.
+Стратифицированный sample ≤1.5 MB плюс nested-member candidates ≤5 MB из pinned J087 population;
+не полный raw corpus, Senate/большие файлы не объявлены принятыми. Actual bounded parser/loader,
+surrogate source URLs; **140 exact outer-body links**, unlinked fingerprints **0**, errors **0**.
+Read/selection/text/manifest fields и input hashes baseline/current exact. Никаких external
+source downloads или body export; это metadata identity qualification, не independent legal gold.
+Corpus CI **7** / process **3294** verified, observations/inputs same.
+
+J099 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40570435112) **4899 passed**, strict
+mypy **454**, Ruff/docs/web success; [deploy](https://github.com/sobolevbel/lexinform/actions/runs/40571176565)
+exact COMMIT `8f86c1b6d443f6d509d90d57255553111473fd53`, listener up **45 s**. J098 type failure
+исправлен этим accepted gate. Отдельный production processing вручную не запускался.
+
+[Acceptance asset](../assets/audits/2026-10-27-artifact-metadata-capture/validation.json) пинует
+source/evidence, gates, native/raw parity и ограничения metadata capture/retention.

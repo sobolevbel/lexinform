@@ -1,6 +1,9 @@
+import hashlib
+
 import pytest
 
 from lexinform.concurrency import fan_out
+from lexinform.models import ArtifactIdentity, DocumentPart, DocumentSelection
 from lexinform.services.documents import TextLoader
 from tests.fakes import FakeSejmGateway, FakeTextExtractor
 
@@ -48,6 +51,25 @@ def test_reset_discards_observations_without_invalidating_cached_files() -> None
     metrics = reader.read_metrics()
     assert metrics.cache_hits == 1 and not metrics.hosts
     assert metrics.distinct_bodies == metrics.body_bytes == metrics.distinct_body_bytes == 0
+
+
+def test_known_artifacts_keep_exact_outer_identity_without_persisting_bytes() -> None:
+    gateway = FakeSejmGateway(files={URL: BODY})
+    reader = loader(gateway)
+    reader.read(URL)
+    sha = hashlib.sha256(BODY).hexdigest()
+    source = DocumentPart(members=("draft.docx",), container_sha256=sha, sha256="b" * 64)
+    selected = DocumentSelection(parts=(source,), observed_parts=(source,))
+    before = selected.model_dump_json()
+    expected = (ArtifactIdentity(sha256=sha, byte_size=len(BODY)),)
+
+    reader.reset_read_metrics()
+
+    assert reader.read_artifacts() == reader.artifacts_for_selection(selected) == expected
+    assert selected.model_dump_json() == before and "source_sha256" not in before
+    assert not reader.artifacts_for_selection(
+        DocumentSelection(parts=(source.model_copy(update={"container_sha256": ""}),))
+    )
 
 
 def test_incomplete_and_failed_attempts_do_not_claim_known_response_sizes() -> None:

@@ -781,6 +781,7 @@ class Container:
                 pre_print=self.settings.pre_print_enabled,
                 full_track_weekday=self.settings.track_full_weekday,
                 document_reads=self.text_loader(),
+                document_artifacts=self.text_loader(),
             ),
         )
 

@@ -1214,7 +1214,7 @@ class SqliteBillRepository:
         if reference.part_index >= len(parts):
             raise ValueError("an artifact reference points outside the selected part scope")
         part = parts[reference.part_index]
-        expected = part.container_sha256 if part.members else part.sha256
+        expected = part.source_sha256
         if reference.artifact_sha256 != expected:
             raise ValueError("an artifact reference must match the recorded outer body identity")
         if self.get_artifact_metadata(reference.artifact_sha256) is None:
