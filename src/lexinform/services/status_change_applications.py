@@ -2,12 +2,12 @@ from datetime import datetime
 
 from lexinform.models import (
     AmendmentsRecord,
-    ResultApplication,
     ResultApplicationTarget,
     StatusChange,
     SupplementRecord,
 )
 from lexinform.ports import BillRepository
+from lexinform.services.result_applications import record_secondary_application
 
 
 def record_status_change(
@@ -48,18 +48,11 @@ def _record_application(
     if record.computation_id is None:
         return
     assert change.id is not None, "the repository read supplies the persisted status-change ID"
-    repo.save_result_application(
-        ResultApplication(
-            result_id=record.computation_id,
-            term=change.term,
-            number=change.number,
-            generation=None,
-            target=ResultApplicationTarget(kind="status_change", ref=str(change.id)),
-            phase="projection",
-            outcome="applied",
-            reason="retained_result",
-            observed_generation=None,
-            observed_status=None,
-            created_at=now,
-        )
+    record_secondary_application(
+        repo,
+        change.term,
+        change.number,
+        record.computation_id,
+        target=ResultApplicationTarget(kind="status_change", ref=str(change.id)),
+        now=now,
     )

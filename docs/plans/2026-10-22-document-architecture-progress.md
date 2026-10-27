@@ -3578,3 +3578,62 @@ integrity ok/FK 0; выполнялся только изолированный 
 содержит XML/source hashes, шесть профилей, rollback snapshots, corpus manifests и observers.
 Source extraction/selection и LLM payloads не менялись. DA6.2/DA6.3 остаются partial: другие
 secondary targets и rollover ещё открыты. План: **74 задачи, 12 выполнены, 62 не закрыты**.
+
+J070 выпущен: `db6e244468657c304f578f5c190ff842e85c4274`,
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40452456234) success:
+**4384 passed / 32 deselected**, strict mypy 410 файлов, lint/web/docs green.
+[Deploy relay](https://github.com/sobolevbel/lexinform/actions/runs/40453059257) success:
+exact COMMIT, `ff890aa334f6 → db6e24446865`, сервис up 45 s после restart.
+Evidence: `out/corpus/j070/release.json`. Production processing вручную не запускался.
+
+<a id="j071"></a>
+### J071. DA6: остальные активные secondary projection checkpoints
+
+Дата: 27 октября 2026. База: `db6e244468657c304f578f5c190ff842e85c4274`.
+Статус: реализован и принят локально; выпуск проверяется отдельно.
+
+Общий `record_secondary_application` записывает только короткую metadata связь. Владельцы
+reviews, joint comparison, редакционного имени, manual amendment revision и `/explain`
+сохраняют свои транзакции, source policy, submit paths и признаки завершения. StatusChange
+использует тот же writer внутри границ J070. Primary generation не заимствуется.
+
+Reviews адресуются исходным source scope и purpose; при отсутствии legacy source key используется
+реальный memo key. Один paid review может примениться к двум scopes, не создавая второй paid result.
+Имя и joint фиксируются с изменением соответствующего поля. Revision адресует фактический ID
+новой publication; receipt следует за immutable result внутри того же checkpoint, сохраняя FK.
+`/explain` связывает результат с recorded command и executed marker, не с Bill.analysis и не
+с подтверждением technical reply delivery. Bare CLI/API/memo reads не объявляются проекцией.
+
+Qualified before: **16 failures** на отсутствовавших receipts/границах. Targeted **179 passed**,
+включая 17 новых сценариев: workers=1/4, source scopes, dump/restore, повторный consume, пять
+мест обрыва projection/application boundary, unchanged command one-execution semantics и
+неизменность original amendment publication. Strict mypy 412 файлов и Ruff green.
+
+**12** before/after World flows: exact common table data, frozen requests, messages, edits и
+technical reply outcomes совпадают. Добавлено **18** коротких receipts; delta SQL **480–1028 bytes**,
+gzip **75–115 bytes**, SQLite delta 0 на fixture. J069 и J070 readers восстановили все 12 snapshots
+с побайтово одинаковым dump; minimum rollback reader остаётся J069/schema50. Новых migrations,
+storage backends, provider payloads и изменений review pause settings нет.
+
+Corpus CI **7 passed**, process **3294 observations**, zero changed decisions/inputs. Human labels
+не добавлялись; прежние coverage/exclusions сохранены. Outputs: `out/corpus/j071`, runs `j071-*`.
+DA6.2/DA6.3 остаются partial: rollover, applicability history и переход остальных ref consumers
+ещё требуют отдельных checks. Общий goal active.
+
+При подготовке следующего rollover slice воспроизведён существующий B121: после rehome
+RCL оплаченный name остаётся в history, но новый term-specific key подаёт второй request.
+Current и baseline J070 дают **2 name requests / 1 retained paid name / current name None**.
+Это отдельный старый дефект, а не эффект J071; probe outputs `out/corpus/j071/rollover-name-*`.
+Следующий этап должен сохранить исходную identity pending name и проверить apply после переноса.
+
+Acceptance: full **4401 passed**, errors/failures/skips/xfails 0, 640.222 s;
+strict mypy 412 файлов, Ruff src/tests/tools, format и strict docs/links green. Local HTTP CLI
+**21 passed**. Pinned production snapshot J069: exact SQL/размеры и projection/memo hashes прежние,
+**457 bills / 166 analyses / 141 memos**, integrity ok/FK 0. Только isolated restore/read,
+без свежего fetch, pipeline/model/Telegram против production copy. Corpus manifests проверены.
+
+[Acceptance evidence](../assets/audits/2026-10-27-secondary-projection-applications/validation.json)
+содержит XML/source hashes, 12 профилей, J069 rollback snapshots и повторяемые observers.
+В AnalysisService изменены только collection/application methods; payload preparation, extraction,
+selection и review pause methods прежние. Следующий этап — B121, затем остальной DA6 rollover.
+План: **74 задачи, 12 выполнены, 62 не закрыты**; goal active.

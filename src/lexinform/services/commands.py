@@ -33,6 +33,7 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    ResultApplicationTarget,
     SpendSnapshot,
     StatusSnapshot,
     TokenUsage,
@@ -61,6 +62,7 @@ from lexinform.services.joint import primary_of
 from lexinform.services.lookup import BillLookup, BillNotFoundError
 from lexinform.services.publications import complete_delivery
 from lexinform.services.publishing import PublishingService
+from lexinform.services.result_applications import record_secondary_application
 from lexinform.services.text_prefilter import TextPrefilterService
 from lexinform.services.tracking import StatusTrackingService, TrackingResult
 
@@ -296,9 +298,19 @@ class CommandService:
             outcome = CommandOutcome(
                 status=OutcomeStatus.ERROR, note=f"{type(exc).__name__}: {exc}"
             )
-        self._repo.mark_command_executed(
-            incoming.update_id, outcome=outcome.line(), at=self._clock.now()
-        )
+        with self._repo.atomic():
+            self._repo.mark_command_executed(
+                incoming.update_id, outcome=outcome.line(), at=self._clock.now()
+            )
+            if outcome.explanation is not None and outcome.bill is not None:
+                record_secondary_application(
+                    self._repo,
+                    outcome.bill.term,
+                    outcome.bill.number,
+                    outcome.explanation.computation_id,
+                    target=ResultApplicationTarget(kind="command", ref=str(incoming.update_id)),
+                    now=self._clock.now(),
+                )
         return outcome
 
     def _earlier_state(self, incoming: IncomingCommand) -> CommandState | None:

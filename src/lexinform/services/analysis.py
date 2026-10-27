@@ -82,6 +82,7 @@ from lexinform.models import (
     PublicationStatus,
     ReadyAnalysis,
     ResultApplication,
+    ResultApplicationTarget,
     ReviewContext,
     ReviewDocument,
     ReviewInputReference,
@@ -154,6 +155,7 @@ from lexinform.services.analysis_applications import apply_analysis
 from lexinform.services.cost import CostLedger
 from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
 from lexinform.services.joint import primary_of, revive_prefilter_skips
+from lexinform.services.result_applications import record_secondary_application
 from lexinform.services.senate_documents import resolve_senate_document, verified_senate_text
 from lexinform.text_projection import TextProjection
 
@@ -1130,9 +1132,12 @@ class AnalysisService:
         if isinstance(record, SupplementRecord):
             record.number = meta.document_number or ""
         with self._repo.atomic():
+            revision_id = None
             if record is not None:
                 if isinstance(record, AmendmentsRecord) and meta.amendment_revision is not None:
-                    self._queue_amendment_revision(item, meta.amendment_revision, record)
+                    revision_id = self._queue_amendment_revision(
+                        item, meta.amendment_revision, record
+                    )
                 self._repo.save_analysis_memo(
                     meta.memo_key,
                     record.model_dump_json(),
@@ -1162,6 +1167,15 @@ class AnalysisService:
                 self._retain_computation(
                     item, result, normalized, provider, now, review_input=review_input
                 )
+            if revision_id is not None and record is not None:
+                record_secondary_application(
+                    self._repo,
+                    item.term,
+                    item.number,
+                    record.computation_id,
+                    target=ResultApplicationTarget(kind="publication", ref=str(revision_id)),
+                    now=now,
+                )
             self._repo.mark_llm_batch_item_consumed(
                 item.batch_id, item.custom_id, consumed_at=now, result=result
             )
@@ -1173,7 +1187,7 @@ class AnalysisService:
 
     def _queue_amendment_revision(
         self, item: LlmBatchItem, target: AmendmentRevisionTarget, record: AmendmentsRecord
-    ) -> None:
+    ) -> int | None:
         original = self._repo.publication_by_id(target.publication_id)
         if (
             original is None
@@ -1194,12 +1208,12 @@ class AnalysisService:
             )
             is not None
         ):
-            return
+            return None
         record.source_url = target.source_url
         change = StatusChange.model_validate_json(target.delivery.change_json)
         change.amendments = record
         delivery = target.delivery.model_copy(update={"change_json": change.model_dump_json()})
-        self._repo.create_publication(
+        return self._repo.create_publication(
             Publication(
                 term=item.term,
                 number=item.number,

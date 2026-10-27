@@ -67,6 +67,21 @@ record only their own application. Event, receipt and enclosing observation/deli
 one transaction. Repeated fingerprints and legacy records without a result ref add no receipts;
 old supplements are not backfilled by a later amendment. This is application evidence, not
 content-version history or delivery confirmation. The minimum rollback reader is J069.
+Other active secondary consumers retain short receipts through `record_secondary_application`:
+
+| Target namespace | Reference | Projection checkpoint |
+|---|---|---|
+| `document_review` | Purpose and original source key; memo key when legacy source key is absent | Review record, delivery work and removal of review work. Two source scopes can share one paid result. |
+| `bill` | `joint` | Saved joint comparison. |
+| `editorial` | `mnemonic` | Selected backfill name, after validation. |
+| `publication` | New publication ID | Manual amendment revision, retained result and consumed checkpoint. |
+| `command` | Incoming update ID | Executed `/explain` command and its known result. Technical reply delivery has its existing separate boundary. |
+
+The shared writer records metadata inside each consumer's transaction. It does not submit work,
+choose sources or supply primary generations. Bare memo/API/CLI reads have no persisted projection
+target and add no receipt. Legacy records without a result ref remain untraced; paused act reviews
+stay paused. Revision receipts follow their retained result within the same transaction, satisfying
+the existing foreign key. No source text or paid answer is duplicated per application.
 All service writes of primary analysis use `services.analysis_applications.apply_analysis`:
 the primary service, RCL watcher, wykaz handover and RPW/RCL-to-print linker share one command.
 A projection receipt commits with `Bill.analysis` and records the actual target row's
@@ -80,7 +95,7 @@ and delivery work. Waiting secondary work leaves the current analysis and ready 
 The reanalysis counter advances after that commit; paid usage remains in the existing call ledger.
 Preparation and quiet source checks do not create projection receipts. Ready does not prove
 application or publication, and applied does not prove delivery. Direct identity relocation
-at term rollover and the remaining secondary application receipts stay in
+at term rollover and the remaining applicability history stay in
 [DA6](plans/2026-10-22-document-architecture.md#da6).
 Result, collection decision, memo/ready changes and consumed checkpoint commit together;
 run cost acknowledgement retains its existing mechanism.

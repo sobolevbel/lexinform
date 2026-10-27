@@ -29,6 +29,7 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    ResultApplicationTarget,
     Stage,
     StatusChange,
     TextDocument,
@@ -61,6 +62,7 @@ from lexinform.services.delivery import DeliveryService
 from lexinform.services.document_reviews import DocumentReviews
 from lexinform.services.posting import Poster
 from lexinform.services.rcl_projects import RclProjectReader
+from lexinform.services.result_applications import record_secondary_application
 from lexinform.services.sources import SejmTextSource, fetch_print
 from lexinform.services.status_change_applications import apply_status_change_amendments
 from lexinform.services.tracking.acts import ActWatcher
@@ -666,7 +668,16 @@ class StatusTrackingService:
                 selected_at=record.created_at,
                 origin="backfill",
             )
-            self._repo.save_editorial(bill.term, bill.number, bill.editorial.select(candidate))
+            with self._repo.atomic():
+                self._repo.save_editorial(bill.term, bill.number, bill.editorial.select(candidate))
+                record_secondary_application(
+                    self._repo,
+                    bill.term,
+                    bill.number,
+                    record.computation_id,
+                    target=ResultApplicationTarget(kind="editorial", ref="mnemonic"),
+                    now=self._clock.now(),
+                )
             log.info("%s named %r", bill.number, name)
 
     def _remind(self, everyone: list[Bill], result: TrackingResult) -> None:

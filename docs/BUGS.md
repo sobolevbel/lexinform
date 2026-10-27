@@ -3,7 +3,7 @@
 ## Как пользоваться
 
 Текущие баги сгруппированы по статусу, внутри группы — по влиянию на читателя.
-Номера B1…B120 постоянные:
+Номера B1…B121 постоянные:
 старые обозначения `#4` и `B4` означают одну запись.
 `open` — воспроизведённый дефект; `candidate` — ещё не доказанная гипотеза.
 `deferred` — подтверждённый дефект, отложенный по решению владельца;
@@ -23,6 +23,18 @@ P3 не означает, что расходы можно игнорирова�
 [повторяющиеся ошибки](development/failure-patterns.md) — памятка для аудита.
 
 ## Open
+
+### B121
+
+**P3 · open · 27.10.2026.** Перенос RCL-проекта в новую каденцию повторно заказывает уже оплаченное имя.
+
+Fake pipeline с batch-only name backfill: primary analysis завершён, name batch отправлен;
+первый run новой каденции собирает paid name и переносит RCL-строку. `_memo_key` имени включает
+term, поэтому новый consumer пропускает прежний memo и отправляет второй name request.
+В history остаётся исходный ответ, но current editorial name ещё пуст. На коде J070 и текущем
+J071 воспроизводятся **2 name requests / 1 retained name / current name None**, без run errors.
+Production-инцидент не установлен. Probe: `out/corpus/j071/rollover_name_probe.py`, outputs
+`rollover-name-probe.json` и `rollover-name-baseline.json`; продолжение — DA6 rollover slice.
 
 ### B120
 

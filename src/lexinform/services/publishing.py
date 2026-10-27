@@ -27,6 +27,7 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    ResultApplicationTarget,
     is_over,
 )
 from lexinform.ports import (
@@ -43,6 +44,7 @@ from lexinform.services.joint import group_of, primary_of
 from lexinform.services.message_parts import freeze_parts, send_continuations
 from lexinform.services.predecessors import rcl_predecessor
 from lexinform.services.publications import inherit_card, open_card_edit_ids, send_publication
+from lexinform.services.result_applications import record_secondary_application
 from lexinform.services.sources import fetch_print
 
 log = logging.getLogger(__name__)
@@ -472,7 +474,16 @@ class PublishingService:
             return bill
         if isinstance(record, Waiting):
             return record
-        self._repo.save_joint_comparison(bill.term, bill.number, record)
+        with self._repo.atomic():
+            self._repo.save_joint_comparison(bill.term, bill.number, record)
+            record_secondary_application(
+                self._repo,
+                bill.term,
+                bill.number,
+                record.computation_id,
+                target=ResultApplicationTarget(kind="bill", ref="joint"),
+                now=self._clock.now(),
+            )
         return bill.model_copy(update={"joint": record})
 
     def became_druk(self, bill: Bill) -> Bill | None:
