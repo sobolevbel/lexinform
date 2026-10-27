@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "stage": "J079",
+  "scope": "DA8 comparison and decision against a universal execution kernel; existing owners and retention guards stay unchanged.",
+  "compared_runtime_baseline": "9e3d891691e6649bac5d25d1c652d5a1917a2f6a",
+  "source": {
+    "src/lexinform/models/documents.py": {
+      "sha256": "79bf620398bbbaffdbd9c2df997344489f7c0b0d15b4c166043deb0282260c81",
+      "unchanged_from_J077": true
+    },
+    "src/lexinform/models/reviews.py": {
+      "sha256": "c9c02f306e12c8146280fbfce51c063ad498ef70958516af33e442df68dcbc2c",
+      "unchanged_from_J077": true
+    },
+    "src/lexinform/services/tracking/service.py": {
+      "sha256": "44095308b54e50f8376efd731372e2f34595b9f96843781994ed4f67bf0479bc",
+      "unchanged_from_J077": true
+    },
+    "src/lexinform/services/document_reviews.py": {
+      "sha256": "ef34023e36eb4e20b3d800af828a6d04ad0ef6469cca12f34c19de6174c76771",
+      "unchanged_from_J077": true
+    },
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "sha256": "36be6491523e1aec0de79bc3665416adde58304402e625e331dd65360d7b3a5a",
+      "unchanged_from_J077": true
+    }
+  },
+  "regressions": {
+    "tests": 137,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 10.069,
+    "xml_sha256": "64938bd9251094ed32a2f095116f5b4fd8b80105e8fc847240eecbd872619a3e",
+    "command": "pytest -q tests/scenario/test_document_selection_recovery_audit.py tests/scenario/test_auto_amendment_revision_payload.py tests/scenario/test_commission_reviews.py tests/scenario/test_document_reviews.py tests/unit/test_state_retention.py"
+  },
+  "prior_full_gate": {
+    "sha256": "2c9068beec82c6dbed2810220085dc9fe80c22547761be4e76217503f3e7ced0",
+    "tests": 4624,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 665.862
+  },
+  "production_pin_inventory": {
+    "source_state_commit": "f34e63e7d2446501ceee0c2595964eef1b8f48a2",
+    "source_sql_sha256": "73e37426e5e5753ad312994a95965d9a100d91c22488ef486c0cb802cbc3b71f",
+    "replayed_sql_sha256": "73e37426e5e5753ad312994a95965d9a100d91c22488ef486c0cb802cbc3b71f",
+    "source_unchanged": true,
+    "document_work": {
+      "waiting": 3
+    },
+    "review_work": {
+      "act_application/abandoned": 2,
+      "consultation_review/abandoned": 5,
+      "consultation_review/context": 2
+    },
+    "protected_rows": {
+      "review_owner_memos": 18,
+      "document_owner_memos": 0,
+      "sent_delivery_payloads_for_document_work": 0
+    },
+    "intents": 0,
+    "unconsumed_or_unaccounted_items": 0,
+    "scope": "Read-only inventory of the pinned restored production snapshot, not a live current-state claim."
+  },
+  "inventory_observer": {
+    "sha256": "b786fb7a070aca392865012318ce43ea69ef91872b9b1aaad1c90c7f3b681b44",
+    "source": "import hashlib\nimport json\nimport sqlite3\nfrom collections import Counter\nfrom contextlib import closing\nfrom pathlib import Path\n\nsource = Path('out/corpus/j073/production-state.sql').resolve()\nbefore = hashlib.sha256(source.read_bytes()).hexdigest()\nwith closing(sqlite3.connect(':memory:')) as db:\n    db.executescript(source.read_text())\n    db.execute('PRAGMA query_only=ON')\n    documents = dict(db.execute('SELECT state, COUNT(*) FROM document_work GROUP BY state').fetchall())\n    reviews = Counter()\n    for raw, in db.execute('SELECT review_work_json FROM bills WHERE review_work_json IS NOT NULL'):\n        for work in json.loads(raw):\n            state = 'context' if work.get('context') else 'snapshot' if work.get('input_bill_json') else 'abandoned'\n            reviews[f\"{work['purpose']}/{state}\"] += 1\n    protected = {\n        'review_owner_memos': db.execute(\"SELECT COUNT(*) FROM analysis_memo m JOIN bills b ON b.term=m.term AND b.number=m.number WHERE b.review_work_json IS NOT NULL\").fetchone()[0],\n        'document_owner_memos': db.execute(\"SELECT COUNT(*) FROM analysis_memo m WHERE EXISTS (SELECT 1 FROM document_work w WHERE w.term=m.term AND w.number=m.number AND w.state != 'complete')\").fetchone()[0],\n        'sent_delivery_payloads_for_document_work': db.execute(\"SELECT COUNT(*) FROM publications p WHERE p.status='sent' AND p.delivery_json IS NOT NULL AND EXISTS (SELECT 1 FROM document_work w WHERE json_extract(w.work_json, '$.change_id')=p.status_change_id AND w.state != 'complete')\").fetchone()[0],\n    }\n    intents = db.execute('SELECT COUNT(*) FROM llm_batch_intents').fetchone()[0]\n    live_items = db.execute('SELECT COUNT(*) FROM llm_batch_items WHERE consumed_at IS NULL OR accounted_at IS NULL').fetchone()[0]\nassert hashlib.sha256(source.read_bytes()).hexdigest() == before\nreport = {'source_state_commit': 'f34e63e7d2446501ceee0c2595964eef1b8f48a2', 'source_sql_sha256': '73e37426e5e5753ad312994a95965d9a100d91c22488ef486c0cb802cbc3b71f', 'replayed_sql_sha256': before, 'source_unchanged': True, 'document_work': documents, 'review_work': dict(reviews), 'protected_rows': protected, 'intents': intents, 'unconsumed_or_unaccounted_items': live_items, 'scope': 'Read-only inventory of the pinned restored production snapshot, not a live current-state claim.'}\nPath('out/corpus/j079/inventory.json').write_text(json.dumps(report, indent=2) + '\\n')\nprint(json.dumps(report))\n"
+  },
+  "decision": {
+    "DA8.1": "Two actual consumers compared, including identity, baseline, source/provider retry, dependencies, refresh, application and completion.",
+    "DA8.2": "Do not add a universal scheduler; shared batch/result/application/publication ownership already exists. Extend read-only ownership diagnostics under DA10.",
+    "DA8.3": "Migration to a new scheduler is inapplicable to this decision. Existing owners and submit paths remain.",
+    "DA8.4": "No retention simplification. Existing legacy guards remain; a future change needs a separate full dependency inventory and regression."
+  },
+  "limitations": [
+    "The compared models, both consumer services and repository are byte-identical to J077. No migration, handler move, retry or delivery-policy change.",
+    "The pinned production inventory is not a fresh production observation or a pending-work live cycle.",
+    "Owner counters do not prove individual legacy rows can be deleted or missing historical payloads can be reconstructed.",
+    "SQLite URI/WAL-header draft probes could not read the copy; accepted inventory replays the pinned SQL in memory with query_only, checks its SHA, and never opens the live database.",
+    "A draft query used a nonexistent normalized change_id column; accepted query follows the actual JSON predicate in prune_history.",
+    "No paid model, source download, production pipeline, Telegram send or storage decision."
+  ]
+}

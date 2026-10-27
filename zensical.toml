@@ -67,6 +67,7 @@ nav = [
   ] },
   { "Аудиты" = [
     { "Обзор" = "reviews/index.md" },
+    { "Незавершённая работа · 27.10" = "reviews/2026-10-27-unfinished-work.md" },
     { "Корпус: рабочий процесс · 25.10" = "reviews/2026-10-25-corpus-workflow.md" },
     { "Архитектура документов · 22.10" = "reviews/2026-10-22-document-architecture.md" },
     { "Проверка комплекта и решение по LLM · 17.10" = "reviews/2026-10-17-document-bundle-acceptance.md" },

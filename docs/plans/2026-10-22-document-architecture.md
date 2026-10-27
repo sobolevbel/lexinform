@@ -705,16 +705,16 @@ Bill и кэша. Повтор записанного результата да�
 Общее ядро не является предварительным условием архива или batch history. Текущий
 `DocumentWork` намеренно узкий; сходство нескольких полей ещё не доказывает общую семантику.
 
-- [ ] DA8.1. Сравнить минимум два реальных потребителя — поздний Senate документ и review:
+- [x] DA8.1. **Принято: [J079](2026-10-22-document-architecture-progress.md#j079), [сравнение](../reviews/2026-10-27-unfinished-work.md).** Сравнить минимум два реальных потребителя — поздний Senate документ и review:
   identity, immutable baseline, dependencies, outage, retry budget/backoff, terminal outcomes,
   source refresh, batch intent ownership и завершение effects. Записать различия.
-- [ ] DA8.2. Если общий жизненный цикл подтверждён, выделить `WorkItem` для identity,
+- [x] DA8.2. **Принято: [J079](2026-10-22-document-architecture-progress.md#j079), отказ от универсального scheduler; существующие batch/result/application/publication owners сохранены, ownership diagnostics продолжается в DA10.** Если общий жизненный цикл подтверждён, выделить `WorkItem` для identity,
   immutable inputs/dependencies, next_at, attempts, cause и result/application refs.
   Purpose handlers сохраняют собственные правила и типизированный контекст. Если нет —
   ограничиться общими ownership refs и диагностикой, зафиксировав отказ от универсализации.
-- [ ] DA8.3. Перенести один потребитель через адаптер чтения старого состояния, затем второй.
+- [ ] DA8.3. **Неприменимо при решении J079 против нового scheduler; перенос кода не заявлен выполненным.** Перенести один потребитель через адаптер чтения старого состояния, затем второй.
   В каждый момент у задачи один владелец и один submit path; dual run не создаёт два intents.
-- [ ] DA8.4. Упростить retention только после проверки зависимостей всех потребителей:
+- [ ] DA8.4. **Частично: [J079](2026-10-22-document-architecture-progress.md#j079), два потребителя и pinned legacy inventory проверены, guards сохранены. Полная dependency inventory и допустимость упрощения остаются отдельной работой.** Упростить retention только после проверки зависимостей всех потребителей:
   старый guard не удаляется, пока legacy work не исчерпан или не мигрирован доказуемо.
 
 **Проверки:** сохранённые незавершённые work до обновления, двойной запуск, late material,

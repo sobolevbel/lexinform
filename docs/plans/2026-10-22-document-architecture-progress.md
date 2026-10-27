@@ -3985,3 +3985,40 @@ qualified source/tests hashes совпадают. Все **50 migrations** пр�
 CLI/wiring/transports прежние. Implementation commit ещё не создан; rollback J077.
 DA6.4 остаётся частичным: applicability observations, legacy import и ref/retention transition
 не закрыты. План: **74 задачи, 12 выполнены, 62 не закрыты**; goal active.
+
+<a id="j079"></a>
+### J079. DA8: compare actual work owners and reject a universal scheduler
+
+Дата: 27 октября 2026. База: J078 (`4ed9a94403a78f0ffe1f5dea540bf3d53b5558af`).
+Статус: локальная приёмка; только документация и воспроизводимые audit artifacts.
+
+[Сравнение](../reviews/2026-10-27-unfinished-work.md) фиксирует identity, frozen baseline,
+source/provider retries, outage, dependencies, refresh, apply и terminal outcomes для позднего
+Senate DocumentWork и ReviewWork. Сходство не подтверждает общий execution lifecycle:
+исторический single-message correction и source-refresh/current-ELI review имеют разные
+условия. Сохраняем existing typed owners и общие batch/result/application/publication refs.
+DA8.1/DA8.2 приняты; DA8.3 неприменим к отказу от scheduler, перенос не объявлен выполненным.
+DA8.4 не закрыт: retention guards остаются, полный dependency inventory и ref migration впереди.
+
+Повторно выполнены **137 existing-work regressions**, failures/errors/skips/xfails 0,
+10.069 s: late material/restore, frozen context, повтор work, unknown correction, review
+uncertain submission, flags/pause, comparison snapshots и retention. Пять сравниваемых
+model/consumer/repository modules byte-identical J077; runtime/tests J078 не менялись, его
+full **4624 passed**, strict mypy/Ruff/format и corpus gates остаются применимы.
+[Acceptance evidence](../assets/audits/2026-10-27-unfinished-work/validation.json)
+содержит XML/source hashes, observer и pinned inventory.
+
+Read-only SQL replay state `f34e63e7`, SHA `73e37426…3b71f`: **3 waiting DocumentWork**,
+**2 consultation context work**, **7 abandoned markers** (5 consultation/2 act), intents и
+unconsumed/unaccounted items 0. Review-owner predicate защищает **18 memo rows**; DocumentWork
+в этом pin не защищает memo/sent-payload rows. Это не доказательство ненужности отдельных
+записей и не fresh production claim. Source SHA прежний, pipeline/providers/Telegram не запускались.
+Неудачные draft SQLite probes и неверный draft column исключены; финальный observer повторяет
+реальные JSON predicates `prune_history`, работает in-memory/query-only и не меняет источник.
+
+Нет DDL, новых flags/defaults, scheduler, retention changes или storage decision. State delta 0
+по отсутствию runtime/migration/writer изменений; новый production рост не прогнозируется.
+Implementation commit ещё не создан; rollback к J078 не требует преобразования данных.
+План: **74 задачи, 14 выполнены, 60 unchecked**, среди них DA8.3 явно неприменим; goal active.
+Следующий фрагмент DA10 — общий безопасный reader SQLite snapshots и диагностика ownership
+незавершённой работы без repair/submit/send.
