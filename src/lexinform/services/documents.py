@@ -12,6 +12,7 @@ import hashlib
 import logging
 import threading
 import time
+from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from urllib.parse import urlparse
@@ -35,7 +36,9 @@ from lexinform.document_versions import (
 from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
 from lexinform.models import (
     DocumentPart,
+    DocumentReadMetrics,
     DocumentSelection,
+    HostDocumentReads,
     ScanInputManifest,
     ScannedDocument,
     TextDocument,
@@ -102,6 +105,34 @@ class TextLoader:
         self._cache: dict[str, LoadedFile] = {}
         self._cache_size = cache_size
         self._lock = threading.Lock()
+        self._read_cache_hits = 0
+        self._download_metrics: dict[str, Counter[str]] = {}
+        self._seen_bodies: dict[str, int] = {}
+
+    def reset_read_metrics(self) -> None:
+        """The caller resets observation before starting run work without clearing cached files."""
+        with self._lock:
+            self._read_cache_hits = 0
+            self._download_metrics.clear()
+            self._seen_bodies.clear()
+
+    def read_metrics(self) -> DocumentReadMetrics:
+        with self._lock:
+            return DocumentReadMetrics(
+                cache_hits=self._read_cache_hits,
+                distinct_bodies=len(self._seen_bodies),
+                distinct_body_bytes=sum(self._seen_bodies.values()),
+                hosts={
+                    host: HostDocumentReads(
+                        attempts=counts["attempts"],
+                        completed=counts["completed"],
+                        body_bytes=counts["body_bytes"],
+                        over_limit=counts["over_limit"],
+                        failed=counts["failed"],
+                    )
+                    for host, counts in sorted(self._download_metrics.items())
+                },
+            )
 
     def load(self, url: str) -> str | None:
         """Extracted text of the file at `url`, or None when it is too big or has no text layer.
@@ -115,6 +146,7 @@ class TextLoader:
         """The same download, with what the file turned out to be."""
         with self._lock:
             if url in self._cache:
+                self._read_cache_hits += 1
                 return self._cache[url]
         loaded = self._fetch(url)
         with self._lock:
@@ -460,11 +492,24 @@ class TextLoader:
         if download is None:
             raise ValueError(f"no downloader for host {host!r} ({url})")
         started = time.perf_counter()
+        with self._lock:
+            self._download_metrics.setdefault(host, Counter())["attempts"] += 1
         try:
             data = download(url, max_bytes=self._max_bytes)
         except AttachmentTooLargeError as exc:
+            with self._lock:
+                self._download_metrics[host]["over_limit"] += 1
             log.warning("%s; skipping text", exc)
             return None
+        except Exception:
+            with self._lock:
+                self._download_metrics[host]["failed"] += 1
+            raise
+        digest = hashlib.sha256(data).hexdigest()
+        with self._lock:
+            self._download_metrics[host]["completed"] += 1
+            self._download_metrics[host]["body_bytes"] += len(data)
+            self._seen_bodies.setdefault(digest, len(data))
         log.info(
             "%s: %d KB downloaded in %.1fs",
             url,

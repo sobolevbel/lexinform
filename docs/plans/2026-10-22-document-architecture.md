@@ -440,7 +440,7 @@ DA2.1 и описание текущего профиля обязательны
 и retention могут выпускаться самостоятельно на текущей SQLite. При отложенном расширении
 задачи blob store отметить неприменимыми с основанием. Это допустимое завершение DA2.
 
-- [ ] DA2.1. **Частично: [J012](2026-10-22-document-architecture-progress.md#j012), [J039](2026-10-22-document-architecture-progress.md#j039), [J094](2026-10-22-document-architecture-progress.md#j094) — fresh raw/reference footprint, actual state history и [текущий профиль](../reviews/2026-10-27-storage-profile.md). Полный исторический поток скачиваний неизвестен; наблюдение будущего спроса/расширение retention остаются.** Измерить объёмы реально потребляемых raw файлов, повторные байты, дневной прирост,
+- [ ] DA2.1. **Частично: [J012](2026-10-22-document-architecture-progress.md#j012), [J039](2026-10-22-document-architecture-progress.md#j039), [J094](2026-10-22-document-architecture-progress.md#j094) — fresh raw/reference footprint, actual state history и [текущий профиль](../reviews/2026-10-27-storage-profile.md). [J097](2026-10-22-document-architecture-progress.md#j097) — агрегаты будущих TextLoader reads в run reports. Полный исторический поток неизвестен; natural production daily profile, direct bypasses и расширение retention остаются.** Измерить объёмы реально потребляемых raw файлов, повторные байты, дневной прирост,
   размеры dump и времени backup/restore. Страты: Sejm, RCL, Senate, ELI, ZIP, Word, сканы.
   Читать существующий корпус; отсутствие raw bytes считать исключением. Сравнить варианты
   §1.2, сроки, сжатие и резервные копии; указать пределы экстраполяции из корпуса на живой поток.

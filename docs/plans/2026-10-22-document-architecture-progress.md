@@ -4983,3 +4983,48 @@ accepted/status/reasons/hits и все **20 прежних SQL tables exact**. I
 исторические cached stages, не прогноз production growth. Restore dump exact. Corpus CI **7** /
 process **3294**: verified, observations/inputs same. Metadata/exclusions и воспроизведение —
 [acceptance asset](../assets/audits/2026-10-27-prefilter-source-history/validation.json).
+
+
+<a id="j097"></a>
+### J097. Будущий downloader demand без хранения файлов
+
+Статус: **завершён**, baseline `7bc500630d665537114fb0210ce0acd07f02d1a6`.
+Продолжение DA2.1: новый optional RunReport `document_reads`, отдельный `DocumentReadMonitor`
+port, shared TextLoader producer. Pipeline сбрасывает счётчики перед work и забирает snapshot
+в finally перед finish-run checkpoint; cache не очищается. Старый report остаётся unknown,
+а новый quiet run имеет observed zero. SQL schema/retention не менялись; metrics живут с runs.
+
+По host считаются attempts, completed bodies/bytes, failed и over-limit; отдельно cache hits,
+количество и bytes distinct completed bodies внутри run. SHA→size живёт только в bounded-by-work
+RAM счётчике; в JSON нет URLs, raw bytes или individual SHA. Hash вычисляется с завершённого
+ответа, не partial download. Ошибка extraction всё равно сохраняет известный download объём;
+успешный download не выдаётся за нормативный текст. Scan derivatives не являются новой сетью.
+Host/unique counters синхронизированы тем же lock; snapshot не разделяет mutable dict с loader.
+
+Новые **26 focused** проходят: cross-URL/host duplicates, cache/reset, failed/over-limit,
+extraction failure, scan window, parallel 1/4, persistent reports/restore, quiet repeat, outage,
+legacy unknown и dry-run rollback. Strict mypy **447** (`--no-incremental`), Ruff/format green.
+CLI gate первоначально не мог bind 127.0.0.1 в sandbox; повтор с разрешённым local fixture —
+**21 passed**, без внешних source/model/Telegram calls. Initial error logs сохранены.
+
+**168 native flows**: exact raw requests/rendered messages и **22 SQL tables** с единственной
+нормализацией `RunReport.document_reads` в распознанном report object. **452** metric object views
+validated; это повторные views, не independent production runs. SQL delta **188–672 bytes**,
+gzip **68–96**. Initial observers не учитывали runs table digest и admission sql_sha256; hashes
+не служат исключением underlying rows: все SQL rows проверены, только новый report field снимается.
+Прежние source decisions, paid results, inputs, publications и остальные report fields exact.
+
+J096 reader восстанавливает **168 populated snapshots / 324 legacy report views** без потери
+SQL и schema conversion. AST qualification после удаления только IO-counter statements:
+прежние loader methods/выбор/извлечение и pipeline run body exact; остальные pipeline/container
+methods прежние. Corpus CI **7** / process **3294** verified, observations/inputs same.
+
+Это downloader response bytes, не HTTP/TLS traffic, не неизвестные partial/refused bytes,
+не cross-run distinct archive size. Direct gateway bypasses и отдельные CLI вызовы вне pipeline
+не входят. Natural production daily profile ещё не измерен; ручной production run не запускался.
+DA2.1 остаётся partial, source/backend/raw retention не выбираются.
+
+J097 accepted full gate: **4864 passed / 0 failures/errors/skips**, **575.204 s**.
+**26 focused / 21 local HTTP**, mypy **447**, Ruff/format и docs checks green.
+[Acceptance asset](../assets/audits/2026-10-27-document-read-metrics/validation.json) пинует
+checks/source/observer и точные границы metric normalization, bytes и restore.

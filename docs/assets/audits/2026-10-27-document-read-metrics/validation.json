@@ -1,0 +1,201 @@
+{
+  "version": 1,
+  "stage": "J097",
+  "baseline": "7bc500630d665537114fb0210ce0acd07f02d1a6",
+  "scope": "Observe shared TextLoader completed-response bodies, attempts and cache hits in optional run-report metadata; no input, selection, policy or provider behavior change.",
+  "checks": {
+    "focused": {
+      "path": "out/corpus/j097/focused-final.xml",
+      "sha256": "2c629e7a4c828c2c82036b51a38b61d650b1dca51fd6aad38937d8e940e75f2d",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "26",
+      "time": "0.898",
+      "timestamp": "2026-10-27T19:42:53.079818+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "local_http": {
+      "path": "out/corpus/j097/local-http-qualified.xml",
+      "sha256": "d2ab569605419533c86ae5df0458ac7d469fc230460b5769d2234428e68de7b1",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "21",
+      "time": "2.004",
+      "timestamp": "2026-10-27T19:45:42.139453+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j097/full.xml",
+      "sha256": "299edc32f002e399c1956731af7d0c900d2500342d6b3e635ea38b08a9e04fc0",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "4864",
+      "time": "575.204",
+      "timestamp": "2026-10-27T19:42:54.653079+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 447 source files",
+    "ruff": "All checks passed!",
+    "format": "448 files left unchanged"
+  },
+  "native": {
+    "cases": 168,
+    "all_requests_and_rendered_messages_exact": true,
+    "all_sql_except_exact_optional_run_io_metrics_equal": true,
+    "all_profiles_except_exact_optional_run_io_and_storage_metrics_equal": true,
+    "tables": 22,
+    "normalization_scope": "Only RunReport.document_reads in recognized report objects; all source/paid/delivery tables compare byte-for-byte.",
+    "metric_objects_validated": 452,
+    "sql_delta": {
+      "min": 188,
+      "max": 672
+    },
+    "gzip_delta": {
+      "min": 68,
+      "max": 96
+    }
+  },
+  "rollback": {
+    "reader": "J096 7bc500630d665537114fb0210ce0acd07f02d1a6",
+    "cases": 168,
+    "legacy_report_views_read": 324,
+    "all_populated_sql_dumps_preserved_exact": true,
+    "schema_conversion": false
+  },
+  "structural": {
+    "all_original_loader_methods_equal_after_removing_only_io_counters": true,
+    "pipeline_run_equal_after_removing_monitor_reset_and_snapshot": true,
+    "other_pipeline_and_container_methods_unchanged": true,
+    "all_existing_run_report_fields_unchanged": true,
+    "selection_extraction_prepared_inputs_requests_and_retention_unchanged": true,
+    "schema": 52,
+    "new_migrations": 0
+  },
+  "corpus": {
+    "ci": {
+      "observations": 7,
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "61400b602c206dfbb2ec0f24402fc5a335a8be15984836a8681d95cb0961fc1b",
+        "before_manifest_sha256": "e4dd59cd7419881a4abbcfac2fd027418c29bcd600968dadf0315e45cfd6a7d2",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "ci",
+        "summary_changes": {},
+        "version": 1
+      }
+    },
+    "process": {
+      "observations": 3294,
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "e9a8257dc4e1878e343dce25a40457f75da02ae21784290e6361638592b0f726",
+        "before_manifest_sha256": "5d739bee8c00929e51b71d4a044874ea1e7dd8c38f2e925f327c69b94f62b445",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "process",
+        "summary_changes": {},
+        "version": 1
+      }
+    }
+  },
+  "source": [
+    {
+      "path": "src/lexinform/models/document_reads.py",
+      "sha256": "f2f63d79345b9763ef1b5278eab3b54b8bf17421bc43425af7bb523212d22da1"
+    },
+    {
+      "path": "src/lexinform/models/report.py",
+      "sha256": "c1b4e933e47f181bb44c572f89f9ef2bd12fb6cf9fe57f3287609ea24832d269"
+    },
+    {
+      "path": "src/lexinform/models/__init__.py",
+      "sha256": "c89b57a94399a880c8c7d81d7ea78cc7d508bf6668974ac1206823ca84deafd2"
+    },
+    {
+      "path": "src/lexinform/ports.py",
+      "sha256": "c9eab71a68ff49aef5d229e16739529a1f31033c90598b252632bd2b5ce3da90"
+    },
+    {
+      "path": "src/lexinform/services/documents.py",
+      "sha256": "25e4fb64b479bb3297bec984ed688f9739c483da8a9d495e1f0b5ce4e8780233"
+    },
+    {
+      "path": "src/lexinform/services/pipeline.py",
+      "sha256": "b678467187a70c8d5a0752c8fa12210dd8f407a32a01bde0a19b34219c75d103"
+    },
+    {
+      "path": "src/lexinform/container.py",
+      "sha256": "90b18e2b9a08be6432001f1646d5a7e5d8a9e47a6d9b7a77729ec02ef5035268"
+    },
+    {
+      "path": "tests/unit/test_document_read_metrics.py",
+      "sha256": "73c90a9712037cc0236dfac5edad612aabfc6c5c5241c91dde142fa0ce2883f5"
+    },
+    {
+      "path": "tests/scenario/test_document_read_metrics.py",
+      "sha256": "1c4957dbb2d9d47badb48764ac1b194d5e1e76bfa9b30c9ef4414b890627357b"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "out/corpus/j097/native_profiles.py",
+      "sha256": "e48639f12345496a73d2e16748320a4e580dfc1f188aa494a3daa1e5823d654b"
+    },
+    {
+      "path": "out/corpus/j097/compare_native.py",
+      "sha256": "bbb5700d83f942b1b998d401b94e551645730be62219b0d80a7118abbc773327"
+    },
+    {
+      "path": "out/corpus/j097/native-parity.json",
+      "sha256": "bef0a864d7d037cbc9911f00a0ba6d9f0e64d31b4be6ead6754315700b898099"
+    },
+    {
+      "path": "out/corpus/j097/rollback_profile.py",
+      "sha256": "68e62cb262566bfa3c4331a104ff70b80a6f0bc20e5bd4ee8d0f954d307d7130"
+    },
+    {
+      "path": "out/corpus/j097/rollback.json",
+      "sha256": "c3893113a4f0bdc44f659aebc4c8ff08f991e19f516cb4ac5285b7e05b787a9d"
+    },
+    {
+      "path": "out/corpus/j097/structural_profile.py",
+      "sha256": "8cfdecd457238b639355941543ba7b4854efd8e0dff85e19a85a8abf6c82f37e"
+    },
+    {
+      "path": "out/corpus/j097/structural-parity.json",
+      "sha256": "069216cbb6944b0a6c8776f050802ce04e2be5debeb168e5ff9ed380b619c314"
+    }
+  ],
+  "exclusions": [
+    "Observed bytes are returned downloader bodies, excluding wire overhead and unknown partial/refused bytes.",
+    "Per-run distinct totals cannot establish cross-run distinct archive size.",
+    "Direct gateway calls bypassing TextLoader and standalone CLI invocations outside pipeline are outside scope.",
+    "No URLs, raw bodies, individual SHA identities or extra source/provider/Telegram requests are persisted.",
+    "Successful download does not prove readable/legal completeness; source/paid history tables remain exact.",
+    "Legacy reports remain unmeasured; no backfill, migration or retention/backend setting change.",
+    "Local HTTP initially failed sandbox bind; permitted fixture-only retry passed all 21 tests.",
+    "First native comparisons exposed report/table dump hash changes; underlying SQL rows are verified with only the exact optional report field normalized.",
+    "Native metric_objects_validated counts repeated views, not independent production runs."
+  ],
+  "reproduction": [
+    "uv run pytest -q tests/unit/test_document_read_metrics.py tests/scenario/test_document_read_metrics.py tests/unit/test_documents.py",
+    "uv run mypy --no-incremental && uv run ruff check src tests tools && uv run pytest -q",
+    "make test-local-http with permitted local socket bind",
+    "Run native_profiles.py and compare_native.py using qualified J096 baseline snapshots and new output paths.",
+    "Run rollback_profile.py with J096 source PYTHONPATH against the new SQL snapshots.",
+    "python out/corpus/j097/structural_profile.py"
+  ]
+}

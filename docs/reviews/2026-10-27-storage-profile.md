@@ -96,3 +96,25 @@ Blob store/dual-store/remote backend/archive modes и их backup/GC услов�
 Они не включены этим измерением. Обязательные payload текущей SQLite продолжают защищаться;
 для уменьшения повторного JSON нужны совместимые refs и переход consumers, а не ранняя очистка.
 Полные checks, hashes, scope и reproduction — в [J094](../plans/2026-10-22-document-architecture-progress.md#j094).
+
+
+## Наблюдение будущих чтений
+
+[J097](../plans/2026-10-22-document-architecture-progress.md#j097) добавляет optional
+`RunReport.document_reads` для новых pipeline runs. Shared TextLoader считает downloader attempts,
+завершённые response bodies и их bytes по host, over-limit/failed attempts и read-cache hits.
+Отдельно сохраняются количество и bytes distinct completed bodies внутри одного run: SHA нужны
+только временному счётчику, в report нет URLs, file bodies или individual hashes. Derived scan
+windows не считаются новым скачиванием; самостоятельное повторное чтение PDF считается.
+
+Это bytes, возвращённые downloader, без HTTP/TLS overhead и без неизвестной части прерванных
+или отказанных ответов. Успешный download не доказывает пригодность документа для extraction
+или анализа. Direct gateway downloads вне TextLoader и отдельные CLI invocations вне pipeline
+не включены. Сумма run-distinct bytes не является distinct archive size за несколько дней.
+Старые reports остаются unknown; новые quiet runs имеют наблюдаемый ноль. Counter reset не
+очищает cache и не меняет selection, budget, retry или provider requests.
+
+Метрики попадают в existing `runs.report_json` перед finish-run checkpoint и живут по retention
+runs, без новой SQL schema, raw archive или backend. Dry run возвращает измерение и откатывает
+DB. Исторический raw demand остаётся неизвестным, а production daily profile можно будет
+построить после естественных runs; вручную production ради измерения не запускался.

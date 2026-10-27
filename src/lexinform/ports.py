@@ -35,6 +35,7 @@ from lexinform.models import (
     DeliveryResolution,
     Digest,
     DigestPart,
+    DocumentReadMetrics,
     DocumentReviewRecord,
     DocumentSelectionRecord,
     DocumentWork,
@@ -100,6 +101,12 @@ class Clock(Protocol):
 
 class StateCheckpoint(Protocol):
     def __call__(self) -> None: ...
+
+
+class DocumentReadMonitor(Protocol):
+    def reset_read_metrics(self) -> None: ...
+
+    def read_metrics(self) -> DocumentReadMetrics: ...
 
 
 class SejmGateway(Protocol):

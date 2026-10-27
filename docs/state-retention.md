@@ -242,3 +242,10 @@ fetch is not promoted to a completed decision. Repeated checks keep the original
 no legacy backfill, extra download, model call or provider-input retention is introduced. Other
 consumers and standalone artifact metadata remain open. See
 [J096](plans/2026-10-22-document-architecture-progress.md#j096).
+
+New pipeline run reports can retain aggregate `document_reads` observations under the existing
+run retention. They store host counts, completed-response bytes and per-run distinct-body totals,
+without URLs, file bodies or individual hashes. Old reports remain unmeasured; failed/over-limit
+bytes and cross-run distinct storage cannot be reconstructed from these counters. See
+[J097](plans/2026-10-22-document-architecture-progress.md#j097) and the
+[storage profile](reviews/2026-10-27-storage-profile.md#наблюдение-будущих-чтений).

@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from lexinform.errors import ServiceUnavailableError, StateCheckpointError
 from lexinform.logging_setup import MemoryLogHandler
 from lexinform.models import PrefilterRejection, RunMode, RunReport, merge_usage
-from lexinform.ports import BillRepository, Clock, RunNotifier
+from lexinform.ports import BillRepository, Clock, DocumentReadMonitor, RunNotifier
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.commands import CommandService
 from lexinform.services.digest import DigestService
@@ -90,8 +90,10 @@ class DailyPipeline:
         analysis_memo_retention_days: int = 180,
         pre_print: bool = True,
         full_track_weekday: int | None = 0,
+        document_reads: DocumentReadMonitor | None = None,
     ) -> None:
         self._repo = repo
+        self._document_reads = document_reads
         self._discovery = discovery
         self._analysis = analysis
         self._publishing = publishing
@@ -139,6 +141,8 @@ class DailyPipeline:
         captured = MemoryLogHandler()
         captured.install()
         run_id: int | None = None
+        if self._document_reads is not None:
+            self._document_reads.reset_read_metrics()
         self._analysis.start_run(dry_run=opts.dry_run)
         self._publishing.start_run()
         if self._digest is not None:
@@ -168,6 +172,8 @@ class DailyPipeline:
         finally:
             report.finished_at = self._clock.now()
             self._phase(report, "batch status", lambda: self._batch_status(report))
+            if self._document_reads is not None:
+                report.document_reads = self._document_reads.read_metrics()
             # Every phase that asks the model goes through one `AnalysisService`, so this is the
             # whole run's spend, however it was reached, and it is recorded before the report is
             # stored — a run that fell over still says what it had spent by then.

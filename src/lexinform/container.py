@@ -780,6 +780,7 @@ class Container:
                 analysis_memo_retention_days=self.settings.analysis_memo_retention_days,
                 pre_print=self.settings.pre_print_enabled,
                 full_track_weekday=self.settings.track_full_weekday,
+                document_reads=self.text_loader(),
             ),
         )
 
