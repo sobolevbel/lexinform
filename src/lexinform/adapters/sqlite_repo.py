@@ -73,7 +73,7 @@ from lexinform.models import (
     rcl_num_key,
     valid_mnemonic,
 )
-from lexinform.models.batch import BatchJob, batch_item_meta
+from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 
 _STAGES = TypeAdapter(tuple[Stage, ...])
@@ -1340,6 +1340,19 @@ class SqliteBillRepository:
             since=datetime.fromisoformat(row["since"]),
             submissions=submissions,
         )
+
+    def computation_owner_terms(self, number: str, kind: BatchKind) -> tuple[int, ...]:
+        rows = self._conn.execute(
+            "SELECT term FROM llm_batch_items WHERE number = ? AND call_kind = ?"
+            " UNION SELECT json_extract(request_json, '$.term') FROM llm_batch_intents"
+            " WHERE json_extract(request_json, '$.number') = ?"
+            " AND COALESCE(json_extract(request_json, '$.question.kind'),"
+            " json_extract(request_json, '$.call_kind')) = ?"
+            " UNION SELECT term FROM computation_results WHERE number = ?"
+            " AND json_extract(result_json, '$.purpose') = ? ORDER BY term DESC",
+            (number, kind, number, kind, number, kind),
+        )
+        return tuple(int(row[0]) for row in rows)
 
     def context_rejected_batch_ids(self) -> set[str]:
         rows = self._conn.execute(

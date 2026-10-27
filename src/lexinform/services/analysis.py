@@ -100,6 +100,7 @@ from lexinform.models import (
     TriageContext,
     TriageRecord,
     computation_id,
+    is_rcl_number,
     merge_usage,
     observe,
     provider_of,
@@ -2199,7 +2200,7 @@ class AnalysisService:
             key_changes=list(answer.key_changes),
             language=answer.mnemonic_language,
         )
-        key = _memo_key(bill, "name", ctx)
+        key = self._name_request_key(bill, ctx)
         return self._ask_or_wait(
             bill,
             NameQuestion(ctx=ctx),
@@ -2209,6 +2210,40 @@ class AnalysisService:
             lambda: self._llm.name_bill(ctx),
             may_wait=may_wait,
         )
+
+    def _name_request_key(self, bill: Bill, context: NameContext) -> str:
+        """Only known original owner terms can locate a retained RCL name question."""
+        key = _memo_key(bill, "name", context)
+        if not is_rcl_number(bill.number) or key in self._memo:
+            return key
+        terms = dict.fromkeys((bill.term, *self._repo.computation_owner_terms(bill.number, "name")))
+        results = [
+            result
+            for term in terms
+            for result in reversed(self._repo.list_computation_results(term, bill.number))
+            if result.purpose == "name"
+        ]
+        for term in terms:
+            original = bill.model_copy(
+                update={"summary": bill.summary.model_copy(update={"term": term})}
+            )
+            # NameContext has no source text, so the legacy hash preserves every name input.
+            candidates = dict.fromkeys(
+                (
+                    _memo_key(original, "name", context),
+                    _memo_key(original, "name", context, legacy=True),
+                )
+            )
+            for candidate in candidates:
+                if candidate in self._memo:
+                    return candidate
+                for result in results:
+                    if result.custom_id == candidate and isinstance(result.record, NameRecord):
+                        self._memo[candidate] = result.record.model_dump_json()
+                        return candidate
+                if self._repo.batch_job(candidate) is not None:
+                    return candidate
+        return key
 
     def _too_expensive_to_digest(self, loaded: _Loaded) -> bool:
         """The per-bill cost limit applies to a filed document too, and here it is the whole

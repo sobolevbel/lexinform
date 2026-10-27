@@ -3637,3 +3637,64 @@ strict mypy 412 файлов, Ruff src/tests/tools, format и strict docs/links 
 В AnalysisService изменены только collection/application methods; payload preparation, extraction,
 selection и review pause methods прежние. Следующий этап — B121, затем остальной DA6 rollover.
 План: **74 задачи, 12 выполнены, 62 не закрыты**; goal active.
+
+J071 выпущен: `8b2e66c5a3bb9f4c97117fdd429060944a15179a`,
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40454360675) success:
+**4401 passed / 32 deselected**, strict mypy 412 файлов, lint/web/docs green.
+[Deploy relay](https://github.com/sobolevbel/lexinform/actions/runs/40454870036) success:
+exact COMMIT, `db6e24446865 → 8b2e66c5a3bb`, сервис up 45 s после restart.
+Evidence: `out/corpus/j071/release.json`. Production processing вручную не запускался.
+
+<a id="j072"></a>
+### J072. DA6 rollover: B121 и исходная identity name work
+
+Дата: 27 октября 2026. База: J071 (`8b2e66c`). Статус: реализован и принят локально; выпуск проверяется отдельно.
+
+Цель — применять уже оплаченное имя RCL после переноса каденции и сохранять единственный
+submit path для pending/submitting/queued work. Repository должен отдавать фактические исходные
+owner terms сохранённой работы; AnalysisService проверяет exact name context/key и владеет reuse
+policy. Original request/custom ID и paid result не переписываются. Отдельно проверяются
+изменившийся input, legacy records без ID, memo cleanup, providers и workers. Переносить это
+правило на повторно используемые wykaz codes без доказательства identity нельзя.
+
+Основной qualified before — **12 failures / 2 passed**, после исправления fixture provider
+routing и accounting перед cleanup. Дополнительный retry boundary воспроизвёл **1 failure /
+1 passed** до объединённого поиска по actual owner terms; невалидный первый probe требовал
+удаления unrelated primary memo и исключён. Final targeted **96 passed**, strict mypy 413
+файлов и Ruff green. Acceptance полного gate записывается ниже.
+
+Repository query читает owner terms из сохранённых requests/results; scope/reuse policy остаётся
+в AnalysisService. Только RCL names с совпадающим полным name-context key используют исходный
+memo/job/result. Учитываются successful retries под новым владельцем после cleanup; original
+ID/SHA/tokens не переписываются. Existing submit engine сохраняет pending/submitting и submission
+budget. Legacy memo без ID не получает выдуманный ref. Новых migrations нет.
+
+12 обычных secondary World profiles и SQL dumps совпали побайтово. 12 rollover flows (оба
+providers, workers=1/4, open/ready/cleaned): вместо двух name requests/results остаётся один;
+original request/paid result, primary analysis, messages и финальная card edit совпали. В cleaned
+cases раньше было две edits (без имени, затем с именем), теперь одна с готовым именем.
+Settled fixture delta SQL **−8496…−3513 bytes**, gzip **−460…−272 bytes**, SQLite **−12288…0 bytes**;
+это локальная матрица, не прогноз production growth. Lookup на pinned production copy:
+**224 RCL subjects / 2240 SELECTs**, p50 ≈0,006 ms, p95 ≈0,007 ms; dump unchanged. Это не
+production phase latency. Outputs: `out/corpus/j072`; корпус и полный gate фиксируются отдельно.
+
+Первый full: **4420 passed**, 596,314 s. Дополнительные три legacy-key regressions выявили
+различие empty-text digest tag старых Name requests; все три падают до расширения lookup.
+NameContext не содержит source text, поэтому legacy key сохраняет все реальные name inputs;
+исключение ограничено names и не разрешает reuse legacy text-analysis результатов. Final
+targeted **99 passed**; окончательный full/corpus повторяются после этого изменения. Normal
+и rollover профили на финальном коде побайтово совпали с принятыми current profiles выше.
+
+Final acceptance: **4423 passed**, errors/failures/skips/xfails 0, 635.726 s;
+strict mypy 413 файлов, Ruff src/tests/tools, format, docs/links и diff check green. Corpus CI
+**7 passed**, process **3294 observations**, zero changed decisions/inputs; final manifests
+проверены и закрепляют окончательный source. Pinned production J069 restore/read сохраняет
+exact SQL/размеры, **457 bills / 166 analyses / 141 memos**, projection/memo hashes, integrity ok/FK 0.
+Нового fetch/production pipeline/model/Telegram не было. Local HTTP не повторён: CLI, wiring
+и transports прежние. Все **50 migrations** побайтово прежние.
+
+J071 reader восстановил **36** normal/rollover snapshots с одинаковым dump. Это read compatibility;
+старый runtime при исполнении возвращает B121. [Acceptance evidence](../assets/audits/2026-10-27-rcl-name-rollover/validation.json)
+содержит XML/source hashes, profiles, ownership query timings, corpus manifests и observers.
+B121 fixed locally; DA6 продолжается с другими rollover/history consumers и legacy/retention.
+План: **74 задачи, 12 выполнены, 62 не закрыты**; goal active.

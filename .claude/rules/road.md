@@ -37,6 +37,8 @@ paths:
   new term (`bills`, `publications`, `status_changes`, `summary_json.term`) because RCL joins use the
   term-less id. Idempotent. Citizens' bills get other wording (taken over; they return as a new druk
   with a new card).
+  RCL names retain their original question key across rehome; only actual stored owners and an
+  unchanged name context permit reuse. The batch request/result is never re-keyed.
 - **"What comes next" is derived, not stored.** `models.next_phase(bill, today)` reads top-level
   stages, submission and act; the formatter dates it from `bill.agenda` (refreshed every run for
   every followed bill) or the constitutional deadline (`Phase.deadline`: Senate 30 days from the 3rd

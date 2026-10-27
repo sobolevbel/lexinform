@@ -26,7 +26,7 @@ P3 не означает, что расходы можно игнорирова�
 
 ### B121
 
-**P3 · open · 27.10.2026.** Перенос RCL-проекта в новую каденцию повторно заказывает уже оплаченное имя.
+**P3 · fixed locally · 27.10.2026.** Перенос RCL-проекта в новую каденцию повторно заказывал уже оплаченное имя.
 
 Fake pipeline с batch-only name backfill: primary analysis завершён, name batch отправлен;
 первый run новой каденции собирает paid name и переносит RCL-строку. `_memo_key` имени включает
@@ -34,7 +34,11 @@ term, поэтому новый consumer пропускает прежний mem
 В history остаётся исходный ответ, но current editorial name ещё пуст. На коде J070 и текущем
 J071 воспроизводятся **2 name requests / 1 retained name / current name None**, без run errors.
 Production-инцидент не установлен. Probe: `out/corpus/j071/rollover_name_probe.py`, outputs
-`rollover-name-probe.json` и `rollover-name-baseline.json`; продолжение — DA6 rollover slice.
+`rollover-name-probe.json` и `rollover-name-baseline.json`.
+Исправление сохраняет исходный context key по фактическим owner terms requests/results.
+Регрессия `tests/scenario/test_rcl_name_rollover.py`: open/ready/cleaned, providers, workers=1/4,
+queued/submitting, retry budget, legacy ref и changed context. Full gate green;
+приёмка и ограничения — [J072](plans/2026-10-22-document-architecture-progress.md#j072).
 
 ### B120
 

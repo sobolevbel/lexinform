@@ -87,7 +87,7 @@ from lexinform.models import (
     WordTextExtraction,
     WykazEntry,
 )
-from lexinform.models.batch import BatchJob
+from lexinform.models.batch import BatchJob, BatchKind
 from lexinform.models.report import CallKind
 
 
@@ -700,6 +700,8 @@ class BillRepository(Protocol):
     def save_batch_intent(self, intent: BatchIntent) -> None: ...
 
     def batch_job(self, custom_id: str) -> BatchJob | None: ...
+
+    def computation_owner_terms(self, number: str, kind: BatchKind) -> tuple[int, ...]: ...
 
     def context_rejected_batch_ids(self) -> set[str]: ...
 

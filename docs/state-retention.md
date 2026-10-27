@@ -82,6 +82,15 @@ choose sources or supply primary generations. Bare memo/API/CLI reads have no pe
 target and add no receipt. Legacy records without a result ref remain untraced; paused act reviews
 stay paused. Revision receipts follow their retained result within the same transaction, satisfying
 the existing foreign key. No source text or paid answer is duplicated per application.
+RCL name backfill locates its original question across actual stored work-owner terms. It compares
+the complete name-context key before using a memo, pending intent/job or retained result. A paid
+retry can belong to the new term while retaining the original question key; history lookup keeps
+both identities. Memo cleanup does not force another name request, and legacy memo refs remain
+unknown. This scope rule applies to RCL project IDs; Sejm terms and reused wykaz codes keep their
+existing boundaries. The original owner ledger must outlive work depending on it. See
+[J072](plans/2026-10-22-document-architecture-progress.md#j072).
+Names also accept the older empty-text digest tag: `NameContext` has no source text, so the key
+still preserves every name input. This exception does not permit legacy text-analysis reuse.
 All service writes of primary analysis use `services.analysis_applications.apply_analysis`:
 the primary service, RCL watcher, wykaz handover and RPW/RCL-to-print linker share one command.
 A projection receipt commits with `Bill.analysis` and records the actual target row's
