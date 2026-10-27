@@ -94,6 +94,26 @@ current ELI applicability, repair state or submit work. Linked publications do n
 configured channel or revision eligibility. Owner memo counts overlap and cannot be added or
 used as a deletion list. Exit codes match the request doctor; no saved owner rows means `not_run`.
 
+## Computation graph doctor
+
+```bash
+uv run --offline --frozen python -m tools.computation_doctor \
+  --database /path/to/checkpointed-copy.db --output "$PWD/out/doctor/computations.json"
+```
+
+This uses the same checkpointed reader and the saved-record walker shared with request doctor.
+It validates normalized computation/application records against their SQL identities and follows
+known result refs in current/ready bills, reviews, memos, status changes, frozen deliveries,
+document work and batch metadata. Missing results, inconsistent recorded request SHA and applying
+a failed result are errors. It preserves the distinction between original input, collection owner
+and application target, including term/generation changes and free reuse.
+
+Legacy refs/checksums stay unknown. Application target kinds/refs remain opaque; this report does
+not execute or resolve them, compare old receipts to today's generation, or establish legal
+applicability, billing or complete state health. It contains identities and links without copying
+answers or legal context. Exit codes match the other doctors; absent history tables or no observed
+records produce `not_run`.
+
 ## Exact scan-input windows
 
 ```bash

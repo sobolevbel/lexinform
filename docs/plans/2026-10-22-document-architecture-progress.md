@@ -4079,3 +4079,57 @@ Implementation commit ещё не создан; rollback J079 не требуе�
 DA10.2 остаётся частичным: application/projection graph и blobs вне этого doctor. План:
 **74 задачи, 14 выполнены, 60 unchecked** (DA8.3 неприменим); goal active. Следующий фрагмент
 проверяет computation/application refs на тех же immutable snapshots без выполнения work.
+
+<a id="j081"></a>
+### J081. DA10: saved computation/application graph
+
+Дата: 27 октября 2026. База: J080 (`795083fc23516c305d1a0cdcde3156219916752e`). Статус: принято локально, deployment проверяется отдельно.
+
+Следующий read-only doctor проверяет result/application SQL identities и известные refs в
+сохранённых проекциях. Original input scope, collection owner и application target намеренно
+различаются при handoff/reuse: они не будут объявляться corruption. Legacy None остаётся
+unknown, question keys не пересчитываются; opaque application targets не исполняются.
+Общий обход saved JSON/columns выносится из request doctor только с сохранением его output.
+Новых state writers, DDL, provider/source calls и retention изменений не планируется.
+
+Общий `saved_records` сохраняет прежний catalogue/order и `bill_json`/`change_json` decoding
+request doctor; graph reader отдельно добавляет recorded work/input snapshots и batch metadata.
+Первый fixture draft создал STATUS_UPDATE без StatusChange ID: **23 setup errors**. Fixture
+теперь вставляет реальное fake event; repository assertions/guards не менялись. Новый targeted
+**71 passed** (26 graph + прежние 45), strict mypy **425** файлов, Ruff/format green.
+
+**104** сохранённых J078 flows восстановлены с exact dump; graph doctor принимает все без
+errors, DB hashes прежние. Включены primary reset, secondary, reviews и primary handoff;
+original binding может отличаться от collection coordinates. Act purpose этим не включается.
+**29 complete request-doctor reports byte-identical** J080/current: прежние 13 snapshots плюс
+16 malformed/legacy/encoded/depth controls. Все входные DB hashes неизменны. На state pin
+`f34e63e7` graph doctor записывает **408 unknown legacy refs / 638 saved columns**, results и
+applications 0; unknown не объявлен corruption и исторический input не достраивается.
+Full gate выполняется; source selection, runtime `src`, schema и state writers прежние.
+
+J080 release проверен по `795083fc23516c305d1a0cdcde3156219916752e`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40490322145) — **4651 passed**,
+strict mypy 424 файла, Ruff, docs/web jobs success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40490962261) — exact COMMIT,
+`0b5928952197 -> 795083fc2351`, listener up 45 s. Отдельного production processing не было.
+
+Дополнительно **8 reanalysis configuration flows** (один credential-safe observer test)
+проверены на providers=2/workers=1,4/prepare-or-apply: исходный superseded collection остаётся,
+exact cold answer применяется отдельно к текущей generation. Итого graph QA **112 flows**,
+все reports recorded/errors 0, DB hashes прежние. Существующие 104 snapshots не включали
+reanalysis; дополнительная восьмёрка учитывается отдельно. Это не 112 независимых инициатив.
+
+Final acceptance: **4677 passed**, failures/errors/skips/xfails 0, 658.529 s; targeted
+**71 passed**, strict mypy **425** файлов, Ruff src/tests/tools, format, docs/links и diff check
+green. Corpus CI **7 passed**, process **3294 observations**, zero changed inputs/decisions;
+qualified source/tests/tools manifests проверены. Все runtime `src` files byte-identical J080,
+схема **50**, migrations, default flags и state writers прежние. **112 graph flows** приняты
+без изменения DB; прежний request-doctor output совпал **побайтно на 29 inputs**.
+[Acceptance evidence](../assets/audits/2026-10-27-computation-graph-doctor/validation.json)
+содержит XML/source hashes, profiles, observers и reproduction. Новая optional CLI не имела
+предыдущей реализации; import failure не использован как искусственный before regression.
+State delta 0: инструменты не пишут в input DB, raw/context archives не создаются.
+Implementation commit ещё не создан; rollback J080 не требует изменения state. Local HTTP
+не повторён: сетевой CLI/wiring/transports прежние, новая offline CLI покрыта subprocess tests.
+DA10.2 остаётся частичным: application target/dependency resolution и blobs не заявлены этим
+reader. План: **74 задачи, 14 выполнены, 60 unchecked** (DA8.3 неприменим); goal active.

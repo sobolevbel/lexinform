@@ -167,6 +167,11 @@ uses the same snapshot reader to inventory document/review owners and saved depe
 Its overlapping memo counts describe existing guards; they do not authorize deletion or establish
 that a historical publication can be edited. See
 [J080](plans/2026-10-22-document-architecture-progress.md#j080).
+The [computation graph doctor](https://github.com/sobolevbel/lexinform/blob/main/tools/README.md#computation-graph-doctor)
+checks saved result/application identities and known result refs across projections. Original
+input, collection owner and application target retain their separate meanings; unknown legacy
+refs remain unknown. It shares recorded JSON traversal with request doctor. See
+[J081](plans/2026-10-22-document-architecture-progress.md#j081).
 
 A document review whose batch failed at every allowed submission keeps only its keys and a
 limitation (`ReviewWork.abandoned`): its documents go, and the same source is not asked again.

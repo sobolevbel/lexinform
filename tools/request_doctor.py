@@ -11,25 +11,11 @@ from pathlib import Path
 from typing import Any
 
 from tools.corpus_artifacts import write_json
+from tools.saved_records import SavedRecordIssue, is_saved_answer, saved_columns, saved_records
 from tools.sqlite_snapshot import open_snapshot
 
 _SHA = re.compile(r"[0-9a-f]{64}")
 _REQUIRED = {"llm_batch_intents", "llm_batch_items", "llm_batches", "bills", "analysis_memo"}
-_RESULT_COLUMNS = {
-    "bills": (
-        "analysis_json",
-        "ready_analysis_json",
-        "joint_json",
-        "supplements_json",
-        "consultation_review_json",
-        "commission_review_json",
-        "act_application_review_json",
-    ),
-    "status_changes": ("amendments_json", "supplements_json"),
-    "publications": ("delivery_json",),
-    "analysis_memo": ("record_json",),
-}
-_ANSWERS = {"analysis", "amendments", "digest", "comparison", "proposal", "review"}
 
 
 @dataclass
@@ -90,24 +76,13 @@ class RequestAudit:
             self.issue("intent_payload_unavailable", ref, level="warning")
 
     def result(self, value: Any, ref: str, depth: int = 0) -> None:
-        if depth > 50:
-            self.issue("record_nesting_limit", ref)
-            return
-        if isinstance(value, list):
-            for index, child in enumerate(value):
-                self.result(child, f"{ref}/{index}", depth + 1)
-        elif isinstance(value, dict):
-            if "request_sha256" in value or (
-                {"model", "prompt_version", "created_at"} <= value.keys()
-                and _ANSWERS.intersection(value)
-            ):
+        for item in saved_records(value, ref, depth=depth):
+            if isinstance(item, SavedRecordIssue):
+                self.issue(item.code, item.ref)
+                continue
+            if "request_sha256" in item.value or is_saved_answer(item.value):
                 self.counts["results"] += 1
-                self.identity(value.get("request_sha256"), ref, "results")
-            for key, child in value.items():
-                if key in {"bill_json", "change_json"} and isinstance(child, str) and child:
-                    child = self.load(child, f"{ref}/{key}")
-                if isinstance(child, (dict, list)):
-                    self.result(child, f"{ref}/{key}", depth + 1)
+                self.identity(item.value.get("request_sha256"), item.ref, "results")
 
     def finish(self) -> None:
         for key in (
@@ -164,27 +139,8 @@ def _rows(connection: sqlite3.Connection, audit: RequestAudit, tables: set[str])
             audit.issue("invalid_item_metadata", ref)
         else:
             audit.identity(meta.get("request_sha256"), ref, "items")
-    for table, candidates in _RESULT_COLUMNS.items():
-        if table not in tables:
-            continue
-        columns = {row["name"] for row in connection.execute(f"PRAGMA table_info({table})")}
-        selected = [column for column in candidates if column in columns]
-        keys = (
-            ["term", "number"]
-            if table == "bills"
-            else ["key"]
-            if table == "analysis_memo"
-            else ["id"]
-        )
-        if not selected or not set(keys) <= columns:
-            continue
-        for row in connection.execute(
-            f"SELECT {', '.join(keys + selected)} FROM {table} ORDER BY {', '.join(keys)}"
-        ):
-            ref = table + "/" + "/".join(str(row[key]) for key in keys)
-            for column in selected:
-                if row[column] is not None:
-                    audit.result(audit.load(row[column], f"{ref}/{column}"), f"{ref}/{column}")
+    for column in saved_columns(connection, tables):
+        audit.result(audit.load(column.raw, column.ref), column.ref)
 
 
 def audit(database: Path) -> dict[str, Any]:
