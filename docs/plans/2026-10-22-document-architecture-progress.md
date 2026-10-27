@@ -5084,3 +5084,49 @@ J097 release `8c343d61da2e7969add1f7c753085b8702785a7d`:
 447, Ruff/docs/web success; [deploy](https://github.com/sobolevbel/lexinform/actions/runs/40565174373)
 exact COMMIT, `7bc500630d66 -> 8c343d61da2e`, listener up **45 s**. Это подтверждение relay,
 не ручной production processing или принятие непроверенной source family.
+
+
+<a id="j099"></a>
+### J099. Artifact identity/size metadata и SQL part refs: совместимый reader
+
+Статус: **завершён**, baseline `d4b01069d764981dc0bcf69c9b61c8bfc979e63d`.
+Migration workflow: append-only **v53**, `artifacts` (complete-body SHA, byte_size, first recorded_at)
+и `selection_artifacts` (selection/scope/index → outer artifact). Из старых text/law hashes,
+page counts или aggregate bytes точный размер не выводим; legacy не backfilled. Part refs —
+нормализованный immutable metadata index с FK/uniqueness, не persisted derived business status.
+Body bytes, locators, backend и retention promises не добавляются; production producers выключены.
+
+Модели отделяют physical identity от первого recording time. Repo повторно валидирует copies,
+сохраняет первое UTC время при повторе, отвергает SHA/size conflict. Link требует существующие
+selection/artifact и точный outer-body SHA того же scope/index; member SHA не заимствуется.
+Caller transaction rollback покрывает все четыре metadata tables; SQL restore точен.
+
+Fresh natural state **dc97f63814eaa967287e7f8c834798d86b88888e** восстановлен изолированно в
+`/private/tmp/lexinform-j099`: **462 Bill JSON и все прежние rows exact**. Пустая схема
+**+709 SQL / +173 gzip bytes**, integrity ok / FK errors **0**, **24 tables / 37 explicit
+indexes / 10 FK**. Synthetic fixture body известен точно (**28 bytes**, SHA вычислен с этих
+bytes); не приписан размер настоящему production SHA. Один artifact/ref/selection/observation:
+**+1777 SQL / +436 gzip bytes**; повтор dump exact, body не хранится. J098 reader сохраняет
+populated v53 dump побайтно, без downgrade/conversion.
+
+**168 native flows** против byte-identical runtime J097 (J098 менял только tools): все requests,
+rendered messages, прочие profiles и **22 прежних SQL tables exact**; две новые таблицы пусты.
+SQL +709 bytes, gzip +137–156. Corpus CI **7** / process **3294** verified, observations/inputs same.
+Extraction, source policy, prepared input, provider payloads и runtime producers не менялись.
+
+J098 [CI 40567293985](https://github.com/sobolevbel/lexinform/actions/runs/40567293985) остановился
+на type check нового source doctor: reused `expected` имел два tuple типа. Deploy 40567449129
+skipped. Переменные разделены; три typed tools явно включены в mypy files рядом с src/tests.
+Это расширение проверки, без ignores/suppressions. Cold check **454** files проходит как с
+рабочим PYTHONPATH, так и без него (CI-equivalent). Первоначальное объяснение J094/J095 про
+incremental cache было гипотезой: `--no-incremental` сам по себе не обеспечил проверку импортируемых
+tool bodies. Теперь их explicit targeting проверяет саму реализацию в стандартном gate.
+
+Первый full J099 остановлен SIGINT до исправления; partial logs/XML сохранены как interrupted.
+Accepted повтор включает fixed tool/config и новый reader; полный gate выполняется. Production
+pipeline/paid/source/Telegram work вручную не запускались.
+
+J099 accepted qualified gate: **110 focused / 4899 full**, **0 failures/errors/skips**,
+**593.533 s**. Mypy с explicit tools **454** files проходит с/без PYTHONPATH; Ruff/format
+green. [Acceptance asset](../assets/audits/2026-10-27-artifact-metadata-reader/validation.json)
+пинует код/данные/проверки, совместимость и границы первого recording time/нехранения raw.

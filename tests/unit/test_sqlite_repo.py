@@ -1007,6 +1007,9 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     assert not repo.list_applicability_observations(10, "RPW/1/2026")
     assert {"document_selections", "source_observations"} <= tables
     assert not repo.list_source_observations(10, "RPW/1/2026")
+    assert {"artifacts", "selection_artifacts"} <= tables
+    assert repo.get_artifact_metadata("a" * 64) is None
+    assert not repo.list_selection_artifacts("selection-v1:" + "a" * 64)
     assert {"term", "number", "last_used_at"} <= memo
     assert "ix_analysis_memo_retention" in indexes
     assert "commands" in tables  # v13
@@ -1373,6 +1376,8 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
         conn.execute("DROP TABLE document_work")
         conn.execute("DROP TABLE result_applications")
         conn.execute("DROP TABLE result_applicability")
+        conn.execute("DROP TABLE selection_artifacts")
+        conn.execute("DROP TABLE artifacts")
         conn.execute("DROP TABLE source_observations")
         conn.execute("DROP TABLE document_selections")
         conn.execute("DROP TABLE computation_results")

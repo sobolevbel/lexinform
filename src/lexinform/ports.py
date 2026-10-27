@@ -11,6 +11,7 @@ from lexinform.models import (
     AmendmentsContext,
     AmendmentsRecord,
     AnalysisRecord,
+    ArtifactMetadata,
     BackfillReport,
     BatchIntent,
     BatchRequest,
@@ -74,6 +75,7 @@ from lexinform.models import (
     RunReport,
     SejmSitting,
     SejmTerm,
+    SelectionArtifactReference,
     SenateAct,
     SittingNews,
     SourceCheck,
@@ -655,6 +657,14 @@ class BillRepository(Protocol):
     def get_source_observation(self, observation_id: str) -> SourceObservation | None: ...
 
     def list_source_observations(self, term: int, number: str) -> list[SourceObservation]: ...
+
+    def save_artifact_metadata(self, artifact: ArtifactMetadata) -> None: ...
+
+    def get_artifact_metadata(self, sha256: str) -> ArtifactMetadata | None: ...
+
+    def save_selection_artifact(self, reference: SelectionArtifactReference) -> None: ...
+
+    def list_selection_artifacts(self, selection_id: str) -> list[SelectionArtifactReference]: ...
 
     def save_document_review(
         self, term: int, number: str, review: DocumentReviewRecord

@@ -1,0 +1,209 @@
+{
+  "version": 1,
+  "stage": "J099",
+  "baseline": "d4b01069d764981dc0bcf69c9b61c8bfc979e63d",
+  "scope": "Reader-first complete-body identity/size metadata and normalized selected-part references; no production capture, raw archive or historical backfill.",
+  "checks": {
+    "focused": {
+      "path": "out/corpus/j099/focused-qualified.xml",
+      "sha256": "2bd26337ff0d087774cefaf83e9850f0ebf1baa116086dc0a4bae1d46ee0dff9",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "110",
+      "time": "2.281",
+      "timestamp": "2026-10-27T20:24:25.382436+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j099/full-qualified.xml",
+      "sha256": "7eaa7be8d28ff2814940df11950af716b73414ad7c16b78e44a11bc45e208865",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "4899",
+      "time": "593.533",
+      "timestamp": "2026-10-27T20:24:28.380031+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 454 source files",
+    "ruff": "All checks passed!",
+    "format": "513 files left unchanged"
+  },
+  "ci_equivalent_mypy": "Success: no issues found in 454 source files",
+  "migration": {
+    "state_pin": "dc97f63814eaa967287e7f8c834798d86b88888e",
+    "baseline_schema": 52,
+    "current_schema": 53,
+    "all_existing_rows_equal": true,
+    "bill_count": 462,
+    "bill_json_sha256": "689b62d8f8fa3bc019af444367f31d23675778b0eaa611a76385b3694689439b",
+    "sql_delta": 709,
+    "gzip_delta": 173,
+    "integrity": [
+      [
+        "ok"
+      ]
+    ],
+    "foreign": [],
+    "old_reader_preserves_populated_schema_53_dump_exact": true
+  },
+  "synthetic_metadata_growth": {
+    "artifact_records": 1,
+    "selection_links": 1,
+    "source_decisions": 1,
+    "source_observations": 1,
+    "known_fixture_body_bytes": 28,
+    "sql_delta": 1777,
+    "gzip_delta": 436,
+    "repeat_dump_exact": true
+  },
+  "native": {
+    "cases": 168,
+    "all_profiles_except_storage_metrics_exact": true,
+    "all_requests_and_rendered_messages_exact": true,
+    "all_22_old_tables_exact": true,
+    "new_metadata_tables_empty": true,
+    "sql_delta": {
+      "min": 709,
+      "max": 709
+    },
+    "gzip_delta": {
+      "min": 137,
+      "max": 156
+    }
+  },
+  "structural": {
+    "existing_repository_methods_ast_identical": 174,
+    "new_methods": [
+      "get_artifact_metadata",
+      "list_selection_artifacts",
+      "save_artifact_metadata",
+      "save_selection_artifact"
+    ],
+    "prior_migrations_ast_identical": 52,
+    "appended_migrations": 1,
+    "source_doctor_ast_identical_after_variable_rename": true,
+    "services_extractors_prompts_and_policy_modules_unchanged": true
+  },
+  "corpus": {
+    "ci": {
+      "observations": 7,
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "14d009ec9e2d10a89c1c43a316abb71752474c545378727276da5e04be731a0b",
+        "before_manifest_sha256": "813198af3a7da4214d94368d317409fed5c088e76b7e29f73e6d2402e08d14f8",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "ci",
+        "summary_changes": {},
+        "version": 1
+      }
+    },
+    "process": {
+      "observations": 3294,
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "c525c03ed82b606c71e6bef7c6c261acd366a255bb79426f43c4b909a01c0478",
+        "before_manifest_sha256": "d0d6b4af2636e774f77de106ddb7116fb71847ce2e19d20e5de5c25938620950",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "process",
+        "summary_changes": {},
+        "version": 1
+      }
+    }
+  },
+  "source": [
+    {
+      "path": "src/lexinform/models/artifacts.py",
+      "sha256": "9a8740299ac2fae0196aca6802948a2f6554ed2293508568d7b2bd14f6be999d"
+    },
+    {
+      "path": "src/lexinform/models/__init__.py",
+      "sha256": "4508779e2d3c92900cf2a0f76aee787297c273700d7c6aed87dc7721ff3abc4b"
+    },
+    {
+      "path": "src/lexinform/ports.py",
+      "sha256": "1924091f0cac47ea41c33148879bd7c7cd53f2842f192dd6138116b259557cc7"
+    },
+    {
+      "path": "src/lexinform/adapters/sqlite_repo.py",
+      "sha256": "e8fe665ab2f5b31bfaa5dab8979c9dc98604f79bdd1611582955aa0714b620f4"
+    },
+    {
+      "path": "tests/unit/test_artifact_metadata.py",
+      "sha256": "3b7fbdcb3ce0add1ba9ec50425f9c214ade5699233a4bc2f4bd52fabfd01c04c"
+    },
+    {
+      "path": "tests/unit/test_sqlite_repo.py",
+      "sha256": "a5f4f74247824cf1695478d6223be181c6b148047510e16e7ccfa92551df9a26"
+    },
+    {
+      "path": "tools/source_history_doctor.py",
+      "sha256": "ee1b8e02e1132e69c843cff8f80543d16bf919acc798257495fac997f3f4a85a"
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "918a03921140ace1f821a723021ab14fb1103a1a33c3243b130933c272880cc0"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "out/corpus/j099/migration_profile.py",
+      "sha256": "14ca48e64a19f37a172b07adf23293e1498abb07d8784edcc5bf5acc487d1883"
+    },
+    {
+      "path": "out/corpus/j099/migration-parity.json",
+      "sha256": "76b478e99c2cc1d9d58c45aee79abdaedeeb4e33953a205ce8cf3d7b52647c55"
+    },
+    {
+      "path": "out/corpus/j099/metadata-growth.json",
+      "sha256": "5ba525a8d1ba7374493ae3cab6b72b243f987147c1f3d5972463aaf335df34e2"
+    },
+    {
+      "path": "out/corpus/j099/native_profiles.py",
+      "sha256": "ebcc9b4defe91398861f7afb91b0d9cd4cf8a32ce6ffdca04b39d60873c9dcc4"
+    },
+    {
+      "path": "out/corpus/j099/compare_native.py",
+      "sha256": "deca9eed06d77f99271852edab562f3913e013de01ceee20eb23de8dab1c77af"
+    },
+    {
+      "path": "out/corpus/j099/native-parity.json",
+      "sha256": "a23e3780d84ddc5fe296ab9e77e4bb3d5973e1a74d3fe78adef3dba8adf32f0b"
+    },
+    {
+      "path": "out/corpus/j099/structural-parity.json",
+      "sha256": "8cb449640f27fd080eac46e03fe7cb40dc40720f7a03865900c1a3610f3e4885"
+    },
+    {
+      "path": "out/corpus/j099/production-state.sql",
+      "sha256": "99377bd56ecdf7d64a6ff8fdd1876c4d39ba99324181e5413ec83b53acb66efd"
+    }
+  ],
+  "exclusions": [
+    "Metadata does not prove retained/available raw bytes or pin them for GC; no backend/storage decision.",
+    "Recorded time is the first metadata recording, never inferred original source/paid time.",
+    "Body size is never derived from page/text length, aggregates or unscoped legacy hashes.",
+    "The 28-byte populated rollback fixture has a known synthetic body, not invented metadata for a real production hash.",
+    "Production tables remain empty after migration; source/extraction/input/provider policy is unchanged.",
+    "J098 CI type failure is corrected by independent variable names and explicit typed-tool targets; no suppressions.",
+    "The first J099 full gate was interrupted before the correction and retained separately; only the qualified repeat is accepted."
+  ],
+  "reproduction": [
+    "uv run pytest -q tests/unit/test_artifact_metadata.py tests/unit/test_document_history.py tests/unit/test_sqlite_repo.py tests/unit/test_source_history_doctor.py tests/unit/test_document_read_profile.py tests/unit/test_measure_referenced_files.py",
+    "uv run mypy --no-incremental && env -u PYTHONPATH uv run mypy --no-incremental",
+    "uv run ruff check src tests tools && uv run pytest -q",
+    "Run migration_profile.py in baseline/current/rollback modes using isolated database paths and fresh evidence paths.",
+    "Run native_profiles.py/compare_native.py against qualified byte-identical J097 runtime snapshots with fresh output paths."
+  ]
+}

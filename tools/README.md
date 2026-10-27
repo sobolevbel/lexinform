@@ -437,3 +437,8 @@ Completed-response bytes exclude wire overhead and unknown partial/refused bytes
 distinct bytes cannot establish cross-run distinct archive size. Direct gateway reads and
 standalone CLI work outside the pipeline remain outside scope; no retention/backend or file download
 is chosen. See [J098](../docs/plans/2026-10-22-document-architecture-progress.md#j098).
+
+
+Typed diagnostic modules are explicit targets in `pyproject.toml` alongside `src` and `tests`.
+When adding one, include its file in that list so `uv run mypy` checks the tool body directly;
+importing a tool from a typed test is not a substitute for checking its own implementation.

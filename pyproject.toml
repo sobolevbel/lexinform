@@ -77,7 +77,13 @@ ignore = ["B008"]  # typer.Option in defaults
 mypy_path = "typings"
 python_version = "3.14"
 strict = true
-files = ["src", "tests"]
+files = [
+  "src",
+  "tests",
+  "tools/source_history_doctor.py",
+  "tools/document_read_profile.py",
+  "tools/measure_referenced_files.py",
+]
 plugins = ["pydantic.mypy"]
 warn_unreachable = true
 

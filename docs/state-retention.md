@@ -249,3 +249,10 @@ without URLs, file bodies or individual hashes. Old reports remain unmeasured; f
 bytes and cross-run distinct storage cannot be reconstructed from these counters. See
 [J097](plans/2026-10-22-document-architecture-progress.md#j097) and the
 [storage profile](reviews/2026-10-27-storage-profile.md#наблюдение-будущих-чтений).
+
+Schema 53 adds complete-body SHA/size/first-recording metadata and normalized selection-part refs.
+The reader stage creates empty tables, without production capture or legacy backfill. A metadata
+row is neither retained bytes nor a GC pin; the chosen storage profile and any required pending
+payload remain separate. Repeated metadata keeps the first UTC recording time; historical file
+sizes/dates are never inferred from text hashes or aggregate download counters. See
+[J099](plans/2026-10-22-document-architecture-progress.md#j099).

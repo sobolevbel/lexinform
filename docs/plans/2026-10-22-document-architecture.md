@@ -451,7 +451,7 @@ DA2.1 и описание текущего профиля обязательны
 - [ ] DA2.2. Реализовать content-addressed store для bounded bytes: проверка SHA/размера,
   запись временного файла, atomic rename и необходимая синхронизация диска, идемпотентный put,
   проверяемый get. Пользовательский filename не участвует в пути; ZIP traversal невозможен.
-- [ ] DA2.3. **Частично: [J095](2026-10-22-document-architecture-progress.md#j095), reader-first source observations и deduplicated selection metadata в schema 52; [J096](2026-10-22-document-architecture-progress.md#j096), prefilter producer; остальные consumers/artifact metadata остаются.** Ввести SQL-метаданные `artifacts`, `source_observations` и явные связи с делами/
+- [ ] DA2.3. **Частично: [J095](2026-10-22-document-architecture-progress.md#j095), reader-first source observations и deduplicated selection metadata в schema 52; [J096](2026-10-22-document-architecture-progress.md#j096), prefilter producer; [J099](2026-10-22-document-architecture-progress.md#j099), reader artifacts/SQL part refs без capture; остальные producers/consumers остаются.** Ввести SQL-метаданные `artifacts`, `source_observations` и явные связи с делами/
   источниками. Поддержать many-to-many: одни байты в разных наблюдениях не теряют URL/роль/дату.
   Поля, по которым нужны uniqueness/ownership/GC, доступны SQL, а не спрятаны только в JSON.
   Неизменившееся содержимое наблюдений хранится один раз; отметка повторной проверки

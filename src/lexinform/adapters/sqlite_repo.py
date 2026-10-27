@@ -25,6 +25,7 @@ from lexinform.models import (
     AgendaItem,
     AmendmentsRecord,
     AnalysisRecord,
+    ArtifactMetadata,
     AttentionAssessment,
     BatchIntent,
     BatchRequest,
@@ -64,6 +65,7 @@ from lexinform.models import (
     ReviewWork,
     RunMode,
     RunReport,
+    SelectionArtifactReference,
     SenateAct,
     SourceCheck,
     SourceObservation,
@@ -593,6 +595,22 @@ MIGRATIONS: tuple[str, ...] = (
     );
     CREATE INDEX ix_source_observations_owner ON source_observations(term, number, purpose);
     CREATE INDEX ix_source_observations_selection ON source_observations(selection_id);
+    """,
+    """
+    CREATE TABLE artifacts (
+        sha256 TEXT PRIMARY KEY NOT NULL,
+        byte_size INTEGER NOT NULL CHECK(byte_size >= 0),
+        recorded_at TEXT NOT NULL
+    );
+    CREATE INDEX ix_artifacts_recorded_at ON artifacts(recorded_at);
+    CREATE TABLE selection_artifacts (
+        selection_id TEXT NOT NULL REFERENCES document_selections(selection_id),
+        part_scope TEXT NOT NULL CHECK(part_scope IN ('parts', 'observed_parts')),
+        part_index INTEGER NOT NULL CHECK(part_index >= 0),
+        artifact_sha256 TEXT NOT NULL REFERENCES artifacts(sha256),
+        PRIMARY KEY(selection_id, part_scope, part_index)
+    );
+    CREATE INDEX ix_selection_artifacts_artifact ON selection_artifacts(artifact_sha256);
     """,
 )
 
@@ -1158,6 +1176,82 @@ class SqliteBillRepository:
         if expected != tuple(row[key] for key in columns):
             raise ValueError("source observation columns differ from the recorded identity")
         return observation
+
+    def save_artifact_metadata(self, artifact: ArtifactMetadata) -> None:
+        artifact = ArtifactMetadata.model_validate_json(artifact.model_dump_json())
+        self._conn.execute(
+            "INSERT INTO artifacts (sha256, byte_size, recorded_at) VALUES (?, ?, ?)"
+            " ON CONFLICT DO NOTHING",
+            (artifact.sha256, artifact.byte_size, _utc_iso(artifact.recorded_at)),
+        )
+        saved = self.get_artifact_metadata(artifact.sha256)
+        assert saved is not None, "the insert retains metadata under its complete-body SHA"
+        if saved != artifact.model_copy(update={"recorded_at": saved.recorded_at}):
+            raise ValueError("an immutable artifact identity cannot change its byte size")
+
+    def get_artifact_metadata(self, sha256: str) -> ArtifactMetadata | None:
+        row = self._conn.execute("SELECT * FROM artifacts WHERE sha256=?", (sha256,)).fetchone()
+        return (
+            ArtifactMetadata(
+                sha256=row["sha256"],
+                byte_size=row["byte_size"],
+                recorded_at=datetime.fromisoformat(row["recorded_at"]),
+            )
+            if row
+            else None
+        )
+
+    def save_selection_artifact(self, reference: SelectionArtifactReference) -> None:
+        reference = SelectionArtifactReference.model_validate_json(reference.model_dump_json())
+        selection = self.get_document_selection(reference.selection_id)
+        if selection is None:
+            raise ValueError("an artifact reference requires a recorded selection")
+        parts = (
+            selection.selection.parts
+            if reference.part_scope == "parts"
+            else selection.selection.observed_parts
+        )
+        if reference.part_index >= len(parts):
+            raise ValueError("an artifact reference points outside the selected part scope")
+        part = parts[reference.part_index]
+        expected = part.container_sha256 if part.members else part.sha256
+        if reference.artifact_sha256 != expected:
+            raise ValueError("an artifact reference must match the recorded outer body identity")
+        if self.get_artifact_metadata(reference.artifact_sha256) is None:
+            raise ValueError("an artifact reference requires known complete-body metadata")
+        self._conn.execute(
+            "INSERT INTO selection_artifacts"
+            " (selection_id, part_scope, part_index, artifact_sha256) VALUES (?, ?, ?, ?)"
+            " ON CONFLICT DO NOTHING",
+            (
+                reference.selection_id,
+                reference.part_scope,
+                reference.part_index,
+                reference.artifact_sha256,
+            ),
+        )
+        saved = self._conn.execute(
+            "SELECT artifact_sha256 FROM selection_artifacts"
+            " WHERE selection_id=? AND part_scope=? AND part_index=?",
+            (reference.selection_id, reference.part_scope, reference.part_index),
+        ).fetchone()
+        if saved is None or saved[0] != reference.artifact_sha256:
+            raise ValueError("an immutable selected part cannot be rebound to different bytes")
+
+    def list_selection_artifacts(self, selection_id: str) -> list[SelectionArtifactReference]:
+        return [
+            SelectionArtifactReference(
+                selection_id=row["selection_id"],
+                part_scope=row["part_scope"],
+                part_index=row["part_index"],
+                artifact_sha256=row["artifact_sha256"],
+            )
+            for row in self._conn.execute(
+                "SELECT * FROM selection_artifacts WHERE selection_id=?"
+                " ORDER BY CASE part_scope WHEN 'parts' THEN 0 ELSE 1 END, part_index",
+                (selection_id,),
+            )
+        ]
 
     def save_result_application(self, application: ResultApplication) -> None:
         identity = (

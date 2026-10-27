@@ -37,3 +37,5 @@ Schema, tables and what each version added: `docs/reference/database.md`; retent
 - Applicability observations retain known source fingerprints separately from immutable paid input; unknown legacy refs stay unknown, and repeated observations preserve the first recording time without adding a row per poll.
 
 - Source decisions and their owner/catalog observations are immutable metadata history; repeated checks retain the first time, and raw/provider-input retention is a separate obligation.
+
+- Artifact metadata records known complete-body SHA/size without a retention promise; selection links require the exact recorded outer-body identity, never a substituted member/text hash.

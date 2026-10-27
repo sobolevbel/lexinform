@@ -44,13 +44,13 @@ def audit(database: Path) -> dict[str, Any]:
                 except ValueError, TypeError:
                     issue("invalid_document_selection", ref)
                     continue
-                expected = (
+                expected_selection = (
                     record.selection_id,
                     record.selection.question,
                     record.selection.policy_version,
                     record.selection.state,
                 )
-                if expected != tuple(
+                if expected_selection != tuple(
                     row[key] for key in ("selection_id", "question", "policy_version", "state")
                 ):
                     issue("document_selection_columns_mismatch", ref)
@@ -72,7 +72,7 @@ def audit(database: Path) -> dict[str, Any]:
                 except ValueError, TypeError:
                     issue("invalid_source_observation", ref)
                     continue
-                expected = (
+                expected_observation = (
                     observation.observation_id,
                     observation.term,
                     observation.number,
@@ -90,7 +90,7 @@ def audit(database: Path) -> dict[str, Any]:
                     "source_url",
                     "source_kind",
                 )
-                if expected != tuple(row[key] for key in columns):
+                if expected_observation != tuple(row[key] for key in columns):
                     issue("source_observation_columns_mismatch", ref)
                 referenced.add(observation.selection_id)
                 counts["purpose/" + observation.purpose] += 1

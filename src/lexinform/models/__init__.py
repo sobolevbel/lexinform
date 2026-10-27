@@ -40,6 +40,9 @@ from lexinform.models.applicability import ApplicabilitySource as ApplicabilityS
 from lexinform.models.applicability import (
     ResultApplicabilityObservation as ResultApplicabilityObservation,
 )
+from lexinform.models.artifacts import ArtifactIdentity as ArtifactIdentity
+from lexinform.models.artifacts import ArtifactMetadata as ArtifactMetadata
+from lexinform.models.artifacts import SelectionArtifactReference as SelectionArtifactReference
 from lexinform.models.attention import AttentionAssessment as AttentionAssessment
 from lexinform.models.batch import (
     AmendmentRevisionTarget,

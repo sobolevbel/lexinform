@@ -1,13 +1,13 @@
 # База данных и миграции
 
-Статус: актуальный справочник · проверен 27 октября 2026 по локальному коду, схема **v52**.
+Статус: актуальный справочник · проверен 27 октября 2026 по локальному коду, схема **v53**.
 
 Источник истины — append-only
 [`MIGRATIONS` в sqlite_repo.py](https://github.com/sobolevbel/lexinform/blob/main/src/lexinform/adapters/sqlite_repo.py).
 `SCHEMA_VERSION = len(MIGRATIONS)`, версия конкретной базы — `PRAGMA user_version`.
-После всех миграций: **22 таблицы, 35 явных индексов
-(18 обычных и 17 уникальных), 8 внешних ключей**. Автоиндексы `PRIMARY KEY` и
-`UNIQUE` в эти 35 не входят. Копия production dump также восстановлена в v52:
+После всех миграций: **24 таблицы, 37 явных индексов
+(20 обычных и 17 уникальных), 10 внешних ключей**. Автоиндексы `PRIMARY KEY` и
+`UNIQUE` в эти 37 не входят. Копия production dump также восстановлена в v53:
 `integrity_check=ok`, `foreign_key_check` не вернул ошибок.
 
 ## Визуальная схема
@@ -20,6 +20,8 @@ HTML содержит снимок v34, включая SQL ограничени�
 
 | Таблица | Ключ | Что хранит |
 | --- | --- | --- |
+| `artifacts` (v53) | `sha256`; индекс recorded_at | Известная идентичность полного body: SHA, размер, первое время записи; без bytes, locator или retention promise. |
+| `selection_artifacts` (v53) | `(selection_id, part_scope, part_index)`; индекс artifact SHA | Проверенный outer-body ref выбранной/наблюдённой части; FK к immutable selection и artifact metadata. |
 | `document_selections` (v52) | `selection_id` | Неизменяемые метаданные решения: question, policy version, state, parts/facts/coverage; без extracted bodies и provider scan input. |
 | `source_observations` (v52) | `observation_id`; индексы owner/purpose и selection | Историческая связь дела, официальных document relations и решения; первое время записи сохраняется при повторной проверке. |
 | `document_work` | `key` | Поздний документ: исходное событие, исторический baseline, контекст batch, backoff и состояние. |
@@ -49,7 +51,8 @@ SQL объявляет внешние ключи:
 `digest_event_links.source_publication_id/owner_publication_id → publications.id` (v40) и
 `result_applications.result_id → computation_results.result_id` (v49) и
 `result_applicability.result_id → computation_results.result_id` (v51) и
-`source_observations.selection_id → document_selections.selection_id` (v52).
+`source_observations.selection_id → document_selections.selection_id` (v52) и
+`selection_artifacts.selection_id/artifact_sha256 → document_selections.selection_id/artifacts.sha256` (v53).
 Связи по `(term, number)`, ссылки аудита на публикацию и команду — логические,
 без `FOREIGN KEY`. Дайджест относится к неделе и каналу, а не к одному законопроекту.
 
@@ -408,3 +411,16 @@ text prefilter сохраняет завершённое source decision и outc
 передаёт metadata, запись идёт на calling thread в input order, время берётся из Clock.
 Новые строки не требуют paid result; missing fetch не становится успешным наблюдением.
 Повтор не создаёт историю polling и не меняет первое время. Остальные producers ещё открыты.
+
+V53 добавляет совместимый reader known complete-body metadata и нормализованных part refs.
+Точный размер не восстанавливается из text/law hashes, страниц или существующего агрегата bytes.
+Старые refs не получают guessed size/date. Первое recorded_at берётся у caller Clock и хранится
+UTC; повтор SHA/размера сохраняет первое время, конфликт размера отвергается. Ref указывает
+на точный part scope/index immutable selection; archive member SHA не подменяет container SHA.
+Обе FK цели должны существовать. Поля ownership/identity доступны SQL; это metadata projection,
+не новая derived business status, raw store или GC pin.
+
+Production producers пока не включены. Fresh state `dc97f63814eaa967287e7f8c834798d86b88888e`:
+все прежние rows и **462 Bill JSON** exact; пустая схема +709 SQL / 173 gzip bytes. J098 reader
+сохраняет populated v53 dump без schema conversion. См.
+[J099](../plans/2026-10-22-document-architecture-progress.md#j099).
