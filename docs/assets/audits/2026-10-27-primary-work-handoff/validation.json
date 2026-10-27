@@ -1,0 +1,928 @@
+{
+  "version": 1,
+  "stage": "J073",
+  "baseline": "f3d8ae5715ddd250e01c4b1a60ac3d051ddca804",
+  "defect": "B122",
+  "checks": {
+    "qualified_before": {
+      "sha256": "842e297b7c7b63245032fe3af13bde78b5c4991d7473d03ef62b7bff882c657a",
+      "tests": 16,
+      "failures": 16,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.557
+    },
+    "focused": {
+      "sha256": "29c2907a851683803eec19aaf6ec5da092d49e97a79c1fc1d9d273d24f3da231",
+      "tests": 117,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 3.217
+    },
+    "full": {
+      "sha256": "aa78917a21f61f67538f4e8e07cc12c4ecb7d1cdcde4bb55c9a19cf30b9c5a80",
+      "tests": 4457,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 612.578
+    },
+    "normal_baseline": {
+      "sha256": "138b99800c8e957ba08ff604b4dbb737ab879eea6c380cca6fce1f42971740ac",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.184
+    },
+    "normal_current": {
+      "sha256": "486361e2d8e1ef4c846c2016479320a9a62074ff53fe70104c013420267c72a3",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.082
+    },
+    "handoff_baseline": {
+      "sha256": "d052a0858f4bc141b18e7edd457cb37a90a464d0772ab8080cbd8494da9a400a",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.432
+    },
+    "handoff_current": {
+      "sha256": "0f734c6983dd98ce88da079fdfde5011e1c1e5e43534179534203f62bd5b5bff",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.151
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 414 source files",
+    "ruff": "All checks passed!",
+    "format": "1 file reformatted, 414 files left unchanged"
+  },
+  "changed_runtime": [
+    {
+      "path": "src/lexinform/adapters/sqlite_repo.py",
+      "baseline_sha256": "54ca95f23407f8736b00e6952d13e43c08df28e2ade6d9d3119f16964b9cd4d3",
+      "current_sha256": "7740f5e7cbbea28e152a89552526bb5344e4ab4fe6bd7a81bf634514d468f9a6"
+    },
+    {
+      "path": "src/lexinform/ports.py",
+      "baseline_sha256": "9b3a69f5858a226338e1ca253fc0f98a3f07ca6cc44240da8b2d93d360c4d40c",
+      "current_sha256": "87f26038964ab45c30b0a497de6514dfa11100788ee08e55217066f675610fad"
+    },
+    {
+      "path": "src/lexinform/services/tracking/linking.py",
+      "baseline_sha256": "9191bf53332b4788eec0d7afa2bac46c85e0b6eeac62f88353b30b8879a86fd0",
+      "current_sha256": "97f7615261efa090b967b308838c69d8f60e111f5fdcf5b503db3bef23211744"
+    }
+  ],
+  "unchanged_runtime": {
+    "count": 142,
+    "path_list_sha256": "2cbf5d9974e1521d3021f89cc8d271080e294bc9e73271d978881de278c15838"
+  },
+  "migrations": {
+    "count": 50,
+    "all_unchanged": true,
+    "tuple_sha256": "f3d023c714c1e1a772f09e20033259f367fb9fcdf075b88cdf89557699d106ff"
+  },
+  "normal_profiles_unchanged": 12,
+  "handoff_profiles": [
+    {
+      "case": "gpt-5.1-1-open",
+      "baseline_error": "",
+      "current_error": "",
+      "before_sha256": "93d2e95ed7856691427f3f68b95de14d5aa394ef9c7cc7708fa583fdfc5f100c",
+      "after_sha256": "93d2e95ed7856691427f3f68b95de14d5aa394ef9c7cc7708fa583fdfc5f100c",
+      "primary_only_unchanged": true,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "gpt-5.1-1-ready",
+      "baseline_error": "",
+      "current_error": "",
+      "before_sha256": "f8a742e01b330f9ef2e9e1564f25fb0ed4ff2769398f9161e388bbae51c13f23",
+      "after_sha256": "f8a742e01b330f9ef2e9e1564f25fb0ed4ff2769398f9161e388bbae51c13f23",
+      "primary_only_unchanged": true,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "gpt-5.1-1-consultation-queued",
+      "baseline_error": "1 validation error for ComputationResult\n  Value error, the retained review input must match its original owner",
+      "current_error": "",
+      "before_sha256": "09e29ed88e5fc59dd199fa41534e42ef9a1c1dd416907e2a4afeaf45e866c285",
+      "after_sha256": "88b48a9e4cdf83fdb1f7c06286bced7576cc5ebeff74b93fef087d7a02715644",
+      "primary_only_unchanged": false,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "gpt-5.1-1-consultation-open",
+      "baseline_error": "1 validation error for ComputationResult\n  Value error, the retained review input must match its original owner",
+      "current_error": "",
+      "before_sha256": "09e29ed88e5fc59dd199fa41534e42ef9a1c1dd416907e2a4afeaf45e866c285",
+      "after_sha256": "88b48a9e4cdf83fdb1f7c06286bced7576cc5ebeff74b93fef087d7a02715644",
+      "primary_only_unchanged": false,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "gpt-5.1-1-commission-queued",
+      "baseline_error": "1 validation error for ComputationResult\n  Value error, the retained review input must match its original owner",
+      "current_error": "",
+      "before_sha256": "56b4bf1cc0949de3dbdcf2e783644a24ba811c64e834f5077907c8165f119b40",
+      "after_sha256": "a9d7b24a2cb198b3f2b03922a6e312b30c2a51f581705b97769b52e2776a9488",
+      "primary_only_unchanged": false,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "gpt-5.1-1-commission-open",
+      "baseline_error": "1 validation error for ComputationResult\n  Value error, the retained review input must match its original owner",
+      "current_error": "",
+      "before_sha256": "56b4bf1cc0949de3dbdcf2e783644a24ba811c64e834f5077907c8165f119b40",
+      "after_sha256": "a9d7b24a2cb198b3f2b03922a6e312b30c2a51f581705b97769b52e2776a9488",
+      "primary_only_unchanged": false,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "gpt-5.1-4-open",
+      "baseline_error": "",
+      "current_error": "",
+      "before_sha256": "93d2e95ed7856691427f3f68b95de14d5aa394ef9c7cc7708fa583fdfc5f100c",
+      "after_sha256": "93d2e95ed7856691427f3f68b95de14d5aa394ef9c7cc7708fa583fdfc5f100c",
+      "primary_only_unchanged": true,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "gpt-5.1-4-ready",
+      "baseline_error": "",
+      "current_error": "",
+      "before_sha256": "f8a742e01b330f9ef2e9e1564f25fb0ed4ff2769398f9161e388bbae51c13f23",
+      "after_sha256": "f8a742e01b330f9ef2e9e1564f25fb0ed4ff2769398f9161e388bbae51c13f23",
+      "primary_only_unchanged": true,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "gpt-5.1-4-consultation-queued",
+      "baseline_error": "1 validation error for ComputationResult\n  Value error, the retained review input must match its original owner",
+      "current_error": "",
+      "before_sha256": "09e29ed88e5fc59dd199fa41534e42ef9a1c1dd416907e2a4afeaf45e866c285",
+      "after_sha256": "88b48a9e4cdf83fdb1f7c06286bced7576cc5ebeff74b93fef087d7a02715644",
+      "primary_only_unchanged": false,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "gpt-5.1-4-consultation-open",
+      "baseline_error": "1 validation error for ComputationResult\n  Value error, the retained review input must match its original owner",
+      "current_error": "",
+      "before_sha256": "09e29ed88e5fc59dd199fa41534e42ef9a1c1dd416907e2a4afeaf45e866c285",
+      "after_sha256": "88b48a9e4cdf83fdb1f7c06286bced7576cc5ebeff74b93fef087d7a02715644",
+      "primary_only_unchanged": false,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "gpt-5.1-4-commission-queued",
+      "baseline_error": "1 validation error for ComputationResult\n  Value error, the retained review input must match its original owner",
+      "current_error": "",
+      "before_sha256": "56b4bf1cc0949de3dbdcf2e783644a24ba811c64e834f5077907c8165f119b40",
+      "after_sha256": "a9d7b24a2cb198b3f2b03922a6e312b30c2a51f581705b97769b52e2776a9488",
+      "primary_only_unchanged": false,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "gpt-5.1-4-commission-open",
+      "baseline_error": "1 validation error for ComputationResult\n  Value error, the retained review input must match its original owner",
+      "current_error": "",
+      "before_sha256": "56b4bf1cc0949de3dbdcf2e783644a24ba811c64e834f5077907c8165f119b40",
+      "after_sha256": "a9d7b24a2cb198b3f2b03922a6e312b30c2a51f581705b97769b52e2776a9488",
+      "primary_only_unchanged": false,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "claude-opus-5-5-1-open",
+      "baseline_error": "",
+      "current_error": "",
+      "before_sha256": "783c1e737e0985562bfa5c11de16e90b93fd9cfecc9c11bb88f9bf826eb06aa9",
+      "after_sha256": "783c1e737e0985562bfa5c11de16e90b93fd9cfecc9c11bb88f9bf826eb06aa9",
+      "primary_only_unchanged": true,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "claude-opus-5-5-1-ready",
+      "baseline_error": "",
+      "current_error": "",
+      "before_sha256": "dbe20531f9201769c22f393a7c6b1b02c712c37447badaa15f3bf5ea2e52ba7c",
+      "after_sha256": "dbe20531f9201769c22f393a7c6b1b02c712c37447badaa15f3bf5ea2e52ba7c",
+      "primary_only_unchanged": true,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "claude-opus-5-5-1-consultation-queued",
+      "baseline_error": "1 validation error for ComputationResult\n  Value error, the retained review input must match its original owner",
+      "current_error": "",
+      "before_sha256": "0870e378d99640447e791fb04beaa015b1790067b75df399bbbbdf7c0da0001f",
+      "after_sha256": "bec7e1dae03d3170e371d9eae0bcdc5f8ab1c064af247b53085d96797b2783d7",
+      "primary_only_unchanged": false,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "claude-opus-5-5-1-consultation-open",
+      "baseline_error": "1 validation error for ComputationResult\n  Value error, the retained review input must match its original owner",
+      "current_error": "",
+      "before_sha256": "0870e378d99640447e791fb04beaa015b1790067b75df399bbbbdf7c0da0001f",
+      "after_sha256": "bec7e1dae03d3170e371d9eae0bcdc5f8ab1c064af247b53085d96797b2783d7",
+      "primary_only_unchanged": false,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "claude-opus-5-5-1-commission-queued",
+      "baseline_error": "1 validation error for ComputationResult\n  Value error, the retained review input must match its original owner",
+      "current_error": "",
+      "before_sha256": "68ba88daf120ae88088210e5a63905ceef2baeadbd6c396023413e6693e85a80",
+      "after_sha256": "0e4612d6abd27b6f0f184e984bc3b548318862ed0af2a7bf7755fed49a82d5d7",
+      "primary_only_unchanged": false,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "claude-opus-5-5-1-commission-open",
+      "baseline_error": "1 validation error for ComputationResult\n  Value error, the retained review input must match its original owner",
+      "current_error": "",
+      "before_sha256": "68ba88daf120ae88088210e5a63905ceef2baeadbd6c396023413e6693e85a80",
+      "after_sha256": "0e4612d6abd27b6f0f184e984bc3b548318862ed0af2a7bf7755fed49a82d5d7",
+      "primary_only_unchanged": false,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "claude-opus-5-5-4-open",
+      "baseline_error": "",
+      "current_error": "",
+      "before_sha256": "783c1e737e0985562bfa5c11de16e90b93fd9cfecc9c11bb88f9bf826eb06aa9",
+      "after_sha256": "783c1e737e0985562bfa5c11de16e90b93fd9cfecc9c11bb88f9bf826eb06aa9",
+      "primary_only_unchanged": true,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "claude-opus-5-5-4-ready",
+      "baseline_error": "",
+      "current_error": "",
+      "before_sha256": "dbe20531f9201769c22f393a7c6b1b02c712c37447badaa15f3bf5ea2e52ba7c",
+      "after_sha256": "dbe20531f9201769c22f393a7c6b1b02c712c37447badaa15f3bf5ea2e52ba7c",
+      "primary_only_unchanged": true,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "claude-opus-5-5-4-consultation-queued",
+      "baseline_error": "1 validation error for ComputationResult\n  Value error, the retained review input must match its original owner",
+      "current_error": "",
+      "before_sha256": "0870e378d99640447e791fb04beaa015b1790067b75df399bbbbdf7c0da0001f",
+      "after_sha256": "bec7e1dae03d3170e371d9eae0bcdc5f8ab1c064af247b53085d96797b2783d7",
+      "primary_only_unchanged": false,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "claude-opus-5-5-4-consultation-open",
+      "baseline_error": "1 validation error for ComputationResult\n  Value error, the retained review input must match its original owner",
+      "current_error": "",
+      "before_sha256": "0870e378d99640447e791fb04beaa015b1790067b75df399bbbbdf7c0da0001f",
+      "after_sha256": "bec7e1dae03d3170e371d9eae0bcdc5f8ab1c064af247b53085d96797b2783d7",
+      "primary_only_unchanged": false,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "claude-opus-5-5-4-commission-queued",
+      "baseline_error": "1 validation error for ComputationResult\n  Value error, the retained review input must match its original owner",
+      "current_error": "",
+      "before_sha256": "68ba88daf120ae88088210e5a63905ceef2baeadbd6c396023413e6693e85a80",
+      "after_sha256": "0e4612d6abd27b6f0f184e984bc3b548318862ed0af2a7bf7755fed49a82d5d7",
+      "primary_only_unchanged": false,
+      "frozen_provider_requests_unchanged": true
+    },
+    {
+      "case": "claude-opus-5-5-4-commission-open",
+      "baseline_error": "1 validation error for ComputationResult\n  Value error, the retained review input must match its original owner",
+      "current_error": "",
+      "before_sha256": "68ba88daf120ae88088210e5a63905ceef2baeadbd6c396023413e6693e85a80",
+      "after_sha256": "0e4612d6abd27b6f0f184e984bc3b548318862ed0af2a7bf7755fed49a82d5d7",
+      "primary_only_unchanged": false,
+      "frozen_provider_requests_unchanged": true
+    }
+  ],
+  "rollback_reader": {
+    "commit": "f3d8ae5715ddd250e01c4b1a60ac3d051ddca804",
+    "snapshots": [
+      {
+        "snapshot": "normal-current/commission_review-1.sql",
+        "sha256": "63e68f513bcee472146075edef74f4f7af52468162e33bad4ac4291e6f27b906",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/commission_review-4.sql",
+        "sha256": "63e68f513bcee472146075edef74f4f7af52468162e33bad4ac4291e6f27b906",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/consultation_review-1.sql",
+        "sha256": "ed82435b504386f04b2632a602873d4f25550e4efbd7f849645fe03d4cab08f4",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/consultation_review-4.sql",
+        "sha256": "ed82435b504386f04b2632a602873d4f25550e4efbd7f849645fe03d4cab08f4",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/explanation-1.sql",
+        "sha256": "5c546b386d428e60ded44a41f0f88b8c4fbf7bd0fca471552f7d75b66af67fbc",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/explanation-4.sql",
+        "sha256": "5c546b386d428e60ded44a41f0f88b8c4fbf7bd0fca471552f7d75b66af67fbc",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/joint-1.sql",
+        "sha256": "0771fe31d3ce4e67977eeff06f0c56d40b7bcbfb0ac2686afc77711e1b82da55",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/joint-4.sql",
+        "sha256": "0771fe31d3ce4e67977eeff06f0c56d40b7bcbfb0ac2686afc77711e1b82da55",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/name-1.sql",
+        "sha256": "41ad1308b08d6b543c3f20a001d4291f7a70184acdb6ed84c61a4ba0381faa43",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/name-4.sql",
+        "sha256": "41ad1308b08d6b543c3f20a001d4291f7a70184acdb6ed84c61a4ba0381faa43",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/revision-1.sql",
+        "sha256": "ff6c8de738f53411cb7de0f72025f5774f87fb3739c9d6e4a16bf74b9f317349",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/revision-4.sql",
+        "sha256": "ff6c8de738f53411cb7de0f72025f5774f87fb3739c9d6e4a16bf74b9f317349",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-commission-open.sql",
+        "sha256": "0e4612d6abd27b6f0f184e984bc3b548318862ed0af2a7bf7755fed49a82d5d7",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-commission-queued.sql",
+        "sha256": "0e4612d6abd27b6f0f184e984bc3b548318862ed0af2a7bf7755fed49a82d5d7",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-consultation-open.sql",
+        "sha256": "bec7e1dae03d3170e371d9eae0bcdc5f8ab1c064af247b53085d96797b2783d7",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-consultation-queued.sql",
+        "sha256": "bec7e1dae03d3170e371d9eae0bcdc5f8ab1c064af247b53085d96797b2783d7",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-open.sql",
+        "sha256": "783c1e737e0985562bfa5c11de16e90b93fd9cfecc9c11bb88f9bf826eb06aa9",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-ready.sql",
+        "sha256": "dbe20531f9201769c22f393a7c6b1b02c712c37447badaa15f3bf5ea2e52ba7c",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-commission-open.sql",
+        "sha256": "0e4612d6abd27b6f0f184e984bc3b548318862ed0af2a7bf7755fed49a82d5d7",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-commission-queued.sql",
+        "sha256": "0e4612d6abd27b6f0f184e984bc3b548318862ed0af2a7bf7755fed49a82d5d7",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-consultation-open.sql",
+        "sha256": "bec7e1dae03d3170e371d9eae0bcdc5f8ab1c064af247b53085d96797b2783d7",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-consultation-queued.sql",
+        "sha256": "bec7e1dae03d3170e371d9eae0bcdc5f8ab1c064af247b53085d96797b2783d7",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-open.sql",
+        "sha256": "783c1e737e0985562bfa5c11de16e90b93fd9cfecc9c11bb88f9bf826eb06aa9",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-ready.sql",
+        "sha256": "dbe20531f9201769c22f393a7c6b1b02c712c37447badaa15f3bf5ea2e52ba7c",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-commission-open.sql",
+        "sha256": "a9d7b24a2cb198b3f2b03922a6e312b30c2a51f581705b97769b52e2776a9488",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-commission-queued.sql",
+        "sha256": "a9d7b24a2cb198b3f2b03922a6e312b30c2a51f581705b97769b52e2776a9488",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-consultation-open.sql",
+        "sha256": "88b48a9e4cdf83fdb1f7c06286bced7576cc5ebeff74b93fef087d7a02715644",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-consultation-queued.sql",
+        "sha256": "88b48a9e4cdf83fdb1f7c06286bced7576cc5ebeff74b93fef087d7a02715644",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-open.sql",
+        "sha256": "93d2e95ed7856691427f3f68b95de14d5aa394ef9c7cc7708fa583fdfc5f100c",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-ready.sql",
+        "sha256": "f8a742e01b330f9ef2e9e1564f25fb0ed4ff2769398f9161e388bbae51c13f23",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-commission-open.sql",
+        "sha256": "a9d7b24a2cb198b3f2b03922a6e312b30c2a51f581705b97769b52e2776a9488",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-commission-queued.sql",
+        "sha256": "a9d7b24a2cb198b3f2b03922a6e312b30c2a51f581705b97769b52e2776a9488",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-consultation-open.sql",
+        "sha256": "88b48a9e4cdf83fdb1f7c06286bced7576cc5ebeff74b93fef087d7a02715644",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-consultation-queued.sql",
+        "sha256": "88b48a9e4cdf83fdb1f7c06286bced7576cc5ebeff74b93fef087d7a02715644",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-open.sql",
+        "sha256": "93d2e95ed7856691427f3f68b95de14d5aa394ef9c7cc7708fa583fdfc5f100c",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-ready.sql",
+        "sha256": "f8a742e01b330f9ef2e9e1564f25fb0ed4ff2769398f9161e388bbae51c13f23",
+        "roundtrip_equal": true
+      }
+    ],
+    "scope": "Restore/read/dump compatibility; executing the old runtime reintroduces B122."
+  },
+  "pinned_production_restore": {
+    "source_state_commit": "98d0bd3267eb8c110945f8fb2d44b1414c58d211",
+    "profile": {
+      "source_sha256": "fc267831b0a010162299b1bd500838466a6f4f6d30618d178f66ade9d416a8da",
+      "source_bytes": 19955778,
+      "sql_sha256": "9c5ec8edee0177041cd4e6bc30778263afc66a4df9c3ece33d30130ec67d1791",
+      "sql_bytes": 19956747,
+      "gzip_bytes": 4074775,
+      "sqlite_bytes": 20938752,
+      "restore_seconds": 0.316583209001692,
+      "dump_seconds": 0.11102820801897906,
+      "bills": 457,
+      "analysis_records": 166,
+      "projection_sha256": "7fa6760e52135e73f597e30db629624fa77a16ba8f7a7723bedaad110cfa8f33",
+      "memo_sha256": "8f68b1de19cfc7ef421659465d653664765cd5d1ed9187d359f33c697c6417ce",
+      "memos": 141,
+      "schema": {
+        "tables": 19,
+        "indexes": 32,
+        "version": 50
+      },
+      "new_rows": {
+        "computation_results": 0,
+        "result_applications": 0
+      },
+      "known_bill_2699": "analyzed",
+      "integrity": "ok",
+      "foreign_key_errors": 0,
+      "scope": "Isolated restore/read; no pipeline, provider or Telegram call; no legacy history backfill."
+    }
+  },
+  "fresh_production_inventory": {
+    "state_commit": "f34e63e7d2446501ceee0c2595964eef1b8f48a2",
+    "source_sha256": "73e37426e5e5753ad312994a95965d9a100d91c22488ef486c0cb802cbc3b71f",
+    "source_bytes": 19508098,
+    "counts": {
+      "bills": 457,
+      "analysis_memo": 141,
+      "llm_batch_items": 109,
+      "llm_batch_intents": 0,
+      "computation_results": 0,
+      "result_applications": 0
+    },
+    "review_items": {
+      "total": 19,
+      "active": 0,
+      "known_context": 0,
+      "mismatched": 0,
+      "active_mismatched": 0
+    },
+    "review_intents": {
+      "total": 0,
+      "mismatched": 0
+    },
+    "dump_unchanged": true,
+    "integrity": "ok",
+    "foreign_key_errors": 0,
+    "scope": "Fresh read-only production snapshot, no processing or repair; absence of active mismatches is not proof of historical completeness."
+  },
+  "prior_release": {
+    "sha": "f3d8ae5715ddd250e01c4b1a60ac3d051ddca804",
+    "ci": {
+      "jobs": [
+        {
+          "id": 122041293358,
+          "name": "web",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 40459754769,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Initialize containers",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Run astral-sh/setup-uv@v7",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Install workspace",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "Check Django and migrations",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6
+            },
+            {
+              "name": "Lint and type-check web",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 7
+            },
+            {
+              "name": "Test web",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8
+            },
+            {
+              "name": "Post Run astral-sh/setup-uv@v7",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15
+            },
+            {
+              "name": "Stop containers",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 16
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 17
+            }
+          ]
+        },
+        {
+          "id": 122041293425,
+          "name": "test (3.14)",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 40459754769,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run astral-sh/setup-uv@v7",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Install",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Lint",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "Type-check",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6
+            },
+            {
+              "name": "Test",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 7
+            },
+            {
+              "name": "Replay offline corpus regression slice",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8
+            },
+            {
+              "name": "Save corpus coverage and decisions",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 9
+            },
+            {
+              "name": "Post Run astral-sh/setup-uv@v7",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 17
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 18
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 19
+            }
+          ]
+        },
+        {
+          "id": 122041293513,
+          "name": "docs",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 40459754769,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run astral-sh/setup-uv@v7",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Install documentation tools",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Build documentation",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "Check links and build contents",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6
+            },
+            {
+              "name": "Post Run astral-sh/setup-uv@v7",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 11
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 12
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 13
+            }
+          ]
+        }
+      ]
+    },
+    "deploy": {
+      "jobs": [
+        {
+          "id": 122042748783,
+          "name": "deploy",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 40460214367,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Update the checkout on the VPS and restart the service",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Tell the log channel when the relay was not updated",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 3
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            }
+          ]
+        }
+      ]
+    },
+    "proof": [
+      [
+        "2026-10-27T06:12:58.2549490Z All checks passed!",
+        "2026-10-27T06:13:08.6331918Z Success: no issues found in 413 source files",
+        "2026-10-27T06:17:13.8060491Z 4423 passed, 32 deselected, 3205 warnings in 242.84s (0:04:02)"
+      ],
+      [
+        "2026-10-27T06:17:29.0683875Z   COMMIT: f3d8ae5715ddd250e01c4b1a60ac3d051ddca804",
+        "2026-10-27T06:17:32.7807175Z 8b2e66c5a3bb -> f3d8ae5715dd",
+        "2026-10-27T06:18:18.0354506Z lexinform-listen up 45 s after restart"
+      ]
+    ]
+  },
+  "corpus": [
+    {
+      "id": "j073-ci",
+      "manifest_sha256": "ec7842e3077d65d76c277d3350f1752a45f5462cc7775fe5cbcf3f29e4281a4b",
+      "observations": 7,
+      "status": "passed",
+      "command": [
+        "/Users/sobaleu/projects/lexinform/.venv/bin/python",
+        "-m",
+        "tools.corpus_check",
+        "--corpus",
+        "/Users/sobaleu/projects/lexinform/tests/fixtures/corpus_check",
+        "--output",
+        "/Users/sobaleu/projects/lexinform/out/corpus/runs/j073-ci/result.json"
+      ]
+    },
+    {
+      "id": "j073-process",
+      "manifest_sha256": "dabe21bbce2988ba51865b009caf6525ec04027ab33abe6dbb08234a67522af1",
+      "observations": 3294,
+      "status": "recorded",
+      "command": [
+        "/Users/sobaleu/projects/lexinform/.venv/bin/python",
+        "-m",
+        "tools.corpus_legacy_suites",
+        "--corpus",
+        "/Users/sobaleu/projects/lexinform-corpus",
+        "--output",
+        "/Users/sobaleu/projects/lexinform/out/corpus/runs/j073-process/result.json",
+        "--kind",
+        "process"
+      ]
+    }
+  ],
+  "process_diff": {
+    "after_manifest_sha256": "dabe21bbce2988ba51865b009caf6525ec04027ab33abe6dbb08234a67522af1",
+    "before_manifest_sha256": "d04ebc2398c71927087135ae79b8d255c6bd236e88256f558468ff20bd4bd59e",
+    "changed_inputs": [],
+    "changes": [],
+    "scope": "Observation differences, not an independent legal accuracy verdict",
+    "status": "same",
+    "suite": "process",
+    "summary_changes": {},
+    "version": 1
+  },
+  "observers": [
+    {
+      "path": "out/corpus/j073/handoff_profile.py",
+      "sha256": "da7b56044237f17489d0f702a868114232c9e88a2503168ca77f2a37065365ce",
+      "source": "import gzip\nimport hashlib\nimport json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nimport lexinform\nfrom lexinform.models import BillStatus\nfrom lexinform.services.analysis import Waiting\nfrom tests.harness import RCL, World, summary\nfrom tests.scenario.test_commission_reviews import context as commission_context\nfrom tests.scenario.test_document_reviews import context\n\n\ndef snapshot(world, output, name):\n    raw = world.repo.dump().encode()\n    (output / f'{name}.sql').write_bytes(raw)\n    with closing(sqlite3.connect(':memory:')) as database:\n        database.executescript(raw.decode())\n        assert database.execute('PRAGMA integrity_check').fetchone() == ('ok',)\n        assert not database.execute('PRAGMA foreign_key_check').fetchall()\n        size = len(database.serialize())\n    return {'sql_sha256': hashlib.sha256(raw).hexdigest(), 'sql_bytes': len(raw), 'gzip_bytes': len(gzip.compress(raw, mtime=0)), 'sqlite_bytes': size, 'source': world.bill(RCL).model_dump(mode='json'), 'target': world.bill('5').model_dump(mode='json'), 'source_results': [row.model_dump(mode='json') for row in world.repo.list_computation_results(10, RCL)], 'target_results': [row.model_dump(mode='json') for row in world.repo.list_computation_results(10, '5')], 'requests': [row.model_dump(mode='json') for row in world.batch.submitted], 'messages': [row.text for row in world.publisher.sent], 'edits': [row.text for row, _ in world.publisher.edited]}\n\n\ndef test_profile():\n    assert Path(lexinform.__file__).resolve().parents[2] == Path(os.environ['DA_EXPECTED_CODE']).resolve()\n    output = Path(os.environ['DA_HANDOFF_PROFILE_OUTPUT'])\n    output.mkdir()\n    profiles = {}\n    for model in ('gpt-5.1', 'claude-opus-5-5'):\n        for workers in (1, 4):\n            for stage in ('open', 'ready', 'consultation-queued', 'consultation-open', 'commission-queued', 'commission-open'):\n                world = World(profile='production', workers=workers, analysis_model=model, batch_kinds=frozenset({'analysis', 'reanalysis', 'consultation_review', 'commission_review'}), consultation_reviews_enabled=True, commission_reviews_enabled=True)\n                project = world.add_rcl_project()\n                world.run()\n                source = None\n                if '-' in stage:\n                    source = (commission_context() if stage.startswith('commission-') else context()).model_copy(update={'number': RCL, 'title': project.title})\n                    assert isinstance(world.analysis.request_document_review(world.bill(RCL), source), Waiting)\n                    if stage.endswith('-open'):\n                        world.analysis.submit_queued_batches()\n                elif stage == 'ready':\n                    world.batch.resolve()\n                    world.analysis.collect_batches()\n                world.repo.upsert_summary(summary('5', project.title), now=world.clock.now())\n                world.repo.set_status(10, '5', BillStatus.BATCH_PENDING)\n                frozen = [row.model_dump(mode='json') for row in world.batch.submitted]\n                queued = [row.model_dump(mode='json') for row in world.repo.list_queued_batch_intents()]\n                transfer = getattr(world.repo, 'move_primary_analysis_work', None) or getattr(world.repo, 'move_batch_work')\n                with world.repo.atomic():\n                    transfer(10, RCL, '5')\n                    world.repo.link_bills(10, RCL, '5')\n                after_queue = [row.model_dump(mode='json') for row in world.repo.list_queued_batch_intents()]\n                world.analysis.submit_queued_batches()\n                world.repo.restore(world.repo.dump())\n                world.batch.resolve()\n                error = ''\n                try:\n                    world.analysis.collect_batches()\n                except ValueError as exc:\n                    error = str(exc).split('[type=')[0].strip()\n                name = f'{model}-{workers}-{stage}'\n                profiles[name] = {'error': error, 'frozen_before': frozen, 'queued_before': queued, 'queued_after': after_queue, 'snapshot': snapshot(world, output, name)}\n                world.repo.close()\n    (output / 'profiles.json').write_text(json.dumps(profiles, ensure_ascii=False, indent=2) + '\\n')\n"
+    },
+    {
+      "path": "out/corpus/j073/read_snapshots.py",
+      "sha256": "c32cee3c3a8ac6fbe8dc8847d66609b7b725bb834a4406c042565a5e5e638f6a",
+      "source": "import hashlib\nimport json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nimport lexinform\nfrom lexinform.adapters.sqlite_repo import SqliteBillRepository\n\nassert Path(lexinform.__file__).resolve().parents[2] == Path(os.environ['DA_EXPECTED_CODE']).resolve()\nroot = Path('out/corpus/j073')\nobservations = []\nfor directory in ('normal-current', 'handoff-current'):\n    for source in sorted((root / directory).glob('*.sql')):\n        raw = source.read_bytes()\n        repository = SqliteBillRepository(':memory:')\n        repository.migrate()\n        repository.restore(raw.decode())\n        with closing(sqlite3.connect(':memory:')) as database:\n            database.executescript(raw.decode())\n            owners = database.execute('SELECT term, number FROM bills').fetchall()\n            historical = database.execute('SELECT DISTINCT term, number FROM computation_results').fetchall()\n        for term, number in owners:\n            assert repository.get(term, number) is not None\n            repository.list_result_applications(term, number)\n        for term, number in historical:\n            repository.list_computation_results(term, number)\n        assert repository.dump().encode() == raw\n        repository.close()\n        observations.append({'snapshot': str(source.relative_to(root)), 'sha256': hashlib.sha256(raw).hexdigest(), 'roundtrip_equal': True})\nassert len(observations) == 36\n(root / 'rollback-reader.json').write_text(json.dumps(observations, indent=2) + '\\n')\n"
+    },
+    {
+      "path": "out/corpus/j073/production_inventory.py",
+      "sha256": "dd5ce9a71d289e97032be0d4dc8b45a5b0c1c1435b55729a27e60093645b7a54",
+      "source": "import hashlib\nimport json\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nfrom lexinform.adapters.sqlite_repo import SqliteBillRepository\n\nroot = Path('out/corpus/j073')\nraw = (root / 'production-state.sql').read_bytes()\nrepository = SqliteBillRepository(':memory:')\nrepository.migrate()\nrepository.restore(raw.decode())\nbefore = repository.dump()\nwith closing(sqlite3.connect(':memory:')) as database:\n    database.executescript(before)\n    assert database.execute('PRAGMA integrity_check').fetchone() == ('ok',)\n    assert not database.execute('PRAGMA foreign_key_check').fetchall()\n    counts = {table: database.execute(f'SELECT count(*) FROM {table}').fetchone()[0] for table in ('bills', 'analysis_memo', 'llm_batch_items', 'llm_batch_intents', 'computation_results', 'result_applications')}\n    review_rows = []\n    for term, number, kind, meta, consumed in database.execute('SELECT term, number, call_kind, meta_json, consumed_at FROM llm_batch_items'):\n        if kind not in ('consultation_review', 'commission_review', 'act_application'):\n            continue\n        context = json.loads(meta).get('review_context')\n        review_rows.append({'active': consumed is None, 'context_known': context is not None, 'number_matches': context is not None and context['number'] == number})\n    intents = []\n    for (request_json,) in database.execute('SELECT request_json FROM llm_batch_intents'):\n        request = json.loads(request_json)\n        question = request.get('question', {'kind': request.get('call_kind'), 'ctx': request.get('ctx')})\n        if question['kind'] not in ('consultation_review', 'commission_review', 'act_application'):\n            continue\n        context = question['ctx']\n        intents.append({'context_known': context is not None, 'number_matches': context is not None and context['number'] == request['number']})\n    for term, number in database.execute('SELECT term, number FROM bills'):\n        assert repository.get(term, number) is not None\n        repository.list_result_applications(term, number)\n    for term, number in database.execute('SELECT DISTINCT term, number FROM computation_results'):\n        repository.list_computation_results(term, number)\nassert repository.dump() == before\nrepository.close()\nreport = {'state_commit': 'f34e63e7d2446501ceee0c2595964eef1b8f48a2', 'source_sha256': hashlib.sha256(raw).hexdigest(), 'source_bytes': len(raw), 'counts': counts, 'review_items': {'total': len(review_rows), 'active': sum(row['active'] for row in review_rows), 'known_context': sum(row['context_known'] for row in review_rows), 'mismatched': sum(row['context_known'] and not row['number_matches'] for row in review_rows), 'active_mismatched': sum(row['active'] and row['context_known'] and not row['number_matches'] for row in review_rows)}, 'review_intents': {'total': len(intents), 'mismatched': sum(row['context_known'] and not row['number_matches'] for row in intents)}, 'dump_unchanged': True, 'integrity': 'ok', 'foreign_key_errors': 0, 'scope': 'Fresh read-only production snapshot, no processing or repair; absence of active mismatches is not proof of historical completeness.'}\n(root / 'production-inventory.json').write_text(json.dumps(report, indent=2) + '\\n')\nprint(json.dumps(report))\n"
+    },
+    {
+      "path": "out/corpus/j071/projection_profile.py",
+      "sha256": "ea04424fccc679b9ad4569ec7c07cc348a73d92c29bb0aa38cb7e517d7e50f0e",
+      "source": "import gzip\nimport hashlib\nimport json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nimport lexinform\n\nfrom lexinform.models import ReviewWork\nfrom lexinform.services.tracking_result import TrackingResult\nfrom tests.harness import World\nfrom tests.scenario.test_amendments_command import published_world\nfrom tests.scenario.test_explain import commands_only\nfrom tests.scenario.test_joint_batch import joint_world\nfrom tests.scenario.test_review_computation_history import queued_review, submit_review\n\n\ndef snapshot(world, output, name, number='3039'):\n    raw = world.repo.dump().encode()\n    (output / f'{name}.sql').write_bytes(raw)\n    with closing(sqlite3.connect(':memory:')) as db:\n        db.executescript(raw.decode())\n        assert db.execute('PRAGMA integrity_check').fetchone() == ('ok',)\n        assert not db.execute('PRAGMA foreign_key_check').fetchall()\n        data = {}\n        for (table,) in db.execute(\"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name\").fetchall():\n            query = f'SELECT * FROM {table}'\n            if table == 'result_applications':\n                query += ' WHERE generation IS NOT NULL'\n            rows = sorted(json.dumps(row, ensure_ascii=False) for row in db.execute(query))\n            data[table] = hashlib.sha256(json.dumps(rows).encode()).hexdigest()\n        sqlite_bytes = len(db.serialize())\n    return {'data': data, 'sql_bytes': len(raw), 'gzip_bytes': len(gzip.compress(raw, mtime=0)), 'sqlite_bytes': sqlite_bytes, 'applications': [row.model_dump(mode='json') for row in world.repo.list_result_applications(10, number) if row.target is not None], 'requests': [request.model_dump(mode='json') for request in world.batch.submitted], 'messages': [{'kind': message.kind.value, 'text': message.text} for message in world.publisher.sent], 'edits': [{'text': message.text, 'message_id': message_id} for message, message_id in world.publisher.edited], 'replies': [outcome.model_dump(mode='json') for _, outcome in world.replier.replies]}\n\n\ndef test_profile():\n    assert Path(lexinform.__file__).resolve().parents[2] == Path(os.environ['DA_EXPECTED_CODE']).resolve()\n    output = Path(os.environ['DA_PROJECTION_PROFILE_OUTPUT'])\n    output.mkdir()\n    profiles = {}\n    for workers in (1, 4):\n        for purpose in ('consultation_review', 'commission_review'):\n            world, source, intent = queued_review(purpose, workers=workers)\n            submit_review(world, intent)\n            world.batch.resolve()\n            world.analysis.collect_batches()\n            world.analysis.start_run()\n            work = ReviewWork(memo_key=source.memo_key(10), purpose=purpose, context=source, source_key='source/1', since=world.clock.now(), baseline_day=world.clock.now().date())\n            reviews = world.container.document_reviews(dry_run=False)\n            for key in ('source/1', 'source/2'):\n                world.repo.save_review_work(10, '3039', (work.model_copy(update={'source_key': key}),))\n                reviews.advance(TrackingResult(), publish=False)\n                world.repo.restore(world.repo.dump())\n            reviews.advance(TrackingResult(), publish=False)\n            name = f'{purpose}-{workers}'\n            profiles[name] = snapshot(world, output, name)\n            world.repo.close()\n        world = joint_world(workers=workers)\n        world.run()\n        world.batch.resolve()\n        world.analysis.collect_batches()\n        world.run()\n        world.repo.restore(world.repo.dump())\n        world.run()\n        name = f'joint-{workers}'\n        profiles[name] = snapshot(world, output, name, '1929')\n        world.repo.close()\n        world = World(batch=True, batch_only=True, name_cards=True, workers=workers)\n        world.add_bill('3039', 'Projekt ustawy o cudzoziemcach')\n        world.run()\n        world.batch.resolve()\n        world.run()\n        world.batch.resolve()\n        world.analysis.collect_batches()\n        world.run()\n        world.repo.restore(world.repo.dump())\n        world.run()\n        name = f'name-{workers}'\n        profiles[name] = snapshot(world, output, name)\n        world.repo.close()\n        world, original = published_world(workers=workers)\n        world.command('/amendments 1929')\n        world.run(track=False)\n        world.batch.resolve()\n        world.analysis.collect_batches()\n        world.repo.restore(world.repo.dump())\n        world.run(track=False)\n        name = f'revision-{workers}'\n        profiles[name] = snapshot(world, output, name, '1929')\n        assert original.id is not None and len(world.repo.list_amendment_revisions(original.id)) == 1\n        world.repo.close()\n        world = World(workers=workers)\n        world.add_bill('3039', 'Projekt ustawy o cudzoziemcach')\n        world.run()\n        world.command('/explain 3039')\n        commands_only(world)\n        world.batch.resolve()\n        for _ in range(2):\n            world.command('/explain 3039')\n            commands_only(world)\n            world.repo.restore(world.repo.dump())\n        name = f'explanation-{workers}'\n        profiles[name] = snapshot(world, output, name)\n        world.repo.close()\n    (output / 'profiles.json').write_text(json.dumps(profiles, ensure_ascii=False, indent=2) + '\\n')\n"
+    }
+  ],
+  "reproduction": [
+    "Export baseline source and set PYTHONPATH to baseline/src plus the current root so both runs use the same test harness.",
+    "Run handoff_profile.py and J071 projection_profile.py through pytest -p tests.conftest with DA_EXPECTED_CODE and fresh output directories.",
+    "Compare all primary-only/normal SQL, requests, reader texts, and assert reviews keep their frozen subject after mixed handoff.",
+    "Read all 36 new snapshots through J072 and compare exact dumps.",
+    "Run production_inventory.py against the SHA-pinned fresh state SQL without Settings or processing."
+  ],
+  "limitations": [
+    "The scope change applies to future primary handoffs; no historical owner is guessed or rewritten.",
+    "The fresh state has no active review jobs; its 19 historical review items lack review contexts, so their historical subjects are unknown.",
+    "No schema, DTO, provider payload, legal-text extraction/selection, prompt, model-setting or output-policy change.",
+    "Queue fixture failures from the first expanded draft were setup errors for immediately submitted explanation and are excluded; accepted focused.xml contains 117 passing cases.",
+    "No raw archive, backend choice, paid experiment, production processing, or Telegram calls.",
+    "The real process corpus remains a historical metadata snapshot, not independent human content review.",
+    "Local HTTP was not repeated because CLI, wiring and transports are unchanged.",
+    "Primary history collected after handoff still records collection coordinates; explicit original-input binding remains separate work."
+  ]
+}

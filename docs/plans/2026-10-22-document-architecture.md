@@ -648,7 +648,7 @@ source disappearance. Изменение normalization/digest — отдельн
 - [ ] DA6.5. Legacy import сохраняет существующие exact данные с `legacy` provenance.
   Не достраивать отсутствующие raw/PreparedInput из текущего URL. Из старого batch можно
   импортировать проверяемый сохранённый text, отдельно отметив отсутствие исторических байтов.
-- [ ] DA6.6. Retention разделяет operational cache, audit/result history и закреплённые blobs.
+- [ ] DA6.6. **Частично: [J073](2026-10-22-document-architecture-progress.md#j073), primary handoff сохраняет отдельные secondary subjects; перенос cache ownership и остальные retention dependencies открыты.** Retention разделяет operational cache, audit/result history и закреплённые blobs.
   Срок архивной истории и стоимость выбрать по DA2; нельзя случайно наследовать 90/180 дней.
   Pending work, публикации и revision links защищают нужные результаты/входы согласно их
   назначению; бессрочная история не означает бессрочное хранение каждого raw.

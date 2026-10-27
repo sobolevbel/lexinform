@@ -245,7 +245,7 @@ class Linker:
                 apply_analysis(self._repo, pre.term, print_number, pre.analysis, now=now)
             # The entry's batch answers for the entry's number, which is `linked` from now on.
             if status in _BEING_READ:
-                self._repo.move_batch_work(pre.term, pre.number, print_number)
+                self._repo.move_primary_analysis_work(pre.term, pre.number, print_number)
         if pre.submission is not None:
             self._repo.save_submission(pre.term, print_number, pre.submission)
         self._repo.link_bills(

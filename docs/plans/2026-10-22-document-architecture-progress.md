@@ -3638,6 +3638,8 @@ strict mypy 412 файлов, Ruff src/tests/tools, format и strict docs/links 
 selection и review pause methods прежние. Следующий этап — B121, затем остальной DA6 rollover.
 План: **74 задачи, 12 выполнены, 62 не закрыты**; goal active.
 
+
+
 J071 выпущен: `8b2e66c5a3bb9f4c97117fdd429060944a15179a`,
 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40454360675) success:
 **4401 passed / 32 deselected**, strict mypy 412 файлов, lint/web/docs green.
@@ -3698,3 +3700,49 @@ J071 reader восстановил **36** normal/rollover snapshots с один�
 содержит XML/source hashes, profiles, ownership query timings, corpus manifests и observers.
 B121 fixed locally; DA6 продолжается с другими rollover/history consumers и legacy/retention.
 План: **74 задачи, 12 выполнены, 62 не закрыты**; goal active.
+
+<a id="j073"></a>
+### J073. DA6: purpose-scoped primary handoff
+
+Дата: 27 октября 2026. База: J072 (`f3d8ae5`). Статус: реализовано, deployment проверяется отдельно.
+
+Ownership audit перед переносом cache metadata обнаружил общую операцию `move_batch_work`:
+primary handoff одновременно меняет владельца secondary jobs/intents с отдельным frozen
+контекстом. Сначала проверить mixed primary/review work и ограничить handoff primary analysis.
+Cache reassignment остаётся DA6.6: без явных source/target bindings он может обойти защиту
+незавершённой работы по старым координатам. Paid history, request/key/usage не переписываются;
+raw storage/backend не меняются. Исторические данные не исправляются по предположению.
+
+B122 подтверждён: **16 regressions failed** до исправления, два провайдера, workers=1/4,
+consultation/commission, queued/open. Primary handoff теперь явно назван
+`move_primary_analysis_work` и ограничен `analysis`/`reanalysis`; secondary input owner,
+frozen context и request SHA прежние. Дополнительно проверены amendments/supplement/joint/name
+и немедленно отправляемый explanation. Targeted **117 passed**; full gate запущен.
+
+На **24** handoff profiles: восемь primary-only open/ready совпадают с J072 побайтово;
+16 mixed flows ранее падали при collect, теперь сохраняют primary у successor и review у
+исходного subject. Frozen provider requests одинаковые. **12** обычных profiles совпали,
+включая dump, requests и reader texts. Corpus CI **7 passed**, process **3294 observations**,
+zero changed inputs/decisions; manifests проверены. Extraction/selection/text policy прежние.
+
+Свежий read-only state `f34e63e7` от 27.10 06:26 UTC: **457 bills / 141 memos / 109 batch items**,
+intents/results/applications 0. Из 19 review items активных 0, у всех отсутствует сохранённый
+review context: историческое соответствие subject по этому snapshot неизвестно. Автоматического
+repair/backfill нет. Dump unchanged, integrity ok/FK 0. Отдельный pinned J069 restore/read
+сохраняет прежние SQL/projection/memo hashes и размеры. Production pipeline не запускался.
+
+J072 release проверен по полному `f3d8ae5715ddd250e01c4b1a60ac3d051ddca804`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40459754769) — **4423 passed**,
+strict mypy 413 файлов, Ruff green; docs/web jobs success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40460214367) — exact COMMIT,
+`8b2e66c5a3bb -> f3d8ae5715dd`, listener up 45 s. Это подтверждает релиз J072, не завершённый
+production цикл новых history rows: в свежем state их ещё 0.
+
+Final acceptance: **4457 passed**, failures/errors/skips/xfails 0, 612.578 s; strict mypy
+414 файлов, Ruff src/tests/tools, format, docs/links и diff check green. Все **50 migrations**
+побайтово прежние. J072 reader восстановил **36** новых snapshots с exact dump; запуск старого
+runtime возвращает B122, read compatibility этого не устраняет. CLI/wiring/transports прежние,
+local HTTP не повторён. [Acceptance evidence](../assets/audits/2026-10-27-primary-work-handoff/validation.json)
+содержит XML/source hashes, observers, corpus manifests, normal/handoff profiles и state inventory.
+Исходный input subject перенесённого primary request ещё не выделен из collection coordinates;
+это отдельная граница DA6. План: **74 задачи, 12 выполнены, 62 не закрыты**; goal active.

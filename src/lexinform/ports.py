@@ -976,8 +976,8 @@ class BillRepository(Protocol):
         print so its replies carry the card's tag."""
         ...
 
-    def move_batch_work(self, term: int, from_number: str, to_number: str) -> None:
-        """Hand the uncollected batch items, queued intents and ready analysis to another row."""
+    def move_primary_analysis_work(self, term: int, from_number: str, to_number: str) -> None:
+        """Hand primary analysis work to its successor while preserving secondary subjects."""
         ...
 
     def save_rcl(self, term: int, number: str, project: RclProject) -> None: ...

@@ -108,6 +108,11 @@ at term rollover and the remaining applicability history stay in
 [DA6](plans/2026-10-22-document-architecture.md#da6).
 Result, collection decision, memo/ready changes and consumed checkpoint commit together;
 run cost acknowledgement retains its existing mechanism.
+Primary handoff to an assigned druk moves only unconsumed `analysis`/`reanalysis` items,
+their intents and ready analysis. Secondary work keeps its original subject and frozen context;
+historical results are not retargeted. Collection coordinates alone do not identify the
+original input of a primary job that was moved before collection. See
+[J073](plans/2026-10-22-document-architecture-progress.md#j073).
 The history preserves the paid record when a skip/reset makes it inapplicable. Immutable rows
 reject replacement, and an exact repeated write is harmless.
 

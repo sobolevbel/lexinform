@@ -2262,16 +2262,19 @@ class SqliteBillRepository:
             (pre_print_number, wykaz_number, term, print_number),
         )
 
-    def move_batch_work(self, term: int, from_number: str, to_number: str) -> None:
+    def move_primary_analysis_work(self, term: int, from_number: str, to_number: str) -> None:
         self._conn.execute(
             "UPDATE llm_batch_items SET number = ?"
-            " WHERE term = ? AND number = ? AND consumed_at IS NULL",
+            " WHERE term = ? AND number = ? AND consumed_at IS NULL"
+            " AND call_kind IN ('analysis', 'reanalysis')",
             (to_number, term, from_number),
         )
         self._conn.execute(
             "UPDATE llm_batch_intents SET request_json = json_set(request_json, '$.number', ?)"
             " WHERE json_extract(request_json, '$.term') = ?"
-            " AND json_extract(request_json, '$.number') = ?",
+            " AND json_extract(request_json, '$.number') = ?"
+            " AND COALESCE(json_extract(request_json, '$.question.kind'),"
+            " json_extract(request_json, '$.call_kind')) IN ('analysis', 'reanalysis')",
             (to_number, term, from_number),
         )
         self._conn.execute(

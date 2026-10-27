@@ -3,7 +3,7 @@
 ## Как пользоваться
 
 Текущие баги сгруппированы по статусу, внутри группы — по влиянию на читателя.
-Номера B1…B121 постоянные:
+Номера B1…B122 постоянные:
 старые обозначения `#4` и `B4` означают одну запись.
 `open` — воспроизведённый дефект; `candidate` — ещё не доказанная гипотеза.
 `deferred` — подтверждённый дефект, отложенный по решению владельца;
@@ -23,6 +23,18 @@ P3 не означает, что расходы можно игнорирова�
 [повторяющиеся ошибки](development/failure-patterns.md) — памятка для аудита.
 
 ## Open
+
+### B122
+
+**P1 · fixed locally · 27.10.2026.** Primary handoff переносил secondary batch work с другим frozen subject.
+
+При RCL → druk `move_batch_work` менял `number` у всех незавершённых batch items и intents,
+включая document reviews. Их сохранённый `ReviewContext.number` оставался прежним; collect
+останавливался на проверке соответствия retained input и owner. Production-инцидент не установлен.
+Регрессии до исправления: **16 failed**, providers=2, workers=1/4, consultation/commission,
+queued/open. Операция переименована в `move_primary_analysis_work` и переносит только
+`analysis`/`reanalysis`, сохраняя secondary work, payload SHA и исторические результаты.
+Приёмка и ограничения — [J073](plans/2026-10-22-document-architecture-progress.md#j073).
 
 ### B121
 
