@@ -142,7 +142,9 @@ def test_legacy_secondary_work_is_not_resubmitted_under_a_new_hash(
         intent.model_copy(
             update={
                 "request": intent.request.model_copy(update={"custom_id": legacy_key}),
-                "meta": intent.meta.model_copy(update={"memo_key": legacy_key}),
+                "meta": intent.meta.model_copy(
+                    update={"memo_key": legacy_key, "input_binding": None}
+                ),
             }
         )
     )
@@ -155,6 +157,18 @@ def test_legacy_secondary_work_is_not_resubmitted_under_a_new_hash(
     analysis.start_run()
 
     assert ask() == first
+    assert all(
+        item.meta.input_binding is None
+        for item in (
+            *w.repo.list_queued_batch_intents(),
+            *w.repo.list_submitting_batch_intents(),
+        )
+    )
+    assert all(
+        item.meta.input_binding is None
+        for batch in w.repo.list_open_llm_batches()
+        for item in w.repo.list_llm_batch_items(batch.batch_id)
+    )
     assert all(item.request.custom_id == legacy_key for item in w.repo.list_queued_batch_intents())
     assert (
         not w.llm.amendment_contexts and not w.llm.supplement_contexts and not w.llm.joint_contexts

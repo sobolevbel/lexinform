@@ -334,3 +334,33 @@ class BatchIntent(BaseModel):
     provider: BatchProvider
     state: Literal["queued", "submitting"] = "queued"
     created_at: dt.datetime
+
+    @classmethod
+    def from_request(
+        cls,
+        *,
+        request: BatchRequest,
+        meta: BatchItemMeta | DigestItemMeta,
+        provider: BatchProvider,
+        created_at: dt.datetime,
+    ) -> Self:
+        if meta.input_binding is not None:
+            raise ValueError("a new intent cannot rebind an existing input")
+        key = meta.memo_key
+        if not key:
+            raise ValueError("a new intent requires its recorded question key")
+        question = request.question
+        number = (
+            question.ctx.subject.number
+            if isinstance(question, JointQuestion)
+            else question.ctx.number
+        )
+        if request.number != number:
+            raise ValueError("a new request must belong to its question subject")
+        binding = ComputationInputBinding(term=request.term, number=number, reuse_key=key)
+        return cls(
+            request=request,
+            meta=meta.model_copy(update={"input_binding": binding}),
+            provider=provider,
+            created_at=created_at,
+        )

@@ -1,0 +1,2423 @@
+{
+  "version": 1,
+  "stage": "J076",
+  "baseline": "800ef774e61d88401014310e90f941144ca96a16",
+  "scope": "New request creation freezes input scope before repository IO; restore keeps unknown legacy metadata unchanged.",
+  "checks": {
+    "focused": {
+      "sha256": "bd1893335362a2784684c4b4e3caaa349e4a01ba1feac8a585bb7a56b3d6eed2",
+      "tests": 155,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 4.031
+    },
+    "full": {
+      "sha256": "458d0a8a1f861681f892a60c0d918d7117d4cf1fbb44d17f3885c62a69312eff",
+      "tests": 4583,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 651.344
+    },
+    "normal_baseline": {
+      "sha256": "3b54d15e1a4b262bc327aa4a160a77dedcc163352f766747e068b64086827fee",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.54
+    },
+    "normal_current": {
+      "sha256": "ab627abad2915eb9815be80e2d2cbfc096b8b21da8812e06c7f154effbd93aea",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.078
+    },
+    "reuse_baseline": {
+      "sha256": "3c1113b282c6269534cae4dabb0119f245235693c4093362a0beb549ea68a7b8",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.169
+    },
+    "reuse_current": {
+      "sha256": "ef513f4ca30dc7e2d3029c1a61552bc554d5e6269d68f02f356244fbbdbde662",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.109
+    },
+    "handoff_baseline": {
+      "sha256": "1508282aa6078ddb3529ca6caf4d284b971dc1365d15a0e6f34eb85dddefe2a2",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.142
+    },
+    "handoff_current": {
+      "sha256": "c67aeda317402c95d3a2607c422f0ec074782167c5adeebc595a5e8931ccc95e",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.24
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 420 source files",
+    "ruff": "All checks passed!",
+    "format": "421 files left unchanged"
+  },
+  "changed_runtime": [
+    {
+      "path": "src/lexinform/models/batch.py",
+      "baseline_sha256": "ebdebef68846448be11a1d37d0e0a9087dad36fec3c47d7c8c4aad95710f2f11",
+      "current_sha256": "3b08fc537384a600be6e6d75c8fff26740e4e01d93220912c2d5a7161bf0dee4"
+    },
+    {
+      "path": "src/lexinform/services/analysis.py",
+      "baseline_sha256": "ce89fd8808e5ba950e63813efa68b7b2959c5f74e0c4aed923b05d76113b97e6",
+      "current_sha256": "26a0900e55ebf36949753350af0050a186a794af1c0f888297a3cf3d5b48fa37"
+    }
+  ],
+  "unchanged_runtime": {
+    "count": 145,
+    "path_list_sha256": "ffcd2bd0c8e96866e58c51b9092e44bb38b5abcb5c313073168df80661b49f5d"
+  },
+  "migrations": {
+    "count": 50,
+    "all_unchanged": true,
+    "tuple_sha256": "f3d023c714c1e1a772f09e20033259f367fb9fcdf075b88cdf89557699d106ff"
+  },
+  "producer_paths": 5,
+  "purpose_coverage": [
+    "analysis",
+    "reanalysis",
+    "amendments",
+    "supplement",
+    "joint",
+    "name",
+    "explanation",
+    "consultation_review",
+    "commission_review",
+    "act_application"
+  ],
+  "profiles": [
+    {
+      "suite": "normal",
+      "case": "consultation_review-1",
+      "normalized_tables_sha256": {
+        "analysis_memo": "72818c97a1d96354683ad4fd35e4500cd70f137dc0e9503f24f44274fbfd19a6",
+        "bills": "b83efbf5e991a347b6fff3ed55f4b929b0c7476b42a72310b0afbf2e8ce20f61",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "509b76198d79ebe399b55b34a55c114675f595d00cd54d6e98a4ac5cf6fd302c",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "1834ccdca1ae1332ce72657e765a0349f6430f0cd93fe48c53674f55ad741eec",
+        "llm_batches": "4acfbecd89b65cf69b02a05b7fedc150d3a13df7c17cc91e63b9940196ce4489",
+        "publication_sequence": "95d0785ab87494735f6561cf62d95c5c7bf73b644442536b2fe5c13c25d65c75",
+        "publications": "83dba89d09304f180965a95139c8efc32f569f885594127db133d98372b6becf",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "f7b8ddc91daa6543ead3f591aadeb72097820345d694862bab474a623d657183",
+        "runs": "eab50b6ea2ba89592c9d708b528869e0d4807cac7af5e158d8198ff99bd6b80a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 278,
+        "gzip_bytes": 23,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "normal",
+      "case": "commission_review-1",
+      "normalized_tables_sha256": {
+        "analysis_memo": "a34a438101e7b57e88e3ed0990e19655a579eb60056df13a9f9911ca052c5bc4",
+        "bills": "e8f3edde3512862b84e4133b66119b0c2c50919f338c556b7197d766ec04ace4",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "5e51df48bdf93dcc19a3fac5be9b97b3da70b5e96916fe702e603edd91a967f9",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "a0937499628a643a6b1c0b3d2a96165c5f3c348a5167dcaafcab609cd74f0eec",
+        "llm_batches": "f42e50a36bbf9f4a3ac939f6d7b81a008bf2bdd8f252bf72a3defddca5e1f0d5",
+        "publication_sequence": "95d0785ab87494735f6561cf62d95c5c7bf73b644442536b2fe5c13c25d65c75",
+        "publications": "83dba89d09304f180965a95139c8efc32f569f885594127db133d98372b6becf",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "2e81a920e5b23f38e89074c1f4959b89e7976ecc1851d33d481229b9c0ee0223",
+        "runs": "eab50b6ea2ba89592c9d708b528869e0d4807cac7af5e158d8198ff99bd6b80a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 278,
+        "gzip_bytes": 22,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "normal",
+      "case": "joint-1",
+      "normalized_tables_sha256": {
+        "analysis_memo": "913144dab48cee1f8e6b7f811b8bdfe131120e658e7c831b9097fb3ee62cc47e",
+        "bills": "09220c7ebd8406e1ba3cc3f53a8806093ec7cd8074bf8efcb859bb2a18df024a",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "d86535f88f579bf48a9f2bf70ccca3e1b377717238d6770ee6db600a97a74ad3",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "f7febca9aa4a30904cf8844eea68dc93593c1302818f633376065ae479c305bc",
+        "llm_batches": "85ad372d01b59634a06a998b9fb602185e79818458390d01911d715f87407bbb",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "8e5ce17f43be6a026dbeed2a5b26d512c5c34d501e7d09203b2cfb5e142bb254",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "d784fe439654c3bd94704114330838c72d1dcf9a99da71533fbdc4aa52ca8707",
+        "runs": "84d1965864d24ffea94ac338da8a5e86f1292438ef73fe003c71aec3fb33dcdc",
+        "source_checks": "47c2e3116d9e78db810488f8eb4aae55c555365e34564ad95d77973cdec37211",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 246,
+        "gzip_bytes": 24,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "normal",
+      "case": "name-1",
+      "normalized_tables_sha256": {
+        "analysis_memo": "3528373eb4f99e98e40f527945a1a5feb87ad8b4cc72b9fbd49b656f8c12399c",
+        "bills": "e1b3e9745296643f2fd08988da2ffd69fc7484688aa05ebe36c25a4681b4cb9d",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "01bddc411618ecaf9bb7b26441f0387873bc1a84da615693f5c09a5450e348dc",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "96dea29e4d2e1de63db20fff98223656cb7b7a3182f32bb3ad3cd967e56696c2",
+        "llm_batches": "a00d1464313d48a8b49344bfaa2549dc71ec4dfa2a7003d8b7e8f4a70c527ac4",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "14d46520c333abc2c4b80f6a92caa8e5bd6f29ca9f3966b5f485fb9ad09811af",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "f642bd9bba9567ab06d3bf28f2bbe0eec9d34c346d6beae3613a6229b931d180",
+        "runs": "e19cf9920e98ef5b0a833fafeef584218515e3595a0deb76b65a4c5f9c3a22e4",
+        "source_checks": "2e1c05a8fcd1bc0b39440e3cd0bfa3bff3ea203e5630b2285b88e3c7b246d4a9",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 492,
+        "gzip_bytes": 30,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "normal",
+      "case": "revision-1",
+      "normalized_tables_sha256": {
+        "analysis_memo": "fd8a3dd6f82a8fc768d06c959d25222d38993a846fc02943d0ffa0883ea462ba",
+        "bills": "de11c9ea78b093c4a2e994a4a81cd239792e37aeaeff0501400186ac0baa6f3a",
+        "commands": "a67df35a6c6cd9363c50ffb81bc80672927ddaeb8e1f6cb0f18b6c1da26d8414",
+        "computation_results": "f0fb6799ddd98b9efeef77db6beb23604bfe38ff6eea602eec2a69cf976ca258",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "4d0e3ff71987186feebc72d8a59eb512a230ffb7da9bcfc54d6db494d04aaa59",
+        "llm_batches": "57d6dc9fe435e43a783e04e274107ed79baef95274a27b0285c6c15b432bfaab",
+        "publication_sequence": "5c6b1060ab56ece6040d8081225f90ca93e8bc1cc7246a1d1e858ac7fddfff58",
+        "publications": "514954e7c46e655632a3f28348c6a480b4d6b2104f706df809070f1c5d85b6d2",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "36c30c2a88ad32c91fb9a7b8f865088416cecaa5f863bcce40d3aae0bc0b52f7",
+        "runs": "2d165407e03022fb8de6a70ff263455c8e34da1821e8ecbde1257f33dba005f4",
+        "source_checks": "52c97f11422ff7b32419ce7b107961a1ab3fb87fd9cb39a8fc7be065acbda8ed",
+        "status_changes": "10628b29102aeedc8e26c2a338a9eaf49eb6ab817ea2b93925680fd4a7399ad7"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 246,
+        "gzip_bytes": 24,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "normal",
+      "case": "explanation-1",
+      "normalized_tables_sha256": {
+        "analysis_memo": "f929db88fd6299050fbd7258d2b641280a03067071c2523b066567cf97aee6da",
+        "bills": "9c7bd221b0f4d3d6c6f865297b217a16d08da595b73b9c5865efd07cb029d814",
+        "commands": "966e7b14f32ebc3bd9b3c0c84ac85b9fd564f0a19846dbd233c9b689cfc57e63",
+        "computation_results": "e3016e8d34caf178db85e2b5a9b43a7a9bf7d2b0617df73286237f6dc07940fc",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "cd05dcb8966198b198c165be7996c9a46641d701b99447792b49378c6b4a087c",
+        "llm_batches": "ea85d6874411a361425ae0d3b694840a557b2a3997e75bae4656cdf2d2fe7182",
+        "publication_sequence": "95d0785ab87494735f6561cf62d95c5c7bf73b644442536b2fe5c13c25d65c75",
+        "publications": "83dba89d09304f180965a95139c8efc32f569f885594127db133d98372b6becf",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "47467efa42f0d98b9aa0857997f4a9f1fbdc510ccb7d9a86190a93d72f4e83a0",
+        "runs": "b4ccb50afa75bd24058b44f825ddbb41762eda307c658394bd55660c145171cd",
+        "source_checks": "2e1c05a8fcd1bc0b39440e3cd0bfa3bff3ea203e5630b2285b88e3c7b246d4a9",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 246,
+        "gzip_bytes": 26,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "normal",
+      "case": "consultation_review-4",
+      "normalized_tables_sha256": {
+        "analysis_memo": "72818c97a1d96354683ad4fd35e4500cd70f137dc0e9503f24f44274fbfd19a6",
+        "bills": "b83efbf5e991a347b6fff3ed55f4b929b0c7476b42a72310b0afbf2e8ce20f61",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "509b76198d79ebe399b55b34a55c114675f595d00cd54d6e98a4ac5cf6fd302c",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "1834ccdca1ae1332ce72657e765a0349f6430f0cd93fe48c53674f55ad741eec",
+        "llm_batches": "4acfbecd89b65cf69b02a05b7fedc150d3a13df7c17cc91e63b9940196ce4489",
+        "publication_sequence": "95d0785ab87494735f6561cf62d95c5c7bf73b644442536b2fe5c13c25d65c75",
+        "publications": "83dba89d09304f180965a95139c8efc32f569f885594127db133d98372b6becf",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "f7b8ddc91daa6543ead3f591aadeb72097820345d694862bab474a623d657183",
+        "runs": "eab50b6ea2ba89592c9d708b528869e0d4807cac7af5e158d8198ff99bd6b80a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 278,
+        "gzip_bytes": 23,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "normal",
+      "case": "commission_review-4",
+      "normalized_tables_sha256": {
+        "analysis_memo": "a34a438101e7b57e88e3ed0990e19655a579eb60056df13a9f9911ca052c5bc4",
+        "bills": "e8f3edde3512862b84e4133b66119b0c2c50919f338c556b7197d766ec04ace4",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "5e51df48bdf93dcc19a3fac5be9b97b3da70b5e96916fe702e603edd91a967f9",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "a0937499628a643a6b1c0b3d2a96165c5f3c348a5167dcaafcab609cd74f0eec",
+        "llm_batches": "f42e50a36bbf9f4a3ac939f6d7b81a008bf2bdd8f252bf72a3defddca5e1f0d5",
+        "publication_sequence": "95d0785ab87494735f6561cf62d95c5c7bf73b644442536b2fe5c13c25d65c75",
+        "publications": "83dba89d09304f180965a95139c8efc32f569f885594127db133d98372b6becf",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "2e81a920e5b23f38e89074c1f4959b89e7976ecc1851d33d481229b9c0ee0223",
+        "runs": "eab50b6ea2ba89592c9d708b528869e0d4807cac7af5e158d8198ff99bd6b80a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 278,
+        "gzip_bytes": 22,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "normal",
+      "case": "joint-4",
+      "normalized_tables_sha256": {
+        "analysis_memo": "913144dab48cee1f8e6b7f811b8bdfe131120e658e7c831b9097fb3ee62cc47e",
+        "bills": "09220c7ebd8406e1ba3cc3f53a8806093ec7cd8074bf8efcb859bb2a18df024a",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "d86535f88f579bf48a9f2bf70ccca3e1b377717238d6770ee6db600a97a74ad3",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "f7febca9aa4a30904cf8844eea68dc93593c1302818f633376065ae479c305bc",
+        "llm_batches": "85ad372d01b59634a06a998b9fb602185e79818458390d01911d715f87407bbb",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "8e5ce17f43be6a026dbeed2a5b26d512c5c34d501e7d09203b2cfb5e142bb254",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "d784fe439654c3bd94704114330838c72d1dcf9a99da71533fbdc4aa52ca8707",
+        "runs": "84d1965864d24ffea94ac338da8a5e86f1292438ef73fe003c71aec3fb33dcdc",
+        "source_checks": "47c2e3116d9e78db810488f8eb4aae55c555365e34564ad95d77973cdec37211",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 246,
+        "gzip_bytes": 24,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "normal",
+      "case": "name-4",
+      "normalized_tables_sha256": {
+        "analysis_memo": "3528373eb4f99e98e40f527945a1a5feb87ad8b4cc72b9fbd49b656f8c12399c",
+        "bills": "e1b3e9745296643f2fd08988da2ffd69fc7484688aa05ebe36c25a4681b4cb9d",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "01bddc411618ecaf9bb7b26441f0387873bc1a84da615693f5c09a5450e348dc",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "96dea29e4d2e1de63db20fff98223656cb7b7a3182f32bb3ad3cd967e56696c2",
+        "llm_batches": "a00d1464313d48a8b49344bfaa2549dc71ec4dfa2a7003d8b7e8f4a70c527ac4",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "14d46520c333abc2c4b80f6a92caa8e5bd6f29ca9f3966b5f485fb9ad09811af",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "f642bd9bba9567ab06d3bf28f2bbe0eec9d34c346d6beae3613a6229b931d180",
+        "runs": "e19cf9920e98ef5b0a833fafeef584218515e3595a0deb76b65a4c5f9c3a22e4",
+        "source_checks": "2e1c05a8fcd1bc0b39440e3cd0bfa3bff3ea203e5630b2285b88e3c7b246d4a9",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 492,
+        "gzip_bytes": 30,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "normal",
+      "case": "revision-4",
+      "normalized_tables_sha256": {
+        "analysis_memo": "fd8a3dd6f82a8fc768d06c959d25222d38993a846fc02943d0ffa0883ea462ba",
+        "bills": "de11c9ea78b093c4a2e994a4a81cd239792e37aeaeff0501400186ac0baa6f3a",
+        "commands": "a67df35a6c6cd9363c50ffb81bc80672927ddaeb8e1f6cb0f18b6c1da26d8414",
+        "computation_results": "f0fb6799ddd98b9efeef77db6beb23604bfe38ff6eea602eec2a69cf976ca258",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "4d0e3ff71987186feebc72d8a59eb512a230ffb7da9bcfc54d6db494d04aaa59",
+        "llm_batches": "57d6dc9fe435e43a783e04e274107ed79baef95274a27b0285c6c15b432bfaab",
+        "publication_sequence": "5c6b1060ab56ece6040d8081225f90ca93e8bc1cc7246a1d1e858ac7fddfff58",
+        "publications": "514954e7c46e655632a3f28348c6a480b4d6b2104f706df809070f1c5d85b6d2",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "36c30c2a88ad32c91fb9a7b8f865088416cecaa5f863bcce40d3aae0bc0b52f7",
+        "runs": "2d165407e03022fb8de6a70ff263455c8e34da1821e8ecbde1257f33dba005f4",
+        "source_checks": "52c97f11422ff7b32419ce7b107961a1ab3fb87fd9cb39a8fc7be065acbda8ed",
+        "status_changes": "10628b29102aeedc8e26c2a338a9eaf49eb6ab817ea2b93925680fd4a7399ad7"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 246,
+        "gzip_bytes": 24,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "normal",
+      "case": "explanation-4",
+      "normalized_tables_sha256": {
+        "analysis_memo": "f929db88fd6299050fbd7258d2b641280a03067071c2523b066567cf97aee6da",
+        "bills": "9c7bd221b0f4d3d6c6f865297b217a16d08da595b73b9c5865efd07cb029d814",
+        "commands": "966e7b14f32ebc3bd9b3c0c84ac85b9fd564f0a19846dbd233c9b689cfc57e63",
+        "computation_results": "e3016e8d34caf178db85e2b5a9b43a7a9bf7d2b0617df73286237f6dc07940fc",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "cd05dcb8966198b198c165be7996c9a46641d701b99447792b49378c6b4a087c",
+        "llm_batches": "ea85d6874411a361425ae0d3b694840a557b2a3997e75bae4656cdf2d2fe7182",
+        "publication_sequence": "95d0785ab87494735f6561cf62d95c5c7bf73b644442536b2fe5c13c25d65c75",
+        "publications": "83dba89d09304f180965a95139c8efc32f569f885594127db133d98372b6becf",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "47467efa42f0d98b9aa0857997f4a9f1fbdc510ccb7d9a86190a93d72f4e83a0",
+        "runs": "b4ccb50afa75bd24058b44f825ddbb41762eda307c658394bd55660c145171cd",
+        "source_checks": "2e1c05a8fcd1bc0b39440e3cd0bfa3bff3ea203e5630b2285b88e3c7b246d4a9",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 246,
+        "gzip_bytes": 26,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "reuse",
+      "case": "gpt-5.1-1-amendments",
+      "normalized_tables_sha256": {
+        "analysis_memo": "4c031076b36e78b86df5a7a2190f66e9f7c4d96d738e689eca3660a410c6d424",
+        "bills": "42c3ff7f89116b25755de7d127f3f5f454ebd2909b4678d0278802042dcaf584",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "a42d2f6392e1bfeab169b5e528e8841ea6cdfc0e99bc24408345849fecdbb0a8",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "b605e8c516b0b47c670638b5528cef89ce42906658b6ad53afd8926dadc1b1a5",
+        "llm_batches": "1a8e639650977d0216c958fe4267f47c1c6920a867757729d9ed0e2919f68ed7",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "9719ea7793a50e484c77d26b083b4e2753aee687f10b1a4618dd8920d61068ff",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "604b0e20311e82fe311b07719b588e1d9ce1f0411af8015851e27d149c5ab4f0",
+        "runs": "c3f6557dbbf7506dd377925efde7d5676d705f40fe10ba6eed61fa2371244c3a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 3,
+        "llm_batch_items": 3
+      },
+      "delta": {
+        "sql_bytes": 738,
+        "gzip_bytes": 49,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "reuse",
+      "case": "gpt-5.1-1-supplement",
+      "normalized_tables_sha256": {
+        "analysis_memo": "d323ee58db0d45e604741ff368eb510d4717903ba1707e4a4b5b5bdfb1501743",
+        "bills": "42c3ff7f89116b25755de7d127f3f5f454ebd2909b4678d0278802042dcaf584",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "e3bfe4d427bf3df06f28023090a9c52c69a6e6c0637fdf40e74ca76b704783e7",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "340e90ec7165a76a0d22732be94ac8305c3a50e6d6a6080f58f58dfe47b212af",
+        "llm_batches": "6b3c1b998c20329976b8774030edfdad693630184ad9f3b6769cbd741a951a3e",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "9719ea7793a50e484c77d26b083b4e2753aee687f10b1a4618dd8920d61068ff",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "604b0e20311e82fe311b07719b588e1d9ce1f0411af8015851e27d149c5ab4f0",
+        "runs": "c3f6557dbbf7506dd377925efde7d5676d705f40fe10ba6eed61fa2371244c3a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 3,
+        "llm_batch_items": 3
+      },
+      "delta": {
+        "sql_bytes": 738,
+        "gzip_bytes": 50,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "reuse",
+      "case": "gpt-5.1-1-joint",
+      "normalized_tables_sha256": {
+        "analysis_memo": "7b47bd6270071502fd78ca5137a2288ca2244e8f378003091f9e57ca246c161e",
+        "bills": "42c3ff7f89116b25755de7d127f3f5f454ebd2909b4678d0278802042dcaf584",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "51d1761ea5cc100591e88af0a79de606e1e1d696180e74b9c1f005204249afa8",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "0ed575712cf3712c5a11a79038563cf9ded19ed7d1feadf6a723c9cec016052b",
+        "llm_batches": "f4f5f47a819d6c319973e3a1b6fd135239b1777e89c4b5ec4e15a75fcb0ceed2",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "9719ea7793a50e484c77d26b083b4e2753aee687f10b1a4618dd8920d61068ff",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "604b0e20311e82fe311b07719b588e1d9ce1f0411af8015851e27d149c5ab4f0",
+        "runs": "c3f6557dbbf7506dd377925efde7d5676d705f40fe10ba6eed61fa2371244c3a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 3,
+        "llm_batch_items": 3
+      },
+      "delta": {
+        "sql_bytes": 738,
+        "gzip_bytes": 62,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "reuse",
+      "case": "gpt-5.1-1-name",
+      "normalized_tables_sha256": {
+        "analysis_memo": "bdb614d564185d820abfa93942c9ed9331338d81a89dea62c355077079550c17",
+        "bills": "42c3ff7f89116b25755de7d127f3f5f454ebd2909b4678d0278802042dcaf584",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "fc726bb913d94cdfb20f725267e3f5e186bd2e4246771496f3f4a0960bd28e27",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "1c371d4387051f20edf781bd2d53ffb4929dec4afd59db3d7b4cc7dca574404f",
+        "llm_batches": "cfb509376f1b903b52fd4ca6c83e29d21068b3b9b49f48504bc91e9ed31825eb",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "9719ea7793a50e484c77d26b083b4e2753aee687f10b1a4618dd8920d61068ff",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "604b0e20311e82fe311b07719b588e1d9ce1f0411af8015851e27d149c5ab4f0",
+        "runs": "c3f6557dbbf7506dd377925efde7d5676d705f40fe10ba6eed61fa2371244c3a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 3,
+        "llm_batch_items": 3
+      },
+      "delta": {
+        "sql_bytes": 738,
+        "gzip_bytes": 62,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "reuse",
+      "case": "gpt-5.1-4-amendments",
+      "normalized_tables_sha256": {
+        "analysis_memo": "4c031076b36e78b86df5a7a2190f66e9f7c4d96d738e689eca3660a410c6d424",
+        "bills": "42c3ff7f89116b25755de7d127f3f5f454ebd2909b4678d0278802042dcaf584",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "a42d2f6392e1bfeab169b5e528e8841ea6cdfc0e99bc24408345849fecdbb0a8",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "b605e8c516b0b47c670638b5528cef89ce42906658b6ad53afd8926dadc1b1a5",
+        "llm_batches": "1a8e639650977d0216c958fe4267f47c1c6920a867757729d9ed0e2919f68ed7",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "9719ea7793a50e484c77d26b083b4e2753aee687f10b1a4618dd8920d61068ff",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "604b0e20311e82fe311b07719b588e1d9ce1f0411af8015851e27d149c5ab4f0",
+        "runs": "c3f6557dbbf7506dd377925efde7d5676d705f40fe10ba6eed61fa2371244c3a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 3,
+        "llm_batch_items": 3
+      },
+      "delta": {
+        "sql_bytes": 738,
+        "gzip_bytes": 49,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "reuse",
+      "case": "gpt-5.1-4-supplement",
+      "normalized_tables_sha256": {
+        "analysis_memo": "d323ee58db0d45e604741ff368eb510d4717903ba1707e4a4b5b5bdfb1501743",
+        "bills": "42c3ff7f89116b25755de7d127f3f5f454ebd2909b4678d0278802042dcaf584",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "e3bfe4d427bf3df06f28023090a9c52c69a6e6c0637fdf40e74ca76b704783e7",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "340e90ec7165a76a0d22732be94ac8305c3a50e6d6a6080f58f58dfe47b212af",
+        "llm_batches": "6b3c1b998c20329976b8774030edfdad693630184ad9f3b6769cbd741a951a3e",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "9719ea7793a50e484c77d26b083b4e2753aee687f10b1a4618dd8920d61068ff",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "604b0e20311e82fe311b07719b588e1d9ce1f0411af8015851e27d149c5ab4f0",
+        "runs": "c3f6557dbbf7506dd377925efde7d5676d705f40fe10ba6eed61fa2371244c3a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 3,
+        "llm_batch_items": 3
+      },
+      "delta": {
+        "sql_bytes": 738,
+        "gzip_bytes": 50,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "reuse",
+      "case": "gpt-5.1-4-joint",
+      "normalized_tables_sha256": {
+        "analysis_memo": "7b47bd6270071502fd78ca5137a2288ca2244e8f378003091f9e57ca246c161e",
+        "bills": "42c3ff7f89116b25755de7d127f3f5f454ebd2909b4678d0278802042dcaf584",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "51d1761ea5cc100591e88af0a79de606e1e1d696180e74b9c1f005204249afa8",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "0ed575712cf3712c5a11a79038563cf9ded19ed7d1feadf6a723c9cec016052b",
+        "llm_batches": "f4f5f47a819d6c319973e3a1b6fd135239b1777e89c4b5ec4e15a75fcb0ceed2",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "9719ea7793a50e484c77d26b083b4e2753aee687f10b1a4618dd8920d61068ff",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "604b0e20311e82fe311b07719b588e1d9ce1f0411af8015851e27d149c5ab4f0",
+        "runs": "c3f6557dbbf7506dd377925efde7d5676d705f40fe10ba6eed61fa2371244c3a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 3,
+        "llm_batch_items": 3
+      },
+      "delta": {
+        "sql_bytes": 738,
+        "gzip_bytes": 62,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "reuse",
+      "case": "gpt-5.1-4-name",
+      "normalized_tables_sha256": {
+        "analysis_memo": "bdb614d564185d820abfa93942c9ed9331338d81a89dea62c355077079550c17",
+        "bills": "42c3ff7f89116b25755de7d127f3f5f454ebd2909b4678d0278802042dcaf584",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "fc726bb913d94cdfb20f725267e3f5e186bd2e4246771496f3f4a0960bd28e27",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "1c371d4387051f20edf781bd2d53ffb4929dec4afd59db3d7b4cc7dca574404f",
+        "llm_batches": "cfb509376f1b903b52fd4ca6c83e29d21068b3b9b49f48504bc91e9ed31825eb",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "9719ea7793a50e484c77d26b083b4e2753aee687f10b1a4618dd8920d61068ff",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "604b0e20311e82fe311b07719b588e1d9ce1f0411af8015851e27d149c5ab4f0",
+        "runs": "c3f6557dbbf7506dd377925efde7d5676d705f40fe10ba6eed61fa2371244c3a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 3,
+        "llm_batch_items": 3
+      },
+      "delta": {
+        "sql_bytes": 738,
+        "gzip_bytes": 62,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "reuse",
+      "case": "claude-opus-5-5-1-amendments",
+      "normalized_tables_sha256": {
+        "analysis_memo": "b0f43ebe7877473a3bb073c0de936bcb059d6e024bdd1ed20f05385ef2ab234b",
+        "bills": "e3e0c9528099c432aa8b691f4af11adaa04866ab646732c7f24045ed8a30ab07",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "2d9f24b1bf437c84c0048ba6f9a45642b39e27ee2e702a34a2c168cc59eb3f85",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "b605e8c516b0b47c670638b5528cef89ce42906658b6ad53afd8926dadc1b1a5",
+        "llm_batches": "43f713b489c38cc8d87c34b44e6c423a40445e21c84c1680d58af4c642b50d74",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "9719ea7793a50e484c77d26b083b4e2753aee687f10b1a4618dd8920d61068ff",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "42e72825e70d89d259ccbfd27b09f6ec9076ee2c16dd06c830e0d1a369e00525",
+        "runs": "c3f6557dbbf7506dd377925efde7d5676d705f40fe10ba6eed61fa2371244c3a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 3,
+        "llm_batch_items": 3
+      },
+      "delta": {
+        "sql_bytes": 738,
+        "gzip_bytes": 50,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "reuse",
+      "case": "claude-opus-5-5-1-supplement",
+      "normalized_tables_sha256": {
+        "analysis_memo": "456ba0428ce9d9b0564d8b24a1c05506f52e709a090355aa9f2d956c6c5ba581",
+        "bills": "e3e0c9528099c432aa8b691f4af11adaa04866ab646732c7f24045ed8a30ab07",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "e6378557c2fef0b592daf6b7441fe9ff4d0ed1e4ecf61df51b8df17c12dfdd51",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "340e90ec7165a76a0d22732be94ac8305c3a50e6d6a6080f58f58dfe47b212af",
+        "llm_batches": "bdff52026876e9abf08046409919a994961f0dfb06279635d6238427470b714d",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "9719ea7793a50e484c77d26b083b4e2753aee687f10b1a4618dd8920d61068ff",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "42e72825e70d89d259ccbfd27b09f6ec9076ee2c16dd06c830e0d1a369e00525",
+        "runs": "c3f6557dbbf7506dd377925efde7d5676d705f40fe10ba6eed61fa2371244c3a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 3,
+        "llm_batch_items": 3
+      },
+      "delta": {
+        "sql_bytes": 738,
+        "gzip_bytes": 51,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "reuse",
+      "case": "claude-opus-5-5-1-joint",
+      "normalized_tables_sha256": {
+        "analysis_memo": "78889693c8b8a9a65c501d80742b50ae4e822972c92bfd0fb0ed1580ebb08a02",
+        "bills": "e3e0c9528099c432aa8b691f4af11adaa04866ab646732c7f24045ed8a30ab07",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "cb7c174b30e19c921ba318ffc0034a4bd386cc50eb91169a0d6f0067c143b5f2",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "0ed575712cf3712c5a11a79038563cf9ded19ed7d1feadf6a723c9cec016052b",
+        "llm_batches": "f09b1f43b2030f0eef34f7568ead9deef7955547acbf97607aaf7f20d9e41f0c",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "9719ea7793a50e484c77d26b083b4e2753aee687f10b1a4618dd8920d61068ff",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "42e72825e70d89d259ccbfd27b09f6ec9076ee2c16dd06c830e0d1a369e00525",
+        "runs": "c3f6557dbbf7506dd377925efde7d5676d705f40fe10ba6eed61fa2371244c3a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 3,
+        "llm_batch_items": 3
+      },
+      "delta": {
+        "sql_bytes": 738,
+        "gzip_bytes": 60,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "reuse",
+      "case": "claude-opus-5-5-1-name",
+      "normalized_tables_sha256": {
+        "analysis_memo": "517ecc75effc37df331cbc991ce64ebfa66c8d822142f4715bfa432d70b239ea",
+        "bills": "e3e0c9528099c432aa8b691f4af11adaa04866ab646732c7f24045ed8a30ab07",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "90972f021879d30a330e01067b97bf87c50b2f6af76b4fda66090e518199abc2",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "1c371d4387051f20edf781bd2d53ffb4929dec4afd59db3d7b4cc7dca574404f",
+        "llm_batches": "993cbcbc3957becc197964c2e8cf4035bddcafb8df8443226463d4e97d50bace",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "9719ea7793a50e484c77d26b083b4e2753aee687f10b1a4618dd8920d61068ff",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "42e72825e70d89d259ccbfd27b09f6ec9076ee2c16dd06c830e0d1a369e00525",
+        "runs": "c3f6557dbbf7506dd377925efde7d5676d705f40fe10ba6eed61fa2371244c3a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 3,
+        "llm_batch_items": 3
+      },
+      "delta": {
+        "sql_bytes": 738,
+        "gzip_bytes": 62,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "reuse",
+      "case": "claude-opus-5-5-4-amendments",
+      "normalized_tables_sha256": {
+        "analysis_memo": "b0f43ebe7877473a3bb073c0de936bcb059d6e024bdd1ed20f05385ef2ab234b",
+        "bills": "e3e0c9528099c432aa8b691f4af11adaa04866ab646732c7f24045ed8a30ab07",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "2d9f24b1bf437c84c0048ba6f9a45642b39e27ee2e702a34a2c168cc59eb3f85",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "b605e8c516b0b47c670638b5528cef89ce42906658b6ad53afd8926dadc1b1a5",
+        "llm_batches": "43f713b489c38cc8d87c34b44e6c423a40445e21c84c1680d58af4c642b50d74",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "9719ea7793a50e484c77d26b083b4e2753aee687f10b1a4618dd8920d61068ff",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "42e72825e70d89d259ccbfd27b09f6ec9076ee2c16dd06c830e0d1a369e00525",
+        "runs": "c3f6557dbbf7506dd377925efde7d5676d705f40fe10ba6eed61fa2371244c3a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 3,
+        "llm_batch_items": 3
+      },
+      "delta": {
+        "sql_bytes": 738,
+        "gzip_bytes": 50,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "reuse",
+      "case": "claude-opus-5-5-4-supplement",
+      "normalized_tables_sha256": {
+        "analysis_memo": "456ba0428ce9d9b0564d8b24a1c05506f52e709a090355aa9f2d956c6c5ba581",
+        "bills": "e3e0c9528099c432aa8b691f4af11adaa04866ab646732c7f24045ed8a30ab07",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "e6378557c2fef0b592daf6b7441fe9ff4d0ed1e4ecf61df51b8df17c12dfdd51",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "340e90ec7165a76a0d22732be94ac8305c3a50e6d6a6080f58f58dfe47b212af",
+        "llm_batches": "bdff52026876e9abf08046409919a994961f0dfb06279635d6238427470b714d",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "9719ea7793a50e484c77d26b083b4e2753aee687f10b1a4618dd8920d61068ff",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "42e72825e70d89d259ccbfd27b09f6ec9076ee2c16dd06c830e0d1a369e00525",
+        "runs": "c3f6557dbbf7506dd377925efde7d5676d705f40fe10ba6eed61fa2371244c3a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 3,
+        "llm_batch_items": 3
+      },
+      "delta": {
+        "sql_bytes": 738,
+        "gzip_bytes": 51,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "reuse",
+      "case": "claude-opus-5-5-4-joint",
+      "normalized_tables_sha256": {
+        "analysis_memo": "78889693c8b8a9a65c501d80742b50ae4e822972c92bfd0fb0ed1580ebb08a02",
+        "bills": "e3e0c9528099c432aa8b691f4af11adaa04866ab646732c7f24045ed8a30ab07",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "cb7c174b30e19c921ba318ffc0034a4bd386cc50eb91169a0d6f0067c143b5f2",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "0ed575712cf3712c5a11a79038563cf9ded19ed7d1feadf6a723c9cec016052b",
+        "llm_batches": "f09b1f43b2030f0eef34f7568ead9deef7955547acbf97607aaf7f20d9e41f0c",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "9719ea7793a50e484c77d26b083b4e2753aee687f10b1a4618dd8920d61068ff",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "42e72825e70d89d259ccbfd27b09f6ec9076ee2c16dd06c830e0d1a369e00525",
+        "runs": "c3f6557dbbf7506dd377925efde7d5676d705f40fe10ba6eed61fa2371244c3a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 3,
+        "llm_batch_items": 3
+      },
+      "delta": {
+        "sql_bytes": 738,
+        "gzip_bytes": 60,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "reuse",
+      "case": "claude-opus-5-5-4-name",
+      "normalized_tables_sha256": {
+        "analysis_memo": "517ecc75effc37df331cbc991ce64ebfa66c8d822142f4715bfa432d70b239ea",
+        "bills": "e3e0c9528099c432aa8b691f4af11adaa04866ab646732c7f24045ed8a30ab07",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "90972f021879d30a330e01067b97bf87c50b2f6af76b4fda66090e518199abc2",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "1c371d4387051f20edf781bd2d53ffb4929dec4afd59db3d7b4cc7dca574404f",
+        "llm_batches": "993cbcbc3957becc197964c2e8cf4035bddcafb8df8443226463d4e97d50bace",
+        "publication_sequence": "9b0188c6ad2164a3bfa84988d16d9583775e4038554f707f3f3b7deec28911df",
+        "publications": "9719ea7793a50e484c77d26b083b4e2753aee687f10b1a4618dd8920d61068ff",
+        "rcl_wykaz_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_applications": "42e72825e70d89d259ccbfd27b09f6ec9076ee2c16dd06c830e0d1a369e00525",
+        "runs": "c3f6557dbbf7506dd377925efde7d5676d705f40fe10ba6eed61fa2371244c3a",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 3,
+        "llm_batch_items": 3
+      },
+      "delta": {
+        "sql_bytes": 738,
+        "gzip_bytes": 62,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "gpt-5.1-1-open",
+      "normalized_tables_sha256": {
+        "analysis_memo": "f35f94a67466b5c74fcd1155a2f238fd5f0f0c9e6ca3c6a3b33d8ef370232854",
+        "bills": "19b64b4a9a0b9153d670611a0d7c4433d34414da4cf632c3d0106fdaca67ef5c",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "3ee6bfe903c3919e942d344b7d5db3c150fcbb5d9cdddcd674b7a522e007377a",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "51f0de12e209362787d3847da6dc965f66d684fc0429e645c643d8a8de4b2091",
+        "llm_batches": "111ae2136b46f8d49ee9be3fac387021563eef23ac10992ccb34ce64245aa5cb",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "bb1f83c4f1f0364246cebf8f8e9fac472c2726d6b7f0ba8d0978b8aa8f788bd9",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 262,
+        "gzip_bytes": 23,
+        "sqlite_bytes": 4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "gpt-5.1-1-ready",
+      "normalized_tables_sha256": {
+        "analysis_memo": "e63d74a6142f6cb7450d77a81506d470d40b4de6a25f4a737cc6ba2cd422f099",
+        "bills": "ade218392bc5e45ad5d1c81e972245337f5d710202413a2a4c974a37378208a0",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "08b914b3f407b74bb5cb33ce91d7f7e684b2ec2150008e2e888335c1a47baac0",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "b9390748ff4ec89869c82850cd59221dddb250ff2e29b88482889e9d47146a68",
+        "llm_batches": "111ae2136b46f8d49ee9be3fac387021563eef23ac10992ccb34ce64245aa5cb",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "06236ba6faa4179e2cd7034fdff34fb89ede7a4e83e75dbf53db96c84dea52a5",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 262,
+        "gzip_bytes": 24,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "gpt-5.1-1-consultation-queued",
+      "normalized_tables_sha256": {
+        "analysis_memo": "3fcde54854beecb1ada3ede814a06b4dc56c3b44231efa05131f63a229c4876e",
+        "bills": "19b64b4a9a0b9153d670611a0d7c4433d34414da4cf632c3d0106fdaca67ef5c",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "18073b3be1c79b0a3eee8ba80a87107ba8bb9325f6e193f178e04ca1c0896e90",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "068f3f458d4ee60b94b91257be47c373b3ad3102baa3594361ba90193dd0c2ef",
+        "llm_batches": "14a4a855e76f0bed89f7c9b3262e9f2b886151c88218097b4189307863bcd052",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "bb1f83c4f1f0364246cebf8f8e9fac472c2726d6b7f0ba8d0978b8aa8f788bd9",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 556,
+        "gzip_bytes": 33,
+        "sqlite_bytes": -4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "gpt-5.1-1-consultation-open",
+      "normalized_tables_sha256": {
+        "analysis_memo": "3fcde54854beecb1ada3ede814a06b4dc56c3b44231efa05131f63a229c4876e",
+        "bills": "19b64b4a9a0b9153d670611a0d7c4433d34414da4cf632c3d0106fdaca67ef5c",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "18073b3be1c79b0a3eee8ba80a87107ba8bb9325f6e193f178e04ca1c0896e90",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "068f3f458d4ee60b94b91257be47c373b3ad3102baa3594361ba90193dd0c2ef",
+        "llm_batches": "14a4a855e76f0bed89f7c9b3262e9f2b886151c88218097b4189307863bcd052",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "bb1f83c4f1f0364246cebf8f8e9fac472c2726d6b7f0ba8d0978b8aa8f788bd9",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 556,
+        "gzip_bytes": 33,
+        "sqlite_bytes": -4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "gpt-5.1-1-commission-queued",
+      "normalized_tables_sha256": {
+        "analysis_memo": "6593f23a9115115ca0a201171c8beb7e6eb5cd4e31667b367f4629b0be5e4668",
+        "bills": "19b64b4a9a0b9153d670611a0d7c4433d34414da4cf632c3d0106fdaca67ef5c",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "8039200f8bdab69cd85d92a0430380c7bff5564df43e364c394e84fdee6292fc",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "040b7a495fbcea52db68a4cce12e5589f02702ffc5390597f90c87d58da592fe",
+        "llm_batches": "f4e7e1930e5aca4b0fb09886de0c58e1f925d59227b48e406c7f2430c1de11a6",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "bb1f83c4f1f0364246cebf8f8e9fac472c2726d6b7f0ba8d0978b8aa8f788bd9",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 556,
+        "gzip_bytes": 44,
+        "sqlite_bytes": -4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "gpt-5.1-1-commission-open",
+      "normalized_tables_sha256": {
+        "analysis_memo": "6593f23a9115115ca0a201171c8beb7e6eb5cd4e31667b367f4629b0be5e4668",
+        "bills": "19b64b4a9a0b9153d670611a0d7c4433d34414da4cf632c3d0106fdaca67ef5c",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "8039200f8bdab69cd85d92a0430380c7bff5564df43e364c394e84fdee6292fc",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "040b7a495fbcea52db68a4cce12e5589f02702ffc5390597f90c87d58da592fe",
+        "llm_batches": "f4e7e1930e5aca4b0fb09886de0c58e1f925d59227b48e406c7f2430c1de11a6",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "bb1f83c4f1f0364246cebf8f8e9fac472c2726d6b7f0ba8d0978b8aa8f788bd9",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 556,
+        "gzip_bytes": 44,
+        "sqlite_bytes": -4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "gpt-5.1-4-open",
+      "normalized_tables_sha256": {
+        "analysis_memo": "f35f94a67466b5c74fcd1155a2f238fd5f0f0c9e6ca3c6a3b33d8ef370232854",
+        "bills": "19b64b4a9a0b9153d670611a0d7c4433d34414da4cf632c3d0106fdaca67ef5c",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "3ee6bfe903c3919e942d344b7d5db3c150fcbb5d9cdddcd674b7a522e007377a",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "51f0de12e209362787d3847da6dc965f66d684fc0429e645c643d8a8de4b2091",
+        "llm_batches": "111ae2136b46f8d49ee9be3fac387021563eef23ac10992ccb34ce64245aa5cb",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "bb1f83c4f1f0364246cebf8f8e9fac472c2726d6b7f0ba8d0978b8aa8f788bd9",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 262,
+        "gzip_bytes": 23,
+        "sqlite_bytes": 4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "gpt-5.1-4-ready",
+      "normalized_tables_sha256": {
+        "analysis_memo": "e63d74a6142f6cb7450d77a81506d470d40b4de6a25f4a737cc6ba2cd422f099",
+        "bills": "ade218392bc5e45ad5d1c81e972245337f5d710202413a2a4c974a37378208a0",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "08b914b3f407b74bb5cb33ce91d7f7e684b2ec2150008e2e888335c1a47baac0",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "b9390748ff4ec89869c82850cd59221dddb250ff2e29b88482889e9d47146a68",
+        "llm_batches": "111ae2136b46f8d49ee9be3fac387021563eef23ac10992ccb34ce64245aa5cb",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "06236ba6faa4179e2cd7034fdff34fb89ede7a4e83e75dbf53db96c84dea52a5",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 262,
+        "gzip_bytes": 24,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "gpt-5.1-4-consultation-queued",
+      "normalized_tables_sha256": {
+        "analysis_memo": "3fcde54854beecb1ada3ede814a06b4dc56c3b44231efa05131f63a229c4876e",
+        "bills": "19b64b4a9a0b9153d670611a0d7c4433d34414da4cf632c3d0106fdaca67ef5c",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "18073b3be1c79b0a3eee8ba80a87107ba8bb9325f6e193f178e04ca1c0896e90",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "068f3f458d4ee60b94b91257be47c373b3ad3102baa3594361ba90193dd0c2ef",
+        "llm_batches": "14a4a855e76f0bed89f7c9b3262e9f2b886151c88218097b4189307863bcd052",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "bb1f83c4f1f0364246cebf8f8e9fac472c2726d6b7f0ba8d0978b8aa8f788bd9",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 556,
+        "gzip_bytes": 33,
+        "sqlite_bytes": -4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "gpt-5.1-4-consultation-open",
+      "normalized_tables_sha256": {
+        "analysis_memo": "3fcde54854beecb1ada3ede814a06b4dc56c3b44231efa05131f63a229c4876e",
+        "bills": "19b64b4a9a0b9153d670611a0d7c4433d34414da4cf632c3d0106fdaca67ef5c",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "18073b3be1c79b0a3eee8ba80a87107ba8bb9325f6e193f178e04ca1c0896e90",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "068f3f458d4ee60b94b91257be47c373b3ad3102baa3594361ba90193dd0c2ef",
+        "llm_batches": "14a4a855e76f0bed89f7c9b3262e9f2b886151c88218097b4189307863bcd052",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "bb1f83c4f1f0364246cebf8f8e9fac472c2726d6b7f0ba8d0978b8aa8f788bd9",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 556,
+        "gzip_bytes": 33,
+        "sqlite_bytes": -4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "gpt-5.1-4-commission-queued",
+      "normalized_tables_sha256": {
+        "analysis_memo": "6593f23a9115115ca0a201171c8beb7e6eb5cd4e31667b367f4629b0be5e4668",
+        "bills": "19b64b4a9a0b9153d670611a0d7c4433d34414da4cf632c3d0106fdaca67ef5c",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "8039200f8bdab69cd85d92a0430380c7bff5564df43e364c394e84fdee6292fc",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "040b7a495fbcea52db68a4cce12e5589f02702ffc5390597f90c87d58da592fe",
+        "llm_batches": "f4e7e1930e5aca4b0fb09886de0c58e1f925d59227b48e406c7f2430c1de11a6",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "bb1f83c4f1f0364246cebf8f8e9fac472c2726d6b7f0ba8d0978b8aa8f788bd9",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 556,
+        "gzip_bytes": 44,
+        "sqlite_bytes": -4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "gpt-5.1-4-commission-open",
+      "normalized_tables_sha256": {
+        "analysis_memo": "6593f23a9115115ca0a201171c8beb7e6eb5cd4e31667b367f4629b0be5e4668",
+        "bills": "19b64b4a9a0b9153d670611a0d7c4433d34414da4cf632c3d0106fdaca67ef5c",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "8039200f8bdab69cd85d92a0430380c7bff5564df43e364c394e84fdee6292fc",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "040b7a495fbcea52db68a4cce12e5589f02702ffc5390597f90c87d58da592fe",
+        "llm_batches": "f4e7e1930e5aca4b0fb09886de0c58e1f925d59227b48e406c7f2430c1de11a6",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "bb1f83c4f1f0364246cebf8f8e9fac472c2726d6b7f0ba8d0978b8aa8f788bd9",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 556,
+        "gzip_bytes": 44,
+        "sqlite_bytes": -4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "claude-opus-5-5-1-open",
+      "normalized_tables_sha256": {
+        "analysis_memo": "d236f8d5b1a132fac936e468c0d6c85037f2739e03f29c3f616bf9ad9c85b96a",
+        "bills": "57a55032d0ba751ab7d36f666147e2e6fd018be9f9f7b6e671af864317c1bc1a",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "2f34130798f7b253e75b60e1ff42e2e5e6ba187cde71cdcb3915163c72881515",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "51f0de12e209362787d3847da6dc965f66d684fc0429e645c643d8a8de4b2091",
+        "llm_batches": "5fe84a4b94e2c26a61af5d3c1cabd35b322cdce4b0013ec8fd16d1e0e39bc5fe",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "006bdb78671330eac9759ef0e040e97f71abc9bbb3c7f2742aafc8287a699fa6",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 262,
+        "gzip_bytes": 22,
+        "sqlite_bytes": 4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "claude-opus-5-5-1-ready",
+      "normalized_tables_sha256": {
+        "analysis_memo": "7ed35ddc08f1bb2ebc5694be3c48151834e6a9e9e2365e99e5ac54f0b3112d17",
+        "bills": "30c66d0a0ee0c4c3f91cdb9bd5782d8c7118f7cdcd77bb812be943cc3ad42710",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "8070f7e52c3131f37f128b5ff177c3f1c410f5c7dd9a3018d4fed3e26c8eb86f",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "b9390748ff4ec89869c82850cd59221dddb250ff2e29b88482889e9d47146a68",
+        "llm_batches": "5fe84a4b94e2c26a61af5d3c1cabd35b322cdce4b0013ec8fd16d1e0e39bc5fe",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "06634a801f98c0363bff5646ecaddd1f590c4dcb55d1857b2708c4f8b5975fd2",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 262,
+        "gzip_bytes": 23,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "claude-opus-5-5-1-consultation-queued",
+      "normalized_tables_sha256": {
+        "analysis_memo": "fa6fbbcc615760f8b560741d6226c21ab162e0d02a8a5f974728f7e6fc33b473",
+        "bills": "57a55032d0ba751ab7d36f666147e2e6fd018be9f9f7b6e671af864317c1bc1a",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "e8b8fe80dfb355b4e1c01ffc80c8e5fc9876f3b2c6c774e706ca1d64a0a6f480",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "068f3f458d4ee60b94b91257be47c373b3ad3102baa3594361ba90193dd0c2ef",
+        "llm_batches": "35d1e30efd0a491035722fdbff5c82ab3e3e2173237ae6ce7c0a0fb13377b94d",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "006bdb78671330eac9759ef0e040e97f71abc9bbb3c7f2742aafc8287a699fa6",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 556,
+        "gzip_bytes": 32,
+        "sqlite_bytes": -4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "claude-opus-5-5-1-consultation-open",
+      "normalized_tables_sha256": {
+        "analysis_memo": "fa6fbbcc615760f8b560741d6226c21ab162e0d02a8a5f974728f7e6fc33b473",
+        "bills": "57a55032d0ba751ab7d36f666147e2e6fd018be9f9f7b6e671af864317c1bc1a",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "e8b8fe80dfb355b4e1c01ffc80c8e5fc9876f3b2c6c774e706ca1d64a0a6f480",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "068f3f458d4ee60b94b91257be47c373b3ad3102baa3594361ba90193dd0c2ef",
+        "llm_batches": "35d1e30efd0a491035722fdbff5c82ab3e3e2173237ae6ce7c0a0fb13377b94d",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "006bdb78671330eac9759ef0e040e97f71abc9bbb3c7f2742aafc8287a699fa6",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 556,
+        "gzip_bytes": 32,
+        "sqlite_bytes": -4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "claude-opus-5-5-1-commission-queued",
+      "normalized_tables_sha256": {
+        "analysis_memo": "88b8607b0077e7f93d51b2161a9f1bcd9ba4d1ce8d939cc4907a10e7c481ce3b",
+        "bills": "57a55032d0ba751ab7d36f666147e2e6fd018be9f9f7b6e671af864317c1bc1a",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "3c1b0b7edc33a327566d8ebb4fdfd22faea340ec7eab7b3ab0b67fdda282c09e",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "040b7a495fbcea52db68a4cce12e5589f02702ffc5390597f90c87d58da592fe",
+        "llm_batches": "fb08b6d19532d0673a91cd0828616f38d53cb57d4afa0381899d425156ec8ed2",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "006bdb78671330eac9759ef0e040e97f71abc9bbb3c7f2742aafc8287a699fa6",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 556,
+        "gzip_bytes": 45,
+        "sqlite_bytes": -4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "claude-opus-5-5-1-commission-open",
+      "normalized_tables_sha256": {
+        "analysis_memo": "88b8607b0077e7f93d51b2161a9f1bcd9ba4d1ce8d939cc4907a10e7c481ce3b",
+        "bills": "57a55032d0ba751ab7d36f666147e2e6fd018be9f9f7b6e671af864317c1bc1a",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "3c1b0b7edc33a327566d8ebb4fdfd22faea340ec7eab7b3ab0b67fdda282c09e",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "040b7a495fbcea52db68a4cce12e5589f02702ffc5390597f90c87d58da592fe",
+        "llm_batches": "fb08b6d19532d0673a91cd0828616f38d53cb57d4afa0381899d425156ec8ed2",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "006bdb78671330eac9759ef0e040e97f71abc9bbb3c7f2742aafc8287a699fa6",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 556,
+        "gzip_bytes": 45,
+        "sqlite_bytes": -4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "claude-opus-5-5-4-open",
+      "normalized_tables_sha256": {
+        "analysis_memo": "d236f8d5b1a132fac936e468c0d6c85037f2739e03f29c3f616bf9ad9c85b96a",
+        "bills": "57a55032d0ba751ab7d36f666147e2e6fd018be9f9f7b6e671af864317c1bc1a",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "2f34130798f7b253e75b60e1ff42e2e5e6ba187cde71cdcb3915163c72881515",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "51f0de12e209362787d3847da6dc965f66d684fc0429e645c643d8a8de4b2091",
+        "llm_batches": "5fe84a4b94e2c26a61af5d3c1cabd35b322cdce4b0013ec8fd16d1e0e39bc5fe",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "006bdb78671330eac9759ef0e040e97f71abc9bbb3c7f2742aafc8287a699fa6",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 262,
+        "gzip_bytes": 22,
+        "sqlite_bytes": 4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "claude-opus-5-5-4-ready",
+      "normalized_tables_sha256": {
+        "analysis_memo": "7ed35ddc08f1bb2ebc5694be3c48151834e6a9e9e2365e99e5ac54f0b3112d17",
+        "bills": "30c66d0a0ee0c4c3f91cdb9bd5782d8c7118f7cdcd77bb812be943cc3ad42710",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "8070f7e52c3131f37f128b5ff177c3f1c410f5c7dd9a3018d4fed3e26c8eb86f",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "b9390748ff4ec89869c82850cd59221dddb250ff2e29b88482889e9d47146a68",
+        "llm_batches": "5fe84a4b94e2c26a61af5d3c1cabd35b322cdce4b0013ec8fd16d1e0e39bc5fe",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "06634a801f98c0363bff5646ecaddd1f590c4dcb55d1857b2708c4f8b5975fd2",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 1,
+        "llm_batch_items": 1
+      },
+      "delta": {
+        "sql_bytes": 262,
+        "gzip_bytes": 23,
+        "sqlite_bytes": 0
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "claude-opus-5-5-4-consultation-queued",
+      "normalized_tables_sha256": {
+        "analysis_memo": "fa6fbbcc615760f8b560741d6226c21ab162e0d02a8a5f974728f7e6fc33b473",
+        "bills": "57a55032d0ba751ab7d36f666147e2e6fd018be9f9f7b6e671af864317c1bc1a",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "e8b8fe80dfb355b4e1c01ffc80c8e5fc9876f3b2c6c774e706ca1d64a0a6f480",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "068f3f458d4ee60b94b91257be47c373b3ad3102baa3594361ba90193dd0c2ef",
+        "llm_batches": "35d1e30efd0a491035722fdbff5c82ab3e3e2173237ae6ce7c0a0fb13377b94d",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "006bdb78671330eac9759ef0e040e97f71abc9bbb3c7f2742aafc8287a699fa6",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 556,
+        "gzip_bytes": 32,
+        "sqlite_bytes": -4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "claude-opus-5-5-4-consultation-open",
+      "normalized_tables_sha256": {
+        "analysis_memo": "fa6fbbcc615760f8b560741d6226c21ab162e0d02a8a5f974728f7e6fc33b473",
+        "bills": "57a55032d0ba751ab7d36f666147e2e6fd018be9f9f7b6e671af864317c1bc1a",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "e8b8fe80dfb355b4e1c01ffc80c8e5fc9876f3b2c6c774e706ca1d64a0a6f480",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "068f3f458d4ee60b94b91257be47c373b3ad3102baa3594361ba90193dd0c2ef",
+        "llm_batches": "35d1e30efd0a491035722fdbff5c82ab3e3e2173237ae6ce7c0a0fb13377b94d",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "006bdb78671330eac9759ef0e040e97f71abc9bbb3c7f2742aafc8287a699fa6",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 556,
+        "gzip_bytes": 32,
+        "sqlite_bytes": -4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "claude-opus-5-5-4-commission-queued",
+      "normalized_tables_sha256": {
+        "analysis_memo": "88b8607b0077e7f93d51b2161a9f1bcd9ba4d1ce8d939cc4907a10e7c481ce3b",
+        "bills": "57a55032d0ba751ab7d36f666147e2e6fd018be9f9f7b6e671af864317c1bc1a",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "3c1b0b7edc33a327566d8ebb4fdfd22faea340ec7eab7b3ab0b67fdda282c09e",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "040b7a495fbcea52db68a4cce12e5589f02702ffc5390597f90c87d58da592fe",
+        "llm_batches": "fb08b6d19532d0673a91cd0828616f38d53cb57d4afa0381899d425156ec8ed2",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "006bdb78671330eac9759ef0e040e97f71abc9bbb3c7f2742aafc8287a699fa6",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 556,
+        "gzip_bytes": 45,
+        "sqlite_bytes": -4096
+      },
+      "all_other_values_equal": true
+    },
+    {
+      "suite": "handoff",
+      "case": "claude-opus-5-5-4-commission-open",
+      "normalized_tables_sha256": {
+        "analysis_memo": "88b8607b0077e7f93d51b2161a9f1bcd9ba4d1ce8d939cc4907a10e7c481ce3b",
+        "bills": "57a55032d0ba751ab7d36f666147e2e6fd018be9f9f7b6e671af864317c1bc1a",
+        "commands": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "computation_results": "3c1b0b7edc33a327566d8ebb4fdfd22faea340ec7eab7b3ab0b67fdda282c09e",
+        "delivery_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "delivery_resolutions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "digest_event_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "document_work": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "effective_rule_links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_intents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "llm_batch_items": "040b7a495fbcea52db68a4cce12e5589f02702ffc5390597f90c87d58da592fe",
+        "llm_batches": "fb08b6d19532d0673a91cd0828616f38d53cb57d4afa0381899d425156ec8ed2",
+        "publication_sequence": "4efa3e37885ce0f2cdb444c81095644898722fbf77a63d8a1386d703b3f0efaa",
+        "publications": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rcl_wykaz_numbers": "df2943dbd71995bba47842aa34455425edd75edc35c84521df9c65ee0b4da495",
+        "result_applications": "006bdb78671330eac9759ef0e040e97f71abc9bbb3c7f2742aafc8287a699fa6",
+        "runs": "c0e16c8af874e65129f3039b5bcbc0d075b8b03315e20b50e63df2c08d150711",
+        "source_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "status_changes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "known_bindings": {
+        "computation_results": 2,
+        "llm_batch_items": 2
+      },
+      "delta": {
+        "sql_bytes": 556,
+        "gzip_bytes": 45,
+        "sqlite_bytes": -4096
+      },
+      "all_other_values_equal": true
+    }
+  ],
+  "delta_ranges": {
+    "sql_bytes": [
+      246,
+      738
+    ],
+    "gzip_bytes": [
+      22,
+      62
+    ],
+    "sqlite_bytes": [
+      -4096,
+      4096
+    ]
+  },
+  "rollback_reader": {
+    "commit": "800ef774e61d88401014310e90f941144ca96a16",
+    "snapshots": [
+      {
+        "snapshot": "normal-current/commission_review-1.sql",
+        "sha256": "e453247a5409a23cc8e0dfb55911d5e81021b8294f5947c64d7f5dd8e1072d25",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/commission_review-4.sql",
+        "sha256": "e453247a5409a23cc8e0dfb55911d5e81021b8294f5947c64d7f5dd8e1072d25",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/consultation_review-1.sql",
+        "sha256": "1e1423083274d6783135e61d8e9ddec3f20c6f10366fee9f2390dc2f183c6194",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/consultation_review-4.sql",
+        "sha256": "1e1423083274d6783135e61d8e9ddec3f20c6f10366fee9f2390dc2f183c6194",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/explanation-1.sql",
+        "sha256": "b2764f09f896cc1b438699b66ababd38ad88f59bbf9d56486b8a8e56700b805b",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/explanation-4.sql",
+        "sha256": "b2764f09f896cc1b438699b66ababd38ad88f59bbf9d56486b8a8e56700b805b",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/joint-1.sql",
+        "sha256": "09fb9f1c561d01bf182ccb39d2a8eb7214983cb6057cb55927c74609c19a8d9a",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/joint-4.sql",
+        "sha256": "09fb9f1c561d01bf182ccb39d2a8eb7214983cb6057cb55927c74609c19a8d9a",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/name-1.sql",
+        "sha256": "08d35a9cbeafea4d34e56e3e13c346086c927e8d8c8855e7822933b5eb379bf9",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/name-4.sql",
+        "sha256": "08d35a9cbeafea4d34e56e3e13c346086c927e8d8c8855e7822933b5eb379bf9",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/revision-1.sql",
+        "sha256": "2381727a607338faf82668669b512e0c5b352fa83cbb48649bd03d9e3fefaec4",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/revision-4.sql",
+        "sha256": "2381727a607338faf82668669b512e0c5b352fa83cbb48649bd03d9e3fefaec4",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/claude-opus-5-5-1-amendments.sql",
+        "sha256": "9a7ff1c1513adde4b7698fdde175096c39aeef4ae33ee7f8349dde7af6b1003f",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/claude-opus-5-5-1-joint.sql",
+        "sha256": "770bc25d511b330a3485ae3a32c4aec69f0d836ba83849f447d07d87597caffe",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/claude-opus-5-5-1-name.sql",
+        "sha256": "40a65f5dee2975e344e06495dc8f60bfe0967dab4bc2e983578068c38a920543",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/claude-opus-5-5-1-supplement.sql",
+        "sha256": "4522538df765beb1f8366e5b79f53af2e343f484c97e0da9f3b333277792d3b8",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/claude-opus-5-5-4-amendments.sql",
+        "sha256": "9a7ff1c1513adde4b7698fdde175096c39aeef4ae33ee7f8349dde7af6b1003f",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/claude-opus-5-5-4-joint.sql",
+        "sha256": "770bc25d511b330a3485ae3a32c4aec69f0d836ba83849f447d07d87597caffe",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/claude-opus-5-5-4-name.sql",
+        "sha256": "40a65f5dee2975e344e06495dc8f60bfe0967dab4bc2e983578068c38a920543",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/claude-opus-5-5-4-supplement.sql",
+        "sha256": "4522538df765beb1f8366e5b79f53af2e343f484c97e0da9f3b333277792d3b8",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/gpt-5.1-1-amendments.sql",
+        "sha256": "73d843e0919d91d3e854a0a55d8f68c99a2d5a034383683d6d62fd3c9a724b45",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/gpt-5.1-1-joint.sql",
+        "sha256": "2c022f173e6f721cfd015088fbc0e10deec1f5a2c0c2ad6db3c8be5156722758",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/gpt-5.1-1-name.sql",
+        "sha256": "bc3f3f70ccc250de86f0cce663625044b4f00870a1a0bc3e1900d4c57c8cd171",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/gpt-5.1-1-supplement.sql",
+        "sha256": "62d59c547f064b20a40777337740e80e858f04c9d78397186e2a26c5f253e1bb",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/gpt-5.1-4-amendments.sql",
+        "sha256": "73d843e0919d91d3e854a0a55d8f68c99a2d5a034383683d6d62fd3c9a724b45",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/gpt-5.1-4-joint.sql",
+        "sha256": "2c022f173e6f721cfd015088fbc0e10deec1f5a2c0c2ad6db3c8be5156722758",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/gpt-5.1-4-name.sql",
+        "sha256": "bc3f3f70ccc250de86f0cce663625044b4f00870a1a0bc3e1900d4c57c8cd171",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/gpt-5.1-4-supplement.sql",
+        "sha256": "62d59c547f064b20a40777337740e80e858f04c9d78397186e2a26c5f253e1bb",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-commission-open.sql",
+        "sha256": "24e87a4071c276138ba59ab6d8b132d95eb58a203f088eb4b1c1767fa050920f",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-commission-queued.sql",
+        "sha256": "24e87a4071c276138ba59ab6d8b132d95eb58a203f088eb4b1c1767fa050920f",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-consultation-open.sql",
+        "sha256": "37588c89b17df90660af280627bb8b123e3fa069f81c56e48752eb90cfe80298",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-consultation-queued.sql",
+        "sha256": "37588c89b17df90660af280627bb8b123e3fa069f81c56e48752eb90cfe80298",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-open.sql",
+        "sha256": "859efb191c5f5f3d0aba89df26e27b02a50107684ff6ef1718c2ac9fd226409c",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-ready.sql",
+        "sha256": "2507359be4f7ca2dd54bd61a148edca0733191ae1f26c5fd5cb8916b9522b671",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-commission-open.sql",
+        "sha256": "24e87a4071c276138ba59ab6d8b132d95eb58a203f088eb4b1c1767fa050920f",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-commission-queued.sql",
+        "sha256": "24e87a4071c276138ba59ab6d8b132d95eb58a203f088eb4b1c1767fa050920f",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-consultation-open.sql",
+        "sha256": "37588c89b17df90660af280627bb8b123e3fa069f81c56e48752eb90cfe80298",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-consultation-queued.sql",
+        "sha256": "37588c89b17df90660af280627bb8b123e3fa069f81c56e48752eb90cfe80298",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-open.sql",
+        "sha256": "859efb191c5f5f3d0aba89df26e27b02a50107684ff6ef1718c2ac9fd226409c",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-ready.sql",
+        "sha256": "2507359be4f7ca2dd54bd61a148edca0733191ae1f26c5fd5cb8916b9522b671",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-commission-open.sql",
+        "sha256": "a182aab21b4252fccd26c65d7a44e15e207a88ea92bc6f8d2bd708dc59a1f4a5",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-commission-queued.sql",
+        "sha256": "a182aab21b4252fccd26c65d7a44e15e207a88ea92bc6f8d2bd708dc59a1f4a5",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-consultation-open.sql",
+        "sha256": "58d3c9c6a4131d410ef178ef8a667ef79572dfa723781e3ee8daba8a995d5f6f",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-consultation-queued.sql",
+        "sha256": "58d3c9c6a4131d410ef178ef8a667ef79572dfa723781e3ee8daba8a995d5f6f",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-open.sql",
+        "sha256": "813e440b2db3a4be094f7063e1646c9617e57d3d1d6d1a77f8459fc4185ebafa",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-ready.sql",
+        "sha256": "b2f117a1f2ab223e9881cadb3317a9894b36e0377049746f6aa2a86bc344da6e",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-commission-open.sql",
+        "sha256": "a182aab21b4252fccd26c65d7a44e15e207a88ea92bc6f8d2bd708dc59a1f4a5",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-commission-queued.sql",
+        "sha256": "a182aab21b4252fccd26c65d7a44e15e207a88ea92bc6f8d2bd708dc59a1f4a5",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-consultation-open.sql",
+        "sha256": "58d3c9c6a4131d410ef178ef8a667ef79572dfa723781e3ee8daba8a995d5f6f",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-consultation-queued.sql",
+        "sha256": "58d3c9c6a4131d410ef178ef8a667ef79572dfa723781e3ee8daba8a995d5f6f",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-open.sql",
+        "sha256": "813e440b2db3a4be094f7063e1646c9617e57d3d1d6d1a77f8459fc4185ebafa",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-ready.sql",
+        "sha256": "b2f117a1f2ab223e9881cadb3317a9894b36e0377049746f6aa2a86bc344da6e",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      }
+    ],
+    "scope": "J075 reads all populated snapshots and pending metadata without altering exact SQL."
+  },
+  "production_restore": {
+    "source_state_commit": "f34e63e7d2446501ceee0c2595964eef1b8f48a2",
+    "scope": "Pinned J073 snapshot; restore/read only, no further fetch or processing.",
+    "profile": {
+      "source_sha256": "73e37426e5e5753ad312994a95965d9a100d91c22488ef486c0cb802cbc3b71f",
+      "source_bytes": 19508098,
+      "sql_sha256": "73e37426e5e5753ad312994a95965d9a100d91c22488ef486c0cb802cbc3b71f",
+      "sql_bytes": 19508098,
+      "gzip_bytes": 3956213,
+      "sqlite_bytes": 20488192,
+      "restore_seconds": 0.325911082996754,
+      "dump_seconds": 0.0944275829824619,
+      "bills": 457,
+      "analysis_records": 166,
+      "projection_sha256": "0cbe2b7191eb2dd9688f404c4dcd0940d7dfa9c6d1090caac88ba580f6496bb7",
+      "memo_sha256": "8f68b1de19cfc7ef421659465d653664765cd5d1ed9187d359f33c697c6417ce",
+      "memos": 141,
+      "schema": {
+        "tables": 19,
+        "indexes": 32,
+        "version": 50
+      },
+      "new_rows": {
+        "computation_results": 0,
+        "result_applications": 0
+      },
+      "known_bill_2699": "analyzed",
+      "integrity": "ok",
+      "foreign_key_errors": 0,
+      "scope": "Isolated restore/read; no pipeline, provider or Telegram call; no legacy history backfill."
+    }
+  },
+  "prior_release": {
+    "sha": "800ef774e61d88401014310e90f941144ca96a16",
+    "ci_run": 40473733446,
+    "test_job": 122086762277,
+    "docs_job": 122086761924,
+    "web_job": 122086762332,
+    "deploy_run": 40474491817,
+    "deploy_job": 122089241876,
+    "ci_proof": [
+      "2026-10-27T08:28:36.7009940Z All checks passed!",
+      "2026-10-27T08:28:51.5064254Z Success: no issues found in 418 source files",
+      "2026-10-27T08:34:34.4754606Z 4524 passed, 32 deselected, 3292 warnings in 340.23s (0:05:40)"
+    ],
+    "deploy_proof": [
+      "2026-10-27T08:34:50.8931146Z   COMMIT: 800ef774e61d88401014310e90f941144ca96a16",
+      "2026-10-27T08:34:55.1380385Z d1cde0e02128 -> 800ef774e61d",
+      "2026-10-27T08:35:40.3563152Z lexinform-listen up 45 s after restart"
+    ]
+  },
+  "corpus": [
+    {
+      "id": "j076-final-ci",
+      "manifest_sha256": "7141dc080cdc873c9638478245b7931011975ba9ca95c1dd82b47503914612f0",
+      "observations": 7,
+      "status": "passed",
+      "command": [
+        "/Users/sobaleu/projects/lexinform/.venv/bin/python",
+        "-m",
+        "tools.corpus_check",
+        "--corpus",
+        "/Users/sobaleu/projects/lexinform/tests/fixtures/corpus_check",
+        "--output",
+        "/Users/sobaleu/projects/lexinform/out/corpus/runs/j076-final-ci/result.json"
+      ]
+    },
+    {
+      "id": "j076-final-process",
+      "manifest_sha256": "bda65db4689e022b50b92a13052724298f2740e8f19f3d8f6c062606eb011fe4",
+      "observations": 3294,
+      "status": "recorded",
+      "command": [
+        "/Users/sobaleu/projects/lexinform/.venv/bin/python",
+        "-m",
+        "tools.corpus_legacy_suites",
+        "--corpus",
+        "/Users/sobaleu/projects/lexinform-corpus",
+        "--output",
+        "/Users/sobaleu/projects/lexinform/out/corpus/runs/j076-final-process/result.json",
+        "--kind",
+        "process"
+      ]
+    }
+  ],
+  "process_diff": {
+    "after_manifest_sha256": "bda65db4689e022b50b92a13052724298f2740e8f19f3d8f6c062606eb011fe4",
+    "before_manifest_sha256": "8cf42a171c80b7d5cbb516813a56496083c170cb99f78261332755652aa6baff",
+    "changed_inputs": [],
+    "changes": [],
+    "scope": "Observation differences, not an independent legal accuracy verdict",
+    "status": "same",
+    "suite": "process",
+    "summary_changes": {},
+    "version": 1
+  },
+  "observers": [
+    {
+      "path": "out/corpus/j076/compare_profiles.py",
+      "sha256": "4c1888be9ae33d28beb3679b41e71db63de9d039c98f4346e1f2f6fc8ce1355c",
+      "source": "import hashlib\nimport json\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nroot = Path('out/corpus/j076')\n\n\ndef strip_bindings(value):\n    if isinstance(value, dict):\n        return {key: strip_bindings(item) for key, item in value.items() if key != 'input_binding'}\n    if isinstance(value, list):\n        return [strip_bindings(item) for item in value]\n    return value\n\n\ndef database(path):\n    with closing(sqlite3.connect(':memory:')) as connection:\n        connection.executescript(path.read_text())\n        assert connection.execute('PRAGMA integrity_check').fetchone() == ('ok',)\n        assert not connection.execute('PRAGMA foreign_key_check').fetchall()\n        schema = connection.execute(\"SELECT type, name, sql FROM sqlite_master ORDER BY type, name\").fetchall()\n        tables = {}\n        bindings = {}\n        for (table,) in connection.execute(\"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name\").fetchall():\n            columns = [row[1] for row in connection.execute(f'PRAGMA table_info({table})')]\n            rows = []\n            count = 0\n            for row in connection.execute(f'SELECT * FROM {table}'):\n                values = []\n                for column, value in zip(columns, row, strict=True):\n                    if column.endswith('_json') and value is not None:\n                        decoded = json.loads(value)\n                        count += int(isinstance(decoded, dict) and decoded.get('input_binding') is not None)\n                        if column == 'meta_json' and isinstance(decoded, dict) and decoded.get('input_binding'):\n                            assert decoded['input_binding']['reuse_key'] == decoded['memo_key']\n                        value = strip_bindings(decoded)\n                    values.append(value)\n                rows.append(values)\n            tables[table] = hashlib.sha256(json.dumps(sorted(json.dumps(row, ensure_ascii=False, sort_keys=True) for row in rows)).encode()).hexdigest()\n            if count:\n                bindings[table] = count\n        return {'schema': schema, 'tables': tables, 'bindings': bindings}\n\n\nrows = []\nfor suite in ('normal', 'reuse', 'handoff'):\n    before_root, after_root = root / f'{suite}-baseline', root / f'{suite}-current'\n    before = json.loads((before_root / 'profiles.json').read_text())\n    after = json.loads((after_root / 'profiles.json').read_text())\n    assert before.keys() == after.keys()\n    for name, original in before.items():\n        current = after[name]\n        old = strip_bindings(original)\n        new = strip_bindings(current)\n        old_snapshot = old['snapshot'] if 'snapshot' in old else old\n        new_snapshot = new['snapshot'] if 'snapshot' in new else new\n        sizes = {}\n        for key in ('sql_bytes', 'gzip_bytes', 'sqlite_bytes'):\n            sizes[key] = new_snapshot.pop(key) - old_snapshot.pop(key)\n        old_snapshot.pop('sql_sha256', None)\n        new_snapshot.pop('sql_sha256', None)\n        old_snapshot.pop('data', None)\n        new_snapshot.pop('data', None)\n        assert old == new, (suite, name, 'non-binding profile changed')\n        old_db = database(before_root / f'{name}.sql')\n        new_db = database(after_root / f'{name}.sql')\n        assert old_db['schema'] == new_db['schema'] and old_db['tables'] == new_db['tables'], (suite, name, 'non-binding SQL changed')\n        assert not old_db['bindings'] and new_db['bindings']\n        rows.append({'suite': suite, 'case': name, 'normalized_tables_sha256': new_db['tables'], 'known_bindings': new_db['bindings'], 'delta': sizes, 'all_other_values_equal': True})\nassert len(rows) == 52\n(root / 'profile-diff.json').write_text(json.dumps(rows, ensure_ascii=False, indent=2) + '\\n')\nprint(json.dumps({'profiles': len(rows), 'delta_ranges': {key: [min(row['delta'][key] for row in rows), max(row['delta'][key] for row in rows)] for key in ('sql_bytes', 'gzip_bytes', 'sqlite_bytes')}}))\n"
+    },
+    {
+      "path": "out/corpus/j076/read_snapshots.py",
+      "sha256": "a1a13c7dcc21741c23f9db14eed4d571456692f595d6ad73ff34d5dafb1ccf48",
+      "source": "import hashlib\nimport json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nimport lexinform\nfrom lexinform.adapters.sqlite_repo import SqliteBillRepository\n\nassert Path(lexinform.__file__).resolve().parents[2] == Path(os.environ['DA_EXPECTED_CODE']).resolve()\nroot = Path('out/corpus/j076')\nobservations = []\nfor directory in ('normal-current', 'reuse-current', 'handoff-current'):\n    for source in sorted((root / directory).glob('*.sql')):\n        raw = source.read_bytes()\n        repository = SqliteBillRepository(':memory:')\n        repository.migrate()\n        repository.restore(raw.decode())\n        with closing(sqlite3.connect(':memory:')) as database:\n            database.executescript(raw.decode())\n            owners = database.execute('SELECT term, number FROM bills').fetchall()\n            historical = database.execute('SELECT DISTINCT term, number FROM computation_results').fetchall()\n        bindings = 0\n        for term, number in owners:\n            assert repository.get(term, number) is not None\n            repository.list_result_applications(term, number)\n        for term, number in historical:\n            rows = repository.list_computation_results(term, number)\n            bindings += sum(row.input_binding is not None for row in rows)\n        for batch in repository.list_open_llm_batches():\n            repository.list_llm_batch_items(batch.batch_id)\n        repository.list_queued_batch_intents()\n        repository.list_submitting_batch_intents()\n        assert bindings > 0\n        assert repository.dump().encode() == raw\n        repository.close()\n        observations.append({'snapshot': str(source.relative_to(root)), 'sha256': hashlib.sha256(raw).hexdigest(), 'known_result_bindings': bindings, 'roundtrip_equal': True})\nassert len(observations) == 52\n(root / 'rollback-reader.json').write_text(json.dumps(observations, indent=2) + '\\n')\n"
+    },
+    {
+      "path": "out/corpus/j071/projection_profile.py",
+      "sha256": "ea04424fccc679b9ad4569ec7c07cc348a73d92c29bb0aa38cb7e517d7e50f0e",
+      "source": "import gzip\nimport hashlib\nimport json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nimport lexinform\n\nfrom lexinform.models import ReviewWork\nfrom lexinform.services.tracking_result import TrackingResult\nfrom tests.harness import World\nfrom tests.scenario.test_amendments_command import published_world\nfrom tests.scenario.test_explain import commands_only\nfrom tests.scenario.test_joint_batch import joint_world\nfrom tests.scenario.test_review_computation_history import queued_review, submit_review\n\n\ndef snapshot(world, output, name, number='3039'):\n    raw = world.repo.dump().encode()\n    (output / f'{name}.sql').write_bytes(raw)\n    with closing(sqlite3.connect(':memory:')) as db:\n        db.executescript(raw.decode())\n        assert db.execute('PRAGMA integrity_check').fetchone() == ('ok',)\n        assert not db.execute('PRAGMA foreign_key_check').fetchall()\n        data = {}\n        for (table,) in db.execute(\"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name\").fetchall():\n            query = f'SELECT * FROM {table}'\n            if table == 'result_applications':\n                query += ' WHERE generation IS NOT NULL'\n            rows = sorted(json.dumps(row, ensure_ascii=False) for row in db.execute(query))\n            data[table] = hashlib.sha256(json.dumps(rows).encode()).hexdigest()\n        sqlite_bytes = len(db.serialize())\n    return {'data': data, 'sql_bytes': len(raw), 'gzip_bytes': len(gzip.compress(raw, mtime=0)), 'sqlite_bytes': sqlite_bytes, 'applications': [row.model_dump(mode='json') for row in world.repo.list_result_applications(10, number) if row.target is not None], 'requests': [request.model_dump(mode='json') for request in world.batch.submitted], 'messages': [{'kind': message.kind.value, 'text': message.text} for message in world.publisher.sent], 'edits': [{'text': message.text, 'message_id': message_id} for message, message_id in world.publisher.edited], 'replies': [outcome.model_dump(mode='json') for _, outcome in world.replier.replies]}\n\n\ndef test_profile():\n    assert Path(lexinform.__file__).resolve().parents[2] == Path(os.environ['DA_EXPECTED_CODE']).resolve()\n    output = Path(os.environ['DA_PROJECTION_PROFILE_OUTPUT'])\n    output.mkdir()\n    profiles = {}\n    for workers in (1, 4):\n        for purpose in ('consultation_review', 'commission_review'):\n            world, source, intent = queued_review(purpose, workers=workers)\n            submit_review(world, intent)\n            world.batch.resolve()\n            world.analysis.collect_batches()\n            world.analysis.start_run()\n            work = ReviewWork(memo_key=source.memo_key(10), purpose=purpose, context=source, source_key='source/1', since=world.clock.now(), baseline_day=world.clock.now().date())\n            reviews = world.container.document_reviews(dry_run=False)\n            for key in ('source/1', 'source/2'):\n                world.repo.save_review_work(10, '3039', (work.model_copy(update={'source_key': key}),))\n                reviews.advance(TrackingResult(), publish=False)\n                world.repo.restore(world.repo.dump())\n            reviews.advance(TrackingResult(), publish=False)\n            name = f'{purpose}-{workers}'\n            profiles[name] = snapshot(world, output, name)\n            world.repo.close()\n        world = joint_world(workers=workers)\n        world.run()\n        world.batch.resolve()\n        world.analysis.collect_batches()\n        world.run()\n        world.repo.restore(world.repo.dump())\n        world.run()\n        name = f'joint-{workers}'\n        profiles[name] = snapshot(world, output, name, '1929')\n        world.repo.close()\n        world = World(batch=True, batch_only=True, name_cards=True, workers=workers)\n        world.add_bill('3039', 'Projekt ustawy o cudzoziemcach')\n        world.run()\n        world.batch.resolve()\n        world.run()\n        world.batch.resolve()\n        world.analysis.collect_batches()\n        world.run()\n        world.repo.restore(world.repo.dump())\n        world.run()\n        name = f'name-{workers}'\n        profiles[name] = snapshot(world, output, name)\n        world.repo.close()\n        world, original = published_world(workers=workers)\n        world.command('/amendments 1929')\n        world.run(track=False)\n        world.batch.resolve()\n        world.analysis.collect_batches()\n        world.repo.restore(world.repo.dump())\n        world.run(track=False)\n        name = f'revision-{workers}'\n        profiles[name] = snapshot(world, output, name, '1929')\n        assert original.id is not None and len(world.repo.list_amendment_revisions(original.id)) == 1\n        world.repo.close()\n        world = World(workers=workers)\n        world.add_bill('3039', 'Projekt ustawy o cudzoziemcach')\n        world.run()\n        world.command('/explain 3039')\n        commands_only(world)\n        world.batch.resolve()\n        for _ in range(2):\n            world.command('/explain 3039')\n            commands_only(world)\n            world.repo.restore(world.repo.dump())\n        name = f'explanation-{workers}'\n        profiles[name] = snapshot(world, output, name)\n        world.repo.close()\n    (output / 'profiles.json').write_text(json.dumps(profiles, ensure_ascii=False, indent=2) + '\\n')\n"
+    },
+    {
+      "path": "out/corpus/j074/reuse_profile.py",
+      "sha256": "6a75655ca4b5fd1e4b81e049ba5e7b4a23b7ed3b75656e3584bf9563b05d3962",
+      "source": "import gzip\nimport hashlib\nimport json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom dataclasses import replace\nfrom pathlib import Path\n\nimport lexinform\nfrom lexinform.models import AmendmentsRecord, JointRecord, NameRecord, SupplementRecord\nfrom lexinform.services.analysis import Waiting\nfrom tests.harness import World\nfrom tests.scenario.test_secondary_computation_history import URL, ask\n\n\ndef snapshot(world, output, name):\n    raw = world.repo.dump().encode()\n    (output / f'{name}.sql').write_bytes(raw)\n    with closing(sqlite3.connect(':memory:')) as database:\n        database.executescript(raw.decode())\n        assert database.execute('PRAGMA integrity_check').fetchone() == ('ok',)\n        assert not database.execute('PRAGMA foreign_key_check').fetchall()\n        size = len(database.serialize())\n    return {'sql_sha256': hashlib.sha256(raw).hexdigest(), 'sql_bytes': len(raw), 'gzip_bytes': len(gzip.compress(raw, mtime=0)), 'sqlite_bytes': size, 'bill': world.bill('3039').model_dump(mode='json'), 'messages': [row.text for row in world.publisher.sent], 'edits': [row.text for row, _ in world.publisher.edited]}\n\n\ndef test_profile():\n    assert Path(lexinform.__file__).resolve().parents[2] == Path(os.environ['DA_EXPECTED_CODE']).resolve()\n    output = Path(os.environ['DA_REUSE_PROFILE_OUTPUT'])\n    output.mkdir()\n    profiles = {}\n    for model in ('gpt-5.1', 'claude-opus-5-5'):\n        for workers in (1, 4):\n            for kind in ('amendments', 'supplement', 'joint', 'name'):\n                world = World(profile='production', workers=workers, analysis_model=model, joint_model=model)\n                settings = world.container.settings.model_copy(update={'llm_amendments_model': model, 'llm_supplement_model': model})\n                world.container = replace(world.container, settings=settings, analysis_options_override=None)\n                world.analysis = world.container.analysis_service()\n                world.pipeline = world.container.pipeline(dry_run=False)\n                world.add_bill('3039', 'Projekt ustawy o cudzoziemcach')\n                world.add_bill('3040', 'Projekt ustawy o obywatelstwie')\n                world.run(track=False)\n                world.batch.resolve()\n                world.run(track=False)\n                world.gateway.files[URL] = b'%PDF-secondary'\n                world.analysis.start_run()\n                assert isinstance(ask(world, kind), Waiting)\n                world.analysis.submit_queued_batches()\n                request = world.batch.submitted[-1].model_dump(mode='json')\n                world.batch.resolve()\n                world.analysis.collect_batches()\n                world.analysis.acknowledge_batch_costs()\n                original = next(row for row in world.repo.list_computation_results(10, '3039') if row.purpose == kind)\n                assert original.provider == ('openai' if model.startswith('gpt-') else 'anthropic')\n                world.clock.advance(days=200)\n                world.repo.prune_history(before=world.clock.now(), memo_before=world.clock.now())\n                world.repo.restore(world.repo.dump())\n                assert not world.repo.load_analysis_memo()\n                world.analysis.start_run()\n                answer = ask(world, kind)\n                repeated = isinstance(answer, Waiting)\n                paid_calls = []\n                if repeated:\n                    world.analysis.submit_queued_batches()\n                    world.batch.resolve()\n                    world.analysis.collect_batches()\n                    paid_calls = [call.model_dump(mode='json') for call in world.analysis.calls]\n                    world.analysis.acknowledge_batch_costs()\n                    world.analysis.start_run()\n                    answer = ask(world, kind)\n                assert isinstance(answer, (AmendmentsRecord, SupplementRecord, JointRecord, NameRecord))\n                assert world.repo.get_computation_result(original.result_id) == original\n                name = f'{model}-{workers}-{kind}'\n                record = answer.model_dump(mode='json')\n                content = {key: record[key] for key in ('amendments', 'digest', 'comparison', 'proposal') if key in record}\n                profiles[name] = {'original_request': request, 'original_result': original.model_dump(mode='json'), 'requests': [row.model_dump(mode='json') for row in world.batch.submitted if row.call_kind == kind], 'results': [row.model_dump(mode='json') for row in world.repo.list_computation_results(10, '3039') if row.purpose == kind], 'paid_calls_after_cleanup': paid_calls, 'answer': record, 'content': content, 'snapshot': snapshot(world, output, name)}\n                world.repo.close()\n    (output / 'profiles.json').write_text(json.dumps(profiles, ensure_ascii=False, indent=2) + '\\n')\n"
+    },
+    {
+      "path": "out/corpus/j073/handoff_profile.py",
+      "sha256": "da7b56044237f17489d0f702a868114232c9e88a2503168ca77f2a37065365ce",
+      "source": "import gzip\nimport hashlib\nimport json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nimport lexinform\nfrom lexinform.models import BillStatus\nfrom lexinform.services.analysis import Waiting\nfrom tests.harness import RCL, World, summary\nfrom tests.scenario.test_commission_reviews import context as commission_context\nfrom tests.scenario.test_document_reviews import context\n\n\ndef snapshot(world, output, name):\n    raw = world.repo.dump().encode()\n    (output / f'{name}.sql').write_bytes(raw)\n    with closing(sqlite3.connect(':memory:')) as database:\n        database.executescript(raw.decode())\n        assert database.execute('PRAGMA integrity_check').fetchone() == ('ok',)\n        assert not database.execute('PRAGMA foreign_key_check').fetchall()\n        size = len(database.serialize())\n    return {'sql_sha256': hashlib.sha256(raw).hexdigest(), 'sql_bytes': len(raw), 'gzip_bytes': len(gzip.compress(raw, mtime=0)), 'sqlite_bytes': size, 'source': world.bill(RCL).model_dump(mode='json'), 'target': world.bill('5').model_dump(mode='json'), 'source_results': [row.model_dump(mode='json') for row in world.repo.list_computation_results(10, RCL)], 'target_results': [row.model_dump(mode='json') for row in world.repo.list_computation_results(10, '5')], 'requests': [row.model_dump(mode='json') for row in world.batch.submitted], 'messages': [row.text for row in world.publisher.sent], 'edits': [row.text for row, _ in world.publisher.edited]}\n\n\ndef test_profile():\n    assert Path(lexinform.__file__).resolve().parents[2] == Path(os.environ['DA_EXPECTED_CODE']).resolve()\n    output = Path(os.environ['DA_HANDOFF_PROFILE_OUTPUT'])\n    output.mkdir()\n    profiles = {}\n    for model in ('gpt-5.1', 'claude-opus-5-5'):\n        for workers in (1, 4):\n            for stage in ('open', 'ready', 'consultation-queued', 'consultation-open', 'commission-queued', 'commission-open'):\n                world = World(profile='production', workers=workers, analysis_model=model, batch_kinds=frozenset({'analysis', 'reanalysis', 'consultation_review', 'commission_review'}), consultation_reviews_enabled=True, commission_reviews_enabled=True)\n                project = world.add_rcl_project()\n                world.run()\n                source = None\n                if '-' in stage:\n                    source = (commission_context() if stage.startswith('commission-') else context()).model_copy(update={'number': RCL, 'title': project.title})\n                    assert isinstance(world.analysis.request_document_review(world.bill(RCL), source), Waiting)\n                    if stage.endswith('-open'):\n                        world.analysis.submit_queued_batches()\n                elif stage == 'ready':\n                    world.batch.resolve()\n                    world.analysis.collect_batches()\n                world.repo.upsert_summary(summary('5', project.title), now=world.clock.now())\n                world.repo.set_status(10, '5', BillStatus.BATCH_PENDING)\n                frozen = [row.model_dump(mode='json') for row in world.batch.submitted]\n                queued = [row.model_dump(mode='json') for row in world.repo.list_queued_batch_intents()]\n                transfer = getattr(world.repo, 'move_primary_analysis_work', None) or getattr(world.repo, 'move_batch_work')\n                with world.repo.atomic():\n                    transfer(10, RCL, '5')\n                    world.repo.link_bills(10, RCL, '5')\n                after_queue = [row.model_dump(mode='json') for row in world.repo.list_queued_batch_intents()]\n                world.analysis.submit_queued_batches()\n                world.repo.restore(world.repo.dump())\n                world.batch.resolve()\n                error = ''\n                try:\n                    world.analysis.collect_batches()\n                except ValueError as exc:\n                    error = str(exc).split('[type=')[0].strip()\n                name = f'{model}-{workers}-{stage}'\n                profiles[name] = {'error': error, 'frozen_before': frozen, 'queued_before': queued, 'queued_after': after_queue, 'snapshot': snapshot(world, output, name)}\n                world.repo.close()\n    (output / 'profiles.json').write_text(json.dumps(profiles, ensure_ascii=False, indent=2) + '\\n')\n"
+    }
+  ],
+  "reproduction": [
+    "Export J075 src and set PYTHONPATH to baseline/src plus the current root for all before profiles.",
+    "Run J071 projection_profile.py, J074 reuse_profile.py and J073 handoff_profile.py through pytest -p tests.conftest, setting DA_EXPECTED_CODE and fresh output directories.",
+    "Repeat the same 52 flows on current code, then run compare_profiles.py: only input_binding may differ in parsed SQL or profiles.",
+    "Compare original request bodies/SHAs, usage, answers, application IDs and reader messages without removing any field except the new input_binding metadata.",
+    "Run read_snapshots.py with J075; all 52 current snapshots, pending intents/items and retained records must read and dump identically.",
+    "Run test_batch_intent.py and test_computation_binding_writer.py for known/unknown legacy input, reset, cleanup, reanalysis and unsupported provider guards."
+  ],
+  "limitations": [
+    "These 52 configuration flows are not 52 independent legal initiatives or human quality labels.",
+    "The writer records identity metadata, not source files, text copies or full PreparedInput.",
+    "Known legacy SHA/context does not justify inventing an absent original binding; plain constructor/restore remain unbound.",
+    "Retargeted or already bound requests cannot be claimed as new input by the factory.",
+    "No serialized provider payload, custom ID, prompt, model selection, retry budget, source selection or reader text changes in qualified flows.",
+    "Missing explanation provider is handled before reservation/queue; no provider is guessed to satisfy the stricter factory signature.",
+    "Paused act submissions remain paused; tests simulate an already submitted legacy request for collect coverage.",
+    "No schema migration, raw archive, storage-backend decision, paid experiment, production pipeline or Telegram calls.",
+    "Initial fixture drafts used an unavailable cleanup API and an invalid Container override; excluded. Qualified tests use public restore/start/collect and explicit direct-service configuration.",
+    "The process corpus is a historical metadata snapshot, not independent human content review.",
+    "Size deltas are bounded fixture observations, not production-growth forecasts; SQLite page allocation can vary in either direction.",
+    "Local HTTP was not repeated because CLI, wiring and transports are unchanged."
+  ],
+  "first_full": {
+    "sha256": "96652fd88807667e009e8037e4423e56dd736178fed45a2d1d42128647b1d975",
+    "tests": 4583,
+    "failures": 9,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 654.581
+  },
+  "legacy_fixture_refinement": {
+    "before_sha256": "4ec74ef02511586f766d0c5d8d5d48dfea59bf20dd6efe7598d36e0e008df3e1",
+    "after_sha256": "330a0a5284e7d0b40b7b511c205856129bc5a479517faaede55b89d3ea197e1b",
+    "scope": "Legacy-key fixtures must omit a modern binding when replacing the recorded memo key. Nine old-key cases now also verify unbound metadata after restore; runtime source and consistency guards are unchanged."
+  }
+}

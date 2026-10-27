@@ -3854,3 +3854,51 @@ SQL/projection/memo hashes и размеры. J074 reader читает 29 defaul
 содержит оба вида before/after probes, source snapshots, XML, observers и измерения. Writer
 новых bindings ещё не включён; это следующий этап. План: **74 задачи, 12 выполнены,
 62 не закрыты**; goal active.
+
+<a id="j076"></a>
+### J076. DA6: freeze input bindings at new intent creation
+
+Дата: 27 октября 2026. База: J075 (`800ef77`). Статус: реализовано, deployment проверяется отдельно.
+
+Пять producers используют `BatchIntent.from_request`: фабрика проверяет новый unbound input,
+согласованность request/question subject и наличие recorded memo key, затем фиксирует
+term/number/key до repository IO. Joint question использует собственный subject; source-specific
+ветвлений нет. Restore/plain constructor остаётся совместимым: старые None не backfilled.
+Фабрика не меняет payload, SHA/custom ID, provider/model, cost/retry engine или pause settings.
+Новый binding проходит существующий submit/collect checkpoint и J075 bridge.
+
+Targeted **155 passed**: primary/reset, reanalysis, пять secondary purposes, три review purposes,
+providers/workers, cleanup и old unbound/new bound collect. Unit guards не позволяют rebind,
+post-hoc retarget или пустой question key; nullable explanation provider явно проверяется до
+reservation/queue, без догадки о backend. Strict mypy **420** файлов, Ruff/format green.
+
+Сравнены **52** fake configuration flows: 12 normal, 16 cold reuse, 24 primary handoff.
+После удаления только нового `input_binding` все SQL rows/schema, payloads/SHAs, paid outputs,
+usage, application IDs и reader messages одинаковые. Settled SQL delta **246…738 bytes**,
+gzip **22…62 bytes**, SQLite **−4096…4096 bytes**; это fixture/page allocation, не production
+growth forecast. Stored metadata key согласуется с binding; J075 reader читает все **52**
+snapshots с exact dump, включая pending intents/items. State pin `f34e63e7` restore/read
+сохраняет SQL/projection/memo hashes и размеры; pipeline/provider/Telegram не запускались.
+
+Первый full выявил девять legacy fixtures: старый key подменялся в современном bound intent,
+но binding не удалялся. Legacy fixture теперь действительно unbound; дополнительно проверен
+None после queued/submitting/open restore. Проверки согласованности metadata не ослаблены.
+Runtime source после этого не менялся; full/corpus qualification повторяется с final tests.
+
+J075 release проверен по полному `800ef774e61d88401014310e90f941144ca96a16`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40473733446) — **4524 passed**,
+strict mypy 418 файлов, Ruff, docs/web jobs success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40474491817) — exact COMMIT,
+`d1cde0e02128 -> 800ef774e61d`, listener up 45 s. Это устанавливает доступный rollback bridge,
+но не подтверждает live cycle нового writer.
+
+Final acceptance: **4583 passed**, failures/errors/skips/xfails 0, 651.344 s; targeted **155 passed**,
+strict mypy **420** файлов, Ruff src/tests/tools, format, docs/links и diff check green.
+Final corpus CI **7 passed**, process **3294 observations**, zero changed inputs/decisions;
+manifests фиксируют окончательный source/tests. Все **50 migrations** прежние. Из runtime
+изменены только batch model factory и пять producers в analysis service. Local HTTP не повторён:
+CLI/wiring/transports прежние. [Acceptance evidence](../assets/audits/2026-10-27-computation-binding-writer/validation.json)
+содержит XML/source hashes, normalized SQL comparison, 52 profiles и rollback checks.
+Binding writer завершён для новых requests; history consumers, applicability observations,
+legacy import и retention/ref transition остаются в DA6. План: **74 задачи, 12 выполнены,
+62 не закрыты**; goal active.

@@ -118,9 +118,13 @@ reuse key from collection coordinates and exact request SHA. Missing legacy meta
 unknown and is omitted from JSON. Metadata keeps the frozen memo key; review bindings match
 recorded input references and subject identities. A historical policy key is never recomputed
 from a stored context with today's rules. The collector preserves already known bindings without
-deriving them from a current bill or mutable item owner. Normal producers do not populate the
-binding in this reader stage. Once a later writer populates the field, rollback requires the
-[J075](plans/2026-10-22-document-architecture-progress.md#j075) reader/collector bridge.
+deriving them from a current bill or mutable item owner. The
+[J076](plans/2026-10-22-document-architecture-progress.md#j076) writer uses
+`BatchIntent.from_request` in the five new-request producers to freeze original term/number/key
+before repository IO. It checks the question subject and rejects rebinding an existing input;
+plain construction/restore keeps absent legacy metadata unknown. Provider payloads and retry
+engines are unchanged. Populated bindings require the
+[J075](plans/2026-10-22-document-architecture-progress.md#j075) reader/collector bridge for rollback.
 The binding does not archive source bytes or certify a full historical PreparedInput.
 The history preserves the paid record when a skip/reset makes it inapplicable. Immutable rows
 reject replacement, and an exact repeated write is harmless.

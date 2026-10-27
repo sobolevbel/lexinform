@@ -1296,7 +1296,7 @@ class AnalysisService:
         now = self._clock.now()
         try:
             self._repo.save_batch_intent(
-                BatchIntent(
+                BatchIntent.from_request(
                     request=request,
                     provider=provider,
                     created_at=now,
@@ -1424,12 +1424,15 @@ class AnalysisService:
             return Waiting(job.since)
         if len((request.payload_json or "").encode()) > 100_000_000:
             raise ValueError("one batch request exceeds the 100 MB payload limit")
+        provider = prepared.batch_provider or self._options.batch_provider
+        if provider is None:
+            raise LlmUnavailableError("batch provider is unavailable for explanation")
         if not self._ledger.reserve(request.estimated_cost_usd):
             raise ValueError("Разбор не поставлен в очередь: исчерпан бюджет прогона")
         now = self._clock.now()
         try:
             self._repo.save_batch_intent(
-                BatchIntent(
+                BatchIntent.from_request(
                     request=request,
                     meta=DigestItemMeta(
                         memo_key=prepared.memo_key,
@@ -1437,7 +1440,7 @@ class AnalysisService:
                         prompt_version=request.prompt_version,
                         explanation=source.model_copy(update={"located": None, "text": ""}),
                     ),
-                    provider=prepared.batch_provider or self._options.batch_provider,
+                    provider=provider,
                     created_at=now,
                 )
             )
@@ -1687,7 +1690,7 @@ class AnalysisService:
                 if self._ledger.reserve(request.estimated_cost_usd):
                     try:
                         self._repo.save_batch_intent(
-                            BatchIntent(
+                            BatchIntent.from_request(
                                 request=request,
                                 meta=meta.model_copy(
                                     update={
@@ -1942,7 +1945,7 @@ class AnalysisService:
             return Waiting(self._clock.now())
         try:
             self._repo.save_batch_intent(
-                BatchIntent(
+                BatchIntent.from_request(
                     request=request,
                     meta=DigestItemMeta(
                         memo_key=key,
@@ -2839,7 +2842,7 @@ class AnalysisService:
             self._remember_analysis(bill, prepared.triage_memo_key, prepared.triage)
         with self._repo.atomic():
             self._repo.save_batch_intent(
-                BatchIntent(
+                BatchIntent.from_request(
                     request=prepared.batch_request,
                     meta=prepared.batch_meta.model_copy(
                         update={
