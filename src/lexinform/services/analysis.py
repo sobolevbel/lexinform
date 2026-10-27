@@ -1262,7 +1262,7 @@ class AnalysisService:
         force_id: str = "",
     ) -> Waiting | Publication:
         assert bill.analysis is not None
-        loaded = self._load_amendments_text(document)
+        loaded = self._load_amendments_text(bill, document)
         if not loaded.text.strip() and loaded.scan is None:
             raise ValueError("Полный текст поправок не извлечён; исправление не запущено")
         if self._too_expensive_to_digest(loaded):
@@ -2046,9 +2046,20 @@ class AnalysisService:
             self._loader, info, adopted_on=stage.date, titles=titles, passed_on=passed_on
         )
 
-    def _load_amendments_text(self, document: TextDocument) -> _Loaded:
+    def _load_secondary_text(self, bill: Bill, document: TextDocument) -> _Loaded:
+        """Record a secondary consumer's completed source read before using its input."""
+        try:
+            loaded = self._load_source(document, trim=False)
+        except _SourceReadError as failure:
+            self._record_source_read(bill, failure.source)
+            raise failure.cause from failure
+        if loaded.source_read is not None:
+            self._record_source_read(bill, loaded.source_read)
+        return loaded
+
+    def _load_amendments_text(self, bill: Bill, document: TextDocument) -> _Loaded:
         if document.kind != "senate_amendments":
-            loaded = self._load_text(document, trim=False)
+            loaded = self._load_secondary_text(bill, document)
             if loaded.truncated:
                 raise ValueError("Полный текст поправок комиссии не помещается в бюджет текста")
             return loaded
@@ -2077,7 +2088,7 @@ class AnalysisService:
         recommendation: TextDocument | None = None,
     ) -> AmendmentsContext | None:
         assert bill.analysis is not None
-        loaded = self._load_amendments_text(document)
+        loaded = self._load_amendments_text(bill, document)
         if not loaded.text.strip() and loaded.scan is None:
             return None
         if self._too_expensive_to_digest(loaded):
@@ -2100,7 +2111,7 @@ class AnalysisService:
         assert bill.analysis is not None
         report = None
         if recommendation is not None:
-            read = self._load_text(recommendation, trim=False)
+            read = self._load_secondary_text(bill, recommendation)
             if read.text.strip() and not read.truncated:
                 report = read.text
             else:
@@ -2197,7 +2208,7 @@ class AnalysisService:
             delivered.source_url = document.url
             self._remember_analysis(bill, delivery_key, delivered)
             return delivered
-        loaded = self._load_text(document, trim=False)
+        loaded = self._load_secondary_text(bill, document)
         if loaded.scan is None and (loaded.source == "metadata_only" or not loaded.text.strip()):
             return self.bare_supplement(document, number=number, title=title)
         if self._too_expensive_to_digest(loaded):

@@ -281,3 +281,10 @@ observed source; this metadata does not assert successful review admission. Reus
 ReviewDocument snapshots create no new source observation, and unknown file policies stay unknown.
 Source metadata remains independent of paid input/result identity and raw retention. See
 [J103](plans/2026-10-22-document-architecture-progress.md#j103).
+
+
+Generic secondary readers now record completed source metadata before committee amendments,
+recommendation and supplement inputs are used. Input-budget refusal and a bare supplement do not
+remove the completed source decision. An extractor exception before selection completion creates
+no inferred decision. The Senate-specific resolution path and historical comparison workers are
+unchanged. See [J104](plans/2026-10-22-document-architecture-progress.md#j104).

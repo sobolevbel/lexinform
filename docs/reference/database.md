@@ -441,4 +441,8 @@ caller transaction записывает decision/observation/known outer refs; �
 возвращает исходный file selection и physical identities отдельно от ReviewDocument; запись
 идёт на caller thread в input order, до подготовки paid review. Snapshot reuse без нового
 чтения не создаёт observation. Неизвестный policy остаётся unknown; source history не объявляет
-файл допустимым для конкретного role/digest. Прочие secondary consumers остаются открытыми.
+файл допустимым для конкретного role/digest.
+[J104](../plans/2026-10-22-document-architecture-progress.md#j104) использует тот же writer перед
+обычными committee amendments, рекомендациями и supplements. Source metadata сохраняются до
+full-input budget refusal и подготовки model context; memo reuse без чтения не получает новый
+source observation. Senate special path и worker historical-comparison reads этим не меняются.

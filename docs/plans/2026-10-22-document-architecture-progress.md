@@ -5315,3 +5315,44 @@ J102 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40580538381): **4
 strict mypy **458**, Ruff/docs/web success. [Relay deploy](https://github.com/sobolevbel/lexinform/actions/runs/40581654012):
 exact COMMIT `fa3e2d99a64a794b842f790b78579c2fe865fe97`, listener up **45 s**.
 Production processing/paid calls/Telegram sends вручную не запускались.
+
+
+<a id="j104"></a>
+### J104. Generic secondary source observations
+
+Статус: **завершён**, baseline `878f889f7183c90dc94739a72716014da91cf845`.
+Committee amendments, amendment revision, recommendation и supplement generic reads используют
+тот же caller-owned source-history helper. Metadata сохраняются до full-input budget refusal или
+model context; caller Clock, first-record preservation и exact known outer-body refs прежние.
+Memo reuse без нового read не создаёт observation. Senate special path и historical comparison
+workers не изменены. AST всех прежних AnalysisService methods exact после раскрытия call adapters;
+остальные **154 src files exact**, schema/models/ports/extractor/policies/payloads не менялись.
+
+**64 focused** passed; strict mypy **460**, Ruff/format green. Production-profile tests проверяют
+history до secondary batch submit, workers1/4/caller writes, повтор и restore, отдельный recommendation,
+budget refusal, no new paid verdict для unreadable supplement и outage. Initial expectations
+уточнены под прежний contract: parser exception до selection не создаёт completed decision;
+пустой readable body даёт bare SupplementRecord, а не DocumentSelectionError. Runtime fallback
+не менялся, exception/xfail suppression не добавлялись.
+
+**168 native cases**: requests/messages/profiles/**20 business tables exact**, old metadata preserved,
+doctor **0 errors**. **206 observation / 194 selection / 186 part-ref views**. SQL delta **0–2088**,
+gzip **0–272** bytes. J103 reader восстанавливает **168 SQL snapshots / 324 reports** exact.
+Corpus CI **7** / process **3294** verified, inputs/observations same.
+
+Real raw: **72 views / 36 unique files**, generic amendments/supplement consumers с fake metadata-only
+primary. Все semantic fingerprints exact (Bill/report кроме phase_seconds/answer/model contexts/
+requests/calls/messages), INDEX/raw hashes exact; **72 source observations / 280 exact outer refs**.
+Прежние outcomes: **43 returned / 17 ValueError / 12 DocumentSelectionError**. Это исходы разных
+input-budget/admission ветвей, не 29 новых багов; baseline/current совпали. SHA/size каждого linked
+artifact проверены по фактическим raw bytes. Новый output сохраняет fingerprints/counts, не payloads.
+Scope — surrogate source roles, не independent legal gold и не full population. Полный gate:
+**4951 passed**, 0 failures/errors/skips, **605.132 s**.
+[Acceptance asset](../assets/audits/2026-10-27-secondary-source-history/validation.json) содержит
+source/evidence hashes, проверки, storage deltas, backward reader и границы.
+
+
+J103 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40582322249): **4943 passed**,
+strict mypy **459**, Ruff/docs/web success. [Relay deploy](https://github.com/sobolevbel/lexinform/actions/runs/40583433623):
+exact COMMIT `878f889f7183c90dc94739a72716014da91cf845`, listener up **45 s**.
+Production pipeline/paid calls/reader sends вручную не запускались.
