@@ -653,6 +653,12 @@ class AnalysisService:
         # Asked here and not in `_prepare`, which runs in the worker threads and never touches
         # the repository.
         carried = {bill.number for bill in candidates if self._joint_card_exists(bill)}
+        history = {
+            (bill.term, bill.number): tuple(
+                self._repo.list_computation_results(bill.term, bill.number, purpose="analysis")
+            )
+            for bill in candidates
+        }
 
         def prepare(bill: Bill) -> _Prepared:
             return self._prepare_first(
@@ -660,6 +666,7 @@ class AnalysisService:
                 triage=bill.number not in carried,
                 submit_batch=self._batches(bill)
                 and (self._options.require_batch or "analysis" in self._options.batch_kinds),
+                history=history[(bill.term, bill.number)],
             )
 
         for outcome in fan_out(candidates, prepare, workers=self._options.workers):
@@ -1469,6 +1476,11 @@ class AnalysisService:
             cost_guard=not ignore_cost_limit,
             triage=not self._joint_card_exists(bill),
             submit_batch=self._options.require_batch,
+            history=tuple(
+                self._repo.list_computation_results(bill.term, bill.number, purpose="analysis")
+            )
+            if not ignore_cost_limit
+            else (),
         )
         if prepared.queued:
             if not self._enqueue(bill, prepared):
@@ -1484,6 +1496,7 @@ class AnalysisService:
         cost_guard: bool = True,
         triage: bool = True,
         submit_batch: bool = False,
+        history: tuple[ComputationResult, ...] = (),
     ) -> _Prepared:
         if (
             cost_guard
@@ -1507,6 +1520,7 @@ class AnalysisService:
             cost_guard=cost_guard,
             triage=triage,
             submit_batch=submit_batch,
+            history=history,
         )
 
     def _joint_card_exists(self, bill: Bill) -> bool:
@@ -1587,6 +1601,9 @@ class AnalysisService:
             previous_document=previous_document or _source_of(bill.analysis),
             submit_batch=self._batches(bill)
             and (self._options.require_batch or "reanalysis" in self._options.batch_kinds),
+            history=tuple(
+                self._repo.list_computation_results(bill.term, bill.number, purpose="reanalysis")
+            ),
         )
         if prepared.queued:
             self._enqueue(bill, prepared)

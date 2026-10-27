@@ -136,8 +136,7 @@ When a secondary memo is absent, amendments/supplement/joint/name can recover a 
 record from history by the same subject, purpose, exact request key and record type. Reuse
 rebuilds the operational memo with the original result/request refs and charges no new tokens.
 Existing memos take precedence, including legacy records without those refs. This does not
-broaden context equivalence or merge Sejm terms. Primary and reviews retain their separate
-contracts. See
+broaden context equivalence or merge Sejm terms. See
 [J074](plans/2026-10-22-document-architecture-progress.md#j074).
 An explanation with a recorded input binding can recover its exact paid answer after memo
 cleanup. The caller reads only explanation history and passes a snapshot into preparation;
@@ -146,6 +145,13 @@ key and record type must match. Existing memos take precedence; an unbound legac
 does not acquire a guessed key. Reuse restores the operational memo without another paid request
 or mutation of the original record. See
 [J077](plans/2026-10-22-document-architecture-progress.md#j077).
+Primary analysis and reanalysis also use caller-owned, purpose-filtered history snapshots.
+An exact known binding can supply the paid answer after memo cleanup or a generation reset.
+The original collection receipt remains immutable; applying the answer records the current
+generation through the existing projection checkpoint. Preparation alone creates no projection
+receipt. Ready/pending shortcuts and the explicit force cache bypass remain unchanged. Unknown
+legacy bindings are not inferred from generation-dependent request IDs. See
+[J078](plans/2026-10-22-document-architecture-progress.md#j078).
 The measured sizes and scope are in [J061](plans/2026-10-22-document-architecture-progress.md#j061)
 and [J062](plans/2026-10-22-document-architecture-progress.md#j062), with tracking/linking in
 [J063](plans/2026-10-22-document-architecture-progress.md#j063).

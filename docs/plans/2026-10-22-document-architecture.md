@@ -648,7 +648,9 @@ source disappearance. Изменение normalization/digest — отдельн
   ответа. [J074](2026-10-22-document-architecture-progress.md#j074): amendments/supplement/joint/name читают exact retained answer после memo cleanup в текущем scope. Request fingerprint и policy reuse — разные сущности; смена prompt сама по себе
   не инвалидирует старые карточки и не инициирует платные вызовы.
   [J077](2026-10-22-document-architecture-progress.md#j077): explanation использует caller-owned
-  snapshot и recorded input binding; primary и legacy unbound explanation пока не расширены.
+  snapshot и recorded input binding.
+  [J078](2026-10-22-document-architecture-progress.md#j078): primary/reanalysis
+  получают caller snapshots; legacy unbound input остаётся unknown, force bypass сохраняется.
   Нынешний `_unchanged()` меняет pointer/source_checked_at: в новой истории это отдельное
   подтверждение применимости к наблюдению, а не перезапись immutable оплаченного результата.
 - [ ] DA6.5. Legacy import сохраняет существующие exact данные с `legacy` provenance.

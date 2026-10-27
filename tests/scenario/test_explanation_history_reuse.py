@@ -120,4 +120,4 @@ def test_history_is_read_on_the_caller_and_never_by_primary_prepare_workers(
     world.run(track=False)
 
     assert isinstance(world.analysis.explain_bill(world.bill("3039")), Waiting)
-    assert calls == ["explanation"]
+    assert calls == ["analysis", "analysis", "analysis", "analysis", "explanation"]

@@ -3937,3 +3937,51 @@ strict mypy 420 файлов, Ruff, docs/web jobs success.
 `800ef774e61d -> 28bcc83fd7ac`, listener up 45 s. Live cycle writer этим не подтверждён.
 План: **74 задачи, 12 выполнены, 62 не закрыты**; goal active. Следующий фрагмент — primary
 history reuse после memo cleanup с caller-owned snapshots и прежними generation guards.
+
+<a id="j078"></a>
+### J078. DA6: exact primary history reuse on the caller
+
+Дата: 27 октября 2026. База: J077 (`9e3d891`). Статус: принято локально, deployment проверяется отдельно.
+
+После memo cleanup/reset основной анализ повторно ставит уже оплаченный вопрос: первые
+**8 probes failed**. Caller теперь читает purpose-filtered immutable snapshots перед `fan_out`,
+прямым анализом и reanalysis; workers получают только данные. Exact known input binding и
+существующий pure matcher сохраняют subject/key/type boundary, memo priority и free reuse.
+Force с `ignore_cost_limit=True` сохраняет прежний cache bypass. Ready/batch-pending shortcuts
+и atomic application/generation guards не изменены. Старые unbound results не backfilled.
+
+Первая целевая проверка **31 passed** включает 22 новых сценария и девять explanation controls.
+В reanalysis платный ответ collected после operator generation reset: он остаётся superseded
+в исходной collection receipt, но повторный exact input может быть применён к новой generation.
+Prepare не создаёт projection receipt; только прежний caller-owned checkpoint делает это.
+Implementation commit не создан; schema/migrations и stored formats прежние. Следуют
+before/after qualification, полный gate и сравнение нормальных/cold flows.
+
+Расширенная before/after проверка на J077: **16 failed / 6 passed**, current targeted
+**137 passed**. Mypy **423** файла, Ruff src/tests/tools и format green. Проверено **104**
+configuration flows: прежние **68** целиком совпали, из 36 primary flows изменились только
+**8 cold bound**, остальные **28** совпали вместе с SQL. New cold projections/applications
+равны baseline warm reuse; original requests/results прежние. Settled SQL delta в исправленных
+fixtures **−4015…−1050 bytes**, gzip **−257…−23**, SQLite **−8192…−4096**: устранена лишняя
+operational work, это не production forecast. J077 читает все **104** snapshots с exact dump.
+State pin `f34e63e7` восстановлен без изменения SQL/projection/memo hashes и размеров,
+integrity ok/FK 0. Корпусный CI **7 passed**, process **3294 observations**, zero changed
+inputs/decisions; manifests проверены. Full gate ещё выполняется, acceptance не объявлена.
+
+J077 release проверен по `9e3d891691e6649bac5d25d1c652d5a1917a2f6a`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40485302726) — **4602 passed**,
+strict mypy 422 файла, Ruff, docs/web jobs success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40485924424) — exact COMMIT,
+`28bcc83fd7ac -> 9e3d891691e6`, listener up 45 s. Это не подтверждает live history reuse.
+
+Final acceptance: **4624 passed**, failures/errors/skips/xfails 0, 665.862 s. Targeted
+**137 passed**, strict mypy **423** файла, Ruff src/tests/tools, format, docs/links и diff check
+green. Corpus CI **7 passed**, process **3294 observations**, zero changed inputs/decisions;
+qualified source/tests hashes совпадают. Все **50 migrations** прежние; runtime изменён
+только в трёх caller paths analysis service, stored format прежний.
+[Acceptance evidence](../assets/audits/2026-10-27-primary-history-reuse/validation.json)
+содержит before/after XML, 104 profiles/rollback reads, observers и pinned restore. Первичные
+невалидные test/observer invocations исключены и описаны отдельно. Local HTTP не повторён:
+CLI/wiring/transports прежние. Implementation commit ещё не создан; rollback J077.
+DA6.4 остаётся частичным: applicability observations, legacy import и ref/retention transition
+не закрыты. План: **74 задачи, 12 выполнены, 62 не закрыты**; goal active.

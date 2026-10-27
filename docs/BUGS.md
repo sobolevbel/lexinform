@@ -3,7 +3,7 @@
 ## Как пользоваться
 
 Текущие баги сгруппированы по статусу, внутри группы — по влиянию на читателя.
-Номера B1…B124 постоянные:
+Номера B1…B125 постоянные:
 старые обозначения `#4` и `B4` означают одну запись.
 `open` — воспроизведённый дефект; `candidate` — ещё не доказанная гипотеза.
 `deferred` — подтверждённый дефект, отложенный по решению владельца;
@@ -23,6 +23,20 @@ P3 не означает, что расходы можно игнорирова�
 [повторяющиеся ошибки](development/failure-patterns.md) — памятка для аудита.
 
 ## Open
+
+### B125
+
+**P3 · fixed locally · 27.10.2026.** После очистки memo/reset основной анализ повторно заказывал exact paid input.
+
+`ComputationResult` сохранял успешный ответ и original input binding, но primary prepare
+читал только operational memo. Восьмёрка primary сценариев и восемь reanalysis сценариев
+падали на J077: новый intent вместо доступного оплаченного ответа. Шесть negative controls
+проходили. Caller теперь передаёт immutable purpose snapshot до parallel prepare; worker
+не читает repository. Reuse сохраняет paid ID/SHA, а application фиксирует текущую generation.
+Changed input, unbound legacy и explicit force не получают расширенного cache hit.
+
+Проверки: `test_primary_history_reuse.py`, before **16 failed / 6 passed**, current **22 passed**;
+измерения и полный gate — [J078](plans/2026-10-22-document-architecture-progress.md#j078).
 
 ### B124
 
