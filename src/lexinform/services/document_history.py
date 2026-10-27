@@ -1,6 +1,8 @@
 """Calling transactions record known physical metadata independently of body retention."""
 
 import datetime as dt
+from dataclasses import dataclass
+from typing import Literal
 
 from lexinform.models import (
     ArtifactIdentity,
@@ -8,9 +10,38 @@ from lexinform.models import (
     DocumentSelectionRecord,
     SelectionArtifactReference,
     SourceObservation,
+    TextDocument,
 )
 from lexinform.models.artifacts import SelectionPartScope
 from lexinform.ports import BillRepository
+
+
+@dataclass(frozen=True)
+class DocumentSourceRead:
+    document: TextDocument
+    selection: DocumentSelectionRecord
+    artifacts: tuple[ArtifactIdentity, ...]
+
+
+def record_source_read(
+    repo: BillRepository,
+    source: DocumentSourceRead,
+    *,
+    term: int,
+    number: str,
+    purpose: Literal["prefilter", "analysis", "review"],
+    recorded_at: dt.datetime,
+) -> None:
+    """Record a consumer's source metadata inside its caller-owned transaction."""
+    observation = SourceObservation(
+        term=term,
+        number=number,
+        purpose=purpose,
+        document=source.document,
+        selection_id=source.selection.selection_id,
+        recorded_at=recorded_at,
+    )
+    record_document_source(repo, source.selection, observation, source.artifacts)
 
 
 def record_artifacts(

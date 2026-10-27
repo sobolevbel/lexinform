@@ -5263,3 +5263,55 @@ prefilter и analysis observations с **одним exact selection ID**. Про�
 стадии и сохранность общей physical identity/отсутствие provider input в source metadata.
 Runtime не менялся после квалификаций; прежний failed full XML/log сохранён. Accepted повтор
 проверяет финальные tests; исключений/xfail не добавлено.
+
+
+Уточнение границы evidence J102: формулировка «body export отсутствует» была неточной.
+Ignored local replay JSON сохраняли полные fake-provider contexts из 36 raw files, включая
+scan payloads: baseline/current artifacts **4152689 / 4152663 bytes**, по **187661 text chars**
+в **24** непустых text contexts, плюс scan data. Эти файлы — локальные qualification artifacts,
+не новые production rows или raw retention policy; в Git сохранены только hashes/counts.
+Пинованные evidence не переписаны. Следующий raw replay сравнивает canonical payload SHA в RAM
+и сохраняет только fingerprints/counts. Production metadata и измеренные SQL deltas J102 прежние.
+
+
+<a id="j103"></a>
+### J103. Общее source-read ядро и observations для review
+
+Статус: **завершён**, baseline `fa3e2d99a64a794b842f790b78579c2fe865fe97`.
+`DocumentSourceRead` и `record_source_read` вынесены в общий service module; prefilter и primary
+analysis используют тот же DTO/metadata transaction contract. Review worker возвращает исходный
+file selection/known outer identities отдельно от прежнего ReviewDocument. Caller сохраняет
+metadata в input order, включая source с refused digest/role. История не утверждает успешный
+review admission и не relabels unknown policy. Saved ReviewDocument reuse не создаёт новый read.
+Models/schema/ports/policies/prompt/provider payload не менялись; остальные **152 src files exact**.
+Admission/context body перенесён AST-exact, остальные прежние history functions не менялись.
+
+**161 focused** passed; strict mypy **459** с/без PYTHONPATH, Ruff/format green.
+Отдельная prototype copy до применения patch: **10 new / 30 shared / 121 existing review** tests
+passed. Первоначально review fixtures не включали purpose в `batch_kinds`; arrange исправлен до
+accepted focused gate. Это не обход feature flags в runtime.
+
+**168 прежних native cases**: все profiles/requests/messages/**20 business tables exact**, все
+старые metadata rows сохранены, doctor errors **0**, SQL/gzip delta **0**. Новая matrix **32 cases**:
+два purposes, workers1/4, compare modes, digest mismatch и snapshot reuse. Context/requests/messages/
+20 business tables exact; network call **multisets** exact. Два различия порядка параллельных
+скачиваний исключены из ordering oracle; caller source-row order проверен отдельно и совпал с input.
+**48 review observation views**, **24 unknown policy views** без relabel; doctor **0 errors**.
+SQL delta **0–7022 bytes**, gzip **0–1013**, старые metadata rows preserved.
+
+Raw sample **36** тот же J100: surrogate print/response consumers, **26 ReviewContexts**,
+**36 new review / 72 total source observations**. Canonical comparison hashes всех Bill/report
+(кроме actual phase timings)/contexts/requests/messages/ReviewContext exact; INDEX/raw hashes exact.
+Новый raw output содержит fingerprints/counts, **не input bodies**; payload для сравнения собран
+только в RAM. Это не независимая legal acceptance response role или full raw population.
+J102 reader сохраняет **200 SQL snapshots / 356 run reports** exact; schema conversion отсутствует.
+CI corpus **7** / process **3294** verified, inputs/observations same. Полный gate:
+**4943 passed**, 0 failures/errors/skips, **591.344 s**.
+[Acceptance asset](../assets/audits/2026-10-27-review-source-history/validation.json) пинует
+source/evidence, storage deltas, сравнения, rollback и scope.
+
+
+J102 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40580538381): **4933 passed**,
+strict mypy **458**, Ruff/docs/web success. [Relay deploy](https://github.com/sobolevbel/lexinform/actions/runs/40581654012):
+exact COMMIT `fa3e2d99a64a794b842f790b78579c2fe865fe97`, listener up **45 s**.
+Production processing/paid calls/Telegram sends вручную не запускались.

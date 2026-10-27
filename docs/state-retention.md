@@ -273,3 +273,11 @@ completed decision; batch-ready reuse without a new read creates no new observat
 source metadata and first recording times stay immutable. Review/secondary readers remain outside
 this producer's scope. No raw retention, extra request or inferred link to an old paid input is
 introduced. See [J102](plans/2026-10-22-document-architecture-progress.md#j102).
+
+
+Review preparation now records the original file-selection metadata through the shared
+`DocumentSourceRead` helper on the calling thread. A refused role/digest can still retain its
+observed source; this metadata does not assert successful review admission. Reused historical
+ReviewDocument snapshots create no new source observation, and unknown file policies stay unknown.
+Source metadata remains independent of paid input/result identity and raw retention. See
+[J103](plans/2026-10-22-document-architecture-progress.md#j103).

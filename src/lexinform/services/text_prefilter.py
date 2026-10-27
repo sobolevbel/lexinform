@@ -21,11 +21,10 @@ from lexinform.models import (
     Bill,
     BillStatus,
     DocumentSelectionRecord,
-    SourceObservation,
     TextDocument,
 )
 from lexinform.ports import BillRepository, Clock, TextSource
-from lexinform.services.document_history import record_document_source
+from lexinform.services.document_history import DocumentSourceRead, record_source_read
 from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
 
 log = logging.getLogger(__name__)
@@ -176,16 +175,15 @@ class TextPrefilterService:
                 assert loaded.source_document is not None, (
                     "PrefilterLoad requires paired source metadata"
                 )
-                observation = SourceObservation(
+                record_source_read(
+                    self._repo,
+                    DocumentSourceRead(
+                        loaded.source_document, loaded.source_selection, loaded.source_artifacts
+                    ),
                     term=bill.term,
                     number=bill.number,
                     purpose="prefilter",
-                    document=loaded.source_document,
-                    selection_id=loaded.source_selection.selection_id,
                     recorded_at=self._clock.now(),
-                )
-                record_document_source(
-                    self._repo, loaded.source_selection, observation, loaded.source_artifacts
                 )
             return self._decide(bill, loaded)
 

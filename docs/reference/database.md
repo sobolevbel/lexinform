@@ -436,4 +436,9 @@ analysis для first/re-analysis/explanation, включая standalone calls. 
 selection формируется до input fitting и сохраняется после prepare, независимо от paid input/result identity. Worker возвращает metadata,
 caller transaction записывает decision/observation/known outer refs; ошибка модели сохраняет
 завершённое source decision, source outage — нет. Batch-ready reuse без нового source read не
-создаёт фиктивное observation. Review и прочие secondary consumers остаются открытыми.
+создаёт фиктивное observation. [J103](../plans/2026-10-22-document-architecture-progress.md#j103) использует общий
+`DocumentSourceRead`/recording helper в prefilter, primary analysis и review. Review worker
+возвращает исходный file selection и physical identities отдельно от ReviewDocument; запись
+идёт на caller thread в input order, до подготовки paid review. Snapshot reuse без нового
+чтения не создаёт observation. Неизвестный policy остаётся unknown; source history не объявляет
+файл допустимым для конкретного role/digest. Прочие secondary consumers остаются открытыми.

@@ -47,7 +47,6 @@ from lexinform.models import (
     AnalysisRecord,
     AnalysisVerdict,
     ApplicantType,
-    ArtifactIdentity,
     BatchIntent,
     BatchItemMeta,
     BatchProvider,
@@ -93,7 +92,6 @@ from lexinform.models import (
     ReviewResultRecord,
     ReviewSource,
     ScannedDocument,
-    SourceObservation,
     Stage,
     StatusChange,
     SupplementContext,
@@ -158,7 +156,7 @@ from lexinform.senate_documents import validate_senate_scan
 from lexinform.services.analysis_applications import apply_analysis
 from lexinform.services.computation_reuse import matching_record, retained_secondary
 from lexinform.services.cost import CostLedger
-from lexinform.services.document_history import record_document_source
+from lexinform.services.document_history import DocumentSourceRead, record_source_read
 from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
 from lexinform.services.joint import primary_of, revive_prefilter_skips
 from lexinform.services.result_applications import record_secondary_application
@@ -307,18 +305,17 @@ class Waiting:
     usage: dict[str, TokenUsage] = field(default_factory=dict)
 
 
-@dataclass(frozen=True)
-class _SourceRead:
-    document: TextDocument
-    selection: DocumentSelectionRecord
-    artifacts: tuple[ArtifactIdentity, ...]
-
-
 class _SourceReadError(Exception):
-    def __init__(self, source: _SourceRead, cause: Exception) -> None:
+    def __init__(self, source: DocumentSourceRead, cause: Exception) -> None:
         super().__init__(str(cause))
         self.source = source
         self.cause = cause
+
+
+@dataclass(frozen=True)
+class _ReviewRead:
+    document: ReviewDocument | None
+    source_read: DocumentSourceRead | None = None
 
 
 @dataclass(frozen=True)
@@ -340,7 +337,7 @@ class _Loaded:
     document: TextDocument | None = None
     selection: DocumentSelection = DocumentSelection()
     projection: TextProjection | None = None
-    source_read: _SourceRead | None = None
+    source_read: DocumentSourceRead | None = None
 
     @property
     def digest(self) -> str | None:
@@ -416,7 +413,7 @@ class _Prepared:
     memo_key: str | None = None
     triage_memo_key: str | None = None
     from_batch: bool = False
-    source_read: _SourceRead | None = None
+    source_read: DocumentSourceRead | None = None
 
 
 _WHITESPACE = re.compile(r"\s+")
@@ -1829,7 +1826,14 @@ class AnalysisService:
             fan_out(documents, self._read_review_document, workers=self._options.workers),
             strict=True,
         ):
-            source = outcome.result()
+            try:
+                read = outcome.result()
+            except _SourceReadError as failure:
+                self._record_source_read(bill, failure.source, purpose="review")
+                raise failure.cause from failure
+            if read.source_read is not None:
+                self._record_source_read(bill, read.source_read, purpose="review")
+            source = read.document
             if source is not None:
                 sources.append(source)
             elif purpose == "commission_review":
@@ -1872,14 +1876,28 @@ class AnalysisService:
             ),
         )
 
-    def _read_review_document(self, source: ReviewSource) -> ReviewDocument | None:
+    def _read_review_document(self, source: ReviewSource) -> _ReviewRead:
         if source.snapshot is not None:
-            return source.snapshot
+            return _ReviewRead(source.snapshot)
         document = source.document
         if document.compare_versions:
             document, file = self._loader.select_document(document)
         else:
             file = self._loader.read_document(document)
+        read = DocumentSourceRead(
+            document,
+            DocumentSelectionRecord.from_selection(file.selection),
+            self._loader.artifacts_for_selection(file.selection),
+        )
+        try:
+            return _ReviewRead(self._review_document_of(source, document, file), read)
+        except Exception as exc:
+            raise _SourceReadError(read, exc) from exc
+
+    def _review_document_of(
+        self, source: ReviewSource, document: TextDocument, file: LoadedFile
+    ) -> ReviewDocument | None:
+        """Build the existing review result without changing admission or its fingerprints."""
         text = file.text or ""
         admission = review_admission(
             file.selection,
@@ -2359,17 +2377,22 @@ class AnalysisService:
             self._record_source_read(bill, prepared.source_read)
         return prepared
 
-    def _record_source_read(self, bill: Bill, source: _SourceRead) -> None:
-        observation = SourceObservation(
-            term=bill.term,
-            number=bill.number,
-            purpose="analysis",
-            document=source.document,
-            selection_id=source.selection.selection_id,
-            recorded_at=self._clock.now(),
-        )
+    def _record_source_read(
+        self,
+        bill: Bill,
+        source: DocumentSourceRead,
+        *,
+        purpose: Literal["analysis", "review"] = "analysis",
+    ) -> None:
         with self._repo.atomic():
-            record_document_source(self._repo, source.selection, observation, source.artifacts)
+            record_source_read(
+                self._repo,
+                source,
+                term=bill.term,
+                number=bill.number,
+                purpose=purpose,
+                recorded_at=self._clock.now(),
+            )
 
     def _prepare(
         self,
@@ -3085,7 +3108,7 @@ class AnalysisService:
                 "unsupported" if isinstance(exc, ValueError) else "waiting",
                 f"{document.url}: {type(exc).__name__}: {exc}",
             ) from exc
-        source = _SourceRead(
+        source = DocumentSourceRead(
             document,
             DocumentSelectionRecord.from_selection(file.selection),
             self._loader.artifacts_for_selection(file.selection),
