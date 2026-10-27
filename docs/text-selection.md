@@ -39,6 +39,13 @@ rejected bodies beyond its cache. These are transient candidates, with the exist
 and membership rules; richer decision persistence/admissibility remains DA4. See
 [J088](plans/2026-10-22-document-architecture-progress.md#j088).
 
+`document_admissibility` defines operation-specific bill-read proposals (`bill-read-v1`) for
+prefilter and analysis. These keep the current unverified/scan/Word fallback distinctions and
+selection blockers. The functions are shadow-only until their consumer stage is accepted;
+the `admissibility` corpus suite records cached-view probes through the common run registry.
+Page counts in that suite are counterfactual, not recovered history. See
+[J089](plans/2026-10-22-document-architecture-progress.md#j089).
+
 `PypdfTextExtractor.extract_pages` now returns `PdfTextExtraction` (`pdf-pages-v1`): input SHA,
 pypdf version, raw page text, physical `pdf-page:N:0` coordinates and per-page read errors.
 Empty pages retain their positions. A page-tree failure leaves the total page count unknown;

@@ -4514,3 +4514,47 @@ Schema **51**, migrations/serialization/default flags прежние, storage de
 rollback J087 без state conversion. Local HTTP не повторён: сетевой CLI/wiring прежний.
 DA4.1/DA4.2 остаются частичными для полной provenance/dispositions, fallback/composition
 и operation-specific admissibility; CandidateSet не выдается за завершённую систему этих правил.
+
+<a id="j089"></a>
+### J089. DA4.5/DA4.6: shadow bill-read admissibility
+
+Дата: 27 октября 2026. База: J088 (`1c2ee02`). Статус: принято локально; deployment проверяется отдельно.
+
+Pure functions `prefilter_admission` и `analysis_admission` сохраняют прежние разные правила
+операций, включая blocked selection, scan attempts, unverified text и nonempty Word fallback.
+OSR остаётся полезным материалом, consultation report — metadata-only для analysis.
+Политика `bill-read-v1` пока не импортируется services и не влияет на runtime.
+
+Первый fixture ошибочно отнёс OSR к APPENDIX_KINDS; исправлен на consultation report,
+добавлен отдельный positive OSR case, production rule не ослаблялся. Syntax/Ruff tool issues
+устранены до запуска gate. Focused **24 passed**, mypy **437** файлов, Ruff/format green.
+Новая `admissibility` suite зарегистрирована в corpus_runs и читает bounded gzip caches;
+output неизменяемый/outside corpus, код и inputs сверяются, bodies не печатаются.
+
+Shadow corpus: **14691 cached views**, **13454 readable / 1237 empty**, unreadable/limit **0**.
+Families: RCL **10418**, RPW **830**, filings **572**, prints **980**, self-amendments **66**,
+Senate-root views **1825**. Это views declared roots, не столько независимых инициатив.
+На **page probes 0/1/20** и двух operations **88146 decisions** совпали с frozen legacy
+branches из baseline services. Page counts условные, selection unverified; historical pages,
+полный input и legal completeness не достраиваются. Sources/corpus не менялись.
+
+Все существующие **149 src files** byte-identical baseline, только новый unused policy module
+добавлен; source schema/default flags/SQL прежние. DA4.5/DA4.6 остаются
+частичными: consumer wiring, comparison/amendments/reviews и их приёмка ещё не включены.
+
+
+J088 release проверен по `1c2ee02a041b0f8a9d206f3657abb59bbf810a74`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40530394227) — **4772 passed**,
+strict mypy 434 файла, Ruff, docs/web success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40531621459) — exact COMMIT,
+`23367da5f75c -> 1c2ee02a041b`, listener up 45 s. Live processing не запускался.
+
+Final acceptance J089: full **4788 passed**, failures/errors/skips 0, **580.923 s**;
+focused **24 passed**, strict mypy **437** файлов, Ruff/format/docs/diff green.
+Corpus CI **7**, process **3294**, shadow **14691 views / 88146 operation decisions**,
+manifest verification и legacy parity приняты; input SHA/решения не изменились.
+[Acceptance evidence](../assets/audits/2026-10-27-shadow-admissibility/validation.json)
+содержит checks/source hashes, coverage/exclusions и reproduction. Original bodies в артефакт
+не включены. Schema **51**, SQL/storage delta **0**; rollback J088 без state conversion.
+Local HTTP не повторён: новая policy не подключена к consumers/transports.
+План **74 задачи, 15 выполнены, 59 unchecked** (DA8.3 неприменим); goal active.

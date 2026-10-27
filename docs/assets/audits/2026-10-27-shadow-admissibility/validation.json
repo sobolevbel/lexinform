@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "stage": "J089",
+  "baseline": "1c2ee02a041b0f8a9d206f3657abb59bbf810a74",
+  "scope": "Shadow-only pure bill-read admission for prefilter and analysis, preserving current operation differences. No runtime consumer is activated.",
+  "checks": {
+    "focused": {
+      "sha256": "1776bc294abce2fd7caff4421ae09a614f0979dde9ab65b26ba7ccece75eee6d",
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.26
+    },
+    "full": {
+      "sha256": "589ca2d232c982532cb2162464bc4a8019f86b2a4403dd982c6e4d4ddabd9cef",
+      "tests": 4788,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 580.923
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 437 source files",
+    "ruff": "All checks passed!",
+    "format": "439 files left unchanged"
+  },
+  "parity": {
+    "cache_views": 14691,
+    "states": {
+      "empty_cache": 1237,
+      "readable_cache": 13454
+    },
+    "families": {
+      "rcl": 10418,
+      "rpw": 830,
+      "sejm_filing": 572,
+      "sejm_print": 980,
+      "sejm_self_amendment": 66,
+      "senate_resolution": 1825
+    },
+    "operation_decisions": 88146,
+    "all_proposals_equal_legacy_branches": true,
+    "existing_runtime_files": 149,
+    "all_existing_src_files_unchanged": true,
+    "services_do_not_import_new_policy": true,
+    "inputs_unchanged": true,
+    "legacy_source_sha256": {
+      "src/lexinform/services/text_prefilter.py": "3d49675095d7f4ef8a0606ea9f75c2bcec7bba37911b118c8430b4fde3e5ec95",
+      "src/lexinform/services/analysis.py": "bab58130ea0ee83ad7b2a780eeb6e5a698689938335157c8de8ffee1860c8efc"
+    },
+    "scope": "Frozen legacy unverified-selection branches on actual cached texts and counterfactual page counts; no legal or historical-page verdict."
+  },
+  "shadow": {
+    "status": "recorded",
+    "policy_version": "bill-read-v1",
+    "counts": {
+      "analysis/metadata_only": 2998,
+      "analysis/scan": 8526,
+      "analysis/text": 32549,
+      "empty_cache": 1237,
+      "prefilter/no_document": 8653,
+      "prefilter/text": 35420,
+      "readable_cache": 13454
+    },
+    "page_probes": [
+      0,
+      1,
+      20
+    ],
+    "selection_state": "unverified",
+    "scope": "Shadow bill-read proposals on cached views with counterfactual page probes.",
+    "exclusions": [
+      "No actual source-page count, selected state or complete historical input is inferred.",
+      "Existing cached views are the population; missing caches are not invented.",
+      "No legal accuracy or holdout verdict; runtime policy is not activated.",
+      "No extraction, source download, model call, SQL write or corpus edit."
+    ]
+  },
+  "source": [
+    {
+      "path": "src/lexinform/document_admissibility.py",
+      "sha256": "350079a1aa98dc8b2d4616af7ca38fc457255c521239e21f32b849271dd88a38"
+    },
+    {
+      "path": "tools/replay_admissibility.py",
+      "sha256": "8433f009b2dc814160354e25bc4e7b3e366eaeabf62da1c26f865ce78b7ecbd1"
+    },
+    {
+      "path": "tools/corpus_runs.py",
+      "sha256": "8dc215a8a12377a190f0383c27bb0374254fdd33a907d65de504931c9439364c"
+    },
+    {
+      "path": "tests/unit/test_document_admissibility.py",
+      "sha256": "c9d015b8c0daa0162f49a7beafa170c8a43994b2eddfac6a59609cfd37db5c70"
+    },
+    {
+      "path": "tests/unit/test_replay_admissibility.py",
+      "sha256": "24c242793b639be300687795d8d96c7facb060508f43d373d062fa82eced6238"
+    }
+  ],
+  "corpus": {
+    "ci_observations": 7,
+    "process_observations": 3294,
+    "process_diff": {
+      "after_manifest_sha256": "25364bfad4cddf496602db1f1ef41e835b7482f9893767b8e7eddca8a9ba510c",
+      "before_manifest_sha256": "7a1aeaabbb82ac14b0677aef6c9040bf6e5757b39430d8ced95c75aee9e9f5b5",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "process",
+      "summary_changes": {},
+      "version": 1
+    },
+    "manifests_verified": true,
+    "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666"
+  },
+  "state": {
+    "schema": 51,
+    "storage_delta": 0,
+    "existing_runtime_files_unchanged": 149,
+    "services_import_new_policy": false
+  },
+  "evidence": [
+    {
+      "path": "out/corpus/j089/parity.json",
+      "sha256": "82c01694c25d36821fefe883be6a910033e337627b49d946265bcc4be3c4d6dd"
+    },
+    {
+      "path": "out/corpus/j089/legacy_parity.py",
+      "sha256": "754aceb9dcad6e530b72126f3c54df3495283ed041b2a042ed2421a57321a436"
+    },
+    {
+      "path": "out/corpus/runs/j089-admissibility/manifest.json",
+      "sha256": "21620cf203fbf2118b6eeb0ac0996d1c4ef32b4d4b5f55632bf98fd187a4c1fa"
+    },
+    {
+      "path": "out/corpus/runs/j089-admissibility/result.json",
+      "sha256": "91cd4b83d7a3f93b66da7d5a003162976b009da46cfe092476d971ef614c7844"
+    }
+  ],
+  "rollback": {
+    "code": "J088",
+    "state_conversion": false
+  },
+  "reproduction": [
+    "uv run pytest -q tests/unit/test_document_admissibility.py tests/unit/test_replay_admissibility.py tests/unit/test_document_candidates.py",
+    "uv run pytest -q && uv run mypy && uv run ruff check src tests tools",
+    "uv run python -m tools.corpus_runs run admissibility --corpus ../lexinform-corpus --id NEW_ID",
+    "PYTHONPATH=src:. uv run python out/corpus/j089/legacy_parity.py",
+    "Use new output paths; recorded replay inputs and outputs are immutable."
+  ]
+}

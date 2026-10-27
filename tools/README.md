@@ -357,3 +357,18 @@ paid origin. Batch receipt presence does not imply that its answer body survives
 are not joined to receipts to guess that identity. Missing source tables remain explicit.
 Exit codes are 0 for recorded inventory, 1 for invalid data/change during reading, 2 for no records
 or batch receipts. This is a storage measurement, not a selected archive or deletion policy.
+
+## Bill-read admissibility shadow replay
+
+```bash
+uv run --offline --frozen python -m tools.corpus_runs run \
+  --root "$PWD/out/corpus/runs" --id admission-baseline --suite admissibility \
+  --corpus /path/to/lexinform-corpus
+```
+
+This records proposed prefilter/analysis modes from bounded gzip text caches across the declared
+families. Page counts 0/1/20 are counterfactual probes; selection remains unverified. It infers no
+historical pages, raw input or legal completeness and does not activate a runtime policy. Empty,
+unreadable and over-limit caches remain explicit observations. Input/code checksums, immutable
+outputs and before/after comparison use the common registry. See the shadow acceptance in
+[J089](../docs/plans/2026-10-22-document-architecture-progress.md#j089).
