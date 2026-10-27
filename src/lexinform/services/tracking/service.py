@@ -56,6 +56,7 @@ from lexinform.ports import (
 )
 from lexinform.services.amendments import AmendmentsSource, amendments_source
 from lexinform.services.analysis import AnalysisService, Waiting
+from lexinform.services.analysis_applications import apply_analysis
 from lexinform.services.delivery import DeliveryService
 from lexinform.services.document_reviews import DocumentReviews
 from lexinform.services.posting import Poster
@@ -963,7 +964,26 @@ class StatusTrackingService:
             and self._analysis.may_wait_for_batch(bill.model_copy(update={"stages": detail.stages}))
         )
         paid = deliver or bill.observation_mode is not ObservationMode.METADATA
-        change = self._detect_change(bill, found, plan, result, may_wait=may_wait, paid=paid)
+        prepared, reanalysed = (
+            self._prepare_new_text(bill, detail, plan.analysis_document)
+            if paid and plan.text_active
+            else (bill, False)
+        )
+        content_changed = plan.content_changed or (
+            reanalysed
+            and prepared.analysis is not None
+            and prepared.analysis.analysis.names_changes
+        )
+        change = self._detect_change(
+            bill,
+            found,
+            plan,
+            result,
+            prepared=prepared,
+            content_changed=content_changed,
+            may_wait=may_wait,
+            paid=paid,
+        )
         if isinstance(change, Waiting):
             if bill.awaiting_batch_since is None:
                 self._repo.set_awaiting_batch(bill.term, bill.number, self._clock.now())
@@ -973,6 +993,26 @@ class StatusTrackingService:
         # not part of `_stage_key`, so writing it moves no fingerprint and announces nothing.
         named = self._enricher.name_committees(bill.term, detail.stages)
         with self._repo.atomic():
+            if prepared is not bill:
+                assert prepared.analysis is not None, (
+                    "prepare_reanalysis returns a new bill only with its record"
+                )
+                apply_analysis(
+                    self._repo,
+                    bill.term,
+                    bill.number,
+                    prepared.analysis,
+                    now=self._clock.now(),
+                    reason=(
+                        "batch_result"
+                        if bill.status is BillStatus.REANALYSIS_READY
+                        else "memo_reuse"
+                    )
+                    if reanalysed
+                    else None,
+                )
+                if prepared.authors is not None:
+                    self._repo.save_authors(bill.term, bill.number, prepared.authors)
             if not plan.text_active and bill.status in (
                 BillStatus.BATCH_PENDING,
                 BillStatus.REANALYSIS_READY,
@@ -1016,6 +1056,11 @@ class StatusTrackingService:
                         self._poster.prepare(fresh, change)
                     else:
                         self._poster.hold(fresh, change)
+        if reanalysed:
+            assert prepared.analysis is not None, (
+                "prepare_reanalysis confirms a reading only with its record"
+            )
+            result.count_reanalysis(prepared.analysis)
         return change
 
     def _remember_supplements(self, bill: Bill, print_info: PrintInfo | None) -> None:
@@ -1038,24 +1083,14 @@ class StatusTrackingService:
         plan: BillPlan,
         result: TrackingResult,
         *,
+        prepared: Bill,
+        content_changed: bool,
         may_wait: bool,
         paid: bool = True,
     ) -> StatusChange | Waiting | None:
-        """The one change worth a post, or None when there is nothing to tell.
-
-        A first sight of the stages seeds them silently: there is no "before" to compare with.
-        Closure is compared with the tracking baseline, which discovery must never overwrite.
-        Stages that are gone again (edited or removed upstream) leave nothing to tell either,
-        and neither does a change an earlier run already recorded.
-        """
+        """Build the update from prepared analysis without advancing the bill."""
         detail = found.detail
         now = self._clock.now()
-        content_changed = (
-            paid
-            and plan.text_active
-            and self._reanalyze_new_text(bill, detail, plan.analysis_document, result)
-        )
-        content_changed = content_changed or plan.content_changed
         old_fp = bill.stages_fingerprint
         if plan.previous is None:
             return None
@@ -1067,14 +1102,13 @@ class StatusTrackingService:
         ):
             return None
 
-        fresh = self._repo.get(bill.term, bill.number) or bill
         change = StatusChange(
             term=bill.term,
             number=bill.number,
             old_fingerprint=old_fp,
             new_fingerprint=change_key(
                 plan.observed.fingerprint,
-                fresh,
+                prepared,
                 closed=closure_detected,
                 supplements=[s.number for s in filed],
             ),
@@ -1108,26 +1142,21 @@ class StatusTrackingService:
         _log_change(bill, change)
         return change
 
-    def _reanalyze_new_text(
+    def _prepare_new_text(
         self,
         bill: Bill,
         detail: ProcessDetail,
         document: TextDocument | None,
-        result: TrackingResult,
-    ) -> bool:
-        """True when the model read a text we had not read and named what changed in it."""
+    ) -> tuple[Bill, bool]:
+        """Prepare or reuse the reading while the checkpoint still owns the current bill."""
         if self._analysis is None:
-            return False
+            return bill, False
         if bill.status is BillStatus.REANALYSIS_READY and bill.ready_analysis is not None:
             document = bill.ready_analysis.located.document or document
         if document is None:
-            return False
+            return bill, False
         log.info("druk %s: new text (%s), re-analysing", bill.number, document.kind)
-        record = self._analysis.reanalyze_bill(bill, document, summary=detail)
-        if record is None:
-            return False
-        result.count_reanalysis(record)
-        return record.analysis.names_changes
+        return self._analysis.prepare_reanalysis(bill, document, summary=detail)
 
     def _attach_supplements(
         self,

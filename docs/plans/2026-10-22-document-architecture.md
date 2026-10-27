@@ -630,7 +630,7 @@ source disappearance. Изменение normalization/digest — отдельн
   provider item/accounting и application identity. Большие входы/ответы хранить по профилю DA2:
   ссылка на архив допустима только для действительно сохранённого объекта;
   статус валидации и версия schema сохраняются. Не создавать второй batch submitter.
-- [ ] DA6.2. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), primary collect; [J062](2026-10-22-document-architecture-progress.md#j062), atomic projection; [J063](2026-10-22-document-architecture-progress.md#j063), тот же command внутри существующих RCL/linking checkpoints. Sejm observation/application consolidation, rollover, secondary и raw response archive остаются открытыми.** В одной локальной транзакции collect сохранить raw/validated result ref,
+- [ ] DA6.2. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), primary collect; [J062](2026-10-22-document-architecture-progress.md#j062), atomic projection; [J063](2026-10-22-document-architecture-progress.md#j063), RCL/linking checkpoints; [J064](2026-10-22-document-architecture-progress.md#j064), Sejm analysis/observation/delivery в одном checkpoint. Rollover, secondary и raw response archive остаются открытыми.** В одной локальной транзакции collect сохранить raw/validated result ref,
   usage accounting и consumed checkpoint. Применение к проекции — отдельная идемпотентная
   транзакция, учитывающая нынешние generation, skip/reset и ownership; при tracking сохранить
   атомарность processed observation и delivery work.

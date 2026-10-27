@@ -41,6 +41,9 @@ reuse; tracking/linking records a changed computation ref as `retained_result`, 
 another paid call. An unchanged ref during quiet tracking adds no receipt. A repeated receipt
 keeps its original timestamp. Nested savepoints retain the enclosing observation/delivery
 transaction's rollback boundary.
+Sejm tracking prepares reanalysis before its checkpoint and applies it with the observed process
+and delivery work. Waiting secondary work leaves the current analysis and ready result intact.
+The reanalysis counter advances after that commit; paid usage remains in the existing call ledger.
 Preparation and quiet source checks do not create projection receipts. Ready does not prove
 application or publication, and applied does not prove delivery. Direct identity relocation
 at term rollover and secondary purposes remain in [DA6](plans/2026-10-22-document-architecture.md#da6).

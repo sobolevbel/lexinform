@@ -81,13 +81,21 @@ def test_a_re_analysis_that_names_no_change_is_not_news_a_run_later() -> None:
     w.batch.resolve()
     w.file_to_print("3039", "Do druku nr 3039 - ocena skutków regulacji")
     w.clock.advance(hours=1)
+    before_wait = w.bill("3039").analysis
     waiting = w.run()
+    assert w.bill("3039").analysis == before_wait
+    assert w.bill("3039").status is BillStatus.REANALYSIS_READY
     w.batch.resolve()
     w.clock.advance(hours=1)
 
     posted = w.run()
 
-    assert (waiting.reanalyzed, waiting.batch_waiting, posted.updates) == (1, 1, 1)
+    assert (waiting.reanalyzed, waiting.batch_waiting, posted.reanalyzed, posted.updates) == (
+        0,
+        1,
+        1,
+        1,
+    )
     _, change, _ = w.publisher.updates[-1]
     assert change.supplements and not change.content_changed
 

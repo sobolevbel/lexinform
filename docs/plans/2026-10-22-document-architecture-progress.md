@@ -3168,3 +3168,66 @@ service owner низкоуровневого `save_analysis`.
 qualified XML/source hashes, before/after profiles, SQLite integrity и runnable observers.
 Локальные outputs: `out/corpus/j063`, registry runs `j063-*`. DA6 остаётся открытым для
 Sejm observation/application consolidation, rollover identity и secondary results/applications.
+
+J063 выпущен на `d35ff170ee387f08401c382e443160c82e128d53`: CI
+[40416466396](https://github.com/sobolevbel/lexinform/actions/runs/40416466396) success,
+4251 passed / 32 deselected, test/web/docs green. Deploy relay
+[40417049937](https://github.com/sobolevbel/lexinform/actions/runs/40417049937) success:
+`5d10eb44a65b → d35ff170ee38`, сервис up 45 s после restart.
+Evidence сохранён в прежнем worktree: `out/corpus/j063/release.json`.
+
+<a id="j064"></a>
+### J064. DA6: Sejm analysis и observation/delivery checkpoint атомарны
+
+Дата: 27 октября 2026. База: `d35ff170ee387f08401c382e443160c82e128d53`.
+Статус: реализован и принят локально; выпуск проверяется отдельно.
+
+Цель завершить весь применимый план создана явно по запросу пользователя. Прежний managed
+worktree оказался read-only в текущем mount; он сохранён с evidence. Чистый основной checkout
+fast-forward до опубликованного main, работа продолжается в `codex/document-architecture-finish`.
+
+Sejm tracker вызывает `prepare_reanalysis` до checkpoint; подготовленный Bill используется
+для fingerprint/содержания события, но текущая проекция ещё не меняется. Общий `apply_analysis`,
+authors, processed observation, status change и frozen delivery work фиксируются в одной
+существующей transaction. Новые schema/settings/payload/model calls не добавлены. Ready record
+и memo остаются при secondary waiting или checkpoint failure. Счётчик reanalyzed относится к
+успешному применению; исходная оплата и токены по-прежнему учитываются отдельным call ledger.
+
+Qualified before: **4 failures**, каждый воспроизводит сохранение нового анализа после ошибки
+delivery checkpoint. После fix targeted **105 passed**, expanded accepted **15 passed**:
+workers=1/4, batch и sync compatibility, rollback/retry без повторной оплаты, ready result при
+ожидании OSR, изменившийся summary и восстановление pre-upgrade частичного состояния.
+Старый incident-3141 scenario усилен: waiting сохраняет старый analysis/REANALYSIS_READY;
+счётчик переносится с waiting на успешное применение, immaterial reanalysis по-прежнему не news.
+
+Before/after observer охватывает immediate sync/batch и simultaneous primary+OSR. Immediate
+snapshots совпали побайтово. При ожидании меняются именно отложенные projection/receipt/counter;
+final answer и processed observation совпадают. Старая версия могла отправить отчёт со старым
+summary, затем отдельную «Новую версию текста». Новая собирает одно согласованное сообщение.
+При изменившемся summary baseline также повторно запрашивал OSR с новым контекстом: **4 → 3**
+fake requests; первые три frozen envelopes совпали. Это принятые изменения reader timing/grouping
+и immutable comparison context, не утверждение о неизменности всех промежуточных состояний.
+
+Первый observer ошибочно задавал общий fake script для всех purposes, возвращая Analysis вместо
+supplement; его v1 outputs исключены из acceptance. В v2 ответ ограничен purpose reanalysis.
+Первоначальный full gate прерван после добавления двух summary regressions (exit 130); принят
+только final full **4261 passed**, errors/failures/skips/xfails 0, 590,867 s. Strict mypy 403 файла,
+Ruff src/tests/tools, format, strict docs/links и diff check green; local HTTP **21 passed**.
+
+Production snapshot `state@98d0bd3267eb8c110945f8fb2d44b1414c58d211`
+(27 октября, 00:04:41 UTC), SQL SHA
+`fc267831b0a010162299b1bd500838466a6f4f6d30618d178f66ade9d416a8da`:
+**457 bills / 166 analysis records / 141 memos**, schema v49, обе history tables ещё пусты.
+Baseline/current restore дали идентичный SQL, projection/memo hashes и размеры, integrity ok/FK 0.
+Pipeline, model calls и Telegram против этого state не запускались.
+
+Process replay **3294 observations**, Senate replay **816 observations / 1825 файлов**:
+zero changed observations/inputs, missing inputs 0. Это защищённые прежние metadata/cached-text
+профили с их exclusions, не новые human labels или полное чтение scans. `j064-ci-accepted`:
+**7 passed observations**, captured source; корпусные wrappers выполнялись на том же runtime,
+а после них расширился только test dataset.
+
+[Acceptance evidence](../assets/audits/2026-10-27-sejm-analysis-checkpoint/validation.json) содержит
+XML/source hashes, повторяемый observer, изменившиеся решения и production/corpus profiles.
+Локальные outputs: `out/corpus/j064`, registry runs `j064-*`. Следующие части DA6 — secondary
+result history/applications и rollover identity; цель всего плана остаётся active.

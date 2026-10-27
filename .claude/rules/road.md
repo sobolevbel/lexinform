@@ -134,7 +134,9 @@ paths:
   decisions are not successful decisions. `models/observations.py::ObservedProcess` is the immutable
   baseline (stages, closure date, `passed`, analysed document, digest, revision, `seen_supplements`)
   discovery may extend but never rewrite; Sejm checkpoints commit it together with the status-change
-  delivery work, with network calls outside that transaction. `models/planning.py::plan_bill` diffs
+  delivery work, with network calls outside that transaction. Sejm reanalysis stays prepared until
+  that checkpoint applies its record and receipt; secondary waiting keeps the ready result.
+  `models/planning.py::plan_bill` diffs
   old vs new, and **first sight (`previous is None`) yields `new_stages=()`,
   `closure_detected=False`, `decision_changed=False`**. `BillPlan.should_publish` adds
   `decision_changed` (from `decision_changes`: Senate-position outcomes, outside `_stage_key`) beside `fills_in_the_past`.
