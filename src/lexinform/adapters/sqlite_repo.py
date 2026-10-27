@@ -39,6 +39,8 @@ from lexinform.models import (
     CheckAspect,
     CommandState,
     ComputationResult,
+    ContentSnapshot,
+    ContentVersion,
     DeliveryAlert,
     DeliveryPlan,
     DeliveryResolution,
@@ -80,6 +82,7 @@ from lexinform.models import (
     valid_mnemonic,
 )
 from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
+from lexinform.models.content import editorial_bill_snapshot
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 
 _STAGES = TypeAdapter(tuple[Stage, ...])
@@ -623,6 +626,28 @@ MIGRATIONS: tuple[str, ...] = (
         UNIQUE(requested_url, artifact_sha256)
     );
     CREATE INDEX ix_artifact_reads_artifact ON artifact_reads(artifact_sha256);
+    """,
+    """
+    CREATE TABLE content_snapshots (
+        snapshot_id TEXT PRIMARY KEY NOT NULL,
+        kind TEXT NOT NULL CHECK(kind IN ('bill', 'change', 'plan')),
+        payload_json TEXT NOT NULL
+    );
+    CREATE TABLE content_versions (
+        content_id TEXT PRIMARY KEY NOT NULL,
+        root_publication_id INTEGER NOT NULL,
+        previous_version_id TEXT REFERENCES content_versions(content_id),
+        bill_snapshot_id TEXT NOT NULL REFERENCES content_snapshots(snapshot_id),
+        change_snapshot_id TEXT NOT NULL REFERENCES content_snapshots(snapshot_id),
+        plan_snapshot_id TEXT NOT NULL REFERENCES content_snapshots(snapshot_id),
+        version_json TEXT NOT NULL
+    );
+    CREATE INDEX ix_content_versions_root ON content_versions(root_publication_id);
+    CREATE TABLE publication_content (
+        publication_id INTEGER PRIMARY KEY NOT NULL,
+        content_id TEXT NOT NULL REFERENCES content_versions(content_id)
+    );
+    CREATE INDEX ix_publication_content_version ON publication_content(content_id);
     """,
 )
 
@@ -1188,6 +1213,164 @@ class SqliteBillRepository:
         if expected != tuple(row[key] for key in columns):
             raise ValueError("source observation columns differ from the recorded identity")
         return observation
+
+    def save_content_snapshot(self, snapshot: ContentSnapshot) -> None:
+        snapshot = ContentSnapshot.model_validate_json(snapshot.model_dump_json())
+        self._conn.execute(
+            "INSERT INTO content_snapshots (snapshot_id, kind, payload_json) VALUES (?, ?, ?)"
+            " ON CONFLICT DO NOTHING",
+            (snapshot.snapshot_id, snapshot.kind, snapshot.payload_json),
+        )
+        if self.get_content_snapshot(snapshot.snapshot_id) != snapshot:
+            raise ValueError("an immutable content snapshot cannot be replaced")
+
+    def get_content_snapshot(self, snapshot_id: str) -> ContentSnapshot | None:
+        row = self._conn.execute(
+            "SELECT * FROM content_snapshots WHERE snapshot_id=?", (snapshot_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        snapshot = ContentSnapshot(kind=row["kind"], payload_json=row["payload_json"])
+        if snapshot.snapshot_id != row["snapshot_id"]:
+            raise ValueError("content snapshot columns differ from the recorded identity")
+        return snapshot
+
+    def save_content_version(self, version: ContentVersion) -> None:
+        version = ContentVersion.model_validate_json(version.model_dump_json())
+        for kind, identity in (
+            ("bill", version.bill_snapshot_id),
+            ("change", version.change_snapshot_id),
+            ("plan", version.plan_snapshot_id),
+        ):
+            snapshot = self.get_content_snapshot(identity)
+            if snapshot is None or snapshot.kind != kind:
+                raise ValueError("a content version requires matching semantic snapshots")
+        if version.previous_version_id is not None:
+            previous = self.get_content_version(version.previous_version_id)
+            if previous is None or previous.root_publication_id != version.root_publication_id:
+                raise ValueError("a content revision requires its own original history")
+        self._conn.execute(
+            "INSERT INTO content_versions (content_id, root_publication_id, previous_version_id,"
+            " bill_snapshot_id, change_snapshot_id, plan_snapshot_id, version_json)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+            (
+                version.content_id,
+                version.root_publication_id,
+                version.previous_version_id,
+                version.bill_snapshot_id,
+                version.change_snapshot_id,
+                version.plan_snapshot_id,
+                version.model_dump_json(),
+            ),
+        )
+        saved = self.get_content_version(version.content_id)
+        if saved != version.model_copy(
+            update={"recorded_at": saved.recorded_at if saved else None}
+        ):
+            raise ValueError("an immutable content version cannot be replaced")
+
+    def get_content_version(self, content_id: str) -> ContentVersion | None:
+        row = self._conn.execute(
+            "SELECT * FROM content_versions WHERE content_id=?", (content_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        version = ContentVersion.model_validate_json(row["version_json"])
+        columns = (
+            "content_id",
+            "root_publication_id",
+            "previous_version_id",
+            "bill_snapshot_id",
+            "change_snapshot_id",
+            "plan_snapshot_id",
+        )
+        expected = (
+            version.content_id,
+            version.root_publication_id,
+            version.previous_version_id,
+            version.bill_snapshot_id,
+            version.change_snapshot_id,
+            version.plan_snapshot_id,
+        )
+        if expected != tuple(row[key] for key in columns):
+            raise ValueError("content version columns differ from the recorded identity")
+        return version
+
+    def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]:
+        versions: list[ContentVersion] = []
+        for row in self._conn.execute(
+            "SELECT content_id FROM content_versions WHERE root_publication_id=? ORDER BY rowid",
+            (root_publication_id,),
+        ):
+            version = self.get_content_version(row["content_id"])
+            assert version is not None, "the selected content version exists in this snapshot"
+            versions.append(version)
+        return versions
+
+    def bind_publication_content(self, publication_id: int, content_id: str) -> None:
+        version = self.get_content_version(content_id)
+        publication = self.publication_by_id(publication_id)
+        root = self.publication_by_id(version.root_publication_id) if version else None
+        if version is None or publication is None or root is None:
+            raise ValueError("a content binding requires its publication and original")
+        if (publication.term, publication.number, publication.channel_id) != (
+            root.term,
+            root.number,
+            root.channel_id,
+        ):
+            raise ValueError("content must belong to the same publication owner")
+        plan = publication.delivery
+        if (
+            plan is None
+            or plan.rendered_text != (version.rendered_text or "")
+            or (
+                publication_id != version.root_publication_id
+                and plan.revision_of != version.root_publication_id
+            )
+        ):
+            raise ValueError("content must match the frozen physical publication")
+        if publication_id != version.root_publication_id and (
+            publication.kind is not PublicationKind.AMENDMENTS_REVISION
+            or plan.edit_message_id != root.message_id
+            or root.status is not PublicationStatus.SENT
+        ):
+            raise ValueError("a revision content binding requires its original physical target")
+        if (publication_id == version.root_publication_id) != (version.previous_version_id is None):
+            raise ValueError("a content binding must distinguish the original and its revision")
+        for identity, payload in (
+            (version.bill_snapshot_id, editorial_bill_snapshot(plan.bill_json).payload_json),
+            (version.change_snapshot_id, plan.change_json),
+        ):
+            snapshot = self.get_content_snapshot(identity)
+            if snapshot is None or snapshot.payload_json != payload:
+                raise ValueError("content must match the frozen semantic snapshot")
+        semantic_plan = plan.model_copy(
+            update={"bill_json": "", "change_json": "", "rendered_text": ""}
+        )
+        plan_snapshot = self.get_content_snapshot(version.plan_snapshot_id)
+        if (
+            plan_snapshot is None
+            or DeliveryPlan.model_validate_json(plan_snapshot.payload_json) != semantic_plan
+        ):
+            raise ValueError("content must match the frozen delivery context")
+        self._conn.execute(
+            "INSERT INTO publication_content (publication_id, content_id) VALUES (?, ?)"
+            " ON CONFLICT DO NOTHING",
+            (publication_id, content_id),
+        )
+        if self.get_publication_content(publication_id) != version:
+            raise ValueError("a publication cannot replace its immutable content binding")
+
+    def get_publication_content(self, publication_id: int) -> ContentVersion | None:
+        row = self._conn.execute(
+            "SELECT content_id FROM publication_content WHERE publication_id=?", (publication_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        version = self.get_content_version(row["content_id"])
+        if version is None:
+            raise ValueError("a publication content binding has lost its version")
+        return version
 
     def save_artifact_metadata(self, artifact: ArtifactMetadata) -> None:
         artifact = ArtifactMetadata.model_validate_json(artifact.model_dump_json())

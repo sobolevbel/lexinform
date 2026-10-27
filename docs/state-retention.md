@@ -314,3 +314,25 @@ metric resets and dry-run rollback; first durable recording remains distinct fro
 Failed/over-limit fetches produce no complete receipt. Crash before the relevant recording boundary
 and unrelated standalone reads are still outside scope. See
 [J107](plans/2026-10-22-document-architecture-progress.md#j107).
+
+
+## Editorial history после J109
+
+`content_snapshots`, `content_versions` и `publication_content` не являются operational cache
+и не очищаются вместе с sent delivery JSON через 90 дней или settled memo через 180.
+Совпадающий frozen Bill хранится один раз и переиспользуется revision; change и plan имеют
+собственные identities. На переходе прежний delivery payload ещё сохраняется по своим правилам,
+поэтому пиковый размер выше устойчивой истории; измерения публикуются в
+[J109](plans/2026-10-22-document-architecture-progress.md#j109).
+
+История относится к новым одиночным amendments status updates/revisions и к доступному original snapshot
+при явном `/amendments`. Retention не заполняет пропуски legacy, не обращается к сети и не
+заменяет прошлый Bill сегодняшним. Сохранённая version не подтверждает редактирование и не
+снимает pending/unknown barrier. Grouped/multipart/digest correction contract не расширен.
+Raw archive/backend/retention policy оригиналов этим не выбираются.
+
+
+Editorial Bill view не копирует `review_work`/`ready_analysis` с их незавершёнными входами.
+Они остаются у operational владельцев и под прежними retention guards. Это ограничение истории,
+не удаление из Bill, pending request или original delivery. Остальные status updates пока не
+попадают в этот producer; расширение требует отдельной проверки состава/объёма snapshot.

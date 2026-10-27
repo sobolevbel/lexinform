@@ -25,6 +25,9 @@ HTML содержит снимок v34, включая SQL ограничени�
 | `document_selections` (v52) | `selection_id` | Неизменяемые метаданные решения: question, policy version, state, parts/facts/coverage; без extracted bodies и provider scan input. |
 | `source_observations` (v52) | `observation_id`; индексы owner/purpose и selection | Историческая связь дела, официальных document relations и решения; первое время записи сохраняется при повторной проверке. |
 | `artifact_reads` (v54) | `read_id`; unique requested URL/raw SHA; artifact index | Первый metadata receipt complete-body response; requested URL и время записи не являются blob location или датой публикации. |
+| `content_snapshots` (v55) | `snapshot_id`; kind + exact JSON | Общие immutable editorial Bill/change/metadata-plan snapshots; plan не копирует отдельные bodies. |
+| `content_versions` (v55) | `content_id`; root publication index; предыдущая версия | Editorial edition: semantic snapshot refs, known paid/event refs, exact rendered text либо явный unknown legacy, язык/formatter version при известности. |
+| `publication_content` (v55) | `publication_id` → `content_id` | Immutable связь физической publication с edition; не является receipt отправки. |
 | `document_work` | `key` | Поздний документ: исходное событие, исторический baseline, контекст batch, backoff и состояние. |
 | `bills` | `(term, number)` | Снимки источников, анализ, обработанное наблюдение и состояние очередей. Номер может быть druk, `RPW/…`, `RCL/…` или `WPL/…`. |
 | `status_changes` | `id`; уникальный `(term, number, new_fingerprint)` | Изменения, новые стадии, поправки и приложения. |
@@ -471,3 +474,33 @@ counter reset/cache reuse и dry-run rollback; durable recording time берёт
 Failed/over-limit fetch не создаёт complete receipt. Прочие standalone reads без source/finish-run
 boundary и crash до этих boundaries ещё не покрыты. Это не source date, HTTP-header archive или
 retained blob location; новых network calls и backend flags нет.
+
+
+## История одиночных исправлений (v55)
+
+[J109](../plans/2026-10-22-document-architecture-progress.md#j109) отделяет durable editorial
+history от очищаемого delivery payload. Bill/change snapshots адресуются по kind и exact semantic JSON;
+plan snapshot содержит остальные frozen поля, без повторных Bill/change/rendered bodies.
+Content ID исключает время первой записи; повтор не меняет version или timestamp. Previous
+version обязана принадлежать тому же original publication. SQL identity columns проверяются
+при чтении; binding требует того же owner, physical edit target, того же editorial Bill/change/text и
+совместимого frozen context. Новые optional DeliveryPlan defaults не переписывают историю.
+
+Publication ID — стабильная audit identity, переживающая явный `/forget`; history не удаляется
+вместе с operational row. Поэтому refs на content/snapshots имеют FK, а publication identity
+не получает каскадного удаления. Binding не означает `sent`: подтверждение остаётся у
+Publication/operator resolution. `pending`/`unknown` не становятся доставленными из-за version.
+
+Producer охватывает одиночные status updates со стадией поправок и amendments revisions. После очистки delivery
+`/amendments` может прочитать original snapshot из истории, сохранив старые Bill/change/date и
+message target. Legacy без обеих копий получает прежний отказ; отсутствовавший исторический
+HTML/язык/formatter не реконструируется. Grouped/multipart/digest originals по-прежнему не
+редактируются этим путём; для длинной revision работает прежняя physical queue, без обещания
+полной новой content history. Нет backfill, изменения source selection, paid requests или retry.
+
+
+Editorial Bill view исключает только `review_work` и `ready_analysis`, когда они содержат
+незавершённую работу: её входы остаются у существующего owner. Summary/analysis/stages и
+остальные известные/неизвестные fields сохраняются; view не меняет original delivery payload.
+Это не document trimming и не переопределение paid input. Без operational данных source JSON
+остаётся byte-identical; для view с исключёнными work fields хранится свой exact JSON/SHA.

@@ -5509,3 +5509,68 @@ byte-identical J107. Natural state `fe7036a09d1688d03236c936cda26c876f3ae825`, o
 J107 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40594687259): **4981 passed**,
 strict mypy **463**, Ruff/docs/web success. [Relay deploy](https://github.com/sobolevbel/lexinform/actions/runs/40595808772):
 exact COMMIT `1b3381b785eb41420cadcb433e1c2e11d4cb99a5`, listener up **45 s**.
+
+
+<a id="j109"></a>
+### J109. Durable single-message editorial history and post-retention amendments
+
+Статус: **готово**, baseline `1763f80e3b431b81c33e847ba9445f235516a7e9`.
+Schema55 добавляет content_snapshots/content_versions/publication_content: frozen editorial
+Bill/change/metadata-plan отдельно, canonical version с previous/reason/known paid/event refs,
+language/formatter при известности, exact rendered text или явный unknown legacy. Plan не
+копирует body snapshots, повтор не меняет первую запись; binding проверяет original owner,
+physical target, Bill/change/text/context. Publication IDs переживают operator deletion;
+FK на semantic history сохранены, cascade от operational publication намеренно отсутствует.
+
+Caller producer сохраняет одиночный amendments status update до pending/checkpoint и amendments revision
+до edit. После retention `/amendments` восстанавливает original из history без current Bill.
+Незавершённая/unknown revision по-прежнему блокирует новый force/model call. Legacy без обоих
+snapshots, grouped/multipart/digest originals сохраняют прежний отказ. Длинная revision использует
+прежнюю physical queue, без новой full-content-history гарантии. Нет raw archive или массового
+backfill; missing old HTML/language/formatter не подставляются из текущего кода.
+
+**118 focused / 21 local HTTP** passed; strict mypy **467**, Ruff/format green. Tests: exact JSON
+и unknown fields, snapshot dedup, parent/owner/frozen semantic guards, atomic rollback, restore,
+operator deletion, missing legacy, 181-day cleanup, repeated/unknown force и successive editions.
+Первый full остановлен до изменения runtime: дополнительная проверка обнаружила, что raw
+serialization сравнение context ошибочно отвергало бы старую version после добавления optional
+DeliveryPlan defaults. Теперь typed compatible comparison не переписывает source JSON; отдельная
+регрессия проверяет это. Финальный full выполняется заново с замороженными sources.
+
+**168 native snapshots**: requests/messages/semantic profiles и **25 прежних tables exact**, кроме одного
+report phase `commands` **0.0→0.1 s** и timing `seconds` соответствующего command outcome; 2 version /
+6 snapshot / 2 binding views. Delta SQL **1008–11920 bytes**, gzip **160–1294**. Дополнительная
+матрица **16 amendments histories** (workers1/4, attention off/on, one/two force, sent/unknown):
+requests/messages/edits/outcomes exact, все прежние rows exact; timing differences отсутствуют в окончательном replay. **36 versions**, один Bill snapshot на history; delta SQL
+**17349–22488**, gzip **1562–2127**. Это fake-source acceptance, не independent legal/Telegram gold.
+
+Fresh fetched state остаётся `fe7036a09d1688d03236c936cda26c876f3ae825`, schema53 →55 в isolated copy:
+все прежние rows и **462 Bill reads exact**, integrity/FK ok. Empty DDL **+1409 SQL/+304 gzip**
+от production schema53 (включает ранее выпущенный v54); synthetic content fixture history
+**+12536 SQL/+3315 gzip** сверх той же physical publication. Repeat/restore/post-retention
+history exact; source/model/Telegram/production processing не выполнялись.
+
+
+J108 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40596202242): **4996 passed**,
+strict mypy **463**, Ruff/docs/web success. [Relay deploy](https://github.com/sobolevbel/lexinform/actions/runs/40597163569):
+exact COMMIT `1763f80e3b431b81c33e847ba9445f235516a7e9`, listener up **45 s**.
+
+
+Дополнительный storage gate выявил, что широкий capture всех status updates копировал бы
+мегабайты исторического `review_work`. Этот вариант не выпущен. Producer ограничен стадиями
+поправок; чистый editorial Bill view исключает только unfinished `review_work`/`ready_analysis`,
+сохраняя остальные frozen facts/unknown fields и не изменяя operational owners/original payload.
+На **47 retained natural Bill snapshots** все остальные поля exact: **7282970→1616447** occurrence
+bytes без operational work. Из 60 status rows: 13 без payload, 2 unsupported shape, 40 не о
+поправках, **5 eligible originals**. Их **15 unique snapshots / 121862 UTF-8 / 19766 gzip bytes**;
+с semantic+rendered content на original **24034–32423 bytes**. Это inventory, не выполненный
+backfill и не прогноз нагрузки. Новые tests защищают как body projection, так и реальную команду
+на legacy snapshot с большим неиспользованным ready input. Остальные release checks повторяются
+на окончательных sources; полный gate и hashes находятся в `out/corpus/j109-release`,
+metadata/native/migration qualification — в `out/corpus/j109-qualified`.
+
+
+Окончательный full: **5026 passed**, 0 failures/errors/skips, **604.343 s**.
+[Acceptance asset](../assets/audits/2026-10-28-content-history/validation.json) пинует sources/gates,
+контроль размера, native parity, migration и backward reader. **DA7.3 выполнен** для existing
+single-message amendments scope; broad source/application/history kinds остаются DA7.1/DA7.2.

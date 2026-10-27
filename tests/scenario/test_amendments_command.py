@@ -1,4 +1,6 @@
 import datetime as dt
+import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -306,6 +308,14 @@ def test_amendments_options_are_validated() -> None:
 
 def test_legacy_message_without_snapshot_is_refused_before_model_call() -> None:
     w, original = published_world()
+    with closing(sqlite3.connect(":memory:")) as legacy:
+        legacy.executescript(w.repo.dump())
+        legacy.execute("DROP TABLE publication_content")
+        legacy.execute("DROP TABLE content_versions")
+        legacy.execute("DROP TABLE content_snapshots")
+        legacy.commit()
+        dump = "\n".join(legacy.iterdump()) + "\nPRAGMA user_version = 54;\n"
+    w.repo.restore(dump)
     future = w.clock.now() + dt.timedelta(days=365)
     w.repo.prune_history(before=future, memo_before=future)
     w.command(f"/amendments 1929 publication={original.id}")

@@ -45,6 +45,7 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway, StateCheckpoint
 from lexinform.services.card_edits import edit_card
+from lexinform.services.content_history import FORMATTER_VERSION, record_publication_content
 from lexinform.services.message_parts import continuation_ready, freeze_parts, send_continuations
 from lexinform.services.publications import (
     card_revision_owner,
@@ -131,6 +132,7 @@ class Poster:
         gateway: SejmGateway,
         channel_id: str,
         max_attempts: int,
+        language: str = "ru",
         attention_mode: str = "shadow",
         urgent_days: int = 3,
         max_group: int = 5,
@@ -147,6 +149,7 @@ class Poster:
         self._gateway = gateway
         self._channel_id = channel_id
         self._max_attempts = max_attempts
+        self._language = language
         self._attention_mode = attention_mode
         self._urgent_days = urgent_days
         self._max_group = max_group
@@ -1364,6 +1367,7 @@ class Poster:
     def _freeze(self, pub: Publication, *, keep_today: bool = False) -> Publication:
         assert pub.delivery is not None and pub.id is not None
         if pub.delivery.rendered_text:
+            record_publication_content(self._repo, self._clock, pub)
             return pub
         if (
             pub.kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED)
@@ -1397,9 +1401,17 @@ class Poster:
                 raise ValueError("The saved hearing reminder lacks its hearing")
         plan = pub.delivery.model_copy(update={"today": today})
         pub = pub.model_copy(update={"delivery": plan})
-        return freeze_parts(
+        frozen = freeze_parts(
             self._repo, self._clock, self._publisher, pub, self._publisher.render_delivery(pub)
         )
+        record_publication_content(
+            self._repo,
+            self._clock,
+            frozen,
+            formatter_version=FORMATTER_VERSION,
+            language=self._language,
+        )
+        return frozen
 
     def _freeze_sitting(self, pub: Publication, text: str) -> Publication:
         assert pub.delivery is not None, "only a saved sitting reaches the physical-part producer"
@@ -1610,6 +1622,8 @@ class Poster:
                 return self._publisher.publish_prepared(pub).message_id
 
             send = prepared_send
+        if pub is not None:
+            record_publication_content(self._repo, self._clock, pub)
         card = self.card(bill)
         reply_to = card.message_id if card else None
         checkpoint = self._delivery_checkpoint(pub)

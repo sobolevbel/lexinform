@@ -153,3 +153,5 @@ Command reference and the relay: `docs/operator-commands.md`.
   the current bill): queue the batch with its immutable edit target, then a separate
   `amendments_revision` delivery; the original event and publication stay as audit history; repeated
   commands never supersede a pending batch or an attempted/uncertain revision delivery.
+
+- **Editorial content history** survives delivery/memo cleanup; single-message amendments restore the original frozen Bill/change/date, never today's Bill. Versions do not confirm delivery, unknown legacy payload/formatter/language stays unknown, and grouped/multipart/digest refusal remains. Bump `content_history.FORMATTER_VERSION` when changing newly rendered content semantics.

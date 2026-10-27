@@ -1,0 +1,231 @@
+{
+  "version": 1,
+  "stage": "J109",
+  "baseline": "1763f80e3b431b81c33e847ba9445f235516a7e9",
+  "scope": "Immutable single-message amendments history, operational-work-free editorial Bill view, and post-retention correction from original context; schema55.",
+  "checks": {
+    "focused": {
+      "path": "out/corpus/j109-release/focused.xml",
+      "sha256": "04a7fadd61c24fe6a5dc7ddb288c10278023b992813570ea61974dcc77f4fc57",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "118",
+      "time": "10.288",
+      "timestamp": "2026-10-28T00:04:37.644745+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j109-release/full.xml",
+      "sha256": "4dc8155a0c6a0c9d6ed3234f00d1a6b3705da1e4c74090853700703a7f891d67",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "5026",
+      "time": "604.343",
+      "timestamp": "2026-10-28T00:04:52.952147+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "local_http": {
+      "path": "out/corpus/j109-qualified/local-http.xml",
+      "sha256": "adca894781e3da6ca0ac7507d662d1310672f4ec6558bc04e0343f24fd900c70",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "21",
+      "time": "2.185",
+      "timestamp": "2026-10-27T23:57:55.131265+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 467 source files",
+    "ruff": "All checks passed!",
+    "format": "1 file reformatted, 463 files left unchanged"
+  },
+  "qualification": {
+    "native": {
+      "cases": 168,
+      "all_profiles_except_metadata_and_storage_metrics_exact": true,
+      "all_requests_and_rendered_messages_exact": true,
+      "all_25_prior_tables_exact_except_recorded_phase_timing": true,
+      "timing_differences": [
+        {
+          "case": "normal/revision-1",
+          "row": 2,
+          "before": {
+            "collect batches": 0.0,
+            "commands": 0.0,
+            "discovery": 0.0,
+            "wykaz discovery": 0.0,
+            "rcl discovery": 0.0,
+            "text prefilter": 0.0,
+            "rcl consultations": 0.0,
+            "analysis": 0.0,
+            "publishing": 0.0,
+            "submit batches": 0.0,
+            "digest": 0.0,
+            "batch status": 0.0
+          },
+          "after": {
+            "collect batches": 0.0,
+            "commands": 0.1,
+            "discovery": 0.0,
+            "wykaz discovery": 0.0,
+            "rcl discovery": 0.0,
+            "text prefilter": 0.0,
+            "rcl consultations": 0.0,
+            "analysis": 0.0,
+            "publishing": 0.0,
+            "submit batches": 0.0,
+            "digest": 0.0,
+            "batch status": 0.0
+          }
+        }
+      ],
+      "command_outcome_seconds_excluded_from_semantic_comparison": true,
+      "content_version_views": 2,
+      "content_snapshot_views": 6,
+      "binding_views": 2,
+      "prior_metadata_rows_preserved": true,
+      "read_receipt_views": 270,
+      "source_observation_views": 210,
+      "selection_views": 198,
+      "link_views": 190,
+      "all_source_doctors_without_errors": true,
+      "sql_delta": {
+        "min": 1008,
+        "max": 11920
+      },
+      "gzip_delta": {
+        "min": 160,
+        "max": 1299
+      }
+    },
+    "amendments": {
+      "cases": 16,
+      "all_requests_rendered_messages_and_command_outcomes_exact": true,
+      "all_25_prior_tables_exact_except_recorded_phase_timing": true,
+      "timing_differences": [],
+      "content_version_views": 36,
+      "one_bill_snapshot_per_history": true,
+      "sql_delta": {
+        "min": 17349,
+        "max": 22488
+      },
+      "gzip_delta": {
+        "min": 1562,
+        "max": 2127
+      },
+      "scope": "Sixteen fake-source native amendment histories, workers1/4, attention off/on, single/repeated force and sent/unknown edits. No independent legal or Telegram verdict."
+    },
+    "migration": {
+      "state_pin": "fe7036a09d1688d03236c936cda26c876f3ae825",
+      "original_schema": 53,
+      "new_schema": 55,
+      "all_prior_table_rows_exact": true,
+      "all_bill_records_read": 462,
+      "integrity_and_foreign_keys_ok": true,
+      "original_sql_bytes": 20313116,
+      "original_sql_sha256": "ab3347e4d5f480f7befbc84c02e6c0e20a5726bfde79f1f0f5ab7d04cc1e865b",
+      "empty_sql_delta": 1409,
+      "empty_gzip_delta": 304,
+      "synthetic_history_sql_delta": 12536,
+      "synthetic_history_gzip_delta": 3315,
+      "repeat_restore_and_post_retention_history_exact": true,
+      "scope": "Fresh original natural state restored and migrated in an isolated DB; synthetic metadata fixture is not a production publication or paid computation. No processing, model/source/Telegram call."
+    },
+    "structural": {
+      "baseline": "1763f80e3b431b81c33e847ba9445f235516a7e9",
+      "all_existing_repository_methods_ast_exact": true,
+      "all_54_deployed_migrations_ast_exact": true,
+      "exactly_one_append_only_migration": true,
+      "other_runtime_files_byte_identical": 149,
+      "all_parsers_selection_policies_prompts_paid_requests_and_delivery_models_byte_identical": true,
+      "changed_runtime": {
+        "src/lexinform/ports.py": "e48aecba61a0021923d7d763d9ab8d3dcd68f45b9e04df3687adc130d8c932bd",
+        "src/lexinform/container.py": "8f8920c18612737728148ec6602e023ef70b7c82cc6bdd6c27bff6d89ae0ed20",
+        "src/lexinform/models/__init__.py": "27c56181b00fa1dccbcfb499f5291751d69e3f3ecb9c86b7048bc28296d99361",
+        "src/lexinform/models/content.py": "4dbd7380ddcf90235495c850bde7e1c668f021f8b98840796a7d6d2d953c2a4b",
+        "src/lexinform/adapters/sqlite_repo.py": "6e77564906a5e87e6d5933513a54ebf8e65981c75f357f44910b397eb3cf7ee5",
+        "src/lexinform/services/content_history.py": "e9c633691294a5c96234365ae53bf9434e558634c7200a1fe6cd4060dd0b97cd",
+        "src/lexinform/services/posting.py": "2617f0868db040bcb953e4d9bd16d0ec48882e8e66edc093dcc0d8201e4ec504",
+        "src/lexinform/services/amendments.py": "449e82f81fb085732ca636e2219b81b2f993ca8a22b771b43a6d34bbe3733d47"
+      }
+    },
+    "rollback": {
+      "reader": "J108 1763f80e3b431b81c33e847ba9445f235516a7e9",
+      "cases": 168,
+      "legacy_report_views_read": 324,
+      "all_populated_sql_dumps_preserved_exact": true,
+      "schema_conversion": false
+    },
+    "retained_natural_inventory": {
+      "state_pin": "fe7036a09d1688d03236c936cda26c876f3ae825",
+      "source_sql_sha256": "ab3347e4d5f480f7befbc84c02e6c0e20a5726bfde79f1f0f5ab7d04cc1e865b",
+      "counts": {
+        "status_rows": 60,
+        "without_delivery": 13,
+        "unsupported_shape": 2,
+        "not_an_amendment_stage": 40,
+        "eligible_retained_originals": 5,
+        "all_retained_bill_projections_checked": 47
+      },
+      "all_non_operational_fields_preserved_exact": true,
+      "retained_bill_occurrence_bytes_before_projection": 7282970,
+      "retained_bill_occurrence_bytes_after_projection": 1616447,
+      "eligible_unique_semantic_snapshots": 15,
+      "eligible_unique_semantic_utf8_bytes": 121862,
+      "eligible_unique_semantic_gzip_bytes": 19766,
+      "per_eligible_original_semantic_and_rendered_utf8_bytes": {
+        "min": 24034,
+        "max": 32423
+      },
+      "scope": "Read-only inventory/projection parity on retained natural snapshots, not an import or future-demand forecast. Original operational payloads and actual work owners remain untouched."
+    }
+  },
+  "sources": {
+    "src/lexinform/ports.py": "e48aecba61a0021923d7d763d9ab8d3dcd68f45b9e04df3687adc130d8c932bd",
+    "src/lexinform/container.py": "8f8920c18612737728148ec6602e023ef70b7c82cc6bdd6c27bff6d89ae0ed20",
+    "src/lexinform/models/__init__.py": "27c56181b00fa1dccbcfb499f5291751d69e3f3ecb9c86b7048bc28296d99361",
+    "src/lexinform/models/content.py": "4dbd7380ddcf90235495c850bde7e1c668f021f8b98840796a7d6d2d953c2a4b",
+    "src/lexinform/adapters/sqlite_repo.py": "6e77564906a5e87e6d5933513a54ebf8e65981c75f357f44910b397eb3cf7ee5",
+    "src/lexinform/services/content_history.py": "e9c633691294a5c96234365ae53bf9434e558634c7200a1fe6cd4060dd0b97cd",
+    "src/lexinform/services/posting.py": "2617f0868db040bcb953e4d9bd16d0ec48882e8e66edc093dcc0d8201e4ec504",
+    "src/lexinform/services/amendments.py": "449e82f81fb085732ca636e2219b81b2f993ca8a22b771b43a6d34bbe3733d47",
+    "tests/unit/test_sqlite_repo.py": "60fcfbc7548dc544b25d20d317773f158459a8c76b2539e5bf5569c1594f174f",
+    "tests/unit/test_content_history.py": "4488be7d4ff59f38744b244f92d135c998fde7e4621d9a069a6592729b04fa50",
+    "tests/scenario/test_content_history.py": "93eda143cfae25752e01222d9e5072d29ba676c1cd364036e810dfc0e44b5b92",
+    "tests/scenario/test_amendments_command.py": "880f3ba8425011cff8692154240a4c9f966a851dccb0cccb41d9ae583a6b7adb"
+  },
+  "evidence": {
+    "out/corpus/j109-qualified/native-parity-accepted.json": "dcfed8bfb40870ce4015a43f67da0189f4dc0a596e6cfd01c8beae3008aae089",
+    "out/corpus/j109-qualified/history-parity.json": "6265d9cd1042c5f1175a671f746ebcfd6cdf9cd1c7f148c1c9b6d27ad7406eef",
+    "out/corpus/j109-qualified/migration-parity.json": "5fd482e866b1f095de23dd9d1cee1d4955be7d37b16b66a02fc22168c270c924",
+    "out/corpus/j109-qualified/structural-parity.json": "9a201f60f005ed3d3f4914f66e05cb5b738f91d1a1153cd6c1b331e8b3a86905",
+    "out/corpus/j109-qualified/rollback.json": "6ee44e9843233a33e02ba3d6256ae52d0f60419f38a4501762642447ccec7d59",
+    "out/corpus/j109-qualified/retained-content-inventory.json": "cc52b37ab6fa860a055e90ff52efce5d6e0dd6d89f477b20892c118568d9938c",
+    "out/corpus/j109-qualified/compare_native_qualified.py": "b5a631ec2158c6d3827d42ab9d01c3193aa4b2b3f2010aa2098032b5bcb8fb56",
+    "out/corpus/j109-qualified/compare_history.py": "65353f80ced5fa7798ec2ead9ed6fc219053d17aaf0444e7d1f64264f3effef4",
+    "out/corpus/j109-qualified/history_profile.py": "ca04ee3a31763c5057ca80a1b07b774d380bc966a608fa0477a6a56b5e4882af",
+    "out/corpus/j109-qualified/native_profiles.py": "d24cf93f370cebf660d0935e4595472d79938c69e8bc4db55fa2bddd9a9d51ce",
+    "out/corpus/j109-qualified/migration_profile.py": "c30d167a1e89a5e69f9efdc542b230255b88c3131a34ec42bbd47bd1d7e3fdea",
+    "out/corpus/j109-qualified/structural_profile.py": "c240f7d95a91554ea361468bf1bb0fc619b7c8f775c8d35a874d08853827dd05",
+    "out/corpus/j109-qualified/rollback_profile.py": "3c96d33888e0cc81f5212e41f3174f932f431b07bb1c5dea595b4a5031a3348c",
+    "out/corpus/j109-qualified/retained_content_inventory.py": "8f9669faad27771ec893fbfe43827b44744e5daead9422b07961a9465185cde9",
+    "out/corpus/j109-qualified/release-j108.json": "815911616ad54f809be44321ee355ff8beb0a15defc1c8243c425f48759b824f",
+    "out/corpus/j109-release/gate-inputs.json": "e235e3325d9f185b3d0f4769a5cbf7eace4178930767c87272018d815d80ee86",
+    "out/corpus/j109-release/accept.py": "0c6c4f2d3d27c40cd263b830698f1c232f27a8d214a597aaa1c4c15c00f9b19a"
+  },
+  "limitations": [
+    "Only amendment-stage single-message originals and supported revisions are captured; grouped/multipart/digest originals remain refused.",
+    "Long revision delivery keeps its prior physical queue and is not covered by full new editorial history.",
+    "Legacy missing HTML/language/formatter or all snapshots remains unknown; no fabricated backfill.",
+    "Raw storage/backend choice, paid source/input identity and natural production processing are unchanged.",
+    "Saved sent/message IDs are database evidence, not independent Telegram/legal acceptance.",
+    "Editorial history does not copy unfinished review_work/ready_analysis; actual owners and original delivery payload remain intact."
+  ]
+}

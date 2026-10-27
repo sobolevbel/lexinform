@@ -594,6 +594,7 @@ class Container:
                 self.gateway,
                 self.analysis_service(),
                 channel_id=self.channel_id(),
+                clock=self.clock,
             ),
         )
 
@@ -696,6 +697,7 @@ class Container:
                 self.clock,
                 gateway=self.gateway,
                 channel_id=self.channel_id(),
+                language=self.settings.output_language,
                 max_attempts=self.settings.max_publish_attempts,
                 attention_mode=self.settings.reader_attention,
                 urgent_days=self.settings.attention_urgent_days,

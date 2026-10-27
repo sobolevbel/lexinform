@@ -19,9 +19,10 @@ from lexinform.models import (
     amendments_stage,
     senate_position_reported,
 )
-from lexinform.ports import BillRepository, SejmGateway
+from lexinform.ports import BillRepository, Clock, SejmGateway
 from lexinform.senate_documents import adoption_before_senate
 from lexinform.services.analysis import AnalysisService, Waiting
+from lexinform.services.content_history import record_publication_content, restore_content_delivery
 
 log = logging.getLogger(__name__)
 
@@ -84,11 +85,13 @@ class AmendmentsService:
         analysis: AnalysisService,
         *,
         channel_id: str,
+        clock: Clock,
     ) -> None:
         self._repo = repo
         self._gateway = gateway
         self._analysis = analysis
         self._channel_id = channel_id
+        self._clock = clock
 
     def request(
         self, bill: Bill, *, publication_id: int | None = None, force_id: str = ""
@@ -96,6 +99,7 @@ class AmendmentsService:
         try:
             original = self._original(bill, publication_id)
             assert original.id is not None and original.delivery is not None
+            record_publication_content(self._repo, self._clock, original)
             revisions = self._repo.list_amendment_revisions(original.id)
             for revision in revisions:
                 if revision.status in (
@@ -186,6 +190,16 @@ class AmendmentsService:
         ):
             raise ValueError("Не найдено отправленное сообщение с поправками этого законопроекта")
         plan = original.delivery
+        if plan is None and original.id is not None:
+            content = self._repo.get_publication_content(original.id)
+            if content is not None:
+                if (
+                    content.root_publication_id != original.id
+                    or content.previous_version_id is not None
+                ):
+                    raise ValueError("История исходного сообщения не соответствует публикации")
+                plan = restore_content_delivery(self._repo, content)
+                original = original.model_copy(update={"delivery": plan})
         if plan is None or not plan.bill_json or not plan.change_json:
             raise ValueError("Исторический снимок отсутствует; безопасное обновление недоступно")
         if (

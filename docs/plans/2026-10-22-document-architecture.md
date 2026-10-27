@@ -675,15 +675,15 @@ Bill и кэша. Повтор записанного результата да�
 **Изменяемые места:** `models/observations.py`, `services/amendments.py`, `posting.py`,
 `message_parts.py`, formatter, publication repository и retention.
 
-- [ ] DA7.1. Ввести `content_versions`: immutable event/source/application refs, язык,
+- [ ] DA7.1. **Частично: [J109](2026-10-22-document-architecture-progress.md#j109), snapshot/version/binding history для одиночных amendments status updates и revisions; полные source/application refs и остальные kinds остаются.** Ввести `content_versions`: immutable event/source/application refs, язык,
   semantic content и exact rendered payload/formatter version, предыдущая версия и причина.
   Physical Publication ссылается на content version; существующие IDs не пересоздаются.
   Общие source/bill/change snapshots не копируются в каждую версию содержания; переход к refs
   требует той же гарантии frozen recovery и учёта размера, что в §1.4.
-- [ ] DA7.2. Сохранить оригинальное содержание отдельно от будущей revision и operational
+- [ ] DA7.2. **Частично: [J109](2026-10-22-document-architecture-progress.md#j109), original frozen context переживает cleanup без current Bill; полный PreparedInput/comparison history остаётся.** Сохранить оригинальное содержание отдельно от будущей revision и operational
   retry plan. Исправление использует старые bill/change/date, исходный message target и
   сохранённый PreparedInput/comparison, без запроса актуального Bill для замены прошлого.
-- [ ] DA7.3. Сначала перевести существующий single-message `/amendments`; защитить original
+- [x] DA7.3. **Принято: [J109](2026-10-22-document-architecture-progress.md#j109), single-message capture и post-retention /amendments, guards для unknown/repeated force.** Сначала перевести существующий single-message `/amendments`; защитить original
   content от retention после очистки delivery payload. Незавершённый/uncertain revision
   нельзя supersede повторной командой или сменой модели.
 - [ ] DA7.4. Затем отдельно спроектировать grouped/multipart/digest revisions: показать

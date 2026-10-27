@@ -706,3 +706,6 @@ __all__ = [
     "wykaz_number",
     "wykaz_summary",
 ]
+
+from lexinform.models.content import ContentSnapshot as ContentSnapshot
+from lexinform.models.content import ContentVersion as ContentVersion
