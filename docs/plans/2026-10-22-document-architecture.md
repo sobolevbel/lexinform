@@ -549,10 +549,10 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
 - [ ] DA4.4. Решение включает question/policy version, membership, role, version, completeness,
   facts/quotes, нормативные связи, support applicability и причины ожидания/конфликта.
   Минимальная дата или PDF preference не заменяют доказательство последней полной редакции.
-- [ ] DA4.5. **Частично: [J089](2026-10-22-document-architecture-progress.md#j089), pure prefilter/analysis contracts, shadow-only; wiring и остальные операции открыты.** Ввести чистую operation-specific admissibility рядом с selection. Не требовать
+- [ ] DA4.5. **Частично: [J089](2026-10-22-document-architecture-progress.md#j089), pure prefilter/analysis contracts; [J090](2026-10-22-document-architecture-progress.md#j090), consumer wiring после shadow parity. Review admission и общая матрица открыты.** Ввести чистую operation-specific admissibility рядом с selection. Не требовать
   `selected` повсюду: у принятого текста может не быть собственной пометы `Projekt z dnia`.
   Сохранить нынешние metadata/scan/`unverified` пути до отдельного изменения политики.
-- [ ] DA4.6. **Частично: [J089](2026-10-22-document-architecture-progress.md#j089), 14691 cached views / 88146 counterfactual decisions, legacy parity, отдельная зарегистрированная shadow suite; остальные операции/activation открыты.** Проверить общую матрицу для prefilter, analysis, comparison, amendments и reviews.
+- [ ] DA4.6. **Частично: [J089](2026-10-22-document-architecture-progress.md#j089), 14691 cached views / 88146 counterfactual decisions, legacy parity, отдельная зарегистрированная shadow suite; [J090](2026-10-22-document-architecture-progress.md#j090), prefilter/analysis activation и native parity. Review и полная матрица открыты.** Проверить общую матрицу для prefilter, analysis, comparison, amendments и reviews.
   Сначала сохранять proposed decision без влияния; применять после приёмки соответствующей операции.
 - [ ] DA4.7. Адресовать выбранный нормативный комплект как `DocumentEdition`, отдельно от
   физических representations. Хранить доказанные связи `representation_of`, `supersedes`,

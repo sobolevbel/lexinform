@@ -41,8 +41,9 @@ and membership rules; richer decision persistence/admissibility remains DA4. See
 
 `document_admissibility` defines operation-specific bill-read proposals (`bill-read-v1`) for
 prefilter and analysis. These keep the current unverified/scan/Word fallback distinctions and
-selection blockers. The functions are shadow-only until their consumer stage is accepted;
-the `admissibility` corpus suite records cached-view probes through the common run registry.
+selection blockers. Prefilter and the shared analysis loader use the qualified policy after
+[J090](plans/2026-10-22-document-architecture-progress.md#j090); the `admissibility` corpus suite
+keeps recording cached-view probes through the common run registry.
 Page counts in that suite are counterfactual, not recovered history. See
 [J089](plans/2026-10-22-document-architecture-progress.md#j089).
 

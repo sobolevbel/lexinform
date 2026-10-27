@@ -4558,3 +4558,55 @@ manifest verification и legacy parity приняты; input SHA/решения 
 не включены. Schema **51**, SQL/storage delta **0**; rollback J088 без state conversion.
 Local HTTP не повторён: новая policy не подключена к consumers/transports.
 План **74 задачи, 15 выполнены, 59 unchecked** (DA8.3 неприменим); goal active.
+
+
+<a id="j090"></a>
+### J090. DA4.5/DA4.6: activate qualified bill-read admission
+
+Дата: 27 октября 2026. База: J089 (`96845ae`). Статус: принято локально; deployment проверяется отдельно.
+
+Prefilter и общий analysis loader делегируют допуск pure policy `bill-read-v1`.
+Loader по-прежнему владеет I/O и source exceptions; services выбирают прежние counters,
+ошибки, scan/metadata fallback и подготовку текста. Shared analysis path используется также
+reanalysis/baseline comparison, committee amendments и supplements; Senate verification
+остаётся отдельным существующим контрактом. Review completeness ещё не перенесена.
+Новых source branches, SQL writes, prompts, heuristic/selection changes нет.
+
+Focused **104 passed**, strict mypy **437** файлов, Ruff/format green. Существующие сценарии
+проверяют textless/thin PDF, Word без страниц, unverified, blocked/missing/oversize/outage,
+trimming/input coverage и material reanalysis. Новых mirror tests не добавлялось.
+Первый Ruff E501 исправлен сокращением one-line docstring до запуска gate.
+
+**104 native flows**, workers **1/4**, comparison baseline/current: все SQL tables/rows,
+profile fields, requests, usage, projection receipts, rendered messages/edits/replies прежние.
+Остальные **71 analysis methods / 6 prefilter methods** по AST не менялись; preparation
+после admission (trim/budget/projection/scan input) прежняя. Из **150 src files** изменены
+только два consumer modules; physical extraction/selection/policy byte-identical baseline.
+
+Shadow replay **14691 views / 88146 decisions**, CI slice **7**, process **3294**: прежние
+observations/input SHA, manifests verified. Первый CI запуск с external corpus root дал
+`not_run` (fixture manifest отсутствует); evidence сохранён, принятый rerun использует
+`tests/fixtures/corpus_check`. CLI reproduction J089 исправлена: `run --suite admissibility`.
+Schema **51**, storage delta **0**, rollback J089 без state conversion.
+
+
+Дополнительная before/after матрица J090: **64 public-pipeline flows** — 8 body/page fixtures ×
+workers 1/4 × sync/batch × нейтральный/релевантный заголовок. Между runs dump восстановлен;
+все reports, exact SQL dumps, contexts, requests, usage и reader messages/edits совпали.
+Fixtures: плотный bill, thin PDF, Word fallback, пустой PDF/Word, consultation report, OSR,
+короткий Word. Это проверка регрессий на объявленных fixtures, не independent legal holdout.
+
+
+J089 release проверен по `96845aee5dc86ada15582e7a6d61858c8560b7c0`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40535414490) — **4788 passed**,
+strict mypy 437 файлов, Ruff, docs/web success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40536672677) — exact COMMIT,
+`1c2ee02a041b -> 96845aee5dc8`, listener up 45 s. Отдельный live processing вручную не запускался.
+
+
+Final acceptance J090: full **4788 passed**, failures/errors/skips 0,
+**587.892 s**; focused **104 passed**, strict mypy **437** файлов, Ruff/format/docs/diff green.
+[Acceptance evidence](../assets/audits/2026-10-27-admission-consumers/validation.json)
+содержит checks/source hashes, **104 native + 64 boundary flows**, corpus manifests и reproduction.
+Необязательный local HTTP не повторён: CLI/network wiring и transports прежние.
+План **74 задачи, 15 выполнены, 59 unchecked** (DA8.3 неприменим); goal active.

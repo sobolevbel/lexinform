@@ -1,0 +1,179 @@
+{
+  "version": 1,
+  "stage": "J090",
+  "baseline": "96845aee5dc86ada15582e7a6d61858c8560b7c0",
+  "scope": "Activate qualified operation-specific prefilter and shared analysis-loader admission, preserving loader I/O and existing consumer behavior.",
+  "checks": {
+    "focused": {
+      "sha256": "a0d37599ef389c0c5c2ec1cec09bdda740f6468c55a6407d2b992026ac69f344",
+      "tests": 104,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 4.819
+    },
+    "full": {
+      "sha256": "375f539ac951d790bd5273726d6fc3408e2fb5cea9997f273b2005109f5e5d66",
+      "tests": 4788,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 587.892
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 437 source files",
+    "ruff": "All checks passed!",
+    "format": "438 files left unchanged"
+  },
+  "native": {
+    "native_flows": 104,
+    "all_previous_profile_fields_equal": true,
+    "all_tables_and_requests_usage_receipts_reader_messages_equal": true,
+    "changed_src_files": [
+      "src/lexinform/services/text_prefilter.py",
+      "src/lexinform/services/analysis.py"
+    ],
+    "other_methods_unchanged": {
+      "src/lexinform/services/analysis.py": 71,
+      "src/lexinform/services/text_prefilter.py": 6
+    },
+    "trimming_budget_scan_input_and_projection_after_admission_unchanged": true,
+    "scope": "Native fake flows with workers=1/4; no model or Telegram call. Same schema 51, exact SQL rows compared."
+  },
+  "additional_public_pipeline": {
+    "cases": 64,
+    "all_reports_sql_contexts_requests_usage_reader_messages_equal": true,
+    "workers": [
+      1,
+      4
+    ],
+    "batch": [
+      false,
+      true
+    ],
+    "neutral_title": [
+      false,
+      true
+    ],
+    "restored_between_runs": true,
+    "scope": "Eight declared body/page fixtures, fake-only public pipeline; no claim of real page provenance or legal accuracy."
+  },
+  "corpus": {
+    "admissibility": {
+      "observations": 14691,
+      "manifest": {
+        "path": "out/corpus/runs/j090-admissibility/manifest.json",
+        "sha256": "8cbbc8a1b46021f72b4f954f080a5d49934706c61ea5e5dce5c1f11bc399afd9"
+      },
+      "diff": {
+        "after_manifest_sha256": "8cbbc8a1b46021f72b4f954f080a5d49934706c61ea5e5dce5c1f11bc399afd9",
+        "before_manifest_sha256": "21620cf203fbf2118b6eeb0ac0996d1c4ef32b4d4b5f55632bf98fd187a4c1fa",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "admissibility",
+        "summary_changes": {},
+        "version": 1
+      }
+    },
+    "ci": {
+      "observations": 7,
+      "manifest": {
+        "path": "out/corpus/runs/j090-ci-qualified/manifest.json",
+        "sha256": "929c57290dd2ae1a2f250b405a90f73d32788200b7a41982edd2d3fabfe2aed7"
+      },
+      "diff": {
+        "after_manifest_sha256": "929c57290dd2ae1a2f250b405a90f73d32788200b7a41982edd2d3fabfe2aed7",
+        "before_manifest_sha256": "f0810b9e505d80506125274487169e5b21b03d0eadce91c669d7482f025ab81e",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "ci",
+        "summary_changes": {},
+        "version": 1
+      }
+    },
+    "process": {
+      "observations": 3294,
+      "manifest": {
+        "path": "out/corpus/runs/j090-process/manifest.json",
+        "sha256": "e9cf7523a5513d49d961dd63071a7d003a9b7dcf3d757cac588b1fd35affe294"
+      },
+      "diff": {
+        "after_manifest_sha256": "e9cf7523a5513d49d961dd63071a7d003a9b7dcf3d757cac588b1fd35affe294",
+        "before_manifest_sha256": "25364bfad4cddf496602db1f1ef41e835b7482f9893767b8e7eddca8a9ba510c",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "process",
+        "summary_changes": {},
+        "version": 1
+      }
+    }
+  },
+  "source": [
+    {
+      "path": "src/lexinform/services/analysis.py",
+      "sha256": "6ebce8e8120cf18bc6d28e7f9a5def9944a3ff4db97f86fa8fdb792deedad335"
+    },
+    {
+      "path": "src/lexinform/services/text_prefilter.py",
+      "sha256": "7622d7fe0b9a6ce4f8e23f98068cdee85891723597279fb8ad412e2a37027aa9"
+    },
+    {
+      "path": "src/lexinform/document_admissibility.py",
+      "sha256": "350079a1aa98dc8b2d4616af7ca38fc457255c521239e21f32b849271dd88a38"
+    }
+  ],
+  "state": {
+    "schema": 51,
+    "migrations_serialization_default_flags_unchanged": true,
+    "storage_delta": 0
+  },
+  "rollback": {
+    "code": "J089",
+    "state_conversion": false
+  },
+  "evidence": [
+    {
+      "path": "out/corpus/j090/compare_profiles.py",
+      "sha256": "43c4a7e33edf358f53a80bed41827816645cec1e4f6004b269e26e6185d0188d"
+    },
+    {
+      "path": "out/corpus/j090/native_profiles.py",
+      "sha256": "d49f6e4bc0147a4b82d63e41c31070f078676c7a5881b41370d381a00a0f60ee"
+    },
+    {
+      "path": "out/corpus/j090/native-parity-qualified.json",
+      "sha256": "af87e344ca3a739dc35d4470a64a6488efeacb812c670c3af6b616fda4ebb958"
+    },
+    {
+      "path": "out/corpus/j090/admission_flows.py",
+      "sha256": "185e456e5bc01bf5c69efe1e12c6dd15138a5d547f3e5231fbeaad386dac6801"
+    },
+    {
+      "path": "out/corpus/j090/admission-parity.json",
+      "sha256": "4c7a7539c4ec3549c8ee25366f5d080776035c531832e95eba5c9a74e13ee75e"
+    }
+  ],
+  "exclusions": [
+    "Cached-view page counts remain counterfactual; no new legal-accuracy or historical page claim.",
+    "Physical extraction and file choice are byte-identical; raw reparsing is not repeated for this consumer-only stage.",
+    "Review admission and full operation matrix remain open.",
+    "Initial CI run with the external corpus root is not_run and is preserved; accepted rerun uses the redistributable fixtures root.",
+    "No paid or production processing, network source download, model or Telegram call.",
+    "Local HTTP not repeated: CLI/network wiring and transports are unchanged."
+  ],
+  "reproduction": [
+    "uv run pytest -q tests/unit/test_document_admissibility.py tests/scenario/test_text_prefilter.py tests/scenario/test_analysis_service.py tests/scenario/test_document_selection_contract.py tests/scenario/test_analysis_input_coverage.py tests/scenario/test_law_fingerprint.py",
+    "uv run pytest -q && uv run mypy && uv run ruff check src tests tools",
+    "uv run python out/corpus/j090/native_profiles.py",
+    "python out/corpus/j090/compare_profiles.py",
+    "Run admission_flows.py with pytest -p tests.conftest under baseline/current PYTHONPATH and explicit DA_EXPECTED_CODE/DA_ADMISSION_OUTPUT; use new output directories.",
+    "uv run python -m tools.corpus_runs run --root out/corpus/runs --suite admissibility --corpus ../lexinform-corpus --id NEW_ID"
+  ]
+}

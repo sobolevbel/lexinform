@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from lexinform.analysis_records import RecordFactory, UsageFields
 from lexinform.commission_reviews import COMMISSION_ROLES, commission_text_matches
 from lexinform.concurrency import fan_out
+from lexinform.document_admissibility import analysis_admission
 from lexinform.document_input import amended_input_projection, append_self_amendments
 from lexinform.document_selection import selection_for_input
 from lexinform.document_versions import draft_version
@@ -141,7 +142,6 @@ from lexinform.pricing import (
     input_cost,
 )
 from lexinform.sections import (
-    APPENDIX_KINDS,
     PAGE_BREAK,
     TextBudget,
     carries_the_document,
@@ -2960,15 +2960,7 @@ class AnalysisService:
         self._memo.setdefault(key, encoded)
 
     def _load_text(self, document: TextDocument | None, *, trim: bool = True) -> _Loaded:
-        """Trimmed, budgeted text of the document — or its pages, when the file has no text in it.
-
-        Much of what the Sejm publishes is signed paper filed as images, whose text layer is
-        empty or holds only the transmittal letter. Such a file goes to the model as pages
-        (`scan`); the extracted text comes back either way, so the signatures are still resolved.
-
-        An outage propagates, and so does orka refusing the file: an analysis of the metadata must
-        never be what a bill with a text ends up with. `trim=False` keeps the whole text.
-        """
+        """Prepare admitted text or pages, propagating failures and blocked selections."""
         if document is None:
             return _Loaded("", False, "metadata_only")
         try:
@@ -2985,27 +2977,24 @@ class AnalysisService:
                 "unsupported" if isinstance(exc, ValueError) else "waiting",
                 f"{document.url}: {type(exc).__name__}: {exc}",
             ) from exc
-        if file.selection.state in ("waiting", "ambiguous", "unsupported"):
-            raise DocumentSelectionError(file.selection.state, "; ".join(file.selection.rejected))
+        admission = analysis_admission(
+            file.selection, file.text, pages=file.pages, min_chars=MIN_TEXT_CHARS
+        )
+        if admission in ("waiting", "ambiguous", "unsupported"):
+            raise DocumentSelectionError(admission, "; ".join(file.selection.rejected))
         text = file.text
-        if text is None or not carries_the_document(
-            text, min_chars=MIN_TEXT_CHARS, pages=file.pages
-        ):
-            if file.pages > 0 or not text:
-                return self._load_scan(document, text or "")
-            # A format with no pages to fall back on (Word, an archive): whatever we could not
-            # find the document in this text, the text is all there will ever be, and a file of
-            # this length is not a covering letter.
+        if admission == "scan":
+            return self._load_scan(document, text or "")
+        assert text is not None, (
+            "analysis_admission admits text or metadata only for a present body"
+        )
+        if not carries_the_document(text, min_chars=MIN_TEXT_CHARS, pages=file.pages):
             log.info("%s: no pages to read; the text is taken as it is", document.url)
-        kind = document_kind(text)
-        if kind in APPENDIX_KINDS:
-            # The file the name pointed at turned out to be published beside the bill, not to be
-            # it: a compliance table, a consultation report, a draft regulation. Analysing it
-            # would describe the wrong document with every appearance of describing the right
-            # one. A print opening with its covering letter is not this case (`letter` is not an
-            # appendix kind), and neither is a layout we simply do not recognise.
+        if admission == "metadata_only":
             log.warning(
-                "%s opens as a %s, not as the bill; using metadata only", document.url, kind
+                "%s opens as a %s, not as the bill; using metadata only",
+                document.url,
+                document_kind(text),
             )
             return _Loaded("", False, "metadata_only")
         if not trim:

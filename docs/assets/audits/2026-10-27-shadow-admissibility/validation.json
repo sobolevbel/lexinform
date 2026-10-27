@@ -148,7 +148,7 @@
   "reproduction": [
     "uv run pytest -q tests/unit/test_document_admissibility.py tests/unit/test_replay_admissibility.py tests/unit/test_document_candidates.py",
     "uv run pytest -q && uv run mypy && uv run ruff check src tests tools",
-    "uv run python -m tools.corpus_runs run admissibility --corpus ../lexinform-corpus --id NEW_ID",
+    "uv run python -m tools.corpus_runs run --root out/corpus/runs --suite admissibility --corpus ../lexinform-corpus --id NEW_ID",
     "PYTHONPATH=src:. uv run python out/corpus/j089/legacy_parity.py",
     "Use new output paths; recorded replay inputs and outputs are immutable."
   ]
