@@ -8,6 +8,7 @@ from lexinform.models import (
     BatchIntent,
     BatchRequest,
     BatchResult,
+    Bill,
     DigestItemMeta,
     JointRecord,
     NameRecord,
@@ -37,8 +38,8 @@ def prepared_world(*, workers: int = 1) -> World:
     return world
 
 
-def ask(world: World, kind: Kind) -> Record | Waiting | None:
-    bill = world.bill("3039")
+def ask(world: World, kind: Kind, *, bill: Bill | None = None) -> Record | Waiting | None:
+    bill = bill or world.bill("3039")
     if kind == "amendments":
         return world.analysis.summarize_amendments(
             bill, TextDocument(url=URL, kind="committee_amendments")

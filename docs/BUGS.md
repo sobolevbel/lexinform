@@ -3,7 +3,7 @@
 ## Как пользоваться
 
 Текущие баги сгруппированы по статусу, внутри группы — по влиянию на читателя.
-Номера B1…B122 постоянные:
+Номера B1…B123 постоянные:
 старые обозначения `#4` и `B4` означают одну запись.
 `open` — воспроизведённый дефект; `candidate` — ещё не доказанная гипотеза.
 `deferred` — подтверждённый дефект, отложенный по решению владельца;
@@ -23,6 +23,19 @@ P3 не означает, что расходы можно игнорирова�
 [повторяющиеся ошибки](development/failure-patterns.md) — памятка для аудита.
 
 ## Open
+
+### B123
+
+**P3 · fixed locally · 27.10.2026.** Удаление memo делало оплаченный secondary answer недоступным для reuse.
+
+После collect и operational cleanup тот же вопрос amendments/supplement/joint/name ставился
+в новый batch, хотя immutable result оставался в history. **8 regressions failed** на J073,
+workers=1/4; повторный explicit request требовал ещё одной оплаты. Production-инцидент не установлен.
+При отсутствии memo общий reader ищет validated answer по сохранённым subject, purpose и exact
+request key, проверяет record type; usage обнуляется существующим reuse contract. Изменённый
+контекст и другая каденция не переиспользуются, существующий legacy memo не получает выдуманных refs.
+Primary/reviews/explanation остаются отдельными consumers. Приёмка —
+[J074](plans/2026-10-22-document-architecture-progress.md#j074).
 
 ### B122
 

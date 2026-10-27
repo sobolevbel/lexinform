@@ -3746,3 +3746,47 @@ local HTTP не повторён. [Acceptance evidence](../assets/audits/2026-10
 содержит XML/source hashes, observers, corpus manifests, normal/handoff profiles и state inventory.
 Исходный input subject перенесённого primary request ещё не выделен из collection coordinates;
 это отдельная граница DA6. План: **74 задачи, 12 выполнены, 62 не закрыты**; goal active.
+
+<a id="j074"></a>
+### J074. DA6: exact secondary history reuse after memo cleanup
+
+Дата: 27 октября 2026. База: J073 (`3cd8212`). Статус: реализовано, deployment проверяется отдельно.
+
+Проверить amendments/supplement/joint/name с тем же exact question key после удаления operational
+memo. История оплаченного ответа уже сохранена; текущий consumer должен использовать её без
+новой submission. Scope ограничен фактическим subject/purpose/key и существующим record type;
+никакого similarity reuse, новой source policy или достраивания legacy input. Primary, reviews
+и explanation имеют отдельные контракты и принимаются отдельно.
+
+B123 подтверждён: **8 regressions failed** на J073, same question после collect/200-day cleanup
+снова ставится в batch. Общий `computation_reuse.retained_secondary` читает immutable history,
+проверяя subject/purpose/key/type; он не меняет projection, не строит запрос и не выбирает source.
+Consumer восстанавливает memo через прежний путь, возвращая `_reused` с нулевыми токенами.
+Контроли changed context, другой Sejm term, legacy memo без refs и второй cleanup green;
+targeted **71 passed**. Strict mypy **416** файлов и Ruff green; full gate запущен.
+
+На **16** isolated fake flows, providers=2/workers=1/4/purposes=4: secondary requests/results
+**2 → 1**, новых paid calls после cleanup нет; original request/result, нормализованное содержание
+ответа, primary Bill и reader texts прежние. Settled SQL delta **−4188…−2592 bytes**,
+gzip **−158…−139 bytes**, SQLite **0**; fixture measurement, не production growth forecast.
+**12** обычных profiles совпали целиком. Fresh state J073 `f34e63e7` восстановлен baseline/current:
+SQL/projection/memo hashes и размеры равны, **457 bills / 166 analyses / 141 memos**, v50,
+integrity ok/FK 0; pipeline/model/Telegram не запускались. Corpus CI **7 passed**, process
+**3294 observations**, zero changed inputs/decisions; manifests проверены.
+
+J073 release проверен по полному `3cd82124cf1a12427897327acefd4c2d8db5dcd5`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40467348173) — **4457 passed**,
+strict mypy 414 файлов, Ruff, docs/web jobs success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40467812482) — exact COMMIT,
+`f3d8ae5715dd -> 3cd82124cf1a`, listener up 45 s. История новых paid rows в production этим
+не подтверждается; доступный state pin имеет results/applications 0.
+
+Final acceptance: **4477 passed**, failures/errors/skips/xfails 0, 645.538 s; mypy **416** файлов,
+Ruff src/tests/tools, format, docs/links и diff check green. Финальные **20** regressions на J073:
+**8 failed / 12 passed**; current targeted **71 passed**. J073 reader восстановил **28** новых
+snapshots с exact dump, все **50 migrations** прежние. Local HTTP не повторён: CLI, wiring,
+transports не менялись. [Acceptance evidence](../assets/audits/2026-10-27-secondary-history-reuse/validation.json)
+содержит XML/source hashes, profiles/deltas, observers, corpus manifests и production restore.
+Это не общий replay всех computations: primary, reviews, explanation, applicability history и
+перенос consumers на refs остаются DA6. План: **74 задачи, 12 выполнены, 62 не закрыты**;
+goal active.

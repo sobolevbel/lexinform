@@ -153,6 +153,7 @@ from lexinform.sections import (
 )
 from lexinform.senate_documents import validate_senate_scan
 from lexinform.services.analysis_applications import apply_analysis
+from lexinform.services.computation_reuse import retained_secondary
 from lexinform.services.cost import CostLedger
 from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
 from lexinform.services.joint import primary_of, revive_prefilter_skips
@@ -1634,6 +1635,12 @@ class AnalysisService:
         if legacy_job is not None and legacy_job.state in {"queued", "submitting", "open"}:
             return Waiting(legacy_job.since)
         cached = self._memo.get(key)
+        if cached is None:
+            retained = retained_secondary(
+                self._repo, bill.term, bill.number, question.kind, key, record_model
+            )
+            if retained is not None:
+                cached = retained.model_dump_json()
         if cached is not None:
             self._cancel_queued_digest(key)
             record = record_model.model_validate_json(cached)

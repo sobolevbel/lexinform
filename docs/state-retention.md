@@ -119,6 +119,13 @@ reject replacement, and an exact repeated write is harmless.
 This first migration temporarily retains the answer in both history and legacy bill/memo
 projections. Removing those copies requires all primary consumers, frozen deliveries and
 secondary purposes to use protected result refs; it is not part of this dual-write stage.
+When a secondary memo is absent, amendments/supplement/joint/name can recover a validated paid
+record from history by the same subject, purpose, exact request key and record type. Reuse
+rebuilds the operational memo with the original result/request refs and charges no new tokens.
+Existing memos take precedence, including legacy records without those refs. This does not
+broaden context equivalence, merge Sejm terms, or enable new purposes. Primary, reviews and
+explanation retain their separate contracts. See
+[J074](plans/2026-10-22-document-architecture-progress.md#j074).
 The measured sizes and scope are in [J061](plans/2026-10-22-document-architecture-progress.md#j061)
 and [J062](plans/2026-10-22-document-architecture-progress.md#j062), with tracking/linking in
 [J063](plans/2026-10-22-document-architecture-progress.md#j063).
@@ -143,7 +150,8 @@ Settings: `LEXINFORM_RUNS_RETENTION_DAYS`, `LEXINFORM_HISTORY_PAYLOAD_RETENTION_
 payloads only), and
 `LEXINFORM_ANALYSIS_MEMO_RETENTION_DAYS`. Minimum: seven days. Reducing a cutoff takes effect on
 the next run. An expired, unneeded cache entry may incur a new LLM call if its old context is
-explicitly revisited later; expiration itself never initiates analysis.
+explicitly revisited and its consumer cannot recover an exact answer from protected history;
+expiration itself never initiates analysis.
 
 Bill identities, legislative evidence, publication history, command IDs, batch accounting and
 unknown operations are not deleted on a timer. Thus the payload history is bounded for completed
