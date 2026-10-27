@@ -29,6 +29,8 @@ Schema, tables and what each version added: `docs/reference/database.md`; retent
   `sqlite3 file "PRAGMA user_version"`, `lexinform show 2699`). A backfill must not create
   retroactive news (v24 seeded `observed_closure_date` from `closure_date`).
 - No schema downgrade: rollback preserves pending/unknown and reconciles later external effects before restoring an older dump.
+- Application target identity lives in JSON, indexed by namespace/ref; generationless rows require
+  an explicit target. Primary JSON omits the nullable target; never persist a sentinel generation.
 - Retention keeps publication identities, batch token accounting and the last discovery watermark;
   it never expires uncertain work or a memo needed by pending analysis, tracking or delivery; legacy
   memos without ownership stay protected.

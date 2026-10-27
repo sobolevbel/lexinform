@@ -133,6 +133,7 @@ service built once) → `cli.py` (typer).
   (`operations.md`).
 - Operator commands are recorded before they run and never re-run (`operations.md`).
 - Migrations are append-only (`database.md`).
+- Projection receipts commit with their target state (`operations.md`).
 
 ## Product decisions
 

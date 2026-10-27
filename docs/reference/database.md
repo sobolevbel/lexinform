@@ -1,13 +1,13 @@
 # База данных и миграции
 
-Статус: актуальный справочник · проверен 27 октября 2026 по локальному коду, схема **v49**.
+Статус: актуальный справочник · проверен 27 октября 2026 по локальному коду, схема **v50**.
 
 Источник истины — append-only
 [`MIGRATIONS` в sqlite_repo.py](https://github.com/sobolevbel/lexinform/blob/main/src/lexinform/adapters/sqlite_repo.py).
 `SCHEMA_VERSION = len(MIGRATIONS)`, версия конкретной базы — `PRAGMA user_version`.
-После всех миграций: **19 таблиц, 30 явных индексов
-(15 обычных и 15 уникальных), 6 внешних ключей**. Автоиндексы `PRIMARY KEY` и
-`UNIQUE` в эти 30 не входят. Копия production dump также восстановлена в v49:
+После всех миграций: **19 таблиц, 32 явных индекса
+(15 обычных и 17 уникальных), 6 внешних ключей**. Автоиндексы `PRIMARY KEY` и
+`UNIQUE` в эти 32 не входят. Копия production dump также восстановлена в v50:
 `integrity_check=ok`, `foreign_key_check` не вернул ошибок.
 
 ## Визуальная схема
@@ -29,7 +29,7 @@ HTML содержит снимок v34, включая SQL ограничени�
 | `rcl_wykaz_numbers` | `(wykaz_number, project_id)` | Номер wykaz, проект RCL и дата создания; номера wykaz могут использоваться повторно. |
 | `analysis_memo` | `key` | Результат LLM по содержимому, цели и контексту; владелец `(term, number)` и `last_used_at`. |
 | `computation_results` (v49) | `result_id`; уникальный `(provider, batch_id, custom_id)` | Неизменяемый normalized primary/secondary result либо failure receipt, исходный usage и schema version; без файлов и полных входов. |
-| `result_applications` (v49) | `(result_id, term, number, generation, phase)` | Collection decision и отдельный projection receipt в общем `apply_analysis`; status/generation целевой строки до записи, batch/memo/retained result. Доставку не подтверждает. |
+| `result_applications` (v49/v50) | Local `id`; unique primary generation identity или explicit target namespace/ref | Collection decision и projection receipt; target хранится в JSON и индексируется без дополнительных columns. Primary applications используют `apply_analysis`; secondary producers ещё подключаются. Доставку не подтверждает. |
 | `llm_batches` | `batch_id` | Провайдер, состояние batch, оценка стоимости и даты опроса, завершения и очистки. |
 | `llm_batch_items` | `(batch_id, custom_id)` | Задание для bill, метаданные, результат, `consumed_at` и отдельный `accounted_at`. |
 | `llm_batch_intents` | `custom_id` | Сохранённые запросы до отправки провайдеру и состояние попытки. |
@@ -89,6 +89,13 @@ amendments/supplement/joint/name/explanation в той же таблице бе�
 с отдельными input refs и normalized answer;
 [J068](../plans/2026-10-22-document-architecture-progress.md#j068) включает их запись в review
 collection checkpoint без source text, новой SQL-миграции или изменения submit/pause settings.
+
+V50 добавляет совместимый reader explicit application targets: generation=NULL требует
+namespace/ref и projection phase. Два partial unique indexes разделяют primary и target scopes;
+SQL CHECK исключает incomplete targets и NULL-identity duplicates. Primary JSON остаётся
+прежним, порядок старых rows сохраняется. Local id не является бизнес-идентификатором.
+Новых target producers и application backfill эта миграция не включает. См.
+[J069](../plans/2026-10-22-document-architecture-progress.md#j069).
 
 ## Снимки и обработанное состояние
 

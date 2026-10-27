@@ -107,6 +107,9 @@ from lexinform.models.computations import (
     ResultApplication as ResultApplication,
 )
 from lexinform.models.computations import (
+    ResultApplicationTarget as ResultApplicationTarget,
+)
+from lexinform.models.computations import (
     ReviewInputReference as ReviewInputReference,
 )
 from lexinform.models.computations import (

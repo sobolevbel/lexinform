@@ -524,6 +524,42 @@ MIGRATIONS: tuple[str, ...] = (
     );
     CREATE INDEX ix_result_application_owner ON result_applications(term, number, generation);
     """,
+    """
+    CREATE TABLE result_applications_v50 (
+        id INTEGER PRIMARY KEY,
+        result_id TEXT NOT NULL REFERENCES computation_results(result_id),
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        generation INTEGER,
+        phase TEXT NOT NULL,
+        application_json TEXT NOT NULL,
+        CHECK (
+            (generation IS NOT NULL
+             AND COALESCE(json_type(application_json, '$.target'), 'null') = 'null')
+            OR (generation IS NULL AND phase = 'projection'
+                AND json_type(application_json, '$.target') IS 'object'
+                AND json_type(application_json, '$.target.kind') IS 'text'
+                AND length(json_extract(application_json, '$.target.kind')) > 0
+                AND json_type(application_json, '$.target.ref') IS 'text'
+                AND length(json_extract(application_json, '$.target.ref')) > 0)
+        )
+    );
+    INSERT INTO result_applications_v50
+      (id, result_id, term, number, generation, phase, application_json)
+      SELECT rowid, result_id, term, number, generation, phase, application_json
+      FROM result_applications ORDER BY rowid;
+    DROP TABLE result_applications;
+    ALTER TABLE result_applications_v50 RENAME TO result_applications;
+    CREATE UNIQUE INDEX ux_result_application_generation
+      ON result_applications(result_id, term, number, generation, phase)
+      WHERE generation IS NOT NULL;
+    CREATE UNIQUE INDEX ux_result_application_target
+      ON result_applications(result_id, term, number, phase,
+          json_extract(application_json, '$.target.kind'),
+          json_extract(application_json, '$.target.ref'))
+      WHERE generation IS NULL;
+    CREATE INDEX ix_result_application_owner ON result_applications(term, number, generation);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -941,10 +977,13 @@ class SqliteBillRepository:
             " VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
             (*identity, application.model_dump_json()),
         )
+        target = application.target
         row = self._conn.execute(
             "SELECT application_json FROM result_applications WHERE result_id = ? AND term = ?"
-            " AND number = ? AND generation = ? AND phase = ?",
-            identity,
+            " AND number = ? AND generation IS ? AND phase = ?"
+            " AND json_extract(application_json, '$.target.kind') IS ?"
+            " AND json_extract(application_json, '$.target.ref') IS ?",
+            (*identity, target.kind if target else None, target.ref if target else None),
         ).fetchone()
         if (
             row is None

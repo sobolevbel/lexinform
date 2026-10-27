@@ -133,6 +133,9 @@ Command reference and the relay: `docs/operator-commands.md`.
 - **Secondary computation history** retains normalized results with memo/consumed checkpoint;
   reviews use separate compact source refs, including known input on failure, without source text.
   Collection adds no primary generation/application receipt and never changes review pause settings.
+- **Projection receipts** name the actual target and commit with its state; memo deposit/reuse alone
+  is not application. Non-primary targets use namespace/ref, never a borrowed primary generation.
+  Target identities are metadata, not executable work; unknown namespaces remain readable.
 - **Document reviews** use separate secondary batch purposes and exact source citations.
   Participant positions never prove acceptance, project analyses never prove final-act
   applicability; commission reviews across RCL, Sejm and Senate keep proposals, recommendations and

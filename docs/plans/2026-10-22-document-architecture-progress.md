@@ -3461,3 +3461,70 @@ corpus manifests и production profiles. 142 runtime files прежние; AST p
 schemas не менялся. Локальные outputs: `out/corpus/j068`, registry runs `j068-*`.
 Следующие части DA6 — secondary application targets/receipts, rollover и остальные consumers;
 цель всего плана остаётся active.
+
+J068 выпущен: `ada1415da9451694a1ca5dc3f1dbf8cfc8d201bb`,
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40444745837) success:
+**4362 passed / 32 deselected**, strict mypy 407 файлов, lint green; web/docs jobs success.
+[Deploy relay](https://github.com/sobolevbel/lexinform/actions/runs/40445434684) success:
+exact COMMIT, `d4da77430316 → ada1415da945`, сервис up 45 s после restart.
+Evidence: `out/corpus/j068/release.json`. Ручной production pipeline не запускался.
+
+<a id="j069"></a>
+### J069. DA6: reader application targets без выдуманного primary generation
+
+Дата: 27 октября 2026. База: `ada1415da9451694a1ca5dc3f1dbf8cfc8d201bb`.
+Статус: реализован и принят локально; выпуск проверяется отдельно.
+
+Применение результата к нескольким событиям нельзя адресовать одним primary generation.
+`ResultApplicationTarget` хранит namespace/ref; это metadata адреса, не задания исполнителю.
+Неизвестный namespace читается без потери identity. Explicit target требует generation=None,
+phase=projection и outcome=applied. Primary receipt оставляет прежний generation и JSON без
+нового nullable поля. Ни collect, ни memo lookup не объявляются применением.
+
+Append-only migration v50 перестраивает одну existing таблицу; прежние **49** scripts побайтово
+прежние. Target хранится один раз в application_json, отдельные columns не добавлены. Два
+partial unique expression indexes разделяют primary generation identity и target identity;
+CHECK требует полный target при NULL generation. Поэтому SQLite NULL uniqueness не даёт
+записать duplicate receipt. Старые primary JSON и порядок сохраняются; исторические target refs
+не backfilled. Скрытый rowid v49 не сериализуется его dump: сохраняется фактический порядок,
+а не выдуманные исходные номера. В v50 новый local id служит только порядку хранения.
+
+На этом этапе production producers по-прежнему пишут только primary receipts. Инфраструктура
+DA6.1 закончена; actual secondary applications остаются DA6.2/DA6.3. Подключение каждого writer
+будет отдельным checkpoint change, после выпуска reader. Namespace/ref выбирает владеющий
+сервис; data addresses никогда не используются как инструкции.
+
+Qualified before **6 failures**, targeted accepted **88 passed**. Новые проверки: несколько
+targets и namespaces у одного результата, repeated receipt с сохранением времени, dump/restore,
+неизвестный namespace, запрет borrowed generation/collection target, SQL uniqueness при NULL,
+SQL CHECK на incomplete targets и upgrade v49 primary rows. Legacy-v1 migration test расширен.
+Expanded test сначала ошибочно ожидал hidden rowids из старого dump; исправлен контракт на
+сохранение JSON и порядка. Финальный targeted run green.
+
+**33** J066/J068 pending/settled/cleaned snapshots: общие данные всех таблиц, включая original
+application JSON, совпали. SQL delta **969–977 bytes**, gzip **183–220 bytes**, SQLite +4096 bytes.
+Old runtime v49 завершил pending primary batch на v50: один request/card, две primary receipts,
+без errors. Это bridge до появления новых target producers, не обещание rollback v49 после их
+включения. Первоначальный bridge observer использовал неканонический version footer; принят
+исправленный observer с точным dump trailer и проверкой загруженного code root.
+
+Full **4374 passed**, errors/failures/skips/xfails 0, **624,944 s**; strict mypy 408 файлов, Ruff
+src/tests/tools и format green. Local HTTP CLI **21 passed**. После gate выполнен свежий fetch
+state, `origin/state == FETCH_HEAD == 98d0bd3267eb8c110945f8fb2d44b1414c58d211` (00:04:41 UTC).
+Копии восстановлены в `/private/tmp`: v49 baseline и v50 current. **457 bills / 166 analyses /
+141 memos**, unchanged projection/memo hashes, known bill2699=analyzed, integrity ok/FK 0.
+SQL +969 bytes, gzip +243 bytes, SQLite +4096 bytes. Schema50: **19 tables / 32 explicit indexes
+(17 unique, 15 ordinary) / 6 FKs**. Pipeline, model calls и Telegram против production copy
+не запускались; source, settings и внешнее хранилище не менялись.
+
+Corpus CI **7 passed**, process **3294 observations**: zero changed decisions/inputs, missing
+inputs 0; manifests verified. Strict docs/links и diff check green. 140 runtime files прежние;
+service/provider/selection code этим срезом не меняется.
+
+[Acceptance evidence](../assets/audits/2026-10-27-result-application-targets/validation.json)
+содержит XML/source hashes, неизменность первых 49 migrations, SQL v50, 33 snapshot profiles,
+old-runtime bridge, fresh production restore/read и повторяемые observers с exclusions.
+DA6.1 отмечен выполненным как infrastructure contract; DA6.2/DA6.3 сохраняют подключение
+secondary projection producers. Локальные outputs: `out/corpus/j069`, registry runs `j069-*`.
+План: **74 задачи, 12 выполнены, 62 не закрыты**; среди оставшихся есть условные/deferred пункты.
+Цель всего плана остаётся active.

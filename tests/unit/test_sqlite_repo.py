@@ -987,6 +987,8 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         "ux_pub_decision",  # v17
         "ux_pub_agenda_cancelled",  # v19
         "ux_pub_amendments_revision",
+        "ux_result_application_generation",
+        "ux_result_application_target",
     } <= indexes
     with sqlite3.connect(tmp_path / "current.db") as conn:
         changes = {r[1] for r in conn.execute("PRAGMA table_info(status_changes)")}

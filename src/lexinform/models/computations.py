@@ -226,13 +226,25 @@ class ComputationResult(BaseModel):
         return self
 
 
+class ResultApplicationTarget(BaseModel):
+    """Opaque target identities are recorded, never interpreted to execute work."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    kind: str = Field(pattern=r"^[a-z][a-z0-9_]*$")
+    ref: str = Field(min_length=1)
+
+
 class ResultApplication(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     result_id: str
     term: int
     number: str
-    generation: int
+    generation: int | None
+    target: ResultApplicationTarget | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     phase: Literal["collection", "projection"] = "collection"
     outcome: Literal["ready", "superseded", "failed", "applied"]
     reason: ApplicationReason
@@ -242,6 +254,11 @@ class ResultApplication(BaseModel):
 
     @model_validator(mode="after")
     def application_phase(self) -> Self:
+        if self.target is None:
+            if self.generation is None:
+                raise ValueError("a primary receipt requires its original generation")
+        elif self.generation is not None or self.phase != "projection":
+            raise ValueError("an explicit target requires projection without a primary generation")
         projection = self.phase == "projection"
         if projection != (self.outcome == "applied"):
             raise ValueError("only a projection receipt confirms application")

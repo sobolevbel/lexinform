@@ -49,12 +49,18 @@ results with memo/consumed checkpoint, using the original frozen metadata. Detai
 records keep their consumer format. Existing review submit/pause settings remain in force;
 collecting an already submitted result never confirms application or delivery. Rollback of
 this writer uses the J067 reader. Primary v1 and other secondary v2 retain their serialization.
-No completed legacy secondary results are imported. Rollback of this writer uses the compatible
-J065 reader; SQL schema remains v49.
+No completed legacy secondary results are imported. J066 shipped on schema v49 with the J065
+reader as its bridge; subsequent review history requires the J067 reader.
 Computation validation describes the parsed output schema; it does not certify source
 completeness or legal correctness, which have separate selection and DA9 checks.
 
 `result_applications` separates **collection** (ready, superseded or failed) from **projection**.
+Schema v50 adds explicit target namespace/ref for projections outside primary generations.
+The target is stored once in JSON, with partial unique indexes and a CHECK preventing NULL
+identity duplicates. Primary receipts keep their original JSON and generation; target producers
+are enabled separately. Unknown namespaces remain readable metadata and never execute work.
+See [J069](plans/2026-10-22-document-architecture-progress.md#j069) for the migration and
+pre-producer rollback bridge; v49 is not a rollback reader for future explicit-target rows.
 All service writes of primary analysis use `services.analysis_applications.apply_analysis`:
 the primary service, RCL watcher, wykaz handover and RPW/RCL-to-print linker share one command.
 A projection receipt commits with `Bill.analysis` and records the actual target row's
