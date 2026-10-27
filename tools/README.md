@@ -108,6 +108,11 @@ document work and batch metadata. Missing results, inconsistent recorded request
 a failed result are errors. It preserves the distinction between original input, collection owner
 and application target, including term/generation changes and free reuse.
 
+Schema-51 source associations are validated against SQL identity and their retained result. A
+missing/failed result, invalid observation or damaged table is an error. Schema 50 may omit the
+new table. Historical source associations do not require a current owner and do not certify
+legal applicability, archived bytes or URL availability. Reports emit row refs, not source metadata.
+
 Known status-change/publication/command targets get a read-only row-presence observation by their
 recorded ID. A missing row/table is a warning. Joint, mnemonic and review targets show current
 owner presence; a missing historical owner does not invalidate the old receipt. Current slot

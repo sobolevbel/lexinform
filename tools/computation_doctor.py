@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from lexinform.models import ComputationResult, ResultApplication
+from lexinform.models import ComputationResult, ResultApplicabilityObservation, ResultApplication
 from tools.application_targets import application_target
 from tools.corpus_artifacts import write_json
 from tools.saved_records import (
@@ -133,6 +133,43 @@ class ComputationAudit:
                 if target["status"] in ("row_unavailable", "table_unavailable"):
                     self.issue("application_target_unavailable", ref, level="warning")
 
+    def applicability(self, connection: sqlite3.Connection) -> None:
+        required = {"observation_id", "result_id", "term", "number", "observation_json"}
+        columns = {
+            row["name"] for row in connection.execute("PRAGMA table_info(result_applicability)")
+        }
+        self.counts["applicability_rows"] = 0
+        if not required <= columns:
+            self.issue("applicability_columns_unavailable", "result_applicability")
+            return
+        for row in connection.execute(
+            "SELECT rowid AS audit_id, * FROM result_applicability ORDER BY rowid"
+        ):
+            ref = f"result_applicability/{row['audit_id']}"
+            self.counts["applicability_rows"] += 1
+            try:
+                observation = ResultApplicabilityObservation.model_validate_json(
+                    row["observation_json"]
+                )
+            except ValueError:
+                self.issue("invalid_applicability_observation", ref)
+                continue
+            expected = (
+                observation.observation_id,
+                observation.result_id,
+                observation.term,
+                observation.number,
+            )
+            observed = tuple(row[key] for key in ("observation_id", "result_id", "term", "number"))
+            if observed != expected:
+                self.issue("applicability_columns_mismatch", ref)
+            result = self.results.get(observation.result_id)
+            if result is None:
+                self.issue("applicability_result_unavailable", ref)
+            elif not result.has_record:
+                self.issue("failed_result_associated", ref)
+            self.refs.setdefault(observation.result_id, []).append(ref)
+
     def projections(self, connection: sqlite3.Connection, tables: set[str]) -> None:
         for column in saved_columns(connection, tables, catalogue=_TABLES):
             self.counts["saved_columns"] += 1
@@ -188,6 +225,10 @@ def audit(database: Path) -> dict[str, Any]:
         if not missing:
             result.computations(connection)
             result.applications(connection, tables)
+            if "result_applicability" in tables:
+                result.applicability(connection)
+            elif schema >= 51:
+                result.issue("applicability_table_unavailable", "result_applicability")
             result.projections(connection, tables)
         if not snapshot.unchanged():
             result.issue("database_changed_during_audit", "database")
@@ -199,6 +240,7 @@ def audit(database: Path) -> dict[str, Any]:
         for key in (
             "result_rows",
             "application_rows",
+            "applicability_rows",
             "projection_refs_known",
             "projection_refs_unknown",
         )
@@ -228,6 +270,7 @@ def audit(database: Path) -> dict[str, Any]:
             "Current generation/status is not compared with immutable historical receipts.",
             "Unsupported target kinds/refs remain opaque; no target is executed.",
             "Target presence does not revalidate historical application or present slot contents.",
+            "Source associations do not revalidate current owners or source URLs.",
             "No blob coverage, legal applicability, billing or full-state health verdict.",
         ],
     }

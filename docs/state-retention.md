@@ -190,6 +190,12 @@ warnings. Logical targets show owner presence without comparing today's slot con
 historical receipt. An absent historical owner remains an observation, and unsupported reference
 formats stay opaque. See [J082](plans/2026-10-22-document-architecture-progress.md#j082).
 
+Schema-51 applicability observations also get SQL/JSON identity and retained-result checks;
+failed or absent results cannot support a valid association. Legacy schema 50 may omit the table;
+a missing schema-51 table is reported as damage. Historical associations do not require the
+current Bill or revalidate its present source. Source metadata is not echoed in the report.
+See [J085](plans/2026-10-22-document-architecture-progress.md#j085).
+
 A document review whose batch failed at every allowed submission keeps only its keys and a
 limitation (`ReviewWork.abandoned`): its documents go, and the same source is not asked again.
 A review the provider refused for its length keeps its documents for the overflow model.

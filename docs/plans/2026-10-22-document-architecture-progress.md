@@ -4292,3 +4292,52 @@ schema 51, SQL/gzip/SQLite delta **0**, никаких автоматическ�
 Local HTTP не повторён: сетевой CLI/wiring/transports прежние. DA6.4 остаётся частичным:
 остальные source associations и legacy import ещё не объявлены принятыми.
 План **74 задачи, 14 выполнены, 60 unchecked** (DA8.3 неприменим); goal active.
+
+<a id="j085"></a>
+### J085. DA10: read-only source-association graph validation
+
+Дата: 27 октября 2026. База: J084 (`77a86df8b35eaea381a9bb6aae71ad1692a6e99f`). Статус: принято локально; deployment проверяется отдельно.
+
+Computation doctor читает `result_applicability`, сверяет identity JSON/SQL и наличие
+валидированного retained result. Invalid/future JSON, несовпадение identity, missing result,
+failed result, schema-51 table/column damage дают отдельные findings. Старый schema-50 snapshot
+может не иметь новой таблицы. Наличие нынешнего Bill и доступность URL не проверяются:
+историческая связь не становится invalid из-за смены owner. В output попадают только row refs,
+не metadata source или provider/context payload. State не меняется и work не исполняется.
+
+Новые **13 cases**: на J084 **12 fail / 1 legacy control pass**, без fixture errors.
+После реализации **58 focused passed**, strict mypy **431** файлов. Первый Ruff выявил
+E501 в тексте exclusion; формулировка сокращена, итоговый Ruff green. Runtime **148 src files**
+побайтно прежние, schema **51**, writers/default flags/DDL не меняются.
+
+На **116** actual writer snapshots doctor проверил **106** source associations: errors/warnings 0,
+все database hashes прежние. Старые graph fields совпали после исключения только нового counter,
+новых source-edge refs и поясняющего exclusion. Первые observer запускались с верными PYTHONPATH;
+qualification повторена с явными assertions импортированного src/tools, прежние guards сохранены.
+Corpus CI **7 passed**, process **3294 observations**, zero changed inputs/decisions;
+qualified manifests verified. Full gate выполняется. Это offline graph QA, без заключения о
+юридической применимости текста, source coverage, billing или наличии архива.
+
+Pinned production QA повторена на schema 50 и мигрированной 51 одного state pin `9e836a9`:
+**408 unknown legacy refs, 638 saved columns, results/applications/associations 0**.
+Errors/warnings 0, DB hashes прежние; все прежние report fields совпали, новая schema добавляет
+только applicability counter 0 и пояснение. Никакие legacy refs не объявлены известными.
+Это прежний зафиксированный pin, не live production processing или новый cycle.
+
+J084 release проверен по `77a86df8b35eaea381a9bb6aae71ad1692a6e99f`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40510090025) — **4735 passed**,
+strict mypy 430 файлов, Ruff, docs/web success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40510937899) — exact COMMIT,
+`28e9b1eaca25 -> 77a86df8b35e`, listener up 45 s. Отдельный live cycle не запускался.
+
+Final acceptance J085: **4748 passed**, failures/errors/skips/xfails 0, **592.703 s**;
+focused **58 passed**, strict mypy **431** файлов, Ruff src/tests/tools, format src/tests/tool,
+docs/links и diff check green. **116** native snapshots, **106** source associations,
+старые graph fields и input DB hashes сохранены. Pinned legacy50/reader51 QA также без writes.
+[Acceptance evidence](../assets/audits/2026-10-27-applicability-doctor/validation.json)
+содержит before/after XML, source hashes, qualified imports, graph comparison и corpus manifests.
+Runtime `src` **148 files** byte-identical J084, migrations/schema/default flags прежние,
+state delta **0**; rollback J084 не требует изменения данных. Local HTTP не повторён:
+новых сетевых CLI/wiring/transports нет. DA10.2 остаётся частичным для deferred blob coverage
+и полной dependency validation. План **74 задачи, 14 выполнены, 60 unchecked**
+(DA8.3 неприменим); goal active.

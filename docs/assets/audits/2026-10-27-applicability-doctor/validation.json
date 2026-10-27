@@ -1,0 +1,1000 @@
+{
+  "version": 1,
+  "stage": "J085",
+  "baseline": "77a86df8b35eaea381a9bb6aae71ad1692a6e99f",
+  "scope": "Read-only source-association identity and retained-result checks. No state repair, source lookup or revalidation of legal applicability/current owners.",
+  "checks": {
+    "before": {
+      "sha256": "da06911203148178e1fae1b0ddcfbec0defbd5afab84f8d24e42906316369865",
+      "tests": 13,
+      "failures": 12,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.589
+    },
+    "focused": {
+      "sha256": "c8f24e8d2777eba71002d62079b7857b7944527befcd68c064377835370090a1",
+      "tests": 58,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 3.3
+    },
+    "full": {
+      "sha256": "efc6a7f8caf7c63a0b213c250eef5c4b30f5f55c8a5e5111ee98f7d279b5871a",
+      "tests": 4748,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 592.703
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 431 source files",
+    "ruff": "All checks passed!",
+    "format": "2 files reformatted, 431 files left unchanged",
+    "docs": "Documentation links, anchors, resources and build contents: OK"
+  },
+  "changed_source": [
+    {
+      "path": "tools/computation_doctor.py",
+      "sha256": "b5bcc4bb2d02f196ee03a1c557456d3fd646b291a383250b74915487e4fab1dd"
+    },
+    {
+      "path": "tests/scenario/test_applicability_doctor.py",
+      "sha256": "2cd9254efaa1005c3ad2adc653e7548037a5f4d86a8c196ed1cf2e0e7d265ec8"
+    }
+  ],
+  "native_graph": {
+    "cases": 116,
+    "observations": 106,
+    "all_old_graph_fields_equal": true,
+    "all_database_hashes_unchanged": true,
+    "errors": 0,
+    "warnings": 0,
+    "runtime": {
+      "files": 148,
+      "all_byte_identical_j084": true,
+      "schema": 51
+    },
+    "profiles": [
+      {
+        "case": "explanation--claude-opus-5-5-1-changed",
+        "database_sha256": "938fd8d9ce67ccec03d40a4dcaf566bcf023a09ececd8a1e0804222d5ad4f1c5",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "explanation--claude-opus-5-5-1-cold",
+        "database_sha256": "6c0a2b84ff68a46480ac7fd4fee1edb47c952c00b06e9aefe452cfac7eda6559",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "explanation--claude-opus-5-5-1-legacy",
+        "database_sha256": "7ec9db57a406b805acb185d80915fd1b9f83f0074e4d41e56216798929e125e5",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "explanation--claude-opus-5-5-1-warm",
+        "database_sha256": "c11bb2232e8cf49b40c2dc1aa5077f73f774779a831f4491637418bc72b9bd08",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "explanation--claude-opus-5-5-4-changed",
+        "database_sha256": "938fd8d9ce67ccec03d40a4dcaf566bcf023a09ececd8a1e0804222d5ad4f1c5",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "explanation--claude-opus-5-5-4-cold",
+        "database_sha256": "6c0a2b84ff68a46480ac7fd4fee1edb47c952c00b06e9aefe452cfac7eda6559",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "explanation--claude-opus-5-5-4-legacy",
+        "database_sha256": "7ec9db57a406b805acb185d80915fd1b9f83f0074e4d41e56216798929e125e5",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "explanation--claude-opus-5-5-4-warm",
+        "database_sha256": "c11bb2232e8cf49b40c2dc1aa5077f73f774779a831f4491637418bc72b9bd08",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "explanation--gpt-5.1-1-changed",
+        "database_sha256": "f411de7d1f58c39659eba826d0bc6c5e17d8d953a9237ecb14e58fe4d32cf129",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "explanation--gpt-5.1-1-cold",
+        "database_sha256": "83555aabb572eb9c74498918a8b3a73b6970c23b0bdef09d5a8698ff865fe720",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "explanation--gpt-5.1-1-legacy",
+        "database_sha256": "aac3501914ab2729669d657b7a258068b57e8a31f34fa3b68a4a34e859300a2b",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "explanation--gpt-5.1-1-warm",
+        "database_sha256": "9ef146e6f7903dbbf206b50292c96b4c35e2a7dbe85aa4ce1c961c615253f041",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "explanation--gpt-5.1-4-changed",
+        "database_sha256": "f411de7d1f58c39659eba826d0bc6c5e17d8d953a9237ecb14e58fe4d32cf129",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "explanation--gpt-5.1-4-cold",
+        "database_sha256": "83555aabb572eb9c74498918a8b3a73b6970c23b0bdef09d5a8698ff865fe720",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "explanation--gpt-5.1-4-legacy",
+        "database_sha256": "aac3501914ab2729669d657b7a258068b57e8a31f34fa3b68a4a34e859300a2b",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "explanation--gpt-5.1-4-warm",
+        "database_sha256": "9ef146e6f7903dbbf206b50292c96b4c35e2a7dbe85aa4ce1c961c615253f041",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "handoff--claude-opus-5-5-1-commission-open",
+        "database_sha256": "03eae439bfd2a98fdc58f5a9ad8eb26fafc4f3ed821b23e9a0e0c4d911bf01c8",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--claude-opus-5-5-1-commission-queued",
+        "database_sha256": "03eae439bfd2a98fdc58f5a9ad8eb26fafc4f3ed821b23e9a0e0c4d911bf01c8",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--claude-opus-5-5-1-consultation-open",
+        "database_sha256": "d11eedfe9d3acdca0b291487a921f019716032ec702303d42cf6fdf0ad49f80f",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--claude-opus-5-5-1-consultation-queued",
+        "database_sha256": "d11eedfe9d3acdca0b291487a921f019716032ec702303d42cf6fdf0ad49f80f",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--claude-opus-5-5-1-open",
+        "database_sha256": "279c97d8cd21f8253039123b479e24e35f02a3c365a00988efa90cf3f6b016f4",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--claude-opus-5-5-1-ready",
+        "database_sha256": "67d41c3c13c1493ff0d51477f325dcba797fabe6431e0b746fba195faebb1a5a",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--claude-opus-5-5-4-commission-open",
+        "database_sha256": "03eae439bfd2a98fdc58f5a9ad8eb26fafc4f3ed821b23e9a0e0c4d911bf01c8",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--claude-opus-5-5-4-commission-queued",
+        "database_sha256": "03eae439bfd2a98fdc58f5a9ad8eb26fafc4f3ed821b23e9a0e0c4d911bf01c8",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--claude-opus-5-5-4-consultation-open",
+        "database_sha256": "d11eedfe9d3acdca0b291487a921f019716032ec702303d42cf6fdf0ad49f80f",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--claude-opus-5-5-4-consultation-queued",
+        "database_sha256": "d11eedfe9d3acdca0b291487a921f019716032ec702303d42cf6fdf0ad49f80f",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--claude-opus-5-5-4-open",
+        "database_sha256": "279c97d8cd21f8253039123b479e24e35f02a3c365a00988efa90cf3f6b016f4",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--claude-opus-5-5-4-ready",
+        "database_sha256": "67d41c3c13c1493ff0d51477f325dcba797fabe6431e0b746fba195faebb1a5a",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--gpt-5.1-1-commission-open",
+        "database_sha256": "587dfa01f102fc5c1b9f382a7435630ac3a071972e88d94576e87e2b96935433",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--gpt-5.1-1-commission-queued",
+        "database_sha256": "587dfa01f102fc5c1b9f382a7435630ac3a071972e88d94576e87e2b96935433",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--gpt-5.1-1-consultation-open",
+        "database_sha256": "3c5d7a4871f8fd05cebbb0ea90a27e63d9c0239810c3918d2dd385d45906b506",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--gpt-5.1-1-consultation-queued",
+        "database_sha256": "3c5d7a4871f8fd05cebbb0ea90a27e63d9c0239810c3918d2dd385d45906b506",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--gpt-5.1-1-open",
+        "database_sha256": "fb26b9a0ad65b5446346769ebab538c48420951da1f01e7fe920f869c0487c72",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--gpt-5.1-1-ready",
+        "database_sha256": "ccbdc016cb9bb986f155b2ad16abc2efec364be8ba96df954f2c31f8af1bb428",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--gpt-5.1-4-commission-open",
+        "database_sha256": "587dfa01f102fc5c1b9f382a7435630ac3a071972e88d94576e87e2b96935433",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--gpt-5.1-4-commission-queued",
+        "database_sha256": "587dfa01f102fc5c1b9f382a7435630ac3a071972e88d94576e87e2b96935433",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--gpt-5.1-4-consultation-open",
+        "database_sha256": "3c5d7a4871f8fd05cebbb0ea90a27e63d9c0239810c3918d2dd385d45906b506",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--gpt-5.1-4-consultation-queued",
+        "database_sha256": "3c5d7a4871f8fd05cebbb0ea90a27e63d9c0239810c3918d2dd385d45906b506",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--gpt-5.1-4-open",
+        "database_sha256": "fb26b9a0ad65b5446346769ebab538c48420951da1f01e7fe920f869c0487c72",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "handoff--gpt-5.1-4-ready",
+        "database_sha256": "ccbdc016cb9bb986f155b2ad16abc2efec364be8ba96df954f2c31f8af1bb428",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "normal--commission_review-1",
+        "database_sha256": "8b4498c9f03f553d2d2bf09dc3b61dd23bc2c8872995e12a62bf31301af161cf",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "normal--commission_review-4",
+        "database_sha256": "8b4498c9f03f553d2d2bf09dc3b61dd23bc2c8872995e12a62bf31301af161cf",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "normal--consultation_review-1",
+        "database_sha256": "d10d0837da5e133a1b355a58270c26394c2c04b52c83641661679abb25c270eb",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "normal--consultation_review-4",
+        "database_sha256": "d10d0837da5e133a1b355a58270c26394c2c04b52c83641661679abb25c270eb",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "normal--explanation-1",
+        "database_sha256": "35c0b603a5eefd18b0cee4895ab7e1a1b092888d309d5dd605ef562fc290cdf7",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "normal--explanation-4",
+        "database_sha256": "35c0b603a5eefd18b0cee4895ab7e1a1b092888d309d5dd605ef562fc290cdf7",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "normal--joint-1",
+        "database_sha256": "bf795ca0feb5882e8e45f21e9a2d68664028ef48dc1fd64924e7874cd727161f",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "normal--joint-4",
+        "database_sha256": "bf795ca0feb5882e8e45f21e9a2d68664028ef48dc1fd64924e7874cd727161f",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "normal--name-1",
+        "database_sha256": "81da3f710efd09383f283b55a003fdee36b8bc94f2939bd0d567f3a0c445d19e",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "normal--name-4",
+        "database_sha256": "81da3f710efd09383f283b55a003fdee36b8bc94f2939bd0d567f3a0c445d19e",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "normal--revision-1",
+        "database_sha256": "73237446dbb41ca3f157d911fc8af365d0c4832b77477ae389bcbe9efb17b52c",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "normal--revision-4",
+        "database_sha256": "73237446dbb41ca3f157d911fc8af365d0c4832b77477ae389bcbe9efb17b52c",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 0
+      },
+      {
+        "case": "primary--claude-opus-5-5-1-direct-changed",
+        "database_sha256": "2a25f4a882926f5132ff4a860e28fba72be40ad318e841a7515d8a8e630f4908",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--claude-opus-5-5-1-direct-cold",
+        "database_sha256": "a6c70c84665114aa8950ce69ebc9bb516ae817d25ca1ed136b938b29e97b1e80",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--claude-opus-5-5-1-direct-force",
+        "database_sha256": "d82237908fd63729574f0669187fff7242d5099b1b5f1390a98e6555a089e6ea",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--claude-opus-5-5-1-direct-legacy",
+        "database_sha256": "48886be0afaf8dce190da3de7baf158865b1ee1b98f591ee067ed7df5939fcea",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--claude-opus-5-5-1-direct-warm",
+        "database_sha256": "947a664505939a4ea2fe144d87364189e93ef520561e1492675b56c963efccd6",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--claude-opus-5-5-1-pending-changed",
+        "database_sha256": "06c6fd11395835af8f414a2130615d0da28f5d0b1b618a58af2cac2497da79b0",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--claude-opus-5-5-1-pending-cold",
+        "database_sha256": "a6c70c84665114aa8950ce69ebc9bb516ae817d25ca1ed136b938b29e97b1e80",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--claude-opus-5-5-1-pending-legacy",
+        "database_sha256": "2fdce0c38f257a1a23998157a4ada52bfbd23ef11284211e2f684a08fbc8b56b",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--claude-opus-5-5-1-pending-warm",
+        "database_sha256": "947a664505939a4ea2fe144d87364189e93ef520561e1492675b56c963efccd6",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--claude-opus-5-5-4-direct-changed",
+        "database_sha256": "2a25f4a882926f5132ff4a860e28fba72be40ad318e841a7515d8a8e630f4908",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--claude-opus-5-5-4-direct-cold",
+        "database_sha256": "a6c70c84665114aa8950ce69ebc9bb516ae817d25ca1ed136b938b29e97b1e80",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--claude-opus-5-5-4-direct-force",
+        "database_sha256": "d82237908fd63729574f0669187fff7242d5099b1b5f1390a98e6555a089e6ea",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--claude-opus-5-5-4-direct-legacy",
+        "database_sha256": "48886be0afaf8dce190da3de7baf158865b1ee1b98f591ee067ed7df5939fcea",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--claude-opus-5-5-4-direct-warm",
+        "database_sha256": "947a664505939a4ea2fe144d87364189e93ef520561e1492675b56c963efccd6",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--claude-opus-5-5-4-pending-changed",
+        "database_sha256": "06c6fd11395835af8f414a2130615d0da28f5d0b1b618a58af2cac2497da79b0",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--claude-opus-5-5-4-pending-cold",
+        "database_sha256": "a6c70c84665114aa8950ce69ebc9bb516ae817d25ca1ed136b938b29e97b1e80",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--claude-opus-5-5-4-pending-legacy",
+        "database_sha256": "2fdce0c38f257a1a23998157a4ada52bfbd23ef11284211e2f684a08fbc8b56b",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--claude-opus-5-5-4-pending-warm",
+        "database_sha256": "947a664505939a4ea2fe144d87364189e93ef520561e1492675b56c963efccd6",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-1-direct-changed",
+        "database_sha256": "68a0f623b5f67ad10cbfa787bce635f476b1861ce38cbf0a1c77d761ae230e6f",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-1-direct-cold",
+        "database_sha256": "dbc658d31185bf5fe324c4467567e374fbb10a6522775b1ee9deb24a8739440f",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-1-direct-force",
+        "database_sha256": "dd35e1cba6f47a86b59ada89c0c53d6c266571765591e7359e3372ba26b6a709",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-1-direct-legacy",
+        "database_sha256": "088f8f59b2277dfde4cb684cac5723ff8934f1c011260bdc29be06e5aef6d59a",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-1-direct-warm",
+        "database_sha256": "0d0ccac241912a601c5b8a157bb6521062ebdf806395b33778e30cf58e1d33bd",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-1-pending-changed",
+        "database_sha256": "f328906b34f3827793e09e347201839f6c42b78e40d4f70da2fc9581c8115a2f",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-1-pending-cold",
+        "database_sha256": "dbc658d31185bf5fe324c4467567e374fbb10a6522775b1ee9deb24a8739440f",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-1-pending-legacy",
+        "database_sha256": "2fca526b856e7defb86d621a9dd76937f086a4f33fb244ba60797828211ebdb7",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-1-pending-warm",
+        "database_sha256": "0d0ccac241912a601c5b8a157bb6521062ebdf806395b33778e30cf58e1d33bd",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-4-direct-changed",
+        "database_sha256": "68a0f623b5f67ad10cbfa787bce635f476b1861ce38cbf0a1c77d761ae230e6f",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-4-direct-cold",
+        "database_sha256": "dbc658d31185bf5fe324c4467567e374fbb10a6522775b1ee9deb24a8739440f",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-4-direct-force",
+        "database_sha256": "dd35e1cba6f47a86b59ada89c0c53d6c266571765591e7359e3372ba26b6a709",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-4-direct-legacy",
+        "database_sha256": "088f8f59b2277dfde4cb684cac5723ff8934f1c011260bdc29be06e5aef6d59a",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-4-direct-warm",
+        "database_sha256": "0d0ccac241912a601c5b8a157bb6521062ebdf806395b33778e30cf58e1d33bd",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-4-pending-changed",
+        "database_sha256": "f328906b34f3827793e09e347201839f6c42b78e40d4f70da2fc9581c8115a2f",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-4-pending-cold",
+        "database_sha256": "dbc658d31185bf5fe324c4467567e374fbb10a6522775b1ee9deb24a8739440f",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-4-pending-legacy",
+        "database_sha256": "2fca526b856e7defb86d621a9dd76937f086a4f33fb244ba60797828211ebdb7",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "primary--gpt-5.1-4-pending-warm",
+        "database_sha256": "0d0ccac241912a601c5b8a157bb6521062ebdf806395b33778e30cf58e1d33bd",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "reanalysis--claude-opus-5-5-1-False",
+        "database_sha256": "4f0a1d15354a3f307be1c68526728a4dabb03fe436580dc6b9cdf07975198e1c",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "reanalysis--claude-opus-5-5-1-True",
+        "database_sha256": "193d5cf0f547df760d65532e8ce79e6b1b5cf7b2e0e2dc7c83c194f115a8d57c",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reanalysis--claude-opus-5-5-4-False",
+        "database_sha256": "4f0a1d15354a3f307be1c68526728a4dabb03fe436580dc6b9cdf07975198e1c",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "reanalysis--claude-opus-5-5-4-True",
+        "database_sha256": "193d5cf0f547df760d65532e8ce79e6b1b5cf7b2e0e2dc7c83c194f115a8d57c",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reanalysis--gpt-5.1-1-False",
+        "database_sha256": "ff7681a3c38ca6191efb5d8626228053f383814a0d71a93d4a9c508893892290",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "reanalysis--gpt-5.1-1-True",
+        "database_sha256": "934429080b4e12acc88ed0114c7be9d7222aa55f34dc61fe27de5e3e1c15ffce",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reanalysis--gpt-5.1-4-False",
+        "database_sha256": "ff7681a3c38ca6191efb5d8626228053f383814a0d71a93d4a9c508893892290",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 1
+      },
+      {
+        "case": "reanalysis--gpt-5.1-4-True",
+        "database_sha256": "934429080b4e12acc88ed0114c7be9d7222aa55f34dc61fe27de5e3e1c15ffce",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reuse--claude-opus-5-5-1-amendments",
+        "database_sha256": "d2c1718e3f0dbd0430645129d4476a65b38e3a96adbc2d45774bc20c168c80c8",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reuse--claude-opus-5-5-1-joint",
+        "database_sha256": "c70303adbc590b19b384e5e08cb83b6109bd1fe96b5b2ceb67bed799aa503ba2",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reuse--claude-opus-5-5-1-name",
+        "database_sha256": "8937cf67681e1486fa12470bbc507f364cff6e562e6f0173e94190df2b937246",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reuse--claude-opus-5-5-1-supplement",
+        "database_sha256": "4448622df96c57fcda1e685b59ebd0667f61ee8b0c02a8312cda51119c743006",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reuse--claude-opus-5-5-4-amendments",
+        "database_sha256": "d2c1718e3f0dbd0430645129d4476a65b38e3a96adbc2d45774bc20c168c80c8",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reuse--claude-opus-5-5-4-joint",
+        "database_sha256": "c70303adbc590b19b384e5e08cb83b6109bd1fe96b5b2ceb67bed799aa503ba2",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reuse--claude-opus-5-5-4-name",
+        "database_sha256": "8937cf67681e1486fa12470bbc507f364cff6e562e6f0173e94190df2b937246",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reuse--claude-opus-5-5-4-supplement",
+        "database_sha256": "4448622df96c57fcda1e685b59ebd0667f61ee8b0c02a8312cda51119c743006",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reuse--gpt-5.1-1-amendments",
+        "database_sha256": "c76a24d15e26843dbfad283edea4140b4acf8de84ca646ffa944c3b5e7c93cc2",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reuse--gpt-5.1-1-joint",
+        "database_sha256": "96e4fdaf5e68df1645b24a2c0d08a09e85da18036f29c3ddf989e17a21343410",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reuse--gpt-5.1-1-name",
+        "database_sha256": "5e94bd37a87aafd30cd982ce760ee7e658770e76fd1e07f77c605dc3b4b144cb",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reuse--gpt-5.1-1-supplement",
+        "database_sha256": "1a6e3a6d376ebb7f46938e7ccddb0ffd00e91eb5013b5fb2f515f9339ced07cc",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reuse--gpt-5.1-4-amendments",
+        "database_sha256": "c76a24d15e26843dbfad283edea4140b4acf8de84ca646ffa944c3b5e7c93cc2",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reuse--gpt-5.1-4-joint",
+        "database_sha256": "96e4fdaf5e68df1645b24a2c0d08a09e85da18036f29c3ddf989e17a21343410",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reuse--gpt-5.1-4-name",
+        "database_sha256": "5e94bd37a87aafd30cd982ce760ee7e658770e76fd1e07f77c605dc3b4b144cb",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "reuse--gpt-5.1-4-supplement",
+        "database_sha256": "1a6e3a6d376ebb7f46938e7ccddb0ffd00e91eb5013b5fb2f515f9339ced07cc",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "rollover--claude-opus-5-5-1",
+        "database_sha256": "64fd42f3cbe65dfc8dcc1f84ff3d1ef4ce32abc575f25df849e63e7c3b1441e5",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "rollover--claude-opus-5-5-4",
+        "database_sha256": "64fd42f3cbe65dfc8dcc1f84ff3d1ef4ce32abc575f25df849e63e7c3b1441e5",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "rollover--gpt-5.1-1",
+        "database_sha256": "25a3d9e31d7c831d66b09f5ea5c1fb4a4fed67bd15a5490d182f8f3a41372e1b",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      },
+      {
+        "case": "rollover--gpt-5.1-4",
+        "database_sha256": "25a3d9e31d7c831d66b09f5ea5c1fb4a4fed67bd15a5490d182f8f3a41372e1b",
+        "unchanged": true,
+        "old_graph_fields_equal": true,
+        "applicability_rows": 2
+      }
+    ],
+    "observer_sha256": "ba7a1badfed7d1d8d16f9ec4086356ae6ddc31c687fe4663e07f1ff8f2533dc8"
+  },
+  "production_pin": {
+    "state_ref": "9e836a90023fdd40e7b56499fce4ad99daf78198",
+    "state_sql_sha256": "b2c05613b361d87331203aaf4aec232428075bc7b31eb2cbfdc1bfc90cb78b47",
+    "profiles": [
+      {
+        "case": "legacy50",
+        "database_sha256": "883970190f545b35a3b6e3bded5ace3dac4cfdbdf2ec201fa2ad9373fd47b344",
+        "unchanged": true,
+        "report": {
+          "version": 1,
+          "status": "recorded",
+          "database_sha256": "883970190f545b35a3b6e3bded5ace3dac4cfdbdf2ec201fa2ad9373fd47b344",
+          "schema_version": 50,
+          "missing_tables": [],
+          "summary": {
+            "errors": 0,
+            "projection_refs_unknown": 408,
+            "saved_columns": 638,
+            "warnings": 0
+          },
+          "findings": [],
+          "references": {},
+          "application_targets": {},
+          "target_links": [],
+          "scope": "Recorded computation/application identities and saved result references.",
+          "exclusions": [
+            "Unknown legacy IDs, keys and request checksums are not reconstructed.",
+            "Input scope, collection owner and application target may legitimately differ.",
+            "Current generation/status is not compared with immutable historical receipts.",
+            "Unsupported target kinds/refs remain opaque; no target is executed.",
+            "Target presence does not revalidate historical application or present slot contents.",
+            "Source associations do not revalidate current owners or source URLs.",
+            "No blob coverage, legal applicability, billing or full-state health verdict."
+          ]
+        }
+      },
+      {
+        "case": "reader51",
+        "database_sha256": "348da5f7f39d8aefa06750edd75ba336bff1443f17bffcfa96e8a2492e16b5f8",
+        "unchanged": true,
+        "report": {
+          "version": 1,
+          "status": "recorded",
+          "database_sha256": "348da5f7f39d8aefa06750edd75ba336bff1443f17bffcfa96e8a2492e16b5f8",
+          "schema_version": 51,
+          "missing_tables": [],
+          "summary": {
+            "applicability_rows": 0,
+            "errors": 0,
+            "projection_refs_unknown": 408,
+            "saved_columns": 638,
+            "warnings": 0
+          },
+          "findings": [],
+          "references": {},
+          "application_targets": {},
+          "target_links": [],
+          "scope": "Recorded computation/application identities and saved result references.",
+          "exclusions": [
+            "Unknown legacy IDs, keys and request checksums are not reconstructed.",
+            "Input scope, collection owner and application target may legitimately differ.",
+            "Current generation/status is not compared with immutable historical receipts.",
+            "Unsupported target kinds/refs remain opaque; no target is executed.",
+            "Target presence does not revalidate historical application or present slot contents.",
+            "Source associations do not revalidate current owners or source URLs.",
+            "No blob coverage, legal applicability, billing or full-state health verdict."
+          ]
+        }
+      }
+    ],
+    "old_graph_fields_equal": true,
+    "processing": false
+  },
+  "corpus": {
+    "ci_observations": 7,
+    "process_observations": 3294,
+    "process_diff": {
+      "after_manifest_sha256": "19f5a8a086d94cc9c96ebffac8f29e38a680e070ed6ef7e6aebc850f6511ff5f",
+      "before_manifest_sha256": "d06b4572cc10ef276b95904bafc0aa1120c31f49605f3037da729895f44adfb9",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "process",
+      "summary_changes": {},
+      "version": 1
+    },
+    "qualified_manifests_verified": true,
+    "external_inputs_labels_unchanged": true
+  },
+  "observers": [
+    {
+      "path": "out/corpus/j085/graph_profile.py",
+      "sha256": "ba7a1badfed7d1d8d16f9ec4086356ae6ddc31c687fe4663e07f1ff8f2533dc8"
+    },
+    {
+      "path": "out/corpus/j085/compare_reports.py",
+      "sha256": "eda9d5475e9fc7364d5d6c575669da79a13e89961a9ecbac6a89677a649610cb"
+    },
+    {
+      "path": "out/corpus/j085/pin_profile.py",
+      "sha256": "9014c0d7aeb3761063bab5930bc006e52e0e73ae75291ba2cc57f1aa18e03083"
+    }
+  ],
+  "rollback": {
+    "code": "J084",
+    "state_changes": false,
+    "migration": false
+  },
+  "exclusions": [
+    "Unknown legacy result IDs and input provenance remain unknown.",
+    "Source metadata and source URLs are not emitted or fetched.",
+    "Historical owner absence does not invalidate recorded source associations.",
+    "No legal applicability, full input coverage, archival, billing or production-cycle verdict.",
+    "116 native configurations are not independent legal initiatives.",
+    "Local HTTP not repeated: no network CLI/wiring/transport changes."
+  ],
+  "reproduction": [
+    "uv run pytest -q tests/scenario/test_applicability_doctor.py tests/scenario/test_computation_doctor.py tests/scenario/test_application_targets.py",
+    "uv run pytest -q && uv run mypy && uv run ruff check src tests tools",
+    "DA_DOCTOR_MODE=baseline PYTHONPATH=out/corpus/j085/baseline/src:out/corpus/j085/baseline:. uv run python out/corpus/j085/graph_profile.py",
+    "DA_DOCTOR_MODE=current PYTHONPATH=src:. uv run python out/corpus/j085/graph_profile.py",
+    "PYTHONPATH=src:. uv run python out/corpus/j085/compare_reports.py"
+  ]
+}
