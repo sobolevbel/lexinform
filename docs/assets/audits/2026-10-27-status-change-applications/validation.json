@@ -1,0 +1,273 @@
+{
+  "version": 1,
+  "stage": "J070",
+  "baseline": "ff890aa334f61eec7c49eaa754ca0c6aa9529a28",
+  "checks": {
+    "before": {
+      "sha256": "14e4708b45d58f2346875ec41b902e0f6da169d354eb718cbf82574621af2c25",
+      "tests": 9,
+      "failures": 8,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.99
+    },
+    "focused": {
+      "sha256": "fead33092279fe78a50c206b16f927c6793fb5f6d12556dca4468c4df0bd326c",
+      "tests": 45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 2.268
+    },
+    "full": {
+      "sha256": "b71818fe3d926a6abd696782af32351687d5292c25fe9945d38d5fb2e3193c90",
+      "tests": 4384,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 632.828
+    },
+    "profile_baseline": {
+      "sha256": "cada0ac45e5f43393cdbcf281bc4bc8d1332387ce5c1d5f2bb9687bf0a80dbdd",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.148
+    },
+    "profile_current": {
+      "sha256": "abf465023a60d804a073797da2a15b6d90ce7c5474737310c62c0632fba6774e",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.827
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 410 source files",
+    "ruff": "All checks passed!",
+    "format": "411 files already formatted"
+  },
+  "changed_runtime": [
+    {
+      "path": "src/lexinform/services/posting.py",
+      "baseline_sha256": "bc6d811c640b6e20a709a2bd7f5326f284863937a6f46966faf7d20506664d7f",
+      "current_sha256": "08897e26bb04166aa380c601e46764e4a5e87e69a44a7358e9b7ea7f917bc042"
+    },
+    {
+      "path": "src/lexinform/services/status_change_applications.py",
+      "baseline_sha256": null,
+      "current_sha256": "b625895ea40c6b726607e27f7dcf14d453826f982af27c093930c0dd4e2ee231"
+    },
+    {
+      "path": "src/lexinform/services/tracking/service.py",
+      "baseline_sha256": "ef7d936c0b0d4590012229f430054b4af4ac8c305038f708d653aea99220af04",
+      "current_sha256": "7fc9983225d54ad332e95a6f13dac8c2189ec492dd83c5f201168d4b76e022f2"
+    }
+  ],
+  "unchanged_runtime": {
+    "count": 141,
+    "path_list_sha256": "7f6df42e41c309d1406ff4b621517ed4b49920de71f25ffa505b26e572d01402"
+  },
+  "before_after": [
+    {
+      "case": "amendments-1",
+      "common_data_and_requests_equal": true,
+      "receipts": 1,
+      "delta": {
+        "sql_bytes": 485,
+        "gzip_bytes": 58,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "supplement-1",
+      "common_data_and_requests_equal": true,
+      "receipts": 1,
+      "delta": {
+        "sql_bytes": 485,
+        "gzip_bytes": 56,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "tracking-1",
+      "common_data_and_requests_equal": true,
+      "receipts": 1,
+      "delta": {
+        "sql_bytes": 485,
+        "gzip_bytes": 89,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "amendments-4",
+      "common_data_and_requests_equal": true,
+      "receipts": 1,
+      "delta": {
+        "sql_bytes": 485,
+        "gzip_bytes": 58,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "supplement-4",
+      "common_data_and_requests_equal": true,
+      "receipts": 1,
+      "delta": {
+        "sql_bytes": 485,
+        "gzip_bytes": 56,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "tracking-4",
+      "common_data_and_requests_equal": true,
+      "receipts": 1,
+      "delta": {
+        "sql_bytes": 485,
+        "gzip_bytes": 89,
+        "sqlite_bytes": 0
+      }
+    }
+  ],
+  "rollback_reader": {
+    "commit": "ff890aa334f61eec7c49eaa754ca0c6aa9529a28",
+    "snapshots": [
+      {
+        "snapshot": "amendments-1.sql",
+        "sha256": "1a37614b49354375fe66f058a922e7d8985143a731689650448bd0fcc6b1028b",
+        "receipts": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "amendments-4.sql",
+        "sha256": "1a37614b49354375fe66f058a922e7d8985143a731689650448bd0fcc6b1028b",
+        "receipts": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "supplement-1.sql",
+        "sha256": "e0882be3cd4f6b2be51a55fc09b0586716842d4530d9acf4f41b057d724d4c60",
+        "receipts": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "supplement-4.sql",
+        "sha256": "e0882be3cd4f6b2be51a55fc09b0586716842d4530d9acf4f41b057d724d4c60",
+        "receipts": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "tracking-1.sql",
+        "sha256": "4ed217a89dac35c4152729c153a082a1e51c6f9191b036b532a2ebc5a391ab43",
+        "receipts": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "tracking-4.sql",
+        "sha256": "4ed217a89dac35c4152729c153a082a1e51c6f9191b036b532a2ebc5a391ab43",
+        "receipts": 1,
+        "roundtrip_equal": true
+      }
+    ]
+  },
+  "production": {
+    "source_state_commit": "98d0bd3267eb8c110945f8fb2d44b1414c58d211",
+    "refresh": "Pinned J069 snapshot, isolated restore/read; no fresh state fetch or processing.",
+    "profile": {
+      "source_sha256": "fc267831b0a010162299b1bd500838466a6f4f6d30618d178f66ade9d416a8da",
+      "source_bytes": 19955778,
+      "sql_sha256": "9c5ec8edee0177041cd4e6bc30778263afc66a4df9c3ece33d30130ec67d1791",
+      "sql_bytes": 19956747,
+      "gzip_bytes": 4074775,
+      "sqlite_bytes": 20938752,
+      "restore_seconds": 0.33570429201063234,
+      "dump_seconds": 0.12529266699857544,
+      "bills": 457,
+      "analysis_records": 166,
+      "projection_sha256": "7fa6760e52135e73f597e30db629624fa77a16ba8f7a7723bedaad110cfa8f33",
+      "memo_sha256": "8f68b1de19cfc7ef421659465d653664765cd5d1ed9187d359f33c697c6417ce",
+      "memos": 141,
+      "schema": {
+        "tables": 19,
+        "indexes": 32,
+        "version": 50
+      },
+      "new_rows": {
+        "computation_results": 0,
+        "result_applications": 0
+      },
+      "known_bill_2699": "analyzed",
+      "integrity": "ok",
+      "foreign_key_errors": 0,
+      "scope": "Isolated restore/read; no pipeline, provider or Telegram call; no legacy history backfill."
+    }
+  },
+  "corpus": [
+    {
+      "id": "j070-ci",
+      "manifest_sha256": "2e4f34e4b02acebad885911f09f500b011fb4596affd219a5b06eae0161ab45b",
+      "observations": 7,
+      "status": "passed",
+      "command": [
+        "/Users/sobaleu/projects/lexinform/.venv/bin/python",
+        "-m",
+        "tools.corpus_check",
+        "--corpus",
+        "/Users/sobaleu/projects/lexinform/tests/fixtures/corpus_check",
+        "--output",
+        "/Users/sobaleu/projects/lexinform/out/corpus/runs/j070-ci/result.json"
+      ]
+    },
+    {
+      "id": "j070-process",
+      "manifest_sha256": "0cd5112baa96cc39c376f432f8fd7ad44ad4f686dac38297f1fc45e5580b7c05",
+      "observations": 3294,
+      "status": "recorded",
+      "command": [
+        "/Users/sobaleu/projects/lexinform/.venv/bin/python",
+        "-m",
+        "tools.corpus_legacy_suites",
+        "--corpus",
+        "/Users/sobaleu/projects/lexinform-corpus",
+        "--output",
+        "/Users/sobaleu/projects/lexinform/out/corpus/runs/j070-process/result.json",
+        "--kind",
+        "process"
+      ]
+    }
+  ],
+  "process_diff": {
+    "after_manifest_sha256": "0cd5112baa96cc39c376f432f8fd7ad44ad4f686dac38297f1fc45e5580b7c05",
+    "before_manifest_sha256": "2ac93e56c7622e820f2a1e063ce1c28d67478521a3660f21a3d7a8f2903734cc",
+    "changed_inputs": [],
+    "changes": [],
+    "scope": "Observation differences, not an independent legal accuracy verdict",
+    "status": "same",
+    "suite": "process",
+    "summary_changes": {},
+    "version": 1
+  },
+  "observers": [
+    {
+      "path": "out/corpus/j070/event_profile.py",
+      "sha256": "c66639ff00b44075405cd0ac5fc60426f22e6ec3c41a597766fe2a9b53429152",
+      "source": "import gzip\nimport hashlib\nimport json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nimport lexinform\n\nfrom lexinform.models import AmendmentsRecord, PublicationKind, StatusChange, SupplementRecord\nfrom lexinform.services.analysis import Waiting\nfrom tests.scenario.test_secondary_scan_input import ask, ready_world\nfrom tests.scenario.test_tracking_batch import tracked_world\n\n\ndef snapshot(world, output, name):\n    raw = world.repo.dump().encode()\n    (output / f'{name}.sql').write_bytes(raw)\n    with closing(sqlite3.connect(':memory:')) as db:\n        db.executescript(raw.decode())\n        assert db.execute('PRAGMA integrity_check').fetchone() == ('ok',)\n        assert not db.execute('PRAGMA foreign_key_check').fetchall()\n        data = {}\n        for (table,) in db.execute(\"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name\").fetchall():\n            query = f'SELECT * FROM {table}'\n            if table == 'result_applications':\n                query += ' WHERE generation IS NOT NULL'\n            rows = sorted(json.dumps(row, ensure_ascii=False) for row in db.execute(query))\n            data[table] = hashlib.sha256(json.dumps(rows).encode()).hexdigest()\n        sqlite_bytes = len(db.serialize())\n    return {'data': data, 'sql_bytes': len(raw), 'gzip_bytes': len(gzip.compress(raw, mtime=0)), 'sqlite_bytes': sqlite_bytes, 'applications': [row.model_dump(mode='json') for row in world.repo.list_result_applications(10, '3039') if row.target is not None]}\n\n\ndef test_profile():\n    assert Path(lexinform.__file__).resolve().parents[2] == Path(os.environ['DA_EXPECTED_CODE']).resolve()\n    output = Path(os.environ['DA_EVENT_PROFILE_OUTPUT'])\n    output.mkdir()\n    profiles = {}\n    for workers in (1, 4):\n        for kind in ('amendments', 'supplement'):\n            world = ready_world(workers=workers)\n            assert isinstance(ask(world, kind), Waiting)\n            world.analysis.submit_queued_batches()\n            world.batch.resolve()\n            world.analysis.collect_batches()\n            world.repo.restore(world.repo.dump())\n            world.analysis.start_run()\n            record = ask(world, kind)\n            assert isinstance(record, (AmendmentsRecord, SupplementRecord))\n            event = StatusChange(term=10, number='3039', old_fingerprint='before', new_fingerprint='after', new_stages=[], detected_at=world.clock.now(), amendments=record if kind == 'amendments' else None, supplements=[record] if kind == 'supplement' else [])\n            poster = world.container.poster(dry_run=False)\n            assert poster.record_change(event) is not None\n            world.repo.restore(world.repo.dump())\n            assert poster.record_change(event) is None\n            name = f'{kind}-{workers}'\n            profiles[name] = snapshot(world, output, name)\n            profiles[name]['requests'] = [request.model_dump(mode='json') for request in world.batch.submitted]\n            world.repo.close()\n        world = tracked_world(workers=workers)\n        world.run()\n        world.batch.resolve()\n        report = world.run()\n        world.repo.restore(world.repo.dump())\n        world.run()\n        name = f'tracking-{workers}'\n        profiles[name] = snapshot(world, output, name)\n        profiles[name]['requests'] = [request.model_dump(mode='json') for request in world.batch.submitted]\n        profiles[name]['report'] = report.model_dump(mode='json')\n        profiles[name]['messages'] = world.publisher.texts(PublicationKind.STATUS_UPDATE)\n        assert len(profiles[name]['messages']) == 1\n        world.repo.close()\n    (output / 'profiles.json').write_text(json.dumps(profiles, ensure_ascii=False, indent=2) + '\\n')\n"
+    },
+    {
+      "path": "out/corpus/j070/read_new_targets.py",
+      "sha256": "6331fbbf6ce10eefb52bf13ebd08419c7012e35ae07addd95a4c0ebe4535924d",
+      "source": "import hashlib\nimport json\nimport os\nfrom pathlib import Path\n\nimport lexinform\nfrom lexinform.adapters.sqlite_repo import SqliteBillRepository\n\nassert Path(lexinform.__file__).resolve().parents[2] == Path(os.environ['DA_EXPECTED_CODE']).resolve()\ndirectory = Path(os.environ['DA_EVENT_PROFILE_OUTPUT'])\nobservations = []\nfor path in sorted(directory.glob('*.sql')):\n    raw = path.read_bytes()\n    repo = SqliteBillRepository(':memory:')\n    repo.migrate()\n    repo.restore(raw.decode())\n    assert repo.schema_version == 50\n    assert repo.get(10, '3039') is not None\n    receipts = [row for row in repo.list_result_applications(10, '3039') if row.target is not None]\n    assert len(receipts) == 1 and receipts[0].target.kind == 'status_change'\n    assert repo.dump().encode() == raw\n    observations.append({'snapshot': path.name, 'sha256': hashlib.sha256(raw).hexdigest(), 'receipts': len(receipts), 'roundtrip_equal': True})\n    repo.close()\nassert len(observations) == 6\nPath(os.environ['DA_READER_OUTPUT']).write_text(json.dumps(observations, indent=2) + '\\n')\n"
+    }
+  ],
+  "limitations": [
+    "Metadata-only application receipts; no extraction, selection, provider payload or delivery-policy change.",
+    "Corpus replay retains its existing metadata/cached/synthetic exclusions and is not new independent legal labelling.",
+    "No new act review submissions, paid experiments, production pipeline or Telegram calls.",
+    "Legacy completed results and old event supplements are not backfilled.",
+    "Fixture size deltas are not a production-growth forecast.",
+    "J069/schema50 is the minimum rollback reader after target rows exist."
+  ]
+}

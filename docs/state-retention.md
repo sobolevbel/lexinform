@@ -61,6 +61,12 @@ identity duplicates. Primary receipts keep their original JSON and generation; t
 are enabled separately. Unknown namespaces remain readable metadata and never execute work.
 See [J069](plans/2026-10-22-document-architecture-progress.md#j069) for the migration and
 pre-producer rollback bridge; v49 is not a rollback reader for future explicit-target rows.
+New status changes retain a `status_change` receipt for each paid amendments/supplement result
+actually stored in the event. The event's persisted ID addresses the target; late amendments
+record only their own application. Event, receipt and enclosing observation/delivery work share
+one transaction. Repeated fingerprints and legacy records without a result ref add no receipts;
+old supplements are not backfilled by a later amendment. This is application evidence, not
+content-version history or delivery confirmation. The minimum rollback reader is J069.
 All service writes of primary analysis use `services.analysis_applications.apply_analysis`:
 the primary service, RCL watcher, wykaz handover and RPW/RCL-to-print linker share one command.
 A projection receipt commits with `Bill.analysis` and records the actual target row's
@@ -74,7 +80,7 @@ and delivery work. Waiting secondary work leaves the current analysis and ready 
 The reanalysis counter advances after that commit; paid usage remains in the existing call ledger.
 Preparation and quiet source checks do not create projection receipts. Ready does not prove
 application or publication, and applied does not prove delivery. Direct identity relocation
-at term rollover and secondary application receipts remain in
+at term rollover and the remaining secondary application receipts stay in
 [DA6](plans/2026-10-22-document-architecture.md#da6).
 Result, collection decision, memo/ready changes and consumed checkpoint commit together;
 run cost acknowledgement retains its existing mechanism.

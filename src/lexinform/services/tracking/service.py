@@ -62,6 +62,7 @@ from lexinform.services.document_reviews import DocumentReviews
 from lexinform.services.posting import Poster
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.sources import SejmTextSource, fetch_print
+from lexinform.services.status_change_applications import apply_status_change_amendments
 from lexinform.services.tracking.acts import ActWatcher
 from lexinform.services.tracking.agenda import AgendaWatcher
 from lexinform.services.tracking.cards import CardRefresher
@@ -894,7 +895,9 @@ class StatusTrackingService:
             with_act=saved.with_act,
         )
         with self._repo.atomic():
-            self._repo.save_status_change_amendments(work.change_id, record)
+            apply_status_change_amendments(
+                self._repo, work.change_id, record, now=self._clock.now()
+            )
             self._repo.create_publication(
                 Publication(
                     term=work.term,

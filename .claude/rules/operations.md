@@ -16,6 +16,7 @@ paths:
   - "src/lexinform/services/listener.py"
   - "src/lexinform/services/digest.py"
   - "src/lexinform/services/document_reviews.py"
+  - "src/lexinform/services/status_change_applications.py"
   - "src/lexinform/services/senate_documents.py"
   - "src/lexinform/services/amendments.py"
   - "src/lexinform/services/delivery_notifier.py"
@@ -136,6 +137,7 @@ Command reference and the relay: `docs/operator-commands.md`.
 - **Projection receipts** name the actual target and commit with its state; memo deposit/reuse alone
   is not application. Non-primary targets use namespace/ref, never a borrowed primary generation.
   Target identities are metadata, not executable work; unknown namespaces remain readable.
+  Status-change receipts use the saved event ID; late amendments do not backfill old supplements.
 - **Document reviews** use separate secondary batch purposes and exact source citations.
   Participant positions never prove acceptance, project analyses never prove final-act
   applicability; commission reviews across RCL, Sejm and Senate keep proposals, recommendations and

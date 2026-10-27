@@ -146,3 +146,10 @@ def test_late_batch_keeps_its_context_when_the_source_disappears_after_submissio
     change = world.repo.list_status_changes(10, "1929")[-1]
     assert change.amendments is not None
     assert change.amendments.source_url == url
+    assert change.amendments.computation_id is not None
+    receipts = [
+        row for row in world.repo.list_result_applications(10, "1929") if row.target is not None
+    ]
+    assert len(receipts) == 1 and receipts[0].result_id == change.amendments.computation_id
+    assert receipts[0].target is not None and receipts[0].target.kind == "status_change"
+    assert receipts[0].target.ref == str(change.id)

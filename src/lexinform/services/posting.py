@@ -53,6 +53,7 @@ from lexinform.services.publications import (
     send_publications,
 )
 from lexinform.services.sources import fetch_print
+from lexinform.services.status_change_applications import record_status_change
 from lexinform.services.tracking_result import TrackingResult
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 from lexinform.usefulness import digest_reason
@@ -670,19 +671,8 @@ class Poster:
         return saved.completed
 
     def record_change(self, change: StatusChange) -> StatusChange | None:
-        """Write the change down before anything is said about it; None when an earlier run
-        recorded it already (the row is unique per bill and fingerprint), which is what keeps
-        the same news from going out twice.
-
-        The change comes back carrying its `id`, so the caller never has to fill it in — which
-        is half of a prologue that stood in seven places, each free to forget a piece of it.
-        (`record` is the same idea for a publication row and is a different table.)
-        """
-        change_id = self._repo.add_status_change(change)
-        if change_id is None:
-            return None
-        change.id = change_id
-        return change
+        """Store a change and its receipts, returning None for an existing fingerprint."""
+        return record_status_change(self._repo, change, now=self._clock.now())
 
     def tell(
         self,

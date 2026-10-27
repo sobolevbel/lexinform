@@ -3528,3 +3528,53 @@ DA6.1 отмечен выполненным как infrastructure contract; DA6.
 secondary projection producers. Локальные outputs: `out/corpus/j069`, registry runs `j069-*`.
 План: **74 задачи, 12 выполнены, 62 не закрыты**; среди оставшихся есть условные/deferred пункты.
 Цель всего плана остаётся active.
+
+J069 выпущен: `ff890aa334f61eec7c49eaa754ca0c6aa9529a28`,
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40450211690) success:
+**4374 passed / 32 deselected**, strict mypy 408 файлов, lint/web/docs green.
+[Deploy relay](https://github.com/sobolevbel/lexinform/actions/runs/40450874041) success:
+exact COMMIT, `ada1415da945 → ff890aa334f6`, сервис up 45 s после restart.
+Evidence: `out/corpus/j069/release.json`. Production processing вручную не запускался.
+
+<a id="j070"></a>
+### J070. DA6: applications к StatusChange и поздним amendments
+
+Дата: 27 октября 2026. База: `ff890aa334f61eec7c49eaa754ca0c6aa9529a28`.
+Статус: реализован и принят локально; выпуск проверяется отдельно.
+
+`Poster.record_change` сохраняет новое событие и короткие receipts оплаченных amendments и
+supplements в одной транзакции. Target использует namespace `status_change` и фактический ID
+сохранённого события, без primary generation. Один оплаченный результат может примениться
+к двум событиям без второго computation/request. Повтор fingerprint не создаёт новый receipt.
+
+Поздние amendments используют тот же command boundary внутри существующего checkpoint
+с revision delivery work и завершением document work. Записывается применение только новых
+amendments; старые supplements в этом событии не backfilled. Legacy records без computation ref
+сохраняют прежнее поведение. Receipt не означает доставку и не заменяет content versions DA7.
+
+Qualified before: **8 failures / 1 passed**. Targeted **45 passed**: workers=1/4, несколько
+событий с одним результатом, dump/restore, duplicate fingerprint, receipt fault rollback,
+outer observation/delivery fault rollback, поздний batch после исчезновения source URL и
+запрет implicit backfill старого supplement.
+
+Шесть World before/after cases сохраняют exact requests, отчёты, reader messages и данные
+общих таблиц. Каждый новый receipt: SQL +485 bytes, gzip +56–89 bytes, SQLite delta 0 в этих
+fixtures; это не прогноз production growth. J069 reader восстановил все шесть новых snapshots
+и сделал побайтово одинаковый dump. Минимальный rollback reader — J069/schema50; новой миграции
+нет. Source selection/extraction, модели, настройки, provider calls и delivery policy прежние.
+
+Corpus CI **7 passed**, process **3294 observations**, zero changed decisions/inputs.
+Сохранены прежние exclusions metadata/cached/synthetic coverage; human labels не добавлялись.
+Локальные outputs: `out/corpus/j070`, registry runs `j070-*`.
+Следующий участок DA6 — review и остальные secondary projection checkpoints; общий goal active.
+
+Acceptance: full **4384 passed**, errors/failures/skips/xfails 0, 632.828 s;
+strict mypy 410 файлов, Ruff src/tests/tools, format, strict docs/links и diff check green.
+Local HTTP не нужен: CLI/wiring/network adapters прежние. На pinned production snapshot J069
+сохранились exact SQL/размеры, projection/memo hashes и **457 bills / 166 analyses / 141 memos**,
+integrity ok/FK 0; выполнялся только изолированный restore/read, без свежего fetch/processing.
+
+[Acceptance evidence](../assets/audits/2026-10-27-status-change-applications/validation.json)
+содержит XML/source hashes, шесть профилей, rollback snapshots, corpus manifests и observers.
+Source extraction/selection и LLM payloads не менялись. DA6.2/DA6.3 остаются partial: другие
+secondary targets и rollover ещё открыты. План: **74 задачи, 12 выполнены, 62 не закрыты**.
