@@ -106,6 +106,15 @@ Preparation and quiet source checks do not create projection receipts. Ready doe
 application or publication, and applied does not prove delivery. Direct identity relocation
 at term rollover and the remaining applicability history stay in
 [DA6](plans/2026-10-22-document-architecture.md#da6).
+Schema v51 adds a reader for compact `result_applicability` observations. The source association
+contains the known paid ref, owner scope, URL/kind, recorded fingerprints and first recording time.
+It neither copies the answer/input nor certifies archived bytes or complete input coverage.
+Repeated saves retain the first time without a row per poll. Unknown legacy refs are not backfilled.
+A paid scan manifest remains original input provenance and is excluded from the current selection
+metadata fingerprint. No production producer writes these observations yet; new reads do not alter
+reuse, delivery or cost policy. The additive table survives a J082 restore/dump unchanged, including
+future-populated fixtures; rollback keeps schema 51 rather than downgrading it.
+See [J083](plans/2026-10-22-document-architecture-progress.md#j083).
 Result, collection decision, memo/ready changes and consumed checkpoint commit together;
 run cost acknowledgement retains its existing mechanism.
 Primary handoff to an assigned druk moves only unconsumed `analysis`/`reanalysis` items,

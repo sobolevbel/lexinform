@@ -34,3 +34,4 @@ Schema, tables and what each version added: `docs/reference/database.md`; retent
 - Retention keeps publication identities, batch token accounting and the last discovery watermark;
   it never expires uncertain work or a memo needed by pending analysis, tracking or delivery; legacy
   memos without ownership stay protected.
+- Applicability observations retain known source fingerprints separately from immutable paid input; unknown legacy refs stay unknown, and repeated observations preserve the first recording time without adding a row per poll.

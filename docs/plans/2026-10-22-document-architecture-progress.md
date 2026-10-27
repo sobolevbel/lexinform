@@ -4180,3 +4180,67 @@ DB hashes сохранены, warning count на native fixtures 0. Source pin `
 Local HTTP не повторён: network CLI/wiring/transports прежние. План: **74 задачи, 14 выполнены,
 60 unchecked** (DA8.3 неприменим); goal active. Следующий фрагмент — DA6.4 applicability
 observations, с отделением known current fingerprints от original paid-input provenance.
+
+<a id="j083"></a>
+### J083. DA6.4: reader for compact applicability observations
+
+Дата: 27 октября 2026. База: J082 (`0b05a4f9a51bdb38c533bc0224f9254aec6f371e`). Статус: принято локально; deployment проверяется отдельно.
+
+Derivability characterization **1 passed**: один paid ID сохраняется при pointer A → B → C,
+но B исчезает из final Bill/result/applications/memo. `source_checks` содержит health/aspect
+timestamps, а не связь paid result ↔ source version. Поэтому эту историю нельзя достроить из
+нынешней проекции. Используется source-command-migration; append-only migration **51** добавляет
+`result_applicability` с FK к paid result. Все **50** прежних SQL scripts неизменны.
+
+Новый frozen reader хранит только scope, result ref, URL/kind, opaque recorded text/law fingerprints,
+selection metadata SHA и время записи связи. Timestamp исключён из identity; повторное сохранение
+сохраняет первое время и не растит dump. Paid scan_input и текст исключены из selection fingerprint:
+original paid derivative не доказывает newly observed input. Unknown legacy IDs/fingerprints
+не backfilled. Producer пока не подключён; reader сам не меняет текущую applicability policy.
+
+Первый targeted выявил два fixture defects: unsupported make_analysis(summary=…) и legacy-v20
+fixture, оставлявший новую таблицу перед replay migration 51. Исправлены только arrangements;
+миграции и consistency guards не ослаблены. Fresh state fetched `9e836a90023fdd40e7b56499fce4ad99daf78198`
+(27.10 10:57:20 UTC); последуют isolated restore/read и сравнение с J082, без pipeline/model/Telegram.
+Rollback проверяется по фактическому round trip, без попытки schema downgrade.
+
+J082 release проверен по `0b05a4f9a51bdb38c533bc0224f9254aec6f371e`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40497785248) — **4696 passed**,
+strict mypy 426 файлов, Ruff, docs/web success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40498578658) — exact COMMIT,
+`3d9c420bf9ac -> 0b05a4f9a51b`, listener up 45 s. Pipeline или live processing не запускался.
+
+Reader QA: **116** сохранённых native configuration flows после миграции сохранили все старые
+табличные данные. В отдельные future-populated fixtures добавлены **98** associations только
+для известных refs/current metadata. Current reader сохраняет их при точном round trip;
+старый J082 reader сохраняет весь заполненный SQL **побайтно** и оставляет schema 51.
+Это реальная rollback boundary, без downgrade и без заявления нового production цикла.
+Временный observer сначала не нашёл annotated `MIGRATIONS` через AST Assign; исправлен на
+AnnAssign, первый ошибочный запуск сохранён отдельно. Runtime guards не ослаблялись.
+
+Fresh production pin `9e836a9`, SHA `b2c05613b361d87331203aaf4aec232428075bc7b31eb2cbfdc1bfc90cb78b47`:
+**457 bills, 166 analyses, 141 memos**, known bill 2699 readable, integrity ok/FK errors 0.
+Все projections/memos и старые table rows прежние; новая таблица пустая, results/applications 0.
+SQL **19,509,831 → 19,510,181 bytes** (+350), gzip **3,956,261 → 3,956,311** (+50),
+SQLite **20,488,192 → 20,500,480** (+12,288). Profile restore 0.419 → 0.411 s,
+dump 0.132 → 0.127 s: единичные локальные измерения, не latency benchmark сети.
+Corpus CI **7 passed**, process **3294 observations**, changed inputs/decisions 0;
+индекс и оригиналы корпуса не менялись. Derivability report уточнён и повторён **1 passed**.
+Параллельный завершённый docs-only коммит `af0bfdc` сохранён без изменения runtime/model flags;
+его отчёт не является частью архитектурного эксперимента.
+
+Дополнительный read-only source metadata profile охватил все **166** сохранённых analyses:
+**71 known source signature / 95 unknown**. Записанные versioned fingerprints сохранены
+дословно; legacy paid IDs отсутствуют и не создаются, dump не изменился. Это чтение текущих
+метаданных, без утверждения о наличии исторических bytes или новом extraction replay.
+
+Final acceptance J083: **4724 passed**, failures/errors/skips/xfails 0, **593.574 s**;
+targeted **81 passed**, derivability **1 passed**, strict mypy **429** файлов,
+Ruff src/tests/tools, format src/tests, docs/links и diff check green.
+[Acceptance evidence](../assets/audits/2026-10-27-applicability-reader/validation.json)
+содержит XML/source hashes, fresh state profile, old-row equality, 116 future-populated round trips,
+rollback J082 и source metadata coverage. Все 50 deployed migrations byte-identical;
+producer, source selection, matching, prompts, retry/delivery и default flags прежние.
+Rollback сохраняет заполненную schema 51 без downgrade. Local HTTP не повторён:
+network CLI/wiring/transports прежние. DA6.4 остаётся частичным до producer и остальных scopes.
+План **74 задачи, 14 выполнены, 60 unchecked** (DA8.3 неприменим); goal active.

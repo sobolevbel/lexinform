@@ -1,13 +1,13 @@
 # База данных и миграции
 
-Статус: актуальный справочник · проверен 27 октября 2026 по локальному коду, схема **v50**.
+Статус: актуальный справочник · проверен 27 октября 2026 по локальному коду, схема **v51**.
 
 Источник истины — append-only
 [`MIGRATIONS` в sqlite_repo.py](https://github.com/sobolevbel/lexinform/blob/main/src/lexinform/adapters/sqlite_repo.py).
 `SCHEMA_VERSION = len(MIGRATIONS)`, версия конкретной базы — `PRAGMA user_version`.
-После всех миграций: **19 таблиц, 32 явных индекса
-(15 обычных и 17 уникальных), 6 внешних ключей**. Автоиндексы `PRIMARY KEY` и
-`UNIQUE` в эти 32 не входят. Копия production dump также восстановлена в v50:
+После всех миграций: **20 таблиц, 33 явных индекса
+(16 обычных и 17 уникальных), 7 внешних ключей**. Автоиндексы `PRIMARY KEY` и
+`UNIQUE` в эти 33 не входят. Копия production dump также восстановлена в v51:
 `integrity_check=ok`, `foreign_key_check` не вернул ошибок.
 
 ## Визуальная схема
@@ -30,6 +30,7 @@ HTML содержит снимок v34, включая SQL ограничени�
 | `analysis_memo` | `key` | Результат LLM по содержимому, цели и контексту; владелец `(term, number)` и `last_used_at`. |
 | `computation_results` (v49) | `result_id`; уникальный `(provider, batch_id, custom_id)` | Неизменяемый normalized primary/secondary result либо failure receipt, исходный usage и schema version; без файлов и полных входов. |
 | `result_applications` (v49/v50) | Local `id`; unique primary generation identity или explicit target namespace/ref | Collection decision и projection receipt; target хранится в JSON и индексируется без дополнительных columns. Primary applications используют `apply_analysis`; secondary producers ещё подключаются. Доставку не подтверждает. |
+| `result_applicability` (v51) | `observation_id`; FK на `result_id`, owner index `(term, number)` | Неизменяемая связь известного paid result с наблюдаемой версией source: URL/kind, записанные fingerprints, metadata SHA и первое время записи; без текстов, raw и копии ответа. Reader готов, production producer ещё не включён. |
 | `llm_batches` | `batch_id` | Провайдер, состояние batch, оценка стоимости и даты опроса, завершения и очистки. |
 | `llm_batch_items` | `(batch_id, custom_id)` | Задание для bill, метаданные, результат, `consumed_at` и отдельный `accounted_at`. |
 | `llm_batch_intents` | `custom_id` | Сохранённые запросы до отправки провайдеру и состояние попытки. |
@@ -44,7 +45,8 @@ SQL объявляет внешние ключи:
 `publications.status_change_id → status_changes.id` и
 `llm_batch_items.batch_id → llm_batches.batch_id`;
 `digest_event_links.source_publication_id/owner_publication_id → publications.id` (v40) и
-`result_applications.result_id → computation_results.result_id` (v49).
+`result_applications.result_id → computation_results.result_id` (v49) и
+`result_applicability.result_id → computation_results.result_id` (v51).
 Связи по `(term, number)`, ссылки аудита на публикацию и команду — логические,
 без `FOREIGN KEY`. Дайджест относится к неделе и каналу, а не к одному законопроекту.
 
@@ -96,6 +98,15 @@ SQL CHECK исключает incomplete targets и NULL-identity duplicates. Pri
 прежним, порядок старых rows сохраняется. Local id не является бизнес-идентификатором.
 Новых target producers и application backfill эта миграция не включает. См.
 [J069](../plans/2026-10-22-document-architecture-progress.md#j069).
+
+V51 добавляет только reader и новую пустую таблицу applicability observations, без backfill.
+Identity включает paid ref, owner scope и source fingerprints; время первой записи исключено
+из identity. Повторное сохранение сохраняет первое время и не увеличивает dump. Записанные
+text/law fingerprints остаются opaque versioned значениями. Metadata SHA исключает текст и
+`scan_input`: исходный оплаченный scan manifest не доказывает новый фактический input.
+Изолированная свежая копия state сохранила все 457 Bill и 141 memo; прирост пустой схемы —
+350 SQL bytes / 50 gzip bytes. J082 reader сохраняет заполненную v51 побайтно при restore/dump,
+без schema downgrade. Приёмка: [J083](../plans/2026-10-22-document-architecture-progress.md#j083).
 
 ## Снимки и обработанное состояние
 

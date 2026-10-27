@@ -36,6 +36,10 @@ from lexinform.models.analysis import (
     merge_usage,
     usage_of,
 )
+from lexinform.models.applicability import ApplicabilitySource as ApplicabilitySource
+from lexinform.models.applicability import (
+    ResultApplicabilityObservation as ResultApplicabilityObservation,
+)
 from lexinform.models.attention import AttentionAssessment as AttentionAssessment
 from lexinform.models.batch import (
     AmendmentRevisionTarget,

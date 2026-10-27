@@ -1001,9 +1001,10 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     assert "supplements_json" in changes  # v18
     assert "consultation_opened" in changes
     assert "analysis_memo" in tables
-    assert {"computation_results", "result_applications"} <= tables
+    assert {"computation_results", "result_applications", "result_applicability"} <= tables
     assert not repo.list_computation_results(10, "RPW/1/2026")
     assert not repo.list_result_applications(10, "RPW/1/2026")
+    assert not repo.list_applicability_observations(10, "RPW/1/2026")
     assert {"term", "number", "last_used_at"} <= memo
     assert "ix_analysis_memo_retention" in indexes
     assert "commands" in tables  # v13
@@ -1369,6 +1370,7 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
         conn.execute("DROP TABLE digest_event_links")
         conn.execute("DROP TABLE document_work")
         conn.execute("DROP TABLE result_applications")
+        conn.execute("DROP TABLE result_applicability")
         conn.execute("DROP TABLE computation_results")
         conn.execute("PRAGMA user_version = 20")
     dump = source.dump()

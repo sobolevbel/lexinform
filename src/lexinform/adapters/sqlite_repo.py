@@ -57,6 +57,7 @@ from lexinform.models import (
     PublicationStatus,
     RclProject,
     ReadyAnalysis,
+    ResultApplicabilityObservation,
     ResultApplication,
     ReviewSource,
     ReviewWork,
@@ -560,6 +561,16 @@ MIGRATIONS: tuple[str, ...] = (
       WHERE generation IS NULL;
     CREATE INDEX ix_result_application_owner ON result_applications(term, number, generation);
     """,
+    """
+    CREATE TABLE result_applicability (
+        observation_id TEXT PRIMARY KEY NOT NULL,
+        result_id TEXT NOT NULL REFERENCES computation_results(result_id),
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        observation_json TEXT NOT NULL
+    );
+    CREATE INDEX ix_result_applicability_owner ON result_applicability(term, number);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -965,6 +976,63 @@ class SqliteBillRepository:
             ComputationResult.model_validate_json(row[0])
             for row in self._conn.execute(query + " ORDER BY rowid", parameters)
         ]
+
+    def save_applicability_observation(self, observation: ResultApplicabilityObservation) -> None:
+        validated = ResultApplicabilityObservation.model_validate_json(
+            observation.model_dump_json()
+        )
+        if validated.observation_id != observation.observation_id:
+            raise ValueError("an applicability observation must keep its validated identity")
+        observation = validated
+        self._conn.execute(
+            "INSERT INTO result_applicability"
+            " (observation_id, result_id, term, number, observation_json) VALUES (?, ?, ?, ?, ?)"
+            " ON CONFLICT DO NOTHING",
+            (
+                observation.observation_id,
+                observation.result_id,
+                observation.term,
+                observation.number,
+                observation.model_dump_json(),
+            ),
+        )
+        saved = self.get_applicability_observation(observation.observation_id)
+        assert saved is not None, "the insert retains the observation under its immutable identity"
+        if saved != observation.model_copy(update={"created_at": saved.created_at}):
+            raise ValueError("an immutable applicability observation cannot be replaced")
+
+    def get_applicability_observation(
+        self, observation_id: str
+    ) -> ResultApplicabilityObservation | None:
+        row = self._conn.execute(
+            "SELECT * FROM result_applicability WHERE observation_id=?", (observation_id,)
+        ).fetchone()
+        return self._applicability_observation(row) if row else None
+
+    def list_applicability_observations(
+        self, term: int, number: str
+    ) -> list[ResultApplicabilityObservation]:
+        return [
+            self._applicability_observation(row)
+            for row in self._conn.execute(
+                "SELECT * FROM result_applicability WHERE term=? AND number=? ORDER BY rowid",
+                (term, number),
+            )
+        ]
+
+    @staticmethod
+    def _applicability_observation(row: sqlite3.Row) -> ResultApplicabilityObservation:
+        observation = ResultApplicabilityObservation.model_validate_json(row["observation_json"])
+        expected = (
+            observation.observation_id,
+            observation.result_id,
+            observation.term,
+            observation.number,
+        )
+        stored = tuple(row[key] for key in ("observation_id", "result_id", "term", "number"))
+        if expected != stored:
+            raise ValueError("applicability observation columns differ from the recorded identity")
+        return observation
 
     def save_result_application(self, application: ResultApplication) -> None:
         identity = (

@@ -64,6 +64,7 @@ from lexinform.models import (
     RclProjectSummary,
     RclStage,
     ReadyAnalysis,
+    ResultApplicabilityObservation,
     ResultApplication,
     ReviewPurpose,
     ReviewSource,
@@ -621,6 +622,18 @@ class BillRepository(Protocol):
     def save_result_application(self, application: ResultApplication) -> None: ...
 
     def list_result_applications(self, term: int, number: str) -> list[ResultApplication]: ...
+
+    def save_applicability_observation(
+        self, observation: ResultApplicabilityObservation
+    ) -> None: ...
+
+    def get_applicability_observation(
+        self, observation_id: str
+    ) -> ResultApplicabilityObservation | None: ...
+
+    def list_applicability_observations(
+        self, term: int, number: str
+    ) -> list[ResultApplicabilityObservation]: ...
 
     def save_review_work(self, term: int, number: str, work: tuple[ReviewWork, ...]) -> None: ...
 
