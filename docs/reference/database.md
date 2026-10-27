@@ -30,7 +30,7 @@ HTML содержит снимок v34, включая SQL ограничени�
 | `analysis_memo` | `key` | Результат LLM по содержимому, цели и контексту; владелец `(term, number)` и `last_used_at`. |
 | `computation_results` (v49) | `result_id`; уникальный `(provider, batch_id, custom_id)` | Неизменяемый normalized primary/secondary result либо failure receipt, исходный usage и schema version; без файлов и полных входов. |
 | `result_applications` (v49/v50) | Local `id`; unique primary generation identity или explicit target namespace/ref | Collection decision и projection receipt; target хранится в JSON и индексируется без дополнительных columns. Primary applications используют `apply_analysis`; secondary producers ещё подключаются. Доставку не подтверждает. |
-| `result_applicability` (v51) | `observation_id`; FK на `result_id`, owner index `(term, number)` | Неизменяемая связь известного paid result с наблюдаемой версией source: URL/kind, записанные fingerprints, metadata SHA и первое время записи; без текстов, raw и копии ответа. Reader готов, production producer ещё не включён. |
+| `result_applicability` (v51) | `observation_id`; FK на `result_id`, owner index `(term, number)` | Неизменяемая связь известного paid result с наблюдаемой версией source: URL/kind, записанные fingerprints, metadata SHA и первое время записи; без текстов, raw и копии ответа. Primary producer записывает связь атомарно с проекцией через `apply_analysis`; unknown legacy пропускается. |
 | `llm_batches` | `batch_id` | Провайдер, состояние batch, оценка стоимости и даты опроса, завершения и очистки. |
 | `llm_batch_items` | `(batch_id, custom_id)` | Задание для bill, метаданные, результат, `consumed_at` и отдельный `accounted_at`. |
 | `llm_batch_intents` | `custom_id` | Сохранённые запросы до отправки провайдеру и состояние попытки. |
@@ -107,6 +107,12 @@ text/law fingerprints остаются opaque versioned значениями. Me
 Изолированная свежая копия state сохранила все 457 Bill и 141 memo; прирост пустой схемы —
 350 SQL bytes / 50 gzip bytes. J082 reader сохраняет заполненную v51 побайтно при restore/dump,
 без schema downgrade. Приёмка: [J083](../plans/2026-10-22-document-architecture-progress.md#j083).
+
+[J084](../plans/2026-10-22-document-architecture-progress.md#j084) включает primary producer
+через общий `apply_analysis`: связь пишется с проекцией, включая reuse неизменного результата
+для нового source pointer. Collect и preparation без применения связи не создают.
+Отдельный дублирующий application receipt не добавляется. Rollback reader J083 сохраняет
+заполненную таблицу; source selection, paid input и current reuse policy прежние.
 
 ## Снимки и обработанное состояние
 

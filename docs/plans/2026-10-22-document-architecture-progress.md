@@ -4244,3 +4244,51 @@ producer, source selection, matching, prompts, retry/delivery и default flags �
 Rollback сохраняет заполненную schema 51 без downgrade. Local HTTP не повторён:
 network CLI/wiring/transports прежние. DA6.4 остаётся частичным до producer и остальных scopes.
 План **74 задачи, 14 выполнены, 60 unchecked** (DA8.3 неприменим); goal active.
+
+<a id="j084"></a>
+### J084. DA6.4: atomic primary applicability writer
+
+Дата: 27 октября 2026. База: J083 (`28e9b1eaca25708e6b849b4072cef10eee7c8b83`). Статус: принято локально; deployment проверяется отдельно.
+
+Общий `apply_analysis` сохраняет компактную source association в уже существующей atomic
+projection transaction. Это текущие известные metadata и связь с paid result, не исходный
+оплаченный input или заявление о сохранённых bytes. Collect/preparation сами связь не создают;
+нет нового scheduler, migration, worker repository I/O или изменения reuse/selection/cost policy.
+Отдельный дублирующий ResultApplication не нужен: observation уже содержит result/source ref.
+
+Регрессии **11 cases**: на reader-only J083 **9 fail / 2 controls pass** из-за отсутствия writer.
+После подключения **46 focused passed**, strict mypy **430** файлов, Ruff/format green.
+Покрыты providers=2/workers=1,4, A → B → C после restore, quiet repeat без роста dump,
+collection-vs-projection, legacy/missing owner, post-write fault и внешний tracking rollback.
+Сбой сохраняет оплаченный результат и ready work для повторного применения без нового запроса.
+
+Свежие paired native observers baseline/current охватили **104 flows**; дополнительно **8**
+reanalysis и **4** rollover проверены против прежних native snapshots: всего **116**.
+Все старые table rows, requests, usage, projections, application receipts и reader payload прежние.
+Новых associations **106** в **82** flows. Для fixtures с ними прирост SQL **735–1864 bytes**,
+gzip **132–305 bytes**; числа включают разное количество associations и не являются прогнозом
+на весь поток. Тексты, paid answers и request bodies не копируются. Повтор той же версии
+сохраняет первое время. Первые paired observer запуски забыли обязательный DA_EXPECTED_CODE;
+параметр исправлен, проверки import path сохранены, первые logs/XML оставлены отдельно.
+
+Corpus CI **7 passed**, process **3294 observations**, zero changed inputs/decisions,
+qualified manifests verified. Full gate выполняется. Doctor пока не валидирует новые
+applicability edges; это следующий reader-only фрагмент DA10, без изменения writer semantics.
+
+J083 release проверен по `28e9b1eaca25708e6b849b4072cef10eee7c8b83`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40508414239) — **4724 passed**,
+strict mypy 429 файлов, Ruff, docs/web success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40509541174) — exact COMMIT,
+`0b05a4f9a51b -> 28e9b1eaca25`, listener up 45 s. Live processing не запускался.
+
+Final acceptance J084: **4735 passed**, failures/errors/skips/xfails 0, **606.726 s**;
+focused **46 passed**, strict mypy **430** файлов, Ruff src/tests/tools, format src/tests,
+docs/links и diff check green. Результаты **116 native flows** и **106 new associations**
+приняты с неизменностью всех старых rows/payload/accounting. Reader J083 сохраняет все
+новые заполненные snapshots **побайтно**. Pinned production restore остаётся идентичным J083:
+schema 51, SQL/gzip/SQLite delta **0**, никаких автоматических backfill или новых платных calls.
+[Acceptance evidence](../assets/audits/2026-10-27-applicability-writer/validation.json)
+содержит before/after XML, source hashes, native comparison, rollback и corpus manifests.
+Local HTTP не повторён: сетевой CLI/wiring/transports прежние. DA6.4 остаётся частичным:
+остальные source associations и legacy import ещё не объявлены принятыми.
+План **74 задачи, 14 выполнены, 60 unchecked** (DA8.3 неприменим); goal active.

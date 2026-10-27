@@ -111,10 +111,14 @@ contains the known paid ref, owner scope, URL/kind, recorded fingerprints and fi
 It neither copies the answer/input nor certifies archived bytes or complete input coverage.
 Repeated saves retain the first time without a row per poll. Unknown legacy refs are not backfilled.
 A paid scan manifest remains original input provenance and is excluded from the current selection
-metadata fingerprint. No production producer writes these observations yet; new reads do not alter
-reuse, delivery or cost policy. The additive table survives a J082 restore/dump unchanged, including
-future-populated fixtures; rollback keeps schema 51 rather than downgrading it.
-See [J083](plans/2026-10-22-document-architecture-progress.md#j083).
+metadata fingerprint. Primary `apply_analysis` writes the association in the existing projection
+transaction, including an unchanged paid ref at a new source URL. Collection and preparation do
+not write it. A failure rolls back the association and projection together; the paid result stays
+retryable. The observation itself is the source association, without a duplicate application receipt.
+Reuse, delivery and cost policy remain unchanged. The additive table survives a J082 restore/dump
+unchanged, including future-populated fixtures; rollback keeps schema 51 rather than downgrading it.
+See [J083](plans/2026-10-22-document-architecture-progress.md#j083) and
+[J084](plans/2026-10-22-document-architecture-progress.md#j084).
 Result, collection decision, memo/ready changes and consumed checkpoint commit together;
 run cost acknowledgement retains its existing mechanism.
 Primary handoff to an assigned druk moves only unconsumed `analysis`/`reanalysis` items,
