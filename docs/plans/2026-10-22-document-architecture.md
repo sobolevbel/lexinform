@@ -1,6 +1,7 @@
 # План развития обработки документов и истории результатов
 
-Составлен 22 октября 2026, уточнён 23 октября 2026. Статус: DA0 частично принят, DA1 в работе.
+Составлен 22 октября 2026; уточняется при реализации. Статус: поэтапная реализация,
+выполненные части и их приёмка отмечены в checklist ниже.
 Основание: [архитектурный аудит](../reviews/2026-10-22-document-architecture.md).
 [Журнал реализации и проверок](2026-10-22-document-architecture-progress.md).
 Проверенная при составлении версия: `bb19c248bbbf9e6c0caf876bbc78c32bbe7bd103`.
@@ -634,7 +635,7 @@ source disappearance. Изменение normalization/digest — отдельн
   usage accounting и consumed checkpoint. Применение к проекции — отдельная идемпотентная
   транзакция, учитывающая нынешние generation, skip/reset и ownership; при tracking сохранить
   атомарность processed observation и delivery work.
-- [ ] DA6.3. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), nullable `AnalysisRecord.computation_id`; [J063](2026-10-22-document-architecture-progress.md#j063), primary projection refs при tracking/linking. Размеры измерены, старые записи не backfilled; secondary/review refs открыты.** Добавить совместимые result refs к актуальным analysis/review полям Bill.
+- [ ] DA6.3. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), nullable `AnalysisRecord.computation_id`; [J063](2026-10-22-document-architecture-progress.md#j063), primary projection refs при tracking/linking; [J065](2026-10-22-document-architecture-progress.md#j065), совместимый secondary reader и nullable refs. Размеры измерены, старые записи не backfilled; secondary writer/applications открыты.** Добавить совместимые result refs к актуальным analysis/review полям Bill.
   Dual write начинается с основного анализа; затем amendments/supplement/joint/reviews/
   explanation. Для secondary прежний статус Bill не меняется.
   По §1.4 измерить временную избыточность проекций/memo/results; постоянная история применения

@@ -3,7 +3,7 @@ from typing import Literal
 
 import pytest
 
-from lexinform.models import BatchRequest, BatchResult, BillStatus, TokenUsage
+from lexinform.models import AnalysisRecord, BatchRequest, BatchResult, BillStatus, TokenUsage
 from lexinform.models.report import CallKind
 from tests.fakes import FakeLlm
 from tests.harness import World
@@ -27,7 +27,9 @@ def test_paid_primary_answer_survives_supersession_and_operational_cleanup(worke
     results = world.repo.list_computation_results(10, "3039")
     assert len(results) == 1
     result = results[0]
-    assert result.record is not None, "a superseded paid answer still has its validated record"
+    assert isinstance(result.record, AnalysisRecord), (
+        "the primary answer retains its analysis record"
+    )
     assert result.record.request_sha256 == request.payload_sha256
     assert result.record.computation_id == result.result_id
     assert result.record.analysis.relevant
@@ -105,7 +107,7 @@ def test_collected_result_is_independent_of_projection_memo_and_request_retentio
     world.run(track=False)
     result = world.repo.list_computation_results(10, "3039")[0]
     record = result.record
-    assert record is not None, "the retained computation has the validated paid answer"
+    assert isinstance(record, AnalysisRecord), "the retained primary computation has its analysis"
     assert record.input_tokens == FakeLlm.ANALYSIS_TOKENS[0]
     assert result.usage.batch_input == record.input_tokens
     assert result.provider == ("openai" if model.startswith("gpt-") else "anthropic")

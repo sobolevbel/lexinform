@@ -29,6 +29,12 @@ The result ID names a provider/batch/custom item,
 whereas `request_sha256` names its frozen input. Reuse retains the same result ID and does not
 create another paid computation. Current provider identities have the repository's existing
 single-account scope; they do not claim cross-account uniqueness.
+The result reader also accepts schema v2 for secondary purposes, with no primary generation.
+It validates the purpose-specific record and matching request/result refs; review output and
+context must agree on the purpose. Nullable computation refs on secondary records are omitted
+from legacy JSON. This is a reader compatibility stage: collection still writes only primary
+history, and no old secondary data is imported. See
+[J065](plans/2026-10-22-document-architecture-progress.md#j065).
 Computation validation describes the parsed output schema; it does not certify source
 completeness or legal correctness, which have separate selection and DA9 checks.
 

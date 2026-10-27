@@ -1,0 +1,404 @@
+{
+  "version": 1,
+  "stage": "J065",
+  "baseline": "beba3f2b5754de1217fb89345250ff18eb80088f",
+  "scope": "Compatible reader before secondary writers; existing writers and schema 49 unchanged.",
+  "checks": {
+    "qualified_before": {
+      "sha256": "bfa9ef00e8b083190e042674336d946c2cbb9b57f535ffc6ce03937cecf2ef2d",
+      "tests": 22,
+      "errors": 0,
+      "failures": 17,
+      "skipped": 0,
+      "seconds": 0.166
+    },
+    "focused": {
+      "sha256": "444062608d059ff6f86a59707ca00df595d531f60ade3609d123fab8cd2c9f0a",
+      "tests": 48,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "seconds": 1.249
+    },
+    "full": {
+      "sha256": "940b6fdc58bdf185f9d602bbedc87477120da738fb01ac6b0452faed69b2ee43",
+      "tests": 4296,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "seconds": 643.944
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 404 source files",
+    "ruff": "All checks passed!",
+    "format": "1 file reformatted, 404 files left unchanged",
+    "docs": "Strict build, built links and contents checked; see progress journal."
+  },
+  "runtime_files_changed": [
+    {
+      "path": "src/lexinform/models/analysis.py",
+      "baseline": "0864df60478e0f038572a3fa7db402920350c89cb27dbd3bf5d464aed72f41bb",
+      "current": "36cfeeaae9c6c43ded0a804efde635d4a42f858df979cc7da8851475cc3db7ee"
+    },
+    {
+      "path": "src/lexinform/models/computations.py",
+      "baseline": "58f39ecf83f05e0fb964e1e4b867737b58e5d1390cc8582b329d95579422c338",
+      "current": "4014e51e7354c778b79844ccc3fa1ec9b29ae104c85bcdbd3a679af47dcbf98c"
+    },
+    {
+      "path": "src/lexinform/models/reviews.py",
+      "baseline": "45547dae624452e0f00b40774ff2ec334c658bea93696f377180cd37768abe1f",
+      "current": "c9c02f306e12c8146280fbfce51c063ad498ef70958516af33e442df68dcbc2c"
+    }
+  ],
+  "runtime_files_byte_identical": [
+    "src/lexinform/__init__.py",
+    "src/lexinform/__main__.py",
+    "src/lexinform/adapters/__init__.py",
+    "src/lexinform/adapters/batch_checkpoint.py",
+    "src/lexinform/adapters/browser_identity.py",
+    "src/lexinform/adapters/checkpoint.py",
+    "src/lexinform/adapters/console.py",
+    "src/lexinform/adapters/consultation_documents.py",
+    "src/lexinform/adapters/doc_text.py",
+    "src/lexinform/adapters/document_text.py",
+    "src/lexinform/adapters/github_inbox.py",
+    "src/lexinform/adapters/inbox_files.py",
+    "src/lexinform/adapters/llm_anthropic.py",
+    "src/lexinform/adapters/llm_hybrid.py",
+    "src/lexinform/adapters/llm_openai.py",
+    "src/lexinform/adapters/llm_prompts.py",
+    "src/lexinform/adapters/orka.py",
+    "src/lexinform/adapters/pdf_text.py",
+    "src/lexinform/adapters/publisher_base.py",
+    "src/lexinform/adapters/rcl_html.py",
+    "src/lexinform/adapters/retries.py",
+    "src/lexinform/adapters/review_prompts.py",
+    "src/lexinform/adapters/sejm_api.py",
+    "src/lexinform/adapters/senat_html.py",
+    "src/lexinform/adapters/sqlite_repo.py",
+    "src/lexinform/adapters/state_checkpoint.py",
+    "src/lexinform/adapters/state_snapshot.py",
+    "src/lexinform/adapters/streams.py",
+    "src/lexinform/adapters/telegram.py",
+    "src/lexinform/adapters/telegram_format.py",
+    "src/lexinform/adapters/telegram_rate.py",
+    "src/lexinform/adapters/wykaz_csv.py",
+    "src/lexinform/agenda.py",
+    "src/lexinform/analysis_records.py",
+    "src/lexinform/attention.py",
+    "src/lexinform/authors.py",
+    "src/lexinform/cli.py",
+    "src/lexinform/clock.py",
+    "src/lexinform/commission_reviews.py",
+    "src/lexinform/concurrency.py",
+    "src/lexinform/container.py",
+    "src/lexinform/delivery_schedule.py",
+    "src/lexinform/document_bundle.py",
+    "src/lexinform/document_facts.py",
+    "src/lexinform/document_input.py",
+    "src/lexinform/document_selection.py",
+    "src/lexinform/document_versions.py",
+    "src/lexinform/errors.py",
+    "src/lexinform/i18n.py",
+    "src/lexinform/json_storage.py",
+    "src/lexinform/keywords.py",
+    "src/lexinform/law_diff.py",
+    "src/lexinform/law_digest.py",
+    "src/lexinform/law_technical.py",
+    "src/lexinform/legacy_delivery.py",
+    "src/lexinform/logging_setup.py",
+    "src/lexinform/models/__init__.py",
+    "src/lexinform/models/attention.py",
+    "src/lexinform/models/batch.py",
+    "src/lexinform/models/bill.py",
+    "src/lexinform/models/commands.py",
+    "src/lexinform/models/delivery.py",
+    "src/lexinform/models/delivery_alert.py",
+    "src/lexinform/models/digest.py",
+    "src/lexinform/models/documents.py",
+    "src/lexinform/models/editorial.py",
+    "src/lexinform/models/enums.py",
+    "src/lexinform/models/events.py",
+    "src/lexinform/models/evidence.py",
+    "src/lexinform/models/ministries.py",
+    "src/lexinform/models/observations.py",
+    "src/lexinform/models/participation.py",
+    "src/lexinform/models/phases.py",
+    "src/lexinform/models/planning.py",
+    "src/lexinform/models/rcl.py",
+    "src/lexinform/models/report.py",
+    "src/lexinform/models/scan_input.py",
+    "src/lexinform/models/sejm.py",
+    "src/lexinform/models/senate.py",
+    "src/lexinform/models/source_checks.py",
+    "src/lexinform/models/word_notes.py",
+    "src/lexinform/models/wykaz.py",
+    "src/lexinform/pdf_projection.py",
+    "src/lexinform/ports.py",
+    "src/lexinform/pricing.py",
+    "src/lexinform/publication_titles.py",
+    "src/lexinform/rcl_letters.py",
+    "src/lexinform/sections.py",
+    "src/lexinform/senate_documents.py",
+    "src/lexinform/services/__init__.py",
+    "src/lexinform/services/amendments.py",
+    "src/lexinform/services/analysis.py",
+    "src/lexinform/services/analysis_applications.py",
+    "src/lexinform/services/card_edits.py",
+    "src/lexinform/services/commands.py",
+    "src/lexinform/services/cost.py",
+    "src/lexinform/services/delivery.py",
+    "src/lexinform/services/delivery_notifier.py",
+    "src/lexinform/services/digest.py",
+    "src/lexinform/services/discovery.py",
+    "src/lexinform/services/document_reviews.py",
+    "src/lexinform/services/documents.py",
+    "src/lexinform/services/joint.py",
+    "src/lexinform/services/listener.py",
+    "src/lexinform/services/lookup.py",
+    "src/lexinform/services/message_parts.py",
+    "src/lexinform/services/pipeline.py",
+    "src/lexinform/services/posting.py",
+    "src/lexinform/services/predecessors.py",
+    "src/lexinform/services/publications.py",
+    "src/lexinform/services/publishing.py",
+    "src/lexinform/services/rcl_discovery.py",
+    "src/lexinform/services/rcl_projects.py",
+    "src/lexinform/services/senate_documents.py",
+    "src/lexinform/services/signatories.py",
+    "src/lexinform/services/sources.py",
+    "src/lexinform/services/terms.py",
+    "src/lexinform/services/text_prefilter.py",
+    "src/lexinform/services/tracking/__init__.py",
+    "src/lexinform/services/tracking/acts.py",
+    "src/lexinform/services/tracking/agenda.py",
+    "src/lexinform/services/tracking/cards.py",
+    "src/lexinform/services/tracking/consultations.py",
+    "src/lexinform/services/tracking/deadlines.py",
+    "src/lexinform/services/tracking/hearings.py",
+    "src/lexinform/services/tracking/linking.py",
+    "src/lexinform/services/tracking/pre_print.py",
+    "src/lexinform/services/tracking/rcl.py",
+    "src/lexinform/services/tracking/rollover.py",
+    "src/lexinform/services/tracking/senate.py",
+    "src/lexinform/services/tracking/service.py",
+    "src/lexinform/services/tracking/stages.py",
+    "src/lexinform/services/tracking/wykaz.py",
+    "src/lexinform/services/tracking_result.py",
+    "src/lexinform/services/wykaz_discovery.py",
+    "src/lexinform/settings.py",
+    "src/lexinform/telegram_text.py",
+    "src/lexinform/text_projection.py",
+    "src/lexinform/usefulness.py",
+    "src/lexinform/word_projection.py"
+  ],
+  "provider_answer_schema_ast_guards": [
+    {
+      "path": "src/lexinform/models/analysis.py",
+      "class": "Analysis",
+      "ast_sha256": "cb1029c5735f04f396ee812b82edcd3c6ba06b90d625f7a524a974a8534f950b"
+    },
+    {
+      "path": "src/lexinform/models/analysis.py",
+      "class": "Amendments",
+      "ast_sha256": "536495470bb62950e42008b33893513f8f28245190622ef9ba28c6210b3461e0"
+    },
+    {
+      "path": "src/lexinform/models/analysis.py",
+      "class": "DocumentDigest",
+      "ast_sha256": "1a40ed89f441e257bff045ce5839b470d483991317395b91f565281c5a446546"
+    },
+    {
+      "path": "src/lexinform/models/analysis.py",
+      "class": "JointComparison",
+      "ast_sha256": "1613a6b0177be707823ff22c32a812880f97dfac37492e6292dbf5dff163eca3"
+    },
+    {
+      "path": "src/lexinform/models/analysis.py",
+      "class": "BillName",
+      "ast_sha256": "0fd50619ba3369a9e8232dacc6d2ed96e0d6f8211f6f311c9fb49082017c98e7"
+    },
+    {
+      "path": "src/lexinform/models/reviews.py",
+      "class": "DocumentReview",
+      "ast_sha256": "0257398abe4709d1137227f2f1ccddb9d46604232c7955189508d33c3ddfb695"
+    },
+    {
+      "path": "src/lexinform/models/reviews.py",
+      "class": "ReviewContext",
+      "ast_sha256": "efc21c83842888087862f68bd8484041e2a1fd198fbe12024a96ba8538095f4e"
+    },
+    {
+      "path": "src/lexinform/models/reviews.py",
+      "class": "ReviewDocument",
+      "ast_sha256": "ea83d33ae671127c994d97412bae7eb246b52c88578b485d81ae9e865b1128dc"
+    },
+    {
+      "path": "src/lexinform/models/reviews.py",
+      "class": "EvidenceCitation",
+      "ast_sha256": "256bab793e0f123de1bf61b6035b6438d7e05dc032fae4fdbc7af18de9cb962f"
+    },
+    {
+      "path": "src/lexinform/models/reviews.py",
+      "class": "EffectiveRule",
+      "ast_sha256": "12cb2b827cff714eb6846ddd127db02522e991ce39fb5b0a79648956be158eb0"
+    },
+    {
+      "path": "src/lexinform/models/reviews.py",
+      "class": "ConsultationFinding",
+      "ast_sha256": "7be3d1ff098efbd5f18e10d5650432cb5728ac0859dac3ffb2f0bd012667bc02"
+    },
+    {
+      "path": "src/lexinform/models/reviews.py",
+      "class": "CommissionFinding",
+      "ast_sha256": "a1dc62967f301c136905cc6b10b74ca38ef4e0dc47a1204725645b32de99a700"
+    }
+  ],
+  "legacy_serialization": {
+    ".json": {
+      "bytes": 9113,
+      "sha256": "740fd24e7b77b8856ccc7bf96cccc538380677c0629166d02f40e00de3712d81"
+    },
+    ".primary.json": {
+      "bytes": 1889,
+      "sha256": "dd0760afb5f9aabf7a7a78bc6ddbfc99ffad2f810a5c162de98c3aba5530ecd3"
+    }
+  },
+  "production_profiles": {
+    "identical_except_timings": true,
+    "baseline": {
+      "source_sha256": "fc267831b0a010162299b1bd500838466a6f4f6d30618d178f66ade9d416a8da",
+      "source_bytes": 19955778,
+      "sql_sha256": "fc267831b0a010162299b1bd500838466a6f4f6d30618d178f66ade9d416a8da",
+      "sql_bytes": 19955778,
+      "gzip_bytes": 4074532,
+      "sqlite_bytes": 20934656,
+      "restore_seconds": 0.3707458329881774,
+      "dump_seconds": 0.11886166701151524,
+      "bills": 457,
+      "analysis_records": 166,
+      "projection_sha256": "7fa6760e52135e73f597e30db629624fa77a16ba8f7a7723bedaad110cfa8f33",
+      "memo_sha256": "8f68b1de19cfc7ef421659465d653664765cd5d1ed9187d359f33c697c6417ce",
+      "memos": 141,
+      "schema": {
+        "tables": 19,
+        "indexes": 30,
+        "version": 49
+      },
+      "new_rows": {
+        "computation_results": 0,
+        "result_applications": 0
+      },
+      "known_bill_2699": "analyzed",
+      "integrity": "ok",
+      "foreign_key_errors": 0,
+      "scope": "Isolated restore/read; no pipeline, provider or Telegram call; no legacy history backfill."
+    },
+    "current": {
+      "source_sha256": "fc267831b0a010162299b1bd500838466a6f4f6d30618d178f66ade9d416a8da",
+      "source_bytes": 19955778,
+      "sql_sha256": "fc267831b0a010162299b1bd500838466a6f4f6d30618d178f66ade9d416a8da",
+      "sql_bytes": 19955778,
+      "gzip_bytes": 4074532,
+      "sqlite_bytes": 20934656,
+      "restore_seconds": 0.38731645900406875,
+      "dump_seconds": 0.11413816700223833,
+      "bills": 457,
+      "analysis_records": 166,
+      "projection_sha256": "7fa6760e52135e73f597e30db629624fa77a16ba8f7a7723bedaad110cfa8f33",
+      "memo_sha256": "8f68b1de19cfc7ef421659465d653664765cd5d1ed9187d359f33c697c6417ce",
+      "memos": 141,
+      "schema": {
+        "tables": 19,
+        "indexes": 30,
+        "version": 49
+      },
+      "new_rows": {
+        "computation_results": 0,
+        "result_applications": 0
+      },
+      "known_bill_2699": "analyzed",
+      "integrity": "ok",
+      "foreign_key_errors": 0,
+      "scope": "Isolated restore/read; no pipeline, provider or Telegram call; no legacy history backfill."
+    }
+  },
+  "corpus_runs": [
+    {
+      "id": "j065-ci",
+      "status": "passed",
+      "observations": 7,
+      "manifest_sha256": "aa1b4532ab1271a9069845d04165214256f099cbb1519cf33d8c35db44446393",
+      "command": [
+        "/Users/sobaleu/projects/lexinform/.venv/bin/python",
+        "-m",
+        "tools.corpus_check",
+        "--corpus",
+        "/Users/sobaleu/projects/lexinform/tests/fixtures/corpus_check",
+        "--output",
+        "/Users/sobaleu/projects/lexinform/out/corpus/runs/j065-ci/result.json"
+      ],
+      "missing_inputs": []
+    },
+    {
+      "id": "j065-process",
+      "status": "recorded",
+      "observations": 3294,
+      "manifest_sha256": "a16a4f592b736cf1c7a5c0fcd19576c6fb97d3f4448da5edc1351c518bc47de6",
+      "command": [
+        "/Users/sobaleu/projects/lexinform/.venv/bin/python",
+        "-m",
+        "tools.corpus_legacy_suites",
+        "--corpus",
+        "/Users/sobaleu/projects/lexinform-corpus",
+        "--output",
+        "/Users/sobaleu/projects/lexinform/out/corpus/runs/j065-process/result.json",
+        "--kind",
+        "process"
+      ],
+      "missing_inputs": []
+    }
+  ],
+  "process_diff": {
+    "after_manifest_sha256": "a16a4f592b736cf1c7a5c0fcd19576c6fb97d3f4448da5edc1351c518bc47de6",
+    "before_manifest_sha256": "d96168d12558580b07ddaa80217e8bfe7695695bbf5c947666640afe4772bda3",
+    "changed_inputs": [],
+    "changes": [],
+    "scope": "Observation differences, not an independent legal accuracy verdict",
+    "status": "same",
+    "suite": "process",
+    "summary_changes": {},
+    "version": 1
+  },
+  "observers": [
+    {
+      "path": "out/corpus/j065/legacy_records.py",
+      "sha256": "401490d40e0884e07adff0eeeea9ed8fb7154640e8cf8a4a199eecb1bc15d2fa",
+      "source": "import datetime as dt\n\nimport pytest\nfrom pydantic import ValidationError\n\nfrom lexinform.adapters.sqlite_repo import SqliteBillRepository\nfrom lexinform.analysis_records import RecordFactory, UsageFields\nfrom lexinform.models import (\n    AmendmentsRecord,\n    AnalysisRecord,\n    ComputationResult,\n    DocumentReview,\n    DocumentReviewRecord,\n    JointRecord,\n    NameRecord,\n    ReviewContext,\n    SupplementRecord,\n    TokenUsage,\n    computation_id,\n)\nfrom lexinform.models.batch import BatchKind\nfrom tests.fakes import make_amendments, make_analysis, make_comparison, make_digest, make_name\n\nRecord = (\n    AnalysisRecord\n    | AmendmentsRecord\n    | SupplementRecord\n    | JointRecord\n    | NameRecord\n    | DocumentReviewRecord\n)\nKINDS: tuple[BatchKind, ...] = (\n    \"analysis\",\n    \"reanalysis\",\n    \"explanation\",\n    \"amendments\",\n    \"supplement\",\n    \"joint\",\n    \"name\",\n    \"consultation_review\",\n    \"commission_review\",\n    \"act_application\",\n)\nNOW = dt.datetime(2026, 10, 27, tzinfo=dt.UTC)\nSHA = \"a\" * 64\n\n\ndef result_record(kind: BatchKind) -> Record:\n    factory = RecordFactory(\n        \"gpt-5.1\",\n        \"pinned-prompt\",\n        NOW,\n        UsageFields(\n            input_tokens=50,\n            output_tokens=3,\n            cache_read_input_tokens=0,\n            cache_creation_input_tokens=0,\n        ),\n        request_sha256=SHA,\n    )\n    if kind in (\"analysis\", \"reanalysis\", \"explanation\"):\n        return factory.analysis(\n            make_analysis(), input_chars=100, truncated=False, text_source=\"pdf\"\n        )\n    if kind == \"amendments\":\n        return factory.amendments(make_amendments(), source_kind=\"committee_amendments\")\n    if kind == \"supplement\":\n        return factory.supplement(make_digest(), title=\"OSR\", source_kind=\"impact_assessment\")\n    if kind == \"joint\":\n        return factory.joint(make_comparison(), compared_with=[\"3040\"])\n    if kind == \"name\":\n        return factory.name(make_name())\n    review = DocumentReview(\n        purpose=kind,\n        complete=False,\n        summary=\"\",\n        consultation_findings=(),\n        effective_rules=(),\n        unresolved=(\"No reviewed source in this schema fixture\",),\n    )\n    return DocumentReviewRecord(\n        review=review,\n        context=ReviewContext(number=\"3039\", title=\"Projekt\", purpose=kind, documents=()),\n        **factory.fields(),\n    )\n\n\n\nimport hashlib\nimport json\nimport os\nfrom pathlib import Path\n\noutput = Path(os.environ[\"DA_RECORDS_OUTPUT\"])\npayload = {kind: result_record(kind).model_dump(mode=\"json\") for kind in KINDS}\nraw = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode()\noutput.write_bytes(raw + b\"\\n\")\nprint(json.dumps({\"records\": len(payload), \"bytes\": len(raw), \"sha256\": hashlib.sha256(raw).hexdigest()}))\n\nprimary_record = result_record(\"analysis\").model_copy(update={\"computation_id\": computation_id(\"openai\", \"provider-batch\", \"analysis\")})\nprimary = ComputationResult(provider=\"openai\", batch_id=\"provider-batch\", custom_id=\"analysis\", purpose=\"analysis\", term=10, number=\"3039\", generation=0, collected_at=NOW, validation=\"validated\", record=primary_record, model=\"gpt-5.1\", request_sha256=SHA, usage=TokenUsage(batch_input=50, batch_output=3))\nprimary_raw = primary.model_dump_json().encode()\noutput.with_suffix(\".primary.json\").write_bytes(primary_raw)\nprint(json.dumps({\"primary_bytes\": len(primary_raw), \"primary_sha256\": hashlib.sha256(primary_raw).hexdigest()}))\n"
+    },
+    {
+      "path": "/Users/sobaleu/.codex/worktrees/scan-input-manifests/lexinform/out/corpus/j061/production_profile.py",
+      "sha256": "666da1b75e2dfa252a2ac028bdc3ad346abad70bfda813fc87286a141687ac61",
+      "source": "import gzip\nimport hashlib\nimport json\nimport os\nimport sqlite3\nimport time\nfrom contextlib import closing\nfrom pathlib import Path\n\nfrom lexinform.adapters.sqlite_repo import SqliteBillRepository\n\nsource = Path(os.environ[\"DA_STATE_SQL\"])\noutput = Path(os.environ[\"DA_PROFILE_OUTPUT\"])\noutput.mkdir()\nraw = source.read_bytes()\ndatabase = output / \"restored.db\"\nrepository = SqliteBillRepository(database)\nrepository.migrate()\nstart = time.perf_counter()\nrepository.restore(raw.decode())\nrestore_seconds = time.perf_counter() - start\nwith closing(sqlite3.connect(database)) as restored:\n    assert restored.execute(\"PRAGMA integrity_check\").fetchone() == (\"ok\",)\n    assert not restored.execute(\"PRAGMA foreign_key_check\").fetchall()\n    identities = restored.execute(\"SELECT term, number FROM bills ORDER BY term, number\").fetchall()\n    schema = {\n        \"tables\": restored.execute(\"SELECT count(*) FROM sqlite_master WHERE type='table'\").fetchone()[0],\n        \"indexes\": restored.execute(\"SELECT count(*) FROM sqlite_master WHERE type='index' AND sql IS NOT NULL\").fetchone()[0],\n        \"version\": restored.execute(\"PRAGMA user_version\").fetchone()[0],\n    }\n    new_rows = {\n        name: restored.execute(f\"SELECT count(*) FROM {name}\").fetchone()[0]\n        for name in (\"computation_results\", \"result_applications\")\n        if restored.execute(\"SELECT 1 FROM sqlite_master WHERE name = ?\", (name,)).fetchone()\n    }\nprojections = []\nfor term, number in identities:\n    bill = repository.get(term, number)\n    assert bill is not None\n    projections.append(bill.model_dump(mode=\"json\"))\nknown_bill = repository.get(10, \"2699\")\nassert known_bill is not None\nmemo = repository.load_analysis_memo()\nstart = time.perf_counter()\nsaved = repository.dump().encode()\ndump_seconds = time.perf_counter() - start\nrepository.close()\n(output / \"roundtrip.sql\").write_bytes(saved)\nreport = {\n    \"source_sha256\": hashlib.sha256(raw).hexdigest(), \"source_bytes\": len(raw),\n    \"sql_sha256\": hashlib.sha256(saved).hexdigest(), \"sql_bytes\": len(saved),\n    \"gzip_bytes\": len(gzip.compress(saved, mtime=0)), \"sqlite_bytes\": database.stat().st_size,\n    \"restore_seconds\": restore_seconds, \"dump_seconds\": dump_seconds,\n    \"bills\": len(projections), \"analysis_records\": sum(row[\"analysis\"] is not None for row in projections),\n    \"projection_sha256\": hashlib.sha256(json.dumps(projections, sort_keys=True).encode()).hexdigest(),\n    \"memo_sha256\": hashlib.sha256(json.dumps(memo, sort_keys=True).encode()).hexdigest(),\n    \"memos\": len(memo), \"schema\": schema, \"new_rows\": new_rows,\n    \"known_bill_2699\": known_bill.status.value,\n    \"integrity\": \"ok\", \"foreign_key_errors\": 0,\n    \"scope\": \"Isolated restore/read; no pipeline, provider or Telegram call; no legacy history backfill.\",\n}\n(output / \"profile.json\").write_text(json.dumps(report, indent=2) + \"\\n\")\nprint(json.dumps(report))\n"
+    }
+  ],
+  "reproduction": [
+    "Use UV_PROJECT_ENVIRONMENT with the same pinned uv.lock; export PYTHONPATH to each compared snapshot src and root.",
+    "DA_RECORDS_OUTPUT=<new-output.json> uv run --no-sync --offline --frozen python legacy_records.py",
+    "DA_STATE_SQL=<pinned-copy.sql> DA_PROFILE_OUTPUT=<new-directory> uv run --no-sync --offline --frozen python production_profile.py",
+    "uv run --no-sync --offline --frozen pytest -q --junitxml=<new-output.xml>",
+    "uv run --no-sync --offline --frozen mypy",
+    "uv run --no-sync --offline --frozen ruff check src tests tools",
+    "make docs-check DOCS='uv run --no-sync --offline --frozen --group docs'"
+  ],
+  "limitations": [
+    "No secondary runtime history writes, imports or migrations are enabled.",
+    "Future review history writers must avoid duplicating full source contexts; this reader stage chooses no archive backend.",
+    "Corpus profiles are metadata/cached and synthetic regression checks with existing exclusions, not independent human legal labels.",
+    "Production copy is the pinned state used by J064; no production pipeline/provider/Telegram calls were made.",
+    "Legacy null computation refs and request hashes are not reconstructed.",
+    "No tests marked local_http were needed: no CLI, wiring, networking or adapter change."
+  ]
+}

@@ -3231,3 +3231,47 @@ zero changed observations/inputs, missing inputs 0. Это защищённые 
 XML/source hashes, повторяемый observer, изменившиеся решения и production/corpus profiles.
 Локальные outputs: `out/corpus/j064`, registry runs `j064-*`. Следующие части DA6 — secondary
 result history/applications и rollover identity; цель всего плана остаётся active.
+
+J064 выпущен: `beba3f2b5754de1217fb89345250ff18eb80088f`,
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40435736072) success:
+**4261 passed / 32 deselected**, strict mypy 403 файла, lint green; web/docs jobs success.
+[Deploy relay](https://github.com/sobolevbel/lexinform/actions/runs/40436268305) success:
+лог подтверждает exact COMMIT, переход `d35ff170ee38 → beba3f2b5754` и up 45 s после restart.
+Это проверка CI/relay; ручной production pipeline и end-to-end reader delivery не запускались.
+
+<a id="j065"></a>
+### J065. DA6: совместимый reader вторичных computation results
+
+Дата: 27 октября 2026. База: `beba3f2b5754de1217fb89345250ff18eb80088f`.
+Статус: реализован и принят локально; выпуск проверяется отдельно, writer — следующий этап.
+
+Reader принимает schema v2 для amendments, supplement, joint, name, explanation и трёх review
+purposes. У primary schema v1 и обязательный generation прежние; secondary не получает
+выдуманный primary generation. Тип record соответствует purpose, а review/context дополнительно
+совпадают по purpose; bare supplement без digest не считается валидированным paid answer.
+Ссылки result/request проверяются вместе. Failure сохраняет usage без выдуманного ответа.
+
+Nullable `computation_id` добавлен к secondary/review records и отсутствует в старом JSON.
+Новые service writes, импорты истории и миграции не включены: это совместимый reader для
+развёртывания перед writer, чтобы откат следующего этапа имел читающую версию. Production
+по-прежнему записывает только primary history; source selection, extraction, prompts,
+provider payload/schema/cost и политика reuse не меняются.
+
+Qualified before: **17 failures** на старом reader. Before/after observer дал одинаковые JSON
+всех десяти legacy records и primary computation schema v1. На том же pinned production
+snapshot из J064 restore/read дал идентичные SQL/projection/memo hashes и размеры:
+**457 bills / 166 analyses / 141 memos**, schema49, integrity ok/FK 0. Pipeline/LLM/Telegram
+не запускались. Process replay **3294 observations**, zero changed decisions/inputs,
+missing inputs 0; CI corpus slice **7 passed**. Эти profiles сохраняют прежние exclusions,
+не являются independent legal labels и не доказывают полноту scans.
+
+Acceptance: targeted **48 passed**, full **4296 passed**, errors/failures/skips/xfails 0,
+643,944 s; strict mypy 404 файла, Ruff src/tests/tools, format, strict docs/links и diff check
+green. Local HTTP не запускался: CLI/wiring/network adapters не менялись. Исходный docs build
+выявил отсутствующий explicit anchor J065; после его добавления strict build и built links green.
+
+[Acceptance evidence](../assets/audits/2026-10-27-secondary-result-reader/validation.json)
+содержит XML/source/serialization hashes, runnable observers, corpus manifests и production
+profiles. 140 runtime files совпали побайтово, AST 12 provider answer/context schemas прежний.
+Локальные outputs: `out/corpus/j065`, registry runs `j065-*`. Следующий этап включает writer
+без full input contexts в history; цель всего плана остаётся active.
