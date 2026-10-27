@@ -3347,3 +3347,56 @@ corpus manifests и production profiles. 140 runtime files совпали поб
 schemas прежние. Локальные outputs: `out/corpus/j066`, registry runs `j066-*`.
 Следующие части DA6 — compact review result reader/writer, secondary applications и rollover;
 цель всего плана остаётся active.
+
+J066 выпущен: `0799a9242b9f82b4ca7179baef4ce91cde676d6f`,
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40439627804) success:
+**4316 passed / 32 deselected**, strict mypy 405 файлов, lint green; web/docs jobs success.
+[Deploy relay](https://github.com/sobolevbel/lexinform/actions/runs/40440330475) success:
+exact COMMIT, `54aad3d90d35 → 0799a9242b9f`, сервис up 45 s после restart.
+Evidence: `out/corpus/j066/release.json`. Ручной production pipeline не запускался.
+
+<a id="j067"></a>
+### J067. DA6: compact review result и отдельная ссылка на input
+
+Дата: 27 октября 2026. База: `0799a9242b9f82b4ca7179baef4ce91cde676d6f`.
+Статус: reader реализован и принят локально; выпуск проверяется отдельно, review writer выключен.
+
+Schema v3 разделяет normalized `ReviewResultRecord` и `ComputationResult.review_input`.
+В результате остаются проверенный answer, original usage/model/prompt/request/result refs;
+input reference хранит исходный context key, owner/purpose, URL, text/normalized/file hashes,
+роли, даты, authority и completeness документов. Полный input text в эти DTO не принимается.
+Unknown/missing поля и исходный completeness сохраняются; hash и полнота не выводятся заново.
+Это ссылки и метаданные, не полный ReviewContext для повторной проверки цитат.
+
+Known input сохраняется независимо от наличия валидного answer. Ошибка с отсутствующим
+legacy context допускает review_input=None; положительный compact result требует input ref.
+Purpose, owner, format version и request/result refs проверяются согласованно. Normalizer
+требует известный computation ID и не копирует projection-only baseline/source/check fields.
+Primary schema v1 и secondary v2 не меняются; новый nullable field в старом JSON отсутствует.
+
+Первоначальный prototype держал input внутри answer; до выпуска reference вынесен в computation,
+чтобы failures не теряли provenance. Первый full run прерван (exit130); provisional before
+fixtures и profiles раннего формата исключены из acceptance. Final schema probe на одной и
+той же raw JSON: baseline **3 failures**, current **3 passed**. Targeted **93 passed**.
+
+Synthetic size fixture: **310000 bytes** input text, normalized v3 computation **1769–1785 bytes**
+JSON для трёх review purposes. Сравниваемый v2 full-context формат поддерживался reader, но его
+runtime writer никогда не включался: это сравнение представлений, не экономия в production.
+Answer/usage/paid result ID/request SHA совпали; SQL v3 не содержит исходный текст. Production
+snapshot J064 восстановлен без изменения SQL/projection/memo hashes и размеров, integrity ok/FK 0.
+Pipeline/provider/Telegram против этой копии не запускались.
+
+Current reader также прочёл **15** сохранённых J066 pending/settled/cleaned snapshots: results,
+memo refs, pending items и повторные dumps совпали побайтово. Corpus CI **7 passed**, process
+**3294 observations**, profiles сохраняют прежние exclusions и не добавляют human legal labels.
+Новая SQL-миграция, provider payload/schema/model/options и review settings не включены.
+Acceptance: full **4341 passed**, errors/failures/skips/xfails 0, 620,635 s; strict mypy
+406 файлов, Ruff src/tests/tools, format, strict docs/links и diff check green. Local HTTP не
+нужен: CLI/wiring/network adapters прежние. Legacy JSON десяти records и primary computation
+v1 совпал побайтово; 141 runtime file прежний, AST provider answer/context schemas не менялся.
+
+[Acceptance evidence](../assets/audits/2026-10-27-compact-review-reader/validation.json)
+содержит final schema probe/XML/source/serialization hashes, source-pinned corpus manifests,
+production/previous-snapshot checks и повторяемый synthetic size observer с ограничениями.
+Локальные outputs: `out/corpus/j067`, registry runs `j067-*`. Следующий этап — review writer
+с сохранением known input и при failure; цель всего плана остаётся active.

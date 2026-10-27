@@ -41,6 +41,11 @@ paid result. New amendments/supplement metadata pins the known original URL and 
 absent legacy values remain unknown in history. Revision delivery work shares the transaction.
 Secondary collection does not change primary status/generation or claim an application receipt.
 Review history writing remains separate to avoid copying full source contexts into result rows.
+The [J067](plans/2026-10-22-document-architecture-progress.md#j067) reader accepts compact
+review schema v3: `review_input` retains source references independently of a validated answer,
+so failed results can preserve known input metadata too. A missing legacy context remains
+unknown. Full source text and projection-only fields are absent from the compact paid record.
+The runtime review writer is still disabled; old schemas keep their serialization.
 No completed legacy secondary results are imported. Rollback of this writer uses the compatible
 J065 reader; SQL schema remains v49.
 Computation validation describes the parsed output schema; it does not certify source

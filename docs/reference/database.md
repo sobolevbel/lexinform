@@ -85,6 +85,8 @@ identity relocation при rollover остаётся открытым.
 [J066](../plans/2026-10-22-document-architecture-progress.md#j066) сохраняет secondary
 amendments/supplement/joint/name/explanation в той же таблице без новой SQL-миграции, schema v2
 в JSON и без primary generation. Secondary application receipts и compact review history открыты.
+[J067](../plans/2026-10-22-document-architecture-progress.md#j067) добавляет reader review JSON v3
+с отдельными input refs и normalized answer; runtime review writer остаётся выключенным.
 
 ## Снимки и обработанное состояние
 

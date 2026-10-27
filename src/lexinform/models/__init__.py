@@ -107,6 +107,15 @@ from lexinform.models.computations import (
     ResultApplication as ResultApplication,
 )
 from lexinform.models.computations import (
+    ReviewInputReference as ReviewInputReference,
+)
+from lexinform.models.computations import (
+    ReviewResultRecord as ReviewResultRecord,
+)
+from lexinform.models.computations import (
+    ReviewSourceReference as ReviewSourceReference,
+)
+from lexinform.models.computations import (
     computation_id as computation_id,
 )
 from lexinform.models.delivery import DeliverySchedule as DeliverySchedule
