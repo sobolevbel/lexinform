@@ -16,6 +16,7 @@ from lexinform.models.analysis import (
     TokenUsage,
 )
 from lexinform.models.batch import BatchKind, BatchProvider
+from lexinform.models.computation_inputs import ComputationInputBinding
 from lexinform.models.enums import BillStatus
 from lexinform.models.reviews import (
     DocumentReview,
@@ -62,9 +63,11 @@ class ReviewInputReference(BaseModel):
     comparison_sha256: str | None = None
 
     @classmethod
-    def from_context(cls, context: ReviewContext, *, term: int) -> Self:
+    def from_context(
+        cls, context: ReviewContext, *, term: int, recorded_key: str | None = None
+    ) -> Self:
         return cls(
-            key=context.memo_key(term),
+            key=context.memo_key(term) if recorded_key is None else recorded_key,
             term=term,
             number=context.number,
             title=context.title,
@@ -164,6 +167,9 @@ class ComputationResult(BaseModel):
     number: str
     generation: int | None
     collected_at: dt.datetime
+    input_binding: ComputationInputBinding | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     review_input: ReviewInputReference | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -219,6 +225,20 @@ class ComputationResult(BaseModel):
                 raise ValueError("a validated compact review requires its original input reference")
         if isinstance(self.record, SupplementRecord) and self.record.digest is None:
             raise ValueError("a validated supplement result must contain its digest")
+        if self.input_binding is not None:
+            binding = self.input_binding
+            if self.review_input is not None:
+                mismatch = (binding.term, binding.number, binding.reuse_key) != (
+                    self.review_input.term,
+                    self.review_input.number,
+                    self.review_input.key,
+                )
+            elif isinstance(self.record, DocumentReviewRecord):
+                mismatch = binding.number != self.record.context.number
+            else:
+                mismatch = False
+            if mismatch:
+                raise ValueError("the retained review must keep its frozen input binding")
         if self.record is not None and self.record.computation_id != self.result_id:
             raise ValueError("the retained record must refer to its computation")
         if self.record is not None and self.record.request_sha256 != self.request_sha256:

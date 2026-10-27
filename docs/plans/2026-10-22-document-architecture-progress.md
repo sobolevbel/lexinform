@@ -3790,3 +3790,67 @@ transports не менялись. [Acceptance evidence](../assets/audits/2026-10
 Это не общий replay всех computations: primary, reviews, explanation, applicability history и
 перенос consumers на refs остаются DA6. План: **74 задачи, 12 выполнены, 62 не закрыты**;
 goal active.
+
+<a id="j075"></a>
+### J075. DA6: compatible frozen input binding reader
+
+Дата: 27 октября 2026. База: J074 (`d1cde0e`). Статус: реализовано, deployment проверяется отдельно.
+
+Подготовить reader до будущего writer: nullable `input_binding` хранит исходные term/number
+и логический reuse key отдельно от collection coordinates и точного request SHA. Сохранённый
+ключ не означает наличие исходных bytes или PreparedInput. Legacy остаётся unknown, поле
+с None не сериализуется. Metadata проверяет согласованность binding/memo key, review reader —
+с сохранённым input/context. Collector bridge сохраняет уже известное future metadata;
+текущие producers ещё не заполняют binding. Схема и backend прежние.
+
+Targeted **122 passed**: десять purpose readers, metadata/key mismatch, primary handoff
+open/ready × providers=2/workers=1/4 и consultation/commission/paused-act collect
+success/failure × providers=2. Act submissions не включены: fixture читает уже отправленную
+legacy работу. Primary paid row сохраняет исходный binding при другом collection target;
+ready-before-handoff history остаётся у прежнего owner. Request SHA и usage прежние.
+Mypy **418** файлов, Ruff/format green; full gate запущен.
+
+**28** normal/cold profiles совпадают с J074 целиком, включая SQL, requests/results и reader
+texts. State `f34e63e7` восстановлен baseline/current: SQL/projection/memo hashes и размеры
+прежние, integrity ok/FK 0. Нет новой schema, source policy, raw storage или production run.
+Corpus CI **7 passed**, process **3294 observations**, zero changed inputs/decisions;
+manifests проверены. J074 reader читает **29** default/legacy snapshots с exact dump.
+Десять populated future fixtures он отклоняет по unknown `input_binding`, current reader
+принимает все десять: это явная минимальная rollback-граница до включения следующего writer.
+На fixture pack из 10 results binding добавляет **965 SQL / 214 gzip / 4096 SQLite bytes**;
+при None default output и production dump не растут. Это не production growth forecast.
+
+J074 release проверен по полному `d1cde0e02128e0bbd652358ecd85c179eda33922`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40469054635) — **4477 passed**,
+strict mypy 416 файлов, Ruff, docs/web jobs success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40469781532) — exact COMMIT,
+`3cd82124cf1a -> d1cde0e02128`, listener up 45 s. Live cycle новых paid history rows
+этим не подтверждён; доступный state pin содержит results/applications 0.
+
+Дополнительная проверка нашла в первой версии reader пересчёт policy key из legacy full review
+context. **3 probes failed**: исторический записанный ключ должен читаться без применения
+сегодняшней политики. Final reader сравнивает persisted compact refs; для full legacy context
+проверяет только известную identity, сохраняя opaque key. Первичный full **4509 passed** остаётся
+диагностикой промежуточного кода; после исправления повторяются full gate и corpus manifests.
+Final targeted **125 passed**, historical-key probes **3 passed**.
+
+Та же проверка расширена на collect: **3 additional probes failed**, если policy меняется
+после submit. `ReviewInputReference.from_context` теперь принимает явно recorded key из
+known binding; legacy fallback не меняется. Binding не пересчитывается через новый policy
+и не теряется из-за различия с текущим контекстным hash. Матрица включает обе модели,
+success/failure и unchanged/changed policy. Новый targeted **137 passed**, шесть policy-key
+probes **6 passed**; второй full **4512 passed** — промежуточная диагностика, финальный gate
+повторяется после collector correction. Исходники обеих промежуточных версий закреплены
+в corpus code snapshots; initial/final/qualified runs не смешиваются.
+
+Final acceptance: **4524 passed**, failures/errors/skips/xfails 0, 656.311 s; strict mypy
+**418** файлов, Ruff src/tests/tools, format, docs/links и diff check green. Qualified corpus
+CI **7 passed**, process **3294 observations**, zero changed inputs/decisions; manifests
+закрепляют финальный source. Все **50 migrations** прежние. **28** финальных normal/cold
+profiles совпадают с J074 и промежуточными profiles; production restore сохраняет прежние
+SQL/projection/memo hashes и размеры. J074 reader читает 29 default/legacy snapshots,
+но populated binding требует J075 bridge. CLI/wiring/transports прежние, local HTTP не повторён.
+[Acceptance evidence](../assets/audits/2026-10-27-computation-binding-reader/validation.json)
+содержит оба вида before/after probes, source snapshots, XML, observers и измерения. Writer
+новых bindings ещё не включён; это следующий этап. План: **74 задачи, 12 выполнены,
+62 не закрыты**; goal active.

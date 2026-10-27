@@ -100,6 +100,7 @@ from lexinform.models.commands import (
     parse_command,
     parse_reference,
 )
+from lexinform.models.computation_inputs import ComputationInputBinding as ComputationInputBinding
 from lexinform.models.computations import (
     ComputationResult as ComputationResult,
 )

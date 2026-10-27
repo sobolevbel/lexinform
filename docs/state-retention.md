@@ -113,6 +113,15 @@ their intents and ready analysis. Secondary work keeps its original subject and 
 historical results are not retargeted. Collection coordinates alone do not identify the
 original input of a primary job that was moved before collection. See
 [J073](plans/2026-10-22-document-architecture-progress.md#j073).
+The nullable `input_binding` reader separates the original request's term/number and logical
+reuse key from collection coordinates and exact request SHA. Missing legacy metadata stays
+unknown and is omitted from JSON. Metadata keeps the frozen memo key; review bindings match
+recorded input references and subject identities. A historical policy key is never recomputed
+from a stored context with today's rules. The collector preserves already known bindings without
+deriving them from a current bill or mutable item owner. Normal producers do not populate the
+binding in this reader stage. Once a later writer populates the field, rollback requires the
+[J075](plans/2026-10-22-document-architecture-progress.md#j075) reader/collector bridge.
+The binding does not archive source bytes or certify a full historical PreparedInput.
 The history preserves the paid record when a skip/reset makes it inapplicable. Immutable rows
 reject replacement, and an exact repeated write is harmless.
 

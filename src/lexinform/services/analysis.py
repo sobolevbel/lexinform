@@ -1027,6 +1027,7 @@ class AnalysisService:
             number=item.number,
             generation=item.meta.generation if isinstance(item.meta, BatchItemMeta) else None,
             collected_at=now,
+            input_binding=item.meta.input_binding,
             review_input=review_input,
             request_sha256=item.meta.request_sha256,
             validation="validated" if record is not None else "error",
@@ -1162,7 +1163,11 @@ class AnalysisService:
                     else record
                 )
                 review_input = (
-                    ReviewInputReference.from_context(meta.review_context, term=item.term)
+                    ReviewInputReference.from_context(
+                        meta.review_context,
+                        term=item.term,
+                        recorded_key=meta.input_binding.reuse_key if meta.input_binding else None,
+                    )
                     if review and meta.review_context is not None
                     else None
                 )

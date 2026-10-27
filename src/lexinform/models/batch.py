@@ -19,6 +19,7 @@ from lexinform.models.analysis import (
     SupplementContext,
 )
 from lexinform.models.bill import LocatedText
+from lexinform.models.computation_inputs import ComputationInputBinding
 from lexinform.models.documents import DocumentSelection
 from lexinform.models.enums import SourceKind, TextSource
 from lexinform.models.observations import DeliveryPlan
@@ -243,6 +244,15 @@ class BatchItemMeta(BaseModel):
     memo_key: str | None = None
     located: LocatedText | None = None
     text: str = ""
+    input_binding: ComputationInputBinding | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    @model_validator(mode="after")
+    def frozen_binding(self) -> Self:
+        if self.input_binding is not None and self.input_binding.reuse_key != self.memo_key:
+            raise ValueError("input binding must keep its frozen memo key")
+        return self
 
 
 class BatchJob(BaseModel):
@@ -278,6 +288,15 @@ class DigestItemMeta(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     explanation: BatchItemMeta | None = None
+    input_binding: ComputationInputBinding | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    @model_validator(mode="after")
+    def frozen_binding(self) -> Self:
+        if self.input_binding is not None and self.input_binding.reuse_key != self.memo_key:
+            raise ValueError("input binding must keep its frozen memo key")
+        return self
 
 
 def batch_item_meta(kind: str, raw: str) -> BatchItemMeta | DigestItemMeta:
