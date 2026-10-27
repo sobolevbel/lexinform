@@ -19,6 +19,8 @@ from lexinform.models.documents import (
 from lexinform.sections import PAGE_BREAK, document_kind, trim_print
 from lexinform.text_projection import SourcePiece, TextProjection, project_pieces
 
+DOCUMENT_SELECTION_POLICY_VERSION = "document-selection-v1"
+
 
 def bill_selection(
     selection: DocumentSelection, *, source_basis: tuple[str, ...]

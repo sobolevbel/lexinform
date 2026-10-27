@@ -2979,7 +2979,9 @@ class AnalysisService:
             raise DocumentSelectionError(admission, "; ".join(file.selection.rejected))
         text = file.text
         if admission == "scan":
-            return self._load_scan(document, text or "")
+            return self._load_scan(
+                document, text or "", policy_version=file.selection.policy_version
+            )
         assert text is not None, (
             "analysis_admission admits text or metadata only for a present body"
         )
@@ -2991,7 +2993,12 @@ class AnalysisService:
                 document.url,
                 document_kind(text),
             )
-            return _Loaded("", False, "metadata_only")
+            return _Loaded(
+                "",
+                False,
+                "metadata_only",
+                selection=DocumentSelection(policy_version=file.selection.policy_version),
+            )
         if not trim:
             budgeted = self._budget.apply(text, self._keywords.spans(text))
             return _Loaded(
@@ -3045,9 +3052,10 @@ class AnalysisService:
             projection=projection,
         )
 
-    def _load_scan(self, document: TextDocument, text: str) -> _Loaded:
-        """The document as pages, when its file carries no text of its own; metadata when it has
-        no pages either (a Word file, an archive, a PDF too big for the model to take)."""
+    def _load_scan(
+        self, document: TextDocument, text: str, *, policy_version: str | None
+    ) -> _Loaded:
+        """Read the document as pages, or preserve metadata when no scan is available."""
         scan = self._loader.load_scan(document.url, cover_letter=has_cover_letter(text))
         if scan is None:
             log.info(
@@ -3055,7 +3063,12 @@ class AnalysisService:
                 document.url,
                 len(text),
             )
-            return _Loaded(text, False, "metadata_only")
+            return _Loaded(
+                text,
+                False,
+                "metadata_only",
+                selection=DocumentSelection(policy_version=policy_version),
+            )
         log.info(
             "%s: no text, reading %d of %d page(s) as images",
             document.url,
@@ -3063,6 +3076,7 @@ class AnalysisService:
             scan.of_pages,
         )
         selection = DocumentSelection(
+            policy_version=policy_version,
             belonging=document.version_basis[:1],
             scan_input=scan.scan_input,
             parts=(

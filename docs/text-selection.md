@@ -52,10 +52,14 @@ input. The [operation matrix](reviews/2026-10-27-document-admission.md) includes
 and amendments; Senate verification keeps its specialized checks. Full-text `text-v2` identity now
 lives in pure `document_fingerprints`, with a compatible alias from `services.analysis`.
 
-`DocumentSelection.policy_version` has a compatible optional reader. Missing legacy values stay
-unknown and are omitted from JSON; no runtime writer or backfill is enabled by
-[J092](plans/2026-10-22-document-architecture-progress.md#j092). A version label alone never
-promotes a selection to evidence-backed `selected`.
+`DocumentSelection.policy_version` has a compatible optional reader from
+[J092](plans/2026-10-22-document-architecture-progress.md#j092). Missing legacy values stay
+unknown and are omitted from JSON. [J093](plans/2026-10-22-document-architecture-progress.md#j093)
+labels fresh `TextLoader.select_document` decisions `document-selection-v1`, including returned
+blocked/unverified decisions, and preserves the label through text/scan/metadata preparation.
+Physical cache entries are not relabeled. This identifies the current source-selection decision;
+it never promotes evidence-backed `selected`, claims a legal edition or retrospectively dates a paid
+analysis. Original known computations keep their immutable metadata; legacy gaps are not backfilled.
 
 `PypdfTextExtractor.extract_pages` now returns `PdfTextExtraction` (`pdf-pages-v1`): input SHA,
 pypdf version, raw page text, physical `pdf-page:N:0` coordinates and per-page read errors.

@@ -4730,3 +4730,62 @@ legacy policy unknown не backfilled. Schema **51**, storage delta **0**; rollb
 без state conversion. Будущий writer откатывается не ниже J092 compatible reader.
 Raw parsing/local HTTP не повторены: physical selection code и network CLI/transport прежние.
 План **74 задачи, 17 выполнены, 57 unchecked** (DA8.3 неприменим); goal active.
+
+
+<a id="j093"></a>
+### J093. DA4.4: version new source-selection decisions
+
+Дата: 27 октября 2026. База: J092 (`d99702c`). Статус: принято локально; deployment проверяется отдельно.
+
+Final TextLoader source-selection decision получает `document-selection-v1` после завершения
+существующего I/O/policy пути. Старое тело select_document перенесено в private helper буквально;
+новый wrapper меняет только metadata immutable LoadedFile/DocumentSelection. Physical cache
+остаётся без final-source label. Метка проходит text и заново создаваемые scan/metadata selections,
+batch/result/projection и restore. Никаких новых heuristics, acceptance of legal editions или
+политики чтения старого dump. Она обозначает текущее решение, не время исходного paid analysis.
+
+Первый mypy fixture передал FakeGateway вместо callable download; исправлен до gate.
+Focused **106 passed**, strict mypy **440** файлов, Ruff/format green. **7** новых cases:
+cache/download identity, pre-download source conflict, material version ambiguity,
+workers 1/4 × text/scan batch → immutable result → projection → restore.
+
+**168 native flows / 20 SQL tables**: requests и rendered messages/edits точны, остальные
+profile/SQL значения равны после удаления только новой selection label и её доказуемых
+SHA/observation-ID производных. SHA пересчитываются из конкретных selection manifests;
+произвольные hashes не игнорируются. **11** selection SHA pairs / **13** observation-ID pairs.
+Operator reply model содержит новую метку, его rendered text прежний. Первые comparison
+observers уточнены для nested snapshot storage metrics и metadata в reply model; failed logs
+сохранены, условия requests/rendered text не ослаблены. Прирост на этих fixtures:
+SQL **0–332 bytes**, gzip **0–30 bytes**; **28** dumps без прироста. Это не production extrapolation.
+
+Переход J092 → J093: **4** worker/text-scan cases, старые paid results остаются побайтно прежними,
+нет model/triage/batch/reader calls. Один новый source-metadata association, далее stable.
+Первый observer неверно требовал exact dump сразу после второго ручного analyze:
+baseline тоже догоняет projection receipt на втором вызове. Control обеих версий:
+generation **2/2/2**, applications **3/4/4**; второй/третий restored dump точен.
+Нового generation/application поведения нет. Дополнительный upgrade delta относительно
+такого же baseline: SQL **681–776 bytes**, gzip **129–138 bytes**.
+
+Structural proof: old selection body exact после private rename, остальные **10 loader methods**
+и **63 AnalysisService methods** прежние. `_load_text`/`_load_scan` отличаются только передачей
+policy metadata и shortened docstring; pure policy module равен без новой constant.
+Models/migrations/adapters прежние. Corpus **4276 cases / 1383 missing inputs**, CI **7**,
+process **3294** приняты без изменения решений/input SHA; manifests verified.
+Rollback reader J092 читает **168** actual new snapshots, **134** Bill policy labels,
+все computation JSON values и exact read/restore SQL dump сохранены, без state conversion.
+
+J092 release проверен по `d99702cedfc4e530a0edcc5de93895301d86430a`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40542786243) — **4811 passed**,
+strict mypy 439 файлов, Ruff, docs/web success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40544073131) — exact COMMIT,
+`e554f1e7bea4 -> d99702cedfc4`, listener up 45 s. Отдельный live processing вручную не запускался.
+Compatible reader floor принят до выпуска producer. Schema **51**, archive/backend flags прежние.
+
+
+Final acceptance J093: full **4818 passed**, failures/errors/skips 0,
+**601.328 s**; focused **106 passed**, strict mypy **440** файлов, Ruff/format/docs/diff green.
+[Acceptance evidence](../assets/audits/2026-10-27-selection-policy-writer/validation.json)
+содержит source/XML hashes, narrowly normalized SQL/hash graph proof, upgrade baseline control,
+actual J092 rollback, corpus replay и размер metadata. Сначала подготовлен/выпущен совместимый
+reader, затем producer. Полная decision history/DocumentEdition и необъявленные scopes остаются
+открытыми. План **74 задачи, 17 выполнены, 57 unchecked** (DA8.3 неприменим); goal active.

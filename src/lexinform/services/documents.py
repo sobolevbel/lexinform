@@ -13,7 +13,7 @@ import logging
 import threading
 import time
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from urllib.parse import urlparse
 
 from lexinform.document_candidates import (
@@ -22,7 +22,11 @@ from lexinform.document_candidates import (
     DocumentCandidate,
     select_candidate_versions,
 )
-from lexinform.document_selection import bill_selection, deduplicate_bundle
+from lexinform.document_selection import (
+    DOCUMENT_SELECTION_POLICY_VERSION,
+    bill_selection,
+    deduplicate_bundle,
+)
 from lexinform.document_versions import (
     join_normative_parts,
     normative_annex_key,
@@ -230,6 +234,15 @@ class TextLoader:
         )
 
     def select_document(self, document: TextDocument) -> tuple[TextDocument, LoadedFile]:
+        selected, loaded = self._select_document(document)
+        return selected, replace(
+            loaded,
+            selection=loaded.selection.model_copy(
+                update={"policy_version": DOCUMENT_SELECTION_POLICY_VERSION}
+            ),
+        )
+
+    def _select_document(self, document: TextDocument) -> tuple[TextDocument, LoadedFile]:
         if document.compare_versions:
             resolved = self._compare_versions(document)
             if resolved is not None:
