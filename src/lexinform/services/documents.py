@@ -16,9 +16,14 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
+from lexinform.document_candidates import (
+    AmbiguousCandidates,
+    CandidateSet,
+    DocumentCandidate,
+    select_candidate_versions,
+)
 from lexinform.document_selection import bill_selection, deduplicate_bundle
 from lexinform.document_versions import (
-    comparable_versions,
     join_normative_parts,
     normative_annex_key,
     regulation_support,
@@ -277,6 +282,7 @@ class TextLoader:
 
     def _compare_versions(self, document: TextDocument) -> tuple[TextDocument, LoadedFile] | None:
         candidates: list[tuple[TextDocument, LoadedFile]] = []
+        prepared: list[DocumentCandidate] = []
         for candidate in (document, *document.alternatives):
             if candidate.official_link_conflict:
                 continue
@@ -286,35 +292,25 @@ class TextLoader:
                 raise
             except Exception:
                 continue
-            if file.text is not None and document_kind(file.text) == "bill":
-                candidates.append((candidate, file))
-        if not candidates:
-            return None
-        indices = comparable_versions([file.text or "" for _, file in candidates])
-        if not indices:
-            return document, LoadedFile(
-                None,
-                selection=DocumentSelection(
-                    state="ambiguous",
-                    parts=tuple(part for _, file in candidates for part in file.selection.parts),
-                    rejected=tuple(
-                        f"{candidate.url}: conflicting bill version" for candidate, _ in candidates
-                    ),
-                ),
+            item = DocumentCandidate(
+                candidate.url, file.text, file.selection.parts, file.selection.observed_parts
             )
-        candidate, _ = candidates[indices[0]]
+            if item.is_bill:
+                candidates.append((candidate, file))
+                prepared.append(item)
+        choice = select_candidate_versions(CandidateSet(tuple(prepared)))
+        if choice is None:
+            return None
+        if isinstance(choice, AmbiguousCandidates):
+            return document, LoadedFile(None, selection=choice.selection)
+        candidate, _ = candidates[choice.index]
         loaded = self._with_evidence(candidate, self.read_document(candidate))
-        observed = tuple(
-            part
-            for _, file in candidates
-            for part in (file.selection.observed_parts or file.selection.parts)
-        )
         return candidate, LoadedFile(
             loaded.text,
             pages=loaded.pages,
             oversize=loaded.oversize,
             sha256=loaded.sha256,
-            selection=loaded.selection.model_copy(update={"observed_parts": observed}),
+            selection=loaded.selection.model_copy(update={"observed_parts": choice.observed_parts}),
         )
 
     def _with_evidence(self, document: TextDocument, file: LoadedFile) -> LoadedFile:

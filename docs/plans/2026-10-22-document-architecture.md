@@ -537,13 +537,13 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
 **Изменяемые места:** `services/sources.py`, `services/documents.py`, `document_selection.py`,
 `document_bundle.py`, `document_versions.py`, `document_facts.py`, source-specific selectors.
 
-- [ ] DA4.1. **Частично: [J087](2026-10-22-document-architecture-progress.md#j087), existing ExtractedParts используется чистой package policy; общий набор official/loose-URL кандидатов ещё не подключён.** Сделать общий `CandidateSet` из extraction parts и официальных source relations.
+- [ ] DA4.1. **Частично: [J087](2026-10-22-document-architecture-progress.md#j087), existing ExtractedParts используется чистой package policy; [J088](2026-10-22-document-architecture-progress.md#j088), общий transient CandidateSet для archive peers и loose files. Полная provenance/disposition persistence остаётся.** Сделать общий `CandidateSet` из extraction parts и официальных source relations.
   Сохранять рассмотренные/исключённые части и основание исключения; ZIP location/filename —
   свидетельство происхождения, а не достаточное доказательство роли/редакции.
-- [ ] DA4.2. **Частично: [J087](2026-10-22-document-architecture-progress.md#j087), package policy вынесена из physical adapter; loose-URL policy остаётся в loader.** Перенести комплектование из `_select_parts` и loose-URL пути в одну чистую политику.
+- [ ] DA4.2. **Частично: [J087](2026-10-22-document-architecture-progress.md#j087), package policy вынесена из physical adapter; [J088](2026-10-22-document-architecture-progress.md#j088), loose-file version choice и диагностика в том же pure module. Remaining fallback/composition и admissibility открыты.** Перенести комплектование из `_select_parts` и loose-URL пути в одну чистую политику.
   Источники продолжают знать официальные связи, достигнутые стадии и тип события. Generic
   loader не ветвится по RCL/Sejm/Senate. Сохранить узкую проверку чужого RCL ID до download.
-- [ ] DA4.3. Сначала сохранить текущие outcomes. Затем отдельно рассматривать равенство дат
+- [x] DA4.3. **Принято: [J087](2026-10-22-document-architecture-progress.md#j087)/[J088](2026-10-22-document-architecture-progress.md#j088), raw/cached parity и meaningful mutations; изменения эвристик не включены и требуют отдельной приёмки.** Сначала сохранить текущие outcomes. Затем отдельно рассматривать равенство дат
   загрузки, folder-family и имя как эвристики кандидатов: расширение пула/смена выбора —
   поведенческое изменение с отдельным replay и записью принятого расхождения.
 - [ ] DA4.4. Решение включает question/policy version, membership, role, version, completeness,

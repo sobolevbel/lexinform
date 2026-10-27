@@ -30,6 +30,15 @@ boundary adds no stored text or raw-file archive. Block coordinates, parent-cont
 versioned extraction manifests and structured failures remain work in
 [DA3](plans/2026-10-22-document-architecture.md#da3).
 
+File-version comparisons use the same pure module and `CandidateSet`. `TextLoader` downloads
+in the existing source order, refuses official identity conflicts before download, and passes
+prepared candidates to `select_candidate_versions`. The policy returns a selected input index
+and observed parts, an ambiguous selection, or no bill body so the existing fallback can run.
+The body predicate stays in the policy; the loader filters while reading to avoid retaining
+rejected bodies beyond its cache. These are transient candidates, with the existing version
+and membership rules; richer decision persistence/admissibility remains DA4. See
+[J088](plans/2026-10-22-document-architecture-progress.md#j088).
+
 `PypdfTextExtractor.extract_pages` now returns `PdfTextExtraction` (`pdf-pages-v1`): input SHA,
 pypdf version, raw page text, physical `pdf-page:N:0` coordinates and per-page read errors.
 Empty pages retain their positions. A page-tree failure leaves the total page count unknown;

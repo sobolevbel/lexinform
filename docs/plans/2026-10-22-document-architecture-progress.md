@@ -4457,3 +4457,60 @@ Schema **51**, migrations/default flags/SQL data прежние, production stor
 rollback J086 без state conversion. Local HTTP не повторён: новых сетевых wiring/transports нет.
 DA3/DA4 остаются частичными: loose URLs и operation-specific admissibility ещё не перенесены.
 План **74 задачи, 14 выполнены, 60 unchecked** (DA8.3 неприменим); goal active.
+
+<a id="j088"></a>
+### J088. DA4: common candidates and pure file-version choice
+
+Дата: 27 октября 2026. База: J087 (`23367da5f75cb3d9597102aa499bf6f8fbe597cc`). Статус: принято локально; deployment проверяется отдельно.
+
+`CandidateSet`/`DocumentCandidate` — общий transient snapshot для archive peers и отдельных
+файлов. Header/body predicate и version choice принадлежат pure module document_candidates.
+Loader владеет download/source order, pre-download official conflict guard и exception handling;
+после pure decision дочитывает выбранный комплект и добавляет source evidence как прежде.
+Неподходящие bodies отсекаются domain predicate в ходе чтения, чтобы не удерживать их сверх
+старого cache footprint. DTO не сохраняет новый text/context в SQL и не назначает provenance.
+
+Typed outcomes: selected input index + observed parts / ambiguous selection / no bill body,
+при котором сохраняется прежний fallback. Порядок input priority, признаки versions и схема
+DocumentSelection прежние; новый CandidateSet не является legal completeness verdict.
+
+Focused **128 passed** (5 новых file-candidate checks + 123 прежних), strict mypy **434** файлов,
+Ruff/format green. Первый Ruff UP037 на quoted forward annotation исправлен через Self.
+Проверены sparse indices, равные версии и source priority, material conflict diagnostics,
+scan/non-bill fallback, классификация тела отдельно от filename/role label.
+Structural proof: source order, pre-download guard и read/exception control flow совпали;
+bill predicate равен старому filter, остальные **10 loader methods** побайтно по AST прежние.
+
+Cached QA **4276 cases**, все прежние fields/input hashes/counts совпали; **1383 missing inputs**
+остаются exclusions. **12 controls + 60 meaningful mutations** совпали с J087.
+Raw baseline переиспользует qualified J087 outputs: их src/tools hashes сначала сверены
+с архивом J088 baseline (commit J087), без подмены code provenance. Fresh raw current и full gate
+выполняются. Corpus/index не меняется; storage delta **0**, schema/flags прежние.
+
+J087 release проверен по `23367da5f75cb3d9597102aa499bf6f8fbe597cc`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40523700525) — **4767 passed**,
+strict mypy 434 файла, Ruff, docs/web success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40524826351) — exact COMMIT,
+`cf757aced644 -> 23367da5f75c`, listener up 45 s. Первый log fetch дал connector internal error;
+повтор вернул полный log. Отдельного live processing не было.
+
+Final corpus J088: **1865 raw paths / 1837 unique bytes**, все прежние model hashes/membership/
+status и input SHA совпали; final population проверена. **4 ZIP >32 MB** — прежние явные exclusions.
+Raw states **1665 unverified / 191 unsupported / 5 ambiguous**, extraction errors **0**;
+не объявляются 1861 доказанной legal edition. Cached **4276 cases**, **1383 missing inputs**
+сохранены; все прежние fields/input hashes прежние. **12 controls + 60 material mutations**
+и Corpus CI **7** / process **3294** приняты без изменения решений; manifests verified.
+
+Full **4772 passed**, failures/errors/skips/xfails 0, **619.138 s**; focused **128 passed**,
+mypy **434** файла, Ruff/format green. DA4.3 отмечен выполненным: текущие outcomes сохранены
+в обоих переносах, filename/folder/date heuristics не расширены. Это процессная гарантия;
+будущее изменение эвристики требует отдельного behavioral replay, а не объявляется выполненным.
+План теперь **74 задачи, 15 выполнены, 59 unchecked** (DA8.3 неприменим); goal active.
+
+[Acceptance evidence J088](../assets/audits/2026-10-27-common-candidate-policy/validation.json)
+содержит XML/source hashes, I/O/predicate structural checks, full raw/cached parity,
+baseline provenance, corpus manifests и reproduction. Docs/links/diff green.
+Schema **51**, migrations/serialization/default flags прежние, storage delta **0**;
+rollback J087 без state conversion. Local HTTP не повторён: сетевой CLI/wiring прежний.
+DA4.1/DA4.2 остаются частичными для полной provenance/dispositions, fallback/composition
+и operation-specific admissibility; CandidateSet не выдается за завершённую систему этих правил.

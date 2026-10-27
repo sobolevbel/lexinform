@@ -1,4 +1,11 @@
-from lexinform.document_candidates import select_document_parts
+from lexinform.document_candidates import (
+    AmbiguousCandidates,
+    CandidateSet,
+    DocumentCandidate,
+    SelectedCandidate,
+    select_candidate_versions,
+    select_document_parts,
+)
 from lexinform.models import DocumentPart, ExtractedParts
 
 BILL = (
@@ -47,3 +54,71 @@ def test_confirmed_versions_with_different_amounts_remain_ambiguous() -> None:
     result = select_document_parts(physical, max_part_chars=400_000)
     assert result.selection.state == "ambiguous" and not result.text
     assert len(result.selection.observed_parts) == len(result.selection.parts) == 2
+
+
+def test_file_selection_keeps_input_indices_after_non_bill_candidates() -> None:
+    bill = DocumentPart(text=BILL)
+    physical = DocumentPart(text="Physical appendix")
+    candidates = CandidateSet(
+        (
+            DocumentCandidate("scan", None),
+            DocumentCandidate("reasons", "UZASADNIENIE"),
+            DocumentCandidate("bill", BILL, (bill,), (bill, physical)),
+        )
+    )
+    choice = select_candidate_versions(candidates)
+    assert isinstance(choice, SelectedCandidate), (
+        "the policy selects the sole header-classified bill"
+    )
+    assert choice.index == 2 and choice.observed_parts == (bill, physical)
+
+
+def test_equal_file_versions_preserve_official_input_priority() -> None:
+    first = DocumentPart(text=BILL, members=("z.pdf",))
+    second = DocumentPart(text=BILL, members=("a.pdf",))
+    candidates = CandidateSet(
+        (
+            DocumentCandidate("https://api.test/z.pdf", BILL, (first,)),
+            DocumentCandidate("https://api.test/a.pdf", BILL, (second,)),
+        )
+    )
+    choice = select_candidate_versions(candidates)
+    assert isinstance(choice, SelectedCandidate), "equal bill versions retain the input priority"
+    assert choice.index == 0 and choice.observed_parts == (first, second)
+
+
+def test_conflicting_file_versions_keep_only_bill_members_and_source_reasons() -> None:
+    first = DocumentPart(text=BILL, members=("one.pdf",))
+    second = DocumentPart(text=BILL.replace("200 zł", "300 zł"), members=("two.pdf",))
+    candidates = CandidateSet(
+        (
+            DocumentCandidate("opinion", "UZASADNIENIE"),
+            DocumentCandidate("one", first.text, (first,)),
+            DocumentCandidate("two", second.text, (second,)),
+        )
+    )
+    choice = select_candidate_versions(candidates)
+    assert isinstance(choice, AmbiguousCandidates), (
+        "different normative amounts conflict under the version policy"
+    )
+    assert choice.selection.state == "ambiguous" and choice.selection.parts == (first, second)
+    assert choice.selection.rejected == (
+        "one: conflicting bill version",
+        "two: conflicting bill version",
+    )
+    assert not choice.selection.observed_parts
+
+
+def test_no_bill_body_leaves_the_loader_fallback_available() -> None:
+    candidates = CandidateSet(
+        (DocumentCandidate("scan", None), DocumentCandidate("reasons", "UZASADNIENIE"))
+    )
+    assert select_candidate_versions(candidates) is None
+
+
+def test_physical_parts_share_body_classification_without_trusting_a_filename_role() -> None:
+    labelled = DocumentPart(text="UZASADNIENIE", members=("projekt.pdf",), role="bill")
+    bill = DocumentPart(text=BILL, members=("other.pdf",))
+    candidates = CandidateSet.from_parts((labelled, bill))
+    assert candidates.bill_indices() == (1,)
+    assert candidates.entries[1].parts == candidates.entries[1].observed_parts == (bill,)

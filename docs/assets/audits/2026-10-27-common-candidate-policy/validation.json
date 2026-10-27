@@ -1,0 +1,207 @@
+{
+  "version": 1,
+  "stage": "J088",
+  "baseline": "23367da5f75cb3d9597102aa499bf6f8fbe597cc",
+  "scope": "A common transient CandidateSet for package peers and files; pure file-version choice and diagnostics, with loader-owned guarded I/O and existing body filtering footprint.",
+  "checks": {
+    "focused": {
+      "sha256": "43ae6f286459c5cdf22a925682865c3adbcdc28cc14daa638d64251ffa667abc",
+      "tests": 128,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.091
+    },
+    "full": {
+      "sha256": "8c874c1b0bc4e8449fb61ee5f4567e94be89cb5fed59d84607b99c0667bf5fdb",
+      "tests": 4772,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 619.138
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 434 source files",
+    "ruff": "All checks passed!",
+    "format": "1 file reformatted, 434 files left unchanged",
+    "docs": "Documentation links, anchors, resources and build contents: OK"
+  },
+  "source": [
+    {
+      "path": "src/lexinform/document_candidates.py",
+      "sha256": "66c7988ee6bad3d2d272308027724dfa8a1d043e4e2467736e0cdca6aa309fae"
+    },
+    {
+      "path": "src/lexinform/services/documents.py",
+      "sha256": "d70b6269803575e4da974fd6a31dd49d19861f5a3cce6b1e23a6a0f31264e739"
+    },
+    {
+      "path": "tests/unit/test_document_candidates.py",
+      "sha256": "b9418da9c6eede59980d978cb114357e1160ff82bbe9a743c16b2217839b5ab6"
+    }
+  ],
+  "structural_parity": {
+    "source_order_and_predownload_identity_guard_equal": true,
+    "read_and_exception_control_flow_equal": true,
+    "pure_bill_predicate_equal_to_old_filter": true,
+    "other_loader_methods_unchanged": 10,
+    "source_specific_branches_added": false,
+    "scope": "Structural I/O and predicate parity; version/output parity is validated separately by replay."
+  },
+  "raw": {
+    "raw_cases": 1865,
+    "zip_paths": 1803,
+    "single_file_cases": 62,
+    "unique_raw_files": 1837,
+    "states": {
+      "unverified": 1665,
+      "ambiguous": 5,
+      "unsupported": 191,
+      "excluded_download_limit": 4
+    },
+    "all_raw_model_hashes_and_selected_members_equal": true,
+    "final_population_equal": true,
+    "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "positive_controls": 12,
+    "meaningful_mutations": 60,
+    "all_material_changes_ambiguous": true,
+    "all_mutation_profiles_equal": true,
+    "excluded_download_limit": [
+      {
+        "path": "documents/files/584479.zip",
+        "bytes": 63159743,
+        "sha256": "1ba1b05f40686650520c6b8f36fb02ff383e04ea4015f827c8757b8f89e8e72c"
+      },
+      {
+        "path": "documents/files/700362.zip",
+        "bytes": 50968331,
+        "sha256": "9fd51f4645cc96c69dcd85e08badabc0bc69e90355de4ec7e146dca26957ca96"
+      },
+      {
+        "path": "documents/files/700988.zip",
+        "bytes": 49386521,
+        "sha256": "adcef58753e388c2a5d25a1185b9027be4c1484cc5a04988f70773a2d6e36911"
+      },
+      {
+        "path": "documents/files/780688.zip",
+        "bytes": 33259230,
+        "sha256": "aa6797247413b58f2be4a83634da30843bbe3044d20165902344b4492d66a6e0"
+      }
+    ],
+    "inputs_unchanged": true,
+    "observer_sha256": "d3fac1aa2908c08317aefba261f196a3952ab14266640c27282b1bf6ebdce920"
+  },
+  "cached": {
+    "candidate_cases": 4276,
+    "candidate_counts": {
+      "ambiguous": 123,
+      "no_candidate": 205,
+      "selected": 2273,
+      "unsupported": 669,
+      "unverified": 925,
+      "waiting": 81
+    },
+    "missing_cached_inputs": 1383,
+    "complete_population": false,
+    "all_candidate_fields_and_input_hashes_equal": true,
+    "positive_controls": 12,
+    "meaningful_mutations": 60,
+    "all_mutation_profiles_equal": true
+  },
+  "baseline_data": {
+    "source": "qualified J087 current replay",
+    "actual_src_tools_equal_j088_baseline_snapshot": true,
+    "raw_sha256": "0b306aca331aeccccbed068ce199e51262fb53b7a3f36a109c16293f6d65835d",
+    "cached_sha256": "67d90daf5854fa604ba3f5172f9d4c69839bac8c19f838821c8fb0d501183a81"
+  },
+  "runtime": {
+    "python": "3.14.7",
+    "libraries": {
+      "pypdf": "6.17.0",
+      "inflate64": "1.0.4",
+      "olefile": "0.47",
+      "pydantic": "2.13.5"
+    }
+  },
+  "corpus": {
+    "ci_observations": 7,
+    "process_observations": 3294,
+    "process_diff": {
+      "after_manifest_sha256": "7a1aeaabbb82ac14b0677aef6c9040bf6e5757b39430d8ced95c75aee9e9f5b5",
+      "before_manifest_sha256": "c633c6f294f654ffaedce02838ab73bb562b5315028fbc7e4f3492d423e7e101",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "process",
+      "summary_changes": {},
+      "version": 1
+    },
+    "manifests_verified": true,
+    "index_and_external_inputs_unchanged": true
+  },
+  "state": {
+    "schema": 51,
+    "migrations_and_serialization_unchanged": true,
+    "storage_delta": 0
+  },
+  "rollback": {
+    "code": "J087",
+    "state_conversion": false
+  },
+  "evidence": [
+    {
+      "path": "out/corpus/j088/raw-current.json",
+      "sha256": "8332f98de94d23d94f8117572aa4f3bbfa5e58e0dae417264a7aa3f10a13434a"
+    },
+    {
+      "path": "out/corpus/j088/mutations-current.json",
+      "sha256": "b19d088129de8db15294432e17fd460a3bc830ad61906f7565e9210be5290bfc"
+    },
+    {
+      "path": "out/corpus/j088/candidates-current.json",
+      "sha256": "3887bafb5987281c7f93eb4fda8bc035a2ed7ec66547db2ac1a3b9980f656d51"
+    }
+  ],
+  "observers": [
+    {
+      "path": "out/corpus/j088/raw_profile.py",
+      "sha256": "d3fac1aa2908c08317aefba261f196a3952ab14266640c27282b1bf6ebdce920"
+    },
+    {
+      "path": "out/corpus/j088/mutation_profile.py",
+      "sha256": "7904e7e92ca869032187a3e897cde8e377a92b84812a553afa8bd76a17ff362c"
+    },
+    {
+      "path": "out/corpus/j088/candidate_profile.py",
+      "sha256": "6de4c69861e555fe2f54b296fc6bcf068e31ac7c94239be019b40470b924bda7"
+    },
+    {
+      "path": "out/corpus/j088/compare_replays.py",
+      "sha256": "905d296f89082be385d934792a209e3564d8b1c2b6e7169fcf84f59f0a113e1e"
+    },
+    {
+      "path": "out/corpus/j088/structural_parity.py",
+      "sha256": "63240fe03bfefa72cdd7bd632ae10952591bfd829190b6e4b79c4e589015ba25"
+    }
+  ],
+  "exclusions": [
+    "Four ZIPs above 32 MB are inventoried but not parsed.",
+    "Sixty-two singles are a first-five-per-extension/family slice; no full raw-single population claim.",
+    "Cached replay retains 1383 missing inputs and is not an independent legal gold standard.",
+    "Twelve distinct extracted texts are regression probes, not independent initiatives or a holdout.",
+    "CandidateSet is transient; full provenance/disposition persistence and operation-specific admissibility remain open.",
+    "No paid/production processing, model or Telegram call; no originals stored in state.",
+    "Local HTTP not repeated: network CLI/wiring/transport unchanged."
+  ],
+  "reproduction": [
+    "uv run pytest -q tests/unit/test_document_candidates.py tests/unit/test_document_text.py tests/unit/test_physical_extraction.py tests/unit/test_document_selection_audit.py tests/unit/test_document_selection_contract.py tests/unit/test_document_selection_evaluation.py",
+    "uv run pytest -q && uv run mypy && uv run ruff check src tests tools",
+    "DA_SELECTION_MODE=current PYTHONPATH=src:. uv run python out/corpus/j088/raw_profile.py",
+    "DA_SELECTION_MODE=current PYTHONPATH=src:. uv run python out/corpus/j088/candidate_profile.py",
+    "Use new output paths; earlier replay files are immutable evidence.",
+    "PYTHONPATH=src:. uv run python out/corpus/j088/compare_replays.py",
+    "python out/corpus/j088/structural_parity.py"
+  ]
+}

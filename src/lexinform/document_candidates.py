@@ -1,6 +1,9 @@
 """Select the existing legal package from physical parts without file or network I/O."""
 
 import re
+from collections.abc import Sequence
+from dataclasses import dataclass
+from typing import Self
 
 from lexinform.document_versions import comparable_versions, normative_annex_key, regulation_support
 from lexinform.models.documents import (
@@ -19,6 +22,73 @@ _ROLE_OF_KIND: dict[Kind, TextRole] = {
 }
 
 _NOT_THE_BILL = APPENDIX_KINDS | {"letter"}
+
+
+@dataclass(frozen=True)
+class DocumentCandidate:
+    source: str
+    text: str | None
+    parts: tuple[DocumentPart, ...] = ()
+    observed_parts: tuple[DocumentPart, ...] = ()
+
+    @property
+    def is_bill(self) -> bool:
+        return self.text is not None and document_kind(self.text) == "bill"
+
+
+@dataclass(frozen=True)
+class CandidateSet:
+    entries: tuple[DocumentCandidate, ...]
+
+    @classmethod
+    def from_parts(cls, parts: Sequence[DocumentPart]) -> Self:
+        return cls(
+            tuple(
+                DocumentCandidate(str(part.members), part.text, (part,), (part,)) for part in parts
+            )
+        )
+
+    def bill_indices(self) -> tuple[int, ...]:
+        return tuple(index for index, item in enumerate(self.entries) if item.is_bill)
+
+
+@dataclass(frozen=True)
+class SelectedCandidate:
+    index: int
+    observed_parts: tuple[DocumentPart, ...]
+
+
+@dataclass(frozen=True)
+class AmbiguousCandidates:
+    selection: DocumentSelection
+
+
+def select_candidate_versions(
+    candidates: CandidateSet,
+) -> SelectedCandidate | AmbiguousCandidates | None:
+    bill_indices = candidates.bill_indices()
+    if not bill_indices:
+        return None
+    versions = comparable_versions([candidates.entries[index].text or "" for index in bill_indices])
+    if not versions:
+        return AmbiguousCandidates(
+            DocumentSelection(
+                state="ambiguous",
+                parts=tuple(
+                    part for index in bill_indices for part in candidates.entries[index].parts
+                ),
+                rejected=tuple(
+                    f"{candidates.entries[index].source}: conflicting bill version"
+                    for index in bill_indices
+                ),
+            )
+        )
+    observed = tuple(
+        part
+        for index in bill_indices
+        for part in (candidates.entries[index].observed_parts or candidates.entries[index].parts)
+    )
+    return SelectedCandidate(bill_indices[versions[0]], observed)
 
 
 def select_document_parts(
@@ -85,7 +155,8 @@ def _select_parts(
     candidates.sort(key=lambda item: (item[0], item[1].members))
     rank, main = candidates[0]
     peers = [p for r, p in candidates if r[0] == rank[0]]
-    confirmed = [p for p in peers if document_kind(p.text) == "bill"]
+    peer_set = CandidateSet.from_parts(peers)
+    confirmed = [peers[index] for index in peer_set.bill_indices()]
     if len(confirmed) > 1:
         indices = comparable_versions([p.text for p in confirmed])
         if not indices:
