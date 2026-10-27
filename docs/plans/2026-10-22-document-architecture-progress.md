@@ -5442,3 +5442,42 @@ evidence, migration/native/storage gates, backward reader и границы natu
 J105 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40587723748): **4960 passed**,
 strict mypy **461**, Ruff/docs/web success. [Relay deploy](https://github.com/sobolevbel/lexinform/actions/runs/40588556473):
 exact COMMIT `c60f078ec138191e92ed9709e4f41d2f7c7a7ea8`, listener up **45 s**.
+
+
+<a id="j107"></a>
+### J107. Caller-owned capture complete-response URL/SHA receipts
+
+Статус: **готово**, baseline `cf185a03f32834e58ea87c0bf91b252ca485906e`.
+TextLoader сохраняет только clock-free `ArtifactReadIdentity` (requested URL/SHA/size), без bytes
+или worker Clock. Registry обновляется вместе с прежними download counters под тем же lock;
+known metadata переживают counter reset/warm cache/dry-run. Отдельный `DocumentFileReadObserver`
+port подключён к pipeline. Source workers передают matching URL/outer-SHA receipts через общий
+DTO; caller source transaction и finish-run пишут их с Clock. Parent artifact size/first time
+проверяются existing reader. Parser failure до selection сохраняет complete response на finish-run,
+не становясь accepted legal source; failed/over-limit fetch не создаёт receipt.
+
+Вне этих boundaries standalone reads и crash до recording ещё не покрыты; Container.close не
+получает скрытых writes. Raw bytes, HTTP headers, source dates, backend/flags не добавлены.
+Source/policy/input/result IDs не меняются. AST download processing и прежних service methods
+exact после удаления observation hooks; models/schema/extractors/admission/payloads неизменны.
+
+**78 focused / 21 local HTTP CLI** passed, strict mypy **463** с/без PYTHONPATH, Ruff/format green.
+Tests: workers1/4/caller writes, parser vs fetch outage, size limit, aliases/changed body, dry-run
+rollback + warm cache и standalone positive primary source transaction. Initial test использовал
+несуществующий root over_limit counter; исправлен на сумму известных per-host outcomes до gate.
+
+**168 native cases**: requests/messages/profiles и **24 прежних tables exact**, изменения только
+в `artifact_reads`: **270 receipt views**, SQL delta **271–1116 bytes**, gzip **57–235**.
+Source doctor **0 errors**; J106 reader сохраняет **168 SQL / 324 report views** exact.
+Real raw **36 files**: read/selection/text/manifest fingerprints baseline/current exact; requested
+URL/raw SHA/size каждого receipt проверены по actual bytes; **140 source part refs**, unlinked0.
+Surrogate URLs, не independent legal gold или full population; output body-free, inputs unchanged.
+Corpus CI **7** / process **3294** verified, inputs/observations same. Полный gate: **4981 passed**,
+0 failures/errors/skips, **585.888 s**.
+
+[Acceptance asset](../assets/audits/2026-10-27-artifact-read-capture/validation.json) пинует
+исходники, native/raw fingerprints и локальные gates.
+
+J106 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40592311832): **4973 passed**,
+strict mypy **462**, Ruff/docs/web success. [Relay deploy](https://github.com/sobolevbel/lexinform/actions/runs/40593342334):
+exact COMMIT `cf185a03f32834e58ea87c0bf91b252ca485906e`, listener up **45 s**.

@@ -1892,6 +1892,7 @@ class AnalysisService:
             document,
             DocumentSelectionRecord.from_selection(file.selection),
             self._loader.artifacts_for_selection(file.selection),
+            reads=self._loader.reads_for_selection(file.selection),
         )
         try:
             return _ReviewRead(self._review_document_of(source, document, file), read)
@@ -3141,6 +3142,7 @@ class AnalysisService:
             document,
             DocumentSelectionRecord.from_selection(file.selection),
             self._loader.artifacts_for_selection(file.selection),
+            reads=self._loader.reads_for_selection(file.selection),
         )
         try:
             return replace(self._load_selected(document, file, trim=trim), source_read=source)

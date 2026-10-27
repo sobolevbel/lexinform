@@ -305,3 +305,12 @@ This reader-first stage starts empty and infers no old downloads from selected U
 A receipt is neither a retained-file locator nor a reliable original download/publication date;
 no bodies, source owners or paid-input lineage are added. The producer remains disabled. See
 [J106](plans/2026-10-22-document-architecture-progress.md#j106).
+
+
+The receipt producer records matching selected-source reads in the source transaction, and the
+remaining known complete responses in pipeline finalization. This includes parser failures before
+a source choice without inventing an accepted document. Known identities survive warm caches,
+metric resets and dry-run rollback; first durable recording remains distinct from first download.
+Failed/over-limit fetches produce no complete receipt. Crash before the relevant recording boundary
+and unrelated standalone reads are still outside scope. See
+[J107](plans/2026-10-22-document-architecture-progress.md#j107).

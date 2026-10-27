@@ -7,6 +7,8 @@ from typing import Literal
 from lexinform.models import (
     ArtifactIdentity,
     ArtifactMetadata,
+    ArtifactReadIdentity,
+    ArtifactReadReceipt,
     DocumentSelectionRecord,
     SelectionArtifactReference,
     SourceObservation,
@@ -21,6 +23,7 @@ class DocumentSourceRead:
     document: TextDocument
     selection: DocumentSelectionRecord
     artifacts: tuple[ArtifactIdentity, ...]
+    reads: tuple[ArtifactReadIdentity, ...] = ()
 
 
 def record_source_read(
@@ -41,7 +44,9 @@ def record_source_read(
         selection_id=source.selection.selection_id,
         recorded_at=recorded_at,
     )
-    record_document_source(repo, source.selection, observation, source.artifacts)
+    record_document_source(
+        repo, source.selection, observation, source.artifacts, reads=source.reads
+    )
 
 
 def record_artifacts(
@@ -56,14 +61,33 @@ def record_artifacts(
         )
 
 
+def record_artifact_reads(
+    repo: BillRepository, reads: tuple[ArtifactReadIdentity, ...], *, recorded_at: dt.datetime
+) -> None:
+    """Persist known complete-body receipts inside the calling transaction."""
+    record_artifacts(repo, reads, recorded_at=recorded_at)
+    for read in reads:
+        repo.save_artifact_read(
+            ArtifactReadReceipt(
+                sha256=read.sha256,
+                byte_size=read.byte_size,
+                requested_url=read.requested_url,
+                recorded_at=recorded_at,
+            )
+        )
+
+
 def record_document_source(
     repo: BillRepository,
     selection: DocumentSelectionRecord,
     observation: SourceObservation,
     artifacts: tuple[ArtifactIdentity, ...],
+    *,
+    reads: tuple[ArtifactReadIdentity, ...] = (),
 ) -> None:
     """Write the source and known outer-body links inside the caller's transaction."""
     record_artifacts(repo, artifacts, recorded_at=observation.recorded_at)
+    record_artifact_reads(repo, reads, recorded_at=observation.recorded_at)
     repo.save_source_observation(selection, observation)
     scopes: tuple[SelectionPartScope, ...] = ("parts", "observed_parts")
     for scope in scopes:

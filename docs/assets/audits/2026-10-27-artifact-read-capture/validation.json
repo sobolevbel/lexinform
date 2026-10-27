@@ -1,0 +1,194 @@
+{
+  "version": 1,
+  "stage": "J107",
+  "baseline": "cf185a03f32834e58ea87c0bf91b252ca485906e",
+  "scope": "Caller-owned metadata-only complete-response receipts; no raw retention or admission/payload policy change.",
+  "checks": {
+    "focused": {
+      "path": "out/corpus/j107/focused.xml",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "78",
+      "time": "2.479",
+      "timestamp": "2026-10-27T23:13:14.748125+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j107/full.xml",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "4981",
+      "time": "585.888",
+      "timestamp": "2026-10-27T23:13:24.274918+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "local-http": {
+      "path": "out/corpus/j107/local-http.xml",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "21",
+      "time": "2.219",
+      "timestamp": "2026-10-27T23:14:46.806277+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy-qualified": "Success: no issues found in 463 source files",
+    "mypy-ci-equivalent": "Success: no issues found in 463 source files",
+    "ruff-qualified": "All checks passed!",
+    "format-qualified": "522 files left unchanged"
+  },
+  "qualification": {
+    "native-parity-qualified": {
+      "cases": 168,
+      "all_profiles_except_metadata_and_storage_metrics_exact": true,
+      "all_requests_and_rendered_messages_exact": true,
+      "all_24_prior_tables_exact": true,
+      "prior_metadata_rows_preserved": true,
+      "read_receipt_views": 270,
+      "source_observation_views": 210,
+      "selection_views": 198,
+      "link_views": 190,
+      "all_source_doctors_without_errors": true,
+      "sql_delta": {
+        "min": 271,
+        "max": 1116
+      },
+      "gzip_delta": {
+        "min": 57,
+        "max": 235
+      }
+    },
+    "raw-parity": {
+      "cases": 36,
+      "all_read_selection_text_and_manifest_fingerprints_exact": true,
+      "input_hashes_equal": true,
+      "receipt_url_raw_sha_and_size_asserted_for_each_case": true,
+      "source_link_views": 140,
+      "scope": "Stratified real raw bodies below bounded limits, surrogate source URLs, actual parser/loader and metadata writes. No source download, body export or independent legal-selection acceptance."
+    },
+    "rollback": {
+      "reader": "J106 cf185a03f32834e58ea87c0bf91b252ca485906e",
+      "cases": 168,
+      "legacy_report_views_read": 324,
+      "all_populated_sql_dumps_preserved_exact": true,
+      "schema_conversion": false
+    },
+    "structural-parity": {
+      "baseline": "cf185a03f32834e58ea87c0bf91b252ca485906e",
+      "download_and_original_service_methods_ast_exact_without_read_receipt_observation": true,
+      "all_models_schema_extractors_admission_policies_prompts_and_paid_payloads_unchanged": true,
+      "changed_runtime": {
+        "src/lexinform/ports.py": "93094c49231742cb70867eee6a6867b9cc2ae741e116c2160affd38a0b2466dc",
+        "src/lexinform/container.py": "c9c1cb6f0aa2083cd18144cb93cdf35e41a3312c1bedd4f1f03afe61c9999cc7",
+        "src/lexinform/services/text_prefilter.py": "48b5b502097d544485a7d57a22ee558a409a7f222437f7a23f390ec99157f725",
+        "src/lexinform/services/analysis.py": "43d61a4a04a1d9d9d8699932cd63a5336dbd20690449bacf76121d864fb36ba8",
+        "src/lexinform/services/documents.py": "6c88bbe43c18ac0e43c6c19e4a3afba4b71f721e052f89fd7b3e771dc046a001",
+        "src/lexinform/services/pipeline.py": "c8bea6aa0977730559884c5e3d1c9d9d7b72577e0b1d458312d52ae3912a29d4",
+        "src/lexinform/services/senate_documents.py": "17a997a6d4aa2d4996239fa7a0b89928ee8c416d18982c3260303a86a8a10f0e",
+        "src/lexinform/services/document_history.py": "c10822a67e9f1d191d13b5cbb05b7696a92c7edbcc635369ef2112f129518867",
+        "tests/scenario/test_artifact_read_capture.py": "bd67b6f184d84e017d71b9d0096368cc14719787c867bf817c43bb8c6002d6f2"
+      }
+    },
+    "ci-diff": {
+      "after_manifest_sha256": "b3c11c92787e7e96532646b15d6797300d2b0222ac400b9f66a401a36335e1d6",
+      "before_manifest_sha256": "0a536a8529094772020f9d63a2a43c73a660da0e1923886259cbc3168673637f",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "ci",
+      "summary_changes": {},
+      "version": 1
+    },
+    "process-diff": {
+      "after_manifest_sha256": "20ab759cef0d811a3f90c7e7ab427cf2eac256b3d324ff33f2336b32d3616fa3",
+      "before_manifest_sha256": "0eff3b2a2c5c65ed08188495165a4afe718973cb4d241f37cb84bda221f06516",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "process",
+      "summary_changes": {},
+      "version": 1
+    }
+  },
+  "evidence": {
+    "out/corpus/j107/raw-metadata-baseline.json": "4866c206fbc14d61d9c4764deead97ed6fa562252c470e5603c0540689ab194d",
+    "out/corpus/j107/verify-process.log": "09696a397f973f0069365df26ff718519a12b898a342f1824381bd2d6aad0513",
+    "out/corpus/j107/mypy-ci-equivalent.log": "c03a022ee0faf6e3859009834422efdd70ba84810630679740b4bdd750ca506d",
+    "out/corpus/j107/handoff-current.log": "423b1d0e014eb1eab96f4420f7b344c2615be505dd574b756ac884826ca74f2d",
+    "out/corpus/j107/explanation-current.log": "423b1d0e014eb1eab96f4420f7b344c2615be505dd574b756ac884826ca74f2d",
+    "out/corpus/j107/corpus-process.log": "09696a397f973f0069365df26ff718519a12b898a342f1824381bd2d6aad0513",
+    "out/corpus/j107/focused.xml": "c45b177c530fc3d9917fb70a655d20b4221339f9ea125ec625b18ae31057fd3b",
+    "out/corpus/j107/raw_reads.py": "7a68f14cdd40c80605f4fd2cad433b1a79cdd22f117314a1b67c3195d9694cdc",
+    "out/corpus/j107/full.log": "36b003da6c465dc2faea3c72bb400a27d58384480e6956b823bc5d6b9bc86d7d",
+    "out/corpus/j107/structural-parity.json": "fffaf9791adf76bb5d1b6f89c4226f0334a6b6c99e29b40288a1d74bd4f6526b",
+    "out/corpus/j107/ruff-initial.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "out/corpus/j107/normal-current.log": "423b1d0e014eb1eab96f4420f7b344c2615be505dd574b756ac884826ca74f2d",
+    "out/corpus/j107/primary-current.xml": "f8880760bba55a654eb6d4765ae6db8c1223fd90f7d2ef1a47c7648fa3161340",
+    "out/corpus/j107/rollback_profile.py": "440b8b12970ae35b3f7fa9f9ba0eab62e45f48c101eecd82a048deee1ad9f25a",
+    "out/corpus/j107/process-diff.json": "53030364ba92e754913e14bf2f2e411c8dabced6e2f154347849c94bc7877531",
+    "out/corpus/j107/raw-metadata-current.json": "fa41bf7db4c3b4c26e8162f30f0a6a644eff094319c2655bf97a7b97206fbc15",
+    "out/corpus/j107/local-http.log": "32faef56d0289369b1ac111e68ee0bb7b2ed1bcf92d3f33b75313bd0556c3e6f",
+    "out/corpus/j107/corpus-ci.log": "ea9c7ad99b1646538e9f508cefb452707df9f2914b05129eb9b56427176381df",
+    "out/corpus/j107/diff-process.log": "19316c1191741ea80d850ddc0a2fce29794645d0c0e7978ff1d9c3d994f1fb13",
+    "out/corpus/j107/admission-current.log": "423b1d0e014eb1eab96f4420f7b344c2615be505dd574b756ac884826ca74f2d",
+    "out/corpus/j107/reuse-current.log": "423b1d0e014eb1eab96f4420f7b344c2615be505dd574b756ac884826ca74f2d",
+    "out/corpus/j107/ruff-focused.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "out/corpus/j107/rollback.json": "416bf065428ddf7f6820f417df1076d63fc44681fccc8b9f1051b4c3b985490f",
+    "out/corpus/j107/normal-current.xml": "b528387804bde8e01272f65a6b502a049e01869686e2e1c7b5fb8f3c455703f5",
+    "out/corpus/j107/format-focused.log": "7d0f8c5dc194877f20526eb6031212d8fe60eed3057b4566e9665db678ff1693",
+    "out/corpus/j107/primary-current.log": "423b1d0e014eb1eab96f4420f7b344c2615be505dd574b756ac884826ca74f2d",
+    "out/corpus/j107/mypy-initial.log": "608d8c4003dc4ddf5011794f1570c5bc58dd49a0533ef2c52f20cd8756576480",
+    "out/corpus/j107/native_profiles.py": "c163e4218a6bebdb3f8e7436dec7794f3bd9758ac30f813ceca21db78a52a57d",
+    "out/corpus/j107/native-parity.log": "454038fb95dd54034a8b5f3edb04a1790b117232a9208732e4557f0ff424dbc1",
+    "out/corpus/j107/raw-parity.json": "6772c025e182bda31db86c9515679df1fecf0e2f2787e5d7abb501c5ef00c81f",
+    "out/corpus/j107/native.log": "62ad82fc52499e91609f14693a0f69fe80c3e368edf60b1098e8b86fbcd287f7",
+    "out/corpus/j107/native-parity-qualified.json": "3570936a1ee4ea322fb52f27c0fa53a8cb15e47e2ab47916744c1f0d2e857acd",
+    "out/corpus/j107/local-http.xml": "2d33561c78d4d246be9251dbd15ccf42909211aa7635a0ada869fd84023dde7b",
+    "out/corpus/j107/raw-baseline.log": "90a6c153b148e6a1b17e98f7ac2083cf3d6c0b49186741f5b66c309f4211f426",
+    "out/corpus/j107/reuse-current.xml": "beeaada8a5d63d74f9790c28470763b42201b5a632bd1b3d5c493abb5f0b3ef7",
+    "out/corpus/j107/rollback.log": "4c2bf9ffc42b512aac5dace0859446783b80eb6dc4a62b815d4f59c14b2da607",
+    "out/corpus/j107/ruff-qualified.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "out/corpus/j107/admission-current.xml": "e10ccf432aeb726bd97a68136de0eb97d94882ef320d1cb3eb83460abc18fcc4",
+    "out/corpus/j107/docs-initial.log": "db3175ede9dd922a25be40df483d91d3c5358ad0b1d815ba5e96a3aba54c9bad",
+    "out/corpus/j107/verify-ci.log": "ea9c7ad99b1646538e9f508cefb452707df9f2914b05129eb9b56427176381df",
+    "out/corpus/j107/format-initial.log": "32545cb3fe0404c6d640f50ceee31bb19c817f0feaa2384fcbc325475932985e",
+    "out/corpus/j107/mypy-focused.log": "8c143f339c57c90d9fe35a536728d600030bba3add9965b29cddf12ecf0d03ab",
+    "out/corpus/j107/raw-current.log": "15614952a32dd252c31092f9f0b2a185e7fcef986bfda31a14d32cd189ce642e",
+    "out/corpus/j107/diff-ci.log": "9b0bed57e614335a93f2b97821d33980438bfeb22f1d9b784552e8af541d2b01",
+    "out/corpus/j107/explanation-current.xml": "81f229110b2028ee56a7956a74ef762c5dc5c0ca57cbe41fafac05d37c4dda18",
+    "out/corpus/j107/handoff-current.xml": "eb2853567edf55eb80e96bf6d379ff15d75956cb780d949b117e5afbca90bddd",
+    "out/corpus/j107/compare_native.py": "0163a9d78dfe40fbaa43c8333663b1b9339660949cbe9ec0c9243a2a11687d33",
+    "out/corpus/j107/ci-diff.json": "90fcd98dc9ec88176d64dbbf0245f29630f4faa3ad3ad0498049e042ebb0c003",
+    "out/corpus/j107/format-qualified.log": "bd431a73c7665b7593b93aa39395a3be17ab0ec06c877c0e7d2602925e847fb3",
+    "out/corpus/j107/structural_profile.py": "4e7a7ff33849c80d910ca506e3eaa68efe7aa493fb99fcd1046bba46e38cd82e",
+    "out/corpus/j107/focused.log": "ac495f87c93297f7a6b6576302f0c026457a444008c68b065caf82d3eed780d0",
+    "out/corpus/j107/mypy-qualified.log": "c03a022ee0faf6e3859009834422efdd70ba84810630679740b4bdd750ca506d",
+    "out/corpus/j107/full.xml": "0f6ad7ab9e7583863be9f9c3e635f96774d982053ef6d7d3ac1ab5a5261d6867"
+  },
+  "sources": {
+    "src/lexinform/ports.py": "93094c49231742cb70867eee6a6867b9cc2ae741e116c2160affd38a0b2466dc",
+    "src/lexinform/container.py": "c9c1cb6f0aa2083cd18144cb93cdf35e41a3312c1bedd4f1f03afe61c9999cc7",
+    "src/lexinform/services/text_prefilter.py": "48b5b502097d544485a7d57a22ee558a409a7f222437f7a23f390ec99157f725",
+    "src/lexinform/services/analysis.py": "43d61a4a04a1d9d9d8699932cd63a5336dbd20690449bacf76121d864fb36ba8",
+    "src/lexinform/services/documents.py": "6c88bbe43c18ac0e43c6c19e4a3afba4b71f721e052f89fd7b3e771dc046a001",
+    "src/lexinform/services/pipeline.py": "c8bea6aa0977730559884c5e3d1c9d9d7b72577e0b1d458312d52ae3912a29d4",
+    "src/lexinform/services/senate_documents.py": "17a997a6d4aa2d4996239fa7a0b89928ee8c416d18982c3260303a86a8a10f0e",
+    "src/lexinform/services/document_history.py": "c10822a67e9f1d191d13b5cbb05b7696a92c7edbcc635369ef2112f129518867",
+    "tests/scenario/test_artifact_read_capture.py": "bd67b6f184d84e017d71b9d0096368cc14719787c867bf817c43bb8c6002d6f2"
+  },
+  "limitations": [
+    "Standalone reads outside source transactions and pipeline finish are not captured.",
+    "No crash-complete receipt before the caller boundary.",
+    "Requested URL and first recording time are not effective redirect URL or source/download date.",
+    "Registry and SQLite contain metadata, not retained bodies."
+  ]
+}

@@ -13,6 +13,7 @@ from lexinform.models import (
     AnalysisRecord,
     ArtifactIdentity,
     ArtifactMetadata,
+    ArtifactReadIdentity,
     ArtifactReadReceipt,
     BackfillReport,
     BatchIntent,
@@ -115,6 +116,10 @@ class DocumentReadMonitor(Protocol):
 
 class DocumentArtifactObserver(Protocol):
     def read_artifacts(self) -> tuple[ArtifactIdentity, ...]: ...
+
+
+class DocumentFileReadObserver(Protocol):
+    def read_artifact_reads(self) -> tuple[ArtifactReadIdentity, ...]: ...
 
 
 class SejmGateway(Protocol):

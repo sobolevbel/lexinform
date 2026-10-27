@@ -36,6 +36,7 @@ from lexinform.document_versions import (
 from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
 from lexinform.models import (
     ArtifactIdentity,
+    ArtifactReadIdentity,
     DocumentPart,
     DocumentReadMetrics,
     DocumentSelection,
@@ -110,6 +111,7 @@ class TextLoader:
         self._download_metrics: dict[str, Counter[str]] = {}
         self._seen_bodies: dict[str, int] = {}
         self._known_bodies: dict[str, int] = {}
+        self._known_reads: dict[str, ArtifactReadIdentity] = {}
 
     def read_artifacts(self) -> tuple[ArtifactIdentity, ...]:
         """Known body identities survive a counter reset without retaining body bytes."""
@@ -117,6 +119,22 @@ class TextLoader:
             return tuple(
                 ArtifactIdentity(sha256=sha, byte_size=size)
                 for sha, size in sorted(self._known_bodies.items())
+            )
+
+    def read_artifact_reads(self) -> tuple[ArtifactReadIdentity, ...]:
+        """Return known complete-response identities without timestamps or body bytes."""
+        with self._lock:
+            return tuple(self._known_reads[key] for key in sorted(self._known_reads))
+
+    def reads_for_selection(self, selection: DocumentSelection) -> tuple[ArtifactReadIdentity, ...]:
+        sources = {
+            (part.url, part.source_sha256) for part in (*selection.parts, *selection.observed_parts)
+        }
+        with self._lock:
+            return tuple(
+                read
+                for _, read in sorted(self._known_reads.items())
+                if (read.requested_url, read.sha256) in sources
             )
 
     def artifacts_for_selection(self, selection: DocumentSelection) -> tuple[ArtifactIdentity, ...]:
@@ -525,7 +543,9 @@ class TextLoader:
                 self._download_metrics[host]["failed"] += 1
             raise
         digest = hashlib.sha256(data).hexdigest()
+        read = ArtifactReadIdentity(sha256=digest, byte_size=len(data), requested_url=url)
         with self._lock:
+            self._known_reads.setdefault(read.read_id, read)
             self._download_metrics[host]["completed"] += 1
             self._download_metrics[host]["body_bytes"] += len(data)
             self._seen_bodies.setdefault(digest, len(data))

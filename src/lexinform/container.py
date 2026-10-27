@@ -782,6 +782,7 @@ class Container:
                 full_track_weekday=self.settings.track_full_weekday,
                 document_reads=self.text_loader(),
                 document_artifacts=self.text_loader(),
+                document_file_reads=self.text_loader(),
             ),
         )
 

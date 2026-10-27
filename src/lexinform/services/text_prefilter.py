@@ -18,6 +18,7 @@ from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
 from lexinform.keywords import WEAK_PATTERNS, KeywordPrefilter, accept_text_hits
 from lexinform.models import (
     ArtifactIdentity,
+    ArtifactReadIdentity,
     Bill,
     BillStatus,
     DocumentSelectionRecord,
@@ -71,13 +72,14 @@ class PrefilterLoad:
     source_document: TextDocument | None = None
     source_selection: DocumentSelectionRecord | None = None
     source_artifacts: tuple[ArtifactIdentity, ...] = ()
+    source_reads: tuple[ArtifactReadIdentity, ...] = ()
 
     def __post_init__(self) -> None:
         if (self.source_document is None) != (self.source_selection is None):
             raise ValueError(
                 "source observation requires both catalog relations and selection metadata"
             )
-        if self.source_artifacts and self.source_selection is None:
+        if (self.source_artifacts or self.source_reads) and self.source_selection is None:
             raise ValueError("artifact observations require the source selection")
 
     @property
@@ -178,7 +180,10 @@ class TextPrefilterService:
                 record_source_read(
                     self._repo,
                     DocumentSourceRead(
-                        loaded.source_document, loaded.source_selection, loaded.source_artifacts
+                        loaded.source_document,
+                        loaded.source_selection,
+                        loaded.source_artifacts,
+                        reads=loaded.source_reads,
                     ),
                     term=bill.term,
                     number=bill.number,
@@ -283,6 +288,7 @@ class TextPrefilterService:
             source_document=located.document,
             source_selection=DocumentSelectionRecord.from_selection(file.selection),
             source_artifacts=self._loader.artifacts_for_selection(file.selection),
+            source_reads=self._loader.reads_for_selection(file.selection),
         )
 
     def _read(self, file: LoadedFile) -> PrefilterLoad:

@@ -461,3 +461,13 @@ recorded_at. Worker identity не содержит Clock; durable receipt пол
 В таблице нет тел или model input, нет backfill по прежним selections/URL. Producer пока выключен.
 Unique URL/SHA index покрывает URL lookup; отдельный redundant URL index не добавлен. См.
 [J106](../plans/2026-10-22-document-architecture-progress.md#j106).
+
+
+[J107](../plans/2026-10-22-document-architecture-progress.md#j107) включает producer. TextLoader
+сохраняет clock-free URL/SHA/size identities без bytes; `DocumentFileReadObserver` отдаёт их caller.
+Selected/observed source parts получают matching receipts в общей source transaction; finish-run
+сохраняет прочие complete responses, включая unselected/неразобранные файлы. Registry переживает
+counter reset/cache reuse и dry-run rollback; durable recording time берётся у caller Clock.
+Failed/over-limit fetch не создаёт complete receipt. Прочие standalone reads без source/finish-run
+boundary и crash до этих boundaries ещё не покрыты. Это не source date, HTTP-header archive или
+retained blob location; новых network calls и backend flags нет.

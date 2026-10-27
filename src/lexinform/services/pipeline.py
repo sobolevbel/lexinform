@@ -21,6 +21,7 @@ from lexinform.ports import (
     BillRepository,
     Clock,
     DocumentArtifactObserver,
+    DocumentFileReadObserver,
     DocumentReadMonitor,
     RunNotifier,
 )
@@ -28,7 +29,7 @@ from lexinform.services.analysis import AnalysisService
 from lexinform.services.commands import CommandService
 from lexinform.services.digest import DigestService
 from lexinform.services.discovery import BillDiscoveryService
-from lexinform.services.document_history import record_artifacts
+from lexinform.services.document_history import record_artifact_reads, record_artifacts
 from lexinform.services.publishing import PublishingService
 from lexinform.services.rcl_discovery import RclDiscoveryService
 from lexinform.services.terms import TermResolver
@@ -99,10 +100,12 @@ class DailyPipeline:
         full_track_weekday: int | None = 0,
         document_reads: DocumentReadMonitor | None = None,
         document_artifacts: DocumentArtifactObserver | None = None,
+        document_file_reads: DocumentFileReadObserver | None = None,
     ) -> None:
         self._repo = repo
         self._document_reads = document_reads
         self._document_artifacts = document_artifacts
+        self._document_file_reads = document_file_reads
         self._discovery = discovery
         self._analysis = analysis
         self._publishing = publishing
@@ -199,6 +202,12 @@ class DailyPipeline:
                             record_artifacts(
                                 self._repo,
                                 self._document_artifacts.read_artifacts(),
+                                recorded_at=self._clock.now(),
+                            )
+                        if self._document_file_reads is not None:
+                            record_artifact_reads(
+                                self._repo,
+                                self._document_file_reads.read_artifact_reads(),
                                 recorded_at=self._clock.now(),
                             )
                         self._repo.finish_run(run_id, report)
