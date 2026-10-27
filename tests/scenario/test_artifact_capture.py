@@ -37,7 +37,7 @@ def test_pipeline_captures_title_hits_and_preserves_the_first_recording_time(wor
     sha = hashlib.sha256(b"%PDF").hexdigest()
     first = world.repo.get_artifact_metadata(sha)
     assert first is not None, "the pipeline captures completed bodies outside text prefilter too"
-    assert not world.repo.list_source_observations(10, "4100")
+    assert [o.purpose for o in world.repo.list_source_observations(10, "4100")] == ["analysis"]
     world.clock.advance(days=30)
 
     report = world.run(track=False)

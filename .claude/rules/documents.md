@@ -42,8 +42,8 @@ What of a document reaches the model, with the prints each rule was derived from
   `pricing.estimate_scan_cost`), keeping the file `sha256` where a text digest would stand; a file
   with neither keeps its text. Only the letter's page is dropped (`sections.scan_page_window` when
   `sections.has_cover_letter` finds the formula; not truncation — `ScannedDocument.truncated` counts
-  only `cover_letter_pages` aside); nothing else of a scan is trimmed. The gate is
-  `AnalysisService._load_text`, the one place every document passes. The prefilter sends an
+  only `cover_letter_pages` aside); nothing else of a scan is trimmed. The admission gate is
+  `AnalysisService._load_selected`, shared by primary source capture and the `_load_text` facade. The prefilter sends an
   unsearchable scan to `analysis_pending` (`TextPrefilterResult.scans`, distinct from `unreadable` =
   no pages); skip reasons name the missed threshold. `TextLoader` alone calls a file textless only
   under `MIN_TEXT_CHARS`, which is why both stages ask `carries_the_document` instead. Before this, 91 of 938 term-10 prints (a

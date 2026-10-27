@@ -5210,3 +5210,56 @@ Ruff/docs/web success. [Relay deployment](https://github.com/sobolevbel/lexinfor
 exact COMMIT `cd9b7f3a5e9f8c7f5defc4c31e455bfe8a4a3604`, `8f86c1b6d443 -> cd9b7f3a5e9f`, up **45 s**.
 [Acceptance asset](../assets/audits/2026-10-27-artifact-diagnostics/validation.json) содержит hashes,
 gates, scope и qualified snapshots. DA2/DA10 остаются частичными в явно перечисленных границах.
+
+
+<a id="j102"></a>
+### J102. Source observations для primary analysis и standalone calls
+
+Статус: **завершён**, baseline `2cc16ddb9d2351b441593df9ed47bb8b11f395d4`.
+First/re-analysis/explanation формируют immutable source metadata до input shaping, отдельно от
+paid selection/computation ID. Worker передаёт metadata и known physical identities, caller
+записывает их существующим atomic repository contract. Ошибки paid preparation возвращают тот же
+тип/reason после сохранения source decision; outage до completed selection не создаёт observation.
+Batch-ready result без нового read не получает вымышленное observation. Повтор сохраняет первое
+время, текущий paid identity не заменяется current-policy source ID.
+
+Admission/shaping body и already-loaded paid preparation body перенесены AST-exact; parser,
+policy, prompt/provider payload и schema не менялись. `_load_text` facade сохраняет прежние типы
+исключений для secondary readers. `Clock` вызывается только на caller thread. Metadata сохраняются
+после возврата prepare; crash внутри prepare всё ещё может потерять source observation —
+pre-paid durable checkpoint здесь не заявлен. Новых bodies/backend/retention pins нет.
+
+**90 focused** passed, включая prefilter/source-history interactions; strict mypy **458** files
+с/без PYTHONPATH, Ruff/format green.
+Initial focused assertions исправлены: quiet re-analysis уже обновлял current selection pointer,
+поэтому проверяется сохранность computation/request ID и ответа; standalone discovery fixture
+получил past since. Это исправления ожиданий/arrange, не изменение runtime policy. Initial Ruff
+нашёл имя exception без Error suffix; исправлено до accepted gate, suppressions не добавлялись.
+
+**168 native snapshots**: все requests/rendered messages, прежние profiles и **20 business tables
+exact**. Все ранее записанные metadata rows сохранены; source doctor **0 errors**. Повторные views:
+**198 source observations / 186 selections / 178 part refs**. SQL delta **0–4046**, gzip **0–607** bytes.
+J101 reader восстанавливает **168 snapshots / 324 run report views** с exact SQL, без conversion.
+Corpus CI **7** / process **3294**, inputs/observations same, manifests verified.
+
+Real raw **36 files**, тот же pinned bounded sample J100: actual parser + full fake-native analysis
+через surrogate print sources; **36 observations**, Bill/reports/contexts/requests/messages exact,
+кроме фактического `report.phase_seconds` (две небольшие duration разницы). Это не legal gold для
+RCL/других source families и не full raw population. INDEX/raw input hashes exact, network/paid
+calls/body export отсутствуют. Полный accepted gate: **4933 passed**, 0 failures/errors/skips, **585.287 s**.
+[Acceptance asset](../assets/audits/2026-10-27-analysis-source-history/validation.json) пинует
+source/evidence hashes, qualified runtime, scope и воспроизводимые observers.
+
+
+J101 release verification: [CI](https://github.com/sobolevbel/lexinform/actions/runs/40576840731)
+**4919 passed**, strict mypy **457**, Ruff/docs/web success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40578004317): exact COMMIT
+`2cc16ddb9d2351b441593df9ed47bb8b11f395d4`, `cd9b7f3a5e9f -> 2cc16ddb9d23`, relay up **45 s**.
+Это проверка release relay, не ручная production обработка.
+
+
+Первый full J102 завершился одним failed expectation в prefilter scan test: теперь существуют
+prefilter и analysis observations с **одним exact selection ID**. Проверка обновлена на обе
+стадии и сохранность общей physical identity/отсутствие provider input в source metadata.
+Runtime не менялся после квалификаций; прежний failed full XML/log сохранён. Accepted повтор
+проверяет финальные tests; исключений/xfail не добавлено.

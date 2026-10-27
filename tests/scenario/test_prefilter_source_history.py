@@ -82,10 +82,13 @@ def test_unreadable_and_scan_decisions_are_retained_without_inventing_paid_input
     report = world.run(track=False)
 
     observed = world.repo.list_source_observations(10, "4100")
-    assert len(observed) == 1
+    assert [o.purpose for o in observed] == (
+        ["prefilter", "analysis"] if scanned else ["prefilter"]
+    )
     selected = world.repo.get_document_selection(observed[0].selection_id)
     assert selected is not None, "the prefilter stores metadata before deciding about a scan"
     assert selected.selection.scan_input is None
+    assert {o.selection_id for o in observed} == {observed[0].selection_id}
     if scanned:
         assert report.text_prefilter_scans == 1 and report.analyzed == 1
     else:

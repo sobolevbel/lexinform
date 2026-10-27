@@ -431,4 +431,9 @@ prefilter пишет metadata/refs вместе с source decision/status; pipel
 известные bodies в finish-run transaction. Metadata survive counter reset/cache reuse, без raw
 bytes; первое время сохраняется. `DocumentPart.source_sha256` — тот же outer-container/member
 выбор, без нового serialized field. Неполные/failed responses не получают guessed SHA/size.
-Standalone analysis/review CLI без pipeline и остальные source-observation producers ещё открыты.
+[J102](../plans/2026-10-22-document-architecture-progress.md#j102) добавляет observations категории
+analysis для first/re-analysis/explanation, включая standalone calls. Metadata view исходного
+selection формируется до input fitting и сохраняется после prepare, независимо от paid input/result identity. Worker возвращает metadata,
+caller transaction записывает decision/observation/known outer refs; ошибка модели сохраняет
+завершённое source decision, source outage — нет. Batch-ready reuse без нового source read не
+создаёт фиктивное observation. Review и прочие secondary consumers остаются открытыми.

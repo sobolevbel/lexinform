@@ -264,3 +264,12 @@ reuse, including after a dry-run rollback; body bytes do not. First recording ti
 original download time. New rows neither retain raw bytes nor pin them for GC; standalone consumers
 outside these capture paths remain outside scope. See
 [J100](plans/2026-10-22-document-architecture-progress.md#j100).
+
+
+Primary analysis now records completed source decisions independently of the later fitted input,
+paid result or delivery. First analysis, re-analysis and explanation use the same caller-thread
+recording boundary, including standalone calls and paid-work failures. A crash before preparation returns can still lose this source observation. Source outages create no
+completed decision; batch-ready reuse without a new read creates no new observation. Existing
+source metadata and first recording times stay immutable. Review/secondary readers remain outside
+this producer's scope. No raw retention, extra request or inferred link to an old paid input is
+introduced. See [J102](plans/2026-10-22-document-architecture-progress.md#j102).

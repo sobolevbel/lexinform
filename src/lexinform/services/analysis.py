@@ -10,7 +10,7 @@ import json
 import logging
 import re
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 from typing import Literal
 
@@ -47,6 +47,7 @@ from lexinform.models import (
     AnalysisRecord,
     AnalysisVerdict,
     ApplicantType,
+    ArtifactIdentity,
     BatchIntent,
     BatchItemMeta,
     BatchProvider,
@@ -66,6 +67,7 @@ from lexinform.models import (
     DocumentReview,
     DocumentReviewRecord,
     DocumentSelection,
+    DocumentSelectionRecord,
     JointBillDescription,
     JointComparison,
     JointContext,
@@ -91,6 +93,7 @@ from lexinform.models import (
     ReviewResultRecord,
     ReviewSource,
     ScannedDocument,
+    SourceObservation,
     Stage,
     StatusChange,
     SupplementContext,
@@ -155,7 +158,8 @@ from lexinform.senate_documents import validate_senate_scan
 from lexinform.services.analysis_applications import apply_analysis
 from lexinform.services.computation_reuse import matching_record, retained_secondary
 from lexinform.services.cost import CostLedger
-from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
+from lexinform.services.document_history import record_document_source
+from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
 from lexinform.services.joint import primary_of, revive_prefilter_skips
 from lexinform.services.result_applications import record_secondary_application
 from lexinform.services.senate_documents import resolve_senate_document, verified_senate_text
@@ -304,6 +308,20 @@ class Waiting:
 
 
 @dataclass(frozen=True)
+class _SourceRead:
+    document: TextDocument
+    selection: DocumentSelectionRecord
+    artifacts: tuple[ArtifactIdentity, ...]
+
+
+class _SourceReadError(Exception):
+    def __init__(self, source: _SourceRead, cause: Exception) -> None:
+        super().__init__(str(cause))
+        self.source = source
+        self.cause = cause
+
+
+@dataclass(frozen=True)
 class _Loaded:
     """What a document turned into for the model: its text, or its pages when it has none.
 
@@ -322,6 +340,7 @@ class _Loaded:
     document: TextDocument | None = None
     selection: DocumentSelection = DocumentSelection()
     projection: TextProjection | None = None
+    source_read: _SourceRead | None = None
 
     @property
     def digest(self) -> str | None:
@@ -397,6 +416,7 @@ class _Prepared:
     memo_key: str | None = None
     triage_memo_key: str | None = None
     from_batch: bool = False
+    source_read: _SourceRead | None = None
 
 
 _WHITESPACE = re.compile(r"\s+")
@@ -666,7 +686,7 @@ class AnalysisService:
         for outcome in fan_out(candidates, prepare, workers=self._options.workers):
             bill = outcome.item
             try:
-                prepared = outcome.result()
+                prepared = self._accept_preparation(bill, outcome.result)
                 if prepared.queued:
                     if not self._enqueue(bill, prepared):
                         result.stopped = self._ledger.stopped
@@ -1404,15 +1424,20 @@ class AnalysisService:
         return record
 
     def explain_bill(self, bill: Bill) -> AnalysisRecord | Waiting:
-        prepared = self._prepare(
+        prepared = self._accept_preparation(
             bill,
-            self._texts.locate(bill),
-            previous=None,
-            triage=False,
-            submit_batch=True,
-            purpose="explanation",
-            history=tuple(
-                self._repo.list_computation_results(bill.term, bill.number, purpose="explanation")
+            lambda: self._prepare(
+                bill,
+                self._texts.locate(bill),
+                previous=None,
+                triage=False,
+                submit_batch=True,
+                purpose="explanation",
+                history=tuple(
+                    self._repo.list_computation_results(
+                        bill.term, bill.number, purpose="explanation"
+                    )
+                ),
             ),
         )
         if prepared.record is not None:
@@ -1465,16 +1490,19 @@ class AnalysisService:
         if ignore_cost_limit:
             self._repo.reset_bill(bill.term, bill.number, BillStatus.ANALYSIS_PENDING)
             bill = self._repo.get(bill.term, bill.number) or bill
-        prepared = self._prepare_first(
+        prepared = self._accept_preparation(
             bill,
-            cost_guard=not ignore_cost_limit,
-            triage=not self._joint_card_exists(bill),
-            submit_batch=self._options.require_batch,
-            history=tuple(
-                self._repo.list_computation_results(bill.term, bill.number, purpose="analysis")
-            )
-            if not ignore_cost_limit
-            else (),
+            lambda: self._prepare_first(
+                bill,
+                cost_guard=not ignore_cost_limit,
+                triage=not self._joint_card_exists(bill),
+                submit_batch=self._options.require_batch,
+                history=tuple(
+                    self._repo.list_computation_results(bill.term, bill.number, purpose="analysis")
+                )
+                if not ignore_cost_limit
+                else (),
+            ),
         )
         if prepared.queued:
             if not self._enqueue(bill, prepared):
@@ -1588,15 +1616,20 @@ class AnalysisService:
             # Already filed and not yet collected: re-detecting it now would queue it twice.
             return bill, False
         located = LocatedText(summary=summary, document=document)
-        prepared = self._prepare(
+        prepared = self._accept_preparation(
             bill,
-            located,
-            previous=bill.analysis,
-            previous_document=previous_document or _source_of(bill.analysis),
-            submit_batch=self._batches(bill)
-            and (self._options.require_batch or "reanalysis" in self._options.batch_kinds),
-            history=tuple(
-                self._repo.list_computation_results(bill.term, bill.number, purpose="reanalysis")
+            lambda: self._prepare(
+                bill,
+                located,
+                previous=bill.analysis,
+                previous_document=previous_document or _source_of(bill.analysis),
+                submit_batch=self._batches(bill)
+                and (self._options.require_batch or "reanalysis" in self._options.batch_kinds),
+                history=tuple(
+                    self._repo.list_computation_results(
+                        bill.term, bill.number, purpose="reanalysis"
+                    )
+                ),
             ),
         )
         if prepared.queued:
@@ -2315,6 +2348,29 @@ class AnalysisService:
                 cached = record.model_dump_json()
         return cached
 
+    def _accept_preparation(self, bill: Bill, prepare: Callable[[], _Prepared]) -> _Prepared:
+        """Record completed source reads on the calling thread, including failed paid work."""
+        try:
+            prepared = prepare()
+        except _SourceReadError as failure:
+            self._record_source_read(bill, failure.source)
+            raise failure.cause from failure
+        if prepared.source_read is not None:
+            self._record_source_read(bill, prepared.source_read)
+        return prepared
+
+    def _record_source_read(self, bill: Bill, source: _SourceRead) -> None:
+        observation = SourceObservation(
+            term=bill.term,
+            number=bill.number,
+            purpose="analysis",
+            document=source.document,
+            selection_id=source.selection.selection_id,
+            recorded_at=self._clock.now(),
+        )
+        with self._repo.atomic():
+            record_document_source(self._repo, source.selection, observation, source.artifacts)
+
     def _prepare(
         self,
         bill: Bill,
@@ -2338,7 +2394,22 @@ class AnalysisService:
         """
         document = located.document
         try:
-            loaded = self._load_text(document)
+            loaded = self._load_source(document)
+        except _SourceReadError as failure:
+            if previous is None or not isinstance(
+                failure.cause, (OrkaUnreachableError, DocumentSelectionError)
+            ):
+                raise
+            return _Prepared(
+                bill,
+                located,
+                "",
+                "metadata_only",
+                previous,
+                first=False,
+                unreadable_reason=str(failure.cause) or type(failure.cause).__name__,
+                source_read=failure.source,
+            )
         except (OrkaUnreachableError, DocumentSelectionError) as exc:
             if previous is None:
                 raise
@@ -2353,6 +2424,41 @@ class AnalysisService:
                 first=False,
                 unreadable_reason=str(exc) or type(exc).__name__,
             )
+        try:
+            prepared = self._prepare_loaded(
+                bill,
+                located,
+                loaded,
+                previous=previous,
+                previous_document=previous_document,
+                cost_guard=cost_guard,
+                triage=triage,
+                submit_batch=submit_batch,
+                purpose=purpose,
+                history=history,
+            )
+        except Exception as exc:
+            if loaded.source_read is None:
+                raise
+            raise _SourceReadError(loaded.source_read, exc) from exc
+        return replace(prepared, source_read=loaded.source_read)
+
+    def _prepare_loaded(
+        self,
+        bill: Bill,
+        located: LocatedText,
+        loaded: _Loaded,
+        *,
+        previous: AnalysisRecord | None,
+        previous_document: TextDocument | None = None,
+        cost_guard: bool = True,
+        triage: bool = True,
+        submit_batch: bool = False,
+        purpose: Literal["analysis", "reanalysis", "explanation"] | None = None,
+        history: tuple[ComputationResult, ...] = (),
+    ) -> _Prepared:
+        """Prepare a paid input from an already observed source without repository writes."""
+        document = located.document
         if loaded.document is not None:
             document = loaded.document
             located = located.model_copy(update={"document": document})
@@ -2955,6 +3061,13 @@ class AnalysisService:
         self._memo.setdefault(key, encoded)
 
     def _load_text(self, document: TextDocument | None, *, trim: bool = True) -> _Loaded:
+        """Preserve secondary readers' exception contract without recording a source observation."""
+        try:
+            return self._load_source(document, trim=trim)
+        except _SourceReadError as failure:
+            raise failure.cause from failure
+
+    def _load_source(self, document: TextDocument | None, *, trim: bool = True) -> _Loaded:
         """Prepare admitted text or pages, propagating failures and blocked selections."""
         if document is None:
             return _Loaded("", False, "metadata_only")
@@ -2972,6 +3085,18 @@ class AnalysisService:
                 "unsupported" if isinstance(exc, ValueError) else "waiting",
                 f"{document.url}: {type(exc).__name__}: {exc}",
             ) from exc
+        source = _SourceRead(
+            document,
+            DocumentSelectionRecord.from_selection(file.selection),
+            self._loader.artifacts_for_selection(file.selection),
+        )
+        try:
+            return replace(self._load_selected(document, file, trim=trim), source_read=source)
+        except Exception as exc:
+            raise _SourceReadError(source, exc) from exc
+
+    def _load_selected(self, document: TextDocument, file: LoadedFile, *, trim: bool) -> _Loaded:
+        """Apply the existing admission and input shaping to a selected source."""
         admission = analysis_admission(
             file.selection, file.text, pages=file.pages, min_chars=MIN_TEXT_CHARS
         )
