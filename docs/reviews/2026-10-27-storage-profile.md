@@ -145,3 +145,20 @@ Read-only tools различают per-run demand и каталог извест
 одна run row ещё без готового report. Это наблюдение quiet run, не оценка обычной нагрузки.
 Source history содержит две selections/observations без ошибок. Подробности и acceptance —
 [J101](../plans/2026-10-22-document-architecture-progress.md#j101).
+
+
+## URL/body receipts и их проверка
+
+[J106–J108](../plans/2026-10-22-document-architecture-progress.md#j106) добавляют отдельные
+metadata receipts requested URL / complete-body SHA / size. Caller source transactions и
+finish-run сохраняют известные complete responses, в том числе до отказа parser. Failed/over-limit
+ответы не получают receipt. Это не locator retained bytes и не effective redirect URL;
+first recorded_at не заменяет дату download или источника. Standalone reads вне этих caller
+boundaries и crash до записи остаются за границами capture.
+
+`tools.source_history_doctor` проверяет immutable identity, parent artifact и размер;
+`tools.document_read_profile` выводит отдельный `artifact_read_receipts` inventory: число receipts,
+unique requested URLs, unique bodies/bytes и UTC день первой записи. Aliases не удваивают bytes.
+Отсутствующая старая таблица отличается от known-empty. Ошибочные rows исключаются из оценок,
+source URLs/body не выводятся; обе команды только читают input snapshot. Исторический поток
+скачиваний из receipt inventory не реконструируется.

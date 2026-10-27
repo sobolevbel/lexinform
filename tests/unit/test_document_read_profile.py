@@ -1,3 +1,4 @@
+import datetime as dt
 import json
 import sqlite3
 from contextlib import closing
@@ -6,7 +7,7 @@ from pathlib import Path
 import pytest
 from tools.document_read_profile import audit, run
 
-from lexinform.models import DocumentReadMetrics, HostDocumentReads
+from lexinform.models import ArtifactReadReceipt, DocumentReadMetrics, HostDocumentReads
 
 
 def metrics() -> DocumentReadMetrics:
@@ -189,3 +190,99 @@ def test_corrupt_artifact_metadata_does_not_become_a_plausible_byte_estimate(
 
     assert result["status"] == "failed"
     assert result["findings"][0]["code"] == "invalid_artifact_metadata"
+
+
+def read_database(tmp_path: Path) -> Path:
+    path = database(tmp_path, [report(None)])
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute("CREATE TABLE artifacts (sha256 TEXT, byte_size INTEGER, recorded_at TEXT)")
+        db.execute(
+            "CREATE TABLE artifact_reads (read_id TEXT, requested_url TEXT, "
+            "artifact_sha256 TEXT, byte_size INTEGER, recorded_at TEXT)"
+        )
+        for sha, size in [("a" * 64, 20), ("b" * 64, 30)]:
+            db.execute(
+                "INSERT INTO artifacts VALUES (?, ?, ?)", (sha, size, "2026-10-27T00:00:00Z")
+            )
+        for url, sha, size, recorded in [
+            ("https://source.test/NEVER-PRINT-URL", "a" * 64, 20, "2026-10-27T00:30:00+02:00"),
+            ("https://source.test/alias", "a" * 64, 20, "2026-10-28T00:00:00Z"),
+            ("https://source.test/NEVER-PRINT-URL", "b" * 64, 30, "2026-10-28T00:00:00Z"),
+        ]:
+            receipt = ArtifactReadReceipt(
+                sha256=sha,
+                byte_size=size,
+                requested_url=url,
+                recorded_at=dt.datetime.fromisoformat(recorded),
+            )
+            db.execute(
+                "INSERT INTO artifact_reads VALUES (?, ?, ?, ?, ?)",
+                (receipt.read_id, url, sha, size, recorded),
+            )
+    return path
+
+
+def test_receipt_inventory_counts_aliases_and_changed_bodies_without_traffic_claims(
+    tmp_path: Path,
+) -> None:
+    path = read_database(tmp_path)
+    before = path.read_bytes()
+
+    result = audit(path)
+
+    receipts = result["artifact_read_receipts"]
+    assert receipts["available"] and not result["findings"]
+    assert receipts["summary"] == {
+        "receipt_rows": 3,
+        "valid_receipts": 3,
+        "unique_requested_urls": 2,
+        "unique_body_identities": 2,
+        "known_unique_body_bytes": 50,
+    }
+    assert receipts["by_first_recorded_day_utc"] == {"2026-10-26": 1, "2026-10-28": 2}
+    assert not result["totals"] and result["summary"]["unmeasured_reports"] == 1
+    assert "NEVER-PRINT-URL" not in json.dumps(result) and path.read_bytes() == before
+
+
+@pytest.mark.parametrize("available", [False, True])
+def test_absent_receipts_are_distinct_from_an_empty_recorded_inventory(
+    tmp_path: Path,
+    available: bool,
+) -> None:
+    path = read_database(tmp_path)
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute("DELETE FROM artifact_reads" if available else "DROP TABLE artifact_reads")
+
+    result = audit(path)
+
+    assert result["artifact_read_receipts"]["available"] == available
+    assert result["artifact_read_receipts"]["summary"].get("receipt_rows") == (
+        0 if available else None
+    )
+
+
+@pytest.mark.parametrize(
+    ("statement", "code"),
+    [
+        ("UPDATE artifact_reads SET read_id='bad'", "artifact_read_identity_mismatch"),
+        ("UPDATE artifact_reads SET recorded_at='2026-10-27'", "invalid_artifact_read"),
+        ("DELETE FROM artifacts", "artifact_read_body_unavailable"),
+        ("UPDATE artifacts SET byte_size=99", "artifact_read_size_mismatch"),
+    ],
+)
+def test_damaged_receipts_do_not_become_plausible_unique_byte_estimates(
+    tmp_path: Path,
+    statement: str,
+    code: str,
+) -> None:
+    path = read_database(tmp_path)
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute(statement)
+
+    result = audit(path)
+
+    assert result["status"] == "failed"
+    assert code in {row["code"] for row in result["findings"]}
+    assert result["artifact_read_receipts"]["summary"]["valid_receipts"] == 0
+    assert result["artifact_read_receipts"]["summary"]["known_unique_body_bytes"] == 0
+    assert "NEVER-PRINT-URL" not in json.dumps(result)

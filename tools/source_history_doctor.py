@@ -6,8 +6,18 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from lexinform.models import DocumentSelectionRecord, SelectionArtifactReference, SourceObservation
-from tools.artifact_metadata import ArtifactMetadataIssue, recorded_artifacts
+from lexinform.models import (
+    ArtifactMetadata,
+    DocumentSelectionRecord,
+    SelectionArtifactReference,
+    SourceObservation,
+)
+from tools.artifact_metadata import (
+    ArtifactMetadataIssue,
+    ArtifactReadIssue,
+    recorded_artifact_reads,
+    recorded_artifacts,
+)
 from tools.corpus_artifacts import write_json
 from tools.sqlite_snapshot import open_snapshot
 
@@ -20,7 +30,7 @@ def audit(database: Path) -> dict[str, Any]:
     findings: list[dict[str, str]] = []
     selections: dict[str, DocumentSelectionRecord] = {}
     referenced: set[str] = set()
-    artifacts: set[str] = set()
+    artifacts: dict[str, ArtifactMetadata] = {}
     linked_artifacts: set[str] = set()
 
     def issue(code: str, ref: str) -> None:
@@ -41,6 +51,8 @@ def audit(database: Path) -> dict[str, Any]:
         if schema >= 53 or _ARTIFACT_TABLES.intersection(tables):
             for name in missing_artifacts:
                 issue("artifact_metadata_table_unavailable", name)
+        if schema >= 54 and "artifact_reads" not in tables:
+            issue("artifact_read_table_unavailable", "artifact_reads")
         if "document_selections" in tables:
             for row in connection.execute(
                 "SELECT rowid AS audit_id, * FROM document_selections ORDER BY rowid"
@@ -110,7 +122,7 @@ def audit(database: Path) -> dict[str, Any]:
                 if isinstance(artifact, ArtifactMetadataIssue):
                     issue("invalid_artifact_metadata", artifact.ref)
                     continue
-                artifacts.add(artifact.sha256)
+                artifacts[artifact.sha256] = artifact
         if "selection_artifacts" in tables:
             for row in connection.execute(
                 "SELECT rowid AS audit_id, * FROM selection_artifacts ORDER BY rowid"
@@ -148,14 +160,31 @@ def audit(database: Path) -> dict[str, Any]:
                     issue("artifact_part_out_of_scope", ref)
                 elif parts[link.part_index].source_sha256 != link.artifact_sha256:
                     issue("artifact_outer_source_mismatch", ref)
+        if "artifact_reads" in tables:
+            for receipt in recorded_artifact_reads(connection):
+                counts["artifact_read_rows"] += 1
+                if isinstance(receipt, ArtifactReadIssue):
+                    issue(receipt.code, receipt.ref)
+                    continue
+                parent = artifacts.get(receipt.sha256)
+                if parent is None:
+                    issue("artifact_read_body_unavailable", receipt.read_id)
+                elif parent.byte_size != receipt.byte_size:
+                    issue("artifact_read_size_mismatch", receipt.read_id)
         if not snapshot.unchanged():
             issue("database_changed_during_audit", "database")
     counts["unreferenced_selection_rows"] = len(set(selections) - referenced)
-    counts["unlinked_artifact_rows"] = len(artifacts - linked_artifacts)
+    counts["unlinked_artifact_rows"] = len(set(artifacts) - linked_artifacts)
     counts["errors"] = len(findings)
     observed = sum(
         counts[name]
-        for name in ("selection_rows", "observation_rows", "artifact_rows", "artifact_link_rows")
+        for name in (
+            "selection_rows",
+            "observation_rows",
+            "artifact_rows",
+            "artifact_link_rows",
+            "artifact_read_rows",
+        )
     )
     return {
         "version": 1,
@@ -164,6 +193,7 @@ def audit(database: Path) -> dict[str, Any]:
         "schema_version": schema,
         "missing_tables": missing,
         "missing_artifact_tables": missing_artifacts,
+        "artifact_reads_available": "artifact_reads" in tables,
         "summary": dict(sorted(counts.items())),
         "findings": findings,
         "scope": "Recorded source/artifact identities, SQL columns and outer-part references.",

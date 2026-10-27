@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "stage": "J108",
+  "baseline": "1b3381b785eb41420cadcb433e1c2e11d4cb99a5",
+  "scope": "Read-only canonical receipt/parent/size diagnostics and separate metadata inventory; no runtime, schema, selection or payload change.",
+  "checks": {
+    "focused-qualified": {
+      "path": "out/corpus/j108/focused-qualified.xml",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "50",
+      "time": "0.482",
+      "timestamp": "2026-10-27T23:26:16.741916+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j108/full.xml",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "4996",
+      "time": "577.035",
+      "timestamp": "2026-10-27T23:26:23.883997+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy-qualified": "Success: no issues found in 463 source files",
+    "ruff-qualified": "All checks passed!",
+    "format-qualified": "463 files left unchanged"
+  },
+  "qualification": {
+    "baseline": "1b3381b785eb41420cadcb433e1c2e11d4cb99a5",
+    "cases": 168,
+    "receipt_views": 270,
+    "all_identity_parent_size_checks_pass": true,
+    "all_input_databases_byte_identical_after_both_readers": true,
+    "runtime_files_byte_identical": 155
+  },
+  "natural": {
+    "state_pin": "fe7036a09d1688d03236c936cda26c876f3ae825",
+    "schema": 53,
+    "receipt_history": "unavailable",
+    "measured_reports": 1,
+    "unmeasured_reports": 380,
+    "rows_without_saved_report": 1,
+    "errors": 0,
+    "scope": "Unchanged original snapshot; no migration or processing."
+  },
+  "sources": {
+    "tools/artifact_metadata.py": "7f2121d0f64851cebdeb5819dfc21d67d55d409ff59789c48bc52a21a708f4bb",
+    "tools/source_history_doctor.py": "e97a75658b6e7d5b6acad6ba2330be8763052bab2690ff0b51a6073a3d14802a",
+    "tools/document_read_profile.py": "3fb168a1caa804ca89b17525bcbbf2330841cc24f196af467c746f698ef2578a",
+    "tests/unit/test_source_history_doctor.py": "9df9aa5f720d00d66c635d68b3dde30fe49bfcbbb69eafb731c3932bb098e8be",
+    "tests/unit/test_document_read_profile.py": "053ab3184dffef3a7c911dafc3305dee919eb751a862d6b49e9ca0271ea41d50"
+  },
+  "evidence": {
+    "out/corpus/j108/qualification.json": "85f5c9760158c6c490f7b4dbc8a848527d0ba0188db2f1a2360d93a2cf81375c",
+    "out/corpus/j108/qualify.py": "08dc83e5f7165b56856fd47668ab2ab2f08eb3c0c0c4d0f8c68cb7f9bf5236b4",
+    "out/corpus/j108/natural-source-doctor.json": "af7f5dd64c6b2defbde0b41f3f0cb26b1e285df6bb0b00a3e68a1e18c6d310d6",
+    "out/corpus/j108/natural-read-profile.json": "1c47ef527daa944ecf7b656830456d71d0624e69bcc7fd1f89be55fbc623f567",
+    "out/corpus/j108/focused-qualified.xml": "fff91da4a7df054fc558d4c6d26579ce3bcb74e35492d67675f77c26f22ebd78",
+    "out/corpus/j108/full.xml": "c071b4794ff47af05016eb592c191a4bbc17cf11461d40a0a1a8f80ad1af6e35"
+  },
+  "limitations": [
+    "Metadata receipts do not establish download demand, source dates, body availability or legal completeness.",
+    "No archive, automatic repair, historical reconstruction or network/model work."
+  ]
+}

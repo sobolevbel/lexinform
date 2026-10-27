@@ -9,7 +9,12 @@ from pathlib import Path
 from typing import Any
 
 from lexinform.models import DocumentReadMetrics
-from tools.artifact_metadata import ArtifactMetadataIssue, recorded_artifacts
+from tools.artifact_metadata import (
+    ArtifactMetadataIssue,
+    ArtifactReadIssue,
+    recorded_artifact_reads,
+    recorded_artifacts,
+)
 from tools.corpus_artifacts import write_json
 from tools.saved_records import SavedTable, saved_columns
 from tools.sqlite_snapshot import open_snapshot
@@ -59,6 +64,11 @@ def audit(database: Path) -> dict[str, Any]:
     findings: list[dict[str, str]] = []
     catalogue: Counter[str] = Counter()
     catalogue_days: dict[str, Counter[str]] = defaultdict(Counter)
+    known_sizes: dict[str, int] = {}
+    read_counts: Counter[str] = Counter()
+    read_days: Counter[str] = Counter()
+    read_urls: set[str] = set()
+    read_bodies: set[str] = set()
 
     def issue(code: str, ref: str, *, level: str = "error") -> None:
         findings.append({"code": code, "ref": ref, "level": level})
@@ -136,11 +146,32 @@ def audit(database: Path) -> dict[str, Any]:
                 if isinstance(artifact, ArtifactMetadataIssue):
                     issue("invalid_artifact_metadata", artifact.ref)
                     continue
+                known_sizes[artifact.sha256] = artifact.byte_size
                 catalogue["known_unique_bodies"] += 1
                 catalogue["known_unique_body_bytes"] += artifact.byte_size
                 day = artifact.recorded_at.astimezone(dt.UTC).date().isoformat()
                 catalogue_days[day]["first_recorded_bodies"] += 1
                 catalogue_days[day]["first_recorded_body_bytes"] += artifact.byte_size
+        if "artifact_reads" in tables:
+            read_counts.update({"receipt_rows": 0, "valid_receipts": 0})
+            for receipt in recorded_artifact_reads(connection):
+                read_counts["receipt_rows"] += 1
+                if isinstance(receipt, ArtifactReadIssue):
+                    issue(receipt.code, receipt.ref)
+                    continue
+                if receipt.sha256 not in known_sizes:
+                    issue("artifact_read_body_unavailable", receipt.read_id)
+                    continue
+                if known_sizes[receipt.sha256] != receipt.byte_size:
+                    issue("artifact_read_size_mismatch", receipt.read_id)
+                    continue
+                read_counts["valid_receipts"] += 1
+                read_urls.add(receipt.requested_url)
+                read_bodies.add(receipt.sha256)
+                read_days[receipt.recorded_at.astimezone(dt.UTC).date().isoformat()] += 1
+            read_counts["unique_requested_urls"] = len(read_urls)
+            read_counts["unique_body_identities"] = len(read_bodies)
+            read_counts["known_unique_body_bytes"] = sum(known_sizes[sha] for sha in read_bodies)
         if not snapshot.unchanged():
             issue("database_changed_during_audit", "database")
     counts["errors"] = sum(row["level"] == "error" for row in findings)
@@ -167,6 +198,12 @@ def audit(database: Path) -> dict[str, Any]:
                 day: dict(sorted(values.items())) for day, values in sorted(catalogue_days.items())
             },
             "scope": "Known complete-body identities; retention and past demand remain separate.",
+        },
+        "artifact_read_receipts": {
+            "available": "artifact_reads" in tables,
+            "summary": dict(sorted(read_counts.items())),
+            "by_first_recorded_day_utc": dict(sorted(read_days.items())),
+            "scope": "Recorded URL/body identities; not traffic, source dates or retained storage.",
         },
         "scope": "Known shared TextLoader observations in saved pipeline run reports.",
         "exclusions": [

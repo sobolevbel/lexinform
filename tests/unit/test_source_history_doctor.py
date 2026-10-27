@@ -10,6 +10,7 @@ from tools.source_history_doctor import audit, run
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import (
     ArtifactMetadata,
+    ArtifactReadReceipt,
     DocumentPart,
     DocumentSelection,
     DocumentSelectionRecord,
@@ -185,3 +186,67 @@ def test_artifact_damage_is_reported_without_a_source_fetch(
     assert result["status"] == "failed"
     assert code in {item["code"] for item in result["findings"]}
     assert MARKER not in json.dumps(result)
+
+
+def read_database(tmp_path: Path) -> Path:
+    path = linked_database(tmp_path)
+    repo = SqliteBillRepository(path)
+    repo.save_artifact_read(
+        ArtifactReadReceipt(
+            sha256="a" * 64,
+            byte_size=20,
+            requested_url="https://source.test/" + MARKER,
+            recorded_at=dt.datetime(2026, 10, 27, tzinfo=dt.UTC),
+        )
+    )
+    repo.close()
+    return path
+
+
+def test_complete_body_receipts_are_checked_without_disclosing_urls(tmp_path: Path) -> None:
+    path = read_database(tmp_path)
+    before = path.read_bytes()
+
+    result = audit(path)
+
+    assert result["artifact_reads_available"]
+    assert result["summary"]["artifact_read_rows"] == 1
+    assert result["status"] == "recorded" and not result["findings"]
+    assert path.read_bytes() == before and MARKER not in json.dumps(result)
+
+
+@pytest.mark.parametrize(
+    ("statement", "code"),
+    [
+        ("UPDATE artifact_reads SET read_id='bad'", "artifact_read_identity_mismatch"),
+        ("UPDATE artifact_reads SET recorded_at='2026-10-27'", "invalid_artifact_read"),
+        ("UPDATE artifact_reads SET requested_url=''", "invalid_artifact_read"),
+        ("DELETE FROM artifacts", "artifact_read_body_unavailable"),
+        ("UPDATE artifacts SET byte_size=21", "artifact_read_size_mismatch"),
+        ("DROP TABLE artifact_reads", "artifact_read_table_unavailable"),
+    ],
+)
+def test_invalid_receipts_and_missing_parents_are_explicit_errors(
+    tmp_path: Path, statement: str, code: str
+) -> None:
+    path = read_database(tmp_path)
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute(statement)
+    before = path.read_bytes()
+
+    result = audit(path)
+
+    assert result["status"] == "failed"
+    assert code in {row["code"] for row in result["findings"]}
+    assert path.read_bytes() == before and MARKER not in json.dumps(result)
+
+
+def test_pre_receipt_schema_absence_remains_unknown(tmp_path: Path) -> None:
+    path = linked_database(tmp_path)
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute("DROP TABLE artifact_reads")
+        db.execute("PRAGMA user_version=53")
+
+    result = audit(path)
+
+    assert not result["artifact_reads_available"] and not result["findings"]

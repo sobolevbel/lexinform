@@ -5481,3 +5481,31 @@ Corpus CI **7** / process **3294** verified, inputs/observations same. Полн�
 J106 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40592311832): **4973 passed**,
 strict mypy **462**, Ruff/docs/web success. [Relay deploy](https://github.com/sobolevbel/lexinform/actions/runs/40593342334):
 exact COMMIT `cf185a03f32834e58ea87c0bf91b252ca485906e`, listener up **45 s**.
+
+
+<a id="j108"></a>
+### J108. Read-only diagnostics of recorded complete-response receipts
+
+Статус: **готово**, baseline `1b3381b785eb41420cadcb433e1c2e11d4cb99a5`.
+Общий metadata reader проверяет canonical read ID, aware recording time и поля receipt.
+Source doctor проверяет presence/size parent artifact; отсутствие receipt table в schema54 —
+ошибка, в schema53 — unknown legacy. Ошибки выводятся по row/identity без URL/body.
+Download profile отдельно считает receipts, unique requested URLs, unique body identities/bytes
+и UTC день первой записи. Aliases не удваивают unique bytes; новый body по прежнему URL остаётся
+отдельным. Unavailable и known-empty inventories различаются; повреждённые receipts не входят
+в byte estimates. Это metadata inventory, не HTTP traffic, source publication date или raw archive.
+
+**50 focused** passed, strict mypy **463**, Ruff/format green. Новые tests покрывают damage,
+missing parent/size conflict, schema absence, aliases/changed bodies, UTC boundary, missing-vs-zero
+и read-only/no-URL output. На **168 saved native snapshots / 270 receipt views** оба reader
+проходят без ошибок и сохраняют каждый input database byte-identical. Все **155 runtime files**
+byte-identical J107. Natural state `fe7036a09d1688d03236c936cda26c876f3ae825`, original schema53,
+без миграции: receipt history unavailable, один measured quiet-zero, 380 unmeasured reports и
+одна row без report; findings0. Полный gate: **4996 passed**, 0 failures/errors/skips, **577.035 s**.
+
+[Acceptance asset](../assets/audits/2026-10-27-artifact-read-diagnostics/validation.json) пинует
+исходники, проверки и qualification script.
+
+J107 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40594687259): **4981 passed**,
+strict mypy **463**, Ruff/docs/web success. [Relay deploy](https://github.com/sobolevbel/lexinform/actions/runs/40595808772):
+exact COMMIT `1b3381b785eb41420cadcb433e1c2e11d4cb99a5`, listener up **45 s**.
