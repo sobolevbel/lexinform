@@ -19,8 +19,12 @@ for document layouts, measured reductions and unsafe shortcuts.
 
 `DocumentTextExtractor.extract_parts` returns an immutable `ExtractedParts` before legal bundle
 selection: input SHA, every extracted readable member with its chain and hashes, and physical
-unpacking failures. Roles remain unknown. `extract_document` assigns the existing roles and
-applies the existing bundle policy; `extract` remains its string interface. Format readers,
+unpacking failures. Roles remain unknown. The pure
+`document_candidates.select_document_parts` assigns roles and chooses the legal package from
+that snapshot, with an explicit `max_part_chars` selection limit. `extract_document` remains
+the compatibility facade calling physical extraction and this policy; `extract` is its string
+interface. The snapshot can serve several consumers without mutation. See
+[J087](plans/2026-10-22-document-architecture-progress.md#j087). Format readers,
 readable extensions, archive limits and physical-loss heuristics are unchanged. This in-memory
 boundary adds no stored text or raw-file archive. Block coordinates, parent-container hashes,
 versioned extraction manifests and structured failures remain work in

@@ -5,6 +5,7 @@ from typing import Never
 
 import pytest
 
+from lexinform import document_candidates
 from lexinform.adapters import document_text
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from tests.fakes import FakeTextExtractor
@@ -56,7 +57,8 @@ def test_physical_extraction_never_invokes_legal_selection(
     monkeypatch: pytest.MonkeyPatch, data: bytes
 ) -> None:
     reader = extractor()
-    monkeypatch.setattr(document_text, "document_kind", refuse_legal_selection)
+    monkeypatch.setattr(document_candidates, "document_kind", refuse_legal_selection)
+    monkeypatch.setattr(document_text, "select_document_parts", refuse_legal_selection)
     monkeypatch.setattr(reader, "extract_document", refuse_legal_selection)
 
     result = reader.extract_parts(data)

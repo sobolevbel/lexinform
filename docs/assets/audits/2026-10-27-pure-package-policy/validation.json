@@ -1,0 +1,256 @@
+{
+  "version": 1,
+  "stage": "J087",
+  "baseline": "cf757aced644ab1bc28aa2ba6835bb00f2324c0f",
+  "scope": "Move legacy package selection and projection into a pure policy over ExtractedParts. Keep the physical extractor facade and explicit selection limit; no heuristic or serialization change.",
+  "checks": {
+    "focused-qualified": {
+      "sha256": "95f0685546eea4ad57b3aeaf857fcd62d5a0d8d4027c2cc41bea09bd3586a2f3",
+      "tests": 123,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.196
+    },
+    "full": {
+      "sha256": "1eee11d88c6cb87717d781613e3a40b29a7876a7d94bff611c9ae25e9f9689c4",
+      "tests": 4767,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 645.66
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 434 source files",
+    "ruff": "All checks passed!",
+    "format": "435 files left unchanged",
+    "docs": "Documentation links, anchors, resources and build contents: OK"
+  },
+  "source": [
+    {
+      "path": "src/lexinform/adapters/document_text.py",
+      "sha256": "fe907f2899dfb12cfdb3d50f6a493e17ce44ba89d532266bd99b6b889a81b26a"
+    },
+    {
+      "path": "src/lexinform/document_candidates.py",
+      "sha256": "83dcd9706c1ace756c5225598952083dcbc1a3ebbf640e32d817d6925c02eb3c"
+    },
+    {
+      "path": "tests/unit/test_document_candidates.py",
+      "sha256": "7c1b0960465bcfc584bc2ba3e2f147950af6bb96f93d0051df67ab1785c61b60"
+    },
+    {
+      "path": "tests/unit/test_physical_extraction.py",
+      "sha256": "5f350638212fe1695ffbe4e951e255b16779486526c68f5a5a10938d20f20891"
+    }
+  ],
+  "structural_parity": {
+    "physical_methods_unchanged": [
+      "__init__",
+      "_collect",
+      "_extract",
+      "_is_pdf",
+      "_pdf_text",
+      "_zip",
+      "extract",
+      "extract_parts",
+      "pages",
+      "select_pages"
+    ],
+    "physical_classes_unchanged": [
+      "DocxTextExtractor",
+      "OdtTextExtractor",
+      "WordXmlTextExtractor",
+      "_WordMl",
+      "_WordNoteOrigins"
+    ],
+    "module_helpers_unchanged": [
+      "_declares_entities",
+      "_is_readable",
+      "_is_word_xml",
+      "_is_zip",
+      "_member_rank",
+      "_member_role",
+      "_normative_annex",
+      "_odt_blocks",
+      "_odt_inline",
+      "_odt_paragraph",
+      "_odt_rows",
+      "_read_member",
+      "_read_xml",
+      "_space_count",
+      "_split_tag",
+      "_wordml_text"
+    ],
+    "selection_body_equal_after_explicit_parameter_and_pure_call_substitution": true,
+    "physical_extract_parts_call_unchanged": true,
+    "new_policy_has_no_adapter_imports": true,
+    "scope": "Structural equality excluding locations, class docstring and the former unused role-order constant; no behavior or import-execution proof by AST alone."
+  },
+  "raw": {
+    "raw_cases": 1865,
+    "zip_paths": 1803,
+    "single_file_cases": 62,
+    "unique_raw_files": 1837,
+    "states": {
+      "unverified": 1665,
+      "ambiguous": 5,
+      "unsupported": 191,
+      "excluded_download_limit": 4
+    },
+    "all_raw_model_hashes_and_selected_members_equal": true,
+    "final_population_equal": true,
+    "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "positive_controls": 12,
+    "meaningful_mutations": 60,
+    "all_material_changes_ambiguous": true,
+    "all_mutation_profiles_equal": true,
+    "excluded_download_limit": [
+      {
+        "path": "documents/files/584479.zip",
+        "bytes": 63159743,
+        "sha256": "1ba1b05f40686650520c6b8f36fb02ff383e04ea4015f827c8757b8f89e8e72c"
+      },
+      {
+        "path": "documents/files/700362.zip",
+        "bytes": 50968331,
+        "sha256": "9fd51f4645cc96c69dcd85e08badabc0bc69e90355de4ec7e146dca26957ca96"
+      },
+      {
+        "path": "documents/files/700988.zip",
+        "bytes": 49386521,
+        "sha256": "adcef58753e388c2a5d25a1185b9027be4c1484cc5a04988f70773a2d6e36911"
+      },
+      {
+        "path": "documents/files/780688.zip",
+        "bytes": 33259230,
+        "sha256": "aa6797247413b58f2be4a83634da30843bbe3044d20165902344b4492d66a6e0"
+      }
+    ],
+    "inputs_unchanged": true,
+    "observer_sha256": "63b3acdf59b7fa2cf6fea037dff3db2041a47a42ea0b197a973df6972022c77e"
+  },
+  "cached": {
+    "cases": 4276,
+    "counts": {
+      "ambiguous": 123,
+      "no_candidate": 205,
+      "selected": 2273,
+      "unsupported": 669,
+      "unverified": 925,
+      "waiting": 81
+    },
+    "missing_inputs": 1383,
+    "complete_population": false,
+    "all_prior_fields_and_input_hashes_equal": true,
+    "scope": "Cached candidate observations; missing sources remain outcomes",
+    "exclusions": [
+      "Cached views do not establish raw bundle, scan or legal completeness."
+    ]
+  },
+  "runtime": {
+    "python": "3.14.7",
+    "libraries": {
+      "pypdf": "6.17.0",
+      "inflate64": "1.0.4",
+      "olefile": "0.47",
+      "pydantic": "2.13.5"
+    }
+  },
+  "corpus": {
+    "ci_observations": 7,
+    "process_observations": 3294,
+    "process_diff": {
+      "after_manifest_sha256": "c633c6f294f654ffaedce02838ab73bb562b5315028fbc7e4f3492d423e7e101",
+      "before_manifest_sha256": "cdb3fc137faece845b60a5ec6084ff4f474029723c5daa80c7f8f138d13eae47",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "process",
+      "summary_changes": {},
+      "version": 1
+    },
+    "manifests_verified": true,
+    "index_and_external_inputs_unchanged": true
+  },
+  "state": {
+    "schema": 51,
+    "migrations_unchanged": true,
+    "serialized_raw_outputs_equal": true,
+    "new_storage": false,
+    "delta": 0
+  },
+  "rollback": {
+    "code": "J086",
+    "migration_or_state_conversion": false
+  },
+  "evidence": [
+    {
+      "path": "out/corpus/j087/raw-baseline.json",
+      "sha256": "b7958f7bc0100c5eefd58bf85432bd5808d9c22c1149622cffd1c340ce1f78ae"
+    },
+    {
+      "path": "out/corpus/j087/raw-current.json",
+      "sha256": "0b306aca331aeccccbed068ce199e51262fb53b7a3f36a109c16293f6d65835d"
+    },
+    {
+      "path": "out/corpus/j087/mutations-baseline.json",
+      "sha256": "9c1ad1db30fadeb5fa5cad3c9477113c077e5423bb9eb4e2aea6c51f0d090b9a"
+    },
+    {
+      "path": "out/corpus/j087/mutations-current.json",
+      "sha256": "e0b4682c7bdfbb441a048b13209cba8e4bb30921e2db954f8e5e6b4ae05551b8"
+    },
+    {
+      "path": "out/corpus/j087/candidates-baseline.json",
+      "sha256": "7ddfdc29a719ab3bf4b9c3c837cecb64cbfbfe42eaced53e1be3e5932321d40c"
+    },
+    {
+      "path": "out/corpus/j087/candidates-current.json",
+      "sha256": "67d90daf5854fa604ba3f5172f9d4c69839bac8c19f838821c8fb0d501183a81"
+    }
+  ],
+  "observers": [
+    {
+      "path": "out/corpus/j087/raw_profile.py",
+      "sha256": "63b3acdf59b7fa2cf6fea037dff3db2041a47a42ea0b197a973df6972022c77e"
+    },
+    {
+      "path": "out/corpus/j087/mutation_profile.py",
+      "sha256": "3957d846765789533e6a12d6b52d9268d15791b918962061abf5effdb809b22b"
+    },
+    {
+      "path": "out/corpus/j087/candidate_profile.py",
+      "sha256": "4390dba55789b1c88e6dbd836b69bb7b814e2ea28a16d81c09f999e9841b82da"
+    },
+    {
+      "path": "out/corpus/j087/compare_replays.py",
+      "sha256": "947e570ca65c7a7dd6c41bdce57d990e4ef857e484fb74287a1735dc4620316e"
+    },
+    {
+      "path": "out/corpus/j087/ast_parity.py",
+      "sha256": "05c7629ed5d342f9371eae859cd546e66f1529bd231d2e8dd73ef663a3f8b801"
+    }
+  ],
+  "exclusions": [
+    "Four ZIPs above 32 MB are inventoried but not extracted; raw state parity is not legal completeness.",
+    "Singles are a first-five-per-extension/family slice, not all raw non-ZIP files.",
+    "Cached replay retains 1383 missing inputs; no complete-population legal-accuracy verdict.",
+    "Twelve distinct extracted texts are regression probes, not independent initiatives or a holdout.",
+    "No paid/production processing, model or Telegram call; no originals stored in state.",
+    "First full gate failed four obsolete monkeypatch locations; test boundary moved and strengthened, then the whole gate reran.",
+    "First cached current replay rejected changing test code; a stable rerun was accepted.",
+    "Local HTTP not repeated: no network CLI/wiring/transport changes."
+  ],
+  "reproduction": [
+    "uv run pytest -q tests/unit/test_document_candidates.py tests/unit/test_document_text.py tests/unit/test_physical_extraction.py tests/unit/test_document_selection_audit.py tests/unit/test_document_selection_contract.py tests/unit/test_document_selection_evaluation.py",
+    "uv run pytest -q && uv run mypy && uv run ruff check src tests tools",
+    "DA_SELECTION_MODE=baseline PYTHONPATH=out/corpus/j087/baseline/src:out/corpus/j087/baseline:. uv run python out/corpus/j087/raw_profile.py",
+    "DA_SELECTION_MODE=current PYTHONPATH=src:. uv run python out/corpus/j087/raw_profile.py",
+    "Use new output paths; existing replay files are immutable evidence.",
+    "PYTHONPATH=src:. uv run python out/corpus/j087/compare_replays.py",
+    "python out/corpus/j087/ast_parity.py"
+  ]
+}

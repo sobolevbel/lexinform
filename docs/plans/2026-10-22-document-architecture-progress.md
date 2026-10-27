@@ -4391,3 +4391,69 @@ state delta **0**. Rollback J085 не меняет state. Local HTTP не пов
 subprocess test, сетевые transports/wiring прежние. Legacy import ещё не включён;
 ответы не связываются с receipts по предположению. План **74 задачи, 14 выполнены, 60 unchecked**
 (DA8.3 неприменим); goal active. Далее — DA3/DA4, перенос selection policy из physical extractor.
+
+<a id="j087"></a>
+### J087. DA3/DA4: pure package-selection policy
+
+Дата: 27 октября 2026. База: J086 (`cf757aced644ab1bc28aa2ba6835bb00f2324c0f`). Статус: принято локально; deployment проверяется отдельно.
+
+Роли, выбор главной редакции, supporting/annex membership и прежний string projection
+вынесены в `document_candidates.select_document_parts`. Вход — существующий frozen
+`ExtractedParts`, лимит `max_part_chars` передаётся явно. Adapter `extract_document` — совместимый
+facade над физическим `extract_parts` и чистой policy. Нет новой serialization/schema,
+input archive, service/source routing или изменения юридической эвристики в этом этапе.
+
+AST qualification подтверждает идентичность **10 physical methods, 5 physical classes и 16 helpers**;
+body policy совпадает после явной замены self parameter и вызова чистой функции. Это structural
+proof, дополненный tests/raw replay, а не самостоятельная юридическая приёмка.
+Первый focused **112 passed**; затем три boundary cases дали **115 passed** и strict mypy 434.
+Полный gate выявил **4 устаревших test seams**: patch document_kind в старом adapter module.
+Тест физической границы переведён на реальный новый classifier/policy, проверка не ослаблена;
+qualified focused **123 passed**, mypy/Ruff green. First full XML/log сохранены отдельно;
+полный gate повторяется после fixture update.
+
+Raw QA охватывает **1865 discovered physical paths**: все **1803 ZIP paths** declared families
+и до пяти одиночных файлов на extension/family. Повторы bytes извлекаются один раз,
+Root/member limit **32 MB**, expanded archive limit **128 MB** прежние. Parsed outputs сравниваются целиком по SHA,
+со state, selected membership и errors. Baseline/current читают отдельные code snapshots,
+assert import paths и source/input SHA; проверка ещё выполняется. Первое observer сравнение
+ошибочно использовало tuple `(sha,size)` как SHA; исправлено без изменений extractor или corpus.
+
+Meaningful probes на **12 distinct extracted RCL texts <=80k chars**: **12 positive controls**,
+**60 mutations** (date/amount/negation/scope/reference внутри первой статьи) на каждой версии;
+все material peer pairs — ambiguous. Synthetic Word-XML ZIP frames детерминированы,
+XML-invalid controls нормализуются только в harness; corpus и legal strings не меняются.
+Это regression slice, не независимые инициативы/holdout и не сохранённый historical input.
+Loose-URL policy остаётся отдельным следующим переносом; DA3/DA4 не объявлены завершёнными.
+
+Raw acceptance: **1865 paths / 1837 unique bytes**, включая **1803 ZIP** и **62** одиночных
+файла. Все model SHA, selected membership, states и inputs совпали; population перепроверена
+после обоих runs. **4 ZIP >32 MB** исключены одинаково, их paths/size/SHA записаны отдельно.
+States **1665 unverified / 191 unsupported / 5 ambiguous**, extraction errors **0**;
+это этап до source evidence, а не 1861 подтверждённых legal editions.
+
+Cached candidate acceptance: **4276 cases**, все outcomes/fields/input hashes прежние;
+**1383 missing cached inputs** сохранены как exclusions, full-population accuracy не заявляется.
+Первый current replay отклонён code guard при test-seam update; повтор после freeze принят.
+Source corpus/index не менялся. Corpus CI **7 passed**, process **3294 observations**,
+changed inputs/decisions **0**, manifests verified.
+
+Повторный full gate: **4767 passed**, failures/errors/skips/xfails 0, **645.660 s**.
+Qualified focused **123 passed**, mypy **434** файлов, Ruff src/tests/tools и format green.
+Source selection/state writes/schema/default flags вне этого переноса прежние.
+
+J086 release проверен по `cf757aced644ab1bc28aa2ba6835bb00f2324c0f`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40515925751) — **4764 passed**,
+strict mypy 432 файлов, Ruff, docs/web success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40517708448) — exact COMMIT,
+`21d6ea180b96 -> cf757aced644`, listener up 45 s. Live processing не запускался.
+
+Final acceptance J087: full **4767 passed**, qualified focused **123 passed**,
+strict mypy **434** файлов, Ruff/format/docs/diff green. Raw **1865 paths** и cached **4276 cases**
+сравнены без изменения inputs/решений; **12 controls + 60 meaningful mutations** на каждой версии.
+[Acceptance evidence](../assets/audits/2026-10-27-pure-package-policy/validation.json)
+содержит XML/source hashes, raw/cached coverage/exclusions, structural proof и reproduction.
+Schema **51**, migrations/default flags/SQL data прежние, production storage delta **0**;
+rollback J086 без state conversion. Local HTTP не повторён: новых сетевых wiring/transports нет.
+DA3/DA4 остаются частичными: loose URLs и operation-specific admissibility ещё не перенесены.
+План **74 задачи, 14 выполнены, 60 unchecked** (DA8.3 неприменим); goal active.

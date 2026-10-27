@@ -499,7 +499,7 @@ paid calls или объявления материалов архивирова
 **Изменяемые места:** `models/documents.py`, extractors PDF/Word/ODT/DOC,
 `StructuredTextExtractor`, `document_text.py`, `document_facts.py`, `services/documents.py`.
 
-- [ ] DA3.1. **Частично: [J042](2026-10-22-document-architecture-progress.md#j042), [J044](2026-10-22-document-architecture-progress.md#j044), [J047](2026-10-22-document-architecture-progress.md#j047).** Отделить раскрытие контейнеров/физическое извлечение от выбора юридического комплекта.
+- [ ] DA3.1. **Частично: [J042](2026-10-22-document-architecture-progress.md#j042), [J044](2026-10-22-document-architecture-progress.md#j044), [J047](2026-10-22-document-architecture-progress.md#j047); [J087](2026-10-22-document-architecture-progress.md#j087), чистая package policy поверх physical snapshot, совместимый facade сохранён.** Отделить раскрытие контейнеров/физическое извлечение от выбора юридического комплекта.
   Возвращать все наблюдённые части, member chain, parent/container/member SHA, отклонения и limits.
 - [ ] DA3.2. **Частично: [J043](2026-10-22-document-architecture-progress.md#j043), [J044](2026-10-22-document-architecture-progress.md#j044), [J046](2026-10-22-document-architecture-progress.md#j046), [J047](2026-10-22-document-architecture-progress.md#j047), [J048](2026-10-22-document-architecture-progress.md#j048), [J049](2026-10-22-document-architecture-progress.md#j049), PDF/Word body и OOXML notes.** Ввести стабильные в пределах extraction координаты блоков: PDF page/index,
   Word XML part + paragraph/table row/cell/note, ODT/DOC собственные адреса или явный unknown.
@@ -537,10 +537,10 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
 **Изменяемые места:** `services/sources.py`, `services/documents.py`, `document_selection.py`,
 `document_bundle.py`, `document_versions.py`, `document_facts.py`, source-specific selectors.
 
-- [ ] DA4.1. Сделать общий `CandidateSet` из extraction parts и официальных source relations.
+- [ ] DA4.1. **Частично: [J087](2026-10-22-document-architecture-progress.md#j087), existing ExtractedParts используется чистой package policy; общий набор official/loose-URL кандидатов ещё не подключён.** Сделать общий `CandidateSet` из extraction parts и официальных source relations.
   Сохранять рассмотренные/исключённые части и основание исключения; ZIP location/filename —
   свидетельство происхождения, а не достаточное доказательство роли/редакции.
-- [ ] DA4.2. Перенести комплектование из `_select_parts` и loose-URL пути в одну чистую политику.
+- [ ] DA4.2. **Частично: [J087](2026-10-22-document-architecture-progress.md#j087), package policy вынесена из physical adapter; loose-URL policy остаётся в loader.** Перенести комплектование из `_select_parts` и loose-URL пути в одну чистую политику.
   Источники продолжают знать официальные связи, достигнутые стадии и тип события. Generic
   loader не ветвится по RCL/Sejm/Senate. Сохранить узкую проверку чужого RCL ID до download.
 - [ ] DA4.3. Сначала сохранить текущие outcomes. Затем отдельно рассматривать равенство дат

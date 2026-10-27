@@ -23,10 +23,9 @@ from zipfile import ZipInfo
 
 from inflate64 import Inflater
 
-from lexinform.document_versions import comparable_versions, normative_annex_key, regulation_support
+from lexinform.document_candidates import select_document_parts
 from lexinform.models.documents import (
     DocumentPart,
-    DocumentSelection,
     ExtractedDocument,
     ExtractedParts,
     PdfPartExtraction,
@@ -38,7 +37,7 @@ from lexinform.models.documents import (
     WordTextBlock,
     WordTextExtraction,
 )
-from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, text_rank, text_role
+from lexinform.models.rcl import READABLE_EXTENSIONS, text_rank
 from lexinform.models.word_notes import (
     NotePartName,
     WordNote,
@@ -53,10 +52,7 @@ from lexinform.ports import (
     WordNoteTextExtractor,
 )
 from lexinform.sections import (
-    APPENDIX_KINDS,
     PAGE_BREAK,
-    Kind,
-    document_kind,
     reads_through_justification,
 )
 from lexinform.word_projection import legacy_word_text
@@ -91,9 +87,6 @@ _MAX_ARCHIVE_BYTES = 128_000_000
 _MAX_ARCHIVE_MEMBERS = 2048
 _MAX_XML_BYTES = 32_000_000
 _MAX_SPACES = 4096  # `<text:s text:c="N"/>`: the count is the file's to choose
-# The order the pieces of a bill package are read in: the bill, its uzasadnienie, the OSR (the
-# trimming in `sections` then drops what the analysis does not need).
-_ROLE_ORDER: dict[TextRole, int] = {"bill": 0, "justification": 1, "osr": 2}
 
 
 class _WordNoteOrigins:
@@ -576,14 +569,7 @@ _ZIP_MAGIC = b"PK\x03\x04"  # .docx, .docm, .odt and plain archives all start li
 
 
 class DocumentTextExtractor:
-    """Routes a file by its magic bytes: PDF, Word (.docx/.docm), legacy Word (.doc), OpenDocument
-    (.odt) or a zip archive of such files (read member by member, bill first; letters, tables and
-    appendices skipped by name); anything else is empty.
-
-    `max_member_bytes` caps the *unpacked* size of an archive member: the download limit only
-    sees the compressed bytes. `max_part_chars` is the length past which a member that does not
-    name itself is not taken for a bill text.
-    """
+    """Route physical formats and retain the legacy package-selection facade."""
 
     def __init__(
         self,
@@ -636,18 +622,7 @@ class DocumentTextExtractor:
         extracted = self.extract_parts(
             data, include_pdf_pages=False, include_word_blocks=False, include_word_notes=False
         )
-        parts: list[DocumentPart] = []
-        for part in extracted.parts:
-            kind = document_kind(part.text) if part.text.strip() else "unknown"
-            parts.append(part.model_copy(update={"role": _ROLE_OF_KIND.get(kind, "unknown")}))
-        rejected = list(extracted.rejected)
-        if len(parts) == 1 and not parts[0].members:
-            part = parts[0]
-            return ExtractedDocument(
-                text=part.text,
-                selection=DocumentSelection(parts=(part,), rejected=tuple(rejected)),
-            )
-        return self._select_parts(parts, rejected)
+        return select_document_parts(extracted, max_part_chars=self._max_part_chars)
 
     def pages(self, data: bytes) -> int:
         """Only a PDF has pages of its own. A Word file paginates when it is rendered, and an
@@ -803,109 +778,6 @@ class DocumentTextExtractor:
                 WordPartNoteExtraction(part_index=len(parts) - 1, extraction=note_result)
             )
 
-    def _select_parts(self, parts: list[DocumentPart], rejected: list[str]) -> ExtractedDocument:
-        candidates: list[tuple[tuple[int, int, int, int], DocumentPart]] = []
-        supporting: list[DocumentPart] = []
-        annexes: list[DocumentPart] = []
-        for part in parts:
-            name = part.members[-1]
-            base = name.rsplit("/", 1)[-1]
-            kind = document_kind(part.text) if part.text.strip() else "unknown"
-            if kind != "bill" and _normative_annex(base, part.text):
-                annexes.append(part.model_copy(update={"role": "normative_annex"}))
-                continue
-            if kind in _NOT_THE_BILL or not part.text.strip():
-                rejected.append(f"{part.members}: {kind}")
-                continue
-            role = _ROLE_OF_KIND.get(kind) or (_member_role(base) if kind == "unknown" else None)
-            if role in ("justification", "osr"):
-                if regulation_support(part.text, name=base):
-                    rejected.append(f"{part.members}: supporting draft regulation")
-                    continue
-                supporting.append(part.model_copy(update={"role": role}))
-                continue
-            if role != "bill":
-                continue
-            if kind == "unknown" and self._max_part_chars and len(part.text) > self._max_part_chars:
-                rejected.append(f"{part.members}: unrecognised long document")
-                continue
-            rank = (
-                0 if kind == "bill" else 1,
-                len(part.members),
-                *text_rank(base, base.rsplit(".", 1)[-1].lower()),
-            )
-            candidates.append((rank, part.model_copy(update={"role": "bill"})))
-        if not candidates:
-            return ExtractedDocument(
-                text=PAGE_BREAK.join(p.text for p in supporting),
-                selection=DocumentSelection(
-                    observed_parts=tuple(parts),
-                    state="unsupported",
-                    parts=tuple(supporting),
-                    rejected=tuple(rejected),
-                ),
-            )
-        candidates.sort(key=lambda item: (item[0], item[1].members))
-        rank, main = candidates[0]
-        peers = [p for r, p in candidates if r[0] == rank[0]]
-        confirmed = [p for p in peers if document_kind(p.text) == "bill"]
-        if len(confirmed) > 1:
-            indices = comparable_versions([p.text for p in confirmed])
-            if not indices:
-                return ExtractedDocument(
-                    selection=DocumentSelection(
-                        observed_parts=tuple(parts),
-                        state="ambiguous",
-                        parts=tuple(confirmed),
-                        rejected=tuple(rejected),
-                    )
-                )
-            main = confirmed[indices[0]]
-        family = main.members[:-1]
-        kept = [main]
-        kept.extend(
-            sorted(
-                (p for p in annexes if p.members[:-1] == family),
-                key=lambda p: normative_annex_key(p.text),
-            )
-        )
-        for role in ("justification", "osr"):
-            matches = [p for p in supporting if p.role == role and p.members[:-1] == family]
-            if matches:
-                kept.append(
-                    min(
-                        matches,
-                        key=lambda p: (
-                            text_rank(p.members[-1], p.members[-1].rsplit(".", 1)[-1].lower()),
-                            p.members,
-                        ),
-                    )
-                )
-        losses = tuple(rejected)
-        return ExtractedDocument(
-            text=PAGE_BREAK.join(p.text for p in kept),
-            selection=DocumentSelection(
-                observed_parts=tuple(parts),
-                parts=tuple(kept),
-                rejected=losses,
-                role=("bill heading",) if document_kind(main.text) == "bill" else (),
-                completeness=()
-                if losses or any(p.losses for p in kept)
-                else ("all selected members extracted",),
-            ),
-        )
-
-
-_ROLE_OF_KIND: dict[Kind, TextRole] = {
-    "bill": "bill",
-    "justification": "justification",
-    "osr": "osr",
-}
-
-_NOT_THE_BILL = APPENDIX_KINDS | {"letter"}
-"""What a package member may not be. The appendices, and a letter: inside a package the covering
-letter is a file of its own, not the opening of the document that follows it."""
-
 
 def _member_rank(info: ZipInfo) -> tuple[int, int]:
     base = info.filename.rsplit("/", 1)[-1]
@@ -921,25 +793,6 @@ def _is_readable(name: str) -> bool:
     if not base or base.startswith(".") or name.startswith("__MACOSX/"):
         return False
     return base.rsplit(".", 1)[-1].lower() in READABLE_EXTENSIONS
-
-
-def _member_role(name: str) -> TextRole | None:
-    base = name.rsplit("/", 1)[-1]
-    if not base or base.startswith(".") or name.startswith("__MACOSX/"):
-        return None
-    if base.rsplit(".", 1)[-1].lower() not in READABLE_EXTENSIONS:
-        return None
-    return text_role(base)
-
-
-def _normative_annex(name: str, text: str) -> bool:
-    return bool(
-        re.search(
-            r"(?im)^\s*za[łl][aą]cznik[^\n]*do (?:(?:niniejszej|projektu) )?ustawy\b",
-            text[:1200],
-        )
-        or re.search(r"za[łl][aą]cznik.*do (?:(?:niniejszej|projektu) )?ustawy", name, re.I)
-    )
 
 
 def _read_xml(archive: zipfile.ZipFile, name: str) -> bytes:
