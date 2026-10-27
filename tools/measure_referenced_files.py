@@ -92,6 +92,9 @@ def audit(database: Path, inventory: Path) -> dict[str, Any]:
         }
         for column in saved_columns(snapshot.connection, tables, catalogue=_CATALOGUE):
             counts["saved_columns"] += 1
+            if not isinstance(column.raw, str | bytes | bytearray):
+                findings.append({"code": "invalid_json", "ref": column.ref})
+                continue
             try:
                 value = json.loads(column.raw)
             except ValueError, TypeError, RecursionError:

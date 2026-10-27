@@ -36,6 +36,7 @@ from lexinform.models import (
     Digest,
     DigestPart,
     DocumentReviewRecord,
+    DocumentSelectionRecord,
     DocumentWork,
     Editorial,
     ExtractedDocument,
@@ -75,6 +76,7 @@ from lexinform.models import (
     SenateAct,
     SittingNews,
     SourceCheck,
+    SourceObservation,
     Stage,
     StatusChange,
     SupplementContext,
@@ -636,6 +638,16 @@ class BillRepository(Protocol):
     ) -> list[ResultApplicabilityObservation]: ...
 
     def save_review_work(self, term: int, number: str, work: tuple[ReviewWork, ...]) -> None: ...
+
+    def save_source_observation(
+        self, selection: DocumentSelectionRecord, observation: SourceObservation
+    ) -> None: ...
+
+    def get_document_selection(self, selection_id: str) -> DocumentSelectionRecord | None: ...
+
+    def get_source_observation(self, observation_id: str) -> SourceObservation | None: ...
+
+    def list_source_observations(self, term: int, number: str) -> list[SourceObservation]: ...
 
     def save_document_review(
         self, term: int, number: str, review: DocumentReviewRecord

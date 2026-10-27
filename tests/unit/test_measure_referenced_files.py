@@ -73,6 +73,21 @@ def test_copies_and_archive_members_do_not_inflate_referenced_original_bytes(
     assert path.read_bytes() == before
 
 
+def test_non_json_sqlite_values_are_reported_without_a_false_empty_success(tmp_path: Path) -> None:
+    manifest = inventory(tmp_path)
+    path = tmp_path / "invalid.db"
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute("CREATE TABLE analysis_memo (key TEXT PRIMARY KEY, record_json)")
+        db.execute("INSERT INTO analysis_memo VALUES ('invalid', 123)")
+
+    report = audit(path, manifest)
+
+    assert report["status"] == "failed"
+    assert report["findings"] == [
+        {"code": "invalid_json", "ref": "analysis_memo/invalid/record_json"}
+    ]
+
+
 def test_encoded_snapshots_use_the_common_walker_without_exposing_text(tmp_path: Path) -> None:
     manifest = inventory(tmp_path)
     value = {"analysis": {"summary": MARKER, "selection": selection()}}

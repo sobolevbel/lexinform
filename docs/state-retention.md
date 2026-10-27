@@ -227,3 +227,10 @@ unknown operations are not deleted on a timer. Thus the payload history is bound
 work, while the lightweight ledger and genuinely pending work can continue growing. This is not
 a hard cap on the entire database. Old Git commits remain available; pruning the current snapshot
 does not rewrite repository history.
+
+Schema 52 introduces deduplicated document-selection metadata and owner/catalog observations.
+This stage provides the reader and atomic repository contract only; production tables start empty.
+History excludes extracted bodies and later provider scan inputs, survives operational memo cleanup,
+and does not imply raw retention or an archive backend. A repeated check preserves the first
+recording time and exact dump; historical paid results acquire no inferred observation. See
+[J095](plans/2026-10-22-document-architecture-progress.md#j095).

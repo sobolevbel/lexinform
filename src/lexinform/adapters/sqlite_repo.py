@@ -41,6 +41,7 @@ from lexinform.models import (
     DeliveryPlan,
     DeliveryResolution,
     DocumentReviewRecord,
+    DocumentSelectionRecord,
     DocumentWork,
     Editorial,
     IncomingCommand,
@@ -65,6 +66,7 @@ from lexinform.models import (
     RunReport,
     SenateAct,
     SourceCheck,
+    SourceObservation,
     Stage,
     StatusChange,
     SupplementRecord,
@@ -571,6 +573,27 @@ MIGRATIONS: tuple[str, ...] = (
     );
     CREATE INDEX ix_result_applicability_owner ON result_applicability(term, number);
     """,
+    """
+    CREATE TABLE document_selections (
+        selection_id TEXT PRIMARY KEY NOT NULL,
+        question TEXT NOT NULL,
+        policy_version TEXT,
+        state TEXT NOT NULL,
+        record_json TEXT NOT NULL
+    );
+    CREATE TABLE source_observations (
+        observation_id TEXT PRIMARY KEY NOT NULL,
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        purpose TEXT NOT NULL CHECK(purpose IN ('prefilter', 'analysis', 'review')),
+        selection_id TEXT NOT NULL REFERENCES document_selections(selection_id),
+        source_url TEXT NOT NULL,
+        source_kind TEXT NOT NULL,
+        observation_json TEXT NOT NULL
+    );
+    CREATE INDEX ix_source_observations_owner ON source_observations(term, number, purpose);
+    CREATE INDEX ix_source_observations_selection ON source_observations(selection_id);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -1032,6 +1055,108 @@ class SqliteBillRepository:
         stored = tuple(row[key] for key in ("observation_id", "result_id", "term", "number"))
         if expected != stored:
             raise ValueError("applicability observation columns differ from the recorded identity")
+        return observation
+
+    def save_source_observation(
+        self, selection: DocumentSelectionRecord, observation: SourceObservation
+    ) -> None:
+        selection = DocumentSelectionRecord.model_validate_json(selection.model_dump_json())
+        observation = SourceObservation.model_validate_json(observation.model_dump_json())
+        if observation.selection_id != selection.selection_id:
+            raise ValueError("a source observation must reference its exact selection metadata")
+        with self.atomic():
+            self._conn.execute(
+                "INSERT INTO document_selections"
+                " (selection_id, question, policy_version, state, record_json)"
+                " VALUES (?, ?, ?, ?, ?)"
+                " ON CONFLICT DO NOTHING",
+                (
+                    selection.selection_id,
+                    selection.selection.question,
+                    selection.selection.policy_version,
+                    selection.selection.state,
+                    selection.model_dump_json(),
+                ),
+            )
+            if self.get_document_selection(selection.selection_id) != selection:
+                raise ValueError("an immutable document selection cannot be replaced")
+            self._conn.execute(
+                "INSERT INTO source_observations"
+                " (observation_id, term, number, purpose, selection_id, source_url, source_kind,"
+                " observation_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+                (
+                    observation.observation_id,
+                    observation.term,
+                    observation.number,
+                    observation.purpose,
+                    observation.selection_id,
+                    observation.document.url,
+                    observation.document.kind,
+                    observation.model_dump_json(),
+                ),
+            )
+            saved = self.get_source_observation(observation.observation_id)
+            assert saved is not None, "the insert retains the observation under its identity"
+            if saved != observation.model_copy(update={"recorded_at": saved.recorded_at}):
+                raise ValueError("an immutable source observation cannot be replaced")
+
+    def get_document_selection(self, selection_id: str) -> DocumentSelectionRecord | None:
+        row = self._conn.execute(
+            "SELECT * FROM document_selections WHERE selection_id=?", (selection_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        record = DocumentSelectionRecord.model_validate_json(row["record_json"])
+        expected = (
+            record.selection_id,
+            record.selection.question,
+            record.selection.policy_version,
+            record.selection.state,
+        )
+        if expected != tuple(
+            row[key] for key in ("selection_id", "question", "policy_version", "state")
+        ):
+            raise ValueError("document selection columns differ from the recorded identity")
+        return record
+
+    def get_source_observation(self, observation_id: str) -> SourceObservation | None:
+        row = self._conn.execute(
+            "SELECT * FROM source_observations WHERE observation_id=?", (observation_id,)
+        ).fetchone()
+        return self._source_observation(row) if row else None
+
+    def list_source_observations(self, term: int, number: str) -> list[SourceObservation]:
+        return [
+            self._source_observation(row)
+            for row in self._conn.execute(
+                "SELECT * FROM source_observations WHERE term=? AND number=? ORDER BY rowid",
+                (term, number),
+            )
+        ]
+
+    @staticmethod
+    def _source_observation(row: sqlite3.Row) -> SourceObservation:
+        observation = SourceObservation.model_validate_json(row["observation_json"])
+        expected = (
+            observation.observation_id,
+            observation.term,
+            observation.number,
+            observation.purpose,
+            observation.selection_id,
+            observation.document.url,
+            observation.document.kind,
+        )
+        columns = (
+            "observation_id",
+            "term",
+            "number",
+            "purpose",
+            "selection_id",
+            "source_url",
+            "source_kind",
+        )
+        if expected != tuple(row[key] for key in columns):
+            raise ValueError("source observation columns differ from the recorded identity")
         return observation
 
     def save_result_application(self, application: ResultApplication) -> None:

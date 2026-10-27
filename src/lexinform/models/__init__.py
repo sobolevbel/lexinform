@@ -142,6 +142,8 @@ from lexinform.models.digest import (
     previous_week,
     week_bounds,
 )
+from lexinform.models.document_history import DocumentSelectionRecord as DocumentSelectionRecord
+from lexinform.models.document_history import SourceObservation as SourceObservation
 from lexinform.models.documents import (
     DocumentCoverage,
     DocumentFact,

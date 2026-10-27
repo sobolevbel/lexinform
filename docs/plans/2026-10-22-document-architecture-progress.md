@@ -4877,3 +4877,64 @@ Final footprint metrics совпали с qualified report; runtime **151 src fi
 Corpus CI **7** и process **3294**: manifests verified, observations/inputs unchanged versus J093.
 [Acceptance asset](../assets/audits/2026-10-27-storage-profile/validation.json) пинует producer,
 данные и проверки; interrupted/промежуточные evidence сохранены, не выданы за final.
+
+
+<a id="j095"></a>
+### J095. Source decision metadata и observations: совместимый reader
+
+Статус: **завершён**, baseline `44d8a2f4e74a006c521a84f8d63472131024ff37`.
+Продолжение DA2.3/DA2.5 на выбранной SQLite; новые production producers пока выключены.
+Данные не выводимы из существующей БД: отвергнутые/ожидающие source decisions и прежние
+официальные relations могут исчезнуть без paid result. Применён migration skill: append-only
+v52, без backfill/понижения schema; источники и потребители анализов не меняются.
+
+`DocumentSelectionRecord` адресует точное metadata view с question/policy/membership/role/
+version/completeness/facts/coverage/losses. Extracted bodies и поздний provider scan input
+запрещены; factory снимает их явно. Evidence quotes остаются частью решения. Unknown policy
+остаётся unknown, future policy opaque. `SourceObservation` адресует owner/purpose и исходные
+официальные `TextDocument` relations с selection ref. First recording time исключено из ID.
+Одинаковое решение разделяется несколькими observations без потери дел/relations; новая SHA по
+прежнему URL не затирает старую запись. Это не legal edition, artifact/raw store или paid identity.
+
+Две таблицы с FK, owner/selection indexes и SQL identity columns. Атомарный repository command
+повторно валидирует входы, проверяет SQL/JSON identities и сохраняет первое время без нового
+row/dump изменения. Caller transaction rollback откатывает обе таблицы. Чтение, corruption,
+restore, разные owners/URL и changed bytes покрыты отдельными поведениями. Legacy v20 fixture
+удаляет обе новые таблицы перед объявлением старой версии; v1 restore проверяет пустой reader.
+
+Fresh state **2f310768040c39deb87f9de1e40e1440cb396aad** восстановлен изолированно в
+`/private/tmp/lexinform-j095`: все прежние rows и **458 Bill JSON** точны, integrity ok,
+foreign-key errors **0**. V51→52: **+814 SQL / +201 gzip bytes**, **22 tables / 35 explicit
+indexes / 8 FK**. Один synthetic selection + две owner observations: **+2217 SQL / +484 gzip**;
+повторная проверка dump exact. J094 reader восстанавливает populated v52 dump побайтно без
+schema conversion. Production pipeline/source/model/Telegram вручную не запускались.
+
+**168 native flows**, workers 1/4, direct/batch/reuse/restore/handoff: requests/rendered messages,
+все прежние profile fields и **20 старых SQL tables точны**. Две новые таблицы пусты во всех
+flows; SQL +814 bytes, gzip +116–132. Первое comparison ожидало прежний набор таблиц внутри
+profile `data`; исправлен observer с явным отдельным assertion пустоты новых таблиц, старые
+rows всё равно сравниваются без исключений. Runtime consumer behavior не включён.
+
+J094 CI **40557403601** выявил недостающий type guard перед `json.loads(column.raw)` в новом
+footprint tool; deploy **40557578548** skipped. Локальный incremental mypy пропустил ошибку.
+Добавлен явный `str|bytes|bytearray` guard и case с malformed non-TEXT SQLite value; прежний
+invalid_json outcome сохранён. Новая проверка mypy выполняется **--no-incremental**. Никакие
+runtime service/extractor semantics этим исправлением не меняются.
+
+
+Корпусная metadata qualification: **4276 cached RCL cases**, **4071** с source decision,
+**205** без кандидата. Captured states: selected **2273**, unverified **925**, unsupported
+**669**, waiting **81**, ambiguous **123**; outcomes не менялись. **3139** unique decisions /
+**3139** owner/catalog observations, metadata JSON **8538729 bytes**, изолированный SQL
+**13188275 / gzip 1447431 bytes**. Это упражнение на всех исторических стадиях, не production
+backfill или прогноз прироста. Repeat checks и restore дают exact dump; source decision metadata
+сохранены точно после явного удаления body/provider scan input. **1383 missing inputs** остаются
+missing; cached role/completeness не объявлены independent legal/raw acceptance. Guard пинует
+**7600 inputs**, corpus INDEX/code не менялись. Corpus CI **7** / process **3294** verified,
+inputs/observations same versus J094. Все reports и observer остаются отдельными evidence.
+
+J095 accepted gate: **75 focused / 4840 full**, **0 failures/errors/skips**, full
+**584.843 s**, strict mypy **443** (`--no-incremental`), Ruff/format green.
+[Acceptance asset](../assets/audits/2026-10-27-source-observation-reader/validation.json) сохраняет
+producer/evidence hashes, размеры, паритет, ограничения и reproduction. Никакие reader payload,
+selection/extraction outcomes или production writer flags не менялись.

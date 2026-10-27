@@ -1,13 +1,13 @@
 # База данных и миграции
 
-Статус: актуальный справочник · проверен 27 октября 2026 по локальному коду, схема **v51**.
+Статус: актуальный справочник · проверен 27 октября 2026 по локальному коду, схема **v52**.
 
 Источник истины — append-only
 [`MIGRATIONS` в sqlite_repo.py](https://github.com/sobolevbel/lexinform/blob/main/src/lexinform/adapters/sqlite_repo.py).
 `SCHEMA_VERSION = len(MIGRATIONS)`, версия конкретной базы — `PRAGMA user_version`.
-После всех миграций: **20 таблиц, 33 явных индекса
-(16 обычных и 17 уникальных), 7 внешних ключей**. Автоиндексы `PRIMARY KEY` и
-`UNIQUE` в эти 33 не входят. Копия production dump также восстановлена в v51:
+После всех миграций: **22 таблицы, 35 явных индексов
+(18 обычных и 17 уникальных), 8 внешних ключей**. Автоиндексы `PRIMARY KEY` и
+`UNIQUE` в эти 35 не входят. Копия production dump также восстановлена в v52:
 `integrity_check=ok`, `foreign_key_check` не вернул ошибок.
 
 ## Визуальная схема
@@ -20,6 +20,8 @@ HTML содержит снимок v34, включая SQL ограничени�
 
 | Таблица | Ключ | Что хранит |
 | --- | --- | --- |
+| `document_selections` (v52) | `selection_id` | Неизменяемые метаданные решения: question, policy version, state, parts/facts/coverage; без extracted bodies и provider scan input. |
+| `source_observations` (v52) | `observation_id`; индексы owner/purpose и selection | Историческая связь дела, официальных document relations и решения; первое время записи сохраняется при повторной проверке. |
 | `document_work` | `key` | Поздний документ: исходное событие, исторический baseline, контекст batch, backoff и состояние. |
 | `bills` | `(term, number)` | Снимки источников, анализ, обработанное наблюдение и состояние очередей. Номер может быть druk, `RPW/…`, `RCL/…` или `WPL/…`. |
 | `status_changes` | `id`; уникальный `(term, number, new_fingerprint)` | Изменения, новые стадии, поправки и приложения. |
@@ -46,7 +48,8 @@ SQL объявляет внешние ключи:
 `llm_batch_items.batch_id → llm_batches.batch_id`;
 `digest_event_links.source_publication_id/owner_publication_id → publications.id` (v40) и
 `result_applications.result_id → computation_results.result_id` (v49) и
-`result_applicability.result_id → computation_results.result_id` (v51).
+`result_applicability.result_id → computation_results.result_id` (v51) и
+`source_observations.selection_id → document_selections.selection_id` (v52).
 Связи по `(term, number)`, ссылки аудита на публикацию и команду — логические,
 без `FOREIGN KEY`. Дайджест относится к неделе и каналу, а не к одному законопроекту.
 
@@ -388,3 +391,14 @@ Canonical history привязана к тому же ELI; первичное з
 если у них нет анализа, связи с продолжением и признака завершения. Ошибка загрузки
 сохраняется для диагностики до успешной проверки. Решения оператора и содержательные
 отказы префильтра не меняются. После обновления следующий прогон повторяет загрузку файла.
+
+V52 добавляет совместимый слой чтения source observations и deduplicated selection metadata.
+Новые таблицы пусты после миграции; producers ещё не включены, старые результаты не backfilled.
+Сохраняется достаточное адресуемое evidence официальных связей (`TextDocument`), а не полный
+каталог сайта. Identity решения включает точные метаданные и policy version; observation identity
+включает owner/purpose/catalog relations/selection ref, исключая время первой записи.
+Обе записи атомарны, SQL identity columns проверяются против JSON. Полные тела и scan provider
+input отвергаются; `from_selection` сохраняет metadata view. Это не legal edition и не raw archive.
+Свежий pin `2f310768040c39deb87f9de1e40e1440cb396aad`: все 458 Bill и прежние rows сохранены,
+пустая схема +814 SQL / 201 gzip bytes; J094 reader сохраняет populated v52 dump побайтно.
+См. [J095](../plans/2026-10-22-document-architecture-progress.md#j095).

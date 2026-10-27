@@ -1,0 +1,234 @@
+{
+  "version": 1,
+  "stage": "J095",
+  "baseline": "44d8a2f4e74a006c521a84f8d63472131024ff37",
+  "scope": "Reader-first immutable source-decision metadata and owner/catalog observations on SQLite; no production producer or raw storage activation.",
+  "checks": {
+    "focused": {
+      "path": "out/corpus/j095/focused-final.xml",
+      "sha256": "9daacb91a19dd079e1d44460cb98bb3185171ce8dd07ae858d95b738fce1536b",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "75",
+      "time": "1.765",
+      "timestamp": "2026-10-27T19:14:04.545743+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j095/full.xml",
+      "sha256": "46710dd276162f90bb552545780fd8b024bbb8c9d7b03c5c78ff46acf5637e5a",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "4840",
+      "time": "584.843",
+      "timestamp": "2026-10-27T19:14:13.166147+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 443 source files",
+    "ruff": "All checks passed!",
+    "format": "503 files left unchanged"
+  },
+  "migration": {
+    "state_pin": "2f310768040c39deb87f9de1e40e1440cb396aad",
+    "baseline_schema": 51,
+    "current_schema": 52,
+    "all_existing_rows_equal": true,
+    "bill_count": 458,
+    "bill_json_sha256": "a232103d4ad276def8984028890e20a5700bd5d914477c5e03c85f699c827fd1",
+    "sql_delta": 814,
+    "gzip_delta": 201,
+    "integrity": [
+      [
+        "ok"
+      ]
+    ],
+    "foreign": [],
+    "old_reader_preserves_populated_schema_52_dump_exact": true
+  },
+  "synthetic_metadata_growth": {
+    "selection_records": 1,
+    "source_observations": 2,
+    "sql_delta": 2217,
+    "gzip_delta": 484,
+    "repeat_dump_exact": true
+  },
+  "native": {
+    "cases": 168,
+    "all_profiles_except_storage_metrics_exact": true,
+    "all_requests_and_rendered_messages_exact": true,
+    "all_20_old_tables_exact": true,
+    "new_metadata_tables_empty": true,
+    "sql_delta": {
+      "min": 814,
+      "max": 814
+    },
+    "gzip_delta": {
+      "min": 116,
+      "max": 132
+    }
+  },
+  "structural": {
+    "changed_src": [
+      "src/lexinform/adapters/sqlite_repo.py",
+      "src/lexinform/models/__init__.py",
+      "src/lexinform/models/document_history.py",
+      "src/lexinform/ports.py"
+    ],
+    "all_existing_repository_methods_ast_identical": true,
+    "existing_repository_methods": 169,
+    "new_repository_methods": [
+      "_source_observation",
+      "get_document_selection",
+      "get_source_observation",
+      "list_source_observations",
+      "save_source_observation"
+    ],
+    "prior_migrations_ast_identical": 51,
+    "appended_migrations": 1,
+    "services_adapters_extraction_and_prompts_unchanged": true
+  },
+  "corpus_metadata": {
+    "counts": {
+      "cases": 4276,
+      "captured": 4071,
+      "state/unsupported": 669,
+      "state/unverified": 925,
+      "state/selected": 2273,
+      "no_candidate": 205,
+      "state/waiting": 81,
+      "state/ambiguous": 123
+    },
+    "unique_selections": 3139,
+    "unique_source_observations": 3139,
+    "selection_metadata_bytes": 8538729,
+    "sql_bytes": 13188275,
+    "gzip_bytes": 1447431,
+    "repeat_dump_exact": true,
+    "restore_dump_exact": true,
+    "all_decision_metadata_exact_after_body_and_input_removal": true,
+    "missing_inputs": 1383,
+    "input_count": 7600,
+    "scope": "Offline metadata persistence exercise on cached RCL candidates and official relation inputs, not new production observations or raw/independent legal acceptance."
+  },
+  "corpus": {
+    "ci": {
+      "observations": 7,
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "29ce69b7fc51b7aefadd76a3bb0b18031a181dd4d33af9519caf32407675aa15",
+        "before_manifest_sha256": "4894626373d43af322ae0e7810efbb64b3cd8f95fe858262b280efac59046024",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "ci",
+        "summary_changes": {},
+        "version": 1
+      }
+    },
+    "process": {
+      "observations": 3294,
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "e23340afb448b1b2e59a075c2bea686fbee04d33a2b1559c17342cb22669147d",
+        "before_manifest_sha256": "2938297b8144e1bcf045c20acbbc00f790b4b8d1963d49c77f0452f50d97f8ec",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "process",
+        "summary_changes": {},
+        "version": 1
+      }
+    }
+  },
+  "source": [
+    {
+      "path": "src/lexinform/models/document_history.py",
+      "sha256": "faa817f9dbd0ab1211c036ec6df9ab7664176ee9964789ed12ce876c348f20e4"
+    },
+    {
+      "path": "src/lexinform/models/__init__.py",
+      "sha256": "4c74b18b0dca3d5da02a3ddcfe083f9ee7d7a9efdce04913a7199ed4f4c02d9e"
+    },
+    {
+      "path": "src/lexinform/ports.py",
+      "sha256": "178c7888dcd8547a6b000983b36ce7830cc1abb68affb168e358c0c4d5b0203e"
+    },
+    {
+      "path": "src/lexinform/adapters/sqlite_repo.py",
+      "sha256": "039e5af1c322eae6c494313d0aebb231e42a7a443a36fc8a935c852bdf1c09c8"
+    },
+    {
+      "path": "tests/unit/test_document_history.py",
+      "sha256": "ef6689d71d7920fc6c4412c4aa8f0bd427de97136e8cfe7e5bc90dc320cc3f7f"
+    },
+    {
+      "path": "tests/unit/test_sqlite_repo.py",
+      "sha256": "6ff01885cd91d677f86c42383de1829cfeefad4c5195b3dff8fb9d94efb830cf"
+    },
+    {
+      "path": "tests/unit/test_measure_referenced_files.py",
+      "sha256": "d24c482fd29c5ac5aed49c77d878c5b0b3f820c69c06ba80518d06aea1745139"
+    },
+    {
+      "path": "tools/measure_referenced_files.py",
+      "sha256": "61fcbc92254e5aa5c2c81366c8c42b53d3f16c7b80b661c9a5efaf9a7d129adc"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "out/corpus/j095/migration_profile.py",
+      "sha256": "adbdc8daedc5373ebb11ca7ec67f9dbcbcbd8d264e62cbd5a11107b9020ee541"
+    },
+    {
+      "path": "out/corpus/j095/migration-parity.json",
+      "sha256": "4e3cc49c1416298f7a26aa575c37326eada37ac7102328106bd961891b36c1dc"
+    },
+    {
+      "path": "out/corpus/j095/compare_native.py",
+      "sha256": "2923e895108eba53549a5d7c5ccb134cd4a5981e263f579ca9bbfa9b906f452b"
+    },
+    {
+      "path": "out/corpus/j095/native-parity.json",
+      "sha256": "d118fdda696405bc00d9ef0326200d603ff02a4b78cd3ca40c6c83aa4b9ee779"
+    },
+    {
+      "path": "out/corpus/j095/native_profiles.py",
+      "sha256": "af1d4ac7e0494f91ff4e186694b519831b6937c38335f7f4b4997e3221f85a5b"
+    },
+    {
+      "path": "out/corpus/j095/corpus_metadata.py",
+      "sha256": "1d41b97485e01e9a1816aa5e7e12a7b0a51308f30c4e6a701b5b4b8d2d0f738d"
+    },
+    {
+      "path": "out/corpus/j095/corpus-metadata.json",
+      "sha256": "fa4f4064836d788d5649d5be98d93612d95bc31907d418bdb6835396a9350718"
+    },
+    {
+      "path": "out/corpus/j095/production-state.sql",
+      "sha256": "955f9681b7bcacbb31ae437236a7cf2118c0e8d48d95d999dce7d9e041c115f3"
+    }
+  ],
+  "exclusions": [
+    "No production writers/backfill, derived edition or raw artifact retention; DA2.3/DA2.5 remain partial.",
+    "Cached corpus has 1383 missing inputs and is not independent legal/raw acceptance.",
+    "Source decisions omit extracted bodies and scan provider inputs; bounded evidence quotes remain.",
+    "Historical first time is never inferred for legacy data.",
+    "J094 CI type-check failure and skipped deploy are recorded; this stage adds the explicit JSON type guard.",
+    "Local HTTP/raw extraction replays not repeated because transport, source choice, extraction and prompts are unchanged.",
+    "Production snapshot is read only; no paid/source/Telegram/manual pipeline calls."
+  ],
+  "reproduction": [
+    "uv run pytest -q tests/unit/test_document_history.py tests/unit/test_sqlite_repo.py tests/unit/test_measure_referenced_files.py",
+    "uv run mypy --no-incremental && uv run ruff check src tests tools && uv run pytest -q",
+    "Run migration_profile.py in baseline/current/rollback modes with isolated database paths and PYTHONPATH; use new evidence paths.",
+    "Run native_profiles.py, compare_native.py and corpus_metadata.py with pinned corpus and fresh output paths."
+  ]
+}

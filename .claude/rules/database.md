@@ -35,3 +35,5 @@ Schema, tables and what each version added: `docs/reference/database.md`; retent
   it never expires uncertain work or a memo needed by pending analysis, tracking or delivery; legacy
   memos without ownership stay protected.
 - Applicability observations retain known source fingerprints separately from immutable paid input; unknown legacy refs stay unknown, and repeated observations preserve the first recording time without adding a row per poll.
+
+- Source decisions and their owner/catalog observations are immutable metadata history; repeated checks retain the first time, and raw/provider-input retention is a separate obligation.
