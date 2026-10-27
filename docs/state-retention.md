@@ -19,7 +19,7 @@ to the transaction that rolls back. All cutoffs are configurable in days:
 | Sent delivery payloads | 90 | Clear `delivery_json` only for confirmed `sent` rows with an old `sent_at`; keep row, IDs, status and deduplication keys. |
 | Batch payloads | — | Remove source text, located text, review documents and answer bodies on the first run after consumption, token accounting and provider cleanup; the owning bill must be settled, without a ready analysis or deferred tracking. Nothing reads them after collection: the answer is in the bill and the memo, the located text in `ready_analysis_json`. Keep item/batch rows, `queued_at`, and token/model/error metadata. |
 | Analysis memo | 180 | Delete entries not used since the cutoff only when ownership is known and the bill is settled. Pending analysis, ready results, deferred tracking, unsent/uncertain publications, queued/submitting intents and unconsumed/unaccounted batch items protect that bill's memos. |
-| Primary computation history | — | New `analysis`/`reanalysis` batch collections retain one validated `AnalysisRecord` or failure receipt per provider item, original usage and one collection decision. This history does not expire with the memo or batch body. No input text, raw file, request body or raw provider response is added. |
+| Computation history | — | New primary collections retain one validated `AnalysisRecord` or failure receipt and collection decision; secondary amendments/supplement/joint/name/explanation retain normalized results or failures. Original usage survives memo and batch-body cleanup. No input text, raw file, request body or raw provider response is added. |
 
 Schema v49 starts primary history from newly collected items; existing completed results are not
 copied or reconstructed. `AnalysisRecord.computation_id` points to that result; previously
@@ -32,9 +32,17 @@ single-account scope; they do not claim cross-account uniqueness.
 The result reader also accepts schema v2 for secondary purposes, with no primary generation.
 It validates the purpose-specific record and matching request/result refs; review output and
 context must agree on the purpose. Nullable computation refs on secondary records are omitted
-from legacy JSON. This is a reader compatibility stage: collection still writes only primary
-history, and no old secondary data is imported. See
+from legacy JSON. The reader compatibility stage is
 [J065](plans/2026-10-22-document-architecture-progress.md#j065).
+The secondary writer in [J066](plans/2026-10-22-document-architecture-progress.md#j066)
+adds amendments, supplement, joint, name and explanation results to the existing memo/consumed
+transaction. Reuse carries the original computation ID with zero new tokens; it does not add a
+paid result. New amendments/supplement metadata pins the known original URL and document number;
+absent legacy values remain unknown in history. Revision delivery work shares the transaction.
+Secondary collection does not change primary status/generation or claim an application receipt.
+Review history writing remains separate to avoid copying full source contexts into result rows.
+No completed legacy secondary results are imported. Rollback of this writer uses the compatible
+J065 reader; SQL schema remains v49.
 Computation validation describes the parsed output schema; it does not certify source
 completeness or legal correctness, which have separate selection and DA9 checks.
 
@@ -52,7 +60,8 @@ and delivery work. Waiting secondary work leaves the current analysis and ready 
 The reanalysis counter advances after that commit; paid usage remains in the existing call ledger.
 Preparation and quiet source checks do not create projection receipts. Ready does not prove
 application or publication, and applied does not prove delivery. Direct identity relocation
-at term rollover and secondary purposes remain in [DA6](plans/2026-10-22-document-architecture.md#da6).
+at term rollover, secondary application receipts and review history remain in
+[DA6](plans/2026-10-22-document-architecture.md#da6).
 Result, collection decision, memo/ready changes and consumed checkpoint commit together;
 run cost acknowledgement retains its existing mechanism.
 The history preserves the paid record when a skip/reset makes it inapplicable. Immutable rows

@@ -130,6 +130,9 @@ Command reference and the relay: `docs/operator-commands.md`.
   Services apply primary analysis only through `services.analysis_applications.apply_analysis`;
   its receipt uses the actual target generation and shares the caller's transaction. Quiet tracking
   of the same result adds no receipt; linking reuses its original computation ID.
+- **Secondary computation history** retains normalized amendments/supplement/joint/name/explanation
+  results with memo/consumed checkpoint; collection adds no primary generation/application receipt.
+  Review history remains separate until source contexts have a compact result representation.
 - **Document reviews** use separate secondary batch purposes and exact source citations.
   Participant positions never prove acceptance, project analyses never prove final-act
   applicability; commission reviews across RCL, Sejm and Senate keep proposals, recommendations and

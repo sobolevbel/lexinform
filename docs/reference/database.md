@@ -1,6 +1,6 @@
 # База данных и миграции
 
-Статус: актуальный справочник · проверен 26 октября 2026 по локальному коду, схема **v49**.
+Статус: актуальный справочник · проверен 27 октября 2026 по локальному коду, схема **v49**.
 
 Источник истины — append-only
 [`MIGRATIONS` в sqlite_repo.py](https://github.com/sobolevbel/lexinform/blob/main/src/lexinform/adapters/sqlite_repo.py).
@@ -28,7 +28,7 @@ HTML содержит снимок v34, включая SQL ограничени�
 | `commands` | `update_id` | Команды Telegram; выполнение (`executed_at`) отделено от ответа (`handled_at`). |
 | `rcl_wykaz_numbers` | `(wykaz_number, project_id)` | Номер wykaz, проект RCL и дата создания; номера wykaz могут использоваться повторно. |
 | `analysis_memo` | `key` | Результат LLM по содержимому, цели и контексту; владелец `(term, number)` и `last_used_at`. |
-| `computation_results` (v49) | `result_id`; уникальный `(provider, batch_id, custom_id)` | Неизменяемый validated primary record либо failure receipt, исходный usage и schema version; без файлов и полных входов. |
+| `computation_results` (v49) | `result_id`; уникальный `(provider, batch_id, custom_id)` | Неизменяемый normalized primary/secondary result либо failure receipt, исходный usage и schema version; без файлов и полных входов. |
 | `result_applications` (v49) | `(result_id, term, number, generation, phase)` | Collection decision и отдельный projection receipt в общем `apply_analysis`; status/generation целевой строки до записи, batch/memo/retained result. Доставку не подтверждает. |
 | `llm_batches` | `batch_id` | Провайдер, состояние batch, оценка стоимости и даты опроса, завершения и очистки. |
 | `llm_batch_items` | `(batch_id, custom_id)` | Задание для bill, метаданные, результат, `consumed_at` и отдельный `accounted_at`. |
@@ -81,7 +81,10 @@ generation guard сохранены. Новое nullable поле `AnalysisRecor
 Projection receipts добавлены без новой SQL-миграции в [J062](../plans/2026-10-22-document-architecture-progress.md#j062):
 сначала `_persist` и direct `reanalyze_bill`. [J063](../plans/2026-10-22-document-architecture-progress.md#j063)
 переводит все service writes основного анализа на общий command, включая RCL/wykaz/linking;
-identity relocation при rollover и secondary results остаются открытыми.
+identity relocation при rollover остаётся открытым.
+[J066](../plans/2026-10-22-document-architecture-progress.md#j066) сохраняет secondary
+amendments/supplement/joint/name/explanation в той же таблице без новой SQL-миграции, schema v2
+в JSON и без primary generation. Secondary application receipts и compact review history открыты.
 
 ## Снимки и обработанное состояние
 

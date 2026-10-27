@@ -3275,3 +3275,75 @@ green. Local HTTP не запускался: CLI/wiring/network adapters не м
 profiles. 140 runtime files совпали побайтово, AST 12 provider answer/context schemas прежний.
 Локальные outputs: `out/corpus/j065`, registry runs `j065-*`. Следующий этап включает writer
 без full input contexts в history; цель всего плана остаётся active.
+
+J065 выпущен: `54aad3d90d350958ccda544e3b2516f562817856`,
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40437670571) success:
+**4296 passed / 32 deselected**, strict mypy 404 файла, lint green; web/docs jobs success.
+[Deploy relay](https://github.com/sobolevbel/lexinform/actions/runs/40438358632) success:
+exact COMMIT, `beba3f2b5754 → 54aad3d90d35`, сервис up 45 s после restart.
+Evidence: `out/corpus/j065/release.json`. Ручной production pipeline не запускался.
+
+<a id="j066"></a>
+### J066. DA6: immutable secondary results с memo/consumed checkpoint
+
+Дата: 27 октября 2026. База: `54aad3d90d350958ccda544e3b2516f562817856`.
+Статус: реализован и принят локально; выпуск проверяется отдельно.
+
+Новые collections amendments/supplement/joint/name/explanation сохраняют normalized result
+или failure, исходный usage, provider item ID и request SHA. Конструирование общей части
+primary/secondary вынесено в `_retain_computation`; RecordFactory принимает nullable result ref.
+Schema v1 и primary decisions прежние, secondary использует v2 с generation=None. Новых
+SQL-миграций нет. History, memo, consumed и frozen amendment revision фиксируются одной
+существующей transaction; network, paid usage acknowledgement и provider cleanup не перенесены
+в неё. Crash не оставляет ни частичного memo, ни revision без history, ни consumed без ответа.
+
+Новый DigestItemMeta сохраняет известный URL исходного документа и номер supplement до submit.
+Они не входят в provider payload и не выводятся из позднего URL при collect. Старый pending
+с отсутствующими metadata/request SHA собирается при недоступном download; неизвестное
+происхождение остаётся неизвестным. Memo reuse сохраняет ID и исходный history usage, а
+возвращённый cached record получает нулевые новые токены. Bill status/generation не меняются.
+
+Это dual write пяти purposes: secondary application receipts ещё не добавлены. Review history
+writer не включён, чтобы не копировать full source context в новую таблицу; history refs для
+него — следующий отдельный этап. Raw/archive/backend, старые completed results и значения
+settings не меняются. Минимальная версия для rollback — совместимый reader J065.
+
+Qualified before: **14 failures** показывают отсутствие secondary history. Targeted accepted
+**78 passed**: workers=1/4, dump/restore, повторный collect/reuse, memo cleanup, отсутствие
+выдуманного legacy provenance, original usage при failure, три места обрыва collect и атомарная
+amendment revision. Existing request-provenance, secondary scan и amendment-command scenarios
+включены; normalized answers, источники и reader behavior не меняются.
+
+Пять before/after сценариев дали одинаковые frozen requests/custom IDs/cost, ответы после
+reuse, report usage, current Bill и primary history. Увеличение SQL после memo cleanup:
+**1357–2959 bytes** на один новый secondary result; gzip **117–287 bytes**, SQLite +4096 bytes.
+Peak dual write: SQL **1451–3053 bytes**, gzip **133–140 bytes**, SQLite +4096–8192 bytes.
+Это маленькие fixtures, не линейный прогноз на corpus/production. Новые URL/number metadata
+добавляют 46/71 SQL bytes при подготовке двух документных purposes. Сырые файлы, provider
+response body и input text в history не копируются.
+
+Observer v1 остановился на отсутствующем поле RunReport; acceptance использует исправленный
+pytest observer с autouse credential isolation. Промежуточные v2 profiles расширены измерением
+SQLite и dump/restore timings; для acceptance сохранены финальные outputs и исходник observer.
+Production snapshot J064 после restore/read даёт те же SQL/projection/memo hashes и размеры,
+schema49, integrity ok/FK 0. Pipeline/provider/Telegram против production copy не запускались.
+Process corpus **3294 observations**, zero changed decisions/inputs, missing inputs 0;
+CI slice **7 passed**, оба manifests проверены. Это прежние metadata/cached/synthetic profiles
+с их exclusions, не новые human labels или доказательство полноты extraction.
+
+Acceptance: full **4316 passed**, errors/failures/skips/xfails 0, 631,312 s; strict mypy
+405 файлов, Ruff src/tests/tools, format, strict docs/links и diff check green. CLI/wiring и
+network adapters прежние, local HTTP не требовался. Десять legacy record serializations и
+primary schema v1 computation совпали побайтово с baseline.
+
+Rollback fixture создал 15 новых snapshots: pending, settled и cleaned для пяти purposes.
+Опубликованный reader J065 восстановил их, прочёл все results/memo refs и pending items;
+повторный dump каждого совпал побайтово. Это проверка чтения/restore, не выполнение batch
+или доставка старой версией. Оба observers и SHA snapshot входят в evidence.
+
+[Acceptance evidence](../assets/audits/2026-10-27-secondary-computation-history/validation.json)
+содержит source/XML hashes, before/after metrics, runnable observers, rollback snapshots hashes,
+corpus manifests и production profiles. 140 runtime files совпали побайтово; provider answer
+schemas прежние. Локальные outputs: `out/corpus/j066`, registry runs `j066-*`.
+Следующие части DA6 — compact review result reader/writer, secondary applications и rollover;
+цель всего плана остаётся active.

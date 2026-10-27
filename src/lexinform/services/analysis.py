@@ -116,7 +116,7 @@ from lexinform.models.batch import (
     NameQuestion,
     SupplementQuestion,
 )
-from lexinform.models.computations import CollectionReason
+from lexinform.models.computations import CollectionReason, ComputationRecord
 from lexinform.ports import (
     AnalysisBackend,
     AuthorsResolver,
@@ -159,7 +159,12 @@ log = logging.getLogger(__name__)
 
 
 def _batch_records(
-    result: BatchResult, prompt_version: str, now: datetime, *, request_sha256: str | None = None
+    result: BatchResult,
+    prompt_version: str,
+    now: datetime,
+    *,
+    request_sha256: str | None = None,
+    computation_id: str | None = None,
 ) -> RecordFactory:
     return RecordFactory(
         result.model or "",
@@ -172,6 +177,7 @@ def _batch_records(
             cache_creation_input_tokens=result.cache_creation_input_tokens,
         ),
         request_sha256=request_sha256,
+        computation_id=computation_id,
     )
 
 
@@ -923,7 +929,7 @@ class AnalysisService:
         self, item: LlmBatchItem, batch_result: BatchResult, provider: BatchProvider
     ) -> None:
         if isinstance(item.meta, DigestItemMeta):
-            self._consume_digest(item, batch_result, item.meta)
+            self._consume_digest(item, batch_result, item.meta, provider)
         else:
             now = self._clock.now()
             current = self._repo.get(item.term, item.number)
@@ -964,29 +970,7 @@ class AnalysisService:
         assert item.call_kind in ("analysis", "reanalysis"), (
             "primary metadata belongs to primary purposes"
         )
-        result = ComputationResult(
-            provider=provider,
-            batch_id=item.batch_id,
-            custom_id=item.custom_id,
-            purpose=item.call_kind,
-            term=item.term,
-            number=item.number,
-            generation=item.meta.generation,
-            collected_at=now,
-            request_sha256=item.meta.request_sha256,
-            validation="validated" if record is not None else "error",
-            record=record,
-            model=response.model,
-            usage=TokenUsage(
-                batch_input=response.input_tokens or 0,
-                batch_output=response.output_tokens or 0,
-                batch_cache_read=response.cache_read_input_tokens or 0,
-                batch_cache_creation=response.cache_creation_input_tokens or 0,
-            ),
-            error=response.error,
-            context_exceeded=response.context_exceeded,
-        )
-        self._repo.save_computation_result(result)
+        result = self._retain_computation(item, response, record, provider, now)
         reason: CollectionReason
         if current is None:
             reason = "bill_missing"
@@ -1012,12 +996,61 @@ class AnalysisService:
             )
         )
 
+    def _retain_computation(
+        self,
+        item: LlmBatchItem,
+        response: BatchResult,
+        record: ComputationRecord | None,
+        provider: BatchProvider,
+        now: datetime,
+    ) -> ComputationResult:
+        assert item.call_kind not in ("triage", "change_review"), (
+            "only batch purposes produce durable computation items"
+        )
+        primary = isinstance(item.meta, BatchItemMeta)
+        result = ComputationResult(
+            schema_version=1 if primary else 2,
+            provider=provider,
+            batch_id=item.batch_id,
+            custom_id=item.custom_id,
+            purpose=item.call_kind,
+            term=item.term,
+            number=item.number,
+            generation=item.meta.generation if isinstance(item.meta, BatchItemMeta) else None,
+            collected_at=now,
+            request_sha256=item.meta.request_sha256,
+            validation="validated" if record is not None else "error",
+            record=record,
+            model=response.model,
+            usage=TokenUsage(
+                batch_input=response.input_tokens or 0,
+                batch_output=response.output_tokens or 0,
+                batch_cache_read=response.cache_read_input_tokens or 0,
+                batch_cache_creation=response.cache_creation_input_tokens or 0,
+            ),
+            error=response.error,
+            context_exceeded=response.context_exceeded,
+        )
+        self._repo.save_computation_result(result)
+        return result
+
     def _consume_digest(
-        self, item: LlmBatchItem, result: BatchResult, meta: DigestItemMeta
+        self,
+        item: LlmBatchItem,
+        result: BatchResult,
+        meta: DigestItemMeta,
+        provider: BatchProvider,
     ) -> None:
         now = self._clock.now()
+        retain = item.call_kind in ("amendments", "supplement", "joint", "name", "explanation")
         records = _batch_records(
-            result, meta.prompt_version, now, request_sha256=meta.request_sha256
+            result,
+            meta.prompt_version,
+            now,
+            request_sha256=meta.request_sha256,
+            computation_id=computation_id(provider, item.batch_id, item.custom_id)
+            if retain
+            else None,
         )
         record: (
             AnalysisRecord
@@ -1080,6 +1113,9 @@ class AnalysisService:
             result = result.model_copy(update={"error": "batch answer does not match call kind"})
         if isinstance(record, (AmendmentsRecord, SupplementRecord)):
             record.scan_input = meta.scan_input
+            record.source_url = meta.source_url or ""
+        if isinstance(record, SupplementRecord):
+            record.number = meta.document_number or ""
         with self._repo.atomic():
             if record is not None:
                 if isinstance(record, AmendmentsRecord) and meta.amendment_revision is not None:
@@ -1099,6 +1135,8 @@ class AnalysisService:
                         number=item.number,
                         used_at=now,
                     )
+            if retain:
+                self._retain_computation(item, result, record, provider, now)
             self._repo.mark_llm_batch_item_consumed(
                 item.batch_id, item.custom_id, consumed_at=now, result=result
             )
@@ -1221,6 +1259,7 @@ class AnalysisService:
                         queued_at=now,
                         prompt_version=request.prompt_version,
                         source_kind=document.kind,
+                        source_url=document.url,
                         amendment_source=context.source_check,
                         scan_input=context.scan.scan_input if context.scan else None,
                         amendment_revision=target.model_copy(update={"delivery": delivery}),
@@ -1987,6 +2026,7 @@ class AnalysisService:
             DigestItemMeta(
                 memo_key=key,
                 source_kind=document.kind,
+                source_url=document.url,
                 amendment_source=ctx.source_check,
                 scan_input=ctx.scan.scan_input if ctx.scan else None,
             ),
@@ -2067,6 +2107,8 @@ class AnalysisService:
                 delivery_key=delivery_key,
                 source_kind=document.kind,
                 title=title,
+                source_url=document.url,
+                document_number=number,
                 scan_input=ctx.scan.scan_input if ctx.scan else None,
             ),
             SupplementRecord,

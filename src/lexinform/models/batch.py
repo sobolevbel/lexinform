@@ -267,6 +267,8 @@ class DigestItemMeta(BaseModel):
         default=None, pattern=r"^[0-9a-f]{64}$", exclude_if=lambda value: value is None
     )
     source_kind: SourceKind = "print"
+    source_url: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    document_number: str | None = Field(default=None, exclude_if=lambda value: value is None)
     title: str = ""
     compared_with: list[str] = Field(default_factory=list)
     review_context: ReviewContext | None = None
