@@ -3,7 +3,7 @@
 ## Как пользоваться
 
 Текущие баги сгруппированы по статусу, внутри группы — по влиянию на читателя.
-Номера B1…B123 постоянные:
+Номера B1…B124 постоянные:
 старые обозначения `#4` и `B4` означают одну запись.
 `open` — воспроизведённый дефект; `candidate` — ещё не доказанная гипотеза.
 `deferred` — подтверждённый дефект, отложенный по решению владельца;
@@ -23,6 +23,18 @@ P3 не означает, что расходы можно игнорирова�
 [повторяющиеся ошибки](development/failure-patterns.md) — памятка для аудита.
 
 ## Open
+
+### B124
+
+**P3 · fixed locally · 27.10.2026.** После очистки memo успешный `/explain` выглядел как failed batch.
+
+На J076 оплаченный explanation сохраняется в history с input binding; после 200-day memo cleanup
+тот же вопрос проходит мимо результата и получает «batch завершился с ошибкой» по состоянию
+consumed item. **4 regressions failed**, providers=2/workers=1/4. Production-инцидент не установлен.
+Caller читает history только нужного purpose и передаёт immutable snapshot в network prepare;
+pure matcher проверяет original subject/key/type, возвращая прежний paid ref без новых токенов.
+Changed question и unknown legacy binding не расширяют reuse. Primary workers не читают БД.
+Приёмка и legacy exclusions — [J077](plans/2026-10-22-document-architecture-progress.md#j077).
 
 ### B123
 

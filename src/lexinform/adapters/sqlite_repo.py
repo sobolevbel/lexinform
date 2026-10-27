@@ -953,14 +953,17 @@ class SqliteBillRepository:
         ).fetchone()
         return ComputationResult.model_validate_json(row[0]) if row else None
 
-    def list_computation_results(self, term: int, number: str) -> list[ComputationResult]:
+    def list_computation_results(
+        self, term: int, number: str, *, purpose: BatchKind | None = None
+    ) -> list[ComputationResult]:
+        query = "SELECT result_json FROM computation_results WHERE term = ? AND number = ?"
+        parameters: tuple[int | str, ...] = (term, number)
+        if purpose is not None:
+            query += " AND json_extract(result_json, '$.purpose') = ?"
+            parameters += (purpose,)
         return [
             ComputationResult.model_validate_json(row[0])
-            for row in self._conn.execute(
-                "SELECT result_json FROM computation_results WHERE term = ? AND number = ?"
-                " ORDER BY rowid",
-                (term, number),
-            )
+            for row in self._conn.execute(query + " ORDER BY rowid", parameters)
         ]
 
     def save_result_application(self, application: ResultApplication) -> None:

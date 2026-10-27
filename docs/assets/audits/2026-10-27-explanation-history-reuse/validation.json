@@ -1,0 +1,899 @@
+{
+  "version": 1,
+  "stage": "J077",
+  "baseline": "28bcc83fd7ac9d4b9b4c51fce2ca6d6d0a5aa9b7",
+  "scope": "Exact bound explanation reuse from caller-owned purpose-filtered history after memo cleanup.",
+  "before": {
+    "sha256": "c12b13f841718787b63ab0f0d79a247f1521fda6b4e295dee13fbdeedbf8d396",
+    "tests": 4,
+    "failures": 4,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 1.291
+  },
+  "checks": {
+    "focused": {
+      "sha256": "232b0ef29650847759c66cab571fc92b272ea247b60a4588fc00ce29750a22ec",
+      "tests": 82,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 2.524
+    },
+    "full": {
+      "sha256": "eba6050e9b558aa9d2c6d0e71aad0c063f35b26e49271eef530d13ec41598a6a",
+      "tests": 4602,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 661.065
+    },
+    "normal_baseline": {
+      "sha256": "2bb6c33ea968d4dc528c76171bfa25c0ad43c9d95653892e201cf2a1c876a95d",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.212
+    },
+    "normal_current": {
+      "sha256": "1c528eb9d63f1555db4d292cecda95d23880895c7019a60034f2fb747c59fb3c",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.077
+    },
+    "reuse_baseline": {
+      "sha256": "f68322ca5f29283b9dba1009ff3642aee8b8344dfbbfb613627343a20e7c2423",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.126
+    },
+    "reuse_current": {
+      "sha256": "ccd6af1e3382b281b8aeb274358ce1f56cd8c64227ddfb2c3aaec56b8ac4c6f3",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.128
+    },
+    "handoff_baseline": {
+      "sha256": "55915f4a3c0c1124fd3fe8fd01f05d88a39fd5b7e3ce67d2e806a35afb568fef",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.144
+    },
+    "handoff_current": {
+      "sha256": "da97494e32bea0b3b9c45ea57813c0eeb2d4478bf303e4e499d8da52a14af002",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.214
+    },
+    "explanation_baseline": {
+      "sha256": "b8e48a502b6da51cea256ad1d758c6d1ee0eea16810e79ad0636493a0b4ee50a",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.408
+    },
+    "explanation_current": {
+      "sha256": "27c2827f809001476510779abae3790f257716d3bd4c1af52f6f3d30cfe0e1dc",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.075
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 422 source files",
+    "ruff": "All checks passed!",
+    "format": "1 file reformatted, 422 files left unchanged"
+  },
+  "changed_runtime": [
+    {
+      "path": "src/lexinform/adapters/sqlite_repo.py",
+      "baseline_sha256": "7740f5e7cbbea28e152a89552526bb5344e4ab4fe6bd7a81bf634514d468f9a6",
+      "current_sha256": "36be6491523e1aec0de79bc3665416adde58304402e625e331dd65360d7b3a5a"
+    },
+    {
+      "path": "src/lexinform/ports.py",
+      "baseline_sha256": "87f26038964ab45c30b0a497de6514dfa11100788ee08e55217066f675610fad",
+      "current_sha256": "6d6cc7f29ab50d2e9ae644d45b4def62f6124fb4d78d19a7a46a67579c7d0cf0"
+    },
+    {
+      "path": "src/lexinform/services/analysis.py",
+      "baseline_sha256": "26a0900e55ebf36949753350af0050a186a794af1c0f888297a3cf3d5b48fa37",
+      "current_sha256": "ace0ab8625ea2f38e5f434cdd1d2b78c5464403dfa5dc71d88996c72f93cdd3c"
+    },
+    {
+      "path": "src/lexinform/services/computation_reuse.py",
+      "baseline_sha256": "e86109708461d92fdbe8d5aed365745df007cb31a66e5f71faafb72185c4b4c1",
+      "current_sha256": "97ffb0a265275dfc0bb899b755b7537e8663712b33e8e0905d18cc03904e4ff9"
+    }
+  ],
+  "migrations": {
+    "count": 50,
+    "all_unchanged": true
+  },
+  "profiles": {
+    "unchanged_existing_flows": 52,
+    "explanation_flows": [
+      {
+        "case": "gpt-5.1-1-warm",
+        "baseline_error": "",
+        "current_error": "",
+        "warm_control_equal": false,
+        "all_other_values_equal": true,
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        }
+      },
+      {
+        "case": "gpt-5.1-1-cold",
+        "baseline_error": "Разбор не получен: batch завершился с ошибкой",
+        "current_error": "",
+        "warm_control_equal": true,
+        "all_other_values_equal": false,
+        "delta": {
+          "sql_bytes": 2299,
+          "gzip_bytes": 66,
+          "sqlite_bytes": 0
+        }
+      },
+      {
+        "case": "gpt-5.1-1-changed",
+        "baseline_error": "",
+        "current_error": "",
+        "warm_control_equal": false,
+        "all_other_values_equal": true,
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        }
+      },
+      {
+        "case": "gpt-5.1-1-legacy",
+        "baseline_error": "Разбор не получен: batch завершился с ошибкой",
+        "current_error": "Разбор не получен: batch завершился с ошибкой",
+        "warm_control_equal": false,
+        "all_other_values_equal": true,
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        }
+      },
+      {
+        "case": "gpt-5.1-4-warm",
+        "baseline_error": "",
+        "current_error": "",
+        "warm_control_equal": false,
+        "all_other_values_equal": true,
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        }
+      },
+      {
+        "case": "gpt-5.1-4-cold",
+        "baseline_error": "Разбор не получен: batch завершился с ошибкой",
+        "current_error": "",
+        "warm_control_equal": true,
+        "all_other_values_equal": false,
+        "delta": {
+          "sql_bytes": 2299,
+          "gzip_bytes": 66,
+          "sqlite_bytes": 0
+        }
+      },
+      {
+        "case": "gpt-5.1-4-changed",
+        "baseline_error": "",
+        "current_error": "",
+        "warm_control_equal": false,
+        "all_other_values_equal": true,
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        }
+      },
+      {
+        "case": "gpt-5.1-4-legacy",
+        "baseline_error": "Разбор не получен: batch завершился с ошибкой",
+        "current_error": "Разбор не получен: batch завершился с ошибкой",
+        "warm_control_equal": false,
+        "all_other_values_equal": true,
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        }
+      },
+      {
+        "case": "claude-opus-5-5-1-warm",
+        "baseline_error": "",
+        "current_error": "",
+        "warm_control_equal": false,
+        "all_other_values_equal": true,
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        }
+      },
+      {
+        "case": "claude-opus-5-5-1-cold",
+        "baseline_error": "Разбор не получен: batch завершился с ошибкой",
+        "current_error": "",
+        "warm_control_equal": true,
+        "all_other_values_equal": false,
+        "delta": {
+          "sql_bytes": 2299,
+          "gzip_bytes": 65,
+          "sqlite_bytes": 0
+        }
+      },
+      {
+        "case": "claude-opus-5-5-1-changed",
+        "baseline_error": "",
+        "current_error": "",
+        "warm_control_equal": false,
+        "all_other_values_equal": true,
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        }
+      },
+      {
+        "case": "claude-opus-5-5-1-legacy",
+        "baseline_error": "Разбор не получен: batch завершился с ошибкой",
+        "current_error": "Разбор не получен: batch завершился с ошибкой",
+        "warm_control_equal": false,
+        "all_other_values_equal": true,
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        }
+      },
+      {
+        "case": "claude-opus-5-5-4-warm",
+        "baseline_error": "",
+        "current_error": "",
+        "warm_control_equal": false,
+        "all_other_values_equal": true,
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        }
+      },
+      {
+        "case": "claude-opus-5-5-4-cold",
+        "baseline_error": "Разбор не получен: batch завершился с ошибкой",
+        "current_error": "",
+        "warm_control_equal": true,
+        "all_other_values_equal": false,
+        "delta": {
+          "sql_bytes": 2299,
+          "gzip_bytes": 65,
+          "sqlite_bytes": 0
+        }
+      },
+      {
+        "case": "claude-opus-5-5-4-changed",
+        "baseline_error": "",
+        "current_error": "",
+        "warm_control_equal": false,
+        "all_other_values_equal": true,
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        }
+      },
+      {
+        "case": "claude-opus-5-5-4-legacy",
+        "baseline_error": "Разбор не получен: batch завершился с ошибкой",
+        "current_error": "Разбор не получен: batch завершился с ошибкой",
+        "warm_control_equal": false,
+        "all_other_values_equal": true,
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        }
+      }
+    ]
+  },
+  "cold_memo_delta_ranges": {
+    "sql_bytes": [
+      2299,
+      2299
+    ],
+    "gzip_bytes": [
+      65,
+      66
+    ],
+    "sqlite_bytes": [
+      0,
+      0
+    ]
+  },
+  "rollback_reader": {
+    "commit": "28bcc83fd7ac9d4b9b4c51fce2ca6d6d0a5aa9b7",
+    "snapshots": [
+      {
+        "snapshot": "normal-current/commission_review-1.sql",
+        "sha256": "e453247a5409a23cc8e0dfb55911d5e81021b8294f5947c64d7f5dd8e1072d25",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/commission_review-4.sql",
+        "sha256": "e453247a5409a23cc8e0dfb55911d5e81021b8294f5947c64d7f5dd8e1072d25",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/consultation_review-1.sql",
+        "sha256": "1e1423083274d6783135e61d8e9ddec3f20c6f10366fee9f2390dc2f183c6194",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/consultation_review-4.sql",
+        "sha256": "1e1423083274d6783135e61d8e9ddec3f20c6f10366fee9f2390dc2f183c6194",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/explanation-1.sql",
+        "sha256": "b2764f09f896cc1b438699b66ababd38ad88f59bbf9d56486b8a8e56700b805b",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/explanation-4.sql",
+        "sha256": "b2764f09f896cc1b438699b66ababd38ad88f59bbf9d56486b8a8e56700b805b",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/joint-1.sql",
+        "sha256": "09fb9f1c561d01bf182ccb39d2a8eb7214983cb6057cb55927c74609c19a8d9a",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/joint-4.sql",
+        "sha256": "09fb9f1c561d01bf182ccb39d2a8eb7214983cb6057cb55927c74609c19a8d9a",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/name-1.sql",
+        "sha256": "08d35a9cbeafea4d34e56e3e13c346086c927e8d8c8855e7822933b5eb379bf9",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/name-4.sql",
+        "sha256": "08d35a9cbeafea4d34e56e3e13c346086c927e8d8c8855e7822933b5eb379bf9",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/revision-1.sql",
+        "sha256": "2381727a607338faf82668669b512e0c5b352fa83cbb48649bd03d9e3fefaec4",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/revision-4.sql",
+        "sha256": "2381727a607338faf82668669b512e0c5b352fa83cbb48649bd03d9e3fefaec4",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/claude-opus-5-5-1-amendments.sql",
+        "sha256": "9a7ff1c1513adde4b7698fdde175096c39aeef4ae33ee7f8349dde7af6b1003f",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/claude-opus-5-5-1-joint.sql",
+        "sha256": "770bc25d511b330a3485ae3a32c4aec69f0d836ba83849f447d07d87597caffe",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/claude-opus-5-5-1-name.sql",
+        "sha256": "40a65f5dee2975e344e06495dc8f60bfe0967dab4bc2e983578068c38a920543",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/claude-opus-5-5-1-supplement.sql",
+        "sha256": "4522538df765beb1f8366e5b79f53af2e343f484c97e0da9f3b333277792d3b8",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/claude-opus-5-5-4-amendments.sql",
+        "sha256": "9a7ff1c1513adde4b7698fdde175096c39aeef4ae33ee7f8349dde7af6b1003f",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/claude-opus-5-5-4-joint.sql",
+        "sha256": "770bc25d511b330a3485ae3a32c4aec69f0d836ba83849f447d07d87597caffe",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/claude-opus-5-5-4-name.sql",
+        "sha256": "40a65f5dee2975e344e06495dc8f60bfe0967dab4bc2e983578068c38a920543",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/claude-opus-5-5-4-supplement.sql",
+        "sha256": "4522538df765beb1f8366e5b79f53af2e343f484c97e0da9f3b333277792d3b8",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/gpt-5.1-1-amendments.sql",
+        "sha256": "73d843e0919d91d3e854a0a55d8f68c99a2d5a034383683d6d62fd3c9a724b45",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/gpt-5.1-1-joint.sql",
+        "sha256": "2c022f173e6f721cfd015088fbc0e10deec1f5a2c0c2ad6db3c8be5156722758",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/gpt-5.1-1-name.sql",
+        "sha256": "bc3f3f70ccc250de86f0cce663625044b4f00870a1a0bc3e1900d4c57c8cd171",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/gpt-5.1-1-supplement.sql",
+        "sha256": "62d59c547f064b20a40777337740e80e858f04c9d78397186e2a26c5f253e1bb",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/gpt-5.1-4-amendments.sql",
+        "sha256": "73d843e0919d91d3e854a0a55d8f68c99a2d5a034383683d6d62fd3c9a724b45",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/gpt-5.1-4-joint.sql",
+        "sha256": "2c022f173e6f721cfd015088fbc0e10deec1f5a2c0c2ad6db3c8be5156722758",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/gpt-5.1-4-name.sql",
+        "sha256": "bc3f3f70ccc250de86f0cce663625044b4f00870a1a0bc3e1900d4c57c8cd171",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current/gpt-5.1-4-supplement.sql",
+        "sha256": "62d59c547f064b20a40777337740e80e858f04c9d78397186e2a26c5f253e1bb",
+        "known_result_bindings": 3,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-commission-open.sql",
+        "sha256": "24e87a4071c276138ba59ab6d8b132d95eb58a203f088eb4b1c1767fa050920f",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-commission-queued.sql",
+        "sha256": "24e87a4071c276138ba59ab6d8b132d95eb58a203f088eb4b1c1767fa050920f",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-consultation-open.sql",
+        "sha256": "37588c89b17df90660af280627bb8b123e3fa069f81c56e48752eb90cfe80298",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-consultation-queued.sql",
+        "sha256": "37588c89b17df90660af280627bb8b123e3fa069f81c56e48752eb90cfe80298",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-open.sql",
+        "sha256": "859efb191c5f5f3d0aba89df26e27b02a50107684ff6ef1718c2ac9fd226409c",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-1-ready.sql",
+        "sha256": "2507359be4f7ca2dd54bd61a148edca0733191ae1f26c5fd5cb8916b9522b671",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-commission-open.sql",
+        "sha256": "24e87a4071c276138ba59ab6d8b132d95eb58a203f088eb4b1c1767fa050920f",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-commission-queued.sql",
+        "sha256": "24e87a4071c276138ba59ab6d8b132d95eb58a203f088eb4b1c1767fa050920f",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-consultation-open.sql",
+        "sha256": "37588c89b17df90660af280627bb8b123e3fa069f81c56e48752eb90cfe80298",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-consultation-queued.sql",
+        "sha256": "37588c89b17df90660af280627bb8b123e3fa069f81c56e48752eb90cfe80298",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-open.sql",
+        "sha256": "859efb191c5f5f3d0aba89df26e27b02a50107684ff6ef1718c2ac9fd226409c",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/claude-opus-5-5-4-ready.sql",
+        "sha256": "2507359be4f7ca2dd54bd61a148edca0733191ae1f26c5fd5cb8916b9522b671",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-commission-open.sql",
+        "sha256": "a182aab21b4252fccd26c65d7a44e15e207a88ea92bc6f8d2bd708dc59a1f4a5",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-commission-queued.sql",
+        "sha256": "a182aab21b4252fccd26c65d7a44e15e207a88ea92bc6f8d2bd708dc59a1f4a5",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-consultation-open.sql",
+        "sha256": "58d3c9c6a4131d410ef178ef8a667ef79572dfa723781e3ee8daba8a995d5f6f",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-consultation-queued.sql",
+        "sha256": "58d3c9c6a4131d410ef178ef8a667ef79572dfa723781e3ee8daba8a995d5f6f",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-open.sql",
+        "sha256": "813e440b2db3a4be094f7063e1646c9617e57d3d1d6d1a77f8459fc4185ebafa",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-1-ready.sql",
+        "sha256": "b2f117a1f2ab223e9881cadb3317a9894b36e0377049746f6aa2a86bc344da6e",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-commission-open.sql",
+        "sha256": "a182aab21b4252fccd26c65d7a44e15e207a88ea92bc6f8d2bd708dc59a1f4a5",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-commission-queued.sql",
+        "sha256": "a182aab21b4252fccd26c65d7a44e15e207a88ea92bc6f8d2bd708dc59a1f4a5",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-consultation-open.sql",
+        "sha256": "58d3c9c6a4131d410ef178ef8a667ef79572dfa723781e3ee8daba8a995d5f6f",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-consultation-queued.sql",
+        "sha256": "58d3c9c6a4131d410ef178ef8a667ef79572dfa723781e3ee8daba8a995d5f6f",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-open.sql",
+        "sha256": "813e440b2db3a4be094f7063e1646c9617e57d3d1d6d1a77f8459fc4185ebafa",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "handoff-current/gpt-5.1-4-ready.sql",
+        "sha256": "b2f117a1f2ab223e9881cadb3317a9894b36e0377049746f6aa2a86bc344da6e",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "explanation-current/claude-opus-5-5-1-changed.sql",
+        "sha256": "aba978469dbbbcc46f9162287efdc9b5820e248df7290b22bd4e2cbf921b7670",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "explanation-current/claude-opus-5-5-1-cold.sql",
+        "sha256": "0cb66e19a2c2dc67b44500f13a65adbc4b8d21565579320eac42517b33c225c2",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "explanation-current/claude-opus-5-5-1-legacy.sql",
+        "sha256": "1f12b644917ee5c5a1db5bb68b6438bb140a32a3099fa13196561ae3aa7f6d98",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "explanation-current/claude-opus-5-5-1-warm.sql",
+        "sha256": "02546997f240a10c00195bd4092f2ea40d489a47ed9fc7bc3483b77a9efb1f89",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "explanation-current/claude-opus-5-5-4-changed.sql",
+        "sha256": "aba978469dbbbcc46f9162287efdc9b5820e248df7290b22bd4e2cbf921b7670",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "explanation-current/claude-opus-5-5-4-cold.sql",
+        "sha256": "0cb66e19a2c2dc67b44500f13a65adbc4b8d21565579320eac42517b33c225c2",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "explanation-current/claude-opus-5-5-4-legacy.sql",
+        "sha256": "1f12b644917ee5c5a1db5bb68b6438bb140a32a3099fa13196561ae3aa7f6d98",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "explanation-current/claude-opus-5-5-4-warm.sql",
+        "sha256": "02546997f240a10c00195bd4092f2ea40d489a47ed9fc7bc3483b77a9efb1f89",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "explanation-current/gpt-5.1-1-changed.sql",
+        "sha256": "60663043eab9c8c5ee0a77d238fdaefdf52e1c502cf1fb484da673131b61cdc0",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "explanation-current/gpt-5.1-1-cold.sql",
+        "sha256": "843cc69e2e960e7d7def36244cf2f4083eeab4d595181d1f357ed0187fbc71cb",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "explanation-current/gpt-5.1-1-legacy.sql",
+        "sha256": "2eb2d85b4313077611f57d97dc11a51fe156ac50e26ab72ab59be47e0ea717e6",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "explanation-current/gpt-5.1-1-warm.sql",
+        "sha256": "cf145699a66dce5151af40be35cdad13b0362597c1c6b5660b4ee4cf76a73341",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "explanation-current/gpt-5.1-4-changed.sql",
+        "sha256": "60663043eab9c8c5ee0a77d238fdaefdf52e1c502cf1fb484da673131b61cdc0",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "explanation-current/gpt-5.1-4-cold.sql",
+        "sha256": "843cc69e2e960e7d7def36244cf2f4083eeab4d595181d1f357ed0187fbc71cb",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "explanation-current/gpt-5.1-4-legacy.sql",
+        "sha256": "2eb2d85b4313077611f57d97dc11a51fe156ac50e26ab72ab59be47e0ea717e6",
+        "known_result_bindings": 1,
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "explanation-current/gpt-5.1-4-warm.sql",
+        "sha256": "cf145699a66dce5151af40be35cdad13b0362597c1c6b5660b4ee4cf76a73341",
+        "known_result_bindings": 2,
+        "roundtrip_equal": true
+      }
+    ]
+  },
+  "production_restore": {
+    "source_state_commit": "f34e63e7d2446501ceee0c2595964eef1b8f48a2",
+    "scope": "Pinned J073 snapshot; restore/read only.",
+    "profile": {
+      "source_sha256": "73e37426e5e5753ad312994a95965d9a100d91c22488ef486c0cb802cbc3b71f",
+      "source_bytes": 19508098,
+      "sql_sha256": "73e37426e5e5753ad312994a95965d9a100d91c22488ef486c0cb802cbc3b71f",
+      "sql_bytes": 19508098,
+      "gzip_bytes": 3956213,
+      "sqlite_bytes": 20488192,
+      "restore_seconds": 0.3008930829819292,
+      "dump_seconds": 0.09224612501566298,
+      "bills": 457,
+      "analysis_records": 166,
+      "projection_sha256": "0cbe2b7191eb2dd9688f404c4dcd0940d7dfa9c6d1090caac88ba580f6496bb7",
+      "memo_sha256": "8f68b1de19cfc7ef421659465d653664765cd5d1ed9187d359f33c697c6417ce",
+      "memos": 141,
+      "schema": {
+        "tables": 19,
+        "indexes": 32,
+        "version": 50
+      },
+      "new_rows": {
+        "computation_results": 0,
+        "result_applications": 0
+      },
+      "known_bill_2699": "analyzed",
+      "integrity": "ok",
+      "foreign_key_errors": 0,
+      "scope": "Isolated restore/read; no pipeline, provider or Telegram call; no legacy history backfill."
+    }
+  },
+  "prior_release": {
+    "commit": "28bcc83fd7ac9d4b9b4c51fce2ca6d6d0a5aa9b7",
+    "ci": {
+      "id": 40480729326,
+      "url": "https://github.com/sobolevbel/lexinform/actions/runs/40480729326",
+      "conclusion": "success",
+      "test_job": 122110069431,
+      "evidence": [
+        "2026-10-27T09:26:10.0531019Z All checks passed!",
+        "2026-10-27T09:26:20.4871457Z Success: no issues found in 420 source files",
+        "2026-10-27T09:30:35.8613705Z 4583 passed, 32 deselected, 3346 warnings in 252.81s (0:04:12)"
+      ]
+    },
+    "deployment": {
+      "id": 40481344647,
+      "url": "https://github.com/sobolevbel/lexinform/actions/runs/40481344647",
+      "conclusion": "success",
+      "job": 122112138946,
+      "evidence": [
+        "2026-10-27T09:30:52.0672040Z   COMMIT: 28bcc83fd7ac9d4b9b4c51fce2ca6d6d0a5aa9b7",
+        "2026-10-27T09:30:55.7716539Z 800ef774e61d -> 28bcc83fd7ac",
+        "2026-10-27T09:31:41.0381261Z lexinform-listen up 45 s after restart"
+      ]
+    }
+  },
+  "corpus": [
+    {
+      "id": "j077-ci",
+      "manifest_sha256": "6f54b0ae530882c7aaafdff5d14a71922899abb1b6ff6f0d70d7ff4940bd0cd1",
+      "observations": 7,
+      "status": "passed",
+      "command": [
+        "/Users/sobaleu/projects/lexinform/.venv/bin/python",
+        "-m",
+        "tools.corpus_check",
+        "--corpus",
+        "/Users/sobaleu/projects/lexinform/tests/fixtures/corpus_check",
+        "--output",
+        "/Users/sobaleu/projects/lexinform/out/corpus/runs/j077-ci/result.json"
+      ]
+    },
+    {
+      "id": "j077-process",
+      "manifest_sha256": "8fe9594a597939f77b43426f6e13f0638d2fc595bc8c5e7908195cfebc6b15b0",
+      "observations": 3294,
+      "status": "recorded",
+      "command": [
+        "/Users/sobaleu/projects/lexinform/.venv/bin/python",
+        "-m",
+        "tools.corpus_legacy_suites",
+        "--corpus",
+        "/Users/sobaleu/projects/lexinform-corpus",
+        "--output",
+        "/Users/sobaleu/projects/lexinform/out/corpus/runs/j077-process/result.json",
+        "--kind",
+        "process"
+      ]
+    }
+  ],
+  "process_diff": {
+    "after_manifest_sha256": "8fe9594a597939f77b43426f6e13f0638d2fc595bc8c5e7908195cfebc6b15b0",
+    "before_manifest_sha256": "bda65db4689e022b50b92a13052724298f2740e8f19f3d8f6c062606eb011fe4",
+    "changed_inputs": [],
+    "changes": [],
+    "scope": "Observation differences, not an independent legal accuracy verdict",
+    "status": "same",
+    "suite": "process",
+    "summary_changes": {},
+    "version": 1
+  },
+  "observers": [
+    {
+      "path": "out/corpus/j077/explanation_profile.py",
+      "sha256": "cff55fa57bfe4df9bfe142c92c697e751720b09512c63733052c3e70632cf777",
+      "source": "import gzip\nimport hashlib\nimport json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nimport lexinform\nimport pytest\nfrom lexinform.models import AnalysisRecord, BatchIntent\nfrom lexinform.services.analysis import Waiting\nfrom tests.harness import World\n\n\ndef test_profile():\n    assert Path(lexinform.__file__).resolve().parents[2] == Path(os.environ['DA_EXPECTED_CODE']).resolve()\n    output = Path(os.environ['DA_EXPLANATION_PROFILE_OUTPUT'])\n    output.mkdir()\n    profiles = {}\n    for model in ('gpt-5.1', 'claude-opus-5-5'):\n        for workers in (1, 4):\n            for stage in ('warm', 'cold', 'changed', 'legacy'):\n                world = World(profile='production', workers=workers, analysis_model=model)\n                world.add_bill('3039', 'Projekt ustawy o cudzoziemcach')\n                world.run(track=False)\n                world.batch.resolve()\n                world.run(track=False)\n                world.analysis.start_run()\n                save = world.repo.save_batch_intent\n\n                def legacy(intent: BatchIntent) -> None:\n                    save(intent.model_copy(update={'meta': intent.meta.model_copy(update={'input_binding': None})}))\n\n                with pytest.MonkeyPatch.context() as patch:\n                    if stage == 'legacy':\n                        patch.setattr(world.repo, 'save_batch_intent', legacy)\n                    assert isinstance(world.analysis.explain_bill(world.bill('3039')), Waiting)\n                request = world.batch.submitted[-1].model_dump(mode='json')\n                world.batch.resolve()\n                world.analysis.collect_batches()\n                world.analysis.acknowledge_batch_costs()\n                original = next(row for row in world.repo.list_computation_results(10, '3039') if row.purpose == 'explanation')\n                world.clock.advance(days=200)\n                if stage != 'warm':\n                    world.repo.prune_history(before=world.clock.now(), memo_before=world.clock.now())\n                if stage == 'changed':\n                    world.gateway.details['3039'] = world.gateway.details['3039'].model_copy(update={'title': 'Inny projekt ustawy o cudzoziemcach'})\n                world.repo.restore(world.repo.dump())\n                world.analysis.start_run()\n                error, answer = '', None\n                try:\n                    answer = world.analysis.explain_bill(world.bill('3039'))\n                except RuntimeError as exc:\n                    error = str(exc)\n                raw = world.repo.dump().encode()\n                name = f'{model}-{workers}-{stage}'\n                (output / f'{name}.sql').write_bytes(raw)\n                with closing(sqlite3.connect(':memory:')) as database:\n                    database.executescript(raw.decode())\n                    assert database.execute('PRAGMA integrity_check').fetchone() == ('ok',)\n                    assert not database.execute('PRAGMA foreign_key_check').fetchall()\n                    size = len(database.serialize())\n                assert world.repo.get_computation_result(original.result_id) == original\n                profiles[name] = {'error': error, 'answer': answer.model_dump(mode='json') if isinstance(answer, AnalysisRecord) else None, 'waiting': isinstance(answer, Waiting), 'original_request': request, 'original_result': original.model_dump(mode='json'), 'requests': [row.model_dump(mode='json') for row in world.batch.submitted], 'bill': world.bill('3039').model_dump(mode='json'), 'applications': [row.model_dump(mode='json') for row in world.repo.list_result_applications(10, '3039')], 'messages': [row.text for row in world.publisher.sent], 'edits': [row.text for row, _ in world.publisher.edited], 'sql_sha256': hashlib.sha256(raw).hexdigest(), 'sql_bytes': len(raw), 'gzip_bytes': len(gzip.compress(raw, mtime=0)), 'sqlite_bytes': size}\n                world.repo.close()\n    (output / 'profiles.json').write_text(json.dumps(profiles, ensure_ascii=False, indent=2) + '\\n')\n"
+    },
+    {
+      "path": "out/corpus/j077/read_snapshots.py",
+      "sha256": "87acde7e3a9e5ba562282c346567879f8f44f96b8d5e7ebf341f3d98f1be23b4",
+      "source": "import hashlib\nimport json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nimport lexinform\nfrom lexinform.adapters.sqlite_repo import SqliteBillRepository\n\nassert Path(lexinform.__file__).resolve().parents[2] == Path(os.environ['DA_EXPECTED_CODE']).resolve()\nroot = Path('out/corpus/j077')\nobservations = []\nfor directory in ('normal-current', 'reuse-current', 'handoff-current', 'explanation-current'):\n    for source in sorted((root / directory).glob('*.sql')):\n        raw = source.read_bytes()\n        repository = SqliteBillRepository(':memory:')\n        repository.migrate()\n        repository.restore(raw.decode())\n        with closing(sqlite3.connect(':memory:')) as database:\n            database.executescript(raw.decode())\n            owners = database.execute('SELECT term, number FROM bills').fetchall()\n            historical = database.execute('SELECT DISTINCT term, number FROM computation_results').fetchall()\n        bindings = 0\n        for term, number in owners:\n            assert repository.get(term, number) is not None\n            repository.list_result_applications(term, number)\n        for term, number in historical:\n            rows = repository.list_computation_results(term, number)\n            bindings += sum(row.input_binding is not None for row in rows)\n        for batch in repository.list_open_llm_batches():\n            repository.list_llm_batch_items(batch.batch_id)\n        repository.list_queued_batch_intents()\n        repository.list_submitting_batch_intents()\n        assert bindings > 0\n        assert repository.dump().encode() == raw\n        repository.close()\n        observations.append({'snapshot': str(source.relative_to(root)), 'sha256': hashlib.sha256(raw).hexdigest(), 'known_result_bindings': bindings, 'roundtrip_equal': True})\nassert len(observations) == 68\n(root / 'rollback-reader.json').write_text(json.dumps(observations, indent=2) + '\\n')\n"
+    },
+    {
+      "path": "out/corpus/j071/projection_profile.py",
+      "sha256": "ea04424fccc679b9ad4569ec7c07cc348a73d92c29bb0aa38cb7e517d7e50f0e",
+      "source": "import gzip\nimport hashlib\nimport json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nimport lexinform\n\nfrom lexinform.models import ReviewWork\nfrom lexinform.services.tracking_result import TrackingResult\nfrom tests.harness import World\nfrom tests.scenario.test_amendments_command import published_world\nfrom tests.scenario.test_explain import commands_only\nfrom tests.scenario.test_joint_batch import joint_world\nfrom tests.scenario.test_review_computation_history import queued_review, submit_review\n\n\ndef snapshot(world, output, name, number='3039'):\n    raw = world.repo.dump().encode()\n    (output / f'{name}.sql').write_bytes(raw)\n    with closing(sqlite3.connect(':memory:')) as db:\n        db.executescript(raw.decode())\n        assert db.execute('PRAGMA integrity_check').fetchone() == ('ok',)\n        assert not db.execute('PRAGMA foreign_key_check').fetchall()\n        data = {}\n        for (table,) in db.execute(\"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name\").fetchall():\n            query = f'SELECT * FROM {table}'\n            if table == 'result_applications':\n                query += ' WHERE generation IS NOT NULL'\n            rows = sorted(json.dumps(row, ensure_ascii=False) for row in db.execute(query))\n            data[table] = hashlib.sha256(json.dumps(rows).encode()).hexdigest()\n        sqlite_bytes = len(db.serialize())\n    return {'data': data, 'sql_bytes': len(raw), 'gzip_bytes': len(gzip.compress(raw, mtime=0)), 'sqlite_bytes': sqlite_bytes, 'applications': [row.model_dump(mode='json') for row in world.repo.list_result_applications(10, number) if row.target is not None], 'requests': [request.model_dump(mode='json') for request in world.batch.submitted], 'messages': [{'kind': message.kind.value, 'text': message.text} for message in world.publisher.sent], 'edits': [{'text': message.text, 'message_id': message_id} for message, message_id in world.publisher.edited], 'replies': [outcome.model_dump(mode='json') for _, outcome in world.replier.replies]}\n\n\ndef test_profile():\n    assert Path(lexinform.__file__).resolve().parents[2] == Path(os.environ['DA_EXPECTED_CODE']).resolve()\n    output = Path(os.environ['DA_PROJECTION_PROFILE_OUTPUT'])\n    output.mkdir()\n    profiles = {}\n    for workers in (1, 4):\n        for purpose in ('consultation_review', 'commission_review'):\n            world, source, intent = queued_review(purpose, workers=workers)\n            submit_review(world, intent)\n            world.batch.resolve()\n            world.analysis.collect_batches()\n            world.analysis.start_run()\n            work = ReviewWork(memo_key=source.memo_key(10), purpose=purpose, context=source, source_key='source/1', since=world.clock.now(), baseline_day=world.clock.now().date())\n            reviews = world.container.document_reviews(dry_run=False)\n            for key in ('source/1', 'source/2'):\n                world.repo.save_review_work(10, '3039', (work.model_copy(update={'source_key': key}),))\n                reviews.advance(TrackingResult(), publish=False)\n                world.repo.restore(world.repo.dump())\n            reviews.advance(TrackingResult(), publish=False)\n            name = f'{purpose}-{workers}'\n            profiles[name] = snapshot(world, output, name)\n            world.repo.close()\n        world = joint_world(workers=workers)\n        world.run()\n        world.batch.resolve()\n        world.analysis.collect_batches()\n        world.run()\n        world.repo.restore(world.repo.dump())\n        world.run()\n        name = f'joint-{workers}'\n        profiles[name] = snapshot(world, output, name, '1929')\n        world.repo.close()\n        world = World(batch=True, batch_only=True, name_cards=True, workers=workers)\n        world.add_bill('3039', 'Projekt ustawy o cudzoziemcach')\n        world.run()\n        world.batch.resolve()\n        world.run()\n        world.batch.resolve()\n        world.analysis.collect_batches()\n        world.run()\n        world.repo.restore(world.repo.dump())\n        world.run()\n        name = f'name-{workers}'\n        profiles[name] = snapshot(world, output, name)\n        world.repo.close()\n        world, original = published_world(workers=workers)\n        world.command('/amendments 1929')\n        world.run(track=False)\n        world.batch.resolve()\n        world.analysis.collect_batches()\n        world.repo.restore(world.repo.dump())\n        world.run(track=False)\n        name = f'revision-{workers}'\n        profiles[name] = snapshot(world, output, name, '1929')\n        assert original.id is not None and len(world.repo.list_amendment_revisions(original.id)) == 1\n        world.repo.close()\n        world = World(workers=workers)\n        world.add_bill('3039', 'Projekt ustawy o cudzoziemcach')\n        world.run()\n        world.command('/explain 3039')\n        commands_only(world)\n        world.batch.resolve()\n        for _ in range(2):\n            world.command('/explain 3039')\n            commands_only(world)\n            world.repo.restore(world.repo.dump())\n        name = f'explanation-{workers}'\n        profiles[name] = snapshot(world, output, name)\n        world.repo.close()\n    (output / 'profiles.json').write_text(json.dumps(profiles, ensure_ascii=False, indent=2) + '\\n')\n"
+    },
+    {
+      "path": "out/corpus/j074/reuse_profile.py",
+      "sha256": "6a75655ca4b5fd1e4b81e049ba5e7b4a23b7ed3b75656e3584bf9563b05d3962",
+      "source": "import gzip\nimport hashlib\nimport json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom dataclasses import replace\nfrom pathlib import Path\n\nimport lexinform\nfrom lexinform.models import AmendmentsRecord, JointRecord, NameRecord, SupplementRecord\nfrom lexinform.services.analysis import Waiting\nfrom tests.harness import World\nfrom tests.scenario.test_secondary_computation_history import URL, ask\n\n\ndef snapshot(world, output, name):\n    raw = world.repo.dump().encode()\n    (output / f'{name}.sql').write_bytes(raw)\n    with closing(sqlite3.connect(':memory:')) as database:\n        database.executescript(raw.decode())\n        assert database.execute('PRAGMA integrity_check').fetchone() == ('ok',)\n        assert not database.execute('PRAGMA foreign_key_check').fetchall()\n        size = len(database.serialize())\n    return {'sql_sha256': hashlib.sha256(raw).hexdigest(), 'sql_bytes': len(raw), 'gzip_bytes': len(gzip.compress(raw, mtime=0)), 'sqlite_bytes': size, 'bill': world.bill('3039').model_dump(mode='json'), 'messages': [row.text for row in world.publisher.sent], 'edits': [row.text for row, _ in world.publisher.edited]}\n\n\ndef test_profile():\n    assert Path(lexinform.__file__).resolve().parents[2] == Path(os.environ['DA_EXPECTED_CODE']).resolve()\n    output = Path(os.environ['DA_REUSE_PROFILE_OUTPUT'])\n    output.mkdir()\n    profiles = {}\n    for model in ('gpt-5.1', 'claude-opus-5-5'):\n        for workers in (1, 4):\n            for kind in ('amendments', 'supplement', 'joint', 'name'):\n                world = World(profile='production', workers=workers, analysis_model=model, joint_model=model)\n                settings = world.container.settings.model_copy(update={'llm_amendments_model': model, 'llm_supplement_model': model})\n                world.container = replace(world.container, settings=settings, analysis_options_override=None)\n                world.analysis = world.container.analysis_service()\n                world.pipeline = world.container.pipeline(dry_run=False)\n                world.add_bill('3039', 'Projekt ustawy o cudzoziemcach')\n                world.add_bill('3040', 'Projekt ustawy o obywatelstwie')\n                world.run(track=False)\n                world.batch.resolve()\n                world.run(track=False)\n                world.gateway.files[URL] = b'%PDF-secondary'\n                world.analysis.start_run()\n                assert isinstance(ask(world, kind), Waiting)\n                world.analysis.submit_queued_batches()\n                request = world.batch.submitted[-1].model_dump(mode='json')\n                world.batch.resolve()\n                world.analysis.collect_batches()\n                world.analysis.acknowledge_batch_costs()\n                original = next(row for row in world.repo.list_computation_results(10, '3039') if row.purpose == kind)\n                assert original.provider == ('openai' if model.startswith('gpt-') else 'anthropic')\n                world.clock.advance(days=200)\n                world.repo.prune_history(before=world.clock.now(), memo_before=world.clock.now())\n                world.repo.restore(world.repo.dump())\n                assert not world.repo.load_analysis_memo()\n                world.analysis.start_run()\n                answer = ask(world, kind)\n                repeated = isinstance(answer, Waiting)\n                paid_calls = []\n                if repeated:\n                    world.analysis.submit_queued_batches()\n                    world.batch.resolve()\n                    world.analysis.collect_batches()\n                    paid_calls = [call.model_dump(mode='json') for call in world.analysis.calls]\n                    world.analysis.acknowledge_batch_costs()\n                    world.analysis.start_run()\n                    answer = ask(world, kind)\n                assert isinstance(answer, (AmendmentsRecord, SupplementRecord, JointRecord, NameRecord))\n                assert world.repo.get_computation_result(original.result_id) == original\n                name = f'{model}-{workers}-{kind}'\n                record = answer.model_dump(mode='json')\n                content = {key: record[key] for key in ('amendments', 'digest', 'comparison', 'proposal') if key in record}\n                profiles[name] = {'original_request': request, 'original_result': original.model_dump(mode='json'), 'requests': [row.model_dump(mode='json') for row in world.batch.submitted if row.call_kind == kind], 'results': [row.model_dump(mode='json') for row in world.repo.list_computation_results(10, '3039') if row.purpose == kind], 'paid_calls_after_cleanup': paid_calls, 'answer': record, 'content': content, 'snapshot': snapshot(world, output, name)}\n                world.repo.close()\n    (output / 'profiles.json').write_text(json.dumps(profiles, ensure_ascii=False, indent=2) + '\\n')\n"
+    },
+    {
+      "path": "out/corpus/j073/handoff_profile.py",
+      "sha256": "da7b56044237f17489d0f702a868114232c9e88a2503168ca77f2a37065365ce",
+      "source": "import gzip\nimport hashlib\nimport json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nimport lexinform\nfrom lexinform.models import BillStatus\nfrom lexinform.services.analysis import Waiting\nfrom tests.harness import RCL, World, summary\nfrom tests.scenario.test_commission_reviews import context as commission_context\nfrom tests.scenario.test_document_reviews import context\n\n\ndef snapshot(world, output, name):\n    raw = world.repo.dump().encode()\n    (output / f'{name}.sql').write_bytes(raw)\n    with closing(sqlite3.connect(':memory:')) as database:\n        database.executescript(raw.decode())\n        assert database.execute('PRAGMA integrity_check').fetchone() == ('ok',)\n        assert not database.execute('PRAGMA foreign_key_check').fetchall()\n        size = len(database.serialize())\n    return {'sql_sha256': hashlib.sha256(raw).hexdigest(), 'sql_bytes': len(raw), 'gzip_bytes': len(gzip.compress(raw, mtime=0)), 'sqlite_bytes': size, 'source': world.bill(RCL).model_dump(mode='json'), 'target': world.bill('5').model_dump(mode='json'), 'source_results': [row.model_dump(mode='json') for row in world.repo.list_computation_results(10, RCL)], 'target_results': [row.model_dump(mode='json') for row in world.repo.list_computation_results(10, '5')], 'requests': [row.model_dump(mode='json') for row in world.batch.submitted], 'messages': [row.text for row in world.publisher.sent], 'edits': [row.text for row, _ in world.publisher.edited]}\n\n\ndef test_profile():\n    assert Path(lexinform.__file__).resolve().parents[2] == Path(os.environ['DA_EXPECTED_CODE']).resolve()\n    output = Path(os.environ['DA_HANDOFF_PROFILE_OUTPUT'])\n    output.mkdir()\n    profiles = {}\n    for model in ('gpt-5.1', 'claude-opus-5-5'):\n        for workers in (1, 4):\n            for stage in ('open', 'ready', 'consultation-queued', 'consultation-open', 'commission-queued', 'commission-open'):\n                world = World(profile='production', workers=workers, analysis_model=model, batch_kinds=frozenset({'analysis', 'reanalysis', 'consultation_review', 'commission_review'}), consultation_reviews_enabled=True, commission_reviews_enabled=True)\n                project = world.add_rcl_project()\n                world.run()\n                source = None\n                if '-' in stage:\n                    source = (commission_context() if stage.startswith('commission-') else context()).model_copy(update={'number': RCL, 'title': project.title})\n                    assert isinstance(world.analysis.request_document_review(world.bill(RCL), source), Waiting)\n                    if stage.endswith('-open'):\n                        world.analysis.submit_queued_batches()\n                elif stage == 'ready':\n                    world.batch.resolve()\n                    world.analysis.collect_batches()\n                world.repo.upsert_summary(summary('5', project.title), now=world.clock.now())\n                world.repo.set_status(10, '5', BillStatus.BATCH_PENDING)\n                frozen = [row.model_dump(mode='json') for row in world.batch.submitted]\n                queued = [row.model_dump(mode='json') for row in world.repo.list_queued_batch_intents()]\n                transfer = getattr(world.repo, 'move_primary_analysis_work', None) or getattr(world.repo, 'move_batch_work')\n                with world.repo.atomic():\n                    transfer(10, RCL, '5')\n                    world.repo.link_bills(10, RCL, '5')\n                after_queue = [row.model_dump(mode='json') for row in world.repo.list_queued_batch_intents()]\n                world.analysis.submit_queued_batches()\n                world.repo.restore(world.repo.dump())\n                world.batch.resolve()\n                error = ''\n                try:\n                    world.analysis.collect_batches()\n                except ValueError as exc:\n                    error = str(exc).split('[type=')[0].strip()\n                name = f'{model}-{workers}-{stage}'\n                profiles[name] = {'error': error, 'frozen_before': frozen, 'queued_before': queued, 'queued_after': after_queue, 'snapshot': snapshot(world, output, name)}\n                world.repo.close()\n    (output / 'profiles.json').write_text(json.dumps(profiles, ensure_ascii=False, indent=2) + '\\n')\n"
+    }
+  ],
+  "reproduction": [
+    "Export J076 src; use baseline/src plus current root as PYTHONPATH and assert DA_EXPECTED_CODE.",
+    "Run embedded observers through pytest -p tests.conftest, before and after, using distinct output directories.",
+    "Normal 12, cold secondary 16 and handoff 24 profiles and exact dumps must remain identical.",
+    "Among 16 explanation flows, only four cold bound flows may change; returned records must equal their baseline warm controls.",
+    "Compare original requests, retained results, bill projections, applications and reader effects without removing fields.",
+    "Read and round-trip all 68 populated current snapshots with J076.",
+    "Run purpose-filter, legacy-binding, changed-question and caller-thread guards, then full gate and corpus manifests."
+  ],
+  "limitations": [
+    "Configuration flows are not independent legal initiatives or human labels.",
+    "Primary preparation receives no history snapshot in this release.",
+    "Unbound legacy explanations cannot be safely reused by inventing their old logical key.",
+    "Operational memo recreation adds 2299 SQL and 65-66 gzip bytes in cold fixtures; paid history and SQLite size do not grow. This is not a production forecast.",
+    "Memo precedence, payload/custom IDs, models, provider selection, text policy, prompts, retries and accounting remain unchanged.",
+    "No migration, raw storage, paid experiment, production pipeline or Telegram call.",
+    "The process corpus is a historical metadata snapshot; it does not establish independent semantic accuracy.",
+    "Local HTTP was not repeated: CLI, wiring and transports remain unchanged."
+  ]
+}

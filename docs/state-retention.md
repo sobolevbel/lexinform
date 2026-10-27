@@ -136,9 +136,16 @@ When a secondary memo is absent, amendments/supplement/joint/name can recover a 
 record from history by the same subject, purpose, exact request key and record type. Reuse
 rebuilds the operational memo with the original result/request refs and charges no new tokens.
 Existing memos take precedence, including legacy records without those refs. This does not
-broaden context equivalence, merge Sejm terms, or enable new purposes. Primary, reviews and
-explanation retain their separate contracts. See
+broaden context equivalence or merge Sejm terms. Primary and reviews retain their separate
+contracts. See
 [J074](plans/2026-10-22-document-architecture-progress.md#j074).
+An explanation with a recorded input binding can recover its exact paid answer after memo
+cleanup. The caller reads only explanation history and passes a snapshot into preparation;
+parallel prepare workers never read the repository. The same subject, purpose, recorded logical
+key and record type must match. Existing memos take precedence; an unbound legacy explanation
+does not acquire a guessed key. Reuse restores the operational memo without another paid request
+or mutation of the original record. See
+[J077](plans/2026-10-22-document-architecture-progress.md#j077).
 The measured sizes and scope are in [J061](plans/2026-10-22-document-architecture-progress.md#j061)
 and [J062](plans/2026-10-22-document-architecture-progress.md#j062), with tracking/linking in
 [J063](plans/2026-10-22-document-architecture-progress.md#j063).

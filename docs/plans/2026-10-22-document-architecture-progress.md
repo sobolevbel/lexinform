@@ -3902,3 +3902,38 @@ CLI/wiring/transports прежние. [Acceptance evidence](../assets/audits/202
 Binding writer завершён для новых requests; history consumers, applicability observations,
 legacy import и retention/ref transition остаются в DA6. План: **74 задачи, 12 выполнены,
 62 не закрыты**; goal active.
+
+<a id="j077"></a>
+### J077. DA6: caller-owned explanation history snapshot
+
+Дата: 27 октября 2026. База: J076 (`28bcc83`). Статус: принято локально, deployment проверяется отдельно.
+
+B124 воспроизведён на known bound explanation после memo cleanup: **4 failed**, providers=2,
+workers=1/4. `list_computation_results` получает optional purpose filter без изменения default
+reader; caller передаёт explanation-only snapshot в `_prepare`. Pure matcher общий с secondary
+reuse: known bindings сопоставляются по original subject/key/type; прежний legacy custom-id
+контракт четырёх secondary purposes сохранён. Memo имеет приоритет, paid record не мутируется.
+Prepare workers не обращаются к repository; primary prepare получает пустой snapshot и пока
+не меняет собственный history reuse. Legacy explanation без binding остаётся unknown.
+
+Final acceptance: **4602 passed**, failures/errors/skips/xfails 0, 661.065 s; targeted
+**82 passed**, strict mypy **422** файлов, Ruff src/tests/tools, format и diff check green.
+Корпусный CI **7 passed**, process **3294 observations**, zero changed inputs/decisions;
+qualified manifests закрепляют source/tests. Все **50 migrations** прежние.
+**52** normal/secondary/handoff profiles и exact dumps целиком совпали с J076. Из **16**
+explanation flows исправлены четыре cold bound; остальные **12** совпали целиком. Возвращённый
+ответ равен прежнему warm reuse; original requests/results, Bill, applications и reader effects
+не изменены. Memo восстановление добавляет **2299 SQL / 65–66 gzip bytes**, SQLite delta 0
+в этих fixtures; это не production forecast. J076 читает **68** current snapshots с exact dump.
+State pin `f34e63e7` restore/read сохраняет прежние hashes/размеры, integrity ok/FK 0.
+[Acceptance evidence](../assets/audits/2026-10-27-explanation-history-reuse/validation.json)
+содержит before probes, XML, observers, source hashes и измерения. CLI/wiring/transports
+прежние, local HTTP не повторён. Implementation commit ещё не создан; rollback J076.
+
+J076 release проверен по `28bcc83fd7ac9d4b9b4c51fce2ca6d6d0a5aa9b7`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40480729326) — **4583 passed**,
+strict mypy 420 файлов, Ruff, docs/web jobs success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40481344647) — exact COMMIT,
+`800ef774e61d -> 28bcc83fd7ac`, listener up 45 s. Live cycle writer этим не подтверждён.
+План: **74 задачи, 12 выполнены, 62 не закрыты**; goal active. Следующий фрагмент — primary
+history reuse после memo cleanup с caller-owned snapshots и прежними generation guards.

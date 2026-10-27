@@ -153,7 +153,7 @@ from lexinform.sections import (
 )
 from lexinform.senate_documents import validate_senate_scan
 from lexinform.services.analysis_applications import apply_analysis
-from lexinform.services.computation_reuse import retained_secondary
+from lexinform.services.computation_reuse import matching_record, retained_secondary
 from lexinform.services.cost import CostLedger
 from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
 from lexinform.services.joint import primary_of, revive_prefilter_skips
@@ -1410,6 +1410,9 @@ class AnalysisService:
             triage=False,
             submit_batch=True,
             purpose="explanation",
+            history=tuple(
+                self._repo.list_computation_results(bill.term, bill.number, purpose="explanation")
+            ),
         )
         if prepared.record is not None:
             assert prepared.memo_key is not None
@@ -2281,6 +2284,25 @@ class AnalysisService:
             number=number, title=title, source_kind=document.kind, source_url=document.url
         )
 
+    def _cached_analysis(
+        self,
+        bill: Bill,
+        purpose: BatchKind,
+        key: str,
+        history: tuple[ComputationResult, ...],
+        *,
+        cost_guard: bool,
+    ) -> str | None:
+        """Prepare workers read only memo and caller-supplied history snapshots."""
+        if not cost_guard:
+            return None
+        cached = self._memo.get(key)
+        if cached is None:
+            record = matching_record(history, bill.term, bill.number, purpose, key, AnalysisRecord)
+            if record is not None:
+                cached = record.model_dump_json()
+        return cached
+
     def _prepare(
         self,
         bill: Bill,
@@ -2292,6 +2314,7 @@ class AnalysisService:
         triage: bool = True,
         submit_batch: bool = False,
         purpose: Literal["analysis", "reanalysis", "explanation"] | None = None,
+        history: tuple[ComputationResult, ...] = (),
     ) -> _Prepared:
         """Load the text and ask the model. Network only: safe to run for several bills at once.
 
@@ -2420,7 +2443,7 @@ class AnalysisService:
                 overflow = submit_batch = True
                 fitted, key = to_overflow("the primary batch rejected the context")
         ctx = fitted.ctx
-        cached = self._memo.get(key) if cost_guard else None
+        cached = self._cached_analysis(bill, purpose, key, history, cost_guard=cost_guard)
         record: AnalysisRecord | None = None
         if cached is None and not submit_batch:
             try:
@@ -2431,7 +2454,7 @@ class AnalysisService:
                 overflow = submit_batch = True
                 fitted, key = to_overflow("the primary model rejected the context")
                 ctx = fitted.ctx
-                cached = self._memo.get(key) if cost_guard else None
+                cached = self._cached_analysis(bill, purpose, key, history, cost_guard=cost_guard)
         backend = self._overflow_batch if overflow else self._batch
         if cached is None and submit_batch and backend is None:
             raise LlmUnavailableError(
