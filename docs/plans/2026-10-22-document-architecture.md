@@ -451,7 +451,7 @@ DA2.1 и описание текущего профиля обязательны
 - [ ] DA2.2. Реализовать content-addressed store для bounded bytes: проверка SHA/размера,
   запись временного файла, atomic rename и необходимая синхронизация диска, идемпотентный put,
   проверяемый get. Пользовательский filename не участвует в пути; ZIP traversal невозможен.
-- [ ] DA2.3. **Частично: [J095](2026-10-22-document-architecture-progress.md#j095), reader-first source observations и deduplicated selection metadata в schema 52; production producers/artifact metadata остаются.** Ввести SQL-метаданные `artifacts`, `source_observations` и явные связи с делами/
+- [ ] DA2.3. **Частично: [J095](2026-10-22-document-architecture-progress.md#j095), reader-first source observations и deduplicated selection metadata в schema 52; [J096](2026-10-22-document-architecture-progress.md#j096), prefilter producer; остальные consumers/artifact metadata остаются.** Ввести SQL-метаданные `artifacts`, `source_observations` и явные связи с делами/
   источниками. Поддержать many-to-many: одни байты в разных наблюдениях не теряют URL/роль/дату.
   Поля, по которым нужны uniqueness/ownership/GC, доступны SQL, а не спрятаны только в JSON.
   Неизменившееся содержимое наблюдений хранится один раз; отметка повторной проверки
@@ -460,7 +460,7 @@ DA2.1 и описание текущего профиля обязательны
   extraction; судьбу повреждённых/unsupported файлов определить отдельным сроком/лимитом.
   Для оборванного по лимиту скачивания хранить попытку и причину, а не SHA якобы полного файла.
   HTTP-200 rejection HTML остаётся outage источника, не успешным нормативным документом.
-- [ ] DA2.5. **Частично: [J095](2026-10-22-document-architecture-progress.md#j095), адресуемые официальные document relations в новом reader; production запись ещё не включена.** Сохранять использованные официальные metadata/catalog snapshots или достаточное
+- [ ] DA2.5. **Частично: [J095](2026-10-22-document-architecture-progress.md#j095), адресуемые официальные document relations в новом reader; [J096](2026-10-22-document-architecture-progress.md#j096), prefilter запись на calling thread; остальные consumers открыты.** Сохранять использованные официальные metadata/catalog snapshots или достаточное
   адресуемое evidence их связи; не скачивать весь сайт. Не сохранять credentials/cookies/secrets.
   Писать durable метаданные и архив в согласованном порядке на calling thread.
 - [ ] DA2.6. Протокол двух хранилищ: сначала объект проверен и устойчиво доступен, потом SQL ref,

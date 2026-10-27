@@ -234,3 +234,11 @@ History excludes extracted bodies and later provider scan inputs, survives opera
 and does not imply raw retention or an archive backend. A repeated check preserves the first
 recording time and exact dump; historical paid results acquire no inferred observation. See
 [J095](plans/2026-10-22-document-architecture-progress.md#j095).
+
+The text prefilter records new completed selection decisions and their official document relations
+before storing the status outcome, in the same transaction on the calling thread. A keyword miss,
+scan, waiting or unsupported selection can retain metadata without a paid analysis. A failed source
+fetch is not promoted to a completed decision. Repeated checks keep the original recording time;
+no legacy backfill, extra download, model call or provider-input retention is introduced. Other
+consumers and standalone artifact metadata remain open. See
+[J096](plans/2026-10-22-document-architecture-progress.md#j096).

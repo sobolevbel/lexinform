@@ -402,3 +402,9 @@ input отвергаются; `from_selection` сохраняет metadata view.
 Свежий pin `2f310768040c39deb87f9de1e40e1440cb396aad`: все 458 Bill и прежние rows сохранены,
 пустая схема +814 SQL / 201 gzip bytes; J094 reader сохраняет populated v52 dump побайтно.
 См. [J095](../plans/2026-10-22-document-architecture-progress.md#j095).
+
+[J096](../plans/2026-10-22-document-architecture-progress.md#j096) включает первый producer:
+text prefilter сохраняет завершённое source decision и outcome одной transaction. Worker
+передаёт metadata, запись идёт на calling thread в input order, время берётся из Clock.
+Новые строки не требуют paid result; missing fetch не становится успешным наблюдением.
+Повтор не создаёт историю polling и не меняет первое время. Остальные producers ещё открыты.

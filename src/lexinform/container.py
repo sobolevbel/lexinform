@@ -436,6 +436,7 @@ class Container:
                 self.text_sources(),
                 self.text_loader(),
                 self.prefilter,
+                clock=self.clock,
                 min_distinct=self.settings.text_prefilter_min_distinct,
                 min_occurrences=self.settings.text_prefilter_min_occurrences,
                 workers=self.settings.sejm_concurrency,

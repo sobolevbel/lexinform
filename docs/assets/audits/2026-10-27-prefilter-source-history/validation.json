@@ -1,0 +1,170 @@
+{
+  "version": 1,
+  "stage": "J096",
+  "baseline": "2a98e294c19555a8a140d940e7129c7bb035948a",
+  "scope": "Caller-owned atomic prefilter source-decision history and status outcome; original source reads and keyword/admission decisions unchanged.",
+  "checks": {
+    "focused": {
+      "path": "out/corpus/j096/focused-qualified.xml",
+      "sha256": "c8110d8b7bfd79bc77b0c71b0911a40c28fe85018c8a8c711bd24f04cd1771b2",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "36",
+      "time": "1.261",
+      "timestamp": "2026-10-27T19:26:00.746816+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j096/full.xml",
+      "sha256": "40c8271518aa4d708beb4d611a1639d179f03cdd8ee7777313e720bf1a8988ca",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "4849",
+      "time": "593.324",
+      "timestamp": "2026-10-27T19:26:23.559926+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 444 source files",
+    "ruff": "All checks passed!",
+    "format": "445 files left unchanged"
+  },
+  "native": {
+    "cases": 168,
+    "all_profiles_except_metadata_history_and_storage_metrics_exact": true,
+    "all_requests_and_rendered_messages_exact": true,
+    "all_20_old_tables_exact": true,
+    "source_observation_occurrences_in_final_snapshots": 32,
+    "decision_occurrences_in_final_snapshots": 32,
+    "snapshots_with_history": 32,
+    "all_new_ids_and_selection_refs_valid": true,
+    "sql_delta": {
+      "min": 0,
+      "max": 2794
+    },
+    "gzip_delta": {
+      "min": 0,
+      "max": 751
+    }
+  },
+  "structural": {
+    "old_decision_body_exact": true,
+    "old_post_load_admission_body_exact": true,
+    "run_check_problem_methods_ast_identical": true,
+    "workers_do_not_access_repository": true,
+    "only_caller_decide_adds_atomic_metadata_write": true
+  },
+  "corpus_prefilter": {
+    "cases": 4276,
+    "all_decisions_reasons_hits_and_statuses_exact": true,
+    "all_20_old_tables_exact": true,
+    "inputs_exact": true,
+    "missing_inputs": 1383,
+    "counts": {
+      "document_selections": 3139,
+      "source_observations": 3139
+    },
+    "sql_delta": 13176684,
+    "gzip_delta": 1445169,
+    "restore_dump_exact": true,
+    "scope": "Cached RCL stage prefilter, sequential comparison; workers covered by native/scenario tests. No independent legal/raw completeness verdict."
+  },
+  "corpus": {
+    "ci": {
+      "observations": 7,
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "e4dd59cd7419881a4abbcfac2fd027418c29bcd600968dadf0315e45cfd6a7d2",
+        "before_manifest_sha256": "29ce69b7fc51b7aefadd76a3bb0b18031a181dd4d33af9519caf32407675aa15",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "ci",
+        "summary_changes": {},
+        "version": 1
+      }
+    },
+    "process": {
+      "observations": 3294,
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "5d739bee8c00929e51b71d4a044874ea1e7dd8c38f2e925f327c69b94f62b445",
+        "before_manifest_sha256": "e23340afb448b1b2e59a075c2bea686fbee04d33a2b1559c17342cb22669147d",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "process",
+        "summary_changes": {},
+        "version": 1
+      }
+    }
+  },
+  "source": [
+    {
+      "path": "src/lexinform/services/text_prefilter.py",
+      "sha256": "e44f6cdc26aae79607fd675ab8c5864fcf94fa6cb04fa17e2c1bb9b77e6fd3d8"
+    },
+    {
+      "path": "src/lexinform/container.py",
+      "sha256": "ba4c65d4084418a4eb7f0cc4bce880bdd7090e50e994d6da987539130d79e27e"
+    },
+    {
+      "path": "tests/scenario/test_prefilter_source_history.py",
+      "sha256": "e774a5301985ce20f2178c148810b8be5ee0496c7b6e14eea59b3aaccf28e9d5"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "out/corpus/j096/native_profiles.py",
+      "sha256": "7aa2c89c340358934ff0cfa715f8a3ae10874c7b4ddb35945a7c8aed4f143c24"
+    },
+    {
+      "path": "out/corpus/j096/compare_native.py",
+      "sha256": "2278487278a507dd057e4781b9f54f51002027695a00b00fe9979139aed0b3f5"
+    },
+    {
+      "path": "out/corpus/j096/native-parity.json",
+      "sha256": "e3b007c7d8184ae50555106c9d96513cee4c45ea3dab1a331d5b106a0760fcd4"
+    },
+    {
+      "path": "out/corpus/j096/corpus_prefilter.py",
+      "sha256": "c42b0ad2df24327ea4a02a3134566f7dd676a51465f18651328fd5fc3d78a00c"
+    },
+    {
+      "path": "out/corpus/j096/compare_corpus.py",
+      "sha256": "62eac1bc95e9a32237626efe327ca81af0bd9cc785dc040781a08791bd17428e"
+    },
+    {
+      "path": "out/corpus/j096/corpus-baseline.json",
+      "sha256": "dbcd0395fff9c12442f31c84b3a9620f8ced077e7ec13b1941afa528696a15c8"
+    },
+    {
+      "path": "out/corpus/j096/corpus-current.json",
+      "sha256": "8851bec7b8a240df97494bc365fc9e8369c719255dc9cead4de051d384063e2f"
+    },
+    {
+      "path": "out/corpus/j096/corpus-parity.json",
+      "sha256": "8957155ab25ed4f7edbc10cd88bb627fc3ac3ed30951112f97bc39ab0b1da532"
+    }
+  ],
+  "exclusions": [
+    "Only completed prefilter selection decisions are recorded; analysis/review consumers remain open.",
+    "Source fetch failure creates no guessed completed decision; legacy history is not backfilled.",
+    "Cached RCL cases retain 1383 missing inputs; no raw/legal completeness acceptance or production-volume forecast.",
+    "Selection metadata omits extracted bodies and provider scan inputs; facts retain evidence quotes.",
+    "No additional source/model/Telegram calls, raw storage backend or retention decision."
+  ],
+  "reproduction": [
+    "uv run pytest -q tests/scenario/test_prefilter_source_history.py tests/scenario/test_text_prefilter.py tests/unit/test_document_history.py",
+    "uv run mypy --no-incremental && uv run ruff check src tests tools && uv run pytest -q",
+    "Run native_profiles.py/compare_native.py against qualified J095 snapshots with fresh output paths.",
+    "Run corpus_prefilter.py with DA_PREFILTER_MODE=baseline/current and each runtime PYTHONPATH, then compare_corpus.py; use new output paths."
+  ]
+}

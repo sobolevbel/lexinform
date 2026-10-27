@@ -4938,3 +4938,48 @@ J095 accepted gate: **75 focused / 4840 full**, **0 failures/errors/skips**, ful
 [Acceptance asset](../assets/audits/2026-10-27-source-observation-reader/validation.json) сохраняет
 producer/evidence hashes, размеры, паритет, ограничения и reproduction. Никакие reader payload,
 selection/extraction outcomes или production writer flags не менялись.
+
+
+<a id="j096"></a>
+### J096. Source decisions text prefilter: запись без paid result
+
+Статус: **завершён**, baseline `2a98e294c19555a8a140d940e7129c7bb035948a`.
+Первый production producer schema-52 metadata history: worker load передаёт paired source
+catalog/decision metadata; calling-thread `decide` сохраняет их и прежний status outcome одной
+transaction. Clock внедрён через Container. Старое keyword/admission body перенесено без
+семантических изменений; source selection/extraction, requests и renderer не менялись.
+
+Нейтральный keyword miss сохраняет адресуемое решение и official relations, хотя paid analysis
+не было. Scans/unsupported и остальные возвращённые selection outcomes также сохраняют
+metadata; outage/missing fetch не выдумывают complete source evidence. Body/provider scan input
+не копируются. Повторная check сохраняет первое время и exact dump, status failure откатывает
+обе metadata таблицы. Workers 1/4 записывают на caller в input order; отдельные scenario tests
+проверяют retained rejection, scan, unreadable, outage, repeat и transaction rollback.
+
+Первый mypy потребовал явного narrowing optional prefilter service в tests; добавлены assertions
+с гарантией World default. Accepted focused **36**, strict mypy **444** (`--no-incremental`),
+Ruff/format green; полный gate выполняется. Source consumers analysis/review ещё не подключены,
+legacy/paid IDs и raw retention не backfilled.
+
+**168 native flows** против J095: все requests/rendered messages, остальные profile fields и
+**20 прежних SQL tables точны**. **32** metadata observations / **32** decisions в **32** final
+snapshots; все IDs/selection refs валидны. SQL delta **0–2794 bytes**, gzip **0–751**; snapshots
+с одинаковыми историями не считаются независимым production объёмом. Decision body и post-load
+admission body AST exact; `run/check/problem` методы не менялись.
+
+
+J095 release `2a98e294c19555a8a140d940e7129c7bb035948a` принят:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40559791312) **4840 passed**,
+mypy/Ruff/docs/web success. [Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40560731917)
+показал exact COMMIT, `83eadcf87c71 -> 2a98e294c195`, listener up **45 s**. J094 CI failure
+исправлен и принят этим gate; отдельный production processing вручную не запускался.
+
+
+Accepted full gate: **4849 passed / 0 failures/errors/skips**, **593.324 s**; **36 focused**,
+strict mypy **444**, Ruff/format green. Actual public prefilter replay — **4276 RCL cases**:
+accepted/status/reasons/hits и все **20 прежних SQL tables exact**. Input hashes равны;
+**1383 missing** сохранены. Новая история **3139 decisions / 3139 observations**, SQL delta
+**13176684 bytes / gzip 1445169 bytes** относительно того же fixture DB без history. Это
+исторические cached stages, не прогноз production growth. Restore dump exact. Corpus CI **7** /
+process **3294**: verified, observations/inputs same. Metadata/exclusions и воспроизведение —
+[acceptance asset](../assets/audits/2026-10-27-prefilter-source-history/validation.json).
