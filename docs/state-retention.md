@@ -288,3 +288,12 @@ recommendation and supplement inputs are used. Input-budget refusal and a bare s
 remove the completed source decision. An extractor exception before selection completion creates
 no inferred decision. The Senate-specific resolution path and historical comparison workers are
 unchanged. See [J104](plans/2026-10-22-document-architecture-progress.md#j104).
+
+
+Senate-specific source observations record actual complete-body identity separately from the
+expected resolution descriptor. Their question/policy identify a physical observation, with
+`unverified` state and unknown normative role; an observed reader-text hash does not establish
+extraction or normative coverage. Changed-body refusals can retain the actual physical metadata.
+Valid full scans retain their original source SHA independently of provider derivatives, without
+claiming visual verification. Subject/date/fullness checks and worker historical comparisons are
+unchanged. See [J105](plans/2026-10-22-document-architecture-progress.md#j105).

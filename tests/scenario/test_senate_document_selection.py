@@ -19,9 +19,9 @@ STAGE = Stage(
 )
 
 
-def world_with_sources(files: dict[str, str]) -> World:
+def world_with_sources(files: dict[str, str], *, workers: int = 1) -> World:
     extractor = FakeTextExtractor(by_content={name.encode(): text for name, text in files.items()})
-    world = World(extractor=extractor, text_budget_chars=60_000)
+    world = World(extractor=extractor, text_budget_chars=60_000, workers=workers)
     world.add_bill("1929", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
     world.run()
     attachments = tuple(

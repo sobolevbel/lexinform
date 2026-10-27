@@ -1,17 +1,27 @@
 import datetime as dt
+import hashlib
 import logging
 import re
+from collections.abc import Callable
 from pathlib import PurePosixPath
 
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
-from lexinform.models import PrintInfo, SenateResolutionIdentity, TextDocument
+from lexinform.models import (
+    DocumentPart,
+    DocumentSelection,
+    DocumentSelectionRecord,
+    PrintInfo,
+    SenateResolutionIdentity,
+    TextDocument,
+)
 from lexinform.senate_documents import (
     inspect_senate_resolution,
     resolution_date_matches,
     senate_subject,
     senate_subject_key,
 )
-from lexinform.services.documents import TextLoader
+from lexinform.services.document_history import DocumentSourceRead
+from lexinform.services.documents import LoadedFile, TextLoader
 
 log = logging.getLogger(__name__)
 
@@ -130,13 +140,50 @@ def resolve_senate_document(
     return visual[0] if len(visual) == 1 else None
 
 
-def verified_senate_text(loader: TextLoader, document: TextDocument) -> str:
+def resolution_source_read(
+    loader: TextLoader,
+    document: TextDocument,
+    *,
+    sha256: str | None,
+    pages: int,
+    text: str | None,
+) -> DocumentSourceRead | None:
+    """Physical source metadata does not claim resolution admission or normative coverage."""
+    if sha256 is None:
+        return None
+    selection = DocumentSelection(
+        question="senate_resolution_source",
+        policy_version="senate-source-observation-v1",
+        parts=(
+            DocumentPart(
+                url=document.url,
+                sha256=sha256,
+                pages=pages,
+                text_sha256=hashlib.sha256(text.encode()).hexdigest() if text is not None else "",
+            ),
+        ),
+    )
+    return DocumentSourceRead(
+        document,
+        DocumentSelectionRecord.from_selection(selection),
+        loader.artifacts_for_selection(selection),
+    )
+
+
+def verified_senate_text(
+    loader: TextLoader,
+    document: TextDocument,
+    *,
+    on_read: Callable[[LoadedFile], None] | None = None,
+) -> str:
     identity = document.senate
     if identity is None:
         raise ValueError("Источник поправок Сената не проверен по содержимому")
     if identity.scan:
         raise ValueError("Скан постановления требует чтения всех страниц")
     loaded = loader.read(document.url)
+    if on_read is not None:
+        on_read(loaded)
     evidence = inspect_senate_resolution(loaded.text or "", word_eof=identity.word_eof)
     if (
         loaded.sha256 != identity.sha256

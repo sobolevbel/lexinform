@@ -445,4 +445,9 @@ caller transaction записывает decision/observation/known outer refs; �
 [J104](../plans/2026-10-22-document-architecture-progress.md#j104) использует тот же writer перед
 обычными committee amendments, рекомендациями и supplements. Source metadata сохраняются до
 full-input budget refusal и подготовки model context; memo reuse без чтения не получает новый
-source observation. Senate special path и worker historical-comparison reads этим не меняются.
+source observation. [J105](../plans/2026-10-22-document-architecture-progress.md#j105) отдельно сохраняет physical
+Senate source metadata: question `senate_resolution_source`, policy `senate-source-observation-v1`,
+state `unverified`, unknown role, actual raw SHA/pages/observed reader-text SHA. Expected source
+identity остаётся в `TextDocument.senate` отдельно от actual body SHA. Scan provider input не
+попадает в source metadata; subject/date/fullness/visual admission прежние. Historical-comparison
+workers этим не меняются.

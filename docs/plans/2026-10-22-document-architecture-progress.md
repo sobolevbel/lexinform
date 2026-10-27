@@ -5356,3 +5356,46 @@ J103 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40582322249): **4
 strict mypy **459**, Ruff/docs/web success. [Relay deploy](https://github.com/sobolevbel/lexinform/actions/runs/40583433623):
 exact COMMIT `878f889f7183c90dc94739a72716014da91cf845`, listener up **45 s**.
 Production pipeline/paid calls/reader sends вручную не запускались.
+
+
+<a id="j105"></a>
+### J105. Физический source receipt для Senate special path
+
+Статус: **завершён**, baseline `b28a898fddf013eb1c1f2f69bf9541becb0487e4`.
+`resolution_source_read` формирует physical metadata с question `senate_resolution_source`,
+policy `senate-source-observation-v1`, state **unverified** и unknown role. SHA actual loaded bytes
+отделён от ожидаемого SHA в `TextDocument.senate`; subject/date/fullness/visual admission не
+подменены этим receipt. Text helper имеет optional caller observer после существующего read;
+scan использует уже возвращённые original SHA/pages. Дополнительных fetch/parse calls нет.
+Observed reader-text SHA не доказывает extraction/normative coverage; provider scan input не
+копируется в source metadata. Ни одно поле paid input/result identity не меняется.
+
+**96 focused / 4960 full**, 0 failures/errors/skips; full **608.091 s**. Strict mypy **461** с/без
+PYTHONPATH, Ruff/format green. Tests: workers1/4/caller-only writes, text/scan, actual vs expected
+SHA после смены bytes, no new model call при отказе, first recording/exact repeated dump, outage.
+Resolver AST exact; verified-text/analysis methods AST exact после удаления observer hooks.
+Остальные **153 src files byte-identical**, schema/models/ports/extractors/payloads прежние.
+
+**168 native cases**: requests/messages/profiles/**20 business tables exact**, old metadata preserved,
+doctor **0 errors**. **210 observation / 198 selection / 190 part-ref views**, SQL delta **0–4343**,
+gzip **0–673** bytes. Backward reader J104: **168 native SQL snapshots / 324 report views** и
+отдельный corpus metadata snapshot с **724 observations** читаются и dump exact, без conversion.
+
+Senate corpus: **816 semantic cases** current/baseline exact, включая прежние negative controls и
+meaningful mutation probes. Active factory/writer — **724 selected sources: 701 text / 23 scan**;
+actual SHA/size каждого linked artifact проверены по сохранённым original bytes. **724 selections /
+724 observations / 724 artifacts / 724 refs**, source doctor **0 errors**, SQLite integrity/FK ok.
+Metadata-only graph: **1735985 SQL / 326647 gzip bytes**, restore exact. Owner keys здесь явно
+qualification-only; real production owners/paid results не импортированы. Использован cached
+extracted text вместе с actual originals и прежними replay download bounds; fresh extraction,
+OCR/visual verification и independent legal/source-family acceptance не заявлены.
+Corpus CI **7** / process **3294** verified, inputs/observations same; Senate manifest verified.
+
+[Acceptance asset](../assets/audits/2026-10-27-senate-source-history/validation.json) пинует code/
+evidence hashes, scopes, cohort sizes, exact SHA/size links, gates и backward-reader qualification.
+Unselected candidates и incomplete reads не получают вымышленный completed source receipt.
+
+J104 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40584670845): **4951 passed**,
+strict mypy **460**, Ruff/docs/web success. [Relay deploy](https://github.com/sobolevbel/lexinform/actions/runs/40585767033):
+exact COMMIT `b28a898fddf013eb1c1f2f69bf9541becb0487e4`, `878f889f7183 -> b28a898fddf0`, up **45 s**.
+Production processing/paid calls/reader sends вручную не запускались.

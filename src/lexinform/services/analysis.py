@@ -160,7 +160,11 @@ from lexinform.services.document_history import DocumentSourceRead, record_sourc
 from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
 from lexinform.services.joint import primary_of, revive_prefilter_skips
 from lexinform.services.result_applications import record_secondary_application
-from lexinform.services.senate_documents import resolve_senate_document, verified_senate_text
+from lexinform.services.senate_documents import (
+    resolution_source_read,
+    resolve_senate_document,
+    verified_senate_text,
+)
 from lexinform.text_projection import TextProjection
 
 log = logging.getLogger(__name__)
@@ -2063,8 +2067,18 @@ class AnalysisService:
             if loaded.truncated:
                 raise ValueError("Полный текст поправок комиссии не помещается в бюджет текста")
             return loaded
+
+        def observe(sha256: str | None, pages: int, text: str | None) -> None:
+            source = resolution_source_read(
+                self._loader, document, sha256=sha256, pages=pages, text=text
+            )
+            if source is not None:
+                self._record_source_read(bill, source)
+
         if document.senate is not None and document.senate.scan:
             scan = self._loader.load_scan(document.url, cover_letter=False)
+            if scan is not None:
+                observe(scan.sha256, scan.of_pages, None)
             if (
                 scan is None
                 or scan.sha256 != document.senate.sha256
@@ -2073,7 +2087,11 @@ class AnalysisService:
             ):
                 raise ValueError("Полный скан постановления не прочитан или файл изменился")
             return _Loaded("", False, "scan", scan=scan)
-        text = verified_senate_text(self._loader, document)
+        text = verified_senate_text(
+            self._loader,
+            document,
+            on_read=lambda loaded: observe(loaded.sha256, loaded.pages, loaded.text),
+        )
         budgeted = self._budget.apply(text, self._keywords.spans(text))
         if budgeted.truncated:
             raise ValueError("Полный текст поправок Сената не помещается в бюджет текста")

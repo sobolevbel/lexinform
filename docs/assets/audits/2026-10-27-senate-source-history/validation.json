@@ -1,0 +1,162 @@
+{
+  "version": 1,
+  "stage": "J105",
+  "baseline": "b28a898fddf013eb1c1f2f69bf9541becb0487e4",
+  "scope": "Unverified physical Senate source observations, independently of resolution admission and expected descriptor, without changing payloads or retaining bodies.",
+  "checks": {
+    "focused": {
+      "path": "out/corpus/j105/focused.xml",
+      "sha256": "6b4ac6b059eb5173fefbacefa9a98e3d7c5e96ce92a9d6af526d90b15a0aafce",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "96",
+      "time": "2.061",
+      "timestamp": "2026-10-27T22:16:30.134896+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j105/full.xml",
+      "sha256": "0fadc044a7065475f14df53a20988af4f2fb17201d384d89f4ed07c110fd216c",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "4960",
+      "time": "608.091",
+      "timestamp": "2026-10-27T22:17:16.244947+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 461 source files",
+    "mypy_ci_equivalent": "Success: no issues found in 461 source files",
+    "ruff": "All checks passed!",
+    "format": "520 files left unchanged"
+  },
+  "qualification": {
+    "native": {
+      "cases": 168,
+      "all_profiles_except_metadata_and_storage_metrics_exact": true,
+      "all_requests_and_rendered_messages_exact": true,
+      "all_20_business_tables_exact": true,
+      "prior_metadata_rows_preserved": true,
+      "source_observation_views": 210,
+      "selection_views": 198,
+      "link_views": 190,
+      "all_source_doctors_without_errors": true,
+      "sql_delta": {
+        "min": 0,
+        "max": 4343
+      },
+      "gzip_delta": {
+        "min": 0,
+        "max": 673
+      }
+    },
+    "rollback": {
+      "reader": "J104 b28a898fddf013eb1c1f2f69bf9541becb0487e4",
+      "native_snapshots": 168,
+      "report_views": 324,
+      "separate_corpus_snapshot_source_observations": 724,
+      "all_sql_dumps_preserved_exact": true,
+      "all_new_question_policy_source_records_and_links_read": true,
+      "schema_conversion": false
+    },
+    "structural": {
+      "baseline": "b28a898fddf013eb1c1f2f69bf9541becb0487e4",
+      "resolver_ast_exact": true,
+      "verified_text_ast_exact_without_optional_observer": true,
+      "all_original_analysis_methods_ast_exact_without_observer": true,
+      "other_153_runtime_files_byte_identical": true,
+      "models_schema_ports_extractors_admission_and_paid_payloads_unchanged": true,
+      "changed_runtime": {
+        "src/lexinform/services/analysis.py": "7e97c9f069d58649236b6957f8efca830e0c33f140026fd455f1f08bdabc7568",
+        "src/lexinform/services/senate_documents.py": "5e46e693395d8c54e8939535fa5242d4bb44baa720dd9ea08e5f4e9e36d035b3"
+      }
+    },
+    "corpus_ci": {
+      "after_manifest_sha256": "1d8e0e1fcd61dd649d4291024698728ac84952541cea74c81b37be338e89753b",
+      "before_manifest_sha256": "b261f30f7636c97372bded57ea72e05b30e123d5995ca430a54be8c10ffd76f3",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "ci",
+      "summary_changes": {},
+      "version": 1
+    },
+    "corpus_process": {
+      "after_manifest_sha256": "ab4ee449c5e5bbf9d54ce95bea3da7132cda888fef34923d8175afcb6d62c68b",
+      "before_manifest_sha256": "efb135835c4bebfbb2425fd7c69e5ae7c8fcf58a480399d7b97c478fd77ee8b8",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "process",
+      "summary_changes": {},
+      "version": 1
+    },
+    "senate": {
+      "selected_catalogue_cases": 724,
+      "captured_source_views": 724,
+      "captured_text_views": 701,
+      "captured_scan_views": 23,
+      "scan_inputs_refused_by_existing_limits": [],
+      "all_old_senate_semantic_observations_exact": true,
+      "all_recorded_raw_sha_and_sizes_match_actual_files": true,
+      "all_source_policy_records_unverified": true,
+      "sql_bytes": 1735985,
+      "gzip_bytes": 326647,
+      "restore_exact": true,
+      "scope": "Actual saved originals with cached extracted text; active source factory/atomic writer qualification under legacy replay download bounds. Not fresh re-extraction, visual verification, real production owners or paid result acceptance."
+    },
+    "senate_doctor": {
+      "artifact_link_rows": 724,
+      "artifact_rows": 724,
+      "errors": 0,
+      "observation_rows": 724,
+      "policy_recorded": 724,
+      "purpose/analysis": 724,
+      "selection_rows": 724,
+      "state/unverified": 724,
+      "unlinked_artifact_rows": 0,
+      "unreferenced_selection_rows": 0
+    }
+  },
+  "sources": {
+    "src/lexinform/services/analysis.py": "7e97c9f069d58649236b6957f8efca830e0c33f140026fd455f1f08bdabc7568",
+    "src/lexinform/services/senate_documents.py": "5e46e693395d8c54e8939535fa5242d4bb44baa720dd9ea08e5f4e9e36d035b3",
+    "tests/scenario/test_senate_source_history.py": "5f2e2d5bc7f3e9f2a2572548f2909ac3f8cfe0d2ace0be6d8400e6f307a4a397",
+    "tests/scenario/test_senate_document_selection.py": "acbaddc0a3718a4ec71e7f9caf483606c003aab7091252d0eb0e06fe03e420d3"
+  },
+  "evidence": {
+    "out/corpus/j105/native-parity.json": "689cdbdbf123db938e2df1c2ff9f1fb73c5ecdb6dc53725de923dac653db4b48",
+    "out/corpus/j105/rollback.json": "734a5c871b6fd690c91c5493f211e55158108c0833981ffc9afaf81492fe99fb",
+    "out/corpus/j105/structural-parity.json": "37eb422c3b7d81f2030695f88dad1ee7322b09c28a36cd45ca989986998a67e7",
+    "out/corpus/j105/ci-diff.json": "225021136ed6c31711cbbb979e52fad2d39e1b58f1a9b640580f23da7fcb8aa1",
+    "out/corpus/j105/process-diff.json": "b8db55b22faae19d2fa525cd99a7c12bc93e58d102fa81d98fef57e9387fd0cb",
+    "out/corpus/j105/senate-baseline.json": "6bd5363af060c546fc1f8e8fa3795f744a1bc5ce77d2890fd93a35f34fe98624",
+    "out/corpus/j105/senate-metadata-qualified.json": "110605952da1647989d6d9800a94742257b9ad43bdb132ba108495347c810865",
+    "out/corpus/j105/senate-source-doctor.json": "c7cf4b40e324fdffa1ce65685cec8242c42a1b64598cb5e06bd96dbf8680713e",
+    "out/corpus/j105/senate-source-history.sql": "5683e2630f8fdc262d805eb61798a7ce7fd5db91322084d02cf39474822b6efa",
+    "out/corpus/j105/senate_baseline.py": "e3ca0fcf2c14a16e132ad323146cee2692f62492f39f12743f9b311d46206435",
+    "out/corpus/j105/senate_metadata_qualified.py": "dffe13f2a3f8e7827c5b306d0e1dc05c14e0d64fd609f247209749e3f73eaa67",
+    "out/corpus/j105/doctor_corpus.py": "f249ab4efcaea8c70307c252b3d02fbf6257050b64a24e611a7e05e6ab1eca94",
+    "out/corpus/j105/native_profiles.py": "075d21cbc996fc116c8bd8416741ee86b302998f1a5e4649166415bb908b5343",
+    "out/corpus/j105/compare_native.py": "93d1c9bd64d8fa787826f255e7e712c11178cdd2a95ec13244cd95ab9c8daeb3",
+    "out/corpus/j105/rollback_profile.py": "9b2afa02395b2da5d178f26693010b7de932b18eca266b235d42a02c7f30a198",
+    "out/corpus/j105/structural_profile.py": "df17a86ff167ee6d268cd722f454231c47b2915d16fbcfb7fdd30d947f9de3c9",
+    "out/corpus/runs/j105-ci/manifest.json": "1d8e0e1fcd61dd649d4291024698728ac84952541cea74c81b37be338e89753b",
+    "out/corpus/runs/j105-process/manifest.json": "ab4ee449c5e5bbf9d54ce95bea3da7132cda888fef34923d8175afcb6d62c68b",
+    "out/corpus/runs/j105-senate/manifest.json": "05e567963c1a949fe807f41e032e88bd710fadb9a616fa5676fb124a1a207cb2"
+  },
+  "limitations": [
+    "Physical observation is not successful subject/date/fullness/visual admission.",
+    "Observed reader-text hash does not establish fresh extraction, complete normative coverage or a retained body.",
+    "Corpus combines actual original bytes with cached extracted text under existing legacy replay download bounds.",
+    "Corpus ownership keys are qualification-only, not inferred production owners or paid-input/result associations.",
+    "Unselected candidates and incomplete fetches do not acquire fabricated completed source decisions."
+  ]
+}
