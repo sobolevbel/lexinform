@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-27",
+  "production_change": false,
+  "replace_gpt51": false,
+  "replace_opus55_overflow": false,
+  "replace_all": false,
+  "per_role": {
+    "analysis": "keep gpt-5.1",
+    "reanalysis": "keep gpt-5.1 and existing overflow",
+    "overflow": "keep claude-opus-5-5",
+    "amendments": "keep gpt-5.1; only one real report tested",
+    "supplement": "keep gpt-5.1; only one real OSR tested",
+    "joint": "keep gpt-5.1; common prompt ambiguity requires separate correction and validation",
+    "triage_change_review": "keep Sonnet; routing and current baseline not compared",
+    "name_explanation_reviews_act_application": "unchanged; untested"
+  },
+  "best_exploratory_manual_config": {
+    "model": "gpt-6.1-terra",
+    "effort": "medium",
+    "max_output_tokens": 8000,
+    "prompt": "production plus general precision instructions from diagnostic-plan.json",
+    "cache": "explicit without breakpoints"
+  },
+  "reason": "Source-reviewed reader group omission in current-prompt analysis, unsupported synthetic reanalysis signal, and long annual-budget publication-priority failure. Calibration repairs selected conditions but lacks a broad independent holdout.",
+  "actual_usd": 3.5702705,
+  "remaining_usd": 0.4297295,
+  "pending_usd": 0
+}

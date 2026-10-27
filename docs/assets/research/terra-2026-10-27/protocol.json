@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-27",
+  "budget_usd": 4.0,
+  "target": "gpt-6.1-terra",
+  "git_head": "0b05a4f9a51bdb38c533bc0224f9254aec6f371e",
+  "corpus_index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "old_archive_sha256": "2c957db8c71ad0bc989dce810845132b1ca7e2c9ef75096548984792b5965ec7",
+  "prompt_version": "2026-10-v12",
+  "selection": "All non-triage Luna contexts, corrected metadata preferred; three additional corpus prints. Budget-constrained stages fixed separately before each submission.",
+  "quality": "No confirmed material loss of conditions, groups, amounts, dates, negation or procedure; source text adjudicates disagreements. Historical models are not gold.",
+  "baseline": "Historical 19 Opus and 5 GPT records; selected new identical-prompt GPT-5.1 comparisons within the same total budget.",
+  "config": "Current production prompts, medium effort and 8000 cap for full analysis; 4000 secondary cap. No prompt calibration before broad results.",
+  "cache": "Explicit without breakpoints, cold generation; no automatic cache writes.",
+  "accounting": "Before submit reserve server-counted input plus max(1024, 2%) and full capped output; long tier applied to whole request. Unknown submissions never retried.",
+  "limitations": [
+    "Selected risk corpus, not random sample or legal certification.",
+    "Repeated versions are not independent bills.",
+    "Some historical reanalysis contexts lack previous full texts.",
+    "Historical and fresh comparison strata reported separately."
+  ]
+}

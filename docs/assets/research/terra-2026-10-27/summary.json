@@ -1,0 +1,695 @@
+{
+  "total_requests": 130,
+  "actual_usd": 3.5702705,
+  "pending_reserve": 0,
+  "terminal_batches": 12,
+  "batch_count": 12,
+  "by_model": {
+    "gpt-5.1": {
+      "requests": 6,
+      "valid": 6,
+      "usd": 0.1901555,
+      "input_tokens": 226188,
+      "output_tokens": 10132,
+      "reasoning_tokens": 6885,
+      "cached_tokens": 3328,
+      "cache_write_tokens": 0
+    },
+    "gpt-6.1-terra": {
+      "requests": 124,
+      "valid": 124,
+      "usd": 3.380115,
+      "input_tokens": 4770050,
+      "output_tokens": 58281,
+      "reasoning_tokens": 14289,
+      "cached_tokens": 0,
+      "cache_write_tokens": 0
+    }
+  },
+  "base_requests_excluding_superseded_metadata": 92,
+  "base_roles": {
+    "analysis": 51,
+    "reanalysis": 14,
+    "joint": 9,
+    "change_review": 13,
+    "amendments": 2,
+    "supplement": 3
+  },
+  "base_real_contexts": 47,
+  "base_real_entities": 45,
+  "base_sources": {
+    "metadata_corrected_saved_batch_text": 2,
+    "saved_batch_text": 21,
+    "corpus_full_text": 7,
+    "new_synthetic_holdout": 5,
+    "controlled_corpus_production_prepared": 2,
+    "new_conditions_v3_guard": 4,
+    "metadata_corrected_corpus_full_text": 3,
+    "synthetic_control": 19,
+    "real_register_metadata": 2,
+    "real_supplement": 1,
+    "real_committee_amendments": 1,
+    "real_joint_descriptions": 2,
+    "new_repair_holdout": 5,
+    "new_max_v2_guard": 5,
+    "controlled_corpus_mutation": 4,
+    "new_reasoning_stability_guard": 1,
+    "corpus_not_in_luna": 3,
+    "real_full_scan": 1,
+    "exploratory_triage_disagreement_full_text": 4
+  },
+  "fresh_pairs": [
+    {
+      "case_id": "analysis-1040",
+      "gpt_usd": 0.008056875,
+      "terra_usd": 0.003812,
+      "gpt_input": 4819,
+      "terra_input": 4819,
+      "gpt_output": 1009,
+      "terra_output": 561,
+      "gpt_score": 4,
+      "terra_score": 4
+    },
+    {
+      "case_id": "reanalysis-2846",
+      "gpt_usd": 0.01333875,
+      "terra_usd": 0.00711,
+      "gpt_input": 11350,
+      "terra_input": 11350,
+      "gpt_output": 1249,
+      "terra_output": 574,
+      "gpt_score": 5,
+      "terra_score": 5
+    },
+    {
+      "case_id": "reanalysis-3008",
+      "gpt_usd": 0.031675875,
+      "terra_usd": 0.023774,
+      "gpt_input": 44483,
+      "terra_input": 44483,
+      "gpt_output": 962,
+      "terra_output": 613,
+      "gpt_score": 2,
+      "terra_score": 2
+    },
+    {
+      "case_id": "analysis-950",
+      "gpt_usd": 0.05628,
+      "terra_usd": 0.039147,
+      "gpt_input": 74304,
+      "terra_input": 74304,
+      "gpt_output": 1968,
+      "terra_output": 798,
+      "gpt_score": 5,
+      "terra_score": 5
+    },
+    {
+      "case_id": "reanalysis-RCL_12412454",
+      "gpt_usd": 0.04587375,
+      "terra_usd": 0.0258795,
+      "gpt_input": 48534,
+      "terra_input": 48534,
+      "gpt_output": 3108,
+      "terra_output": 645,
+      "gpt_score": 3,
+      "terra_score": 3
+    },
+    {
+      "case_id": "analysis-fresh-3126",
+      "gpt_usd": 0.03493025,
+      "terra_usd": 0.022934,
+      "gpt_input": 42698,
+      "terra_input": 42698,
+      "gpt_output": 1836,
+      "terra_output": 634,
+      "gpt_score": 2,
+      "terra_score": 2
+    }
+  ],
+  "historical_pairs": [
+    {
+      "case_id": "analysis-1040",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 0.016146,
+      "terra_usd": 0.003812,
+      "old_input": 4708,
+      "terra_input": 4819,
+      "old_score": 4,
+      "terra_score": 4
+    },
+    {
+      "case_id": "reanalysis-2846",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 0.046328,
+      "terra_usd": 0.00711,
+      "old_input": 17389,
+      "terra_input": 11350,
+      "old_score": 3,
+      "terra_score": 5
+    },
+    {
+      "case_id": "reanalysis-3008",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 0.147874,
+      "terra_usd": 0.023774,
+      "old_input": 71032,
+      "terra_input": 44483,
+      "old_score": 1,
+      "terra_score": 2
+    },
+    {
+      "case_id": "analysis-1039",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 0.03124,
+      "terra_usd": 0.005289,
+      "old_input": 10115,
+      "terra_input": 8278,
+      "old_score": 4,
+      "terra_score": 4
+    },
+    {
+      "case_id": "analysis-3143",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 0.04003,
+      "terra_usd": 0.0057585,
+      "old_input": 14785,
+      "terra_input": 9472,
+      "old_score": 2,
+      "terra_score": 3
+    },
+    {
+      "case_id": "analysis-3141",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 0.17273,
+      "terra_usd": 0.0275705,
+      "old_input": 78995,
+      "terra_input": 51356,
+      "old_score": 3,
+      "terra_score": 3
+    },
+    {
+      "case_id": "analysis-3146",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 0.131616,
+      "terra_usd": 0.0219645,
+      "old_input": 61448,
+      "terra_input": 41234,
+      "old_score": 2,
+      "terra_score": 2
+    },
+    {
+      "case_id": "reanalysis-RCL_12412454",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 0.166964,
+      "terra_usd": 0.0258795,
+      "old_input": 76387,
+      "terra_input": 48534,
+      "old_score": 3,
+      "terra_score": 3
+    },
+    {
+      "case_id": "reanalysis-2110",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 0.042864,
+      "terra_usd": 0.0066895,
+      "old_input": 15787,
+      "terra_input": 10294,
+      "old_score": 2,
+      "terra_score": 3
+    },
+    {
+      "case_id": "reanalysis-2271",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 0.064172,
+      "terra_usd": 0.010235,
+      "old_input": 26181,
+      "terra_input": 17085,
+      "old_score": 1,
+      "terra_score": 2
+    },
+    {
+      "case_id": "reanalysis-3004",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 0.205002,
+      "terra_usd": 0.0332495,
+      "old_input": 97076,
+      "terra_input": 63554,
+      "old_score": 1,
+      "terra_score": 2
+    },
+    {
+      "case_id": "reanalysis-RCL_12410853",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 0.047756,
+      "terra_usd": 0.0066245,
+      "old_input": 16308,
+      "terra_input": 10469,
+      "old_score": 1,
+      "terra_score": 1
+    },
+    {
+      "case_id": "reanalysis-3146",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 0.13379,
+      "terra_usd": 0.0220055,
+      "old_input": 61870,
+      "terra_input": 41496,
+      "old_score": 2,
+      "terra_score": 2
+    },
+    {
+      "case_id": "reanalysis-3141",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 0.171894,
+      "terra_usd": 0.027571,
+      "old_input": 79397,
+      "terra_input": 51632,
+      "old_score": 3,
+      "terra_score": 3
+    },
+    {
+      "case_id": "analysis-3160",
+      "old_model": "gpt-5.1-2025-11-13",
+      "old_usd": 0.054913125,
+      "terra_usd": 0.036983,
+      "old_input": 70069,
+      "terra_input": 70761,
+      "old_score": 3,
+      "terra_score": 2
+    },
+    {
+      "case_id": "analysis-3157",
+      "old_model": "gpt-5.1-2025-11-13",
+      "old_usd": 0.043224,
+      "terra_usd": 0.030892,
+      "old_input": 57664,
+      "terra_input": 59234,
+      "old_score": 3,
+      "terra_score": 3
+    },
+    {
+      "case_id": "analysis-3139",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 1.107934,
+      "terra_usd": 0.3531735,
+      "old_input": 550072,
+      "terra_input": 350646,
+      "old_score": 2,
+      "terra_score": 2
+    },
+    {
+      "case_id": "analysis-RCL_12408900",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 0.310906,
+      "terra_usd": 0.0508795,
+      "old_input": 150243,
+      "terra_input": 98709,
+      "old_score": 2,
+      "terra_score": 2
+    },
+    {
+      "case_id": "analysis-RCL_12398102",
+      "old_model": "gpt-5.1-2025-11-13",
+      "old_usd": 0.105506875,
+      "terra_usd": 0.079481,
+      "old_input": 154731,
+      "terra_input": 155277,
+      "old_score": 3,
+      "terra_score": 3
+    },
+    {
+      "case_id": "analysis-RCL_12399355",
+      "old_model": "gpt-5.1-2025-11-13",
+      "old_usd": 0.08207775,
+      "terra_usd": 0.0634145,
+      "old_input": 122174,
+      "terra_input": 123744,
+      "old_score": 5,
+      "terra_score": 5
+    },
+    {
+      "case_id": "reanalysis-RCL_12402353",
+      "old_model": "gpt-5.1-2025-11-13",
+      "old_usd": 0.0700225,
+      "terra_usd": 0.050421,
+      "old_input": 97196,
+      "terra_input": 97487,
+      "old_score": 4,
+      "terra_score": 2
+    },
+    {
+      "case_id": "analysis-3140",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 1.014984,
+      "terra_usd": 0.325749,
+      "old_input": 504067,
+      "terra_input": 323304,
+      "old_score": 2,
+      "terra_score": 2
+    },
+    {
+      "case_id": "analysis-3150",
+      "old_model": "claude-opus-5-5",
+      "old_usd": 1.637216,
+      "terra_usd": 0.5863985,
+      "old_input": 815438,
+      "terra_input": 583481,
+      "old_score": 1,
+      "terra_score": 4
+    }
+  ],
+  "control_checks": [
+    {
+      "case_id": "joint-heldout-fee",
+      "checks": {
+        "same_substance": false
+      },
+      "all_pass": false
+    },
+    {
+      "case_id": "change_review-prepared-employment_or_and",
+      "checks": {
+        "material": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "change_review-deadline",
+      "checks": {
+        "material": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "change_review-amount",
+      "checks": {
+        "material": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "change_review-negation",
+      "checks": {
+        "material": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "change_review-scope",
+      "checks": {
+        "material": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "change_review-reference",
+      "checks": {
+        "material": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "change_review-format",
+      "checks": {
+        "material": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "change_review-unrelated",
+      "checks": {
+        "material": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "analysis-control-deadline",
+      "checks": {
+        "score": true,
+        "publish": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "analysis-control-work",
+      "checks": {
+        "score": true,
+        "publish": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "analysis-control-social",
+      "checks": {
+        "score": true,
+        "publish": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "analysis-control-agency",
+      "checks": {
+        "score": true,
+        "publish": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "analysis-control-uncertain",
+      "checks": {
+        "score": false,
+        "publish": false
+      },
+      "all_pass": false
+    },
+    {
+      "case_id": "amendments-control-proposal",
+      "checks": {
+        "affects_foreigners": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "supplement-control-position-False",
+      "checks": {
+        "supports": true,
+        "affects_foreigners": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "supplement-control-position-True",
+      "checks": {
+        "supports": true,
+        "affects_foreigners": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "joint-control-True",
+      "checks": {
+        "same_substance": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "joint-control-False",
+      "checks": {
+        "same_substance": false
+      },
+      "all_pass": false
+    },
+    {
+      "case_id": "analysis-WPL_UD368",
+      "checks": {
+        "effective_date": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "analysis-WPL_UD338",
+      "checks": {
+        "effective_date": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "reanalysis-control-changed",
+      "checks": {
+        "names_changes": true,
+        "publish": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "reanalysis-control-unchanged",
+      "checks": {
+        "names_changes": true,
+        "publish": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "supplement-real-1319",
+      "checks": {
+        "supports": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "amendments-real-1929",
+      "checks": {
+        "affects_foreigners": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "joint-real-316",
+      "checks": {
+        "same_substance": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "joint-real-1933",
+      "checks": {
+        "same_substance": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "joint-heldout-filing_deadline",
+      "checks": {
+        "same_substance": false
+      },
+      "all_pass": false
+    },
+    {
+      "case_id": "joint-heldout-eligibility",
+      "checks": {
+        "same_substance": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "joint-heldout-negation",
+      "checks": {
+        "same_substance": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "joint-heldout-editorial_date",
+      "checks": {
+        "same_substance": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "reanalysis-new-omitted_detail",
+      "checks": {
+        "names_changes": false
+      },
+      "all_pass": false
+    },
+    {
+      "case_id": "reanalysis-new-actual_changed_amount",
+      "checks": {
+        "names_changes": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "analysis-maxguard-budget_existing",
+      "checks": {
+        "score": true,
+        "publish": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "analysis-maxguard-funding_new_right",
+      "checks": {
+        "score": true,
+        "publish": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "analysis-maxguard-bilateral_ratification",
+      "checks": {
+        "score": true,
+        "publish": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "analysis-maxguard-patient_without_pesel",
+      "checks": {
+        "score": true,
+        "publish": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "analysis-maxguard-generic_hospital_budget",
+      "checks": {
+        "score": true,
+        "publish": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "change_review-corpus-vacatio",
+      "checks": {
+        "material": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "change_review-corpus-employment_or_and",
+      "checks": {
+        "material": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "change_review-prepared-vacatio",
+      "checks": {
+        "material": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "analysis-v3guard-no_criminal_record",
+      "checks": {
+        "score": true,
+        "publish": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "analysis-stability-mixed",
+      "checks": {
+        "score": true,
+        "publish": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "change_review-corpus-course_insurance_negation",
+      "checks": {
+        "material": true
+      },
+      "all_pass": true
+    },
+    {
+      "case_id": "change_review-corpus-format_only",
+      "checks": {
+        "material": true
+      },
+      "all_pass": true
+    }
+  ],
+  "limitations": "Formal controls, selected source review and finite selected contexts do not establish global legal accuracy; metadata repeats and effort/prompt variants are not independent bills."
+}

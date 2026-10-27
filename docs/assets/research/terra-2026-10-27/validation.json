@@ -1,0 +1,20 @@
+{
+  "pytest": {
+    "status": "failed",
+    "failures": [
+      "tests/unit/test_applicability.py::test_check_time_and_paid_answer_do_not_create_a_new_source_association",
+      "tests/unit/test_sqlite_repo.py::test_restore_of_a_dump_that_still_says_skipped_joint"
+    ],
+    "qualification": "Both failures concern concurrent changes already present outside this documentation-only task; sources and tests were not edited by the evaluation. Test files changed while pytest ran."
+  },
+  "mypy": {
+    "status": "failed",
+    "diagnostic": "tests/unit/test_applicability.py:65 unexpected summary keyword argument for tests.fakes.make_analysis",
+    "qualification": "Concurrent unowned work."
+  },
+  "ruff_check": "passed",
+  "ruff_format_check": "passed, 430 files already formatted",
+  "docs_check": "passed: strict Zensical build and links/anchors/resources/contents",
+  "git_diff_check": "passed",
+  "pdf_qa": "six pages rendered and visually checked; embedded Arial, no replacement glyphs or out-of-page text blocks"
+}

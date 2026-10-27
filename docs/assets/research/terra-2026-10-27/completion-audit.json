@@ -1,0 +1,10 @@
+{
+  "paid_requests": 130,
+  "unique_paid_custom_ids": 130,
+  "all_provider_batches_terminal": true,
+  "pending_usd": 0,
+  "exact_usage_cost_usd": "3.570270500",
+  "unused_budget_usd": "0.429729500",
+  "valid_answers": 130,
+  "cost_method": "Disjoint actual input/cache/output categories, reasoning included once; per-request Terra >272000 full-request rate; Batch rates. No invoice reconciliation."
+}

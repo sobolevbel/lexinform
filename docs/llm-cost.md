@@ -4,6 +4,14 @@ Extracted from `CLAUDE.md` on 2026-09-14: the price of a run, the guard rails an
 behind them. Read it when changing `AnalysisService`, `pricing.py`,
 `sections.excerpts`/`TextBudget` or any cost setting.
 
+## Terra: корпусный тест 27 октября 2026
+
+[Отчёт о GPT‑6.1 Terra](reviews/2026-10-27-terra-evaluation.md): 130 Batch-запросов
+за $3.5702705, шесть свежих пар с GPT‑5.1 и проверка длинных входов Opus.
+На свежих парах Terra дешевле на 35,5%, на трёх длинных документах — на 66,35%,
+но сохраняются потери полноты и ошибка приоритета бюджета. Production-модели
+сохранены; это датированный эксперимент, а не изменение тарифов приложения.
+
 ## Сохранённое исследование Luna
 
 Результаты тестирования 5–6 октября 2026: [GPT-6 Luna — качество, калибровка и стоимость](reviews/2026-10-06-luna-evaluation.md).

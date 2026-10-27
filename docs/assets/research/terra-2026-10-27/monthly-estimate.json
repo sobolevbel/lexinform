@@ -1,0 +1,37 @@
+{
+  "models": {
+    "claude-sonnet-5": {
+      "input_tokens": 374025,
+      "output_tokens": 6455,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "calls": 35,
+      "usd": 0.8126
+    },
+    "claude-opus-5-5": {
+      "input_tokens": 3496230,
+      "output_tokens": 17592,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0,
+      "calls": 17,
+      "usd": 7.16838
+    },
+    "gpt-5.1-2025-11-13": {
+      "input_tokens": 2680189,
+      "output_tokens": 243241,
+      "cache_read_input_tokens": 675328,
+      "cache_creation_input_tokens": 0,
+      "calls": 88,
+      "usd": 2.9335311250000005
+    }
+  },
+  "old": 10.914511124999997,
+  "same_token_counterfactual": {
+    "replace_opus": 6.906365875000003,
+    "replace_gpt": 9.9460602,
+    "replace_both": 5.93791495,
+    "only_true_overflow": 8.167810375000006,
+    "all": 5.53161495
+  },
+  "qualification": "Historical identical-token repricing; Terra tokenizer/reasoning/cache-write behavior not applied. These are scenarios, not measured monthly bills."
+}

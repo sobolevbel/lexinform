@@ -1,0 +1,11 @@
+{
+  "archive": "evidence.tar.xz",
+  "archive_sha256": "6a396d41ab0abf6f2f2b9a690566007af2c54b0fd8747258c4ca25a5c5ac1a9d",
+  "archive_bytes": 11076472,
+  "inventory_files": 97,
+  "uncompressed_bytes": 119345344,
+  "report_pdf_sha256": "8f89f979b720dea61d9f2b405962ff1f15eff3a27055850df209cea0393d00f1",
+  "usage_cost_usd": "3.570270500",
+  "paid_requests": 130,
+  "pending_requests": 0
+}

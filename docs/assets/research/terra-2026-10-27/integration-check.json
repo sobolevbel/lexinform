@@ -1,0 +1,16 @@
+{
+  "tiktoken_installed": "0.14.0",
+  "pypi_latest_verified": "0.14.0",
+  "official_main_model_mapping_has_terra": false,
+  "pricing_registration": false,
+  "registered_input_limit": null,
+  "configured_models": {
+    "analysis": "gpt-5.1",
+    "overflow": "claude-opus-5-5",
+    "amendments": "gpt-5.1",
+    "supplement": "gpt-5.1",
+    "joint": "gpt-5.1",
+    "triage": "claude-sonnet-5"
+  },
+  "mode": "Standalone frozen Batch requests; no runtime integration or configuration mutation tested"
+}
