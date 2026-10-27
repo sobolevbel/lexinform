@@ -47,6 +47,11 @@ keeps recording cached-view probes through the common run registry.
 Page counts in that suite are counterfactual, not recovered history. See
 [J089](plans/2026-10-22-document-architecture-progress.md#j089).
 
+Reviews use their own `review-read-v1` admission contract for expected digest, role and partial
+input. The [operation matrix](reviews/2026-10-27-document-admission.md) includes baseline comparison
+and amendments; Senate verification keeps its specialized checks. Full-text `text-v2` identity now
+lives in pure `document_fingerprints`, with a compatible alias from `services.analysis`.
+
 `PypdfTextExtractor.extract_pages` now returns `PdfTextExtraction` (`pdf-pages-v1`): input SHA,
 pypdf version, raw page text, physical `pdf-page:N:0` coordinates and per-page read errors.
 Empty pages retain their positions. A page-tree failure leaves the total page count unknown;

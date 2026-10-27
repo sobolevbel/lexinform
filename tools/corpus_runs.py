@@ -30,6 +30,7 @@ SUITES = {
     "review": ("corpus_review", ("--mode", "record")),
     "candidates": ("replay_document_candidates", ()),
     "admissibility": ("replay_admissibility", ()),
+    "review-admissibility": ("replay_admissibility", ("--operation", "review")),
     "process": ("corpus_legacy_suites", ("--kind", "process")),
     "senate": ("corpus_legacy_suites", ("--kind", "senate")),
     "scan": ("replay_scan_inputs", ()),

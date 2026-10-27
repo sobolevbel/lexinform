@@ -1,6 +1,11 @@
 import pytest
 
-from lexinform.document_admissibility import analysis_admission, prefilter_admission
+from lexinform.document_admissibility import (
+    analysis_admission,
+    prefilter_admission,
+    review_admission,
+)
+from lexinform.document_fingerprints import text_digest
 from lexinform.models import DocumentSelection
 
 BILL = (
@@ -60,3 +65,88 @@ def test_osr_remains_readable_instead_of_being_treated_as_an_unrelated_appendix(
     selection = DocumentSelection()
     text = "OCENA SKUTKÓW REGULACJI\n" + "Wpływ regulacji na sektor finansów publicznych. " * 80
     assert analysis_admission(selection, text, pages=0, min_chars=200) == "text"
+
+
+def test_review_accepts_a_dense_unverified_response_without_a_bill_heading() -> None:
+    text = "Pkt 1. Uwaga uwzględniona; termin wynosi 30 dni. " * 30
+    assert (
+        review_admission(
+            DocumentSelection(), text, pages=1, min_chars=200, oversize=False, role="response"
+        )
+        == "complete"
+    )
+
+
+def test_review_expected_digest_is_normalized_text_identity() -> None:
+    assert (
+        review_admission(
+            DocumentSelection(),
+            BILL,
+            pages=1,
+            min_chars=200,
+            oversize=False,
+            role="project_text",
+            expected_digest=text_digest(BILL.replace(" ", "  ")),
+        )
+        == "complete"
+    )
+    assert (
+        review_admission(
+            DocumentSelection(),
+            BILL.replace("200 zł", "300 zł"),
+            pages=1,
+            min_chars=200,
+            oversize=False,
+            role="project_text",
+            expected_digest=text_digest(BILL),
+        )
+        == "digest_mismatch"
+    )
+
+
+def test_review_role_mismatch_is_rejected_before_completeness() -> None:
+    assert (
+        review_admission(
+            DocumentSelection(),
+            BILL,
+            pages=1,
+            min_chars=200,
+            oversize=False,
+            role="commission_minutes",
+        )
+        == "role_mismatch"
+    )
+
+
+@pytest.mark.parametrize("state", ["unverified", "waiting", "ambiguous", "unsupported"])
+def test_review_preserves_its_own_selection_completeness_contract(state: str) -> None:
+    selection = DocumentSelection.model_validate({"state": state})
+    assert review_admission(
+        selection, BILL, pages=1, min_chars=200, oversize=False, role="project_text"
+    ) == ("partial" if state in ("ambiguous", "unsupported") else "complete")
+
+
+@pytest.mark.parametrize("pages", [0, 20])
+def test_review_keeps_thin_text_as_partial_instead_of_using_analysis_fallback(pages: int) -> None:
+    assert (
+        review_admission(
+            DocumentSelection(),
+            "Krótki tekst",
+            pages=pages,
+            min_chars=200,
+            oversize=False,
+            role="response",
+        )
+        == "partial"
+    )
+
+
+@pytest.mark.parametrize("oversize", [False, True])
+def test_review_incomplete_inputs_are_kept_as_partial(oversize: bool) -> None:
+    selection = DocumentSelection() if oversize else DocumentSelection(rejected=("part unread",))
+    assert (
+        review_admission(
+            selection, BILL, pages=1, min_chars=200, oversize=oversize, role="project_text"
+        )
+        == "partial"
+    )

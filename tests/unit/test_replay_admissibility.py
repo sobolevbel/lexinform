@@ -62,3 +62,19 @@ def test_report_paths_cannot_overwrite_input_or_prior_evidence(tmp_path: Path) -
         with pytest.raises(ValueError, match="new and outside"):
             run(root, target)
     assert output.read_text() == "preserve"
+
+
+def test_review_role_probes_do_not_invent_source_roles_or_print_bodies(tmp_path: Path) -> None:
+    root = corpus(tmp_path)
+    text = ("Pkt 1. Uwaga uwzględniona. " + MARKER + "\n") * 30
+    (root / "documents/text/1.gz").write_bytes(gzip.compress(text.encode(), mtime=0))
+    output = tmp_path / "review.json"
+    assert run(root, output, operation="review") == 0
+    report = json.loads(output.read_text())
+    assert report["policy_version"] == "review-read-v1"
+    assert len(report["role_probes"]) == 9
+    probes = report["results"]["rcl/documents/text/1.gz"]["page_probes"]
+    assert probes["0"]["response"] == "complete"
+    assert probes["20"]["response"] == "partial"
+    assert probes["0"]["commission_minutes"] == "role_mismatch"
+    assert MARKER not in output.read_text()

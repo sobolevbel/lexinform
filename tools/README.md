@@ -358,7 +358,7 @@ are not joined to receipts to guess that identity. Missing source tables remain 
 Exit codes are 0 for recorded inventory, 1 for invalid data/change during reading, 2 for no records
 or batch receipts. This is a storage measurement, not a selected archive or deletion policy.
 
-## Bill-read admissibility shadow replay
+## Operation-specific admissibility shadow replay
 
 ```bash
 uv run --offline --frozen python -m tools.corpus_runs run \
@@ -372,3 +372,10 @@ historical pages, raw input or legal completeness and does not activate a runtim
 unreadable and over-limit caches remain explicit observations. Input/code checksums, immutable
 outputs and before/after comparison use the common registry. See the shadow acceptance in
 [J089](../docs/plans/2026-10-22-document-architecture-progress.md#j089).
+
+Use `--suite review-admissibility` for the same bounded reader and guarded run contract with
+`review-read-v1`. Its nine role probes and page counts are counterfactual; it does not infer
+historical source roles or claim legal completeness. Expected-digest, oversize and blocked-selection
+conditions are qualified separately by unit/public-consumer cases. See the
+[operation matrix](../docs/reviews/2026-10-27-document-admission.md) and
+[J091](../docs/plans/2026-10-22-document-architecture-progress.md#j091).

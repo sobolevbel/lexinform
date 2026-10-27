@@ -4610,3 +4610,71 @@ Final acceptance J090: full **4788 passed**, failures/errors/skips 0,
 содержит checks/source hashes, **104 native + 64 boundary flows**, corpus manifests и reproduction.
 Необязательный local HTTP не повторён: CLI/network wiring и transports прежние.
 План **74 задачи, 15 выполнены, 59 unchecked** (DA8.3 неприменим); goal active.
+
+
+<a id="j091"></a>
+### J091. DA4.5/DA4.6: review admission and the complete operation matrix
+
+Дата: 27 октября 2026. База: J090 (`c14d3f4`). Статус: принято локально; deployment проверяется отдельно.
+
+Pure `review_admission` (`review-read-v1`) сохраняет expected-digest/commission-role checks
+и прежнюю complete/partial классификацию. В отличие от analysis, короткий Word остаётся partial;
+partial не становится автоматическим отказом consultation review. Snapshot branch,
+commission purpose gate и paused flags прежние. Политика вызывается из review reader после I/O,
+без repository access. [Матрица пяти операций](../reviews/2026-10-27-document-admission.md)
+фиксирует shared analysis/baseline/committee path и отдельный строгий Senate contract.
+
+`text_digest` перенесён из analysis service в pure `document_fingerprints`, алгоритм и prefix
+`text-v2:` буквально прежние; public import из analysis сохранён alias. Legacy whitespace
+helper внутри analysis остаётся для своего старого compatibility case, без изменения политики.
+При подготовке первый mypy выявил ошибочный import digest из sections; исправлен переносом
+единственной реализации. Первый tool fixture имел misplaced assertion; исправлен до corpus/full gate.
+Неуспешные logs сохранены. Baseline review observer сначала не задал обязательные Bill поля;
+qualified rerun использует явные status/time из FixedClock.
+
+До подключения review consumer принят shadow: **32 focused passed**, mypy **438** файлов,
+Ruff/format green. **14691 views / 396657 decisions**, все девять role probes × pages 0/1/20
+совпали с frozen legacy branches; **14691 text-v2 digests** совпали. Service class methods
+до activation по AST прежние. Shadow source snapshot/manifest сохранены отдельно; после
+подключения policy и fingerprint SHA не менялись. Исторические роли/pages не восстанавливались.
+
+После подключения focused **252 passed**. Public review_context before/after: **864 cases**,
+workers 1/4 × два активных purposes × девять ролей × восемь body/page fixtures × expected
+none/matching/mismatch. Все contexts/complete/source calls совпали; SQL не менялся,
+provider/Telegram calls отсутствуют. Act application остаётся paused, новых calls не разрешено.
+
+**168 native flows** (104 предыдущих + 64 boundary) совпали по всем profile fields и SQL rows,
+requests, usage, receipts, contexts и reader messages. Qualified J090 current использован как
+baseline только после проверки SHA всех **150 src files** против git archive J090.
+Кроме review reader остальные **71 analysis methods**, включая общий bill loader, прежние.
+**12 actual cached texts / 12 controls / 60 meaningful mutations**: fingerprints обеих версий
+одинаковы и каждая дата/сумма/отрицание/scope/reference меняет identity. Это regression probes,
+не независимые инициативы или legal holdout. Финальная corpus приёмка принята.
+Schema **51**, storage delta **0**, rollback J090 без state conversion.
+
+
+J090 release проверен по `c14d3f4fc84cd6fb0f577606abea3ef164a182a9`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40537407667) — **4788 passed**,
+strict mypy 437 файлов, Ruff, docs/web success.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40538667148) — exact COMMIT,
+`96845aee5dc8 -> c14d3f4fc84c`, listener up 45 s. Отдельный live processing вручную не запускался.
+
+Corpus final J091: bill admission **14691 views**, CI **7**, process **3294**, Senate **816**;
+input hashes/observations совпали с квалифицированными previous runs. Senate replay читает
+**1825 files**, outcomes **701 selected / 23 scan pending / 2 no unique date / 90 not amendments**,
+**4903 mutation probes**. Scan pending не объявляются подтверждёнными. Общие пути corpus/suite
+пересекаются; coverage не складывается в число независимых инициатив. Все manifests verified.
+Bill observations/counts прежние; metadata replay scope уточнена, поскольку сам replay
+не меняет runtime policy, уже включённую для bill consumers в J090.
+
+
+Final acceptance J091: full **4800 passed**, failures/errors/skips 0,
+**610.257 s**; focused **252 passed**, strict mypy **438** файлов, Ruff/format/docs/diff green.
+[Acceptance evidence](../assets/audits/2026-10-27-review-admission/validation.json)
+содержит source/XML hashes, pre-activation shadow manifest, 864 public review cases,
+168 native flows, fingerprint mutations, Senate/corpus parity и reproduction.
+DA4.5/DA4.6 отмечены выполненными: pure admission/matrix приняты для действующих операций;
+полная запись решения, provenance и DocumentEdition остаются DA4.1/DA4.2/DA4.4/DA4.7.
+Raw ZIP reparsing и local HTTP не повторены: physical extraction/file choice, CLI/network
+wiring/transports прежние. Schema **51**, production storage delta **0**.
+План **74 задачи, 17 выполнены, 57 unchecked** (DA8.3 неприменим); goal active.

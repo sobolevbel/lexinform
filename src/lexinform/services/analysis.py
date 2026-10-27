@@ -17,9 +17,10 @@ from typing import Literal
 from pydantic import BaseModel
 
 from lexinform.analysis_records import RecordFactory, UsageFields
-from lexinform.commission_reviews import COMMISSION_ROLES, commission_text_matches
+from lexinform.commission_reviews import COMMISSION_ROLES
 from lexinform.concurrency import fan_out
-from lexinform.document_admissibility import analysis_admission
+from lexinform.document_admissibility import analysis_admission, review_admission
+from lexinform.document_fingerprints import text_digest as text_digest
 from lexinform.document_input import amended_input_projection, append_self_amendments
 from lexinform.document_selection import selection_for_input
 from lexinform.document_versions import draft_version
@@ -34,7 +35,6 @@ from lexinform.errors import (
 from lexinform.keywords import KeywordPrefilter
 from lexinform.law_diff import diff_laws
 from lexinform.law_digest import law_digest
-from lexinform.law_technical import DECORATED_PAGE
 from lexinform.models import (
     AMENDMENT_SOURCES,
     FULL_TEXT_SOURCES,
@@ -415,12 +415,6 @@ def _describe_for_comparison(bill: Bill) -> JointBillDescription:
         affected_groups=list(analysis.affected_groups),
         practical_impact=analysis.practical_impact,
     )
-
-
-def text_digest(text: str) -> str:
-    """Versioned full-text identity; bare numeric lines may be table values."""
-    normalised = _WHITESPACE.sub(" ", DECORATED_PAGE.sub("", text)).strip()
-    return "text-v2:" + hashlib.sha256(normalised.encode("utf-8")).hexdigest()
 
 
 def _same_text_read_again(previous: AnalysisRecord, fresh: AnalysisRecord) -> AnalysisRecord:
@@ -1854,9 +1848,16 @@ class AnalysisService:
         else:
             file = self._loader.read_document(document)
         text = file.text or ""
-        if source.expected_digest is not None and text_digest(text) != source.expected_digest:
-            return None
-        if not commission_text_matches(source.role, text):
+        admission = review_admission(
+            file.selection,
+            text,
+            pages=file.pages,
+            min_chars=MIN_TEXT_CHARS,
+            oversize=file.oversize,
+            role=source.role,
+            expected_digest=source.expected_digest,
+        )
+        if admission in ("digest_mismatch", "role_mismatch"):
             return None
         return ReviewDocument(
             identity=source.identity if document.url == source.document.url else document.url,
@@ -1866,13 +1867,7 @@ class AnalysisService:
             text=text,
             sha256=hashlib.sha256(text.encode()).hexdigest(),
             normalized_sha256=text_digest(text),
-            complete=(
-                bool(text.strip())
-                and not file.oversize
-                and carries_the_document(text, min_chars=MIN_TEXT_CHARS, pages=file.pages)
-                and not file.selection.rejected
-                and file.selection.state not in ("ambiguous", "unsupported")
-            ),
+            complete=admission == "complete",
             file_sha256=file.sha256,
             author=source.author,
             body=source.body,
