@@ -84,6 +84,7 @@ files = [
   "tools/document_read_profile.py",
   "tools/measure_referenced_files.py",
   "tools/artifact_metadata.py",
+  "tools/content_history_doctor.py",
 ]
 plugins = ["pydantic.mypy"]
 warn_unreachable = true

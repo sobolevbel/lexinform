@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "stage": "J110",
+  "baseline": "8f32030f59e83256698b7c40d19aa815b7a71cf1",
+  "scope": "Read-only editorial-history identity/reference/frozen-context/physical-confirmation inspector. No runtime, schema, writer or source/model/publication call.",
+  "checks": {
+    "focused-final": {
+      "path": "out/corpus/j110/focused-final.xml",
+      "sha256": "579a1feb0f0dab28dc74f7511da2545fbccaa14a8a6d7d6128ebba9d7cb04636",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "23",
+      "time": "1.999",
+      "timestamp": "2026-10-28T00:22:17.597702+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j110/full.xml",
+      "sha256": "c4b68b0d345b551a6deccf8410e889f13cb0d287dde66b7fc802e77e908863ff",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "5049",
+      "time": "603.282",
+      "timestamp": "2026-10-28T00:22:20.354406+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 469 source files",
+    "ruff": "All checks passed!",
+    "format": "1 file reformatted, 465 files left unchanged"
+  },
+  "qualification": {
+    "runtime_files_byte_identical": 157,
+    "cases": 184,
+    "version_views": 38,
+    "warnings": 0,
+    "all_read_only_and_without_errors": true,
+    "metadata_only_report_without_source_urls": true,
+    "tool_sha256": "9dcdade89d24ab5424feddcfc7f266a81057e118c78932d853415985823963ab",
+    "cases_with_recorded_history": 18
+  },
+  "natural": {
+    "state_pin": "fe7036a09d1688d03236c936cda26c876f3ae825",
+    "schema": 53,
+    "status": "not_run",
+    "errors": 0,
+    "scope": "Unchanged original snapshot, no history tables; no migration or import."
+  },
+  "sources": {
+    "tools/content_history_doctor.py": "9dcdade89d24ab5424feddcfc7f266a81057e118c78932d853415985823963ab",
+    "tests/unit/test_content_history_doctor.py": "8a2be9afddf9898115d9c5333afddc2a1af704eb7836036b96c28fb7380fad88",
+    "pyproject.toml": "72edb548fad94dae39ae0d61525fbbfd2bbcd5ffb9ada3cac121cbaba9711bf2"
+  },
+  "evidence": {
+    "out/corpus/j110/qualification.json": "e76e6fbfaec491ce84a2bb6913314d25cf0bc243b24e6e882d88dca3bc13de9e",
+    "out/corpus/j110/qualify.py": "84220b4d53ca3b44529b8c3d7acf241745a5bca45bb815967b30ab4e0f1edc58",
+    "out/corpus/j110/natural-history.json": "658b04eb28ee84c551f129201bfe92478dc14967dcd924d602244b54e59b34da",
+    "out/corpus/j110/release-j109.json": "9685fe73b602772d3bcd57cbc1948d29c68e50629e7e6fa106bb1157477cf051",
+    "out/corpus/j110/frozen-inputs.json": "5cd322bae8381f6e4d641fc74f364d8dce130712fce0233801587a84113c3916",
+    "out/corpus/j110/accept.py": "021ada7476f91388263a494f1b0d50b462cb40fd94ad08342f5837f735e04c6f"
+  },
+  "limitations": [
+    "Confirmation is saved database evidence, not an independent Telegram/legal read.",
+    "Only known editorial history is inspected; missing legacy data remains unknown.",
+    "Opaque unknown labels/refs are counted without echoing their contents or rewriting SQL.",
+    "No repair, retry, source revalidation, archive/backend or runtime behavior change."
+  ]
+}

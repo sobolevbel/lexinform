@@ -504,3 +504,29 @@ Editorial Bill view исключает только `review_work` и `ready_anal
 остальные известные/неизвестные fields сохраняются; view не меняет original delivery payload.
 Это не document trimming и не переопределение paid input. Без operational данных source JSON
 остаётся byte-identical; для view с исключёнными work fields хранится свой exact JSON/SHA.
+
+
+## Read-only просмотр editorial history
+
+[J110](../plans/2026-10-22-document-architecture-progress.md#j110) добавляет offline inspector
+для checkpointed SQLite copy:
+
+```bash
+uv run python -m tools.content_history_doctor --database COPY.db --output NEW_REPORT.json
+uv run python -m tools.content_history_doctor --database COPY.db --publication 136 --output NEW_REPORT.json
+```
+
+Он проверяет canonical snapshot/version IDs, semantic refs и predecessor/root; пока delivery
+payload сохранён, сверяет с ним Bill/change/text/context. Physical publication owner, edit target
+и SQL identity operator decision проверяются отдельно. Отчёт показывает original/current version,
+physical status/attempts и confirm/retry/dismiss decisions, не выполняя work или repair.
+`--publication` фильтрует отображение history, validation охватывает весь snapshot.
+
+Current version выводится только из подтверждённой цепочки `sent`/message ID. Prepared/unknown
+edit не заменяет её; при повреждении current не угадывается. Отсутствие physical original оставляет
+history и warning без обещания current message. Это DB evidence, не независимая проверка Telegram.
+
+В отчёте нет rendered/source bodies, URLs или prose operator reasons. Unknown opaque refs/labels
+остаются в SQL, а в отчёте указаны counts/warnings без их содержимого. Missing legacy tables
+отличаются от known-empty schema55. Exit0 — recorded, exit1 — ошибки, exit2 — нет history для
+наблюдения; существующий output не перезаписывается, input database остаётся byte-identical.

@@ -5574,3 +5574,42 @@ metadata/native/migration qualification — в `out/corpus/j109-qualified`.
 [Acceptance asset](../assets/audits/2026-10-28-content-history/validation.json) пинует sources/gates,
 контроль размера, native parity, migration и backward reader. **DA7.3 выполнен** для existing
 single-message amendments scope; broad source/application/history kinds остаются DA7.1/DA7.2.
+
+
+<a id="j110"></a>
+### J110. Read-only editorial history and confirmation diagnostics
+
+Статус: **готово**, baseline `8f32030f59e83256698b7c40d19aa815b7a71cf1`.
+Новый `tools.content_history_doctor` читает checkpointed snapshot через shared SqliteSnapshot;
+models content и чистый editorial Bill view переиспользованы. Отдельные helpers читают records,
+проверяют frozen context/physical bindings и строят confirmation graph. Canonical IDs/SQL columns,
+semantic parents/kinds, previous/root и ещё сохранённый delivery payload проверяются без repair.
+Current — только connected confirmed chain; unknown edit, отсутствующий original или corruption
+не становятся новой current version. Operator decisions проверяют SQL publication/command IDs.
+
+Отчёт показывает version/source/result/application refs, content checksum/size, physical attempts
+и confirm/retry/dismiss; bodies/URLs/prose reasons не выводятся. Opaque unknown refs/labels остаются
+в SQL и получают counts/warnings в отчёте, без переопределения identity. Missing schema54 tables и
+known-empty schema55 различаются. Output immutable/separate, input read-only; никакого execution,
+нового runtime writer, migration, backend или paid/source/Telegram call.
+
+**23 focused** passed, strict mypy **469**, Ruff/format green. Tests: sent vs unknown current,
+consistent-but-wrong content, ID/columns/parent corruption, current schema damage vs legacy absence,
+known-empty inventory, operator confirmation/mismatched audit, missing original, opaque refs,
+positive input identity и output guards. Новый tool включён в explicit mypy targets.
+Полный gate выполняется; qualification проверяет 184 saved snapshots/38 version views.
+
+
+На **184 saved snapshots / 38 version views** inspector прошёл без errors/warnings; все input DB
+сохранены byte-identical, source URLs в output отсутствуют. **157 runtime files byte-identical**
+J109. Natural exact copy `fe7036a09d1688d03236c936cda26c876f3ae825` остаётся schema53: tables
+history отсутствуют, status `not_run`, errors0; migration/import/processing не запускались.
+
+J109 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40600942088): **5026 passed**,
+strict mypy **467**, Ruff/docs/web success. [Relay deploy](https://github.com/sobolevbel/lexinform/actions/runs/40601871710):
+exact COMMIT `8f32030f59e83256698b7c40d19aa815b7a71cf1`, listener up **45 s**.
+
+
+Полный gate: **5049 passed**, 0 failures/errors/skips, **603.282 s**.
+[Acceptance asset](../assets/audits/2026-10-28-content-history-diagnostics/validation.json) пинует
+source/config hashes, gates, qualification и natural legacy boundary.
