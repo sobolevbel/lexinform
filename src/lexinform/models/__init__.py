@@ -42,6 +42,8 @@ from lexinform.models.applicability import (
 )
 from lexinform.models.artifacts import ArtifactIdentity as ArtifactIdentity
 from lexinform.models.artifacts import ArtifactMetadata as ArtifactMetadata
+from lexinform.models.artifacts import ArtifactReadIdentity as ArtifactReadIdentity
+from lexinform.models.artifacts import ArtifactReadReceipt as ArtifactReadReceipt
 from lexinform.models.artifacts import SelectionArtifactReference as SelectionArtifactReference
 from lexinform.models.attention import AttentionAssessment as AttentionAssessment
 from lexinform.models.batch import (

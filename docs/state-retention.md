@@ -297,3 +297,11 @@ extraction or normative coverage. Changed-body refusals can retain the actual ph
 Valid full scans retain their original source SHA independently of provider derivatives, without
 claiming visual verification. Subject/date/fullness checks and worker historical comparisons are
 unchanged. See [J105](plans/2026-10-22-document-architecture-progress.md#j105).
+
+
+Schema 54 adds an immutable requested-URL/complete-body read receipt, with the first caller recording
+time preserved across retries and exact restores. The parent artifact and byte size must match.
+This reader-first stage starts empty and infers no old downloads from selected URLs or text hashes.
+A receipt is neither a retained-file locator nor a reliable original download/publication date;
+no bodies, source owners or paid-input lineage are added. The producer remains disabled. See
+[J106](plans/2026-10-22-document-architecture-progress.md#j106).

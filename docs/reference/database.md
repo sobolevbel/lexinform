@@ -24,6 +24,7 @@ HTML содержит снимок v34, включая SQL ограничени�
 | `selection_artifacts` (v53) | `(selection_id, part_scope, part_index)`; индекс artifact SHA | Проверенный outer-body ref выбранной/наблюдённой части; FK к immutable selection и artifact metadata. |
 | `document_selections` (v52) | `selection_id` | Неизменяемые метаданные решения: question, policy version, state, parts/facts/coverage; без extracted bodies и provider scan input. |
 | `source_observations` (v52) | `observation_id`; индексы owner/purpose и selection | Историческая связь дела, официальных document relations и решения; первое время записи сохраняется при повторной проверке. |
+| `artifact_reads` (v54) | `read_id`; unique requested URL/raw SHA; artifact index | Первый metadata receipt complete-body response; requested URL и время записи не являются blob location или датой публикации. |
 | `document_work` | `key` | Поздний документ: исходное событие, исторический baseline, контекст batch, backoff и состояние. |
 | `bills` | `(term, number)` | Снимки источников, анализ, обработанное наблюдение и состояние очередей. Номер может быть druk, `RPW/…`, `RCL/…` или `WPL/…`. |
 | `status_changes` | `id`; уникальный `(term, number, new_fingerprint)` | Изменения, новые стадии, поправки и приложения. |
@@ -451,3 +452,12 @@ state `unverified`, unknown role, actual raw SHA/pages/observed reader-text SHA.
 identity остаётся в `TextDocument.senate` отдельно от actual body SHA. Scan provider input не
 попадает в source metadata; subject/date/fullness/visual admission прежние. Historical-comparison
 workers этим не меняются.
+
+
+V54 добавляет reader-first `artifact_reads`: requested URL, actual complete-body SHA/size и первое
+recorded_at. Worker identity не содержит Clock; durable receipt получает время caller. Record ID
+не включает время; повтор сохраняет прежнее время и exact dump. Required parent artifact metadata
+должны иметь тот же размер; данные повторно валидируются при save, SQL identity проверяется при read.
+В таблице нет тел или model input, нет backfill по прежним selections/URL. Producer пока выключен.
+Unique URL/SHA index покрывает URL lookup; отдельный redundant URL index не добавлен. См.
+[J106](../plans/2026-10-22-document-architecture-progress.md#j106).

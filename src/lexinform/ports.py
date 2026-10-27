@@ -13,6 +13,7 @@ from lexinform.models import (
     AnalysisRecord,
     ArtifactIdentity,
     ArtifactMetadata,
+    ArtifactReadReceipt,
     BackfillReport,
     BatchIntent,
     BatchRequest,
@@ -666,6 +667,14 @@ class BillRepository(Protocol):
     def save_artifact_metadata(self, artifact: ArtifactMetadata) -> None: ...
 
     def get_artifact_metadata(self, sha256: str) -> ArtifactMetadata | None: ...
+
+    def save_artifact_read(self, receipt: ArtifactReadReceipt) -> None: ...
+
+    def get_artifact_read(self, read_id: str) -> ArtifactReadReceipt | None: ...
+
+    def list_artifact_reads(
+        self, *, sha256: str | None = None, requested_url: str | None = None
+    ) -> list[ArtifactReadReceipt]: ...
 
     def save_selection_artifact(self, reference: SelectionArtifactReference) -> None: ...
 

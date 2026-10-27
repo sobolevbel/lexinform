@@ -26,6 +26,7 @@ from lexinform.models import (
     AmendmentsRecord,
     AnalysisRecord,
     ArtifactMetadata,
+    ArtifactReadReceipt,
     AttentionAssessment,
     BatchIntent,
     BatchRequest,
@@ -611,6 +612,17 @@ MIGRATIONS: tuple[str, ...] = (
         PRIMARY KEY(selection_id, part_scope, part_index)
     );
     CREATE INDEX ix_selection_artifacts_artifact ON selection_artifacts(artifact_sha256);
+    """,
+    """
+    CREATE TABLE artifact_reads (
+        read_id TEXT PRIMARY KEY NOT NULL,
+        requested_url TEXT NOT NULL,
+        artifact_sha256 TEXT NOT NULL REFERENCES artifacts(sha256),
+        byte_size INTEGER NOT NULL CHECK(byte_size >= 0),
+        recorded_at TEXT NOT NULL,
+        UNIQUE(requested_url, artifact_sha256)
+    );
+    CREATE INDEX ix_artifact_reads_artifact ON artifact_reads(artifact_sha256);
     """,
 )
 
@@ -1200,6 +1212,65 @@ class SqliteBillRepository:
             if row
             else None
         )
+
+    def save_artifact_read(self, receipt: ArtifactReadReceipt) -> None:
+        receipt = ArtifactReadReceipt.model_validate_json(receipt.model_dump_json())
+        artifact = self.get_artifact_metadata(receipt.sha256)
+        if artifact is None or artifact.byte_size != receipt.byte_size:
+            raise ValueError("an artifact read requires matching complete-body metadata")
+        self._conn.execute(
+            "INSERT INTO artifact_reads"
+            " (read_id, requested_url, artifact_sha256, byte_size, recorded_at)"
+            " VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+            (
+                receipt.read_id,
+                receipt.requested_url,
+                receipt.sha256,
+                receipt.byte_size,
+                _utc_iso(receipt.recorded_at),
+            ),
+        )
+        saved = self.get_artifact_read(receipt.read_id)
+        assert saved is not None, "the insert retains the receipt under its immutable read identity"
+        if saved != receipt.model_copy(update={"recorded_at": saved.recorded_at}):
+            raise ValueError("an immutable artifact read receipt cannot be replaced")
+
+    def get_artifact_read(self, read_id: str) -> ArtifactReadReceipt | None:
+        row = self._conn.execute(
+            "SELECT * FROM artifact_reads WHERE read_id=?", (read_id,)
+        ).fetchone()
+        return self._artifact_read(row) if row is not None else None
+
+    def list_artifact_reads(
+        self, *, sha256: str | None = None, requested_url: str | None = None
+    ) -> list[ArtifactReadReceipt]:
+        clauses: list[str] = []
+        parameters: list[str] = []
+        if sha256 is not None:
+            clauses.append("artifact_sha256=?")
+            parameters.append(sha256)
+        if requested_url is not None:
+            clauses.append("requested_url=?")
+            parameters.append(requested_url)
+        query = "SELECT * FROM artifact_reads"
+        if clauses:
+            query += " WHERE " + " AND ".join(clauses)
+        return [
+            self._artifact_read(row)
+            for row in self._conn.execute(query + " ORDER BY rowid", parameters)
+        ]
+
+    @staticmethod
+    def _artifact_read(row: sqlite3.Row) -> ArtifactReadReceipt:
+        receipt = ArtifactReadReceipt(
+            requested_url=row["requested_url"],
+            sha256=row["artifact_sha256"],
+            byte_size=row["byte_size"],
+            recorded_at=datetime.fromisoformat(row["recorded_at"]),
+        )
+        if receipt.read_id != row["read_id"]:
+            raise ValueError("artifact read columns differ from the recorded identity")
+        return receipt
 
     def save_selection_artifact(self, reference: SelectionArtifactReference) -> None:
         reference = SelectionArtifactReference.model_validate_json(reference.model_dump_json())

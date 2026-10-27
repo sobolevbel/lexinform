@@ -39,3 +39,5 @@ Schema, tables and what each version added: `docs/reference/database.md`; retent
 - Source decisions and their owner/catalog observations are immutable metadata history; repeated checks retain the first time, and raw/provider-input retention is a separate obligation.
 
 - Artifact metadata records known complete-body SHA/size without a retention promise; selection links require the exact recorded outer-body identity, never a substituted member/text hash.
+
+- Artifact read receipts bind requested URLs to complete-body identities; first recording time is preserved, without legacy inference, source-date claims or retained-file promises.

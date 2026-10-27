@@ -5399,3 +5399,46 @@ J104 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40584670845): **4
 strict mypy **460**, Ruff/docs/web success. [Relay deploy](https://github.com/sobolevbel/lexinform/actions/runs/40585767033):
 exact COMMIT `b28a898fddf013eb1c1f2f69bf9541becb0487e4`, `878f889f7183 -> b28a898fddf0`, up **45 s**.
 Production processing/paid calls/reader sends вручную не запускались.
+
+
+<a id="j106"></a>
+### J106. Requested URL → complete-body receipt: совместимый reader
+
+Статус: **завершён**, baseline `c60f078ec138191e92ed9709e4f41d2f7c7a7ea8`.
+Append-only migration **v54**, `artifact_reads`: immutable URL/raw SHA/size receipt с FK к известному
+artifact. Это не выводимое из старых selections наблюдение HTTP body: старым hashes/URL не
+приписаны неизвестные bytes или даты. Новая таблица пуста; production producer выключен.
+`ArtifactReadIdentity` не требует Clock, `ArtifactReadReceipt` получает aware caller time.
+ID исключает recorded_at; повтор сохраняет первое время и exact dump, aliases и changed body по
+одному URL остаются разными. Parent artifact size обязателен и совпадает, copied inputs revalidated,
+SQL identity columns проверены при read; bytes/redirect target/retention promise не добавлены.
+Unique URL/SHA index одновременно покрывает URL lookup, отдельного дублирующего URL index нет.
+
+**77 focused / 4973 full**, 0 failures/errors/skips, full **596.880 s**. Strict mypy **462** с/без
+PYTHONPATH, Ruff/format green. V1/v20 legacy restore coverage обновлены; все прежние repository
+methods и **53 deployed migration scripts AST exact**, appended ровно один script. Все services,
+parsers/policies/payloads byte-identical; прочие **151 src files exact**.
+
+Fresh natural pin `fe7036a09d1688d03236c936cda26c876f3ae825`: SQL **20313116 bytes**, SHA
+`ab3347e4d5f480f7befbc84c02e6c0e20a5726bfde79f1f0f5ab7d04cc1e865b`. Изолированная миграция
+**v53→v54**, все прежние rows и **462 Bill reads exact**, integrity ok / FK errors0. Empty schema
+**+401 SQL / +106 gzip**. Parent+receipt fixture: известные **29 bytes**, SHA вычислен с literal
+fixture (не приписан production SHA), **+389 SQL / +186 gzip**. Повтор/restore exact; body отсутствует.
+J105 reader сохраняет populated v54 SQL exact без conversion. **168 native snapshots**:
+requests/messages/profiles и **все 24 прежних tables exact**, новый table empty; delta401 SQL,
+gzip46–70. Corpus CI **7** / process **3294** verified, inputs/observations same.
+
+Точная natural copy без миграции отдельно проверена: schema53, **382 runs / 5 computations /
+2 source observations / 0 artifacts**; source doctor0 errors. Один measured quiet-zero report,
+**380 unmeasured / 1 row without saved report**; known-empty catalogue не заменяет download history.
+Для **RCL/12416153** совпали source/paid physical membership (3 parts), immutable result/request
+checksum, тот же result ID в frozen publication225: DB `sent`, message144. Для **2995** (1 part)
+анализ score2, ниже min_score3, публикации нет. Это DB evidence реального сохранённого цикла,
+не независимая Telegram/legal/source-family acceptance; processing/models/sends вручную не запускались.
+
+[Acceptance asset](../assets/audits/2026-10-27-artifact-read-receipts/validation.json) пинует source/
+evidence, migration/native/storage gates, backward reader и границы natural-cycle evidence.
+
+J105 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40587723748): **4960 passed**,
+strict mypy **461**, Ruff/docs/web success. [Relay deploy](https://github.com/sobolevbel/lexinform/actions/runs/40588556473):
+exact COMMIT `c60f078ec138191e92ed9709e4f41d2f7c7a7ea8`, listener up **45 s**.
