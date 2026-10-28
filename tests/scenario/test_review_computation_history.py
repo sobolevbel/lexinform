@@ -56,8 +56,9 @@ def submit_review(world: World, intent: BatchIntent) -> None:
     if intent.request.call_kind != "act_application":
         world.analysis.submit_queued_batches()
         return
+    submitted = len(world.batch.submitted)
     world.analysis.submit_queued_batches()
-    assert not world.batch.submitted, "new act review submissions remain paused"
+    assert len(world.batch.submitted) == submitted, "new act review submissions remain paused"
     batch_id = world.batch.submit([intent.request])
     with world.repo.atomic():
         world.repo.save_llm_batch(

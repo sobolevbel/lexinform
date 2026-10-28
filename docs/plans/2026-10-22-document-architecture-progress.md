@@ -6131,3 +6131,41 @@ CLI help показывает opt-in flag; прежние 159 runtime modules by
 exports новых моделей. Full DA5.1 остаётся открытой до physical/context/runtime integration.
 [Acceptance asset](../assets/audits/2026-10-28-prepared-text/validation.json) фиксирует population,
 source hashes, exact prior-profile comparison, round trips и gates. Strict docs/build/link green.
+
+
+<a id="j126"></a>
+### J126. Retained review receipts follow government term rollover
+
+Статус: **готово**, baseline `1f3f0d432353a09e3f3d9155495621e21725f254`.
+Воспроизведён пробел: government Bill переносится с текущим review, но new-owner application
+receipt отсутствует. Paid result, context и old-owner receipt при этом сохранены. В той же
+транзакции, что move и primary receipt, переносятся только доказанные current review targets:
+computation ID + точный source key/legacy context key должны совпасть с существующим receipt.
+Known original address сохраняется дословно. Result/request/input не rekey'ятся; missing history
+и unknown legacy не backfilled. Очереди, enable flags, retention и reader effects прежние.
+
+**83 focused**, strict mypy **494**, Ruff/format green. RCL/Wykaz, три review purposes,
+source-key/context-key variants, workers1/4, cleaned/unpruned state, restore и повторный вызов.
+Failure secondary receipt откатывает move вместе с primary receipt. Unknown result, иной target
+и отсутствие исходного receipt не создают новой history. Shared paused-act fixture теперь
+сравнивает число requests до/после, сохраняя возможность предшествующего primary batch;
+commission fixture явно включает свой batch kind, cleanup подтверждает accounting перед prune.
+Первоначальные fixture failures сохранены отдельно; runtime flags для них не ослаблялись.
+
+**12 native before/after profiles**: все requests/messages/paid results и prior application rows
+exact. Все остальные 27 SQL tables exact с исключением run phase timings; каждый профиль
+получает ровно один new-owner review receipt. Raw SQL delta **533–602 bytes**, gzip **15–108**;
+это fixture snapshots, не прогноз production storage. Integrity/FK checks и повтор после restore
+green. Other secondary scopes/name lineage остаются отдельной частью DA6.2/DA6.3.
+Full gate выполняется на frozen code; corpus text replay не требуется для этой metadata-only
+transfer, поскольку extraction/selection/normalization/provider text не менялись.
+
+J125 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40636670932) success:
+**5211 passed**, strict mypy **493**, docs/web green. Feature branch/draft PR only;
+main/deployment не выполнялись. Read-only state tip повторно сверён: тот же J116 pin
+`4f19d9bf7b8035f2239dece6098c4b06942f9414`, нового natural cycle нет.
+
+Full gate: **5227 passed**, failures/errors/skips0; final source freeze сохранён.
+[Acceptance asset](../assets/audits/2026-10-28-rollover-review-history/validation.json) пинует
+source/test hashes, 12 old/new profile pairs, all-table comparison и gate XML. Strict docs/build/
+links и diff check green. Ни один новый общий scheduler, source/backend или migration не добавлен.
