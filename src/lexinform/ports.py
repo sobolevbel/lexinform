@@ -1114,6 +1114,10 @@ class BillRepository(Protocol):
         """The row of a register entry by its `WPL/UD408` number."""
         ...
 
+    def list_government_rollover_candidates(self, term: int) -> list[Bill]:
+        """Rows eligible for the same government-only transfer as move_government_rows."""
+        ...
+
     def move_government_rows(self, from_term: int, to_term: int) -> int:
         """Carry the government's own rows — RCL projects still waiting for their druk, and
         wykaz entries — over to a new term (with their posts and status changes); a project

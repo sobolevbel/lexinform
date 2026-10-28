@@ -5753,3 +5753,48 @@ fixture, не прогноз роста production logs. [Acceptance asset](../a
 J113 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40608181382) success;
 [deploy](https://github.com/sobolevbel/lexinform/actions/runs/40608978602) сообщает exact COMMIT
 `244b63b4fd558424527ffe0eb1c1efe6f7b7f3c8`, already at that commit, listener running.
+
+
+<a id="j115"></a>
+### J115. Primary result provenance survives government-row rollover
+
+Статус: **готово**, baseline `933f8d2f3f6ef31cc5888b498f7a35ea58ca569f`.
+Government-only rollover сохраняет known primary result application и прежнюю source association
+у нового term owner в одной транзакции с переносом Bill/publication/change/check rows. Общий
+primary projection helper используется и обычным apply, и relocation, но rollover не вызывает
+повторный save_analysis: status, generation, analysis bytes и ready/cache owners прежние.
+Original paid result/input binding/old receipts не re-keyed; legacy без paid identity остаётся unknown.
+
+Repository reader и прежний move используют один eligibility query; pending primary statuses и
+linked RCL исключены по прежнему правилу. Сбой source/application persistence либо collision
+откатывает move вместе с уже созданной историей, включая отказ на втором project.
+New source association не означает свежего чтения URL или новой legal-applicability проверки.
+Secondary relocation и дальнейший переход consumers к refs остаются открытыми.
+
+**114 focused / 21 local HTTP**, strict mypy **477**, Ruff/format green; full gate выполняется.
+**168 native snapshots**: requests/messages и все 28 tables exact, кроме одного tracking timing
+**0.1→0.0 s**, SQL delta0, gzip **-4–0 bytes**; source doctors без errors.
+
+**13 rollover profiles**: RCL/Wykaz, workers1/4, до/после cleanup, unknown legacy, pending input
+и simulation на pinned production state `fe7036a09d1688d03236c936cda26c876f3ae825`.
+Все прежние rows, requests/messages/edits, Bill snapshots и original result bodies exact; новые
+rows только result_applications/result_applicability. SQL **0–2137 bytes**, gzip **0–145 bytes**.
+На natural-data simulation: **208 eligible rows / 39 с analysis / 3 known paid refs**, добавлены
+**3 applications / 1 source association**, model/reader API calls0. Это симуляция смены term на
+сохранённых данных, не естественный production rollover и не independent legal/Telegram gate.
+
+Backward reader J114 прочитал **13 snapshots / 474 Bill reads**, dumps exact без schema
+conversion. Все **55 deployed migrations AST exact**, прочие **156 runtime files byte-identical**.
+
+
+Full gate: **5091 passed**, 0 failures/errors/skips, **594.546 s**.
+На natural-data simulation whole-dump delta **2137 SQL / 145 gzip bytes**; это metadata history
+трёх известных результатов, без копирования source/result bodies.
+[Acceptance asset](../assets/audits/2026-10-28-rollover-provenance/validation.json).
+
+J114 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40610158748): **5075 passed**,
+strict mypy **476**, Ruff/docs/web success. [Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40610866847):
+exact COMMIT `933f8d2f3f6ef31cc5888b498f7a35ea58ca569f`, listener up **45 s**.
+Естественный [delivery drain](https://github.com/sobolevbel/lexinform/actions/runs/40610526550)
+завершился на том же коде; его snapshot проверяется отдельно в J116, file-read production
+приёмка этим drain не заявляется.

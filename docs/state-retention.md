@@ -106,9 +106,13 @@ Sejm tracking prepares reanalysis before its checkpoint and applies it with the 
 and delivery work. Waiting secondary work leaves the current analysis and ready result intact.
 The reanalysis counter advances after that commit; paid usage remains in the existing call ledger.
 Preparation and quiet source checks do not create projection receipts. Ready does not prove
-application or publication, and applied does not prove delivery. Direct identity relocation
-at term rollover and the remaining applicability history stay in
-[DA6](plans/2026-10-22-document-architecture.md#da6).
+application or publication, and applied does not prove delivery. Government-row rollover records a known primary result's new projection and unchanged source
+association in the same transaction as the move. The paid result, original input owner and old
+receipts stay under their original identities; no analysis is re-applied to update status or
+generation. Legacy without a paid ID gets no invented receipt. This records the retained view,
+not a fresh source read or a new legal-applicability check. See
+[J115](plans/2026-10-22-document-architecture-progress.md#j115); secondary relocation and the
+remaining applicability history stay in [DA6](plans/2026-10-22-document-architecture.md#da6).
 Schema v51 adds a reader for compact `result_applicability` observations. The source association
 contains the known paid ref, owner scope, URL/kind, recorded fingerprints and first recording time.
 It neither copies the answer/input nor certifies archived bytes or complete input coverage.

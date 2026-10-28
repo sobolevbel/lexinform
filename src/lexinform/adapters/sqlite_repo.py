@@ -2785,24 +2785,27 @@ class SqliteBillRepository:
         ).fetchone()
         return self._row_to_bill(row) if row else None
 
+    def list_government_rollover_candidates(self, term: int) -> list[Bill]:
+        return [self._row_to_bill(row) for row in self._government_rollover_rows(term)]
+
+    def _government_rollover_rows(self, term: int) -> list[sqlite3.Row]:
+        return self._conn.execute(
+            "SELECT * FROM bills WHERE term = ? AND status NOT IN (?, ?, ?, ?)"
+            " AND ((number LIKE ? AND json_extract(rcl_json, '$.print_number') IS NULL)"
+            "      OR number LIKE ?) ORDER BY number",
+            (
+                term,
+                BillStatus.LINKED.value,
+                BillStatus.BATCH_PENDING.value,
+                BillStatus.ANALYSIS_READY.value,
+                BillStatus.REANALYSIS_READY.value,
+                f"{RCL_PREFIX}%",
+                f"{WYKAZ_PREFIX}%",
+            ),
+        ).fetchall()
+
     def move_government_rows(self, from_term: int, to_term: int) -> int:
-        numbers = [
-            str(r[0])
-            for r in self._conn.execute(
-                "SELECT number FROM bills WHERE term = ? AND status NOT IN (?, ?, ?, ?)"
-                " AND ((number LIKE ? AND json_extract(rcl_json, '$.print_number') IS NULL)"
-                "      OR number LIKE ?) ORDER BY number",
-                (
-                    from_term,
-                    BillStatus.LINKED.value,
-                    BillStatus.BATCH_PENDING.value,
-                    BillStatus.ANALYSIS_READY.value,
-                    BillStatus.REANALYSIS_READY.value,
-                    f"{RCL_PREFIX}%",
-                    f"{WYKAZ_PREFIX}%",
-                ),
-            )
-        ]
+        numbers = [str(row["number"]) for row in self._government_rollover_rows(from_term)]
         if not numbers:
             return 0
         placeholders = ",".join("?" for _ in numbers)

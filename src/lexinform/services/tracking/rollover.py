@@ -15,6 +15,7 @@ import logging
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import Bill, PublicationStatus, StatusChange
 from lexinform.ports import BillRepository, Clock
+from lexinform.services.analysis_applications import record_analysis_application
 from lexinform.services.posting import Poster, Told
 from lexinform.services.tracking.stages import synthetic_key
 from lexinform.services.tracking_result import TrackingResult
@@ -33,7 +34,21 @@ class TermRollover:
         self, previous: int, current: int, result: TrackingResult, *, publish: bool
     ) -> bool:
         """Queued announcements survive discontinuation even when Telegram is unavailable."""
-        moved = self._repo.move_government_rows(previous, current)
+        with self._repo.atomic():
+            carried = self._repo.list_government_rollover_candidates(previous)
+            moved = self._repo.move_government_rows(previous, current)
+            for original in carried:
+                if original.analysis is None:
+                    continue
+                target = self._repo.get(current, original.number)
+                assert target is not None, "move_government_rows transfers each eligible row"
+                record_analysis_application(
+                    self._repo,
+                    target,
+                    original.analysis,
+                    now=self._clock.now(),
+                    reason="retained_result",
+                )
         if moved:
             result.rehomed += moved
             log.warning(
