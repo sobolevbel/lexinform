@@ -16,6 +16,7 @@ from lexinform.models import (
 )
 from lexinform.ports import PublishResult
 from lexinform.services.digest import DigestService
+from tests.checkpoint_state import StoredState, saved_state
 from tests.harness import CHANNEL, COMMITTEE_STAGES, World
 from tests.scenario.test_card_remote_checkpoints import (
     Mode,
@@ -62,12 +63,12 @@ def service_for(world: World, *, dry_run: bool = False) -> DigestService:
     return service
 
 
-def saved_digest(world: World, *, draft: bool = False) -> Publication:
+def saved_digest(world: StoredState, *, channel_id: str = CHANNEL) -> Publication:
     row = world.repo.get_publication(
         DIGEST_TERM,
         DIGEST_NUMBER,
         PublicationKind.DIGEST,
-        world.container.drafts_channel_id() if draft else CHANNEL,
+        channel_id,
         ref=REF,
     )
     assert row is not None, "the first digest part owns the week reference"
@@ -96,22 +97,21 @@ def test_new_digest_freezes_its_real_layout_and_membership_before_the_channel_ap
     observed: list[int] = []
 
     def send(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        row = durable.repo.publication_by_id(publication.id or 0)
-        assert row is not None and row.delivery is not None, "remote pending precedes the API"
-        assert row.status is PublicationStatus.PENDING
-        assert row.delivery.digest_parts == (row.id,)
-        assert row.delivery.rendered_text == expected[0].text
-        current = durable.repo.publication_by_id(source.id or 0)
-        assert current is not None and current.status is PublicationStatus.QUEUED, (
-            "a pending physical digest part has not completed its reserved event"
-        )
-        assert durable.repo.digest_owner(source.id or 0) == row.id
-        assert not row.delivery.approve_label
-        assert row.delivery.digest_ref == REF
-        observed.append(publication.id or 0)
-        return original(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            row = durable.repo.publication_by_id(publication.id or 0)
+            assert row is not None and row.delivery is not None, "remote pending precedes the API"
+            assert row.status is PublicationStatus.PENDING
+            assert row.delivery.digest_parts == (row.id,)
+            assert row.delivery.rendered_text == expected[0].text
+            current = durable.repo.publication_by_id(source.id or 0)
+            assert current is not None and current.status is PublicationStatus.QUEUED, (
+                "a pending physical digest part has not completed its reserved event"
+            )
+            assert durable.repo.digest_owner(source.id or 0) == row.id
+            assert not row.delivery.approve_label
+            assert row.delivery.digest_ref == REF
+            observed.append(publication.id or 0)
+            return original(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", send)
 
@@ -156,7 +156,7 @@ def test_digest_draft_preserves_its_layout_and_approval_button_without_reader_ch
     assert event is not None and event.status is PublicationStatus.QUEUED, (
         "a technical draft never completes a reader event"
     )
-    draft = saved_digest(world, draft=True)
+    draft = saved_digest(world, channel_id=world.container.drafts_channel_id())
     assert (draft.delivery is not None) is (mode == "on")
 
 
@@ -176,33 +176,36 @@ def test_each_new_digest_part_checkpoints_all_membership_and_prior_receipts(
     observed: list[int] = []
 
     def send(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        root = saved_digest(durable)
-        assert root.delivery is not None and len(root.delivery.digest_parts) == 3, (
-            "all rendered physical parts are frozen before the first API call"
-        )
-        identities = root.delivery.digest_parts
-        index = identities.index(publication.id or 0)
-        for position, identity in enumerate(identities):
-            row = durable.repo.publication_by_id(identity)
-            assert row is not None and row.delivery is not None, (
-                "the root lists every saved physical part"
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            root = saved_digest(durable)
+            assert root.delivery is not None and len(root.delivery.digest_parts) == 3, (
+                "all rendered physical parts are frozen before the first API call"
             )
-            assert row.delivery.rendered_text == layout[position].text
-            assert row.status is (
-                PublicationStatus.SENT
-                if position < index
-                else PublicationStatus.PENDING
-                if position == index
-                else PublicationStatus.QUEUED
+            identities = root.delivery.digest_parts
+            index = identities.index(publication.id or 0)
+            for position, identity in enumerate(identities):
+                row = durable.repo.publication_by_id(identity)
+                assert row is not None and row.delivery is not None, (
+                    "the root lists every saved physical part"
+                )
+                assert row.delivery.rendered_text == layout[position].text
+                assert row.status is (
+                    PublicationStatus.SENT
+                    if position < index
+                    else PublicationStatus.PENDING
+                    if position == index
+                    else PublicationStatus.QUEUED
+                )
+            assert durable.repo.digest_owner(source.id or 0) == identities[1]
+            event = durable.repo.publication_by_id(source.id or 0)
+            assert event is not None, (
+                "the source publication survives each physical part checkpoint"
             )
-        assert durable.repo.digest_owner(source.id or 0) == identities[1]
-        event = durable.repo.publication_by_id(source.id or 0)
-        assert event is not None, "the source publication survives each physical part checkpoint"
-        assert event.status is (PublicationStatus.SENT if index == 2 else PublicationStatus.QUEUED)
-        observed.append(publication.id or 0)
-        return original(publication)
+            assert event.status is (
+                PublicationStatus.SENT if index == 2 else PublicationStatus.QUEUED
+            )
+            observed.append(publication.id or 0)
+            return original(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", send)
 
@@ -283,13 +286,12 @@ def test_saved_digest_parts_keep_their_original_payloads_in_every_attention_mode
     assert [outgoing.text for outgoing in world.publisher.sent[before:]] == [
         f"Saved digest part {index + 1}" for index in range(3)
     ]
-    durable = World()
-    durable.repo.restore(git(remote, "show", "state:state.sql"))
-    assert all(
-        row is not None and row.status is PublicationStatus.SENT
-        for identity in identities
-        for row in (durable.repo.publication_by_id(identity),)
-    )
+    with saved_state(git(remote, "show", "state:state.sql")) as durable:
+        assert all(
+            row is not None and row.status is PublicationStatus.SENT
+            for identity in identities
+            for row in (durable.repo.publication_by_id(identity),)
+        )
 
 
 def test_uncertain_digest_receipt_is_durable_and_does_not_complete_its_source(
@@ -348,31 +350,29 @@ def test_runner_loss_and_operator_retry_preserve_digest_payload_membership_and_a
     observed: list[int] = []
 
     def retry(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        assert publication.id == row.id, "an audited retry preserves the physical part identity"
-        history = durable.repo.delivery_resolutions(publication.id or 0)
-        assert len(history) == 1 and history[0].command == incoming
-        current = durable.repo.publication_by_id(publication.id or 0)
-        assert current is not None and current.delivery == plan, (
-            "an audited retry uses the original digest identity and payload"
-        )
-        assert current.status is PublicationStatus.PENDING
-        assert durable.repo.digest_owner(source.id or 0) == row.id
-        observed.append(publication.id or 0)
-        return original(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            assert publication.id == row.id, "an audited retry preserves the physical part identity"
+            history = durable.repo.delivery_resolutions(publication.id or 0)
+            assert len(history) == 1 and history[0].command == incoming
+            current = durable.repo.publication_by_id(publication.id or 0)
+            assert current is not None and current.delivery == plan, (
+                "an audited retry uses the original digest identity and payload"
+            )
+            assert current.status is PublicationStatus.PENDING
+            assert durable.repo.digest_owner(source.id or 0) == row.id
+            observed.append(publication.id or 0)
+            return original(publication)
 
     monkeypatch.setattr(fresh.publisher, "publish_prepared", retry)
 
     fresh.run(discover=False, analyze=False, track=False, max_publish=0)
 
     assert observed == [row.id]
-    durable = World()
-    durable.repo.restore(git(remote, "show", "state:state.sql"))
-    event = durable.repo.publication_by_id(source.id or 0)
-    assert event is not None and event.status is PublicationStatus.SENT, (
-        "the successful retry checkpoints its source effect with the receipt"
-    )
+    with saved_state(git(remote, "show", "state:state.sql")) as durable:
+        event = durable.repo.publication_by_id(source.id or 0)
+        assert event is not None and event.status is PublicationStatus.SENT, (
+            "the successful retry checkpoints its source effect with the receipt"
+        )
 
 
 @pytest.mark.parametrize("boundary", [PublicationStatus.PENDING, PublicationStatus.SENT])

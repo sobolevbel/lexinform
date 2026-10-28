@@ -14,7 +14,7 @@ from lexinform.models import (
     computation_id,
 )
 from lexinform.models.reviews import ReviewPurpose
-from tests.scenario.test_computation_reader import retained_result
+from tests.computations import retained_result
 
 PURPOSES: tuple[ReviewPurpose, ...] = (
     "consultation_review",

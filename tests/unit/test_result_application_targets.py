@@ -9,7 +9,7 @@ from pydantic import ValidationError
 
 from lexinform.adapters.sqlite_repo import MIGRATIONS, SqliteBillRepository
 from lexinform.models import ResultApplication
-from tests.scenario.test_computation_reader import NOW, retained_result
+from tests.computations import NOW, retained_result
 
 
 @pytest.fixture

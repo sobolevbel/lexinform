@@ -10,6 +10,7 @@ from lexinform.errors import DeliveryUncertainError, StateCheckpointError
 from lexinform.models import Publication, PublicationKind, PublicationStatus
 from lexinform.ports import PublishResult
 from lexinform.services.analysis import AnalysisService
+from tests.checkpoint_state import saved_state
 from tests.fakes import make_analysis, make_comparison
 from tests.harness import CHANNEL, TERM, World
 
@@ -138,27 +139,26 @@ def test_every_card_part_has_a_remote_pending_payload_and_exact_parent_before_ap
     identities: list[int] = []
 
     def send(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        row = durable.repo.publication_by_id(publication.id or 0)
-        assert row is not None and row.delivery is not None, "remote intent precedes the API"
-        assert row.status is PublicationStatus.PENDING
-        assert row.channel_id == CHANNEL
-        assert publication.delivery is not None, "prepared sends carry frozen HTML"
-        assert row.delivery.rendered_text == publication.delivery.rendered_text
-        assert row.delivery.reply_to == publication.delivery.reply_to
-        if row.delivery.continuation_parent is not None:
-            parent = durable.repo.publication_by_id(row.delivery.continuation_parent)
-            assert parent is not None and parent.status is PublicationStatus.SENT
-            assert row.delivery.reply_to == parent.message_id
-        else:
-            assert row.delivery.continuation_ids, "the long fixture has multiple physical parts"
-            for identity in row.delivery.continuation_ids:
-                child = durable.repo.publication_by_id(identity)
-                assert child is not None and child.delivery is not None
-                assert child.status is PublicationStatus.QUEUED and child.delivery.rendered_text
-        identities.append(publication.id or 0)
-        return original(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            row = durable.repo.publication_by_id(publication.id or 0)
+            assert row is not None and row.delivery is not None, "remote intent precedes the API"
+            assert row.status is PublicationStatus.PENDING
+            assert row.channel_id == CHANNEL
+            assert publication.delivery is not None, "prepared sends carry frozen HTML"
+            assert row.delivery.rendered_text == publication.delivery.rendered_text
+            assert row.delivery.reply_to == publication.delivery.reply_to
+            if row.delivery.continuation_parent is not None:
+                parent = durable.repo.publication_by_id(row.delivery.continuation_parent)
+                assert parent is not None and parent.status is PublicationStatus.SENT
+                assert row.delivery.reply_to == parent.message_id
+            else:
+                assert row.delivery.continuation_ids, "the long fixture has multiple physical parts"
+                for identity in row.delivery.continuation_ids:
+                    child = durable.repo.publication_by_id(identity)
+                    assert child is not None and child.delivery is not None
+                    assert child.status is PublicationStatus.QUEUED and child.delivery.rendered_text
+            identities.append(publication.id or 0)
+            return original(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", send)
 
@@ -345,28 +345,26 @@ def test_operator_retry_is_checkpointed_with_its_audit_before_the_card_api(
     observed: list[int] = []
 
     def retry(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        assert publication.id is not None, "the retry preserves the original publication id"
-        audit = durable.repo.delivery_resolutions(publication.id)
-        assert len(audit) == 1 and audit[0].command == incoming
-        saved = durable.repo.publication_by_id(publication.id)
-        assert saved is not None and saved.delivery is not None
-        assert saved.status is PublicationStatus.PENDING
-        assert saved.delivery.rendered_text == plan.rendered_text
-        assert saved.delivery.reply_to == plan.reply_to
-        observed.append(publication.id)
-        return original(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            assert publication.id is not None, "the retry preserves the original publication id"
+            audit = durable.repo.delivery_resolutions(publication.id)
+            assert len(audit) == 1 and audit[0].command == incoming
+            saved = durable.repo.publication_by_id(publication.id)
+            assert saved is not None and saved.delivery is not None
+            assert saved.status is PublicationStatus.PENDING
+            assert saved.delivery.rendered_text == plan.rendered_text
+            assert saved.delivery.reply_to == plan.reply_to
+            observed.append(publication.id)
+            return original(publication)
 
     monkeypatch.setattr(fresh.publisher, "publish_prepared", retry)
 
     fresh.run(track=False)
 
     assert observed == [row.id]
-    durable = World()
-    durable.repo.restore(git(remote, "show", "state:state.sql"))
-    receipt = durable.repo.publication_by_id(row.id)
-    assert receipt is not None and receipt.status is PublicationStatus.SENT
+    with saved_state(git(remote, "show", "state:state.sql")) as durable:
+        receipt = durable.repo.publication_by_id(row.id)
+        assert receipt is not None and receipt.status is PublicationStatus.SENT
 
 
 @pytest.mark.parametrize("dry_run", [False, True])

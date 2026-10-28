@@ -15,6 +15,7 @@ from lexinform.models import (
     Stage,
 )
 from lexinform.ports import PublishResult
+from tests.checkpoint_state import StoredState, saved_state
 from tests.harness import CHANNEL, TERM, World, act, submission
 from tests.scenario.test_card_remote_checkpoints import (
     Mode,
@@ -45,13 +46,13 @@ class NoticeCase:
     saved_day: dt.date
 
 
-def row(world: World, identity: int) -> Publication:
+def row(world: StoredState, identity: int) -> Publication:
     publication = world.repo.publication_by_id(identity)
     assert publication is not None, "the fixture saves the notice before its first delivery"
     return publication
 
 
-def plan(world: World, identity: int) -> DeliveryPlan:
+def plan(world: StoredState, identity: int) -> DeliveryPlan:
     delivery = row(world, identity).delivery
     assert delivery is not None, "a notice keeps its original delivery snapshot"
     return delivery
@@ -115,18 +116,17 @@ def test_notice_freezes_legacy_equivalent_html_date_and_target_before_its_api(
     observed: list[int] = []
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        saved = row(durable, case.identity)
-        assert saved.status is PublicationStatus.PENDING and saved.attempts == 0
-        assert saved.channel_id == CHANNEL and saved.delivery == publication.delivery
-        frozen = plan(durable, case.identity)
-        assert frozen.rendered_text == expected
-        assert frozen.reply_to == original_plan.reply_to != 999
-        if kind in DATED:
-            assert frozen.today == expected_day
-        observed.append(case.identity)
-        return original(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            saved = row(durable, case.identity)
+            assert saved.status is PublicationStatus.PENDING and saved.attempts == 0
+            assert saved.channel_id == CHANNEL and saved.delivery == publication.delivery
+            frozen = plan(durable, case.identity)
+            assert frozen.rendered_text == expected
+            assert frozen.reply_to == original_plan.reply_to != 999
+            if kind in DATED:
+                assert frozen.today == expected_day
+            observed.append(case.identity)
+            return original(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
     before = len(world.publisher.sent)
@@ -182,14 +182,13 @@ def test_failed_legacy_notice_freezes_its_saved_payload_and_date_before_api(
     observed: list[int] = []
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        current = row(durable, case.identity)
-        assert current.status is PublicationStatus.PENDING and current.attempts == attempts
-        assert current.delivery == publication.delivery == frozen
-        assert current.channel_id == CHANNEL and frozen.reply_to != 999
-        observed.append(case.identity)
-        return prepared(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            current = row(durable, case.identity)
+            assert current.status is PublicationStatus.PENDING and current.attempts == attempts
+            assert current.delivery == publication.delivery == frozen
+            assert current.channel_id == CHANNEL and frozen.reply_to != 999
+            observed.append(case.identity)
+            return prepared(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
     before = len(world.publisher.sent)
@@ -253,20 +252,23 @@ def test_notice_parts_have_remote_frozen_membership_and_receipt_parents_before_a
     observed: list[int] = []
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        identities = (case.identity, *plan(durable, case.identity).continuation_ids)
-        assert tuple(plan(durable, identity).rendered_text for identity in identities) == expected
-        assert publication.id is not None, "every physical notice has its own saved identity"
-        saved = row(durable, publication.id)
-        assert saved.status is PublicationStatus.PENDING and saved.delivery == publication.delivery
-        position = identities.index(publication.id)
-        if position:
-            parent = row(durable, identities[position - 1])
-            assert parent.status is PublicationStatus.SENT
-            assert plan(durable, publication.id).reply_to == parent.message_id
-        observed.append(publication.id)
-        return original(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            identities = (case.identity, *plan(durable, case.identity).continuation_ids)
+            assert (
+                tuple(plan(durable, identity).rendered_text for identity in identities) == expected
+            )
+            assert publication.id is not None, "every physical notice has its own saved identity"
+            saved = row(durable, publication.id)
+            assert (
+                saved.status is PublicationStatus.PENDING and saved.delivery == publication.delivery
+            )
+            position = identities.index(publication.id)
+            if position:
+                parent = row(durable, identities[position - 1])
+                assert parent.status is PublicationStatus.SENT
+                assert plan(durable, publication.id).reply_to == parent.message_id
+            observed.append(publication.id)
+            return original(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
 
@@ -308,12 +310,11 @@ def test_lost_notice_runner_requires_audited_recovery_of_its_original_payload(
     send = fresh.publisher.publish_prepared
 
     def retry(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        audit = durable.repo.delivery_resolutions(case.identity)
-        assert len(audit) == 1 and audit[0].command == incoming
-        assert plan(durable, case.identity) == saved
-        return send(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            audit = durable.repo.delivery_resolutions(case.identity)
+            assert len(audit) == 1 and audit[0].command == incoming
+            assert plan(durable, case.identity) == saved
+            return send(publication)
 
     monkeypatch.setattr(fresh.publisher, "publish_prepared", retry)
 

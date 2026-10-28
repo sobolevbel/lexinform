@@ -6,7 +6,7 @@ import pytest
 from lexinform.errors import DeliveryUncertainError, TelegramUnavailableError
 from lexinform.models import Bill, Publication, PublicationKind, PublicationStatus, StatusChange
 from lexinform.ports import PublishResult
-from tests.harness import World
+from tests.checkpoint_state import saved_state
 from tests.scenario.test_card_remote_checkpoints import Mode, connect, git
 from tests.scenario.test_update_remote_checkpoints import (
     UpdateCase,
@@ -57,13 +57,12 @@ def test_legacy_edit_has_the_same_html_and_target_frozen_remotely_before_api(
     original_edit = world.publisher.edit_status_update
 
     def checkpointed() -> None:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        current = row(durable, case.identity)
-        assert current.status is PublicationStatus.PENDING and current.attempts == attempts
-        assert current.delivery == saved.model_copy(
-            update={"rendered_text": expected, "render_origin": "legacy_snapshot"}
-        )
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            current = row(durable, case.identity)
+            assert current.status is PublicationStatus.PENDING and current.attempts == attempts
+            assert current.delivery == saved.model_copy(
+                update={"rendered_text": expected, "render_origin": "legacy_snapshot"}
+            )
 
     def prepared(publication: Publication) -> PublishResult:
         checkpointed()

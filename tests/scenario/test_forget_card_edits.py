@@ -11,6 +11,7 @@ from lexinform.models import (
     PublicationKind,
     PublicationStatus,
 )
+from tests.checkpoint_state import StoredState
 from tests.harness import CHANNEL, TERM, World, summary
 from tests.scenario.test_card_remote_checkpoints import ready_world
 
@@ -30,7 +31,7 @@ class EditCase:
     operation: int
 
 
-def row(world: World, identity: int) -> Publication:
+def row(world: StoredState, identity: int) -> Publication:
     publication = world.repo.publication_by_id(identity)
     assert publication is not None, "the fixture retains each saved physical operation"
     return publication

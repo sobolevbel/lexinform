@@ -52,6 +52,7 @@ def refuse_legal_selection(*args: object, **kwargs: object) -> Never:
         archive({"projekt.zip": archive({"projekt.docx": docx("USTAWA")})}),
         b"unknown format",
     ],
+    ids=["pdf", "docx", "nested_zip", "unknown"],
 )
 def test_physical_extraction_never_invokes_legal_selection(
     monkeypatch: pytest.MonkeyPatch, data: bytes

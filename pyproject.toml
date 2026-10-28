@@ -45,6 +45,7 @@ dev = [
   "ruff>=0.6",
   "mypy>=1.11",
   "hypothesis>=6.168.0",
+  "pytest-xdist>=3.8,<4",
 ]
 docs = [
   "zensical>=0.0.64,<0.1",
@@ -103,7 +104,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-m 'not integration and not local_http' -q"
+addopts = "-n auto --maxprocesses=4 --dist=worksteal -m 'not integration and not local_http' -q"
 markers = [
   "integration: tests that call a live external system (network)",
   "local_http: tests that start a local HTTP server (run on demand)",

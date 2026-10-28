@@ -18,6 +18,7 @@ from lexinform.models import (
 from lexinform.ports import PublishResult
 from lexinform.services.publications import inherit_card, open_card_edit_ids
 from lexinform.services.tracking_result import TrackingResult
+from tests.checkpoint_state import saved_state
 from tests.harness import CHANNEL, TERM, World, summary
 from tests.scenario.test_card_remote_checkpoints import connect, git
 from tests.scenario.test_forget_card_edits import EditCase, row, saved_edit
@@ -111,15 +112,14 @@ def test_exhausted_card_retry_has_its_original_payload_target_and_audit_remote_b
     seen: list[int] = []
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        pending = row(durable, case.operation)
-        assert pending.status is PublicationStatus.PENDING and pending.attempts == 0
-        assert pending.delivery == saved.delivery == publication.delivery
-        assert durable.repo.delivery_resolutions(case.operation)[0].command == incoming
-        assert durable.publication("3039") == case.card
-        seen.append(case.operation)
-        return prepared(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            pending = row(durable, case.operation)
+            assert pending.status is PublicationStatus.PENDING and pending.attempts == 0
+            assert pending.delivery == saved.delivery == publication.delivery
+            assert durable.repo.delivery_resolutions(case.operation)[0].command == incoming
+            assert durable.publication("3039") == case.card
+            seen.append(case.operation)
+            return prepared(publication)
 
     monkeypatch.setattr(world.publisher, "render_delivery", refuse_render)
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)

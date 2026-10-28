@@ -34,10 +34,10 @@ test-scenario: ## Run bot pipeline scenarios
 	$(RUN) pytest tests/scenario $(ARGS)
 
 test-local-http: ## Run optional CLI tests with a local HTTP server
-	$(RUN) pytest -m local_http $(ARGS)
+	$(RUN) pytest -n 0 -m local_http $(ARGS)
 
 test-integration: ## Run live integration tests (network required)
-	$(RUN) pytest -m integration $(ARGS)
+	$(RUN) pytest -n 0 -m integration $(ARGS)
 
 coverage: ## Run bot tests with a coverage report
 	$(RUN) pytest --cov --cov-report=term-missing $(ARGS)

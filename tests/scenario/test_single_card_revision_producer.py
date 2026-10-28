@@ -7,6 +7,7 @@ import pytest
 from lexinform.errors import StateCheckpointError
 from lexinform.models import Bill, Publication, PublicationKind, PublicationStatus
 from lexinform.ports import PublishResult
+from tests.checkpoint_state import StoredState, saved_state
 from tests.harness import CHANNEL, TERM, World, act
 from tests.scenario.test_card_remote_checkpoints import (
     Mode,
@@ -18,13 +19,13 @@ from tests.scenario.test_card_remote_checkpoints import (
 )
 
 
-def card(world: World) -> Publication:
+def card(world: StoredState) -> Publication:
     found = world.publication("3039")
     assert found is not None and found.id is not None, "the batch fixture published its card"
     return found
 
 
-def operation(world: World) -> Publication:
+def operation(world: StoredState) -> Publication:
     current = card(world)
     found = world.repo.card_refresh_parts(current.id or 0)
     assert len(found) == 1 and found[0].kind is PublicationKind.MESSAGE_PART, (
@@ -69,25 +70,24 @@ def test_single_card_refresh_freezes_its_remote_edit_before_api_and_receipt_afte
     observed: list[Publication] = []
 
     def inspect(saved: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        current = operation(durable)
-        assert current == saved
-        assert current.status is PublicationStatus.PENDING
-        assert current.channel_id == CHANNEL
-        assert current.delivery is not None, "pending operations retain their immutable plans"
-        assert current.delivery.rendered_text == expected
-        assert current.delivery.edit_message_id == baseline.message_id
-        assert current.delivery.revision_of == baseline.id
-        assert current.delivery.reply_to == baseline.message_id
-        assert current.delivery.continuation_parent == baseline.id
-        assert current.delivery.today == world.clock.now().date()
-        assert current.delivery.continuation_ids == ()
-        compact = Bill.model_validate_json(current.delivery.bill_json)
-        assert compact.analysis is None
-        assert card(durable) == baseline
-        observed.append(current)
-        return original(saved)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            current = operation(durable)
+            assert current == saved
+            assert current.status is PublicationStatus.PENDING
+            assert current.channel_id == CHANNEL
+            assert current.delivery is not None, "pending operations retain their immutable plans"
+            assert current.delivery.rendered_text == expected
+            assert current.delivery.edit_message_id == baseline.message_id
+            assert current.delivery.revision_of == baseline.id
+            assert current.delivery.reply_to == baseline.message_id
+            assert current.delivery.continuation_parent == baseline.id
+            assert current.delivery.today == world.clock.now().date()
+            assert current.delivery.continuation_ids == ()
+            compact = Bill.model_validate_json(current.delivery.bill_json)
+            assert compact.analysis is None
+            assert card(durable) == baseline
+            observed.append(current)
+            return original(saved)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
     sent_before = len(world.publisher.sent)

@@ -1,9 +1,10 @@
+import datetime as dt
 import hashlib
 
 import pytest
 
 from lexinform.concurrency import fan_out
-from lexinform.models import ArtifactIdentity, DocumentPart, DocumentSelection
+from lexinform.models import ArtifactIdentity, DocumentPart, DocumentSelection, RunMode, RunReport
 from lexinform.services.documents import TextLoader
 from tests.fakes import FakeSejmGateway, FakeTextExtractor
 
@@ -131,3 +132,13 @@ def test_parallel_observations_keep_every_completed_download(workers: int) -> No
     assert metrics.distinct_body_bytes == 2 * (len(BODY) + 1)
     metrics.hosts.clear()
     assert reader.read_metrics().completed == len(urls)
+
+
+def test_legacy_report_does_not_acquire_a_false_zero_download_measurement() -> None:
+    now = dt.datetime(2026, 10, 27, tzinfo=dt.UTC)
+    original = RunReport(started_at=now, since=now, mode=RunMode.RUN)
+
+    restored = RunReport.model_validate_json(original.model_dump_json())
+
+    assert restored.document_reads is None
+    assert "document_reads" not in restored.model_dump_json()

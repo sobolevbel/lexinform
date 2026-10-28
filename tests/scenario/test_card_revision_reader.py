@@ -9,6 +9,7 @@ from lexinform.models import DeliveryPlan, Publication, PublicationKind, Publica
 from lexinform.ports import PublishResult
 from lexinform.services.message_parts import continuation_snapshot
 from lexinform.services.publications import card_revision_owner
+from tests.checkpoint_state import StoredState, saved_state
 from tests.harness import CHANNEL, TERM, World
 from tests.scenario.test_card_remote_checkpoints import (
     Mode,
@@ -31,7 +32,7 @@ class CardEdit:
     texts: tuple[str, ...]
 
 
-def row(world: World, identity: int) -> Publication:
+def row(world: StoredState, identity: int) -> Publication:
     found = world.repo.publication_by_id(identity)
     assert found is not None, "the fixture saves physical operations before delivery"
     return found
@@ -113,28 +114,27 @@ def test_saved_card_edits_checkpoint_intent_and_apply_only_explicit_card_revisio
     observed: list[int] = []
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        assert publication.id is not None and publication.delivery is not None, (
-            "prepared edits have their saved identity and target"
-        )
-        index = case.identities.index(publication.id)
-        current = row(durable, publication.id)
-        assert current.status is PublicationStatus.PENDING
-        assert current.delivery == publication.delivery
-        assert publication.delivery.rendered_text == case.texts[index]
-        assert publication.delivery.edit_message_id is not None
-        assert row(durable, case.card.id or 0) == case.card
-        owner = card_revision_owner(durable.repo, row(durable, case.identities[0]))
-        assert owner is not None and owner.id == case.card.id, (
-            "both supported formats resolve the owner"
-        )
-        if index:
-            previous = row(durable, case.identities[index - 1])
-            assert previous.status is PublicationStatus.SENT
-            assert publication.delivery.reply_to == previous.message_id
-        observed.append(publication.id)
-        return original(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            assert publication.id is not None and publication.delivery is not None, (
+                "prepared edits have their saved identity and target"
+            )
+            index = case.identities.index(publication.id)
+            current = row(durable, publication.id)
+            assert current.status is PublicationStatus.PENDING
+            assert current.delivery == publication.delivery
+            assert publication.delivery.rendered_text == case.texts[index]
+            assert publication.delivery.edit_message_id is not None
+            assert row(durable, case.card.id or 0) == case.card
+            owner = card_revision_owner(durable.repo, row(durable, case.identities[0]))
+            assert owner is not None and owner.id == case.card.id, (
+                "both supported formats resolve the owner"
+            )
+            if index:
+                previous = row(durable, case.identities[index - 1])
+                assert previous.status is PublicationStatus.SENT
+                assert publication.delivery.reply_to == previous.message_id
+            observed.append(publication.id)
+            return original(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
 
@@ -224,39 +224,38 @@ def test_card_revision_operator_resolution_preserves_target_audit_and_projection
     assert row(world, case.card.id or 0).rendered_sha256 == OLD
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        history = durable.repo.delivery_resolutions(case.identities[0])
-        assert len(history) == 1 and history[0].command == incoming
-        return original(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            history = durable.repo.delivery_resolutions(case.identities[0])
+            assert len(history) == 1 and history[0].command == incoming
+            return original(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
     world.container.delivery_service(dry_run=False).run()
     world.container.state_checkpoint()()
-    durable = World()
-    durable.repo.restore(git(remote, "show", "state:state.sql"))
-    if action == "mismatch":
-        assert row(durable, root.id or 0).status is PublicationStatus.UNKNOWN
-        assert not durable.repo.delivery_resolutions(root.id or 0)
-        assert row(durable, case.card.id or 0) == case.card
-        assert len(world.publisher.edited) == before
-    elif action == "dismiss":
-        assert all(
-            row(durable, identity).status is PublicationStatus.DISMISSED
-            for identity in case.identities
-        )
-        assert row(durable, case.card.id or 0) == case.card
-        assert len(world.publisher.edited) == before
-    else:
-        assert row(durable, case.card.id or 0).rendered_sha256 == (OLD if legacy else DESIRED)
-        assert len(world.publisher.edited) - before == len(case.identities) - int(
-            action == "confirm"
-        )
-        assert all(
-            row(durable, identity).status is PublicationStatus.SENT for identity in case.identities
-        )
-        history = durable.repo.delivery_resolutions(root.id or 0)
-        assert len(history) == 1 and history[0].command == incoming
+    with saved_state(git(remote, "show", "state:state.sql")) as durable:
+        if action == "mismatch":
+            assert row(durable, root.id or 0).status is PublicationStatus.UNKNOWN
+            assert not durable.repo.delivery_resolutions(root.id or 0)
+            assert row(durable, case.card.id or 0) == case.card
+            assert len(world.publisher.edited) == before
+        elif action == "dismiss":
+            assert all(
+                row(durable, identity).status is PublicationStatus.DISMISSED
+                for identity in case.identities
+            )
+            assert row(durable, case.card.id or 0) == case.card
+            assert len(world.publisher.edited) == before
+        else:
+            assert row(durable, case.card.id or 0).rendered_sha256 == (OLD if legacy else DESIRED)
+            assert len(world.publisher.edited) - before == len(case.identities) - int(
+                action == "confirm"
+            )
+            assert all(
+                row(durable, identity).status is PublicationStatus.SENT
+                for identity in case.identities
+            )
+            history = durable.repo.delivery_resolutions(root.id or 0)
+            assert len(history) == 1 and history[0].command == incoming
 
 
 def test_confirmed_final_card_edit_after_retention_applies_its_saved_digest_without_an_api(
@@ -290,11 +289,10 @@ def test_confirmed_final_card_edit_after_retention_applies_its_saved_digest_with
 
     assert result.failed == 0
     assert len(world.publisher.edited) == before
-    durable = World()
-    durable.repo.restore(git(remote, "show", "state:state.sql"))
-    assert row(durable, case.card.id or 0).rendered_sha256 == DESIRED
-    history = durable.repo.delivery_resolutions(last.id or 0)
-    assert len(history) == 1 and history[0].command == incoming
+    with saved_state(git(remote, "show", "state:state.sql")) as durable:
+        assert row(durable, case.card.id or 0).rendered_sha256 == DESIRED
+        history = durable.repo.delivery_resolutions(last.id or 0)
+        assert len(history) == 1 and history[0].command == incoming
 
 
 def test_a_card_edit_without_a_saved_desired_digest_cannot_change_the_card_projection(
@@ -306,10 +304,9 @@ def test_a_card_edit_without_a_saved_desired_digest_cannot_change_the_card_proje
 
     assert send(case)
 
-    durable = World()
-    durable.repo.restore(git(remote, "show", "state:state.sql"))
-    assert row(durable, case.identities[0]).status is PublicationStatus.SENT
-    assert row(durable, case.card.id or 0) == case.card
+    with saved_state(git(remote, "show", "state:state.sql")) as durable:
+        assert row(durable, case.identities[0]).status is PublicationStatus.SENT
+        assert row(durable, case.card.id or 0) == case.card
 
 
 @pytest.mark.parametrize("invalid", ["missing", "target", "channel", "kind", "bill"])
@@ -376,7 +373,6 @@ def test_card_revision_keeps_its_logical_owner_when_the_physical_parent_belongs_
 
     assert send(case)
 
-    durable = World()
-    durable.repo.restore(git(remote, "show", "state:state.sql"))
-    assert row(durable, case.card.id or 0).rendered_sha256 == DESIRED
-    assert row(durable, predecessor).rendered_sha256 is None
+    with saved_state(git(remote, "show", "state:state.sql")) as durable:
+        assert row(durable, case.card.id or 0).rendered_sha256 == DESIRED
+        assert row(durable, predecessor).rendered_sha256 is None

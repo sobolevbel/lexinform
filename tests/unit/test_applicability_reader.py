@@ -7,7 +7,7 @@ import pytest
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import ResultApplicabilityObservation
-from tests.scenario.test_computation_reader import retained_result
+from tests.computations import retained_result
 from tests.unit.test_applicability import NOW, captured
 
 

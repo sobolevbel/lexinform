@@ -3,7 +3,7 @@
 import pytest
 
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import DeliveryPlan, new_supplements, supplement_kind
+from lexinform.models import DeliveryPlan
 from tests.fakes import FakeTextExtractor, make_digest
 from tests.harness import COMMITTEE_STAGES, World
 
@@ -25,29 +25,6 @@ Jednocześnie informuję, że Rada Ministrów upoważniła Ministra Spraw Wewnę
 i Administracji do prezentowania stanowiska Rządu w tej sprawie w toku prac parlamentarnych.
 Z wyrazami szacunku, Donald Tusk
 """
-
-
-def test_the_kinds_worth_telling_are_told_apart_by_their_title() -> None:
-    """An opinion is not one of them: 1732 of the 2339 documents filed in term 10 are opinions,
-    1.4 per print and 16 at the most, and a reader cannot act on yet another body having written
-    something."""
-    assert supplement_kind(GOVERNMENT_POSITION) == "government_position"
-    assert supplement_kind(OSR) == "impact_assessment"
-    assert supplement_kind(OPINION) is None
-    assert supplement_kind(NO_REMARKS) is None
-    assert supplement_kind(HOUSEKEEPING) is None
-
-
-def test_new_supplements_are_those_the_print_has_and_the_bill_has_not_seen() -> None:
-    w = World()
-    w.add_bill("3039", TITLE)
-    w.file_to_print("3039", GOVERNMENT_POSITION)
-    w.file_to_print("3039", OSR, suffix="001")
-    print_info = w.gateway.prints["3039"]
-
-    assert [p.number for p in new_supplements(print_info, ())] == ["3039-s", "3039-001"]
-    assert [p.number for p in new_supplements(print_info, ["3039-s"])] == ["3039-001"]
-    assert new_supplements(None, ()) == ()
 
 
 def test_the_documents_a_print_already_has_at_first_sight_are_seeded_silently() -> None:

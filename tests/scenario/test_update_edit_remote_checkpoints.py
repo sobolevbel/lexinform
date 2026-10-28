@@ -15,6 +15,7 @@ from lexinform.models import (
     Vote,
 )
 from lexinform.ports import PublishResult
+from tests.checkpoint_state import StoredState, saved_state
 from tests.harness import CHANNEL, World
 from tests.scenario.test_card_remote_checkpoints import (
     Mode,
@@ -34,13 +35,13 @@ class EditCase:
     original: Publication
 
 
-def row(world: World, identity: int) -> Publication:
+def row(world: StoredState, identity: int) -> Publication:
     found = world.repo.publication_by_id(identity)
     assert found is not None, "late votes have a saved status-change publication"
     return found
 
 
-def plan(world: World, identity: int) -> DeliveryPlan:
+def plan(world: StoredState, identity: int) -> DeliveryPlan:
     delivery = row(world, identity).delivery
     assert delivery is not None, "late votes retain the adoption snapshot and date"
     return delivery
@@ -116,30 +117,30 @@ def test_late_vote_edit_checkpoints_original_date_html_target_and_every_part(
     observed: list[int] = []
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        root = row(durable, case.identity)
-        saved = plan(durable, case.identity)
-        identities = (case.identity, *saved.continuation_ids)
-        index = identities.index(publication.id or 0)
-        assert len(identities) == len(expected)
-        current = row(durable, identities[index])
-        assert current.status is PublicationStatus.PENDING and current.attempts == 0
-        assert publication.delivery == current.delivery
-        assert plan(durable, identities[index]).rendered_text == expected[index]
-        assert saved.today == plan(world, case.identity).today
-        if index == 0:
-            assert saved.edit_message_id == case.original.message_id
-        else:
-            parent = row(durable, identities[index - 1])
-            assert parent.status is PublicationStatus.SENT
-            assert plan(durable, identities[index]).reply_to == parent.message_id
-        assert row(durable, case.original.id or 0) == case.original
-        assert (
-            root.delivery is not None and saved.continuation_ids == root.delivery.continuation_ids
-        )
-        observed.append(publication.id or 0)
-        return original_send(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            root = row(durable, case.identity)
+            saved = plan(durable, case.identity)
+            identities = (case.identity, *saved.continuation_ids)
+            index = identities.index(publication.id or 0)
+            assert len(identities) == len(expected)
+            current = row(durable, identities[index])
+            assert current.status is PublicationStatus.PENDING and current.attempts == 0
+            assert publication.delivery == current.delivery
+            assert plan(durable, identities[index]).rendered_text == expected[index]
+            assert saved.today == plan(world, case.identity).today
+            if index == 0:
+                assert saved.edit_message_id == case.original.message_id
+            else:
+                parent = row(durable, identities[index - 1])
+                assert parent.status is PublicationStatus.SENT
+                assert plan(durable, identities[index]).reply_to == parent.message_id
+            assert row(durable, case.original.id or 0) == case.original
+            assert (
+                root.delivery is not None
+                and saved.continuation_ids == root.delivery.continuation_ids
+            )
+            observed.append(publication.id or 0)
+            return original_send(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
 
@@ -276,12 +277,11 @@ def test_attempted_legacy_edit_freezes_html_and_keeps_the_original_publication(
     original = world.publisher.publish_prepared
 
     def checkpointed(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        assert row(durable, case.identity).status is PublicationStatus.PENDING
-        assert plan(durable, case.identity) == publication.delivery == frozen
-        assert row(durable, case.original.id or 0) == case.original
-        return original(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            assert row(durable, case.identity).status is PublicationStatus.PENDING
+            assert plan(durable, case.identity) == publication.delivery == frozen
+            assert row(durable, case.original.id or 0) == case.original
+            return original(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", checkpointed)
     monkeypatch.setattr(world.publisher, "edit_status_update", refuse_render)
@@ -294,8 +294,7 @@ def test_attempted_legacy_edit_freezes_html_and_keeps_the_original_publication(
     assert world.publisher.edited[-1][1] == case.original.message_id
     assert row(world, case.original.id or 0) == case.original
     assert git(remote, "rev-parse", "state") != before_tip
-    durable = World()
-    durable.repo.restore(git(remote, "show", "state:state.sql"))
-    assert row(durable, case.identity).status is PublicationStatus.SENT
-    assert plan(durable, case.identity) == frozen
-    assert row(durable, case.original.id or 0) == case.original
+    with saved_state(git(remote, "show", "state:state.sql")) as durable:
+        assert row(durable, case.identity).status is PublicationStatus.SENT
+        assert plan(durable, case.identity) == frozen
+        assert row(durable, case.original.id or 0) == case.original

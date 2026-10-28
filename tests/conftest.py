@@ -1,6 +1,8 @@
 """Shared fixtures: recorded Sejm API responses and an in-memory repository."""
 
 import json
+from collections.abc import Iterator
+from contextlib import closing
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -11,6 +13,7 @@ from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.sejm_api import parse_print, parse_process_detail, parse_process_summary
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import PrintInfo, ProcessDetail, ProcessSummary
+from tests.database import close_test_repositories, empty_repository
 
 FIXTURES = Path(__file__).parent / "fixtures" / "sejm"
 RCL_FIXTURES = Path(__file__).parent / "fixtures" / "rcl"
@@ -41,10 +44,15 @@ def no_real_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture
-def repo() -> SqliteBillRepository:
-    repository = SqliteBillRepository(":memory:")
-    repository.migrate()
-    return repository
+def repo() -> Iterator[SqliteBillRepository]:
+    with closing(empty_repository()) as repository:
+        yield repository
+
+
+@pytest.fixture(autouse=True)
+def close_scenario_databases() -> Iterator[None]:
+    yield
+    close_test_repositories()
 
 
 @pytest.fixture

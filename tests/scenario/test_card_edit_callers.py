@@ -10,6 +10,7 @@ from lexinform.models import Bill, PrintInfo, Publication, PublicationKind, Publ
 from lexinform.ports import PublishResult
 from lexinform.services.card_edits import edit_card
 from lexinform.services.publications import inherit_card
+from tests.checkpoint_state import StoredState, saved_state
 from tests.harness import CHANNEL, TERM, World, act
 from tests.scenario.test_card_remote_checkpoints import (
     Mode,
@@ -24,13 +25,13 @@ from tests.scenario.test_single_card_revision_producer import card, change, read
 Caller = Literal["poster", "publishing"]
 
 
-def owned(world: World, number: str) -> Publication:
+def owned(world: StoredState, number: str) -> Publication:
     found = world.publication(number)
     assert found is not None and found.id is not None, "the owner is a stored sent logical card"
     return found
 
 
-def latest(world: World, number: str) -> Publication:
+def latest(world: StoredState, number: str) -> Publication:
     owner = owned(world, number)
     return world.repo.card_refresh_parts(owner.id or 0)[0]
 
@@ -67,29 +68,28 @@ def test_other_card_editors_save_matching_logical_owner_and_remote_frozen_target
     inspected: list[Publication] = []
 
     def inspect(saved: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        operation = latest(durable, number)
-        owner = owned(durable, number)
-        assert operation == saved
-        assert operation.status is PublicationStatus.PENDING
-        assert operation.number == owner.number == number
-        assert operation.term == owner.term == TERM
-        assert operation.channel_id == owner.channel_id == CHANNEL
-        assert operation.delivery is not None, "the edit is frozen before the physical API"
-        assert operation.delivery.revision_of == owner.id
-        assert operation.delivery.edit_message_id == owner.message_id == predecessor.message_id
-        assert operation.delivery.today == world.clock.now().date()
-        assert operation.delivery.rendered_text
-        assert Bill.model_validate_json(operation.delivery.bill_json).analysis is None
-        assert owned(durable, "3039") == predecessor
-        assert owner.status is PublicationStatus.SENT
-        if caller == "publishing":
-            assert owner.id != predecessor.id
-            assert owner.sent_at == predecessor.sent_at
-            assert owner.rendered_sha256 is None
-        inspected.append(operation)
-        return original(saved)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            operation = latest(durable, number)
+            owner = owned(durable, number)
+            assert operation == saved
+            assert operation.status is PublicationStatus.PENDING
+            assert operation.number == owner.number == number
+            assert operation.term == owner.term == TERM
+            assert operation.channel_id == owner.channel_id == CHANNEL
+            assert operation.delivery is not None, "the edit is frozen before the physical API"
+            assert operation.delivery.revision_of == owner.id
+            assert operation.delivery.edit_message_id == owner.message_id == predecessor.message_id
+            assert operation.delivery.today == world.clock.now().date()
+            assert operation.delivery.rendered_text
+            assert Bill.model_validate_json(operation.delivery.bill_json).analysis is None
+            assert owned(durable, "3039") == predecessor
+            assert owner.status is PublicationStatus.SENT
+            if caller == "publishing":
+                assert owner.id != predecessor.id
+                assert owner.sent_at == predecessor.sent_at
+                assert owner.rendered_sha256 is None
+            inspected.append(operation)
+            return original(saved)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
     sent_before = len(world.publisher.sent)

@@ -14,6 +14,29 @@ from tests.harness import act
 
 
 @pytest.mark.parametrize("language", ["ru", "en"])
+def test_card_puts_audience_consequence_and_action_before_details(
+    process_3039: ProcessDetail, language: str
+) -> None:
+    analysis = make_analysis()
+    bill = bill_of(process_3039, analysis)
+
+    text = MessageFormatter(language).new_bill(bill, None, today=TODAY).text
+
+    assert text.index(analysis.affected_groups[0]) < text.index(analysis.practical_impact)
+    assert analysis.summary not in text
+    assert text.index(analysis.practical_impact) < text.index(analysis.key_changes[0])
+    assert_telegram_html(text)
+
+
+def test_card_says_the_bill_was_found_by_its_text(process_3039: ProcessDetail) -> None:
+    bill = bill_of(process_3039, prefilter_hits=["text:cudzoziemcy"])
+
+    text = MessageFormatter("ru").new_bill(bill, None).text
+
+    assert "Найден по тексту проекта" in text
+
+
+@pytest.mark.parametrize("language", ["ru", "en"])
 def test_rejected_card_marks_analysis_as_historical_and_omits_promised_effective_date(
     process_3039: ProcessDetail, language: str
 ) -> None:

@@ -5,7 +5,7 @@ import pytest
 from lexinform.errors import StateCheckpointError
 from lexinform.models import DeliveryPlan, Publication, PublicationKind, PublicationStatus
 from lexinform.ports import PublishResult
-from tests.harness import World
+from tests.checkpoint_state import saved_state
 from tests.scenario.test_card_remote_checkpoints import Mode, connect, git, reject_checkpoint
 from tests.scenario.test_commands import _commands_only
 from tests.scenario.test_group_remote_checkpoints import restored
@@ -59,40 +59,41 @@ def test_failed_legacy_notice_prepares_every_part_and_checkpoints_receipt_parent
     observed: list[int] = []
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        root = plan(durable, case.identity)
-        identities = (case.identity, *root.continuation_ids)
-        assert tuple(plan(durable, identity).rendered_text for identity in identities) == expected
-        assert root == saved.model_copy(
-            update={
-                "rendered_text": expected[0],
-                "render_origin": "legacy_snapshot",
-                "continuation_ids": identities[1:],
-            }
-        )
-        assert publication.id is not None, "every physical notice has a persisted identity"
-        index = identities.index(publication.id)
-        current = row(durable, publication.id)
-        assert current.status is PublicationStatus.PENDING
-        assert current.attempts == int(index == 0)
-        assert current.delivery == publication.delivery
-        if index:
-            parent = row(durable, identities[index - 1])
-            assert parent.status is PublicationStatus.SENT
-            assert plan(durable, publication.id).reply_to == parent.message_id
-        else:
-            assert root.reply_to == saved.reply_to
-        for position, identity in enumerate(identities):
-            assert row(durable, identity).status is (
-                PublicationStatus.SENT
-                if position < index
-                else PublicationStatus.PENDING
-                if position == index
-                else PublicationStatus.QUEUED
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            root = plan(durable, case.identity)
+            identities = (case.identity, *root.continuation_ids)
+            assert (
+                tuple(plan(durable, identity).rendered_text for identity in identities) == expected
             )
-        observed.append(publication.id)
-        return prepared(publication)
+            assert root == saved.model_copy(
+                update={
+                    "rendered_text": expected[0],
+                    "render_origin": "legacy_snapshot",
+                    "continuation_ids": identities[1:],
+                }
+            )
+            assert publication.id is not None, "every physical notice has a persisted identity"
+            index = identities.index(publication.id)
+            current = row(durable, publication.id)
+            assert current.status is PublicationStatus.PENDING
+            assert current.attempts == int(index == 0)
+            assert current.delivery == publication.delivery
+            if index:
+                parent = row(durable, identities[index - 1])
+                assert parent.status is PublicationStatus.SENT
+                assert plan(durable, publication.id).reply_to == parent.message_id
+            else:
+                assert root.reply_to == saved.reply_to
+            for position, identity in enumerate(identities):
+                assert row(durable, identity).status is (
+                    PublicationStatus.SENT
+                    if position < index
+                    else PublicationStatus.PENDING
+                    if position == index
+                    else PublicationStatus.QUEUED
+                )
+            observed.append(publication.id)
+            return prepared(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
 

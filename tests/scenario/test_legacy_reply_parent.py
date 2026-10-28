@@ -4,6 +4,7 @@ import pytest
 
 from lexinform.models import Bill, Publication, PublicationKind, PublicationStatus, StatusChange
 from lexinform.ports import PublishResult
+from tests.checkpoint_state import saved_state
 from tests.harness import CHANNEL, RCL, World
 from tests.scenario.test_card_remote_checkpoints import Mode, connect, git
 from tests.scenario.test_legacy_status_reply_freeze import legacy_reply
@@ -30,18 +31,17 @@ def test_absent_legacy_parent_is_confirmed_and_frozen_before_the_first_api(
     observed: list[int] = []
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        root = row(durable, case.identity)
-        assert root.delivery is not None, "the root retains its frozen context"
-        assert root.delivery.reply_to == card.message_id
-        assert root.attempts == before.attempts
-        if publication.id == case.identity:
-            assert root.status is PublicationStatus.PENDING
-            assert publication.delivery is not None, "the physical root has a prepared payload"
-            assert publication.delivery.reply_to == card.message_id
-        observed.append(publication.id or 0)
-        return original(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            root = row(durable, case.identity)
+            assert root.delivery is not None, "the root retains its frozen context"
+            assert root.delivery.reply_to == card.message_id
+            assert root.attempts == before.attempts
+            if publication.id == case.identity:
+                assert root.status is PublicationStatus.PENDING
+                assert publication.delivery is not None, "the physical root has a prepared payload"
+                assert publication.delivery.reply_to == card.message_id
+            observed.append(publication.id or 0)
+            return original(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
 
