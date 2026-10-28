@@ -676,7 +676,7 @@ source disappearance. Изменение normalization/digest — отдельн
   получают caller snapshots; legacy unbound input остаётся unknown, force bypass сохраняется.
   Нынешний `_unchanged()` меняет pointer/source_checked_at: в новой истории это отдельное
   подтверждение применимости к наблюдению, а не перезапись immutable оплаченного результата.
-- [ ] DA6.5. **Частично: [J086](2026-10-22-document-architecture-progress.md#j086), read-only exact-value inventory; [J136](2026-10-22-document-architecture-progress.md#j136), совместимый reader, schema58 и явный once-only import API без production backfill или B producer.** Legacy import сохраняет существующие exact данные с `legacy` provenance.
+- [ ] DA6.5. **Частично: [J086](2026-10-22-document-architecture-progress.md#j086), read-only inventory; [J136](2026-10-22-document-architecture-progress.md#j136), reader и once-only import API; [J138](2026-10-22-document-architecture-progress.md#j138), обычные writes сохраняют existing physical refs. Production backfill и первый compact producer ещё не активированы.** Legacy import сохраняет существующие exact данные с `legacy` provenance.
   Не достраивать отсутствующие raw/PreparedInput из текущего URL. Из старого batch можно
   импортировать проверяемый сохранённый text, отдельно отметив отсутствие исторических байтов.
 - [ ] DA6.6. **Частично: [J073](2026-10-22-document-architecture-progress.md#j073), primary handoff сохраняет отдельные secondary subjects; перенос cache ownership и остальные retention dependencies открыты.** Retention разделяет operational cache, audit/result history и закреплённые blobs.

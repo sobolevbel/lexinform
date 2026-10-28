@@ -1,0 +1,283 @@
+{
+  "a_only_baseline": {
+    "counts": {
+      "bills": 462,
+      "candidate_disposition_traces": 0,
+      "legacy_analysis_bodies": 0,
+      "legacy_result_imports": 0,
+      "legacy_result_occurrences": 0,
+      "legacy_result_values": 0,
+      "source_candidate_traces": 0,
+      "source_observations": 2
+    },
+    "gzip_bytes": 4049075,
+    "gzip_compresslevel": 9,
+    "input_sha256": "82cc62062a5e27244cfbc6a0dd4c7094c55adb7bdea8be221b81ec11d0f06633",
+    "schema": 59,
+    "source_unchanged": true,
+    "sql_bytes": 19975346,
+    "sql_sha256": "eb1adcc675d9b5ed9afa77014ce091deb7470015428f29dec4bd51041cbceda0",
+    "sqlite_bytes": 21188608,
+    "state_commit": "5c3d43b0c5370d250da03221cea0d4a758837398",
+    "tables": 38
+  },
+  "all_59_migrations_exact": true,
+  "baseline": "14e45dcc3b51ffc87a4cb36a8fee9b356fa8d333",
+  "counterfactual_max_gzip_increase_percent": 4.404116989682838,
+  "evidence": {
+    "out/corpus/j138/accept.py": {
+      "bytes": 6943,
+      "sha256": "4d56150eb043dbe285a90db5f3dae152045c101d1adac5ce796e040721dfc610"
+    },
+    "out/corpus/j138/agent/handoff.json": {
+      "bytes": 3166,
+      "sha256": "60205ead3cc335e1e8b4612e764b85ce33f733f98d113e1dbe7a483432f95856"
+    },
+    "out/corpus/j138/agent/j138-writes.patch": {
+      "bytes": 36224,
+      "sha256": "bf69a7193dd80d8a0922935b8c632aa2dd6b965ad940c3db01009ee90ed4071f"
+    },
+    "out/corpus/j138/baseline59.json": {
+      "bytes": 671,
+      "sha256": "5feb4402654563711bc2ab188d5a62f196026c37a01dc3eb61f53abd0a37e323"
+    },
+    "out/corpus/j138/docs.log": {
+      "bytes": 266,
+      "sha256": "5284e0f47bce4edc6c6ba56a6177c9840e1486405d0400d2bc932f4563518cd4"
+    },
+    "out/corpus/j138/focused.xml": {
+      "bytes": 66124,
+      "sha256": "503e5daba4f4d88436cea2b3dd3289cad3ac21c6d185d79b013cf3e441e7ed8c"
+    },
+    "out/corpus/j138/format.log": {
+      "bytes": 25,
+      "sha256": "ab4be99bcc7a9383b938f48ef882586ba5cc88a718d00309f7d358ca5569cbe5"
+    },
+    "out/corpus/j138/frozen-source.json": {
+      "bytes": 64717,
+      "sha256": "9eab8e0845a74ee7eeca782417cf6c19cf973ce573960ee81906f692c759edd7"
+    },
+    "out/corpus/j138/full.xml": {
+      "bytes": 985057,
+      "sha256": "ad3f9e54b051e5f783e6a684f43ad9c126432e7d534e5ae84dd8d389ae33f15f"
+    },
+    "out/corpus/j138/mypy.log": {
+      "bytes": 45,
+      "sha256": "b7726dc5056194ef842ba12892f0c62f4c63da21e921041d065bfafef308efe6"
+    },
+    "out/corpus/j138/parity/evidence-manifest.json": {
+      "bytes": 1796,
+      "sha256": "754965ab5d8c99eb1cdee1f2afb551521b571c842df84cc52c554e9892a8c5f5"
+    },
+    "out/corpus/j138/parity/native-parity.json": {
+      "bytes": 53972,
+      "sha256": "c1e6d7e9ddcc77c569e65f1a1f9c89a92b7321661c81a5ecd99ae5cb8f7cd1ec"
+    },
+    "out/corpus/j138/parity/ordinary-writer-parity.json": {
+      "bytes": 25089,
+      "sha256": "fe9891010138e2864f3530b86f97111558914b8df6e4ea192bf33b7f9cd4b820"
+    },
+    "out/corpus/j138/parity/ordinary_writers.py": {
+      "bytes": 22770,
+      "sha256": "38879fb93a87f63ef69c43d18cc42b429da4ce6664a51f5a63ccf6f13468ec53"
+    },
+    "out/corpus/j138/parity/summary.json": {
+      "bytes": 4216,
+      "sha256": "4e06c1bc71affdf71502d245f3f439896031bc17c7047f0487ace391ad8aa8bb"
+    },
+    "out/corpus/j138/ruff.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "out/corpus/j138/state-input.json": {
+      "bytes": 383,
+      "sha256": "ab62a32560e4b56d38ca7ca33e33bff7bc7cab511bb76817df7a90d7ea65db58"
+    }
+  },
+  "exclusions": [
+    "Disposable fresh pinned-state copies only; no production import or processing.",
+    "Commission-review column has no natural record in this pin; its writer shares the exercised review method.",
+    "Twelve ready wrappers and one null input-token observation are explicit QA fixtures derived from real records.",
+    "Selection metadata uses an explicit QA policy label; no extraction or selection algorithm runs.",
+    "Existing save_analysis semantics clear ready records on a changed analysis; a later ready write has no prior reference to preserve.",
+    "All seven natural supplement lists contain one record; reordered multi-record lists are outside this real-state measurement.",
+    "Inline legacy archive representation only; optional body sharing is not measured.",
+    "Peak SQLite/WAL values are observed samples, not upper bounds.",
+    "No network, paid provider, Telegram, checkpoint or push action.",
+    "Fresh-state import/projection seeding occurs only in disposable QA copies; production activation remains off.",
+    "The <=5% result is a writer-readiness measurement, not authorization or a complete import/maintenance implementation.",
+    "No extraction/selection changes; raw corpus replay is outside this repository-storage-only stage.",
+    "No paid/provider, Telegram, SSH, production pipeline or state-branch mutation."
+  ],
+  "focused": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 377
+  },
+  "fresh_state": {
+    "gzip_bytes": 4048618,
+    "gzip_compresslevel": 9,
+    "gzip_mtime": 0,
+    "purpose": "isolated read-only qualification input; no production processing",
+    "python_version": "3.14.7",
+    "sql_bytes": 19973448,
+    "sql_sha256": "82cc62062a5e27244cfbc6a0dd4c7094c55adb7bdea8be221b81ec11d0f06633",
+    "state_commit": "5c3d43b0c5370d250da03221cea0d4a758837398",
+    "zlib_version": "1.3.2"
+  },
+  "frozen_python_and_config_files": 589,
+  "full": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 6033
+  },
+  "independent": {
+    "baseline_head": "14e45dcc3b51ffc87a4cb36a8fee9b356fa8d333",
+    "candidate_freeze_sha256": "9eab8e0845a74ee7eeca782417cf6c19cf973ce573960ee81906f692c759edd7",
+    "evidence_manifest_sha256": "754965ab5d8c99eb1cdee1f2afb551521b571c842df84cc52c554e9892a8c5f5",
+    "native168": {
+      "all_sql_sha_exact": true,
+      "cases": 168,
+      "observer_sources_match": true,
+      "phase_timing_differences": 0,
+      "raw_table_count": 38
+    },
+    "network_attempts": 0,
+    "ordinary_writers": {
+      "archive": {
+        "counts": {
+          "legacy_analysis_bodies": 0,
+          "legacy_result_imports": 1,
+          "legacy_result_occurrences": 300,
+          "legacy_result_values": 280
+        },
+        "sha256": "78f2723bb6414a97979cf9ec17e4493690def36f650c970d7e3e4d52f783b22d"
+      },
+      "bill_count_each_phase": 462,
+      "coverage_per_control_and_mirror": {
+        "save_analysis": 825,
+        "save_document_review": 15,
+        "save_joint_comparison": 10,
+        "save_ready_analysis": 72,
+        "save_status_change_amendments": 30,
+        "save_status_change_supplements": 35
+      },
+      "expected_model_upcast_fallbacks": 5,
+      "initial_refs": 300,
+      "memo_count_each_phase": 148,
+      "peak": {
+        "/Users/sobaleu/projects/lexinform/out/corpus/j138/parity/ordinary/control.db": {
+          "combined": 49842608,
+          "sqlite": 26218496,
+          "wal": 23624112
+        },
+        "/Users/sobaleu/projects/lexinform/out/corpus/j138/parity/ordinary/projected.db": {
+          "combined": 47557568,
+          "sqlite": 25952256,
+          "wal": 22293352
+        }
+      },
+      "phases": [
+        "seed",
+        "same",
+        "ready-metadata",
+        "quiet",
+        "selection",
+        "repeat",
+        "changed-answer"
+      ],
+      "ready_cleared_then_recreated_inline": 12,
+      "ready_metadata_refs_preserved": 12,
+      "selection_repeat_storage": {
+        "all_38_hydrated_table_hashes_exact": true,
+        "archive_unchanged": {
+          "counts": {
+            "legacy_analysis_bodies": 0,
+            "legacy_result_imports": 1,
+            "legacy_result_occurrences": 300,
+            "legacy_result_values": 280
+          },
+          "sha256": "78f2723bb6414a97979cf9ec17e4493690def36f650c970d7e3e4d52f783b22d"
+        },
+        "bills_exact": 462,
+        "control": {
+          "gzip_bytes": 4544740,
+          "sql_bytes": 22076878,
+          "sql_sha256": "32a0f59ebe24b44342921151089a11d063c222f089b58f45667b5a0346544563",
+          "sqlite_bytes": 23486464,
+          "wal_bytes": 0
+        },
+        "existing_refs_after_writes": 283,
+        "generations_editorial_usage_applications_publications_exact": true,
+        "memos_exact": 148,
+        "phase": "repeat",
+        "projected": {
+          "gzip_bytes": 4227401,
+          "sql_bytes": 20798847,
+          "sql_sha256": "3bf230c2b915075b1204cd8d5bb559afd4818116a420c862654f7c926fd73481",
+          "sqlite_bytes": 22163456,
+          "wal_bytes": 0
+        },
+        "rankings": [
+          {
+            "limit": 0,
+            "ordered_identity_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "rows": 0
+          },
+          {
+            "limit": 1,
+            "ordered_identity_sha256": "b19fdf3cc87f92c5c462b4c100fb51feef2f5c84240b8095d731575082b6358a",
+            "rows": 1
+          },
+          {
+            "limit": 5,
+            "ordered_identity_sha256": "dbbb520a21aa83f737ed2bc46171f59d99e4970b93f33ac1ac1164a95836f7d7",
+            "rows": 5
+          },
+          {
+            "limit": 25,
+            "ordered_identity_sha256": "94b675ae4a55bbb014682bc84c1dbb5656e0aebe53e8497623be719ea29649d0",
+            "rows": 25
+          },
+          {
+            "limit": 1000,
+            "ordered_identity_sha256": "5add9dcc9c76d9cd78db0a70402cdc35811b71fa046d0fe66e9b3a52603c7568",
+            "rows": 169
+          }
+        ],
+        "status_changes_exact": 185,
+        "writer_calls": {
+          "save_analysis": 660,
+          "save_document_review": 12,
+          "save_joint_comparison": 8,
+          "save_ready_analysis": 60,
+          "save_status_change_amendments": 24,
+          "save_status_change_supplements": 28
+        }
+      },
+      "status_change_count_each_phase": 185,
+      "table_count_each_phase": 38
+    },
+    "paid_calls": 0,
+    "pins_unchanged": true,
+    "production_import_activation_or_run": false,
+    "status": "passed"
+  },
+  "mypy_files": 535,
+  "review_repair": "Validate previous supplement refs before clearing to existing SQL NULL; covered by corruption tests.",
+  "runtime_files": {
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "bytes": 209354,
+      "sha256": "9e6395399b70d21335948f7eff9d64fa8d36051e57b1ea6fdc5d64a1809ace21"
+    },
+    "src/lexinform/legacy_results.py": {
+      "bytes": 9782,
+      "sha256": "32fad8182920d79bb1e1bcdfba8d67d715852d4183d3e9eb339815230fee9ae1"
+    }
+  },
+  "schema": 59,
+  "scope": "Ordinary writes preserve existing legacy projections; no first-reference producer or activation",
+  "stage": "J138"
+}

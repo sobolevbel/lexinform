@@ -37,14 +37,25 @@ The bridge accepts direct `legacy_result_ref` projections with bounded current m
 and explicit removals. The immutable original remains unchanged, including its original usage.
 Missing/corrupt refs, duplicate keys in reference-bearing JSON and answer/origin overrides fail
 closed; ordinary inline JSON keeps its existing reader behavior. Embedded JSON strings and
-content-addressed snapshots are not rewritten. No producer writes this format yet. Activation
-requires the bridge's CI/deploy proof and a measured copy-state gzip increase of at most 5%,
+content-addressed snapshots are not rewritten. No producer creates first references or compacts
+existing inline records automatically. Activation requires the bridge's CI/deploy proof and a
+measured copy-state gzip increase of at most 5%,
 including actual writer serialization, quiet checks and selection updates. The explicit
 `analysis-editorial-v1` current-schema upcast may add only absent `mnemonic_candidate`,
 `mnemonic_fallback`, `mnemonic_basis` as empty strings and `mnemonic_language` as `ru`. These fixed
 defaults are a current projection, not historical answer facts; present values stay exact. Every
 other answer difference takes the ordinary inline path. Timestamp-only counterfactual
 measurements do not establish the activation budget.
+
+Ordinary analysis, ready-analysis, joint, review and status-answer saves preserve a valid existing
+physical reference at its saved structural path. Quiet checks and supported selection metadata
+updates change only the existing bounded overrides; changed answers and modern computation refs
+use inline JSON. These writes add no import or archive rows. Empty supplement clearing validates
+the previous refs before retaining its existing SQL NULL representation. Cost ranking resolves
+saved input tokens before filtering and ordering, including explicit null, zero and removals.
+Transfers into new locations, reordered lists and review-envelope changes outside the fixed
+override allowlist can still become inline; immutable archive values remain retained. Preserving
+source refs across those transfers needs a separate contract and qualification.
 
 | Data | Default | Rule |
 |---|---:|---|

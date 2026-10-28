@@ -6702,7 +6702,7 @@ checkpoint latency пока не включены.
 <a id="j137"></a>
 ### J137. Record bounded shadow dispositions of outer document candidates
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**. Baseline `d73accc0bfbda91eff80c4745529fd6465490b16`.
+Статус: **выпущен и проверен**. Baseline `d73accc0bfbda91eff80c4745529fd6465490b16`.
 Schema59 добавляет immutable content-addressed trace и отдельную many-to-many связь с
 source observation, не меняя identity самого observation/selection. `TextLoader.select_document`
 пишет нетривиальные ordered решения по внешним URL, original typed request, известные full-body SHA и
@@ -6753,3 +6753,60 @@ source/config freeze588. Прерывание первого full gate ради 
 связывает исходники, corpus/storage и predecessor proofs, XML и явные exclusions. Paid/provider,
 Telegram, SSH, production pipeline и state-branch mutations не выполнялись. План остаётся
 74tasks/26done/6explicitN/A/42applicable partial-open: DA4.1 этим полностью не закрыта.
+Коммит `14e45dcc3b51ffc87a4cb36a8fee9b356fa8d333` прошёл [push CI](https://github.com/sobolevbel/lexinform/actions/runs/40722364265)
+и [автоматический deploy](https://github.com/sobolevbel/lexinform/actions/runs/40724193750):
+точный переход `d73accc0bfbd` → `14e45dcc3b51`, 45-секундный health check и активный timer.
+[Отфильтрованный release proof](../assets/audits/2026-10-28-candidate-dispositions/release.json)
+не является проверкой функциональной доставки в Telegram.
+
+<a id="j138"></a>
+### J138. Preserve existing legacy projections through ordinary result writes
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**. Baseline `14e45dcc3b51ffc87a4cb36a8fee9b356fa8d333`.
+Шесть repository save APIs читают прежний physical JSON отдельным raw cursor и сохраняют
+только уже существующие refs на тех же structural paths. Общая pure policy проверяет exact
+immutable base; supported quiet/selection metadata остаётся в bounded overrides, новый ответ
+или modern computation ref получает обычный inline JSON. Вложенный ready record и списки
+supplements сохраняют текущие generation/clear/reorder semantics. Никакой writer не создаёт
+первую ссылку и не добавляет archive/import rows. Все59 миграций прежние.
+
+Cost ranking разрешает input tokens projection до SQL filter/order/limit и сохраняет NULL,
+zero, override/removal, ties и negative-limit semantics. Допустимая очистка supplements остаётся
+SQL NULL; найденный независимым review пропуск проверки corrupt prior ref при empty clear
+исправлен до полной приёмки. Первоначальный patch подготовлен в изолированной рабочей копии
+параллельно full/CI J137, затем интегрирован без конфликтов. Integration focused377,
+strict mypy535 и Ruff прошли; independent review20 targeted tests завершён без оставшихся findings.
+
+Свежий state pin `5c3d43b0c5370d250da03221cea0d4a758837398`, SQL SHA
+`82cc62062a5e27244cfbc6a0dd4c7094c55adb7bdea8be221b81ec11d0f06633`:
+19,973,448B SQL/4,048,618B gzip(level9,mtime0). Изолированный A-only baseline schema59:
+462 Bills/38 tables,19,975,346B SQL/4,049,075B gzip, integrity/FK pass; новые history tables пусты.
+Это copy qualification; production processing, import/activation и state writes не выполнялись.
+Native168 profiles из pristine J137 archive и candidate сохраняют все38 raw tables и SQL SHA
+exact, SQL/gzip delta0, requests/model inputs/public payloads/ordered outcomes exact; даже
+phase timing differences отсутствуют. Fresh ordinary-writer proof использует две disposable
+копии с одним QA-only import и сравнивает seed/same/ready-metadata/quiet/selection/repeat/
+changed-answer: во всех фазах462 Bills/185 status changes/148 memos и38 hydrated tables exact,
+включая generation/editorial/usage/applications/publications и ranking limits0/1/5/25/1000.
+Archive280 values/300 occurrences/1import остаётся exact, shared bodies0. Пять natural immutable
+model upcasts корректно уходят inline;12 ready refs выдерживают отдельное metadata update,
+а после штатного analysis-clear их12 recreated records остаются inline без первого ref producer.
+
+Selection/repeat control22,076,878B SQL/4,544,740B gzip против projected20,798,847B SQL/
+4,227,401B gzip(level9,mtime0). Последнее — максимальный measured projected gzip по фазам,
++4.4041% к A-only baseline с учётом QA fixtures/import; это не activation approval.
+Наблюдавшийся SQLite+WAL peak49,842,608B control/47,557,568B projected не является upper bound.
+Natural commission-review row отсутствует; supplement lists в pin одиночные; оба scope
+дополнительно покрыты unit fixtures. Source/config freeze589 и исходный pin неизменны,
+network/paid calls0. Финальный gate:6033 full tests без failures/errors/skips,377 focused,
+strict mypy535, Ruff, format523 unchanged, docs-check и `git diff --check` прошли на frozen коде.
+Добавлено77 unit cases; новых сценарных случаев нет.
+Finite writer audit отдельно подтвердил границу same-location/path: ready→primary, linking,
+memo→new projection/event, supplement reorder и review-envelope refresh вне fixed allowlist
+могут развернуть ref в inline. Government rehome/SQL work move сохраняют physical bytes,
+reset/retention намеренно очищают operational work. Других SQL JSON selectors по table-specific
+eligible result columns не найдено. Эти transfer gaps остаются последующими этапами; B activation
+J138 не выполняет и не объявляет разрешённой.
+[Acceptance asset](../assets/audits/2026-10-28-legacy-projection-writes/validation.json) фиксирует
+hashes исходников/первоначального patch, review repair, full/focused XML, native168 и все
+fresh-state phases с coverage/exclusions. План остаётся74tasks/26done/6explicitN/A/42partial-open.

@@ -24,6 +24,7 @@ from lexinform.legacy_results import (
     LEGACY_PROJECTION_COLUMNS,
     legacy_analysis_body,
     materialize_legacy_value,
+    preserve_legacy_json,
     read_legacy_json,
 )
 from lexinform.log_context import log_extra
@@ -943,6 +944,18 @@ class SqliteBillRepository:
         )
         return sqlite3.Row(cursor, materialized)
 
+    def _preserve_legacy_json(self, raw: str, query: str, parameters: tuple[object, ...]) -> str:
+        cursor = self._conn.cursor()
+        cursor.row_factory = None
+        try:
+            row = cursor.execute(query, parameters).fetchone()
+        finally:
+            cursor.close()
+        previous = row[0] if row is not None else None
+        return preserve_legacy_json(
+            raw, previous if isinstance(previous, str) else None, self.get_legacy_result
+        )
+
     @property
     def schema_version(self) -> int:
         return int(self._conn.execute("PRAGMA user_version").fetchone()[0])
@@ -1191,7 +1204,11 @@ class SqliteBillRepository:
             WHERE term = ? AND number = ?
             """,
             (
-                record.model_dump_json(),
+                self._preserve_legacy_json(
+                    record.model_dump_json(),
+                    "SELECT analysis_json FROM bills WHERE term = ? AND number = ?",
+                    (term, number),
+                ),
                 0 if same else 1,
                 same,
                 row["status"] if keeps else BillStatus.ANALYZED.value,
@@ -1230,7 +1247,15 @@ class SqliteBillRepository:
     def save_ready_analysis(self, term: int, number: str, ready: ReadyAnalysis) -> None:
         self._conn.execute(
             "UPDATE bills SET ready_analysis_json = ? WHERE term = ? AND number = ?",
-            (ready.model_dump_json(), term, number),
+            (
+                self._preserve_legacy_json(
+                    ready.model_dump_json(),
+                    "SELECT ready_analysis_json FROM bills WHERE term = ? AND number = ?",
+                    (term, number),
+                ),
+                term,
+                number,
+            ),
         )
 
     def save_observed_process(self, term: int, number: str, observed: ObservedProcess) -> None:
@@ -2098,7 +2123,15 @@ class SqliteBillRepository:
         }[review.review.purpose]
         self._conn.execute(
             f"UPDATE bills SET {column} = ? WHERE term = ? AND number = ?",
-            (review.model_dump_json(), term, number),
+            (
+                self._preserve_legacy_json(
+                    review.model_dump_json(),
+                    f"SELECT {column} FROM bills WHERE term = ? AND number = ?",
+                    (term, number),
+                ),
+                term,
+                number,
+            ),
         )
 
     def list_review_work(self) -> list[Bill]:
@@ -3319,7 +3352,15 @@ class SqliteBillRepository:
     def save_joint_comparison(self, term: int, number: str, record: JointRecord) -> None:
         self._conn.execute(
             "UPDATE bills SET joint_json = ? WHERE term = ? AND number = ?",
-            (record.model_dump_json(), term, number),
+            (
+                self._preserve_legacy_json(
+                    record.model_dump_json(),
+                    "SELECT joint_json FROM bills WHERE term = ? AND number = ?",
+                    (term, number),
+                ),
+                term,
+                number,
+            ),
         )
 
     def save_wykaz(self, term: int, number: str, entry: WykazEntry) -> None:
@@ -4231,15 +4272,28 @@ class SqliteBillRepository:
     def save_status_change_amendments(self, change_id: int, record: AmendmentsRecord) -> None:
         self._conn.execute(
             "UPDATE status_changes SET amendments_json = ? WHERE id = ?",
-            (record.model_dump_json(), change_id),
+            (
+                self._preserve_legacy_json(
+                    record.model_dump_json(),
+                    "SELECT amendments_json FROM status_changes WHERE id = ?",
+                    (change_id,),
+                ),
+                change_id,
+            ),
         )
 
     def save_status_change_supplements(
         self, change_id: int, records: list[SupplementRecord]
     ) -> None:
+        encoded = _supplements_json(records)
+        preserved = self._preserve_legacy_json(
+            encoded if encoded is not None else "[]",
+            "SELECT supplements_json FROM status_changes WHERE id = ?",
+            (change_id,),
+        )
         self._conn.execute(
             "UPDATE status_changes SET supplements_json = ? WHERE id = ?",
-            (_supplements_json(records), change_id),
+            (preserved if encoded is not None else None, change_id),
         )
 
     def closure_announced(self, term: int, number: str) -> bool:
@@ -4453,9 +4507,24 @@ class SqliteBillRepository:
     def most_expensive_analyses(self, *, limit: int) -> list[Bill]:
         rows = self._conn.execute(
             """
-            SELECT * FROM bills
-            WHERE json_extract(analysis_json, '$.input_tokens') IS NOT NULL
-            ORDER BY json_extract(analysis_json, '$.input_tokens') DESC, term, number
+            WITH ranked AS (
+                SELECT b.*, CASE
+                    WHEN json_type(b.analysis_json, '$.legacy_result_ref') IS NULL
+                        THEN json_extract(b.analysis_json, '$.input_tokens')
+                    WHEN json_type(b.analysis_json, '$.projection_overrides.input_tokens')
+                        IS NOT NULL
+                        THEN json_extract(b.analysis_json, '$.projection_overrides.input_tokens')
+                    WHEN EXISTS (
+                        SELECT 1 FROM json_each(b.analysis_json, '$.projection_removed')
+                        WHERE value = 'input_tokens'
+                    ) THEN NULL
+                    ELSE json_extract(v.envelope_json, '$.input_tokens')
+                END AS analysis_input_tokens
+                FROM bills b LEFT JOIN legacy_result_values v
+                    ON v.value_id = json_extract(b.analysis_json, '$.legacy_result_ref')
+            )
+            SELECT * FROM ranked WHERE analysis_input_tokens IS NOT NULL
+            ORDER BY analysis_input_tokens DESC, term, number
             LIMIT ?
             """,
             (limit,),

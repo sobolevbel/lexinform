@@ -215,3 +215,32 @@ def legacy_projection(
     if canonical_legacy_json(hydrate_legacy_value(result, read)) != canonical_legacy_json(value):
         raise ValueError("legacy projection did not preserve the incoming exact value")
     return result
+
+
+def preserve_legacy_json(raw: str, previous: str | None, read: LegacyValueReader) -> str:
+    """Retain valid existing projections at their saved paths without creating new references."""
+    if previous is None or read_legacy_json(previous, read) == previous:
+        return raw
+
+    def preserve(value: JsonValue, saved: JsonValue) -> JsonValue:
+        if isinstance(saved, dict):
+            if LEGACY_REFERENCE_FIELDS.intersection(saved):
+                identifier = saved.get("legacy_result_ref")
+                assert isinstance(identifier, str), "read_legacy_json validates saved references"
+                projection = legacy_projection(value, identifier, read)
+                return value if projection is None else projection
+            if isinstance(value, dict):
+                return {
+                    key: preserve(child, saved[key]) if key in saved else child
+                    for key, child in value.items()
+                }
+        if isinstance(saved, list) and isinstance(value, list):
+            return [
+                preserve(child, saved[index]) if index < len(saved) else child
+                for index, child in enumerate(value)
+            ]
+        return value
+
+    return json.dumps(
+        preserve(legacy_json(raw), legacy_json(previous)), ensure_ascii=False, separators=(",", ":")
+    )
