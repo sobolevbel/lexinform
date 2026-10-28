@@ -6262,3 +6262,42 @@ current dependencies на fake transport, не полный binary/deployment ro
 [Acceptance asset](../assets/audits/2026-10-28-legacy-reply-parts/validation.json) пинует source,
 faults/ownership/CAS cases, native/default/compatibility evidence и gates. Strict docs/build/
 link и diff checks green. Backend и natural production acceptance не расширялись.
+
+
+<a id="j129"></a>
+### J129. Capture a missing legacy reply parent from its current owner's sent card
+
+Статус: **готово**, baseline `89f8858199ad429c4d43ef9cf00a15874d9fab8b`.
+Legacy failed reply без сохранённого parent теперь фиксирует адрес только из SENT-card того же
+publication owner/channel. Writer повторно проверяет receipt внутри atomic freeze. Уже заданный
+parent не меняется. Missing/unconfirmed/foreign/mismatched receipt не допускает API и не расходует
+attempt; это не отказ по содержанию закона. Исторический parent не реконструируется.
+
+Lookup использует текущие term/number/channel публикации: после government rollover immutable
+Bill snapshot остаётся в прежнем term, а карточка и текущий owner уже переехали. RCL scenario
+проверяет новый адрес без перезаписи сохранённого Bill. Короткие и multipart replies используют
+тот же J127/J128 freeze/checkpoint protocol; новые поля/schema/backend не вводятся.
+
+**250 focused / 5324 full passed**, failures/errors/skips0, strict mypy **500**, Ruff/format green.
+Wrong term/number/channel, pending/unknown/failed/absent card, invalid/mismatched message ID и
+retarget уже сохранённого parent отвергаются. Remote pre-API checks подтверждают новый known
+parent; source failure воспроизведён на prior source без setup errors.
+
+**168 default native profiles**: requests/messages/all28 tables exact, timing differences0,
+SQL/gzip delta0, source doctors errors0. **12 missing-parent profiles**: actual old callback
+parent совпадает с новым stored parent; canonical texts/model requests/paid results/root
+IDs/receipts/attempts/logical outcomes сохранены. Long before-input принимал только fake transport;
+успешная старая Telegram-доставка не утверждается. Fixture SQL delta **919–24392 bytes**,
+gzip **93–1335**: сюда входят HTML и новые physical parts, не только integer parent.
+
+Шесть final writer SQL snapshots **побайтно совпадают с J128**. Поэтому prior/new/main reader
+acceptance J128 переиспользуется по exact SHA; новая natural/reader acceptance не приписывается.
+Остальные159 runtime files unchanged; AST repository/migrations/readers/posting вне scoped
+methods и pure legacy policy вне reply eligibility exact. Final source freeze сохранён.
+[Acceptance asset](../assets/audits/2026-10-28-legacy-reply-parent/validation.json) пинует sources,
+reproduction, owner guards, profiles, exact snapshot reuse и gates. Corpus text replay не нужен:
+extraction/selection/normalization/provider inputs не менялись. Strict docs/build/link и diff green.
+
+J128 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40643892565) success:
+**5301 passed**, strict mypy **498**, docs/web green. Feature branch/draft PR only;
+main/deployment по-прежнему требуют ранее запрошенного разрешения.

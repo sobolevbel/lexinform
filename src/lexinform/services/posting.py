@@ -1581,9 +1581,26 @@ class Poster:
             assert pub.delivery is not None, "both legacy status predicates require a saved plan"
             candidate = pub
             if legacy_reply:
+                reply_to = pub.delivery.reply_to
+                if reply_to is None:
+                    parent = self._repo.get_publication(
+                        pub.term, pub.number, PublicationKind.NEW_BILL, pub.channel_id
+                    )
+                    if (
+                        parent is None
+                        or parent.status is not PublicationStatus.SENT
+                        or parent.message_id is None
+                        or parent.message_id <= 0
+                    ):
+                        raise ValueError("The legacy reply lacks its sent card receipt")
+                    reply_to = parent.message_id
                 today = self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date()
                 candidate = pub.model_copy(
-                    update={"delivery": pub.delivery.model_copy(update={"today": today})}
+                    update={
+                        "delivery": pub.delivery.model_copy(
+                            update={"today": today, "reply_to": reply_to}
+                        )
+                    }
                 )
             text = self._publisher.render_delivery(candidate)
             if legacy_reply:

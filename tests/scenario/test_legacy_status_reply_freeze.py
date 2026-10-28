@@ -20,12 +20,20 @@ from tests.scenario.test_update_remote_checkpoints import (
 )
 
 
-def legacy_reply(mode: Mode = "off", *, with_act: bool = False, long: bool = False) -> UpdateCase:
+def legacy_reply(
+    mode: Mode = "off",
+    *,
+    with_act: bool = False,
+    long: bool = False,
+    with_saved_parent: bool = True,
+) -> UpdateCase:
     case = queued(mode, with_act=with_act, long=long)
     saved = plan(case.world, case.identity).model_copy(update={"policy_version": "legacy"})
     assert saved.reply_to is not None and saved.edit_message_id is None, (
         "queued preserves the existing card as the reply parent"
     )
+    if not with_saved_parent:
+        saved = saved.model_copy(update={"reply_to": None})
     assert case.world.repo.replace_unattempted_delivery(case.identity, saved)
     case.world.repo.mark_publication(case.identity, PublicationStatus.FAILED)
     return case

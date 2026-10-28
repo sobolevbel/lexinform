@@ -18,8 +18,7 @@ def legacy_status_reply(publication: Publication) -> bool:
         _legacy_status_snapshot(publication)
         and plan is not None
         and plan.edit_message_id is None
-        and plan.reply_to is not None
-        and plan.reply_to > 0
+        and (plan.reply_to is None or plan.reply_to > 0)
     )
 
 

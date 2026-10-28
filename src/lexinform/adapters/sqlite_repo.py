@@ -1780,7 +1780,10 @@ class SqliteBillRepository:
             or delivery.render_origin != "legacy_snapshot"
             or self.digest_owner(publication_id) is not None
             or self.digest_sources(publication_id)
-            or (reply and delivery.today is None)
+            or (
+                reply
+                and (delivery.today is None or delivery.reply_to is None or delivery.reply_to <= 0)
+            )
         ):
             return False
         saved = original.delivery
@@ -1792,6 +1795,18 @@ class SqliteBillRepository:
         expected = saved.model_copy(update=updates)
         if reply:
             expected = expected.model_copy(update={"today": delivery.today})
+            if saved.reply_to is None:
+                card = self.get_publication(
+                    original.term, original.number, PublicationKind.NEW_BILL, original.channel_id
+                )
+                if (
+                    card is None
+                    or card.status is not PublicationStatus.SENT
+                    or card.message_id != delivery.reply_to
+                ):
+                    return False
+                updates["reply_to"] = delivery.reply_to
+                expected = expected.model_copy(update={"reply_to": delivery.reply_to})
             if delivery.continuation_ids:
                 if not self._legacy_reply_parts(original, delivery):
                     return False
