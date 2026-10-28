@@ -1,0 +1,148 @@
+{
+  "stage": "J116",
+  "observation": {
+    "state_pin": "4f19d9bf7b8035f2239dece6098c4b06942f9414",
+    "sql_sha256": "ed190c098771c6c5ba53d9e43d779fe952857fc464710f67320ceed39000aa45",
+    "sql_bytes": 20316258,
+    "isolated_db_sha256": "66ecc58b10c3e7ba2df1d4fc89be26e018539a8f94931f0c7aeaf12205f6fe2e",
+    "schema": 55,
+    "bill_reads": 462,
+    "dump_exact_without_conversion": true,
+    "readonly_doctors_input_unchanged": true,
+    "latest_run": {
+      "run_id": 383,
+      "started_at": "2026-10-28T00:43:52+00:00",
+      "ok": true,
+      "mode": "deliveries",
+      "document_reads": null,
+      "errors": 0,
+      "llm_calls": 0
+    },
+    "doctors": {
+      "downloads": {
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "measured_reports": 1,
+          "rows_without_saved_report": 1,
+          "saved_reports": 382,
+          "unmeasured_reports": 381,
+          "warnings": 0
+        },
+        "finding_codes": []
+      },
+      "sources": {
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "observation_rows": 2,
+          "policy_recorded": 2,
+          "purpose/prefilter": 2,
+          "selection_rows": 2,
+          "state/selected": 1,
+          "state/unverified": 1,
+          "unlinked_artifact_rows": 0,
+          "unreferenced_selection_rows": 0
+        },
+        "finding_codes": []
+      },
+      "computations": {
+        "status": "recorded",
+        "summary": {
+          "applicability_rows": 3,
+          "application_collection": 5,
+          "application_outcome_applied": 5,
+          "application_outcome_ready": 5,
+          "application_projection": 5,
+          "application_rows": 10,
+          "errors": 0,
+          "input_binding_known": 5,
+          "projection_refs_known": 14,
+          "projection_refs_unknown": 411,
+          "purpose_analysis": 4,
+          "purpose_reanalysis": 1,
+          "request_sha_known": 5,
+          "result_rows": 5,
+          "result_validated": 5,
+          "saved_columns": 667,
+          "warnings": 0
+        },
+        "finding_codes": []
+      },
+      "contents": {
+        "status": "not_run",
+        "summary": {
+          "binding_rows": 0,
+          "errors": 0,
+          "snapshot_rows": 0,
+          "version_rows": 0,
+          "warnings": 0
+        },
+        "finding_codes": []
+      },
+      "work": {
+        "status": "recorded",
+        "summary": {
+          "document_rows": 3,
+          "document_waiting": 3,
+          "errors": 0,
+          "review_abandoned": 7,
+          "review_context": 2,
+          "review_owner_rows": 9,
+          "review_purpose_act_application": 2,
+          "review_purpose_consultation_review": 7,
+          "review_rows": 9,
+          "warnings": 3
+        },
+        "finding_codes": [
+          "document_publication_unavailable"
+        ]
+      }
+    }
+  },
+  "observed_workflow_flags": {
+    "workflow_run": 40610526550,
+    "job": 122560683985,
+    "code_sha": "933f8d2f3f6ef31cc5888b498f7a35ea58ca569f",
+    "allowlisted_observed_flags": [
+      "LEXINFORM_ATTENTION_ROUNDUP: daily",
+      "LEXINFORM_LLM_BATCH_ENABLED: true",
+      "LEXINFORM_READER_ATTENTION: on",
+      "LEXINFORM_STATE_CHECKPOINT_REQUIRED: true"
+    ]
+  },
+  "reader_methods_ast_exact_to_observed_code": [
+    "_row_to_bill",
+    "dump",
+    "get",
+    "migrate",
+    "restore"
+  ],
+  "audit_tool_sources": {
+    "tools/document_read_profile.py": "3fb168a1caa804ca89b17525bcbbf2330841cc24f196af467c746f698ef2578a",
+    "tools/source_history_doctor.py": "e97a75658b6e7d5b6acad6ba2330be8763052bab2690ff0b51a6073a3d14802a",
+    "tools/computation_doctor.py": "f0e9925650d3418804dc0c6844def44fee1cc0677057114fe2bd10994cf1293e",
+    "tools/content_history_doctor.py": "94ff9e159c4a943cda79ee9fc70e353575d359da50161b9378962a3a3ff003bd",
+    "tools/work_doctor.py": "69b81ed4bc7c2799cd1b2bf819afede6ab21da1d4f51913bcaac65e2e33c095a",
+    "tools/sqlite_snapshot.py": "3d3d4da27eca153cd0801c0e8c3c9adf2674297c5488fc639feab26174f2ff6a"
+  },
+  "evidence": {
+    "out/corpus/j116-verified/natural-summary.json": "e0603f6842e163658dac9dcb297e3ed49ae50e920d1af6fabd5269ac89c3c51b",
+    "out/corpus/j116-verified/observed-flags.json": "356aecd635ed48b65fab6c62634007d60febfb9d77a459b939502ccdb49902a1",
+    "out/corpus/j116-verified/downloads.json": "d80614f20081d548a1423d6a6a0545adb49e09850a8c99e44dd84f1e8c096617",
+    "out/corpus/j116-verified/sources.json": "080987b8082388a56dbcc11d6fd050020d05d0a52e7a769bc2458fb775a68f2d",
+    "out/corpus/j116-verified/computations.json": "233a157dc4047e4e0b19cbfa6df67301852fbdee2712fa8c3491d424e1fa9f79",
+    "out/corpus/j116-verified/contents.json": "0ab1e5258c55930b2607e1cdfe481cf363241e30e1d00076eb82caba33c8987c",
+    "out/corpus/j116-verified/work.json": "d765172ef1f865765ae9fa05312cc2459f540eaaf79e0bf03596429877a9f229",
+    "out/corpus/j116-verified/accept.py": "18a6c3a48f01d2c865ee177b7038c9772536bc4af62d821bcff370f3fa5ff2f2",
+    "out/corpus/j116/read_natural_final.py": "4af8383027dac2faba54f46dae001ace4c2d543e949c8025373120a679f0161e",
+    "out/corpus/j116/state-pin.txt": "b24ca8b3d9501bb87a0a1c888b7880f44e93d6c6cf4070ab69f6d5595d539f48"
+  },
+  "limitations": [
+    "Observed natural run is delivery drain, not a file-reading pipeline or a rollover.",
+    "Null document_reads remains unmeasured; it is not zero download traffic.",
+    "Empty editorial/artifact tables do not prove producer coverage or an archive.",
+    "Existing three unavailable-publication warnings are retained, not repaired.",
+    "No processing, network/model calls, operator commands or canonical state writes were performed."
+  ]
+}

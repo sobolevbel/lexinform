@@ -106,7 +106,8 @@ Sejm tracking prepares reanalysis before its checkpoint and applies it with the 
 and delivery work. Waiting secondary work leaves the current analysis and ready result intact.
 The reanalysis counter advances after that commit; paid usage remains in the existing call ledger.
 Preparation and quiet source checks do not create projection receipts. Ready does not prove
-application or publication, and applied does not prove delivery. Government-row rollover records a known primary result's new projection and unchanged source
+application or publication, and applied does not prove delivery.
+Government-row rollover records a known primary result's new projection and unchanged source
 association in the same transaction as the move. The paid result, original input owner and old
 receipts stay under their original identities; no analysis is re-applied to update status or
 generation. Legacy without a paid ID gets no invented receipt. This records the retained view,

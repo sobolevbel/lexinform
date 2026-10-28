@@ -162,3 +162,17 @@ unique requested URLs, unique bodies/bytes и UTC день первой запи
 Отсутствующая старая таблица отличается от known-empty. Ошибочные rows исключаются из оценок,
 source URLs/body не выводятся; обе команды только читают input snapshot. Исторический поток
 скачиваний из receipt inventory не реконструируется.
+
+
+## Естественное восстановление schema 55 · 28 октября
+
+[J116](../plans/2026-10-22-document-architecture-progress.md#j116) проверяет новый state pin
+`4f19d9bf7b8035f2239dece6098c4b06942f9414`, 28.10.2026 00:43:55 UTC:
+**20316258 SQL bytes / schema55 / 462 Bill reads**, isolated restore/dump exact. Естественный
+run383 был delivery drain: `document_reads=null`, без model calls/errors. Это подтверждает
+сохранение/чтение новой схемы, но не измеряет файловый поток.
+
+Все пять doctors: errors0. Прежние work warnings `document_publication_unavailable` остаются3;
+пустая editorial history не подменяется реконструкцией. В saved reports измерен только один
+прежний pipeline run; unmeasured history не считается нулём. Архив/retention/backend решение
+не меняется. [Evidence](../assets/audits/2026-10-28-natural-schema-55/validation.json).

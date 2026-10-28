@@ -5798,3 +5798,31 @@ exact COMMIT `933f8d2f3f6ef31cc5888b498f7a35ea58ca569f`, listener up **45 s**.
 Естественный [delivery drain](https://github.com/sobolevbel/lexinform/actions/runs/40610526550)
 завершился на том же коде; его snapshot проверяется отдельно в J116, file-read production
 приёмка этим drain не заявляется.
+
+
+<a id="j116"></a>
+### J116. Natural schema-55 drain snapshot, independently restored
+
+Статус: **read-only проверка готова**, code в наблюдаемом job
+`933f8d2f3f6ef31cc5888b498f7a35ea58ca569f`, state
+`4f19d9bf7b8035f2239dece6098c4b06942f9414` (**28.10.2026 00:43:55 UTC**).
+[Run](https://github.com/sobolevbel/lexinform/actions/runs/40610526550) — естественный delivery
+drain, не ручной запуск. Allowlist в job logs: batch enabled=true, state checkpoint required=true,
+reader attention=on, roundup=daily. Secrets/`.env` не читались; остальные runtime settings
+по этим четырём значениям не выводятся.
+
+Изолированный restore: **schema55 / 20316258 SQL bytes / 462 Bill reads**; dump byte-exact
+без conversion. Последний run383: deliveries, errors0, model calls0, `document_reads=null`.
+Поэтому файловый поток не объявляется измеренным нулём. Source/download/computation/content/work
+doctors дали errors0; прежние **3 document_publication_unavailable** warnings сохраняются.
+Known computation refs14, unknown411; paid results5. Editorial history пока known-empty0.
+Ни один новый source family/purpose этим drain не объявлен принятым.
+
+После чтения SQL и SQLite SHA не изменились. Reader methods dump/restore/migrate/get/row mapping
+AST exact к наблюдаемому code; tools hashes сохранены. Первая qualification fixture использовала
+relative SQLite URI; исправлена только fixture в новом output directory, initial evidence не
+перезаписывалась. [Acceptance asset](../assets/audits/2026-10-28-natural-schema-55/validation.json).
+
+Documentation-only stage; runtime gate J115 **5091 passed** остаётся действительным.
+Strict docs/diff check обязательны. Raw archive/backfill, paid calls, Telegram API, workflow
+dispatch и canonical state mutations не выполнялись. DA2/DA10 file coverage остаётся открытым.

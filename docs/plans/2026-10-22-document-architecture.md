@@ -808,7 +808,7 @@ compatibility reader. «Выключить флаг» недостаточно �
 
 ### 10.4. Отдельная production-приёмка
 
-- [ ] DA10.5. Перед выпуском сверить actual deployment/flags и восстановить изолированную
+- [ ] DA10.5. **Частично: [J116](2026-10-22-document-architecture-progress.md#j116), actual workflow code/allowlisted flags и fresh schema55 state проверены на isolated restore. Natural file-family/purpose coverage и будущие flags остаются отдельными gates.** Перед выпуском сверить actual deployment/flags и восстановить изолированную
   копию актуального state. Ничего не включать по историческому разрешению для другой цели.
 - [ ] DA10.6. **Частично: [J094](2026-10-22-document-architecture-progress.md#j094), реальный сохранённый metadata-only Wykaz analysis → result/collection/projection/publication snapshot. [J106](2026-10-22-document-architecture-progress.md#j106): natural file RCL source→paid result→frozen publication `sent` подтверждён по DB, без независимой Telegram/legal проверки. Остальные source families/file paths не объявлены принятыми.** Для новой архитектурной записи включить ограниченный наблюдаемый участок,
   сохранить old/candidate outcomes и проверить реальные saved queues; выбор участка определяется
