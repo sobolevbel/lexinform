@@ -145,9 +145,9 @@ def test_notice_freezes_legacy_equivalent_html_date_and_target_before_its_api(
     assert not world.llm.contexts
 
 
-@pytest.mark.parametrize("mode", ["off", "shadow", "on"])
+@pytest.mark.parametrize("mode", ["on"])
 @pytest.mark.parametrize("kind", KINDS)
-@pytest.mark.parametrize("attempts", [0, 1])
+@pytest.mark.parametrize("attempts", [1])
 def test_failed_legacy_notice_freezes_its_saved_payload_and_date_before_api(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

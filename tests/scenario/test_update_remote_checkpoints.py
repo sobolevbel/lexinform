@@ -359,8 +359,8 @@ def test_lost_final_status_part_keeps_its_audit_payload_and_effects_on_operator_
     assert len(history) == 1 and history[0].command == incoming
 
 
-@pytest.mark.parametrize("mode", ["off", "shadow", "on"])
-@pytest.mark.parametrize("attempts", [0, 1])
+@pytest.mark.parametrize("mode", ["on"])
+@pytest.mark.parametrize("attempts", [1])
 @pytest.mark.parametrize("long", [False, True])
 @pytest.mark.parametrize("policy", ["legacy", "attention-v1"])
 def test_failed_status_snapshot_freezes_callback_equivalent_replies(

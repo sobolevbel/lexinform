@@ -1,0 +1,570 @@
+{
+  "baseline": "97f99a5f9461702d27f7cbca8cc4851b6ff2a3fb",
+  "closed_existing_contracts": {
+    "DA1.9": {
+      "checkpoint_samples": [
+        {
+          "checkpoint_seconds": 1.194395,
+          "iteration": null,
+          "phase": "initial"
+        },
+        {
+          "checkpoint_seconds": 0.220196,
+          "iteration": null,
+          "phase": "unchanged"
+        },
+        {
+          "checkpoint_seconds": 1.085685,
+          "iteration": 1,
+          "phase": "before_simulated_effect"
+        },
+        {
+          "checkpoint_seconds": 1.036736,
+          "iteration": 1,
+          "phase": "after_simulated_effect"
+        },
+        {
+          "checkpoint_seconds": 1.075537,
+          "iteration": 2,
+          "phase": "before_simulated_effect"
+        },
+        {
+          "checkpoint_seconds": 0.980573,
+          "iteration": 2,
+          "phase": "after_simulated_effect"
+        }
+      ],
+      "clone": {
+        "prior_evidence": "docs/plans/2026-10-22-document-architecture-progress.md#j036",
+        "status": "not_measured_in_this_run"
+      },
+      "command": "UV_CACHE_DIR=/private/tmp/lexinform-uv-cache UV_NO_SYNC=1 UV_OFFLINE=1 PYTHONDONTWRITEBYTECODE=1 uv run --no-sync --offline python -B -m tools.benchmark_state_checkpoint --dump out/corpus/j138/baseline59.sql --output out/corpus/j139/checkpoint-copy.json --iterations 2",
+      "input": {
+        "bytes": 19975346,
+        "path": "out/corpus/j138/baseline59.sql",
+        "sha256": "eb1adcc675d9b5ed9afa77014ce091deb7470015428f29dec4bd51041cbceda0"
+      },
+      "input_unchanged": true,
+      "iterations": 2,
+      "limitations": [
+        "Does not measure GitHub network, authentication or runner latency",
+        "Report-row mutations are synthetic and do not estimate production daily growth",
+        "Packed history is measured after explicit local GC, not after every checkpoint",
+        "Temporary Git repositories and copied SQLite are removed after measurement"
+      ],
+      "measurements": {
+        "checkpoint_count": 6,
+        "commit_count": 5,
+        "dump_seconds": 0.087813,
+        "final_sql_bytes": 19978798,
+        "final_sql_gzip_bytes": 4049239,
+        "final_sqlite_bytes": 21196800,
+        "git_objects_after_pack": {
+          "local_bytes": 4090761,
+          "remote_bytes": 4091151
+        },
+        "git_objects_before_pack": {
+          "local_bytes": 26518894,
+          "remote_bytes": 26518894
+        },
+        "initial_sql_bytes": 19975346,
+        "initial_sql_gzip_bytes": 4049075,
+        "pack_seconds": 1.65785,
+        "restore_seconds": 0.293909,
+        "sql_growth_bytes": 3452
+      },
+      "network": false,
+      "qualification": "Local copy-state benchmark accepted; hosted telemetry remains DA10.3",
+      "report": {
+        "bytes": 22455,
+        "path": "out/corpus/j139/checkpoint-copy.json",
+        "sha256": "9144041cc0c2fbf4794711610197cfc1f56e88f7dc400f3b0b85765ef9be3da9"
+      },
+      "schema_version": 59,
+      "tool": {
+        "bytes": 7975,
+        "path": "tools/benchmark_state_checkpoint.py",
+        "sha256": "01d44ca68151ea67be30f194d61cf682ef16820a1726fc8bbfec7389873e27bd"
+      },
+      "transport": "isolated local filesystem Git remote"
+    },
+    "DA5.5": {
+      "ast_encoding": "SHA-256 of UTF-8 ast.dump(node, include_attributes=False)",
+      "current_scan_files": [
+        {
+          "bytes": 2408,
+          "matches_pinned_scan_audit": true,
+          "path": "src/lexinform/adapters/pdf_text.py",
+          "sha256": "e46eb0795a68ce41900b5837740474cbc62ce0bfdbd3c3c1822a2ccbd4754101"
+        },
+        {
+          "bytes": 1568,
+          "matches_pinned_scan_audit": true,
+          "path": "src/lexinform/models/scan_input.py",
+          "sha256": "736fda5637d14c2c5d7f7de19480b42dd19a73a3324910d592445c2520aeaa8e"
+        }
+      ],
+      "limitations": [
+        "Completed PDF derivatives are not archived under the current deferred raw-storage profile",
+        "No SQL-only exact-input replay is promised after provider receipt without retained bytes",
+        "Legacy absent manifests remain unknown",
+        "No legal completeness, OCR, rendered pixels or source-family production acceptance is claimed"
+      ],
+      "method_comparisons": [
+        {
+          "ast_equal": true,
+          "current_ast_sha256": "36b6830847075b111bfe5ad84b6acff315dc9e42b7e06d3e011ea8e80fd9e50d",
+          "current_file_sha256": "2d8a654af30ffa9b866641a4bf70707bfcd8a02ba05ecd0a3345195d12c0118b",
+          "method": "load_scan",
+          "path": "src/lexinform/services/documents.py",
+          "reference_ast_sha256": "36b6830847075b111bfe5ad84b6acff315dc9e42b7e06d3e011ea8e80fd9e50d"
+        },
+        {
+          "ast_equal": true,
+          "current_ast_sha256": "ef1f17baf4c1d276b33f9d7250739d450f21ca2af809e874eb74d59858f3ccf3",
+          "current_file_sha256": "2d8a654af30ffa9b866641a4bf70707bfcd8a02ba05ecd0a3345195d12c0118b",
+          "method": "first_pages",
+          "path": "src/lexinform/services/documents.py",
+          "reference_ast_sha256": "ef1f17baf4c1d276b33f9d7250739d450f21ca2af809e874eb74d59858f3ccf3"
+        },
+        {
+          "ast_equal": true,
+          "current_ast_sha256": "63ccf7239f1e1bf58c7dd43700f5c4a97f0a9d0a6ac699cf4c74db664bb9e4f4",
+          "current_file_sha256": "36cfeeaae9c6c43ded0a804efde635d4a42f858df979cc7da8851475cc3db7ee",
+          "method": "exact_input",
+          "path": "src/lexinform/models/analysis.py",
+          "reference_ast_sha256": "63ccf7239f1e1bf58c7dd43700f5c4a97f0a9d0a6ac699cf4c74db664bb9e4f4"
+        }
+      ],
+      "new_tests_run": false,
+      "pinned_scan_proofs": [
+        {
+          "bytes": 5479,
+          "matches_j132_reference": true,
+          "path": "out/corpus/j132/finite-scan-audit/audit.json",
+          "sha256": "a8171a7090cc8f3558705eb0b5dbf5aa112897e97e383f7db7708cf57cf9312d"
+        },
+        {
+          "bytes": 821,
+          "matches_j132_reference": true,
+          "path": "out/corpus/j132/finite-scan-audit/new-deps.xml",
+          "sha256": "5eef21e49c9c7abeadbcf2452cbb382c56cd251c7ff8414aad00fa92efcbeb62"
+        },
+        {
+          "bytes": 2869,
+          "matches_j132_reference": true,
+          "path": "out/corpus/j132/finite-scan-audit/probes_new_deps.py",
+          "sha256": "3862e7e00b2e0d552757b261555b765f669bb5e38289cc2552831778b4e0775b"
+        }
+      ],
+      "qualification": "Current-profile scan identity/page-window/immutable-request contracts accepted",
+      "raw_replay_rerun": false,
+      "reference_commit": "56107503198d4a876e23baf4f7f63f3d5895163e",
+      "validation_assets": [
+        {
+          "bytes": 8739,
+          "path": "docs/assets/audits/2026-10-26-scan-input/validation.json",
+          "sha256": "5dae4e6299cb95dd8decf39be5493646f9f85ee56a040e5b31337dd36b10fc4a"
+        },
+        {
+          "bytes": 15166,
+          "path": "docs/assets/audits/2026-10-26-secondary-scan-input/validation.json",
+          "sha256": "888ddd6177c85104ec483936e11a5aa3e5beab2a0d1e6c279f8932990a2988c3"
+        },
+        {
+          "bytes": 20361,
+          "path": "docs/assets/audits/2026-10-26-batch-payload-identity/validation.json",
+          "sha256": "495931aa50f0190eb26cee193676e3c2e4f0ab1376487df132d59f77a31313c3"
+        },
+        {
+          "bytes": 24720,
+          "path": "docs/assets/audits/2026-10-26-request-provenance/validation.json",
+          "sha256": "c95ea852cfe47f6037d2240a60a7d8026f2bb86105f0897428f4baab915e63da"
+        },
+        {
+          "bytes": 29646,
+          "path": "docs/assets/audits/2026-10-28-runtime-extraction/validation.json",
+          "sha256": "1b0d75f46376bb8a5c2bfd18ea0da5d1fd0b00f01bd09dd71c2fdd4d38ec5732"
+        }
+      ]
+    }
+  },
+  "collection": {
+    "added_contract_cases": 69,
+    "baseline_cases": 6033,
+    "final_categories": {
+      "scenario": 3113,
+      "unit": 2935
+    },
+    "moved_scenario_cases": 54
+  },
+  "evidence": {
+    "docs/assets/audits/2026-10-28-legacy-projection-writes/release.json": {
+      "bytes": 1619,
+      "sha256": "b8d0ec96d289a00a31952e5c2d267c545fbff60964dd32c236635adda727b519"
+    },
+    "out/corpus/j139/accept.py": {
+      "bytes": 9411,
+      "sha256": "9adbae55c2a23e2fbdd522af0e94c12b6db0b1a3d03a919a6c11548f296de66d"
+    },
+    "out/corpus/j139/agent/after.log": {
+      "bytes": 78329,
+      "sha256": "b223ba2ace778b2cb53ec5dce48a20a69d69f68aeb11443fb6a52014054d89a1"
+    },
+    "out/corpus/j139/agent/after.xml": {
+      "bytes": 72445,
+      "sha256": "952556ce51f3671f736db850a966d52e303caea634e0c15ee929e7c60922dace"
+    },
+    "out/corpus/j139/agent/before-notice.log": {
+      "bytes": 80,
+      "sha256": "6e88d7552c7d0f69ef9dd94f2f03455134c26c337f91efc46162eecf0ee3a909"
+    },
+    "out/corpus/j139/agent/before-notice.xml": {
+      "bytes": 10693,
+      "sha256": "5d0e757cec39481c252392f41ad736cf2f3acc4e1d172d0ff4fe6ba34f28eddc"
+    },
+    "out/corpus/j139/agent/before.log": {
+      "bytes": 52599,
+      "sha256": "28ea3ab044d01577b78ff44c7ecffd4055bb2f2a2f3b8015ab57d95cfa51b8e5"
+    },
+    "out/corpus/j139/agent/before.xml": {
+      "bytes": 59509,
+      "sha256": "5f918b3450ff5784a9375fbfd73e226a3d053aa4c76652a5cc748e5483895456"
+    },
+    "out/corpus/j139/agent/contracts.log": {
+      "bytes": 80,
+      "sha256": "b156e9922f76d25723911762a7fc411b0a8aeb840a9069496bef64f6b3877445"
+    },
+    "out/corpus/j139/agent/contracts.xml": {
+      "bytes": 12708,
+      "sha256": "142691518a0f90259620ed4e633a2bece34595509211cef8db8cbab41192210c"
+    },
+    "out/corpus/j139/agent/delivery-test-contracts.patch": {
+      "bytes": 20923,
+      "sha256": "25abf2e9ba96e6dcee35503688eeb8d4a49e2d00e9a12a30dcd0321336cae7de"
+    },
+    "out/corpus/j139/agent/handoff.json": {
+      "bytes": 21553,
+      "sha256": "e79cd0b4ec7569722207f8c077ef5c6115ff18e8797c856299ef5800c28fe29e"
+    },
+    "out/corpus/j139/agent/mutation-attempts.log": {
+      "bytes": 6989,
+      "sha256": "77ac2846d615a3d4b11168e3a83e93a13032f5849d77c4acfbbb6ed88565a75e"
+    },
+    "out/corpus/j139/agent/mutation-attempts.xml": {
+      "bytes": 6141,
+      "sha256": "4d52f5e3d31a333a1186447ba292b0ebfc9fa1d7e123741e0546454cda1aa08a"
+    },
+    "out/corpus/j139/agent/mutation-checkpoint_git_notice.log": {
+      "bytes": 4813,
+      "sha256": "ca21c62d19099a9cae1422f344ec2ec8c00a580f04b117e7d636fc6ec95ee90b"
+    },
+    "out/corpus/j139/agent/mutation-checkpoint_git_notice.xml": {
+      "bytes": 3452,
+      "sha256": "7a3d71bac4e24eb92a0ad8ca5d6f9746ed65cdfda6ef4838ee5cd46e5282d958"
+    },
+    "out/corpus/j139/agent/mutation-checkpoint_git_review.log": {
+      "bytes": 6805,
+      "sha256": "07cf2718647fce9baf607f5aed4725e869e4d08f4313596e56165421b62da1a7"
+    },
+    "out/corpus/j139/agent/mutation-checkpoint_git_review.xml": {
+      "bytes": 6972,
+      "sha256": "c8cb7a6682c284ad8c1a8f356736457d49dec5944322a489225eb8b10eac0e4b"
+    },
+    "out/corpus/j139/agent/mutation-checkpoint_unit.log": {
+      "bytes": 8543,
+      "sha256": "d4e2a314dfe47d5bbca4df73174b0dbef2752211b5edab1b48feff6075efd82f"
+    },
+    "out/corpus/j139/agent/mutation-checkpoint_unit.xml": {
+      "bytes": 8585,
+      "sha256": "1fd7710c47ff5fb7a7e7498cd66c4522e267f1e155166e01af0d83c11ed9d6d1"
+    },
+    "out/corpus/j139/agent/mutation-date.log": {
+      "bytes": 7647,
+      "sha256": "a3a39db2a9d8982e4c490ad4bb999bf222c229966f1f9e31b824421fb2a7b116"
+    },
+    "out/corpus/j139/agent/mutation-date.xml": {
+      "bytes": 7798,
+      "sha256": "df559f1105526cd58bd8243e8000cc0e4166ad1f8d1b4f8cfed0501ce1ead931"
+    },
+    "out/corpus/j139/agent/mutation-parent.log": {
+      "bytes": 7647,
+      "sha256": "52ccf43a0f962e8f341dc397de5fec6541ff6f0661b1bac7d388ea3e9ee42f8d"
+    },
+    "out/corpus/j139/agent/mutation-parent.xml": {
+      "bytes": 7806,
+      "sha256": "8269c725e2b1b2909e6fe7300f4f99e259b769f702dc82913308aadc30186441"
+    },
+    "out/corpus/j139/agent/mutation-policy.log": {
+      "bytes": 8726,
+      "sha256": "6f072487f0092b3fabb9f17ed746d42cfb40555942505fd6a137e08645d97a97"
+    },
+    "out/corpus/j139/agent/mutation-policy.xml": {
+      "bytes": 8873,
+      "sha256": "ff32cca65dd17546d2b880994c922f1e5c1830ee1f01c6544b76413549ee41c3"
+    },
+    "out/corpus/j139/agent/mutation-probe.log": {
+      "bytes": 151,
+      "sha256": "184198d4ffc190bd8b4c473e7b1b5d54c70247c3e4e8717858d09bd32a4e7605"
+    },
+    "out/corpus/j139/agent/mutation_probe.py": {
+      "bytes": 3937,
+      "sha256": "ad895430bd1712e68f91df9cf97c07b3a3aa8f5b65684022ea0b303466b45b16"
+    },
+    "out/corpus/j139/agent/mutations.json": {
+      "bytes": 6368,
+      "sha256": "3f63ce75bb21df5c642318a6ef0344e713931f54381f5ccd4a6352cd044e6344"
+    },
+    "out/corpus/j139/agent/mypy.log": {
+      "bytes": 43,
+      "sha256": "71144743c83babea384888a735db0c4daba3d4d7b7942b6839984bd5c21b52bb"
+    },
+    "out/corpus/j139/agent/restored.log": {
+      "bytes": 160,
+      "sha256": "20f5f27046a7bba4f1632529723920cb0714405e7c436f83ff72626e3a37131b"
+    },
+    "out/corpus/j139/agent/restored.xml": {
+      "bytes": 15491,
+      "sha256": "cb55a4168b4706e0dfbb277f8d52c17a224766fa79de2b802a194939308120cf"
+    },
+    "out/corpus/j139/agent/ruff.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "out/corpus/j139/agent/summarize.py": {
+      "bytes": 5931,
+      "sha256": "68cf968879917955637bedd9d73ee503fa7c2ada92f2270726138356eddcd038"
+    },
+    "out/corpus/j139/checkpoint-copy.json": {
+      "bytes": 22455,
+      "sha256": "9144041cc0c2fbf4794711610197cfc1f56e88f7dc400f3b0b85765ef9be3da9"
+    },
+    "out/corpus/j139/closure-audit.json": {
+      "bytes": 7977,
+      "sha256": "afe8bfd49fd1cf4871caa44a3cea88db657c811f037ff781a03cd32e48eedfae"
+    },
+    "out/corpus/j139/docs.log": {
+      "bytes": 266,
+      "sha256": "e35176d3ac09fc5daa4e9813c2f6613fb9f99f7de16cf71f5ecf0dfdded4718c"
+    },
+    "out/corpus/j139/focused.xml": {
+      "bytes": 15491,
+      "sha256": "66d0902d454a1b283e799f8a7a3055263380825b1d99777ccfd2350ff8bee07d"
+    },
+    "out/corpus/j139/format.log": {
+      "bytes": 25,
+      "sha256": "e0ccd8dc6ca43e6a72c8ce65470a7885bd48066549d604910da29754e903f5ed"
+    },
+    "out/corpus/j139/frozen-source.json": {
+      "bytes": 64835,
+      "sha256": "f6dfcc8fb817e7fb63ec444bdfcee59aa1475b75c8093069ee789ba12c34eefd"
+    },
+    "out/corpus/j139/full.xml": {
+      "bytes": 986571,
+      "sha256": "7d1e0e27615d9a53be09f360ceaa97cfb8ee4eea4ede49e13cdd720268a00da3"
+    },
+    "out/corpus/j139/mypy.log": {
+      "bytes": 45,
+      "sha256": "a7ae0d125ac994f5df13ec46e95cdc11147474fa89fe24bf360168ea5ff582c0"
+    },
+    "out/corpus/j139/ruff.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    }
+  },
+  "exclusions": [
+    "Observed targeted wall time is local evidence, not a guaranteed whole-suite speedup.",
+    "Two unchanged physical-extraction cases embed ZIP timestamps in parameter IDs; only their stable docx/nested-ZIP labels are normalized for node comparison.",
+    "All fault/unknown/recovery scenarios and 15 real-Git candidate representatives remain.",
+    "Mutation probes ran on the pristine J137 runtime files that remain byte-identical after J138.",
+    "No runtime or extraction/selection change; corpus replay and local HTTP are outside this test-only stage.",
+    "No paid/provider, Telegram, SSH, production pipeline or state-branch mutation."
+  ],
+  "focused": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 84
+  },
+  "frozen_python_and_config_files": 590,
+  "full": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 6048
+  },
+  "independent_handoff": {
+    "baseline": "14e45dcc3b51ffc87a4cb36a8fee9b356fa8d333",
+    "mutations": [
+      {
+        "name": "date",
+        "original_sha256": "bf8d989ab0c1a850ae547ab5ab3edc0206431684aab7bc458a954337a863659d",
+        "rejected": true,
+        "returncode": 1
+      },
+      {
+        "name": "parent",
+        "original_sha256": "bf8d989ab0c1a850ae547ab5ab3edc0206431684aab7bc458a954337a863659d",
+        "rejected": true,
+        "returncode": 1
+      },
+      {
+        "name": "policy",
+        "original_sha256": "bf8d989ab0c1a850ae547ab5ab3edc0206431684aab7bc458a954337a863659d",
+        "rejected": true,
+        "returncode": 1
+      },
+      {
+        "name": "attempts",
+        "original_sha256": "237855a26e26f2f5f6020df3c8e60d2bc23aa71c1ee506cc5d64ecf86efce48b",
+        "rejected": true,
+        "returncode": 1
+      },
+      {
+        "name": "checkpoint_unit",
+        "original_sha256": "83239b88c759054fc72c5e1a16c739c6d909050c9f7db26f4729cf309cfd580b",
+        "rejected": true,
+        "returncode": 1
+      },
+      {
+        "name": "checkpoint_git_notice",
+        "original_sha256": "83239b88c759054fc72c5e1a16c739c6d909050c9f7db26f4729cf309cfd580b",
+        "rejected": true,
+        "returncode": 1
+      },
+      {
+        "name": "checkpoint_git_review",
+        "original_sha256": "83239b88c759054fc72c5e1a16c739c6d909050c9f7db26f4729cf309cfd580b",
+        "rejected": true,
+        "returncode": 1
+      }
+    ],
+    "patch_sha256": "25abf2e9ba96e6dcee35503688eeb8d4a49e2d00e9a12a30dcd0321336cae7de",
+    "restored_runtime_sha256": {
+      "src/lexinform/services/direct_delivery.py": "bf8d989ab0c1a850ae547ab5ab3edc0206431684aab7bc458a954337a863659d",
+      "src/lexinform/services/posting.py": "237855a26e26f2f5f6020df3c8e60d2bc23aa71c1ee506cc5d64ecf86efce48b",
+      "src/lexinform/services/publications.py": "83239b88c759054fc72c5e1a16c739c6d909050c9f7db26f4729cf309cfd580b"
+    },
+    "scenario_ast_checks": [
+      {
+        "only_matrix_decorators_changed": true,
+        "path": "tests/scenario/test_update_remote_checkpoints.py"
+      },
+      {
+        "only_matrix_decorators_changed": true,
+        "path": "tests/scenario/test_notice_remote_checkpoints.py"
+      },
+      {
+        "only_matrix_decorators_changed": true,
+        "path": "tests/scenario/test_review_remote_checkpoints.py"
+      }
+    ],
+    "source_sha256": {
+      "tests/scenario/test_notice_remote_checkpoints.py": "16a59f59861f08d59c41ee16b8bf10c47d3305fdc6daa447e34cdbdb40c3e28d",
+      "tests/scenario/test_review_remote_checkpoints.py": "698c0013790671002762fa4ec9081fb2fa78685b0a617b0e93e04cb99b5123dd",
+      "tests/scenario/test_update_remote_checkpoints.py": "fd4aed9673c558af7b663ee5d1dc273662c622dc78ec9391691dc7b4ec5127e8",
+      "tests/unit/test_poster_snapshot_contracts.py": "d9e9d2bdc483b0ea3930eb7d4d02a96e93e4059985f9454c618db48dd1517b10"
+    },
+    "timings_by_module": {
+      "after": {
+        "tests.scenario.test_notice_remote_checkpoints": {
+          "case_seconds": 24.448,
+          "cases": 41
+        },
+        "tests.scenario.test_review_remote_checkpoints": {
+          "case_seconds": 38.102,
+          "cases": 60
+        },
+        "tests.scenario.test_update_remote_checkpoints": {
+          "case_seconds": 32.652,
+          "cases": 50
+        },
+        "tests.unit.test_direct_delivery_freeze": {
+          "case_seconds": 0.31,
+          "cases": 39
+        },
+        "tests.unit.test_direct_notice_freeze": {
+          "case_seconds": 0.615,
+          "cases": 64
+        },
+        "tests.unit.test_direct_reply_parts_freeze": {
+          "case_seconds": 0.211,
+          "cases": 25
+        },
+        "tests.unit.test_direct_status_edit_freeze": {
+          "case_seconds": 0.305,
+          "cases": 42
+        },
+        "tests.unit.test_direct_status_reply_freeze": {
+          "case_seconds": 0.23,
+          "cases": 26
+        },
+        "tests.unit.test_poster_snapshot_contracts": {
+          "case_seconds": 2.072,
+          "cases": 69
+        }
+      },
+      "before": {
+        "tests.scenario.test_notice_remote_checkpoints": {
+          "case_seconds": 42.215,
+          "cases": 71
+        },
+        "tests.scenario.test_review_remote_checkpoints": {
+          "case_seconds": 43.859,
+          "cases": 64
+        },
+        "tests.scenario.test_update_remote_checkpoints": {
+          "case_seconds": 51.091,
+          "cases": 70
+        },
+        "tests.unit.test_direct_delivery_freeze": {
+          "case_seconds": 0.314,
+          "cases": 39
+        },
+        "tests.unit.test_direct_notice_freeze": {
+          "case_seconds": 0.631,
+          "cases": 64
+        },
+        "tests.unit.test_direct_reply_parts_freeze": {
+          "case_seconds": 0.212,
+          "cases": 25
+        },
+        "tests.unit.test_direct_status_edit_freeze": {
+          "case_seconds": 0.304,
+          "cases": 42
+        },
+        "tests.unit.test_direct_status_reply_freeze": {
+          "case_seconds": 0.221,
+          "cases": 26
+        }
+      }
+    },
+    "verification": {
+      "after_cases": 416,
+      "after_wall_seconds": 100.352,
+      "all_noncandidate_scenario_names_preserved": true,
+      "all_original_matrix_names_preserved_as_direct_contracts": true,
+      "all_unchanged_direct_freeze_unit_modules_preserved": true,
+      "before_cases": 401,
+      "before_wall_seconds": 140.54,
+      "direct_contract_cases": 69,
+      "moved_git_cases": 54,
+      "original_matrix_cases": 69,
+      "restored_runtime_recheck_cases": 84,
+      "restored_runtime_recheck_wall_seconds": 16.264,
+      "retained_git_cases": 15,
+      "wall_saved_percent": 28.6,
+      "wall_saved_seconds": 40.188
+    }
+  },
+  "mypy_files": 536,
+  "only_candidate_scenario_decorators_changed": true,
+  "plan_counts": {
+    "applicable_partial_open": 40,
+    "done": 28,
+    "not_applicable": 6,
+    "total": 74
+  },
+  "scope": "Test-only delivery contract placement; runtime/configuration/dependencies unchanged",
+  "stage": "J139"
+}
