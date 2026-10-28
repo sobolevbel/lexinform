@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 
 from lexinform.attention import assess_attention
 from lexinform.delivery_schedule import daily_schedule, sitting_is_close
-from lexinform.legacy_delivery import legacy_status_edit, legacy_status_reply
+from lexinform.legacy_delivery import legacy_notice_reply, legacy_status_edit, legacy_status_reply
 from lexinform.models import (
     AgendaItem,
     Bill,
@@ -1577,7 +1577,22 @@ class Poster:
     def _send(self, pub_id: int, bill: Bill, send: Send) -> int | None:
         pub = self._repo.publication_by_id(pub_id)
         legacy_reply = pub is not None and legacy_status_reply(pub)
-        if pub is not None and (legacy_status_edit(pub) or legacy_reply):
+        if pub is not None and legacy_notice_reply(pub):
+            assert pub.delivery is not None, "legacy notices retain their saved semantic plan"
+            candidate = pub.model_copy(
+                update={
+                    "delivery": pub.delivery.model_copy(update={"render_origin": "legacy_snapshot"})
+                }
+            )
+            pub = freeze_parts(
+                self._repo,
+                self._clock,
+                self._publisher,
+                candidate,
+                self._publisher.render_delivery(candidate),
+                persist=self._repo.freeze_legacy_notice_reply,
+            )
+        elif pub is not None and (legacy_status_edit(pub) or legacy_reply):
             assert pub.delivery is not None, "both legacy status predicates require a saved plan"
             candidate = pub
             if legacy_reply:

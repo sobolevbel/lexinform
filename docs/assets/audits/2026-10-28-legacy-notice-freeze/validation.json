@@ -1,0 +1,275 @@
+{
+  "baseline": "88dc3ea9c1afded812db76a3abb3dc4cbdd8a476",
+  "compatibility": {
+    "new-reader": {
+      "chains": 18,
+      "manifest_sha256": "68019db97b5668f89a5e1e4e29988a76368aa1dc2b054176474160f7174b8aba",
+      "physical_calls": 54
+    },
+    "old-reader": {
+      "chains": 18,
+      "manifest_sha256": "42aaa85f6f2f566151754aa6c29d708772ead3198d81792d9d6c9074da126ebe",
+      "physical_calls": 54
+    },
+    "writer": {
+      "chains": 18,
+      "manifest_sha256": "e787b79efb4e00bbb288e68ffbee3e84e29bb707ff4ff8f8b6d3c57d6fd6c4ea",
+      "physical_calls": 0
+    }
+  },
+  "compatibility_transport": "fake; 18 oversized synthetic three-part payloads per reader, no live Telegram or binary rollback claim",
+  "corpus_text_replay": "not required: extraction/selection/normalization/provider-input code unchanged",
+  "default_native": {
+    "all_28_prior_tables_exact_except_recorded_phase_timing": true,
+    "all_profiles_except_metadata_and_storage_metrics_exact": true,
+    "all_requests_and_rendered_messages_exact": true,
+    "all_source_doctors_without_errors": true,
+    "binding_views": 2,
+    "cases": 168,
+    "command_outcome_seconds_excluded_from_semantic_comparison": true,
+    "content_snapshot_views": 6,
+    "content_version_views": 2,
+    "gzip_delta": {
+      "max": 0,
+      "min": 0
+    },
+    "link_views": 190,
+    "prior_metadata_rows_preserved": true,
+    "read_receipt_views": 270,
+    "selection_views": 198,
+    "source_observation_views": 210,
+    "sql_delta": {
+      "max": 0,
+      "min": 0
+    },
+    "timing_differences": []
+  },
+  "evidence": {
+    "out/corpus/j130/accept.py": {
+      "bytes": 3609,
+      "sha256": "656f4364f8f4bdf4ba1c61a762a72d5078178d167971b5d1944b8325ed155f46"
+    },
+    "out/corpus/j130/compare_defaults.py": {
+      "bytes": 4616,
+      "sha256": "3f0077b5028da3054825a4a6de903ce66c7a350371fd1fcab72f9fa64fe2054e"
+    },
+    "out/corpus/j130/compare_notices.py": {
+      "bytes": 923,
+      "sha256": "8a0fc2630864a20b3cff0e05fcb44bcfc3c05404a73d8e2aed6a4cdace66b132"
+    },
+    "out/corpus/j130/compatibility.py": {
+      "bytes": 3382,
+      "sha256": "56d29b28865d53a0f384390eee893fb9b2a73e0d5ff5524771ed16ee72090987"
+    },
+    "out/corpus/j130/default-parity.json": {
+      "bytes": 679,
+      "sha256": "ebcd5ec8f4b46ad3e25445d7eecee389c2de0520c2044c26304d9f9e2c476669"
+    },
+    "out/corpus/j130/default_profiles.py": {
+      "bytes": 1176,
+      "sha256": "8cc0dfc36c772a26880d99ca2fa00c80e4c50ae3895d0e34e90f3a6226402b6c"
+    },
+    "out/corpus/j130/format.log": {
+      "bytes": 25,
+      "sha256": "f852cdb574d9894472a417f708730c2c86faf0857090b1d17e374030d272a6d1"
+    },
+    "out/corpus/j130/frozen-inputs.json": {
+      "bytes": 60730,
+      "sha256": "330d09aa865edf6b8b017ddbf0af4526f72658b6b4bc27061950578e69c7e32a"
+    },
+    "out/corpus/j130/full.xml": {
+      "bytes": 859259,
+      "sha256": "dcc56d746ab0c72e9458b8d59bb20d47d18f542870fee83cf45efd7a19c36ac9"
+    },
+    "out/corpus/j130/mypy-final.log": {
+      "bytes": 45,
+      "sha256": "2b519c3f090408f6e270f6de0d8379aaed65e136d962651e07a4607e9f2e6948"
+    },
+    "out/corpus/j130/notice-parity.json": {
+      "bytes": 2039,
+      "sha256": "611ea390eb69b0294b613c683c9d692c8a362f0ebc7fdf6f61a9db2e24f6998a"
+    },
+    "out/corpus/j130/notice_profile.py": {
+      "bytes": 2034,
+      "sha256": "8a21e8c11c93a9cbd341982b37f8f41776c781f583e04f3f7caea9dad7036c9c"
+    },
+    "out/corpus/j130/reproduction.xml": {
+      "bytes": 3447,
+      "sha256": "39261a150b3cd617c231c70eedee7534dac672cdd53e24e800716311ef98c8ab"
+    },
+    "out/corpus/j130/ruff.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "out/corpus/j130/scenario.xml": {
+      "bytes": 22375,
+      "sha256": "7ab9ca3944257c6f0c134824b3a68ec4045d368f4325ff4ef4044fb11820f0f6"
+    },
+    "out/corpus/j130/unit.xml": {
+      "bytes": 26116,
+      "sha256": "9bc9f72e5a4fc43ace050e8f21a27ed8d6b4d9c039f3ea61835d32ce8683cf79"
+    }
+  },
+  "exclusions": [
+    "attempted attention-v1 without HTML",
+    "missing notice parent/context",
+    "legacy ungrouped sittings/digest",
+    "oversized legacy status edits",
+    "raw storage/backend decision",
+    "natural production acceptance"
+  ],
+  "frozen_python_files": 553,
+  "gates": {
+    "full": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 5422
+    },
+    "scenario": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 121
+    },
+    "unit": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 160
+    }
+  },
+  "mypy_files": 502,
+  "notice_native": {
+    "cases": 18,
+    "cases_detail": [
+      {
+        "case": "act_published-off",
+        "gzip_bytes": 438,
+        "sql_bytes": 1201
+      },
+      {
+        "case": "act_published-on",
+        "gzip_bytes": 460,
+        "sql_bytes": 1201
+      },
+      {
+        "case": "act_published-shadow",
+        "gzip_bytes": 462,
+        "sql_bytes": 1201
+      },
+      {
+        "case": "consultation_deadline-off",
+        "gzip_bytes": 293,
+        "sql_bytes": 949
+      },
+      {
+        "case": "consultation_deadline-on",
+        "gzip_bytes": 295,
+        "sql_bytes": 949
+      },
+      {
+        "case": "consultation_deadline-shadow",
+        "gzip_bytes": 295,
+        "sql_bytes": 949
+      },
+      {
+        "case": "consultation_results-off",
+        "gzip_bytes": 457,
+        "sql_bytes": 1445
+      },
+      {
+        "case": "consultation_results-on",
+        "gzip_bytes": 467,
+        "sql_bytes": 1445
+      },
+      {
+        "case": "consultation_results-shadow",
+        "gzip_bytes": 468,
+        "sql_bytes": 1445
+      },
+      {
+        "case": "decision_deadline-off",
+        "gzip_bytes": 405,
+        "sql_bytes": 1125
+      },
+      {
+        "case": "decision_deadline-on",
+        "gzip_bytes": 367,
+        "sql_bytes": 1125
+      },
+      {
+        "case": "decision_deadline-shadow",
+        "gzip_bytes": 368,
+        "sql_bytes": 1125
+      },
+      {
+        "case": "hearing_deadline-off",
+        "gzip_bytes": 466,
+        "sql_bytes": 1330
+      },
+      {
+        "case": "hearing_deadline-on",
+        "gzip_bytes": 462,
+        "sql_bytes": 1330
+      },
+      {
+        "case": "hearing_deadline-shadow",
+        "gzip_bytes": 462,
+        "sql_bytes": 1330
+      },
+      {
+        "case": "in_force-off",
+        "gzip_bytes": 351,
+        "sql_bytes": 988
+      },
+      {
+        "case": "in_force-on",
+        "gzip_bytes": 372,
+        "sql_bytes": 988
+      },
+      {
+        "case": "in_force-shadow",
+        "gzip_bytes": 372,
+        "sql_bytes": 988
+      }
+    ],
+    "gzip_delta": {
+      "max": 468,
+      "min": 293
+    },
+    "sql_delta": {
+      "max": 1445,
+      "min": 949
+    },
+    "texts_parents_dates_root_ids_receipts_attempts_requests_paid_results_exact": true
+  },
+  "other_runtime_files_byte_exact": 158,
+  "prior_source_reproduction": {
+    "errors": 0,
+    "failures": 1,
+    "skipped": 0,
+    "tests": 1
+  },
+  "runtime_files": {
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "bytes": 176590,
+      "sha256": "b6cefbc6dc0f37db7a7752102377a405e4e1523d556ad20024c669ca2e670110"
+    },
+    "src/lexinform/legacy_delivery.py": {
+      "bytes": 2774,
+      "sha256": "9d3ecdd6f1ef1849ad9d90b0a42fa1d6e3c9f75003876feb32a7498e5bd59e60"
+    },
+    "src/lexinform/ports.py": {
+      "bytes": 44257,
+      "sha256": "b9117d8db222dbb7ea77f1f5b6d0bf6073f3c2405d68c5684db372f57f42ce0b"
+    },
+    "src/lexinform/services/posting.py": {
+      "bytes": 80113,
+      "sha256": "e3d57dc6cda3e3f70eb783fccc5436db8e88eea40e960716de65b13940146145"
+    }
+  },
+  "schema_changed": false,
+  "scope": "Qualified FAILED legacy simple notice future payload; saved positive parent/date, no inferred prior HTML",
+  "stage": "J130"
+}

@@ -148,12 +148,19 @@ def test_notice_freezes_legacy_equivalent_html_date_and_target_before_its_api(
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])
 @pytest.mark.parametrize("kind", KINDS)
 @pytest.mark.parametrize("attempts", [0, 1])
-def test_attempted_notice_without_html_preserves_legacy_payload_and_date(
-    monkeypatch: pytest.MonkeyPatch, mode: Mode, kind: PublicationKind, attempts: int
+def test_failed_legacy_notice_freezes_its_saved_payload_and_date_before_api(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mode: Mode,
+    kind: PublicationKind,
+    attempts: int,
 ) -> None:
     case = queued(kind, mode)
     world = case.world
-    original = plan(world, case.identity)
+    original = plan(world, case.identity).model_copy(update={"policy_version": "legacy"})
+    assert world.repo.replace_unattempted_delivery(case.identity, original), (
+        "the fixture fixes the historical policy before recording its failed attempt"
+    )
     world.repo.mark_publication(
         case.identity,
         PublicationStatus.FAILED,
@@ -161,16 +168,42 @@ def test_attempted_notice_without_html_preserves_legacy_payload_and_date(
         count_attempt=bool(attempts),
     )
     expected = world.publisher.render_delivery(row(world, case.identity))
-    monkeypatch.setattr(world.publisher, "publish_prepared", refuse_render)
+    frozen = original.model_copy(
+        update={"rendered_text": expected, "render_origin": "legacy_snapshot"}
+    )
+    card = world.publication("3039")
+    assert card is not None and card.id is not None, "the notice owns an existing reader card"
+    world.repo.mark_publication(
+        card.id, PublicationStatus.SENT, message_id=999, count_attempt=False
+    )
+    world.clock.advance(days=5)
+    remote = connect(world, tmp_path)
+    prepared = world.publisher.publish_prepared
+    observed: list[int] = []
+
+    def inspect(publication: Publication) -> PublishResult:
+        durable = World()
+        durable.repo.restore(git(remote, "show", "state:state.sql"))
+        current = row(durable, case.identity)
+        assert current.status is PublicationStatus.PENDING and current.attempts == attempts
+        assert current.delivery == publication.delivery == frozen
+        assert current.channel_id == CHANNEL and frozen.reply_to != 999
+        observed.append(case.identity)
+        return prepared(publication)
+
+    monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
     before = len(world.publisher.sent)
 
     assert deliver(case)
 
     assert len(world.publisher.sent) == before + 1
+    assert observed == [case.identity]
     assert world.publisher.sent[-1].text == expected
-    assert plan(world, case.identity) == original
+    assert world.publisher.sent[-1].reply_to == original.reply_to
+    assert plan(world, case.identity) == frozen
     assert not original.rendered_text and not original.continuation_ids
     assert row(world, case.identity).attempts == attempts
+    assert not world.llm.contexts
 
 
 @pytest.mark.parametrize("at", [1, 2, 5, 6])

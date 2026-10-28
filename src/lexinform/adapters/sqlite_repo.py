@@ -12,12 +12,13 @@ from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from typing import Literal
 
 from pydantic import TypeAdapter
 
 from lexinform.content_versions import content_delivery_mismatch
 from lexinform.json_storage import compact_json, storage_json
-from lexinform.legacy_delivery import legacy_status_edit, legacy_status_reply
+from lexinform.legacy_delivery import legacy_notice_reply, legacy_status_edit, legacy_status_reply
 from lexinform.log_context import log_extra
 from lexinform.models import (
     PRE_PRINT_PREFIX,
@@ -1758,13 +1759,20 @@ class SqliteBillRepository:
         return cur.rowcount == 1
 
     def freeze_legacy_status_edit(self, publication_id: int, delivery: DeliveryPlan) -> bool:
-        return self._freeze_legacy_status_delivery(publication_id, delivery, reply=False)
+        return self._freeze_legacy_delivery(publication_id, delivery, mode="status_edit")
 
     def freeze_legacy_status_reply(self, publication_id: int, delivery: DeliveryPlan) -> bool:
-        return self._freeze_legacy_status_delivery(publication_id, delivery, reply=True)
+        return self._freeze_legacy_delivery(publication_id, delivery, mode="status_reply")
 
-    def _freeze_legacy_status_delivery(
-        self, publication_id: int, delivery: DeliveryPlan, *, reply: bool
+    def freeze_legacy_notice_reply(self, publication_id: int, delivery: DeliveryPlan) -> bool:
+        return self._freeze_legacy_delivery(publication_id, delivery, mode="notice_reply")
+
+    def _freeze_legacy_delivery(
+        self,
+        publication_id: int,
+        delivery: DeliveryPlan,
+        *,
+        mode: Literal["status_edit", "status_reply", "notice_reply"],
     ) -> bool:
         row = self._conn.execute(
             "SELECT * FROM publications WHERE id = ?", (publication_id,)
@@ -1772,7 +1780,13 @@ class SqliteBillRepository:
         if row is None:
             return False
         original = self._row_to_publication(row)
-        eligible = legacy_status_reply(original) if reply else legacy_status_edit(original)
+        eligible = {
+            "status_edit": legacy_status_edit,
+            "status_reply": legacy_status_reply,
+            "notice_reply": legacy_notice_reply,
+        }[mode](original)
+        reply = mode != "status_edit"
+        refresh_day = mode == "status_reply"
         if (
             not eligible
             or not delivery.rendered_text.strip()
@@ -1780,21 +1794,20 @@ class SqliteBillRepository:
             or delivery.render_origin != "legacy_snapshot"
             or self.digest_owner(publication_id) is not None
             or self.digest_sources(publication_id)
-            or (
-                reply
-                and (delivery.today is None or delivery.reply_to is None or delivery.reply_to <= 0)
-            )
+            or (reply and (delivery.reply_to is None or delivery.reply_to <= 0))
+            or (refresh_day and delivery.today is None)
         ):
             return False
         saved = original.delivery
-        assert saved is not None, "both legacy status predicates require a saved semantic snapshot"
+        assert saved is not None, "legacy delivery predicates require a saved semantic snapshot"
         updates: dict[str, object] = {
             "rendered_text": delivery.rendered_text,
             "render_origin": "legacy_snapshot",
         }
         expected = saved.model_copy(update=updates)
-        if reply:
+        if refresh_day:
             expected = expected.model_copy(update={"today": delivery.today})
+        if reply:
             if saved.reply_to is None:
                 card = self.get_publication(
                     original.term, original.number, PublicationKind.NEW_BILL, original.channel_id
@@ -1818,8 +1831,8 @@ class SqliteBillRepository:
             return False
         raw: dict[str, object] = json.loads(row["delivery_json"])
         raw.update(updates)
-        if reply:
-            assert delivery.today is not None, "the reply eligibility check requires its render day"
+        if refresh_day:
+            assert delivery.today is not None, "status replies require their new render day"
             raw["today"] = delivery.today.isoformat()
         changed = self._conn.execute(
             "UPDATE publications SET delivery_json = ?"
@@ -1834,7 +1847,7 @@ class SqliteBillRepository:
         return changed.rowcount == 1
 
     def _legacy_reply_parts(self, original: Publication, delivery: DeliveryPlan) -> bool:
-        assert original.delivery is not None, "legacy_status_reply requires the original plan"
+        assert original.delivery is not None, "legacy reply predicates require the original plan"
         identities = delivery.continuation_ids
         if len(set(identities)) != len(identities) or delivery.held_change_ids:
             return False

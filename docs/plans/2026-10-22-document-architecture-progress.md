@@ -6301,3 +6301,62 @@ extraction/selection/normalization/provider inputs не менялись. Strict
 J128 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40643892565) success:
 **5301 passed**, strict mypy **498**, docs/web green. Feature branch/draft PR only;
 main/deployment по-прежнему требуют ранее запрошенного разрешения.
+
+<a id="release-pr11-pr10"></a>
+### Release: PR11 and the artifact-upload dependency update
+
+После повторного явного разрешения пользователя на merge/push/deployment PR11 слит в main:
+`9a10d8e2150333f6b4b89c2ff70ef0741b443930`.
+[Main CI](https://github.com/sobolevbel/lexinform/actions/runs/40655317241) и
+[relay deployment](https://github.com/sobolevbel/lexinform/actions/runs/40656383295) success;
+deploy log подтверждает переход `176c32821042 → 9a10d8e21503`. Предыдущие записи о pending
+разрешении описывают прежнее состояние и больше не блокируют выпуск.
+
+PR10 проверен и слит: единственное изменение — `actions/upload-artifact@v4 → @v7`.
+Официальный action contract сохраняет используемые name/path и ZIP-default; GHES и opt-in
+`archive:false` здесь не используются. Actual PR CI загрузил `corpus-check-3.14`, artifact
+12681194156, 22723 bytes. Merge `88dc3ea9c1afded812db76a3abb3dc4cbdd8a476`:
+[main CI](https://github.com/sobolevbel/lexinform/actions/runs/40656642750) и
+[deploy](https://github.com/sobolevbel/lexinform/actions/runs/40657676516) success.
+Новый live bot run или Telegram delivery этим не утверждаются.
+
+<a id="j130"></a>
+### J130. Freeze failed legacy notices before retry
+
+Статус: **готово**, baseline `88dc3ea9c1afded812db76a3abb3dc4cbdd8a476`.
+Шесть kinds — act publication, consultation results, in-force и три deadline reminders —
+фиксируют будущий literal HTML и все physical parts перед повторным API. Closed eligibility:
+FAILED, literal legacy/direct, positive saved parent, complete required semantic context,
+без существующей membership/absorption/revision/participation override. Сохранённые день,
+parent, flags/context и attempts не переписываются. Новая очередь/schema не добавляется.
+
+Общая CAS/raw-JSON реализация используется также status reply/edit writers с прежними
+ограничениями. Multipart использует J128 ownership/leaf membership и existing checkpoint
+protocol. `legacy_snapshot` описывает будущую попытку; текст прошлой попытки не реконструируется.
+Attention-v1, отсутствующий parent/context, legacy sittings/digest и oversized status edits
+остаются явно за границей этого этапа.
+
+**281 focused passed**, failures/errors/skips0; strict mypy **502**, Ruff/format green.
+Remote checks покрывают все шесть notices × три attention modes × attempts0/1, multipart,
+pre/post root/leaf failure, restore, formatter change, definite failed child, UNKNOWN + audited
+confirmation и atomic writer refusal. Prior source воспроизводит отсутствие freeze без setup errors.
+
+**168 default native profiles**: requests/messages/all28 tables exact, timing differences0,
+SQL/gzip delta0, source doctors errors0. **18 native legacy notice profiles** сохраняют outgoing
+text/parent/day/root identity/receipt/attempts/model requests/paid results. Fixture SQL increment
+949–1445 bytes, gzip293–468. **18 synthetic oversized chains** прочитаны prior/new readers:
+по54 physical calls, exact frozen payload/remote receipt/parent, duplicate0, без render.
+Corpus text replay не нужен: extraction/selection/normalization/provider inputs не менялись.
+Full gate: **5422 passed**, failures/errors/skips0. Final source freeze сохранён.
+[Acceptance asset](../assets/audits/2026-10-28-legacy-notice-freeze/validation.json) пинует
+sources/gates/profiles и исключения; остальные158 runtime files byte-exact.
+С обновлёнными PR9 dependencies повторно прошли281 focused, mypy502, Ruff/format.
+
+PR9 после review обновлён до текущего main и слит:
+`c45f3f339a9902ab99aad7b91cfb861b81445f03`.
+[Fresh head CI](https://github.com/sobolevbel/lexinform/actions/runs/40657065517) success,
+включая PostgreSQL web tests. Изолированная локальная проверка:5324 tests (пять ошибок setup
+Git-archive прошли после восстановления metadata), localHTTP21, mypy500, strict docs/web checks;
+168 native profiles exact, SQL/gzip delta0. SDK request/collection probes не нашли изменений
+HTTP bodies, PDF blocks, JSONL или parsed batch results. Anthropic меняет API version/auth header;
+наши requests совместимы. Это не live provider acceptance; платных вызовов не было.
