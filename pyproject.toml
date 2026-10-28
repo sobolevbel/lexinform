@@ -50,6 +50,9 @@ dev = [
 docs = [
   "zensical>=0.0.64,<0.1",
 ]
+mutation = [
+  "mutmut==3.8.1",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -113,3 +116,33 @@ markers = [
 [tool.coverage.run]
 source = ["lexinform"]
 branch = true
+
+[tool.mutmut]
+source_paths = ["src/"]
+only_mutate = [
+  "src/lexinform/delivery_schedule.py",
+  "src/lexinform/services/message_parts.py",
+  "src/lexinform/services/publications.py",
+  "src/lexinform/services/analysis.py",
+]
+also_copy = ["tools"]
+pytest_add_cli_args = ["-n", "0", "-p", "no:cacheprovider", "-p", "tools.mutation_probe", "--maxfail=0"]
+pytest_add_cli_args_test_selection = [
+  "tests/unit/test_delivery_schedule.py",
+  "tests/unit/test_message_parts.py",
+  "tests/unit/test_posting.py",
+  "tests/unit/test_publications.py",
+  "tests/unit/test_analysis_batch_lifecycle.py",
+  "tests/scenario/test_daily_attention.py",
+  "tests/scenario/test_message_parts.py",
+  "tests/scenario/test_delivery_recovery.py",
+  "tests/scenario/test_batch_only.py",
+  "tests/scenario/test_batch_payload_restore.py",
+  "tests/scenario/test_batch_reporting.py",
+  "tests/scenario/test_computation_history.py",
+  "tests/scenario/test_secondary_batch_failures.py",
+]
+process_isolation = "forkserver"
+use_setproctitle = false
+timeout_constant = 2.0
+timeout_multiplier = 3.0

@@ -10,6 +10,7 @@ build/
 .pytest_cache/
 .coverage
 .coverage.*
+mutants/
 htmlcov/
 site/
 .cache/
