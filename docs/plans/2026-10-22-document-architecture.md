@@ -755,7 +755,7 @@ flags ради различающихся контрактов. Отказ от 
 
 ### 10.1. Сквозная диагностика
 
-- [ ] DA10.1. Добавить структурированные `run_id`, bill key, observation/artifact/extraction/
+- [ ] DA10.1. **Частично: [J114](2026-10-22-document-architecture-progress.md#j114), scoped run/command context и bounded structured IDs для существующих source/result/application/content/publication writes. Extraction/PreparedInput IDs отсутствуют в нынешнем storage profile и не синтезируются; полная цепочка зависит от DA3/DA5.** Добавить структурированные `run_id`, bill key, observation/artifact/extraction/
   selection/input/result/application/content/publication IDs в логи. На первом этапе
   неприменимые поля отсутствуют; идентификаторы не извлекаются обратно из prose сообщения.
   В SQL-отчётах сохранять нужные IDs/краткие причины; подробные traces ограничивать сроком

@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from zoneinfo import ZoneInfo
 
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError, StateCheckpointError
+from lexinform.log_context import log_context
 from lexinform.models import (
     DISPATCHED,
     FAILING_CHECK_MIN,
@@ -211,15 +212,16 @@ class CommandService:
             if self._digest is not None:
                 self._digest.start_run()
         for incoming in self._inbox.pending():
-            if not self._handle_one(
-                incoming,
-                result,
-                min_score=min_score,
-                run_started_at=run_started_at,
-                publish=publish,
-                dry_run=dry_run,
-            ):
-                break
+            with log_context(command_id=incoming.update_id):
+                if not self._handle_one(
+                    incoming,
+                    result,
+                    min_score=min_score,
+                    run_started_at=run_started_at,
+                    publish=publish,
+                    dry_run=dry_run,
+                ):
+                    break
         return result
 
     def _handle_one(

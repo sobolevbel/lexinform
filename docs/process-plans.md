@@ -145,3 +145,27 @@ Secondary batch jobs use the memo key as custom ID. Their timeout starts when th
 created and survives submission; an uncertain intent is never resubmitted automatically. v32
 adds `awaiting_batch_since` to keep deferred observations visible after the discovery watermark
 moves. This timestamp is cleared only with the observation checkpoint.
+
+
+## Correlation logs
+
+Pipeline and delivery-drain logs carry the actual `runs.id` as `run_id` after the run row exists.
+Command handling adds `command_id` for that command alone. Each `fan_out` task receives its own
+copy of the caller context; nested operations and exceptions restore the enclosing context.
+Standalone operations without a run row omit `run_id`.
+
+`LEXINFORM_LOG_JSON=true` emits these as JSON fields; the default text format appends the same
+metadata. At `LEXINFORM_LOG_LEVEL=DEBUG`, local repository writes also include known source
+observation/selection/artifact-read IDs, request SHA, computation ID, application identity
+components, content binding and publication status. No synthetic application or extraction ID
+is inferred when the current schema has none. Unknown legacy request hashes stay absent.
+
+A `local … write` log describes a local write and validation. It does not prove SQL commit,
+remote checkpoint, provider acceptance or reader delivery. Use the existing immutable SQL
+records, checkpoint outcome and physical receipts to establish those facts. Traces contain
+allowlisted scalar IDs of at most 256 characters; source URLs, request/result bodies and unknown
+extra fields are excluded from correlation metadata. Existing warning prose is unchanged.
+
+These traces stay in process/workflow logs under their existing retention. `runs.report_json`
+and operator warning summaries do not accumulate the detailed trace. Debug logging is opt-in;
+no additional document copies or SQL rows are created for logging.

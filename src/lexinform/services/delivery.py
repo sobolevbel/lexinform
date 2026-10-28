@@ -1,7 +1,9 @@
 import logging
+from contextlib import ExitStack
 from datetime import timedelta
 
 from lexinform.errors import ServiceUnavailableError, StateCheckpointError
+from lexinform.log_context import log_context
 from lexinform.logging_setup import MemoryLogHandler
 from lexinform.models import (
     Bill,
@@ -158,6 +160,10 @@ class DeliveryService:
         return card_revision_owner(self._repo, root)
 
     def run(self, *, dry_run: bool = False) -> RunReport:
+        with ExitStack() as trace:
+            return self._run(dry_run=dry_run, trace=trace)
+
+    def _run(self, *, dry_run: bool, trace: ExitStack) -> RunReport:
         started = self._clock.now()
         report = RunReport(
             started_at=started,
@@ -173,6 +179,7 @@ class DeliveryService:
         try:
             self._poster.start_run()
             run_id = self._repo.start_run(report)
+            trace.enter_context(log_context(run_id=run_id))
             stale = self._repo.mark_stale_pending_as_unknown(now=started)
             if stale:
                 report.errors.append("Stale pending deliveries marked unknown: " + ", ".join(stale))

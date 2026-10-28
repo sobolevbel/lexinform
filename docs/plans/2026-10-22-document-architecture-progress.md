@@ -5712,3 +5712,44 @@ correction producers **не включены**: прежний безопасн�
 прохождения соответствующих gates. DA7.5 остаётся частичным по coverage history kinds/source refs.
 Это documentation-only stage; runtime и схемы J112 неизменны. Strict docs gate и diff check
 обязательны; повтор полного runtime gate из-за документации не назначается.
+
+
+<a id="j114"></a>
+### J114. Scoped correlation logs without growing state
+
+Статус: **готово**, baseline `244b63b4fd558424527ffe0eb1c1efe6f7b7f3c8`.
+Pipeline/drain используют actual run row ID, команды — update ID; контекст восстанавливается
+после вложенных scopes и исключений. `fan_out` копирует context отдельно для каждой задачи,
+сохраняя прежний порядок consumption и caller-owned SQL writes. Default text и JSON logs
+показывают structured IDs; detailed local source/result/application/content/publication traces
+включаются существующим DEBUG level. Схемы, SQL reports, reader/model payloads не меняются.
+
+Correlation metadata ограничены allowlist scalar IDs до 256 characters. URL/body/unknown fields
+не включаются; application identity остаётся своей составной identity, отсутствующие extraction/
+PreparedInput/request IDs не выдумываются. Local-write trace не доказывает remote checkpoint
+или доставку. Warning summaries и `runs.report_json` не копируют подробные traces.
+[Контракт эксплуатации](../process-plans.md#correlation-logs).
+
+Первичная проверка новой failure fixture выявила неверное имя fake outage (`term` вместо
+`list_terms`); исправлена fixture и добавлено явное утверждение о фактическом failed report.
+Первый full gate остановлен; окончательный запускается на зафиксированных sources.
+
+**168 native snapshots**: provider requests/messages и все 28 tables exact, кроме одного
+tracking timing **0.0→0.1 s**. SQL delta0, gzip **0–4 bytes**; source doctors без errors.
+Metadata/result/content identities и behaviour workers1/4 прежние. Никаких paid calls или
+production processing этот этап не выполняет.
+
+J112 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40607876409): **5065 passed**,
+strict mypy **473**, Ruff/docs/web success. [Relay deploy](https://github.com/sobolevbel/lexinform/actions/runs/40608728007):
+exact COMMIT `e588e1ed31a63d06b20f8b55514c8fda3d5baee2`, listener up **45 s**.
+
+
+Финальный gate: **5075 passed**, 0 failures/errors/skips, **595.786 s**; **54 focused / 21 local HTTP**,
+strict mypy **476**, Ruff/format и strict docs green. **153 прочих runtime files byte-identical**;
+repository AST exact после удаления trace calls/import. На одном amendment cycle: **35 records /
+11275 UTF-8 bytes / максимум484 bytes на record**, workers1/4 canonical records exact. Это DEBUG
+fixture, не прогноз роста production logs. [Acceptance asset](../assets/audits/2026-10-28-correlation-logs/validation.json).
+
+J113 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40608181382) success;
+[deploy](https://github.com/sobolevbel/lexinform/actions/runs/40608978602) сообщает exact COMMIT
+`244b63b4fd558424527ffe0eb1c1efe6f7b7f3c8`, already at that commit, listener running.

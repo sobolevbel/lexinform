@@ -9,12 +9,14 @@ the Sejm moves on.
 import logging
 import time
 from collections.abc import Callable, Sequence
+from contextlib import ExitStack
 from datetime import datetime, timedelta
 from typing import Literal
 
 from pydantic import BaseModel
 
 from lexinform.errors import ServiceUnavailableError, StateCheckpointError
+from lexinform.log_context import log_context
 from lexinform.logging_setup import MemoryLogHandler
 from lexinform.models import PrefilterRejection, RunMode, RunReport, merge_usage
 from lexinform.ports import (
@@ -143,6 +145,10 @@ class DailyPipeline:
 
     def run(self, opts: RunOptions) -> RunReport:
         """Record phase outcomes and stop the run when its durable state checkpoint fails."""
+        with ExitStack() as trace:
+            return self._run(opts, trace)
+
+    def _run(self, opts: RunOptions, trace: ExitStack) -> RunReport:
         started = self._clock.now()
         report = RunReport(
             started_at=started,
@@ -165,6 +171,7 @@ class DailyPipeline:
             if opts.dry_run:
                 self._repo.begin()
             run_id = self._repo.start_run(report)
+            trace.enter_context(log_context(run_id=run_id))
             report.term = self._resolve_term(opts, report)
             if report.term is not None:
                 log.info(

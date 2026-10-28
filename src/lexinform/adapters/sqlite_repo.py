@@ -18,6 +18,7 @@ from pydantic import TypeAdapter
 from lexinform.content_versions import content_delivery_mismatch
 from lexinform.json_storage import compact_json, storage_json
 from lexinform.legacy_delivery import legacy_status_edit
+from lexinform.log_context import log_extra
 from lexinform.models import (
     PRE_PRINT_PREFIX,
     RCL_PREFIX,
@@ -1035,6 +1036,17 @@ class SqliteBillRepository:
         )
         if self.get_computation_result(result.result_id) != result:
             raise ValueError("an immutable computation result cannot be replaced")
+        log.debug(
+            "local computation result write",
+            extra=log_extra(
+                bill_term=result.term,
+                bill_number=result.number,
+                computation_id=result.result_id,
+                batch_id=result.batch_id,
+                custom_id=result.custom_id,
+                request_sha256=result.request_sha256,
+            ),
+        )
 
     def get_computation_result(self, result_id: str) -> ComputationResult | None:
         row = self._conn.execute(
@@ -1154,6 +1166,15 @@ class SqliteBillRepository:
             assert saved is not None, "the insert retains the observation under its identity"
             if saved != observation.model_copy(update={"recorded_at": saved.recorded_at}):
                 raise ValueError("an immutable source observation cannot be replaced")
+        log.debug(
+            "local source observation write",
+            extra=log_extra(
+                bill_term=observation.term,
+                bill_number=observation.number,
+                observation_id=observation.observation_id,
+                selection_id=selection.selection_id,
+            ),
+        )
 
     def get_document_selection(self, selection_id: str) -> DocumentSelectionRecord | None:
         row = self._conn.execute(
@@ -1357,6 +1378,15 @@ class SqliteBillRepository:
         )
         if self.get_publication_content(publication_id) != version:
             raise ValueError("a publication cannot replace its immutable content binding")
+        log.debug(
+            "local publication content binding",
+            extra=log_extra(
+                bill_term=publication.term,
+                bill_number=publication.number,
+                content_id=content_id,
+                publication_id=publication_id,
+            ),
+        )
 
     def get_publication_content(self, publication_id: int) -> ContentVersion | None:
         row = self._conn.execute(
@@ -1424,6 +1454,10 @@ class SqliteBillRepository:
         assert saved is not None, "the insert retains the receipt under its immutable read identity"
         if saved != receipt.model_copy(update={"recorded_at": saved.recorded_at}):
             raise ValueError("an immutable artifact read receipt cannot be replaced")
+        log.debug(
+            "local artifact read write",
+            extra=log_extra(artifact_sha256=receipt.sha256, artifact_read_id=receipt.read_id),
+        )
 
     def get_artifact_read(self, read_id: str) -> ArtifactReadReceipt | None:
         row = self._conn.execute(
@@ -1498,6 +1532,12 @@ class SqliteBillRepository:
         ).fetchone()
         if saved is None or saved[0] != reference.artifact_sha256:
             raise ValueError("an immutable selected part cannot be rebound to different bytes")
+        log.debug(
+            "local selection artifact binding",
+            extra=log_extra(
+                selection_id=reference.selection_id, artifact_sha256=reference.artifact_sha256
+            ),
+        )
 
     def list_selection_artifacts(self, selection_id: str) -> list[SelectionArtifactReference]:
         return [
@@ -1544,6 +1584,18 @@ class SqliteBillRepository:
             != application
         ):
             raise ValueError("an immutable result application cannot be replaced")
+        log.debug(
+            "local result application write",
+            extra=log_extra(
+                bill_term=application.term,
+                bill_number=application.number,
+                computation_id=application.result_id,
+                application_phase=application.phase,
+                application_generation=application.generation,
+                application_target_kind=target.kind if target else None,
+                application_target_ref=target.ref if target else None,
+            ),
+        )
 
     def list_result_applications(self, term: int, number: str) -> list[ResultApplication]:
         return [
@@ -1861,6 +1913,15 @@ class SqliteBillRepository:
                 intent.created_at.isoformat(),
             ),
         )
+        log.debug(
+            "local batch intent write",
+            extra=log_extra(
+                bill_term=intent.request.term,
+                bill_number=intent.request.number,
+                custom_id=intent.request.custom_id,
+                request_sha256=intent.meta.request_sha256,
+            ),
+        )
 
     def batch_job(self, custom_id: str) -> BatchJob | None:
         submissions = self._conn.execute(
@@ -2074,6 +2135,17 @@ class SqliteBillRepository:
                 for i in items
             ],
         )
+        for item in items:
+            log.debug(
+                "local batch item write",
+                extra=log_extra(
+                    bill_term=item.term,
+                    bill_number=item.number,
+                    batch_id=item.batch_id,
+                    custom_id=item.custom_id,
+                    request_sha256=item.meta.request_sha256,
+                ),
+            )
 
     def list_open_llm_batches(self) -> list[LlmBatch]:
         rows = self._conn.execute(
@@ -3240,6 +3312,10 @@ class SqliteBillRepository:
                 int(status is PublicationStatus.FAILED and count_attempt),
                 publication_id,
             ),
+        )
+        log.debug(
+            "local publication status write",
+            extra=log_extra(publication_id=publication_id, delivery_status=status.value),
         )
 
     def get_publication(

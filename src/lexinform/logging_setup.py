@@ -5,6 +5,26 @@ import logging
 import sys
 from datetime import UTC, datetime
 
+from lexinform.log_context import correlation_fields, current_log_fields
+
+
+class CorrelationFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.correlation = {
+            **current_log_fields(),
+            **correlation_fields(getattr(record, "correlation", None)),
+        }
+        return True
+
+
+class TextFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        text = super().format(record)
+        fields = correlation_fields(getattr(record, "correlation", None))
+        if fields:
+            text += " | " + json.dumps(fields, ensure_ascii=False, sort_keys=True)
+        return text
+
 
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
@@ -14,6 +34,7 @@ class JsonFormatter(logging.Formatter):
             "logger": record.name,
             "msg": record.getMessage(),
         }
+        payload.update(correlation_fields(getattr(record, "correlation", None)))
         if record.exc_info:
             payload["exc"] = self.formatException(record.exc_info)
         return json.dumps(payload, ensure_ascii=False)
@@ -21,11 +42,12 @@ class JsonFormatter(logging.Formatter):
 
 def configure_logging(level: str = "INFO", *, json_output: bool = False) -> None:
     handler = logging.StreamHandler(sys.stderr)
+    handler.addFilter(CorrelationFilter())
     if json_output:
         handler.setFormatter(JsonFormatter())
     else:
         handler.setFormatter(
-            logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s", "%H:%M:%S")
+            TextFormatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s", "%H:%M:%S")
         )
     root = logging.getLogger()
     root.handlers.clear()

@@ -1,0 +1,216 @@
+{
+  "stage": "J114",
+  "baseline": "244b63b4fd558424527ffe0eb1c1efe6f7b7f3c8",
+  "checks": {
+    "focused-final": {
+      "sha256": "6782f66e18d3abdb7f1185ae4045b1e083cfff0b61a22779ac45014696ce9a16",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "54",
+      "time": "3.633",
+      "timestamp": "2026-10-28T01:28:41.865132+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full-final": {
+      "sha256": "b5efe92ce2e068ace8917053605cb302d250a843ac355b324fa4e18037e80fae",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "5075",
+      "time": "595.786",
+      "timestamp": "2026-10-28T01:28:47.788009+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "local-http": {
+      "sha256": "545344bdc5d385c379fdac798f580cbe2edeea4dfe8843c05fcfb165e645c633",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "21",
+      "time": "2.401",
+      "timestamp": "2026-10-28T01:26:40.442515+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "log-profile": {
+      "sha256": "5142557c880849dc65d895d5c74bfd26850a0a4d1bb40bf6b2f0dcb5e740b10e",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "2",
+      "time": "1.083",
+      "timestamp": "2026-10-28T01:30:17.330202+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 476 source files",
+    "ruff": "All checks passed!",
+    "format": "472 files already formatted"
+  },
+  "sources": {
+    "src/lexinform/adapters/sqlite_repo.py": "f1374126bd125e912ef675defad800d818322014028beb8146e81fc99eb903ac",
+    "src/lexinform/concurrency.py": "a7b384c81222656afa1fb19934fe237be203d59d25215d548d0c5c2d4fc3f895",
+    "src/lexinform/log_context.py": "a8917393c15bbbd677a203f8ac67df29a28dacc7595b6596b29dfef8df33d22e",
+    "src/lexinform/logging_setup.py": "26cf15eada04e8ec9f935f8a98e4c811737414b441f653d7a31307709efa45b3",
+    "src/lexinform/services/commands.py": "b6e81298a4a8fb3e668a00643429545ca7a5d48cfd263c7810140b04b4b3bfe6",
+    "src/lexinform/services/delivery.py": "233b308863c4f862c9762b1a3c873ae7fdebc6bb67bc837e85368346461a90be",
+    "src/lexinform/services/pipeline.py": "e1face27ee245116aeffb1c0b7a52ff7c58d13b19666f2e17712427aef1c5bfe"
+  },
+  "qualification": {
+    "native": {
+      "cases": 168,
+      "all_profiles_except_metadata_and_storage_metrics_exact": true,
+      "all_requests_and_rendered_messages_exact": true,
+      "all_28_prior_tables_exact_except_recorded_phase_timing": true,
+      "timing_differences": [
+        {
+          "case": "normal/name-4",
+          "row": 1,
+          "before": {
+            "collect batches": 0.0,
+            "commands": 0.0,
+            "discovery": 0.0,
+            "wykaz discovery": 0.0,
+            "rcl discovery": 0.0,
+            "text prefilter": 0.0,
+            "rcl consultations": 0.0,
+            "analysis": 0.0,
+            "publishing": 0.0,
+            "tracking": 0.0,
+            "submit batches": 0.0,
+            "digest": 0.0,
+            "batch status": 0.0
+          },
+          "after": {
+            "collect batches": 0.0,
+            "commands": 0.0,
+            "discovery": 0.0,
+            "wykaz discovery": 0.0,
+            "rcl discovery": 0.0,
+            "text prefilter": 0.0,
+            "rcl consultations": 0.0,
+            "analysis": 0.0,
+            "publishing": 0.0,
+            "tracking": 0.1,
+            "submit batches": 0.0,
+            "digest": 0.0,
+            "batch status": 0.0
+          }
+        }
+      ],
+      "command_outcome_seconds_excluded_from_semantic_comparison": true,
+      "content_version_views": 2,
+      "content_snapshot_views": 6,
+      "binding_views": 2,
+      "prior_metadata_rows_preserved": true,
+      "read_receipt_views": 270,
+      "source_observation_views": 210,
+      "selection_views": 198,
+      "link_views": 190,
+      "all_source_doctors_without_errors": true,
+      "sql_delta": {
+        "min": 0,
+        "max": 0
+      },
+      "gzip_delta": {
+        "min": 0,
+        "max": 4
+      }
+    },
+    "structural": {
+      "baseline": "244b63b4fd558424527ffe0eb1c1efe6f7b7f3c8",
+      "repository_ast_exact_after_removing_trace_calls_and_import": true,
+      "no_sql_schema_or_query_changes": true,
+      "other_runtime_files_byte_identical": 153,
+      "changed_runtime": {
+        "src/lexinform/adapters/sqlite_repo.py": "f1374126bd125e912ef675defad800d818322014028beb8146e81fc99eb903ac",
+        "src/lexinform/concurrency.py": "a7b384c81222656afa1fb19934fe237be203d59d25215d548d0c5c2d4fc3f895",
+        "src/lexinform/log_context.py": "a8917393c15bbbd677a203f8ac67df29a28dacc7595b6596b29dfef8df33d22e",
+        "src/lexinform/logging_setup.py": "26cf15eada04e8ec9f935f8a98e4c811737414b441f653d7a31307709efa45b3",
+        "src/lexinform/services/commands.py": "b6e81298a4a8fb3e668a00643429545ca7a5d48cfd263c7810140b04b4b3bfe6",
+        "src/lexinform/services/delivery.py": "233b308863c4f862c9762b1a3c873ae7fdebc6bb67bc837e85368346461a90be",
+        "src/lexinform/services/pipeline.py": "e1face27ee245116aeffb1c0b7a52ff7c58d13b19666f2e17712427aef1c5bfe"
+      },
+      "existing_model_identity_extraction_provider_and_sender_modules_byte_identical": true
+    },
+    "traces": {
+      "records": 35,
+      "utf8_bytes": 11275,
+      "max_record_utf8": 484,
+      "fields": [
+        "application_phase",
+        "application_target_kind",
+        "application_target_ref",
+        "artifact_read_id",
+        "artifact_sha256",
+        "batch_id",
+        "bill_number",
+        "bill_term",
+        "command_id",
+        "computation_id",
+        "content_id",
+        "custom_id",
+        "delivery_status",
+        "observation_id",
+        "publication_id",
+        "request_sha256",
+        "run_id",
+        "selection_id"
+      ],
+      "actual_run_ids": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "workers1_4_records_exact_except_timestamp": true
+    },
+    "release": {
+      "j112": {
+        "sha": "e588e1ed31a63d06b20f8b55514c8fda3d5baee2",
+        "ci_run": 40607876409,
+        "ci_job": 122551807838,
+        "tests": 5065,
+        "mypy_files": 473,
+        "ci_conclusion": "success",
+        "deploy_run": 40608728007,
+        "deploy_job": 122554679081,
+        "deployed_commit": "e588e1ed31a63d06b20f8b55514c8fda3d5baee2",
+        "listener_up_seconds": 45
+      },
+      "j113": {
+        "sha": "244b63b4fd558424527ffe0eb1c1efe6f7b7f3c8",
+        "ci_run": 40608181382,
+        "ci_test_job": 122552840427,
+        "ci_conclusion": "success",
+        "deploy_run": 40608978602,
+        "deploy_job": 122555531362,
+        "deploy_log_commit": "244b63b4fd558424527ffe0eb1c1efe6f7b7f3c8",
+        "deploy_result": "already at 244b63b4fd55, lexinform-listen running"
+      }
+    }
+  },
+  "evidence": {
+    "out/corpus/j114/frozen-final.json": "dd0696250b9e9682eb16fece6e4223b9f5b26a67704606f93c616a241bc9f197",
+    "out/corpus/j114/native_profiles.py": "fd08fdedd3add00961cb37094ec38fc92eb060393aefc4a7622e17f9dac82b19",
+    "out/corpus/j114/compare_native_all_tables.py": "cabda0cba0bdccb1caec07223e343b453e975be7021fd1bab666d6af1aa2e86c",
+    "out/corpus/j114/native-parity-accepted.json": "6350c3c7667168e65a119c07a267d63c14de9d2e3321e97b2cacb0385782419c",
+    "out/corpus/j114/structural_profile.py": "3d0dbad60732d92b7d4e905d43681cd109997eb2ed9aab2b33ce08641488b893",
+    "out/corpus/j114/structural-parity.json": "08d45a23a312ee5a11f18cb98e7230b98ffe0a1b99820e10c3b16fb50b089c6d",
+    "out/corpus/j114/log_profile.py": "d66311a96f65d8f6c10e81f18f4b216feb818a57d998c77684851a452ba190dd",
+    "out/corpus/j114/log-parity.json": "9ec919a9d89244ba913725e39cccb94007e9f9cbfaff5e8e2a7e546c357a293d",
+    "out/corpus/j114/release-j112-j113.json": "e0248890ce208eb7799c8b9ea7a50af967d2db59664962ba68775b5d2519e39c",
+    "out/corpus/j114/accept.py": "3ae3860e8aed267091739555e163ed183e3bf0c5f38fe720049e878e247d7d92"
+  },
+  "limitations": [
+    "Detailed local-write traces require DEBUG and do not establish remote commit or physical delivery.",
+    "Missing extraction/PreparedInput identities and legacy hashes are omitted.",
+    "No SQL rows, raw files, provider payloads or report traces are added.",
+    "Natural production processing and paid experiments were not run."
+  ]
+}
