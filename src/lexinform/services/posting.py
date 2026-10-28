@@ -17,7 +17,12 @@ from zoneinfo import ZoneInfo
 
 from lexinform.attention import assess_attention
 from lexinform.delivery_schedule import daily_schedule, sitting_is_close
-from lexinform.legacy_delivery import legacy_notice_reply, legacy_status_edit, legacy_status_reply
+from lexinform.legacy_delivery import (
+    legacy_notice_reply,
+    legacy_sitting_member,
+    legacy_status_edit,
+    legacy_status_reply,
+)
 from lexinform.models import (
     AgendaItem,
     Bill,
@@ -503,6 +508,16 @@ class Poster:
                     assert self._repo.replace_unattempted_delivery(pub.id, planned)
             stored = self._repo.publication_by_id(group_ids[0])
             assert stored is not None
+            self._retry_sitting_group(stored, result)
+            return
+        if all(legacy_sitting_member(pub) for pub in pubs):
+            if not self._repo.freeze_legacy_sitting_group(
+                tuple(pubs), self._publisher.render_sittings(news)
+            ):
+                raise ValueError("Cannot freeze the legacy sitting group")
+            assert pubs[0].id is not None, "legacy_sitting_member requires stored identities"
+            stored = self._repo.publication_by_id(pubs[0].id)
+            assert stored is not None, "the group freeze retains every saved member"
             self._retry_sitting_group(stored, result)
             return
         identities: list[int] = []

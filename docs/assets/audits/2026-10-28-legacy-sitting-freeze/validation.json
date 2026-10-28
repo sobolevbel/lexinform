@@ -1,0 +1,285 @@
+{
+  "baseline": "0f5453e9ea447157023e8cefb24b45170291e40b",
+  "corpus_text_replay": "Not required: physical extraction, selection, normalization and provider-input source files byte-identical",
+  "default_native": {
+    "all_30_prior_tables_exact_except_recorded_phase_timing": true,
+    "all_profiles_except_metadata_and_storage_metrics_exact": true,
+    "all_requests_and_rendered_messages_exact": true,
+    "all_source_doctors_without_errors": true,
+    "binding_views": 2,
+    "cases": 168,
+    "command_outcome_seconds_excluded_from_semantic_comparison": true,
+    "content_snapshot_views": 6,
+    "content_version_views": 2,
+    "gzip_delta": {
+      "max": 0,
+      "min": 0
+    },
+    "link_views": 190,
+    "prior_metadata_rows_preserved": true,
+    "read_receipt_views": 270,
+    "selection_views": 198,
+    "source_observation_views": 210,
+    "sql_delta": {
+      "max": 0,
+      "min": 0
+    },
+    "timing_differences": []
+  },
+  "evidence": {
+    "out/corpus/j133/accept.py": {
+      "bytes": 2639,
+      "sha256": "977020bc6de8281beb8e39313154c0b5ccc4cfb3455144a733425878a69708a5"
+    },
+    "out/corpus/j133/compare_defaults.py": {
+      "bytes": 4616,
+      "sha256": "73e2202a5ef6d9e5b57d5b6657cfe0192b6b13564472ae801b11918c843520bd"
+    },
+    "out/corpus/j133/default-parity.json": {
+      "bytes": 679,
+      "sha256": "92023a4e837a86ff250a9196fca9d1437be5da9d9c12d74ac8f07731217fcfd1"
+    },
+    "out/corpus/j133/default_profiles.py": {
+      "bytes": 1176,
+      "sha256": "8cc0dfc36c772a26880d99ca2fa00c80e4c50ae3895d0e34e90f3a6226402b6c"
+    },
+    "out/corpus/j133/docs-final.log": {
+      "bytes": 266,
+      "sha256": "2e9e54497c2dbd09236e709dfad9427721fc549af1ce9c0ca36b905c14a74ceb"
+    },
+    "out/corpus/j133/focused.xml": {
+      "bytes": 56515,
+      "sha256": "a58f1fe4f8506ce26ee9a5d3e1e5175caa35f1999f879154c161f324b6603a03"
+    },
+    "out/corpus/j133/format-final.log": {
+      "bytes": 28,
+      "sha256": "7bd2cec842b9e4948b1eed99c801b94797e1cfc1fc3bfbf709c523d556d4e56f"
+    },
+    "out/corpus/j133/frozen-final.json": {
+      "bytes": 61740,
+      "sha256": "48dab0e283a0ce9cf449fbc5f439d9114f0e37944ccd4d07ec26ec6d9c7b09d1"
+    },
+    "out/corpus/j133/full.xml": {
+      "bytes": 902079,
+      "sha256": "94e00bf128f7b54543f3247ecb23c3a261f40fc05418ce53b9a521eac5962b18"
+    },
+    "out/corpus/j133/integrated-source-gates.json": {
+      "bytes": 631,
+      "sha256": "8f09e796b41ca057e4ed875c3bb33bc828d8ed50f1b73bfb602b651cbf3c5ad6"
+    },
+    "out/corpus/j133/mypy-final.log": {
+      "bytes": 45,
+      "sha256": "41d61c875ac3d050602675fbf4881916135c7522f9b1d04fd98054fe9d95830d"
+    },
+    "out/corpus/j133/qualification.json": {
+      "bytes": 3942,
+      "sha256": "5a97316e2b7b9d79660ed90f84a674d81cada5123b24e583305ddbca0d110e7f"
+    },
+    "out/corpus/j133/reproduction.xml": {
+      "bytes": 5103,
+      "sha256": "ac0ec9987a282c988b07ecc7dfde397755af135df5b92f4081caa690f7244df8"
+    },
+    "out/corpus/j133/ruff-final.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    }
+  },
+  "exclusions": [
+    "Attempted attention-v1 without frozen text",
+    "Oversized ungrouped legacy singleton",
+    "Legacy digest",
+    "Nonqualified ownership/context shapes",
+    "Historical HTML or group inference",
+    "Live Telegram/natural production acceptance",
+    "Raw archive/backend decision"
+  ],
+  "frozen_python_files": 562,
+  "gates": {
+    "focused": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 199
+    },
+    "full": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 5553
+    }
+  },
+  "mypy_files": 511,
+  "other_runtime_files_byte_exact": 160,
+  "prior_source_reproduction": {
+    "errors": 0,
+    "failures": 1,
+    "skipped": 0,
+    "tests": 1
+  },
+  "runtime_files": {
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "bytes": 182976,
+      "sha256": "6b71dcc82881fb65410705d14dd4c9cd5fc628aae9809337faa0565209e1643b"
+    },
+    "src/lexinform/legacy_delivery.py": {
+      "bytes": 3892,
+      "sha256": "72324f17aa68cd5996d0b4c02ccc6f110fa89ccac69ae874bba0a92697595f77"
+    },
+    "src/lexinform/ports.py": {
+      "bytes": 45002,
+      "sha256": "9e2dabb092ec9e0db792455af04449a5726d50715e7aa1fd00fc9fc34eee3bca"
+    },
+    "src/lexinform/services/posting.py": {
+      "bytes": 80747,
+      "sha256": "d4cb71a64c1ddadfde33f9f37dc5d23b5d8df5cd8f5f0e6059643bf7299db333"
+    }
+  },
+  "schema_changed": false,
+  "scope": "Future exact HTML and membership for qualified literal legacy FAILED sitting groups, including mixed QUEUED0 members",
+  "sitting_qualification": {
+    "duration_differences": [
+      {
+        "after": {
+          "analysis": 0.0,
+          "batch status": 0.0,
+          "collect batches": 0.0,
+          "commands": 0.4,
+          "digest": 0.0,
+          "publishing": 0.0,
+          "rcl consultations": 0.0,
+          "submit batches": 0.0,
+          "text prefilter": 0.0
+        },
+        "before": {
+          "analysis": 0.0,
+          "batch status": 0.0,
+          "collect batches": 0.0,
+          "commands": 0.5,
+          "digest": 0.0,
+          "publishing": 0.0,
+          "rcl consultations": 0.0,
+          "submit batches": 0.0,
+          "text prefilter": 0.0
+        },
+        "case": "mixed-shadow-confirm.sql",
+        "field": "phase_seconds",
+        "row": 4,
+        "table": "runs"
+      }
+    ],
+    "frozen_before_after_exact": true,
+    "full_qualification": {
+      "bytes": 53811,
+      "path": "out/corpus/j133/sitting-integrated-qualification.json",
+      "sha256": "be5496104cb2e46718002656931fad8860cbcf9c6caa8f6c5edb2d643e6b035b"
+    },
+    "integrity_and_foreign_keys_and_source_doctors": "passed",
+    "limits": [
+      "Fake transport and current pinned dependencies; no production or paid calls.",
+      "Future payload is newly persisted saved semantic context, not recovered historic HTML.",
+      "Main native baseline/current use schema56; c45 schema55 runs are supplemental. Fixture measurements are not production forecasts."
+    ],
+    "native_profiles": {
+      "api_text_parent_owner_ids_receipts_attempts_days_requests_paid_results_logical_outcomes": "exact",
+      "baseline_schema": 56,
+      "cases": 9,
+      "current_tables_compared": 30,
+      "expected_future_fields": [
+        "sitting_group",
+        "group_text",
+        "render_origin"
+      ],
+      "integrated_schema": 56,
+      "new_tables_added": [],
+      "pending_and_receipt_checkpoints_compared": 18,
+      "prior_tables_compared": 30,
+      "storage_deltas": [
+        {
+          "case": "failed-off",
+          "gzip_delta": 184,
+          "sql_delta": 1744
+        },
+        {
+          "case": "failed-on",
+          "gzip_delta": 182,
+          "sql_delta": 1744
+        },
+        {
+          "case": "failed-shadow",
+          "gzip_delta": 180,
+          "sql_delta": 1744
+        },
+        {
+          "case": "mixed-off",
+          "gzip_delta": 186,
+          "sql_delta": 1731
+        },
+        {
+          "case": "mixed-on",
+          "gzip_delta": 186,
+          "sql_delta": 1731
+        },
+        {
+          "case": "mixed-shadow",
+          "gzip_delta": 182,
+          "sql_delta": 1731
+        },
+        {
+          "case": "single-off",
+          "gzip_delta": 149,
+          "sql_delta": 490
+        },
+        {
+          "case": "single-on",
+          "gzip_delta": 157,
+          "sql_delta": 490
+        },
+        {
+          "case": "single-shadow",
+          "gzip_delta": 151,
+          "sql_delta": 490
+        }
+      ]
+    },
+    "prior0f_reader": {
+      "actions": [
+        "settled no resend",
+        "unknown operator retry",
+        "unknown operator confirm"
+      ],
+      "all_30_tables": "exact except explicitly recorded durations",
+      "api_calls_per_reader": 9,
+      "cases": 27,
+      "current_reader_cases": 27,
+      "fixture_shapes": [
+        "single FAILED",
+        "all FAILED",
+        "FAILED + QUEUED0"
+      ],
+      "input_restore_dump": "byte exact",
+      "modes": [
+        "off",
+        "shadow",
+        "on"
+      ],
+      "no_automatic_unknown_or_settled_sends": true,
+      "no_sitting_rerender_paid_or_external_network_calls": true,
+      "publication_resolution_api_checkpoint_rows": "exact",
+      "schema": 56,
+      "source": "/private/tmp/lexinform-j133-root-baseline"
+    },
+    "source_imports": {
+      "lexinform": "/Users/sobaleu/projects/lexinform/src/lexinform/__init__.py",
+      "lexinform.adapters.sqlite_repo": "/Users/sobaleu/projects/lexinform/src/lexinform/adapters/sqlite_repo.py",
+      "lexinform.services.posting": "/Users/sobaleu/projects/lexinform/src/lexinform/services/posting.py"
+    },
+    "version": 1,
+    "versions": {
+      "anthropic": "2.2.0",
+      "openai": "3.37.0",
+      "pydantic": "2.14.1",
+      "pytest": "9.1.1"
+    }
+  },
+  "stage": "J133"
+}

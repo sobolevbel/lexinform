@@ -18,7 +18,12 @@ from pydantic import TypeAdapter
 
 from lexinform.content_versions import content_delivery_mismatch
 from lexinform.json_storage import compact_json, storage_json
-from lexinform.legacy_delivery import legacy_notice_reply, legacy_status_edit, legacy_status_reply
+from lexinform.legacy_delivery import (
+    legacy_notice_reply,
+    legacy_sitting_member,
+    legacy_status_edit,
+    legacy_status_reply,
+)
 from lexinform.log_context import log_extra
 from lexinform.models import (
     PRE_PRINT_PREFIX,
@@ -1848,6 +1853,55 @@ class SqliteBillRepository:
 
     def freeze_legacy_notice_reply(self, publication_id: int, delivery: DeliveryPlan) -> bool:
         return self._freeze_legacy_delivery(publication_id, delivery, mode="notice_reply")
+
+    def freeze_legacy_sitting_group(self, members: tuple[Publication, ...], text: str) -> bool:
+        identities = tuple(member.id for member in members)
+        if (
+            not members
+            or len(set(identities)) != len(identities)
+            or not text.strip()
+            or utf16_length(text) > MESSAGE_LIMIT
+            or not any(member.status is PublicationStatus.FAILED for member in members)
+        ):
+            return False
+        prepared: list[tuple[str, int, str, int, str]] = []
+        with self.atomic():
+            for member in members:
+                if not legacy_sitting_member(member) or member.channel_id != members[0].channel_id:
+                    return False
+                assert member.id is not None, "legacy_sitting_member requires a stored identity"
+                row = self._conn.execute(
+                    "SELECT * FROM publications WHERE id = ?", (member.id,)
+                ).fetchone()
+                if (
+                    row is None
+                    or self._row_to_publication(row) != member
+                    or self.digest_owner(member.id) is not None
+                    or self.digest_sources(member.id)
+                ):
+                    return False
+                raw: dict[str, object] = json.loads(row["delivery_json"])
+                raw.update(sitting_group=identities, group_text=text)
+                if member.status is PublicationStatus.FAILED:
+                    raw["render_origin"] = "legacy_snapshot"
+                prepared.append(
+                    (
+                        json.dumps(raw, ensure_ascii=False, separators=(",", ":")),
+                        member.id,
+                        member.status.value,
+                        member.attempts,
+                        row["delivery_json"],
+                    )
+                )
+            for parameters in prepared:
+                changed = self._conn.execute(
+                    "UPDATE publications SET delivery_json = ?"
+                    " WHERE id = ? AND status = ? AND attempts = ? AND delivery_json = ?",
+                    parameters,
+                )
+                if changed.rowcount != 1:
+                    raise ValueError("Cannot freeze a changed legacy sitting group")
+        return True
 
     def _freeze_legacy_delivery(
         self,

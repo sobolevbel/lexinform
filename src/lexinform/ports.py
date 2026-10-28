@@ -947,6 +947,8 @@ class BillRepository(Protocol):
 
     def freeze_legacy_notice_reply(self, publication_id: int, delivery: DeliveryPlan) -> bool: ...
 
+    def freeze_legacy_sitting_group(self, members: tuple[Publication, ...], text: str) -> bool: ...
+
     def list_joint_reply_candidates(
         self, channel_id: str, *, limit: int, max_attempts: int = 3
     ) -> list[Bill]:

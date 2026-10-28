@@ -5,7 +5,7 @@ from typing import Literal
 import pytest
 
 from lexinform.errors import DeliveryUncertainError, StateCheckpointError
-from lexinform.models import Publication, PublicationKind, PublicationStatus, SittingNews
+from lexinform.models import Publication, PublicationKind, PublicationStatus
 from lexinform.ports import PublishResult
 from lexinform.services.tracking_result import TrackingResult
 from tests.harness import CHANNEL, COMMITTEE_STAGES, START, World
@@ -256,26 +256,29 @@ def test_operator_retry_after_mode_change_saves_shared_audit_before_api(
     assert all(row.status is PublicationStatus.SENT for row in rows(fresh, identities))
 
 
-def test_attempted_legacy_sitting_without_membership_keeps_its_compatible_callback(
+def test_attempted_legacy_sitting_freezes_its_future_text_and_membership(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     world, identities = queued_world("sittings", "off")
     for identity in identities:
         world.repo.mark_publication(identity, PublicationStatus.FAILED, error="old refusal")
     connect(world, tmp_path)
-    observed: list[tuple[SittingNews, ...]] = []
-    original = world.publisher.publish_sittings
+    observed: list[tuple[int, ...]] = []
+    original = world.publisher.publish_prepared
 
-    def send(news: tuple[SittingNews, ...] | list[SittingNews]) -> PublishResult:
-        observed.append(tuple(news))
-        return original(news)
+    def send(publication: Publication) -> PublishResult:
+        assert publication.delivery is not None, "the bounded legacy retry freezes its group"
+        observed.append(publication.delivery.sitting_group)
+        return original(publication)
 
-    monkeypatch.setattr(world.publisher, "publish_sittings", send)
+    monkeypatch.setattr(world.publisher, "publish_prepared", send)
 
     flush(world, "sittings", identities)
 
-    assert len(observed) == 1 and len(observed[0]) == 2
-    assert all(not text_and_members(row, "sittings")[1] for row in rows(world, identities))
+    assert observed == [identities]
+    assert all(
+        text_and_members(row, "sittings")[1] == identities for row in rows(world, identities)
+    )
 
 
 def failed_group(

@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from lexinform.errors import StateCheckpointError
-from lexinform.models import OutcomeStatus, PublicationStatus
+from lexinform.models import OutcomeStatus, PublicationStatus, SittingNews
 from tests.scenario.test_card_remote_checkpoints import Mode, connect, reject_checkpoint, restored
 from tests.scenario.test_group_remote_checkpoints import flush, queued_world, rows
 from tests.scenario.test_update_remote_checkpoints import plan, queued, row, send
@@ -55,13 +55,20 @@ def test_legacy_status_edit_freezes_its_saved_context_at_the_remote_boundary(
 
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])
 @pytest.mark.parametrize("boundary", [1, 2])
-def test_attempted_legacy_sitting_callback_checkpoints_all_pending_members_and_stops_on_failure(
+def test_attempted_sitting_checkpoints_preserve_exact_or_unsupported_legacy_context(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: Mode, boundary: int
 ) -> None:
     world, identities = queued_world("sittings", mode)
     for identity in identities:
         world.repo.mark_publication(identity, PublicationStatus.FAILED)
     original = rows(world, identities)
+    text = world.publisher.render_sittings(
+        [
+            SittingNews.of(member.kind, member.delivery)
+            for member in original
+            if member.delivery is not None
+        ]
+    )
     remote = connect(world, tmp_path)
     posts = len(world.publisher.sent)
     reject_checkpoint(monkeypatch, boundary)
@@ -71,7 +78,20 @@ def test_attempted_legacy_sitting_callback_checkpoints_all_pending_members_and_s
 
     assert len(world.publisher.sent) - posts == int(boundary == 2)
     assert all(
-        saved.delivery == current.delivery and saved.attempts == current.attempts
+        saved.delivery is not None
+        and current.delivery
+        == (
+            saved.delivery.model_copy(
+                update={
+                    "sitting_group": identities,
+                    "group_text": text,
+                    "render_origin": "legacy_snapshot",
+                }
+            )
+            if mode != "on"
+            else saved.delivery
+        )
+        and saved.attempts == current.attempts
         for saved, current in zip(original, rows(world, identities), strict=True)
     )
     fresh = restored(remote, world, tmp_path)

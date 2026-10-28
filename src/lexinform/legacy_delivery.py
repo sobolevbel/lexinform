@@ -49,6 +49,36 @@ def legacy_notice_reply(publication: Publication) -> bool:
     )
 
 
+def legacy_sitting_member(publication: Publication) -> bool:
+    plan = publication.delivery
+    return (
+        publication.id is not None
+        and publication.kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED)
+        and (
+            publication.status is PublicationStatus.FAILED
+            or (publication.status is PublicationStatus.QUEUED and not publication.attempts)
+        )
+        and plan is not None
+        and plan.policy_version == "legacy"
+        and plan.destination == "direct"
+        and bool(plan.bill_json and plan.item_json)
+        and plan.edit_message_id is None
+        and plan.participation is None
+        and not plan.rendered_text
+        and plan.render_origin is None
+        and not plan.group_text
+        and not plan.publication_ids
+        and not plan.continuation_ids
+        and plan.continuation_parent is None
+        and plan.continuation_root is None
+        and plan.continuation_index == 1
+        and not plan.digest_parts
+        and not plan.digest_event_ids
+        and plan.absorbed_by is None
+        and plan.revision_of is None
+    )
+
+
 def _legacy_status_snapshot(publication: Publication) -> bool:
     plan = publication.delivery
     return (

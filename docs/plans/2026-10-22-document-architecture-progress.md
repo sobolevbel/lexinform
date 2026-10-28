@@ -6449,3 +6449,54 @@ Completed byte archive отложен по J123. DA8.4 закрыт конечн
 План:74 tasks,22 done,6 explicit N/A,46 applicable partial/open.
 [Acceptance asset](../assets/audits/2026-10-28-runtime-extraction/validation.json) пинует final source freeze,
 все gates, оба окружения, scope reuse, corpus/input hashes, actual state migration и budget exclusions.
+
+J132 выпущен `0f5453e9ea447157023e8cefb24b45170291e40b`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40674247669) success;
+[auto deploy](https://github.com/sobolevbel/lexinform/actions/runs/40675419813) подтвердил
+переход b1d22cb → 0f5453e, restart,45s health и timer setup.
+[Release proof](../assets/audits/2026-10-28-runtime-extraction/release.json) содержит только
+allowlisted metadata/filtered lines. Это systemd acceptance, не Telegram functional probe.
+
+<a id="j133"></a>
+### J133. Freeze future legacy sitting batches before retry
+
+Статус: **готово локально**, все gates и compatibility acceptance пройдены; выпуск проверяется отдельно.
+Baseline `0f5453e9ea447157023e8cefb24b45170291e40b`.
+Qualified legacy AGENDA/AGENDA_CANCELLED batch с хотя бы одним FAILED member теперь сохраняет
+точные будущие HTML и ordered membership до pending/checkpoint/API. Допустимы single,
+all-FAILED и mixed FAILED/QUEUED0, без rendered/group/continuation/digest/revision ownership.
+Saved semantic snapshots, card links, attempts и IDs не переписываются. Это future intent;
+предыдущие HTML/состав несохранённой группы не восстанавливаются задним числом.
+
+Repository проверяет весь batch до записи, channel/identity/raw JSON/status/attempt CAS и
+отсутствие digest ownership; late CAS failure откатывает все строки. Unknown raw JSON поля
+сохраняются. FAILED получает legacy_snapshot; новый QUEUED member сохраняет прежний origin.
+Группа отправляется top-level через существующий prepared reader; card parent остаётся ссылкой
+в строке. После runner loss UNKNOWN не отправляется автоматически; audited retry/confirm
+применяется к сохранённой группе целиком. Существующие modern/frozen producers не меняются.
+
+5553 full tests passed, failures/errors/skips0; 199 focused, strict mypy511, Ruff/format green.
+На exact baseline один новый scenario падает на отсутствии prepared-send без setup errors.
+Fault scenarios покрывают checkpoint до/после API, fresh remote restore, clock/formatter drift,
+audited group resolution и отказ writer. Unit controls проверяют stale members, channels,
+ownership, CAS rollback, opaque fields и UTF16 size bound.
+168 native profiles: requests/messages/all30 прежних таблиц exact, timing differences0,
+SQL/gzip delta0. Source/selection/extraction/provider input не меняются; raw replay не требуется.
+
+Attempted attention-v1 без frozen text, oversized legacy singleton, legacy digest и остальные
+неквалифицированные shapes остаются отдельными ветками. Весь DA1 не закрывается; общего
+multipart sitting producer этот этап не добавляет. SQL schema56, backend и raw retention прежние.
+
+На9 native sitting profiles schema56→56 API HTML/parent/IDs/owners/attempts/day/model inputs,
+paid results и logical outcomes exact; все30 таблиц exact после исключения только трёх
+новых future fields. Pre-send и receipt snapshots также проверены. Прирост на fixtures:
+SQL+490–1744 bytes, gzip+149–186; это цена сохранения будущего сообщения, не production forecast.
+Дополнительные c45/schema55 profiles сохранены как supplemental, их DDL delta не входит в эти числа.
+
+Старый0f reader и current reader восстановили непустые schema56 dumps byte-exact и прошли
+27 cases каждый: settled no resend, UNKNOWN audited retry/confirm ×3shapes ×3modes.
+По9 fake API calls на reader; никакого повторного render/model/network. Publication/resolution/
+checkpoint rows и все30таблиц exact; одно измеренное commands phase время0.5→0.4s сохранено
+как duration difference, не скрыто как semantic parity. Миграции AST exact,160 остальных runtime
+files byte-exact. [Acceptance asset](../assets/audits/2026-10-28-legacy-sitting-freeze/validation.json)
+пинует source freeze, текущие dependencies, XML gates и complete local qualification.
