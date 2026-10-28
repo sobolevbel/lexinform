@@ -250,11 +250,11 @@ Conventions:
 - Fixture bills: `process_3039` (deputies' bill in committee), `process_1962` (Senate
   amendments, adopted), `process_950` (plenary first reading), `print_3039` and its real PDF.
 
-### Optional mutation pilot
+### Optional mutation audits
 
 The `mutation` dependency group pins `mutmut`; it is installed only when requested.
-The pilot config selects delivery scheduling and message continuations, with direct unit
-contracts and their existing scenarios. Run the bounded function selection explicitly:
+The config covers delivery scheduling, physical delivery and batch lifecycle functions.
+Run the original scheduling and continuation-readiness pilot explicitly:
 
 ```bash
 uv run --frozen --group mutation mutmut run --max-children 2 \
@@ -267,6 +267,25 @@ Pytest runs serially inside each mutant. Generated sources and progress stay in 
 `mutants/`; `results` also lists generated mutations outside the executed selection.
 Review surviving mutations for missing contracts, equivalent behavior and input preconditions;
 timeouts and tool failures are separate outcomes. The pilot is optional and has no CI score gate.
+
+For the delivery/batch campaign, generate mutants with one smoke case, then run the fixed
+250-mutation sample across six functions with two workers and a 20-minute deadline:
+
+```bash
+uv run --frozen --group mutation mutmut run --max-children 2 \
+  'lexinform.services.message_parts.x_freeze_parts__mutmut_1'
+uv run --frozen --group mutation python tools/run_mutation_campaign.py out/mutation-campaign
+uv run --frozen python tools/analyze_mutation_campaign.py out/mutation-campaign \
+  --output out/mutation-matrix.json
+```
+
+The runner refuses an existing output directory and verifies production-source hashes.
+`tools.mutation_probe` records every relevant test outcome; mutation runs disable pytest's
+first-failure stop so the matrix can simulate removals with `--exclude-nodeid`.
+Zero exclusive detections identify review candidates, not disposable tests: inspect the
+contract, run survivors against other existing tests, and check detection after a proposed removal.
+The probe also accepts four explicit `LEXINFORM_MUTATION_FAULT` boundary mutations; names and
+transformations live in that module, and no source file is rewritten.
 
 Refreshing fixtures:
 

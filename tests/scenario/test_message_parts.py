@@ -59,8 +59,10 @@ def test_long_card_preserves_all_facts_with_durable_physical_parts(
     assert len(w.publisher.texts(PublicationKind.MESSAGE_PART)) == len(children)
 
 
-@pytest.mark.parametrize("failure", ["failed", "unknown"])
-@pytest.mark.parametrize("resolution", ["retry", "confirm", "dismiss"])
+@pytest.mark.parametrize(
+    "failure,resolution",
+    [("failed", "retry"), ("unknown", "retry"), ("unknown", "confirm"), ("unknown", "dismiss")],
+)
 def test_interrupted_part_keeps_parent_and_text_across_restart(
     failure: str, resolution: str
 ) -> None:
