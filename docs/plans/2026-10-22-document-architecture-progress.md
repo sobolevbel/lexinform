@@ -7003,7 +7003,7 @@ ef8d9901643a→943ce8971a68, health после45s и timer enabled.
 <a id="j142"></a>
 ### J142. Retain bounded pipeline download diagnostics
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**.
+Статус: **реализовано, CI и обновление реле подтверждены**.
 Baseline `943ce8971a6861ef0824b5730f8f42132dcb3fd9`.
 Optional versioned RunReport field измеряет TextLoader download invocations. Cache hits,
 invalid/unknown routing и known pre-send budget rejection различаются; adapter-internal HTTP
@@ -7048,3 +7048,49 @@ catalog не расширяет этот work item до общего HTTP ledger
 source freeze605 files, full/targeted/HTTP checks, paired/native replay и storage/stress evidence.
 Raw/report details остаются в исходных QA artifacts; asset содержит агрегаты и SHA refs.
 План74tasks/29done/6explicitN/A/39applicable partial-open: scope gap отмечен в DA2.4.
+
+J142 release: commit `6bb31bbb34260404b6a0a419f738601d31f66332`, CI40749351407 и deploy40749846821;
+реле перешло с `943ce8971a68` на `6bb31bbb3426`, health после45s и timer подтверждены.
+Последующая интеграция mutation-аудита `27b8181355e3f111916ef244308851bbe83deb2c` также прошла
+CI40750311611/deploy40751010858 с переходом с6bb31bbb, health45s и timer.
+[Историческое подтверждение](../assets/audits/2026-10-28-download-diagnostics/release.json)
+и [интегрированный выпуск](../assets/audits/2026-10-28-download-diagnostics/release-integrated.json)
+проверены отдельно; проверка старого SHA не выдаётся за состояние текущего main.
+
+
+### J143. Bound resumable corpus collection and restore the PDF replay generation
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**. Baseline `27b8181355e3f111916ef244308851bbe83deb2c`.
+Отдельный staging pilot читает pinned plan максимум на 20 официальных RCL originals:
+serial/no retries, 5 MiB на response, 128 MiB на charged application bodies + retained originals +
+24 MiB reserved metadata. Это не wire/TLS accounting и не production archive/backend.
+Active corpus, INDEX и caches не меняются. Installation остаётся отдельной операцией.
+
+Resume сверяет exact sealed inventory, unique retained inodes и reservations до HTTP;
+unknown request сохраняет полный резерв и не повторяется. Intent, code и directory chain
+fsynced до запроса. Strict HTTPS ports ограничены 443; query provenance принадлежит final URL.
+Один deterministic final bundle на pilot связывает все dispositions и проверенные hardlinks;
+повтор verified bundle read-only, partial output не заменяется, copy fallback отсутствует.
+Pilot lifecycle отделён от collect/install; общий create-only helper сохраняет прежний контракт.
+
+Независимое review закрыло budget/resume, port provenance, directory durability и повторную
+finalization; дополнительный stale redirect-query hash исправлен отдельным точечным тестом.
+Механический перенос сохранил AST 34 production definitions; позднее изменился только fetch.
+Crash/power-loss injection не проводился; проверены fsync ordering и отказ до HTTP при ошибке.
+
+PDF generation сохранена отдельно от исторической: 114 raw SHA exact, 330 346 602 B;
+исторический INDEX найден byte-exact в corpus commit 408819d01f03339097c720db4aa13bfb1c5f0e90.
+При новом INDEX все case records/exclusions сохранены, у трёх дел добавились только связи.
+Новые library/adapter recordings совпали: 114 observations, 10 670 pages, 0 errors/changes,
+inputs/code unchanged. 210 meaningful mutation probes на 42 files обнаружены; 72 files без
+применимого Art.1/law-digest probe не объявлены покрытыми этими мутациями. Это machine
+page oracle и regression population, не независимая юридическая разметка.
+
+Реальный network pilot/install пока не запускался. План: 74 tasks / 29 done / 6 explicit N/A /
+39 applicable partial-open; восстановленная PDF generation не означает полный extraction gate.
+
+Финальный gate: 6290 tests / 0 failures-errors-skips, 214.092s, coverage92%; mypy553,
+Ruff/format и docs-check passed. Все612 source/config hashes неизменны. Новые63 cases — unit;
+сценарный набор не расширялся. Focused72 и independent review закрыты.
+[Acceptance asset](../assets/audits/2026-10-28-corpus-gap-pilot/validation.json) связывает
+финальную версию, проверки и обе PDF recordings.

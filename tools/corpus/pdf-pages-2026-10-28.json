@@ -1,0 +1,1154 @@
+{
+  "version": 1,
+  "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "cases": [
+    {
+      "path": "documents/files/205993.pdf",
+      "sha256": "3454b40a896df7eed626c68176f15d3d68999d646f02c9d360e5e104aba19528",
+      "official_ids": [
+        "RCL/document/205993"
+      ],
+      "cohorts": [
+        "rcl_metadata_unclassified"
+      ]
+    },
+    {
+      "path": "documents/files/300532.pdf",
+      "sha256": "14108eb63c032eb33db5da3df38c7a063a1d6f66810691499025789b9be11241",
+      "official_ids": [
+        "RCL/document/300532"
+      ],
+      "cohorts": [
+        "rcl_metadata_regulation"
+      ]
+    },
+    {
+      "path": "documents/files/323888.pdf",
+      "sha256": "72ec5660c7e96cf0b19a1df11f94dcd85cb35cd79d2e2a53f17120c871c35de7",
+      "official_ids": [
+        "RCL/document/323888"
+      ],
+      "cohorts": [
+        "rcl_metadata_letter"
+      ]
+    },
+    {
+      "path": "documents/files/324668.pdf",
+      "sha256": "218718daf2712b5a43cd84937cd06667b69643b9677184e9696b713fc109ed8d",
+      "official_ids": [
+        "RCL/document/324668"
+      ],
+      "cohorts": [
+        "rcl_metadata_unclassified"
+      ]
+    },
+    {
+      "path": "documents/files/341524.pdf",
+      "sha256": "401b70dd877120ad122ac5da831513c681bb8f2f0ba08918423c173052450fea",
+      "official_ids": [
+        "RCL/document/341524"
+      ],
+      "cohorts": [
+        "rcl_metadata_bill"
+      ]
+    },
+    {
+      "path": "documents/files/388344.pdf",
+      "sha256": "bf9ea6512febeccc7b3342a7c56ec877db7dd7be256aa1e773cf5014c2e907b0",
+      "official_ids": [
+        "RCL/document/388344"
+      ],
+      "cohorts": [
+        "rcl_metadata_annex"
+      ]
+    },
+    {
+      "path": "documents/files/394246.pdf",
+      "sha256": "85c58adec3d3563d9118b745a0a534375e60abc01ddfb76a7dd77d853febca13",
+      "official_ids": [
+        "RCL/document/394246"
+      ],
+      "cohorts": [
+        "rcl_metadata_unclassified"
+      ]
+    },
+    {
+      "path": "documents/files/394250.pdf",
+      "sha256": "a6e4214d7de3b91afa1b84cce31a018eb28cd09d8b25e070d28262a45f5fddb8",
+      "official_ids": [
+        "RCL/document/394250"
+      ],
+      "cohorts": [
+        "rcl_metadata_bill"
+      ]
+    },
+    {
+      "path": "documents/files/394253.pdf",
+      "sha256": "670ea75d68430c8fd83c4d27317a5d6e9600f0b493df6be9c863b19beb15f620",
+      "official_ids": [
+        "RCL/document/394253"
+      ],
+      "cohorts": [
+        "rcl_metadata_justification"
+      ]
+    },
+    {
+      "path": "documents/files/464289.pdf",
+      "sha256": "9103775a807d3cec8617ac2dad3e861303bdc7740dbca0f17b3efb9d99a52323",
+      "official_ids": [
+        "RCL/document/464289"
+      ],
+      "cohorts": [
+        "rcl_metadata_consultation_report"
+      ]
+    },
+    {
+      "path": "documents/files/547707.pdf",
+      "sha256": "82188b7bc374a9ccb4a62b15a87b6c85a03ee2db7553acada4c3e39c15d6a8c2",
+      "official_ids": [
+        "RCL/document/547707"
+      ],
+      "cohorts": [
+        "rcl_metadata_osr"
+      ]
+    },
+    {
+      "path": "documents/files/562840.pdf",
+      "sha256": "0b5a0f7d8201628c12cc3d5a87ce880313ada8e7000edf8e82533057805e9895",
+      "official_ids": [
+        "RCL/document/562840"
+      ],
+      "cohorts": [
+        "rcl_metadata_remarks_table"
+      ]
+    },
+    {
+      "path": "documents/files/579694.pdf",
+      "sha256": "b6be82997508196d781c2126f01fb4639b75da46e43e5c1e3f34a395454d5921",
+      "official_ids": [
+        "RCL/document/579694"
+      ],
+      "cohorts": [
+        "rcl_metadata_remarks_table"
+      ]
+    },
+    {
+      "path": "documents/files/618839.pdf",
+      "sha256": "fa1d2adc3f544afd5d63b56f03365427f7aae8a9c67f7fd9c18bf59cf2c4883b",
+      "official_ids": [
+        "RCL/document/618839"
+      ],
+      "cohorts": [
+        "rcl_metadata_discrepancies"
+      ]
+    },
+    {
+      "path": "documents/files/665320.pdf",
+      "sha256": "26a8590c16397fd205d2580fdbafc8342801ead2339dabe5c5b6b8d499f46b42",
+      "official_ids": [
+        "RCL/document/665320"
+      ],
+      "cohorts": [
+        "rcl_metadata_justification"
+      ]
+    },
+    {
+      "path": "documents/files/679320.pdf",
+      "sha256": "cebe9ca0f056970c0b1df2ebba09153f7e117cb1634866c7ff9679e396c4f3ac",
+      "official_ids": [
+        "RCL/document/679320"
+      ],
+      "cohorts": [
+        "rcl_metadata_letter"
+      ]
+    },
+    {
+      "path": "documents/files/687663.pdf",
+      "sha256": "d8bced8e23405dc17fd5275c9b37d4288d9bd5f598de741b69a27ce65fac1560",
+      "official_ids": [
+        "RCL/document/687663"
+      ],
+      "cohorts": [
+        "rcl_metadata_compliance_table"
+      ]
+    },
+    {
+      "path": "documents/files/692703.pdf",
+      "sha256": "f63bfcb47995d7c7a480d8777ecaab07b37494f4c53ba41dc2176e88133e929a",
+      "official_ids": [
+        "RCL/document/692703"
+      ],
+      "cohorts": [
+        "rcl_metadata_compliance_table"
+      ]
+    },
+    {
+      "path": "documents/files/717892.pdf",
+      "sha256": "53f167ffe5ddea6c863e6de740a3e04a83f6f48e072da6fb85f817b6903f42f9",
+      "official_ids": [
+        "RCL/document/717892"
+      ],
+      "cohorts": [
+        "rcl_metadata_unknown"
+      ]
+    },
+    {
+      "path": "documents/files/717895.pdf",
+      "sha256": "47506f5fc689c014256f18f477ae5c0d0842bb1ad12860b21823f81abb85343f",
+      "official_ids": [
+        "RCL/document/717895"
+      ],
+      "cohorts": [
+        "rcl_metadata_osr"
+      ]
+    },
+    {
+      "path": "documents/files/718633.pdf",
+      "sha256": "98875fbd894b5d018ca4ab1b6546e07fe1f700ad2fbf24eec575f8078a6a8fc6",
+      "official_ids": [
+        "RCL/document/718633"
+      ],
+      "cohorts": [
+        "rcl_metadata_remarks_table"
+      ]
+    },
+    {
+      "path": "documents/files/724499.pdf",
+      "sha256": "492937f10cbf40b562523af1424c6bd5e195b5a8b9d2dd425d824408151c8a32",
+      "official_ids": [
+        "RCL/document/724499"
+      ],
+      "cohorts": [
+        "rcl_metadata_regulation"
+      ]
+    },
+    {
+      "path": "documents/files/736512.pdf",
+      "sha256": "32159a99e49b079533902b9e6eab14e52da521a05c2c8fc0ebf787c22b32ffd2",
+      "official_ids": [
+        "RCL/document/736512"
+      ],
+      "cohorts": [
+        "rcl_metadata_bill"
+      ]
+    },
+    {
+      "path": "documents/files/736579.pdf",
+      "sha256": "4ba1770c340dd97a2143590bf66f5ea89bec028f4f807e0693487b54c70d538a",
+      "official_ids": [
+        "RCL/document/736579"
+      ],
+      "cohorts": [
+        "rcl_metadata_consultation_report"
+      ]
+    },
+    {
+      "path": "documents/files/740618.pdf",
+      "sha256": "d0fc5b2983f13af4cb0bd2ad5c22157f219fe0734ba4678397ee5d925cb274bf",
+      "official_ids": [
+        "RCL/document/740618"
+      ],
+      "cohorts": [
+        "rcl_metadata_consultation_report"
+      ]
+    },
+    {
+      "path": "documents/files/743399.pdf",
+      "sha256": "2c392964db1cc5900750d264abd0541efa4070280aff416f3e461d3d3f8cd3c8",
+      "official_ids": [
+        "RCL/document/743399"
+      ],
+      "cohorts": [
+        "rcl_metadata_unknown"
+      ]
+    },
+    {
+      "path": "documents/files/744843.pdf",
+      "sha256": "039764f98b9b3273f4b8c37e108bfe373c062ff5e243e5e3bb992d22b74257b8",
+      "official_ids": [
+        "RCL/document/744843"
+      ],
+      "cohorts": [
+        "rcl_metadata_osr"
+      ]
+    },
+    {
+      "path": "documents/files/749808.pdf",
+      "sha256": "62c5c6d32af114c3d1d4ef578bf95d6dda0f240dac59a5edb1d6d353896ef436",
+      "official_ids": [
+        "RCL/document/749808"
+      ],
+      "cohorts": [
+        "rcl_metadata_unknown"
+      ]
+    },
+    {
+      "path": "documents/files/761758.pdf",
+      "sha256": "60e39cad6e9f35aeaf9a01e1011a21676111fec514e768ae74f0de77177b075c",
+      "official_ids": [
+        "RCL/document/761758"
+      ],
+      "cohorts": [
+        "rcl_metadata_justification"
+      ]
+    },
+    {
+      "path": "documents/files/764391.pdf",
+      "sha256": "eaf0ca9fd4d96240b3d7b7e0f4e7f6c12b1d2cb1c99bdab2cf344e7e70793115",
+      "official_ids": [
+        "RCL/document/764391"
+      ],
+      "cohorts": [
+        "rcl_metadata_discrepancies"
+      ]
+    },
+    {
+      "path": "documents/files/786483.pdf",
+      "sha256": "c951d1717a4b6c584da03388fa872ea8e0fb623d3add803fc816ef10d137b371",
+      "official_ids": [
+        "RCL/document/786483"
+      ],
+      "cohorts": [
+        "rcl_metadata_compliance_table"
+      ]
+    },
+    {
+      "path": "documents/files/786486.pdf",
+      "sha256": "bf6fc72b201ea5f8afdd6064ede7758126213164a9cf89578d665ff2916026e8",
+      "official_ids": [
+        "RCL/document/786486"
+      ],
+      "cohorts": [
+        "rcl_metadata_regulation"
+      ]
+    },
+    {
+      "path": "documents/files/790793.pdf",
+      "sha256": "a9c852eb274bb65d596ef999736374cda956b3aa7b282303d47c908a617ddfb6",
+      "official_ids": [
+        "RCL/document/790793"
+      ],
+      "cohorts": [
+        "rcl_metadata_discrepancies"
+      ]
+    },
+    {
+      "path": "documents/files/791050.pdf",
+      "sha256": "e9ca82ae36c9cb295e377b01a7d36a09db6dd3e413f659ad2b7f7c8378361b0e",
+      "official_ids": [
+        "RCL/document/791050"
+      ],
+      "cohorts": [
+        "rcl_metadata_letter"
+      ]
+    },
+    {
+      "path": "documents/files/791836.pdf",
+      "sha256": "d06ed5939966c3abee35a0d7bf0bc2f421c46507f165e046d97ccdef41a26ffb",
+      "official_ids": [
+        "RCL/document/791836"
+      ],
+      "cohorts": [
+        "rcl_metadata_annex"
+      ]
+    },
+    {
+      "path": "documents/files/793968.pdf",
+      "sha256": "fecde955a2c890fb53b6db6b9309f2817fe0acf2d903218131310093c7e6d11f",
+      "official_ids": [
+        "RCL/document/793968"
+      ],
+      "cohorts": [
+        "rcl_metadata_annex"
+      ]
+    },
+    {
+      "path": "rpw/term10/files/RPW-15333-2025.pdf",
+      "sha256": "c4bb3d5730a4c848645f731df505e5402e30e66d06d73060bca4a903109d8380",
+      "official_ids": [
+        "rpw:RPW/15333/2025"
+      ],
+      "cohorts": [
+        "rpw_page_count_sample"
+      ]
+    },
+    {
+      "path": "rpw/term10/files/RPW-16951-2026.pdf",
+      "sha256": "a0c4e04418bbcf14a83b9dcab3cc7492ccf6dbde4b330a2c467f7dbf0310dccc",
+      "official_ids": [
+        "rpw:RPW/16951/2026"
+      ],
+      "cohorts": [
+        "rpw_page_count_sample"
+      ]
+    },
+    {
+      "path": "rpw/term10/files/RPW-17089-2026.pdf",
+      "sha256": "3288fd7e2cbc0fe59e73e9366826dda0cda717917dba3e88ed15db385e093d36",
+      "official_ids": [
+        "rpw:RPW/17089/2026"
+      ],
+      "cohorts": [
+        "rpw_page_count_sample"
+      ]
+    },
+    {
+      "path": "rpw/term10/files/RPW-19718-2026.pdf",
+      "sha256": "9342d7d2a01e77c3c2413333958d342d7dd01f3c381110725d679e29af438686",
+      "official_ids": [
+        "rpw:RPW/19718/2026"
+      ],
+      "cohorts": [
+        "rpw_page_count_sample"
+      ]
+    },
+    {
+      "path": "rpw/term10/files/RPW-20235-2026.pdf",
+      "sha256": "91911ef1cd5655141e63acb4f66387eeda143b16b6436086121cf1fab6df2e33",
+      "official_ids": [
+        "rpw:RPW/20235/2026"
+      ],
+      "cohorts": [
+        "rpw_page_count_sample"
+      ]
+    },
+    {
+      "path": "rpw/term10/files/RPW-20488-2025.pdf",
+      "sha256": "fab37239f74712b389b933bc8388e0c1610331b549e18a7a1594cd4315eb5ae6",
+      "official_ids": [
+        "rpw:RPW/20488/2025"
+      ],
+      "cohorts": [
+        "rpw_page_count_sample"
+      ]
+    },
+    {
+      "path": "rpw/term10/files/RPW-20817-2026.pdf",
+      "sha256": "eb9e82a62cf40f743a986ebdbfc28994eec0f51afa5f718fda05cc9d842ff2c2",
+      "official_ids": [
+        "rpw:RPW/20817/2026"
+      ],
+      "cohorts": [
+        "rpw_page_count_sample"
+      ]
+    },
+    {
+      "path": "rpw/term10/files/RPW-25733-2025.pdf",
+      "sha256": "70c3cc4e3caf8d10ea121a339c033a60d93670d5cd79b922c5e127433027a4c7",
+      "official_ids": [
+        "rpw:RPW/25733/2025"
+      ],
+      "cohorts": [
+        "rpw_page_count_sample"
+      ]
+    },
+    {
+      "path": "rpw/term10/files/RPW-2969-2026.pdf",
+      "sha256": "14ec1f3c53906e719553f949bb58703d3bb81253a0dd2a70600c12415c57a382",
+      "official_ids": [
+        "rpw:RPW/2969/2026"
+      ],
+      "cohorts": [
+        "rpw_page_count_sample"
+      ]
+    },
+    {
+      "path": "rpw/term10/files/RPW-29709-2025.pdf",
+      "sha256": "c61440f94fabd89f05a17913d0cd049cdf68a2a731aaeb69b058b73494750c5f",
+      "official_ids": [
+        "rpw:RPW/29709/2025"
+      ],
+      "cohorts": [
+        "rpw_page_count_sample"
+      ]
+    },
+    {
+      "path": "rpw/term10/files/RPW-32144-2025.pdf",
+      "sha256": "612f69edfcc860f7652202a54645c13094f46ba63529ca6f08bdf53eb10d607b",
+      "official_ids": [
+        "rpw:RPW/32144/2025"
+      ],
+      "cohorts": [
+        "rpw_page_count_sample"
+      ]
+    },
+    {
+      "path": "rpw/term10/files/RPW-34289-2025.pdf",
+      "sha256": "fef47acdd012d6989ac10862304a917b2aac28d18f62cdeec4890171082a9eb9",
+      "official_ids": [
+        "rpw:RPW/34289/2025"
+      ],
+      "cohorts": [
+        "rpw_page_count_sample"
+      ]
+    },
+    {
+      "path": "rpw/term10/files/RPW-41244-2025.pdf",
+      "sha256": "0ab4e197fe32bda207b2d5927103195ae12853cf846efeeaa5e9de2304d23474",
+      "official_ids": [
+        "rpw:RPW/41244/2025"
+      ],
+      "cohorts": [
+        "rpw_page_count_sample"
+      ]
+    },
+    {
+      "path": "rpw/term10/files/RPW-6579-2025.pdf",
+      "sha256": "8f2fae14b77b84b08725a9acc2c162fb10c52967d058cf6e1409d74670caa64c",
+      "official_ids": [
+        "rpw:RPW/6579/2025"
+      ],
+      "cohorts": [
+        "rpw_page_count_sample"
+      ]
+    },
+    {
+      "path": "rpw/term10/files/RPW-7298-2026.pdf",
+      "sha256": "c69041621ae5c7a3b44da974b4fa0607b66d80fc6966761054f1ba2106848335",
+      "official_ids": [
+        "rpw:RPW/7298/2026"
+      ],
+      "cohorts": [
+        "rpw_page_count_sample"
+      ]
+    },
+    {
+      "path": "rpw/term10/files/RPW-9678-2025.pdf",
+      "sha256": "7cec0a0249800daab5a2982a458aae5b0be1f30ea48818aa5bf6818fb439164e",
+      "official_ids": [
+        "rpw:RPW/9678/2025"
+      ],
+      "cohorts": [
+        "rpw_page_count_sample"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/1058__1058.pdf",
+      "sha256": "91f4cfd4d5b886d5fdb95eaa43a3b3cd1100ee091b13d5f78ff7743bb8a2298e",
+      "official_ids": [
+        "druk:1058"
+      ],
+      "cohorts": [
+        "sejm_metadata_text"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/1081__1081.pdf",
+      "sha256": "8bd49f3a4417961d157d005e345ba7403db430459f10a0bb3947f0f951060a76",
+      "official_ids": [
+        "druk:1081"
+      ],
+      "cohorts": [
+        "sejm_metadata_cover"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/1246__1246.pdf",
+      "sha256": "c7d634d7017f8fa5eeedf74f52d36ccd5721907f556620b0b7062386207cc4d6",
+      "official_ids": [
+        "druk:1246"
+      ],
+      "cohorts": [
+        "sejm_metadata_text"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/1390__1390.pdf",
+      "sha256": "f8f093d125af73bd08fcc5718d6a0fd6f833f4d9c1b63b8038e5fa9dd22b1230",
+      "official_ids": [
+        "druk:1390"
+      ],
+      "cohorts": [
+        "sejm_metadata_text"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/1524__1524.pdf",
+      "sha256": "1f6d223e1ba2369486d0578949f46f624f08af97b88586c08ad4d489f2e8da81",
+      "official_ids": [
+        "druk:1524"
+      ],
+      "cohorts": [
+        "sejm_metadata_cover"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/1603__1603.pdf",
+      "sha256": "e67a7887ade14b8438eca8c4941130aca64c90cdff955995d796f93bf2573dc6",
+      "official_ids": [
+        "druk:1603"
+      ],
+      "cohorts": [
+        "sejm_metadata_text"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/1726__1726.pdf",
+      "sha256": "3600b2caaf05c423823cf43c892924b92fc6dadbc4c8f7eabc23afb4b4382215",
+      "official_ids": [
+        "druk:1726"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/1760__1760.pdf",
+      "sha256": "bf2bf7692adf5593eeb14cf7381cadcd4436e97321ad8b6ac7d8ae1d5d986bfc",
+      "official_ids": [
+        "druk:1760"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/1762__1762.pdf",
+      "sha256": "5787619f2cf75caedb0df9624d037ed1a4c73c95658c96f4c630bcb58a5db7d9",
+      "official_ids": [
+        "druk:1762"
+      ],
+      "cohorts": [
+        "sejm_metadata_text"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/1765__1765.pdf",
+      "sha256": "06d78ff3817c47d425faa17053e93d93621739703116f65ecc077fac65cf97d2",
+      "official_ids": [
+        "druk:1765"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/1931__1931.pdf",
+      "sha256": "ed863493f7b8548afc5f508fece8d7258a5cb0bbc2e368a4fb806b7996fe13a3",
+      "official_ids": [
+        "druk:1931"
+      ],
+      "cohorts": [
+        "sejm_metadata_text"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/2007__2007.pdf",
+      "sha256": "7e7f1fb9a49601d49179dcd8e09a37f3ba61be4eaa2469c5a0b7678a0cc79b8e",
+      "official_ids": [
+        "druk:2007"
+      ],
+      "cohorts": [
+        "sejm_metadata_cover"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/2120__2120.pdf",
+      "sha256": "3d3ad37146d7e562e61f31a6d5a81f0eb0aa0105d5791227c8e6afb6f1c5b0f6",
+      "official_ids": [
+        "druk:2120"
+      ],
+      "cohorts": [
+        "sejm_metadata_text"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/216__216.pdf",
+      "sha256": "4d89eb9b624b6f697cf559a7adecab25237f713643a32def66839b82e15240a7",
+      "official_ids": [
+        "druk:216"
+      ],
+      "cohorts": [
+        "sejm_metadata_cover"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/2196__2196.pdf",
+      "sha256": "c09ef6e42c558f4b2a5505075ebe1ab198159a8f131d87b7d567cfa2fac6d65e",
+      "official_ids": [
+        "druk:2196"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/2198__2198.pdf",
+      "sha256": "2122afaebac9a9232ec8067c654b3c2cf5a3773501d5b515417e41fb892d6ff7",
+      "official_ids": [
+        "druk:2198"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/233__233.pdf",
+      "sha256": "e66777c4697175f4734d8fae3e6d1bec7a727a63a38a797c30169a623bc7ca0f",
+      "official_ids": [
+        "druk:233"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/2352__2352.pdf",
+      "sha256": "6d93730f47c3af914e440d4746facd8c67b1a365cf862082334b2f01127287a5",
+      "official_ids": [
+        "druk:2352"
+      ],
+      "cohorts": [
+        "sejm_metadata_text"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/2440__2440.pdf",
+      "sha256": "7c0a19e52b42a251e098d3f0732372ad15b99e2a17a99ee0f9eec2ec64753a1f",
+      "official_ids": [
+        "druk:2440"
+      ],
+      "cohorts": [
+        "sejm_metadata_cover"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/244__244.pdf",
+      "sha256": "9e9c81a3b92e743ea532ca5ccc69dff8020ed14fbc804781380c20ffb3f1cd22",
+      "official_ids": [
+        "druk:244"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/24__24.pdf",
+      "sha256": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+      "official_ids": [
+        "druk:24"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/2551__2551.pdf",
+      "sha256": "c7eb9738850484b513340d9f2bad9fee0d391d88cf18e330f44814f389e88703",
+      "official_ids": [
+        "druk:2551"
+      ],
+      "cohorts": [
+        "sejm_metadata_text"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/25__25.pdf",
+      "sha256": "11c7c5bed9e2df7b13671052b16981d015a7471db8c3d81a4e53100b9c3ad97b",
+      "official_ids": [
+        "druk:25"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/26__26.pdf",
+      "sha256": "8720249ee23510ab2701a54c69d15c76d2feecdc9645148ba9eeec8cd24df51b",
+      "official_ids": [
+        "druk:26"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/2703__2703.pdf",
+      "sha256": "ecdc459ab9af35dbf1fcc885a65ba937a52ec14996977e373a81d74a3c10752c",
+      "official_ids": [
+        "druk:2703"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/2749__2749.pdf",
+      "sha256": "46ff1da5e90c8ff6d593a13e31eb44e4102924c48eec732c9e4b3c3aa30cfdbf",
+      "official_ids": [
+        "druk:2749"
+      ],
+      "cohorts": [
+        "sejm_metadata_text"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/27__27.pdf",
+      "sha256": "58851fd591ef04d253d108e28bfde82b1d4f33d944d8047020f65a71ad75155f",
+      "official_ids": [
+        "druk:27"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/2821__2821-004.pdf",
+      "sha256": "4fe3727c50661c3e9dff899f52ab0e1e38e5bcd78a71d9e6b9cc12f5032485c4",
+      "official_ids": [
+        "druk:2821"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/28__28.pdf",
+      "sha256": "b9c1ed15f72025399b801b492ce110520c12cf3abdcf29e34f069975d45fee4e",
+      "official_ids": [
+        "druk:28"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/29__29.pdf",
+      "sha256": "f8ba0db5d8d3dd7a26f2a42f512f7efc6fe8a95f9afed6e1bf5be94d9a81775d",
+      "official_ids": [
+        "druk:29"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/3009__3009.pdf",
+      "sha256": "94242980a51770f0997198a6b861edc481d5fb3d8350b97bdb01e148d2209045",
+      "official_ids": [
+        "druk:3009"
+      ],
+      "cohorts": [
+        "sejm_metadata_text"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/3039__3039.pdf",
+      "sha256": "d9600e2c8a0d84376be10b9122a357138467c6e42722ba90e6114ada8e71693a",
+      "official_ids": [
+        "druk:3039"
+      ],
+      "cohorts": [
+        "sejm_regression_or_long_pdf"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/30__30.pdf",
+      "sha256": "c99ad076129cee848c5c6093a2c9a6024bd8483f2dec613db2392b4ed692c1e1",
+      "official_ids": [
+        "druk:30"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/3125__3125.pdf",
+      "sha256": "c73c45580d29ad3736fd5837c3d6f883c0330196cdee9cb85f898bd1c76339bc",
+      "official_ids": [
+        "druk:3125"
+      ],
+      "cohorts": [
+        "sejm_metadata_cover"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/3160__3160.pdf",
+      "sha256": "f22d8ac64ec558b88dcbbc055de548e5a3b8278de02c2183b595cf6e836d1bac",
+      "official_ids": [
+        "druk:3160"
+      ],
+      "cohorts": [
+        "sejm_metadata_text"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/316__316.pdf",
+      "sha256": "9deeeb9f5b26d0c47bcab860623124c40657b55ce58f4547f0358a2cf295bc49",
+      "official_ids": [
+        "druk:316"
+      ],
+      "cohorts": [
+        "sejm_metadata_cover"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/31__31.pdf",
+      "sha256": "08a94a2f392288d2dbed6f62255ee7b6e661df0954541eac7f58aeb03ac4ee6c",
+      "official_ids": [
+        "druk:31"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/320__320.pdf",
+      "sha256": "a660c3d1deebdfaa3440a315286ca2785efeacc55e4b63f409c9cfa2729c11be",
+      "official_ids": [
+        "druk:320"
+      ],
+      "cohorts": [
+        "sejm_metadata_text"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/32__32.pdf",
+      "sha256": "be651fc031876e884f444ed4d563df377111002f048dd6176f0f04a2ace9a7e6",
+      "official_ids": [
+        "druk:32"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/33__33.pdf",
+      "sha256": "84590c37b68b63f2ecabb7c7ddbb02e72858f68c7083d231fdbad3f411505d68",
+      "official_ids": [
+        "druk:33"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/351__351.pdf",
+      "sha256": "34a39b9e2cc29d582c86a1ab274305f7b86c8df6b4935ac99773890391c133b3",
+      "official_ids": [
+        "druk:351"
+      ],
+      "cohorts": [
+        "sejm_metadata_cover"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/497__497.pdf",
+      "sha256": "3ca94584ed4b03a0abf469cacafb9c9ff013841f43e708bbe3ee5a9a5768e1c3",
+      "official_ids": [
+        "druk:497"
+      ],
+      "cohorts": [
+        "sejm_metadata_cover"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/599__599-s.pdf",
+      "sha256": "5d7c93de6af087c7b71eaa24bb2bfd23ffdd4e21d5b82aeb28e5ddafefee591e",
+      "official_ids": [
+        "druk:599"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/59__59.pdf",
+      "sha256": "bef36801921ea15b204c5bb6e824f6aca3395e3c599ba16c1df58d94585da5cf",
+      "official_ids": [
+        "druk:59"
+      ],
+      "cohorts": [
+        "sejm_metadata_text"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/603__603.pdf",
+      "sha256": "8d38af587961ebfb89278cfa7a855b790360630b0a36dbcc1864a270cbf36814",
+      "official_ids": [
+        "druk:603"
+      ],
+      "cohorts": [
+        "sejm_metadata_cover"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/604__604.pdf",
+      "sha256": "2a9dc5be4d5ba5133037be5541fc0c0a41ca780520cca66a712fd66d01a428b0",
+      "official_ids": [
+        "druk:604"
+      ],
+      "cohorts": [
+        "sejm_regression_or_long_pdf"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/608__608.pdf",
+      "sha256": "aa58d832e86b349f26b65b7480503a2c3755c74534c919195c090c65b61ac24d",
+      "official_ids": [
+        "druk:608"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/613__613.pdf",
+      "sha256": "431f5641230454cb798461d99c8f6b4c2e1b0eb053ba7fa63627ebe60bcc1e83",
+      "official_ids": [
+        "druk:613"
+      ],
+      "cohorts": [
+        "sejm_metadata_cover"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/63__63.pdf",
+      "sha256": "89876301b9c3e3f3ca92115730c95e105dfdc0f6abe1f22a68ab7f9464be6d0b",
+      "official_ids": [
+        "druk:63"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/656__656.pdf",
+      "sha256": "2172ac7554056572c5efa71a91aed9e8755df41820caa5e5ba9cc1706d193172",
+      "official_ids": [
+        "druk:656"
+      ],
+      "cohorts": [
+        "sejm_metadata_text"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/690__690.pdf",
+      "sha256": "286163c796f6aade919d9ea5566020e4b6e67939e39e5deff4a797a7690f0700",
+      "official_ids": [
+        "druk:690"
+      ],
+      "cohorts": [
+        "sejm_metadata_cover"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/703__703.pdf",
+      "sha256": "31740413c6b7acf607c4260bc77b23733d1a679a8c55e0515da89bc56e55afbd",
+      "official_ids": [
+        "druk:703"
+      ],
+      "cohorts": [
+        "sejm_regression_or_long_pdf"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/810__810.pdf",
+      "sha256": "346a3e2e8fce63a745ace08bcfc1cee6d3d5f0facf37f664390b76c02764d3f1",
+      "official_ids": [
+        "druk:810"
+      ],
+      "cohorts": [
+        "sejm_regression_or_long_pdf"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/823__823.pdf",
+      "sha256": "376a3c9f7c02f1bff314ad6f06a5ca4e045b8223f11097dca0c2ad297ef9b18e",
+      "official_ids": [
+        "druk:823"
+      ],
+      "cohorts": [
+        "sejm_metadata_cover"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/830__830.pdf",
+      "sha256": "3444987ad54297ba0b1cea4c583e498295f64a159bd00abd7c1a04f7ea05babd",
+      "official_ids": [
+        "druk:830"
+      ],
+      "cohorts": [
+        "sejm_metadata_cover"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/839__839.pdf",
+      "sha256": "70bada717d448a0f2084de0211df0f9a37add1adca1868e9b49764d3da2baa2b",
+      "official_ids": [
+        "druk:839"
+      ],
+      "cohorts": [
+        "sejm_metadata_text"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/866__866.pdf",
+      "sha256": "c08653ac4d5424711c553fe0a7d41429a33350205c9f114850958b5b65c4c388",
+      "official_ids": [
+        "druk:866"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/867__867.pdf",
+      "sha256": "658a6182ae790ff12e09facc4bc035836ba6a043d769f8a0e799f2637cabd898",
+      "official_ids": [
+        "druk:867"
+      ],
+      "cohorts": [
+        "sejm_metadata_scan"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/92__92.pdf",
+      "sha256": "66a79c29f1e4375b1a75823db7bab82022bbc7949a8a21fe49edf85ec57e874b",
+      "official_ids": [
+        "druk:92"
+      ],
+      "cohorts": [
+        "sejm_metadata_cover"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/948__948.pdf",
+      "sha256": "caebd0ba13adc85d231c58097c4c684fdcce17e7f9eebd382c3aace5e26b579b",
+      "official_ids": [
+        "druk:948"
+      ],
+      "cohorts": [
+        "sejm_regression_or_long_pdf"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/949__949.pdf",
+      "sha256": "ae0c91f22bf6a221c8e72a947932d463aabf03ec4611d4ec022bfcb358669c20",
+      "official_ids": [
+        "druk:949"
+      ],
+      "cohorts": [
+        "sejm_regression_or_long_pdf"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/995__995.pdf",
+      "sha256": "8fcf4190f2b55d057aa3aaf58c6098e578f3507d56246ab521371e26bff9f0ab",
+      "official_ids": [
+        "druk:995"
+      ],
+      "cohorts": [
+        "sejm_metadata_cover"
+      ]
+    }
+  ],
+  "exclusions": [
+    "Machine metadata chooses cohorts; it is not an independent legal oracle.",
+    "Frozen raw PDF sample only; remaining standalone PDFs and ZIP members need separate replay.",
+    "No OCR or layout/table reconstruction; an empty text layer does not prove an empty legal page.",
+    "Sejm 599/1768/2821 may reference substitute attachments in the historical corpus.",
+    "Inputs at most 32 MB; current source freshness and downloaded-file boundaries are those of INDEX.json.",
+    "5 RPW indexed files are missing or exceed 32 MB and are outside the available-file sample."
+  ]
+}

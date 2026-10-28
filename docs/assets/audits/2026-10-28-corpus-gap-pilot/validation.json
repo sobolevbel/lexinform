@@ -1,0 +1,177 @@
+{
+  "version": 1,
+  "stage": "J143",
+  "status": "local_acceptance_passed",
+  "base_commit": "27b8181355e3f111916ef244308851bbe83deb2c",
+  "scope": "Bounded RCL staging pilot; no production/runtime policy or active corpus writes",
+  "gate": {
+    "tests": 6290,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "seconds": 214.092,
+    "coverage_percent": 92,
+    "mypy_files": 553,
+    "ruff": "passed",
+    "format": "541 files unchanged",
+    "docs": "passed",
+    "source_files_exact": 612,
+    "focused_tests": 72,
+    "new_pilot_unit_cases": 63
+  },
+  "bounds": {
+    "source_attempts": 20,
+    "workers": 1,
+    "automatic_retries": 0,
+    "response_body_bytes": 5242880,
+    "charged_application_retained_and_metadata_bytes": 134217728,
+    "reserved_metadata_bytes": 25165824,
+    "wire_bytes_measured": false,
+    "final_bundle": "Single deterministic sibling; verified hardlinks, repeat read-only, unknown partial preserved"
+  },
+  "review": {
+    "remaining_actionable_findings": 0,
+    "resolved": [
+      "retained-inode accounting on resume",
+      "strict HTTPS port provenance",
+      "pre-request intent and ancestor fsync",
+      "single bounded finalization destination",
+      "final query hash reset after redirects"
+    ],
+    "mechanical_split_unchanged_ast_definitions": 34,
+    "subsequent_changed_definition": "fetch",
+    "crash_fault_injection": false
+  },
+  "pdf_generation": {
+    "observations": 114,
+    "raw_bytes": 330346602,
+    "pages": 10670,
+    "changes": 0,
+    "document_errors": 0,
+    "page_errors": 0,
+    "mutation_probes": 210,
+    "mutation_misses": 0,
+    "files_with_mutations": 42,
+    "files_without_applicable_mutation_probe": 72,
+    "oracle": "Independent machine library page observation; not human legal truth",
+    "generation_provenance": {
+      "status": "qualified_new_generation",
+      "original_manifest_sha256": "8fc8680391deb0aff7730f01381dbda95c33f2e5d2900b4c6e104ff0d3ce5e3b",
+      "historical_index_commit": "408819d01f03339097c720db4aa13bfb1c5f0e90",
+      "historical_index_sha256": "76c3683bf35edbe914c5847dd4bbe9dfe63d0e0faa5047cc4a207cc0d5c1649a",
+      "current_index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+      "case_count": 114,
+      "raw_bytes": 330346602,
+      "entity_metadata_additions": {
+        "druk:3039": {
+          "supplements": {
+            "before": [
+              "3039-001"
+            ],
+            "after": [
+              "3039-001",
+              "3039-005"
+            ]
+          }
+        },
+        "druk:3125": {
+          "rpw": {
+            "before": null,
+            "after": "rpw:RPW/26215/2026"
+          }
+        },
+        "druk:3160": {
+          "rpw": {
+            "before": null,
+            "after": "rpw:RPW/33024/2026"
+          }
+        }
+      },
+      "case_records_and_exclusions": "exact original values; cohort labels remain historical, not new legal adjudications",
+      "new_manifest_sha256": "4051ee2a5009d2c3f2980e0ca67a83c547829d4dd6c586bca0faedcb0ea74d51"
+    },
+    "manifest": {
+      "path": "tools/corpus/pdf-pages-2026-10-28.json",
+      "sha256": "4051ee2a5009d2c3f2980e0ca67a83c547829d4dd6c586bca0faedcb0ea74d51",
+      "bytes": 30391
+    },
+    "library": {
+      "path": "out/corpus/j143/pdf-runs/pdf114-library-20261028/result.json",
+      "sha256": "a252351d65c48efef82ebb4b35666cb9b2f37fddf0b03c879bb624ab39ab9fda",
+      "bytes": 2492357
+    },
+    "adapter": {
+      "path": "out/corpus/j143/pdf-runs/pdf114-adapter-20261028/result.json",
+      "sha256": "41c50b6763c10e5f471f9ffdb0882571464aaa308389b1d699d94a2c0fc3ac3b",
+      "bytes": 2504493
+    }
+  },
+  "evidence": [
+    {
+      "path": "out/corpus/j143/final-gate/full.xml",
+      "sha256": "4de8580c3b9ef5be046c96d20020d3da9a9b35eb77770fb74635d57b25457227",
+      "bytes": 1011486
+    },
+    {
+      "path": "out/corpus/j143/final-gate/full.log",
+      "sha256": "8d74256184e56abcbaa6adde9ab3d9319cb86aad1f22ceb55ab5fb6a5139be22",
+      "bytes": 664991
+    },
+    {
+      "path": "out/corpus/j143/final-gate/mypy.log",
+      "sha256": "abeb82969b3a630d6f41a0baec2f99779404bc3ef8f45eac65c031d853d75b85",
+      "bytes": 45
+    },
+    {
+      "path": "out/corpus/j143/final-gate/ruff.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "bytes": 19
+    },
+    {
+      "path": "out/corpus/j143/final-gate/format.log",
+      "sha256": "01ab794e20da01ea902fb9a10233a87f8a525a0de89683dabe2c089ea1c50dc7",
+      "bytes": 25
+    },
+    {
+      "path": "out/corpus/j143/final-gate/docs.log",
+      "sha256": "d65dbf9bbc969d8d48d9f8fe7c8221a0e1e164e16cc5ad6cd2950ff08d82744b",
+      "bytes": 266
+    },
+    {
+      "path": "out/corpus/j143/final-gate/source-freeze.json",
+      "sha256": "0c90c47519e0fcd81dc80e784822b1864e60556d98f21b031dab81871ecbfae0",
+      "bytes": 67084
+    },
+    {
+      "path": "out/corpus/j143/agent/revision4/j143.patch",
+      "sha256": "16404316b39d6625314ca60f160bb21d74cfa1eb279b0389e2a26231645b69a9",
+      "bytes": 92082
+    },
+    {
+      "path": "out/corpus/j143/agent/revision4/freeze.json",
+      "sha256": "cbf1bd33a235565d34b11c0c1763f575dad94426aeea83e2bbce065a1538fe11",
+      "bytes": 3019
+    },
+    {
+      "path": "out/corpus/j143/agent/revision4/focused.xml",
+      "sha256": "5dc63546f4f0d8fd880c321143d4d1d41413255d4227d0fab668d0bb42676f2f",
+      "bytes": 10698
+    },
+    {
+      "path": "out/corpus/j143/verify_pdf_generation.py",
+      "sha256": "6db0b4e54f2d0f1d77146bfadaab65839d1cdaeb33b2fe5a8ec97403632aac10",
+      "bytes": 2353
+    },
+    {
+      "path": "out/corpus/j143/pdf114-raw-verification.json",
+      "sha256": "2245744829f28d73e3e1f85e29d0d941b89422e3ec4fa459f9b262a2393fc679",
+      "bytes": 33350
+    }
+  ],
+  "exclusions": [
+    "No real network pilot or installation yet",
+    "No source selection, extraction, SQL schema or production storage change",
+    "The refreshed PDF cohort does not qualify every extraction profile",
+    "Historical cohort labels remain historical; no new legal labels"
+  ]
+}

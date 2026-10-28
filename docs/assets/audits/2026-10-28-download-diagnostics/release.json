@@ -1,0 +1,62 @@
+{
+  "ci": {
+    "id": 40749351407,
+    "head_sha": "6bb31bbb34260404b6a0a419f738601d31f66332",
+    "event": "push",
+    "status": "completed",
+    "conclusion": "success",
+    "run_attempt": 1,
+    "created_at": "2026-10-28T18:53:49Z",
+    "updated_at": "2026-10-28T18:57:04Z",
+    "jobs": [
+      {
+        "id": 123031548337,
+        "name": "web",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 123031548982,
+        "name": "docs",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 123031549046,
+        "name": "test (3.14)",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "deploy": {
+    "id": 40749846821,
+    "head_sha": "6bb31bbb34260404b6a0a419f738601d31f66332",
+    "event": "workflow_run",
+    "status": "completed",
+    "conclusion": "success",
+    "run_attempt": 1,
+    "created_at": "2026-10-28T18:57:07Z",
+    "updated_at": "2026-10-28T18:58:02Z",
+    "jobs": [
+      {
+        "id": 123033308087,
+        "name": "deploy",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "proof": {
+    "commit_sha": "6bb31bbb34260404b6a0a419f738601d31f66332",
+    "transition_from": "943ce8971a68",
+    "transition_to": "6bb31bbb3426",
+    "restart45": true,
+    "timer_enabled": true,
+    "skip_observed": false,
+    "complete": true
+  },
+  "target_sha": "6bb31bbb34260404b6a0a419f738601d31f66332",
+  "status": "historical_release_verified",
+  "scope": "Exact historical CI/deploy proof; current main is a descendant, checked separately"
+}

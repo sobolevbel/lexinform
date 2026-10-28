@@ -17,6 +17,15 @@ def read_artifact(path: Path) -> bytes:
     return path.read_bytes()
 
 
+def create_only(path: Path, data: bytes) -> None:
+    if path.exists():
+        if path.is_symlink() or path.read_bytes() != data:
+            raise ValueError(f"Refusing to replace existing corpus bytes: {path.name}")
+    else:
+        with path.open("xb") as stream:
+            stream.write(data)
+
+
 def write_json(path: Path, value: Any) -> None:
     if path.is_symlink():
         raise ValueError("Artifact output must not be a symlink")

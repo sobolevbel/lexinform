@@ -260,6 +260,20 @@ refusals stay unavailable. Installation verifies the sealed source run, never re
 bytes, preserves old index records, saves the before-index and uses an advisory lock plus content
 check before atomic index publication. Identical repeat installation records `already_installed`.
 
+For the fixed RCL gap pilot, use `corpus_collect pilot --allow-network --corpus CORPUS
+--plan PLAN --plan-sha256 SHA --root STAGING --id PILOT`. The pinned plan permits at most 20
+serial source attempts, 5 MiB per response and 128 MiB of charged application bodies, retained
+originals and reserved metadata. Wire/header/TLS bytes are not measured. Output stays outside
+the corpus; failed or interrupted attempts are preserved and never retried by `--resume`.
+Resume requires the same plan, inputs and code. An unknown attempt keeps its full reservation.
+
+`corpus_collect finalize-pilot --corpus CORPUS --plan PLAN --plan-sha256 SHA
+--pilot-run STAGING/PILOT --pilot-manifest-sha256 MANIFEST_SHA --root STAGING
+--id final-MANIFEST_SHA` verifies every disposition offline and creates one deterministic
+bundle using checked hardlinks. A verified repeat is read-only; an incomplete final bundle
+requires explicit recovery. There is no copy fallback or alternate destination. Finalization
+does not install originals: publication remains the separate `install` command above.
+
 Sejm collection paginates fresh `prints`, `processes`, `bills` listings and records request
 provenance plus added/removed/changed metadata against the chosen reference. Publication creates
 one new dated snapshot. Listings do not refresh process detail trees, supplementary catalogs or

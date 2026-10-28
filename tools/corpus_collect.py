@@ -14,10 +14,12 @@ import httpx2 as httpx
 from lexinform.adapters.browser_identity import BROWSER_HEADERS
 from lexinform.models.rcl import text_role
 from lexinform.sections import document_kind
+from tools.corpus_artifacts import create_only as create_only
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.corpus_extraction import bounded_reader
 from tools.corpus_health import local_path
 from tools.corpus_http import attachment_extension, fetch
+from tools.corpus_pilot import finalize_pilot, pilot
 from tools.corpus_rcl import document_id, projects
 from tools.corpus_runs import finish, new_run, verify, write_started
 from tools.corpus_runtime import CorpusReads, source_fingerprints
@@ -32,6 +34,7 @@ def collect(
     client: httpx.Client,
     *,
     consultations: Path | None = None,
+    max_bytes: int = 32_000_000,
 ) -> dict[str, Any]:
     data = read_artifact(health)
     if digest(data) != pin:
@@ -93,7 +96,7 @@ def collect(
             "metadata": metadata.get(key),
         }
         try:
-            response = fetch(client, source["url"])
+            response = fetch(client, source["url"], max_bytes=max_bytes)
             row["response"] = response.provenance
             declared = Path(urlsplit(source["url"]).path).suffix.removeprefix(".").lower()
             extension = attachment_extension(response.data, declared)
@@ -128,15 +131,6 @@ def collect(
     }
     write_json(directory / "result.json", result)
     return finish(directory, "sources", returncode=int(bool(changed)), started=started)
-
-
-def create_only(path: Path, data: bytes) -> None:
-    if path.exists():
-        if path.is_symlink() or path.read_bytes() != data:
-            raise ValueError(f"Refusing to replace existing corpus bytes: {path.name}")
-    else:
-        with path.open("xb") as stream:
-            stream.write(data)
 
 
 def install(corpus: Path, source_run: Path, root: Path, identity: str) -> dict[str, Any]:
@@ -244,7 +238,7 @@ def install(corpus: Path, source_run: Path, root: Path, identity: str) -> dict[s
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("download", "install"):
+    for name in ("download", "install", "pilot", "finalize-pilot"):
         command = commands.add_parser(name)
         command.add_argument("--corpus", type=Path, required=True)
         command.add_argument("--root", type=Path, required=True)
@@ -254,8 +248,17 @@ def main() -> None:
             command.add_argument("--health-sha256", required=True)
             command.add_argument("--consultations", type=Path)
             command.add_argument("--allow-network", action="store_true", required=True)
-        else:
+        elif name == "install":
             command.add_argument("--source-run", type=Path, required=True)
+        else:
+            command.add_argument("--plan", type=Path, required=True)
+            command.add_argument("--plan-sha256", required=True)
+            if name == "pilot":
+                command.add_argument("--allow-network", action="store_true", required=True)
+                command.add_argument("--resume", action="store_true")
+            else:
+                command.add_argument("--pilot-run", type=Path, required=True)
+                command.add_argument("--pilot-manifest-sha256", required=True)
     args = parser.parse_args()
     corpus = args.corpus.resolve(strict=True)
     if args.command == "download":
@@ -269,8 +272,25 @@ def main() -> None:
                 client,
                 consultations=args.consultations,
             )
-    else:
+    elif args.command == "install":
         result = install(corpus, args.source_run.resolve(), args.root, args.id)
+    elif args.command == "pilot":
+        with httpx.Client(
+            headers={**BROWSER_HEADERS, "Accept-Encoding": "identity"}, trust_env=False, timeout=15
+        ) as client:
+            result = pilot(
+                corpus, args.plan, args.plan_sha256, args.root, args.id, client, resume=args.resume
+            )
+    else:
+        result = finalize_pilot(
+            corpus,
+            args.plan,
+            args.plan_sha256,
+            args.pilot_run,
+            args.pilot_manifest_sha256,
+            args.root,
+            args.id,
+        )
     print(json.dumps({key: result[key] for key in ("id", "suite", "status", "observations")}))
 
 
