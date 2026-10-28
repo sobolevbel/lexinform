@@ -600,7 +600,7 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
 - [x] DA5.3. [J045](2026-10-22-document-architecture-progress.md#j045). Исправить регрессию DA0.4: bill retained range не включает удалённый consultation
   appendix. Проверить повторяющийся фрагмент, склейку, footnotes, tables и несколько excerpts;
   одинаковый текст в другом месте не подтверждает чтение нужной нормативной части.
-- [ ] DA5.4. Разделить extraction coverage, selection completeness и actual input coverage.
+- [ ] DA5.4. **Частично: [J124](2026-10-22-document-architecture-progress.md#j124), known input map проверяет required ranges собственного part, duplicate support text не доказывает чтение пропущенного bill. Три независимых coverage views и остальные paths открыты.** Разделить extraction coverage, selection completeness и actual input coverage.
   Потерянное обязательное приложение снимает доказанную полноту после всех сокращений.
   Текст OSR/обоснования не становится нормативным baseline; предупреждение о неизвестной
   применимости поддержки доходит в prompt.

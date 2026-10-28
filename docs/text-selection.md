@@ -134,11 +134,20 @@ metadata. It is transient and changes no SQL, legal selection or provider input.
 
 `trim_print.projection` records source positions while trimming and gives generated omission
 markers no source origin. Adjacent copied pages coalesce into one range. `selection_for_input`
-uses this map only when the entire ordered part assembly or its traced trim equals the actual
-input. Other transformations keep explicit `input coverage unknown` losses and zero ranges;
-substring presence alone does not establish exact coverage. Selection policy is unchanged.
-Budget/cost-fitting trace composition and durable PreparedInput remain in
+validates an explicit composed input map against the selected assembly SHA, length and copied
+text. Without an explicit map, it recognizes the whole assembly or its traced trim; other
+transformations retain `input coverage unknown` losses and zero ranges. Source selection
+policy remains separate from input fitting; durable PreparedInput is still tracked in
 [DA5](plans/2026-10-22-document-architecture.md#da5).
+
+With an exact prepared-input projection, a normative part counts as retained only when its
+required source ranges are covered by that part's own copied ranges. The required bill view
+uses the existing trim projection and ignores generated omission markers; edge whitespace
+keeps the prior strip behavior. Adjacent/overlapping copied ranges combine for this check.
+A matching bill or annex quoted inside another part cannot replace its missing origin.
+Known omissions retain `normative_text_omitted` and downgrade selected input to unverified;
+the original normative SHA and source facts remain unchanged. Without an input map, the
+existing coarse/unknown coverage contract remains in force.
 
 Senate amendment summaries select attachments by their extracted contents. A candidate needs
 the formal resolution heading, date, subject, affirmative amendment decision, operative changes

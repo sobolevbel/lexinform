@@ -6053,3 +6053,47 @@ Master checklist: **74 задачи / 19 отмечены выполненным
 отвергнутый общий scheduler. Новых implementation completion marks нет. Human labels,
 непринятый paid A/B и natural production coverage не подменяются conditional exclusions.
 Runtime/tests/tools/config не менялись; strict docs/link/build и diff gate обязательны.
+
+
+<a id="j124"></a>
+### J124. Prepared-input completeness requires the part's own source ranges
+
+Статус: **готово**, baseline `14d7fa92975dfc9f3eafdfe5831c62ed251d6659`.
+Reproduction: закон с четырьмя evidence checks остаётся selected, хотя exact input map содержит
+только ту же строку из justification, а собственный bill range 0–0. Omission/loss отсутствуют.
+Причина — completeness спрашивала глобальный substring отдельно от уже верной source map.
+
+При known projection проверяется покрытие required ranges собственного part. Для bill/
+continuation это прежний trim map без generated markers; annex сохраняет strip-only semantics.
+Adjacent/overlapping actual ranges объединяются. Текст и source facts не переписываются,
+нормативный SHA сохраняется; selected input с известной потерей становится unverified.
+Coarse unknown-map path не усиливает своих обещаний; source selection policy version прежняя,
+поскольку не изменены file choice, edition или legal admissibility.
+
+**122 focused**, strict mypy **490**, Ruff/format green. Synthetic source-position probes:
+**20 cases**, прежние 15 false completeness verdicts исправлены, 5 positive controls сохранены;
+date/amount/negation/scope/reference needles остаются в exact input. Это fixture invariants,
+не независимая смысловая разметка. **168 native scenarios**: requests/messages/all28 tables
+exact, timing0, SQL/gzip delta0, source doctors errors0.
+
+Full gate и raw replay приняты ниже. Pinned population **5365 inputs**: RCL DOC379 / DOCX2564 /
+DOCM491 / XML13 / ZIP1803, прежние PDF114 и direct ODT1. Другие PDF/scans не входят в этот
+text-projection gate. Prior decisions проверены до commit; итоговые changed cases0.
+Изменён только один runtime module, остальные 159 unchanged.
+
+J122 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40627180662) и J123
+[PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40627393197) success:
+**5185 passed**, strict mypy **490**, docs/web green для каждого head. Main/deployment не
+выполнены; явное разрешение остаётся запрошенным, feature branch/draft PR сохранены.
+
+Full gate: **5189 passed**, failures/errors/skips0, **641.366 s**.
+Raw replay завершён: **5365 paths / 3753220922 bytes / 42920 prepared views**. Ошибок0,
+changed cases0: все prior text/law digest/input/original selection hashes, projection maps,
+coverage coordinates и profile values exact. Selection JSON byte delta0. Changed decisions
+для просмотра отсутствуют; 15 известных false-full fixture cases исправлены, 5 positive controls
+не изменены. Final input SHA/index recheck и source freeze подтверждены.
+[Acceptance asset](../assets/audits/2026-10-28-input-source-completeness/validation.json) пинует
+полную population, старые/новые profiles, replay/comparator, meaningful probes, native/gates.
+
+Readonly origin/state tip проверен во время qualification: остаётся J116 pin
+`4f19d9bf7b8035f2239dece6098c4b06942f9414`; новый natural file-family cycle не заявляется.
