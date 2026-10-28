@@ -59,6 +59,7 @@ from lexinform.models import (
     ObservationBasis,
     ObservationMode,
     ObservedProcess,
+    OdtTextExtraction,
     PdfTextExtraction,
     Phase,
     PlenaryVoting,
@@ -307,6 +308,11 @@ class WordBlockTextExtractor(Protocol):
 @runtime_checkable
 class WordNoteTextExtractor(Protocol):
     def extract_with_notes(self, data: bytes) -> WordDetailedExtraction: ...
+
+
+@runtime_checkable
+class OdtBlockTextExtractor(Protocol):
+    def extract_odt_blocks(self, data: bytes) -> OdtTextExtraction: ...
 
 
 class TextExtractor(Protocol):

@@ -5826,3 +5826,49 @@ relative SQLite URI; исправлена только fixture в новом out
 Documentation-only stage; runtime gate J115 **5091 passed** остаётся действительным.
 Strict docs/diff check обязательны. Raw archive/backfill, paid calls, Telegram API, workflow
 dispatch и canonical state mutations не выполнялись. DA2/DA10 file coverage остаётся открытым.
+
+
+<a id="j117"></a>
+### J117. ODT physical block origins with the unchanged legacy view
+
+Статус: **готово**, baseline `8e39f0629ce2ea88bb37af4b796a623a0fd8764c`.
+ODT extraction возвращает отдельный transient manifest: actual child-index paths абзацев,
+заголовков, rows/cells, ordered legacy projection, input/XML SHA, Python/view versions.
+Ignored nodes сохраняют path/tag; inline notes, tracked changes и repeated table content явно
+остаются unresolved/unexpanded legacy views. Никакой пагинации, legal completeness либо
+PreparedInput spans из этих координат не выводится.
+
+Physical package связывает manifest с existing part index/raw SHA/exact text. Optional port
+сохраняет прежние custom adapters; ordinary facade отключает сбор metadata. Policy, provider
+inputs, SQL и сохранённые selections не меняются. Legacy DOC и durable extraction history
+остаются следующими задачами, не объявлены реализованными.
+
+**106 focused**, strict mypy **478**, Ruff/format green. **5112 full passed**, errors/failures/
+skips0, **606.484 s**. **168 native snapshots**: provider requests/messages и все 28 tables
+exact, timing differences0, SQL/gzip delta0. Старые document model classes AST exact, кроме
+additive transient ExtractedParts; прочие **156 runtime files byte-identical**.
+
+Discovery проверил SHA/size всех **16341 paths / 12073227147 bytes** шести raw families.
+Из ZIP roots: 5719 Word вне changed parser, **1803 containers / 1 direct ODT**. В трёх ZIP
+найдены ещё **7 ODT parts**, всего8. Real text/selection replay: **6 corpus roots** (включая
+2 rejection controls) и **9 variants**, из них5 meaningful mutations: date/amount/negation/
+scope/reference. Все physical/selection decisions exact к предыдущему коду. **1798 других
+roots** проверены только на format routing с placeholder adapters — их text/legal selection
+этим replay не приняты. Independent human/legal labels не создавались.
+
+**17 origin views / 1066 block views / 46 ignored-node views**: JSON round trip, part binding и
+paths/tags в original XML подтверждены. Corpus INDEX и все 16341 input hashes перепроверены
+после replay, без изменений. Первую discovery остановили из-за лишнего разбора не-ODT текстов;
+отдельный format-only pass и actual ODT replay разделены. Первичная replay fixture не передала
+обязательный max_part_chars; исправлена только fixture в новом output directory.
+
+J115 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40611560095) success: **5091 passed**,
+strict mypy **477**. [Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40612101577):
+exact `4774da8ce83e47a071453fdfaee5b0e6b19176db`, listener up **45 s**.
+J116 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40612084715) success;
+[deploy](https://github.com/sobolevbel/lexinform/actions/runs/40612839027) сообщает exact
+`8e39f0629ce2ea88bb37af4b796a623a0fd8764c`, already at that commit, listener running.
+
+
+[Acceptance asset](../assets/audits/2026-10-28-odt-blocks/validation.json) пинует gates, источники,
+real/routing coverage, mutations и неизменность корпуса/сохранённого state.

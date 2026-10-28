@@ -365,6 +365,102 @@ class WordDetailedExtraction(BaseModel):
         return self
 
 
+class OdtTextBlock(BaseModel):
+    """Child-index paths start at office:text; no pagination is inferred."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    xml_part: Literal["content.xml"] = "content.xml"
+    kind: Literal["paragraph", "heading", "table_row", "table_cell"]
+    path: tuple[int, ...] = Field(min_length=1)
+    text: str = ""
+
+    @property
+    def block_id(self) -> str:
+        return f"odt-xml:{self.xml_part}:body:{'/'.join(str(index) for index in self.path)}"
+
+    @property
+    def text_sha256(self) -> str:
+        return hashlib.sha256(self.text.encode()).hexdigest()
+
+    @model_validator(mode="after")
+    def child_positions_are_nonnegative(self) -> Self:
+        if any(index < 0 for index in self.path):
+            raise ValueError("OpenDocument child positions must be nonnegative")
+        return self
+
+
+class OdtIgnoredNode(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    path: tuple[int, ...] = Field(min_length=1)
+    tag: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def child_positions_are_nonnegative(self) -> Self:
+        if any(index < 0 for index in self.path):
+            raise ValueError("OpenDocument child positions must be nonnegative")
+        return self
+
+
+class OdtTextExtraction(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    version: Literal["odt-blocks-v1"] = "odt-blocks-v1"
+    text_view: Literal["legacy-odt-body-v1"] = "legacy-odt-body-v1"
+    inline_notes: Literal["legacy-inline-unmapped"] = "legacy-inline-unmapped"
+    tracked_changes: Literal["legacy-inline-unresolved"] = "legacy-inline-unresolved"
+    table_repetitions: Literal["legacy-unexpanded"] = "legacy-unexpanded"
+    input_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    xml_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    python_version: str = Field(min_length=1)
+    body_state: Literal["read", "missing", "unsupported"]
+    blocks: tuple[OdtTextBlock, ...] = ()
+    legacy_blocks: tuple[str, ...] = ()
+    ignored_nodes: tuple[OdtIgnoredNode, ...] = ()
+
+    @property
+    def legacy_text(self) -> str:
+        blocks = {block.block_id: block.text for block in self.blocks}
+        return "\n".join(blocks[identity] for identity in self.legacy_blocks)
+
+    @property
+    def manifest_sha256(self) -> str:
+        canonical = json.dumps(
+            self.model_dump(mode="json"), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        )
+        return hashlib.sha256(canonical.encode()).hexdigest()
+
+    @model_validator(mode="after")
+    def physical_blocks_and_projection_agree(self) -> Self:
+        paths = [block.path for block in self.blocks]
+        if paths != sorted(paths) or len(set(paths)) != len(paths):
+            raise ValueError("OpenDocument blocks require unique paths in XML order")
+        blocks = {block.block_id: block for block in self.blocks}
+        if len(set(self.legacy_blocks)) != len(self.legacy_blocks) or any(
+            identity not in blocks or blocks[identity].kind == "table_cell"
+            for identity in self.legacy_blocks
+        ):
+            raise ValueError(
+                "OpenDocument projection requires distinct paragraph, heading or row blocks"
+            )
+        ignored = [node.path for node in self.ignored_nodes]
+        if ignored != sorted(ignored) or len(set(ignored)) != len(ignored):
+            raise ValueError("Ignored OpenDocument nodes require unique paths in XML order")
+        if set(ignored) & set(paths):
+            raise ValueError("An OpenDocument node cannot be both read and ignored")
+        if self.body_state != "read" and (self.blocks or self.legacy_blocks or self.ignored_nodes):
+            raise ValueError("An unread OpenDocument body cannot claim physical blocks")
+        return self
+
+
+class OdtPartExtraction(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    part_index: int = Field(ge=0)
+    extraction: OdtTextExtraction
+
+
 class PdfPartExtraction(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -395,6 +491,7 @@ class ExtractedParts(BaseModel):
     pdf_pages: tuple[PdfPartExtraction, ...] = ()
     word_blocks: tuple[WordPartExtraction, ...] = ()
     word_notes: tuple[WordPartNoteExtraction, ...] = ()
+    odt_blocks: tuple[OdtPartExtraction, ...] = ()
 
     @model_validator(mode="after")
     def manifests_refer_to_physical_parts(self) -> Self:
@@ -424,6 +521,17 @@ class ExtractedParts(BaseModel):
             if index not in bodies or index in seen:
                 raise ValueError("Word notes require one existing body manifest")
             WordDetailedExtraction(body=bodies[index], notes=note_result.extraction)
+            seen.add(index)
+        seen.clear()
+        for odt_result in self.odt_blocks:
+            index = odt_result.part_index
+            if index >= len(self.parts) or index in seen:
+                raise ValueError("OpenDocument blocks require one existing physical part")
+            part = self.parts[index]
+            if part.sha256 != odt_result.extraction.input_sha256:
+                raise ValueError("OpenDocument blocks refer to different physical bytes")
+            if part.text != odt_result.extraction.legacy_text:
+                raise ValueError("OpenDocument blocks differ from the physical part text")
             seen.add(index)
         return self
 

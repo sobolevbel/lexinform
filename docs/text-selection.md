@@ -108,6 +108,20 @@ Replay modes `notes` and `notes-parts` validate note and reference coordinates t
 and physical-parts APIs respectively. These origins
 do not assert retained note spans after trimming, budget fitting or provider request preparation.
 
+`OdtTextExtractor.extract_odt_blocks` exposes transient `odt-blocks-v1` metadata. Paragraphs,
+headings, rows and cells have child-index paths relative to `office:text` in `content.xml`.
+The ordered projection reproduces the exact legacy string, including empty edges and nested
+tables; no page numbers are inferred. Input/XML SHA, Python version and canonical manifest SHA
+identify the view. Ignored body/row-group nodes retain their paths and tags; they may be layout
+nodes and do not independently prove a missing legal provision. Inline notes, tracked changes
+and repeated rows/cells explicitly retain the old unresolved/unexpanded view. `body_state=read`
+certifies traversal in this view, not document completeness or an analysis/citation span.
+`ExtractedParts.odt_blocks` binds each result to its physical part by index, raw SHA and exact
+legacy text. The optional `OdtBlockTextExtractor` port leaves custom legacy adapters unchanged;
+`include_odt_blocks=False` and the ordinary `extract_document` facade collect no ODT manifest.
+No stored selection, SQL, legal-role policy or provider input changes. See
+[J117](plans/2026-10-22-document-architecture-progress.md#j117) for raw/mutation coverage.
+
 `trim_print.projection` records source positions while trimming and gives generated omission
 markers no source origin. Adjacent copied pages coalesce into one range. `selection_for_input`
 uses this map only when the entire ordered part assembly or its traced trim equals the actual

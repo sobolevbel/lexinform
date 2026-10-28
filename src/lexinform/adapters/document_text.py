@@ -17,6 +17,7 @@ import sys
 import zipfile
 import zlib
 from collections.abc import Iterator
+from dataclasses import dataclass, field
 from typing import Literal
 from xml.etree import ElementTree as ET
 from zipfile import ZipInfo
@@ -28,6 +29,10 @@ from lexinform.models.documents import (
     DocumentPart,
     ExtractedDocument,
     ExtractedParts,
+    OdtIgnoredNode,
+    OdtPartExtraction,
+    OdtTextBlock,
+    OdtTextExtraction,
     PdfPartExtraction,
     PdfTextExtraction,
     WordBodyState,
@@ -46,6 +51,7 @@ from lexinform.models.word_notes import (
     WordNoteXmlPart,
 )
 from lexinform.ports import (
+    OdtBlockTextExtractor,
     PdfPageTextExtractor,
     TextExtractor,
     WordBlockTextExtractor,
@@ -482,6 +488,26 @@ class _WordMl:
                 self._inline(el, parts, path=child_path, paragraph=paragraph)
 
 
+@dataclass
+class _OdtOrigins:
+    blocks: list[OdtTextBlock] = field(default_factory=list)
+    legacy_blocks: list[str] = field(default_factory=list)
+    ignored_nodes: list[OdtIgnoredNode] = field(default_factory=list)
+
+    def record(
+        self,
+        kind: Literal["paragraph", "heading", "table_row", "table_cell"],
+        path: tuple[int, ...],
+        text: str,
+        *,
+        projected: bool,
+    ) -> None:
+        block = OdtTextBlock(kind=kind, path=path, text=text)
+        self.blocks.append(block)
+        if projected:
+            self.legacy_blocks.append(block.block_id)
+
+
 class OdtTextExtractor:
     """Paragraphs and headings of `content.xml`, tables as tab-separated rows."""
 
@@ -492,36 +518,97 @@ class OdtTextExtractor:
         return data
 
     def extract(self, data: bytes) -> str:
+        _, body, _ = self._body(data)
+        return "\n".join(_odt_blocks(body)) if body is not None else ""
+
+    def extract_odt_blocks(self, data: bytes) -> OdtTextExtraction:
+        xml, body, state = self._body(data)
+        origins = _OdtOrigins()
+        if body is not None:
+            list(_odt_blocks(body, origins=origins))
+        return OdtTextExtraction(
+            input_sha256=hashlib.sha256(data).hexdigest(),
+            xml_sha256=hashlib.sha256(xml).hexdigest(),
+            python_version=sys.version.split()[0],
+            body_state=state,
+            blocks=tuple(sorted(origins.blocks, key=lambda block: block.path)),
+            legacy_blocks=tuple(origins.legacy_blocks),
+            ignored_nodes=tuple(sorted(origins.ignored_nodes, key=lambda node: node.path)),
+        )
+
+    @staticmethod
+    def _body(
+        data: bytes,
+    ) -> tuple[bytes, ET.Element | None, Literal["read", "missing", "unsupported"]]:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             xml = _read_xml(archive, "content.xml")
         if _declares_entities(xml):
-            return ""
+            return xml, None, "unsupported"
         body = ET.fromstring(xml).find(f"{_ODT_OFFICE}body/{_ODT_OFFICE}text")
         if body is None:
             log.warning("OpenDocument file without a text body; no text")
-            return ""
-        return "\n".join(_odt_blocks(body))
+            return xml, None, "missing"
+        return xml, body, "read"
 
 
-def _odt_blocks(node: ET.Element) -> Iterator[str]:
-    for child in node:
+def _odt_blocks(
+    node: ET.Element,
+    *,
+    path: tuple[int, ...] = (),
+    origins: _OdtOrigins | None = None,
+    projected: bool = True,
+) -> Iterator[str]:
+    for index, child in enumerate(node):
+        child_path = (*path, index)
         if child.tag in (f"{_ODT_TEXT}p", f"{_ODT_TEXT}h"):
-            yield _odt_paragraph(child)
+            text = _odt_paragraph(child)
+            if origins is not None:
+                origins.record(
+                    "heading" if child.tag == f"{_ODT_TEXT}h" else "paragraph",
+                    child_path,
+                    text,
+                    projected=projected,
+                )
+            yield text
         elif child.tag == f"{_ODT_TABLE}table":
-            for row in _odt_rows(child):
-                cells = [" ".join(_odt_blocks(cell)) for cell in row if cell.tag in _ODT_CELLS]
-                yield "\t".join(cells)
+            for row, row_path in _odt_rows(child, path=child_path, origins=origins):
+                cells: list[str] = []
+                for cell_index, cell in enumerate(row):
+                    cell_path = (*row_path, cell_index)
+                    if cell.tag not in _ODT_CELLS:
+                        if origins is not None:
+                            origins.ignored_nodes.append(
+                                OdtIgnoredNode(path=cell_path, tag=cell.tag)
+                            )
+                        continue
+                    text = " ".join(
+                        _odt_blocks(cell, path=cell_path, origins=origins, projected=False)
+                    )
+                    if origins is not None:
+                        origins.record("table_cell", cell_path, text, projected=False)
+                    cells.append(text)
+                text = "\t".join(cells)
+                if origins is not None:
+                    origins.record("table_row", row_path, text, projected=projected)
+                yield text
         elif child.tag in _ODT_CONTAINERS:
-            yield from _odt_blocks(child)
+            yield from _odt_blocks(child, path=child_path, origins=origins, projected=projected)
+        elif origins is not None:
+            origins.ignored_nodes.append(OdtIgnoredNode(path=child_path, tag=child.tag))
 
 
-def _odt_rows(table: ET.Element) -> Iterator[ET.Element]:
+def _odt_rows(
+    table: ET.Element, *, path: tuple[int, ...], origins: _OdtOrigins | None
+) -> Iterator[tuple[ET.Element, tuple[int, ...]]]:
     """The rows of one table (not of the tables nested in its cells), through the row groups."""
-    for child in table:
+    for index, child in enumerate(table):
+        child_path = (*path, index)
         if child.tag == f"{_ODT_TABLE}table-row":
-            yield child
+            yield child, child_path
         elif child.tag in _ODT_ROW_GROUPS:
-            yield from _odt_rows(child)
+            yield from _odt_rows(child, path=child_path, origins=origins)
+        elif origins is not None:
+            origins.ignored_nodes.append(OdtIgnoredNode(path=child_path, tag=child.tag))
 
 
 def _space_count(value: str | None) -> int:
@@ -599,6 +686,7 @@ class DocumentTextExtractor:
         include_pdf_pages: bool = True,
         include_word_blocks: bool = True,
         include_word_notes: bool = True,
+        include_odt_blocks: bool = True,
     ) -> ExtractedParts:
         parts: list[DocumentPart] = []
         rejected: list[str] = []
@@ -608,7 +696,19 @@ class DocumentTextExtractor:
         word_notes: list[WordPartNoteExtraction] | None = (
             [] if include_word_notes and include_word_blocks else None
         )
-        self._collect(data, (), digest, parts, rejected, [0, 0], pdf_pages, word_blocks, word_notes)
+        odt_blocks: list[OdtPartExtraction] | None = [] if include_odt_blocks else None
+        self._collect(
+            data,
+            (),
+            digest,
+            parts,
+            rejected,
+            [0, 0],
+            pdf_pages,
+            word_blocks,
+            word_notes,
+            odt_blocks,
+        )
         return ExtractedParts(
             input_sha256=digest,
             parts=tuple(parts),
@@ -616,11 +716,16 @@ class DocumentTextExtractor:
             pdf_pages=tuple(pdf_pages or ()),
             word_blocks=tuple(word_blocks or ()),
             word_notes=tuple(word_notes or ()),
+            odt_blocks=tuple(odt_blocks or ()),
         )
 
     def extract_document(self, data: bytes) -> ExtractedDocument:
         extracted = self.extract_parts(
-            data, include_pdf_pages=False, include_word_blocks=False, include_word_notes=False
+            data,
+            include_pdf_pages=False,
+            include_word_blocks=False,
+            include_word_notes=False,
+            include_odt_blocks=False,
         )
         return select_document_parts(extracted, max_part_chars=self._max_part_chars)
 
@@ -678,10 +783,12 @@ class DocumentTextExtractor:
         pdf_pages: list[PdfPartExtraction] | None,
         word_blocks: list[WordPartExtraction] | None,
         word_notes: list[WordPartNoteExtraction] | None,
+        odt_blocks: list[OdtPartExtraction] | None,
     ) -> None:
         pdf_result: PdfTextExtraction | None = None
         word_result: WordTextExtraction | None = None
         note_result: WordNoteExtraction | None = None
+        odt_result: OdtTextExtraction | None = None
         if data.startswith(_ZIP_MAGIC):
             try:
                 with zipfile.ZipFile(io.BytesIO(data)) as archive:
@@ -699,7 +806,11 @@ class DocumentTextExtractor:
                         else:
                             text = self._docx.extract(data)
                     elif "content.xml" in names and "mimetype" in names:
-                        text = self._odt.extract(data)
+                        if odt_blocks is not None and isinstance(self._odt, OdtBlockTextExtractor):
+                            odt_result = self._odt.extract_odt_blocks(data)
+                            text = odt_result.legacy_text
+                        else:
+                            text = self._odt.extract(data)
                     else:
                         if len(members) >= _MAX_ARCHIVE_DEPTH:
                             rejected.append(f"{members}: archive depth limit")
@@ -729,6 +840,7 @@ class DocumentTextExtractor:
                                     pdf_pages,
                                     word_blocks,
                                     word_notes,
+                                    odt_blocks,
                                 )
                             except Exception as exc:
                                 rejected.append(
@@ -777,6 +889,8 @@ class DocumentTextExtractor:
             word_notes.append(
                 WordPartNoteExtraction(part_index=len(parts) - 1, extraction=note_result)
             )
+        if odt_blocks is not None and odt_result is not None:
+            odt_blocks.append(OdtPartExtraction(part_index=len(parts) - 1, extraction=odt_result))
 
 
 def _member_rank(info: ZipInfo) -> tuple[int, int]:
