@@ -133,6 +133,7 @@ class RunMode(StrEnum):
     COMMANDS = "commands"
     COLLECT = "collect"
     DELIVERIES = "deliveries"
+    CLI_READS = "cli_reads"
     DRY_RUN = "dry_run"
 
 

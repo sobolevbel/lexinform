@@ -119,6 +119,7 @@ class MonthFigures(BaseModel):
         """The figures of the month `month` falls in, counting rows *taken in* and never the
         `seen` of a phase: the register is downloaded whole every run and the Sejm listing is
         re-read with a day of overlap, so a sum of those counts one entry sixty times."""
+        reports = [report for report in reports if report.execution_accounting_measured]
         usage: dict[str, TokenUsage] = {}
         for report in reports:
             merge_usage(usage, report.llm_usage)
@@ -146,6 +147,7 @@ class WeekFigures(BaseModel):
 
     @classmethod
     def of(cls, reports: list[RunReport]) -> Self:
+        reports = [report for report in reports if report.execution_accounting_measured]
         rejected = {key for report in reports for key in report.prefilter_rejected or []}
         rejected.update(
             f"{verdict.term}/{verdict.number}" for report in reports for verdict in report.rejected

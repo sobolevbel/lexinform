@@ -370,7 +370,11 @@ class DigestService:
         if current_report is not None:
             reports.append(current_report)
         reports = [
-            r for r in reports if starts <= r.started_at < ends and r.mode is not RunMode.DRY_RUN
+            r
+            for r in reports
+            if starts <= r.started_at < ends
+            and r.mode is not RunMode.DRY_RUN
+            and r.execution_accounting_measured
         ]
         return Digest(
             ref=ref,

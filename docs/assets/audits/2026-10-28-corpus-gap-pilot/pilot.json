@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "status": "staged_and_offline_readable",
+  "commit": "1ff8e8def142d6ebf76bd5534d067efccae80b04",
+  "sources": 20,
+  "http_200": 20,
+  "downloaded": 20,
+  "unknown_attempts": 0,
+  "application_bytes": 8894020,
+  "unique_retained_body_bytes": 8894020,
+  "unique_staging_metadata_bytes": 3553929,
+  "charged_body_and_retained_plus_reserved_metadata": 42953864,
+  "additional_final_bundle_body_bytes": 0,
+  "offline_readability": {
+    "extracted": 20,
+    "nonempty": 20,
+    "characters": 2173312,
+    "selection_state": "20 unverified; not a legal selection or completeness verdict"
+  },
+  "active_indexes_unchanged": {
+    "INDEX.json": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "documents/index.json": "2909d71cab80b549771d5f1eaa51bf0b9c8c01e3088392264fee9424f590df2a"
+  },
+  "installed": false,
+  "evidence": [
+    {
+      "path": "out/corpus/j143/staging/rcl-gap-pilot-20261028/manifest.json",
+      "bytes": 92824,
+      "sha256": "44760f580399f54232a3c9255dbd1ab2837c80d766a0e1cd75b8fbd1575900b6"
+    },
+    {
+      "path": "out/corpus/j143/staging/rcl-gap-pilot-20261028/result.json",
+      "bytes": 7583,
+      "sha256": "61b0addcb96554bc788bb98844fa05566e311e01effeb0ec66098fc67e9ba2ce"
+    },
+    {
+      "path": "out/corpus/j143/staging/final-44760f580399f54232a3c9255dbd1ab2837c80d766a0e1cd75b8fbd1575900b6/manifest.json",
+      "bytes": 94588,
+      "sha256": "b08dc6acb5cd93486a664a9b8866aeadded6dbd4b1521913dfafb3622e6f0ffc"
+    },
+    {
+      "path": "out/corpus/j143/staging/final-44760f580399f54232a3c9255dbd1ab2837c80d766a0e1cd75b8fbd1575900b6/result.json",
+      "bytes": 37683,
+      "sha256": "b374daf10d8a724fc07bebf84ffa2640979eab59bed0a61987313d2961330df5"
+    },
+    {
+      "path": "out/corpus/j143/pilot-readability.json",
+      "bytes": 96009,
+      "sha256": "f9dcd848c8de1f241da67e5c61688aab6a463a6db12bd3b8017b83047a1150cd"
+    },
+    {
+      "path": "out/corpus/j143/rcl-originals-pilot-plan.json",
+      "bytes": 12518,
+      "sha256": "6de4fb7452df057368231ad3fece08e24b0891b8f4bfde1440cd131177ab2d80"
+    }
+  ]
+}

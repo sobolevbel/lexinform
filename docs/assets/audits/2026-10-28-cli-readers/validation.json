@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "stage": "J144",
+  "status": "local_acceptance_passed",
+  "base_commit": "1ff8e8def142d6ebf76bd5534d067efccae80b04",
+  "scope": "Reader-first CLI document reports; no producers/helper/Container/repository/pipeline/schema changes",
+  "gate": {
+    "tests": 6315,
+    "seconds": 220.975,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "coverage_percent": 92,
+    "focused_tests": 310,
+    "mypy_files": 554,
+    "local_http_tests": 25,
+    "local_http_seconds": 11.26,
+    "ruff": "passed",
+    "format": "542 files unchanged",
+    "source_files_exact": 613,
+    "new_unit_cases": 23,
+    "new_scenario_boundaries": 2
+  },
+  "compatibility": {
+    "base": "6bb31bbb34260404b6a0a419f738601d31f66332",
+    "changed_cli_functions": [
+      "cost",
+      "runs"
+    ],
+    "future_report": {
+      "new": {
+        "accepted": true,
+        "mode": "cli_reads"
+      },
+      "old": {
+        "accepted": false,
+        "codes": [
+          "enum"
+        ]
+      }
+    },
+    "historical_profile": {
+      "new": {
+        "sha256": "5e48e207d2ec1b18977c1a4e62143cd3e975a4e3068febb69ce92ee3b5b4d9df",
+        "status": "recorded"
+      },
+      "old": {
+        "sha256": "5e48e207d2ec1b18977c1a4e62143cd3e975a4e3068febb69ce92ee3b5b4d9df",
+        "status": "recorded"
+      }
+    },
+    "historical_reports": {
+      "new": {
+        "count": 385,
+        "sha256": "aeecdd44659b552f40facc3ef6f3f110b2314ff9cfaaa083d3d9dfe886f48c0c"
+      },
+      "old": {
+        "count": 385,
+        "sha256": "aeecdd44659b552f40facc3ef6f3f110b2314ff9cfaaa083d3d9dfe886f48c0c"
+      }
+    },
+    "source_dump_sha256": "eb1adcc675d9b5ed9afa77014ce091deb7470015428f29dec4bd51041cbceda0",
+    "source_dump_unchanged": true,
+    "unchanged_runtime_boundaries": {
+      "src/lexinform/adapters/sqlite_repo.py": true,
+      "src/lexinform/container.py": true,
+      "src/lexinform/ports.py": true,
+      "src/lexinform/services/pipeline.py": true
+    }
+  },
+  "independent_review": "No actionable findings; every list_runs consumer and direct month/week accounting inspected",
+  "rollback": "S1 must deploy before any cli_reads producer; producer rollback must retain S1 reader",
+  "documentation_change": "Russian wording in state-retention; implementation matches reviewed frozen patch",
+  "evidence": [
+    {
+      "path": "out/corpus/j144/final-gate/full.xml",
+      "bytes": 1015390,
+      "sha256": "8c8ec596f3ef49f7fecc28e5862888eeb5a123e2989d43e9c5ab456b98940295"
+    },
+    {
+      "path": "out/corpus/j144/final-gate/full.log",
+      "bytes": 662179,
+      "sha256": "0a1deecea59460dcb1f9ca79cf241f1dc496d4caf77534b496b353d19664fc54"
+    },
+    {
+      "path": "out/corpus/j144/final-gate/mypy.log",
+      "bytes": 45,
+      "sha256": "19528eb8365d8a0c9c50cdba8218debc2e311ca294dcfdf684c45834f672f909"
+    },
+    {
+      "path": "out/corpus/j144/final-gate/ruff.log",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "path": "out/corpus/j144/final-gate/format.log",
+      "bytes": 25,
+      "sha256": "f81659949c9b2295269bd80fccc7843370c66ab7ccb5a8b7c9578020c8e7ea23"
+    },
+    {
+      "path": "out/corpus/j144/final-gate/local-http.log",
+      "bytes": 180,
+      "sha256": "0a5f753ec306f1712ca7a81ce7db54deff541c299e04ba4d865112697aea4aa7"
+    },
+    {
+      "path": "out/corpus/j144/final-gate/source-freeze.json",
+      "bytes": 67193,
+      "sha256": "4c659ec15330de58a385cd487b18804de68bff2ddcc0e4b2bb91266568fb13d7"
+    },
+    {
+      "path": "out/corpus/j144/final-gate/compatibility.json",
+      "bytes": 343,
+      "sha256": "eb07917d344bdcf203a74989ec10334652c88c0f4a04a18c123a116cc1d1921a"
+    },
+    {
+      "path": "out/corpus/j144/agent-s1/frozen.json",
+      "bytes": 5249,
+      "sha256": "41216a7d0c831ab123404fe3933f1483d2cba3935c46f9dc50b2e6a97950e5b9"
+    },
+    {
+      "path": "out/corpus/j144/agent-s1/j144-s1.patch",
+      "bytes": 33766,
+      "sha256": "f03b52dc5e01e4741bd577bbaf8f8a2c567217aaca1ed86e78e052599428c379"
+    },
+    {
+      "path": "out/corpus/j144/agent-s1/focused.xml",
+      "bytes": 42970,
+      "sha256": "91eb577917def42dc3af544aca1470fdf1f70a6f2db7bbe6769b04ece5b69b4a"
+    }
+  ]
+}

@@ -7060,7 +7060,7 @@ CI40750311611/deploy40751010858 с переходом с6bb31bbb, health45s и t
 
 ### J143. Bound resumable corpus collection and restore the PDF replay generation
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**. Baseline `27b8181355e3f111916ef244308851bbe83deb2c`.
+Статус: **реализовано, CI и обновление реле подтверждены**. Baseline `27b8181355e3f111916ef244308851bbe83deb2c`.
 Отдельный staging pilot читает pinned plan максимум на 20 официальных RCL originals:
 serial/no retries, 5 MiB на response, 128 MiB на charged application bodies + retained originals +
 24 MiB reserved metadata. Это не wire/TLS accounting и не production archive/backend.
@@ -7086,7 +7086,7 @@ inputs/code unchanged. 210 meaningful mutation probes на 42 files обнару
 применимого Art.1/law-digest probe не объявлены покрытыми этими мутациями. Это machine
 page oracle и regression population, не независимая юридическая разметка.
 
-Реальный network pilot/install пока не запускался. План: 74 tasks / 29 done / 6 explicit N/A /
+Кодовая приёмка завершилась до network pilot; установка в активный корпус не выполнялась. План: 74 tasks / 29 done / 6 explicit N/A /
 39 applicable partial-open; восстановленная PDF generation не означает полный extraction gate.
 
 Финальный gate: 6290 tests / 0 failures-errors-skips, 214.092s, coverage92%; mypy553,
@@ -7094,3 +7094,32 @@ Ruff/format и docs-check passed. Все612 source/config hashes неизмен�
 сценарный набор не расширялся. Focused72 и independent review закрыты.
 [Acceptance asset](../assets/audits/2026-10-28-corpus-gap-pilot/validation.json) связывает
 финальную версию, проверки и обе PDF recordings.
+
+J143 commit `1ff8e8def142d6ebf76bd5534d067efccae80b04`: CI 40755799635 и deploy 40756617831
+прошли; переход реле с 27b818, health 45s и timer подтверждены
+[release proof](../assets/audits/2026-10-28-corpus-gap-pilot/release.json).
+После выпуска bounded pilot получил 20/20 originals, HTTP 200, 8 894 020 B; unknown/retries 0.
+Offline final bundle не добавил body bytes; 20 файлов извлекаются непустыми, 2 173 312 characters.
+Selection остаётся unverified; legal labels не добавлялись. Active INDEX/documents index exact,
+install не выполнялся. [Pilot evidence](../assets/audits/2026-10-28-corpus-gap-pilot/pilot.json).
+
+### J144. Read CLI document observations without counting them as executions
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**. Только reader-first этап DA2.4.
+`cli_reads` требует finite `cli_read_operation`; другие modes отвергают это поле. Старый JSON
+его не получает. Списки прогонов показывают loader observations и unmeasured execution/model
+accounting. Cost totals/denominators/dearest, status health, month/week figures и weekly
+completeness исключают этот scope; аудит чтения файлов выделяет его отдельно.
+
+Producers, caller lifecycle, Container, repository, pipeline, schema и retention не изменены.
+Show/preview/lookup остаются SQL-read-only. После будущего включения записи минимальная
+rollback-версия должна поддерживать этот reader; старый 6bb отвергает новый enum.
+385 исторических report serializations и historical profile hash exact; проверка повторена
+на интегрированной версии. Новые synthetic rows проходят dump/restore и сохраняют прежние
+watermark/prune semantics. Технический formatter не меняет editorial content versions.
+
+Full: 6315 tests / 0 failures-errors-skips, 220.975s, coverage 92%; focused 310, local HTTP 25 / 11.26s,
+mypy 554, Ruff/format passed. Добавлено 23 unit cases и 2 boundary scenarios для command routing
+и weekly completeness. Independent review не нашло actionable findings.
+[Acceptance asset](../assets/audits/2026-10-28-cli-readers/validation.json).
+DA2.4 остаётся partial до отдельного caller-owned capture; план: 74 / 29 done / 6 N/A / 39 open.

@@ -227,6 +227,33 @@ def test_cost_sums_the_runs_and_names_the_dearest_analyses(db: Path) -> None:
     assert "3039" not in result.output  # the fixture's analysis has no token counts to rank
 
 
+def test_cli_read_rows_are_visible_without_inventing_execution_cost(db: Path) -> None:
+    _record_run(db, datetime(2026, 9, 8, 4, 23, tzinfo=UTC), analyzed=2, input_tokens=100_000)
+    before = runner.invoke(app, ["cost", "--days", "3650"], env=_env(db))
+    repo = SqliteBillRepository(db)
+    try:
+        now = datetime(2026, 9, 9, 4, 23, tzinfo=UTC)
+        report = RunReport(
+            started_at=now,
+            since=now,
+            finished_at=now,
+            mode=RunMode.CLI_READS,
+            cli_read_operation="analyze",
+        )
+        identity = repo.start_run(report)
+        repo.finish_run(identity, report)
+    finally:
+        repo.close()
+
+    after = runner.invoke(app, ["cost", "--days", "3650"], env=_env(db))
+    listed = runner.invoke(app, ["runs", "--days", "3650", "--all"], env=_env(db))
+
+    assert before.exit_code == after.exit_code == listed.exit_code == 0
+    assert before.output == after.output
+    line = next(line for line in listed.output.splitlines() if "cli_reads/analyze" in line)
+    assert "accounting: unmeasured" in line and "$0" not in line and "0/0" not in line
+
+
 def test_reset_puts_the_bill_back_with_a_clean_budget(db: Path) -> None:
     result = runner.invoke(app, ["reset", "3039", "--to", "analysis_pending", "-y"], env=_env(db))
 

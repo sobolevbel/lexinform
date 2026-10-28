@@ -1,9 +1,9 @@
 """What one run reports to the log channel and stores in the `runs` table."""
 
 import datetime as dt
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from lexinform.models.analysis import TokenUsage
 from lexinform.models.document_reads import DocumentDownloadDiagnostics, DocumentReadMetrics
@@ -44,6 +44,18 @@ CallKind = Literal[
     "commission_review",
     "act_application",
     "name",
+]
+
+CliReadOperation = Literal[
+    "scan",
+    "reprefilter",
+    "analyze",
+    "explain",
+    "amendments",
+    "republish",
+    "forget",
+    "reset",
+    "observe",
 ]
 
 
@@ -109,6 +121,9 @@ class RunReport(BaseModel):
     finished_at: dt.datetime | None = None
     since: dt.datetime
     mode: RunMode
+    cli_read_operation: CliReadOperation | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     term: int | None = None
     discovery_ok: bool = False
     discovered: int = 0
@@ -183,6 +198,16 @@ class RunReport(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    @model_validator(mode="after")
+    def cli_read_scope(self) -> Self:
+        if (self.mode is RunMode.CLI_READS) != (self.cli_read_operation is not None):
+            raise ValueError("CLI document-read reports require their operation and distinct mode")
+        return self
+
+    @property
+    def execution_accounting_measured(self) -> bool:
+        return self.mode is not RunMode.CLI_READS
+
     @property
     def ok(self) -> bool:
         return not self.errors
@@ -202,6 +227,17 @@ class RunReport(BaseModel):
     @property
     def is_empty(self) -> bool:
         """Routine checks, batch waiting and timing alone are not run results."""
+        if not self.execution_accounting_measured:
+            downloads = self.document_download_diagnostics
+            reads = self.document_reads
+            return not (
+                self.errors
+                or self.notes
+                or downloads is not None
+                and (downloads.invocations or downloads.cache_hits)
+                or reads is not None
+                and (reads.cache_hits or any(host.attempts for host in reads.hosts.values()))
+            )
         values = self.model_dump()
         values["attention"] = {
             key: count

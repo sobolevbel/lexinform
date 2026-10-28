@@ -33,6 +33,51 @@ def database(tmp_path: Path, reports: list[str | None]) -> Path:
     return path
 
 
+def test_cli_read_reports_keep_their_own_measurement_totals(tmp_path: Path) -> None:
+    value = metrics().model_dump(mode="json")
+    cli = json.loads(report(value))
+    cli.update(mode="cli_reads", cli_read_operation="reprefilter")
+    path = database(tmp_path, [report(value), json.dumps(cli)])
+    before = path.read_bytes()
+
+    result = audit(path)
+
+    assert path.read_bytes() == before and result["status"] == "recorded"
+    assert result["totals"]["measured_runs"] == 1
+    assert result["totals"]["completed_body_bytes"] == 10
+    assert result["by_host"]["source.test"]["completed"] == 1
+    assert result["cli_reads"]["totals"]["measured_reports"] == 1
+    assert result["cli_reads"]["totals"]["completed_body_bytes"] == 10
+    assert result["cli_reads"]["by_host"]["source.test"]["completed"] == 1
+    assert "measured_runs" not in result["cli_reads"]["totals"]
+    assert result["summary"]["cli_read_reports"] == 1
+
+
+@pytest.mark.parametrize(
+    ("value", "status", "counter"),
+    [
+        (None, "not_run", "unmeasured_reports"),
+        ({"schema_version": 2}, "not_run", "unsupported_metric_versions"),
+        ({}, "failed", None),
+        (DocumentReadMetrics().model_dump(mode="json"), "recorded", "measured_reports"),
+    ],
+)
+def test_cli_measurements_preserve_unknown_failure_and_recorded_zero(
+    tmp_path: Path, value: object, status: str, counter: str | None
+) -> None:
+    cli = json.loads(report(value))
+    cli.update(mode="cli_reads", cli_read_operation="scan")
+
+    result = audit(database(tmp_path, [json.dumps(cli)]))
+
+    assert result["status"] == status and result["totals"] == {}
+    assert result["by_host"] == {} and result["by_run_started_day_utc"] == {}
+    if counter is not None:
+        assert result["cli_reads"]["summary"][counter] == 1
+    if value is None:
+        assert result["cli_reads"]["totals"] == {}
+
+
 def test_daily_totals_keep_legacy_unknowns_and_per_run_distinct_scope(tmp_path: Path) -> None:
     value = metrics().model_dump(mode="json")
     path = database(tmp_path, [report(value), report(value), report(None), None])

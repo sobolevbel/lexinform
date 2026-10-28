@@ -932,7 +932,11 @@ class CommandService:
                     self._publishing.channel_id, limit=self._status_bills
                 )
             ),
-            runs=tuple(self._repo.list_runs(since=since)),
+            runs=tuple(
+                report
+                for report in self._repo.list_runs(since=since)
+                if report.execution_accounting_measured
+            ),
             days=self._status_days,
             batches=batches,
             queued_intents=len(queued),
@@ -974,7 +978,11 @@ class CommandService:
 
     def _cost(self, days: int, top: int) -> CommandOutcome:
         """`/cost`: the window's model spend, per model, its dearest run and its dearest bills."""
-        reports = self._repo.list_runs(since=self._clock.now() - dt.timedelta(days=days))
+        reports = [
+            report
+            for report in self._repo.list_runs(since=self._clock.now() - dt.timedelta(days=days))
+            if report.execution_accounting_measured
+        ]
         usage: dict[str, TokenUsage] = {}
         for report in reports:
             merge_usage(usage, report.llm_usage)

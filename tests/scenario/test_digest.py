@@ -158,6 +158,37 @@ def test_weekly_figures_use_warsaw_week_boundaries() -> None:
     assert week.figures.filtered == 0
 
 
+def test_cli_read_rows_neither_complete_daily_checks_nor_change_weekly_figures() -> None:
+    w = World()
+    service = w.container.digest_service(dry_run=False)
+    assert service is not None, "The World configures a digest publisher"
+    report = RunReport(
+        started_at=w.clock.now(),
+        since=w.clock.now(),
+        mode=RunMode.CLI_READS,
+        cli_read_operation="scan",
+        discovered=999,
+        errors=["document unavailable"],
+    )
+    w.repo.finish_run(w.repo.start_run(report), report)
+
+    alone = service.build("2026-W37")
+    full = RunReport(
+        started_at=w.clock.now(),
+        since=w.clock.now(),
+        mode=RunMode.RUN,
+        discovered=3,
+        prefilter_rejected=[],
+    )
+    w.repo.finish_run(w.repo.start_run(full), full)
+    together = service.build("2026-W37")
+
+    assert alone.checks_incomplete and alone.figures is None
+    assert not together.checks_incomplete
+    assert together.figures is not None, "The weekly full execution supplies figures"
+    assert together.figures.discovered == 3 and together.figures.filtered == 0
+
+
 def test_the_draft_carries_the_button_and_the_channel_has_nothing_yet() -> None:
     w = World()
     w.add_bill("3039", TITLE)

@@ -8,7 +8,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
-from lexinform.models import DocumentReadMetrics
+from lexinform.models import DocumentReadMetrics, RunMode
 from tools.artifact_metadata import (
     ArtifactMetadataIssue,
     ArtifactReadIssue,
@@ -61,6 +61,10 @@ def audit(database: Path) -> dict[str, Any]:
     totals: Counter[str] = Counter()
     days: dict[str, Counter[str]] = defaultdict(Counter)
     hosts: dict[str, Counter[str]] = defaultdict(Counter)
+    cli_counts: Counter[str] = Counter()
+    cli_totals: Counter[str] = Counter()
+    cli_days: dict[str, Counter[str]] = defaultdict(Counter)
+    cli_hosts: dict[str, Counter[str]] = defaultdict(Counter)
     findings: list[dict[str, str]] = []
     catalogue: Counter[str] = Counter()
     catalogue_days: dict[str, Counter[str]] = defaultdict(Counter)
@@ -92,18 +96,26 @@ def audit(database: Path) -> dict[str, Any]:
             if not isinstance(report, dict):
                 issue("invalid_run_report", column.ref)
                 continue
+            cli_reads = report.get("mode") == RunMode.CLI_READS.value
+            scope_counts = cli_counts if cli_reads else counts
+            scope_totals = cli_totals if cli_reads else totals
+            scope_days = cli_days if cli_reads else days
+            scope_hosts = cli_hosts if cli_reads else hosts
+            if cli_reads:
+                counts["cli_read_reports"] += 1
+                cli_counts["saved_reports"] += 1
             day = _day(report.get("started_at"))
             raw = report.get("document_reads")
             if raw is None:
-                counts["unmeasured_reports"] += 1
-                days[day]["unmeasured_reports"] += 1
+                scope_counts["unmeasured_reports"] += 1
+                scope_days[day]["unmeasured_reports"] += 1
                 continue
             if (
                 isinstance(raw, dict)
                 and type(raw.get("schema_version")) is int
                 and raw["schema_version"] != 1
             ):
-                counts["unsupported_metric_versions"] += 1
+                scope_counts["unsupported_metric_versions"] += 1
                 issue("unsupported_document_read_version", column.ref, level="warning")
                 continue
             if (
@@ -129,14 +141,22 @@ def audit(database: Path) -> dict[str, Any]:
             except ValueError, TypeError:
                 issue("invalid_document_read_metrics", column.ref)
                 continue
-            counts["measured_reports"] += 1
+            scope_counts["measured_reports"] += 1
             if day == "unknown":
                 issue("run_recording_day_unknown", column.ref, level="warning")
             observed = _totals(metrics)
-            totals.update(observed)
-            days[day].update(observed)
+            if cli_reads:
+                for old, new in (
+                    ("measured_runs", "measured_reports"),
+                    ("sum_per_run_distinct_body_bytes", "sum_per_report_distinct_body_bytes"),
+                    ("sum_per_run_distinct_bodies", "sum_per_report_distinct_bodies"),
+                    ("within_run_duplicate_body_bytes", "within_report_duplicate_body_bytes"),
+                ):
+                    observed[new] = observed.pop(old)
+            scope_totals.update(observed)
+            scope_days[day].update(observed)
             for host, values in metrics.hosts.items():
-                hosts[host].update(values.model_dump())
+                scope_hosts[host].update(values.model_dump())
         if "runs" in tables:
             rows = connection.execute("SELECT count(*) FROM runs").fetchone()[0]
             counts["rows_without_saved_report"] = rows - counts["saved_reports"]
@@ -176,12 +196,12 @@ def audit(database: Path) -> dict[str, Any]:
             issue("database_changed_during_audit", "database")
     counts["errors"] = sum(row["level"] == "error" for row in findings)
     counts["warnings"] = sum(row["level"] == "warning" for row in findings)
-    return {
+    result: dict[str, Any] = {
         "version": 1,
         "status": "failed"
         if counts["errors"]
         else "recorded"
-        if counts["measured_reports"]
+        if counts["measured_reports"] or cli_counts["measured_reports"]
         else "not_run",
         "database_sha256": snapshot.sha256,
         "summary": dict(sorted(counts.items())),
@@ -215,6 +235,21 @@ def audit(database: Path) -> dict[str, Any]:
             "Artifact first-recording day is not the first download or source publication day.",
         ],
     }
+    if counts["cli_read_reports"]:
+        result["cli_reads"] = {
+            "summary": dict(sorted(cli_counts.items())),
+            "totals": dict(sorted(cli_totals.items())),
+            "by_report_started_day_utc": {
+                day: dict(sorted(row.items())) for day, row in sorted(cli_days.items())
+            },
+            "by_host": {host: dict(sorted(row.items())) for host, row in sorted(cli_hosts.items())},
+            "scope": "CLI document-read reports; execution/model accounting is unmeasured.",
+        }
+        result["scope"] = "Known TextLoader observations, separated by execution/CLI report scope."
+        result["exclusions"][0] = (
+            "Unmeasured is not zero; unsaved standalone/direct gateway reads remain outside scope."
+        )
+    return result
 
 
 def run(database: Path, output: Path) -> int:

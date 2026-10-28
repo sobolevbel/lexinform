@@ -21,7 +21,7 @@ from lexinform.adapters.github_inbox import (
 )
 from lexinform.adapters.state_snapshot import write_state_snapshot
 from lexinform.adapters.telegram import TelegramBotClient, TelegramRunNotifier, send_and_retract
-from lexinform.adapters.telegram_format import MessageFormatter
+from lexinform.adapters.telegram_format import MessageFormatter, format_document_reads
 from lexinform.concurrency import fan_out
 from lexinform.container import Container, build_container
 from lexinform.errors import ServiceUnavailableError, StateCheckpointError
@@ -937,10 +937,17 @@ def runs(
         label = "runs" if include_all else "non-empty runs"
         typer.echo(f"no {label} recorded in the last {days} days")
         return
-    typer.echo(
-        "started (UTC)     mode      ok   disc  anal  publ  upd  errs  tokens in/out       cost"
-    )
+    if any(report.execution_accounting_measured for report in reports):
+        typer.echo(
+            "started (UTC)     mode      ok   disc  anal  publ  upd  errs  tokens in/out       cost"
+        )
     for r in reports:
+        if not r.execution_accounting_measured:
+            typer.echo(
+                f"{r.started_at:%Y-%m-%d %H:%M}  cli_reads/{r.cli_read_operation}  "
+                f"{format_document_reads(r)}; execution/model accounting: unmeasured"
+            )
+            continue
         cost = cost_usd(r.llm_usage) if r.llm_usage or not r.llm_input_tokens else None
         tokens = f"{format_tokens(r.llm_input_tokens)}/{format_tokens(r.llm_output_tokens)}"
         typer.echo(
@@ -996,7 +1003,11 @@ def cost(
     """LLM spend of the last days: per model, per run, and the most expensive analyses."""
     c = _container()
     try:
-        reports = c.repo.list_runs(since=c.clock.now() - timedelta(days=days))
+        reports = [
+            report
+            for report in c.repo.list_runs(since=c.clock.now() - timedelta(days=days))
+            if report.execution_accounting_measured
+        ]
         priciest = c.repo.most_expensive_analyses(limit=top)
     finally:
         c.close()

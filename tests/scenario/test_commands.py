@@ -18,6 +18,7 @@ from lexinform.models import (
     RunMode,
     RunReport,
     Stage,
+    TokenUsage,
     Triage,
 )
 from lexinform.services.commands import FORCE_HINT
@@ -1145,6 +1146,40 @@ def test_cost_adds_up_the_window_per_model_and_names_the_dearest_bills() -> None
     assert outcome.status is OutcomeStatus.SPENT and spend is not None
     assert (spend.days, spend.runs) == (7, 1) and spend.usage
     assert spend.dearest is not None and [b.number for b in spend.priciest] == ["3039"]
+
+
+def test_cli_read_rows_are_listed_but_do_not_count_as_execution_or_cost() -> None:
+    w = World()
+    full = RunReport(
+        started_at=w.clock.now(),
+        since=w.clock.now(),
+        mode=RunMode.RUN,
+        llm_usage={"gpt-5.1": TokenUsage(input=100)},
+    )
+    w.repo.finish_run(w.repo.start_run(full), full)
+    w.clock.advance(days=1)
+    cli = RunReport(
+        started_at=w.clock.now(),
+        since=w.clock.now(),
+        mode=RunMode.CLI_READS,
+        cli_read_operation="analyze",
+        errors=["document unavailable"],
+        llm_usage={"gpt-5.1": TokenUsage(input=999_999)},
+    )
+    w.repo.finish_run(w.repo.start_run(cli), cli)
+    w.command("/runs all")
+    w.command("/status")
+    w.command("/cost days=7")
+
+    _commands_only(w)
+
+    (_, listed), (_, status), (_, cost) = w.replier.replies
+    assert listed.runs == (cli, full)
+    assert status.snapshot is not None, "The status command returns its queue/run snapshot"
+    assert status.snapshot.runs == (full,)
+    assert cost.spend is not None, "The cost command returns its measured spend"
+    assert cost.spend.runs == 1 and cost.spend.usage == full.llm_usage
+    assert cost.spend.dearest == full
 
 
 def test_reset_puts_a_bill_into_any_status_with_a_clean_budget() -> None:

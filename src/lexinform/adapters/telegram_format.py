@@ -1514,6 +1514,23 @@ class MessageFormatter:
     def run_report(
         self, report: RunReport, log_lines: list[str], *, run_url: str | None = None
     ) -> RenderedMessage:
+        if not report.execution_accounting_measured:
+            operation = report.cli_read_operation or "unknown"
+            blocks = [
+                f"<b>CLI document reads · {esc(operation)}</b>",
+                f"started: {esc(report.started_at.isoformat())}",
+                format_document_reads(report),
+                "Execution/model accounting: unmeasured",
+            ]
+            if run_url:
+                blocks.append(link(run_url, "GitHub Actions log"))
+            if report.errors:
+                blocks.append(_section("❌", "errors", *(_bullet(e) for e in report.errors)))
+            if report.notes:
+                blocks.append(_section("ℹ️", "notes", *(_bullet(n) for n in report.notes)))
+            if log_lines:
+                blocks.append("⚠️ <b>warnings</b>\n<pre>" + esc("\n".join(log_lines)) + "</pre>")
+            return RenderedMessage(text=self._assemble(blocks))
         lb = self._labels
         status = "✅" if report.ok else "❌"
         duration = report.duration_seconds
@@ -3438,12 +3455,33 @@ def _counts(counts: dict[str, int]) -> str:
     return " · ".join(f"{esc(name)} {value}" for name, value in ordered)
 
 
+def format_document_reads(report: RunReport) -> str:
+    diagnostics = report.document_download_diagnostics
+    if diagnostics is not None:
+        failed = diagnostics.invocations - diagnostics.completed - diagnostics.unresolved
+        return (
+            f"loader invocations: {diagnostics.invocations} · completed: {diagnostics.completed}"
+            f" · failed: {failed} · unresolved: {diagnostics.unresolved}"
+            f" · cache hits: {diagnostics.cache_hits}"
+        )
+    reads = report.document_reads
+    if reads is not None:
+        return f"completed responses: {reads.completed} · cache hits: {reads.cache_hits}"
+    return "download observations: unmeasured"
+
+
 def _run_line(report: RunReport) -> str:
     """One row of `/runs`: the columns `lexinform runs` prints, as one line of a message.
 
     A run recorded before the per-model breakdown existed carries tokens but no usage: its cost
     is unknown, not zero, and `format_usd` says so.
     """
+    if not report.execution_accounting_measured:
+        operation = report.cli_read_operation or "unknown"
+        return (
+            f"• <b>{report.started_at:%d.%m %H:%M}</b> cli_reads/{esc(operation)}"
+            f" · {format_document_reads(report)} · execution/model accounting: unmeasured"
+        )
     cost = cost_usd(report.llm_usage) if report.llm_usage or not report.llm_input_tokens else None
     counters = (
         f"{report.discovered}/{report.analyzed}/{report.published}/{report.updates}"
@@ -3467,7 +3505,7 @@ def _orphan_line(bill: Bill) -> str:
 def _runs_line(snapshot: StatusSnapshot) -> str:
     """What the recorded runs of the window did and cost, and when the last one started —
     the answer to "is it still running at all", which no single run report gives."""
-    runs = snapshot.runs
+    runs = tuple(report for report in snapshot.runs if report.execution_accounting_measured)
     if not runs:
         return f"🏃 <b>runs</b>: none in {snapshot.days} days"
     usage: dict[str, TokenUsage] = {}
