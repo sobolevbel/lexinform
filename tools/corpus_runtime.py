@@ -125,11 +125,17 @@ def code_version() -> str:
     return result.stdout.strip() if result.returncode == 0 else "unknown"
 
 
-def source_fingerprints() -> dict[str, str]:
-    root = Path(__file__).resolve().parents[1]
+def source_fingerprints(*, root: Path | None = None) -> dict[str, str]:
+    root = root.resolve() if root is not None else Path(__file__).resolve().parents[1]
     paths = [root / "uv.lock"]
     for directory in ("src", "tests", "tools"):
-        paths.extend(sorted((root / directory).rglob("*.py")))
+        base = root / directory
+        if base.resolve() != base:
+            raise ValueError("Source directory aliases are prohibited")
+        paths.extend(sorted(base.rglob("*.py")))
+    for path in paths:
+        if path.resolve() != path or not path.is_relative_to(root) or path.name == ".env":
+            raise ValueError("Source file aliases are prohibited")
     return {
         str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest() for path in paths
     }
@@ -146,8 +152,10 @@ def code_dirty() -> bool:
     return result.returncode != 0 or bool(result.stdout.strip())
 
 
-def capture_code(directory: Path, fingerprints: dict[str, str]) -> dict[str, Any]:
-    root = Path(__file__).resolve().parents[1]
+def capture_code(
+    directory: Path, fingerprints: dict[str, str], *, root: Path | None = None
+) -> dict[str, Any]:
+    root = root.resolve() if root is not None else Path(__file__).resolve().parents[1]
     buffer = io.BytesIO()
     with tarfile.open(fileobj=buffer, mode="w") as archive:
         for relative, expected in sorted(fingerprints.items()):

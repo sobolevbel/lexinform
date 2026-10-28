@@ -56,6 +56,23 @@ summary and adjacent `.json.runs` directory together. See the
 [required job matrix, plan format, commands and result semantics](../tests/fixtures/corpus_check/README.md).
 The default manifest fixture and standalone external commands retain their CLI.
 
+## Fixed native replay
+
+`native_replay` runs the existing six observer suites (168 cases) through one offline boundary:
+
+```bash
+uv run --offline --frozen python -m tools.native_replay run --code "$PWD" --output out/native/new-run
+uv run --offline --frozen python -m tools.native_replay verify out/native/new-run
+uv run --offline --frozen python -m tools.native_replay reuse out/native/new-run --code "$PWD"
+```
+
+Outputs are new immutable directories with exact case identities, SQL/profile validation,
+source archives, environment pins and actual import/read closure. Guards reject network,
+external writes and credential-file reads. Reuse returns nonzero if the requested source,
+configuration, consumed fixtures, runner or environment differ. It never adopts an older ad-hoc
+recording as a verified cache. These six suites remain separate from default pytest and the
+external-corpus registry. Cross-run comparison remains a separate acceptance step.
+
 ## Request provenance doctor
 
 ```bash

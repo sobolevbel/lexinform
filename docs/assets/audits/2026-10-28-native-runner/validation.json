@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "stage": "J145",
+  "status": "local_acceptance_passed",
+  "base_commit": "8a76a8e4f8a021f6b195c082bf901e09cd660914",
+  "scope": "Fixed native observer runner, immutable manifests and guarded positive reuse; no application runtime changes",
+  "gate": {
+    "tests": 6384,
+    "seconds": 225.401,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "coverage_percent": 92,
+    "focused_tests": 97,
+    "mypy_files": 555,
+    "ruff": "passed",
+    "format": "543 files unchanged",
+    "source_files_exact": 622,
+    "new_unit_cases": 69,
+    "new_default_scenarios": 0
+  },
+  "native": {
+    "cases": 168,
+    "suites": {
+      "normal": 12,
+      "handoff": 24,
+      "reuse": 16,
+      "explanation": 16,
+      "primary": 36,
+      "admission": 64
+    },
+    "six_original_observer_hashes": "exact; checked by fixed registry",
+    "raw_artifact_comparisons": 348,
+    "sql_and_profile_differences": 0,
+    "normalization": "none",
+    "same_tree_reuse": true,
+    "gzip_level": 9,
+    "gzip_mtime": 0,
+    "sql_bytes_total": 7574128,
+    "gzip_bytes_total": 1377404,
+    "j142_migration": "Prior agent run exact against immutable J142 evidence; primary old/final/agent outputs exact"
+  },
+  "independent_review": {
+    "findings_closed": [
+      "descriptor-relative write escape",
+      "source preflight alias read before validation",
+      "manifest/entry alias read before validation"
+    ],
+    "benign_fixture_only": true,
+    "secret_files_read": false,
+    "remaining_actionable_findings": 0
+  },
+  "evidence": [
+    {
+      "path": "out/corpus/j145/final-gate-v2/full.xml",
+      "bytes": 1025110,
+      "sha256": "ff29069065968377ffc937089c6d7bf3d3670b05df7171836386e18cba0f640a"
+    },
+    {
+      "path": "out/corpus/j145/final-gate-v2/full.log",
+      "bytes": 665624,
+      "sha256": "4d3ca34474d83504f8e4134fd886eb988b476c7c5bdb5167177515d7ed8a78f0"
+    },
+    {
+      "path": "out/corpus/j145/final-gate-v2/mypy.log",
+      "bytes": 45,
+      "sha256": "df8e1c2ae54828a68830f7db5f0cda70884d3e71bedd187bd1667b06e4c29acf"
+    },
+    {
+      "path": "out/corpus/j145/final-gate-v2/ruff.log",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "path": "out/corpus/j145/final-gate-v2/format.log",
+      "bytes": 25,
+      "sha256": "ca4006cd952385d5086e4e12782711a2ea567af5d2a09b4cb0422d4d47ccbd9f"
+    },
+    {
+      "path": "out/corpus/j145/final-gate-v2/source-freeze.json",
+      "bytes": 68192,
+      "sha256": "a03658b5199a89b5ab6d0599d299819a0a96e0955d7dd38cae1d6cf4c7c023da"
+    },
+    {
+      "path": "out/corpus/j145/final-parity.json",
+      "bytes": 387,
+      "sha256": "a3e1659d4105ad748b06f0168b66cdfaefefd1af06d0306d775161419426cb0e"
+    },
+    {
+      "path": "out/corpus/j145/native168-final/manifest.json",
+      "bytes": 156862,
+      "sha256": "34642f8de5101658727fcae39259a2f650b7f88c64851789a3f5a06a00f27af9"
+    },
+    {
+      "path": "out/corpus/j145/agent/handoff-reviewed.json",
+      "bytes": 4445,
+      "sha256": "ee42aff90dba525ad379060c3247fbb6acda152b0672694adddf89a176a5d3d4"
+    },
+    {
+      "path": "out/corpus/j145/agent/entry-path-handoff.json",
+      "bytes": 2307,
+      "sha256": "11cc38b54b4374e0b7938756180f8584ae5c0b6027eba423c00b52adfd7bcc54"
+    },
+    {
+      "path": "out/corpus/j145/agent/migration-parity-reviewed.json",
+      "bytes": 50444,
+      "sha256": "e9cb25c6975f687151ccb4df88b5bafecf2f7eb9dd1e38791f6f041b9a623333"
+    },
+    {
+      "path": "out/corpus/j145/agent/review-fixes.xml",
+      "bytes": 12142,
+      "sha256": "8ff3aeade218b05f985ba4fb7d1290498c96967b7cfd98b3f527dd3e28ae34aa"
+    },
+    {
+      "path": "out/corpus/j145/agent/entry-path-focused-final.xml",
+      "bytes": 13906,
+      "sha256": "2ee6649fd62f5d2dbc9bff0bff62f3d3def3e6e9a0a6e968ae176edf2f0969e3"
+    },
+    {
+      "path": "out/corpus/j145/manifest-alias-before-canonical.json",
+      "bytes": 235,
+      "sha256": "179e451c02908f6256b77522a04e60e0e125581d0a2686633ac030dd0aae46ab"
+    }
+  ],
+  "limits": [
+    "Six finite native fixture suites, separate from default pytest and external corpus profiles",
+    "Cross-run comparator remains a separate acceptance step",
+    "No historical ad-hoc recording silently adopted as reusable manifest-v1 evidence",
+    "No natural-state processing, paid calls, production flags or storage/backend activation"
+  ]
+}

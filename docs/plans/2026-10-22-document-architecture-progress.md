@@ -7105,14 +7105,16 @@ install не выполнялся. [Pilot evidence](../assets/audits/2026-10-28-
 
 ### J144. Read CLI document observations without counting them as executions
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**. Только reader-first этап DA2.4.
+Статус: **реализовано, CI и обновление реле подтверждены**. Только reader-first этап DA2.4.
 `cli_reads` требует finite `cli_read_operation`; другие modes отвергают это поле. Старый JSON
 его не получает. Списки прогонов показывают loader observations и unmeasured execution/model
 accounting. Cost totals/denominators/dearest, status health, month/week figures и weekly
 completeness исключают этот scope; аудит чтения файлов выделяет его отдельно.
 
 Producers, caller lifecycle, Container, repository, pipeline, schema и retention не изменены.
-Show/preview/lookup остаются SQL-read-only. После будущего включения записи минимальная
+Show/read-only lookup сохраняют прежний контракт. Preview не получает нового report owner;
+его существующий lookup может зарегистрировать неизвестное дело до ответа «not analysed».
+Утверждение о полностью SQL-read-only preview было неточным; S1 не меняет этот путь. После будущего включения записи минимальная
 rollback-версия должна поддерживать этот reader; старый 6bb отвергает новый enum.
 385 исторических report serializations и historical profile hash exact; проверка повторена
 на интегрированной версии. Новые synthetic rows проходят dump/restore и сохраняют прежние
@@ -7123,3 +7125,34 @@ mypy 554, Ruff/format passed. Добавлено 23 unit cases и 2 boundary sce
 и weekly completeness. Independent review не нашло actionable findings.
 [Acceptance asset](../assets/audits/2026-10-28-cli-readers/validation.json).
 DA2.4 остаётся partial до отдельного caller-owned capture; план: 74 / 29 done / 6 N/A / 39 open.
+
+J144 reader commit `8a76a8e4f8a021f6b195c082bf901e09cd660914`: точные CI/deploy и переход
+реле с1ff8e8de, health45s/timer подтверждены
+[release proof](../assets/audits/2026-10-28-cli-readers/release.json).
+Это минимальная совместимая версия для будущих CLI report producers.
+
+
+### J145. Centralize fixed native replay and qualify baseline reuse
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**.
+Шесть существующих observer bodies перенесены byte-exact в tools; состав остаётся 168 cases.
+Один runner владеет запуском, immutable source/artifact manifests, environment/import/read
+closure и fail-closed reuse. Он проверяет SQL/FK/integrity и derived profile values, включая
+runs hashes. Guard запрещает сеть, запись вне output, исполнение subprocess и чтение `.env`;
+source/fixture/runner aliases отклоняются до чтения. Positive reuse проверяет запрошенный
+before snapshot и actual environment; AST similarity или старый ad-hoc report не заменяют proof.
+Cross-run comparator ещё не включён в этот API; accepted raw comparisons сохранены отдельно.
+
+Independent review исправил descriptor-relative write escape и source-preflight alias read;
+root review также закрыл manifest-entry read до validation. Пробы использовали безопасные
+внешние fixtures, без credential files. Final 97 focused checks и 6384 full tests прошли:
+0 failures/errors/skips, 225.401s, coverage 92%; mypy 555, Ruff/format passed. Новые 69 unit cases
+проверяют guards/manifests/reuse; default scenario suite не расширен.
+
+Fresh 168 на интегрированной версии: 348 raw SQL/profile comparisons exact против primary
+до entry fix и agent baseline до J144. Normalization не потребовалась; provider inputs,
+messages/order и все SQL bytes exact. SQL total 7 574 128 B, gzip 9 / mtime 0 total 1 377 404 B;
+изменений объёма 0. Same-tree reuse witness passed; source/config freeze exact.
+[Acceptance asset](../assets/audits/2026-10-28-native-runner/validation.json).
+План: 74 tasks / 29 done / 6 N/A / 39 applicable partial-open; это автоматизация приёмки существующего
+контракта DA0.5, без заявления о завершении natural production coverage.
