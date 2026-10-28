@@ -5,7 +5,7 @@ import pytest
 from lexinform.errors import StateCheckpointError
 from lexinform.models import DeliveryPlan, Publication, PublicationKind, PublicationStatus
 from lexinform.ports import PublishResult
-from tests.harness import World
+from tests.checkpoint_state import saved_state
 from tests.scenario.test_card_remote_checkpoints import Mode, connect, git, reject_checkpoint
 from tests.scenario.test_legacy_status_reply_freeze import legacy_reply
 from tests.scenario.test_update_remote_checkpoints import (
@@ -34,34 +34,33 @@ def test_legacy_long_reply_freezes_every_part_and_checkpoints_each_real_parent_b
     observed: list[int] = []
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        saved = plan(durable, case.identity)
-        identities = (case.identity, *saved.continuation_ids)
-        assert len(identities) == len(expected)
-        index = identities.index(publication.id or 0)
-        current = row(durable, identities[index])
-        assert current.status is PublicationStatus.PENDING
-        assert current.attempts == (1 if index == 0 else 0)
-        assert current.delivery == publication.delivery
-        assert plan(durable, identities[index]).rendered_text == expected[index]
-        if index:
-            parent = row(durable, identities[index - 1])
-            assert parent.status is PublicationStatus.SENT
-            assert plan(durable, identities[index]).reply_to == parent.message_id
-        for position, identity in enumerate(identities):
-            assert plan(durable, identity).rendered_text == expected[position]
-            assert row(durable, identity).status is (
-                PublicationStatus.SENT
-                if position < index
-                else PublicationStatus.PENDING
-                if position == index
-                else PublicationStatus.QUEUED
-            )
-        assert row(durable, case.included).status is PublicationStatus.SKIPPED
-        assert durable.publication("3039", PublicationKind.ACT_PUBLISHED) is None
-        observed.append(identities[index])
-        return original(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            saved = plan(durable, case.identity)
+            identities = (case.identity, *saved.continuation_ids)
+            assert len(identities) == len(expected)
+            index = identities.index(publication.id or 0)
+            current = row(durable, identities[index])
+            assert current.status is PublicationStatus.PENDING
+            assert current.attempts == (1 if index == 0 else 0)
+            assert current.delivery == publication.delivery
+            assert plan(durable, identities[index]).rendered_text == expected[index]
+            if index:
+                parent = row(durable, identities[index - 1])
+                assert parent.status is PublicationStatus.SENT
+                assert plan(durable, identities[index]).reply_to == parent.message_id
+            for position, identity in enumerate(identities):
+                assert plan(durable, identity).rendered_text == expected[position]
+                assert row(durable, identity).status is (
+                    PublicationStatus.SENT
+                    if position < index
+                    else PublicationStatus.PENDING
+                    if position == index
+                    else PublicationStatus.QUEUED
+                )
+            assert row(durable, case.included).status is PublicationStatus.SKIPPED
+            assert durable.publication("3039", PublicationKind.ACT_PUBLISHED) is None
+            observed.append(identities[index])
+            return original(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
 

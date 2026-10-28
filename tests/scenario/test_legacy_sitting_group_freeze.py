@@ -12,6 +12,7 @@ from lexinform.models import (
     SittingNews,
 )
 from lexinform.ports import PublishResult
+from tests.checkpoint_state import saved_state
 from tests.harness import World
 from tests.scenario.test_card_remote_checkpoints import (
     Mode,
@@ -86,27 +87,27 @@ def test_legacy_sitting_batch_freezes_future_text_and_members_before_its_top_lev
     observed: list[int] = []
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        for before, current in zip(original, rows(durable, identities), strict=True):
-            assert before.delivery is not None, (
-                "the fixture retains each original semantic snapshot"
-            )
-            assert (
-                current.status is PublicationStatus.PENDING and current.attempts == before.attempts
-            )
-            assert current.delivery == before.delivery.model_copy(
-                update={
-                    "sitting_group": identities,
-                    "group_text": expected,
-                    "render_origin": "legacy_snapshot"
-                    if before.status is PublicationStatus.FAILED
-                    else None,
-                }
-            )
-        assert publication.id is not None, "the shared send uses a saved member identity"
-        observed.append(publication.id)
-        return send(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            for before, current in zip(original, rows(durable, identities), strict=True):
+                assert before.delivery is not None, (
+                    "the fixture retains each original semantic snapshot"
+                )
+                assert (
+                    current.status is PublicationStatus.PENDING
+                    and current.attempts == before.attempts
+                )
+                assert current.delivery == before.delivery.model_copy(
+                    update={
+                        "sitting_group": identities,
+                        "group_text": expected,
+                        "render_origin": "legacy_snapshot"
+                        if before.status is PublicationStatus.FAILED
+                        else None,
+                    }
+                )
+            assert publication.id is not None, "the shared send uses a saved member identity"
+            observed.append(publication.id)
+            return send(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
     before = len(world.publisher.sent)

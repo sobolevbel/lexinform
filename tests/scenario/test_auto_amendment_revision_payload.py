@@ -17,6 +17,7 @@ from lexinform.models import (
     StatusChange,
 )
 from lexinform.ports import PublishResult
+from tests.checkpoint_state import StoredState, saved_state
 from tests.fakes import FakeTextExtractor, make_amendments
 from tests.harness import CHANNEL, REFERRED, TERM, World
 from tests.scenario.test_card_remote_checkpoints import Mode, connect, git
@@ -36,7 +37,7 @@ class LateCase:
     revision: Publication
 
 
-def row(world: World, identity: int) -> Publication:
+def row(world: StoredState, identity: int) -> Publication:
     publication = world.repo.publication_by_id(identity)
     assert publication is not None, "the fixture keeps the original and revision identities"
     return publication
@@ -136,24 +137,23 @@ def test_late_amendments_create_new_frozen_html_without_old_physical_membership_
     observed: list[int] = []
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        assert publication.id is not None, "new physical correction parts retain their identity"
-        saved = row(durable, publication.id)
-        assert saved.status is PublicationStatus.PENDING and plan(saved) == publication.delivery
-        assert row(durable, case.original.id or 0) == case.original
-        assert not plan(saved).held_change_ids and not plan(saved).publication_ids
-        if publication.id == revision.id:
-            assert MARKER in plan(saved).rendered_text
-            assert plan(saved).rendered_text != original.rendered_text
-            assert plan(saved).edit_message_id == case.original.message_id
-            assert bool(plan(saved).continuation_ids) is long
-            for identity in plan(saved).continuation_ids:
-                assert identity != case.original.id
-                assert row(durable, identity).status is PublicationStatus.QUEUED
-                assert plan(row(durable, identity)).continuation_root == revision.id
-        observed.append(publication.id)
-        return prepared(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            assert publication.id is not None, "new physical correction parts retain their identity"
+            saved = row(durable, publication.id)
+            assert saved.status is PublicationStatus.PENDING and plan(saved) == publication.delivery
+            assert row(durable, case.original.id or 0) == case.original
+            assert not plan(saved).held_change_ids and not plan(saved).publication_ids
+            if publication.id == revision.id:
+                assert MARKER in plan(saved).rendered_text
+                assert plan(saved).rendered_text != original.rendered_text
+                assert plan(saved).edit_message_id == case.original.message_id
+                assert bool(plan(saved).continuation_ids) is long
+                for identity in plan(saved).continuation_ids:
+                    assert identity != case.original.id
+                    assert row(durable, identity).status is PublicationStatus.QUEUED
+                    assert plan(row(durable, identity)).continuation_root == revision.id
+            observed.append(publication.id)
+            return prepared(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
 
@@ -242,12 +242,11 @@ def test_unknown_late_correction_retries_its_saved_new_html_and_exact_edit_targe
     prepared = fresh.publisher.publish_prepared
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        history = durable.repo.delivery_resolutions(saved.id or 0)
-        assert len(history) == 1 and history[0].command == incoming
-        assert publication.delivery == saved.delivery
-        return prepared(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            history = durable.repo.delivery_resolutions(saved.id or 0)
+            assert len(history) == 1 and history[0].command == incoming
+            assert publication.delivery == saved.delivery
+            return prepared(publication)
 
     monkeypatch.setattr(fresh.publisher, "render_delivery", refuse_render)
     monkeypatch.setattr(fresh.publisher, "publish_prepared", inspect)

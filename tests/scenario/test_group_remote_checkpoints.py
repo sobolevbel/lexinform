@@ -8,6 +8,7 @@ from lexinform.errors import DeliveryUncertainError, StateCheckpointError
 from lexinform.models import Publication, PublicationKind, PublicationStatus
 from lexinform.ports import PublishResult
 from lexinform.services.tracking_result import TrackingResult
+from tests.checkpoint_state import StoredState, saved_state
 from tests.harness import CHANNEL, COMMITTEE_STAGES, START, World
 from tests.scenario.test_card_remote_checkpoints import RunnerLost, connect, git, reject_checkpoint
 from tests.scenario.test_commands import _commands_only
@@ -46,7 +47,7 @@ def queued_world(group: Group, mode: Mode = "on") -> tuple[World, tuple[int, ...
     return world, identities
 
 
-def rows(world: World, identities: tuple[int, ...]) -> tuple[Publication, ...]:
+def rows(world: StoredState, identities: tuple[int, ...]) -> tuple[Publication, ...]:
     result = tuple(world.repo.publication_by_id(identity) for identity in identities)
     assert all(row is not None for row in result), "all group members are retained"
     return tuple(row for row in result if row is not None)
@@ -114,13 +115,12 @@ def test_shared_send_checkpoints_exact_text_members_and_receipt_as_one_unit(
     sent: list[str] = []
 
     def inspect(text: str) -> None:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        for row in rows(durable, identities):
-            assert row.status is PublicationStatus.PENDING and row.attempts == 0
-            assert text_and_members(row, group) == (text, identities)
-            assert row.channel_id == CHANNEL
-        sent.append(text)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            for row in rows(durable, identities):
+                assert row.status is PublicationStatus.PENDING and row.attempts == 0
+                assert text_and_members(row, group) == (text, identities)
+                assert row.channel_id == CHANNEL
+            sent.append(text)
 
     def send_update(text: str) -> PublishResult:
         inspect(text)
@@ -230,13 +230,12 @@ def test_operator_retry_after_mode_change_saves_shared_audit_before_api(
     observed: list[str] = []
 
     def inspect(text: str) -> None:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        for identity in identities:
-            audit = durable.repo.delivery_resolutions(identity)
-            assert len(audit) == 1 and audit[0].command == incoming
-        assert text == frozen
-        observed.append(text)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            for identity in identities:
+                audit = durable.repo.delivery_resolutions(identity)
+                assert len(audit) == 1 and audit[0].command == incoming
+            assert text == frozen
+            observed.append(text)
 
     def send_update(text: str) -> PublishResult:
         inspect(text)

@@ -16,8 +16,8 @@ from lexinform.models import (
 )
 from lexinform.models.batch import BatchKind
 from lexinform.models.reviews import ReviewPurpose
+from tests.computations import KINDS, retained_result
 from tests.harness import RCL, World, summary
-from tests.scenario.test_computation_reader import KINDS, retained_result
 from tests.scenario.test_review_computation_history import PURPOSES, queued_review, submit_review
 
 

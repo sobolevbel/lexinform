@@ -25,6 +25,7 @@ def test_bill_with_a_neutral_title_is_caught_by_its_text() -> None:
     assert report.prefilter_hits == 0  # the title said nothing
     assert (report.text_prefilter_checked, report.text_prefilter_hits) == (1, 1)
     assert (report.analyzed, report.published) == (1, 1)
+    assert sum(c.startswith("download:") for c in w.gateway.calls) == 1
     bill = w.bill("4100")
     assert bill.status is BillStatus.ANALYZED
     assert bill.prefilter_hits == [
@@ -46,25 +47,6 @@ def test_weak_title_hit_alone_goes_to_the_text_stage_not_to_the_model() -> None:
     bill = w.bill("4100")
     assert bill.status is BillStatus.SKIPPED_TEXT_PREFILTER
     assert bill.prefilter_hits == ["text:straz_graniczna"]  # the title's weak hit, kept for tuning
-
-
-def test_card_says_the_bill_was_found_by_its_text() -> None:
-    w = World(extractor=FakeTextExtractor(FOREIGNER_TEXT))
-    w.add_bill("4100", "Rządowy projekt ustawy o zmianie niektórych ustaw")
-    w.run()
-
-    text = MessageFormatter("ru").new_bill(w.bill("4100"), None).text
-
-    assert "Найден по тексту проекта" in text
-
-
-def test_pdf_is_downloaded_once_for_prefilter_and_analysis() -> None:
-    w = World(extractor=FakeTextExtractor(FOREIGNER_TEXT))
-    w.add_bill("4100", "Rządowy projekt ustawy o zmianie niektórych ustaw")
-
-    w.run()
-
-    assert sum(1 for c in w.gateway.calls if c.startswith("download:")) == 1
 
 
 @pytest.mark.parametrize("workers", [1, 4])

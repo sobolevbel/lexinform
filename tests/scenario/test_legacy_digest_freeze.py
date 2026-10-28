@@ -16,6 +16,7 @@ from lexinform.models import (
 )
 from lexinform.ports import PublishResult
 from lexinform.telegram_text import MESSAGE_LIMIT, split_html, utf16_length
+from tests.checkpoint_state import saved_state
 from tests.harness import CHANNEL, World
 from tests.scenario.test_card_remote_checkpoints import (
     Mode,
@@ -92,18 +93,21 @@ def test_legacy_reader_digest_freezes_its_chosen_future_payload_before_api(
         return render(week, draft=draft)
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        saved = durable.repo.publication_by_id(identity)
-        assert saved is not None and saved.delivery is not None, "future intent precedes the API"
-        assert saved.status is PublicationStatus.PENDING and saved.attempts == attempts
-        assert saved.created_at == original.created_at
-        assert saved.delivery.rendered_text == expected
-        assert saved.delivery.digest_parts == (identity,) and saved.delivery.digest_ref == REF
-        assert saved.delivery.reply_to is None and not saved.delivery.approve_label
-        assert durable.repo.digest_owner(source.id or 0) == (None if body == "html" else identity)
-        calls.append(identity)
-        return send(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            saved = durable.repo.publication_by_id(identity)
+            assert saved is not None and saved.delivery is not None, (
+                "future intent precedes the API"
+            )
+            assert saved.status is PublicationStatus.PENDING and saved.attempts == attempts
+            assert saved.created_at == original.created_at
+            assert saved.delivery.rendered_text == expected
+            assert saved.delivery.digest_parts == (identity,) and saved.delivery.digest_ref == REF
+            assert saved.delivery.reply_to is None and not saved.delivery.approve_label
+            assert durable.repo.digest_owner(source.id or 0) == (
+                None if body == "html" else identity
+            )
+            calls.append(identity)
+            return send(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
     monkeypatch.setattr(world.publisher, "render_digest_parts", render_once)
@@ -143,26 +147,27 @@ def test_oversized_saved_html_freezes_all_parts_and_delays_its_known_whole_body_
     calls: list[int] = []
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        saved = durable.repo.publication_by_id(identity)
-        assert saved is not None and saved.delivery is not None, "all parts share one saved root"
-        members = saved.delivery.digest_parts
-        assert len(members) == len(expected) and members[0] == identity
-        for index, member_id in enumerate(members):
-            part = durable.repo.publication_by_id(member_id)
-            assert part is not None and part.delivery is not None, (
-                "every physical future part exists"
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            saved = durable.repo.publication_by_id(identity)
+            assert saved is not None and saved.delivery is not None, (
+                "all parts share one saved root"
             )
-            assert part.delivery.rendered_text == expected[index]
-            assert part.delivery.digest_event_ids == (
-                (source.id,) if index == len(members) - 1 else ()
-            )
-        assert durable.repo.digest_owner(source_id) == members[-1]
-        event = durable.repo.publication_by_id(source_id)
-        assert event is not None and event.status is PublicationStatus.QUEUED
-        calls.append(publication.id or 0)
-        return send(publication)
+            members = saved.delivery.digest_parts
+            assert len(members) == len(expected) and members[0] == identity
+            for index, member_id in enumerate(members):
+                part = durable.repo.publication_by_id(member_id)
+                assert part is not None and part.delivery is not None, (
+                    "every physical future part exists"
+                )
+                assert part.delivery.rendered_text == expected[index]
+                assert part.delivery.digest_event_ids == (
+                    (source.id,) if index == len(members) - 1 else ()
+                )
+            assert durable.repo.digest_owner(source_id) == members[-1]
+            event = durable.repo.publication_by_id(source_id)
+            assert event is not None and event.status is PublicationStatus.QUEUED
+            calls.append(publication.id or 0)
+            return send(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
 

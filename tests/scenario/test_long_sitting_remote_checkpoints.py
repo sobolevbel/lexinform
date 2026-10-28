@@ -15,6 +15,7 @@ from lexinform.models import (
 )
 from lexinform.ports import PublishResult
 from lexinform.services.tracking_result import TrackingResult
+from tests.checkpoint_state import StoredState, saved_state
 from tests.harness import CHANNEL, COMMITTEE_STAGES, World
 from tests.scenario.test_card_remote_checkpoints import (
     Mode,
@@ -40,13 +41,13 @@ class SittingCase:
     card_id: int
 
 
-def row(world: World, identity: int) -> Publication:
+def row(world: StoredState, identity: int) -> Publication:
     publication = world.repo.publication_by_id(identity)
     assert publication is not None, "the real agenda watcher saves the source publication"
     return publication
 
 
-def plan(world: World, identity: int) -> DeliveryPlan:
+def plan(world: StoredState, identity: int) -> DeliveryPlan:
     delivery = row(world, identity).delivery
     assert delivery is not None, "the sitting retains its original delivery snapshot"
     return delivery
@@ -118,7 +119,7 @@ def expected_parts(case: SittingCase) -> tuple[str, ...]:
     return parts
 
 
-def identities(world: World, identity: int) -> tuple[int, ...]:
+def identities(world: StoredState, identity: int) -> tuple[int, ...]:
     return (identity, *plan(world, identity).continuation_ids)
 
 
@@ -142,33 +143,34 @@ def test_every_long_sitting_part_has_remote_html_and_parent_receipt_before_api(
     before = len(world.publisher.sent)
 
     def send(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        source = row(durable, case.identity)
-        saved = plan(durable, case.identity)
-        members = identities(durable, case.identity)
-        assert len(members) == len(expected)
-        assert not saved.sitting_group and not saved.group_text
-        assert saved.reply_to == case.card_id, "the saved card receipt remains line-link context"
-        assert tuple(plan(durable, identity).rendered_text for identity in members) == expected
-        assert f"https://t.me/test/{case.card_id}" in "\n".join(expected)
-        current = row(durable, publication.id or 0)
-        assert current.status is PublicationStatus.PENDING and not current.attempts
-        assert current.delivery == publication.delivery
-        if current.id == source.id:
-            assert current.kind is case.kind
-            assert all(
-                row(durable, identity).status is PublicationStatus.QUEUED
-                for identity in members[1:]
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            source = row(durable, case.identity)
+            saved = plan(durable, case.identity)
+            members = identities(durable, case.identity)
+            assert len(members) == len(expected)
+            assert not saved.sitting_group and not saved.group_text
+            assert saved.reply_to == case.card_id, (
+                "the saved card receipt remains line-link context"
             )
-        else:
-            current_plan = plan(durable, current.id or 0)
-            parent = row(durable, current_plan.continuation_parent or 0)
-            assert parent.status is PublicationStatus.SENT and parent.message_id is not None
-            assert current_plan.reply_to == parent.message_id
-            assert current_plan.continuation_root == case.identity
-        observed.append(publication.id or 0)
-        return original(publication)
+            assert tuple(plan(durable, identity).rendered_text for identity in members) == expected
+            assert f"https://t.me/test/{case.card_id}" in "\n".join(expected)
+            current = row(durable, publication.id or 0)
+            assert current.status is PublicationStatus.PENDING and not current.attempts
+            assert current.delivery == publication.delivery
+            if current.id == source.id:
+                assert current.kind is case.kind
+                assert all(
+                    row(durable, identity).status is PublicationStatus.QUEUED
+                    for identity in members[1:]
+                )
+            else:
+                current_plan = plan(durable, current.id or 0)
+                parent = row(durable, current_plan.continuation_parent or 0)
+                assert parent.status is PublicationStatus.SENT and parent.message_id is not None
+                assert current_plan.reply_to == parent.message_id
+                assert current_plan.continuation_root == case.identity
+            observed.append(publication.id or 0)
+            return original(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", send)
 
@@ -292,15 +294,14 @@ def test_operator_retry_keeps_the_saved_long_sitting_and_audit_after_mode_change
     checked: list[int] = []
 
     def send(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        if publication.id == case.identity:
-            history = durable.repo.delivery_resolutions(case.identity)
-            assert len(history) == 1 and history[0].command == incoming
-            assert plan(durable, case.identity) == saved
-            assert row(durable, case.identity).status is PublicationStatus.PENDING
-            checked.append(case.identity)
-        return original(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            if publication.id == case.identity:
+                history = durable.repo.delivery_resolutions(case.identity)
+                assert len(history) == 1 and history[0].command == incoming
+                assert plan(durable, case.identity) == saved
+                assert row(durable, case.identity).status is PublicationStatus.PENDING
+                checked.append(case.identity)
+            return original(publication)
 
     monkeypatch.setattr(fresh.publisher, "publish_prepared", send)
 
@@ -338,15 +339,14 @@ def test_confirming_a_long_sitting_root_unblocks_only_its_unsent_children(
     checked: list[int] = []
 
     def send(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        root = row(durable, case.identity)
-        assert root.status is PublicationStatus.SENT and root.message_id == 888
-        history = durable.repo.delivery_resolutions(case.identity)
-        assert len(history) == 1 and history[0].command == incoming
-        assert publication.id != case.identity
-        checked.append(publication.id or 0)
-        return original(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            root = row(durable, case.identity)
+            assert root.status is PublicationStatus.SENT and root.message_id == 888
+            history = durable.repo.delivery_resolutions(case.identity)
+            assert len(history) == 1 and history[0].command == incoming
+            assert publication.id != case.identity
+            checked.append(publication.id or 0)
+            return original(publication)
 
     monkeypatch.setattr(fresh.publisher, "publish_prepared", send)
 

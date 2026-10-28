@@ -2,7 +2,7 @@ import pytest
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models.batch import BatchKind
-from tests.scenario.test_computation_reader import KINDS, retained_result
+from tests.computations import KINDS, retained_result
 
 
 @pytest.mark.parametrize("purpose", KINDS)

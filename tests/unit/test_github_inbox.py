@@ -128,21 +128,37 @@ def test_a_token_without_actions_says_which_scope_is_missing() -> None:
 
 
 def test_a_file_that_exists_already_is_not_an_error() -> None:
+    requests: list[httpx.Request] = []
+
     def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
         if request.url.path.endswith("/dispatches"):
             return httpx.Response(204)
         return httpx.Response(422, json={"message": '"sha" wasn\'t supplied.'})
 
     _writer(handler).put(COMMAND)  # the same update filed twice: fine
 
+    assert [(request.method, request.url.path) for request in requests] == [
+        ("PUT", "/repos/owner/repo/contents/inbox/5.json"),
+        ("POST", "/repos/owner/repo/dispatches"),
+    ]
+
 
 def test_a_failed_kick_is_not_an_error_the_file_is_what_counts() -> None:
+    requests: list[httpx.Request] = []
+
     def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
         if request.url.path.endswith("/dispatches"):
             return httpx.Response(404, json={"message": "Not Found"})
         return httpx.Response(201, json={})
 
     _writer(handler).put(COMMAND)  # the next scheduled run answers it
+
+    assert [(request.method, request.url.path) for request in requests] == [
+        ("PUT", "/repos/owner/repo/contents/inbox/5.json"),
+        ("POST", "/repos/owner/repo/dispatches"),
+    ]
 
 
 def test_a_moved_branch_is_retried_and_a_bad_token_is_not() -> None:

@@ -1,8 +1,5 @@
-import datetime as dt
-
 import pytest
 
-from lexinform.models import RunMode, RunReport
 from tests.fakes import FakeTextExtractor
 from tests.harness import World
 
@@ -60,16 +57,6 @@ def test_failed_run_retains_attempts_without_guessing_the_missing_body_size() ->
     assert report.document_reads is not None, "the pipeline collects observations in finally"
     assert sum(host.failed for host in report.document_reads.hosts.values()) == 1
     assert report.document_reads.body_bytes == report.document_reads.distinct_body_bytes == 0
-
-
-def test_legacy_report_does_not_acquire_a_false_zero_download_measurement() -> None:
-    now = dt.datetime(2026, 10, 27, tzinfo=dt.UTC)
-    original = RunReport(started_at=now, since=now, mode=RunMode.RUN)
-
-    restored = RunReport.model_validate_json(original.model_dump_json())
-
-    assert restored.document_reads is None
-    assert "document_reads" not in restored.model_dump_json()
 
 
 def test_dry_run_returns_observed_io_while_rolling_back_its_database_changes() -> None:

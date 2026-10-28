@@ -15,6 +15,7 @@ from lexinform.models import (
     UpdateSnapshot,
 )
 from lexinform.ports import PublishResult
+from tests.checkpoint_state import saved_state
 from tests.fakes import FakePublisher
 from tests.harness import CHANNEL, World
 from tests.scenario.test_card_remote_checkpoints import connect, git, ready_world
@@ -162,27 +163,26 @@ def test_attempted_first_publication_freezes_the_saved_card_plan_and_keeps_its_a
     oracle = FakePublisher(formatter=world.formatter)
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        actual = row(durable, identity)
-        assert actual.status is PublicationStatus.PENDING and actual.attempts == 1
-        assert actual.delivery == publication.delivery
-        expected_text = callback_text(oracle, actual)
-        assert plan(durable, identity).rendered_text == expected_text
-        if has_delivery:
-            assert expected_text == expected
-            assert plan(durable, identity).bill_json == saved.bill_json
-        else:
-            actual_bill = Bill.model_validate_json(plan(durable, identity).bill_json)
-            assert actual_bill.model_dump(exclude={"joint"}) == card.bill.model_dump(
-                exclude={"joint"}
-            )
-            if kind is PublicationKind.JOINT_BILL:
-                assert actual_bill.joint is not None
-        assert plan(durable, identity).primary_json == saved.primary_json
-        assert plan(durable, identity).reply_to == saved.reply_to
-        observed.append((identity, expected_text))
-        return prepared(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            actual = row(durable, identity)
+            assert actual.status is PublicationStatus.PENDING and actual.attempts == 1
+            assert actual.delivery == publication.delivery
+            expected_text = callback_text(oracle, actual)
+            assert plan(durable, identity).rendered_text == expected_text
+            if has_delivery:
+                assert expected_text == expected
+                assert plan(durable, identity).bill_json == saved.bill_json
+            else:
+                actual_bill = Bill.model_validate_json(plan(durable, identity).bill_json)
+                assert actual_bill.model_dump(exclude={"joint"}) == card.bill.model_dump(
+                    exclude={"joint"}
+                )
+                if kind is PublicationKind.JOINT_BILL:
+                    assert actual_bill.joint is not None
+            assert plan(durable, identity).primary_json == saved.primary_json
+            assert plan(durable, identity).reply_to == saved.reply_to
+            observed.append((identity, expected_text))
+            return prepared(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
 
@@ -298,25 +298,28 @@ def test_oversized_retry_edit_freezes_all_parts_and_releases_only_after_the_leaf
     observed: list[int] = []
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        frozen = plan(durable, case.identity)
-        identities = (case.identity, *frozen.continuation_ids)
-        assert tuple(plan(durable, identity).rendered_text for identity in identities) == expected
-        assert frozen.edit_message_id == 444 and frozen.today == saved.today
-        assert not frozen.held_change_ids
-        assert plan(durable, identities[-1]).held_change_ids == saved.held_change_ids
-        assert row(durable, case.included).status is PublicationStatus.SKIPPED
-        assert row(durable, case.later).status is PublicationStatus.SKIPPED
-        assert publication.id is not None, "every prepared physical part has its durable identity"
-        index = identities.index(publication.id)
-        if index:
-            previous = row(durable, identities[index - 1])
-            assert previous.status is PublicationStatus.SENT
-            assert plan(durable, publication.id).reply_to == previous.message_id
-            assert plan(durable, publication.id).edit_message_id is None
-        observed.append(publication.id)
-        return prepared(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            frozen = plan(durable, case.identity)
+            identities = (case.identity, *frozen.continuation_ids)
+            assert (
+                tuple(plan(durable, identity).rendered_text for identity in identities) == expected
+            )
+            assert frozen.edit_message_id == 444 and frozen.today == saved.today
+            assert not frozen.held_change_ids
+            assert plan(durable, identities[-1]).held_change_ids == saved.held_change_ids
+            assert row(durable, case.included).status is PublicationStatus.SKIPPED
+            assert row(durable, case.later).status is PublicationStatus.SKIPPED
+            assert publication.id is not None, (
+                "every prepared physical part has its durable identity"
+            )
+            index = identities.index(publication.id)
+            if index:
+                previous = row(durable, identities[index - 1])
+                assert previous.status is PublicationStatus.SENT
+                assert plan(durable, publication.id).reply_to == previous.message_id
+                assert plan(durable, publication.id).edit_message_id is None
+            observed.append(publication.id)
+            return prepared(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
 

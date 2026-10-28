@@ -20,6 +20,7 @@ from lexinform.ports import PublishResult
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.message_parts import freeze_parts
 from lexinform.services.tracking_result import TrackingResult
+from tests.checkpoint_state import StoredState, saved_state
 from tests.harness import CHANNEL, TERM, World
 from tests.scenario.test_card_remote_checkpoints import (
     Mode,
@@ -46,13 +47,13 @@ class ReviewCase:
     held: int
 
 
-def row(world: World, identity: int) -> Publication:
+def row(world: StoredState, identity: int) -> Publication:
     publication = world.repo.publication_by_id(identity)
     assert publication is not None, "the fixture stores each physical message before delivery"
     return publication
 
 
-def plan(world: World, identity: int) -> DeliveryPlan:
+def plan(world: StoredState, identity: int) -> DeliveryPlan:
     delivery = row(world, identity).delivery
     assert delivery is not None, "each physical message retains its immutable delivery plan"
     return delivery
@@ -163,7 +164,7 @@ def refuse_render(*args: object, **kwargs: object) -> Never:
     raise AssertionError("saved review HTML must never be rendered from current data")
 
 
-def held_status(world: World, identity: int) -> PublicationStatus:
+def held_status(world: StoredState, identity: int) -> PublicationStatus:
     publication = world.repo.get_update_publication(identity, CHANNEL)
     assert publication is not None, "Poster.hold creates the source publication"
     return publication.status
@@ -186,29 +187,29 @@ def test_saved_review_parts_checkpoint_exact_html_parent_and_edit_target_before_
 
     def inspect(publication: Publication) -> PublishResult:
         assert publication.id is not None, "prepared review sends retain their saved identity"
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        frozen = row(durable, publication.id)
-        assert (
-            frozen.status is PublicationStatus.PENDING and frozen.delivery == publication.delivery
-        )
-        assert frozen.delivery is not None, "the remote pending row has its immutable payload"
-        assert frozen.delivery.rendered_text == payloads[publication.id]
-        assert held_status(durable, case.held) is PublicationStatus.SKIPPED
-        if publication.id == case.identity:
-            assert frozen.delivery.reply_to == saved.reply_to
-            assert frozen.delivery.edit_message_id == saved.edit_message_id
-            for identity in saved.continuation_ids:
-                assert row(durable, identity).status is PublicationStatus.QUEUED
-        else:
-            parent = row(durable, frozen.delivery.continuation_parent or 0)
-            assert parent.status is PublicationStatus.SENT
-            assert frozen.delivery.reply_to == parent.message_id
-        if case.original is not None:
-            assert case.original.id is not None, "the revision preserves the original event row"
-            assert row(durable, case.original.id) == case.original
-        observed.append(publication.id)
-        return original(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            frozen = row(durable, publication.id)
+            assert (
+                frozen.status is PublicationStatus.PENDING
+                and frozen.delivery == publication.delivery
+            )
+            assert frozen.delivery is not None, "the remote pending row has its immutable payload"
+            assert frozen.delivery.rendered_text == payloads[publication.id]
+            assert held_status(durable, case.held) is PublicationStatus.SKIPPED
+            if publication.id == case.identity:
+                assert frozen.delivery.reply_to == saved.reply_to
+                assert frozen.delivery.edit_message_id == saved.edit_message_id
+                for identity in saved.continuation_ids:
+                    assert row(durable, identity).status is PublicationStatus.QUEUED
+            else:
+                parent = row(durable, frozen.delivery.continuation_parent or 0)
+                assert parent.status is PublicationStatus.SENT
+                assert frozen.delivery.reply_to == parent.message_id
+            if case.original is not None:
+                assert case.original.id is not None, "the revision preserves the original event row"
+                assert row(durable, case.original.id) == case.original
+            observed.append(publication.id)
+            return original(publication)
 
     monkeypatch.setattr(world.publisher, "render_delivery", refuse_render)
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
@@ -291,14 +292,13 @@ def test_review_unknown_requires_audited_retry_of_exact_payload_after_fresh_clon
     retried = fresh.publisher.publish_prepared
 
     def retry(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        history = durable.repo.delivery_resolutions(case.identity)
-        assert len(history) == 1 and history[0].command == incoming
-        assert plan(durable, case.identity) == saved
-        assert row(durable, case.identity).status is PublicationStatus.PENDING
-        observed.append(case.identity)
-        return retried(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            history = durable.repo.delivery_resolutions(case.identity)
+            assert len(history) == 1 and history[0].command == incoming
+            assert plan(durable, case.identity) == saved
+            assert row(durable, case.identity).status is PublicationStatus.PENDING
+            observed.append(case.identity)
+            return retried(publication)
 
     monkeypatch.setattr(fresh.publisher, "render_delivery", refuse_render)
     monkeypatch.setattr(fresh.publisher, "publish_prepared", retry)
@@ -504,19 +504,17 @@ def test_failed_saved_review_keeps_html_and_edit_target_while_checkpointing_retr
     original = world.publisher.publish_prepared
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        assert row(durable, case.identity).status is PublicationStatus.PENDING
-        assert row(durable, case.identity).attempts == attempts
-        assert plan(durable, case.identity) == saved == publication.delivery
-        return original(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            assert row(durable, case.identity).status is PublicationStatus.PENDING
+            assert row(durable, case.identity).attempts == attempts
+            assert plan(durable, case.identity) == saved == publication.delivery
+            return original(publication)
 
     monkeypatch.setattr(world.publisher, "render_delivery", refuse_render)
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
 
     assert world.container.poster(dry_run=False).deliver(row(world, case.identity))
 
-    durable = World()
-    durable.repo.restore(git(remote, "show", "state:state.sql"))
-    assert row(durable, case.identity).status is PublicationStatus.SENT
-    assert plan(durable, case.identity) == saved
+    with saved_state(git(remote, "show", "state:state.sql")) as durable:
+        assert row(durable, case.identity).status is PublicationStatus.SENT
+        assert plan(durable, case.identity) == saved

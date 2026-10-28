@@ -20,6 +20,7 @@ from lexinform.models import (
     StatusChange,
 )
 from lexinform.ports import PublishResult
+from tests.checkpoint_state import StoredState, saved_state
 from tests.harness import CHANNEL, COMMITTEE_STAGES, TERM, World, act
 from tests.scenario.test_card_remote_checkpoints import (
     Mode,
@@ -42,13 +43,13 @@ class UpdateCase:
     later: int
 
 
-def row(world: World, identity: int) -> Publication:
+def row(world: StoredState, identity: int) -> Publication:
     found = world.repo.publication_by_id(identity)
     assert found is not None, "the fixture saves every publication before delivery"
     return found
 
 
-def plan(world: World, identity: int) -> DeliveryPlan:
+def plan(world: StoredState, identity: int) -> DeliveryPlan:
     found = row(world, identity).delivery
     assert found is not None, "a physical update retains its saved delivery plan"
     return found
@@ -150,39 +151,40 @@ def test_new_status_update_checkpoints_exact_parts_and_receipts_before_each_api(
     observed: list[int] = []
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        root = row(durable, case.identity)
-        root_plan = plan(durable, case.identity)
-        identities = (case.identity, *root_plan.continuation_ids)
-        assert len(identities) == len(expected)
-        index = identities.index(publication.id or 0)
-        current = row(durable, identities[index])
-        assert current.status is PublicationStatus.PENDING and current.attempts == 0
-        assert current.channel_id == CHANNEL
-        assert plan(durable, current.id or 0).rendered_text == expected[index]
-        assert publication.delivery == current.delivery
-        if index == 0:
-            assert root_plan.reply_to == saved_reply
-        else:
-            parent = row(durable, identities[index - 1])
-            assert parent.status is PublicationStatus.SENT and parent.message_id is not None
-            assert plan(durable, current.id or 0).reply_to == parent.message_id
-        for position, identity in enumerate(identities):
-            member = row(durable, identity)
-            assert plan(durable, identity).rendered_text == expected[position]
-            assert member.status is (
-                PublicationStatus.SENT
-                if position < index
-                else PublicationStatus.PENDING
-                if position == index
-                else PublicationStatus.QUEUED
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            root = row(durable, case.identity)
+            root_plan = plan(durable, case.identity)
+            identities = (case.identity, *root_plan.continuation_ids)
+            assert len(identities) == len(expected)
+            index = identities.index(publication.id or 0)
+            current = row(durable, identities[index])
+            assert current.status is PublicationStatus.PENDING and current.attempts == 0
+            assert current.channel_id == CHANNEL
+            assert plan(durable, current.id or 0).rendered_text == expected[index]
+            assert publication.delivery == current.delivery
+            if index == 0:
+                assert root_plan.reply_to == saved_reply
+            else:
+                parent = row(durable, identities[index - 1])
+                assert parent.status is PublicationStatus.SENT and parent.message_id is not None
+                assert plan(durable, current.id or 0).reply_to == parent.message_id
+            for position, identity in enumerate(identities):
+                member = row(durable, identity)
+                assert plan(durable, identity).rendered_text == expected[position]
+                assert member.status is (
+                    PublicationStatus.SENT
+                    if position < index
+                    else PublicationStatus.PENDING
+                    if position == index
+                    else PublicationStatus.QUEUED
+                )
+            assert row(durable, case.included).status is PublicationStatus.SKIPPED
+            assert durable.publication("3039", PublicationKind.ACT_PUBLISHED) is None
+            assert root.delivery is not None, (
+                "the pending root retains the complete physical-part map"
             )
-        assert row(durable, case.included).status is PublicationStatus.SKIPPED
-        assert durable.publication("3039", PublicationKind.ACT_PUBLISHED) is None
-        assert root.delivery is not None, "the pending root retains the complete physical-part map"
-        observed.append(publication.id or 0)
-        return original(publication)
+            observed.append(publication.id or 0)
+            return original(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
 
@@ -336,27 +338,25 @@ def test_lost_final_status_part_keeps_its_audit_payload_and_effects_on_operator_
     commands.handle_pending(min_score=3, run_started_at=fresh.world.clock.now())
 
     def retry(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        assert publication.id == last, "operator retry preserves the final physical identity"
-        assert plan(durable, last) == saved
-        history = durable.repo.delivery_resolutions(last)
-        assert len(history) == 1 and history[0].command == incoming
-        return original(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            assert publication.id == last, "operator retry preserves the final physical identity"
+            assert plan(durable, last) == saved
+            history = durable.repo.delivery_resolutions(last)
+            assert len(history) == 1 and history[0].command == incoming
+            return original(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", retry)
     fresh.world.container.delivery_service(dry_run=False).run()
     fresh.world.container.state_checkpoint()()
 
     assert len(world.publisher.sent) - before == int(action == "retry")
-    durable = World()
-    durable.repo.restore(git(remote, "show", "state:state.sql"))
-    assert row(durable, last).status is PublicationStatus.SENT
-    assert row(durable, case.included).status is PublicationStatus.SENT
-    assert row(durable, case.later).status is PublicationStatus.SKIPPED
-    assert durable.publication("3039", PublicationKind.ACT_PUBLISHED) is not None
-    history = durable.repo.delivery_resolutions(last)
-    assert len(history) == 1 and history[0].command == incoming
+    with saved_state(git(remote, "show", "state:state.sql")) as durable:
+        assert row(durable, last).status is PublicationStatus.SENT
+        assert row(durable, case.included).status is PublicationStatus.SENT
+        assert row(durable, case.later).status is PublicationStatus.SKIPPED
+        assert durable.publication("3039", PublicationKind.ACT_PUBLISHED) is not None
+        history = durable.repo.delivery_resolutions(last)
+        assert len(history) == 1 and history[0].command == incoming
 
 
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])
@@ -498,10 +498,9 @@ def test_failed_legacy_status_edit_checkpoints_frozen_html_and_keeps_its_target(
     assert len(world.publisher.sent) == before_sent
     assert len(world.publisher.edited) == before_edits + 1
     assert world.publisher.edited[-1][1] == row(world, case.identity).message_id == 444
-    durable = World()
-    durable.repo.restore(git(remote, "show", "state:state.sql"))
-    assert row(durable, case.identity).status is PublicationStatus.SENT
-    assert plan(durable, case.identity) == frozen
+    with saved_state(git(remote, "show", "state:state.sql")) as durable:
+        assert row(durable, case.identity).status is PublicationStatus.SENT
+        assert plan(durable, case.identity) == frozen
 
 
 @pytest.mark.parametrize("dry_run", [False, True])

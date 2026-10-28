@@ -9,7 +9,6 @@ import datetime as dt
 from dataclasses import replace
 from typing import Any, Literal
 
-from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.container import LOCAL_TZ, Container
 from lexinform.keywords import KeywordPrefilter
@@ -45,7 +44,7 @@ from lexinform.models.wykaz import BILL_KIND
 from lexinform.ports import TextExtractor
 from lexinform.services.pipeline import RunOptions
 from lexinform.services.terms import TermResolver
-from lexinform.settings import Settings
+from tests.database import empty_repository
 from tests.fakes import (
     FakeBatchBackend,
     FakeInbox,
@@ -61,6 +60,7 @@ from tests.fakes import (
     FakeWykazGateway,
     FixedClock,
 )
+from tests.settings import ScenarioSettings
 
 CHANNEL = "@test"
 SUPPORT_URL = "https://example.test/coffee"
@@ -325,8 +325,7 @@ class World:
         name_cards: bool = False,
     ) -> None:
         self.clock = FixedClock()
-        self.repo = SqliteBillRepository(":memory:")
-        self.repo.migrate()
+        self.repo = empty_repository()
         self.gateway = FakeSejmGateway()
         self.llm = FakeLlm(
             script=llm_script, triage_script=triage_script, joint_script=joint_script
@@ -361,7 +360,7 @@ class World:
         # The production wiring over the fakes: the settings name the fake hosts (downloads are
         # routed by host), every tuning value is the daily run's unless a test says otherwise,
         # and nothing is read from the environment or a .env file.
-        settings = Settings(
+        settings = ScenarioSettings(
             _env_file=None,
             term=None,
             sejm_api_base_url=f"https://{FILE_HOST}",

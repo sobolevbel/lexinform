@@ -11,11 +11,12 @@ from lexinform.models import (
     failed_card_part_resolution_allowed,
 )
 from lexinform.ports import PublishResult
+from tests.checkpoint_state import StoredState, saved_state
 from tests.harness import World
 from tests.scenario.test_card_remote_checkpoints import Mode, connect, git, ready_world, restored
 
 
-def row(world: World, identity: int) -> Publication:
+def row(world: StoredState, identity: int) -> Publication:
     saved = world.repo.publication_by_id(identity)
     assert saved is not None, "the production fixture retains each physical identity"
     return saved
@@ -101,16 +102,15 @@ def test_initial_card_retry_saves_its_audit_before_replaying_exact_parts_after_f
     seen: list[int] = []
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        pending = row(durable, publication.id or 0)
-        assert pending.status is PublicationStatus.PENDING
-        assert publication.delivery == pending.delivery
-        assert row(durable, root.id or 0) == root
-        assert durable.repo.delivery_resolutions(child.id or 0)[0].command == incoming
-        assert publication.id is not None, "each physical continuation is saved before API"
-        seen.append(publication.id)
-        return original(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            pending = row(durable, publication.id or 0)
+            assert pending.status is PublicationStatus.PENDING
+            assert publication.delivery == pending.delivery
+            assert row(durable, root.id or 0) == root
+            assert durable.repo.delivery_resolutions(child.id or 0)[0].command == incoming
+            assert publication.id is not None, "each physical continuation is saved before API"
+            seen.append(publication.id)
+            return original(publication)
 
     monkeypatch.setattr(fresh.publisher, "publish_prepared", inspect)
 

@@ -61,7 +61,7 @@ The underlying commands remain available:
 ```bash
 uv run ruff format src tests && uv run ruff check src tests
 uv run mypy                   # strict, over src and tests
-uv run pytest                 # unit tests, a few seconds, offline
+uv run pytest                 # offline unit + scenario tests, up to four worker processes
 ```
 
 All three must be clean. CI (`.github/workflows/ci.yml`) runs the same on Python 3.14, the only
@@ -195,11 +195,17 @@ Rules that keep this honest:
 
 ```bash
 uv run pytest                          # unit + scenario, excluding integration and local_http
-uv run pytest -m local_http             # optional CLI tests with a local HTTP server
-uv run pytest -m integration           # live external systems, network
+uv run pytest -n 0                      # serial run, also useful with -k or --pdb
+uv run pytest -n 0 -m local_http         # optional CLI tests with a local HTTP server
+uv run pytest -n 0 -m integration       # live external systems, network
 uv run pytest tests/scenario/test_tracking.py -k closure -vv
 uv run pytest --cov --cov-report=term-missing
 ```
+
+The default uses `pytest-xdist`, caps automatic worker selection at four processes and
+redistributes remaining tests with `worksteal`. Every test still runs. Override it with
+`-n 0` for short focused runs, `-s`, or debugging, and `-n 2` on a constrained machine.
+`make test-local-http` and `make test-integration` run serially.
 
 Tests marked `local_http` are excluded from the default run, coverage and CI. Run
 `make test-local-http` only when a change needs CLI coverage through the local HTTP server
@@ -222,6 +228,12 @@ Layout:
   RCL (`w.add_bill`, `w.add_rcl_project`, `w.set_stages`, `w.touch`, `w.publish_act`,
   `w.command`, `w.gateway.submissions`), acts (`w.run(...)`) and asserts on the `RunReport`, the
   publisher's records and the database (`w.bill`, `w.publication`, `w.card_id`).
+- `tests/settings.py` validates scenario constructor inputs and production defaults without
+  environment sources. `tests/database.py` restores a cached empty SQL dump produced by the
+  real migrations into a separate in-memory connection for each caller; migration tests still
+  construct and migrate their own repositories. An autouse fixture closes factory connections
+  after each test. `tests/checkpoint_state.py` restores actual
+  checkpoint dumps for assertions without building another pipeline, and closes the connection.
 - `tests/fixtures/sejm/`: recorded API responses. Refresh with `curl` when the API changes
   (commands below) and keep them small.
 - Adapter tests use `httpx2.MockTransport` (`test_sejm_api`, `test_telegram_client`) or a stub

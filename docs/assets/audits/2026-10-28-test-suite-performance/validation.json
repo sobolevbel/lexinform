@@ -1,0 +1,479 @@
+{
+  "date": "2026-10-28",
+  "baseline_commit": "14e45dcc3b51ffc87a4cb36a8fee9b356fa8d333",
+  "branch": "codex/test-suite-performance",
+  "scope": "Static inventory of the entire suite, profiling and detailed review of expensive scenarios and selected weak assertions; not a claim of manual semantic review of every parameterized case.",
+  "environment": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "3.14.7",
+    "pytest": "9.1.1",
+    "pytest-xdist": "3.8.0",
+    "pytest-cov": "7.1.0"
+  },
+  "full_suite_before": {
+    "cases": 5956,
+    "errors": 0,
+    "failures": 0,
+    "wall_seconds": 911.561,
+    "groups": {
+      "scenario": {
+        "cases": 3167,
+        "summed_case_seconds": 831.0769999999999
+      },
+      "unit": {
+        "cases": 2789,
+        "summed_case_seconds": 67.72300000000031
+      }
+    }
+  },
+  "full_suite_after_initial_optimizations": {
+    "cases": 5957,
+    "errors": 0,
+    "failures": 0,
+    "wall_seconds": 209.004,
+    "groups": {
+      "scenario": {
+        "cases": 3076,
+        "summed_case_seconds": 748.5089999999991
+      },
+      "unit": {
+        "cases": 2881,
+        "summed_case_seconds": 68.2570000000012
+      }
+    }
+  },
+  "full_suite_final": {
+    "cases": 5957,
+    "errors": 0,
+    "failures": 0,
+    "wall_seconds": 225.985,
+    "groups": {
+      "scenario": {
+        "cases": 3076,
+        "summed_case_seconds": 802.6679999999992
+      },
+      "unit": {
+        "cases": 2881,
+        "summed_case_seconds": 78.66600000000149
+      }
+    }
+  },
+  "controlled_same_code": {
+    "target": "tests/scenario/test_card_edit_multipart.py",
+    "serial": {
+      "cases": 47,
+      "errors": 0,
+      "failures": 0,
+      "wall_seconds": 66.521,
+      "groups": {
+        "scenario": {
+          "cases": 47,
+          "summed_case_seconds": 65.74400000000001
+        }
+      }
+    },
+    "parallel_4": {
+      "cases": 47,
+      "errors": 0,
+      "failures": 0,
+      "wall_seconds": 26.677,
+      "groups": {
+        "scenario": {
+          "cases": 47,
+          "summed_case_seconds": 87.93900000000002
+        }
+      }
+    },
+    "note": "Measured sequentially, before the later connection-teardown addition; only process count changed."
+  },
+  "world_construction": {
+    "before": {
+      "construction_ms_per_world": [
+        7.134035830094945,
+        7.118727079941891,
+        7.11046709009679,
+        7.142157920170575,
+        7.13029499980621
+      ],
+      "median_ms": 7.13029499980621
+    },
+    "after": {
+      "construction_ms_per_world": [
+        3.7351804197533056,
+        3.7489116701181047,
+        3.7294100000872277,
+        3.742997500230558,
+        3.7298187499982305
+      ],
+      "median_ms": 3.7351804197533056
+    },
+    "speedup": 1.9089559803049994
+  },
+  "checkpoint_profile": {
+    "profile_seconds": 1.2089567989999983,
+    "subprocess_calls": 69,
+    "subprocess_cumulative_seconds": 1.100321498
+  },
+  "changes": {
+    "scenario_cases_moved_to_unit": 90,
+    "whole_modules_moved": [
+      "test_computation_reader",
+      "test_review_result_reader",
+      "test_applicability_reader",
+      "test_result_application_targets"
+    ],
+    "whole_module_cases": [
+      35,
+      25,
+      12,
+      12
+    ],
+    "additional_pure_cases": 6,
+    "redundant_download_scenario_merged": 1,
+    "support_guard_tests_added": 2,
+    "read_only_world_constructions_replaced": 56,
+    "automatic_parallel_process_cap": 4,
+    "scenario_assertion_preservation": [
+      {
+        "path": "tests/scenario/test_auto_amendment_revision_payload.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 2
+      },
+      {
+        "path": "tests/scenario/test_card_edit_callers.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 1
+      },
+      {
+        "path": "tests/scenario/test_card_edit_multipart.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 4
+      },
+      {
+        "path": "tests/scenario/test_card_remote_checkpoints.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 3
+      },
+      {
+        "path": "tests/scenario/test_card_revision_reader.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 6
+      },
+      {
+        "path": "tests/scenario/test_digest_remote_checkpoints.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 5
+      },
+      {
+        "path": "tests/scenario/test_direct_reader_roots.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 2
+      },
+      {
+        "path": "tests/scenario/test_failed_card_edit_recovery.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 1
+      },
+      {
+        "path": "tests/scenario/test_group_remote_checkpoints.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 2
+      },
+      {
+        "path": "tests/scenario/test_initial_card_part_recovery.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 1
+      },
+      {
+        "path": "tests/scenario/test_legacy_digest_freeze.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 2
+      },
+      {
+        "path": "tests/scenario/test_legacy_notice_freeze.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 1
+      },
+      {
+        "path": "tests/scenario/test_legacy_reply_multipart.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 1
+      },
+      {
+        "path": "tests/scenario/test_legacy_reply_parent.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 1
+      },
+      {
+        "path": "tests/scenario/test_legacy_sitting_group_freeze.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 1
+      },
+      {
+        "path": "tests/scenario/test_legacy_status_edit_freeze.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 1
+      },
+      {
+        "path": "tests/scenario/test_legacy_status_reply_freeze.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 1
+      },
+      {
+        "path": "tests/scenario/test_long_sitting_remote_checkpoints.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 3
+      },
+      {
+        "path": "tests/scenario/test_notice_remote_checkpoints.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 4
+      },
+      {
+        "path": "tests/scenario/test_review_remote_checkpoints.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 4
+      },
+      {
+        "path": "tests/scenario/test_single_card_revision_producer.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 1
+      },
+      {
+        "path": "tests/scenario/test_sitting_delivery_freeze.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 2
+      },
+      {
+        "path": "tests/scenario/test_update_edit_remote_checkpoints.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 3
+      },
+      {
+        "path": "tests/scenario/test_update_remote_checkpoints.py",
+        "tests_preserved": true,
+        "assertions_preserved": true,
+        "parametrizations_preserved": true,
+        "saved_state_sites": 4
+      }
+    ]
+  },
+  "assertion_mutations": {
+    "inbox": [
+      {
+        "test": "test_a_file_that_exists_already_is_not_an_error",
+        "before": "survived_no_op",
+        "after": "detected_no_op"
+      },
+      {
+        "test": "test_a_failed_kick_is_not_an_error_the_file_is_what_counts",
+        "before": "survived_no_op",
+        "after": "detected_no_op"
+      }
+    ],
+    "prefilter": {
+      "old_download_only_assertion_passes": true,
+      "analysis_actually_completed": 0,
+      "merged_test_detects_skipped_analysis": true
+    }
+  },
+  "parallel_collection": {
+    "observed_failure": "ZIP bytes generated at collection contained current timestamps and produced different automatic node IDs in workers.",
+    "fix": "Explicit pdf/docx/nested_zip/unknown parameter IDs; extraction inputs and assertions unchanged.",
+    "verification": {
+      "runs": 2,
+      "cases": 5957,
+      "identical_ids": true,
+      "sha256": "0780089963b2da2c8c67f7a14732c4cf412907dfd1d79938d5a20fb53a035d1c"
+    }
+  },
+  "coverage_plugin_verification": {
+    "cases": 31,
+    "status": "passed",
+    "resource_warnings_before_cleanup": 19,
+    "resource_warnings_after_cleanup": 0,
+    "scope": "Focused parallel check of pytest-cov combination, not a complete coverage comparison."
+  },
+  "local_http": {
+    "cases": 25,
+    "status": "passed",
+    "default_selection": "still excluded",
+    "command": "make test-local-http"
+  },
+  "remaining_audit_candidates": [
+    {
+      "path": "tests/scenario/test_card_edit_multipart.py",
+      "reason": "Largest baseline module: 47 cases, 81.28 summed case seconds; consider moving payload matrices to direct service contracts while retaining real Git boundaries."
+    },
+    {
+      "path": "tests/unit/test_checkpoint_wiring.py",
+      "reason": "Contains a two-case World pipeline scenario in the unit directory; classification debt, not a meaningful bottleneck."
+    },
+    {
+      "path": "tests/unit/test_listener.py",
+      "reason": "One constructor-wiring test uses World where a direct Container fixture would suffice."
+    }
+  ],
+  "retained_coverage": "Legacy restore/migration, pending/unknown delivery, crash boundaries, worker-count invariants and Hypothesis scenarios were preserved. Age of fixtures was not treated as evidence of obsolescence.",
+  "syntactic_audit": {
+    "tautological_assertions_found": 0,
+    "identical_test_function_bodies_found": 0,
+    "note": "Syntactic checks cannot establish semantic non-redundancy."
+  },
+  "external_agent_proposal": {
+    "workspace": "/Users/sobaleu/.codex/worktrees/delivery-test-contracts/lexinform",
+    "baseline": "14e45dcc3b51ffc87a4cb36a8fee9b356fa8d333",
+    "verification": {
+      "restored_runtime_recheck_cases": 84,
+      "restored_runtime_recheck_wall_seconds": 16.264,
+      "before_cases": 401,
+      "after_cases": 416,
+      "before_wall_seconds": 140.54,
+      "after_wall_seconds": 100.352,
+      "wall_saved_seconds": 40.188,
+      "wall_saved_percent": 28.6,
+      "all_original_matrix_names_preserved_as_direct_contracts": true,
+      "all_noncandidate_scenario_names_preserved": true,
+      "all_unchanged_direct_freeze_unit_modules_preserved": true,
+      "original_matrix_cases": 69,
+      "retained_git_cases": 15,
+      "moved_git_cases": 54,
+      "direct_contract_cases": 69
+    },
+    "patch_sha256": "25abf2e9ba96e6dcee35503688eeb8d4a49e2d00e9a12a30dcd0321336cae7de",
+    "status": "Inspected and accounted for, not integrated or independently approved here. Its timings are not included in this branch result.",
+    "shared_paths": [
+      "tests/scenario/test_update_remote_checkpoints.py",
+      "tests/scenario/test_notice_remote_checkpoints.py",
+      "tests/scenario/test_review_remote_checkpoints.py"
+    ],
+    "merge_note": "Proposal changes matrix decorators; this branch changes saved-state inspections. A context conflict in the update module needs a mechanical resolution."
+  },
+  "reproduction_commands": [
+    "uv sync --frozen",
+    "uv run pytest -n 0 --durations=50 --junitxml=/tmp/serial.xml",
+    "uv run pytest --durations=50 --junitxml=/tmp/parallel.xml",
+    "uv run pytest -n 0 tests/scenario/test_card_edit_multipart.py --junitxml=/tmp/controlled-serial.xml",
+    "uv run pytest -n 4 tests/scenario/test_card_edit_multipart.py --junitxml=/tmp/controlled-parallel.xml",
+    "uv run mypy",
+    "uv run ruff check src tests",
+    "uv run ruff format --check src tests",
+    "uv lock --check"
+  ],
+  "timing_limits": [
+    "Full-suite comparisons are local observations on a shared host, with other work active during parts of the baseline.",
+    "The baseline process collected its initial test code before edits; later CLI subprocesses could load newer test helpers. The same-code 47-case serial/parallel comparison is the controlled process-count check.",
+    "Summed case seconds across workers are not wall time.",
+    "No live-service integration run, production run, model call, push or corpus-extraction replay was performed; production source files were not changed."
+  ],
+  "source_sha256": {
+    ".github/workflows/integration.yml": "4c6f48b449756f3897f94a11ea0c34a2a7fc528d7fdc6b1a4c0e09737789acca",
+    "CONTRIBUTING.md": "5c5962838278259d1677c0ed520ab1b76d40492b55c5e367e70c0662dd38aa74",
+    "Makefile": "f98a7efdae58037ae5675340aee01512782519ddaa66355827dc0431087c5bb3",
+    "pyproject.toml": "c7adcd61abe8bf8d0ca3f1cea860ca1716aa548b701b8a9ff2e1bf0e7908fab9",
+    "tests/checkpoint_state.py": "9bdc884efc4dd2bc8d035eaec30bc17790bf1a3105945db9baa3c05bd1a7dcfe",
+    "tests/computations.py": "4a26f2667f27882510b84eb971ece1aea577c240e35accf781dc37d2a884b29e",
+    "tests/conftest.py": "82e9afd462d0bc72f0660c40e44a1f38fdf4d0331ceeea5afc4ae6e0ea44cb97",
+    "tests/database.py": "a09eb93e0f4f09021de34d18f4329eece0e859c34b34f79acf7014d1665a3dea",
+    "tests/harness.py": "caca233bba83037662d626eaea25c2aaef65c2cc6bfd5454bab4bc70a4a1079c",
+    "tests/scenario/test_auto_amendment_revision_payload.py": "a1d443d951de8a4a79455dc2e30fa11b1fb2907660693712ac391d0d122fa165",
+    "tests/scenario/test_card_edit_callers.py": "e845de7872a926ba349d0562c16c3571dc1aa4128d2842cf598ef01ebeb1f8b8",
+    "tests/scenario/test_card_edit_multipart.py": "cd2b75a98283fa7c568eb030bbd962211757c3d9c394705cb9908f8358df284b",
+    "tests/scenario/test_card_remote_checkpoints.py": "c2759b4f2ecfab69ea88a20485c50acd1f0e2d91c2143f6d663453a4c9faa262",
+    "tests/scenario/test_card_revision_reader.py": "9ccd9ab9bb499c18e0e6b8341f30f80c7bb17887a567fb7310232db67780684a",
+    "tests/scenario/test_computation_binding_reader.py": "f03ceef9e3b625e14f89b394f3bd8dbe1507b4c276c4ac8b6558377de47027a0",
+    "tests/scenario/test_digest_remote_checkpoints.py": "c16b35a7fa1e37f2ac6ba6cb87c89851f9b9980714811a51b26a1bf0bc10ec5a",
+    "tests/scenario/test_direct_reader_roots.py": "eab4df69372b4b117a6483a540f6a010e73178a66c6216f557fde16cc7b5d191",
+    "tests/scenario/test_document_read_metrics.py": "8bb86f63868c348d4c940e17222b6c7471238d2c3a12060abb8b621084d8ae63",
+    "tests/scenario/test_failed_card_edit_recovery.py": "c7cf24c8a39ecad83483f138ccb553aca914784dba3c298b5e4bd8bb56079834",
+    "tests/scenario/test_forget_card_edits.py": "8133b6507e41ac8cd2f6c19ffe9e69f263b4d788ec8dc92ba70bdc07eaf63ce9",
+    "tests/scenario/test_group_remote_checkpoints.py": "5fd1e8118d155de7ea1d5b13e8062eb84c37dac035a593182e14c556fefbb641",
+    "tests/scenario/test_initial_card_part_recovery.py": "4daa7b1b32cf3fdcdecfd6bf96f01f7b4845d73b5c3e85a90316e37aaac85ca9",
+    "tests/scenario/test_legacy_digest_freeze.py": "6ac3e3d657c02b39e76947487c1965503e3a0976bcfc640853b28fe0e8781fd0",
+    "tests/scenario/test_legacy_notice_freeze.py": "fea01204d22b3a2c7ea22dafcb3eeb81bf31c6f3fd50921175a7e3c5246bcba0",
+    "tests/scenario/test_legacy_reply_multipart.py": "110c9a155c599daced76d9df07ced98a2ba30167d87c839ca0957531b38c61c1",
+    "tests/scenario/test_legacy_reply_parent.py": "5e8f90e02e2ddc286de3ad5d2073d44b97f7c00baa087b94d820c14a9d2e43bc",
+    "tests/scenario/test_legacy_sitting_group_freeze.py": "66d1639fdfe47051aa0caa7d072a881f6c8ead4e58bc3461d0529a0ab050650d",
+    "tests/scenario/test_legacy_status_edit_freeze.py": "ec167985082ade09fad74e63c2aa504a633cc96582b7779b55a750c3c516f475",
+    "tests/scenario/test_legacy_status_reply_freeze.py": "8b7169311134c9f6ae2936d5392c03c38f888e66f88a36013df57c36327f621c",
+    "tests/scenario/test_long_sitting_remote_checkpoints.py": "a3e0f489a7942b59347e257eec8c2f0cdecaa09ba3546ffe485ae29f334000c7",
+    "tests/scenario/test_message_usefulness.py": "c0b1e8997a75539d56bbdbf6fdac688c23b8f52f7d715ebda4111ab3d171805f",
+    "tests/scenario/test_notice_remote_checkpoints.py": "316bf7395c1ef468b336c123c42c24db793b3acae5a0d0c02ffe55487c2e7a98",
+    "tests/scenario/test_review_remote_checkpoints.py": "ef6fd4671b3c0db2c293722afc195a890a0408d7edcae1b74fc533df889f0915",
+    "tests/scenario/test_single_card_revision_producer.py": "11add80f7ca1c0f10f204a6bdcb137d2fb8de95f20f43d815330a8dadebae054",
+    "tests/scenario/test_sitting_delivery_freeze.py": "88ac460c38852162403d4b3ac2b33e08c657599773947cf2d2cc13742eb957fe",
+    "tests/scenario/test_supplements.py": "04ff51f8774632a971c2a2c77f863ac945aa1ffb8bfd1db1222c20ce64698870",
+    "tests/scenario/test_text_prefilter.py": "124922e0f39a1955a77a4b9597ec9874d5a066063c6475d64151efa7400ae9d6",
+    "tests/scenario/test_update_edit_remote_checkpoints.py": "06c744ced97d50da89ed90ade536a344d3db6d3ee76a5bfe295b8115d20ac50a",
+    "tests/scenario/test_update_remote_checkpoints.py": "1bfb726ed46008bea411af74d79fd46e59d1cba80615a582306626dddf68b6d7",
+    "tests/settings.py": "fa46c110876fbe10af8cb96fceedc9989894283de96f017f238258ea4b410d03",
+    "tests/unit/test_applicability_reader.py": "5ba5929ddffcb8e2fc9e8d272ae7f537636f82cfa2f2357435bb052300c060b4",
+    "tests/unit/test_computation_purpose.py": "57104858b74542315ce52a23935e4404587910ec27e66729c1e3d0520e8712c5",
+    "tests/unit/test_computation_reader.py": "33eba1f5e55086875a280656e7e6b447ecbe99dc02adecce146dceea63c5f352",
+    "tests/unit/test_document_read_metrics.py": "68cd060f47a0f04d7f3a3e9ea954f55225d7afe357de1840b8e346684d952d52",
+    "tests/unit/test_format_card.py": "ee6bfffa6f4b07eca9e5738b6e80d9c7fc9a08d783314fb5644a8efd575b3e3a",
+    "tests/unit/test_github_inbox.py": "60c64814bceda55af35cd34417d7cc936937454cd51d83828df752a0e2f176e2",
+    "tests/unit/test_physical_extraction.py": "36ac1370dcce12908d9abe403f5649c0499d95d8b7b440a23f6eab86c0079cbd",
+    "tests/unit/test_result_application_targets.py": "6387bfca40bf1a437ece80a214c30fa3a9af7061d93bdc52b5e08e7910602320",
+    "tests/unit/test_review_result_reader.py": "9e58a49b7e33e0abf87face4485fd71a1d75ff7b55a7259b954ad33f560a6cc8",
+    "tests/unit/test_scenario_support.py": "580970ee361beb6b84ab010d00b5834f96c4876cd88ada19217ce489459a8d15",
+    "tests/unit/test_supplements.py": "24771d1decfbe52a80205e5c58b12dc91780960a14701a42916524e05f8a84f7",
+    "uv.lock": "1d6514f9d848c6187ee90ebb4efac0fa7cb9d60f45453cc04f80eacbbe8bbc2e"
+  },
+  "observed_full_suite_speedup": 4.0337234772219395,
+  "quality_gate": {
+    "pytest": "passed",
+    "mypy": "passed",
+    "ruff_check": "passed",
+    "ruff_format": "passed",
+    "diff_check": "passed",
+    "uv_lock_check": "passed"
+  }
+}

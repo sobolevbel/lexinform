@@ -9,6 +9,7 @@ from lexinform.errors import DeliveryUncertainError, StateCheckpointError, Teleg
 from lexinform.models import Bill, Publication, PublicationStatus, SejmTerm
 from lexinform.ports import PublishResult
 from lexinform.services.publishing import PublishingResult
+from tests.checkpoint_state import StoredState, saved_state
 from tests.harness import CHANNEL, TERM, World
 from tests.scenario.test_card_edit_callers import owned, successor
 from tests.scenario.test_card_remote_checkpoints import (
@@ -33,7 +34,7 @@ class Edition:
     texts: tuple[str, ...]
 
 
-def edition(world: World, number: str = "3039") -> list[Publication]:
+def edition(world: StoredState, number: str = "3039") -> list[Publication]:
     owner = owned(world, number)
     return world.repo.card_refresh_parts(owner.id or 0)
 
@@ -79,38 +80,39 @@ def test_every_multipart_edit_part_is_remote_before_api_and_final_receipt_alone_
     before_sent, before_edits = len(world.publisher.sent), len(world.publisher.edited)
 
     def inspect(saved: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        parts = edition(durable)
-        assert tuple(part.delivery.rendered_text for part in parts if part.delivery) == case.texts
-        assert all(part.delivery is not None for part in parts)
-        index = len(observed)
-        current = parts[index]
-        assert saved.id == current.id and saved.delivery == current.delivery
-        assert current.id is not None and current.delivery is not None, (
-            "a physical operation and its payload precede the API"
-        )
-        assert current.status is PublicationStatus.PENDING
-        assert current.channel_id == CHANNEL
-        assert current.delivery.today == world.clock.now().date()
-        assert Bill.model_validate_json(current.delivery.bill_json).analysis is None
-        assert card(durable) == case.baseline
-        root = parts[0]
-        assert root.delivery is not None, "the root saves immutable edition membership"
-        assert root.delivery.revision_of == case.baseline.id
-        assert root.delivery.continuation_ids == tuple(part.id for part in parts[1:])
-        if index:
-            assert parts[index - 1].status is PublicationStatus.SENT
-            assert current.delivery.reply_to == parts[index - 1].message_id
-            assert current.delivery.continuation_root == root.id
-        else:
-            assert all(part.status is PublicationStatus.QUEUED for part in parts[1:])
-        if index < len(case.previous):
-            assert current.delivery.edit_message_id == case.previous[index].message_id
-        else:
-            assert current.delivery.edit_message_id is None
-        observed.append(current.id)
-        return original(saved)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            parts = edition(durable)
+            assert (
+                tuple(part.delivery.rendered_text for part in parts if part.delivery) == case.texts
+            )
+            assert all(part.delivery is not None for part in parts)
+            index = len(observed)
+            current = parts[index]
+            assert saved.id == current.id and saved.delivery == current.delivery
+            assert current.id is not None and current.delivery is not None, (
+                "a physical operation and its payload precede the API"
+            )
+            assert current.status is PublicationStatus.PENDING
+            assert current.channel_id == CHANNEL
+            assert current.delivery.today == world.clock.now().date()
+            assert Bill.model_validate_json(current.delivery.bill_json).analysis is None
+            assert card(durable) == case.baseline
+            root = parts[0]
+            assert root.delivery is not None, "the root saves immutable edition membership"
+            assert root.delivery.revision_of == case.baseline.id
+            assert root.delivery.continuation_ids == tuple(part.id for part in parts[1:])
+            if index:
+                assert parts[index - 1].status is PublicationStatus.SENT
+                assert current.delivery.reply_to == parts[index - 1].message_id
+                assert current.delivery.continuation_root == root.id
+            else:
+                assert all(part.status is PublicationStatus.QUEUED for part in parts[1:])
+            if index < len(case.previous):
+                assert current.delivery.edit_message_id == case.previous[index].message_id
+            else:
+                assert current.delivery.edit_message_id is None
+            observed.append(current.id)
+            return original(saved)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
 
@@ -210,13 +212,12 @@ def test_unknown_final_part_requires_audited_resolution_and_retries_exact_frozen
     seen: list[int] = []
 
     def inspect(part: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        history = durable.repo.delivery_resolutions(saved.id or 0)
-        assert len(history) == 1 and history[0].command == incoming
-        assert part.id == saved.id and part.delivery == saved.delivery
-        seen.append(part.id or 0)
-        return original(part)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            history = durable.repo.delivery_resolutions(saved.id or 0)
+            assert len(history) == 1 and history[0].command == incoming
+            assert part.id == saved.id and part.delivery == saved.delivery
+            seen.append(part.id or 0)
+            return original(part)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
 
@@ -441,10 +442,9 @@ def test_card_checkpoint_failure_stops_siblings_and_the_next_card(
     assert len(world.publisher.sent) + len(world.publisher.edited) == before + at // 2
     assert owned(world, "3040") == second
     assert edition(world, "3040") == [second]
-    durable = World()
-    durable.repo.restore(git(remote, "show", "state:state.sql"))
-    assert owned(durable, "3040") == second
-    assert edition(durable, "3040") == [second]
+    with saved_state(git(remote, "show", "state:state.sql")) as durable:
+        assert owned(durable, "3040") == second
+        assert edition(durable, "3040") == [second]
 
 
 def test_dismissed_absent_growth_tail_is_not_recreated_and_confirmed_targets_survive_retention(
@@ -524,18 +524,17 @@ def test_unknown_root_resolution_audits_before_any_remaining_multipart_api(
     seen: list[int] = []
 
     def inspect(saved: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        assert durable.repo.delivery_resolutions(root.id or 0)[0].command == incoming
-        index = [part.id for part in frozen].index(saved.id)
-        plan = frozen[index].delivery
-        assert saved.delivery is not None and plan is not None, "the whole edition was frozen"
-        assert saved.delivery.rendered_text == plan.rendered_text
-        assert saved.delivery.edit_message_id == plan.edit_message_id
-        assert saved.delivery.today == plan.today
-        assert card(durable) == case.baseline
-        seen.append(saved.id or 0)
-        return original(saved)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            assert durable.repo.delivery_resolutions(root.id or 0)[0].command == incoming
+            index = [part.id for part in frozen].index(saved.id)
+            plan = frozen[index].delivery
+            assert saved.delivery is not None and plan is not None, "the whole edition was frozen"
+            assert saved.delivery.rendered_text == plan.rendered_text
+            assert saved.delivery.edit_message_id == plan.edit_message_id
+            assert saved.delivery.today == plan.today
+            assert card(durable) == case.baseline
+            seen.append(saved.id or 0)
+            return original(saved)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
 

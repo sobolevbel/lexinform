@@ -15,6 +15,7 @@ from lexinform.models import (
     SittingNews,
 )
 from lexinform.ports import PublishResult
+from tests.checkpoint_state import saved_state
 from tests.harness import World
 from tests.scenario.test_card_remote_checkpoints import RunnerLost, connect, git, reject_checkpoint
 from tests.scenario.test_commands import _commands_only
@@ -123,23 +124,22 @@ def test_retained_sitting_attempts_freeze_saved_callback_context_before_api(
     observed: list[int] = []
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        for before, current in zip(original, rows(durable, identities), strict=True):
-            assert before.delivery is not None, "the fixture keeps every saved semantic plan"
-            assert current.status is PublicationStatus.PENDING
-            assert current.attempts == before.attempts
-            assert current.delivery == before.delivery.model_copy(
-                update={
-                    "sitting_group": identities,
-                    "group_text": expected,
-                    "render_origin": "legacy_snapshot"
-                    if before.status is PublicationStatus.FAILED or before.attempts
-                    else None,
-                }
-            )
-        observed.append(publication.id or 0)
-        return publish(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            for before, current in zip(original, rows(durable, identities), strict=True):
+                assert before.delivery is not None, "the fixture keeps every saved semantic plan"
+                assert current.status is PublicationStatus.PENDING
+                assert current.attempts == before.attempts
+                assert current.delivery == before.delivery.model_copy(
+                    update={
+                        "sitting_group": identities,
+                        "group_text": expected,
+                        "render_origin": "legacy_snapshot"
+                        if before.status is PublicationStatus.FAILED or before.attempts
+                        else None,
+                    }
+                )
+            observed.append(publication.id or 0)
+            return publish(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
     before_count = len(world.publisher.sent)
@@ -171,28 +171,29 @@ def test_attempted_long_sitting_freezes_all_parts_with_saved_link_and_receipt_pa
     observed: list[int] = []
 
     def inspect(publication: Publication) -> PublishResult:
-        durable = World()
-        durable.repo.restore(git(remote, "show", "state:state.sql"))
-        frozen = plan(durable, case.identity)
-        assert frozen == saved.model_copy(
-            update={
-                "render_origin": "legacy_snapshot",
-                "rendered_text": expected[0],
-                "continuation_ids": frozen.continuation_ids,
-            }
-        )
-        assert row(durable, case.identity).attempts == 1
-        member_ids = physical_ids(durable, case.identity)
-        assert tuple(plan(durable, identity).rendered_text for identity in member_ids) == expected
-        current = row(durable, publication.id or 0)
-        assert current.status is PublicationStatus.PENDING
-        if current.id != case.identity:
-            current_plan = plan(durable, current.id or 0)
-            parent = row(durable, current_plan.continuation_parent or 0)
-            assert parent.status is PublicationStatus.SENT
-            assert current_plan.reply_to == parent.message_id
-        observed.append(current.id or 0)
-        return publish(publication)
+        with saved_state(git(remote, "show", "state:state.sql")) as durable:
+            frozen = plan(durable, case.identity)
+            assert frozen == saved.model_copy(
+                update={
+                    "render_origin": "legacy_snapshot",
+                    "rendered_text": expected[0],
+                    "continuation_ids": frozen.continuation_ids,
+                }
+            )
+            assert row(durable, case.identity).attempts == 1
+            member_ids = physical_ids(durable, case.identity)
+            assert (
+                tuple(plan(durable, identity).rendered_text for identity in member_ids) == expected
+            )
+            current = row(durable, publication.id or 0)
+            assert current.status is PublicationStatus.PENDING
+            if current.id != case.identity:
+                current_plan = plan(durable, current.id or 0)
+                parent = row(durable, current_plan.continuation_parent or 0)
+                assert parent.status is PublicationStatus.SENT
+                assert current_plan.reply_to == parent.message_id
+            observed.append(current.id or 0)
+            return publish(publication)
 
     monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
     before = len(world.publisher.sent)
