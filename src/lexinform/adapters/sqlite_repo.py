@@ -17,7 +17,7 @@ from pydantic import TypeAdapter
 
 from lexinform.content_versions import content_delivery_mismatch
 from lexinform.json_storage import compact_json, storage_json
-from lexinform.legacy_delivery import legacy_status_edit
+from lexinform.legacy_delivery import legacy_status_edit, legacy_status_reply
 from lexinform.log_context import log_extra
 from lexinform.models import (
     PRE_PRINT_PREFIX,
@@ -1758,29 +1758,47 @@ class SqliteBillRepository:
         return cur.rowcount == 1
 
     def freeze_legacy_status_edit(self, publication_id: int, delivery: DeliveryPlan) -> bool:
+        return self._freeze_legacy_status_delivery(publication_id, delivery, reply=False)
+
+    def freeze_legacy_status_reply(self, publication_id: int, delivery: DeliveryPlan) -> bool:
+        return self._freeze_legacy_status_delivery(publication_id, delivery, reply=True)
+
+    def _freeze_legacy_status_delivery(
+        self, publication_id: int, delivery: DeliveryPlan, *, reply: bool
+    ) -> bool:
         row = self._conn.execute(
             "SELECT * FROM publications WHERE id = ?", (publication_id,)
         ).fetchone()
         if row is None:
             return False
         original = self._row_to_publication(row)
+        eligible = legacy_status_reply(original) if reply else legacy_status_edit(original)
         if (
-            not legacy_status_edit(original)
+            not eligible
             or not delivery.rendered_text.strip()
             or utf16_length(delivery.rendered_text) > MESSAGE_LIMIT
             or delivery.render_origin != "legacy_snapshot"
             or self.digest_owner(publication_id) is not None
             or self.digest_sources(publication_id)
+            or (reply and delivery.today is None)
         ):
             return False
         saved = original.delivery
-        assert saved is not None, "legacy_status_edit requires a saved semantic edit snapshot"
-        if delivery != saved.model_copy(
-            update={"rendered_text": delivery.rendered_text, "render_origin": "legacy_snapshot"}
-        ):
+        assert saved is not None, "both legacy status predicates require a saved semantic snapshot"
+        updates: dict[str, object] = {
+            "rendered_text": delivery.rendered_text,
+            "render_origin": "legacy_snapshot",
+        }
+        expected = saved.model_copy(update=updates)
+        if reply:
+            expected = expected.model_copy(update={"today": delivery.today})
+        if delivery != expected:
             return False
         raw: dict[str, object] = json.loads(row["delivery_json"])
-        raw.update(rendered_text=delivery.rendered_text, render_origin="legacy_snapshot")
+        raw.update(updates)
+        if reply:
+            assert delivery.today is not None, "the reply eligibility check requires its render day"
+            raw["today"] = delivery.today.isoformat()
         changed = self._conn.execute(
             "UPDATE publications SET delivery_json = ?"
             " WHERE id = ? AND status = 'failed' AND attempts = ? AND delivery_json = ?",

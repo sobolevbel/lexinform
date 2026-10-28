@@ -6169,3 +6169,47 @@ Full gate: **5227 passed**, failures/errors/skips0; final source freeze сохр
 [Acceptance asset](../assets/audits/2026-10-28-rollover-review-history/validation.json) пинует
 source/test hashes, 12 old/new profile pairs, all-table comparison и gate XML. Strict docs/build/
 links и diff check green. Ни один новый общий scheduler, source/backend или migration не добавлен.
+
+
+<a id="j127"></a>
+### J127. Freeze qualified failed legacy status replies before their next API attempt
+
+Статус: **готово**, baseline `a3d4689d1af5a59858178c293454da8d63fc6306`.
+На прежнем source один remote-boundary scenario падает без setup errors: перед API durable
+pending имеет semantic plan, но не точный HTML. Новый узкий writer принимает только FAILED
+legacy single status reply с положительным сохранённым reply target и без membership/continuations.
+UNKNOWN/PENDING, замена parent, уже frozen payload, другие kinds и oversized text не активируются.
+
+Shared predicate и raw-JSON/CAS writer переиспользуются с existing status edit; прежний edit
+contract сохраняет original today. Новый post сохраняет render day из Clock, как прежний live
+callback, поэтому retry спустя дни не возвращает старую дату в будущие действия. Меняются только
+HTML/origin/render day; Bill/change, reply target, flags, attempts и status остаются прежними.
+Origin `legacy_snapshot` не выдаёт новый HTML за исторический payload предыдущей попытки.
+Unknown JSON fields переживают запись; сети внутри SQL transaction нет. Existing pre-API/
+receipt checkpoints и uncertain recovery применяются без отдельной очереди/schema.
+
+**200 focused**, strict mypy **496**, Ruff/format green. Проверены pre/post API checkpoint failure,
+restore, known parent, delayed render day, immutable retry спустя 100 дней и смену formatter,
+unknown/changed fields и UTF-16 size bound; все прежние status-edit guards сохранены. Шесть
+старых callback assertions расширены на frozen send, остальные legacy/long/attention controls
+сохраняют прежний путь. Plain unknown parents/groups/multipart остаются отдельной работой.
+
+**6 native before/after profiles**: requests и actual outgoing text/parent exact. Все 28 tables
+exact после исключения только трёх новых frozen payload fields и run phase timings. HTML SHA
+равен реальному outgoing SHA; day 7→12 сентября совпадает с прежним callback после пяти дней.
+Fixture SQL delta **920–1427 bytes**, gzip **92–367**; это не production forecast.
+Actual previous source archive прочитал новый payload: **6/6 old-reader** и **6/6 new-reader**,
+по одному fake API call, exact remote pending/receipt, без render или повторной отправки.
+Full gate выполняется на frozen code; extraction/selection/legal text/provider requests не менялись.
+
+J126 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40638246968) success:
+**5227 passed**, strict mypy **494**, docs/web green. Feature branch/draft PR only;
+main/deployment по-прежнему требуют ранее запрошенного разрешения.
+
+Full gate: **5265 passed**, failures/errors/skips0; source freeze сохранён. Все 158 остальных
+runtime files byte-exact; AST repository/migrations/row readers и posting вне narrow freeze/
+_send methods, а также остального protocol, совпадает с baseline. Schema/model shape прежние.
+[Acceptance asset](../assets/audits/2026-10-28-legacy-reply-freeze/validation.json) сохраняет
+baseline reproduction, native/compatibility pairs, raw-JSON/date guards, source hashes и gates.
+Strict docs/build/link и diff checks green. Оставшиеся legacy kinds/unknown parent/multipart/
+groups этим ограниченным контрактом не объявляются переведёнными.

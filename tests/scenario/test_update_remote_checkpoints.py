@@ -363,7 +363,7 @@ def test_lost_final_status_part_keeps_its_audit_payload_and_effects_on_operator_
 @pytest.mark.parametrize("attempts", [0, 1])
 @pytest.mark.parametrize("long", [False, True])
 @pytest.mark.parametrize("policy", ["legacy", "attention-v1"])
-def test_attempted_status_without_html_keeps_its_legacy_callback_and_payload(
+def test_failed_status_snapshot_freezes_only_qualified_legacy_replies(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     mode: Mode,
@@ -380,7 +380,15 @@ def test_attempted_status_without_html_keeps_its_legacy_callback_and_payload(
     )
     connect(world, tmp_path)
     original = world.publisher.publish_status_update
+    original_prepared = world.publisher.publish_prepared
     observed: list[int] = []
+    prepared_calls: list[int] = []
+    frozen = legacy.model_copy(
+        update={
+            "rendered_text": world.publisher.render_delivery(row(world, case.identity)),
+            "render_origin": "legacy_snapshot",
+        }
+    )
 
     def send_legacy(
         bill: Bill, change: StatusChange, reply_to: int | None, *, with_act: bool = False
@@ -389,12 +397,23 @@ def test_attempted_status_without_html_keeps_its_legacy_callback_and_payload(
         observed.append(case.identity)
         return original(bill, change, reply_to, with_act=with_act)
 
+    def prepared(publication: Publication) -> PublishResult:
+        assert publication.delivery == frozen
+        assert plan(world, case.identity) == frozen
+        prepared_calls.append(case.identity)
+        return original_prepared(publication)
+
     monkeypatch.setattr(world.publisher, "publish_status_update", send_legacy)
+    monkeypatch.setattr(world.publisher, "publish_prepared", prepared)
 
     assert send(case)
 
-    assert observed == [case.identity]
-    assert plan(world, case.identity) == legacy
+    if policy == "legacy" and not long:
+        assert not observed and prepared_calls == [case.identity]
+        assert plan(world, case.identity) == frozen
+    else:
+        assert observed == [case.identity] and not prepared_calls
+        assert plan(world, case.identity) == legacy
     assert row(world, case.identity).attempts == attempts
 
 
