@@ -5694,3 +5694,21 @@ exact COMMIT `ab63022bb7225eb11513a33edf75b3ea6ef2e061`, listener up **45 s**.
 Полный gate: **5065 passed**, 0 failures/errors/skips, **614.123 s**.
 [Acceptance asset](../assets/audits/2026-10-28-amendment-target-context/validation.json) пинует
 gates, source hashes, exact provider parity, state-size reduction и backward reader.
+
+
+<a id="j113"></a>
+### J113. Compound correction ownership and recovery contract
+
+Статус: **контракт готов**, runtime baseline `e588e1ed31a63d06b20f8b55514c8fda3d5baee2`.
+[DA7.4](2026-10-22-document-architecture.md#da7) спроектирован в отдельном
+[контракте](../reviews/2026-10-28-compound-content-revisions.md): physical owner, immutable
+member/part baseline, expected-base CAS, mixed/unknown receipts и stale approval. Shared
+correction не затирает исправления других members; digest edit не пересобирает неделю и
+не освобождает event links. Отсутствующие historical parts не восстанавливаются из current Bill.
+
+Определены пять самостоятельных reader-first выпусков и fault matrix, включая loss of runner,
+частичный edit, append без receipt, competing results и cleanup. Новые grouped/multipart/digest
+correction producers **не включены**: прежний безопасный отказ сохраняется до реализации и
+прохождения соответствующих gates. DA7.5 остаётся частичным по coverage history kinds/source refs.
+Это documentation-only stage; runtime и схемы J112 неизменны. Strict docs gate и diff check
+обязательны; повтор полного runtime gate из-за документации не назначается.

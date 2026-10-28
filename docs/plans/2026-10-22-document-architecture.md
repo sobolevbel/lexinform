@@ -686,7 +686,7 @@ Bill и кэша. Повтор записанного результата да�
 - [x] DA7.3. **Принято: [J109](2026-10-22-document-architecture-progress.md#j109), single-message capture и post-retention /amendments, guards для unknown/repeated force.** Сначала перевести существующий single-message `/amendments`; защитить original
   content от retention после очистки delivery payload. Незавершённый/uncertain revision
   нельзя supersede повторной командой или сменой модели.
-- [ ] DA7.4. Затем отдельно спроектировать grouped/multipart/digest revisions: показать
+- [x] DA7.4. **Спроектировано: [J113](2026-10-22-document-architecture-progress.md#j113), [контракт](../reviews/2026-10-28-compound-content-revisions.md); activation новых producers остаётся отдельной реализацией с отказом до приёмки.** Затем отдельно спроектировать grouped/multipart/digest revisions: показать
   идентичность изменяемого содержания, все части и подтверждение результата. Пока этот
   контракт не принят и не проверен, прежний безопасный отказ сохраняется.
 - [ ] DA7.5. **Частично: [J110](2026-10-22-document-architecture-progress.md#j110), read-only offline history/physical confirmation inspector; [J111](2026-10-22-document-architecture-progress.md#j111), body-free /delivery references и общая confirmation/context policy приняты для текущего single-message scope; расширение history kinds/source refs остаётся.** `/delivery` и планируемый read-only просмотр истории показывают original/current

@@ -8,6 +8,7 @@
 - [Аудит архитектуры документов](../reviews/2026-10-22-document-architecture.md) и [план развития](../plans/2026-10-22-document-architecture.md) — проверка 22.10 и постепенная реализация; принятые этапы и открытые задачи отмечены в [журнале](../plans/2026-10-22-document-architecture-progress.md).
 - [Допуск документов по вопросу](../reviews/2026-10-27-document-admission.md) — принятые различия prefilter, analysis, comparison, amendments и reviews.
 - [Профиль хранения](../reviews/2026-10-27-storage-profile.md) — measured SQL/Git/raw inventory, границы source refs и отложенное расширение хранения.
+- [Исправления составных сообщений](../reviews/2026-10-28-compound-content-revisions.md) — контракт shared/multipart/digest; новые producers пока не включены.
 - [Незавершённая работа](../reviews/2026-10-27-unfinished-work.md) — сравнение Senate/review и решение DA8 против универсального scheduler.
 - [Сравнение изменений на корпусе](../reviews/2026-10-03-law-comparison.md) — проверенные гипотезы и защита значимых изменений.
 - [Короткие названия в Telegram](../reviews/2026-10-11-publication-titles.md) — варианты префиксов на корпусе и границы сокращения.
