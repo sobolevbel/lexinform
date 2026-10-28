@@ -6762,7 +6762,7 @@ Telegram, SSH, production pipeline и state-branch mutations не выполня
 <a id="j138"></a>
 ### J138. Preserve existing legacy projections through ordinary result writes
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**. Baseline `14e45dcc3b51ffc87a4cb36a8fee9b356fa8d333`.
+Статус: **выпущен и проверен**. Baseline `14e45dcc3b51ffc87a4cb36a8fee9b356fa8d333`.
 Шесть repository save APIs читают прежний physical JSON отдельным raw cursor и сохраняют
 только уже существующие refs на тех же structural paths. Общая pure policy проверяет exact
 immutable base; supported quiet/selection metadata остаётся в bounded overrides, новый ответ
@@ -6810,3 +6810,54 @@ J138 не выполняет и не объявляет разрешённой.
 [Acceptance asset](../assets/audits/2026-10-28-legacy-projection-writes/validation.json) фиксирует
 hashes исходников/первоначального patch, review repair, full/focused XML, native168 и все
 fresh-state phases с coverage/exclusions. План остаётся74tasks/26done/6explicitN/A/42partial-open.
+Коммит `97f99a5f9461702d27f7cbca8cc4851b6ff2a3fb` прошёл [push CI](https://github.com/sobolevbel/lexinform/actions/runs/40727685682)
+и [автоматический deploy](https://github.com/sobolevbel/lexinform/actions/runs/40729427565):
+точный переход `14e45dcc3b51` → `97f99a5f9461`, 45-секундный health check и активный timer.
+[Отфильтрованный release proof](../assets/audits/2026-10-28-legacy-projection-writes/release.json)
+не подтверждает функциональную доставку Telegram.
+
+<a id="j139"></a>
+### J139. Move payload matrices to focused Poster contracts
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**. Baseline `97f99a5f9461702d27f7cbca8cc4851b6ff2a3fb`.
+Три expensive payload/policy/attempt/mode matrices сохраняют все69 сочетаний в прямых
+контрактах публичного `Poster`: реальная in-memory SQLite, FixedClock, FakePublisher,
+checkpoint dump и независимый restore перед publisher callback. В сценарном слое остаются
+15 real-Git представителей:4 status,6 notice,5 review с mode wiring off/shadow/on. Все136
+noncandidate scenarios и fault/UNKNOWN/recovery cases сохранены; bodies сценарных функций
+не меняются, сокращаются только decorators. Runtime/config/dependencies/AGENTS неизменны.
+
+Изолированный targeted набор401→416 cases:140.540s→100.352s, observed saving40.188s/28.6%.
+Это локальный замер выбранного набора, не гарантированное ускорение каждого full gate.
+Git candidate testcase time55.514s→13.876s, полный direct contract matrix2.072s.
+Все7 meaningful mutation probes отвергнуты: date/parent/policy/attempts, missing pre-checkpoint
+в unit и retained notice/review Git paths. Временные runtime mutations восстановлены byte-exact.
+Independent review подтвердил coverage и отсутствие actionable findings.
+
+Патч собран на pristine J137 параллельно full J138, затем применён поверх J138 без конфликтов.
+Integration focused84 passed, strict mypy536 и Ruff green; runtime diff с J138 пуст.
+Source/config freeze590 закреплён. Рост общего числа cases
+на15 обусловлен отдельными wiring representatives;54 дорогих World/Git сочетания заменены
+быстрыми service contracts без потери исходной матрицы. Состав проверок перед commit не ослаблен.
+
+Финальный full gate6048 tests без failures/errors/skips, focused84, strict mypy536,
+Ruff, format524 unchanged, docs-check и diff check прошли. XML collection comparison сохраняет
+все6033 прежних cases кроме54 перенесённых scenario combinations и добавляет69 unit cases;
+два прежних ZIP-byte parameter IDs нормализованы по формату из-за timestamp при сборке ZIP,
+их исходник неизменен. Full wall в этом запуске863.058s против предыдущих911.262s;
+это observed run comparison, не контролируемое обещание полного ускорения.
+
+Checklist audit закрывает DA1.9 по его local copy-state критерию и DA5.5 в текущем storage profile.
+Свежий неизменённый benchmark CLI на pinned schema59 dump:restore0.293909s/dump0.087813s,
+6 checkpoints/5 commits; initial1.194395s, unchanged0.220196s, changed0.980573–1.085685s.
+SQL19,975,346→19,978,798B/gzip4,049,075→4,049,239B; local/remote objects после GC
+4,090,761/4,091,151B, GC1.657850s. Network blocked, input и175 source/tool hashes exact.
+Hosted latency/auth/runner overhead/natural growth не измерены и остаются DA10.3; granularity
+checkpoint не меняется. Clone здесь не повторялся, отдельное прежнее доказательство — J036.
+DA5.5 сверено по5 validation assets и3 pinned finite scan proofs J132:PDF/scan source hashes
+и load_scan/first_pages/exact_input AST exact с56107503. Нового raw replay нет; completed-byte
+archive исключён текущим профилем, SQL-only replay не заявляется.
+
+[Acceptance asset](../assets/audits/2026-10-28-delivery-test-contracts/validation.json) связывает
+source/test hashes, before/after/mutation XML, independent coverage review, свежий copy benchmark
+и scan closure audit. План:74tasks/28done/6explicitN/A/40applicable partial-open.

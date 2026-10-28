@@ -170,8 +170,14 @@ def held_status(world: StoredState, identity: int) -> PublicationStatus:
     return publication.status
 
 
-@pytest.mark.parametrize("mode", ["off", "shadow", "on"])
-@pytest.mark.parametrize("kind", KINDS)
+@pytest.mark.parametrize(
+    "mode,kind",
+    [pytest.param("on", kind, id=f"{kind}-on") for kind in KINDS]
+    + [
+        pytest.param("off", KINDS[0], id=f"{KINDS[0]}-off"),
+        pytest.param("shadow", KINDS[1], id=f"{KINDS[1]}-shadow"),
+    ],
+)
 def test_saved_review_parts_checkpoint_exact_html_parent_and_edit_target_before_api(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: Mode, kind: PublicationKind
 ) -> None:
