@@ -16,3 +16,36 @@ Production state хранится SQL-дампом в ветке `state`. Про
 на копии с `lexinform run --dry-run`; такой запуск всё равно делает платные LLM-вызовы.
 Рецепт подготовки копии — в
 [CONTRIBUTING.md](https://github.com/sobolevbel/lexinform/blob/main/CONTRIBUTING.md#against-production-data).
+
+## Проверить выпуск и автоматическое обновление relay
+
+Статус инструкции: проверена локальными fixtures 28 октября 2026.
+Из корня checkout, с установленным и авторизованным `gh`:
+
+```bash
+uv run --frozen python tools/verify_release.py FULL_40_CHARACTER_SHA
+```
+
+По умолчанию это один read-only снимок GitHub. `--output /tmp/new-release.json` создаёт новый
+JSON-файл и отказывается перезаписывать существующий. `--previous-verified-sha FULL_SHA`
+дополнительно связывает исходный 12-символьный префикс перехода с предыдущим подтверждённым выпуском.
+`--wait-seconds 30` разрешает один повтор после ожидания, только если первый снимок дал `pending`;
+предел ожидания — 60 секунд. Фонового или повторяющегося monitor нет.
+
+Единственный формат отчёта: `schema_version`, `status`, `reason`, `target_sha`,
+`observed_main_sha`, `ci` и `deploy` с их `jobs`, а также `proof`. Статусы:
+
+- `verified`: main всё ещё равен целевому SHA; ровно один CI от push и один автоматический
+  Deploy relay от `workflow_run` для него завершились успешно со всеми ожидаемыми jobs.
+  В выбранном deploy job подтверждены именно этот `COMMIT`, переход с другого SHA,
+  сообщение о 45 секундах после restart и включение timer, в таком порядке.
+- `pending`: нужный run ещё отсутствует или выполняется.
+- `failed`: выбранный run или его job завершился без success.
+- `superseded`: main уже изменился; этот снимок не подтверждает текущий выпуск.
+- `unproven`: доказательства неполны, неоднозначны, недоступны или не соответствуют контракту.
+
+Exit code — 0 только у `verified`, иначе 1. Сокращённые SHA не принимаются. Skipped, stale,
+ручной deploy и `already at` не подтверждают новое развёртывание. Из логов сохраняются только
+SHA перехода и признаки restart/timer; raw logs, env, пути и SQL в отчёт не входят.
+Проверка делает только GET через `gh api`: без SSH, rerun, dispatch, push или production run.
+45-секундное выживание systemd не доказывает доставку Telegram или работу внешних провайдеров.

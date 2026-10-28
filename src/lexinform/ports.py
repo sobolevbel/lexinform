@@ -53,6 +53,9 @@ from lexinform.models import (
     IncomingCommand,
     JointContext,
     JointRecord,
+    LegacyResultImport,
+    LegacyResultOccurrence,
+    LegacyResultValue,
     LlmBatch,
     LlmBatchItem,
     LocatedText,
@@ -650,6 +653,14 @@ class BillRepository(Protocol):
     def atomic(self) -> AbstractContextManager[None]: ...
 
     def load_analysis_memo(self) -> dict[str, str]: ...
+
+    def import_legacy_results(self, imported: LegacyResultImport) -> bool: ...
+
+    def get_legacy_result(self, value_id: str) -> LegacyResultValue | None: ...
+
+    def list_legacy_result_occurrences(
+        self, term: int, number: str
+    ) -> list[LegacyResultOccurrence]: ...
 
     def save_computation_result(self, result: ComputationResult) -> None: ...
 

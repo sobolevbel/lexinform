@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from tools.source_history_doctor import audit
 
-from lexinform.adapters.sqlite_repo import MIGRATIONS, SqliteBillRepository
+from lexinform.adapters.sqlite_repo import MIGRATIONS, SCHEMA_VERSION, SqliteBillRepository
 from lexinform.document_editions import candidate_edition
 from lexinform.models import (
     DocumentEdition,
@@ -121,7 +121,7 @@ def test_schema_56_restore_creates_empty_edition_tables_without_inferred_history
 
     repo.restore(dump)
 
-    assert repo.schema_version == 57
+    assert repo.schema_version == SCHEMA_VERSION
     assert repo.get_document_edition("edition-v1:" + "f" * 64) is None
 
 

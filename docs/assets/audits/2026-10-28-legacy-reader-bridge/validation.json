@@ -1,0 +1,608 @@
+{
+  "baseline": "1bd7d7eebf9f260678320e79c1c84c80eb01ff52",
+  "earlier_failed_full": {
+    "errors": 0,
+    "failures": 1,
+    "skipped": 0,
+    "tests": 4248
+  },
+  "evidence": {
+    "out/corpus/j136/accept.py": {
+      "bytes": 6930,
+      "sha256": "f2ecdd104470616c3852472c8ac102fa9b49d7411b8e7bec38530706f37a6ab7"
+    },
+    "out/corpus/j136/combined-handoff.json": {
+      "bytes": 5636,
+      "sha256": "3a6c5258c2a243810a1f634d51086c5844ba452acce203ff92958ddb462e5c0f"
+    },
+    "out/corpus/j136/docs.log": {
+      "bytes": 266,
+      "sha256": "8fc19a88d1876d661c98734e4de676eeb96ca2b69ba10d2975e3e6472fbc41c1"
+    },
+    "out/corpus/j136/focused.xml": {
+      "bytes": 23550,
+      "sha256": "f9bad687fcc1a5f52f01543c5699a5a237e7c2b63d06f5b1c8226240e6eb7c27"
+    },
+    "out/corpus/j136/frozen-final.json": {
+      "bytes": 64367,
+      "sha256": "dfddbcc8266e2040be6a2c04ba656c4d55d76979e8e2067fd0230bd6ae41f3dc"
+    },
+    "out/corpus/j136/full-before-schema-expectation.xml": {
+      "bytes": 689896,
+      "sha256": "a94a299083a694383d92b9b2b73deab2149eb09782a48d67676e4d56757caeb5"
+    },
+    "out/corpus/j136/full.xml": {
+      "bytes": 965672,
+      "sha256": "16d23d34879ab7a3a723617e540bbd3633415ad220f6102bcc8774589f44c2e4"
+    },
+    "out/corpus/j136/legacy/artifacts.json": {
+      "bytes": 773,
+      "sha256": "41e35753355bf2bee47772004a279cd6f618c8b82c07d80ff7c345986d80d70a"
+    },
+    "out/corpus/j136/legacy/compatibility.json": {
+      "bytes": 2426,
+      "sha256": "843050c2bc1ed446989010ced83b013a67b7be2b0245873eb6d541e7786eb7db"
+    },
+    "out/corpus/j136/legacy/qualify_copy.py": {
+      "bytes": 14893,
+      "sha256": "84484ed210cfdbd1d03f3e6def77b9733f03f406014b6013fac03a25e3ea9319"
+    },
+    "out/corpus/j136/legacy/report.json": {
+      "bytes": 3865,
+      "sha256": "6951a4016081df3d7ab0eb07e0e0b2ba1fb3ba49fbe1c6e83dba90c0b9d721ad"
+    },
+    "out/corpus/j136/local-http.xml": {
+      "bytes": 3413,
+      "sha256": "d3decbe03f2f65cbde929fe1c51fe4bcf49096fc2c1b5a4773d010181e609f17"
+    },
+    "out/corpus/j136/mypy.log": {
+      "bytes": 45,
+      "sha256": "ac1fa0fa15c678f6967ede261d6da6f5b2adf2d5de1a256340cb9c624dff383e"
+    },
+    "out/corpus/j136/native/default-parity.json": {
+      "bytes": 2764,
+      "sha256": "99aa9afc0d7dc7c39912953a39a329a00c6b715374717594cba67077fc82c478"
+    },
+    "out/corpus/j136/release_checks/report.json": {
+      "bytes": 6534,
+      "sha256": "1a3cc0a965e1f782716df6223f56e5788e6a18fac4e909c138f788e53c908c1c"
+    },
+    "out/corpus/j136/ruff.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "out/corpus/j136/verifier-live-j134-before-supersession.json": {
+      "bytes": 1619,
+      "sha256": "cabcfc609d827f8fc44262e0d43bcfa53b005ca4efd7bb59abe682a4b63080f0"
+    },
+    "out/corpus/j136/verifier-v2-handoff.json": {
+      "bytes": 4308,
+      "sha256": "8702c423b72372a0d8a075ee6a6aab5727787cc358bc0ff3ec7790dc426816ca"
+    }
+  },
+  "exclusions": [
+    "No automatic historical import, current projection format flip, B activation, raw archive or backend choice.",
+    "The 3.8696% optional-layout result is a historical-copy counterfactual, not a fresh-production activation gate.",
+    "Hosted checkpoint latency awaits natural deployed runs; local duration fixtures are not a production bound.",
+    "No paid model, Telegram, SSH, production pipeline or state-branch mutation.",
+    "A pre-bridge reader cannot be used after any future reference-bearing B dump without separate rollback planning."
+  ],
+  "focused": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 158
+  },
+  "frozen_python_and_config_files": 586,
+  "full": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 5940
+  },
+  "historical_copy": {
+    "actual_model_roundtrips": {
+      "actual_analysis_serialization": 267,
+      "editorial_upcast": 170,
+      "explicit_selection_metadata_update": 267
+    },
+    "baseline57": {
+      "gzip": 4133245,
+      "sql": 20317340
+    },
+    "code": {
+      "branch": "codex/legacy-history-reader-metrics",
+      "codec_module": "/Users/sobaleu/projects/lexinform/src/lexinform/legacy_results.py",
+      "dirty_integration": true,
+      "head": "1bd7d7eebf9f260678320e79c1c84c80eb01ff52",
+      "migration58_sha256": "b10c46bf3d8251ea88df9009b417475e169146b7cc31ea6d34bfb61ab6a62bac",
+      "repository_module": "/Users/sobaleu/projects/lexinform/src/lexinform/adapters/sqlite_repo.py",
+      "runtime_files": 177,
+      "runtime_manifest_sha256": "7e62bf9a8f8bcd8a239eed4fe5f4148685d87020c5f17a21477732ae8ea0ad76",
+      "schema57_prefix_matches_head": true,
+      "unchanged_during_qualification": true
+    },
+    "encoded_snapshot_strings": "Preserved exactly as string values in all 667 compared saved JSON columns.",
+    "exclusions": [
+      "Historical J116 pin, not a current live-state claim.",
+      "No B activation or automatic format-writing path exercised.",
+      "Optional sharing/compaction is manually prepared on disposable copies.",
+      "Selection update is an explicit synthetic policy label; no new source evidence.",
+      "No pipeline, provider/API, Telegram, checkpoint/push, full or native-168 run.",
+      "Peak is observed, not an upper bound.",
+      "No promise of raw-source/provider-input retention or a universal bound on future selection growth; this pin has no positive content_snapshots cases.",
+      "No answer bodies are emitted in the report."
+    ],
+    "five_percent_gate_passes": true,
+    "frozen_final": {
+      "files": 586,
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j136/frozen-final.json",
+      "sha256": "dfddbcc8266e2040be6a2c04ba656c4d55d76979e8e2067fd0230bd6ae41f3dc",
+      "verified_before_and_after": true
+    },
+    "hypothetical_activation_only": {
+      "initial": {
+        "archive_values_roundtripped": 323,
+        "bill_reader_roundtrips": 462,
+        "columns_roundtripped": 667,
+        "gzip": 4247156,
+        "immutable_history_counts": [
+          323,
+          411,
+          1,
+          194
+        ],
+        "memo_reader_roundtrips": 148,
+        "sql": 20878585,
+        "sqlite": 22274048
+      },
+      "quiet": {
+        "archive_values_roundtripped": 323,
+        "bill_reader_roundtrips": 462,
+        "columns_roundtripped": 667,
+        "gzip": 4293183,
+        "immutable_history_counts": [
+          323,
+          411,
+          1,
+          194
+        ],
+        "memo_reader_roundtrips": 148,
+        "sql": 21135247,
+        "sqlite": 22528000
+      },
+      "quiet-repeat": {
+        "archive_values_roundtripped": 323,
+        "bill_reader_roundtrips": 462,
+        "columns_roundtripped": 667,
+        "gzip": 4293188,
+        "immutable_history_counts": [
+          323,
+          411,
+          1,
+          194
+        ],
+        "memo_reader_roundtrips": 148,
+        "sql": 21135247,
+        "sqlite": 22528000
+      }
+    },
+    "observed_peak_sqlite_directory_bytes": 49098224,
+    "occurrences": 411,
+    "quiet_gzip_increase_percent": 3.8695504379730794,
+    "release_a_empty_bridge": {
+      "all_existing_table_rows_unchanged": true,
+      "empty_table_counts": {
+        "legacy_analysis_bodies": 0,
+        "legacy_result_imports": 0,
+        "legacy_result_occurrences": 0,
+        "legacy_result_values": 0
+      },
+      "gzip": 4133583,
+      "legacy_tables_empty": true,
+      "sql": 20318590
+    },
+    "representation": "Hypothetical manually factored exact raw analysis bodies; production importer remains inline-only and inactive.",
+    "selection_update": "Synthetic explicit policy label only; existing selection body preserved; not new corpus/source evidence.",
+    "source_content_snapshot_rows": 0,
+    "source_sha256": "66ecc58b10c3e7ba2df1d4fc89be26e018539a8f94931f0c7aeaf12205f6fe2e",
+    "source_unchanged": true,
+    "values": 323
+  },
+  "independent_integration": {
+    "all_candidate_delta_sequences_exact_except_root_integrity_fixes": true,
+    "artifacts_sha256": {
+      "focused.log": "9352925e5e271773731e7ca3a390daf15479f6b144d2d059ca8d677d62821619",
+      "focused.xml": "0474fb8da0f34f6ce4fd90f84edd2a5c8abae1ff7342f117b3df42c892867e43",
+      "format.log": "ef7d13d02214e98ca902b05257cdbe6a8e84f3b4714508efdc19766460b54209",
+      "frozen-after.json": "dfddbcc8266e2040be6a2c04ba656c4d55d76979e8e2067fd0230bd6ae41f3dc",
+      "frozen-before.json": "dfddbcc8266e2040be6a2c04ba656c4d55d76979e8e2067fd0230bd6ae41f3dc",
+      "integration.json": "045556ebef68972dbe3d8150933a55a4db60fae259cacda2f2d31a0a92d7268a",
+      "live-j134.json": "aa94f23d00f6fdf1c8d1ad1aee1211244d81b06463494553c3c82f952b7ab358",
+      "live-j135.json": "70371558b3cf487df799add3792664fb8983d8134836aef61f2fc1cedfe31260",
+      "mypy.log": "ab35ee42183d4d6d3ba483825ab037d18a5a15622d03be01d82220b1564851ff",
+      "ruff.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "candidate_base": "563b3e805db04301ae18f5d5e9555d51a9639b19",
+    "candidate_patch_sha256": "5b96eca98b21cecbc4e544a8a10869fb67af3117c5ef323c494b01cff61ee818",
+    "candidate_whole_file_hash_mismatches_inherited_j135": [
+      "docs/reference/database.md",
+      "src/lexinform/adapters/sqlite_repo.py",
+      "src/lexinform/ports.py"
+    ],
+    "focused": {
+      "errors": "0",
+      "failures": "0",
+      "hostname": "Yauhenis-MacBook-Pro.local",
+      "name": "pytest",
+      "skipped": "0",
+      "tests": "60",
+      "time": "6.785",
+      "timestamp": "2026-10-28T15:31:35.856524+01:00"
+    },
+    "focused_not_rerun_for_integrity_requalification": true,
+    "format_check": "6 files passed",
+    "head_sha": "1bd7d7eebf9f260678320e79c1c84c80eb01ff52",
+    "integrity_documentation_change": "Unique occurrence source location matches the tightened v58 primary key.",
+    "j135_import_resolution_preserved": true,
+    "limits": [
+      "Final integrity requalification reran all six native observers / 168 semantic profiles; earlier 60 focused and targeted static results remain identified with their earlier freeze. Root owns current full gate.",
+      "Release snapshots were not refreshed during this bounded requalification; previous CI/deploy statuses are historical observations only.",
+      "Only original15 package paths plus the known integrity/schema test changes; root release bookkeeping is listed separately.",
+      "No source/tests/docs edits, paid/provider/Telegram/production processing, commit or push."
+    ],
+    "live_j134": {
+      "ci": null,
+      "deploy": null,
+      "observed_main_sha": "1bd7d7eebf9f260678320e79c1c84c80eb01ff52",
+      "proof": {
+        "commit_sha": null,
+        "complete": false,
+        "restart45": false,
+        "skip_observed": false,
+        "timer_enabled": false,
+        "transition_from": null,
+        "transition_to": null
+      },
+      "reason": "main_differs_from_target",
+      "schema_version": 1,
+      "status": "superseded",
+      "target_sha": "563b3e805db04301ae18f5d5e9555d51a9639b19"
+    },
+    "live_j135": {
+      "ci": {
+        "conclusion": null,
+        "created_at": "2026-10-28T14:28:34Z",
+        "event": "push",
+        "head_sha": "1bd7d7eebf9f260678320e79c1c84c80eb01ff52",
+        "id": 40706288523,
+        "jobs": [
+          {
+            "conclusion": "success",
+            "id": 122879198489,
+            "name": "docs",
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "id": 122879198847,
+            "name": "web",
+            "status": "completed"
+          },
+          {
+            "conclusion": null,
+            "id": 122879198986,
+            "name": "test (3.14)",
+            "status": "in_progress"
+          }
+        ],
+        "run_attempt": 1,
+        "status": "in_progress",
+        "updated_at": "2026-10-28T14:28:46Z"
+      },
+      "deploy": null,
+      "observed_main_sha": "1bd7d7eebf9f260678320e79c1c84c80eb01ff52",
+      "proof": {
+        "commit_sha": null,
+        "complete": false,
+        "restart45": false,
+        "skip_observed": false,
+        "timer_enabled": false,
+        "transition_from": null,
+        "transition_to": null
+      },
+      "reason": "ci_not_successful",
+      "schema_version": 1,
+      "status": "pending",
+      "target_sha": "1bd7d7eebf9f260678320e79c1c84c80eb01ff52"
+    },
+    "migrations_1_through_57_exact": true,
+    "native": {
+      "all_prior_rows_inputs_reader_effects_exact": true,
+      "cases": 168,
+      "gzip_delta": {
+        "max": 263,
+        "min": 222
+      },
+      "network_attempts": 0,
+      "only_four_empty_v58_tables": true,
+      "paid_calls": 0,
+      "prior_tables": 32,
+      "proof_path": "/Users/sobaleu/projects/lexinform/out/corpus/j136/native/default-parity.json",
+      "proof_sha256": "99aa9afc0d7dc7c39912953a39a329a00c6b715374717594cba67077fc82c478",
+      "pytest_profile_observers": 6,
+      "source_doctors_without_errors": true,
+      "sql_delta": {
+        "max": 1223,
+        "min": 1223
+      }
+    },
+    "no_unexpected_shared_changes": true,
+    "only_new_schema_version": 58,
+    "only_new_test_path": "tests/unit/test_edition_repository.py",
+    "owned_paths": [
+      "docs/operations/index.md",
+      "docs/reference/database.md",
+      "docs/state-retention.md",
+      "src/lexinform/adapters/sqlite_repo.py",
+      "src/lexinform/adapters/state_checkpoint.py",
+      "src/lexinform/legacy_results.py",
+      "src/lexinform/models/__init__.py",
+      "src/lexinform/models/legacy_results.py",
+      "src/lexinform/ports.py",
+      "tests/unit/test_legacy_results.py",
+      "tests/unit/test_sqlite_repo.py",
+      "tests/unit/test_state_checkpoint.py",
+      "tests/unit/test_verify_release.py",
+      "tools/saved_records.py",
+      "tools/verify_release.py"
+    ],
+    "previous_focused_source_freeze_sha256": "b388cb02332d140b947af0abf321124913f18ba366f976d047021be7eb91bb7b",
+    "root_integrity_changed_candidate_paths": [
+      "docs/reference/database.md",
+      "src/lexinform/adapters/sqlite_repo.py",
+      "src/lexinform/models/legacy_results.py",
+      "tests/unit/test_legacy_results.py"
+    ],
+    "root_release_bookkeeping_paths": [
+      "docs/assets/audits/2026-10-28-reader-delivery/release.json",
+      "docs/plans/2026-10-22-document-architecture-progress.md"
+    ],
+    "ruff": "passed",
+    "source_changes_since_previous_independent_freeze": [
+      "src/lexinform/adapters/sqlite_repo.py",
+      "src/lexinform/models/legacy_results.py",
+      "tests/unit/test_edition_repository.py",
+      "tests/unit/test_legacy_results.py"
+    ],
+    "source_freeze_files": 586,
+    "source_freeze_sha256": "dfddbcc8266e2040be6a2c04ba656c4d55d76979e8e2067fd0230bd6ae41f3dc",
+    "source_freeze_unchanged": true,
+    "targeted_strict_mypy": "6 files passed"
+  },
+  "local_http": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 25
+  },
+  "migrations_1_through_57_exact": true,
+  "mypy_files": 532,
+  "native": {
+    "all_four_v58_tables_empty": true,
+    "all_prior_tables_exact_except_recorded_phase_timing": true,
+    "all_profiles_except_metadata_and_storage_metrics_exact": true,
+    "all_requests_and_rendered_messages_exact": true,
+    "all_six_profile_imports_pinned_to_primary": true,
+    "all_source_doctors_without_errors": true,
+    "baseline_head_sha": "1bd7d7eebf9f260678320e79c1c84c80eb01ff52",
+    "baseline_input_files": 174,
+    "baseline_manifest_sha256": "f4bcb97301fe25f2dba58e9fafec6a88b8af4dd2d3c2cf65a7c65dae55dea7ef",
+    "binding_views": 2,
+    "cases": 168,
+    "command_outcome_seconds_excluded_from_semantic_comparison": true,
+    "content_snapshot_views": 6,
+    "content_version_views": 2,
+    "edition_link_views": 8,
+    "edition_views": 8,
+    "gzip_delta": {
+      "max": 263,
+      "min": 222
+    },
+    "limits": [
+      "FakeWorld/native fixture profiles only, no real provider or Telegram calls.",
+      "Phase timings and command outcome seconds are excluded as recorded above; all reader payloads, targets and SQL rows otherwise compare exactly."
+    ],
+    "link_views": 190,
+    "network_attempts": 0,
+    "network_blocked": true,
+    "observer_source_sha256": {
+      "/Users/sobaleu/projects/lexinform/out/corpus/j136/native/compare_defaults.py": "02b3bcb0ecdd918a7d545f448f1bb982d711e933054c98f7776c37fe9cef434a",
+      "out/corpus/j071/projection_profile.py": "ea04424fccc679b9ad4569ec7c07cc348a73d92c29bb0aa38cb7e517d7e50f0e",
+      "out/corpus/j073/handoff_profile.py": "da7b56044237f17489d0f702a868114232c9e88a2503168ca77f2a37065365ce",
+      "out/corpus/j074/reuse_profile.py": "6a75655ca4b5fd1e4b81e049ba5e7b4a23b7ed3b75656e3584bf9563b05d3962",
+      "out/corpus/j077/explanation_profile.py": "cff55fa57bfe4df9bfe142c92c697e751720b09512c63733052c3e70632cf777",
+      "out/corpus/j078/primary_profile.py": "f11f5516c55b6993a27029c92fde9eb32075666b7c24a969a3dd849e0cad191e",
+      "out/corpus/j090/admission_flows.py": "185e456e5bc01bf5c69efe1e12c6dd15138a5d547f3e5231fbeaad386dac6801",
+      "out/corpus/j136/native/default_profiles.py": "f6e2233c7005b8ed380eb86ca274cab07a2c74e947ba25138e684bb4a039d0c3",
+      "out/corpus/j136/native/native_guard_j136.py": "043b9f6c61616eed94c7ae3fc4bd1d0443f3fad3ef12cacbbb9d34dee08b230b"
+    },
+    "only_new_tables": [
+      "legacy_analysis_bodies",
+      "legacy_result_imports",
+      "legacy_result_occurrences",
+      "legacy_result_values"
+    ],
+    "paid_calls": 0,
+    "prior_metadata_rows_preserved": true,
+    "prior_table_count": 32,
+    "read_receipt_views": 270,
+    "selection_views": 198,
+    "source_freeze_files": 586,
+    "source_freeze_sha256": "dfddbcc8266e2040be6a2c04ba656c4d55d76979e8e2067fd0230bd6ae41f3dc",
+    "source_freeze_unchanged": true,
+    "source_observation_views": 210,
+    "sql_delta": {
+      "max": 1223,
+      "min": 1223
+    },
+    "timing_differences": []
+  },
+  "old_reader_compatibility": {
+    "a_only_input_db_sha256": "e1e882b3759bcfcf17f778707746dcdef20e251f8d10bdc1b39ac27e682b0e59",
+    "a_only_input_sql_bytes": 20318590,
+    "a_only_input_sql_sha256": "e1e35e8de7be5dcca14b8d0dc6f04325eb1f95ab6564278b13fa30c33210ad3e",
+    "all_table_values_columns_and_identities_equal": true,
+    "artifacts": {
+      "current.json": "76acf0af5f6d99b6193b191df4a4ec6e781c10352e83bf5dd4277a99c51c42da",
+      "predecessor.json": "ac627cecfbfdaf8e3d32afb867f936b0cc26fe71ec85d72e202a103d15aad805",
+      "qualify_predecessor.py": "b9c655bac55cda3d90617768b132c91f7ed4fdf72a6f1519aafe09fba1f022bc",
+      "reader_roundtrip.py": "049a00f4fd00656023fa4fe8ba4c5d7eab234938c9b2d532b277a59911bcb64e"
+    },
+    "audits": {
+      "current": {
+        "allowed_file_writes": 1,
+        "network_attempts": 0,
+        "out_of_scope_writes": 0,
+        "sqlite_connections": 4,
+        "subprocess_attempts": 0
+      },
+      "predecessor": {
+        "allowed_file_writes": 1,
+        "network_attempts": 0,
+        "out_of_scope_writes": 0,
+        "sqlite_connections": 4,
+        "subprocess_attempts": 0
+      }
+    },
+    "bill_reader_rows": 462,
+    "both_dumps_byte_identical_to_input": true,
+    "current_schema_version": 58,
+    "exclusions": [
+      "A-only inline nonempty state: no B refs, body sharing, import or activation.",
+      "Direct repository restore/dump/read APIs only; no pipeline, provider, Telegram or checkpoint.",
+      "SQLite writes are confined to disposable QA targets; original pin, input and primary runtime unchanged.",
+      "Does not establish predecessor compatibility after B introduces legacy references."
+    ],
+    "four_legacy_tables_empty": true,
+    "frozen_final": {
+      "files": 586,
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j136/frozen-final.json",
+      "sha256": "dfddbcc8266e2040be6a2c04ba656c4d55d76979e8e2067fd0230bd6ae41f3dc",
+      "verified_before_and_after": true
+    },
+    "memo_reader_rows": 148,
+    "predecessor_commit": "1bd7d7eebf9f260678320e79c1c84c80eb01ff52",
+    "predecessor_schema_version": 57,
+    "predecessor_snapshot_unchanged": true,
+    "predecessor_source_sha256": "a1f644aba0c80e18b60de0fa46a3b6bd966cdefa530a3bfffc872f8e6a837a21",
+    "primary_runtime_unchanged": true,
+    "prior_rows_compared": 2785,
+    "prior_tables_compared": 32,
+    "public_reader_views_match": true,
+    "source_sha256": "66ecc58b10c3e7ba2df1d4fc89be26e018539a8f94931f0c7aeaf12205f6fe2e",
+    "source_unchanged": true,
+    "user_version58_retained_by_both": true
+  },
+  "runtime_files": {
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "bytes": 202381,
+      "sha256": "4317568f7b50e1f8a691c2803ec197e959fd8c3286b377b51776e3476f20ecde"
+    },
+    "src/lexinform/adapters/state_checkpoint.py": {
+      "bytes": 6787,
+      "sha256": "649f8e97d04214e5fa67dec68752bcb37cf9148e045c1bc783f9c01343962aa6"
+    },
+    "src/lexinform/legacy_results.py": {
+      "bytes": 8441,
+      "sha256": "edbeff9bec37ef15380ef7b06209ff3e2f589e914eea50720ab125c06b7eeb40"
+    },
+    "src/lexinform/models/__init__.py": {
+      "bytes": 18241,
+      "sha256": "256faaf94d2dfd06b78e25acfb3dd96a107073135b10a480b96e23ecdd22811f"
+    },
+    "src/lexinform/models/legacy_results.py": {
+      "bytes": 5558,
+      "sha256": "f279e4c277483171f84bcd99c676774b5856a405a4b0f8aac6761df3c5cbc3ed"
+    },
+    "src/lexinform/ports.py": {
+      "bytes": 45577,
+      "sha256": "b530812ad3d213cae738383cf8b3d806f64de0cbc92a8e3e190bb3302fd54f94"
+    },
+    "tools/saved_records.py": {
+      "bytes": 4132,
+      "sha256": "6baf675b01b63df7ede0c6a53533f3f4339fef13f865b60683155d191444e3a2"
+    },
+    "tools/verify_release.py": {
+      "bytes": 11797,
+      "sha256": "c1f992330bb911573c3a6f4e9098ec2e91b1d9618234fdda5d0c24fb48b8657e"
+    }
+  },
+  "schema": 58,
+  "scope": "Reader-only legacy history bridge, compact checkpoint metrics and GET-only release verifier; no activation/backfill",
+  "stage": "J136",
+  "verifier_live_j134_before_supersession": {
+    "ci": {
+      "conclusion": "success",
+      "created_at": "2026-10-28T11:57:51Z",
+      "event": "push",
+      "head_sha": "563b3e805db04301ae18f5d5e9555d51a9639b19",
+      "id": 40683990897,
+      "jobs": [
+        {
+          "conclusion": "success",
+          "id": 122801567960,
+          "name": "test (3.14)",
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "id": 122801568216,
+          "name": "docs",
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "id": 122801568405,
+          "name": "web",
+          "status": "completed"
+        }
+      ],
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-28T12:05:51Z"
+    },
+    "deploy": {
+      "conclusion": "success",
+      "created_at": "2026-10-28T12:05:54Z",
+      "event": "workflow_run",
+      "head_sha": "563b3e805db04301ae18f5d5e9555d51a9639b19",
+      "id": 40685055464,
+      "jobs": [
+        {
+          "conclusion": "success",
+          "id": 122805151925,
+          "name": "deploy",
+          "status": "completed"
+        }
+      ],
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-28T12:06:49Z"
+    },
+    "observed_main_sha": "563b3e805db04301ae18f5d5e9555d51a9639b19",
+    "proof": {
+      "commit_sha": "563b3e805db04301ae18f5d5e9555d51a9639b19",
+      "complete": true,
+      "restart45": true,
+      "skip_observed": false,
+      "timer_enabled": true,
+      "transition_from": "7287059ab139",
+      "transition_to": "563b3e805db0"
+    },
+    "reason": "exact_release_confirmed",
+    "schema_version": 1,
+    "status": "verified",
+    "target_sha": "563b3e805db04301ae18f5d5e9555d51a9639b19"
+  }
+}

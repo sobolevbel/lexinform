@@ -6577,7 +6577,7 @@ Actual7287059→563b3e8, restart/45s health и timer enabled подтвержд�
 <a id="j135"></a>
 ### J135. Complete future preparation of retryable reader roots
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**. Baseline `563b3e805db04301ae18f5d5e9555d51a9639b19`.
+Статус: **выпущен и проверен**. Baseline `563b3e805db04301ae18f5d5e9555d51a9639b19`.
 Пакет объединяет совместимые direct-root, legacy reader digest, sitting adoption и guard для
 `/preview`; один итоговый full gate идёт на собранном frozen tree. Перед читательским API effect
 новые/старые карточки, joint replies, status replies/edits, шесть notices и sitting roundups
@@ -6635,3 +6635,61 @@ test-only ремонта, независимые native/effect/compatibility р�
 DA1.2/DA1.4/DA1.6 приняты локально для нынешней reader surface после конечного callgraph
 аудита и fail-closed checkpoint-owner guard. DA1.8 maintenance lock и DA1.9 hosted latency
 остаются открытыми. План:74tasks,26done,6explicitN/A,42applicable partial/open.
+Коммит `1bd7d7eebf9f260678320e79c1c84c80eb01ff52` прошёл [push CI](https://github.com/sobolevbel/lexinform/actions/runs/40706288523)
+и [автоматический deploy](https://github.com/sobolevbel/lexinform/actions/runs/40707955367):
+проверен переход `563b3e805db0` → `1bd7d7eebf9f`, 45-секундный health check и активный
+timer. [Отфильтрованный release proof](../assets/audits/2026-10-28-reader-delivery/release.json)
+содержит точные SHA и job outcomes; systemd proof не является проверкой доставки в Telegram.
+
+<a id="j136"></a>
+### J136. Add the legacy-result reader bridge and checkpoint observability
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**. Baseline `1bd7d7eebf9f260678320e79c1c84c80eb01ff52`.
+Schema58 добавляет четыре пустые таблицы для exact legacy values, их мест сохранения,
+once-only import marker и optional общего raw `analysis` body. Миграция не делает inventory,
+backfill или переписывание нынешних JSON. Импорт вызывается только явно, хранит неизвестную
+original computation provenance как unknown. Reader восстанавливает exact whole value/SHA;
+фиксированный `analysis-editorial-v1` upcast служит только текущей typed projection, не меняет
+архив. Никакой current writer пока не создаёт ссылок, поэтому старый dump и обычные записи
+читаются прежним путём. Активация уплотнения — отдельный этап после deployed reader proof и
+нового измерения на копии state с реальными quiet/selection writes и ≤5% приростом gzip.
+
+State checkpoint пишет один ограниченный INFO record с outcome, phase, monotonic durations и
+известным объёмом SQL/manifest без SQL-текста, адресов или секретов. Это инструмент для
+измерения DA1.9 на естественных hosted runs; локальные замеры не подменяют их. Отдельный
+read-only `tools/verify_release.py` сверяет точный main SHA, push CI и автоматический
+workflow_run deploy, затем только отфильтрованные признаки перехода SHA, 45-секундного health
+и timer. Неполное доказательство остаётся `pending`/`unproven`; systemd не доказывает
+функциональную доставку Telegram. В составе пакета нет SSH, rerun или production processing.
+
+Пакет собран поверх J135 без изменения миграций1–57; один import-hunk SQLite adapter
+разрешён с сохранением его новых delivery imports. Первый full gate выявил старое ожидание
+schema57 в тесте v56 restore; оно исправлено на `SCHEMA_VERSION`. Независимый review до выпуска
+нашёл две ошибки: разные values могли занять одно физическое место, а восстановление не
+проверяло целостность import manifest/FK. Schema58 теперь уникализирует место без `value_id`,
+restore и idempotent import проверяют сохранённые значения, ссылки и manifest; пустой import
+не закрывает once-only marker. Исправление и corruption tests прошли158 focused tests,
+strict mypy532, Ruff; предыдущие60 независимых focused cases относятся к прежнему freeze.
+Проверены все15 интегрированных paths и четыре ожидаемых integrity/test изменения поверх него;
+лишних J136 изменений поверх J135 контекста нет. 168 native profiles: все32 прежних таблицы,
+requests/reader messages/model inputs exact, четыре v58 таблицы пусты; SQL+1223B,
+gzip+222–263B. Финальный source/config freeze586 files неизменен.
+
+На pinned J116 state-copy исходный schema57 dump20,317,340B SQL/4,133,245B gzip;
+A-only миграция20,318,590B SQL/4,133,583B gzip (+338B), прежние таблицы exact.
+Явный импорт проверен только на временных копиях:323 original values/SHA,267 real typed
+serialization/selection roundtrips,667 сохранённых columns,462 Bill readers и148 memos.
+Дополнительный counterfactual с optional shared analysis body и quiet/selection writes даёт
+4,293,183B gzip (+3.86955%); он не разрешает activation B на свежем state. Наблюдавшийся
+пиковый размер временного каталога49,098,224B, steady SQLite22,528,000B; это не upper bound.
+Прежний J135 reader и финальный J136 восстановили и выгрузили один schema58 A-only dump
+byte-exact: все32 прежние таблицы/2785 строк и четыре пустые новые таблицы сохранены;
+462 Bill views,148 memos, pending batches и cost rankings совпали. Это не разрешает rollback
+после будущих B references. Первую failed попытку полного gate сохранили отдельно как
+не-приёмку. Финальный gate:5940 tests без failures/errors/skips,158 focused,25 local HTTP,
+strict mypy532, Ruff, format520 unchanged, docs-check и `git diff --check` прошли на одном
+freeze586. Никаких paid/provider, Telegram, SSH, production pipeline или state-branch mutations.
+[Acceptance asset](../assets/audits/2026-10-28-legacy-reader-bridge/validation.json) связывает
+hashes source, local QA, historical copy, native parity и predecessor compatibility.
+DA6.5 и DA1.9 остаются частичными: production import/compact writer и естественные hosted
+checkpoint latency пока не включены.

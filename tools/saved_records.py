@@ -38,6 +38,7 @@ CONTEXT_RESULT_TABLES = {
     "document_work": SavedTable(("key",), ("work_json",)),
     "llm_batch_items": SavedTable(("batch_id", "custom_id"), ("meta_json",)),
     "llm_batch_intents": SavedTable(("custom_id",), ("meta_json",)),
+    "content_snapshots": SavedTable(("snapshot_id",), ("payload_json",)),
 }
 BILL_SNAPSHOT_FIELDS = frozenset(
     {"bill_json", "change_json", "input_bill_json", "source_bill_json"}

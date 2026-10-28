@@ -411,7 +411,7 @@ DA6–DA7 не требуют предварительно включать но
 - [ ] DA1.8. **Частично: [J007](2026-10-22-document-architecture-progress.md#j007), [J037](2026-10-22-document-architecture-progress.md#j037), [J038](2026-10-22-document-architecture-progress.md#j038).** Финальный workflow dump пользуется тем же контрактом, всегда включает polling manifest.
   Lock охватывает scheduled/commands/collect/drain и maintenance. Ручная запись не разрешает
   параллельный writer; процедура maintenance явно получает эксклюзивное владение.
-- [ ] DA1.9. **Частично: [J012](2026-10-22-document-architecture-progress.md#j012), [J031](2026-10-22-document-architecture-progress.md#j031), [J036](2026-10-22-document-architecture-progress.md#j036).** Измерить dump/push latency и объём на копии state. Без измерений не объединять
+- [ ] DA1.9. **Частично: [J012](2026-10-22-document-architecture-progress.md#j012), [J031](2026-10-22-document-architecture-progress.md#j031), [J036](2026-10-22-document-architecture-progress.md#j036), [J136](2026-10-22-document-architecture-progress.md#j136) добавил ограниченные checkpoint metrics; естественные hosted замеры ещё нужны.** Измерить dump/push latency и объём на копии state. Без измерений не объединять
   несколько физически начатых отправок в один checkpoint ради производительности.
   При неприемлемых затратах сравнить постоянный runtime; второе delivery-хранилище не вводить по умолчанию.
 - [x] DA1.10. **Принято локально: [J007](2026-10-22-document-architecture-progress.md#j007), [J015](2026-10-22-document-architecture-progress.md#j015), [J029](2026-10-22-document-architecture-progress.md#j029).** Связать commands/inbox с подтверждённым state: сохранять started до исполнения,
@@ -676,7 +676,7 @@ source disappearance. Изменение normalization/digest — отдельн
   получают caller snapshots; legacy unbound input остаётся unknown, force bypass сохраняется.
   Нынешний `_unchanged()` меняет pointer/source_checked_at: в новой истории это отдельное
   подтверждение применимости к наблюдению, а не перезапись immutable оплаченного результата.
-- [ ] DA6.5. **Частично: [J086](2026-10-22-document-architecture-progress.md#j086), read-only exact-value inventory и измерение дублей/объёма; импорт и legacy provenance reader ещё не включены.** Legacy import сохраняет существующие exact данные с `legacy` provenance.
+- [ ] DA6.5. **Частично: [J086](2026-10-22-document-architecture-progress.md#j086), read-only exact-value inventory; [J136](2026-10-22-document-architecture-progress.md#j136), совместимый reader, schema58 и явный once-only import API без production backfill или B producer.** Legacy import сохраняет существующие exact данные с `legacy` provenance.
   Не достраивать отсутствующие raw/PreparedInput из текущего URL. Из старого batch можно
   импортировать проверяемый сохранённый text, отдельно отметив отсутствие исторических байтов.
 - [ ] DA6.6. **Частично: [J073](2026-10-22-document-architecture-progress.md#j073), primary handoff сохраняет отдельные secondary subjects; перенос cache ownership и остальные retention dependencies открыты.** Retention разделяет operational cache, audit/result history и закреплённые blobs.

@@ -18,6 +18,34 @@ recorded physical refs and Git checkpoints; it does not enable a raw archive or 
 The [finite dependency audit](reviews/2026-10-28-retention-dependencies.md) records the decision
 to keep every existing guard through schema 56; it does not declare legacy work exhausted.
 
+Schema v58 is the legacy-reader bridge. Its four legacy tables start empty; migration, restore,
+normal runs and cleanup do not inventory or import existing answers. The explicit finite import
+API records exact canonical whole-record values and their observed locations once. It preserves
+unknown fields, absent/null distinctions and placeholders without assigning provider/input/prompt
+provenance, original timestamps or a paid computation identity. Import time is supplied explicitly;
+container ownership is separate from unknown original computation ownership. Legacy history has
+no automatic retention cutoff and is independent of operational source-row deletion.
+
+The reader also accepts one fixed optional storage representation: an exact `analysis` member
+in `legacy_analysis_bodies`, with the remaining record envelope and a nullable body FK in
+`legacy_result_values`. It reconstructs the original whole canonical value and verifies both SHAs;
+the stored envelope is a representation, not the original raw JSON. No other members or recursive
+contexts are factored out. Present/absent/null/unknown fields survive, and archive materialization
+does not upcast. The import API currently writes inline whole values; body sharing has no producer.
+
+The bridge accepts direct `legacy_result_ref` projections with bounded current metadata overrides
+and explicit removals. The immutable original remains unchanged, including its original usage.
+Missing/corrupt refs, duplicate keys in reference-bearing JSON and answer/origin overrides fail
+closed; ordinary inline JSON keeps its existing reader behavior. Embedded JSON strings and
+content-addressed snapshots are not rewritten. No producer writes this format yet. Activation
+requires the bridge's CI/deploy proof and a measured copy-state gzip increase of at most 5%,
+including actual writer serialization, quiet checks and selection updates. The explicit
+`analysis-editorial-v1` current-schema upcast may add only absent `mnemonic_candidate`,
+`mnemonic_fallback`, `mnemonic_basis` as empty strings and `mnemonic_language` as `ru`. These fixed
+defaults are a current projection, not historical answer facts; present values stay exact. Every
+other answer difference takes the ordinary inline path. Timestamp-only counterfactual
+measurements do not establish the activation budget.
+
 | Data | Default | Rule |
 |---|---:|---|
 | Run reports | 90 | Delete old runs, retaining the latest successful discovery watermark even after a long pause. |

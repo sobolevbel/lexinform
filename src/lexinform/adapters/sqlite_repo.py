@@ -20,6 +20,12 @@ from lexinform.direct_delivery import direct_root_plan
 from lexinform.document_editions import candidate_edition
 from lexinform.json_storage import compact_json, storage_json
 from lexinform.legacy_delivery import legacy_digest_root
+from lexinform.legacy_results import (
+    LEGACY_PROJECTION_COLUMNS,
+    legacy_analysis_body,
+    materialize_legacy_value,
+    read_legacy_json,
+)
 from lexinform.log_context import log_extra
 from lexinform.models import (
     DIGEST_NUMBER,
@@ -59,6 +65,9 @@ from lexinform.models import (
     ExtractionResult,
     IncomingCommand,
     JointRecord,
+    LegacyResultImport,
+    LegacyResultOccurrence,
+    LegacyResultValue,
     LlmBatch,
     LlmBatchItem,
     Mnemonic,
@@ -686,6 +695,38 @@ MIGRATIONS: tuple[str, ...] = (
     );
     CREATE INDEX ix_selection_editions_edition ON selection_editions(edition_id);
     """,
+    """
+    CREATE TABLE legacy_analysis_bodies (
+        body_sha256 TEXT PRIMARY KEY NOT NULL,
+        body_json TEXT NOT NULL
+    );
+    CREATE TABLE legacy_result_values (
+        value_id TEXT PRIMARY KEY NOT NULL,
+        envelope_json TEXT NOT NULL,
+        analysis_body_sha256 TEXT REFERENCES legacy_analysis_bodies(body_sha256)
+    );
+    CREATE TABLE legacy_result_imports (
+        import_id INTEGER PRIMARY KEY CHECK(import_id = 1),
+        manifest_sha256 TEXT NOT NULL,
+        imported_at TEXT NOT NULL,
+        source_sha256 TEXT
+    );
+    CREATE TABLE legacy_result_occurrences (
+        value_id TEXT NOT NULL REFERENCES legacy_result_values(value_id),
+        import_id INTEGER NOT NULL REFERENCES legacy_result_imports(import_id),
+        source_table TEXT NOT NULL,
+        source_key_json TEXT NOT NULL,
+        source_column TEXT NOT NULL,
+        source_path TEXT NOT NULL,
+        container_term INTEGER,
+        container_number TEXT,
+        purpose TEXT,
+        CHECK((container_term IS NULL) = (container_number IS NULL)),
+        PRIMARY KEY(source_table, source_key_json, source_column, source_path)
+    );
+    CREATE INDEX ix_legacy_result_owner
+      ON legacy_result_occurrences(container_term, container_number);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -744,6 +785,105 @@ def _dump_version(script: str) -> int:
 log = logging.getLogger(__name__)
 
 
+def _read_legacy_result(connection: sqlite3.Connection, value_id: str) -> LegacyResultValue | None:
+    row = connection.execute(
+        "SELECT envelope_json, analysis_body_sha256 FROM legacy_result_values WHERE value_id = ?",
+        (value_id,),
+    ).fetchone()
+    if row is None:
+        return None
+    body = None
+    if row[1] is not None:
+        body = connection.execute(
+            "SELECT body_json FROM legacy_analysis_bodies WHERE body_sha256 = ?", (row[1],)
+        ).fetchone()
+    value = materialize_legacy_value(
+        row[0], body_sha256=row[1], body_json=body[0] if body else None
+    )
+    if value.value_id != value_id:
+        raise ValueError("immutable legacy value checksum mismatch")
+    return value
+
+
+def _validate_legacy_import(connection: sqlite3.Connection) -> None:
+    for body_sha, raw in connection.execute(
+        "SELECT body_sha256, body_json FROM legacy_analysis_bodies"
+    ):
+        legacy_analysis_body(raw, body_sha)
+    for table in ("legacy_result_values", "legacy_result_occurrences"):
+        if connection.execute(f"PRAGMA foreign_key_check({table})").fetchone() is not None:
+            raise ValueError("legacy result import has a broken reference")
+    markers = connection.execute(
+        "SELECT manifest_sha256, imported_at, source_sha256 FROM legacy_result_imports"
+    ).fetchall()
+    if len(markers) > 1:
+        raise ValueError("legacy result import has more than one marker")
+    values: list[LegacyResultValue] = []
+    for (value_id,) in connection.execute("SELECT value_id FROM legacy_result_values"):
+        value = _read_legacy_result(connection, value_id)
+        assert value is not None, "the selected legacy result row exists on this connection"
+        values.append(value)
+    occurrences = tuple(
+        LegacyResultOccurrence.model_validate(
+            {
+                "value_id": row[0],
+                "source_table": row[1],
+                "source_key_json": row[2],
+                "source_column": row[3],
+                "source_path": row[4],
+                "container_term": row[5],
+                "container_number": row[6],
+                "purpose": row[7],
+            }
+        )
+        for row in connection.execute(
+            "SELECT value_id, source_table, source_key_json, source_column, source_path,"
+            " container_term, container_number, purpose FROM legacy_result_occurrences"
+        )
+    )
+    if not markers:
+        if (
+            values
+            or occurrences
+            or connection.execute("SELECT 1 FROM legacy_analysis_bodies LIMIT 1").fetchone()
+        ):
+            raise ValueError("legacy result rows require an import marker")
+        return
+    manifest_sha, imported_at, source_sha = markers[0]
+    imported = LegacyResultImport(
+        imported_at=imported_at,
+        source_sha256=source_sha,
+        values=tuple(values),
+        occurrences=occurrences,
+    )
+    if manifest_sha != imported.manifest_sha256:
+        raise ValueError("legacy result import manifest checksum mismatch")
+
+
+def _validate_legacy_projections(connection: sqlite3.Connection) -> None:
+    def read(value_id: str) -> LegacyResultValue | None:
+        return _read_legacy_result(connection, value_id)
+
+    _validate_legacy_import(connection)
+    for table in (
+        "bills",
+        "status_changes",
+        "publications",
+        "analysis_memo",
+        "document_work",
+        "llm_batch_items",
+        "llm_batch_intents",
+    ):
+        columns = {
+            row[1] for row in connection.execute(f"PRAGMA table_info({table})")
+        } & LEGACY_PROJECTION_COLUMNS
+        for column in columns:
+            for (raw,) in connection.execute(
+                f"SELECT {column} FROM {table} WHERE {column} IS NOT NULL"
+            ):
+                read_legacy_json(raw, read)
+
+
 class SqliteBillRepository:
     """`BillRepository` on one sqlite3 connection; JSON columns hold pydantic dumps."""
 
@@ -752,11 +892,23 @@ class SqliteBillRepository:
         if self._path != ":memory:":
             Path(self._path).parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(self._path, isolation_level=None)  # autocommit, see begin()
-        self._conn.row_factory = sqlite3.Row
+        self._conn.row_factory = self._legacy_row
         self._conn.execute("PRAGMA foreign_keys = ON")
         if self._path != ":memory:":
             self._conn.execute("PRAGMA journal_mode = WAL")
         self._in_txn = False
+
+    def _legacy_row(self, cursor: sqlite3.Cursor, row: tuple[object, ...]) -> sqlite3.Row:
+        columns = cursor.description
+        if columns is None:
+            return sqlite3.Row(cursor, row)
+        materialized = tuple(
+            read_legacy_json(value, self.get_legacy_result)
+            if column[0] in LEGACY_PROJECTION_COLUMNS and isinstance(value, str)
+            else value
+            for column, value in zip(columns, row, strict=True)
+        )
+        return sqlite3.Row(cursor, materialized)
 
     @property
     def schema_version(self) -> int:
@@ -819,6 +971,7 @@ class SqliteBillRepository:
             version = _dump_version(script)
             for number, migration in enumerate(MIGRATIONS[version:], start=version + 1):
                 scratch.executescript(f"BEGIN;{migration}PRAGMA user_version = {number};COMMIT;")
+            _validate_legacy_projections(scratch)
         finally:
             scratch.close()
         tables = [
@@ -1054,6 +1207,65 @@ class SqliteBillRepository:
 
     def load_analysis_memo(self) -> dict[str, str]:
         return dict(self._conn.execute("SELECT key, record_json FROM analysis_memo"))
+
+    def get_legacy_result(self, value_id: str) -> LegacyResultValue | None:
+        return _read_legacy_result(self._conn, value_id)
+
+    def import_legacy_results(self, imported: LegacyResultImport) -> bool:
+        imported = LegacyResultImport.model_validate_json(imported.model_dump_json())
+        with self.atomic():
+            _validate_legacy_import(self._conn)
+            previous = self._conn.execute(
+                "SELECT manifest_sha256 FROM legacy_result_imports WHERE import_id = 1"
+            ).fetchone()
+            if previous is not None:
+                if previous[0] != imported.manifest_sha256:
+                    raise ValueError("the finite legacy import already has a different manifest")
+                return False
+            self._conn.execute(
+                "INSERT INTO legacy_result_imports VALUES (1, ?, ?, ?)",
+                (
+                    imported.manifest_sha256,
+                    imported.imported_at.isoformat(),
+                    imported.source_sha256,
+                ),
+            )
+            self._conn.executemany(
+                "INSERT INTO legacy_result_values(value_id, envelope_json) VALUES (?, ?)",
+                [(value.value_id, value.value_json) for value in imported.values],
+            )
+            self._conn.executemany(
+                "INSERT INTO legacy_result_occurrences"
+                " (value_id, import_id, source_table, source_key_json, source_column, source_path,"
+                " container_term, container_number, purpose) VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?)",
+                [
+                    (
+                        item.value_id,
+                        item.source_table,
+                        item.source_key_json,
+                        item.source_column,
+                        item.source_path,
+                        item.container_term,
+                        item.container_number,
+                        item.purpose,
+                    )
+                    for item in imported.occurrences
+                ],
+            )
+            _validate_legacy_import(self._conn)
+        return True
+
+    def list_legacy_result_occurrences(
+        self, term: int, number: str
+    ) -> list[LegacyResultOccurrence]:
+        rows = self._conn.execute(
+            "SELECT value_id, source_table, source_key_json, source_column, source_path,"
+            " container_term, container_number, purpose FROM legacy_result_occurrences"
+            " WHERE container_term = ? AND container_number = ?"
+            " ORDER BY source_table, source_key_json, source_column, source_path, value_id",
+            (term, number),
+        )
+        return [LegacyResultOccurrence.model_validate(dict(row)) for row in rows]
 
     def save_computation_result(self, result: ComputationResult) -> None:
         self._conn.execute(

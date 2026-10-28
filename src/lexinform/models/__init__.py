@@ -259,6 +259,9 @@ from lexinform.models.extractions import (
 from lexinform.models.extractions import (
     SelectionExtractionReference as SelectionExtractionReference,
 )
+from lexinform.models.legacy_results import LegacyResultImport as LegacyResultImport
+from lexinform.models.legacy_results import LegacyResultOccurrence as LegacyResultOccurrence
+from lexinform.models.legacy_results import LegacyResultValue as LegacyResultValue
 from lexinform.models.ministries import (
     MINISTRIES,
     Ministry,
@@ -427,6 +430,9 @@ from lexinform.models.wykaz import (
 )
 
 __all__ = [
+    "LegacyResultImport",
+    "LegacyResultOccurrence",
+    "LegacyResultValue",
     "DocumentCoverage",
     "DocumentFact",
     "DocumentLink",

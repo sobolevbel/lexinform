@@ -40,6 +40,10 @@ HTML содержит снимок v34, включая SQL ограничени�
 | `commands` | `update_id` | Команды Telegram; выполнение (`executed_at`) отделено от ответа (`handled_at`). |
 | `rcl_wykaz_numbers` | `(wykaz_number, project_id)` | Номер wykaz, проект RCL и дата создания; номера wykaz могут использоваться повторно. |
 | `analysis_memo` | `key` | Результат LLM по содержимому, цели и контексту; владелец `(term, number)` и `last_used_at`. |
+| `legacy_analysis_bodies` (v58) | SHA-256 exact canonical `analysis` JSON | Optional общий raw answer member; без upcast и догадок об эквивалентности. |
+| `legacy_result_values` (v58) | SHA-256 canonical whole JSON | Полный legacy record либо envelope + optional body FK; reader восстанавливает exact original value/SHA, stored envelope не является raw JSON оригинала. |
+| `legacy_result_occurrences` (v58) | Unique source table/key/column/path | Immutable связь одного места с value ID; nullable container owner/purpose не обозначают original computation owner. |
+| `legacy_result_imports` (v58) | Единственная строка `import_id=1` | Manifest конечного явного импорта и фактическое время импорта; автоматический backfill выключен. |
 | `computation_results` (v49) | `result_id`; уникальный `(provider, batch_id, custom_id)` | Неизменяемый normalized primary/secondary result либо failure receipt, исходный usage и schema version; без файлов и полных входов. |
 | `result_applications` (v49/v50) | Local `id`; unique primary generation identity или explicit target namespace/ref | Collection decision и projection receipt; target хранится в JSON и индексируется без дополнительных columns. Primary applications используют `apply_analysis`; secondary producers ещё подключаются. Доставку не подтверждает. |
 | `result_applicability` (v51) | `observation_id`; FK на `result_id`, owner index `(term, number)` | Неизменяемая связь известного paid result с наблюдаемой версией source: URL/kind, записанные fingerprints, metadata SHA и первое время записи; без текстов, raw и копии ответа. Primary producer записывает связь атомарно с проекцией через `apply_analysis`; unknown legacy пропускается. |
