@@ -1,0 +1,655 @@
+{
+  "all_59_migrations_exact": true,
+  "baseline": "d7d0ab30e8004d1ea6a6b75e06064e25c74fea5f",
+  "checks": {
+    "ci_fix_focused": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 6
+    },
+    "coverage": true,
+    "focused": [
+      {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 217
+      },
+      {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 16
+      }
+    ],
+    "format": "599 files left unchanged",
+    "full": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 6097
+    },
+    "full_time": {
+      "baseline": "d7d0ab30e8004d1ea6a6b75e06064e25c74fea5f",
+      "coverage": true,
+      "started_monotonic": 260210.173162083,
+      "started_unix": 1793208844.933286,
+      "wall_seconds": 209.75892020799802,
+      "workers": 4
+    },
+    "inherited_ci_fix_unit_cases": 1,
+    "mypy": "Success: no issues found in 545 source files",
+    "new_maintenance_unit_cases": 47,
+    "ruff": "All checks passed!",
+    "workers": 4
+  },
+  "ci_regression": {
+    "controlled_reproduction": {
+      "patch_sha256": "39e5b7d0f3fab9e614db146d509e6e22550cc1f1dd9af3f48334adbe884502bc",
+      "primary_head": "a1664fbd87506a7788747682ef53fda5806dea31",
+      "probes": [
+        {
+          "dirty_sequence": [
+            false,
+            true,
+            false
+          ],
+          "manifest_changed_fields_with_worker": [
+            "working_tree_dirty"
+          ],
+          "pattern": "current",
+          "real_source_drift_detected": true,
+          "worker_git_status": "?? .coverage.worker.12345.token"
+        },
+        {
+          "dirty_sequence": [
+            false,
+            false,
+            false
+          ],
+          "manifest_changed_fields_with_worker": [],
+          "pattern": "fixed",
+          "real_source_drift_detected": true,
+          "worker_git_status": ""
+        }
+      ],
+      "results": [
+        {
+          "errors": 0,
+          "failures": 1,
+          "label": "red",
+          "returncode": 1,
+          "tests": 3
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "label": "green",
+          "returncode": 0,
+          "tests": 3
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "label": "green-cov-xdist",
+          "returncode": 0,
+          "tests": 3
+        }
+      ],
+      "source_files_unchanged": true
+    },
+    "duplicate_local_tests_committed": false,
+    "failure": {
+      "docs": "success",
+      "failed_step": "Test",
+      "failure_location": "tools/measure_delivery_state.py:481",
+      "failure_message": "measured source and fixture files remain unchanged",
+      "failure_node": "tests/scenario/test_delivery_state_measurement.py::test_delivery_measurement_counts_whole_state_and_preserves_unresolved_work[2]",
+      "head": "a1664fbd87506a7788747682ef53fda5806dea31",
+      "job_id": 122974745538,
+      "lint": "success",
+      "raw_logs_saved": false,
+      "run_id": 40733209869,
+      "run_url": "https://github.com/sobolevbel/lexinform/actions/runs/40733209869",
+      "schema_version": 1,
+      "summary": {
+        "failed": 1,
+        "passed": 6048
+      },
+      "test_command": "uv run pytest --cov --cov-report=term-missing",
+      "typecheck": "success",
+      "web": "success"
+    },
+    "guard_unchanged": true,
+    "inherited_fix_commit": "d7d0ab30e8004d1ea6a6b75e06064e25c74fea5f",
+    "limits": "Coverage shard mechanism reproduced deterministically; exact failed CI worker timing was not observed."
+  },
+  "cli_workflow_ports_changed": false,
+  "copy": {
+    "apply": {
+      "applied": true,
+      "baseline_gzip_bytes": 4049075,
+      "baseline_sql_bytes": 19975346,
+      "compact_gzip_bytes": 4170910,
+      "compact_sql_bytes": 20516240,
+      "manifest_sha256": "be4d8c54b260351ccd9da2539dc0c7e99cfbe38a698babe856516c73427d518a"
+    },
+    "apply_max_rss_platform_units": 1082146816,
+    "audit": {
+      "sqlite_connections": 28
+    },
+    "compresslevel": 9,
+    "exclusions": [
+      "Historical pinned state, not a fresh activation snapshot.",
+      "Selection policy label and quiet/reuse metadata are explicit disposable storage fixtures, not source observations.",
+      "No cross-location ref transport, review override expansion, raw retention, CLI/workflow activation or network/paid/pipeline/Telegram execution.",
+      "Directory peak samples include two disposable DBs and their WAL/SHM; sampling is not an upper bound.",
+      "Strict fixed upcast applies only to current projection views; immutable archive values remain exact."
+    ],
+    "fixed_editorial_upcasts": 170,
+    "imported_at": "2026-10-28T17:01:04.970496+00:00",
+    "inputs": {
+      "baseline59.db": "d23be46e783124e690300dccc8b0dcbb33a316954f397c57baeffa57cde0a9ef",
+      "baseline59.json": "5feb4402654563711bc2ab188d5a62f196026c37a01dc3eb61f53abd0a37e323",
+      "baseline59.sql": "eb1adcc675d9b5ed9afa77014ce091deb7470015428f29dec4bd51041cbceda0",
+      "state-input.json": "ab62a32560e4b56d38ca7ca33e33bff7bc7cab511bb76817df7a90d7ea65db58",
+      "state-input.sql": "82cc62062a5e27244cfbc6a0dd4c7094c55adb7bdea8be221b81ec11d0f06633"
+    },
+    "inputs_unchanged": true,
+    "max_gzip_growth_percent_vs_original_baseline": 3.736310144909649,
+    "max_rss_platform_units": 1146945536,
+    "modern_occurrences": 14,
+    "mtime": 0,
+    "normalized_baseline_sha256": "eb1adcc675d9b5ed9afa77014ce091deb7470015428f29dec4bd51041cbceda0",
+    "observed_copy_directory_peak_bytes": 93461088,
+    "occurrences": 411,
+    "phases": {
+      "initial": {
+        "all_prior_rows_and_rankings_match": true,
+        "bill_views": 462,
+        "candidate": {
+          "gzip_bytes": 4170910,
+          "sql_bytes": 20516240,
+          "sql_sha256": "ed3e2f5845a260845a07bc38a0611ad0749fefc7ab90c941d0178e50c1da15fe"
+        },
+        "control": {
+          "gzip_bytes": 4049075,
+          "sql_bytes": 19975346,
+          "sql_sha256": "eb1adcc675d9b5ed9afa77014ce091deb7470015428f29dec4bd51041cbceda0"
+        },
+        "gzip_growth_percent": 3.008958836277431,
+        "history_counts": {
+          "legacy_analysis_bodies": 62,
+          "legacy_result_imports": 1,
+          "legacy_result_occurrences": 411,
+          "legacy_result_values": 323
+        },
+        "prior_tables": 34,
+        "status_change_views": 185
+      },
+      "quiet": {
+        "all_prior_rows_and_rankings_match": true,
+        "bill_views": 462,
+        "candidate": {
+          "gzip_bytes": 4175924,
+          "sql_bytes": 20562293,
+          "sql_sha256": "d0889de0fdfbfc8181f724e49f9463a9ae28d272b4e18caa6d99be197ad4fc64"
+        },
+        "control": {
+          "gzip_bytes": 4051292,
+          "sql_bytes": 20018164,
+          "sql_sha256": "474b6b732e8ef385c3624d828d696aa7d89a3e8a09e941a0141c02e398e34803"
+        },
+        "gzip_growth_percent": 3.076351939085109,
+        "history_counts": {
+          "legacy_analysis_bodies": 62,
+          "legacy_result_imports": 1,
+          "legacy_result_occurrences": 411,
+          "legacy_result_values": 323
+        },
+        "prior_tables": 34,
+        "status_change_views": 185
+      },
+      "repeat_quiet": {
+        "all_prior_rows_and_rankings_match": true,
+        "bill_views": 462,
+        "candidate": {
+          "gzip_bytes": 4200361,
+          "sql_bytes": 20678755,
+          "sql_sha256": "36de95445588346fa6638b0d07cc82913f92bd8bd776c49689a58cf69cf9f2e0"
+        },
+        "control": {
+          "gzip_bytes": 4050040,
+          "sql_bytes": 20025451,
+          "sql_sha256": "35d9c3ff52d9bc34950d0566803f561ad135a60f29fe12012955b2218339453b"
+        },
+        "gzip_growth_percent": 3.7115929719212737,
+        "history_counts": {
+          "legacy_analysis_bodies": 62,
+          "legacy_result_imports": 1,
+          "legacy_result_occurrences": 411,
+          "legacy_result_values": 323
+        },
+        "prior_tables": 34,
+        "status_change_views": 185
+      },
+      "reuse": {
+        "all_prior_rows_and_rankings_match": true,
+        "bill_views": 462,
+        "candidate": {
+          "gzip_bytes": 4200361,
+          "sql_bytes": 20678755,
+          "sql_sha256": "36de95445588346fa6638b0d07cc82913f92bd8bd776c49689a58cf69cf9f2e0"
+        },
+        "control": {
+          "gzip_bytes": 4050040,
+          "sql_bytes": 20025451,
+          "sql_sha256": "35d9c3ff52d9bc34950d0566803f561ad135a60f29fe12012955b2218339453b"
+        },
+        "gzip_growth_percent": 3.7115929719212737,
+        "history_counts": {
+          "legacy_analysis_bodies": 62,
+          "legacy_result_imports": 1,
+          "legacy_result_occurrences": 411,
+          "legacy_result_values": 323
+        },
+        "prior_tables": 34,
+        "status_change_views": 185
+      },
+      "selection": {
+        "all_prior_rows_and_rankings_match": true,
+        "bill_views": 462,
+        "candidate": {
+          "gzip_bytes": 4199244,
+          "sql_bytes": 20667206,
+          "sql_sha256": "fa9928b23541191f07372ba9d81b780df56986c687e9d41ced7cb5cc4d276ab2"
+        },
+        "control": {
+          "gzip_bytes": 4052543,
+          "sql_bytes": 20025393,
+          "sql_sha256": "86772fb5352d258b4adb5b33314f8d06f77688bc3e6493b97d377eec3bf4f77f"
+        },
+        "gzip_growth_percent": 3.6199739274820786,
+        "history_counts": {
+          "legacy_analysis_bodies": 62,
+          "legacy_result_imports": 1,
+          "legacy_result_occurrences": 411,
+          "legacy_result_values": 323
+        },
+        "prior_tables": 34,
+        "status_change_views": 185
+      }
+    },
+    "plan_read_only": true,
+    "python": "3.14.7",
+    "repeat_apply": {
+      "applied": false,
+      "baseline_gzip_bytes": null,
+      "baseline_sql_bytes": null,
+      "compact_gzip_bytes": null,
+      "compact_sql_bytes": null,
+      "manifest_sha256": "be4d8c54b260351ccd9da2539dc0c7e99cfbe38a698babe856516c73427d518a"
+    },
+    "repeat_quiet_dump_identical": true,
+    "replacement_columns": {
+      "analysis_memo.record_json": 105,
+      "bills.act_application_review_json": 1,
+      "bills.analysis_json": 165,
+      "bills.consultation_review_json": 2,
+      "bills.joint_json": 2,
+      "status_changes.amendments_json": 6,
+      "status_changes.supplements_json": 1
+    },
+    "replacements": 282,
+    "replan_noop": {
+      "applied": false,
+      "baseline_gzip_bytes": null,
+      "baseline_sql_bytes": null,
+      "compact_gzip_bytes": null,
+      "compact_sql_bytes": null,
+      "manifest_sha256": "be4d8c54b260351ccd9da2539dc0c7e99cfbe38a698babe856516c73427d518a"
+    },
+    "replan_surveys_no_new_columns": true,
+    "rss_platform": "darwin",
+    "rss_scope": "Observed fresh-process high-water mark, not a bound; includes two disposable copies and QA control checks.",
+    "rss_unit": "bytes",
+    "shared_bodies": 62,
+    "shared_values": 135,
+    "snapshot_sha256": "eb1adcc675d9b5ed9afa77014ce091deb7470015428f29dec4bd51041cbceda0",
+    "source_manifest_sha256": "5da0b278983ecf5df266391c9311f822165da1df9684a1114daac89ac1860578",
+    "sources_unchanged": true,
+    "stage": "complete",
+    "state_commit": "5c3d43b0c5370d250da03221cea0d4a758837398",
+    "steady_sqlite_bytes": {
+      "control.db": 24055808,
+      "qualification.db": 26640384
+    },
+    "surveyed_columns": 667,
+    "typed_analysis_values": 267,
+    "values": 323,
+    "zlib": "1.2.12"
+  },
+  "evidence": {
+    "out/corpus/j140/accept.py": {
+      "bytes": 8737,
+      "sha256": "1745f9460eb7215cbcc5031d80fb081ac668ad2253a4b6570c3d114b79b8af18"
+    },
+    "out/corpus/j140/agent/artifacts.json": {
+      "bytes": 1621,
+      "sha256": "d84727b92615893795619f058ededaf805a43a405b5d2cc4421ac13de4c69668"
+    },
+    "out/corpus/j140/agent/frozen.json": {
+      "bytes": 1175,
+      "sha256": "9f7929b75ddb6d09c028723493025f1f05573559be43cdcc4375c231484c2e86"
+    },
+    "out/corpus/j140/agent/j140.patch": {
+      "bytes": 46190,
+      "sha256": "8639074e0f05eb45cfc59399621a441dfd1dd979ca8ab91150b7d43fc0332849"
+    },
+    "out/corpus/j140/agent/memory.json": {
+      "bytes": 648,
+      "sha256": "faaf99786411140e26861778372b8bc0d72938dec44d0eda8ed64ada1f015635"
+    },
+    "out/corpus/j140/agent/qualification.json": {
+      "bytes": 7345,
+      "sha256": "476213a11fb072d3b41db2d50b4762e8e6dff490b37e3ec876a82e27748acfa9"
+    },
+    "out/corpus/j140/ci-failure.json": {
+      "bytes": 761,
+      "sha256": "8b139334a4c60c46e0bbece4ef4ecb73ca39a33dd2a6d5984a90eb92f0008022"
+    },
+    "out/corpus/j140/ci-fix/coverage-ignore.patch": {
+      "bytes": 3455,
+      "sha256": "39e5b7d0f3fab9e614db146d509e6e22550cc1f1dd9af3f48334adbe884502bc"
+    },
+    "out/corpus/j140/ci-fix/evidence.json": {
+      "bytes": 1127,
+      "sha256": "64b185b5a5bc64a442acb4c67174d8513a8e1667ea6afeadf33287c739ce8176"
+    },
+    "out/corpus/j140/ci-fix/final-focused.xml": {
+      "bytes": 1180,
+      "sha256": "6b3850c3b70fc42c12a40fd0d5503c8ac05796d7bb179b5599325687e448fd97"
+    },
+    "out/corpus/j140/ci-fix/focused.xml": {
+      "bytes": 1509,
+      "sha256": "68dd009bb76ce1eca82ef9044d275e80abb9040821df48b2d64516b1eba92913"
+    },
+    "out/corpus/j140/ci-fix/green-cov-xdist.xml": {
+      "bytes": 628,
+      "sha256": "b11141216b7fb6b375aa536cefdbc11ae8be827bea119449a7c9574c420fd122"
+    },
+    "out/corpus/j140/ci-fix/green.xml": {
+      "bytes": 628,
+      "sha256": "58a1e2ed58c32a42c6877ffba5aeff53ac3714c668962201011a0b260157a0dc"
+    },
+    "out/corpus/j140/ci-fix/red.xml": {
+      "bytes": 2191,
+      "sha256": "ef05b8aae1ff802f06922cc21fd39352c0fcfc384701a4aba122e2a4ac95f036"
+    },
+    "out/corpus/j140/ci-fix/reproduce.py": {
+      "bytes": 5400,
+      "sha256": "5ac3258b11c31b4c4413eb95d8fad8c242d93a196ed264414906beafd300ab9a"
+    },
+    "out/corpus/j140/coverage-fix-release-check-1.json": {
+      "bytes": 1619,
+      "sha256": "9692a8c54fc4e89f45078c2420bc2dd70ecd3bf771557b2ed97d008086cd278a"
+    },
+    "out/corpus/j140/docs.log": {
+      "bytes": 266,
+      "sha256": "a9948685d15104d9ec8bf5fdf8424968615a77d9f9e90f502222377620d577eb"
+    },
+    "out/corpus/j140/focused.xml": {
+      "bytes": 37499,
+      "sha256": "5dedf4bc49bfd0d4fcb66a66c389e6497163346cfc35b551ef34e33698c44372"
+    },
+    "out/corpus/j140/format.log": {
+      "bytes": 25,
+      "sha256": "1e5035f3167e4ad6e513f9633ac720dac6e5b026e24a7982d168cf7490597956"
+    },
+    "out/corpus/j140/frozen-source.json": {
+      "bytes": 65898,
+      "sha256": "0f0104f4684ac085fa16391330936e48db2dbf1c8a12bb9def526a707ab473c3"
+    },
+    "out/corpus/j140/full-time.json": {
+      "bytes": 199,
+      "sha256": "dbb25d79105167202034928406cd5e3495412d907981cd3384aefd9910768515"
+    },
+    "out/corpus/j140/full.xml": {
+      "bytes": 983475,
+      "sha256": "d13b01b1808ebac370fa492bd4bab6bdb2a805540ba897e5f24f1783320ea770"
+    },
+    "out/corpus/j140/history.xml": {
+      "bytes": 2486,
+      "sha256": "f1dfaea01bdc0ef21a54753ba546a45d892d2d80dbc18e7623aab40ec5b0129b"
+    },
+    "out/corpus/j140/memory.json": {
+      "bytes": 648,
+      "sha256": "58df5d85c8c70d7d40ac9d00ca75a346ebf6522c0e6ba31dcdb4adcfa5fa0568"
+    },
+    "out/corpus/j140/memory_probe.py": {
+      "bytes": 1957,
+      "sha256": "b27bfd1a56414f46de50611bb568e042717f8c5d495ec45faa58794900d02921"
+    },
+    "out/corpus/j140/mypy.log": {
+      "bytes": 45,
+      "sha256": "5edd7ac9ade98d1f5a0798acfb83c06641c7afc4510c2b4df4cf91724148b404"
+    },
+    "out/corpus/j140/native/compare_native.py": {
+      "bytes": 4369,
+      "sha256": "b079db52ceae4a5fcf0a98dd4850926b33d409222ffbc66244f9767345867292"
+    },
+    "out/corpus/j140/native/native-parity.json": {
+      "bytes": 59034,
+      "sha256": "df5eac90810ad5fc64ccda0f0adecbdbc709a30c1945b4b95eabe9b0f945747d"
+    },
+    "out/corpus/j140/native/native_guard_j140.py": {
+      "bytes": 2153,
+      "sha256": "d89a66afa47fb26af6d244037221022a1ddb669e6dc91871c485a23db66b431f"
+    },
+    "out/corpus/j140/native/native_profiles.py": {
+      "bytes": 2152,
+      "sha256": "e743e8cf717aad73e1440488a6cb75fe2c723c0ec0ae36ef21274feeb937473f"
+    },
+    "out/corpus/j140/pre-remote-fix-full-time.json": {
+      "bytes": 141,
+      "sha256": "23f9b687139edf213d0e12e5666c3605e04fc35488363cce977d76ad90eea29f"
+    },
+    "out/corpus/j140/pre-remote-fix-full.xml": {
+      "bytes": 983806,
+      "sha256": "bb2c81f59cb97d293224f8d51daf7b19a532031bd941c17d8e2721f38d7b716c"
+    },
+    "out/corpus/j140/primary-acceptance.json": {
+      "bytes": 5825,
+      "sha256": "57b8b1357843e64ad630f7414e3ae98351c0346c2e337fab47334779bdb01a78"
+    },
+    "out/corpus/j140/primary-artifacts.json": {
+      "bytes": 1882,
+      "sha256": "a6f9496a28d2993cb5d642a1ee7f3e1fde649ce574cbddfe752efcddb779fb4c"
+    },
+    "out/corpus/j140/primary-source-freeze.json": {
+      "bytes": 65814,
+      "sha256": "dacafacd52ffb40a74645f95fcd4f291cb5d7fedcefe42f63ce63877661e15f3"
+    },
+    "out/corpus/j140/qualification.json": {
+      "bytes": 7345,
+      "sha256": "a8876b59c8149ae298311296f2632611631abea48ea1c9b5a95f8808a5ebafef"
+    },
+    "out/corpus/j140/qualify.py": {
+      "bytes": 13086,
+      "sha256": "ae3d60255b87d5d5e2e4266af58f8e76f9416b632e2d4a46aa5d66e9c7b9dab4"
+    },
+    "out/corpus/j140/ruff.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "out/corpus/j140/source-manifest.json": {
+      "bytes": 65563,
+      "sha256": "16f7619aeeb920db993349059ae83d26d3072b0be331a4b4e4114ea0b6e70736"
+    }
+  },
+  "fresh_one_copy_memory": {
+    "after_apply_max_rss": 862437376,
+    "after_plan_max_rss": 407814144,
+    "after_restore_max_rss": 279019520,
+    "apply": {
+      "applied": true,
+      "baseline_gzip_bytes": 4049075,
+      "baseline_sql_bytes": 19975346,
+      "compact_gzip_bytes": 4170909,
+      "compact_sql_bytes": 20516240,
+      "manifest_sha256": "be4d8c54b260351ccd9da2539dc0c7e99cfbe38a698babe856516c73427d518a"
+    },
+    "input_sha256": "eb1adcc675d9b5ed9afa77014ce091deb7470015428f29dec4bd51041cbceda0",
+    "input_unchanged": true,
+    "platform": "darwin",
+    "rss_unit": "bytes",
+    "scope": "Observed fresh-process one-copy high-water marks, not upper bounds.",
+    "stage": "complete"
+  },
+  "independent_review": {
+    "actionable_findings": 0,
+    "scope": "Frozen planner/apply contracts, rollback, whitelist, exact archive provenance, parity and memory limits; CI shard diagnosis separately reproduced."
+  },
+  "integrated_baseline_release": {
+    "ci": {
+      "conclusion": "success",
+      "created_at": "2026-10-28T17:27:44Z",
+      "event": "push",
+      "head_sha": "d7d0ab30e8004d1ea6a6b75e06064e25c74fea5f",
+      "id": 40735937209,
+      "jobs": [
+        {
+          "conclusion": "success",
+          "id": 122984367250,
+          "name": "docs",
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "id": 122984367493,
+          "name": "test (3.14)",
+          "status": "completed"
+        },
+        {
+          "conclusion": "success",
+          "id": 122984367751,
+          "name": "web",
+          "status": "completed"
+        }
+      ],
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-28T17:32:07Z"
+    },
+    "deploy": {
+      "conclusion": "success",
+      "created_at": "2026-10-28T17:32:09Z",
+      "event": "workflow_run",
+      "head_sha": "d7d0ab30e8004d1ea6a6b75e06064e25c74fea5f",
+      "id": 40736634167,
+      "jobs": [
+        {
+          "conclusion": "success",
+          "id": 122986836407,
+          "name": "deploy",
+          "status": "completed"
+        }
+      ],
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-28T17:33:08Z"
+    },
+    "observed_main_sha": "d7d0ab30e8004d1ea6a6b75e06064e25c74fea5f",
+    "proof": {
+      "commit_sha": "d7d0ab30e8004d1ea6a6b75e06064e25c74fea5f",
+      "complete": true,
+      "restart45": true,
+      "skip_observed": false,
+      "timer_enabled": true,
+      "transition_from": "97f99a5f9461",
+      "transition_to": "d7d0ab30e800"
+    },
+    "reason": "exact_release_confirmed",
+    "schema_version": 1,
+    "status": "verified",
+    "target_sha": "d7d0ab30e8004d1ea6a6b75e06064e25c74fea5f"
+  },
+  "limits": [
+    "Historical pinned state, not a fresh activation snapshot.",
+    "Selection policy label and quiet/reuse metadata are explicit disposable storage fixtures, not source observations.",
+    "No cross-location ref transport, review override expansion, raw retention, CLI/workflow activation or network/paid/pipeline/Telegram execution.",
+    "Directory peak samples include two disposable DBs and their WAL/SHM; sampling is not an upper bound.",
+    "Strict fixed upcast applies only to current projection views; immutable archive values remain exact.",
+    "Fixture-backed native profiles only; no production processing or provider/Telegram calls.",
+    "Only runs.report_json.phase_seconds may differ; command outcome seconds and all other SQL bytes/model/profile values compare exactly.",
+    "Both exact baseline and candidate suites rerun serially with -n0 under the integrated frozen environment.",
+    "Native/copy qualification preceded the CI ignore/benchmark-unit-only fix; all five implementation hashes remain exact. Final full coverage gate includes canonical d7d0ab30 repair; duplicate local probes stay evidence-only.",
+    "Cross-location transfer, supplement reorder and unsupported review-envelope writes keep the documented inline fallback.",
+    "No current source/backend/raw retention or production import is enabled; later activation needs locked-writer proof and fresh snapshot qualification."
+  ],
+  "native": {
+    "all_38_table_rows_exact_except_recorded_phase_timing": true,
+    "all_lexinform_and_tests_imports_pinned": true,
+    "all_other_sql_bytes_exact": true,
+    "all_profile_values_exact_except_storage_and_phase_timing": true,
+    "all_raw_sql_sha_exact": true,
+    "all_sql_and_gzip_deltas_zero": true,
+    "baseline_head": "14e45dcc3b51ffc87a4cb36a8fee9b356fa8d333",
+    "baseline_outputs_reused": false,
+    "cases": 168,
+    "command_outcome_seconds_compared": true,
+    "groups": {
+      "admission": 64,
+      "explanation": 16,
+      "handoff": 24,
+      "normal": 12,
+      "primary": 36,
+      "reuse": 16
+    },
+    "head": "a1664fbd87506a7788747682ef53fda5806dea31",
+    "network_attempts": 0,
+    "observer_hashes": {
+      "/Users/sobaleu/projects/lexinform/out/corpus/j071/projection_profile.py": "ea04424fccc679b9ad4569ec7c07cc348a73d92c29bb0aa38cb7e517d7e50f0e",
+      "/Users/sobaleu/projects/lexinform/out/corpus/j073/handoff_profile.py": "da7b56044237f17489d0f702a868114232c9e88a2503168ca77f2a37065365ce",
+      "/Users/sobaleu/projects/lexinform/out/corpus/j074/reuse_profile.py": "6a75655ca4b5fd1e4b81e049ba5e7b4a23b7ed3b75656e3584bf9563b05d3962",
+      "/Users/sobaleu/projects/lexinform/out/corpus/j077/explanation_profile.py": "cff55fa57bfe4df9bfe142c92c697e751720b09512c63733052c3e70632cf777",
+      "/Users/sobaleu/projects/lexinform/out/corpus/j078/primary_profile.py": "f11f5516c55b6993a27029c92fde9eb32075666b7c24a969a3dd849e0cad191e",
+      "/Users/sobaleu/projects/lexinform/out/corpus/j090/admission_flows.py": "185e456e5bc01bf5c69efe1e12c6dd15138a5d547f3e5231fbeaad386dac6801",
+      "/Users/sobaleu/projects/lexinform/out/corpus/j140/native/native_guard_j140.py": "d89a66afa47fb26af6d244037221022a1ddb669e6dc91871c485a23db66b431f",
+      "/Users/sobaleu/projects/lexinform/out/corpus/j140/native/native_profiles.py": "e743e8cf717aad73e1440488a6cb75fe2c723c0ec0ae36ef21274feeb937473f"
+    },
+    "observer_sources_exact": true,
+    "paid_calls": 0,
+    "provider_requests_model_inputs_public_payloads_targets_and_ordered_outcomes_exact": true,
+    "schema": 59,
+    "source_freezes_unchanged": true,
+    "tables": 38
+  },
+  "primary_qualification": {
+    "baseline_reuse_refused_reason": "Imported tests/conftest.py and tests/harness.py AST changed after test-performance merge; reran exact pinned baseline suite. Six observer sources remain byte-identical.",
+    "baseline_reused": false,
+    "head": "a1664fbd87506a7788747682ef53fda5806dea31",
+    "owned5_exact": true,
+    "phase_timing_differences": 0,
+    "primary_freeze_sha256": "dacafacd52ffb40a74645f95fcd4f291cb5d7fedcefe42f63ce63877661e15f3",
+    "primary_frozen_files": 600,
+    "production_processing_or_activation": false,
+    "source_and_pins_unchanged": true,
+    "status": "passed"
+  },
+  "production_activation": false,
+  "schema_version": 1,
+  "scope": "Inert finite legacy planner/atomic apply qualified atop the canonical coverage-shard fix",
+  "source_freeze_files": 601,
+  "source_sha256": {
+    ".gitignore": "fbdb9e58c95b3a0da2f05c4d45e1a0e14781c4ae03be3508d63a908ca1b21180",
+    "src/lexinform/adapters/sqlite_repo.py": "e52f4159771bf8834cf14e175ee76e86dbadcb8f4d2ccd5407a6994c6d9fcf7f",
+    "src/lexinform/legacy_maintenance.py": "8fc27831a542671c5841fc8bb6a1733c5cb6a33d3d05c9d124cc93afc7921e0b",
+    "src/lexinform/saved_records.py": "a24d4714d2859e67c809d1bf499e606ffb8793ff873d0f781be3f5020eedfccb",
+    "tests/unit/test_legacy_maintenance.py": "8d3303564414d430223728385e1f35c4747b3445cb50f8fd3e55b1c2a8cb922e",
+    "tests/unit/test_state_checkpoint_benchmark.py": "98182306f641564a023c3506cc814e6099679aa39125568e2ed014d3bb1b193f",
+    "tools/saved_records.py": "be646808791a6422518b7e10270b18bf36f011a354da1af5b625cbbb0d24769e"
+  },
+  "stage": "J140"
+}

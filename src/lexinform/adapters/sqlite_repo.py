@@ -5,6 +5,8 @@ Schema is versioned with PRAGMA user_version; `migrate()` applies missing steps 
 a git branch with readable diffs.
 """
 
+import gzip
+import hashlib
 import json
 import logging
 import sqlite3
@@ -20,6 +22,12 @@ from lexinform.direct_delivery import direct_root_plan
 from lexinform.document_editions import candidate_edition
 from lexinform.json_storage import compact_json, storage_json
 from lexinform.legacy_delivery import legacy_digest_root
+from lexinform.legacy_maintenance import (
+    LegacyMaintenancePlan,
+    LegacyMaintenanceResult,
+    LegacySnapshotColumn,
+    plan_legacy_maintenance,
+)
 from lexinform.legacy_results import (
     LEGACY_PROJECTION_COLUMNS,
     legacy_analysis_body,
@@ -104,6 +112,8 @@ from lexinform.models import (
     valid_mnemonic,
 )
 from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
+from lexinform.models.legacy_results import canonical_legacy_json, legacy_json
+from lexinform.saved_records import CONTEXT_RESULT_TABLES
 from lexinform.sitting_delivery import sitting_root_plan
 from lexinform.telegram_text import MESSAGE_LIMIT, split_html, utf16_length
 
@@ -1269,6 +1279,179 @@ class SqliteBillRepository:
 
     def get_legacy_result(self, value_id: str) -> LegacyResultValue | None:
         return _read_legacy_result(self._conn, value_id)
+
+    def _legacy_snapshot_columns(self) -> tuple[LegacySnapshotColumn, ...]:
+        result: list[LegacySnapshotColumn] = []
+        cursor = self._conn.cursor()
+        cursor.row_factory = sqlite3.Row
+        try:
+            for table, shape in CONTEXT_RESULT_TABLES.items():
+                columns = {row[1] for row in cursor.execute(f"PRAGMA table_info({table})")}
+                owners = ("term", "number") if {"term", "number"} <= columns else ()
+                selected = tuple(dict.fromkeys((*shape.keys, *shape.columns, *owners)))
+                for row in cursor.execute(
+                    f"SELECT {', '.join(selected)} FROM {table} ORDER BY {', '.join(shape.keys)}"
+                ):
+                    key = [row[part] for part in shape.keys]
+                    if any(
+                        not isinstance(part, (str, int)) or isinstance(part, bool) for part in key
+                    ):
+                        raise ValueError("a legacy snapshot requires exact string/integer keys")
+                    term = row["term"] if owners else None
+                    number = row["number"] if owners else None
+                    known_owner = isinstance(term, int) and isinstance(number, str)
+                    for column in shape.columns:
+                        raw = row[column]
+                        if raw is None:
+                            continue
+                        if not isinstance(raw, str):
+                            raise ValueError("a saved legacy column requires JSON text")
+                        result.append(
+                            LegacySnapshotColumn(
+                                table,
+                                canonical_legacy_json(key),
+                                column,
+                                raw,
+                                term if known_owner else None,
+                                number if known_owner else None,
+                            )
+                        )
+        finally:
+            cursor.close()
+        return tuple(result)
+
+    def _legacy_maintenance_views(self) -> tuple[str, str]:
+        def digest(query: str, decode: Callable[[sqlite3.Row], Bill | StatusChange]) -> str:
+            fingerprint = hashlib.sha256()
+            for row in self._conn.execute(query):
+                raw = decode(row).model_dump_json().encode()
+                fingerprint.update(len(raw).to_bytes(8, "big"))
+                fingerprint.update(raw)
+            return fingerprint.hexdigest()
+
+        return (
+            digest("SELECT * FROM bills ORDER BY term, number", self._row_to_bill),
+            digest("SELECT * FROM status_changes ORDER BY id", self._row_to_status_change),
+        )
+
+    def plan_legacy_maintenance(
+        self, *, imported_at: datetime, share_analysis_bodies: bool = True
+    ) -> LegacyMaintenancePlan:
+        with self.atomic():
+            _validate_legacy_import(self._conn)
+            snapshot_sha = hashlib.sha256(self.dump().encode()).hexdigest()
+            marker = self._conn.execute(
+                "SELECT manifest_sha256 FROM legacy_result_imports WHERE import_id = 1"
+            ).fetchone()
+            if marker is not None:
+                _validate_legacy_projections(self._conn)
+                return LegacyMaintenancePlan(
+                    snapshot_sha,
+                    imported_at,
+                    share_analysis_bodies,
+                    existing_manifest_sha256=marker[0],
+                )
+            return plan_legacy_maintenance(
+                self._legacy_snapshot_columns(),
+                snapshot_sha256=snapshot_sha,
+                imported_at=imported_at,
+                share_analysis_bodies=share_analysis_bodies,
+            )
+
+    def apply_legacy_maintenance(self, plan: LegacyMaintenancePlan) -> LegacyMaintenanceResult:
+        with self.atomic():
+            _validate_legacy_import(self._conn)
+            marker = self._conn.execute(
+                "SELECT manifest_sha256 FROM legacy_result_imports WHERE import_id = 1"
+            ).fetchone()
+            if marker is not None:
+                _validate_legacy_projections(self._conn)
+                expected_manifest = (
+                    LegacyResultImport.model_validate_json(
+                        plan.imported.model_dump_json()
+                    ).manifest_sha256
+                    if plan.imported is not None
+                    else plan.existing_manifest_sha256
+                )
+                if expected_manifest != marker[0]:
+                    raise ValueError("the finite legacy import already has a different manifest")
+                return LegacyMaintenanceResult(False, marker[0])
+            baseline = self.dump().encode()
+            snapshot_sha = hashlib.sha256(baseline).hexdigest()
+            if snapshot_sha != plan.snapshot_sha256:
+                raise ValueError("the legacy maintenance raw snapshot changed")
+            columns = self._legacy_snapshot_columns()
+            expected = plan_legacy_maintenance(
+                columns,
+                snapshot_sha256=snapshot_sha,
+                imported_at=plan.imported_at,
+                share_analysis_bodies=plan.share_analysis_bodies,
+            )
+            if plan != expected:
+                raise ValueError("the legacy maintenance plan does not match its exact snapshot")
+            if plan.imported is None:
+                return LegacyMaintenanceResult(False, None)
+            views = self._legacy_maintenance_views()
+            self.import_legacy_results(plan.imported)
+            for shared in plan.shared:
+                self._conn.execute(
+                    "INSERT OR IGNORE INTO legacy_analysis_bodies VALUES (?, ?)",
+                    (shared.body_sha256, shared.body_json),
+                )
+                self._conn.execute(
+                    "UPDATE legacy_result_values SET envelope_json = ?, analysis_body_sha256 = ?"
+                    " WHERE value_id = ?",
+                    (shared.envelope_json, shared.body_sha256, shared.value_id),
+                )
+            for replacement in plan.replacements:
+                original = replacement.original
+                shape = CONTEXT_RESULT_TABLES[original.table]
+                key = legacy_json(original.key_json)
+                assert isinstance(key, list), "the recomputed plan validates physical key arrays"
+                predicate = " AND ".join(f"{part} = ?" for part in shape.keys)
+                changed = self._conn.execute(
+                    f"UPDATE {original.table} SET {original.column} = ? WHERE {predicate}"
+                    f" AND {original.column} = ?",
+                    (replacement.replacement_json, *key, original.raw_json),
+                ).rowcount
+                if changed != 1:
+                    raise ValueError("a legacy projection physical value changed")
+            _validate_legacy_projections(self._conn)
+            if any(
+                self.get_legacy_result(value.value_id) != value for value in plan.imported.values
+            ):
+                raise ValueError("legacy maintenance changed an immutable whole value")
+            if self._conn.execute("PRAGMA foreign_key_check").fetchone() is not None:
+                raise ValueError("legacy maintenance requires valid foreign keys")
+            for original, current in zip(columns, self._legacy_snapshot_columns(), strict=True):
+                hydrated = read_legacy_json(current.raw_json, self.get_legacy_result)
+                if canonical_legacy_json(legacy_json(hydrated)) != canonical_legacy_json(
+                    legacy_json(original.raw_json)
+                ):
+                    raise ValueError("legacy maintenance changed a saved JSON view")
+            if self._legacy_maintenance_views() != views:
+                raise ValueError("legacy maintenance changed a typed reader view")
+            compact = self.dump()
+            restored = SqliteBillRepository(":memory:")
+            try:
+                restored.restore(compact)
+                if restored.dump() != compact or restored._legacy_maintenance_views() != views:
+                    raise ValueError("legacy maintenance failed exact dump/restore parity")
+            finally:
+                restored.close()
+            baseline_gzip = len(gzip.compress(baseline, compresslevel=9, mtime=0))
+            compact_bytes = compact.encode()
+            compact_gzip = len(gzip.compress(compact_bytes, compresslevel=9, mtime=0))
+            if compact_gzip * 100 > baseline_gzip * 105:
+                raise ValueError("legacy maintenance exceeds the 105% gzip budget")
+            return LegacyMaintenanceResult(
+                True,
+                plan.imported.manifest_sha256,
+                len(baseline),
+                baseline_gzip,
+                len(compact_bytes),
+                compact_gzip,
+            )
 
     def import_legacy_results(self, imported: LegacyResultImport) -> bool:
         imported = LegacyResultImport.model_validate_json(imported.model_dump_json())

@@ -6819,7 +6819,7 @@ fresh-state phases с coverage/exclusions. План остаётся74tasks/26do
 <a id="j139"></a>
 ### J139. Move payload matrices to focused Poster contracts
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**. Baseline `97f99a5f9461702d27f7cbca8cc4851b6ff2a3fb`.
+Статус: **выпущен и проверен в составе d7d0ab30**. Baseline `97f99a5f9461702d27f7cbca8cc4851b6ff2a3fb`.
 Три expensive payload/policy/attempt/mode matrices сохраняют все69 сочетаний в прямых
 контрактах публичного `Poster`: реальная in-memory SQLite, FixedClock, FakePublisher,
 checkpoint dump и независимый restore перед publisher callback. В сценарном слое остаются
@@ -6861,3 +6861,82 @@ archive исключён текущим профилем, SQL-only replay не �
 [Acceptance asset](../assets/audits/2026-10-28-delivery-test-contracts/validation.json) связывает
 source/test hashes, before/after/mutation XML, independent coverage review, свежий copy benchmark
 и scan closure audit. План:74tasks/28done/6explicitN/A/40applicable partial-open.
+Отдельный ed99339a superseded параллельным merge a1664fbd до подтверждения deploy. CI общей
+версии40733209869 обнаружил coverage-shard/Git-dirty race; его исправление и интегрированный
+gate записаны в J140. Историческая локальная приёмка J139 не является deploy proof.
+Integrated release d7d0ab30 подтверждён отдельно: CI40735937209 и deploy40736634167 green,
+фактический relay transition97f99a5f9461→d7d0ab30e800, health после45s и timer enabled.
+[Filtered proof](../assets/audits/2026-10-28-delivery-test-contracts/release-integrated.json)
+подтверждает составной релиз, не отдельный superseded ed99339a.
+
+<a id="j140"></a>
+### J140. Plan and atomically apply a finite legacy import
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**.
+Baseline `d7d0ab30e8004d1ea6a6b75e06064e25c74fea5f` включает J139, параллельную оптимизацию
+тестового окружения и coverage fix. Патч подготовлен отдельно на `97f99a5f`, перенесён без изменения пяти
+owned source/test/tool файлов. Первый full на ed99339a остановлен после появления новой
+общей базы; его частичный результат не считается приёмкой.
+
+Чистый planner связывает конечный inventory с SHA полного raw dump, включая WAL-visible
+состояние и schema version. Repository apply заново строит план и проверяет physical originals;
+одна outer transaction включает import, sharing повторяющихся exact analysis bodies, строго
+ограниченные direct replacements, archive/FK/reader checks, dump/restore parity и gzip budget.
+При расхождении или росте свыше5% откатывается весь этап. Existing marker проверяется без
+нового answer inventory; пустая выборка marker не расходует. Общий finite saved-record catalogue
+и walker перенесены из tools в pure module; SQL-reader facade tools сохраняет совместимость.
+
+Сокращение допускается только для whole analysis/joint/review records, record в ready envelope,
+amendments, отдельных supplement records и whole memo records. Work/delivery/request envelopes,
+encoded evidence и content-addressed snapshots остаются observation-only. Original canonical
+values, unknown/absent/null fields и provenance сохраняются; original ownership не выводится
+из container owner. Modern computation records пропускаются. Схема и59 миграций не меняются.
+
+Изолированный replay pinned schema59 copy:667 columns,323 exact values/411 occurrences,
+14 modern occurrences skipped,282 compacted columns,62 shared bodies для135 whole-value
+variants. Baseline SQL19,975,346/gzip4,049,075B; initial compact SQL20,516,240/gzip4,170,910B.
+После actual typed quiet/selection/reuse/memo writes максимум gzip4,200,361B (+3.73631%);
+повтор quiet writes byte-exact, archive counts323/411/1/62 неизменны. All34 prior-table logical
+views,462 Bills,185 changes и полный cost ranking совпадают с control. Проверены267 typed
+roundtrips,170 с уже принятой fixed editorial upcast; архив не upcast'ится.
+
+Проверка памяти в свежем one-copy процессе macOS: observed peak RSS863,387,648B; это не bound.
+Typed views проверяются потоковыми framed digests, но inventory/dumps/restore copies остаются
+в памяти. Этот maintenance рассчитан на canonical Actions writer; relay host не квалифицирован.
+Natural ready/commission-review rows отсутствуют в snapshot; их структуру проверяют focused
+fixtures. Source/pins изолированного replay неизменны. Independent review: actionable findings нет.
+
+Нового CLI, port, pipeline/workflow entrypoint, automatic import/backfill или production activation
+нет. DA6.5 остаётся partial: locked writer operation, exact deployed-writer proof и свежая
+snapshot-specific qualification quiet/selection/transfer ещё нужны. Cross-location transfers,
+supplement reorder и неподдерживаемые review-envelope updates сохраняют inline fallback;
+новой политики retention или raw/backend storage этот этап не выбирает.
+
+Integrated acceptance заново прогнал baseline и candidate всех168 native cases на общей
+frozen среде: прежний baseline не переиспользован после изменения harness/conftest. Все38 таблиц,
+SQL SHA/bytes/gzip, provider requests, model inputs, publication payloads и command outcomes
+совпали; даже разрешённых phase-timing differences нет. Primary copy replay повторил все
+storage/view результаты. Свежий one-copy RSS862,437,376B; two-copy sampled SQLite/WAL/SHM
+peak93,461,088B. Оба значения observed, без обещания верхней границы.
+
+CI a1664fbd упал только на source-manifest equality при xdist+coverage: `.coverage.*` shards
+не были ignored и меняли `working_tree_dirty`, хотя source/fixture hashes не менялись.
+Изолированный real-Git probe воспроизвёл false→true→false; одна ignore pattern исправляет
+это на false→false→false. Manifest guard не ослаблен. Три isolated regression probes: ignored shard
+create/update/delete и обнаружение реальных source/fixture edits. Red1fail/2pass, green3pass,
+green с coverage+xdist2 также3pass; initial integrated benchmark module8pass.
+Перед push найден готовый parallel d7d0ab30 с тем же ignore fix и своим Git regression test.
+Он принят целиком; три локальные probes оставлены evidence-only, duplicate tests не добавлены.
+
+Финальный full поверх canonical d7d0ab30 с coverage options CI:6097 tests,0fail/error/skip,
+coverage92%, wall209.759s/4 workers. Предшествующие qualified runs:6099tests/305.683s с тремя
+локальными probes вместо одного parallel regression и6096tests/199.017s без coverage.
+Это разные составы/режимы на общем host, не controlled speed comparison. Focused233 legacy+6benchmark,
+strict mypy545, Ruff всего src/tests/tools, format599 unchanged, docs-check и diff check прошли.
+601 source/config hashes frozen; новых scenario cases нет, добавлены47 maintenance unit cases.
+Canonical coverage regression унаследован из d7d0ab30;59 migrations неизменны.
+
+[Acceptance asset](../assets/audits/2026-10-28-legacy-maintenance/validation.json) связывает
+patch/source freezes, полные/целевые XML, baseline/candidate native и copy-state evidence,
+memory probe, independent review и controlled CI regression. План остаётся
+74tasks/28done/6explicitN/A/40applicable partial-open; inert import не выдаётся за activation.

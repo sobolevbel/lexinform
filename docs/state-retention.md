@@ -31,7 +31,8 @@ in `legacy_analysis_bodies`, with the remaining record envelope and a nullable b
 `legacy_result_values`. It reconstructs the original whole canonical value and verifies both SHAs;
 the stored envelope is a representation, not the original raw JSON. No other members or recursive
 contexts are factored out. Present/absent/null/unknown fields survive, and archive materialization
-does not upcast. The import API currently writes inline whole values; body sharing has no producer.
+does not upcast. The import API writes inline whole values; the explicit maintenance API can
+share only repeated exact analysis bodies within that same finite import.
 
 The bridge accepts direct `legacy_result_ref` projections with bounded current metadata overrides
 and explicit removals. The immutable original remains unchanged, including its original usage.
@@ -46,6 +47,16 @@ including actual writer serialization, quiet checks and selection updates. The e
 defaults are a current projection, not historical answer facts; present values stay exact. Every
 other answer difference takes the ordinary inline path. Timestamp-only counterfactual
 measurements do not establish the activation budget.
+
+The inert maintenance planner binds its finite inventory and approved direct replacements to
+the exact WAL-visible raw dump SHA. Apply recomputes the plan and checks physical originals in
+one transaction, validates immutable values and hydrated readers, then verifies dump/restore
+parity and the 5% gzip budget. Any refusal rolls everything back. Existing import markers permit
+only a validated no-op; empty inventories leave the marker absent. Encoded snapshots and work,
+delivery and request envelopes are inventoried without rewrites. No CLI, pipeline or workflow
+activates this API. The canonical locked job and fresh writer/size qualification remain the
+activation boundary; the copy probe is not sized for the relay host. See
+[J140](plans/2026-10-22-document-architecture-progress.md#j140).
 
 Ordinary analysis, ready-analysis, joint, review and status-answer saves preserve a valid existing
 physical reference at its saved structural path. Quiet checks and supported selection metadata
