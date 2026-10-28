@@ -176,3 +176,17 @@ run383 был delivery drain: `document_reads=null`, без model calls/errors. 
 пустая editorial history не подменяется реконструкцией. В saved reports измерен только один
 прежний pipeline run; unmeasured history не считается нулём. Архив/retention/backend решение
 не меняется. [Evidence](../assets/audits/2026-10-28-natural-schema-55/validation.json).
+
+
+## Применимость задач DA2 · J123, 28 октября
+
+Текущий профиль выше оставляет пять целых задач неприменимыми: DA2.2 blob store, DA2.6
+протокол двух stores, DA2.7 выбор backend, DA2.8 archive modes и DA2.9 blob manifests/backup/GC.
+Это явные conditional exclusions, без заявления о реализации и без нового решения о backend.
+Если профиль будет расширен, эти задачи открываются перед соответствующим producer.
+
+В DA2.4 условна запись raw bodies; attempt/error metadata остаётся применимым. DA2.1/DA2.3/
+DA2.5 — измерения и совместимые source/artifact/evidence metadata — продолжаются. Сохранность
+SQL, frozen pending inputs, результаты и зависимости retention остаются в DA5/DA6/DA8/DA10.
+Исключение blob store не разрешает удалять защищённые payload либо выдавать URL/SHA за архив.
+Дальнейшие изменения состояния по-прежнему требуют измерения dump/history growth.

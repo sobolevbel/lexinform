@@ -6036,3 +6036,20 @@ Full gate: **5185 passed**, failures/errors/skips0, **619.643 s**.
 exact. Повторные **43 focused**, strict mypy **490**, Ruff/format green.
 [Acceptance asset](../assets/audits/2026-10-28-work-ages/validation.json) сохраняет tested/final
 source hashes и AST proof, CLI/natural report parity, snapshot SHA и coverage limitations.
+
+
+<a id="j123"></a>
+### J123. Explicit exclusions for the deferred raw-storage profile
+
+Статус: **готово**, documentation-only follow-up к J122.
+По уже принятому пользовательскому ограничению пять blob-store задач DA2.2/2.6/2.7/2.8/2.9
+явно помечены неприменимыми при текущем профиле. Raw часть DA2.4 условна; metadata/error
+contract остаётся открытым. Не вводятся store/GC/modes и не принимается решение filesystem/S3.
+SQL restore, frozen pending inputs, result/history и retention dependencies по-прежнему
+обязательны в остальных applicable задачах. Это exclusions, не выполненная реализация.
+
+Master checklist: **74 задачи / 19 отмечены выполненными / 6 неприменимы / 49 применимых
+остаются открытыми либо частичными**. Шестая неприменимая задача — DA8.3, перенос через
+отвергнутый общий scheduler. Новых implementation completion marks нет. Human labels,
+непринятый paid A/B и natural production coverage не подменяются conditional exclusions.
+Runtime/tests/tools/config не менялись; strict docs/link/build и diff gate обязательны.

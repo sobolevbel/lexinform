@@ -448,7 +448,7 @@ DA2.1 и описание текущего профиля обязательны
   многократные checkpoint и временный dual write, согласно §1.4.
   Зафиксировать текущий состав/retention и результаты измерения. Расширение профиля, его бюджет
   и raw backend выбираются отдельно; отсутствие этого решения не блокирует совместимые изменения.
-- [ ] DA2.2. Реализовать content-addressed store для bounded bytes: проверка SHA/размера,
+- [ ] DA2.2. **Неприменимо при текущем профиле: пользователь отложил расширение хранения; blob store не реализуется. См. [J123](2026-10-22-document-architecture-progress.md#j123).** Реализовать content-addressed store для bounded bytes: проверка SHA/размера,
   запись временного файла, atomic rename и необходимая синхронизация диска, идемпотентный put,
   проверяемый get. Пользовательский filename не участвует в пути; ZIP traversal невозможен.
 - [ ] DA2.3. **Частично: [J095](2026-10-22-document-architecture-progress.md#j095), reader-first source observations и deduplicated selection metadata в schema 52; [J096](2026-10-22-document-architecture-progress.md#j096), prefilter producer; [J099](2026-10-22-document-architecture-progress.md#j099), reader artifacts/SQL part refs; [J100](2026-10-22-document-architecture-progress.md#j100), capture complete-body metadata в shared loader/prefilter/pipeline. Standalone/прочие source producers остаются.** Ввести SQL-метаданные `artifacts`, `source_observations` и явные связи с делами/
@@ -456,24 +456,24 @@ DA2.1 и описание текущего профиля обязательны
   Поля, по которым нужны uniqueness/ownership/GC, доступны SQL, а не спрятаны только в JSON.
   Неизменившееся содержимое наблюдений хранится один раз; отметка повторной проверки
   не требует очередной копии полного каталога/извлечения в dump.
-- [ ] DA2.4. Для материалов, включённых в принятую политику, сохранять bounded response до
+- [ ] DA2.4. **Условная raw-часть неприменима при текущем профиле; совместимый attempt/error metadata contract остаётся применимым и открытым. См. [J123](2026-10-22-document-architecture-progress.md#j123).** Для материалов, включённых в принятую политику, сохранять bounded response до
   extraction; судьбу повреждённых/unsupported файлов определить отдельным сроком/лимитом.
   Для оборванного по лимиту скачивания хранить попытку и причину, а не SHA якобы полного файла.
   HTTP-200 rejection HTML остаётся outage источника, не успешным нормативным документом.
 - [ ] DA2.5. **Частично: [J095](2026-10-22-document-architecture-progress.md#j095), адресуемые официальные document relations в новом reader; [J096](2026-10-22-document-architecture-progress.md#j096), prefilter запись на calling thread; остальные consumers открыты.** Сохранять использованные официальные metadata/catalog snapshots или достаточное
   адресуемое evidence их связи; не скачивать весь сайт. Не сохранять credentials/cookies/secrets.
   Писать durable метаданные и архив в согласованном порядке на calling thread.
-- [ ] DA2.6. Протокол двух хранилищ: сначала объект проверен и устойчиво доступен, потом SQL ref,
+- [ ] DA2.6. **Неприменимо: в текущем профиле нет второго постоянного blob store; протокол SQL+blob условен. См. [J123](2026-10-22-document-architecture-progress.md#j123).** Протокол двух хранилищ: сначала объект проверен и устойчиво доступен, потом SQL ref,
   потом checkpoint. Orphan после неуспешного SQL допустим и убирается GC; ссылка на ещё не
   сохранённый объект недопустима. Ошибка archive write не маскируется как обычное отсутствие текста.
-- [ ] DA2.7. Для production сравнить durable filesystem и объектный backend по измерениям.
+- [ ] DA2.7. **Неприменимо сейчас: выбор backend отложен пользователем; решение не запрашивается повторно. См. [J123](2026-10-22-document-architecture-progress.md#j123).** Для production сравнить durable filesystem и объектный backend по измерениям.
   Этот выбор нужен только если профиль предусматривает blob store. Временный кэш runner
   не называется постоянным архивом. Согласовать backend, доступ, backup, лимиты и ответственность;
   до этого production archive mode выключен.
-- [ ] DA2.8. Добавить archive mode: off / record без влияния на выбор / read-from-archive.
+- [ ] DA2.8. **Неприменимо при текущем профиле без raw archive; новые archive flags не вводятся. См. [J123](2026-10-22-document-architecture-progress.md#j123).** Добавить archive mode: off / record без влияния на выбор / read-from-archive.
   Record получает те же байты текущего чтения и не делает дополнительные HTTP/LLM-запросы.
   Ошибки/счётчики и пригодность конкретного snapshot для воспроизведения видны отдельно.
-- [ ] DA2.9. Проверить export/import manifest архива вместе с dump. Для restore сверить все refs
+- [ ] DA2.9. **Неприменимо как blob manifest/backup/GC: такого store и raw retention obligations сейчас нет. SQL restore и retained pending inputs остаются обязательными в DA5/DA6/DA8/DA10. См. [J123](2026-10-22-document-architecture-progress.md#j123).** Проверить export/import manifest архива вместе с dump. Для restore сверить все refs
   и hashes ожидаемых сохранённых объектов до запуска обработки. Pending/unknown work закрепляет
   необходимые для завершения входы. Reader history закрепляет результаты/содержание, а сроки
   удержания исходных raw задаёт профиль; публикация не удерживает все оригиналы бессрочно.
