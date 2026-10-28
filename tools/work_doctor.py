@@ -5,7 +5,7 @@ import json
 import sqlite3
 from collections import Counter
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +14,74 @@ from tools.corpus_artifacts import write_json
 from tools.sqlite_snapshot import open_snapshot
 
 _REQUIRED = {"bills", "document_work", "status_changes", "publications", "analysis_memo"}
+
+
+def work_ages(
+    owners: list[dict[str, Any]], observed_at: datetime, *, complete: bool
+) -> dict[str, Any]:
+    """Age saved nonterminal owners from their recorded work timestamp, never a source date."""
+    if observed_at.utcoffset() is None:
+        raise ValueError("Observed time must include a timezone")
+    groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    excluded: Counter[str] = Counter()
+    for owner in owners:
+        kind, state = owner["kind"], owner["state"]
+        nonterminal = (kind, state) in (
+            ("document", "waiting"),
+            ("review", "context"),
+            ("review", "snapshot"),
+        )
+        if nonterminal:
+            groups.setdefault((kind, state), []).append(owner)
+        else:
+            excluded[f"{kind}/{state}"] += 1
+    records: list[dict[str, Any]] = []
+    for (kind, state), items in sorted(groups.items()):
+        field_name = "created_at" if kind == "document" else "since"
+        ages: list[tuple[int, str]] = []
+        unknown: Counter[str] = Counter()
+        for owner in items:
+            raw = owner.get(field_name)
+            if not isinstance(raw, str) or not raw:
+                unknown["missing_timestamp"] += 1
+                continue
+            try:
+                started = datetime.fromisoformat(raw)
+            except ValueError:
+                unknown["invalid_timestamp"] += 1
+                continue
+            if started.utcoffset() is None:
+                unknown["timezone_unknown"] += 1
+                continue
+            elapsed = (observed_at - started).total_seconds()
+            if elapsed < 0:
+                unknown["timestamp_after_observation"] += 1
+                continue
+            ages.append((int(elapsed), owner["ref"]))
+        oldest = max(ages, key=lambda item: item[0]) if ages else None
+        records.append(
+            {
+                "kind": kind,
+                "state": state,
+                "count": len(items),
+                "timestamp_field": field_name,
+                "known_ages": len(ages),
+                "unknown_ages": dict(sorted(unknown.items())),
+                "oldest_seconds": oldest[0] if oldest is not None else None,
+                "oldest_ref": oldest[1] if oldest is not None else None,
+            }
+        )
+    return {
+        "observed_at": observed_at.astimezone(UTC).isoformat(),
+        "coverage": "recorded" if complete else "partial",
+        "nonterminal_owners": sum(row["count"] for row in records),
+        "groups": records,
+        "excluded_terminal_owners": dict(sorted(excluded.items())),
+        "scope": (
+            "Saved work age in whole seconds; runnable state, enabled flags "
+            "and source/delivery latency are not evaluated."
+        ),
+    }
 
 
 @dataclass
@@ -173,7 +241,9 @@ class WorkAudit:
         )
 
 
-def audit(database: Path) -> dict[str, Any]:
+def audit(database: Path, *, observed_at: datetime | None = None) -> dict[str, Any]:
+    if observed_at is not None and observed_at.utcoffset() is None:
+        raise ValueError("Observed time must include a timezone")
     result = WorkAudit()
     with open_snapshot(database) as snapshot:
         connection = snapshot.connection
@@ -199,7 +269,7 @@ def audit(database: Path) -> dict[str, Any]:
         if missing or not observed
         else "recorded"
     )
-    return {
+    report: dict[str, Any] = {
         "version": 1,
         "status": status,
         "database_sha256": snapshot.sha256,
@@ -216,12 +286,17 @@ def audit(database: Path) -> dict[str, Any]:
             "Publication linkage does not establish the configured channel or edit eligibility.",
         ],
     }
+    if observed_at is not None:
+        report["work_ages"] = work_ages(
+            result.owners, observed_at, complete=not missing and not result.counts["errors"]
+        )
+    return report
 
 
-def run(database: Path, output: Path) -> int:
+def run(database: Path, output: Path, *, observed_at: datetime | None = None) -> int:
     if output.resolve() == database.resolve():
         raise ValueError("Report must be separate from the input database")
-    report = audit(database)
+    report = audit(database, observed_at=observed_at)
     output.parent.mkdir(parents=True, exist_ok=True)
     write_json(output, report)
     return 1 if report["status"] == "failed" else 2 if report["status"] == "not_run" else 0
@@ -231,9 +306,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--database", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--observed-at", type=datetime.fromisoformat)
     args = parser.parse_args()
     try:
-        code = run(args.database, args.output)
+        code = run(args.database, args.output, observed_at=args.observed_at)
     except (OSError, sqlite3.Error, ValueError) as exc:
         parser.error(str(exc))
     raise SystemExit(code)

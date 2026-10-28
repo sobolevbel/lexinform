@@ -6005,3 +6005,34 @@ Full gate: **5169 passed**, errors/failures/skips0, **597.702 s**.
 [Acceptance asset](../assets/audits/2026-10-28-unlocated-text/validation.json) пинует source
 fingerprints, нормализацию AST, полный DOC/XML cohort, controls/mutations, native parity и
 ODT suite. Final raw/variant recheck не нашёл изменений; physical metadata остаётся transient.
+
+
+<a id="j122"></a>
+### J122. Explicit-clock age of saved nonterminal work
+
+Статус: **готово**, baseline `4f64ec7a2b30e52d1d4af12f4593b01b17ccbf93`.
+Existing read-only work doctor получает optional observed-at и body-free group ages для
+DocumentWork waiting и ReviewWork context/snapshot. Счётчик nonterminal не обещает runnable/
+enabled/due state. Terminal/abandoned markers учтены отдельно; retention/retry/apply прежние.
+Отсутствующие, naive, invalid и future timestamps остаются unknown с краткой причиной.
+Время наблюдения требует timezone; UTC/default source timestamps не синтезируются.
+
+**43 focused**, strict mypy **490**. CLI valid/naive clock, DST offsets, oldest known owner,
+unknown clocks, terminal exclusions и partial corrupted inventory проверены. Без observed-at
+нового поля нет; default report на natural schema55 копии byte-exact с прежним tool.
+**5 nonterminal owners**: document waiting3 / review context2; abandoned7 excluded. As-of
+**2026-10-28T00:43:55Z**, oldest ages **628733 / 1176118 s**. Это тот же pinned J116 state,
+не новое наблюдение live work/source latency. DB SHA сохранён:
+`66ecc58b10c3e7ba2df1d4fc89be26e018539a8f94931f0c7aeaf12205f6fe2e`.
+Все **160 runtime files byte-identical**, нет SQL/pipeline/provider/reader изменений.
+Full gate и final formatting/lint приняты ниже.
+
+J121 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40625287381) success:
+**5169 passed**, strict mypy **488**, docs/web green. Код в feature branch / draft PR #11;
+main/deployment ещё не выполнены без запрошенного отдельного разрешения.
+
+Full gate: **5185 passed**, failures/errors/skips0, **619.643 s**.
+После frozen full gate разделена одна overlong scope string: literal value и полный module AST
+exact. Повторные **43 focused**, strict mypy **490**, Ruff/format green.
+[Acceptance asset](../assets/audits/2026-10-28-work-ages/validation.json) сохраняет tested/final
+source hashes и AST proof, CLI/natural report parity, snapshot SHA и coverage limitations.

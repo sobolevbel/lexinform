@@ -1,3 +1,4 @@
+import datetime as dt
 import json
 import sqlite3
 import subprocess
@@ -120,6 +121,45 @@ def test_work_inventory_preserves_unknown_legacy_keys_and_does_not_expose_inputs
     assert MARKER not in json.dumps(report)
     assert "recorded-opaque-question" not in json.dumps(report)
     assert path.read_bytes() == before and sorted(tmp_path.iterdir()) == files
+
+
+def test_work_ages_are_opt_in_and_preserve_the_existing_audit(
+    work_world: World, tmp_path: Path
+) -> None:
+    path = snapshot(work_world, tmp_path)
+    before = path.read_bytes()
+    observed = work_world.clock.now() + dt.timedelta(days=2)
+
+    legacy = audit(path)
+    report = audit(path, observed_at=observed)
+    ages = report.pop("work_ages")
+
+    assert report == legacy and "work_ages" not in legacy
+    assert ages["nonterminal_owners"] == 3 and ages["coverage"] == "recorded"
+    assert all(group["oldest_seconds"] == 172800 for group in ages["groups"])
+    assert ages["excluded_terminal_owners"] == {"review/abandoned": 1}
+    assert MARKER not in json.dumps(ages) and path.read_bytes() == before
+
+
+def test_work_age_metrics_do_not_turn_broken_dependencies_into_complete_coverage(
+    work_world: World, tmp_path: Path
+) -> None:
+    path = snapshot(work_world, tmp_path)
+    with closing(sqlite3.connect(path)) as database, database:
+        database.execute("DELETE FROM status_changes")
+    before = path.read_bytes()
+
+    report = audit(path, observed_at=work_world.clock.now())
+
+    assert report["status"] == "failed" and report["work_ages"]["coverage"] == "partial"
+    assert path.read_bytes() == before
+
+
+def test_work_age_metrics_refuse_naive_observation_before_opening_the_database(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="timezone"):
+        audit(tmp_path / "not-present.db", observed_at=dt.datetime(2026, 10, 28))
 
 
 @pytest.mark.parametrize(
@@ -288,10 +328,12 @@ def test_missing_or_empty_work_is_explicitly_not_run(tmp_path: Path, missing: bo
 
 
 @pytest.mark.parametrize("corrupt", [False, True])
+@pytest.mark.parametrize("with_age", [False, True])
 def test_work_doctor_cli_uses_only_the_declared_copy(
     work_world: World,
     tmp_path: Path,
     corrupt: bool,
+    with_age: bool,
 ) -> None:
     path = snapshot(work_world, tmp_path)
     if corrupt:
@@ -309,6 +351,7 @@ def test_work_doctor_cli_uses_only_the_declared_copy(
             str(path),
             "--output",
             str(output),
+            *(["--observed-at", work_world.clock.now().isoformat()] if with_age else []),
         ],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
@@ -320,4 +363,33 @@ def test_work_doctor_cli_uses_only_the_declared_copy(
     assert result.returncode == int(corrupt), result.stderr
     report = json.loads(output.read_text())
     assert report["status"] == ("failed" if corrupt else "recorded")
+    assert ("work_ages" in report) == with_age
+    if with_age:
+        assert report["work_ages"]["coverage"] == ("partial" if corrupt else "recorded")
     assert MARKER not in output.read_text() and path.read_bytes() == before
+
+
+def test_work_doctor_cli_requires_an_explicit_timezone(tmp_path: Path) -> None:
+    output = tmp_path / "report.json"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "tools.work_doctor",
+            "--database",
+            str(tmp_path / "missing.db"),
+            "--output",
+            str(output),
+            "--observed-at",
+            "2026-10-28T00:00:00",
+        ],
+        cwd=Path(__file__).resolve().parents[2],
+        capture_output=True,
+        text=True,
+        timeout=20,
+        check=False,
+    )
+
+    assert result.returncode == 2 and "timezone" in result.stderr
+    assert not output.exists()
