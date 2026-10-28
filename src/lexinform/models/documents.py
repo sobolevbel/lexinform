@@ -482,6 +482,35 @@ class WordPartNoteExtraction(BaseModel):
     extraction: WordNoteExtraction
 
 
+class UnlocatedTextExtraction(BaseModel):
+    """A legacy string identifies bytes and text without claiming physical coordinates."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    version: Literal["unlocated-text-v1"] = "unlocated-text-v1"
+    route: Literal["doc", "word_xml"]
+    input_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    text_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    text_chars: int = Field(ge=0)
+    coordinates: Literal["unknown"] = "unknown"
+    pagination: Literal["unknown"] = "unknown"
+    note_origins: Literal["unlocated"] = "unlocated"
+    tracked_changes: Literal["unknown"] = "unknown"
+    field_origins: Literal["unknown"] = "unknown"
+
+    @property
+    def manifest_sha256(self) -> str:
+        canonical = json.dumps(self.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(canonical.encode()).hexdigest()
+
+
+class UnlocatedPartExtraction(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    part_index: int = Field(ge=0)
+    extraction: UnlocatedTextExtraction
+
+
 class ExtractedParts(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -492,6 +521,7 @@ class ExtractedParts(BaseModel):
     word_blocks: tuple[WordPartExtraction, ...] = ()
     word_notes: tuple[WordPartNoteExtraction, ...] = ()
     odt_blocks: tuple[OdtPartExtraction, ...] = ()
+    unlocated_text: tuple[UnlocatedPartExtraction, ...] = ()
 
     @model_validator(mode="after")
     def manifests_refer_to_physical_parts(self) -> Self:
@@ -532,6 +562,26 @@ class ExtractedParts(BaseModel):
                 raise ValueError("OpenDocument blocks refer to different physical bytes")
             if part.text != odt_result.extraction.legacy_text:
                 raise ValueError("OpenDocument blocks differ from the physical part text")
+            seen.add(index)
+        located = (
+            {result.part_index for result in self.pdf_pages}
+            | {result.part_index for result in self.word_blocks}
+            | {result.part_index for result in self.odt_blocks}
+        )
+        seen.clear()
+        for unlocated in self.unlocated_text:
+            index = unlocated.part_index
+            if index >= len(self.parts) or index in seen or index in located:
+                raise ValueError("Unlocated text requires one physical part without coordinates")
+            part = self.parts[index]
+            metadata = unlocated.extraction
+            if part.sha256 != metadata.input_sha256:
+                raise ValueError("Unlocated text refers to different physical bytes")
+            if (
+                hashlib.sha256(part.text.encode()).hexdigest() != metadata.text_sha256
+                or len(part.text) != metadata.text_chars
+            ):
+                raise ValueError("Unlocated text differs from the physical part projection")
             seen.add(index)
         return self
 

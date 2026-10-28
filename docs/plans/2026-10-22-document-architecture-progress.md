@@ -5964,3 +5964,44 @@ coordinates exact с J119. Input maps library/adapter exact: **7 paths**, вкл
 [Pinned cases](../assets/audits/2026-10-28-odt-replay/cases.json) byte-identical проверенному
 входу и включены в репозиторий. [Acceptance asset](../assets/audits/2026-10-28-corpus-registry-inputs/validation.json)
 пинует reproduction/retest, registry artifacts, gates и source fingerprints.
+
+
+<a id="j121"></a>
+### J121. Explicit unlocated DOC/XML projections and one physical-walk collector
+
+Статус: **готово**, baseline `259c97b0b802433d7e095cf7896de53613f6c105`.
+`unlocated-text-v1` связывает raw/text SHA и длину строки с physical part для DOC/standalone
+Word XML routes. Coordinates/pagination/tracked changes/fields unknown, note origins unlocated.
+Route обозначает путь decoder, не successful format/completeness verdict. Нет блоков, страниц
+или source spans, выдуманных из plain text. Missing/empty projections сохраняют прежние losses.
+JSON round trip и part/raw/text binding валидируются; located и unknown origins не совмещаются.
+Данные transient; legacy facade явно не собирает этот inventory.
+
+Внутренний `_PhysicalOrigins` объединяет requested lists одного обхода. Рекурсия не получает
+отдельный растущий список аргументов каждого формата. После нормализации carrier access и
+удаления нового metadata-only append старый `_collect` AST exact; `_extract` AST exact,
+DOC parser byte-identical. Изменены три runtime files; остальные **157 byte-identical**.
+
+**118 focused**, strict mypy **488**, Ruff/format всех src/tests/tools green.
+Corpus: все **404 .doc + 13 .xml** roots J094 inventory (**134483899 raw bytes**) и **45 controls**
+из остальных форматов/families. **462 profiles** — прежние physical/selection outcomes exact,
+input maps exact, leaf errors0. Новых manifests **414**: DOC402 / Word XML12, empty projections0.
+Это физические routes по bytes; расширения не объявляются доказательством формата.
+**9 synthetic variants** реального Word XML: wrappers и пять meaningful mutations; exact
+old/new profiles, needles сохранены, manifests9. Это не девять независимых документов.
+
+**168 native profiles**: requests/messages и все 28 tables exact, timing differences0,
+SQL/gzip delta0; source doctors errors0. Actual ODT suite passed against pinned J120 library.
+Уже принятый native baseline J117 пригоден: между J117 и J120 все runtime sources unchanged;
+его observer inputs и outcomes сохранены. Нет model calls, source refresh, publication или SQL
+migration. Full gate выполняется. Другие PDF/OOXML inputs — stratified controls, не full family
+acceptance; embedded DOC/XML вне 417 roots не объявлены полностью покрытыми.
+
+J120 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40623368145) success:
+**5151 passed**, strict mypy **487**, docs/web green. Main/deployment permission remains pending;
+готовый код сохранён в feature branch и [draft PR #11](https://github.com/sobolevbel/lexinform/pull/11).
+
+Full gate: **5169 passed**, errors/failures/skips0, **597.702 s**.
+[Acceptance asset](../assets/audits/2026-10-28-unlocated-text/validation.json) пинует source
+fingerprints, нормализацию AST, полный DOC/XML cohort, controls/mutations, native parity и
+ODT suite. Final raw/variant recheck не нашёл изменений; physical metadata остаётся transient.

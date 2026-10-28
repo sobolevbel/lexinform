@@ -122,6 +122,16 @@ legacy text. The optional `OdtBlockTextExtractor` port leaves custom legacy adap
 No stored selection, SQL, legal-role policy or provider input changes. See
 [J117](plans/2026-10-22-document-architecture-progress.md#j117) for raw/mutation coverage.
 
+`ExtractedParts.unlocated_text` records `unlocated-text-v1` for the legacy DOC and standalone
+Word XML routes. It binds the exact input SHA, projected text SHA and character count to a
+physical part; nested and duplicate archive members keep separate links. Coordinates,
+pagination, tracked changes, note origins and field origins remain explicitly unknown or
+unlocated. The route names the selected decoder path, not a successful format/completeness
+verdict; an empty projection keeps its existing losses. No source spans are inferred from
+line breaks or substring matches. Located and unlocated records cannot claim the same part.
+`include_unlocated_text=False` and the ordinary `extract_document` facade collect no such
+metadata. It is transient and changes no SQL, legal selection or provider input.
+
 `trim_print.projection` records source positions while trimming and gives generated omission
 markers no source origin. Adjacent copied pages coalesce into one range. `selection_for_input`
 uses this map only when the entire ordered part assembly or its traced trim equals the actual
