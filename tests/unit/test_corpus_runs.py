@@ -1,10 +1,14 @@
 import json
 import tarfile
 from pathlib import Path
+from typing import Any
 
 import pytest
 from tools.corpus_artifacts import digest
 from tools.corpus_runs import compare, execute, register, verify
+
+from tests.unit.test_odt_blocks import odt_document
+from tests.unit.test_odt_blocks_replay import population
 
 
 def report_at(path: Path, *, value: int = 1, sha: str = "a") -> Path:
@@ -122,3 +126,79 @@ def test_suite_presets_cannot_be_overridden(tmp_path: Path, flag: str) -> None:
     with pytest.raises(ValueError, match="controlled"):
         execute(tmp_path / "runs", "bad", "senate", tmp_path / "corpus", [flag, "process"])
     assert not (tmp_path / "runs").exists()
+
+
+@pytest.mark.parametrize("kind", ["observation", "input", "population"])
+@pytest.mark.parametrize("reverse", [False, True])
+def test_diff_detects_presence_and_population_identity(
+    tmp_path: Path, kind: str, reverse: bool
+) -> None:
+    runs = tmp_path / "runs"
+    left: dict[str, Any] = {"status": "recorded", "observations": {"control": 1}}
+    right: dict[str, Any] = {"status": "recorded", "observations": {"control": 1}}
+    if kind == "observation":
+        left["observations"]["unknown"] = None
+    elif kind == "input":
+        left["read_inputs"], right["read_inputs"] = {"unknown": None}, {}
+    else:
+        left["case_manifest_sha256"], right["case_manifest_sha256"] = "a" * 64, "b" * 64
+    if reverse:
+        left, right = right, left
+    for name, report in (("before", left), ("after", right)):
+        source = tmp_path / (name + ".json")
+        source.write_text(json.dumps(report))
+        register(runs, name, "health", source)
+
+    result = compare(runs / "before", runs / "after", tmp_path / "diff.json")
+
+    assert result["status"] == "changed"
+    if kind == "observation":
+        assert result["changes"] == [
+            {
+                "id": "unknown",
+                "kind": "added" if reverse else "removed",
+                "before": None,
+                "after": None,
+            }
+        ]
+    elif kind == "input":
+        assert result["changed_inputs"] == ["unknown"]
+    else:
+        assert result["summary_changes"]["case_manifest_sha256"] == {
+            "before": left["case_manifest_sha256"],
+            "after": right["case_manifest_sha256"],
+        }
+
+
+def test_odt_replay_runs_verifies_and_compares_through_the_shared_registry(tmp_path: Path) -> None:
+    raw = odt_document("<text:p>Kwota 100 zł.</text:p>")
+    corpus, cases = population(tmp_path, {"input.odt": raw})
+    runs = tmp_path / "runs"
+
+    library = execute(runs, "library", "odt", corpus, ["--cases", str(cases), "--mode", "library"])
+    adapter = execute(
+        runs,
+        "adapter",
+        "odt",
+        corpus,
+        [
+            "--cases",
+            str(cases),
+            "--mode",
+            "adapter",
+            "--reference",
+            str(runs / "library/result.json"),
+            "--reference-sha256",
+            digest((runs / "library/result.json").read_bytes()),
+        ],
+    )
+
+    assert library["status"] == "recorded" and adapter["status"] == "passed"
+    assert verify(runs / "library") == library and verify(runs / "adapter") == adapter
+    result = json.loads((runs / "adapter/result.json").read_bytes())
+    assert result["read_inputs"] == {
+        "INDEX.json": digest((corpus / "INDEX.json").read_bytes()),
+        "input.odt": digest(raw),
+    }
+    diff = compare(runs / "library", runs / "adapter", tmp_path / "diff.json")
+    assert diff["status"] == "same" and not diff["changes"] and not diff["changed_inputs"]

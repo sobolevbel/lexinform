@@ -289,3 +289,38 @@ controls. Дополнительно **9 производных варианто
 46 ignored-node coordinates**; old/new observations exact. Эти варианты не считаются новыми
 природными документами. Подробности и gates —
 [J119](../plans/2026-10-22-document-architecture-progress.md#j119).
+
+
+## Общий реестр и различия входов · J120, 28 октября
+
+[Pinned natural cases](../assets/audits/2026-10-28-odt-replay/cases.json) входят в репозиторий;
+их bytes exact совпадают с manifest проверенного J119/J120 replay. Смена INDEX требует нового
+явно проверенного поколения cases, старый файл не обновляется автоматически.
+
+ODT подключён к `tools.corpus_runs` как suite `odt`, рядом с `pdf` и `word`. Каждый запуск
+получает отдельный каталог с started/result/manifest, console log и snapshot кода.
+`verify` проверяет SHA артефактов; `diff` сравнивает завершённые generations.
+
+```sh
+uv run python -m tools.corpus_runs run --root /path/to/runs --id odt-library \
+  --suite odt --corpus /path/to/lexinform-corpus -- \
+  --cases /path/to/odt-cases.json --mode library
+uv run python -m tools.corpus_runs run --root /path/to/runs --id odt-adapter \
+  --suite odt --corpus /path/to/lexinform-corpus -- \
+  --cases /path/to/odt-cases.json --mode adapter \
+  --reference /path/to/runs/odt-library/result.json --reference-sha256 BASELINE_SHA256
+uv run python -m tools.corpus_runs verify /path/to/runs/odt-adapter
+uv run python -m tools.corpus_runs diff /path/to/runs/odt-library \
+  /path/to/runs/odt-adapter --output /path/to/odt-diff.json
+```
+
+Общий diff различает исчезнувшее observation/input и explicit unknown `null`, а также смену
+case/catalog/index manifest SHA. PDF/Word/ODT reports записывают `read_inputs`: SHA фактически
+открытых корпусных путей, включая INDEX там, где он читается. Это дополняет declared population;
+SHA не объявляет raw bytes архивированными. Прежние отчёты без поля читаются совместимо.
+Source SHA остаётся provenance, изменение версии кода само по себе не объявляется регрессией.
+
+На прежнем diff воспроизведены три false `same` и один unchanged control. Исправленные проверки
+различают все три изменения и обе стороны added/removed. Real ODT generations из J119
+проведены через registry, проверены и сравнены; observations/input maps совпадают.
+Подробности — [J120](../plans/2026-10-22-document-architecture-progress.md#j120).

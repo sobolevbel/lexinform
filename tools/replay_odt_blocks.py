@@ -225,6 +225,7 @@ def run(
                 result["errors"][case.path] = f"{type(exc).__name__}: {exc}"
     if not successful:
         result["errors"]["population"] = "Population contains no successfully observed ODT leaves"
+    result["read_inputs"] = dict(sorted(reads.initial_sha256.items()))
     result["changed_inputs"] = reads.changed_inputs()
     result["changed_code"] = before != source_fingerprints()
     if previous is not None:

@@ -5934,3 +5934,33 @@ J118 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40619729692) succ
 Full gate: **5144 passed**, errors/failures/skips0, **612.682 s**.
 [Acceptance asset](../assets/audits/2026-10-28-odt-replay/validation.json) пинует оба cohorts,
 исходные manifests, пять meaningful mutations и test/source fingerprints.
+
+
+<a id="j120"></a>
+### J120. ODT registry and explicit input/population differences
+
+Статус: **готово**, baseline `a78670629787324465587a9c65f2061181b48fe7`.
+ODT suite использует существующий immutable run registry, code snapshots, verify и общий diff.
+Shared observation comparison применяется и в registry: missing/unknown null больше не
+сливаются. Case/catalog/index SHA входят в summary differences; payload algorithms прежние.
+PDF/Word/ODT emit фактический read_inputs map из shared guard, включая запрошенные aliases.
+
+На прежнем registry **3 false same / 1 unchanged control**. Добавлены шесть forward/reverse
+regressions и настоящий subprocess library→adapter→verify→diff для ODT. PDF/Word tests
+подтверждают actual input hashes. Strict mypy **487**, Ruff и format всех src/tests/tools green.
+Все **160 runtime files byte-identical**, три physical snapshot functions AST exact.
+Full gate выполняется; runtime/SQL/prompt/legal policy не менялись.
+
+J119 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40622533941) success:
+**5144 passed**, strict mypy **486**, docs/web green.
+[Draft PR #11](https://github.com/sobolevbel/lexinform/pull/11) содержит готовый stage;
+production deployment ещё не заявлен. Automatic approval review отклонил direct main push,
+поскольку он запускает production deployment. Запрошено явное разрешение на main/deployment;
+разработка и feature-branch pushes продолжаются, обход запрета не выполняется.
+
+Full gate: **5151 passed**, failures/errors/skips0, **599.24 s**.
+**61 focused** и real registry cycle green; 6 roots / 8 ODT manifests / 935 blocks / 37 ignored
+coordinates exact с J119. Input maps library/adapter exact: **7 paths**, включая INDEX.
+[Pinned cases](../assets/audits/2026-10-28-odt-replay/cases.json) byte-identical проверенному
+входу и включены в репозиторий. [Acceptance asset](../assets/audits/2026-10-28-corpus-registry-inputs/validation.json)
+пинует reproduction/retest, registry artifacts, gates и source fingerprints.

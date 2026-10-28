@@ -61,6 +61,10 @@ def test_pinned_pdf_replay_compares_legacy_selection_and_physical_pages(tmp_path
     assert not saved["changed_inputs"] and not saved["changed_code"]
     assert len(saved["page_manifests"]["source.pdf"]) == 64
     assert saved["observations"]["source.pdf"]["physical"]["page_count"] == 17
+    assert saved["read_inputs"] == {
+        "INDEX.json": hashlib.sha256((root / "INDEX.json").read_bytes()).hexdigest(),
+        "source.pdf": hashlib.sha256(original).hexdigest(),
+    }
     assert source.read_bytes() == original
 
 

@@ -87,6 +87,7 @@ files = [
   "tools/content_history_doctor.py",
   "tools/corpus_artifacts.py",
   "tools/corpus_runtime.py",
+  "tools/corpus_runs.py",
   "tools/corpus_manifests.py",
   "tools/replay_odt_blocks.py",
   "tools/replay_pdf_pages.py",
