@@ -31,9 +31,9 @@ that current code generated it. Diffs separate observations, input identities an
 `recorded` means completed observation, `passed` means declared assertions passed, and `not_run`
 means an incomplete requested check. An empty population never becomes a completed run.
 
-Offline suites: `health`, `ci`, `external`, `pdf`, `word`, `input`, `cost`, `amendments`,
+Offline suites: `health`, `ci`, `external`, `pdf`, `word`, `odt`, `input`, `cost`, `amendments`,
 `reextract`, `annotations`, `empty-review`, `physical`, `holdout`, `review-form`, `review`,
-`candidates`, `process`, `senate`, `scan`. Extra arguments follow `--`;
+`candidates`, `admissibility`, `review-admissibility`, `process`, `senate`, `scan`. Extra arguments follow `--`;
 each child module's `--help` lists its required pins/options. `external` uses the existing
 corpus-check profiles; the default `ci` suite requires a manifest corpus such as
 `tests/fixtures/corpus_check`. Process/Senate wrappers preserve old observation semantics and
@@ -46,6 +46,15 @@ and legal correctness still require their own checks. The registry supplies no i
 `out/` survives temporary-directory cleanup but is ignored by Git and is not a backup. Keep the
 whole important run directory, its referenced inputs and original reports when copying elsewhere.
 Storage backend and automatic retention are intentionally undecided.
+
+### Pinned release checks
+
+`make corpus-check CORPUS_SUITE=release` combines existing offline suites through explicit
+extraction/selection/comparison/delivery profiles. A reviewed SHA-pinned plan declares input
+artifacts and expected populations; comparison also pins its accepted baseline. Preserve the
+summary and adjacent `.json.runs` directory together. See the
+[required job matrix, plan format, commands and result semantics](../tests/fixtures/corpus_check/README.md).
+The default manifest fixture and standalone external commands retain their CLI.
 
 ## Request provenance doctor
 

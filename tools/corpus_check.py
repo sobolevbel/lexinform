@@ -23,6 +23,7 @@ from lexinform.adapters.sejm_api import parse_print
 from lexinform.models import RclProject
 from lexinform.sections import document_kind
 from tools.corpus_external import run_external
+from tools.corpus_runs import check as check_release
 from tools.corpus_runtime import code_dirty as code_dirty
 from tools.corpus_runtime import code_version as code_version
 from tools.corpus_runtime import source_fingerprints as source_fingerprints
@@ -239,7 +240,9 @@ def main() -> None:
     parser.add_argument("--corpus", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--profiles", default=",".join(PROFILES))
-    parser.add_argument("--suite", choices=("manifest", "external"), default="manifest")
+    parser.add_argument("--suite", choices=("manifest", "external", "release"), default="manifest")
+    parser.add_argument("--plan", type=Path)
+    parser.add_argument("--plan-sha256")
     parser.add_argument("--mode", choices=("baseline", "compare"))
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--reference-sha256")
@@ -250,13 +253,28 @@ def main() -> None:
     profiles = tuple(profile for profile in PROFILES if profile in requested)
     if len(profiles) != len(requested):
         parser.error("Profiles must be nonempty and unique")
-    if args.suite == "external" and args.mode is None:
-        parser.error("External suite needs explicit --mode baseline or --mode compare")
+    if args.suite in ("external", "release") and args.mode is None:
+        parser.error("External/release suite needs explicit --mode baseline or --mode compare")
+    if args.suite == "release" and (args.plan is None or args.plan_sha256 is None):
+        parser.error("Release suite needs an explicit plan and its SHA")
+    if args.suite != "release" and (args.plan is not None or args.plan_sha256 is not None):
+        parser.error("Plan options apply only to the release suite")
     if args.suite == "manifest" and any((args.mode, args.reference, args.reference_sha256)):
         parser.error("Mode and reference options apply only to the external suite")
     try:
-        code = (
-            run_external(
+        if args.suite == "release":
+            code = check_release(
+                args.corpus,
+                args.output,
+                profiles,
+                args.plan,
+                args.plan_sha256,
+                mode=args.mode,
+                reference=args.reference,
+                reference_sha256=args.reference_sha256,
+            )
+        elif args.suite == "external":
+            code = run_external(
                 args.corpus,
                 args.output,
                 profiles,
@@ -269,9 +287,8 @@ def main() -> None:
                     "source_sha256": source_fingerprints(),
                 },
             )
-            if args.suite == "external"
-            else run(args.corpus, args.output, profiles)
-        )
+        else:
+            code = run(args.corpus, args.output, profiles)
     except ValueError as exc:
         parser.error(str(exc))
     raise SystemExit(code)

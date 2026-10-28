@@ -6872,7 +6872,7 @@ Integrated release d7d0ab30 подтверждён отдельно: CI407359372
 <a id="j140"></a>
 ### J140. Plan and atomically apply a finite legacy import
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**.
+Статус: **выпущен и проверен**.
 Baseline `d7d0ab30e8004d1ea6a6b75e06064e25c74fea5f` включает J139, параллельную оптимизацию
 тестового окружения и coverage fix. Патч подготовлен отдельно на `97f99a5f`, перенесён без изменения пяти
 owned source/test/tool файлов. Первый full на ed99339a остановлен после появления новой
@@ -6940,3 +6940,59 @@ Canonical coverage regression унаследован из d7d0ab30;59 migrations
 patch/source freezes, полные/целевые XML, baseline/candidate native и copy-state evidence,
 memory probe, independent review и controlled CI regression. План остаётся
 74tasks/28done/6explicitN/A/40applicable partial-open; inert import не выдаётся за activation.
+Release ef8d9901 подтверждён CI40737834323 и deploy40738549866: фактический relay transition
+d7d0ab30e800→ef8d9901643a, health после45s и timer enabled.
+[Filtered proof](../assets/audits/2026-10-28-legacy-maintenance/release.json) не включает raw logs.
+
+<a id="j141"></a>
+### J141. Run pinned corpus profiles through the shared registry
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**.
+Baseline `ef8d9901643a81afc636f19e0554ee880e246851`.
+Opt-in `make corpus-check CORPUS_SUITE=release` сводит существующие offline replays в фиксированную
+матрицу16 jobs/4 profiles. Strict plan закрепляет INDEX, input artifacts, обязательные режимы
+и полный ожидаемый набор observation IDs. Registry children, code snapshots, manifests и semantic
+diffs сохраняются рядом с summary; перезапись результатов и подмена controlled flags запрещены.
+Baseline получает `recorded`; compare требует intact reference summary/child manifests и те же
+plan/profiles/inputs/populations. Недостающие данные дают `not_run/2`, corruption/drift/changed
+observations — `failed/1` с приоритетом над неполнотой. Collectors и human-review команды остаются
+за пределами этой regression matrix. Child suites сохраняют свои network/model guards.
+
+Independent review выявил два P2 до integration: initial absent raw у scan/PDF/Word/ODT ошибочно
+становился failed, а reference pin проверялся только перед replay. Исправления различают initial
+absence, corruption и input drift без чтения exception strings; reference summary и child manifest
+pins повторно проверяются перед compare и в конце. Legacy process/Senate not_run с описательным
+error остаётся not_run. Повторные disposable repros подтвердили оба исправления; новых findings нет.
+Delivery использует existing external suite, чтобы все profiles работали с одним corpus root.
+
+Integrated106 focused tests, full6147 с coverage92% и4 workers, strict mypy546 и Ruff прошли;
+format600 unchanged. Добавлены50 unit cases, новых scenario cases нет. Исходники приложения,
+SQLite/schema, зависимости, production settings и workflow неизменны. Прежний default manifest
+`make corpus-check` прошёл. Common tools README ссылается на canonical matrix/plan reference.
+
+Real corpus INDEX2030ab1d и documents catalog2909d71c закреплены. Delivery plan выполнил
+baseline recorded → compare passed с тем же observation ID и всеми3 synthetic recovery invariants.
+Это проверка orchestration/delivery contracts. Comparison plan перечисляет1028 реальных пар
+(468RCL/560rpw-without-rule),1698 text paths и1029 observations с mutation summary; metadata
+enumeration сохраняет прежнее исключение rpw. Actual baseline recorded/qualified:1029 observations,
+2169 прочитанных inputs, missing/drift0. Выполнены6594 controlled mutation observations;
+full text_digest различил все. Experimental digest/guard misses сохранены в исходном отчёте
+как диагностические наблюдения: citation/layout cases требуют отдельной классификации, это
+не production accuracy verdict. Повтор полного same-code replay не запускался: application и
+child comparator/mutation algorithms byte-exact с baseline, compare path проверен real delivery
+и отдельными subprocess/ODT contracts. Полный comparison baseline подготовлен для будущих изменений.
+
+Full extraction/selection readiness отдельно открыта:114-PDF manifest привязан к старому INDEX,
+семь указанных исторических references/inventories отсутствуют;1383 известных RCL cache gaps
+сохраняются. ODT/scan fragments имеют доступные declared raw paths, без новой raw/extraction
+приёмки. Полный corpus release, independent labels и production acceptance этим не объявляются.
+Порядок запуска и plan schema — в
+[tools reference](https://github.com/sobolevbel/lexinform/blob/main/tools/README.md#pinned-release-checks).
+Full wall248.469s на общем host; timings не являются controlled benchmark.
+Executable Python/config/Makefile/tests оставались frozen. Во время gate сокращён только
+tools README до ссылки на canonical plan matrix; отдельный doc delta закреплён.
+DA0.5 закрыта по tooling contract; план74tasks/29done/6explicitN/A/39applicable partial-open.
+[Acceptance asset](../assets/audits/2026-10-28-corpus-release/validation.json) связывает
+reviewed patch, full/targeted XML, sealed child manifests, plans, preflight и input/code hashes.
+Исходные подробные результаты и code snapshots остаются в immutable sidecars; JSON asset хранит
+агрегаты и refs, без копии corpus bodies или повторной полной input map.

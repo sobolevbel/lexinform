@@ -354,7 +354,7 @@ DA6–DA7 не требуют предварительно включать но
   законченный коммит не оставляет обычный падающий тест. Исправление — отдельный коммит DA5,
   после него ожидание ошибки удаляется.
   Исправлено в [J045](2026-10-22-document-architecture-progress.md#j045): обычный тест проверяет точный source span 0–512.
-- [ ] DA0.5. **Частично: [J120](2026-10-22-document-architecture-progress.md#j120), ODT в общем run registry, actual input maps PDF/Word/ODT и presence/population-aware diff; [J118](2026-10-22-document-architecture-progress.md#j118), общие PDF/Word IO/comparison/final-input guards и потоковый SHA без смены snapshot algorithms; [J006](2026-10-22-document-architecture-progress.md#j006), [J009](2026-10-22-document-architecture-progress.md#j009).** Свести существующие replay в один планируемый `make corpus-check` с профилями
+- [x] DA0.5. **[J141](2026-10-22-document-architecture-progress.md#j141): общий pinned release runner с фиксированной матрицей16 jobs/4 profiles, immutable children и проверкой полной population/reference. Недостающие входы остаются not_run; data readiness и полная corpus acceptance не подменяются готовностью runner.** Свести существующие replay в один планируемый `make corpus-check` с профилями
   extraction/selection/comparison/delivery и явно заданными corpus/output путями.
   Runner не меняет входы, отказывается перезаписывать результаты и не вызывает сеть/модели.
 - [ ] DA0.6. **Частично: [J006](2026-10-22-document-architecture-progress.md#j006), [J009](2026-10-22-document-architecture-progress.md#j009).** Manifest содержит input SHA, официальный ID/связи, raw/cached/excerpt coverage,

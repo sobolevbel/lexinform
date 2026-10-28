@@ -1,0 +1,313 @@
+{
+  "baseline": "ef8d9901643a81afc636f19e0554ee880e246851",
+  "checks": {
+    "coverage_percent": 92,
+    "focused": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 106
+    },
+    "format": "600 files left unchanged",
+    "full": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 6147
+    },
+    "full_time": {
+      "baseline": "ef8d9901643a81afc636f19e0554ee880e246851",
+      "coverage": true,
+      "started_monotonic": 261066.936973375,
+      "started_unix": 1793209701.701385,
+      "wall_seconds": 248.46896366600413,
+      "workers": 4
+    },
+    "mypy": "Success: no issues found in 546 source files",
+    "new_scenario_cases": 0,
+    "new_unit_cases": 50,
+    "ruff": "All checks passed!",
+    "workers": 4
+  },
+  "documentation_update": {
+    "changes": {
+      "tools/README.md": {
+        "after": "2d0c1b30f3a1025b5e88b2d49bac39e1b508579ac78cb247d83a66e031554024",
+        "before": "f0565691370fd6f1a84613378bdcc55f0644836dcf1c9fd528ab2739a9e779a9"
+      }
+    },
+    "scope": "Only documentation was shortened to link the canonical matrix instead of duplicating it; executable Python, config, Makefile and tests stayed frozen."
+  },
+  "evidence": {
+    "out/corpus/j141/accept.py": {
+      "bytes": 9056,
+      "sha256": "aef03220a03ffb58c002959232eefd34b86305ce9d056f2ac10102b68f23c4ea"
+    },
+    "out/corpus/j141/agent/focused-review-fixes.xml": {
+      "bytes": 14926,
+      "sha256": "91fb5e9f9b7880f6a5eb922902c0e24d3a76ebb66ef0e0be97a4fc2feebda2b2"
+    },
+    "out/corpus/j141/agent/handoff-reviewed.json": {
+      "bytes": 4786,
+      "sha256": "201375477380817e23ef0e6691dc5963aa36124e4197c89c7ccd2664bbe5ce51"
+    },
+    "out/corpus/j141/agent/j141-reviewed.patch": {
+      "bytes": 49622,
+      "sha256": "7d07d28b8aa253e185d27ae1e3cfa4f49882ea3a6da29b77af70ed0a07cd3a9f"
+    },
+    "out/corpus/j141/agent/real-preflight/append-only-regeneration-plan.json": {
+      "bytes": 8577,
+      "sha256": "c326bcf3d8703d42cc4eb082806e0c0ef2361deb5986701143ea381a94e9f226"
+    },
+    "out/corpus/j141/agent/real-preflight/cache-gap-readiness.json": {
+      "bytes": 162730,
+      "sha256": "e9f643183a0a4e6aef250113008db0f25537a5596c25e2ce4e30ba04d247781c"
+    },
+    "out/corpus/j141/agent/real-preflight/cache_gap_readiness.py": {
+      "bytes": 12858,
+      "sha256": "42c5ac70468658e97f1ccd74e146d5e7e7fb45a1bb2ab7021df61efec6e5b570"
+    },
+    "out/corpus/j141/ci-default.json": {
+      "bytes": 76165,
+      "sha256": "9dcfa0c95d2e6d6a72b396f2befbcbfe236ef8fa483ee5af29b383c74da57b5f"
+    },
+    "out/corpus/j141/comparison-baseline.json": {
+      "bytes": 67771,
+      "sha256": "ba1022cfb76a22791a49187c8975bd35b25ea72e84ab88717d3121eaefa95743"
+    },
+    "out/corpus/j141/comparison-baseline.json.runs/external-comparison/manifest.json": {
+      "bytes": 138685,
+      "sha256": "5c41932a07b1b4d3c471810b6f4eec5b21f087a6e333124f12ca04638006331e"
+    },
+    "out/corpus/j141/comparison-baseline.json.runs/external-comparison/manifest.sha256": {
+      "bytes": 65,
+      "sha256": "3f35dd29b97391578ce44ebeac25e706ea64bf5c36063af47cf062558420b02f"
+    },
+    "out/corpus/j141/comparison-baseline.json.runs/external-comparison/result.json": {
+      "bytes": 2997436,
+      "sha256": "5f6423c785472e3279f509d406d56acb4cd9bc036182e0b74ebf77a30cfb34ea"
+    },
+    "out/corpus/j141/comparison-baseline.json.runs/external-comparison/started.json": {
+      "bytes": 67772,
+      "sha256": "3971550cb8b0821181387e43d1727a85858f8346cf7dadae15a776a6e3b0f954"
+    },
+    "out/corpus/j141/comparison-plan.json": {
+      "bytes": 90332,
+      "sha256": "e357c1833c1369515b2be7b42a5baec616e57f858d928b64a683460b5b800996"
+    },
+    "out/corpus/j141/delivery-baseline.json": {
+      "bytes": 67762,
+      "sha256": "bcea4ef38124150afcd76ee24d5fa1ab4668197cb6e82fd797abee49607741bf"
+    },
+    "out/corpus/j141/delivery-baseline.json.runs/external-delivery/manifest.json": {
+      "bytes": 138670,
+      "sha256": "1b001da47954e7505ea2f9c618c5670213f2cc43f8d03bc383c1c12ce361d96c"
+    },
+    "out/corpus/j141/delivery-baseline.json.runs/external-delivery/manifest.sha256": {
+      "bytes": 65,
+      "sha256": "5e9499faf2ba575f5dfa6bea61d85440e6ea14f2dfad47a2575d05cd7bd657b5"
+    },
+    "out/corpus/j141/delivery-baseline.json.runs/external-delivery/result.json": {
+      "bytes": 69607,
+      "sha256": "f9a84b5281a120fe4f79410c5b47f62c83705fed018530e5c777e5fd2f188c8b"
+    },
+    "out/corpus/j141/delivery-baseline.json.runs/external-delivery/started.json": {
+      "bytes": 67766,
+      "sha256": "4db5fb7b249afe43e723bf48d48a676e1b72cfb36202b3bbf2df3c4f4fc48ad3"
+    },
+    "out/corpus/j141/delivery-compare.json": {
+      "bytes": 67785,
+      "sha256": "29093c5bf890ebe3c945f97996df484f3d3f4843cfd1d9d82db8c9cd0b1e3675"
+    },
+    "out/corpus/j141/delivery-compare.json.runs/external-delivery/manifest.json": {
+      "bytes": 138669,
+      "sha256": "62e01104ac645965b440d03b54bc81a3c2b89c4b5af5e59f691a30a7efeb7331"
+    },
+    "out/corpus/j141/delivery-compare.json.runs/external-delivery/manifest.sha256": {
+      "bytes": 65,
+      "sha256": "bd18dc582f6a729fbfab142d9896b8644be34da821ad5af6199b829c3f998518"
+    },
+    "out/corpus/j141/delivery-compare.json.runs/external-delivery/result.json": {
+      "bytes": 69606,
+      "sha256": "49cb3fa7b93eaea96030f98a07f2eb4f6b97a0b27c0c993cda54b28a5c5f6849"
+    },
+    "out/corpus/j141/delivery-compare.json.runs/external-delivery/started.json": {
+      "bytes": 67765,
+      "sha256": "97691046436f54b332bed7d588a6e1aced0ba18e60f5101978127443507cc00b"
+    },
+    "out/corpus/j141/delivery-plan.json": {
+      "bytes": 738,
+      "sha256": "cbd365f9f3d9ea3617b53ffdda145e69a44d296f016e1b8c0c0d9c34bff88997"
+    },
+    "out/corpus/j141/docs.log": {
+      "bytes": 266,
+      "sha256": "1963f6a87bbeb899a8663cf9c8e3b6e75ebddc3888cf17fdc5e039c01193c2d2"
+    },
+    "out/corpus/j141/focused.xml": {
+      "bytes": 14926,
+      "sha256": "c9b5a8e8fdc16b49da0a2f52d53054c06c683a9fb3f61d7ee1a294be3695b2f0"
+    },
+    "out/corpus/j141/format.log": {
+      "bytes": 25,
+      "sha256": "0af4425abc80b476de1203905b8826fa9fb7dc7539c3fdedb6d11b4aa2f7ee09"
+    },
+    "out/corpus/j141/frozen-source.json": {
+      "bytes": 66205,
+      "sha256": "918de63147b6c22ce9c736f0397ca5c8ac405ee3d998dff7960a590ec1e6377b"
+    },
+    "out/corpus/j141/full-time.json": {
+      "bytes": 199,
+      "sha256": "1eb389fd55c9b0961869c0bd0ae9f06c2e1d81820f8ede68737aa47ec26d0937"
+    },
+    "out/corpus/j141/full.xml": {
+      "bytes": 990609,
+      "sha256": "94bcf8cacb3cd4241e5c0990e479387118a108a6e81dd61ea1b4e0f8224b95d8"
+    },
+    "out/corpus/j141/gate-documentation-update.json": {
+      "bytes": 384,
+      "sha256": "f56b8dcda84aaeaa700920e5b3bf34280106fe0eee9dfb7bdb2f88eecc22a177"
+    },
+    "out/corpus/j141/mypy.log": {
+      "bytes": 45,
+      "sha256": "893535620c88f5e9820abfba13c74696404fb968f55ba2fc82a351a9eb49088a"
+    },
+    "out/corpus/j141/preflight.json": {
+      "bytes": 8932,
+      "sha256": "3b39d9969ce0eae1fae6af721150d09e9188cdb4fdccd20f95d24ac7374de929"
+    },
+    "out/corpus/j141/ruff.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    }
+  },
+  "execution_sources_unchanged": true,
+  "independent_review": {
+    "fixed": [
+      "Initially absent population vs corruption/drift and descriptive legacy not_run",
+      "Pinned reference summary/child manifest lifetime"
+    ],
+    "initial_P2_findings": 2,
+    "patch_sha256": "7d07d28b8aa253e185d27ae1e3cfa4f49882ea3a6da29b77af70ed0a07cd3a9f",
+    "remaining_actionable_findings": 0
+  },
+  "integrated_baseline_release": {
+    "bytes": 1619,
+    "path": "docs/assets/audits/2026-10-28-legacy-maintenance/release.json",
+    "sha256": "443a05e6c257b200acc7b3d5a347c2a77673df818302a51185538a28380665c9"
+  },
+  "limits": [
+    "Comparison is a complete observed baseline under its declared population, not a second same-code full compare or independent legal acceptance; runtime and child algorithms are byte-identical.",
+    "Experimental digest/guard observations include citation/layout probes needing separate source review; zero text_digest misses is not a production accuracy claim.",
+    "Full extraction/selection are not qualified: stale114-PDF INDEX and seven unavailable named references/inventories;1383 existing RCL cache gaps stay explicit.",
+    "ODT/scan path availability in preflight is not fresh raw extraction qualification.",
+    "Human labels, full current corpus acceptance, production evaluation and raw/backend storage are unchanged."
+  ],
+  "plan_status": {
+    "applicable_partial_open": 39,
+    "closed": "DA0.5 tooling contract",
+    "done": 29,
+    "explicit_not_applicable": 6,
+    "tasks": 74
+  },
+  "preflight_scope": {
+    "catalog": {
+      "bytes": 13970753,
+      "exists": true,
+      "path": "/Users/sobaleu/projects/lexinform-corpus/documents/index.json",
+      "sha256": "2909d71cab80b549771d5f1eaa51bf0b9c8c01e3088392264fee9424f590df2a"
+    },
+    "extraction_status": "full_profile_not_ready",
+    "index": {
+      "bytes": 2027122,
+      "exists": true,
+      "path": "/Users/sobaleu/projects/lexinform-corpus/INDEX.json",
+      "sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666"
+    },
+    "scope_limits": [
+      "No raw body rehash/extraction or text comparator/mutation replay; raw path availability only",
+      "Only named bounded manifests/reports/corpus metadata were read or stream-hashed; no unbounded raw-content scan",
+      "No full release, network, collections, models, production processing, source or primary edits",
+      "Expected populations are fixed delivery contract, verified historical observations or explicit metadata enumeration; no human legal labels invented"
+    ],
+    "selection_status": "full_profile_known_incomplete_not_run"
+  },
+  "qualifications": {
+    "comparison_baseline": "recorded",
+    "comparison_inputs": 2169,
+    "comparison_missing_or_drift": 0,
+    "comparison_observations": 1029,
+    "comparison_pairs": {
+      "rcl": 468,
+      "rpw-without-rule": 560
+    },
+    "controlled_mutations": 6594,
+    "default_manifest": "passed",
+    "delivery_baseline": "recorded",
+    "delivery_compare": "passed_same",
+    "diagnostic_digest_guard_counts": {
+      "deadline": {
+        "digest_missed": 0,
+        "guard_missed": 0,
+        "text_digest_missed": 0,
+        "total": 1222
+      },
+      "deadline_swap": {
+        "digest_missed": 0,
+        "guard_missed": 0,
+        "text_digest_missed": 0,
+        "total": 645
+      },
+      "decimal": {
+        "digest_missed": 14,
+        "guard_missed": 14,
+        "text_digest_missed": 0,
+        "total": 371
+      },
+      "negation": {
+        "digest_missed": 0,
+        "guard_missed": 0,
+        "text_digest_missed": 0,
+        "total": 928
+      },
+      "reference": {
+        "digest_missed": 0,
+        "guard_missed": 0,
+        "text_digest_missed": 0,
+        "total": 1585
+      },
+      "scope": {
+        "digest_missed": 0,
+        "guard_missed": 0,
+        "text_digest_missed": 0,
+        "total": 81
+      },
+      "standalone_number": {
+        "digest_missed": 5,
+        "guard_missed": 0,
+        "text_digest_missed": 0,
+        "total": 140
+      },
+      "year": {
+        "digest_missed": 528,
+        "guard_missed": 539,
+        "text_digest_missed": 0,
+        "total": 1622
+      }
+    },
+    "diagnostic_missed_entries": 558,
+    "mutation_text_paths": 1698,
+    "text_digest_misses": 0
+  },
+  "runtime_dependencies_migrations_workflows_unchanged": true,
+  "schema_version": 1,
+  "scope": "Finite offline corpus release profiles through the shared registry",
+  "source_sha256": {
+    "Makefile": "9626fe41260d949a582887d1fa954c7c5aef351ba1431f41525d55802dca14e2",
+    "tests/fixtures/corpus_check/README.md": "508c4cdce75e65ba464f432384423004e8ed9db6b1ee64b8c24eac42b38f7482",
+    "tests/unit/test_corpus_release.py": "853d11d896a6959343719c548ffd5d0d7aa19857670905c93e03be44065e8e2f",
+    "tools/README.md": "2d0c1b30f3a1025b5e88b2d49bac39e1b508579ac78cb247d83a66e031554024",
+    "tools/corpus_check.py": "e2420f5b449398527b2d567578fcef1a75eac84e993ea67f56af9a98a83713b6",
+    "tools/corpus_runs.py": "9fe2e088b56b4a999bdcfa79966cbec9f0182b1f8f4e692609571f70afc28ced"
+  },
+  "stage": "J141"
+}

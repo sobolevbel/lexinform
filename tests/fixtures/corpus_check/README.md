@@ -62,3 +62,47 @@ process-evidence and policy inventories remain outside its coverage. Transitions
 are excluded by the existing comparison replay; `rpw-without-rule` transitions are retained.
 All external observations are machine baselines in the regression split. The input manifest
 suite above remains the independently packaged CI slice.
+
+The opt-in release suite runs a finite set of existing registry commands on one external corpus:
+
+| Profile | Required job IDs |
+| --- | --- |
+| extraction | external-extraction, pdf, word, odt, scan, input, cost, amendments |
+| selection | external-selection, candidates, admissibility, review-admissibility, process, senate |
+| comparison | external-comparison |
+| delivery | external-delivery |
+
+The external jobs fix their named profile and baseline mode. PDF uses the adapter page reader;
+Word uses `notes-parts`, ODT uses `adapter`, input uses `compare`, cost/amendments use mapped
+inputs. The remaining suite IDs match their job IDs. Online collectors, human-review workflows
+and maintenance commands are outside this matrix. Delivery runs the three existing synthetic
+recovery invariants through the external suite, so it uses the same corpus root as other jobs.
+
+Supply a reviewed JSON plan and its SHA explicitly:
+
+```sh
+make corpus-check CORPUS=/absolute/corpus CORPUS_OUTPUT=/tmp/release-new.json \
+  CORPUS_SUITE=release CORPUS_PROFILES=delivery CORPUS_MODE=baseline \
+  CORPUS_PLAN=/absolute/release-plan.json CORPUS_PLAN_SHA256=<sha256>
+```
+
+The strict version-1 plan has `index_sha256` and `jobs`. Each job has `id`, `suite`, `args`,
+nonempty `pins` (`path`, `sha256`), positive `expected_observations` and `expected_ids_sha256`.
+Use absolute nonsymlink pin paths. Every artifact argument (`--cases`, `--catalog`, `--pdf-cases`,
+`--inventory`, `--manifest`, `--reference`, `--derivatives`) needs a matching pin; existing
+SHA arguments must equal it. Required file/options remain those of the underlying replay.
+Paths, suite, profile and fixed modes cannot be overridden or abbreviated.
+
+Expected counts and IDs come from an explicitly accepted regression population. The IDs hash is
+SHA-256 of UTF-8 `json.dumps(sorted(observation_ids), separators=(",", ":"))`.
+For `external-delivery`, the observation ID is `delivery`, containing all three invariants.
+The plan records source/reference artifacts, not independently verified legal labels.
+
+Outputs are a new summary JSON and a new adjacent `<output-name>.runs/` directory of immutable
+registry children. Keep both together. Baseline success is `recorded`; compare additionally
+requires `CORPUS_REFERENCE` and `CORPUS_REFERENCE_SHA256`, the same plan and profiles, intact
+child manifests and unchanged semantic observations/input populations. Only then is it `passed`.
+Missing jobs, artifacts or complete populations are `not_run` (exit 2). Corruption, changed
+inputs/code or replay differences fail (exit 1), taking priority over missing populations.
+No missing corpus files are fetched. Existing raw/cache/format exclusions remain applicable;
+this runner does not replace independent labels, paid evaluations or production acceptance.
