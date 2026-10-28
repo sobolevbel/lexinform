@@ -5872,3 +5872,37 @@ J116 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40612084715) succ
 
 [Acceptance asset](../assets/audits/2026-10-28-odt-blocks/validation.json) пинует gates, источники,
 real/routing coverage, mutations и неизменность корпуса/сохранённого state.
+
+
+<a id="j118"></a>
+### J118. Shared replay IO and streaming input revalidation
+
+Статус: **готово**, baseline `1312184b96d2a015384dff70eaa09ed5e54a69ab`.
+PDF/Word tools используют общий CorpusReads.changed_inputs, artifact readers/writer и observation
+comparison. Исчезнувшее observation отличается от explicit unknown null. Word сохраняет
+requested internal alias до чтения; initial alias rebinding обнаруживается, даже когда прежний
+canonical target не изменился. Final check не открывает retargeted outside/credential paths.
+Direct require также применяет credential-path запрет. Нормальные output formats/CLI остаются.
+
+Reproduction на прежнем helper: **5 failures / 3 controls**, errors0; protected reads блокировал
+test spy до фактического открытия. Исправленная группа и две integration regressions PDF/Word
+прошли. **55 focused / 149 corpus-related**, strict mypy **483**, Ruff/format green. Четыре
+shared/consumer tool modules добавлены в explicit mypy targets. Full gate выполняется.
+
+Final SHA recheck теперь потоковый. Before/after на **16341 paths / 12073227147 bytes**: initial
+fingerprint maps exact, changed_inputs0. На actual raw ZIP **15737127 bytes** Python allocation
+peak во время одного final recheck **15738592→395327 bytes**. Это не full-process RSS и не
+прогноз производительности архива; single timing sample не выдаётся за speedup.
+
+Все **160 runtime files byte-identical**; PDF/Word snapshot functions и прежний PDF digest
+algorithm AST exact. Нет extraction/selection/normalization/paid/reader/SQL изменений, поэтому
+повтор text/legal corpus replay не назначается. Результаты индекса и байтов проверены напрямую.
+
+
+Full gate: **5125 passed**, errors/failures/skips0, **667.055 s**.
+[Acceptance asset](../assets/audits/2026-10-28-corpus-input-rechecks/validation.json) пинует
+reproduction, gates, common helpers, real input maps и allocation sample.
+
+J117 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40615914088) success: **5112 passed**,
+strict mypy **478**. [Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40616708707):
+exact COMMIT `1312184b96d2a015384dff70eaa09ed5e54a69ab`, listener up **45 s**.

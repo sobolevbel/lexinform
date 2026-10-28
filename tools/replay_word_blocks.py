@@ -13,7 +13,7 @@ from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.models import ExtractedParts, WordDetailedExtraction, WordTextExtraction
-from tools.corpus_artifacts import digest, read_artifact
+from tools.corpus_artifacts import digest, observation_changes, read_artifact, write_json
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 
 
@@ -241,8 +241,8 @@ def run(
     with reads.guard():
         for name, sha in sorted(inputs.items()):
             try:
-                path = (root / name).resolve()
-                if not path.is_relative_to(root):
+                path = root / name
+                if not path.resolve().is_relative_to(root):
                     raise ValueError("Input escapes corpus")
                 data = path.read_bytes()
                 if digest(data) != sha:
@@ -258,26 +258,16 @@ def run(
                     result["physical"][name] = physical
             except Exception as exc:
                 result["errors"][name] = f"{type(exc).__name__}: {exc}"
-    result["changed_inputs"] = [
-        name
-        for name, sha in reads.initial_sha256.items()
-        if not (root / name).is_file() or digest((root / name).read_bytes()) != sha
-    ]
+    result["changed_inputs"] = reads.changed_inputs()
     result["changed_code"] = before != source_fingerprints()
     if previous is not None:
         result["reference_sha256"] = reference_sha256
-        result["changes"] = [
-            name
-            for name in sorted(previous["observations"].keys() | result["observations"].keys())
-            if previous["observations"].get(name) != result["observations"].get(name)
-        ]
+        result["changes"] = observation_changes(previous["observations"], result["observations"])
     failed = bool(
         result["errors"] or result["changes"] or result["changed_code"] or result["changed_inputs"]
     )
     result["status"] = "failed" if failed else "passed" if previous is not None else "recorded"
-    with target.open("x") as stream:
-        json.dump(result, stream, sort_keys=True, ensure_ascii=False, indent=2)
-        stream.write("\n")
+    write_json(target, result)
     return int(failed)
 
 

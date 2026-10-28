@@ -1,7 +1,8 @@
 import hashlib
 import json
+import os
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import pytest
 from tools import replay_word_blocks
@@ -98,6 +99,43 @@ def test_replay_rejects_changed_raw_bytes_and_an_unpinned_reference(tmp_path: Pa
         result["status"] == "failed"
         and "SHA mismatch" in result["errors"]["documents/files/sample.docx"]
     )
+
+
+def test_replay_detects_rebound_internal_alias_after_its_original_target_was_read(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    corpus, catalog, sha, source = inputs(tmp_path)
+    data = source.read_bytes()
+    first, second = source.with_name("first.docx"), source.with_name("second.docx")
+    source.replace(first)
+    source.symlink_to(first)
+    second.write_bytes(data + b"\n")
+    replacement = source.with_name("replacement")
+    replacement.symlink_to(second)
+    original = replay_word_blocks.snapshot
+
+    def retarget(
+        data: bytes,
+        *,
+        adapter: bool,
+        physical_parts: bool = False,
+        with_notes: bool = False,
+    ) -> tuple[dict[str, Any], dict[str, Any] | None]:
+        result = original(
+            data, adapter=adapter, physical_parts=physical_parts, with_notes=with_notes
+        )
+        os.replace(replacement, source)
+        return result
+
+    monkeypatch.setattr(replay_word_blocks, "snapshot", retarget)
+    output = tmp_path / "after.json"
+
+    assert replay_word_blocks.run(corpus, catalog, sha, output, mode="library") == 1
+
+    saved = json.loads(output.read_bytes())
+    assert saved["status"] == "failed"
+    assert saved["changed_inputs"] == ["documents/files/sample.docx"]
 
 
 def test_notes_replay_checks_the_declared_target_against_original_xml(

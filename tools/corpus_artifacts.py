@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -22,3 +23,11 @@ def write_json(path: Path, value: Any) -> None:
     with path.open("x") as stream:
         json.dump(value, stream, sort_keys=True, ensure_ascii=False, indent=2)
         stream.write("\n")
+
+
+def observation_changes(previous: Mapping[str, object], current: Mapping[str, object]) -> list[str]:
+    return [
+        name
+        for name in sorted(previous.keys() | current.keys())
+        if name not in previous or name not in current or previous[name] != current[name]
+    ]

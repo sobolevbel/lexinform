@@ -239,3 +239,19 @@ collector/version и статусом ответа. При изменении б
 Реализация предложений и последующие измерения ведутся в
 [отдельном checklist и журнале](../plans/2026-10-25-corpus-improvements.md).
 Числа выше относятся к исходному health snapshot, не заменяются новыми результатами.
+
+
+## Общие replay guards · J118, 28 октября
+
+PDF/Word replays используют общие artifact read/write, comparison и CorpusReads final checks.
+Внутренняя символьная ссылка сохраняется как запрошенный input path: её смена не теряется
+за прежним canonical target. Повторная проверка не открывает цель вне корпуса либо `.env`
+и возвращает такой вход в changed_inputs; direct require также проверяет credential paths.
+Новые tests используют только controlled temporary fixtures.
+
+Final SHA recheck читает поток вместо целого файла. На одном существующем raw ZIP размером
+**15737127 bytes** Python allocation peak при recheck уменьшился **15738592→395327 bytes**;
+это не RSS процесса. Before/after fingerprint maps всех **16341 raw paths / 12073227147 bytes**
+совпали, changed_inputs пусты. Shared comparison различает отсутствующее наблюдение и явный
+unknown `null`; JSON/output formats и snapshot algorithms прежние.
+Подробности и gates — [J118](../plans/2026-10-22-document-architecture-progress.md#j118).
