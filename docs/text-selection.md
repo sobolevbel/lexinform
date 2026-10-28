@@ -149,6 +149,16 @@ Known omissions retain `normative_text_omitted` and downgrade selected input to 
 the original normative SHA and source facts remain unchanged. Without an input map, the
 existing coarse/unknown coverage contract remains in force.
 
+`prepared_text_input` builds a transient `PreparedTextInput` for document text before provider
+assembly. It hashes the exact emitted string and ordered source part strings; copied spans
+refer to a specific part, while separators and transform markers have system origins. Without
+a supplied projection, origins stay unknown. Coordinates are explicitly legacy string offsets,
+not physical citations; an exact map does not prove document completeness. The metadata contains
+no bodies and adds no SQLite fields or runtime producer. Optional
+`tools.replay_input_coverage --prepared-manifest` verifies these manifests in mapped compare
+mode while keeping default observations unchanged. See
+[J125](plans/2026-10-22-document-architecture-progress.md#j125).
+
 Senate amendment summaries select attachments by their extracted contents. A candidate needs
 the formal resolution heading, date, subject, affirmative amendment decision, operative changes
 and a closing marker. A closed single removal at a structured Word body end can stand without

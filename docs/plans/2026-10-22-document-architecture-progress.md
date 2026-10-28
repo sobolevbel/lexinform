@@ -6097,3 +6097,37 @@ coverage coordinates и profile values exact. Selection JSON byte delta0. Change
 
 Readonly origin/state tip проверен во время qualification: остаётся J116 pin
 `4f19d9bf7b8035f2239dece6098c4b06942f9414`; новый natural file-family cycle не заявляется.
+
+
+<a id="j125"></a>
+### J125. Transient prepared-text identity and explicit segment origins
+
+Статус: **готово**, baseline `9964a9ab6183c805b2c37b9aaaf7623c4937dc9e`.
+`PreparedTextInput` описывает точную emitted строку хешем/длиной, source-selection identity,
+упорядоченными part hashes/roles и диапазонами. Source spans адресуются внутри конкретного
+legacy part string. Generated transform markers и part separators имеют system origin;
+без projection вход остаётся unknown даже при совпадающем тексте. Карта не обещает полноту.
+Physical/block citations, provider context/prompt/options, SQL persistence и старые paid inputs
+в этот scoped контракт не входят. Документные тела в нём отсутствуют.
+
+Общий factory проверяет declared part hash и projection identity/copied bytes, не ищет
+substring origins. Он принимает source decision до fitting; scan/fitted decisions отвергаются.
+Optional `tools.replay_input_coverage --prepared-manifest` включает manifest только в mapped
+compare; прежний default report сохраняет форму. Replay проверяет JSON/identity round trip и
+дословность каждого source span. Runtime callers, prompts, paid identity и SQLite не меняются.
+Full gate и bounded real-format pilot выполняются на frozen code; результаты ниже.
+
+J124 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40632633527) success:
+**5189 passed**, strict mypy **490**, docs/web green. Main/deployment по-прежнему ждут ранее
+запрошенного разрешения; draft PR #11 не запускает production deployment.
+
+**26 focused / 5211 full passed**, failures/errors/skips0, strict mypy **493**, Ruff/format green.
+Pilot: **29 raw inputs / 178889531 bytes**, DOC4 / DOCX4 / DOCM4 / XML4 / PDF4 / ZIP8 / ODT1.
+Size strata min/median/p90/max дополняются ODT ZIP и rejection controls. **232 exact input maps**,
+335 source и 143 generated segments; все прежние J124 profile values exact, changed cases0.
+Идентичность raw/INDEX и source freeze проверена после прогона. Compact metadata —
+455–2171 bytes на manifest, суммарно184860; это transient inventory, не измерение SQL growth.
+CLI help показывает opt-in flag; прежние 159 runtime modules byte-exact, ещё один меняет только
+exports новых моделей. Full DA5.1 остаётся открытой до physical/context/runtime integration.
+[Acceptance asset](../assets/audits/2026-10-28-prepared-text/validation.json) фиксирует population,
+source hashes, exact prior-profile comparison, round trips и gates. Strict docs/build/link green.

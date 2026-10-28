@@ -283,6 +283,15 @@ from lexinform.models.planning import (
     tells_only_a_text,
     text_still_matters,
 )
+from lexinform.models.prepared_input import (
+    PreparedTextInput as PreparedTextInput,
+)
+from lexinform.models.prepared_input import (
+    PreparedTextPart as PreparedTextPart,
+)
+from lexinform.models.prepared_input import (
+    PreparedTextSegment as PreparedTextSegment,
+)
 from lexinform.models.rcl import (
     RCL_STAGE_TYPE,
     RclConsultation,
@@ -410,6 +419,9 @@ __all__ = [
     "DocumentLink",
     "DocumentPart",
     "DocumentSelection",
+    "PreparedTextInput",
+    "PreparedTextPart",
+    "PreparedTextSegment",
     "DocumentWork",
     "ExtractedDocument",
     "ExtractedParts",

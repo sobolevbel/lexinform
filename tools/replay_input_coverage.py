@@ -13,6 +13,8 @@ from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.document_selection import bill_selection, selection_for_input
 from lexinform.keywords import KeywordPrefilter
 from lexinform.law_digest import law_digest
+from lexinform.models import DocumentSelection, PreparedTextInput
+from lexinform.prepared_input import prepared_text_input
 from lexinform.sections import PAGE_BREAK, TextBudget, trim_print
 from lexinform.text_projection import TextProjection
 from tools.corpus_artifacts import digest as digest
@@ -21,7 +23,9 @@ from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 from tools.replay_pdf_pages import PdfReplayManifest
 
 
-def snapshot(data: bytes, *, mapped: bool) -> dict[str, Any]:
+def snapshot(data: bytes, *, mapped: bool, prepared_manifest: bool = False) -> dict[str, Any]:
+    if prepared_manifest and not mapped:
+        raise ValueError("Prepared manifests require mapped replay")
     reader = DocumentTextExtractor(
         PypdfTextExtractor(),
         DocxTextExtractor(),
@@ -85,7 +89,7 @@ def snapshot(data: bytes, *, mapped: bool) -> dict[str, Any]:
             if input_trace is not None
             else selection_for_input(selected, text)
         )
-    return {
+    result = {
         "core": {
             "input_sha256": digest(data),
             "extracted_sha256": digest(extracted.text.encode()),
@@ -109,6 +113,38 @@ def snapshot(data: bytes, *, mapped: bool) -> dict[str, Any]:
         },
         "mapping": mapping,
     }
+    if prepared_manifest:
+        result["prepared_inputs"] = {
+            name: check_prepared_input(
+                prepared_text_input(
+                    selected, text, projection=projections.get(name) if assembly_matches else None
+                ),
+                selected,
+                text,
+            )
+            for name, text in variants.items()
+        }
+    return result
+
+
+def check_prepared_input(
+    manifest: PreparedTextInput, selection: DocumentSelection, text: str
+) -> dict[str, Any]:
+    encoded = manifest.model_dump_json()
+    restored = PreparedTextInput.model_validate_json(encoded)
+    if restored != manifest or restored.input_id != manifest.input_id:
+        raise ValueError("Prepared manifest identity changed on round trip")
+    if manifest.text_sha256 != digest(text.encode()) or manifest.text_chars != len(text):
+        raise ValueError("Prepared manifest differs from the emitted text")
+    for segment in manifest.segments:
+        if segment.origin != "source":
+            continue
+        index = segment.part_index
+        assert index is not None, "PreparedTextSegment requires a source part"
+        copied = selection.parts[index].text[segment.source_start : segment.source_end]
+        if copied != text[segment.start : segment.end]:
+            raise ValueError("Prepared source part range differs from the emitted text")
+    return {"input_id": manifest.input_id, "manifest": manifest.model_dump(mode="json")}
 
 
 def check_projection(projection: TextProjection, source: str) -> dict[str, Any]:
@@ -143,7 +179,10 @@ def run(
     mode: Literal["baseline", "compare"],
     reference: Path | None = None,
     reference_sha256: str | None = None,
+    prepared_manifest: bool = False,
 ) -> int:
+    if prepared_manifest and mode != "compare":
+        raise ValueError("Prepared manifests require mapped compare mode")
     root, target = corpus.resolve(strict=True), output.resolve()
     if output.is_symlink() or target.exists() or target.is_relative_to(root):
         raise ValueError("Output must be a new file outside the corpus")
@@ -215,7 +254,9 @@ def run(
                 data = path.read_bytes()
                 if digest(data) != sha:
                     raise ValueError("Raw input SHA mismatch")
-                result["observations"][name] = snapshot(data, mapped=mode == "compare")
+                result["observations"][name] = snapshot(
+                    data, mapped=mode == "compare", prepared_manifest=prepared_manifest
+                )
             except Exception as exc:
                 result["errors"][name] = f"{type(exc).__name__}: {exc}"
     result["changed_inputs"] = [
@@ -255,6 +296,7 @@ def main() -> None:
     parser.add_argument("--mode", choices=("baseline", "compare"), required=True)
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--reference-sha256")
+    parser.add_argument("--prepared-manifest", action="store_true")
     args = parser.parse_args()
     logging.basicConfig(level=logging.ERROR)
     raise SystemExit(
@@ -267,6 +309,7 @@ def main() -> None:
             mode=args.mode,
             reference=args.reference,
             reference_sha256=args.reference_sha256,
+            prepared_manifest=args.prepared_manifest,
         )
     )
 

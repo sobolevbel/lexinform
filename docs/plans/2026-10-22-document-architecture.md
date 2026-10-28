@@ -586,7 +586,7 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
 **Изменяемые места:** `sections.py`, `keywords.py`/excerpts, бюджет текста, `_load_text`,
 `_fit_to_budget`, `selection_for_input`, batch contexts/meta, provider request preparation.
 
-- [ ] DA5.1. **Частично: [J045](2026-10-22-document-architecture-progress.md#j045), [J050](2026-10-22-document-architecture-progress.md#j050), [J051](2026-10-22-document-architecture-progress.md#j051), trim/excerpts/budget maps и runtime initial-budget coverage.** Ввести `PreparedInput` с ordered segments: extraction/block ref, source span,
+- [ ] DA5.1. **Частично: [J045](2026-10-22-document-architecture-progress.md#j045), [J050](2026-10-22-document-architecture-progress.md#j050), [J051](2026-10-22-document-architecture-progress.md#j051), trim/excerpts/budget maps и runtime initial-budget coverage; [J125](2026-10-22-document-architecture-progress.md#j125), transient text manifest с part origins и точной emitted identity в optional offline replay. Physical refs, context/options и runtime persistence остаются.** Ввести `PreparedInput` с ordered segments: extraction/block ref, source span,
   transformation, emitted span, роль, losses. Зафиксировать идентичность итоговой строки
   и контекста; их payload хранится по DA2 с обязательной защитой незавершённых запросов.
   Для сгенерированного разделителя/инструкции указать system origin, а не фиктивную цитату источника.
