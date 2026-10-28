@@ -159,7 +159,7 @@ def run_summary(read: Read, run: dict[str, Any]) -> dict[str, Any]:
             {
                 "id": job["id"],
                 "name": job.get("name")
-                if job.get("name") in ("docs", "web", "test (3.14)", "deploy")
+                if job.get("name") in ("docs", "web", "lint", "test (3.14)", "deploy")
                 else "unexpected_job",
                 "status": job["status"],
                 "conclusion": job.get("conclusion"),
@@ -181,7 +181,11 @@ def run_state(run: dict[str, Any], *, deploy: bool) -> Status:
     if deploy:
         return "verified" if names == ["deploy"] else "unproven"
     expected = {"docs", "web", "test (3.14)"}
-    return "verified" if len(names) == len(expected) and set(names) == expected else "unproven"
+    return (
+        "verified"
+        if len(names) == len(set(names)) and set(names) in (expected, expected | {"lint"})
+        else "unproven"
+    )
 
 
 def relay_proof(log: str, target: str, previous: str | None) -> Proof:

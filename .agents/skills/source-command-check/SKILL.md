@@ -5,8 +5,8 @@ description: "Прогнать и при необходимости почини
 
 # source-command-check
 
-Use for the migrated `check` command. Run, in order, `uv run ruff format src tests`,
-`uv run ruff check src tests`, `uv run mypy`, and `uv run pytest -q`.
+Use for the migrated `check` command. Run `make format`, then `make check`; both cover
+`src`, `tests` and `tools`, matching CI.
 
 Fix root causes, not configuration or suppressions: no `type: ignore`, local imports, `noqa`, or
 weakened type/lint rules. Tests use `World` and public fakes; keep arrange-act-assert and avoid

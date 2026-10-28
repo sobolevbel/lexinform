@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "stage": "J145a",
+  "status": "local_acceptance_passed",
+  "base_commit": "e7d7068cc42e31353d80f58bbb04451a63ff5cbf",
+  "incident": {
+    "ci_run": 40760522668,
+    "cause": "CI checks all tools; parent local static gate omitted the six unformatted observer modules",
+    "lint_errors": 57,
+    "production_relay": "Previous verified reader8a76 remained deployed"
+  },
+  "fix": {
+    "all_lint_paths": [
+      "src",
+      "tests",
+      "tools"
+    ],
+    "separate_lint_job": true,
+    "test_needs": "lint",
+    "lint_group_packages": [
+      "ruff"
+    ],
+    "unchanged_nonproject_lock_records": 105,
+    "legacy_and_split_ci_job_profiles": "exact3 or exact4; every observed job must succeed; duplicates/unexpected names rejected",
+    "local_guidance": [
+      "AGENTS.md",
+      "CONTRIBUTING.md",
+      ".agents/skills/source-command-check/SKILL.md"
+    ],
+    "observer_delta": "Formatting/import order;2 explicit closure default bindings and1 equivalent constant getattr-to-attribute rewrite; case identities unchanged"
+  },
+  "gate": {
+    "tests": 6388,
+    "seconds": 223.121,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "coverage_percent": 92,
+    "mypy_files": 555,
+    "focused_tests": 108,
+    "ruff": "all src/tests/tools passed",
+    "format": "621 files formatted",
+    "source_files_exact": 623
+  },
+  "native": {
+    "status": "exact",
+    "cases": 168,
+    "raw_sql_and_profile_artifacts": 174,
+    "changed": [],
+    "normalization": "none",
+    "same_tree_reuse": {
+      "reusable": true,
+      "differences": []
+    },
+    "manifest_sha256": "023c9f31f27c7c60f1ad9ce3ad3a9ce38c3eaf060c748ababf341e60d9edb8d0"
+  },
+  "evidence": [
+    {
+      "path": "out/corpus/j145a/final-gate/full.xml",
+      "bytes": 1025620,
+      "sha256": "029c6b5776d414e24db6ac8820f5c73917d5a606636f4ed4739e8dbb1f82c0de"
+    },
+    {
+      "path": "out/corpus/j145a/final-gate/full.log",
+      "bytes": 673578,
+      "sha256": "fca3ff95524a1e95c4c3b1aa7f9b258f9fb293656f1b844515ec292821b2418e"
+    },
+    {
+      "path": "out/corpus/j145a/final-gate/mypy.log",
+      "bytes": 45,
+      "sha256": "df8e1c2ae54828a68830f7db5f0cda70884d3e71bedd187bd1667b06e4c29acf"
+    },
+    {
+      "path": "out/corpus/j145a/final-gate/ruff.log",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "path": "out/corpus/j145a/final-gate/format.log",
+      "bytes": 28,
+      "sha256": "2f480de77c3f72bdcae308b483b72523c89bf8b35d8945a58d2017d302d5cc80"
+    },
+    {
+      "path": "out/corpus/j145a/final-gate/source-freeze.json",
+      "bytes": 68290,
+      "sha256": "6ff3ecf7040a2c97cf7b4f4c85780e04666b0eb6af3f7080af1a0fdcd32d7912"
+    },
+    {
+      "path": "out/corpus/j145a/focused.xml",
+      "bytes": 15708,
+      "sha256": "589628b894a2523b2c7d88e4e266f6296b71c8d32674823ad4942e523bb79170"
+    },
+    {
+      "path": "out/corpus/j145a/lock-proof.json",
+      "bytes": 142,
+      "sha256": "682507a3384b4b3204a6a5615ddffc83e431e96dc83da51caceefc0a4732abc0"
+    },
+    {
+      "path": "out/corpus/j145a/native-parity.json",
+      "bytes": 285,
+      "sha256": "faa4c6fb3b5d4215dd8e2fe093efc58f56585a2d105f8f6d9aa6ea6029f22786"
+    },
+    {
+      "path": "out/corpus/j145a/native168/manifest.json",
+      "bytes": 157277,
+      "sha256": "023c9f31f27c7c60f1ad9ce3ad3a9ce38c3eaf060c748ababf341e60d9edb8d0"
+    },
+    {
+      "path": "out/corpus/j145a/format-proof/handoff.json",
+      "bytes": 1944,
+      "sha256": "fb4a1ac6305af9a08b23bf7dcde057334eb6373e5258d586d34f9e4996ef4013"
+    },
+    {
+      "path": "out/corpus/j145a/format-proof/lint-fix.patch",
+      "bytes": 49669,
+      "sha256": "57a8ae4537aefce8a730660deb2957919413023736995270bb0e95e9f430f1a8"
+    },
+    {
+      "path": "out/corpus/j145a/failed-ci.json",
+      "bytes": 1128,
+      "sha256": "cc6a2565131e53a783c76b41bff2d0b660edff10ee882ee8024e5b827258e17c"
+    }
+  ],
+  "review": "Independent CI dependency/group/job/verifier review;47 additional readonly checks passed",
+  "limits": [
+    "No application source changes",
+    "No selection/extraction/provider inputs change",
+    "No ignored lint rules or weakened formatting/type configuration"
+  ]
+}

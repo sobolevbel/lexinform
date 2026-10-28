@@ -40,7 +40,7 @@ SUITES: tuple[Suite, ...] = (
         "projection_profile.py",
         "DA_PROJECTION_PROFILE_OUTPUT",
         12,
-        "ea04424fccc679b9ad4569ec7c07cc348a73d92c29bb0aa38cb7e517d7e50f0e",
+        "4e599fdfd5996ce2775d13109388d5ea31db590d2ce5e4612c58ac930fdc57e5",
         "36a2504a4ee69efde94605bc530e736c47850cd0ec5ab7dee3d126cdbf09de57",
     ),
     Suite(
@@ -48,7 +48,7 @@ SUITES: tuple[Suite, ...] = (
         "handoff_profile.py",
         "DA_HANDOFF_PROFILE_OUTPUT",
         24,
-        "da7b56044237f17489d0f702a868114232c9e88a2503168ca77f2a37065365ce",
+        "4d8a5e73d149bb674f1d2d77c6e325f57378364b24df592a8a49301b14aa8914",
         "25c63871b466edcc4ffbe10884c494385460a8bb4a4d594c38081aa8fa94bb62",
     ),
     Suite(
@@ -56,7 +56,7 @@ SUITES: tuple[Suite, ...] = (
         "reuse_profile.py",
         "DA_REUSE_PROFILE_OUTPUT",
         16,
-        "6a75655ca4b5fd1e4b81e049ba5e7b4a23b7ed3b75656e3584bf9563b05d3962",
+        "553cc38e3ecbcb1dadc9e83112911cf8800300419075fac82747cdf7c27ec94e",
         "6c2c6eda6ed153ad7733ae805aeeafeda8689c1a3c25ff7bee31dcaf1cfe5240",
     ),
     Suite(
@@ -64,7 +64,7 @@ SUITES: tuple[Suite, ...] = (
         "explanation_profile.py",
         "DA_EXPLANATION_PROFILE_OUTPUT",
         16,
-        "cff55fa57bfe4df9bfe142c92c697e751720b09512c63733052c3e70632cf777",
+        "ad0d723db301b422ac2dba94dc70667e9e075128e69046427ff878bfb8dff41b",
         "199042ec03d9fc3e73ca4f84e470ab2314997ad3cbb4500941ed2a5560145b5a",
     ),
     Suite(
@@ -72,7 +72,7 @@ SUITES: tuple[Suite, ...] = (
         "primary_profile.py",
         "DA_PRIMARY_PROFILE_OUTPUT",
         36,
-        "f11f5516c55b6993a27029c92fde9eb32075666b7c24a969a3dd849e0cad191e",
+        "4beeabd72ae6a043b135a941e09e472db17db09f81de9e9258def032e60da3d8",
         "3507705b06dd4ac8fc5d24e39bdcb624c4d94c5283808078fd8b3080116114f3",
     ),
     Suite(
@@ -80,7 +80,7 @@ SUITES: tuple[Suite, ...] = (
         "admission_flows.py",
         "DA_ADMISSION_OUTPUT",
         64,
-        "185e456e5bc01bf5c69efe1e12c6dd15138a5d547f3e5231fbeaad386dac6801",
+        "cd783376cf1d62f9c1a2f9375dffc2dc0f4e785f19b83e801201f533007101ae",
         "0decceef0163922d76e747329bfe5566865a15b16ff69175f712f6e94de3c2d0",
     ),
 )

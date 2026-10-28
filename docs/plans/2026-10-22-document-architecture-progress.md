@@ -7134,7 +7134,7 @@ J144 reader commit `8a76a8e4f8a021f6b195c082bf901e09cd660914`: точные CI/d
 
 ### J145. Centralize fixed native replay and qualify baseline reuse
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**.
+Статус: **runtime replay завершён; CI lint отказал, исправление в J145a**.
 Шесть существующих observer bodies перенесены byte-exact в tools; состав остаётся 168 cases.
 Один runner владеет запуском, immutable source/artifact manifests, environment/import/read
 closure и fail-closed reuse. Он проверяет SQL/FK/integrity и derived profile values, включая
@@ -7156,3 +7156,26 @@ messages/order и все SQL bytes exact. SQL total 7 574 128 B, gzip 9 / mtime 
 [Acceptance asset](../assets/audits/2026-10-28-native-runner/validation.json).
 План: 74 tasks / 29 done / 6 N/A / 39 applicable partial-open; это автоматизация приёмки существующего
 контракта DA0.5, без заявления о завершении natural production coverage.
+
+
+### J145a. Match the full lint gate and separate its CI job
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**. CI 40760522668 остановил J145
+на 57 lint errors в observer modules: локальный статический gate проверял только выбранные
+новые tools, CI — весь каталог. Реле осталось на успешном reader 8a76; ложного deploy proof нет.
+Все шесть observers приведены к общим правилам, без suppressions. Два loop closures получили
+явный default binding; один постоянный getattr заменён эквивалентным attribute access.
+Остальная логика и 168 case identities сохранены; новые source hashes задекларированы явно.
+
+По запросу пользователя lint вынесен в отдельную CI job. Она ставит только frozen Ruff из
+новой lint dependency group; dev включает ту же группу, 105 остальных lock records exact.
+Test job зависит от lint и затем проверяет types, pytest и corpus. Docs/web остаются параллельны.
+Release verifier поддерживает точные старый 3 / новый 4 profiles и требует успеха всех observed jobs;
+дубликаты/неизвестные jobs не принимаются. AGENTS, CONTRIBUTING и check skill теперь включают
+весь tools, как существующий make check и CI.
+
+Full: 6388 tests / 0 failures-errors-skips, 223.121s, coverage 92%; mypy 555, полный Ruff/format 621 passed,
+focused 108. В чистом lint environment установлен только Ruff 0.17.2. Fresh 168: 174 raw SQL/profile
+artifacts exact относительно J145, без normalization; same-tree reuse passed. Independent
+review не нашло замечаний к job dependency/lock/verifier; 47 readonly checks passed.
+[Incident/fix evidence](../assets/audits/2026-10-28-native-runner/ci-lint.json).

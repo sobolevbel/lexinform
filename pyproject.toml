@@ -40,12 +40,15 @@ lexinform = "lexinform.cli:main"
 
 [dependency-groups]
 dev = [
+  { include-group = "lint" },
   "pytest>=8",
   "pytest-cov>=5",
-  "ruff>=0.6",
   "mypy>=1.11",
   "hypothesis>=6.168.0",
   "pytest-xdist>=3.8,<4",
+]
+lint = [
+  "ruff>=0.6",
 ]
 docs = [
   "zensical>=0.0.64,<0.1",

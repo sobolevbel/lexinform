@@ -20,7 +20,20 @@ jobs:
       - name: Check links and build contents
         run: uv run --frozen --only-group docs python tools/check_docs.py
 
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: Install lint tools
+        run: uv sync --frozen --only-group lint --python 3.14
+      - name: Lint and format
+        run: uv run --frozen --only-group lint ruff check src tests tools && uv run --frozen --only-group lint ruff format --check src tests tools
+
   test:
+    needs: lint
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -32,8 +45,6 @@ jobs:
           enable-cache: true
       - name: Install
         run: uv sync --frozen --python ${{ matrix.python-version }}
-      - name: Lint
-        run: uv run ruff check src tests tools && uv run ruff format --check src tests tools
       - name: Type-check
         run: uv run mypy
       - name: Test

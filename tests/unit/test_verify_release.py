@@ -62,6 +62,27 @@ class GitHub:
         return self.log
 
 
+@pytest.mark.parametrize("conclusion", ["success", "failure", "skipped"])
+def test_separate_lint_job_must_finish_successfully(conclusion: str) -> None:
+    github = GitHub()
+    lint = job(4, "lint")
+    lint["conclusion"] = conclusion
+    github.ci_jobs.append(lint)
+
+    report = verify(TARGET, previous=PREVIOUS, read=github.read)
+
+    assert report["status"] == ("verified" if conclusion == "success" else "failed")
+
+
+def test_duplicate_lint_jobs_cannot_verify() -> None:
+    github = GitHub()
+    github.ci_jobs.extend([job(4, "lint"), job(5, "lint")])
+
+    report = verify(TARGET, previous=PREVIOUS, read=github.read)
+
+    assert report["status"] == "unproven"
+
+
 def test_current_known_valid_automatic_deploy_has_one_canonical_report() -> None:
     github = GitHub()
 

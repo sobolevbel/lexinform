@@ -842,6 +842,9 @@ dev = [
 docs = [
     { name = "zensical" },
 ]
+lint = [
+    { name = "ruff" },
+]
 mutation = [
     { name = "mutmut" },
 ]
@@ -871,6 +874,7 @@ dev = [
     { name = "ruff", specifier = ">=0.6" },
 ]
 docs = [{ name = "zensical", specifier = ">=0.0.64,<0.1" }]
+lint = [{ name = "ruff", specifier = ">=0.6" }]
 mutation = [{ name = "mutmut", specifier = "==3.8.1" }]
 
 [[package]]

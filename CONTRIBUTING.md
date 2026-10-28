@@ -59,7 +59,7 @@ Override the uv command with `make check UV="uv --offline"` after dependencies a
 The underlying commands remain available:
 
 ```bash
-uv run ruff format src tests && uv run ruff check src tests
+uv run ruff format src tests tools && uv run ruff check src tests tools
 uv run mypy                   # strict, over src and tests
 uv run pytest                 # offline unit + scenario tests, up to four worker processes
 ```
@@ -67,6 +67,8 @@ uv run pytest                 # offline unit + scenario tests, up to four worker
 All three must be clean. CI (`.github/workflows/ci.yml`) runs the same on Python 3.14, the only
 version this project is built and tested on: `uv` fetches it wherever it is missing, so nothing
 depends on what a distribution ships.
+The separate `lint` job installs only the frozen `lint` group; `test` waits for it before
+type checking, pytest and the offline corpus slice. Documentation and web jobs run independently.
 Commit after each finished part; do not push unless asked. Commit messages are English, subject
 and body alike.
 
@@ -379,6 +381,6 @@ history of the `state` branch.
 
 ## Pull requests
 
-One topic per PR, with tests; run `uv run ruff format src tests && uv run ruff check src tests &&
+One topic per PR, with tests; run `uv run ruff format src tests tools && uv run ruff check src tests tools &&
 uv run mypy && uv run pytest -q` before pushing; describe the user-visible effect (a changed
 message, a new keyword, a new setting).

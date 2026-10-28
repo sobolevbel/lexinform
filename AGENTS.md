@@ -38,7 +38,7 @@ referrals, hearings, deadlines — not a chronicle.
 ## Working rules
 
 - Python 3.14, `uv`. Before a commit: `uv run pytest -q && uv run mypy && uv run ruff check src
-  tests`, then `uv run ruff format src tests`. mypy is strict over `src` and `tests`: no `type:
+  tests tools`, then `uv run ruff format src tests tools`. mypy is strict over `src` and `tests`: no `type:
   ignore`, no local imports, tests fully typed. An `assert` that narrows a type states an invariant
   and who guarantees it (`assert x is not None, "…"`); a value that can really be None is handled.
   Tests marked `local_http` are outside the default gate; `make test-local-http` only when a change
