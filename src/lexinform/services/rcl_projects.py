@@ -5,13 +5,18 @@ Every page takes seconds to render, so callers read only what they need: the tim
 whether a project matters, the catalogs of a candidate, the newest text of a title miss.
 """
 
+import datetime as dt
 import logging
+from contextlib import suppress
+from typing import Literal
 
+from lexinform import rcl_letters as letter_parser
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import RclConsultation, RclDocument, RclProject, RclStage
-from lexinform.ports import RclGateway
-from lexinform.rcl_letters import LETTER_PARSER, deadline_of, parse_letter
-from lexinform.services.documents import TextLoader
+from lexinform.ports import RclGateway, RclLetterUseObserver
+from lexinform.rcl_letters import LETTER_PARSER, LetterInfo, deadline_of, parse_letter
+from lexinform.services.documents import LoadedFile, TextLoader
+from lexinform.services.rcl_letter_history import rcl_letter_observation
 
 log = logging.getLogger(__name__)
 
@@ -21,9 +26,12 @@ TEXT_STAGE_ATTEMPTS = 3
 
 
 class RclProjectReader:
-    def __init__(self, rcl: RclGateway, loader: TextLoader) -> None:
+    def __init__(
+        self, rcl: RclGateway, loader: TextLoader, *, observer: RclLetterUseObserver | None = None
+    ) -> None:
         self._rcl = rcl
         self._loader = loader
+        self._observer = observer
 
     def timeline(self, project_id: int) -> RclProject:
         """The project page alone: metadata and stage states, no folders."""
@@ -116,7 +124,7 @@ class RclProjectReader:
         unread = [d for d in stage.consultation_letters() if d.url not in read]
         window = known
         for letter in unread:
-            window = _better_window(window, self._read_letter(letter, stage, project))
+            window = self._read_window(letter, stage, project, window)
             read.add(letter.url)
         if window is None:
             return RclConsultation(**facts)
@@ -126,29 +134,88 @@ class RclProjectReader:
             update={**facts, "letters_read": tuple(sorted(read)), "letter_parser": LETTER_PARSER}
         )
 
-    def _read_letter(
-        self, letter: RclDocument, stage: RclStage, project: RclProject
+    def _read_window(
+        self,
+        letter: RclDocument,
+        stage: RclStage,
+        project: RclProject,
+        before: RclConsultation | None,
     ) -> RclConsultation:
         url = letter.url
+        loaded: LoadedFile | None = None
+        text: str | None = None
+        parser_called = False
+        info: LetterInfo | None = None
+        published: dt.date | None = None
+        published_source: Literal[
+            "letter.created", "stage.modified", "project.modified", "not_used"
+        ] = "not_used"
+        result: RclConsultation | None = None
+        after: RclConsultation | None = None
+        error: BaseException | None = None
         try:
-            text = self._loader.load(url)
-        except ServiceUnavailableError:
+            try:
+                loaded = self._loader.read(url)
+                text = loaded.text
+            except ServiceUnavailableError:
+                raise
+            except Exception as exc:
+                error = exc
+                log.warning("consultation letter %s unreadable: %s", url, exc)
+            if text is None:
+                result = RclConsultation(letter_url=url)
+            else:
+                parser_called = True
+                info = parse_letter(text)
+                published = letter.created or stage.modified or project.modified
+                published_source = (
+                    "letter.created"
+                    if letter.created
+                    else "stage.modified"
+                    if stage.modified
+                    else "project.modified"
+                )
+                deadline = deadline_of(info, published=published)
+                result = RclConsultation(
+                    letter_url=url,
+                    letter_date=info.letter_date,
+                    days=info.days,
+                    deadline=deadline,
+                    email=info.email,
+                )
+            after = _better_window(before, result)
+            return after
+        except BaseException as exc:
+            error = exc
             raise
-        except Exception as exc:
-            log.warning("consultation letter %s unreadable: %s", url, exc)
-            text = None
-        if text is None:
-            return RclConsultation(letter_url=url)
-        info = parse_letter(text)
-        published = letter.created or stage.modified or project.modified
-        deadline = deadline_of(info, published=published)
-        return RclConsultation(
-            letter_url=url,
-            letter_date=info.letter_date,
-            days=info.days,
-            deadline=deadline,
-            email=info.email,
-        )
+        finally:
+            if self._observer is not None:
+                try:
+                    origins = (
+                        self._loader.file_origins(url, loaded)
+                        if loaded is not None
+                        else (None, None, None)
+                    )
+                    observation = rcl_letter_observation(
+                        project,
+                        stage,
+                        letter,
+                        before=before,
+                        result=result,
+                        after=after,
+                        parser_text=text if parser_called else None,
+                        info=info,
+                        published=published,
+                        published_source=published_source,
+                        origins=origins,
+                        error=error,
+                        parser_source=letter_parser.__file__,
+                        merge_source=__file__,
+                    )
+                    self._observer.observe_rcl_letter_use(observation)
+                except BaseException as exc:
+                    with suppress(BaseException):
+                        log.warning("RCL letter-use capture failed (%s)", type(exc).__name__[:128])
 
 
 def _better_window(known: RclConsultation | None, read: RclConsultation) -> RclConsultation:

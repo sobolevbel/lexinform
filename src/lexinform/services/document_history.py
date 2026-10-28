@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from lexinform.document_editions import candidate_edition
+from lexinform.errors import SourceHistoryPersistenceError
 from lexinform.models import (
     ArtifactIdentity,
     ArtifactMetadata,
@@ -19,7 +20,17 @@ from lexinform.models import (
     TextDocument,
 )
 from lexinform.models.artifacts import SelectionPartScope
-from lexinform.ports import BillRepository
+from lexinform.ports import BillRepository, SourceHistoryPersistence
+
+
+def persist_source_history(
+    repo: BillRepository, history: SourceHistoryPersistence, *, recorded_at: dt.datetime
+) -> None:
+    """Contain new observation-hook failures without changing unrelated cancellation handling."""
+    try:
+        history.persist_source_history(repo, recorded_at=recorded_at)
+    except BaseException as exc:
+        raise SourceHistoryPersistenceError(type(exc).__name__) from None
 
 
 @dataclass(frozen=True)

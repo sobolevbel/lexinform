@@ -1,0 +1,289 @@
+{
+  "agent_handoff": {
+    "baseline": "9a3729a829c2bb11f2fc20862c12c769095e3407",
+    "behavior": "One actual read/parse/merge, exact reached facts and original exceptions; no parser/schema/publicJSON/CLI flow change. Shared clock-free collector, one opaque history hook, existing caller atomic boundaries.",
+    "evidence_scope": "Corpus-derived cached unknown-origin views and separate actual-raw local replay; missing543 excluded, partial/seeded contexts counterfactual, not natural production demand/application. Parent JSON is outside each use cap.",
+    "files": 13,
+    "focused": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 118
+    },
+    "freeze_sha256": "7c68e13ec157ecd9cf6961fb659784c5614da8fe112b5967c373e7eecce4e045",
+    "not_run": [
+      "full gate",
+      "network/providers/paid calls",
+      "production state",
+      "commit/push/deploy"
+    ],
+    "parity": {
+      "cached": {
+        "available_parser_or_raw_inputs": 404,
+        "business_or_IO_deltas": [],
+        "combined_delta": {
+          "gzip": 146475,
+          "sql": 1214472
+        },
+        "counterfactual_use_facts": 437,
+        "excluded_missing_slots": 543,
+        "max_persisted_use_json_bytes": 2910,
+        "official_selected_slots": 947,
+        "paired_cases": 2031,
+        "parent_counts": {
+          "artifact_reads": 0,
+          "artifacts": 0,
+          "extraction_results": 0,
+          "rcl_letter_uses": 437
+        },
+        "parent_delta": {
+          "gzip": 0,
+          "sql": 0
+        },
+        "repeat_dump_growth": 0,
+        "shared_extraction_json_total_bytes": 0,
+        "use_delta_over_existing_parents": {
+          "gzip": 146475,
+          "sql": 1214472
+        }
+      },
+      "raw": {
+        "available_parser_or_raw_inputs": 404,
+        "business_or_IO_deltas": [],
+        "combined_delta": {
+          "gzip": 374012,
+          "sql": 2787907
+        },
+        "counterfactual_use_facts": 437,
+        "excluded_missing_slots": 543,
+        "max_persisted_use_json_bytes": 3151,
+        "official_selected_slots": 947,
+        "paired_cases": 2031,
+        "parent_counts": {
+          "artifact_reads": 404,
+          "artifacts": 403,
+          "extraction_results": 403,
+          "rcl_letter_uses": 437
+        },
+        "parent_delta": {
+          "gzip": 162418,
+          "sql": 1373493
+        },
+        "repeat_dump_growth": 0,
+        "shared_extraction_json_total_bytes": 1104959,
+        "use_delta_over_existing_parents": {
+          "gzip": 211594,
+          "sql": 1414414
+        }
+      }
+    },
+    "patch": {
+      "bytes": 45983,
+      "path": "/Users/sobaleu/.codex/worktrees/download-outcomes/lexinform/out/corpus/rcl-letter-use-design/s2/rcl-letter-capture.patch",
+      "sha256": "6676307fe1b535998b486542871c1cc10f2c01b834a82af879e5dc33585c9707"
+    },
+    "preserved_stash": "e5394484b42e682b468572c6d84581c717f787bd",
+    "privacy": "Unsafe RCL descriptor URLs retain hash; its parent envelope omits unsafe read object/ref while keeping exact body/extraction. Existing generic receipts untouched; no database-wide URL-redaction claim.",
+    "static": {
+      "format.log": "631 files already formatted",
+      "mypy.log": "Success: no issues found in 565 source files",
+      "ruff.log": "All checks passed!"
+    },
+    "status": "Frozen; ready for independent review before root full gate"
+  },
+  "baseline_runtime": "9a3729a829c2bb11f2fc20862c12c769095e3407",
+  "docs_check": {
+    "log_sha256": "177779044d00ef532a65df7a425b413ceecb6d063392172376540125049ef74c",
+    "strict_build_links_resources_contents": "passed"
+  },
+  "full_gate": {
+    "added_case_breakdown": {
+      "tests.scenario": 10,
+      "tests.unit": 19
+    },
+    "coverage_percent": 93,
+    "errors": 0,
+    "failures": 0,
+    "local_http_seconds": 3.15,
+    "local_http_tests": 25,
+    "mypy_files": 565,
+    "pytest_seconds": 228.98,
+    "ruff_format_files": 631,
+    "skipped": 0,
+    "source_config_freeze_exact_files": 633,
+    "tests": 6500
+  },
+  "independent_review": {
+    "all_nonpatch_src_files_match_S1": true,
+    "builder_focused_verified": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 118
+    },
+    "freeze_sha256": "7c68e13ec157ecd9cf6961fb659784c5614da8fe112b5967c373e7eecce4e045",
+    "frozen_evidence_files": 16,
+    "frozen_files": 13,
+    "independent_origin_probe_sha256": "50878a21b2fb36e555aac4264d032006f3c59bebece28f7f0ff07567ebb4e031",
+    "lanes": {
+      "cached": {
+        "corpus_hash_pins_verified": 2721,
+        "counterfactual_case_entries": 876,
+        "exact_case_and_ordered_IO_equality": true,
+        "integrity_fk_and_use_count": true,
+        "paired_cases": 2031,
+        "revalidated_use_parent_envelopes": 437,
+        "source_and_options_matched": true
+      },
+      "raw": {
+        "corpus_hash_pins_verified": 2721,
+        "counterfactual_case_entries": 876,
+        "exact_case_and_ordered_IO_equality": true,
+        "integrity_fk_and_use_count": true,
+        "paired_cases": 2031,
+        "revalidated_use_parent_envelopes": 437,
+        "source_and_options_matched": true
+      }
+    },
+    "limits": [
+      "No full gate or native168 rerun by reviewer.",
+      "Public-reader corpus parity includes labeled available-only/seeded counterfactual contexts;543 missing descriptor slots remain excluded.",
+      "Cached strings do not establish original body identity; raw lane is separate local replay, not natural production demand or saved application.",
+      "Unsafe URL omission is scoped to new RCL envelope, not inherited global receipt redaction.",
+      "Show/read-only lookup/preview have no new persistence owner; unknown preview enrollment is preserved."
+    ],
+    "new_RCL_imports_in_generic_owners": 0,
+    "patch_sha256": "6676307fe1b535998b486542871c1cc10f2c01b834a82af879e5dc33585c9707",
+    "reviewed_source_matches_independent_origin_probe": true,
+    "source_and_evidence_unchanged": true,
+    "stage": "J150 S2",
+    "status": "review_complete_no_actionable_findings"
+  },
+  "native_replay": {
+    "added_parent_rows": 0,
+    "appended_row_totals": {
+      "rcl_letter_uses": 24
+    },
+    "artifacts": {
+      "out/corpus/j148/native168/manifest.json": {
+        "bytes": 158242,
+        "sha256": "38db3001c2499b0a4476f3aa4c22248083f1718af1ce96b2fdbd3d0232847973"
+      },
+      "out/corpus/j150/native168/manifest.json": {
+        "bytes": 158689,
+        "sha256": "287253f40f9f5c3f8ad16f8e08bcf590950e0190a6dcb99e36df416085b21574"
+      },
+      "out/corpus/j150/native168/spec.json": {
+        "bytes": 81399,
+        "sha256": "f1f17fda2658e012af314f4013218e8763c189501a0f29822765a0c4a5ff9ef9"
+      },
+      "out/corpus/j150/qa/compare_native.py": {
+        "bytes": 6881,
+        "sha256": "485283ef10f0d6941f44a28e91ecc7e437e47173842495e8efe0790a1c8753a2"
+      },
+      "out/corpus/j150/qa/parity.json": {
+        "bytes": 82793,
+        "sha256": "1dde334fc848dd5121d4cbd02724c14f035fa09d8c5543dfe33b5b07324e85c3"
+      }
+    },
+    "business_profile_normalization": "Only independently SQL-derived metrics and normal/data hashes for actual validated allowed appended rows; no runs/reports or business fields removed.",
+    "cases": 168,
+    "counts": {
+      "admission": 64,
+      "explanation": 16,
+      "handoff": 24,
+      "normal": 12,
+      "primary": 36,
+      "reuse": 16
+    },
+    "frozen_S2_files_match": 13,
+    "guard_violations": 0,
+    "gzip9_mtime0_bytes_delta_per_changed_case_range": [
+      700,
+      742
+    ],
+    "gzip9_mtime0_bytes_delta_sum": 17204,
+    "imports": 195,
+    "limits": [
+      "Fixed six observer suites only; no full gate/network/paid/production processing/source edits/commit/push.",
+      "Only handoff fixture RCL use rows added; each is strict-model/column/existing-parent validated, not claimed natural production evidence.",
+      "Only validated SQL-derived hash/size fields differ in profiles; no runs/data/report/business fields are stripped."
+    ],
+    "necessary_existing_parent_refs_validated": true,
+    "old_schema_tables_rows_runs_reports_messages_provider_inputs_exact": true,
+    "reads": 204,
+    "reproduction": "UV_CACHE_DIR=/private/tmp/lexinform-pr9-uv-cache UV_PROJECT_ENVIRONMENT=/private/tmp/lexinform-j140-integrated/.venv PYTHONPATH=primary/src:primary uv run --no-sync --offline --frozen python tools/native_replay.py run --code PRIMARY --output PRIMARY/out/corpus/j150/native168 ; then same environment python -B out/corpus/j150/qa/compare_native.py. Runner output must be fresh; use new ignored output to repeat.",
+    "same_schema": 60,
+    "source_inputs": 709,
+    "source_runner_and_baseline_manifests_unchanged": true,
+    "sql_bytes_delta_per_changed_case_range": [
+      2525,
+      2525
+    ],
+    "sql_bytes_delta_sum": 60600,
+    "sql_changed_cases": 24,
+    "sql_changed_groups": [
+      "handoff"
+    ],
+    "status": "exact_except_validated_append_only_RCL_history",
+    "unchanged_case_sql_byte_exact": 144
+  },
+  "pins": {
+    "/Users/sobaleu/.codex/worktrees/download-outcomes/lexinform/out/corpus/rcl-letter-use-design/s2/freeze.json": {
+      "bytes": 5530,
+      "sha256": "7c68e13ec157ecd9cf6961fb659784c5614da8fe112b5967c373e7eecce4e045"
+    },
+    "/Users/sobaleu/.codex/worktrees/download-outcomes/lexinform/out/corpus/rcl-letter-use-design/s2/handoff.json": {
+      "bytes": 3198,
+      "sha256": "d536ef8eca4fb8c4046a1a4857319a9b10b4713e62721573414dcee790fafd84"
+    },
+    "/Users/sobaleu/.codex/worktrees/download-outcomes/lexinform/out/corpus/rcl-letter-use-design/s2/parity-summary.json": {
+      "bytes": 1769,
+      "sha256": "34117fcf168dbb21461b85916a7884a5fc8959c010d0482301dcd76659e3707b"
+    },
+    "out/corpus/j149-independent-review/final-review.json": {
+      "bytes": 1917,
+      "sha256": "a3f42a3e4731ab3511d77cfd6871f62876736ed9eba0cc773119b2e3f03f173e"
+    },
+    "out/corpus/j150/final-gate/check.log": {
+      "bytes": 668452,
+      "sha256": "acb7dcd1279ebba85bdb89bf07a63a1fd9d445e69fa7b2bb14a5f39931a1ebc2"
+    },
+    "out/corpus/j150/final-gate/full.xml": {
+      "bytes": 1054248,
+      "sha256": "f0056db58943b7afde87afd6658ff208b659db0e3a05513828bfbca1528067c5"
+    },
+    "out/corpus/j150/final-gate/local-http.log": {
+      "bytes": 179,
+      "sha256": "5b50b23813390ea7fb63c025aaca302fbc601937c92f5c9514c8a907fde9c071"
+    },
+    "out/corpus/j150/final-gate/source-freeze.json": {
+      "bytes": 69447,
+      "sha256": "3ebc3c966aebc9a8d8ab87bf60678172a001b9c0cf316fbe2d0262f529d21e9e"
+    },
+    "out/corpus/j150/qa/handoff.json": {
+      "bytes": 2783,
+      "sha256": "8ddadd486632708fd24860d619112e3d52e546e5f636eedb0d646a34e9404155"
+    },
+    "out/corpus/j150/qa/parity.json": {
+      "bytes": 82793,
+      "sha256": "1dde334fc848dd5121d4cbd02724c14f035fa09d8c5543dfe33b5b07324e85c3"
+    }
+  },
+  "qualification_scope": [
+    "actual cached/raw local machine replay is not natural production demand or saved application",
+    "all 543 missing descriptor slots remain excluded; partial contexts explicit",
+    "no schema, parser policy/version, public RCL JSON, CLI flow, model/provider IO or raw/backend/retention expansion",
+    "read-only show/lookup and preview ownership unchanged; unknown preview enrollment preserved",
+    "unsafe URL omission guarantee applies to new RCL envelope, inherited generic receipts unchanged"
+  ],
+  "reader_release_proven": "docs/assets/audits/2026-10-28-rcl-letter-reader/release.json",
+  "runtime_caps": {
+    "full_record_json_bytes": 4096,
+    "global_database_size": "workload-dependent, no constant-size or daily-growth claim",
+    "omitted_record_json_bytes": 2048,
+    "shared_extraction_record_json_bytes": 16384,
+    "shared_parent_metadata": "separate existing bounded extraction records; not included in per-use JSON cap"
+  },
+  "stage": "J150 RCL consultation-letter source-use capture"
+}

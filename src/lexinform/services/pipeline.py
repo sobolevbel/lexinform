@@ -9,13 +9,17 @@ the Sejm moves on.
 import logging
 import time
 from collections.abc import Callable, Sequence
-from contextlib import ExitStack
+from contextlib import ExitStack, suppress
 from datetime import datetime, timedelta
 from typing import Literal
 
 from pydantic import BaseModel
 
-from lexinform.errors import ServiceUnavailableError, StateCheckpointError
+from lexinform.errors import (
+    ServiceUnavailableError,
+    SourceHistoryPersistenceError,
+    StateCheckpointError,
+)
 from lexinform.log_context import log_context
 from lexinform.logging_setup import MemoryLogHandler
 from lexinform.models import PrefilterRejection, RunMode, RunReport, merge_usage
@@ -27,12 +31,17 @@ from lexinform.ports import (
     DocumentFileReadObserver,
     DocumentReadMonitor,
     RunNotifier,
+    SourceHistoryPersistence,
 )
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.commands import CommandService
 from lexinform.services.digest import DigestService
 from lexinform.services.discovery import BillDiscoveryService
-from lexinform.services.document_history import record_artifact_reads, record_artifacts
+from lexinform.services.document_history import (
+    persist_source_history,
+    record_artifact_reads,
+    record_artifacts,
+)
 from lexinform.services.publishing import PublishingService
 from lexinform.services.rcl_discovery import RclDiscoveryService
 from lexinform.services.terms import TermResolver
@@ -105,12 +114,14 @@ class DailyPipeline:
         document_downloads: DocumentDownloadMonitor | None = None,
         document_artifacts: DocumentArtifactObserver | None = None,
         document_file_reads: DocumentFileReadObserver | None = None,
+        source_history: SourceHistoryPersistence | None = None,
     ) -> None:
         self._repo = repo
         self._document_reads = document_reads
         self._document_downloads = document_downloads
         self._document_artifacts = document_artifacts
         self._document_file_reads = document_file_reads
+        self._source_history = source_history
         self._discovery = discovery
         self._analysis = analysis
         self._publishing = publishing
@@ -226,8 +237,16 @@ class DailyPipeline:
                                 self._document_file_reads.read_artifact_reads(),
                                 recorded_at=self._clock.now(),
                             )
+                        if self._source_history is not None:
+                            persist_source_history(
+                                self._repo, self._source_history, recorded_at=report.finished_at
+                            )
                         self._repo.finish_run(run_id, report)
                         self._analysis.acknowledge_batch_costs()
+                except SourceHistoryPersistenceError as exc:
+                    with suppress(BaseException):
+                        log.warning("could not record source history (%s)", exc.failure_class)
+                    report.errors.append(f"could not record source history: {exc.failure_class}")
                 except Exception as exc:
                     log.exception("could not record the run: %s", exc)
                     report.errors.append(f"could not record the run: {type(exc).__name__}: {exc}")

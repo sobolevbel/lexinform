@@ -132,6 +132,26 @@ class TextLoader:
         with self._lock:
             return tuple(self._known_reads[key] for key in sorted(self._known_reads))
 
+    def file_origins(
+        self, url: str, loaded: LoadedFile
+    ) -> tuple[ArtifactIdentity | None, ArtifactReadIdentity | None, ExtractionResult | None]:
+        """Match returned outer-body identity without inferring origins from a URL or text."""
+        with self._lock:
+            size = self._known_bodies.get(loaded.sha256) if loaded.sha256 is not None else None
+            if loaded.sha256 is None or size is None:
+                return None, None, None
+            artifact = ArtifactIdentity(sha256=loaded.sha256, byte_size=size)
+            read = next(
+                (
+                    item
+                    for item in self._known_reads.values()
+                    if (item.requested_url, item.sha256, item.byte_size)
+                    == (url, loaded.sha256, size)
+                ),
+                None,
+            )
+            return artifact, read, self._extractions.get(loaded.sha256)
+
     def reads_for_selection(self, selection: DocumentSelection) -> tuple[ArtifactReadIdentity, ...]:
         sources = {
             (part.url, part.source_sha256) for part in (*selection.parts, *selection.observed_parts)

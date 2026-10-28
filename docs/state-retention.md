@@ -429,7 +429,20 @@ FK parents и ссылки переживают operational cleanup. Прави�
 
 `rcl_letter_uses` хранит неизменяемое metadata разбора письма и merge окна в памяти, отдельно от
 `RclConsultation`/Bill JSON. Это наблюдение source-use, а не receipt сохранённого применения,
-актуального дедлайна или отправки. В этой стадии runtime producer/collector/finalizer не подключён.
+актуального дедлайна или отправки. RCL reader наблюдает существующие read/parse/merge без повторного
+IO; один collector разделяется между reader instances контейнера. Pipeline и девять standalone
+CLI owners сохраняют его через один opaque history hook внутри существующей транзакции: exact
+body/read/extraction parents перед uses, затем report/prune или batch-cost acknowledgement.
+SQL остаётся на вызывающем потоке; callback не получает Clock/repository. Counter reset не забывает
+известные факты, dry-run откатывает SQL. Show/read-only lookup и preview не получают нового owner;
+неизвестный preview сохраняет существующее enrollment поведение. Container.close ничего не flush'ит.
+
+Новая telemetry construction/observer failure не меняет результат или исходное исключение.
+History hook failure откатывает общую owner-транзакцию, следует её прежней report policy и пишет
+только ограниченное имя класса; исходная business exception сохраняется при ошибке logging.
+Для unsafe URL новый RCL envelope не переносит ArtifactReadIdentity/requested_url: read ref остаётся
+unknown, но известные body/extraction refs сохраняются. Existing generic receipts не удаляются и
+не переписываются; это не гарантия URL-redaction всей БД или изменение общего receipt behavior.
 
 Официальные project/stage/letter ID принадлежат RCL; неизвестный stage ID остаётся `None`,
 stage number не подставляется вместо ID. Известные complete body/read/extraction refs проверяются

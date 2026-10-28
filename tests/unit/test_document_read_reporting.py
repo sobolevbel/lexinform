@@ -1,5 +1,6 @@
 import datetime as dt
 import threading
+from dataclasses import replace
 
 import pytest
 
@@ -7,6 +8,7 @@ from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.concurrency import fan_out
 from lexinform.log_context import current_log_fields, log_context
 from lexinform.models import ArtifactMetadata, DocumentReadMetrics, RunMode, RunReport
+from lexinform.ports import BillRepository
 from lexinform.services import document_read_reporting
 from lexinform.services.document_read_reporting import CliDocumentReadReporter
 from lexinform.services.documents import TextLoader
@@ -26,6 +28,72 @@ def reporter(
     return CliDocumentReadReporter(
         repo, clock, reader, reader, reader, reader, dt.timedelta(days=90)
     )
+
+
+class OpaqueHistory:
+    def __init__(self, failure: BaseException | None = None) -> None:
+        self.failure = failure
+        self.calls: list[tuple[int, dt.datetime]] = []
+
+    def persist_source_history(self, repo: BillRepository, *, recorded_at: dt.datetime) -> None:
+        self.calls.append((threading.get_ident(), recorded_at))
+        assert repo.list_artifact_reads(), (
+            "The owner persists global receipts before its opaque hook"
+        )
+        repo.save_artifact_metadata(
+            ArtifactMetadata(sha256="e" * 64, byte_size=17, recorded_at=recorded_at)
+        )
+        if self.failure is not None:
+            raise self.failure
+
+
+@pytest.mark.parametrize(
+    "business_failure", [None, RuntimeError("business failure"), SystemExit(0), KeyboardInterrupt()]
+)
+def test_opaque_hook_failure_rolls_back_history_and_preserves_original_outcome(
+    repo: SqliteBillRepository,
+    monkeypatch: pytest.MonkeyPatch,
+    business_failure: BaseException | None,
+) -> None:
+    clock = FixedClock()
+    reader = TextLoader({"source.test": download_body}, FakeTextExtractor(), max_bytes=1000)
+    history = OpaqueHistory(KeyboardInterrupt("private history error"))
+    capture = replace(reporter(repo, reader, clock), source_history=history)
+
+    def failed_log(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("logging failed")
+
+    monkeypatch.setattr(document_read_reporting.log, "warning", failed_log)
+    try:
+        with capture.capture("scan"):
+            reader.read(URL)
+            if business_failure is not None:
+                raise business_failure
+    except BaseException as exc:
+        assert exc is business_failure
+    else:
+        assert business_failure is None
+    assert history.calls == [(threading.get_ident(), clock.now())]
+    assert not repo.list_artifact_reads()
+    assert repo.get_artifact_metadata("e" * 64) is None
+    assert not saved(repo, clock)
+
+
+def test_opaque_hook_commits_before_report_and_preserves_first_time(
+    repo: SqliteBillRepository,
+) -> None:
+    clock = FixedClock()
+    reader = TextLoader({"source.test": download_body}, FakeTextExtractor(), max_bytes=1000)
+    history = OpaqueHistory()
+    capture = replace(reporter(repo, reader, clock), source_history=history)
+    with capture.capture("scan"):
+        reader.read(URL)
+    assert len(saved(repo, clock)) == 1
+    record = repo.get_artifact_metadata("e" * 64)
+    assert record is not None and record.recorded_at == clock.now(), (
+        "The opaque hook commits its sentinel metadata before the completed report"
+    )
+    assert history.calls == [(threading.get_ident(), clock.now())]
 
 
 def saved(repo: SqliteBillRepository, clock: FixedClock) -> list[RunReport]:

@@ -42,6 +42,12 @@ class StateCheckpointError(RuntimeError):
     exit_code = 75
 
 
+class SourceHistoryPersistenceError(RuntimeError):
+    def __init__(self, failure_class: str) -> None:
+        self.failure_class = failure_class[:128]
+        super().__init__(f"source history persistence failed ({self.failure_class})")
+
+
 class SejmApiUnavailableError(ServiceUnavailableError):
     system = "Sejm API"
 

@@ -58,6 +58,7 @@ from lexinform.ports import (
     RunNotifier,
     SejmApi,
     SenateGateway,
+    SourceHistoryPersistence,
     StateCheckpoint,
     TextExtractor,
     WykazGateway,
@@ -80,6 +81,7 @@ from lexinform.services.pipeline import DailyPipeline
 from lexinform.services.posting import Poster
 from lexinform.services.publishing import PublishingService
 from lexinform.services.rcl_discovery import RclDiscoveryService
+from lexinform.services.rcl_letter_history import RclLetterHistoryPersistence, RclLetterUseCollector
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.signatories import SejmAuthorsResolver
 from lexinform.services.sources import (
@@ -213,6 +215,7 @@ class Container:
                 artifacts=loader,
                 file_reads=loader,
                 retention=timedelta(days=self.settings.runs_retention_days),
+                source_history=self.source_history(),
             ),
         )
 
@@ -246,7 +249,17 @@ class Container:
     def rcl_reader(self) -> RclProjectReader:
         if self.rcl is None:
             raise RuntimeError("RCL is disabled (LEXINFORM_RCL_ENABLED=false)")
-        return RclProjectReader(self.rcl, self.text_loader())
+        return RclProjectReader(self.rcl, self.text_loader(), observer=self.rcl_letter_uses())
+
+    def rcl_letter_uses(self) -> RclLetterUseCollector:
+        return self._once("rcl_letter_uses", RclLetterUseCollector)
+
+    def source_history(self) -> SourceHistoryPersistence | None:
+        if self.rcl is None:
+            return None
+        return self._once(
+            "source_history", lambda: RclLetterHistoryPersistence(self.rcl_letter_uses())
+        )
 
     def rcl_discovery_service(self) -> RclDiscoveryService | None:
         if self.rcl is None:
@@ -826,6 +839,7 @@ class Container:
                 document_downloads=self.text_loader(),
                 document_artifacts=self.text_loader(),
                 document_file_reads=self.text_loader(),
+                source_history=self.source_history(),
             ),
         )
 

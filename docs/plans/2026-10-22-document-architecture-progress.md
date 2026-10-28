@@ -7355,3 +7355,57 @@ checkpoint/pack/dual-write numbers не выдаются за новые benchma
 [Acceptance asset](../assets/audits/2026-10-28-storage-assessment/validation.json).
 Runtime/tests/tools/config byte-exact с J148; повтор full pytest для изменения текста не требуется.
 План теперь: **74 / 31 done / 6 explicit N/A / 37 applicable partial-open**.
+
+
+J149 commit `db34f493ab17dfe699ea08e75aa9bd631f47b40b`: все четыре CI jobs и deploy прошли;
+реле перешло с 9a37 на db34, health 45s/timer подтверждены
+[release proof](../assets/audits/2026-10-28-storage-assessment/release.json).
+
+
+<a id="j150"></a>
+
+### J150. Capture actual RCL consultation-letter source use
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**.
+Поддерживающий S1 reader 9a37 уже реально развёрнут. RclProjectReader сохраняет факты
+достигнутых read/parse/date/merge этапов, точную parser input identity и actual before/result/after
+пяти letter-derived fields. Один прежний read/parse/merge, без дополнительных запросов
+или LETTER_PARSER bump. Это source use/in-memory merge, не saved application/current deadline
+или delivery verdict. Legacy/cached origins не реконструируются.
+
+Container разделяет один clock-free collector между readers. Generic pipeline/CLI owners
+получают один opaque persistence hook и не импортируют RCL. Worker callback не пишет SQL;
+после workers существующая caller transaction пишет exact parents/extraction/use перед report.
+New-hook failure проходит через bounded generic error с class-only handling, сохраняя
+original business result/exception/cause/cancellation и прежнюю atomic rollback политику.
+Show/read-only lookup/preview не получают owner; unknown preview enrollment прежний.
+
+Unsafe descriptor URL в новом RCL envelope представлен hash/explicit omission; unsafe read
+object/ref туда не переносится. Exact body/extraction могут сохраняться отдельно. Existing
+generic receipt behavior не меняется; это не обещание redaction всей исторической БД.
+Schema, public RCL/Bill JSON, parser/selection/admission и model/provider/CLI flow неизменны.
+Raw/backend/retention не расширяются. Full/omitted use JSON ограничен 4096/2048 B; shared
+extraction JSON имеет существующий предел 16 384 B и считается отдельно. Общий dump зависит
+от уникальных фактов; повтор/поллинг не создаёт версию только из-за нового Clock time.
+
+118 focused и independent review прошли без actionable findings. Корпус: cached и actual-raw
+lanes по 2031 paired public-reader contexts, суммарно 4062; business/window/errors/ordered IO
+и extractor options exact. Полная популяция 947 descriptor slots сохранена: 404 available,
+543 missing excluded, без fake failures/downloads. В каждой lane явно отмечены 876 partial
+case entries; seeded/available-only contexts counterfactual, не natural demand/application.
+437 use facts в каждой lane: cached origins unknown; raw имеет 403 body/extraction parents
+и 404 URL receipts, все body SHA перепроверены по originals. 433 exact input mappings и
+4 no-text outcomes различаются. Max persisted use 2910 B cached / 3151 B raw; 1 104 959 B
+shared extraction JSON не включены в record cap. Raw-only graph добавил 2 787 907 SQL /
+374 012 gzip B, из них parents 1 373 493 / 162 418 B; это corpus-sized synthetic population,
+не daily forecast. Повтор +365 дней: 0 dump growth.
+
+Native 168: 144 SQL artifacts byte-exact; только 24 handoff cases добавили по одному
+validated use, без новых parents. Все прежние rows/reports/messages/provider inputs exact;
+per-case delta 2525 SQL / 700–742 gzip B, aggregate независимых fixtures 60 600 / 17 204 B.
+
+Final make check: 6500 tests / 0 failures-errors-skips, 228.98s, coverage 93%; mypy 565,
+Ruff/format 631 по всем src/tests/tools, source/config freeze 633 exact. Новые 19 unit cases
+и 10 boundary scenarios; 25 local HTTP tests прошли за 3.15s.
+[Acceptance asset](../assets/audits/2026-10-28-rcl-letter-capture/validation.json).
+DA2.3/DA2.5 partial до Senate candidate inspection; план 74 / 31 done / 6 N/A / 37 open.
