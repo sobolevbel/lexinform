@@ -5906,3 +5906,31 @@ reproduction, gates, common helpers, real input maps и allocation sample.
 J117 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40615914088) success: **5112 passed**,
 strict mypy **478**. [Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40616708707):
 exact COMMIT `1312184b96d2a015384dff70eaa09ed5e54a69ab`, listener up **45 s**.
+
+
+<a id="j119"></a>
+### J119. Portable ODT replay and shared raw population manifest
+
+Статус: **готово**, baseline `176c328210426e9e92ff8bc6be16dc2cb0e4cda7`.
+Development-only ODT replay заменяет одноразовый observer стандартным CLI library/adapter.
+Общий raw population model используется PDF/ODT; прежние PDF constructors и JSON сохранены.
+ODT suite сохраняет SHA текста и bindings всех найденных leaves, archive rejections и ошибки,
+проверяет XML SHA, JSON round trip, actual block/ignored paths и exact part/text binding.
+Ненулевая популяция ODT обязательна; остальные форматы явно исключены из text/legal coverage.
+
+**51 focused**, strict mypy **486**, Ruff/format green. Corpus replay: **6 natural roots /
+8 ODT leaves**, **9 synthetic derived variants**; observations exact. **17 manifests,
+1066 block coordinates, 46 ignored coordinates** проверены непосредственно в source XML.
+Ошибок, изменения code/input либо расхождений нет. Meaningful mutations уже созданы и
+зафиксированы J117; suite заново сверила те же exact bytes. Независимый legal oracle отсутствует.
+Все **160 runtime files byte-identical**, PDF snapshot function AST exact. Нет SQL, prompt,
+selection policy или production wiring изменений. Full gate выполняется.
+
+J118 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40619729692) success:
+**5125 passed**, strict mypy **483**.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40620532529): exact COMMIT
+`176c328210426e9e92ff8bc6be16dc2cb0e4cda7`, listener up **45 s**.
+
+Full gate: **5144 passed**, errors/failures/skips0, **612.682 s**.
+[Acceptance asset](../assets/audits/2026-10-28-odt-replay/validation.json) пинует оба cohorts,
+исходные manifests, пять meaningful mutations и test/source fingerprints.

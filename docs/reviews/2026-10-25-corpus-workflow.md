@@ -255,3 +255,37 @@ Final SHA recheck читает поток вместо целого файла. 
 совпали, changed_inputs пусты. Shared comparison различает отсутствующее наблюдение и явный
 unknown `null`; JSON/output formats и snapshot algorithms прежние.
 Подробности и gates — [J118](../plans/2026-10-22-document-architecture-progress.md#j118).
+
+
+## Проверка ODT · J119, 28 октября
+
+`tools/replay_odt_blocks.py` делает два offline прохода одной pinned raw population:
+`library` сохраняет прежнюю строку ODT, `adapter` сверяет её с block projection и проверяет
+координаты непосредственно в `content.xml`. Один вход может быть ZIP с несколькими ODT,
+вложенными архивами либо расширением, не совпадающим с содержимым. Ошибки отдельных листьев
+и archive rejections остаются наблюдениями. Популяция без успешных ODT observations не проходит.
+
+Формат cases общий с PDF replay: version 1, SHA `INDEX.json`, список path/SHA,
+official_ids/cohorts и явные exclusions. Полный путь задаётся относительно корпуса.
+Каждый output должен быть новым файлом вне корпуса; adapter требует SHA baseline и тот же
+case manifest. Сеть, записи в исходники, `.env`, изменение кода/входов блокируют приёмку.
+
+```sh
+uv run python -m tools.replay_odt_blocks --corpus /path/to/lexinform-corpus \
+  --cases /path/to/odt-cases.json --output /path/to/odt-library.json --mode library
+uv run python -m tools.replay_odt_blocks --corpus /path/to/lexinform-corpus \
+  --cases /path/to/odt-cases.json --output /path/to/odt-adapter.json --mode adapter \
+  --reference /path/to/odt-library.json --reference-sha256 BASELINE_SHA256
+```
+
+PDF/DOC/DOCX adapters здесь возвращают пустые placeholders: их текст и legal selection
+не входят в эту suite. Note origins, tracked changes, table repetitions и pagination сохраняют
+явные unresolved/unknown границы текущего ODT reader. Это machine regression oracle,
+без независимой смысловой разметки.
+
+Проверены **6 natural roots**: один raw ODT, три ZIP с семью ODT members и два rejection
+controls. Дополнительно **9 производных вариантов** одного raw ODT: wrappers и изменения даты,
+суммы, отрицания, круга лиц и ссылки. Суммарно **17 manifests / 1066 block coordinates /
+46 ignored-node coordinates**; old/new observations exact. Эти варианты не считаются новыми
+природными документами. Подробности и gates —
+[J119](../plans/2026-10-22-document-architecture-progress.md#j119).
