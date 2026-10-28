@@ -57,6 +57,7 @@ from lexinform.ports import (
 from lexinform.pricing import cost_usd
 from lexinform.services.amendments import AmendmentsService
 from lexinform.services.analysis import AnalysisService, TooExpensiveError, Waiting
+from lexinform.services.content_inspection import inspect_content
 from lexinform.services.digest import DigestResult, DigestService
 from lexinform.services.joint import primary_of
 from lexinform.services.lookup import BillLookup, BillNotFoundError
@@ -1201,6 +1202,9 @@ class CommandService:
                 if member.id is not None
             ),
             delivery_history=tuple(self._repo.delivery_resolutions(command.delivery_id)),
+            content_history=inspect_content(self._repo, publication)
+            if publication is not None
+            else None,
             note="queued for the next publishing/tracking phase" if action == "retry" else "",
         )
 

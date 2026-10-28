@@ -493,6 +493,10 @@ __all__ = [
     "CommandName",
     "ChannelPost",
     "CommandOutcome",
+    "ContentHistoryView",
+    "ContentSnapshot",
+    "ContentVersion",
+    "ContentVersionSummary",
     "CommandState",
     "OutcomeStatus",
     "Command",
@@ -707,5 +711,7 @@ __all__ = [
     "wykaz_summary",
 ]
 
+from lexinform.models.content import ContentHistoryView as ContentHistoryView
 from lexinform.models.content import ContentSnapshot as ContentSnapshot
 from lexinform.models.content import ContentVersion as ContentVersion
+from lexinform.models.content import ContentVersionSummary as ContentVersionSummary

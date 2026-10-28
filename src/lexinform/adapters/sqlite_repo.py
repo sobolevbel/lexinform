@@ -15,6 +15,7 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
+from lexinform.content_versions import content_delivery_mismatch
 from lexinform.json_storage import compact_json, storage_json
 from lexinform.legacy_delivery import legacy_status_edit
 from lexinform.models import (
@@ -82,7 +83,6 @@ from lexinform.models import (
     valid_mnemonic,
 )
 from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
-from lexinform.models.content import editorial_bill_snapshot
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 
 _STAGES = TypeAdapter(tuple[Stage, ...])
@@ -1337,22 +1337,19 @@ class SqliteBillRepository:
             raise ValueError("a revision content binding requires its original physical target")
         if (publication_id == version.root_publication_id) != (version.previous_version_id is None):
             raise ValueError("a content binding must distinguish the original and its revision")
-        for identity, payload in (
-            (version.bill_snapshot_id, editorial_bill_snapshot(plan.bill_json).payload_json),
-            (version.change_snapshot_id, plan.change_json),
+        snapshots: dict[str, ContentSnapshot] = {}
+        for identity in (
+            version.bill_snapshot_id,
+            version.change_snapshot_id,
+            version.plan_snapshot_id,
         ):
             snapshot = self.get_content_snapshot(identity)
-            if snapshot is None or snapshot.payload_json != payload:
-                raise ValueError("content must match the frozen semantic snapshot")
-        semantic_plan = plan.model_copy(
-            update={"bill_json": "", "change_json": "", "rendered_text": ""}
-        )
-        plan_snapshot = self.get_content_snapshot(version.plan_snapshot_id)
-        if (
-            plan_snapshot is None
-            or DeliveryPlan.model_validate_json(plan_snapshot.payload_json) != semantic_plan
-        ):
-            raise ValueError("content must match the frozen delivery context")
+            if snapshot is not None:
+                snapshots[identity] = snapshot
+        mismatch = content_delivery_mismatch(version, snapshots, plan)
+        if mismatch is not None:
+            label = "semantic snapshot" if mismatch in ("body", "snapshot") else "delivery context"
+            raise ValueError(f"content must match the frozen {label}")
         self._conn.execute(
             "INSERT INTO publication_content (publication_id, content_id) VALUES (?, ?)"
             " ON CONFLICT DO NOTHING",
@@ -1371,6 +1368,16 @@ class SqliteBillRepository:
         if version is None:
             raise ValueError("a publication content binding has lost its version")
         return version
+
+    def list_content_publications(self, root_publication_id: int) -> list[Publication]:
+        rows = self._conn.execute(
+            "SELECT p.* FROM publications p"
+            " JOIN publication_content binding ON binding.publication_id=p.id"
+            " JOIN content_versions version ON version.content_id=binding.content_id"
+            " WHERE version.root_publication_id=? ORDER BY p.id",
+            (root_publication_id,),
+        )
+        return [self._row_to_publication(row) for row in rows]
 
     def save_artifact_metadata(self, artifact: ArtifactMetadata) -> None:
         artifact = ArtifactMetadata.model_validate_json(artifact.model_dump_json())

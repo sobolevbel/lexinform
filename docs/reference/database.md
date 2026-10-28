@@ -530,3 +530,18 @@ history и warning без обещания current message. Это DB evidence, 
 остаются в SQL, а в отчёте указаны counts/warnings без их содержимого. Missing legacy tables
 отличаются от known-empty schema55. Exit0 — recorded, exit1 — ошибки, exit2 — нет history для
 наблюдения; существующий output не перезаписывается, input database остаётся byte-identical.
+
+
+## Editorial metadata в `/delivery`
+
+[J111](../plans/2026-10-22-document-architecture-progress.md#j111) показывает доступные
+original/current/inspected content IDs, Bill/event snapshot refs, known source/result refs и
+rendered checksum. Summary не содержит HTML/source bodies; одинаковая версия представлена
+одной metadata записью с тремя отдельными pointers. Legacy без content binding сохраняет
+прежний ответ и JSON без нового поля.
+
+Подтверждение цепочки и сверка frozen context — общие чистые функции для repository,
+offline inspector и operator view. История читается через immutable publication/content join,
+поэтому удаление operational `delivery_json` не стирает confirmation chain. Corrupt/missing
+history не меняет physical status, не подтверждает unknown и не разрешает retry. В этом случае
+operator view помечает integrity unavailable, а offline doctor показывает точные findings.

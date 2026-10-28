@@ -689,7 +689,7 @@ Bill и кэша. Повтор записанного результата да�
 - [ ] DA7.4. Затем отдельно спроектировать grouped/multipart/digest revisions: показать
   идентичность изменяемого содержания, все части и подтверждение результата. Пока этот
   контракт не принят и не проверен, прежний безопасный отказ сохраняется.
-- [ ] DA7.5. **Частично: [J110](2026-10-22-document-architecture-progress.md#j110), read-only offline history/physical confirmation inspector; отображение в /delivery остаётся.** `/delivery` и планируемый read-only просмотр истории показывают original/current
+- [ ] DA7.5. **Частично: [J110](2026-10-22-document-architecture-progress.md#j110), read-only offline history/physical confirmation inspector; [J111](2026-10-22-document-architecture-progress.md#j111), body-free /delivery references и общая confirmation/context policy приняты для текущего single-message scope; расширение history kinds/source refs остаётся.** `/delivery` и планируемый read-only просмотр истории показывают original/current
   versions, их источники, physical attempts и operator decisions. Новые данные не превращают
   неподтверждённое редактирование в `sent`.
 

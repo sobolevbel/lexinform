@@ -1,16 +1,20 @@
 """Inspect editorial versions and database delivery confirmations without replaying any work."""
 
 import argparse
-import hashlib
-import re
 import sqlite3
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from lexinform.models import ContentSnapshot, ContentVersion, DeliveryPlan, DeliveryResolution
-from lexinform.models.content import editorial_bill_snapshot
+from lexinform.content_versions import confirmed_content_version, content_delivery_mismatch
+from lexinform.models import (
+    ContentSnapshot,
+    ContentVersion,
+    ContentVersionSummary,
+    DeliveryPlan,
+    DeliveryResolution,
+)
 from tools.corpus_artifacts import write_json
 from tools.sqlite_snapshot import open_snapshot
 
@@ -22,25 +26,10 @@ def _frozen_content_issue(
 ) -> str | None:
     try:
         plan = DeliveryPlan.model_validate_json(raw)
-        if plan.rendered_text != (version.rendered_text or ""):
-            return "content_frozen_text_mismatch"
-        for identity, expected in (
-            (version.bill_snapshot_id, editorial_bill_snapshot(plan.bill_json).payload_json),
-            (version.change_snapshot_id, plan.change_json),
-        ):
-            saved = snapshots.get(identity)
-            if saved is not None and saved.payload_json != expected:
-                return "content_frozen_body_mismatch"
-        saved_plan = snapshots.get(version.plan_snapshot_id)
-        semantic = plan.model_copy(update={"bill_json": "", "change_json": "", "rendered_text": ""})
-        if (
-            saved_plan is not None
-            and DeliveryPlan.model_validate_json(saved_plan.payload_json) != semantic
-        ):
-            return "content_frozen_context_mismatch"
+        mismatch = content_delivery_mismatch(version, snapshots, plan)
     except ValueError, TypeError:
         return "invalid_content_frozen_context"
-    return None
+    return "content_frozen_" + mismatch + "_mismatch" if mismatch else None
 
 
 @dataclass
@@ -52,26 +41,16 @@ class _Findings:
 
 
 def _version_metadata(version: ContentVersion, findings: _Findings) -> dict[str, Any]:
-    metadata = version.model_dump(
-        mode="json", exclude={"rendered_text", "source_observation_ids", "computation_ids"}
-    )
-    for name, values, prefix in (
-        ("source_observation_ids", version.source_observation_ids, "source-observation-v1:"),
-        ("computation_ids", version.computation_ids, "result-v1:"),
+    summary = ContentVersionSummary.from_version(version)
+    for count in (
+        summary.source_observation_ids_opaque_count,
+        summary.computation_ids_opaque_count,
     ):
-        known = [
-            value for value in values if re.fullmatch(re.escape(prefix) + "[0-9a-f]{64}", value)
-        ]
-        metadata[name] = known
-        metadata[name + "_opaque_count"] = len(values) - len(known)
-        if len(known) != len(values):
+        if count:
             findings.add("content_reference_format_unknown", version.content_id, warning=True)
-    for name in ("language", "formatter_version"):
-        value = metadata[name]
-        if value is not None and not re.fullmatch(r"[A-Za-z0-9_.:+-]{1,128}", value):
-            metadata[name] = None
-            findings.add("content_label_format_unknown", version.content_id, warning=True)
-    return metadata
+    for _ in summary.unrecognized_labels:
+        findings.add("content_label_format_unknown", version.content_id, warning=True)
+    return summary.model_dump(mode="json")
 
 
 def _read_history(
@@ -261,21 +240,10 @@ def _history_rows(
                 for physical in bindings.get(version.content_id, [])
             )
         }
-        eligible: set[str] = set()
-        for identity in confirmed:
-            seen: set[str] = set()
-            current: str | None = identity
-            while current is not None and current in confirmed and current not in seen:
-                seen.add(current)
-                current = versions[current].previous_version_id
-            if current is None:
-                eligible.add(identity)
-        confirmed = eligible
-        parents = {
-            version.previous_version_id for version in members if version.content_id in confirmed
-        }
-        leaves = confirmed - parents
-        if len(leaves) > 1:
+        confirmation = confirmed_content_version(
+            {version.content_id: version.previous_version_id for version in members}, confirmed
+        )
+        if confirmation.ambiguous:
             findings.add("content_confirmed_branch", str(root))
         histories.append(
             {
@@ -283,21 +251,12 @@ def _history_rows(
                 "original_content_ids": [
                     version.content_id for version in members if version.previous_version_id is None
                 ],
-                "current_content_id": next(iter(leaves)) if len(leaves) == 1 else None,
+                "current_content_id": confirmation.current_id,
                 "confirmation_scope": "DB sent/message-ID evidence; no independent Telegram read.",
                 "versions": [
                     {
                         **_version_metadata(version, findings),
                         "content_id": version.content_id,
-                        "rendered_text_known": version.rendered_text is not None,
-                        "rendered_utf8_bytes": len(version.rendered_text.encode())
-                        if version.rendered_text is not None
-                        else None,
-                        "rendered_sha256": hashlib.sha256(
-                            version.rendered_text.encode()
-                        ).hexdigest()
-                        if version.rendered_text is not None
-                        else None,
                         "publications": bindings.get(version.content_id, []),
                     }
                     for version in members

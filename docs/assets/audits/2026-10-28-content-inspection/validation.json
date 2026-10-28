@@ -1,0 +1,200 @@
+{
+  "version": 1,
+  "stage": "J111",
+  "baseline": "9fd58f6aea3142a400e23ad8147d03c35681dd9e",
+  "scope": "Body-free editorial references in /delivery, immutable binding lookup, and shared confirmation/frozen-context/summary policies. Schema and persisted content identities unchanged.",
+  "checks": {
+    "focused": {
+      "path": "out/corpus/j111/focused-final.xml",
+      "sha256": "458009869450f2037b602c015fa648667f8789177506fdffa0d494cb3948ee04",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "104",
+      "time": "4.144",
+      "timestamp": "2026-10-28T00:53:22.952916+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j111/full-final.xml",
+      "sha256": "70ae40eec5b5b708dde8cafe542470d1e5bc1e9614702db166eb6117f2961609",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "5065",
+      "time": "579.132",
+      "timestamp": "2026-10-28T00:53:27.802608+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "local_http": {
+      "path": "out/corpus/j111/local-http-final.xml",
+      "sha256": "e7bdd15a3aeeaa918d550b29df0fcbf4dc6dc4ba5a9b6e2566fca323efd6f4dd",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "21",
+      "time": "2.431",
+      "timestamp": "2026-10-28T00:53:22.437330+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 473 source files",
+    "ruff": "All checks passed!",
+    "format": "470 files left unchanged"
+  },
+  "qualification": {
+    "native": {
+      "cases": 168,
+      "all_profiles_except_metadata_and_storage_metrics_exact": true,
+      "all_requests_and_rendered_messages_exact": true,
+      "all_28_prior_tables_exact_except_recorded_phase_timing": true,
+      "timing_differences": [
+        {
+          "case": "normal/revision-1",
+          "row": 2,
+          "before": {
+            "collect batches": 0.0,
+            "commands": 0.1,
+            "discovery": 0.0,
+            "wykaz discovery": 0.0,
+            "rcl discovery": 0.0,
+            "text prefilter": 0.0,
+            "rcl consultations": 0.0,
+            "analysis": 0.0,
+            "publishing": 0.0,
+            "submit batches": 0.0,
+            "digest": 0.0,
+            "batch status": 0.0
+          },
+          "after": {
+            "collect batches": 0.0,
+            "commands": 0.0,
+            "discovery": 0.0,
+            "wykaz discovery": 0.0,
+            "rcl discovery": 0.0,
+            "text prefilter": 0.0,
+            "rcl consultations": 0.0,
+            "analysis": 0.0,
+            "publishing": 0.0,
+            "submit batches": 0.0,
+            "digest": 0.0,
+            "batch status": 0.0
+          }
+        }
+      ],
+      "command_outcome_seconds_excluded_from_semantic_comparison": true,
+      "content_version_views": 2,
+      "content_snapshot_views": 6,
+      "binding_views": 2,
+      "prior_metadata_rows_preserved": true,
+      "read_receipt_views": 270,
+      "source_observation_views": 210,
+      "selection_views": 198,
+      "link_views": 190,
+      "all_source_doctors_without_errors": true,
+      "sql_delta": {
+        "min": 0,
+        "max": 0
+      },
+      "gzip_delta": {
+        "min": -5,
+        "max": 0
+      }
+    },
+    "inspection": {
+      "cases": 24,
+      "all_requests_reader_messages_and_edits_exact": true,
+      "all_old_outcome_fields_exact_except_seconds": true,
+      "all_28_tables_exact_except_new_command_metadata_and_recorded_timing": true,
+      "changed_tables": [],
+      "metadata_summaries_unique_and_body_free": true,
+      "metadata_utf8_bytes": {
+        "min": 1296,
+        "max": 2381
+      },
+      "sql_delta": {
+        "min": 0,
+        "max": 0
+      },
+      "gzip_delta": {
+        "min": 0,
+        "max": 0
+      },
+      "scope": "Native fake-source delivery inspection over workers1/4, attention off/on, retention and original/unknown/operator-confirmed editions; not independent legal or Telegram acceptance."
+    },
+    "doctor": {
+      "cases": 184,
+      "all_prior_report_fields_and_confirmations_exact": true,
+      "only_new_field": "unrecognized_labels=[]",
+      "all_inputs_preserved_and_without_errors": true
+    },
+    "rollback": {
+      "reader": "J110 9fd58f6aea3142a400e23ad8147d03c35681dd9e",
+      "cases": 192,
+      "run_reports_read": 436,
+      "all_sql_dumps_preserved_exact": true,
+      "schema_conversion": false
+    },
+    "structural": {
+      "baseline": "9fd58f6aea3142a400e23ad8147d03c35681dd9e",
+      "all_55_deployed_migrations_ast_exact": true,
+      "all_existing_repository_methods_ast_exact_except_shared_binding_validation": true,
+      "content_snapshot_and_version_identity_models_ast_exact": true,
+      "paid_requests_prompts_extraction_selection_and_document_models_byte_identical": true,
+      "other_runtime_files_byte_identical": 150,
+      "changed_runtime": {
+        "src/lexinform/content_versions.py": "8c62102095af92d29b68202ba4c4086232f666c00fc276b6c62da84573f9af03",
+        "src/lexinform/ports.py": "123e5424f9aa19a7de6c7c151519e2cc7427da3035d62ac9b2b4ffd5e7c38400",
+        "src/lexinform/models/__init__.py": "9bcd090f53c6db35128b3ca95e1a53b5fe57d2c410ab20de3daad1d87cad2b3f",
+        "src/lexinform/models/content.py": "6e89283afb99245e4909db0a86b1b09c67c9267716b14ce78d0035e293d56f34",
+        "src/lexinform/models/commands.py": "61bf2c421942e53cd319908477907e94c38ca6199781317a898984fda8abdd02",
+        "src/lexinform/adapters/sqlite_repo.py": "d5cb3108dbca56c8bb4f96f24385a8e9254e3583e1f4e55634f8d4a385c4063c",
+        "src/lexinform/adapters/telegram_format.py": "8703bb6630b4a44a823700e84a3352ccf566fee156476d34fdab8d2ab45c5d4b",
+        "src/lexinform/services/content_inspection.py": "4a0f6916964b41926308d68d6ab3fd1c0997b82ef673fe5c28e308df9308bdbb",
+        "src/lexinform/services/commands.py": "0133b3a934e22dd2c93ff312d984043a96e8c864adcc3a5f805683f1d5ac44fd"
+      }
+    }
+  },
+  "sources": {
+    "src/lexinform/content_versions.py": "8c62102095af92d29b68202ba4c4086232f666c00fc276b6c62da84573f9af03",
+    "src/lexinform/ports.py": "123e5424f9aa19a7de6c7c151519e2cc7427da3035d62ac9b2b4ffd5e7c38400",
+    "src/lexinform/models/__init__.py": "9bcd090f53c6db35128b3ca95e1a53b5fe57d2c410ab20de3daad1d87cad2b3f",
+    "src/lexinform/models/content.py": "6e89283afb99245e4909db0a86b1b09c67c9267716b14ce78d0035e293d56f34",
+    "src/lexinform/models/commands.py": "61bf2c421942e53cd319908477907e94c38ca6199781317a898984fda8abdd02",
+    "src/lexinform/adapters/sqlite_repo.py": "d5cb3108dbca56c8bb4f96f24385a8e9254e3583e1f4e55634f8d4a385c4063c",
+    "src/lexinform/adapters/telegram_format.py": "8703bb6630b4a44a823700e84a3352ccf566fee156476d34fdab8d2ab45c5d4b",
+    "src/lexinform/services/content_inspection.py": "4a0f6916964b41926308d68d6ab3fd1c0997b82ef673fe5c28e308df9308bdbb",
+    "src/lexinform/services/commands.py": "0133b3a934e22dd2c93ff312d984043a96e8c864adcc3a5f805683f1d5ac44fd",
+    "tools/content_history_doctor.py": "94ff9e159c4a943cda79ee9fc70e353575d359da50161b9378962a3a3ff003bd",
+    "tests/scenario/test_content_inspection.py": "be8956245f54231598b2f7a5bb6b37ba6d3ce47d9248a97c2386cd4b709dbb27",
+    "tests/unit/test_content_versions.py": "4e69807c1f7367fc20289705e034f6282c8c23d96b1a9c9ac4c112e6cf188caf"
+  },
+  "evidence": {
+    "out/corpus/j111-final/native-parity-accepted.json": "e252a9be7e288b67440962018298c8300bf0168b2ea72b9abc3a4f86ed75c859",
+    "out/corpus/j111-final/inspection-parity.json": "ca6361b1357e6e50ad9b39d9dfe6d529639bf34938183733b9b9b10cfcb1dfd2",
+    "out/corpus/j111-final/doctor-parity.json": "0ecde9e6a2d607307f48ac79c935725ba2e72687cc6ab9e0fc1031bcbe880df5",
+    "out/corpus/j111-final/rollback.json": "e24497e2d9474fc707790c0f378b700eb9bca58c5d316f8806b7a9376eb51afd",
+    "out/corpus/j111-final/structural-parity.json": "033d446ee0ad011c2e076217f94bff44b3bafd8771bb09e27d60bcb024f891a2",
+    "out/corpus/j111-final/release-j110.json": "274549f0a4f5fb1c06ac909bbeeeb83f413a3350f14c049ecaaa1c489bbad07b",
+    "out/corpus/j111-final/frozen-inputs.json": "c67371f90dcf26b5188e05d61b491d913fee348d99685a8ebc91aecb81233ca0",
+    "out/corpus/j111-final/native_profiles.py": "bde1b6cd173bc8e6490ae2d1f6be8abc32071d0105023befdbd1788a5267104d",
+    "out/corpus/j111-final/compare_native_all_tables.py": "6a88ec458a109531cb11bf200d9d094d8b4272e4e8b766847eca462eddbf74b7",
+    "out/corpus/j111-final/inspection_profile.py": "1e39b79b4f3a1954fd6500db9a6f1cca8a4a72e19bca298cac01322dc37b5b7d",
+    "out/corpus/j111-final/compare_inspection.py": "c621b7ab54a73dc75eb23452453326a947f8f35fb9aae0a1111ea3f228d221bf",
+    "out/corpus/j111-final/doctor_profile.py": "28544d58fb1b469e5b193ff6a2b5caff7dc9028719e5a07a2a33732c98908fbb",
+    "out/corpus/j111-final/rollback_profile.py": "1b70605e0bbbf553316c41e49abbd01bb2632b449bcd232231ed556a107bcaf9",
+    "out/corpus/j111-final/structural_profile.py": "99d3d129ab1a979eedfceed11f585ad2fa2b4fbe5d799246873ee6cf54939b55",
+    "out/corpus/j111-final/accept.py": "4fab4cba312d2155a463ad5ee421befa195da2d6f2714e990dcc67150e60c82e"
+  },
+  "limitations": [
+    "Confirmation is saved database evidence, not independent Telegram or legal acceptance.",
+    "Legacy without a binding retains its prior view; no history or source/result refs are invented.",
+    "Source bodies are not exported into the metadata summary; at most three distinct summaries are referenced.",
+    "A corrupt optional history cannot change delivery state, resolve unknown or authorize a retry.",
+    "No new raw/backend choice, migration, paid request, source selection or reader-channel message."
+  ]
+}

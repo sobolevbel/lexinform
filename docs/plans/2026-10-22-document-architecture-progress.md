@@ -5613,3 +5613,45 @@ exact COMMIT `8f32030f59e83256698b7c40d19aa815b7a71cf1`, listener up **45 s**.
 Полный gate: **5049 passed**, 0 failures/errors/skips, **603.282 s**.
 [Acceptance asset](../assets/audits/2026-10-28-content-history-diagnostics/validation.json) пинует
 source/config hashes, gates, qualification и natural legacy boundary.
+
+
+<a id="j111"></a>
+### J111. `/delivery` references and shared editorial confirmation policy
+
+Статус: **готово**, baseline `9fd58f6aea3142a400e23ad8147d03c35681dd9e`.
+Новые ContentVersionSummary/ContentHistoryView — body-free DTO: original/current/inspected IDs
+ссылаются на один набор unique metadata summaries, без повторных rendered/source bodies.
+Optional CommandOutcome field отсутствует в legacy JSON. Read-only service берёт physical
+publications из immutable content bindings, не из очищаемого retry-plan revision_of. Он проверяет
+owners/kinds, snapshot refs/context и показывает current только по confirmed connected chain.
+Повреждение optional history не меняет delivery/recovery state и не отменяет выполненный audit.
+
+`content_versions` объединяет confirmation и exact frozen-context checks; repository, offline
+doctor и operator view используют ту же политику. Metadata redaction/summary тоже общие.
+Первые проверки выявили зависимость lookup от delivery_json; она устранена отдельным indexed
+read-only repository query. Новая регрессия читает confirmed revision после удаления обоих
+operational plans; wrong owner/kind получают unavailable. Schema55/immutable IDs остаются прежними.
+
+**104 focused / 21 local HTTP** passed, strict mypy **473**, Ruff/format green. Pure policy tests
+покрывают branch/cycle/missing predecessor; сценарии — retention, unknown→audited confirm,
+legacy JSON, corruption, read-only effects и реальные formatter labels. Full gate выполняется.
+
+**168 native snapshots**: все 28 tables и provider requests/reader messages exact, кроме одного
+phase commands timing **0.1→0.0 s** и соответствующего command seconds. SQL delta0, gzip -5–0.
+**24 inspection cases**: workers1/4, attention off/on, retention и original/unknown/confirmed.
+Все requests/reader messages/edits и прежние outcome fields exact (кроме timing); **все 28 tables
+exact**, SQL/gzip delta0. Новые metadata summaries unique/body-free, serialized view **1296–2381
+bytes**. Это native fake-source evidence, не independent legal/Telegram acceptance.
+
+J110 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40602978562): **5049 passed**,
+strict mypy **469**, Ruff/docs/web success. [Relay deploy](https://github.com/sobolevbel/lexinform/actions/runs/40603747181):
+exact COMMIT `9fd58f6aea3142a400e23ad8147d03c35681dd9e`, listener up **45 s**.
+
+
+Окончательный full: **5065 passed**, 0 failures/errors/skips, **579.132 s**.
+J110 backward reader: **192 SQL snapshots / 436 run reports**, dumps exact без conversion.
+Doctor parity: **184 snapshots**, прежние report fields/current decisions exact; добавлен только
+`unrecognized_labels=[]`. **55 deployed migrations и content identity models AST exact**;
+прочие 150 runtime files byte-identical.
+[Acceptance asset](../assets/audits/2026-10-28-content-inspection/validation.json) пинует hashes,
+gates, immutable lookup, confirmations, backward reader и metadata/state compactness.

@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from lexinform.models.analysis import AnalysisRecord, TokenUsage
 from lexinform.models.batch import LlmBatch
 from lexinform.models.bill import Bill, Publication
+from lexinform.models.content import ContentHistoryView
 from lexinform.models.digest import week_bounds
 from lexinform.models.enums import (
     PRE_PRINT_PREFIX,
@@ -605,6 +606,9 @@ class CommandOutcome(BaseModel):
     digest_owner: Publication | None = None
     digest_members: tuple[int, ...] = ()
     delivery_history: tuple[DeliveryResolution, ...] = ()
+    content_history: ContentHistoryView | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     as_json: bool = False
     explanation: AnalysisRecord | None = None
     run_started_at: dt.datetime | None = None
