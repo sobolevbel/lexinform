@@ -250,6 +250,24 @@ Conventions:
 - Fixture bills: `process_3039` (deputies' bill in committee), `process_1962` (Senate
   amendments, adopted), `process_950` (plenary first reading), `print_3039` and its real PDF.
 
+### Optional mutation pilot
+
+The `mutation` dependency group pins `mutmut`; it is installed only when requested.
+The pilot config selects delivery scheduling and message continuations, with direct unit
+contracts and their existing scenarios. Run the bounded function selection explicitly:
+
+```bash
+uv run --frozen --group mutation mutmut run --max-children 2 \
+  'lexinform.delivery_schedule.*' \
+  'lexinform.services.message_parts.x_continuation_ready*'
+uv run --frozen --group mutation mutmut results
+```
+
+Pytest runs serially inside each mutant. Generated sources and progress stay in ignored
+`mutants/`; `results` also lists generated mutations outside the executed selection.
+Review surviving mutations for missing contracts, equivalent behavior and input preconditions;
+timeouts and tool failures are separate outcomes. The pilot is optional and has no CI score gate.
+
 Refreshing fixtures:
 
 ```bash

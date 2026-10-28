@@ -50,6 +50,9 @@ dev = [
 docs = [
   "zensical>=0.0.64,<0.1",
 ]
+mutation = [
+  "mutmut==3.8.1",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -113,3 +116,18 @@ markers = [
 [tool.coverage.run]
 source = ["lexinform"]
 branch = true
+
+[tool.mutmut]
+source_paths = ["src/"]
+only_mutate = ["src/lexinform/delivery_schedule.py", "src/lexinform/services/message_parts.py"]
+pytest_add_cli_args = ["-n", "0", "-p", "no:cacheprovider"]
+pytest_add_cli_args_test_selection = [
+  "tests/unit/test_delivery_schedule.py",
+  "tests/unit/test_message_parts.py",
+  "tests/scenario/test_daily_attention.py",
+  "tests/scenario/test_message_parts.py",
+]
+process_isolation = "forkserver"
+use_setproctitle = false
+timeout_constant = 2.0
+timeout_multiplier = 3.0

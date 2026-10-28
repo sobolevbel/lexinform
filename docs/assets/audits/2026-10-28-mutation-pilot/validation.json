@@ -1,0 +1,1357 @@
+{
+  "date": "2026-10-28",
+  "schema": 1,
+  "result": "pilot_measured",
+  "baseline_integration_commit": "a1664fbd87506a7788747682ef53fda5806dea31",
+  "parent_commit": "d7d0ab30e8004d1ea6a6b75e06064e25c74fea5f",
+  "scope": "All 86 generated mutations in daily_schedule, sitting_is_close and continuation_ready, within two modules; results concern the explicitly selected tests, not the complete project or every function in those modules.",
+  "environment": {
+    "python": "3.14.7",
+    "platform": "Darwin",
+    "mutmut": "3.8.1",
+    "libcst": "1.9.0",
+    "pytest": "9.1.1",
+    "pytest-xdist": "3.8.0"
+  },
+  "budget": {
+    "unique_mutations_limit": 100,
+    "unique_mutations_executed": 86,
+    "per_run_seconds_limit": 1200,
+    "max_mutant_processes": 2,
+    "pytest_processes_per_mutant": 0,
+    "first_run_seconds": 35.462785124982474,
+    "second_run_seconds": 21.00798641698202,
+    "timing_excludes": "Installation, initial one-mutant smoke and human adjudication.",
+    "budget_exhausted": false
+  },
+  "generation": {
+    "files_mutated": 2,
+    "mutations_generated": 260,
+    "selected_functions": {
+      "lexinform.delivery_schedule.x_daily_schedule": 54,
+      "lexinform.delivery_schedule.x_sitting_is_close": 6,
+      "lexinform.services.message_parts.x_continuation_ready": 26
+    },
+    "unselected_mutations_not_executed": 174
+  },
+  "before": {
+    "status_counts": {
+      "survived": 18,
+      "killed": 68
+    },
+    "test_selection": [
+      "tests/scenario/test_daily_attention.py",
+      "tests/scenario/test_message_parts.py"
+    ],
+    "clean_control": "passed",
+    "forced_failure_control": "passed"
+  },
+  "after": {
+    "status_counts": {
+      "killed": 82,
+      "survived": 4
+    },
+    "test_selection": [
+      "tests/unit/test_delivery_schedule.py",
+      "tests/unit/test_message_parts.py",
+      "tests/scenario/test_daily_attention.py",
+      "tests/scenario/test_message_parts.py"
+    ],
+    "new_unit_cases": 22,
+    "targeted_cases": 61,
+    "targeted_seconds": 3.71,
+    "clean_control": "passed",
+    "forced_failure_control": "passed"
+  },
+  "new_contracts": [
+    "Unassessed, important and urgent events bypass the daily queue.",
+    "Warsaw release instants remain correct on UTC and Asia/Tokyo hosts, before and after the release hour.",
+    "Sitting urgency includes its deadline boundary on the Warsaw date.",
+    "Only a sent parent with a confirmed message ID unlocks a child.",
+    "Missing parents do not borrow the first publication, and saved reply targets remain frozen.",
+    "The returned continuation matches its persisted parent binding; a stale queued snapshot cannot overwrite a pending part."
+  ],
+  "per_mutant": [
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_1",
+      "before": "survived",
+      "after": "killed",
+      "before_exit_code": 0,
+      "after_exit_code": 1,
+      "diff": "--- src/lexinform/delivery_schedule.py\n+++ src/lexinform/delivery_schedule.py\n@@ -6,7 +6,7 @@\n     release_hour: int,\n     urgent_days: int,\n ) -> DeliverySchedule | None:\n-    if assessment is None or assessment.protected:\n+    if assessment is None and assessment.protected:\n         return None\n     if kind is PublicationKind.STATUS_UPDATE:\n         route = \"daily_updates\""
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_sitting_is_close__mutmut_1",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_1",
+      "before": "survived",
+      "after": "survived",
+      "before_exit_code": 0,
+      "after_exit_code": 0,
+      "diff": "--- src/lexinform/services/message_parts.py\n+++ src/lexinform/services/message_parts.py\n@@ -1,5 +1,5 @@\n def continuation_ready(repo: BillRepository, pub: Publication) -> Publication | None:\n-    assert pub.id is not None and pub.delivery is not None\n+    assert pub.id is not None or pub.delivery is not None\n     parent = repo.publication_by_id(pub.delivery.continuation_parent or 0)\n     if parent is None or parent.status is not PublicationStatus.SENT or parent.message_id is None:\n         return None"
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_2",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_sitting_is_close__mutmut_2",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_2",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_3",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_sitting_is_close__mutmut_3",
+      "before": "survived",
+      "after": "killed",
+      "before_exit_code": 0,
+      "after_exit_code": 1,
+      "diff": "--- src/lexinform/delivery_schedule.py\n+++ src/lexinform/delivery_schedule.py\n@@ -1,6 +1,6 @@\n def sitting_is_close(\n     assessment: AttentionAssessment, *, now: dt.datetime, urgent_days: int\n ) -> bool:\n-    return assessment.deadline is not None and assessment.deadline <= now.astimezone(\n+    return assessment.deadline is not None and assessment.deadline < now.astimezone(\n         LOCAL_TZ\n     ).date() + dt.timedelta(days=urgent_days)"
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_3",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_4",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_sitting_is_close__mutmut_4",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_4",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_5",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_sitting_is_close__mutmut_5",
+      "before": "survived",
+      "after": "killed",
+      "before_exit_code": 0,
+      "after_exit_code": 1,
+      "diff": "--- src/lexinform/delivery_schedule.py\n+++ src/lexinform/delivery_schedule.py\n@@ -2,5 +2,5 @@\n     assessment: AttentionAssessment, *, now: dt.datetime, urgent_days: int\n ) -> bool:\n     return assessment.deadline is not None and assessment.deadline <= now.astimezone(\n-        LOCAL_TZ\n+        None\n     ).date() + dt.timedelta(days=urgent_days)"
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_5",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_6",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_sitting_is_close__mutmut_6",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_6",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_7",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_7",
+      "before": "survived",
+      "after": "killed",
+      "before_exit_code": 0,
+      "after_exit_code": 1,
+      "diff": "--- src/lexinform/services/message_parts.py\n+++ src/lexinform/services/message_parts.py\n@@ -1,6 +1,6 @@\n def continuation_ready(repo: BillRepository, pub: Publication) -> Publication | None:\n     assert pub.id is not None and pub.delivery is not None\n-    parent = repo.publication_by_id(pub.delivery.continuation_parent or 0)\n+    parent = repo.publication_by_id(pub.delivery.continuation_parent or 1)\n     if parent is None or parent.status is not PublicationStatus.SENT or parent.message_id is None:\n         return None\n     if pub.delivery.reply_to is None:"
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_8",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_8",
+      "before": "survived",
+      "after": "killed",
+      "before_exit_code": 0,
+      "after_exit_code": 1,
+      "diff": "--- src/lexinform/services/message_parts.py\n+++ src/lexinform/services/message_parts.py\n@@ -1,7 +1,7 @@\n def continuation_ready(repo: BillRepository, pub: Publication) -> Publication | None:\n     assert pub.id is not None and pub.delivery is not None\n     parent = repo.publication_by_id(pub.delivery.continuation_parent or 0)\n-    if parent is None or parent.status is not PublicationStatus.SENT or parent.message_id is None:\n+    if parent is None or parent.status is not PublicationStatus.SENT and parent.message_id is None:\n         return None\n     if pub.delivery.reply_to is None:\n         plan = pub.delivery.model_copy(update={\"reply_to\": parent.message_id})"
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_9",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_9",
+      "before": "survived",
+      "after": "killed",
+      "before_exit_code": 0,
+      "after_exit_code": 1,
+      "diff": "--- src/lexinform/services/message_parts.py\n+++ src/lexinform/services/message_parts.py\n@@ -1,7 +1,7 @@\n def continuation_ready(repo: BillRepository, pub: Publication) -> Publication | None:\n     assert pub.id is not None and pub.delivery is not None\n     parent = repo.publication_by_id(pub.delivery.continuation_parent or 0)\n-    if parent is None or parent.status is not PublicationStatus.SENT or parent.message_id is None:\n+    if parent is None and parent.status is not PublicationStatus.SENT or parent.message_id is None:\n         return None\n     if pub.delivery.reply_to is None:\n         plan = pub.delivery.model_copy(update={\"reply_to\": parent.message_id})"
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_10",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_10",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_11",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_11",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_12",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_12",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_13",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_13",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_14",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_14",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_15",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_15",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_16",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_16",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_17",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_17",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_18",
+      "before": "survived",
+      "after": "killed",
+      "before_exit_code": 0,
+      "after_exit_code": 1,
+      "diff": "--- src/lexinform/delivery_schedule.py\n+++ src/lexinform/delivery_schedule.py\n@@ -16,7 +16,7 @@\n             return None\n     else:\n         return None\n-    local = now.astimezone(LOCAL_TZ)\n+    local = now.astimezone(None)\n     release = dt.datetime.combine(local.date(), dt.time(release_hour), tzinfo=LOCAL_TZ)\n     if release <= local:\n         release = dt.datetime.combine("
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_18",
+      "before": "survived",
+      "after": "killed",
+      "before_exit_code": 0,
+      "after_exit_code": 1,
+      "diff": "--- src/lexinform/services/message_parts.py\n+++ src/lexinform/services/message_parts.py\n@@ -5,7 +5,7 @@\n         return None\n     if pub.delivery.reply_to is None:\n         plan = pub.delivery.model_copy(update={\"reply_to\": parent.message_id})\n-        if not repo.replace_unattempted_delivery(pub.id, plan):\n+        if repo.replace_unattempted_delivery(pub.id, plan):\n             return None\n         pub = pub.model_copy(update={\"delivery\": plan})\n     return pub"
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_19",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_19",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_20",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_20",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_21",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_21",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_22",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_22",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_23",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_23",
+      "before": "survived",
+      "after": "killed",
+      "before_exit_code": 0,
+      "after_exit_code": 1,
+      "diff": "--- src/lexinform/services/message_parts.py\n+++ src/lexinform/services/message_parts.py\n@@ -7,5 +7,5 @@\n         plan = pub.delivery.model_copy(update={\"reply_to\": parent.message_id})\n         if not repo.replace_unattempted_delivery(pub.id, plan):\n             return None\n-        pub = pub.model_copy(update={\"delivery\": plan})\n+        pub = None\n     return pub"
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_24",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_24",
+      "before": "survived",
+      "after": "killed",
+      "before_exit_code": 0,
+      "after_exit_code": 1,
+      "diff": "--- src/lexinform/services/message_parts.py\n+++ src/lexinform/services/message_parts.py\n@@ -7,5 +7,5 @@\n         plan = pub.delivery.model_copy(update={\"reply_to\": parent.message_id})\n         if not repo.replace_unattempted_delivery(pub.id, plan):\n             return None\n-        pub = pub.model_copy(update={\"delivery\": plan})\n+        pub = pub.model_copy(update=None)\n     return pub"
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_25",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_25",
+      "before": "survived",
+      "after": "killed",
+      "before_exit_code": 0,
+      "after_exit_code": 1,
+      "diff": "--- src/lexinform/services/message_parts.py\n+++ src/lexinform/services/message_parts.py\n@@ -7,5 +7,5 @@\n         plan = pub.delivery.model_copy(update={\"reply_to\": parent.message_id})\n         if not repo.replace_unattempted_delivery(pub.id, plan):\n             return None\n-        pub = pub.model_copy(update={\"delivery\": plan})\n+        pub = pub.model_copy(update={\"XXdeliveryXX\": plan})\n     return pub"
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_26",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.services.message_parts.x_continuation_ready__mutmut_26",
+      "before": "survived",
+      "after": "killed",
+      "before_exit_code": 0,
+      "after_exit_code": 1,
+      "diff": "--- src/lexinform/services/message_parts.py\n+++ src/lexinform/services/message_parts.py\n@@ -7,5 +7,5 @@\n         plan = pub.delivery.model_copy(update={\"reply_to\": parent.message_id})\n         if not repo.replace_unattempted_delivery(pub.id, plan):\n             return None\n-        pub = pub.model_copy(update={\"delivery\": plan})\n+        pub = pub.model_copy(update={\"DELIVERY\": plan})\n     return pub"
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_27",
+      "before": "survived",
+      "after": "survived",
+      "before_exit_code": 0,
+      "after_exit_code": 0,
+      "diff": "--- src/lexinform/delivery_schedule.py\n+++ src/lexinform/delivery_schedule.py\n@@ -18,7 +18,7 @@\n         return None\n     local = now.astimezone(LOCAL_TZ)\n     release = dt.datetime.combine(local.date(), dt.time(release_hour), tzinfo=LOCAL_TZ)\n-    if release <= local:\n+    if release < local:\n         release = dt.datetime.combine(\n             local.date() + dt.timedelta(days=1), dt.time(release_hour), tzinfo=LOCAL_TZ\n         )"
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_28",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_29",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_30",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_31",
+      "before": "survived",
+      "after": "killed",
+      "before_exit_code": 0,
+      "after_exit_code": 1,
+      "diff": "--- src/lexinform/delivery_schedule.py\n+++ src/lexinform/delivery_schedule.py\n@@ -20,7 +20,7 @@\n     release = dt.datetime.combine(local.date(), dt.time(release_hour), tzinfo=LOCAL_TZ)\n     if release <= local:\n         release = dt.datetime.combine(\n-            local.date() + dt.timedelta(days=1), dt.time(release_hour), tzinfo=LOCAL_TZ\n+            local.date() + dt.timedelta(days=1), dt.time(release_hour), tzinfo=None\n         )\n     # The elapsed-time cap stays 24 hours across Warsaw's daylight-saving transitions.\n     limit = assessment.detected_at.astimezone(dt.UTC) + MAX_EDITORIAL_WAIT"
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_32",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_33",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_34",
+      "before": "survived",
+      "after": "killed",
+      "before_exit_code": 0,
+      "after_exit_code": 1,
+      "diff": "--- src/lexinform/delivery_schedule.py\n+++ src/lexinform/delivery_schedule.py\n@@ -20,8 +20,7 @@\n     release = dt.datetime.combine(local.date(), dt.time(release_hour), tzinfo=LOCAL_TZ)\n     if release <= local:\n         release = dt.datetime.combine(\n-            local.date() + dt.timedelta(days=1), dt.time(release_hour), tzinfo=LOCAL_TZ\n-        )\n+            local.date() + dt.timedelta(days=1), dt.time(release_hour), )\n     # The elapsed-time cap stays 24 hours across Warsaw's daylight-saving transitions.\n     limit = assessment.detected_at.astimezone(dt.UTC) + MAX_EDITORIAL_WAIT\n     return DeliverySchedule("
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_35",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_36",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_37",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_38",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_39",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_40",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_41",
+      "before": "survived",
+      "after": "survived",
+      "before_exit_code": 0,
+      "after_exit_code": 0,
+      "diff": "--- src/lexinform/delivery_schedule.py\n+++ src/lexinform/delivery_schedule.py\n@@ -23,7 +23,7 @@\n             local.date() + dt.timedelta(days=1), dt.time(release_hour), tzinfo=LOCAL_TZ\n         )\n     # The elapsed-time cap stays 24 hours across Warsaw's daylight-saving transitions.\n-    limit = assessment.detected_at.astimezone(dt.UTC) + MAX_EDITORIAL_WAIT\n+    limit = assessment.detected_at.astimezone(None) + MAX_EDITORIAL_WAIT\n     return DeliverySchedule(\n         route=route,\n         detected_at=assessment.detected_at,"
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_42",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_43",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_44",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_45",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_46",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_47",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_48",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_49",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_50",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_51",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_52",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_53",
+      "before": "killed",
+      "after": "killed",
+      "before_exit_code": 1,
+      "after_exit_code": 1
+    },
+    {
+      "name": "lexinform.delivery_schedule.x_daily_schedule__mutmut_54",
+      "before": "survived",
+      "after": "survived",
+      "before_exit_code": 0,
+      "after_exit_code": 0,
+      "diff": "--- src/lexinform/delivery_schedule.py\n+++ src/lexinform/delivery_schedule.py\n@@ -27,6 +27,6 @@\n     return DeliverySchedule(\n         route=route,\n         detected_at=assessment.detected_at,\n-        not_before=min(release.astimezone(dt.UTC), limit),\n+        not_before=min(release.astimezone(None), limit),\n         deliver_by=limit,\n     )"
+    }
+  ],
+  "survivor_adjudication": {
+    "lexinform.services.message_parts.x_continuation_ready__mutmut_1": {
+      "category": "outside_valid_input_contract",
+      "reason": "Only weakens the assertion that repository callers supply a stored publication and a delivery plan. No invalid-input test was added solely to kill it."
+    },
+    "lexinform.delivery_schedule.x_daily_schedule__mutmut_27": {
+      "category": "open_boundary_policy",
+      "reason": "At exactly the release hour the original chooses the next day and the mutant releases immediately. This is behaviorally different; no policy was invented to improve the score."
+    },
+    "lexinform.delivery_schedule.x_daily_schedule__mutmut_41": {
+      "category": "equivalent_for_schedule_instants",
+      "reason": "Converting the detection instant to the host fixed offset before adding 24 hours preserves elapsed time. ISO offset rendering may differ; this is not whole-program textual equivalence."
+    },
+    "lexinform.delivery_schedule.x_daily_schedule__mutmut_54": {
+      "category": "equivalent_for_schedule_instants",
+      "reason": "Timezone conversion preserves the instant used by min and due comparisons. ISO offset rendering may differ; exact operator formatting is outside this pilot contract."
+    }
+  },
+  "adjudication_probes": {
+    "equivalence_scope": "Scheduling instants, not exact operator ISO timestamp rendering. Finite probes support the algebraic fixed-offset argument; not a whole-program equivalence proof.",
+    "comparisons": [
+      {
+        "mutant": "41",
+        "host_timezone": "UTC",
+        "now": "2026-03-28T17:01:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "UTC",
+        "now": "2026-03-28T17:01:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "UTC",
+        "now": "2026-03-28T17:01:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "UTC",
+        "now": "2026-03-28T17:01:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "UTC",
+        "now": "2026-10-24T16:01:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "UTC",
+        "now": "2026-10-24T16:01:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "UTC",
+        "now": "2026-10-24T16:01:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "UTC",
+        "now": "2026-10-24T16:01:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "UTC",
+        "now": "2026-09-07T15:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "UTC",
+        "now": "2026-09-07T15:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "UTC",
+        "now": "2026-09-07T15:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "UTC",
+        "now": "2026-09-07T15:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "UTC",
+        "now": "2026-09-07T16:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "UTC",
+        "now": "2026-09-07T16:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "UTC",
+        "now": "2026-09-07T16:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "UTC",
+        "now": "2026-09-07T16:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "UTC",
+        "now": "2026-09-07T22:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "UTC",
+        "now": "2026-09-07T22:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "UTC",
+        "now": "2026-09-07T22:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "UTC",
+        "now": "2026-09-07T22:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "UTC",
+        "now": "2026-09-07T16:00:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "UTC",
+        "now": "2026-09-07T16:00:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "UTC",
+        "now": "2026-09-07T16:00:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "UTC",
+        "now": "2026-09-07T16:00:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-03-28T17:01:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-03-28T17:01:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-03-28T17:01:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-03-28T17:01:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-10-24T16:01:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-10-24T16:01:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-10-24T16:01:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-10-24T16:01:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-09-07T15:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-09-07T15:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-09-07T15:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-09-07T15:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-09-07T16:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-09-07T16:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-09-07T16:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-09-07T16:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-09-07T22:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-09-07T22:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-09-07T22:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-09-07T22:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-09-07T16:00:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-09-07T16:00:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-09-07T16:00:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Europe/Warsaw",
+        "now": "2026-09-07T16:00:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-03-28T17:01:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-03-28T17:01:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-03-28T17:01:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-03-28T17:01:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-10-24T16:01:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-10-24T16:01:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-10-24T16:01:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-10-24T16:01:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-09-07T15:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-09-07T15:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-09-07T15:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-09-07T15:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-09-07T16:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-09-07T16:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-09-07T16:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-09-07T16:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-09-07T22:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-09-07T22:30:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-09-07T22:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-09-07T22:30:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-09-07T16:00:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-09-07T16:00:00+00:00",
+        "detection_age_hours": 0,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "41",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-09-07T16:00:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": false
+      },
+      {
+        "mutant": "54",
+        "host_timezone": "Asia/Tokyo",
+        "now": "2026-09-07T16:00:00+00:00",
+        "detection_age_hours": 23,
+        "same_schedule_instants": true,
+        "same_serialization": true
+      }
+    ],
+    "exact_release_boundary": {
+      "original": "2026-09-08T16:00:00+00:00",
+      "27": "2026-09-07T16:00:00+00:00"
+    },
+    "boundary_policy": "Current code chooses the next day; the mutant releases immediately. No new product policy or test asserting either choice was introduced."
+  },
+  "source_sha256": {
+    "src/lexinform/delivery_schedule.py": "58a5f61385ab3e74fe02eefb5bcb5d13bcf7fbf77348b1f899e5052ad758b119",
+    "src/lexinform/services/message_parts.py": "60018971f0b80db175d9c94d436afd89b442d722786e40c87258dc687cee5c63"
+  },
+  "production_source_changed": false,
+  "reproduction": {
+    "command": [
+      "uv",
+      "run",
+      "--frozen",
+      "--group",
+      "mutation",
+      "mutmut",
+      "run",
+      "--max-children",
+      "2",
+      "lexinform.delivery_schedule.*",
+      "lexinform.services.message_parts.x_continuation_ready*"
+    ],
+    "tool_config": "pyproject.toml [tool.mutmut]",
+    "note": "Use the explicit function patterns; bare mutmut run also includes generated functions outside this pilot. Compare survivor classifications, not a project-wide mutation score."
+  },
+  "full_quality_gate": {
+    "status": "passed",
+    "tests": 6072,
+    "mypy": "passed",
+    "ruff_check_src_tests_tools": "passed",
+    "ruff_format": "passed",
+    "uv_lock_check": "passed",
+    "diff_check": "passed",
+    "pytest_junit_suite_seconds": 250.595,
+    "pytest_reported_wall_seconds": 260.23
+  },
+  "limitations": [
+    "Selected-scope survivors were not run against every existing test before strengthening the targeted contracts.",
+    "Mutmut exit code 1 establishes a failing test run, not which assertion killed each mutation. No timeouts, internal-error exit codes or missing-test results were counted as kills.",
+    "No mutation score threshold was added to normal CI.",
+    "Continuation snapshotting, freeze_parts, send_continuations and explicit checkpoint reordering mutations remain outside this pilot.",
+    "The exact-release boundary remains an open policy case; four remaining survivors were not suppressed."
+  ],
+  "initial_measurement_commit": "73949034a6c89c0888c5b7e3074e529b1746e8f0",
+  "source_provenance_note": "The initial selected run preceded integration of upstream delivery-contract matrices. The second run included that integration; neither target module nor the two original selected scenario files changed, and the upstream matrix tests were outside both selections.",
+  "main_integration": {
+    "commit": "d7d0ab30e8004d1ea6a6b75e06064e25c74fea5f",
+    "ci": "https://github.com/sobolevbel/lexinform/actions/runs/40735937209",
+    "ci_result": "success",
+    "main_parallel_coverage_tests": 6050,
+    "coverage_shard_regression": "Before the .coverage.* ignore rule, generated worker files flipped source provenance to dirty. The isolated Git regression now ignores shards while detecting a tracked source edit."
+  },
+  "pilot_file_sha256": {
+    ".gitignore": "913866f250ff44c969761ea992d2014854222d3d1d8bb01c294cd71f215632a3",
+    "CONTRIBUTING.md": "2a29f828d4e64a15c94cb8385f45bb0076fb0d99e49111747609c72678c6785e",
+    "pyproject.toml": "b2e569ec099ff1c5c42988e5bfa5e3e8205d23b2275e81d7c60af3a047b0d177",
+    "uv.lock": "883840351a91d1dae74f483ad7f63a91681553478c36e4d34b94e923eee5e2c4",
+    "tests/unit/test_delivery_schedule.py": "a3fb412f0e4ef6cfef4b3e322fd9ec01048644a9bddc9892f8d7552e84f0e312",
+    "tests/unit/test_message_parts.py": "91c68497d36f5db70d51a79a388a02d429942d43912bd3107627b262f518de5c"
+  }
+}
