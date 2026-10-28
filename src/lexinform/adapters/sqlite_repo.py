@@ -1792,6 +1792,13 @@ class SqliteBillRepository:
         expected = saved.model_copy(update=updates)
         if reply:
             expected = expected.model_copy(update={"today": delivery.today})
+            if delivery.continuation_ids:
+                if not self._legacy_reply_parts(original, delivery):
+                    return False
+                updates.update(continuation_ids=delivery.continuation_ids, held_change_ids=())
+                expected = expected.model_copy(
+                    update={"continuation_ids": delivery.continuation_ids, "held_change_ids": ()}
+                )
         if delivery != expected:
             return False
         raw: dict[str, object] = json.loads(row["delivery_json"])
@@ -1810,6 +1817,50 @@ class SqliteBillRepository:
             ),
         )
         return changed.rowcount == 1
+
+    def _legacy_reply_parts(self, original: Publication, delivery: DeliveryPlan) -> bool:
+        assert original.delivery is not None, "legacy_status_reply requires the original plan"
+        identities = delivery.continuation_ids
+        if len(set(identities)) != len(identities) or delivery.held_change_ids:
+            return False
+        parent = original.id
+        for index, identity in enumerate(identities, 2):
+            child = self.publication_by_id(identity)
+            if (
+                child is None
+                or child.kind is not PublicationKind.MESSAGE_PART
+                or child.status is not PublicationStatus.QUEUED
+                or child.attempts
+                or child.message_id is not None
+                or child.term != original.term
+                or child.number != original.number
+                or child.channel_id != original.channel_id
+                or child.ref != f"message/{original.id}/{index}"
+            ):
+                return False
+            plan = child.delivery
+            held = original.delivery.held_change_ids if index == len(identities) + 1 else ()
+            if (
+                plan is None
+                or not plan.rendered_text.strip()
+                or utf16_length(plan.rendered_text) > MESSAGE_LIMIT
+                or plan.continuation_parent != parent
+                or plan.continuation_root != original.id
+                or plan.continuation_index != index
+                or plan.continuation_ids
+                or plan.reply_to is not None
+                or plan.edit_message_id is not None
+                or plan.revision_of is not None
+                or plan.destination != "direct"
+                or plan.policy_version != "attention-v1"
+                or plan.publication_ids
+                or plan.digest_parts
+                or plan.digest_event_ids
+                or plan.held_change_ids != held
+            ):
+                return False
+            parent = identity
+        return True
 
     def get_update_publication(self, change_id: int, channel_id: str) -> Publication | None:
         row = self._conn.execute(

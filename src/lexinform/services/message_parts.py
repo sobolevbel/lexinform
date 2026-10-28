@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from functools import partial
 
@@ -28,7 +29,13 @@ def continuation_snapshot(bill: Bill) -> str:
 
 
 def freeze_parts(
-    repo: BillRepository, clock: Clock, publisher: Publisher, pub: Publication, text: str
+    repo: BillRepository,
+    clock: Clock,
+    publisher: Publisher,
+    pub: Publication,
+    text: str,
+    *,
+    persist: Callable[[int, DeliveryPlan], bool] | None = None,
 ) -> Publication:
     assert pub.id is not None and pub.delivery is not None
     if pub.delivery.rendered_text:
@@ -59,6 +66,10 @@ def freeze_parts(
                 ),
             )
             parent = repo.create_publication(child)
+            if persist is not None and repo.publication_by_id(parent) != child.model_copy(
+                update={"id": parent}
+            ):
+                raise ValueError("Cannot adopt a mismatched legacy continuation")
             children.append(parent)
         plan = plan.model_copy(
             update={
@@ -66,7 +77,8 @@ def freeze_parts(
                 "held_change_ids": () if children else plan.held_change_ids,
             }
         )
-        if not repo.replace_unattempted_delivery(pub.id, plan):
+        save = persist if persist is not None else repo.replace_unattempted_delivery
+        if not save(pub.id, plan):
             raise ValueError("Cannot change an attempted message payload")
     return pub.model_copy(update={"delivery": plan})
 

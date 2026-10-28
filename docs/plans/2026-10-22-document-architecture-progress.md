@@ -6213,3 +6213,52 @@ _send methods, а также остального protocol, совпадает �
 baseline reproduction, native/compatibility pairs, raw-JSON/date guards, source hashes и gates.
 Strict docs/build/link и diff checks green. Оставшиеся legacy kinds/unknown parent/multipart/
 groups этим ограниченным контрактом не объявляются переведёнными.
+
+
+<a id="j128"></a>
+### J128. Prepare every physical part of a failed legacy status reply before retry
+
+Статус: **готово**, baseline `e27327c7c5189812ad541c1f3a85bc675bfdec16`.
+Oversized legacy callback передаёт один input в Telegram adapter и не сохраняет физические части.
+Новый путь использует существующий `freeze_parts` с узким persist callback: children + failed root
+записываются в одной транзакции до pre-API checkpoint. Новая physical identity относится к
+будущей попытке, не реконструирует прошлую отправку. Parent каждого child появляется только из
+receipt предыдущей части и checkpoint'ится до его API. Held changes принадлежат leaf; act notice
+не завершается до всей цепочки. Не вводится новая очередь или схема.
+
+Repository проверяет ownership/ref/index/parent/root, queued0/no-receipt state, bounded payloads и
+точную leaf membership. Существующая часть с иным payload/shape не усыновляется; CAS failure
+откатывает подготовку всех children. Root сохраняет known target/flags/source/attempts; render day следует Clock по контракту J127.
+Default `freeze_parts` callers используют прежний writer; новый callback имеет одного явного
+legacy caller. Body rendering и HTML splitter прежние, других source/admissibility решений нет.
+
+**227 focused**, strict mypy **498**, Ruff/format green. Remote pre/post root/leaf faults,
+restore, definite failed continuation, unknown + audited confirmation, actual next reply parent,
+foreign/attempted/malformed child, orphan collision и atomic root-write failure проверены.
+При UNKNOWN ничего не auto-resend'ится; confirm не вызывает API и разрешает только следующий child.
+Reproduction на actual prior source падает без setup errors из-за отсутствия prepared part calls.
+
+**168 default native profiles**: requests/messages/all28 tables exact, phase timing differences0,
+SQL/gzip delta0, source doctors errors0. Отдельные **6 oversized legacy profiles** получают по
+3 bounded API inputs, exact canonical splitter output прежнего полного текста; model requests,
+paid results, root IDs/receipts/attempts/parent и logical outcomes сохранены. Старый fake принимал
+oversized input; успешная старая доставка в настоящий Telegram не утверждается. Fixture SQL
+increment **23048–24393 bytes**, gzip **1176–1333**, в этих шести fixtures с компактными continuation snapshots; raw files в SQL не добавлялись.
+
+Previous source и новый reader прошли по **6 chains / 18 physical calls**, exact frozen payloads /
+remote receipts и duplicate calls0, без render. Production acceptance этим не заменяется;
+unknown groups, missing root parents и oversized legacy edits остаются отдельной работой.
+Full gate выполняется на frozen code; corpus text replay для delivery-only change не требуется.
+
+J127 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40640458709) success:
+**5265 passed**, strict mypy **496**, docs/web green. Feature branch/draft PR only;
+main/deployment по-прежнему требуют ранее запрошенного разрешения.
+
+Full gate: **5301 passed**, failures/errors/skips0; final source freeze сохранён. Migrations,
+row readers и прочий repository/posting/protocol AST вне scoped methods exact. Остальные
+158 runtime files byte-exact. Дополнительный reader actual main `176c328` прошёл **6 chains /
+18 calls**, exact pending/payload/parent/receipt и duplicate0; uv.lock byte-exact. Это source +
+current dependencies на fake transport, не полный binary/deployment rollback test.
+[Acceptance asset](../assets/audits/2026-10-28-legacy-reply-parts/validation.json) пинует source,
+faults/ownership/CAS cases, native/default/compatibility evidence и gates. Strict docs/build/
+link и diff checks green. Backend и natural production acceptance не расширялись.

@@ -1586,17 +1586,29 @@ class Poster:
                     update={"delivery": pub.delivery.model_copy(update={"today": today})}
                 )
             text = self._publisher.render_delivery(candidate)
-            if utf16_length(text) <= MESSAGE_LIMIT:
+            if legacy_reply:
+                assert candidate.delivery is not None, "the reply candidate retains its plan"
+                candidate = candidate.model_copy(
+                    update={
+                        "delivery": candidate.delivery.model_copy(
+                            update={"render_origin": "legacy_snapshot"}
+                        )
+                    }
+                )
+                pub = freeze_parts(
+                    self._repo,
+                    self._clock,
+                    self._publisher,
+                    candidate,
+                    text,
+                    persist=self._repo.freeze_legacy_status_reply,
+                )
+            elif utf16_length(text) <= MESSAGE_LIMIT:
                 assert candidate.delivery is not None, "the candidate retains the saved plan"
                 plan = candidate.delivery.model_copy(
                     update={"rendered_text": text, "render_origin": "legacy_snapshot"}
                 )
-                freeze = (
-                    self._repo.freeze_legacy_status_reply
-                    if legacy_reply
-                    else self._repo.freeze_legacy_status_edit
-                )
-                if not freeze(pub_id, plan):
+                if not self._repo.freeze_legacy_status_edit(pub_id, plan):
                     raise ValueError("Cannot freeze the legacy status snapshot")
                 pub = pub.model_copy(update={"delivery": plan})
         if (
