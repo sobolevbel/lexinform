@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,41 @@ def input_dump(tmp_path: Path) -> Path:
     finally:
         repo.close()
     return dump
+
+
+def test_coverage_worker_shards_preserve_git_provenance_but_source_edits_do_not(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+    git = benchmark_state_checkpoint.git
+    git(tmp_path, "init", "-b", "main", "--template=")
+    ignore = Path(__file__).resolve().parents[2] / ".gitignore"
+    (tmp_path / ".gitignore").write_bytes(ignore.read_bytes())
+    source = tmp_path / "source.py"
+    source.write_text("VALUE = 1\n")
+    git(tmp_path, "add", ".gitignore", "source.py")
+    git(
+        tmp_path,
+        "-c",
+        "user.name=Test",
+        "-c",
+        "user.email=test@example.test",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "core.hooksPath=/dev/null",
+        "commit",
+        "-m",
+        "Seed source provenance",
+    )
+    assert git(tmp_path, "status", "--porcelain") == ""
+
+    (tmp_path / ".coverage.worker.12345.sample").write_bytes(b"coverage worker data")
+
+    assert git(tmp_path, "status", "--porcelain") == ""
+    source.write_text("VALUE = 2\n")
+    assert git(tmp_path, "status", "--porcelain") == "M source.py"
 
 
 def test_benchmark_preserves_input_and_measures_both_changed_and_unchanged_snapshots(
