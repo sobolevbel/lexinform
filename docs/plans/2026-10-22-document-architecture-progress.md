@@ -7320,3 +7320,38 @@ inputs exact. Отличается только проверенная пуст�
 +149–240 gzip B/case. После replay изменились ровно два test assertions, runtime/fixtures/
 observer/runner exact; same-tree reuse через эту границу не заявляется.
 [Acceptance asset](../assets/audits/2026-10-28-rcl-letter-reader/validation.json).
+
+
+J148 reader commit `9a3729a829c2bb11f2fc20862c12c769095e3407`: все четыре CI jobs
+и deploy 40777416543 прошли; реле перешло с 61e5 на 9a37, health 45s/timer подтверждены
+[release proof](../assets/audits/2026-10-28-rcl-letter-reader/release.json).
+S1 reader prerequisite для RCL producer выполнен.
+
+
+<a id="j149"></a>
+
+### J149. Accept the measured current storage profile and bounded download contract
+
+Статус: **documentation-only приёмка завершена; strict docs/link/build и diff gate прошли**.
+Независимый аудит сопоставил буквальные критерии DA2.1/DA2.4 с текущим metadata-only профилем.
+Global wire ledger, восстановление отсутствующей истории, crash-proof capture и новый SQL owner
+для show/read-only lookup/preview не требуются этими критериями. Гарантии не расширены:
+unknown при потере процесса и existing preview enrollment сохранены. DA2.4 закрыт по уже
+развёрнутым J142/J146: bounded errors/omissions, complete-body identity, caller finalization,
+rollback/workers и старые report/exception/IO contracts имеют проверенные proofs.
+
+DA2.1 закрыт конечной [оценкой текущего профиля](../reviews/2026-10-27-storage-profile.md#current-profile-assessment):
+pinned historical inventory по source/suffix, explicit unknown scan/ELI/paid/publication joins,
+четыре storage alternatives и actual guarded retention sensitivities на свежей копии.
+Измерения stock, observed transfer window, SQL snapshots и Git history не смешиваются.
+Для 30-дневного scratch сценария удалены 169 runs/10 sent payloads/23 memos; mandatory work,
+unsent identities/payloads/accounting и discovery watermark точны. 90/365/default age effects
+нулевые на этих retained rows; каждый вариант отдельно очищает один уже eligible batch payload.
+Production retention, backend и raw profile не менялись.
+
+Inputs/source SHA проверены before/after, все изменения DB только в удалённых scratch copies.
+Новых fetch, Settings/.env, CLI/pipeline, provider/paid или production calls нет. Исторические
+checkpoint/pack/dual-write numbers не выдаются за новые benchmarks или разрешение на activation.
+[Acceptance asset](../assets/audits/2026-10-28-storage-assessment/validation.json).
+Runtime/tests/tools/config byte-exact с J148; повтор full pytest для изменения текста не требуется.
+План теперь: **74 / 31 done / 6 explicit N/A / 37 applicable partial-open**.

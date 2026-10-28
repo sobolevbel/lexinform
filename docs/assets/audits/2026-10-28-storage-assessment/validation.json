@@ -1,0 +1,334 @@
+{
+  "assessment_sha256": "299e5541adf74015af5c0a17f56470a71ff6b8f81adfa47d3cd97c9851021624",
+  "denominator_limits": {
+    "candidate": "Only retained selection records/observed part entries and measured loader window; full ever-considered population unknown.",
+    "published": "Sent SQL rows/owners are known; no complete exact raw-file-to-publication relation or independent Telegram verification.",
+    "raw_retention_days30_90_365": "Not measurable from inventory stock or first-recorded timestamps; no adopted raw-retention obligations or backup-manifest lifetimes.",
+    "relevant": "Current Bill analysis.relevant flags are known; historical relevant-file union unknown.",
+    "used": "Selected part entries and complete returned bodies do not prove exact paid-input membership; complete candidate-to-paid mapping unknown."
+  },
+  "download_diagnostics_acceptance": {
+    "basis": [
+      "docs/assets/audits/2026-10-28-download-diagnostics/validation.json",
+      "docs/assets/audits/2026-10-28-cli-read-capture/validation.json",
+      "docs/assets/audits/2026-10-28-historical-rereads/validation.json"
+    ],
+    "limits": [
+      "read-only show/lookup unchanged",
+      "preview preserves existing enrollment and gets no new report owner",
+      "direct catalog HTTP is outside TextLoader diagnostics",
+      "process loss before finalization remains unknown",
+      "complete metadata/receipt is not retained raw",
+      "no wire-attempt or per-download durable ledger claim"
+    ],
+    "owners": "DailyPipeline plus nine explicit mutating CLI roots"
+  },
+  "inventory": {
+    "ELI": {
+      "bytes": null,
+      "paths": null,
+      "reason": "saved ELI JSON metadata is not a catalogued raw-original cohort",
+      "status": "excluded_from_raw_inventory"
+    },
+    "RCL": {
+      "by_suffix": {
+        "ODT": {
+          "bytes": 0,
+          "format_status": "suffix_only",
+          "paths": 0,
+          "scan_status": "unknown"
+        },
+        "PDF_not_scan": {
+          "bytes": 1663013308,
+          "format_status": "suffix_only",
+          "paths": 5168,
+          "scan_status": "unknown"
+        },
+        "Word": {
+          "bytes": 529242240,
+          "format_status": "suffix_only",
+          "paths": 3447,
+          "scan_status": "unknown"
+        },
+        "ZIP": {
+          "bytes": 2893623292,
+          "format_status": "suffix_only",
+          "paths": 1803,
+          "scan_status": "unknown"
+        }
+      },
+      "path_bytes": 5085878840,
+      "paths": 10418,
+      "unique_bytes": 4602991139,
+      "unique_contents": 8271
+    },
+    "Sejm (prints/filings/self-amendments/RPW)": {
+      "by_suffix": {
+        "ODT": {
+          "bytes": 8788,
+          "format_status": "suffix_only",
+          "paths": 1,
+          "scan_status": "unknown"
+        },
+        "PDF_not_scan": {
+          "bytes": 6330563203,
+          "format_status": "suffix_only",
+          "paths": 2419,
+          "scan_status": "unknown"
+        },
+        "Word": {
+          "bytes": 176829637,
+          "format_status": "suffix_only",
+          "paths": 1678,
+          "scan_status": "unknown"
+        },
+        "ZIP": {
+          "bytes": 0,
+          "format_status": "suffix_only",
+          "paths": 0,
+          "scan_status": "unknown"
+        }
+      },
+      "path_bytes": 6507401628,
+      "paths": 4098,
+      "unique_bytes": 6504537079,
+      "unique_contents": 4095
+    },
+    "Senate": {
+      "by_suffix": {
+        "ODT": {
+          "bytes": 0,
+          "format_status": "suffix_only",
+          "paths": 0,
+          "scan_status": "unknown"
+        },
+        "PDF_not_scan": {
+          "bytes": 433266116,
+          "format_status": "suffix_only",
+          "paths": 816,
+          "scan_status": "unknown"
+        },
+        "Word": {
+          "bytes": 46680563,
+          "format_status": "suffix_only",
+          "paths": 1009,
+          "scan_status": "unknown"
+        },
+        "ZIP": {
+          "bytes": 0,
+          "format_status": "suffix_only",
+          "paths": 0,
+          "scan_status": "unknown"
+        }
+      },
+      "path_bytes": 479946679,
+      "paths": 1825,
+      "unique_bytes": 479946679,
+      "unique_contents": 1825
+    }
+  },
+  "inventory_totals": {
+    "bytes": 12073227147,
+    "duplicate_bytes": 485752250,
+    "duplicate_files": 2150,
+    "files": 16341,
+    "unique_bytes": 11587474897,
+    "unique_contents": 14191
+  },
+  "profile_alternatives": [
+    {
+      "adopted": true,
+      "extra_raw_bytes": 0,
+      "measured_gzip9_bytes": 4112280,
+      "measured_sql_bytes": 20378124,
+      "profile": "metadata_and_decisions",
+      "restorable": "retained SQL values and mandatory pending/frozen payload only"
+    },
+    {
+      "adopted": false,
+      "known_current_json_columns": {
+        "analysis_memo.record_json": 944003,
+        "bills.review_work_json": 3922226,
+        "llm_batch_items.meta_json": 233718,
+        "publications.delivery_json": 9448739
+      },
+      "limits": "These overlapping JSON contexts already belong to current SQL, not additive unique text/input archive bytes.",
+      "profile": "texts_and_exact_inputs",
+      "total_incremental_bytes": null
+    },
+    {
+      "addressable_research_subset_bytes": 9585013,
+      "addressable_research_subset_sha": 13,
+      "adopted": false,
+      "limits": "Exact references available in inventory, not a relevance/publication filter or adopted subset policy.",
+      "policy_selected_bytes": null,
+      "profile": "selective_originals"
+    },
+    {
+      "actual_all_consumption_or_retention_bytes": null,
+      "adopted": false,
+      "limits": "Observed window transfers are not multi-run unique archive bytes; corpus stock is not production demand.",
+      "measured_window_completed_transfer_bytes": 15050702,
+      "profile": "full_raw",
+      "research_global_unique_bytes": 11587474897
+    }
+  ],
+  "profile_handoff": {
+    "artifacts": {
+      "out/corpus/da2-acceptance-audit/aggregate_existing_transition.py": {
+        "bytes": 1560,
+        "sha256": "a71fee4f47d7a0e0ac4c3bf32b0a88de8f73ee7048ef89be7d6e625f890c78be"
+      },
+      "out/corpus/da2-acceptance-audit/assess_profile.py": {
+        "bytes": 16941,
+        "sha256": "b123d841355f46c343e43892fad578619be75c903d82eb29f921acdc95e63bd7"
+      },
+      "out/corpus/da2-acceptance-audit/assessment-data-final/aggregate.json": {
+        "bytes": 46788,
+        "sha256": "8c1aeeb90a338aec966516138189d93ab33387a697f85993fbb4af711bc8009b"
+      },
+      "out/corpus/da2-acceptance-audit/assessment-data-final/pins.json": {
+        "bytes": 23508,
+        "sha256": "27b4851902333d0f5977282fde251646543e971194c7a72ca5ee8cfea27b5ac9"
+      },
+      "out/corpus/da2-acceptance-audit/assessment-data-final/transition-metrics.json": {
+        "bytes": 6522,
+        "sha256": "fb104214d63c356dc154a9c937fc435b86c525958f9ca569b657f185776f5f09"
+      },
+      "out/corpus/da2-acceptance-audit/profile-assessment.md": {
+        "bytes": 8387,
+        "sha256": "299e5541adf74015af5c0a17f56470a71ff6b8f81adfa47d3cd97c9851021624"
+      }
+    },
+    "checkboxes_changed": false,
+    "limits": [
+      "Measured current-profile stock/retained-row sensitivities; no daily/archive forecast, full demand/relevance/publication union or raw backup promise.",
+      "J094 historical producer and fresh f503 pin differ from current9a retention API/schema60; schema upgrade preserves all38 old tables/values.",
+      "Raw stock suffix cells do not prove formats/scan/legal roles.",
+      "Earlier provisional metadata is preserved separately; its disposable databases were removed."
+    ],
+    "new_network_or_paid_or_production_calls": 0,
+    "only_disposable_database_mutations": true,
+    "raw_backend_or_retention_policy_changed": false,
+    "reproduction": "Use pinned source hashes and /private/tmp/lexinform-j140-integrated/.venv; explicit PYTHONPATH=primary/src:primary; UV_CACHE_DIR=/private/tmp/lexinform-pr9-uv-cache UV_PROJECT_ENVIRONMENT=/private/tmp/lexinform-j140-integrated/.venv uv run --no-sync --offline --frozen python -B out/corpus/da2-acceptance-audit/assess_profile.py. Set OUT to a fresh ignored directory first; never overwrite evidence. Run aggregate_existing_transition.py against that fresh output. No new fetch required.",
+    "source_and_all_inputs_unchanged": true,
+    "source_head": "9a3729a829c2bb11f2fc20862c12c769095e3407",
+    "status": "finite_profile_assessment_ready_for_review",
+    "words": 1146
+  },
+  "qualification": {
+    "docs_log_sha256": "5284e0f47bce4edc6c6ba56a6177c9840e1486405d0400d2bc932f4563518cd4",
+    "docs_strict_build_links_resources_contents": "passed",
+    "full_tests_not_repeated_for_docs_only": true,
+    "runtime_tests_tools_config_files_exact_J148": 631
+  },
+  "retention": {
+    "baseline60": {
+      "gzip9_mtime0_bytes": 4112546,
+      "serialized_sqlite_bytes": 21676032,
+      "sql_bytes": 20378958,
+      "sql_sha256": "c892208ec351dbf9da15aeac9e4667b210788fd50a124bbd4bb1eeaae146d45c"
+    },
+    "code_defaults90_180": {
+      "all_protected_identities_and_unsent_payloads_exact": true,
+      "gzip9_mtime0_bytes": 4111659,
+      "history_pruned": {
+        "analysis_memos": 0,
+        "batch_payloads": 1,
+        "delivery_payloads": 0
+      },
+      "memo_cutoff": "2026-05-01T19:52:23+00:00",
+      "memos_retained": 149,
+      "physical_sqlite_bytes_without_vacuum": 21676032,
+      "run_cutoff": "2026-07-30T19:52:23+00:00",
+      "runs_pruned": 0,
+      "runs_retained": 389,
+      "serialized_sqlite_bytes": 21676032,
+      "sql_bytes": 20377395,
+      "sql_sha256": "0a56700172fdc4c4749fc11ce75a82d4eb5d530791b9c297508497fb843e858a"
+    },
+    "days30": {
+      "all_protected_identities_and_unsent_payloads_exact": true,
+      "gzip9_mtime0_bytes": 4056246,
+      "history_pruned": {
+        "analysis_memos": 23,
+        "batch_payloads": 1,
+        "delivery_payloads": 10
+      },
+      "memo_cutoff": "2026-09-28T19:52:23+00:00",
+      "memos_retained": 126,
+      "physical_sqlite_bytes_without_vacuum": 21676032,
+      "run_cutoff": "2026-09-28T19:52:23+00:00",
+      "runs_pruned": 169,
+      "runs_retained": 220,
+      "serialized_sqlite_bytes": 21676032,
+      "sql_bytes": 19852496,
+      "sql_sha256": "7858bdc765ca9a2650d58853a737fb246bb6fbb704caecfe442c58b95fc44f6d"
+    },
+    "days365": {
+      "all_protected_identities_and_unsent_payloads_exact": true,
+      "gzip9_mtime0_bytes": 4111659,
+      "history_pruned": {
+        "analysis_memos": 0,
+        "batch_payloads": 1,
+        "delivery_payloads": 0
+      },
+      "memo_cutoff": "2025-10-28T19:52:23+00:00",
+      "memos_retained": 149,
+      "physical_sqlite_bytes_without_vacuum": 21676032,
+      "run_cutoff": "2025-10-28T19:52:23+00:00",
+      "runs_pruned": 0,
+      "runs_retained": 389,
+      "serialized_sqlite_bytes": 21676032,
+      "sql_bytes": 20377395,
+      "sql_sha256": "0a56700172fdc4c4749fc11ce75a82d4eb5d530791b9c297508497fb843e858a"
+    },
+    "days90": {
+      "all_protected_identities_and_unsent_payloads_exact": true,
+      "gzip9_mtime0_bytes": 4111659,
+      "history_pruned": {
+        "analysis_memos": 0,
+        "batch_payloads": 1,
+        "delivery_payloads": 0
+      },
+      "memo_cutoff": "2026-07-30T19:52:23+00:00",
+      "memos_retained": 149,
+      "physical_sqlite_bytes_without_vacuum": 21676032,
+      "run_cutoff": "2026-07-30T19:52:23+00:00",
+      "runs_pruned": 0,
+      "runs_retained": 389,
+      "serialized_sqlite_bytes": 21676032,
+      "sql_bytes": 20377395,
+      "sql_sha256": "0a56700172fdc4c4749fc11ce75a82d4eb5d530791b9c297508497fb843e858a"
+    },
+    "no_age_expiration": {
+      "all_protected_identities_and_unsent_payloads_exact": true,
+      "gzip9_mtime0_bytes": 4111659,
+      "history_pruned": {
+        "analysis_memos": 0,
+        "batch_payloads": 1,
+        "delivery_payloads": 0
+      },
+      "memo_cutoff": "0001-01-01T00:00:00+00:00",
+      "memos_retained": 149,
+      "physical_sqlite_bytes_without_vacuum": 21676032,
+      "run_cutoff": "0001-01-01T00:00:00+00:00",
+      "runs_pruned": 0,
+      "runs_retained": 389,
+      "serialized_sqlite_bytes": 21676032,
+      "sql_bytes": 20377395,
+      "sql_sha256": "0a56700172fdc4c4749fc11ce75a82d4eb5d530791b9c297508497fb843e858a"
+    },
+    "same_rows_after_schema60_upgrade": true
+  },
+  "scope": [
+    "existing pinned inventory and production-state copies only",
+    "no new network, Settings, CLI, processing, paid calls or production writes",
+    "suffix cells are not validated formats, scans or legal roles",
+    "source and all inputs unchanged; disposable DBs removed",
+    "no retention/backend/raw policy expansion; first-recorded dates are not download timestamps"
+  ],
+  "scope_audit_sha256": "cd297ca43694bc15e0216b9a08a0728b1a81528b7024af40021b7a3fb291cbd1",
+  "source_head": "9a3729a829c2bb11f2fc20862c12c769095e3407",
+  "stage": "J149 current-profile acceptance; documentation only"
+}

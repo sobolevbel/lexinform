@@ -205,3 +205,96 @@ response / 15 050 702 B и 12 cache hits. CLI read reports на этом pin н�
 Known catalogue bodies не означают сохранённые raw bytes. Backend/retention expansion остаются
 отложенными; production overrides не читались, prune не запускался.
 [Проверяемые агрегаты и SHA](../assets/audits/2026-10-28-current-storage/validation.json).
+
+
+<a id="current-profile-assessment"></a>
+
+## Итоговая оценка текущего профиля · 28 октября
+
+Принимается текущий SQLite-профиль метаданных/решений и обязательных pending/frozen payloads.
+Расширение raw retention и выбор backend остаются отложенными. Это конечная оценка DA2.1
+по существующим pins; она не требует восстанавливать неизвестные исторические скачивания.
+[Evidence и reproduction](../assets/audits/2026-10-28-storage-assessment/validation.json)
+связывают J094 inventory/state schema51, свежий state e15b53d0/schema59 и код 9a37/schema60.
+Исторический inventory повторно не скачивался и не хешировался целиком; проверены его pinned
+SHA и исходные measurement artifacts. Disposable DBs удалены; source/inputs не изменены.
+
+### Источники и границы форматных страт
+
+| Source inventory | Paths / bytes | ZIP suffix paths / bytes | Word suffix paths / bytes | Scans |
+| --- | ---: | ---: | ---: | --- |
+| Sejm prints/filings/self-amendments/RPW | 4098 / 6 507 401 628 | 0 / 0 | 1678 / 176 829 637 | Unknown |
+| RCL | 10 418 / 5 085 878 840 | 1803 / 2 893 623 292 | 3447 / 529 242 240 | Unknown |
+| Catalogued Senate originals | 1825 / 479 946 679 | 0 / 0 | 1009 / 46 680 563 | Unknown |
+| ELI | Вне raw cohort | Unknown | Unknown | Unknown |
+
+Word здесь — только suffix `.doc/.docx/.docm/.xml`, без подтверждения формата или legal role.
+PDF suffix counts: 2419 Sejm / 5168 RCL / 816 Senate; PDF не доказывает scan. Есть один Sejm ODT.
+ELI JSON, research/derived/cache copies и uncatalogued Senate snapshots исключены. Нулевой
+ZIP count относится только к этому inventory, а не к потреблению источника вообще.
+Сохранённые extraction summaries содержат 15 Word / 6 PDF / 1 DOC selected parts; это другой
+знаменатель, который не заполняет неизвестные scan/source cells. Полные stock/reference totals
+и unmatched SHA приведены выше; для scan gaps используется corrected J094 qualified artifact.
+
+В свежем state 477 Bill rows: current analysis flags 77 relevant / 93 irrelevant / 307 absent.
+Есть 10 selection decisions, 49 observed-part и 22 selected-part entries с возможным overlap.
+173 SQL sent publications относятся к 49 owners; независимая проверка Telegram не выполнялась.
+Это разные множества. Исторические связи raw → exact paid input → relevant → publication
+не восстанавливаются из этих чисел. Natural window содержит 21 completions / 15 050 702 B:
+Sejm API 7 / 1 220 178 B, RCL 14 / 13 830 524 B; 12 cache hits. Within-run duplicate bytes 0,
+cross-run union unknown. Start-date buckets 27/28 октября неполны: часть reports unmeasured;
+они не являются полными сутками притока raw.
+
+### Четыре профиля на известных данных
+
+| Профиль | Измеренная основа | Неизвестное расширение |
+| --- | --- | --- |
+| Принятые metadata/decisions + обязательные payloads | Свежий SQL 20 378 124 B / gzip9 4 112 280 B / SQLite 21 663 744 B | Дополнительного raw store нет |
+| Тексты и exact inputs | Уже retained JSON: delivery 9 448 739 B, review work 3 922 226 B, memo 944 003 B, batch meta 233 718 B | Дополнительные уникальные extracts/inputs для candidate/used/relevant/published множеств |
+| Выборочные оригиналы | Доступная addressable research subset: 13 SHA / 9 585 013 B | Policy-selected union, его связь с публикациями/важностью и сроками |
+| Полный raw по политике | Известны transfers в наблюдаемом окне и research stock, приведённые выше | Полный live unique inflow, derivatives и union с backup pins |
+
+JSON columns пересекаются по смыслу; их сумма не является incremental archive bytes.
+Corpus stock, run-distinct counters и число публикаций не дают стоимости raw retention
+30/90/365 дней. First-recorded dates не заменяют download/source dates. Для невыбранных
+профилей отсутствующие cells остаются unknown; решение о backend повторно не запрашивается.
+
+### Retention sensitivities на имеющихся строках
+
+На копиях state existing guarded pruning проверен на момент commit e15b53d0. После миграции
+в schema60 исходные 38 таблиц/values точны; добавлена только пустая letter-use таблица.
+Baseline до cleanup: 20 378 958 SQL / 4 112 546 gzip9 B. Политика production не менялась.
+
+| Возраст reports / sent payload / memo, дней | Runs removed | Sent payloads cleared | Memos removed | Остаток SQL / gzip9 B |
+| --- | ---: | ---: | ---: | ---: |
+| Без age expiry | 0 | 0 | 0 | 20 377 395 / 4 111 659 |
+| 30 / 30 / 30 | 169 | 10 | 23 | 19 852 496 / 4 056 246 |
+| 90 / 90 / 90 | 0 | 0 | 0 | 20 377 395 / 4 111 659 |
+| 365 / 365 / 365 | 0 | 0 | 0 | 20 377 395 / 4 111 659 |
+| Code defaults 90 / 90 / 180 | 0 | 0 | 0 | 20 377 395 / 4 111 659 |
+
+В каждом варианте отдельно очищен один eligible consumed/accounted/provider-forgotten batch
+payload независимо от возраста. Идентичности publications, unsent payloads, work/accounting,
+source/artifact rows и discovery watermark точны; FK/integrity passed. SQLite без VACUUM остаётся
+21 676 032 B. Pending/unknown, ready/unconsumed и dependency guards сохранены; queued payloads
+удерживают 3 008 025 B. Production overrides из secrets не читались. Уже expired данные эти
+сценарии не восстанавливают и будущий рост не прогнозируют.
+
+### Backup, checkpoint и временное сосуществование
+
+Исторические state/pack/restore/checkpoint измерения и ограничения local Git приведены выше.
+Они не доказывают размер самостоятельного backup всей истории или GitHub latency. Для свежего
+pin local-only restore/dump: 0,331/0,102 s; 4 checkpoints / 3 commits, synthetic +1726 SQL / +102 gzip B;
+changed checkpoints 0,929–1,218 s, unchanged 0,228 s. Повторный checkpoint здесь не запускался.
+
+Inactive J140 reference/archive coexistence: 19 975 346 → 20 516 240 SQL B,
+4 049 075 → 4 170 910 gzip9 B; worst qualified quiet/selection growth 3,7363% относительно
+исходного baseline, sampled two-copy SQLite/WAL peak 93 461 088 B. Это историческая
+counterfactual qualification, без активации и общего допуска на любой dual write. J142
+385-slot diagnostics coexistence даёт +1963–135 317 gzip B в зависимости от failure scenario.
+Каждая следующая migration требует собственного peak/steady gate. Raw backup pin lifetimes
+не выбраны; они не реконструируются из времени записи metadata.
+
+Текущий профиль измерен с явными strata, альтернативами, retention sensitivities и пределами
+экстраполяции. Дополнительные raw-гарантии остаются вне принятого профиля. Неизвестный
+исторический поток не объявляется нулём и не удерживает эту конечную оценку бессрочно открытой.
