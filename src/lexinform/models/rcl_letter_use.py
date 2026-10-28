@@ -340,8 +340,18 @@ class RclLetterUseOmission(_Fact):
         return self
 
 
+def _retained_identity(semantic_sha256: str, payload_state: str, payload: object) -> str:
+    envelope = {
+        "contract": "rcl-letter-use-identity-v2",
+        "semantic_sha256": semantic_sha256,
+        "payload_state": payload_state,
+        "payload": payload,
+    }
+    return "rcl-letter-use-v2:" + rcl_letter_sha256(envelope)
+
+
 class RclLetterUse(_Fact):
-    use_id: str = Field(pattern=r"^rcl-letter-use-v1:[0-9a-f]{64}$")
+    use_id: str = Field(pattern=r"^rcl-letter-use-v[12]:[0-9a-f]{64}$")
     semantic_sha256: Sha256
     payload_state: Literal["complete", "omitted_over_limit"]
     payload: Annotated[RclLetterUsePayload | RclLetterUseOmission, Field(discriminator="contract")]
@@ -388,10 +398,33 @@ class RclLetterUse(_Fact):
         )
         return cls(**base, payload_state="omitted_over_limit", payload=omitted)
 
+    @classmethod
+    def of_bound(cls, payload: RclLetterUsePayload) -> Self:
+        """Build a bound omission from its actual complete input; legacy rows are never upgraded."""
+        use = cls.of(payload)
+        if use.payload_state == "complete":
+            return use
+        values = use.model_dump(mode="json")
+        values["use_id"] = _retained_identity(
+            use.semantic_sha256, use.payload_state, use.payload.model_dump(mode="json")
+        )
+        return cls.model_validate(values)
+
+    @property
+    def retained_identity_bound(self) -> bool:
+        return self.payload_state == "complete" or self.use_id.startswith("rcl-letter-use-v2:")
+
     @model_validator(mode="after")
     def identity_and_bound(self) -> Self:
-        if self.use_id != "rcl-letter-use-v1:" + self.semantic_sha256:
-            raise ValueError("the use ID must match its semantic hash")
+        expected = (
+            _retained_identity(
+                self.semantic_sha256, self.payload_state, self.payload.model_dump(mode="json")
+            )
+            if self.use_id.startswith("rcl-letter-use-v2:")
+            else "rcl-letter-use-v1:" + self.semantic_sha256
+        )
+        if self.use_id != expected:
+            raise ValueError("the use ID must match its semantic and retained identity")
         complete = isinstance(self.payload, RclLetterUsePayload)
         if complete != (self.payload_state == "complete"):
             raise ValueError("the retained payload and completeness state must agree")

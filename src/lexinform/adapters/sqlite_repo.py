@@ -17,6 +17,13 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
+from lexinform.adapters.senate_history import (
+    SenateInspectionRowError,
+    read_senate_inspection,
+    senate_inspection_links,
+    validate_senate_inspections,
+    verify_senate_inspection,
+)
 from lexinform.content_versions import content_delivery_mismatch
 from lexinform.direct_delivery import direct_root_plan
 from lexinform.document_editions import candidate_edition
@@ -115,6 +122,7 @@ from lexinform.models import (
 )
 from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
 from lexinform.models.legacy_results import canonical_legacy_json, legacy_json
+from lexinform.models.senate_inspection import SenateInspectionLink, SenateInspectionRecord
 from lexinform.saved_records import CONTEXT_RESULT_TABLES
 from lexinform.sitting_delivery import sitting_root_plan
 from lexinform.telegram_text import MESSAGE_LIMIT, split_html, utf16_length
@@ -773,6 +781,40 @@ MIGRATIONS: tuple[str, ...] = (
     );
     CREATE INDEX ix_rcl_letter_uses_owner ON rcl_letter_uses(project_id, stage_id, letter_id);
     """,
+    """
+    CREATE TABLE senate_inspections (
+        inspection_id TEXT PRIMARY KEY NOT NULL,
+        semantic_sha256 TEXT NOT NULL,
+        owner_term INTEGER NOT NULL,
+        owner_number TEXT NOT NULL,
+        resolution_term INTEGER NOT NULL,
+        resolution_number TEXT NOT NULL,
+        coverage TEXT NOT NULL CHECK(coverage IN ('complete', 'omitted_over_limit')),
+        descriptor_count INTEGER NOT NULL CHECK(descriptor_count >= 0),
+        link_count INTEGER NOT NULL CHECK(link_count >= 0 AND link_count <= descriptor_count),
+        links_sha256 TEXT NOT NULL,
+        recorded_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK(length(CAST(record_json AS BLOB)) <=
+          CASE coverage WHEN 'omitted_over_limit' THEN 2048 ELSE 8192 END),
+        FOREIGN KEY(owner_term, owner_number) REFERENCES bills(term, number)
+    );
+    CREATE INDEX ix_senate_inspections_owner
+      ON senate_inspections(owner_term, owner_number, resolution_number);
+    CREATE TABLE senate_inspection_sources (
+        inspection_id TEXT NOT NULL REFERENCES senate_inspections(inspection_id),
+        descriptor_index INTEGER NOT NULL CHECK(descriptor_index >= 0),
+        descriptor_sha256 TEXT NOT NULL,
+        requested_url_sha256 TEXT NOT NULL,
+        observation_id TEXT REFERENCES source_observations(observation_id),
+        selection_id TEXT REFERENCES document_selections(selection_id),
+        artifact_sha256 TEXT NOT NULL REFERENCES artifacts(sha256),
+        artifact_bytes INTEGER NOT NULL CHECK(artifact_bytes >= 0),
+        reader_text_sha256 TEXT,
+        artifact_read_id TEXT REFERENCES artifact_reads(read_id),
+        extraction_id TEXT REFERENCES extraction_results(extraction_id),
+        PRIMARY KEY(inspection_id, descriptor_index)
+    );
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -1156,6 +1198,7 @@ class SqliteBillRepository:
             _validate_legacy_projections(scratch)
             _validate_candidate_disposition_traces(scratch)
             _validate_rcl_letter_uses(scratch)
+            validate_senate_inspections(scratch)
         finally:
             scratch.close()
         tables = [
@@ -2142,6 +2185,96 @@ class SqliteBillRepository:
             (root_publication_id,),
         )
         return [self._row_to_publication(row) for row in rows]
+
+    def save_senate_inspection(
+        self,
+        record: SenateInspectionRecord,
+        links: tuple[SenateInspectionLink, ...] = (),
+        *,
+        recorded_at: datetime,
+    ) -> None:
+        record = SenateInspectionRecord.model_validate_json(
+            record.model_dump_json(exclude={"recorded_at"})
+        )
+        if recorded_at.utcoffset() is None:
+            raise ValueError("Senate inspection recording time requires a timezone")
+        record = SenateInspectionRecord.model_validate(
+            {**record.model_dump(), "recorded_at": recorded_at}
+        )
+        links = tuple(
+            SenateInspectionLink.model_validate_json(link.model_dump_json()) for link in links
+        )
+        verify_senate_inspection(self._conn, record, links)
+        with self.atomic():
+            self._conn.execute(
+                "INSERT INTO senate_inspections VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+                " ON CONFLICT DO NOTHING",
+                (
+                    record.inspection_id,
+                    record.semantic_sha256,
+                    record.owner.term,
+                    record.owner.number,
+                    record.resolution_print.term,
+                    record.resolution_print.number,
+                    record.coverage,
+                    record.descriptor_count,
+                    record.link_count,
+                    record.links_sha256,
+                    _utc_iso(recorded_at),
+                    record.model_dump_json(),
+                ),
+            )
+            for link in links:
+                self._conn.execute(
+                    "INSERT INTO senate_inspection_sources VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+                    " ON CONFLICT DO NOTHING",
+                    (
+                        record.inspection_id,
+                        link.descriptor_index,
+                        link.descriptor_sha256,
+                        link.requested_url_sha256,
+                        link.observation_id,
+                        link.selection_id,
+                        link.artifact_sha256,
+                        link.artifact_bytes,
+                        link.reader_text_sha256,
+                        link.artifact_read_id,
+                        link.extraction_id,
+                    ),
+                )
+            saved = self.get_senate_inspection(record.inspection_id)
+            if (
+                saved is None
+                or saved.model_copy(update={"recorded_at": record.recorded_at}) != record
+            ):
+                raise ValueError("immutable Senate inspection metadata cannot be replaced")
+
+    def get_senate_inspection(self, inspection_id: str) -> SenateInspectionRecord | None:
+        row = self._conn.execute(
+            "SELECT * FROM senate_inspections WHERE inspection_id=?", (inspection_id,)
+        ).fetchone()
+        if (
+            row is None
+            and self._conn.execute(
+                "SELECT 1 FROM senate_inspection_sources WHERE inspection_id=? LIMIT 1",
+                (inspection_id,),
+            ).fetchone()
+            is not None
+        ):
+            raise SenateInspectionRowError("senate_inspection_parent_mismatch")
+        return read_senate_inspection(self._conn, row) if row is not None else None
+
+    def iter_senate_inspections(self, term: int, number: str) -> Iterator[SenateInspectionRecord]:
+        for row in self._conn.execute(
+            "SELECT * FROM senate_inspections WHERE owner_term=? AND owner_number=?"
+            " ORDER BY inspection_id",
+            (term, number),
+        ):
+            yield read_senate_inspection(self._conn, row)
+
+    def list_senate_inspection_links(self, inspection_id: str) -> tuple[SenateInspectionLink, ...]:
+        record = self.get_senate_inspection(inspection_id)
+        return senate_inspection_links(self._conn, inspection_id) if record is not None else ()
 
     def save_rcl_letter_use(self, use: RclLetterUse, *, recorded_at: datetime) -> None:
         use = RclLetterUse.model_validate_json(use.model_dump_json(exclude={"recorded_at"}))

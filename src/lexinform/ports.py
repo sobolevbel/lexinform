@@ -114,6 +114,7 @@ from lexinform.models import (
 )
 from lexinform.models.batch import BatchJob, BatchKind
 from lexinform.models.report import CallKind
+from lexinform.models.senate_inspection import SenateInspectionLink, SenateInspectionRecord
 
 
 class Clock(Protocol):
@@ -758,6 +759,24 @@ class BillRepository(Protocol):
     def save_selection_artifact(self, reference: SelectionArtifactReference) -> None: ...
 
     def list_selection_artifacts(self, selection_id: str) -> list[SelectionArtifactReference]: ...
+
+    def save_senate_inspection(
+        self,
+        record: SenateInspectionRecord,
+        links: tuple[SenateInspectionLink, ...] = (),
+        *,
+        recorded_at: datetime,
+    ) -> None: ...
+
+    def get_senate_inspection(self, inspection_id: str) -> SenateInspectionRecord | None: ...
+
+    def iter_senate_inspections(
+        self, term: int, number: str
+    ) -> Iterator[SenateInspectionRecord]: ...
+
+    def list_senate_inspection_links(
+        self, inspection_id: str
+    ) -> tuple[SenateInspectionLink, ...]: ...
 
     def save_rcl_letter_use(self, use: RclLetterUse, *, recorded_at: datetime) -> None: ...
 

@@ -8,6 +8,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from lexinform.adapters.senate_history import SenateInspectionRowError, read_senate_inspection
 from lexinform.adapters.sqlite_repo import RclLetterUseRowError, read_rcl_letter_use
 from lexinform.document_editions import candidate_edition
 from lexinform.models import (
@@ -48,8 +49,34 @@ def _audit_rcl_letters(
             issue(exc.code, ref)
             continue
         counts["rcl_letter_use_" + record.payload_state] += 1
+        if not record.retained_identity_bound:
+            counts["rcl_letter_use_legacy_unbound_omissions"] += 1
         counts["rcl_letter_use_unknown_origin"] += record.payload.physical.artifact_sha256 is None
         counts["rcl_letter_use_unknown_stage_id"] += record.payload.official.stage_id is None
+
+
+def _audit_senate_inspections(
+    connection: sqlite3.Connection, counts: Counter[str], issue: Callable[[str, str], None]
+) -> None:
+    for row in connection.execute(
+        "SELECT rowid AS audit_id, * FROM senate_inspections ORDER BY rowid"
+    ):
+        counts["senate_inspection_rows"] += 1
+        try:
+            record = read_senate_inspection(connection, row)
+        except SenateInspectionRowError as exc:
+            issue(exc.code, f"senate_inspections/{row['audit_id']}")
+            continue
+        counts["senate_inspection_" + record.coverage] += 1
+    counts["senate_inspection_link_rows"] = connection.execute(
+        "SELECT count(*) FROM senate_inspection_sources"
+    ).fetchone()[0]
+    for row in connection.execute(
+        "SELECT link.rowid AS audit_id FROM senate_inspection_sources AS link"
+        " LEFT JOIN senate_inspections AS parent USING(inspection_id)"
+        " WHERE parent.inspection_id IS NULL"
+    ):
+        issue("senate_inspection_orphan_link", f"senate_inspection_sources/{row['audit_id']}")
 
 
 def audit(database: Path) -> dict[str, Any]:
@@ -87,6 +114,12 @@ def audit(database: Path) -> dict[str, Any]:
             issue("rcl_letter_use_table_unavailable", "rcl_letter_uses")
         if "rcl_letter_uses" in tables:
             _audit_rcl_letters(connection, counts, issue)
+        senate_tables = {"senate_inspections", "senate_inspection_sources"}
+        if schema >= 61 or senate_tables.intersection(tables):
+            for name in sorted(senate_tables - tables):
+                issue("senate_inspection_table_unavailable", name)
+        if senate_tables <= tables:
+            _audit_senate_inspections(connection, counts, issue)
         if "document_selections" in tables:
             for row in connection.execute(
                 "SELECT rowid AS audit_id, * FROM document_selections ORDER BY rowid"
@@ -264,6 +297,8 @@ def audit(database: Path) -> dict[str, Any]:
         + counts.get("edition_rows", 0)
         + counts.get("edition_link_rows", 0)
         + counts.get("rcl_letter_use_rows", 0)
+        + counts.get("senate_inspection_rows", 0)
+        + counts.get("senate_inspection_link_rows", 0)
     )
     return {
         "version": 1,
@@ -274,6 +309,8 @@ def audit(database: Path) -> dict[str, Any]:
         "missing_artifact_tables": missing_artifacts,
         "artifact_reads_available": "artifact_reads" in tables,
         "rcl_letter_uses_available": "rcl_letter_uses" in tables,
+        "senate_inspections_available": {"senate_inspections", "senate_inspection_sources"}
+        <= tables,
         "summary": dict(sorted(counts.items())),
         "findings": findings,
         "scope": "Recorded source/artifact identities, SQL columns and outer-part references.",
@@ -283,7 +320,10 @@ def audit(database: Path) -> dict[str, Any]:
             "Policy versions remain opaque; no historical policy or paid identity is inferred.",
             "No raw availability, extraction/legal completeness or provider-input replay verdict.",
             "RCL letter-use facts describe parsing and in-memory merging, not saved applications.",
+            "Senate inspection facts do not certify admission, paid inputs or saved applications.",
+            "Omitted Senate universe/context metadata cannot be completely revalidated.",
             "Omitted RCL payloads cannot revalidate their absent full semantic metadata.",
+            "Legacy v1 RCL omissions have unbound refs; v2 binds retained metadata only.",
             "No source bodies, URLs or evidence quotes in this report; no work is executed.",
         ],
     }

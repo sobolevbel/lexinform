@@ -7409,3 +7409,72 @@ Ruff/format 631 по всем src/tests/tools, source/config freeze 633 exact. �
 и 10 boundary scenarios; 25 local HTTP tests прошли за 3.15s.
 [Acceptance asset](../assets/audits/2026-10-28-rcl-letter-capture/validation.json).
 DA2.3/DA2.5 partial до Senate candidate inspection; план 74 / 31 done / 6 N/A / 37 open.
+
+
+J150 commit `2a6e599bb4df20925165b24d8c811dd4cc1db903`: CI 40781447926 и deploy 40782126787
+прошли; фактический relay transition db34 → 2a6e, health 45s/timer подтверждены
+[release proof](../assets/audits/2026-10-28-rcl-letter-capture/release.json).
+
+
+<a id="j151"></a>
+
+### J151. Read Senate inspection history and bind retained RCL omissions
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 29 октября.
+Одна append-only migration 61 добавляет Senate inspection и body-junction tables.
+Факт хранит actual Bill owner, официальную relation к resolution print, ordered attachment
+universe, достигнутые inspection/skip/reason/group/result fields. Descriptor index/hash — locator,
+не выдуманный официальный ID. Каждый known complete body сохраняет SHA/size и junction;
+неизвестные source/read/extraction IDs остаются null. Shared get/doctor/scratch restore
+проверяют record/SQL identity, manifest и реальные parents до изменения target DB.
+
+8 KiB full / 2 KiB whole omission включают timestamp. Immutable identity связывает opaque
+full semantic SHA, весь retained summary и ordered link count/hash, исключая Clock time.
+Пропущенное полное metadata не становится доступным для semantic revalidation. Capture version
+описывает формат; source code hashes описывают обработку. Модель проверяет структуру и refs,
+не повторяет business policy resolver. Collector/writer инертны; Container/resolver/CLI/pipeline
+не создают Senate inspection records. Предыдущие source/body/paid/output contracts прежние.
+
+Independent review нашло и закрыло три проблемы до публикации: worker completion order влиял
+на snapshot/SQL; omitted manifest можно было согласованно заменить под прежним ID; validators
+повторяли текущие selector rules. Stable-ID snapshot, retained identity envelope и структурная
+валидация устранили их. Root также закрыл более узкую numbering grammar относительно public str
+и rsplit/PurePosixPath drift на dotfiles; nullable refs не заполняются guesses.
+
+Sena corpus-derived cohort: 759 context records / 724 resolution prints, 929 known originals,
+974 mandatory body links. Actual serializer: все 759 complete, max 6641 B с timestamp; synthetic
+ref-capacity max 6955 B. Unknown persisted parent IDs не выдаются за existing refs.
+Record+junction delta 3 726 372 SQL / 590 156 gzip B, artifact parents отдельно
+124 538 / 41 115 B; owner rows seeded только в counterfactual fixture. Это не natural demand
+или общий предел БД. Отдельный real-extractor synthetic graph: full 3094 B / omission 1237 B,
+2723 B shared extraction metadata вне cap. Old9a сохранил 761-record/976-link SQL opaque
+byte-exact; original IDs/parents и +365-day repeat проверены, без assertion old semantic validation.
+
+Аналогичное persisted-integrity ограничение есть у прежних RCL omitted-v1: current SQL/parent
+coherence проверяется, но opaque full semantic SHA не связывает отдельно retained refs.
+Совместимый reader сохраняет эти bytes/IDs и помечает их legacy-unbound; испорченных production
+records этим не установлено. Инертная of_bound factory требует исходный complete payload;
+v2 связывает весь retained payload/state с opaque semantic SHA. Полные v1 факты/JSON неизменны,
+текущий runtime по-прежнему вызывает прежний of. Нет backfill или отдельной migration для RCL.
+
+RCL proof: прежняя factory AST exact; corpus-derived/fixture population 439 rows dump byte-exact,
+438 full JSON exact и один synthetic legacy omission явно unbound. V2 fixture: coordinated
+parent/body tamper отклонён get/doctor/scratch restore без изменения target, повтор не растёт.
+Тот же SQL length; gzip +47 B в одной fixture, без daily/global forecast. Старый2a reader
+отклоняет v2 до изменения target: reader deployment обязателен до writer switch, rollback после
+активации сохраняет v2-capable reader. Senate opaque proof выше не распространяется на RCL v2.
+
+На disposable копии real state e15b53d0 все 38 старых tables/schema/rows точны; schema59→61
+добавляет только три пустые metadata tables, +2584 SQL / +691 gzip B. FK/integrity/doctor
+и dump/restore exact прошли, processing production не запускался. Native 168: только empty
+schema61 tables/indexes/pragma и проверенные SQL-derived metrics отличаются; все прежние
+rows/reports/messages/provider inputs и 24 существующих v1 RCL IDs byte-exact.
+
+Final make check: 6571 tests / 0 failures-errors-skips, 256.36s, coverage 92%; mypy 570,
+Ruff/format 636 по src/tests/tools, source/config freeze 638 exact. Добавлен 71 unit case,
+новых scenario нет; существующий invalid-schema parameter автоматически сдвинулся с61 на62.
+227 Senate focused и 61 RCL focused passed; независимые reviews/integrated delta checks
+не оставили actionable findings. Full gate включает source merge с J150; отдельные cap/older-reader
+proofs имеют свои точные source pins.
+[Acceptance asset](../assets/audits/2026-10-29-source-history-readers/validation.json).
+Новые writers включаются после реального CI/deploy этого reader. План: 74 / 31 done / 6 N/A / 37 open.

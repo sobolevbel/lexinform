@@ -425,6 +425,39 @@ FK parents и ссылки переживают operational cleanup. Прави�
 эквивалентность representations, supersession или paid-input identity. Полная provenance
 решения остаётся частичной; manifest не заполняет пропущенные candidate dispositions.
 
+## Senate candidate inspection reader (v61)
+
+`senate_inspections` сохраняет известного Bill owner, официальную связь с resolution print,
+реальные поля стадии, аргументы вызова, упорядоченные descriptors вложений, причины inspection/
+skip, equivalence groups и итог выбора/отказа/ошибки. Индексы и hashes descriptors — локальные
+locators; отсутствующие в API Stage/Attachment IDs не придумываются. Physical source facts
+остаются unverified, отдельно от legal admission, прежнего paid input и сохранённого применения.
+Collector/writer инертен: producer в resolver, container, CLI и pipeline не подключён.
+
+Полная запись вместе с первым aware UTC timestamp ограничена 8 KiB UTF-8. Переполнение сохраняет
+whole omission ≤ 2 KiB с semantic/universe/context/decision hashes, counts, итогом/chosen identity
+hashes и immutable manifest физических связей. Отсутствующее полное metadata явно недоступно
+для semantic revalidation; поля не обрезаются. Immutable ID связывает opaque full semantic SHA,
+весь retained summary, count и hash links; timestamp в identity не входит. Capture version
+описывает metadata contract, а не legal admission policy; reader проверяет структуру и ссылки,
+не повторяет resolver policy. Безопасные официальные URL сохраняют значение
+и hash точного оригинала; userinfo/query/fragment и небезопасные URL в новых envelopes имеют
+только hash/omission. Текст исключений и извлечённые bodies не копируются.
+
+Каждый известный complete candidate body сохраняет точный artifact parent и descriptor-index
+link, включая omitted records. Source/selection/read/extraction IDs nullable, пока реально
+неизвестны; известные parents проверяются по owner, actual outer SHA/size и точному URL hash.
+Известные source observations требуют своего physical selection/artifact/extraction graph.
+Reader-text SHA не доказывает равенство extraction output или provider input. Обработка URL/body
+в существующих J105 parents прежняя; новые envelopes не редактируют и не заменяют старые parents.
+
+Повторный факт сохраняет первое время; вновь известные parent metadata меняют immutable identity.
+Run/history pruning сохраняет записи и shared parents. JSON caps не включают shared artifact/read/
+extraction/source metadata и junction rows; их размеры измеряются отдельно. Schema60 reader
+сохраняет populated opaque SQL без понимания новых semantics. Get, doctor и pre-destructive
+scratch restore используют общую SQL/JSON/parent validation, включая count/hash связей,
+известного owner и orphan checks.
+
 ## RCL consultation-letter use reader (v60)
 
 `rcl_letter_uses` хранит неизменяемое metadata разбора письма и merge окна в памяти, отдельно от
@@ -450,11 +483,26 @@ stage number не подставляется вместо ID. Известные
 Hash точного UTF-8 parser input отделён от extraction output; равенство заявляется только явно.
 
 Полная запись вместе с первым aware UTC `recorded_at` ограничена 4 KiB UTF-8. При превышении общих
-или полевых лимитов сохраняется omission ≤ 2 KiB с исходным semantic ID, официальными ключами,
+или полевых лимитов сохраняется omission ≤ 2 KiB с исходным semantic SHA, официальными ключами,
 известными refs, input/output/merge hashes и причинами; отсутствующее полное metadata не считается
 перепроверенным. URL с userinfo/query/fragment и небезопасные URL сохраняют только hash/omission.
 Текст, body, каталог, exception message и платный input сюда не копируются; shared parent metadata
 не входит в лимит одной записи и учитывается отдельно.
+
+Совместимый reader принимает identities v1 и v2. У полного v1 semantic SHA перепроверяет retained
+metadata. У omitted v1 отсутствующий full payload не позволяет связать retained refs с исходным
+ID; doctor помечает такие rows как legacy-unbound, сохраняя bytes/IDs и прежнюю parent-coherence
+проверку. Это ограничение persisted integrity, не свидетельство ошибочного production record.
+V2 identity связывает opaque full semantic SHA, весь retained payload и coverage, без timestamp;
+coordinated замена допустимых refs под прежним ID отклоняется до изменения restore target.
+
+Factory `of_bound` требует исходный complete payload: legacy omission не upcast'ится. Полные
+факты сохраняют старый v1 ID/JSON; новая factory инертна и пока не вызывается runtime producer.
+Текущий `of` продолжает создавать v1. Нет backfill, новой migration или увеличения 4/2 KiB caps.
+V2-capable reader должен быть реально развёрнут до переключения новых omitted facts на v2.
+Старый 2a6e reader отклоняет v2 на scratch preflight; после writer activation rollback сохраняет
+этот совместимый reader. Проверенный schema60 opaque roundtrip Senate records относится к
+snapshot с прежними RCL identities и не обещает чтения будущих RCL v2 старым кодом.
 
 Одинаковый факт сохраняет первую запись и время; изменившиеся input/origin/components/merge context
 дают другой ID. Run/history pruning не удаляет эти metadata и родителей. Число различных фактов

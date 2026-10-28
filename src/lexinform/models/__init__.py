@@ -428,6 +428,7 @@ from lexinform.models.senate import (
     senate_title_distance,
     senate_title_matches,
 )
+from lexinform.models.senate_inspection import SenateInspectionRecord as SenateInspectionRecord
 from lexinform.models.source_checks import (
     FAILING_CHECK_MIN,
     CheckAspect,
@@ -448,6 +449,7 @@ from lexinform.models.wykaz import (
 )
 
 __all__ = [
+    "SenateInspectionRecord",
     "LegacyResultImport",
     "LegacyResultOccurrence",
     "LegacyResultValue",

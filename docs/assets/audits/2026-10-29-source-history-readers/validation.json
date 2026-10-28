@@ -1,0 +1,389 @@
+{
+  "baseline_runtime": "2a6e599bb4df20925165b24d8c811dd4cc1db903",
+  "docs_check": {
+    "log_sha256": "03dc3f8d5396cdf5fa1547edadd24915d5ba0de8ff093a0fb623c031fd381eb4",
+    "strict_build_links_resources_contents": "passed"
+  },
+  "full_gate": {
+    "coverage_percent": 92,
+    "errors": 0,
+    "existing_schema_boundary_parameter_renamed": "61 to62 because current schema is61",
+    "failures": 0,
+    "mypy_files": 570,
+    "new_scenario_cases": 0,
+    "new_unit_cases": 71,
+    "pytest_seconds": 256.36,
+    "ruff_format_files": 636,
+    "skipped": 0,
+    "source_config_freeze_exact_files": 638,
+    "tests": 6571
+  },
+  "integration": {
+    "adapter_cleanup": "removed requested_url self-comparison only; exact URL hash check intact",
+    "selector_policy_reexecution_removed": true,
+    "three_way_preserved": [
+      "J150 active RCL retention text",
+      "SourceHistoryPersistence port",
+      "RCL legacy-unbound doctor counter and limit"
+    ]
+  },
+  "limits": [
+    "metadata-only local machine/counterfactual cohorts, not natural growth/legal/paid-input completeness",
+    "shared parents/junctions outside record caps, measured separately",
+    "all old data/IDs preserved; raw/backend/retention expansion deferred",
+    "RCL v2 writer and Senate capture require actual reader CI/deploy first"
+  ],
+  "native_replay": {
+    "artifacts": {
+      "out/corpus/j150/native168/manifest.json": {
+        "bytes": 158689,
+        "sha256": "287253f40f9f5c3f8ad16f8e08bcf590950e0190a6dcb99e36df416085b21574"
+      },
+      "out/corpus/j151/native168/manifest.json": {
+        "bytes": 159679,
+        "sha256": "9f8d347e153b3f5c86d61ba13ee5188ec6ff669ba1da27f8701e9c8dc4f6cab2"
+      },
+      "out/corpus/j151/native168/spec.json": {
+        "bytes": 81974,
+        "sha256": "1394f2d7f53757b33b391d101d8fa5c830334b9268f3fc9960ebec33a8c67ed6"
+      },
+      "out/corpus/j151/qa/compare_native.py": {
+        "bytes": 6401,
+        "sha256": "f0246d86fbdf56c7ae4ed79263aa900745f278b523735aca5add25cfa12c4f8f"
+      },
+      "out/corpus/j151/qa/parity.json": {
+        "bytes": 60582,
+        "sha256": "6195838aa9c841c748307dff095058bfe4f54c854b0bde95de5f774a7cd6420e"
+      }
+    },
+    "cases": 168,
+    "counts": {
+      "admission": 64,
+      "explanation": 16,
+      "handoff": 24,
+      "normal": 12,
+      "primary": 36,
+      "reuse": 16
+    },
+    "empty_senate_tables_verified_per_case": 2,
+    "guard_violations": 0,
+    "gzip9_mtime0_delta_per_case_range": [
+      223,
+      299
+    ],
+    "gzip9_mtime0_delta_sum": 41076,
+    "imports": 197,
+    "integration": {
+      "adapter_delta": "Only removes requested_url self-comparison; separate exact URL-SHA check retained.",
+      "doctor_delta": "Adds legacy-unbound RCL count (two lines) and one explicit limitation.",
+      "exact_Senate_frozen_files": 8,
+      "expected_differing_files": [
+        "docs/state-retention.md",
+        "src/lexinform/adapters/senate_history.py",
+        "src/lexinform/ports.py",
+        "tools/source_history_doctor.py"
+      ],
+      "ports_retention_delta": "Preserves deployed J150 opaque hook and capture scope."
+    },
+    "limits": [
+      "Fixed six observer suites only; no reviewer full gate, source edits, external network, paid or production calls.",
+      "Senate producer and bound-RCL producer remain inert; this validates empty-schema reader integration and existing v1 runtime behavior.",
+      "Only exact additive schema/index/pragma and independently validated SQL-derived metrics are accounted for; no generic report or table stripping."
+    ],
+    "normalization": [
+      "schema60-to61: empty senate_inspections and senate_inspection_sources tables, indexes and PRAGMA only",
+      "validated SQL-derived hash/size/profile table addition only"
+    ],
+    "old_rows_reports_business_messages_provider_inputs_exact": true,
+    "prior_reports_or_data_removed": false,
+    "reads": 206,
+    "reproduction": "UV_CACHE_DIR=/private/tmp/lexinform-pr9-uv-cache UV_PROJECT_ENVIRONMENT=/private/tmp/lexinform-j140-integrated/.venv PYTHONPATH=primary/src:primary uv run --no-sync --offline --frozen python tools/native_replay.py run --code PRIMARY --output PRIMARY/out/corpus/j151/native168; same environment python -B out/corpus/j151/qa/compare_native.py. Output must be fresh when repeating.",
+    "runtime_of_bound_calls": [],
+    "schemas": [
+      60,
+      61
+    ],
+    "source_and_runner_unchanged": true,
+    "source_inputs": 714,
+    "sql_bytes_delta_per_case_range": [
+      1750,
+      1750
+    ],
+    "sql_bytes_delta_sum": 294000,
+    "status": "exact_except_empty_schema61",
+    "v1_RCL_rows_and_IDs_exact_and_parents_revalidated": 24
+  },
+  "pins": {
+    "out/corpus/j151/final-gate/check.log": {
+      "bytes": 663017,
+      "sha256": "f5c4c5332c730cd2f120475244d80f025c21c4797ad7dad00687b0c4ff2b51b8"
+    },
+    "out/corpus/j151/final-gate/full.xml": {
+      "bytes": 1102962,
+      "sha256": "2eff74600fbabddc41bc09dea1e862c0a38b9c72379ae1b25a836936a173103c"
+    },
+    "out/corpus/j151/final-gate/source-freeze.json": {
+      "bytes": 70012,
+      "sha256": "7f123260c97e6202de73d2fd90513c805422129a63558d9b89f3e2ea9a32099c"
+    },
+    "out/corpus/j151/qa/handoff.json": {
+      "bytes": 3179,
+      "sha256": "12435236aa36ea97388615fe79a2d5e2ab833f758a9efe490f2293788310e531"
+    },
+    "out/corpus/j151/qa/parity.json": {
+      "bytes": 60582,
+      "sha256": "6195838aa9c841c748307dff095058bfe4f54c854b0bde95de5f774a7cd6420e"
+    },
+    "out/corpus/j151/senate-agent/handoff.json": {
+      "bytes": 2644,
+      "sha256": "c4c419294d1e24fcf4033ac2b377e47d9509bff93a118fcabb4759ddd8a336c0"
+    },
+    "out/corpus/j151/senate-agent/source-freeze.json": {
+      "bytes": 7133,
+      "sha256": "9a09f5e9608d569189e49a1c9f57e29f57e4bcb83ff7308b141d38cf4a691101"
+    },
+    "out/corpus/j151/state-copy-proof.json": {
+      "bytes": 844,
+      "sha256": "a02f0af815bc6be0a262f556ac1ad1118b425616275d9442a0247b177b241443"
+    },
+    "out/corpus/rcl-bound-reader/focused-v2.xml": {
+      "bytes": 20957,
+      "sha256": "9a54f0789f450244edd1ab95d9b0326c13a7b671257ceda46f009d94ebdb34ae"
+    },
+    "out/corpus/rcl-bound-reader/qualification/validation.json": {
+      "bytes": 1246,
+      "sha256": "e7be01c113cbe5159584b79f506493f9f3e8a9015236538cbb4978005ec0eb55"
+    },
+    "out/corpus/rcl-bound-reader/qualify.py": {
+      "bytes": 5446,
+      "sha256": "669b57a0476f1f185d36be1fc1d2879e21a153bd870b5072cdbe6c178a523066"
+    },
+    "out/corpus/rcl-bound-reader/source-overlay.json": {
+      "bytes": 700,
+      "sha256": "b1b62740e040972e94ea6514fa138d5fd8b86c7dfb01366330592446b350105e"
+    },
+    "out/corpus/senate-s1-independent-review/final-review.json": {
+      "bytes": 2120,
+      "sha256": "9124a9ac4df2e8637b0c6e97cc499f7c8d57a601049bc5148b38bdd23785164b"
+    }
+  },
+  "rcl_bound_reader": {
+    "default_factory": "unchanged v1; of_bound is inert until reader release verified",
+    "independent_review": {
+      "findings": [],
+      "reviewer": "corpus_pilot_review",
+      "scope": "independent digest, retained mutation rejection, complete-input precondition, v1 full/omitted JSON bytes, timestamp exclusion and inactive default; two known-parent fixtures"
+    },
+    "legacy_v1_omission": "preserved and reported legacy-unbound; no backfill or original retained-ref binding claim",
+    "qualification": {
+      "default_factory_AST_exact": true,
+      "delta": {
+        "gzip9_mtime0_bytes": 47,
+        "sql_bytes": 0
+      },
+      "first_recording_time_excluded_from_identity": true,
+      "legacy_dump_byte_exact": true,
+      "legacy_dump_sha256": "d8f658bf4d0c624b4bc2c6ce5a00ac0a541242fa8711164586a33e4fba2f040f",
+      "legacy_full_json_exact": 438,
+      "legacy_rows": 439,
+      "legacy_unbound_omissions": 1,
+      "old_reader": {
+        "exception_class": "RclLetterUseRowError",
+        "legacy_sha256": "a47e8b8153ea29c2b10d3d65018abb499476e5dbeb11ffbad0beaa39f8c0fd7b",
+        "old_reader_rejects_v2": true,
+        "target_dump_unchanged": true
+      },
+      "positive_bound_and_legacy_roundtrip_repeat": true,
+      "runtime_new_factory_calls": [],
+      "scope": "metadata-only fixture/corpus-derived population; no raw/input/selection change or production processing; default producer unchanged",
+      "source_model_sha256": "7e706a611869463b5bf3c1abc3be59765c78b044608274f10d3cf977eb4ec970",
+      "v1_size": {
+        "gzip9_mtime0_bytes": 5183,
+        "sha256": "a47e8b8153ea29c2b10d3d65018abb499476e5dbeb11ffbad0beaa39f8c0fd7b",
+        "sql_bytes": 22993
+      },
+      "v2_size": {
+        "gzip9_mtime0_bytes": 5230,
+        "sha256": "a81010c7f4be1c238098cc7f6f78c105b164ddcd5317a3edb366cbd36afc7743",
+        "sql_bytes": 22993
+      }
+    },
+    "runtime_of_bound_calls": [],
+    "source_overlay": {
+      "base_commit": "2a6e599bb4df20925165b24d8c811dd4cc1db903",
+      "overlay_files_sha256": {
+        "src/lexinform/models/rcl_letter_use.py": "7e706a611869463b5bf3c1abc3be59765c78b044608274f10d3cf977eb4ec970",
+        "tests/unit/test_rcl_letter_identity.py": "037d5c22175d2b7336902da66cec9f7a3ad18913652820b93c63749a6a4ea434",
+        "tools/source_history_doctor.py": "4468ca62220daf9859123b15900ce5a465124b4af2b171880f13d087cac48534"
+      },
+      "reproduction": "Export base commit src/tools/tests to a fresh ignored directory, overlay these three files, use frozen venv with PYTHONPATH=<fresh>/src:<fresh> and fresh qualify.py output; never overwrite sealed evidence. Default runtime factory remains unchanged."
+    }
+  },
+  "senate": {
+    "caps_bytes": {
+      "full_record": 8192,
+      "whole_omission": 2048
+    },
+    "final_qualification": {
+      "actual_serializer": {
+        "complete": 759,
+        "max_utf8_bytes_with_timestamp": 6641,
+        "omitted": 0
+      },
+      "base_qualification_sha256": "3c814b160c4bf432c5ae22ae293959f8ae7509a1be473d1569b6a50e32b64821",
+      "current_doctor_without_findings": true,
+      "current_reader_restores761_records_and_all_links": true,
+      "no_runtime_wiring_or_policy_change": true,
+      "old9a_opaque_SQL_evidence_reused_unchanged": true,
+      "populated_sql_sha256": "c3635993b74ad09b521e78b5de689eefee88067d2634af3d1331ad84d2a72e46",
+      "saved759_typed_bytes_ids_link_manifests_exact": true,
+      "scope": "Final retained-identity/structural-reader/capture-version contract; exact saved typed serializer, full current shared restore/doctor/read and synthetic ref-slot capacity proof",
+      "source_after": {
+        "src/lexinform/adapters/senate_history.py": "50e5c84614cbe1a605ba9306d1566926f8bf7b6e327699d68793db58fd158f17",
+        "src/lexinform/adapters/sqlite_repo.py": "2ac841db62b2d40a9888c7e635f08d630dbb098a05b4fdd4b3c53c3aa9caf43d",
+        "src/lexinform/models/__init__.py": "c9195c5be986f8e346d7cfc1e938e081d525bc46accbafb07275e010df2e1bb6",
+        "src/lexinform/models/senate_inspection.py": "438b0790a7466d5e006aa19094cac46d7f0e46181d889a52f9206dcc4eef1a32",
+        "src/lexinform/ports.py": "ebd22e6e97a0f11f1605292c420fca2cb68dfa49910dfba7068aecbce6cbec64",
+        "src/lexinform/services/senate_history.py": "1cd463e2b79e8a5e7066df42f90d196b35beecb85c358c63d02d5323600ab6a1",
+        "tests/unit/test_senate_inspection.py": "d78aad1c42c4b81e89470a3a4cf7df1606a81f88442f35daae2a5bce8f5fa43c",
+        "tools/source_history_doctor.py": "9e802a1d8f51e4a635966b8e9c6d1f3f5d4b8a61beb9c1cec88a190bd226b0ca"
+      },
+      "source_before": {
+        "src/lexinform/adapters/senate_history.py": "50e5c84614cbe1a605ba9306d1566926f8bf7b6e327699d68793db58fd158f17",
+        "src/lexinform/adapters/sqlite_repo.py": "2ac841db62b2d40a9888c7e635f08d630dbb098a05b4fdd4b3c53c3aa9caf43d",
+        "src/lexinform/models/__init__.py": "c9195c5be986f8e346d7cfc1e938e081d525bc46accbafb07275e010df2e1bb6",
+        "src/lexinform/models/senate_inspection.py": "438b0790a7466d5e006aa19094cac46d7f0e46181d889a52f9206dcc4eef1a32",
+        "src/lexinform/ports.py": "ebd22e6e97a0f11f1605292c420fca2cb68dfa49910dfba7068aecbce6cbec64",
+        "src/lexinform/services/senate_history.py": "1cd463e2b79e8a5e7066df42f90d196b35beecb85c358c63d02d5323600ab6a1",
+        "tests/unit/test_senate_inspection.py": "d78aad1c42c4b81e89470a3a4cf7df1606a81f88442f35daae2a5bce8f5fa43c",
+        "tools/source_history_doctor.py": "9e802a1d8f51e4a635966b8e9c6d1f3f5d4b8a61beb9c1cec88a190bd226b0ca"
+      },
+      "status": "passed",
+      "synthetic_ref_capacity": {
+        "complete": 759,
+        "max_utf8_bytes_with_timestamp": 6955,
+        "omitted": 0,
+        "records": 759,
+        "scope": "Actual typed payloads with explicit synthetic SHA-width persisted IDs; no real parent inference or save"
+      }
+    },
+    "focused_cases": 227,
+    "old9a_opaque_SQL_scope": "761 Senate records and prior RCL formats only; not future RCL v2 data",
+    "patch_sha256": "ec1ed8055015b881f00f6a929ef4aaecacb9cf69721a4b06dba1bad657c76029",
+    "positive_fixture": {
+      "fixture_extraction_metadata_bytes": 2723,
+      "full_record_bytes": 3094,
+      "inspection_records": 2,
+      "links": 2,
+      "omission_record_bytes": 1237,
+      "scope": "Synthetic Word fixture/official descriptor namespace; no network or actual official-body claim",
+      "shared_source_graphs": 1
+    },
+    "review": {
+      "all_nonpatch_runtime_files_exact_to_baseline": true,
+      "append_migration61_only": true,
+      "baseline": "9a3729a829c2bb11f2fc20862c12c769095e3407",
+      "closed_findings": [
+        "Deterministic collector snapshot/dump across workers1/4",
+        "Unchanged omitted inspection ID rejects retained-manifest/body substitution at get and scratch restore",
+        "Model retains structural facts/parent validation and no longer reexecutes selector eligibility/terminal policy"
+      ],
+      "final_probe_sha256": "c309e02460251ea4ecbe7a2ffb41a86552bcd5b3f8257c1e17f7655ee5cff4e9",
+      "focused_builder_XML_verified": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 227
+      },
+      "limits": [
+        "Inert reader/collector/writer; no producer or current production coverage claimed.",
+        "759 M0 contexts are corpus-derived sizing/reasoning evidence with929 verified original inputs; persisted source/read/extraction/selection IDs stay unknown unless actually recorded.",
+        "Omitted full semantics remain unavailable for revalidation; retained omission summary/link manifest is independently bound.",
+        "Synthetic reference-capacity and positive full/omitted physical graphs are separately labeled in frozen builder evidence.",
+        "Reviewer revalidated existing local records and probes, not extraction/model/legal quality or a full gate."
+      ],
+      "migration60_prefix_exact": true,
+      "original_probe_sha256": "8cb1fc297bc2331867e660d720f901a45cdbe25e37563b011b27dd1b127a5dcb",
+      "patch_sha256": "ec1ed8055015b881f00f6a929ef4aaecacb9cf69721a4b06dba1bad657c76029",
+      "populated_SQL_and_pinned_predecessor_dump_byte_exact": true,
+      "populated_reader_restore_records": 761,
+      "reviewer_full_native_network_paid_production_calls": false,
+      "source_and_evidence_unchanged": true,
+      "source_freeze_sha256": "9a09f5e9608d569189e49a1c9f57e29f57e4bcb83ff7308b141d38cf4a691101",
+      "status": "review_complete_no_remaining_actionable_findings",
+      "typed_max_timestamped_utf8_bytes": 6641,
+      "typed_records_independently_rebuilt": 759,
+      "validated_populated_links": 976,
+      "verified_evidence_files": 12,
+      "verified_source_files": 12
+    },
+    "runtime_producer": false,
+    "source_freeze_sha256": "9a09f5e9608d569189e49a1c9f57e29f57e4bcb83ff7308b141d38cf4a691101",
+    "storage_deltas": {
+      "actual_artifact_parents": {
+        "gzip_bytes": 41115,
+        "sql_bytes": 124538,
+        "sqlite_bytes": 212992
+      },
+      "actual_record_and_junction": {
+        "gzip_bytes": 590156,
+        "sql_bytes": 3726372,
+        "sqlite_bytes": 4395008
+      },
+      "schema": {
+        "gzip_bytes": 221,
+        "sql_bytes": 1750,
+        "sqlite_bytes": 20480
+      },
+      "synthetic_positive_graph_parents": {
+        "gzip_bytes": 1838,
+        "sql_bytes": 5489,
+        "sqlite_bytes": 0
+      },
+      "synthetic_positive_records_and_links": {
+        "gzip_bytes": 1415,
+        "sql_bytes": 6495,
+        "sqlite_bytes": 8192
+      }
+    },
+    "typed_serializer": {
+      "body_junctions": 974,
+      "complete": 759,
+      "max_utf8_bytes_with_timestamp": 6641,
+      "omitted": 0,
+      "persisted_source_read_extraction_selection_ids_inferred": 0,
+      "records": 759,
+      "total_utf8_bytes": 3056401
+    }
+  },
+  "stage": "J151 compatible source-history readers; no new producer activation",
+  "state_copy": {
+    "after": {
+      "gzip9_mtime0_bytes": 4112971,
+      "sha256": "fcb7cfe42ae6d86dd059fe5191edbe219c8941ad3b8d6bcd7b92b89e557aba58",
+      "sql_bytes": 20380708
+    },
+    "before": {
+      "gzip9_mtime0_bytes": 4112280,
+      "sha256": "cf9aa3aaf251e457916db371fb1a3a423473ff1d6008d8891d42188b6433cd36",
+      "sql_bytes": 20378124
+    },
+    "delta": {
+      "gzip9_mtime0_bytes": 691,
+      "sql_bytes": 2584
+    },
+    "doctor_findings": 0,
+    "new_empty_tables": [
+      "rcl_letter_uses",
+      "senate_inspection_sources",
+      "senate_inspections"
+    ],
+    "new_rows": 0,
+    "old_tables_exact": 38,
+    "roundtrip_byte_exact": true,
+    "schema_after": 61,
+    "schema_before": 59,
+    "scope": "pinned production dump on disposable local copies; no Settings, CLI, processing, network or production writes",
+    "source_state_commit": "e15b53d07ac1d20fccce9d5d931d3c89d880e4ca"
+  }
+}

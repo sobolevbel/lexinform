@@ -258,7 +258,7 @@ def test_migration_is_one_append_only_step_and_sql_counts_utf8_bytes(
 ) -> None:
     repo = repository(tmp_path)
     repo.close()
-    assert len(MIGRATIONS) == 60
+    assert len(MIGRATIONS) == SCHEMA_VERSION
     with closing(sqlite3.connect(tmp_path / "history.db")) as db, db:
         columns = (
             "rcl-letter-use-v1:" + "a" * 64,
