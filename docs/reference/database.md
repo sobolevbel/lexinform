@@ -545,3 +545,10 @@ offline inspector и operator view. История читается через i
 поэтому удаление operational `delivery_json` не стирает confirmation chain. Corrupt/missing
 history не меняет physical status, не подтверждает unknown и не разрешает retry. В этом случае
 operator view помечает integrity unavailable, а offline doctor показывает точные findings.
+
+
+[J112](../plans/2026-10-22-document-architecture-progress.md#j112) использует тот же editorial
+context для новых amendments targets, даже пока original operational delivery ещё доступен.
+`review_work`/`ready_analysis` не копируются повторно в batch metadata; original payload и actual
+work owners остаются прежними. Provider context/checksum не меняется. Новая `/delivery` строка
+physical attempts относится к сохранённой publication, а не к числу content versions.

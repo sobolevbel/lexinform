@@ -5655,3 +5655,42 @@ Doctor parity: **184 snapshots**, прежние report fields/current decisions
 прочие 150 runtime files byte-identical.
 [Acceptance asset](../assets/audits/2026-10-28-content-inspection/validation.json) пинует hashes,
 gates, immutable lookup, confirmations, backward reader и metadata/state compactness.
+
+
+<a id="j112"></a>
+### J112. Compact amendment targets from the frozen editorial view
+
+Статус: **готово**, baseline `ab63022bb7225eb11513a33edf75b3ea6ef2e061`.
+Новый amendment target использует original editorial view и до operational retention cleanup.
+Таким образом, старый ready/review input не копируется в batch delivery metadata, но original
+publication payload, actual work owners, Bill/change/date и physical target не переписываются.
+Exact provider context/request и content ID прежние. `/delivery` показывает physical attempt
+count для известных editorial histories; legacy без history сохраняет прежний ответ.
+
+**65 focused / 21 local HTTP** passed, strict mypy **473**, Ruff/format green. Расширенная
+регрессия проверяет отсутствие большого unfinished input и в provider context, и в batch target,
+при этом original delivery по-прежнему содержит свой historical payload. Первичная qualification
+fixture неверно записывала PRAGMA без формата dump reader; исправлен только fixture export.
+Full gate выполняется на замороженных sources.
+
+**168 native snapshots**: provider requests/messages/profiles и **все 28 tables exact**, SQL/gzip
+разница0; source doctors без errors. Дополнительно **8 transport cases**: workers1/4, ordinary/
+heavy legacy payload, до/после cleanup. Requests/messages/edits/network calls и original content
+IDs exact, все остальные Bill fields exact. Новый target не содержит unused input ни в одном
+case. Размер target **5825–407958 → 5825–5864 UTF-8 bytes**; SQL delta **-402355…0**, gzip
+**-4699…0**. Единственное changed column — `llm_batch_items.meta_json`; остальные rows exact.
+Это synthetic legacy fixture, не production growth forecast или независимая legal acceptance.
+
+
+J111 backward reader: **176 snapshots / 8 amendment targets** читаются, dump exact без schema
+conversion. Paid request/prompt/extraction/identity/schema modules и прочие **157 runtime files**
+byte-identical; изменения ограничены amendments request context и technical attempt-count line.
+
+J111 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40606320512): **5065 passed**,
+strict mypy **473**, Ruff/docs/web success. [Relay deploy](https://github.com/sobolevbel/lexinform/actions/runs/40607059959):
+exact COMMIT `ab63022bb7225eb11513a33edf75b3ea6ef2e061`, listener up **45 s**.
+
+
+Полный gate: **5065 passed**, 0 failures/errors/skips, **614.123 s**.
+[Acceptance asset](../assets/audits/2026-10-28-amendment-target-context/validation.json) пинует
+gates, source hashes, exact provider parity, state-size reduction и backward reader.

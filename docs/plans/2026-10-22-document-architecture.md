@@ -680,7 +680,7 @@ Bill и кэша. Повтор записанного результата да�
   Physical Publication ссылается на content version; существующие IDs не пересоздаются.
   Общие source/bill/change snapshots не копируются в каждую версию содержания; переход к refs
   требует той же гарантии frozen recovery и учёта размера, что в §1.4.
-- [ ] DA7.2. **Частично: [J109](2026-10-22-document-architecture-progress.md#j109), original frozen context переживает cleanup без current Bill; полный PreparedInput/comparison history остаётся.** Сохранить оригинальное содержание отдельно от будущей revision и operational
+- [ ] DA7.2. **Частично: [J109](2026-10-22-document-architecture-progress.md#j109), original frozen context переживает cleanup без current Bill; [J112](2026-10-22-document-architecture-progress.md#j112), новые targets не копируют unfinished work из operational payload. Полный PreparedInput/comparison history остаётся.** Сохранить оригинальное содержание отдельно от будущей revision и operational
   retry plan. Исправление использует старые bill/change/date, исходный message target и
   сохранённый PreparedInput/comparison, без запроса актуального Bill для замены прошлого.
 - [x] DA7.3. **Принято: [J109](2026-10-22-document-architecture-progress.md#j109), single-message capture и post-retention /amendments, guards для unknown/repeated force.** Сначала перевести существующий single-message `/amendments`; защитить original

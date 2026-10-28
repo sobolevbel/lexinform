@@ -336,3 +336,10 @@ Editorial Bill view не копирует `review_work`/`ready_analysis` с их
 Они остаются у operational владельцев и под прежними retention guards. Это ограничение истории,
 не удаление из Bill, pending request или original delivery. Остальные status updates пока не
 попадают в этот producer; расширение требует отдельной проверки состава/объёма snapshot.
+
+
+Новые amendments targets используют сохранённый editorial view вместо повторного включения
+старых unfinished work в transport metadata. Это не очистка original delivery или pending owner;
+изменяется только новый target. Сериализованный provider request и исходная content identity
+сохраняются. Измерение synthetic legacy case и exclusions —
+[J112](plans/2026-10-22-document-architecture-progress.md#j112).

@@ -99,7 +99,14 @@ class AmendmentsService:
         try:
             original = self._original(bill, publication_id)
             assert original.id is not None and original.delivery is not None
-            record_publication_content(self._repo, self._clock, original)
+            content = record_publication_content(self._repo, self._clock, original)
+            if content is not None:
+                original = original.model_copy(
+                    update={"delivery": restore_content_delivery(self._repo, content)}
+                )
+            assert original.id is not None and original.delivery is not None, (
+                "the history view preserves the original identity and supplies its frozen plan"
+            )
             revisions = self._repo.list_amendment_revisions(original.id)
             for revision in revisions:
                 if revision.status in (

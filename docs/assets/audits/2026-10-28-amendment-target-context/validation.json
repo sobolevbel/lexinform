@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "stage": "J112",
+  "baseline": "ab63022bb7225eb11513a33edf75b3ea6ef2e061",
+  "scope": "Use frozen editorial context for new amendment targets, exclude unrelated unfinished work from transport metadata and show physical attempts in /delivery.",
+  "checks": {
+    "focused": {
+      "path": "out/corpus/j112/focused.xml",
+      "sha256": "97aa3886d76fad340bd42beb6cdea4b186ead351cb06ff5652cb3b5085ddcb07",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "65",
+      "time": "10.287",
+      "timestamp": "2026-10-28T01:05:21.431439+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j112/full.xml",
+      "sha256": "ed8df0d53ecb249d5d67851bb976b74bd6dc5e3a55cb245f1432d44a7c551eca",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "5065",
+      "time": "614.123",
+      "timestamp": "2026-10-28T01:06:21.918457+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "local-http": {
+      "path": "out/corpus/j112/local-http.xml",
+      "sha256": "52a81561ab250a9d8b349710fcd139ba0f83bb186ed4bbda8ede260173a16557",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "21",
+      "time": "1.868",
+      "timestamp": "2026-10-28T01:06:24.102498+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 473 source files",
+    "ruff": "All checks passed!",
+    "format": "469 files left unchanged"
+  },
+  "qualification": {
+    "native": {
+      "cases": 168,
+      "all_profiles_except_metadata_and_storage_metrics_exact": true,
+      "all_requests_and_rendered_messages_exact": true,
+      "all_28_prior_tables_exact_except_recorded_phase_timing": true,
+      "timing_differences": [],
+      "command_outcome_seconds_excluded_from_semantic_comparison": true,
+      "content_version_views": 2,
+      "content_snapshot_views": 6,
+      "binding_views": 2,
+      "prior_metadata_rows_preserved": true,
+      "read_receipt_views": 270,
+      "source_observation_views": 210,
+      "selection_views": 198,
+      "link_views": 190,
+      "all_source_doctors_without_errors": true,
+      "sql_delta": {
+        "min": 0,
+        "max": 0
+      },
+      "gzip_delta": {
+        "min": 0,
+        "max": 0
+      }
+    },
+    "transport": {
+      "cases": 8,
+      "all_provider_requests_reader_messages_edits_and_network_calls_exact": true,
+      "original_content_ids_exact": true,
+      "all_other_bill_fields_exact": true,
+      "unfinished_input_absent_from_every_new_target": true,
+      "changed_columns": {
+        "llm_batch_items": [
+          "meta_json"
+        ]
+      },
+      "target_bill_utf8_bytes_before": {
+        "min": 5825,
+        "max": 407958
+      },
+      "target_bill_utf8_bytes_after": {
+        "min": 5825,
+        "max": 5864
+      },
+      "sql_delta": {
+        "min": -402355,
+        "max": 0
+      },
+      "gzip_delta": {
+        "min": -4699,
+        "max": 0
+      },
+      "scope": "Synthetic legacy unfinished input in a native fake-source amendments fixture; not production growth forecast or independent legal/source-family acceptance."
+    },
+    "structural": {
+      "baseline": "ab63022bb7225eb11513a33edf75b3ea6ef2e061",
+      "other_runtime_files_byte_identical": 157,
+      "schema_identity_models_paid_requests_prompts_and_extraction_byte_identical": true,
+      "changed_runtime": {
+        "src/lexinform/adapters/telegram_format.py": "877a17c7ad615bb48813519214d936472074076199df735d22beeda51c774560",
+        "src/lexinform/services/amendments.py": "b318bc87536b1ec13731c0883c1dfd23aed883e1bbeb19b51d1e944dc341e4bd"
+      }
+    },
+    "rollback": {
+      "reader": "J111 ab63022bb7225eb11513a33edf75b3ea6ef2e061",
+      "cases": 176,
+      "amendment_targets_read": 8,
+      "all_sql_preserved_exact": true,
+      "schema_conversion": false
+    }
+  },
+  "sources": {
+    "src/lexinform/adapters/telegram_format.py": "877a17c7ad615bb48813519214d936472074076199df735d22beeda51c774560",
+    "src/lexinform/services/amendments.py": "b318bc87536b1ec13731c0883c1dfd23aed883e1bbeb19b51d1e944dc341e4bd",
+    "tests/scenario/test_content_history.py": "815e0cea9bb206f435c90878f5b0af8f80ce0f7de3c0f1945c00954573f67a47",
+    "tests/scenario/test_content_inspection.py": "8e0b8fc0399c7234bf05de7c7aebe6c1fd6eb27924fbd9090950ff2378d64dd0"
+  },
+  "evidence": {
+    "out/corpus/j112/native-parity-accepted.json": "ebcd5ec8f4b46ad3e25445d7eecee389c2de0520c2044c26304d9f9e2c476669",
+    "out/corpus/j112/transport-parity.json": "4a2ce686c0c910dbfeae00046f9cebd522e02205ca5fcd47a8315fd4622193b1",
+    "out/corpus/j112/structural-parity.json": "8dbbddfc5a4ae6326488faf80ab1de5ea5fe45250bb7ef81e9c0d98f9471ea7c",
+    "out/corpus/j112/rollback.json": "dd0fd0bea1ca43e9b2434781e9a7f24246e01490b174953e1808872ce57b9976",
+    "out/corpus/j112/native_profiles.py": "645745f54f3d9481c40ff1bae04a4dbda85383f4440e2bc6a5756c4ef08a52bc",
+    "out/corpus/j112/compare_native_all_tables.py": "2792649114b55fc3178f68069c5499f316098cc251be1226d594a4f646514e98",
+    "out/corpus/j112/transport_profile.py": "10141b45940379ed344060d29c87e103de3163fcf5bf08fc1289615f195575d8",
+    "out/corpus/j112/compare_transport.py": "62306d10556fc36944463f55303db95437ac55feb200716983ccbcd7955cf8ee",
+    "out/corpus/j112/structural_profile.py": "fab566ef9d4d283620f595975edd76aa995812d745df50c967fa6e31023eb451",
+    "out/corpus/j112/rollback_profile.py": "1e3fb2d933ffc659281db472b20a82d2b212103d379bf9de261468321134e9cf",
+    "out/corpus/j112/release-j111.json": "ef674ad5c97d98895838b251b83acaeb587bc9cebb0007a3f170638423402d32",
+    "out/corpus/j112/frozen-inputs.json": "58a2209fcd04f53f6b88e14bc221d657f9065bc75c5a5d211e7855c746ca8c4b",
+    "out/corpus/j112/accept.py": "2f6157ff2e639184124e671d06dd30ad0a63d611bcddd213c4908d3f504aa58b"
+  },
+  "limitations": [
+    "Synthetic legacy unfinished input is a storage qualification fixture, not a production growth forecast.",
+    "Original operational payload and actual unfinished-work owners remain unchanged.",
+    "No raw storage/backend choice, paid reanalysis, source selection or reader-channel message changes.",
+    "Legacy without source/history data remains unknown."
+  ]
+}

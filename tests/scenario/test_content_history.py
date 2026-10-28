@@ -7,6 +7,7 @@ import pytest
 from lexinform.models import (
     Bill,
     ContentSnapshot,
+    DigestItemMeta,
     OutcomeStatus,
     PublicationStatus,
     ReadyAnalysis,
@@ -51,6 +52,18 @@ def test_legacy_unfinished_input_is_not_duplicated_in_editorial_history() -> Non
     assert "ready_analysis" not in json.loads(snapshot.payload_json)
     assert len(world.batch.submitted) == 1
     assert marker not in world.batch.submitted[0].ctx.model_dump_json()
+    batch = world.repo.list_open_llm_batches()[0]
+    item = world.repo.list_llm_batch_items(batch.batch_id)[0]
+    assert isinstance(item.meta, DigestItemMeta) and item.meta.amendment_revision is not None, (
+        "amendment revisions keep their immutable delivery target in the batch metadata"
+    )
+    assert marker not in item.meta.amendment_revision.delivery.bill_json
+    assert item.meta.amendment_revision.delivery.bill_json == snapshot.payload_json
+    saved = world.repo.publication_by_id(original.id)
+    assert saved is not None and saved.delivery is not None, (
+        "the original operational payload remains intact"
+    )
+    assert marker in saved.delivery.bill_json
     assert world.repo.get_publication_content(original.id) == content
 
 

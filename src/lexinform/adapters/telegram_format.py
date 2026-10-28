@@ -2045,6 +2045,7 @@ class MessageFormatter:
                 for r in outcome.delivery_history
             ]
             if outcome.content_history is not None:
+                lines.append(f"physical attempts: {pub.attempts}")
                 lines.extend(self._content_history_lines(outcome.content_history))
             preview = self.delivery_preview(pub)
             return ["\n".join(lines), "<b>Saved snapshot preview</b>\n" + preview]

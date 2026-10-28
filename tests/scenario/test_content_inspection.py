@@ -51,6 +51,10 @@ def test_delivery_shows_body_free_history_without_changing_the_publication(retai
     rendered = MessageFormatter("en").command_reply(world.replier.replies[-1][0], outcome).text
     assert "original content:" in rendered and "current content:" in rendered
     assert content.content_id in rendered
+    assert outcome.delivery is not None, (
+        "delivery inspection includes the saved physical publication"
+    )
+    assert f"physical attempts: {outcome.delivery.attempts}" in rendered
 
 
 def test_unknown_revision_does_not_replace_the_current_original_in_delivery() -> None:
