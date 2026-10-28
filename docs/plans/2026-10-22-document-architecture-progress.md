@@ -7181,6 +7181,8 @@ review не нашло замечаний к job dependency/lock/verifier; 47 re
 [Incident/fix evidence](../assets/audits/2026-10-28-native-runner/ci-lint.json).
 
 
+<a id="j146"></a>
+
 ### J146. Capture standalone CLI document observations at the caller boundary
 
 Статус: **реализовано, CI и обновление реле подтверждены**.
@@ -7221,9 +7223,11 @@ J146 `f503e952e62cb78ffeee1d9bd01f7ec0c7de2b6c`: все четыре CI jobs и 
 [release proof](../assets/audits/2026-10-28-cli-read-capture/release.json).
 
 
+<a id="j147"></a>
+
 ### J147. Preserve current source evidence from historical rereads
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**.
+Статус: **локальная приёмка завершена; CI docs отказал, deploy не запускался**.
 Historical previous-law/change-review reads сохраняют returned source metadata через прежний
 caller-owned transaction с реальным Bill owner. Это текущее наблюдение, отдельно от неизменного
 предыдущего paid input. Успешные и завершённые blocked selections сохраняются; неизвестный
@@ -7256,3 +7260,10 @@ Ruff/format 625 по всем src/tests/tools, source freeze 627 exact.
 286 584 SQL / 43 259 gzip B, max 13 151 SQL / 1855 gzip B на fixture. Это отдельные
 копии, не natural daily forecast и не общий предел dump. Повторный расчёт побайтно
 воспроизвёл агрегаты; source bodies/input texts не добавляются в production history.
+
+
+J147 commit `7516ed2a3539181f64ed233a80f1f5724c943dbd`: lint, test и web прошли,
+но CI 40773710544 остановился на шести ссылках к отсутствующим коротким anchors J146/J147.
+Добавлены явные anchors, без изменения runtime или ослабления strict docs gate;
+реле осталось на f503 до успешного следующего выпуска.
+[Failure evidence](../assets/audits/2026-10-28-historical-rereads/ci-docs-failure.json).
