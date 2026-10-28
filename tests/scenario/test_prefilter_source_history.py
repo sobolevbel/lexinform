@@ -2,15 +2,39 @@ import threading
 
 import pytest
 
-from lexinform.models import BillStatus, DocumentSelectionRecord, SourceObservation
+from lexinform.keywords import KeywordPrefilter
+from lexinform.models import (
+    Bill,
+    BillStatus,
+    DocumentSelectionRecord,
+    LocatedText,
+    ReviewSource,
+    SourceObservation,
+    TextDocument,
+)
+from lexinform.models.reviews import ReviewPurpose
+from lexinform.services.documents import TextLoader
+from lexinform.services.text_prefilter import TextPrefilterService
 from tests.fakes import FakeTextExtractor
-from tests.harness import World
+from tests.harness import World, print_url
+
+
+class FixedTextSource:
+    def __init__(self, document: TextDocument) -> None:
+        self.document = document
+
+    def locate(self, bill: Bill) -> LocatedText:
+        return LocatedText(document=self.document)
+
+    def supporting_documents(self, bill: Bill, purpose: ReviewPurpose) -> tuple[ReviewSource, ...]:
+        return ()
 
 
 @pytest.mark.parametrize("workers", [1, 4])
 def test_rejected_source_decision_survives_without_a_paid_analysis(workers: int) -> None:
     world = World(
-        workers=workers, extractor=FakeTextExtractor("Art. 1. Podatek wynosi 10 zł. " * 30)
+        workers=workers,
+        extractor=FakeTextExtractor("USTAWA\n" + "Art. 1. Podatek wynosi 10 zł. " * 30),
     )
     world.add_bill("4100", "Projekt ustawy o podatku")
 
@@ -25,6 +49,8 @@ def test_rejected_source_decision_survives_without_a_paid_analysis(workers: int)
     assert selected is not None, "the atomic source observation retains its exact selection"
     assert selected.selection.policy_version == "document-selection-v1"
     assert selected.selection.parts and all(not part.text for part in selected.selection.parts)
+    traces = world.repo.list_candidate_disposition_traces(observed[0].observation_id)
+    assert not traces
     assert not world.repo.list_computation_results(10, "4100")
     assert not world.llm.contexts and not world.batch.submitted
 
@@ -44,6 +70,39 @@ def test_repeat_check_keeps_the_first_source_time_and_exact_dump() -> None:
     assert world.repo.dump() == before
     assert world.repo.get_source_observation(first.observation_id) == first
     assert first.recorded_at < world.clock.now()
+
+
+def test_nontrivial_prefilter_fallback_persists_original_request_and_rejection() -> None:
+    world = World(extractor=FakeTextExtractor("Art. 1. Podatek wynosi 10 zł. " * 30))
+    world.add_bill("4100", "Projekt ustawy o podatku")
+    world.repo.upsert_summary(world.gateway.processes[0], now=world.clock.now())
+    selected = TextDocument(url=print_url("4100"), kind="print")
+    requested = TextDocument(
+        url="https://api.test/conflicting-link.pdf",
+        kind="print",
+        official_link_conflict=True,
+        alternatives=(selected,),
+    )
+    reader = TextLoader({"api.test": world.gateway.download}, world.extractor, max_bytes=1000)
+    service = TextPrefilterService(
+        world.repo,
+        FixedTextSource(requested),
+        reader,
+        KeywordPrefilter(),
+        clock=world.clock,
+    )
+
+    assert not service.check(world.bill("4100"))
+
+    observations = world.repo.list_source_observations(10, "4100")
+    assert len(observations) == 1
+    traces = world.repo.list_candidate_disposition_traces(observations[0].observation_id)
+    assert len(traces) == 1 and traces[0].requested_document == requested
+    assert [item.outcome for item in traces[0].dispositions] == [
+        "official_conflict",
+        "selected",
+    ]
+    assert world.bill("4100").status is BillStatus.SKIPPED_TEXT_PREFILTER
 
 
 @pytest.mark.parametrize("workers", [1, 4])

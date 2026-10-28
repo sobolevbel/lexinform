@@ -5,6 +5,7 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from lexinform.models.candidate_trace import CandidateDispositionTrace
 from lexinform.models.documents import DocumentSelection
 
 
@@ -61,6 +62,7 @@ class LoadedFile:
     oversize: bool = False
     sha256: str | None = None
     selection: DocumentSelection = DocumentSelection()
+    candidate_trace: CandidateDispositionTrace | None = None
 
     @property
     def is_scan(self) -> bool:

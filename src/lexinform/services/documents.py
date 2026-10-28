@@ -40,6 +40,8 @@ from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
 from lexinform.models import (
     ArtifactIdentity,
     ArtifactReadIdentity,
+    CandidateDisposition,
+    CandidateDispositionTrace,
     DocumentPart,
     DocumentReadMetrics,
     DocumentSelection,
@@ -49,6 +51,7 @@ from lexinform.models import (
     ScannedDocument,
     TextDocument,
 )
+from lexinform.models.candidate_trace import CandidateTraceReason, CandidateTraceResult
 from lexinform.models.document_reads import LoadedFile as LoadedFile
 from lexinform.ports import (
     Downloader,
@@ -221,23 +224,49 @@ class TextLoader:
         return finish_bundle(bundle, document)
 
     def select_document(self, document: TextDocument) -> tuple[TextDocument, LoadedFile]:
-        selected, loaded = self._select_document(document)
+        dispositions: list[CandidateDisposition] = []
+        selected, loaded, result, reason = self._select_document(document, dispositions)
+        try:
+            trace = CandidateDispositionTrace.from_decisions(
+                document,
+                tuple(dispositions),
+                result=result,
+                reason=reason,
+                selection_state=loaded.selection.state,
+            )
+        except Exception:
+            log.warning("candidate disposition trace omitted after metadata failure")
+            trace = None
+        if trace is not None and trace.is_routine_singleton:
+            trace = None
         return selected, replace(
             loaded,
             selection=loaded.selection.model_copy(
                 update={"policy_version": DOCUMENT_SELECTION_POLICY_VERSION}
             ),
+            candidate_trace=trace,
         )
 
-    def _select_document(self, document: TextDocument) -> tuple[TextDocument, LoadedFile]:
+    def _select_document(
+        self, document: TextDocument, dispositions: list[CandidateDisposition]
+    ) -> tuple[TextDocument, LoadedFile, CandidateTraceResult, CandidateTraceReason]:
         if document.compare_versions:
-            resolved = self._compare_versions(document)
+            resolved = self._compare_versions(document, dispositions)
             if resolved is not None:
                 return resolved
         fallback = CandidateFallback()
-        for candidate in (document, *document.alternatives):
+        candidates = (document, *document.alternatives)
+        for index, candidate in enumerate(candidates):
             if candidate.official_link_conflict:
                 fallback = fallback.conflict(candidate.url)
+                dispositions.append(
+                    CandidateDisposition(
+                        phase="fallback",
+                        index=index,
+                        outcome="official_conflict",
+                        reason="official_link_conflict",
+                    )
+                )
                 continue
             try:
                 main = self.read(candidate.url)
@@ -253,6 +282,14 @@ class TextLoader:
                 fallback = fallback.failure(
                     candidate.url, type(exc).__name__, str(exc), invalid=isinstance(exc, ValueError)
                 )
+                dispositions.append(
+                    CandidateDisposition(
+                        phase="fallback",
+                        index=index,
+                        outcome="read_failure",
+                        reason="invalid_response" if isinstance(exc, ValueError) else "read_error",
+                    )
+                )
                 continue
             rejected = fallback.consider(
                 candidate.url,
@@ -261,21 +298,75 @@ class TextLoader:
             )
             if rejected is not None:
                 fallback = rejected
+                dispositions.append(
+                    CandidateDisposition(
+                        phase="fallback",
+                        index=index,
+                        outcome="policy_excluded",
+                        reason=(
+                            "appendix_kind"
+                            if main.text is not None
+                            else "download_size_limit"
+                            if main.oversize
+                            else "no_readable_body"
+                        ),
+                        observed_sha256=main.sha256,
+                    )
+                )
                 continue
-            return candidate, self._with_evidence(candidate, self.read_document(candidate))
-        return document, fallback.result()
+            loaded = self._with_evidence(candidate, self.read_document(candidate))
+            dispositions.append(
+                CandidateDisposition(
+                    phase="fallback",
+                    index=index,
+                    outcome="selected",
+                    reason="first_acceptable_candidate",
+                    observed_sha256=main.sha256,
+                )
+            )
+            dispositions.extend(
+                CandidateDisposition(
+                    phase="fallback",
+                    index=remaining,
+                    outcome="unattempted",
+                    reason="selection_stopped",
+                )
+                for remaining in range(index + 1, len(candidates))
+            )
+            return candidate, loaded, "selected", "first_acceptable_candidate"
+        return document, fallback.result(), "fallback", "all_rejected"
 
-    def _compare_versions(self, document: TextDocument) -> tuple[TextDocument, LoadedFile] | None:
+    def _compare_versions(
+        self, document: TextDocument, dispositions: list[CandidateDisposition]
+    ) -> tuple[TextDocument, LoadedFile, CandidateTraceResult, CandidateTraceReason] | None:
         candidates: list[tuple[TextDocument, LoadedFile]] = []
         prepared: list[DocumentCandidate] = []
-        for candidate in (document, *document.alternatives):
+        candidate_indices: list[int] = []
+        decisions: list[CandidateDisposition] = []
+        for index, candidate in enumerate((document, *document.alternatives)):
             if candidate.official_link_conflict:
+                decisions.append(
+                    CandidateDisposition(
+                        phase="version_comparison",
+                        index=index,
+                        outcome="official_conflict",
+                        reason="official_link_conflict",
+                    )
+                )
                 continue
             try:
                 file = self.read(candidate.url)
             except ServiceUnavailableError:
                 raise
-            except Exception:
+            except Exception as exc:
+                decisions.append(
+                    CandidateDisposition(
+                        phase="version_comparison",
+                        index=index,
+                        outcome="read_failure",
+                        reason="invalid_response" if isinstance(exc, ValueError) else "read_error",
+                    )
+                )
                 continue
             item = DocumentCandidate(
                 candidate.url, file.text, file.selection.parts, file.selection.observed_parts
@@ -283,19 +374,75 @@ class TextLoader:
             if item.is_bill:
                 candidates.append((candidate, file))
                 prepared.append(item)
+                candidate_indices.append(index)
+                decisions.append(
+                    CandidateDisposition(
+                        phase="version_comparison",
+                        index=index,
+                        outcome="policy_excluded",
+                        reason="version_preference",
+                        observed_sha256=file.sha256,
+                    )
+                )
+            else:
+                decisions.append(
+                    CandidateDisposition(
+                        phase="version_comparison",
+                        index=index,
+                        outcome="non_bill" if file.text is not None else "unclassified",
+                        reason=(
+                            "non_bill_body"
+                            if file.text is not None
+                            else "download_size_limit"
+                            if file.oversize
+                            else "ambiguous_extraction"
+                            if file.selection.state == "ambiguous"
+                            else "scan_without_text"
+                            if file.is_scan
+                            else "no_readable_body"
+                        ),
+                        observed_sha256=file.sha256,
+                    )
+                )
         choice = select_candidate_versions(CandidateSet(tuple(prepared)))
         if choice is None:
+            dispositions.extend(decisions)
             return None
         if isinstance(choice, AmbiguousCandidates):
-            return document, LoadedFile(None, selection=choice.selection)
+            dispositions.extend(
+                item.model_copy(update={"reason": "version_conflict"})
+                if item.outcome == "policy_excluded"
+                else item
+                for item in decisions
+            )
+            return (
+                document,
+                LoadedFile(None, selection=choice.selection),
+                "ambiguous",
+                "version_conflict",
+            )
         candidate, _ = candidates[choice.index]
         loaded = self._with_evidence(candidate, self.read_document(candidate))
-        return candidate, LoadedFile(
-            loaded.text,
-            pages=loaded.pages,
-            oversize=loaded.oversize,
-            sha256=loaded.sha256,
-            selection=loaded.selection.model_copy(update={"observed_parts": choice.observed_parts}),
+        selected_index = candidate_indices[choice.index]
+        dispositions.extend(
+            item.model_copy(update={"outcome": "selected", "reason": "version_choice"})
+            if item.index == selected_index
+            else item
+            for item in decisions
+        )
+        return (
+            candidate,
+            LoadedFile(
+                loaded.text,
+                pages=loaded.pages,
+                oversize=loaded.oversize,
+                sha256=loaded.sha256,
+                selection=loaded.selection.model_copy(
+                    update={"observed_parts": choice.observed_parts}
+                ),
+            ),
+            "selected",
+            "version_choice",
         )
 
     def _with_evidence(self, document: TextDocument, file: LoadedFile) -> LoadedFile:

@@ -21,6 +21,7 @@ from lexinform.models import (
     ArtifactReadIdentity,
     Bill,
     BillStatus,
+    CandidateDispositionTrace,
     DocumentSelectionRecord,
     ExtractionResult,
     TextDocument,
@@ -75,6 +76,7 @@ class PrefilterLoad:
     source_artifacts: tuple[ArtifactIdentity, ...] = ()
     source_reads: tuple[ArtifactReadIdentity, ...] = ()
     source_extractions: tuple[ExtractionResult, ...] = ()
+    source_candidate_trace: CandidateDispositionTrace | None = None
 
     def __post_init__(self) -> None:
         if (self.source_document is None) != (self.source_selection is None):
@@ -82,7 +84,10 @@ class PrefilterLoad:
                 "source observation requires both catalog relations and selection metadata"
             )
         if (
-            self.source_artifacts or self.source_reads or self.source_extractions
+            self.source_artifacts
+            or self.source_reads
+            or self.source_extractions
+            or self.source_candidate_trace is not None
         ) and self.source_selection is None:
             raise ValueError("artifact observations require the source selection")
 
@@ -189,6 +194,7 @@ class TextPrefilterService:
                         loaded.source_artifacts,
                         reads=loaded.source_reads,
                         extractions=loaded.source_extractions,
+                        candidate_trace=loaded.source_candidate_trace,
                     ),
                     term=bill.term,
                     number=bill.number,
@@ -295,6 +301,7 @@ class TextPrefilterService:
             source_artifacts=self._loader.artifacts_for_selection(file.selection),
             source_reads=self._loader.reads_for_selection(file.selection),
             source_extractions=self._loader.extractions_for_selection(file.selection),
+            source_candidate_trace=file.candidate_trace,
         )
 
     def _read(self, file: LoadedFile) -> PrefilterLoad:

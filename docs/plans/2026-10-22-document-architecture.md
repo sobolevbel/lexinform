@@ -560,7 +560,7 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
 **Изменяемые места:** `services/sources.py`, `services/documents.py`, `document_selection.py`,
 `document_bundle.py`, `document_versions.py`, `document_facts.py`, source-specific selectors.
 
-- [ ] DA4.1. **Частично: [J087](2026-10-22-document-architecture-progress.md#j087), existing ExtractedParts используется чистой package policy; [J088](2026-10-22-document-architecture-progress.md#j088), общий transient CandidateSet для archive peers и loose files. Полная provenance/disposition persistence остаётся.** Сделать общий `CandidateSet` из extraction parts и официальных source relations.
+- [ ] DA4.1. **Частично: [J087](2026-10-22-document-architecture-progress.md#j087), pure package policy; [J088](2026-10-22-document-architecture-progress.md#j088), transient CandidateSet для archive peers и loose files; [J137](2026-10-22-document-architecture-progress.md#j137), bounded shadow trace нетривиальных outer URL решений. Внутренние member dispositions и полная provenance остаются.** Сделать общий `CandidateSet` из extraction parts и официальных source relations.
   Сохранять рассмотренные/исключённые части и основание исключения; ZIP location/filename —
   свидетельство происхождения, а не достаточное доказательство роли/редакции.
 - [x] DA4.2. **Принято: [J134](2026-10-22-document-architecture-progress.md#j134), pure loose composition/fallback с corpus/IO parity; [J087](2026-10-22-document-architecture-progress.md#j087)/[J088](2026-10-22-document-architecture-progress.md#j088), package/version policy; admission принят отдельно в DA4.5.** Перенести комплектование из `_select_parts` и loose-URL пути в одну чистую политику.

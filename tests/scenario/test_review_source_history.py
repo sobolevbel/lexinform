@@ -36,7 +36,18 @@ def test_review_records_source_without_changing_context_or_inventing_a_paid_resu
         identity="review/1",
         role="response",
         document=TextDocument(
-            url=print_url("4100"), kind="print", compare_versions=compare_versions
+            url=print_url("4100"),
+            kind="print",
+            compare_versions=compare_versions,
+            alternatives=(
+                TextDocument(
+                    url="https://api.test/conflicting-review-link.pdf",
+                    kind="print",
+                    official_link_conflict=True,
+                ),
+            )
+            if compare_versions
+            else (),
         ),
     )
 
@@ -50,6 +61,16 @@ def test_review_records_source_without_changing_context_or_inventing_a_paid_resu
     assert selected is not None, "review source metadata is retained independently of a paid result"
     assert not any(p.text for p in selected.selection.parts)
     assert world.repo.list_selection_artifacts(observations[0].selection_id)
+    traces = world.repo.list_candidate_disposition_traces(observations[0].observation_id)
+    assert len(traces) == (1 if compare_versions else 0)
+    if compare_versions:
+        assert traces[0].requested_document == source.document
+        assert [item.outcome for item in traces[0].dispositions] == [
+            "non_bill",
+            "official_conflict",
+            "selected",
+            "unattempted",
+        ]
     assert len(world.llm.contexts) == before
     assert not world.repo.list_computation_results(10, "4100", purpose="consultation_review")
     first = observations[0]

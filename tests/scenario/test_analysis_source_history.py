@@ -5,7 +5,13 @@ from datetime import timedelta
 import pytest
 
 from lexinform.errors import LlmUnavailableError
-from lexinform.models import BillStatus, DocumentSelectionRecord, SourceObservation, TextDocument
+from lexinform.models import (
+    BillStatus,
+    CandidateDispositionTrace,
+    DocumentSelectionRecord,
+    SourceObservation,
+    TextDocument,
+)
 from tests.fakes import FakeTextExtractor
 from tests.harness import World, print_url
 
@@ -33,6 +39,8 @@ def test_analysis_records_source_before_input_fitting_and_preserves_first_time(
     selection = world.repo.get_document_selection(first.selection_id)
     assert selection is not None, "source observation retains its exact source decision"
     assert selection.selection.parts and not any(p.text for p in selection.selection.parts)
+    traces = world.repo.list_candidate_disposition_traces(first.observation_id)
+    assert not traces
     assert not any(span.stage == "analysis" for span in selection.selection.coverage)
     links = world.repo.list_selection_artifacts(first.selection_id)
     assert links and links[0].artifact_sha256 == hashlib.sha256(b"%PDF").hexdigest()
@@ -47,12 +55,19 @@ def test_analysis_records_source_before_input_fitting_and_preserves_first_time(
 def test_analysis_source_writes_stay_on_the_calling_thread(
     workers: int, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    world = World(workers=workers)
+    world = World(
+        workers=workers,
+        extractor=FakeTextExtractor(
+            "USTAWA\n" + "Art. 1. Cudzoziemiec składa wniosek osobiście.\n" * 30
+        ),
+    )
     for number in ("4100", "4101", "4102"):
         world.add_bill(number, "Projekt ustawy o cudzoziemcach")
     caller = threading.get_ident()
     save = world.repo.save_source_observation
+    save_trace = world.repo.save_candidate_disposition_trace
     threads: list[int] = []
+    trace_threads: list[int] = []
 
     def record(selection: DocumentSelectionRecord, observation: SourceObservation) -> None:
         threads.append(threading.get_ident())
@@ -60,9 +75,16 @@ def test_analysis_source_writes_stay_on_the_calling_thread(
 
     monkeypatch.setattr(world.repo, "save_source_observation", record)
 
+    def record_trace(observation_id: str, trace: CandidateDispositionTrace) -> None:
+        trace_threads.append(threading.get_ident())
+        save_trace(observation_id, trace)
+
+    monkeypatch.setattr(world.repo, "save_candidate_disposition_trace", record_trace)
+
     world.run(track=False)
 
     assert threads == [caller] * 3
+    assert not trace_threads
     assert all(
         len(world.repo.list_source_observations(10, n)) == 1 for n in ("4100", "4101", "4102")
     )
@@ -120,6 +142,45 @@ def test_quiet_reanalysis_records_new_source_without_replacing_the_paid_result()
     assert current.computation_id == original.computation_id
     assert current.request_sha256 == original.request_sha256
     assert current.analysis == original.analysis
+
+
+def test_nontrivial_reanalysis_trace_links_selected_source_on_calling_thread(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    world = World()
+    world.add_bill("4100", "Projekt ustawy o cudzoziemcach")
+    world.run(track=False)
+    requested = TextDocument(
+        url="https://api.test/conflicting-link.pdf",
+        kind="print",
+        official_link_conflict=True,
+        alternatives=(TextDocument(url=print_url("4100"), kind="print"),),
+    )
+    caller = threading.get_ident()
+    save = world.repo.save_candidate_disposition_trace
+    writes: list[int] = []
+
+    def record(observation_id: str, trace: CandidateDispositionTrace) -> None:
+        writes.append(threading.get_ident())
+        save(observation_id, trace)
+
+    monkeypatch.setattr(world.repo, "save_candidate_disposition_trace", record)
+
+    assert world.analysis.reanalyze_bill(world.bill("4100"), requested) is None
+
+    observations = world.repo.list_source_observations(10, "4100")
+    traced = [
+        (observation, trace)
+        for observation in observations
+        for trace in world.repo.list_candidate_disposition_traces(observation.observation_id)
+        if trace.requested_document == requested
+    ]
+    assert len(traced) == 1 and traced[0][0].document.url == print_url("4100")
+    assert [item.outcome for item in traced[0][1].dispositions] == [
+        "official_conflict",
+        "selected",
+    ]
+    assert writes == [caller]
 
 
 def test_dry_run_rolls_back_analysis_source_metadata() -> None:

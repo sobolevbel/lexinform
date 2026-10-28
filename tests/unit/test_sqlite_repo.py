@@ -1012,10 +1012,12 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     assert {"content_snapshots", "content_versions", "publication_content"} <= tables
     assert {"extraction_results", "selection_extractions"} <= tables
     assert {"document_editions", "selection_editions"} <= tables
+    assert {"candidate_disposition_traces", "source_candidate_traces"} <= tables
     assert {"legacy_result_values", "legacy_result_occurrences", "legacy_result_imports"} <= tables
     assert "legacy_analysis_bodies" in tables
     assert not repo.list_legacy_result_occurrences(10, "RPW/1/2026")
     assert repo.get_selection_edition("selection-v1:" + "a" * 64) is None
+    assert not repo.list_candidate_disposition_traces("source-observation-v1:" + "a" * 64)
     assert repo.get_document_edition("edition-v1:" + "a" * 64) is None
     assert not repo.list_selection_extractions("selection-v1:" + "a" * 64)
     assert not repo.list_content_versions(1)

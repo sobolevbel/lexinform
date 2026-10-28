@@ -10,6 +10,7 @@ from lexinform.models import (
     ArtifactMetadata,
     ArtifactReadIdentity,
     ArtifactReadReceipt,
+    CandidateDispositionTrace,
     DocumentSelectionRecord,
     ExtractionResult,
     SelectionArtifactReference,
@@ -28,6 +29,7 @@ class DocumentSourceRead:
     artifacts: tuple[ArtifactIdentity, ...]
     reads: tuple[ArtifactReadIdentity, ...] = ()
     extractions: tuple[ExtractionResult, ...] = ()
+    candidate_trace: CandidateDispositionTrace | None = None
 
 
 def record_source_read(
@@ -55,6 +57,7 @@ def record_source_read(
         source.artifacts,
         reads=source.reads,
         extractions=source.extractions,
+        candidate_trace=source.candidate_trace,
     )
 
 
@@ -94,11 +97,14 @@ def record_document_source(
     *,
     reads: tuple[ArtifactReadIdentity, ...] = (),
     extractions: tuple[ExtractionResult, ...] = (),
+    candidate_trace: CandidateDispositionTrace | None = None,
 ) -> None:
     """Write the source and known outer-body links inside the caller's transaction."""
     record_artifacts(repo, artifacts, recorded_at=observation.recorded_at)
     record_artifact_reads(repo, reads, recorded_at=observation.recorded_at)
     repo.save_source_observation(selection, observation)
+    if candidate_trace is not None:
+        repo.save_candidate_disposition_trace(observation.observation_id, candidate_trace)
     edition = candidate_edition(selection, recorded_at=observation.recorded_at)
     if edition is not None:
         repo.save_selection_edition(selection.selection_id, edition)

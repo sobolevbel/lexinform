@@ -48,6 +48,7 @@ from lexinform.models import (
     BillAuthors,
     BillStatus,
     BillSubmission,
+    CandidateDispositionTrace,
     CheckAspect,
     CommandState,
     ComputationResult,
@@ -727,6 +728,20 @@ MIGRATIONS: tuple[str, ...] = (
     CREATE INDEX ix_legacy_result_owner
       ON legacy_result_occurrences(container_term, container_number);
     """,
+    """
+    CREATE TABLE candidate_disposition_traces (
+        trace_id TEXT PRIMARY KEY NOT NULL,
+        coverage TEXT NOT NULL CHECK(coverage IN ('complete', 'omitted_over_limit')),
+        candidate_count INTEGER NOT NULL CHECK(candidate_count >= 1),
+        trace_json TEXT NOT NULL CHECK(length(CAST(trace_json AS BLOB)) <= 4096)
+    );
+    CREATE TABLE source_candidate_traces (
+        observation_id TEXT NOT NULL REFERENCES source_observations(observation_id),
+        trace_id TEXT NOT NULL REFERENCES candidate_disposition_traces(trace_id),
+        PRIMARY KEY(observation_id, trace_id)
+    );
+    CREATE INDEX ix_source_candidate_traces_trace ON source_candidate_traces(trace_id);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -884,6 +899,24 @@ def _validate_legacy_projections(connection: sqlite3.Connection) -> None:
                 read_legacy_json(raw, read)
 
 
+def _validate_candidate_disposition_traces(connection: sqlite3.Connection) -> None:
+    for trace_id, coverage, candidate_count, raw in connection.execute(
+        "SELECT trace_id, coverage, candidate_count, trace_json FROM candidate_disposition_traces"
+    ):
+        trace = CandidateDispositionTrace.model_validate_json(raw)
+        if (trace.trace_id, trace.coverage, trace.candidate_count) != (
+            trace_id,
+            coverage,
+            candidate_count,
+        ):
+            raise ValueError("candidate trace columns differ from the recorded identity")
+    if (
+        connection.execute("PRAGMA foreign_key_check(source_candidate_traces)").fetchone()
+        is not None
+    ):
+        raise ValueError("candidate trace link has a broken reference")
+
+
 class SqliteBillRepository:
     """`BillRepository` on one sqlite3 connection; JSON columns hold pydantic dumps."""
 
@@ -972,6 +1005,7 @@ class SqliteBillRepository:
             for number, migration in enumerate(MIGRATIONS[version:], start=version + 1):
                 scratch.executescript(f"BEGIN;{migration}PRAGMA user_version = {number};COMMIT;")
             _validate_legacy_projections(scratch)
+            _validate_candidate_disposition_traces(scratch)
         finally:
             scratch.close()
         tables = [
@@ -1516,6 +1550,62 @@ class SqliteBillRepository:
             for row in self._conn.execute(
                 "SELECT * FROM source_observations WHERE term=? AND number=? ORDER BY rowid",
                 (term, number),
+            )
+        ]
+
+    def save_candidate_disposition_trace(
+        self, observation_id: str, trace: CandidateDispositionTrace
+    ) -> None:
+        trace = CandidateDispositionTrace.model_validate_json(
+            trace.model_dump_json(exclude_defaults=True)
+        )
+        with self.atomic():
+            if self.get_source_observation(observation_id) is None:
+                raise ValueError("a candidate trace requires a recorded source observation")
+            self._conn.execute(
+                "INSERT INTO candidate_disposition_traces"
+                " (trace_id, coverage, candidate_count, trace_json) VALUES (?, ?, ?, ?)"
+                " ON CONFLICT DO NOTHING",
+                (
+                    trace.trace_id,
+                    trace.coverage,
+                    trace.candidate_count,
+                    trace.model_dump_json(exclude_defaults=True),
+                ),
+            )
+            if self.get_candidate_disposition_trace(trace.trace_id) != trace:
+                raise ValueError("an immutable candidate trace cannot be replaced")
+            self._conn.execute(
+                "INSERT INTO source_candidate_traces (observation_id, trace_id) VALUES (?, ?)"
+                " ON CONFLICT DO NOTHING",
+                (observation_id, trace.trace_id),
+            )
+
+    def get_candidate_disposition_trace(self, trace_id: str) -> CandidateDispositionTrace | None:
+        row = self._conn.execute(
+            "SELECT * FROM candidate_disposition_traces WHERE trace_id=?", (trace_id,)
+        ).fetchone()
+        return self._candidate_disposition_trace(row) if row else None
+
+    @staticmethod
+    def _candidate_disposition_trace(row: sqlite3.Row) -> CandidateDispositionTrace:
+        trace = CandidateDispositionTrace.model_validate_json(row["trace_json"])
+        if (trace.trace_id, trace.coverage, trace.candidate_count) != tuple(
+            row[key] for key in ("trace_id", "coverage", "candidate_count")
+        ):
+            raise ValueError("candidate trace columns differ from the recorded identity")
+        return trace
+
+    def list_candidate_disposition_traces(
+        self, observation_id: str
+    ) -> list[CandidateDispositionTrace]:
+        return [
+            self._candidate_disposition_trace(row)
+            for row in self._conn.execute(
+                "SELECT t.* FROM source_candidate_traces AS link"
+                " JOIN candidate_disposition_traces AS t ON t.trace_id=link.trace_id"
+                " WHERE link.observation_id=? ORDER BY t.trace_id",
+                (observation_id,),
             )
         ]
 

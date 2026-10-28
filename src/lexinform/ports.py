@@ -25,6 +25,7 @@ from lexinform.models import (
     BillContext,
     BillStatus,
     BillSubmission,
+    CandidateDispositionTrace,
     ChangeContext,
     ChangeReviewRecord,
     ChannelPost,
@@ -703,6 +704,18 @@ class BillRepository(Protocol):
     def get_source_observation(self, observation_id: str) -> SourceObservation | None: ...
 
     def list_source_observations(self, term: int, number: str) -> list[SourceObservation]: ...
+
+    def save_candidate_disposition_trace(
+        self, observation_id: str, trace: CandidateDispositionTrace
+    ) -> None: ...
+
+    def get_candidate_disposition_trace(
+        self, trace_id: str
+    ) -> CandidateDispositionTrace | None: ...
+
+    def list_candidate_disposition_traces(
+        self, observation_id: str
+    ) -> list[CandidateDispositionTrace]: ...
 
     def save_content_snapshot(self, snapshot: ContentSnapshot) -> None: ...
 

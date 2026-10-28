@@ -1,0 +1,421 @@
+{
+  "baseline": "d73accc0bfbda91eff80c4745529fd6465490b16",
+  "corpus": {
+    "baseline_commit": "d73accc0bfbda91eff80c4745529fd6465490b16",
+    "cached": {
+      "cases": 4276,
+      "max_trace_bytes": 4051,
+      "missing_inputs": 1383,
+      "overflow_cases": [
+        "12294859/11",
+        "12294859/2",
+        "12294859/4",
+        "12294859/7",
+        "12294859/8",
+        "12294859/9",
+        "12311506/11",
+        "12311506/13",
+        "12321497/10",
+        "12321497/9",
+        "12321500/11",
+        "12326400/2",
+        "12336306/6",
+        "12337400/6",
+        "12383101/6",
+        "12383852/10",
+        "12383852/9",
+        "12384151/6",
+        "12384254/2",
+        "12384254/3",
+        "12384504/10",
+        "12384504/6",
+        "12384504/9",
+        "12385409/6",
+        "12386961/10",
+        "12386961/9",
+        "12387406/9",
+        "12389705/10",
+        "12389705/9",
+        "12390454/9",
+        "12390757/6",
+        "12392400/10",
+        "12392400/9",
+        "12392701/6",
+        "12393102/10",
+        "12393102/9",
+        "12394351/6",
+        "12396003/10",
+        "12396003/9",
+        "12398651/10",
+        "12398651/9",
+        "12400351/6",
+        "12401602/10",
+        "12401602/9",
+        "12402550/2",
+        "12402550/3"
+      ],
+      "projects": 825,
+      "source_outcomes_urls_text_selections_io_exact": true,
+      "trace_coverage": {
+        "complete": 1698,
+        "omitted_over_limit": 46,
+        "suppressed_routine": 2327
+      }
+    },
+    "controlled_io": {
+      "cases": 85,
+      "outcomes_exact": true
+    },
+    "corpus_index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "limitations": [
+      "Cached RCL downloads return document-ID stubs, not raw physical SHA or legal completeness evidence.",
+      "1383 missing cached inputs remain explicit exclusions; two raw RCL multipart cases have complete local files.",
+      "Prepared model text is checked on bounded strata, without a provider request or paid call.",
+      "The 60 mutations test existing package/version sensitivity, not new legal labels."
+    ],
+    "meaningful_mutations": 60,
+    "model_preparation": {
+      "cases": 14,
+      "text_inputs_exact": true
+    },
+    "old_state_compatibility": {
+      "empty": {
+        "gzip_bytes": 134,
+        "sql_bytes": 675,
+        "sqlite_bytes": 24576
+      },
+      "old55": {
+        "gzip_bytes": 214,
+        "sql_bytes": 675,
+        "sqlite_bytes": 24576
+      },
+      "populated57": {
+        "gzip_bytes": 129,
+        "sql_bytes": 675,
+        "sqlite_bytes": 24576
+      },
+      "populated58": {
+        "gzip_bytes": 214,
+        "sql_bytes": 675,
+        "sqlite_bytes": 24576
+      }
+    },
+    "raw_rcl": {
+      "all_selection_part_sha_equal_raw_body_sha": true,
+      "cases": 2,
+      "selected_text_selection_io_exact": true
+    },
+    "status": "passed",
+    "trace_storage": {
+      "cases_with_trace": 1744,
+      "coverage": {
+        "complete": 1698,
+        "omitted_over_limit": 46,
+        "suppressed_routine": 2327
+      },
+      "gzip_delta": 465424,
+      "restore_roundtrip_byte_exact": true,
+      "sql_delta": 2617914,
+      "suppressed_routine": 2327,
+      "writer_repeat_byte_exact": true
+    }
+  },
+  "earlier_interrupted_full_not_acceptance": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 1295
+  },
+  "evidence": {
+    "out/corpus/j137/accept.py": {
+      "bytes": 6730,
+      "sha256": "086c586534b64b9a57bf8d849e23c43804ea0d2d855cfedaccbec4686f18dbd6"
+    },
+    "out/corpus/j137/acceptance.json": {
+      "bytes": 68680,
+      "sha256": "88b33d4f59db532f8aa2b5cf3f2d46129cc50c096d0312901f33f38b75d385ae"
+    },
+    "out/corpus/j137/compatibility/report.json": {
+      "bytes": 1839,
+      "sha256": "62ed5881d8e775f6ed0837788a548652dcb1583715798575c893d41c04e0d92f"
+    },
+    "out/corpus/j137/compatibility/source-manifest.json": {
+      "bytes": 36835,
+      "sha256": "268026ff606cfcf324b9eedaa1e300cd9e8c1a2762716477e2223ad98186bedf"
+    },
+    "out/corpus/j137/docs.log": {
+      "bytes": 266,
+      "sha256": "cc71246617d05bb3e2a23b1bdc76601df5e8dd9019ab2617e6ccecaf45ba72f8"
+    },
+    "out/corpus/j137/focused.xml": {
+      "bytes": 24287,
+      "sha256": "f46426bd5d226a4385cf7d6060e91a3c13ab8c86327c7862a7d5cfb90f4acf18"
+    },
+    "out/corpus/j137/format.log": {
+      "bytes": 25,
+      "sha256": "bd431a73c7665b7593b93aa39395a3be17ab0ec06c877c0e7d2602925e847fb3"
+    },
+    "out/corpus/j137/freeze.json": {
+      "bytes": 71812,
+      "sha256": "5d644b400eda1a8d303e38d312c70e130caa9340b040a8fbf28caac5986a414e"
+    },
+    "out/corpus/j137/frozen-source.json": {
+      "bytes": 64600,
+      "sha256": "20822a35ae82cad380df990f08caf2e743660cbb5adffbf9e26e67a7ab2e2b13"
+    },
+    "out/corpus/j137/full-before-size-policy.xml": {
+      "bytes": 217850,
+      "sha256": "4f139522df2d19e000cda560c8aa802855dd8469708f054cb4f7821acd6d0dab"
+    },
+    "out/corpus/j137/full.xml": {
+      "bytes": 967249,
+      "sha256": "3e167d16f43252db6d1b9b784112c724095903683a36e677ffbaa758f07e6d2e"
+    },
+    "out/corpus/j137/local-http.xml": {
+      "bytes": 3413,
+      "sha256": "b2725d4c0c3da5bc897d65dd2d1202c2104c18f7e576ca25c2e06d2390d5ee95"
+    },
+    "out/corpus/j137/mypy.log": {
+      "bytes": 45,
+      "sha256": "e3c5e65652f55cbbba1f329c8ed3d38419fcbeebe565bde3b3f4a28b9bf7584e"
+    },
+    "out/corpus/j137/ruff.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "out/corpus/j137/trace-storage-anomaly.json": {
+      "bytes": 122229,
+      "sha256": "1959bad4847dbd7b742b8eae163ae194793cf185c658f74e0748068b4d41a045"
+    },
+    "out/corpus/j137/trace-storage-gate.json": {
+      "bytes": 68453,
+      "sha256": "952ca8aed4454725427d00b079a226b8a74b0846225a7cc8a8801d64d98a80f4"
+    },
+    "out/corpus/j137/trace-storage-reference.json": {
+      "bytes": 66811,
+      "sha256": "075cc15abba19de0a9171be4c8ebbf8b7b7c74d8805d9f160374ff0a1a716988"
+    },
+    "out/corpus/j137/trace-storage-selective.json": {
+      "bytes": 67176,
+      "sha256": "a5ec4c6511b3e82aca058c5a3e61a6fb49950916d20f715b135a560c08653136"
+    },
+    "out/corpus/j137/trace-storage.json": {
+      "bytes": 68370,
+      "sha256": "f3cadd747d1287f2cc46c035f84fa7d78fcdbbb2030ef1bb9e8dc692aede1f37"
+    }
+  },
+  "exclusions": [
+    "Routine successful singleton decisions remain represented by existing SourceObservation and add no trace row.",
+    "Cached RCL downloads use ID stubs; 1383 missing cache inputs are unchanged exclusions, not raw-file proof.",
+    "Raw proof covers two real multipart RCL cases; full internal archive-member dispositions remain outside this stage.",
+    "The all-historical corpus storage experiment is not a production growth forecast or an automatic backfill.",
+    "Overflow is explicit and bounded at 4 KiB; it retains universe SHA/count without pretending full dispositions.",
+    "The private analysis text facade that intentionally discards source observations does not persist a trace.",
+    "No paid/provider, Telegram, SSH, production pipeline or state-branch mutation."
+  ],
+  "focused": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 162
+  },
+  "frozen_python_and_config_files": 588,
+  "full": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 5956
+  },
+  "local_http": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 25
+  },
+  "migrations_1_through_58_exact": true,
+  "mypy_files": 534,
+  "predecessor_compatibility": {
+    "all_schema59_tables_compared": 38,
+    "baseline_commit": "d73accc0bfbda91eff80c4745529fd6465490b16",
+    "baseline_schema": 58,
+    "baseline_source_files": 172,
+    "current_schema": 59,
+    "current_source_files": 173,
+    "dump_sha256": {
+      "current": "cd24af342cb3b75b88dc8e6119413963ad2461d965d15c3b98419ea2d19589c5",
+      "current59": "cd24af342cb3b75b88dc8e6119413963ad2461d965d15c3b98419ea2d19589c5",
+      "current_roundtrip": "cd24af342cb3b75b88dc8e6119413963ad2461d965d15c3b98419ea2d19589c5",
+      "predecessor": "cd24af342cb3b75b88dc8e6119413963ad2461d965d15c3b98419ea2d19589c5",
+      "seed58": "20e11536e180d3a2a2c54bbf824a1ff2aaa068d79ff7ababe91c8795e2bf6b9c"
+    },
+    "final_source_rerun": {
+      "changed_source_files": [
+        "lexinform/models/candidate_trace.py",
+        "lexinform/services/documents.py"
+      ],
+      "previous_source_tree_sha256": "cac86769bcfabbb8b6b48d37d0254dcda07c25ce5dd20a5307a4613ae8025c99",
+      "schema59_dump_unchanged": true
+    },
+    "integrity_and_foreign_keys": "pass",
+    "network_or_provider_invocations": 0,
+    "observation_id": "source-observation-v1:2b2397b3574f4163559e806f6c3219352909bdc683558c7ac97a8f51527f9a1e",
+    "old_table_rows_compared": 7,
+    "old_tables_compared": 36,
+    "paid_result_or_batch_rows": 0,
+    "queued_due_before_after": 1,
+    "reader_methods_compared": 15,
+    "result": "pass",
+    "schema59_rows_compared": 11,
+    "source_tree_sha256": {
+      "baseline": "0e7f434f92b4ef12914d8d02c41240378460847e757397211401626365dd5ed7",
+      "current": "8268d6e47e7bc04919d9af7f35e6ecf633e4e8be4e7fa48cf584b182d1a0ffa5"
+    },
+    "trace_coverage": {
+      "candidate-trace-v1:0f13e2339e97d5fd234e9fa17ab32d717e2ef6c579af2ebdf010a8b2321418d3": "complete",
+      "candidate-trace-v1:b7277d970e6064c4aa2ad8a0292384a9be56d91050bd7f2b0bf06dcfaf424969": "omitted_over_limit"
+    },
+    "unknown_remains_unknown": true
+  },
+  "runtime_files": {
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "bytes": 206530,
+      "sha256": "33b5e89cb827dba9e7efe416a8140be8cf824554124256f12aa8b3678fac7f50"
+    },
+    "src/lexinform/models/__init__.py": {
+      "bytes": 18431,
+      "sha256": "c192b55696b721d742bb7ccfd2ad2984d5216f96e88033ff32d307a7912f929c"
+    },
+    "src/lexinform/models/candidate_trace.py": {
+      "bytes": 8286,
+      "sha256": "411b0727b13a6217555b1030a475817b32439672da686a112583508a1374070d"
+    },
+    "src/lexinform/models/document_reads.py": {
+      "bytes": 2358,
+      "sha256": "7f4a1303e0938e73eb9043a95ea576ffa8d99a21dad1069debac1f0e176c2f3a"
+    },
+    "src/lexinform/ports.py": {
+      "bytes": 45979,
+      "sha256": "82ab6587a09e3f96a8bbcdb7e6c7ec74b18cc2b998866f05c2cf6232485bf697"
+    },
+    "src/lexinform/services/analysis.py": {
+      "bytes": 140054,
+      "sha256": "a654b75a92301c764b27453becdf94100925f834fef98051eacddecb58f3b9a5"
+    },
+    "src/lexinform/services/document_history.py": {
+      "bytes": 4765,
+      "sha256": "46611da94e78a4cbd0b0c035184e47e6fdb5f9e72ea6efa38546409cd5051a37"
+    },
+    "src/lexinform/services/documents.py": {
+      "bytes": 24591,
+      "sha256": "2d8a654af30ffa9b866641a4bf70707bfcd8a02ba05ecd0a3345195d12c0118b"
+    },
+    "src/lexinform/services/text_prefilter.py": {
+      "bytes": 15386,
+      "sha256": "011eddc49c55535212705a3b724e097ec7f0011104b73596647b127998bffef9"
+    }
+  },
+  "schema": 59,
+  "scope": "Bounded shadow history of nontrivial outer URL candidate decisions; no backfill or text storage",
+  "stage": "J137",
+  "storage": {
+    "cases_with_trace": 1744,
+    "counts_after": {
+      "analysis_memo": 0,
+      "artifact_reads": 0,
+      "artifacts": 0,
+      "bills": 0,
+      "candidate_disposition_traces": 1400,
+      "commands": 0,
+      "computation_results": 0,
+      "content_snapshots": 0,
+      "content_versions": 0,
+      "delivery_alerts": 0,
+      "delivery_resolutions": 0,
+      "digest_event_links": 0,
+      "document_editions": 0,
+      "document_selections": 3139,
+      "document_work": 0,
+      "effective_rule_links": 0,
+      "extraction_results": 0,
+      "legacy_analysis_bodies": 0,
+      "legacy_result_imports": 0,
+      "legacy_result_occurrences": 0,
+      "legacy_result_values": 0,
+      "llm_batch_intents": 0,
+      "llm_batch_items": 0,
+      "llm_batches": 0,
+      "publication_content": 0,
+      "publication_sequence": 1,
+      "publications": 0,
+      "rcl_wykaz_numbers": 0,
+      "result_applicability": 0,
+      "result_applications": 0,
+      "runs": 0,
+      "selection_artifacts": 0,
+      "selection_editions": 0,
+      "selection_extractions": 0,
+      "source_candidate_traces": 1400,
+      "source_checks": 0,
+      "source_observations": 3139,
+      "status_changes": 0
+    },
+    "counts_before": {
+      "analysis_memo": 0,
+      "artifact_reads": 0,
+      "artifacts": 0,
+      "bills": 0,
+      "candidate_disposition_traces": 0,
+      "commands": 0,
+      "computation_results": 0,
+      "content_snapshots": 0,
+      "content_versions": 0,
+      "delivery_alerts": 0,
+      "delivery_resolutions": 0,
+      "digest_event_links": 0,
+      "document_editions": 0,
+      "document_selections": 3139,
+      "document_work": 0,
+      "effective_rule_links": 0,
+      "extraction_results": 0,
+      "legacy_analysis_bodies": 0,
+      "legacy_result_imports": 0,
+      "legacy_result_occurrences": 0,
+      "legacy_result_values": 0,
+      "llm_batch_intents": 0,
+      "llm_batch_items": 0,
+      "llm_batches": 0,
+      "publication_content": 0,
+      "publication_sequence": 1,
+      "publications": 0,
+      "rcl_wykaz_numbers": 0,
+      "result_applicability": 0,
+      "result_applications": 0,
+      "runs": 0,
+      "selection_artifacts": 0,
+      "selection_editions": 0,
+      "selection_extractions": 0,
+      "source_candidate_traces": 0,
+      "source_checks": 0,
+      "source_observations": 3139,
+      "status_changes": 0
+    },
+    "coverage": {
+      "complete": 1698,
+      "omitted_over_limit": 46,
+      "suppressed_routine": 2327
+    },
+    "decisions": 4071,
+    "gzip_after": 1903773,
+    "gzip_before": 1438349,
+    "gzip_delta": 465424,
+    "no_raw_bodies_or_paid_calls": true,
+    "prior_tables_exact": true,
+    "restore_roundtrip_byte_exact": true,
+    "source_sha256": "1c581b41e19e0ec5d568f81c2405a0c90a55070404f82ac2d192df1f0fb9ab55",
+    "sql_after": 15657927,
+    "sql_before": 13040013,
+    "sql_delta": 2617914,
+    "suppressed_routine": 2327,
+    "writer_repeat_byte_exact": true
+  }
+}

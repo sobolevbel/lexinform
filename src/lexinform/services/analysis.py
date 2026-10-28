@@ -1894,6 +1894,7 @@ class AnalysisService:
             self._loader.artifacts_for_selection(file.selection),
             reads=self._loader.reads_for_selection(file.selection),
             extractions=self._loader.extractions_for_selection(file.selection),
+            candidate_trace=file.candidate_trace,
         )
         try:
             return _ReviewRead(self._review_document_of(source, document, file), read)
@@ -3145,6 +3146,7 @@ class AnalysisService:
             self._loader.artifacts_for_selection(file.selection),
             reads=self._loader.reads_for_selection(file.selection),
             extractions=self._loader.extractions_for_selection(file.selection),
+            candidate_trace=file.candidate_trace,
         )
         try:
             return replace(self._load_selected(document, file, trim=trim), source_read=source)

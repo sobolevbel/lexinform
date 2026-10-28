@@ -391,6 +391,28 @@ FK parents и ссылки переживают operational cleanup. Прави�
 эквивалентность representations, supersession или paid-input identity. Полная provenance
 решения остаётся частичной; manifest не заполняет пропущенные candidate dispositions.
 
+## Outer candidate disposition trace (v59)
+
+`candidate_disposition_traces` сохраняет теневую метаисторию нетривиального выбора внешних URL:
+исходный typed запрос, порядок кандидатов, известный SHA полного прочитанного body, исход и
+причину каждой попытки. Обычный успешный одиночный кандидат с selection `selected`/`unverified`
+уже описан в source observation и не получает повторную trace. Альтернативы, восстановленные
+отказы, переполнение и заблокированные состояния сохраняются. `source_candidate_traces`
+связывает trace с source observation отдельно от
+`selection_id`; разные отвергнутые альтернативы могут привести к одному наблюдению.
+Обе записи делят транзакцию observation. Пустые новые таблицы не заполняют старые дела.
+
+JSON ограничен 4 KiB. Если полный запрос и решения не помещаются, запись имеет явное
+`omitted_over_limit`, число пропущенных dispositions и SHA полного исходного запроса без
+частичного списка. Состояние выбранной selection хранится отдельно от факта выбора URL:
+выбранный внешний файл может всё ещё ждать обязательное приложение. Поздние альтернативы
+после остановки fallback помечены `unattempted`, без притворного чтения. Ошибка построения
+только этой необязательной телеметрии не меняет прежний выбор; сохранённая запись и её FK
+проверяются при restore. Тексты, bytes и extracted blocks здесь не хранятся.
+
+Этап не фиксирует каждое решение по внутреннему члену ZIP и не выводит официальные связи
+по имени файла. Он не меняет policy, admission, model input, стоимость или raw retention.
+
 ## Editorial history после J109
 
 `content_snapshots`, `content_versions` и `publication_content` не являются operational cache

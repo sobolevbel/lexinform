@@ -6644,7 +6644,7 @@ timer. [Отфильтрованный release proof](../assets/audits/2026-10-2
 <a id="j136"></a>
 ### J136. Add the legacy-result reader bridge and checkpoint observability
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**. Baseline `1bd7d7eebf9f260678320e79c1c84c80eb01ff52`.
+Статус: **выпущен и проверен**. Baseline `1bd7d7eebf9f260678320e79c1c84c80eb01ff52`.
 Schema58 добавляет четыре пустые таблицы для exact legacy values, их мест сохранения,
 once-only import marker и optional общего raw `analysis` body. Миграция не делает inventory,
 backfill или переписывание нынешних JSON. Импорт вызывается только явно, хранит неизвестную
@@ -6693,3 +6693,63 @@ freeze586. Никаких paid/provider, Telegram, SSH, production pipeline ил
 hashes source, local QA, historical copy, native parity и predecessor compatibility.
 DA6.5 и DA1.9 остаются частичными: production import/compact writer и естественные hosted
 checkpoint latency пока не включены.
+Коммит `d73accc0bfbda91eff80c4745529fd6465490b16` прошёл [push CI](https://github.com/sobolevbel/lexinform/actions/runs/40713067276)
+и [автоматический deploy](https://github.com/sobolevbel/lexinform/actions/runs/40714475047):
+точный переход `1bd7d7eebf9f` → `d73accc0bfbd`, 45-секундный health check и активный timer.
+[Отфильтрованный release proof](../assets/audits/2026-10-28-legacy-reader-bridge/release.json)
+не содержит raw workflow logs. Systemd proof не подтверждает отправку в Telegram.
+
+<a id="j137"></a>
+### J137. Record bounded shadow dispositions of outer document candidates
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**. Baseline `d73accc0bfbda91eff80c4745529fd6465490b16`.
+Schema59 добавляет immutable content-addressed trace и отдельную many-to-many связь с
+source observation, не меняя identity самого observation/selection. `TextLoader.select_document`
+пишет нетривиальные ordered решения по внешним URL, original typed request, известные full-body SHA и
+выбранное selection state. Trace передаётся в caller-owned transaction prefilter/analysis/review;
+внутренний `_load_text` без source observation остаётся явным исключением. Значение `selected`
+для URL не объявляет весь комплект юридически допустимым: обязательное приложение может ждать.
+Текст, extracted blocks и raw bytes не добавляются. Модельный вход, admission, порядок IO и
+сам выбранный документ не меняются.
+
+Каждый JSON ≤4 KiB; при переполнении хранится `omitted_over_limit`, число не записанных решений
+и SHA полного исходного запроса вместо мнимо полного усечённого списка. После ранней остановки
+fallback остальные альтернативы — `unattempted`. Textless scan при сравнении версий —
+`unclassified`, а не `non_bill`. Ошибка только построения необязательной trace не блокирует
+прежний выбор; сохранённые trace ID/JSON/FK проверяются в scratch до замены базы при restore.
+Миграции1–58 остаются побайтно прежними. Внутренние ZIP-member dispositions и доказательство
+официальной relation пока вне этой стадии; DA4.1 остаётся частичной.
+
+Размер определяет policy capture: обычный успешный singleton с `selected`/`unverified` и
+единственным исходом `selected` уже представлен source observation и не получает отдельную
+trace. Все альтернативы, recovered failures/exclusions, blocked states и overflow сохраняются.
+Контрфактическая полная запись4071 исторических RCL решений дала+895508B gzip;
+lossless parent-reference codec сохранял покрытие, но экономил только165946B gzip и усложнял
+reader. Более узкий anomaly-only gate терял653 реальных multi-candidate сравнений.
+Выбран простой gate без повторных singleton rows; финальный actual-writer proof сохраняет
+1744 решения и исключает2327 обычных singleton successes:1400 unique traces/links,
++2617914B SQL/+465424B gzip на том же наборе parent observations. Это абсолютный
+исторический counterfactual, не прогноз роста production; backfill не выполняется, повторы
+не добавляют rows. Первый full gate остановлен намеренно до смены capture policy и не принят.
+
+На corpus825 RCL projects/4276 stage cases выбранные descriptors, text/selection hashes,
+outcomes и read/download order exact с J136;1383 missing cached inputs остались прежними,
+0 errors. Из4071 completed candidate decisions1698 complete traces,46 explicit overflow,
+2327 routine singleton suppressed; максимум compact JSON4051B. Cached downloads используют
+ID stubs и не доказывают raw identity. Два реальных multipart RCL cases сохраняют exact input
+и все9 selected part SHA соответствуют local raw body;85 IO branches,14 prepared model-text
+strata и60 meaningful date/amount/negation/scope/reference mutations exact.
+
+Четыре empty/old55/populated57/populated58 состояния мигрируют с прежними rows exact:
+SQL+675B, gzip+129–214B. Отдельный pristine J136 reader восстанавливает populated schema59
+dump byte-exact; все36 прежних таблиц, обе новые таблицы и15 reader views совпадают.
+UNKNOWN и очередь не изменены. Это синтетическая проверка совместимости, не production replay.
+Повтор записи и restore actual-writer corpus dump byte-exact.
+
+Финальная приёмка:5956 full tests без failures/errors/skips,162 focused tests,25 local HTTP,
+strict mypy534, Ruff, format522 unchanged, docs-check и `git diff --check` прошли на одном
+source/config freeze588. Прерывание первого full gate ради storage policy не является
+приёмкой. [Acceptance asset](../assets/audits/2026-10-28-candidate-dispositions/validation.json)
+связывает исходники, corpus/storage и predecessor proofs, XML и явные exclusions. Paid/provider,
+Telegram, SSH, production pipeline и state-branch mutations не выполнялись. План остаётся
+74tasks/26done/6explicitN/A/42applicable partial-open: DA4.1 этим полностью не закрыта.
