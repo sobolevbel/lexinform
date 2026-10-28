@@ -8,7 +8,6 @@ import re
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
 from pypdf import PdfReader
 
 from lexinform.adapters.doc_text import DocTextExtractor
@@ -17,27 +16,12 @@ from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.law_digest import law_digest
 from lexinform.sections import trim_print
 from tools.corpus_artifacts import digest, observation_changes, read_artifact, write_json
+from tools.corpus_manifests import RawReplayInput, RawReplayManifest
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 
 PageReader = Literal["library", "adapter"]
-
-
-class PdfReplayInput(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid")
-
-    path: str
-    sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
-    official_ids: tuple[str, ...] = Field(min_length=1)
-    cohorts: tuple[str, ...] = Field(min_length=1)
-
-
-class PdfReplayManifest(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid")
-
-    version: Literal[1]
-    index_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
-    cases: tuple[PdfReplayInput, ...] = Field(min_length=1)
-    exclusions: tuple[str, ...] = Field(min_length=1)
+PdfReplayInput = RawReplayInput
+PdfReplayManifest = RawReplayManifest
 
 
 def library_pages(data: bytes) -> dict[str, Any]:
@@ -187,6 +171,7 @@ def run(
                     result["page_manifests"][case.path] = page_manifest
             except Exception as exc:
                 result["errors"][case.path] = f"{type(exc).__name__}: {exc}"
+    result["read_inputs"] = dict(sorted(reads.initial_sha256.items()))
     result["changed_inputs"] = reads.changed_inputs()
     result["changed_code"] = before != source_fingerprints()
     if previous is not None:

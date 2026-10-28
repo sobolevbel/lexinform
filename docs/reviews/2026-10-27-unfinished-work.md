@@ -67,3 +67,30 @@ DocumentWork, две consultation review work с context и семь abandoned m
 Отсутствие сохранённого original payload также не разрешает реконструировать его по сегодняшнему Bill.
 
 Связи: [план DA8](../plans/2026-10-22-document-architecture.md#da8), [журнал J079](../plans/2026-10-22-document-architecture-progress.md#j079).
+
+
+## Возраст сохранённой работы · J122, 28 октября
+
+`tools.work_doctor` принимает optional `--observed-at` с явным часовым поясом. Без этого аргумента
+прежний отчёт не меняется. Дополнительный `work_ages` группирует nonterminal document/review
+owners по сохранённому состоянию: document waiting и review context/snapshot. Возраст считается
+в целых прошедших секундах от `DocumentWork.created_at` либо `ReviewWork.since`.
+Complete/unsupported document rows и abandoned review markers учтены отдельно; retention прежний.
+
+```sh
+uv run python -m tools.work_doctor --database /path/to/checkpointed-copy.db \
+  --output /path/to/new-work-report.json --observed-at 2026-10-28T00:43:55Z
+```
+
+Дата без timezone, отсутствующий timestamp и timestamp после observed-at не превращаются
+в нулевой возраст: причины unknown видны в каждой группе. Ошибки/пропуски owner inventory дают
+partial coverage. Отчёт не решает, включён ли purpose flag, наступил ли next_at или разрешён ли
+submit; nonterminal не означает runnable. Saved work age не выдаётся за время от официальной
+публикации либо delivery latency. Время наблюдения задаётся вызывающей стороной, source dates
+не подставляются. Doctor не меняет вход, не запускает работу и не повторяет отправку.
+
+Pinned schema55 snapshot `4f19d9bf7b8035f2239dece6098c4b06942f9414` на **2026-10-28T00:43:55Z**:
+3 document waiting / 2 review context owners, 7 abandoned markers отдельно. В этой копии пять
+возрастов известны; oldest document **628733 s**, review **1176118 s**. Это историческая копия,
+не live verdict о нынешней очереди. Default old/new reports byte-exact, SHA БД не изменился.
+Полный gate и границы — [J122](../plans/2026-10-22-document-architecture-progress.md#j122).

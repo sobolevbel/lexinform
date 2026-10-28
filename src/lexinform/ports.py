@@ -921,6 +921,10 @@ class BillRepository(Protocol):
 
     def freeze_legacy_status_edit(self, publication_id: int, delivery: DeliveryPlan) -> bool: ...
 
+    def freeze_legacy_status_reply(self, publication_id: int, delivery: DeliveryPlan) -> bool:
+        """The caller atomically creates any continuation chain and freezes its failed root."""
+        ...
+
     def list_joint_reply_candidates(
         self, channel_id: str, *, limit: int, max_attempts: int = 3
     ) -> list[Bill]:

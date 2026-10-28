@@ -17,7 +17,7 @@ from pydantic import TypeAdapter
 
 from lexinform.content_versions import content_delivery_mismatch
 from lexinform.json_storage import compact_json, storage_json
-from lexinform.legacy_delivery import legacy_status_edit
+from lexinform.legacy_delivery import legacy_status_edit, legacy_status_reply
 from lexinform.log_context import log_extra
 from lexinform.models import (
     PRE_PRINT_PREFIX,
@@ -1758,29 +1758,69 @@ class SqliteBillRepository:
         return cur.rowcount == 1
 
     def freeze_legacy_status_edit(self, publication_id: int, delivery: DeliveryPlan) -> bool:
+        return self._freeze_legacy_status_delivery(publication_id, delivery, reply=False)
+
+    def freeze_legacy_status_reply(self, publication_id: int, delivery: DeliveryPlan) -> bool:
+        return self._freeze_legacy_status_delivery(publication_id, delivery, reply=True)
+
+    def _freeze_legacy_status_delivery(
+        self, publication_id: int, delivery: DeliveryPlan, *, reply: bool
+    ) -> bool:
         row = self._conn.execute(
             "SELECT * FROM publications WHERE id = ?", (publication_id,)
         ).fetchone()
         if row is None:
             return False
         original = self._row_to_publication(row)
+        eligible = legacy_status_reply(original) if reply else legacy_status_edit(original)
         if (
-            not legacy_status_edit(original)
+            not eligible
             or not delivery.rendered_text.strip()
             or utf16_length(delivery.rendered_text) > MESSAGE_LIMIT
             or delivery.render_origin != "legacy_snapshot"
             or self.digest_owner(publication_id) is not None
             or self.digest_sources(publication_id)
+            or (
+                reply
+                and (delivery.today is None or delivery.reply_to is None or delivery.reply_to <= 0)
+            )
         ):
             return False
         saved = original.delivery
-        assert saved is not None, "legacy_status_edit requires a saved semantic edit snapshot"
-        if delivery != saved.model_copy(
-            update={"rendered_text": delivery.rendered_text, "render_origin": "legacy_snapshot"}
-        ):
+        assert saved is not None, "both legacy status predicates require a saved semantic snapshot"
+        updates: dict[str, object] = {
+            "rendered_text": delivery.rendered_text,
+            "render_origin": "legacy_snapshot",
+        }
+        expected = saved.model_copy(update=updates)
+        if reply:
+            expected = expected.model_copy(update={"today": delivery.today})
+            if saved.reply_to is None:
+                card = self.get_publication(
+                    original.term, original.number, PublicationKind.NEW_BILL, original.channel_id
+                )
+                if (
+                    card is None
+                    or card.status is not PublicationStatus.SENT
+                    or card.message_id != delivery.reply_to
+                ):
+                    return False
+                updates["reply_to"] = delivery.reply_to
+                expected = expected.model_copy(update={"reply_to": delivery.reply_to})
+            if delivery.continuation_ids:
+                if not self._legacy_reply_parts(original, delivery):
+                    return False
+                updates.update(continuation_ids=delivery.continuation_ids, held_change_ids=())
+                expected = expected.model_copy(
+                    update={"continuation_ids": delivery.continuation_ids, "held_change_ids": ()}
+                )
+        if delivery != expected:
             return False
         raw: dict[str, object] = json.loads(row["delivery_json"])
-        raw.update(rendered_text=delivery.rendered_text, render_origin="legacy_snapshot")
+        raw.update(updates)
+        if reply:
+            assert delivery.today is not None, "the reply eligibility check requires its render day"
+            raw["today"] = delivery.today.isoformat()
         changed = self._conn.execute(
             "UPDATE publications SET delivery_json = ?"
             " WHERE id = ? AND status = 'failed' AND attempts = ? AND delivery_json = ?",
@@ -1792,6 +1832,50 @@ class SqliteBillRepository:
             ),
         )
         return changed.rowcount == 1
+
+    def _legacy_reply_parts(self, original: Publication, delivery: DeliveryPlan) -> bool:
+        assert original.delivery is not None, "legacy_status_reply requires the original plan"
+        identities = delivery.continuation_ids
+        if len(set(identities)) != len(identities) or delivery.held_change_ids:
+            return False
+        parent = original.id
+        for index, identity in enumerate(identities, 2):
+            child = self.publication_by_id(identity)
+            if (
+                child is None
+                or child.kind is not PublicationKind.MESSAGE_PART
+                or child.status is not PublicationStatus.QUEUED
+                or child.attempts
+                or child.message_id is not None
+                or child.term != original.term
+                or child.number != original.number
+                or child.channel_id != original.channel_id
+                or child.ref != f"message/{original.id}/{index}"
+            ):
+                return False
+            plan = child.delivery
+            held = original.delivery.held_change_ids if index == len(identities) + 1 else ()
+            if (
+                plan is None
+                or not plan.rendered_text.strip()
+                or utf16_length(plan.rendered_text) > MESSAGE_LIMIT
+                or plan.continuation_parent != parent
+                or plan.continuation_root != original.id
+                or plan.continuation_index != index
+                or plan.continuation_ids
+                or plan.reply_to is not None
+                or plan.edit_message_id is not None
+                or plan.revision_of is not None
+                or plan.destination != "direct"
+                or plan.policy_version != "attention-v1"
+                or plan.publication_ids
+                or plan.digest_parts
+                or plan.digest_event_ids
+                or plan.held_change_ids != held
+            ):
+                return False
+            parent = identity
+        return True
 
     def get_update_publication(self, change_id: int, channel_id: str) -> Publication | None:
         row = self._conn.execute(

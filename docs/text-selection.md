@@ -122,13 +122,42 @@ legacy text. The optional `OdtBlockTextExtractor` port leaves custom legacy adap
 No stored selection, SQL, legal-role policy or provider input changes. See
 [J117](plans/2026-10-22-document-architecture-progress.md#j117) for raw/mutation coverage.
 
+`ExtractedParts.unlocated_text` records `unlocated-text-v1` for the legacy DOC and standalone
+Word XML routes. It binds the exact input SHA, projected text SHA and character count to a
+physical part; nested and duplicate archive members keep separate links. Coordinates,
+pagination, tracked changes, note origins and field origins remain explicitly unknown or
+unlocated. The route names the selected decoder path, not a successful format/completeness
+verdict; an empty projection keeps its existing losses. No source spans are inferred from
+line breaks or substring matches. Located and unlocated records cannot claim the same part.
+`include_unlocated_text=False` and the ordinary `extract_document` facade collect no such
+metadata. It is transient and changes no SQL, legal selection or provider input.
+
 `trim_print.projection` records source positions while trimming and gives generated omission
 markers no source origin. Adjacent copied pages coalesce into one range. `selection_for_input`
-uses this map only when the entire ordered part assembly or its traced trim equals the actual
-input. Other transformations keep explicit `input coverage unknown` losses and zero ranges;
-substring presence alone does not establish exact coverage. Selection policy is unchanged.
-Budget/cost-fitting trace composition and durable PreparedInput remain in
+validates an explicit composed input map against the selected assembly SHA, length and copied
+text. Without an explicit map, it recognizes the whole assembly or its traced trim; other
+transformations retain `input coverage unknown` losses and zero ranges. Source selection
+policy remains separate from input fitting; durable PreparedInput is still tracked in
 [DA5](plans/2026-10-22-document-architecture.md#da5).
+
+With an exact prepared-input projection, a normative part counts as retained only when its
+required source ranges are covered by that part's own copied ranges. The required bill view
+uses the existing trim projection and ignores generated omission markers; edge whitespace
+keeps the prior strip behavior. Adjacent/overlapping copied ranges combine for this check.
+A matching bill or annex quoted inside another part cannot replace its missing origin.
+Known omissions retain `normative_text_omitted` and downgrade selected input to unverified;
+the original normative SHA and source facts remain unchanged. Without an input map, the
+existing coarse/unknown coverage contract remains in force.
+
+`prepared_text_input` builds a transient `PreparedTextInput` for document text before provider
+assembly. It hashes the exact emitted string and ordered source part strings; copied spans
+refer to a specific part, while separators and transform markers have system origins. Without
+a supplied projection, origins stay unknown. Coordinates are explicitly legacy string offsets,
+not physical citations; an exact map does not prove document completeness. The metadata contains
+no bodies and adds no SQLite fields or runtime producer. Optional
+`tools.replay_input_coverage --prepared-manifest` verifies these manifests in mapped compare
+mode while keeping default observations unchanged. See
+[J125](plans/2026-10-22-document-architecture-progress.md#j125).
 
 Senate amendment summaries select attachments by their extracted contents. A candidate needs
 the formal resolution heading, date, subject, affirmative amendment decision, operative changes

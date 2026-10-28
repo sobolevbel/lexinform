@@ -7,6 +7,7 @@ import pytest
 from tools import replay_input_coverage
 from tools.replay_pdf_pages import PdfReplayInput, PdfReplayManifest
 
+from lexinform.models import PreparedTextInput
 from lexinform.sections import BudgetedText, TextBudget
 from lexinform.text_projection import SourcePiece, project_pieces
 from tests.conftest import FIXTURES
@@ -113,6 +114,56 @@ def test_changed_bytes_fail_even_when_the_document_still_extracts(tmp_path: Path
     result = json.loads(after.read_bytes())
     assert result["status"] == "failed"
     assert "SHA mismatch" in result["errors"]["documents/files/sample.docx"]
+
+
+def test_optional_prepared_manifests_keep_every_existing_replay_field(tmp_path: Path) -> None:
+    corpus, catalog, sha, cases, word = inputs(tmp_path)
+    before, after = tmp_path / "before.json", tmp_path / "after.json"
+    data = word.read_bytes()
+    plain = replay_input_coverage.snapshot(data, mapped=True)
+    detailed = replay_input_coverage.snapshot(data, mapped=True, prepared_manifest=True)
+    manifests = detailed.pop("prepared_inputs")
+    assert detailed == plain and len(manifests) == 8
+    for row in manifests.values():
+        manifest = PreparedTextInput.model_validate(row["manifest"])
+        assert manifest.input_id == row["input_id"] and manifest.mapping == "exact"
+        assert manifest.physical_origins == "unmapped"
+    assert replay_input_coverage.run(corpus, catalog, sha, cases, before, mode="baseline") == 0
+
+    assert (
+        replay_input_coverage.run(
+            corpus,
+            catalog,
+            sha,
+            cases,
+            after,
+            mode="compare",
+            reference=before,
+            reference_sha256=hashlib.sha256(before.read_bytes()).hexdigest(),
+            prepared_manifest=True,
+        )
+        == 0
+    )
+
+    result = json.loads(after.read_bytes())
+    assert result["status"] == "passed" and not result["errors"]
+    assert all(len(row["prepared_inputs"]) == 8 for row in result["observations"].values())
+
+
+def test_prepared_manifests_require_explicit_mapping(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="mapped replay"):
+        replay_input_coverage.snapshot(b"", mapped=False, prepared_manifest=True)
+    with pytest.raises(ValueError, match="mapped compare"):
+        replay_input_coverage.run(
+            tmp_path,
+            tmp_path / "absent",
+            "0" * 64,
+            tmp_path / "absent",
+            tmp_path / "output.json",
+            mode="baseline",
+            prepared_manifest=True,
+        )
+    assert not (tmp_path / "output.json").exists()
 
 
 def test_replay_cannot_compare_an_unpinned_reference(tmp_path: Path) -> None:

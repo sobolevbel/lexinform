@@ -17,6 +17,7 @@ from lexinform.models import Bill, PublicationStatus, StatusChange
 from lexinform.ports import BillRepository, Clock
 from lexinform.services.analysis_applications import record_analysis_application
 from lexinform.services.posting import Poster, Told
+from lexinform.services.result_applications import record_retained_review_applications
 from lexinform.services.tracking.stages import synthetic_key
 from lexinform.services.tracking_result import TrackingResult
 
@@ -38,16 +39,18 @@ class TermRollover:
             carried = self._repo.list_government_rollover_candidates(previous)
             moved = self._repo.move_government_rows(previous, current)
             for original in carried:
-                if original.analysis is None:
-                    continue
                 target = self._repo.get(current, original.number)
                 assert target is not None, "move_government_rows transfers each eligible row"
-                record_analysis_application(
-                    self._repo,
-                    target,
-                    original.analysis,
-                    now=self._clock.now(),
-                    reason="retained_result",
+                if original.analysis is not None:
+                    record_analysis_application(
+                        self._repo,
+                        target,
+                        original.analysis,
+                        now=self._clock.now(),
+                        reason="retained_result",
+                    )
+                record_retained_review_applications(
+                    self._repo, original, target, now=self._clock.now()
                 )
         if moved:
             result.rehomed += moved

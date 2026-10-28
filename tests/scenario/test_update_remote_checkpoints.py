@@ -363,7 +363,7 @@ def test_lost_final_status_part_keeps_its_audit_payload_and_effects_on_operator_
 @pytest.mark.parametrize("attempts", [0, 1])
 @pytest.mark.parametrize("long", [False, True])
 @pytest.mark.parametrize("policy", ["legacy", "attention-v1"])
-def test_attempted_status_without_html_keeps_its_legacy_callback_and_payload(
+def test_failed_status_snapshot_freezes_only_qualified_legacy_replies(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     mode: Mode,
@@ -380,7 +380,15 @@ def test_attempted_status_without_html_keeps_its_legacy_callback_and_payload(
     )
     connect(world, tmp_path)
     original = world.publisher.publish_status_update
+    original_prepared = world.publisher.publish_prepared
     observed: list[int] = []
+    prepared_calls: list[int] = []
+    frozen = legacy.model_copy(
+        update={
+            "rendered_text": world.publisher.render_delivery(row(world, case.identity)),
+            "render_origin": "legacy_snapshot",
+        }
+    )
 
     def send_legacy(
         bill: Bill, change: StatusChange, reply_to: int | None, *, with_act: bool = False
@@ -389,18 +397,45 @@ def test_attempted_status_without_html_keeps_its_legacy_callback_and_payload(
         observed.append(case.identity)
         return original(bill, change, reply_to, with_act=with_act)
 
+    def prepared(publication: Publication) -> PublishResult:
+        root_plan = plan(world, case.identity)
+        identities = (case.identity, *root_plan.continuation_ids)
+        expected_parts = world.publisher.split_message(frozen.rendered_text)
+        assert len(identities) == len(expected_parts)
+        index = identities.index(publication.id or 0)
+        expected_root = frozen.model_copy(
+            update={
+                "rendered_text": expected_parts[0],
+                "continuation_ids": root_plan.continuation_ids,
+                "held_change_ids": () if root_plan.continuation_ids else frozen.held_change_ids,
+            }
+        )
+        assert root_plan == expected_root
+        assert publication.delivery is not None, "prepared parts retain the frozen payload"
+        assert publication.delivery.rendered_text == expected_parts[index]
+        if index:
+            assert publication.delivery.reply_to == row(world, identities[index - 1]).message_id
+        prepared_calls.append(identities[index])
+        return original_prepared(publication)
+
     monkeypatch.setattr(world.publisher, "publish_status_update", send_legacy)
+    monkeypatch.setattr(world.publisher, "publish_prepared", prepared)
 
     assert send(case)
 
-    assert observed == [case.identity]
-    assert plan(world, case.identity) == legacy
+    if policy == "legacy":
+        identities = [case.identity, *plan(world, case.identity).continuation_ids]
+        assert not observed and prepared_calls == identities
+        assert all(row(world, identity).status is PublicationStatus.SENT for identity in identities)
+    else:
+        assert observed == [case.identity] and not prepared_calls
+        assert plan(world, case.identity) == legacy
     assert row(world, case.identity).attempts == attempts
 
 
 @pytest.mark.parametrize("attempts", [0, 1])
 @pytest.mark.parametrize("policy", ["legacy", "attention-v1"])
-def test_failed_long_status_drains_its_legacy_plan_without_inventing_frozen_parts(
+def test_failed_long_status_freezes_qualified_legacy_parts_without_rewriting_other_policies(
     tmp_path: Path, attempts: int, policy: str
 ) -> None:
     case = queued(long=True)
@@ -415,8 +450,17 @@ def test_failed_long_status_drains_its_legacy_plan_without_inventing_frozen_part
     world.container.delivery_service(dry_run=False).run()
 
     assert row(world, case.identity).status is PublicationStatus.SENT
-    assert plan(world, case.identity) == legacy
-    assert not legacy.rendered_text and not legacy.continuation_ids
+    if policy == "legacy":
+        saved = plan(world, case.identity)
+        assert saved.rendered_text and saved.render_origin == "legacy_snapshot"
+        assert saved.continuation_ids
+        assert all(
+            row(world, identity).status is PublicationStatus.SENT
+            for identity in saved.continuation_ids
+        )
+    else:
+        assert plan(world, case.identity) == legacy
+        assert not legacy.rendered_text and not legacy.continuation_ids
 
 
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])

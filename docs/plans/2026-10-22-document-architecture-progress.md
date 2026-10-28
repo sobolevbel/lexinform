@@ -5906,3 +5906,398 @@ reproduction, gates, common helpers, real input maps и allocation sample.
 J117 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40615914088) success: **5112 passed**,
 strict mypy **478**. [Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40616708707):
 exact COMMIT `1312184b96d2a015384dff70eaa09ed5e54a69ab`, listener up **45 s**.
+
+
+<a id="j119"></a>
+### J119. Portable ODT replay and shared raw population manifest
+
+Статус: **готово**, baseline `176c328210426e9e92ff8bc6be16dc2cb0e4cda7`.
+Development-only ODT replay заменяет одноразовый observer стандартным CLI library/adapter.
+Общий raw population model используется PDF/ODT; прежние PDF constructors и JSON сохранены.
+ODT suite сохраняет SHA текста и bindings всех найденных leaves, archive rejections и ошибки,
+проверяет XML SHA, JSON round trip, actual block/ignored paths и exact part/text binding.
+Ненулевая популяция ODT обязательна; остальные форматы явно исключены из text/legal coverage.
+
+**51 focused**, strict mypy **486**, Ruff/format green. Corpus replay: **6 natural roots /
+8 ODT leaves**, **9 synthetic derived variants**; observations exact. **17 manifests,
+1066 block coordinates, 46 ignored coordinates** проверены непосредственно в source XML.
+Ошибок, изменения code/input либо расхождений нет. Meaningful mutations уже созданы и
+зафиксированы J117; suite заново сверила те же exact bytes. Независимый legal oracle отсутствует.
+Все **160 runtime files byte-identical**, PDF snapshot function AST exact. Нет SQL, prompt,
+selection policy или production wiring изменений. Full gate выполняется.
+
+J118 [CI](https://github.com/sobolevbel/lexinform/actions/runs/40619729692) success:
+**5125 passed**, strict mypy **483**.
+[Deploy](https://github.com/sobolevbel/lexinform/actions/runs/40620532529): exact COMMIT
+`176c328210426e9e92ff8bc6be16dc2cb0e4cda7`, listener up **45 s**.
+
+Full gate: **5144 passed**, errors/failures/skips0, **612.682 s**.
+[Acceptance asset](../assets/audits/2026-10-28-odt-replay/validation.json) пинует оба cohorts,
+исходные manifests, пять meaningful mutations и test/source fingerprints.
+
+
+<a id="j120"></a>
+### J120. ODT registry and explicit input/population differences
+
+Статус: **готово**, baseline `a78670629787324465587a9c65f2061181b48fe7`.
+ODT suite использует существующий immutable run registry, code snapshots, verify и общий diff.
+Shared observation comparison применяется и в registry: missing/unknown null больше не
+сливаются. Case/catalog/index SHA входят в summary differences; payload algorithms прежние.
+PDF/Word/ODT emit фактический read_inputs map из shared guard, включая запрошенные aliases.
+
+На прежнем registry **3 false same / 1 unchanged control**. Добавлены шесть forward/reverse
+regressions и настоящий subprocess library→adapter→verify→diff для ODT. PDF/Word tests
+подтверждают actual input hashes. Strict mypy **487**, Ruff и format всех src/tests/tools green.
+Все **160 runtime files byte-identical**, три physical snapshot functions AST exact.
+Full gate выполняется; runtime/SQL/prompt/legal policy не менялись.
+
+J119 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40622533941) success:
+**5144 passed**, strict mypy **486**, docs/web green.
+[Draft PR #11](https://github.com/sobolevbel/lexinform/pull/11) содержит готовый stage;
+production deployment ещё не заявлен. Automatic approval review отклонил direct main push,
+поскольку он запускает production deployment. Запрошено явное разрешение на main/deployment;
+разработка и feature-branch pushes продолжаются, обход запрета не выполняется.
+
+Full gate: **5151 passed**, failures/errors/skips0, **599.24 s**.
+**61 focused** и real registry cycle green; 6 roots / 8 ODT manifests / 935 blocks / 37 ignored
+coordinates exact с J119. Input maps library/adapter exact: **7 paths**, включая INDEX.
+[Pinned cases](../assets/audits/2026-10-28-odt-replay/cases.json) byte-identical проверенному
+входу и включены в репозиторий. [Acceptance asset](../assets/audits/2026-10-28-corpus-registry-inputs/validation.json)
+пинует reproduction/retest, registry artifacts, gates и source fingerprints.
+
+
+<a id="j121"></a>
+### J121. Explicit unlocated DOC/XML projections and one physical-walk collector
+
+Статус: **готово**, baseline `259c97b0b802433d7e095cf7896de53613f6c105`.
+`unlocated-text-v1` связывает raw/text SHA и длину строки с physical part для DOC/standalone
+Word XML routes. Coordinates/pagination/tracked changes/fields unknown, note origins unlocated.
+Route обозначает путь decoder, не successful format/completeness verdict. Нет блоков, страниц
+или source spans, выдуманных из plain text. Missing/empty projections сохраняют прежние losses.
+JSON round trip и part/raw/text binding валидируются; located и unknown origins не совмещаются.
+Данные transient; legacy facade явно не собирает этот inventory.
+
+Внутренний `_PhysicalOrigins` объединяет requested lists одного обхода. Рекурсия не получает
+отдельный растущий список аргументов каждого формата. После нормализации carrier access и
+удаления нового metadata-only append старый `_collect` AST exact; `_extract` AST exact,
+DOC parser byte-identical. Изменены три runtime files; остальные **157 byte-identical**.
+
+**118 focused**, strict mypy **488**, Ruff/format всех src/tests/tools green.
+Corpus: все **404 .doc + 13 .xml** roots J094 inventory (**134483899 raw bytes**) и **45 controls**
+из остальных форматов/families. **462 profiles** — прежние physical/selection outcomes exact,
+input maps exact, leaf errors0. Новых manifests **414**: DOC402 / Word XML12, empty projections0.
+Это физические routes по bytes; расширения не объявляются доказательством формата.
+**9 synthetic variants** реального Word XML: wrappers и пять meaningful mutations; exact
+old/new profiles, needles сохранены, manifests9. Это не девять независимых документов.
+
+**168 native profiles**: requests/messages и все 28 tables exact, timing differences0,
+SQL/gzip delta0; source doctors errors0. Actual ODT suite passed against pinned J120 library.
+Уже принятый native baseline J117 пригоден: между J117 и J120 все runtime sources unchanged;
+его observer inputs и outcomes сохранены. Нет model calls, source refresh, publication или SQL
+migration. Full gate выполняется. Другие PDF/OOXML inputs — stratified controls, не full family
+acceptance; embedded DOC/XML вне 417 roots не объявлены полностью покрытыми.
+
+J120 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40623368145) success:
+**5151 passed**, strict mypy **487**, docs/web green. Main/deployment permission remains pending;
+готовый код сохранён в feature branch и [draft PR #11](https://github.com/sobolevbel/lexinform/pull/11).
+
+Full gate: **5169 passed**, errors/failures/skips0, **597.702 s**.
+[Acceptance asset](../assets/audits/2026-10-28-unlocated-text/validation.json) пинует source
+fingerprints, нормализацию AST, полный DOC/XML cohort, controls/mutations, native parity и
+ODT suite. Final raw/variant recheck не нашёл изменений; physical metadata остаётся transient.
+
+
+<a id="j122"></a>
+### J122. Explicit-clock age of saved nonterminal work
+
+Статус: **готово**, baseline `4f64ec7a2b30e52d1d4af12f4593b01b17ccbf93`.
+Existing read-only work doctor получает optional observed-at и body-free group ages для
+DocumentWork waiting и ReviewWork context/snapshot. Счётчик nonterminal не обещает runnable/
+enabled/due state. Terminal/abandoned markers учтены отдельно; retention/retry/apply прежние.
+Отсутствующие, naive, invalid и future timestamps остаются unknown с краткой причиной.
+Время наблюдения требует timezone; UTC/default source timestamps не синтезируются.
+
+**43 focused**, strict mypy **490**. CLI valid/naive clock, DST offsets, oldest known owner,
+unknown clocks, terminal exclusions и partial corrupted inventory проверены. Без observed-at
+нового поля нет; default report на natural schema55 копии byte-exact с прежним tool.
+**5 nonterminal owners**: document waiting3 / review context2; abandoned7 excluded. As-of
+**2026-10-28T00:43:55Z**, oldest ages **628733 / 1176118 s**. Это тот же pinned J116 state,
+не новое наблюдение live work/source latency. DB SHA сохранён:
+`66ecc58b10c3e7ba2df1d4fc89be26e018539a8f94931f0c7aeaf12205f6fe2e`.
+Все **160 runtime files byte-identical**, нет SQL/pipeline/provider/reader изменений.
+Full gate и final formatting/lint приняты ниже.
+
+J121 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40625287381) success:
+**5169 passed**, strict mypy **488**, docs/web green. Код в feature branch / draft PR #11;
+main/deployment ещё не выполнены без запрошенного отдельного разрешения.
+
+Full gate: **5185 passed**, failures/errors/skips0, **619.643 s**.
+После frozen full gate разделена одна overlong scope string: literal value и полный module AST
+exact. Повторные **43 focused**, strict mypy **490**, Ruff/format green.
+[Acceptance asset](../assets/audits/2026-10-28-work-ages/validation.json) сохраняет tested/final
+source hashes и AST proof, CLI/natural report parity, snapshot SHA и coverage limitations.
+
+
+<a id="j123"></a>
+### J123. Explicit exclusions for the deferred raw-storage profile
+
+Статус: **готово**, documentation-only follow-up к J122.
+По уже принятому пользовательскому ограничению пять blob-store задач DA2.2/2.6/2.7/2.8/2.9
+явно помечены неприменимыми при текущем профиле. Raw часть DA2.4 условна; metadata/error
+contract остаётся открытым. Не вводятся store/GC/modes и не принимается решение filesystem/S3.
+SQL restore, frozen pending inputs, result/history и retention dependencies по-прежнему
+обязательны в остальных applicable задачах. Это exclusions, не выполненная реализация.
+
+Master checklist: **74 задачи / 19 отмечены выполненными / 6 неприменимы / 49 применимых
+остаются открытыми либо частичными**. Шестая неприменимая задача — DA8.3, перенос через
+отвергнутый общий scheduler. Новых implementation completion marks нет. Human labels,
+непринятый paid A/B и natural production coverage не подменяются conditional exclusions.
+Runtime/tests/tools/config не менялись; strict docs/link/build и diff gate обязательны.
+
+
+<a id="j124"></a>
+### J124. Prepared-input completeness requires the part's own source ranges
+
+Статус: **готово**, baseline `14d7fa92975dfc9f3eafdfe5831c62ed251d6659`.
+Reproduction: закон с четырьмя evidence checks остаётся selected, хотя exact input map содержит
+только ту же строку из justification, а собственный bill range 0–0. Omission/loss отсутствуют.
+Причина — completeness спрашивала глобальный substring отдельно от уже верной source map.
+
+При known projection проверяется покрытие required ranges собственного part. Для bill/
+continuation это прежний trim map без generated markers; annex сохраняет strip-only semantics.
+Adjacent/overlapping actual ranges объединяются. Текст и source facts не переписываются,
+нормативный SHA сохраняется; selected input с известной потерей становится unverified.
+Coarse unknown-map path не усиливает своих обещаний; source selection policy version прежняя,
+поскольку не изменены file choice, edition или legal admissibility.
+
+**122 focused**, strict mypy **490**, Ruff/format green. Synthetic source-position probes:
+**20 cases**, прежние 15 false completeness verdicts исправлены, 5 positive controls сохранены;
+date/amount/negation/scope/reference needles остаются в exact input. Это fixture invariants,
+не независимая смысловая разметка. **168 native scenarios**: requests/messages/all28 tables
+exact, timing0, SQL/gzip delta0, source doctors errors0.
+
+Full gate и raw replay приняты ниже. Pinned population **5365 inputs**: RCL DOC379 / DOCX2564 /
+DOCM491 / XML13 / ZIP1803, прежние PDF114 и direct ODT1. Другие PDF/scans не входят в этот
+text-projection gate. Prior decisions проверены до commit; итоговые changed cases0.
+Изменён только один runtime module, остальные 159 unchanged.
+
+J122 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40627180662) и J123
+[PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40627393197) success:
+**5185 passed**, strict mypy **490**, docs/web green для каждого head. Main/deployment не
+выполнены; явное разрешение остаётся запрошенным, feature branch/draft PR сохранены.
+
+Full gate: **5189 passed**, failures/errors/skips0, **641.366 s**.
+Raw replay завершён: **5365 paths / 3753220922 bytes / 42920 prepared views**. Ошибок0,
+changed cases0: все prior text/law digest/input/original selection hashes, projection maps,
+coverage coordinates и profile values exact. Selection JSON byte delta0. Changed decisions
+для просмотра отсутствуют; 15 известных false-full fixture cases исправлены, 5 positive controls
+не изменены. Final input SHA/index recheck и source freeze подтверждены.
+[Acceptance asset](../assets/audits/2026-10-28-input-source-completeness/validation.json) пинует
+полную population, старые/новые profiles, replay/comparator, meaningful probes, native/gates.
+
+Readonly origin/state tip проверен во время qualification: остаётся J116 pin
+`4f19d9bf7b8035f2239dece6098c4b06942f9414`; новый natural file-family cycle не заявляется.
+
+
+<a id="j125"></a>
+### J125. Transient prepared-text identity and explicit segment origins
+
+Статус: **готово**, baseline `9964a9ab6183c805b2c37b9aaaf7623c4937dc9e`.
+`PreparedTextInput` описывает точную emitted строку хешем/длиной, source-selection identity,
+упорядоченными part hashes/roles и диапазонами. Source spans адресуются внутри конкретного
+legacy part string. Generated transform markers и part separators имеют system origin;
+без projection вход остаётся unknown даже при совпадающем тексте. Карта не обещает полноту.
+Physical/block citations, provider context/prompt/options, SQL persistence и старые paid inputs
+в этот scoped контракт не входят. Документные тела в нём отсутствуют.
+
+Общий factory проверяет declared part hash и projection identity/copied bytes, не ищет
+substring origins. Он принимает source decision до fitting; scan/fitted decisions отвергаются.
+Optional `tools.replay_input_coverage --prepared-manifest` включает manifest только в mapped
+compare; прежний default report сохраняет форму. Replay проверяет JSON/identity round trip и
+дословность каждого source span. Runtime callers, prompts, paid identity и SQLite не меняются.
+Full gate и bounded real-format pilot выполняются на frozen code; результаты ниже.
+
+J124 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40632633527) success:
+**5189 passed**, strict mypy **490**, docs/web green. Main/deployment по-прежнему ждут ранее
+запрошенного разрешения; draft PR #11 не запускает production deployment.
+
+**26 focused / 5211 full passed**, failures/errors/skips0, strict mypy **493**, Ruff/format green.
+Pilot: **29 raw inputs / 178889531 bytes**, DOC4 / DOCX4 / DOCM4 / XML4 / PDF4 / ZIP8 / ODT1.
+Size strata min/median/p90/max дополняются ODT ZIP и rejection controls. **232 exact input maps**,
+335 source и 143 generated segments; все прежние J124 profile values exact, changed cases0.
+Идентичность raw/INDEX и source freeze проверена после прогона. Compact metadata —
+455–2171 bytes на manifest, суммарно184860; это transient inventory, не измерение SQL growth.
+CLI help показывает opt-in flag; прежние 159 runtime modules byte-exact, ещё один меняет только
+exports новых моделей. Full DA5.1 остаётся открытой до physical/context/runtime integration.
+[Acceptance asset](../assets/audits/2026-10-28-prepared-text/validation.json) фиксирует population,
+source hashes, exact prior-profile comparison, round trips и gates. Strict docs/build/link green.
+
+
+<a id="j126"></a>
+### J126. Retained review receipts follow government term rollover
+
+Статус: **готово**, baseline `1f3f0d432353a09e3f3d9155495621e21725f254`.
+Воспроизведён пробел: government Bill переносится с текущим review, но new-owner application
+receipt отсутствует. Paid result, context и old-owner receipt при этом сохранены. В той же
+транзакции, что move и primary receipt, переносятся только доказанные current review targets:
+computation ID + точный source key/legacy context key должны совпасть с существующим receipt.
+Known original address сохраняется дословно. Result/request/input не rekey'ятся; missing history
+и unknown legacy не backfilled. Очереди, enable flags, retention и reader effects прежние.
+
+**83 focused**, strict mypy **494**, Ruff/format green. RCL/Wykaz, три review purposes,
+source-key/context-key variants, workers1/4, cleaned/unpruned state, restore и повторный вызов.
+Failure secondary receipt откатывает move вместе с primary receipt. Unknown result, иной target
+и отсутствие исходного receipt не создают новой history. Shared paused-act fixture теперь
+сравнивает число requests до/после, сохраняя возможность предшествующего primary batch;
+commission fixture явно включает свой batch kind, cleanup подтверждает accounting перед prune.
+Первоначальные fixture failures сохранены отдельно; runtime flags для них не ослаблялись.
+
+**12 native before/after profiles**: все requests/messages/paid results и prior application rows
+exact. Все остальные 27 SQL tables exact с исключением run phase timings; каждый профиль
+получает ровно один new-owner review receipt. Raw SQL delta **533–602 bytes**, gzip **15–108**;
+это fixture snapshots, не прогноз production storage. Integrity/FK checks и повтор после restore
+green. Other secondary scopes/name lineage остаются отдельной частью DA6.2/DA6.3.
+Full gate выполняется на frozen code; corpus text replay не требуется для этой metadata-only
+transfer, поскольку extraction/selection/normalization/provider text не менялись.
+
+J125 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40636670932) success:
+**5211 passed**, strict mypy **493**, docs/web green. Feature branch/draft PR only;
+main/deployment не выполнялись. Read-only state tip повторно сверён: тот же J116 pin
+`4f19d9bf7b8035f2239dece6098c4b06942f9414`, нового natural cycle нет.
+
+Full gate: **5227 passed**, failures/errors/skips0; final source freeze сохранён.
+[Acceptance asset](../assets/audits/2026-10-28-rollover-review-history/validation.json) пинует
+source/test hashes, 12 old/new profile pairs, all-table comparison и gate XML. Strict docs/build/
+links и diff check green. Ни один новый общий scheduler, source/backend или migration не добавлен.
+
+
+<a id="j127"></a>
+### J127. Freeze qualified failed legacy status replies before their next API attempt
+
+Статус: **готово**, baseline `a3d4689d1af5a59858178c293454da8d63fc6306`.
+На прежнем source один remote-boundary scenario падает без setup errors: перед API durable
+pending имеет semantic plan, но не точный HTML. Новый узкий writer принимает только FAILED
+legacy single status reply с положительным сохранённым reply target и без membership/continuations.
+UNKNOWN/PENDING, замена parent, уже frozen payload, другие kinds и oversized text не активируются.
+
+Shared predicate и raw-JSON/CAS writer переиспользуются с existing status edit; прежний edit
+contract сохраняет original today. Новый post сохраняет render day из Clock, как прежний live
+callback, поэтому retry спустя дни не возвращает старую дату в будущие действия. Меняются только
+HTML/origin/render day; Bill/change, reply target, flags, attempts и status остаются прежними.
+Origin `legacy_snapshot` не выдаёт новый HTML за исторический payload предыдущей попытки.
+Unknown JSON fields переживают запись; сети внутри SQL transaction нет. Existing pre-API/
+receipt checkpoints и uncertain recovery применяются без отдельной очереди/schema.
+
+**200 focused**, strict mypy **496**, Ruff/format green. Проверены pre/post API checkpoint failure,
+restore, known parent, delayed render day, immutable retry спустя 100 дней и смену formatter,
+unknown/changed fields и UTF-16 size bound; все прежние status-edit guards сохранены. Шесть
+старых callback assertions расширены на frozen send, остальные legacy/long/attention controls
+сохраняют прежний путь. Plain unknown parents/groups/multipart остаются отдельной работой.
+
+**6 native before/after profiles**: requests и actual outgoing text/parent exact. Все 28 tables
+exact после исключения только трёх новых frozen payload fields и run phase timings. HTML SHA
+равен реальному outgoing SHA; day 7→12 сентября совпадает с прежним callback после пяти дней.
+Fixture SQL delta **920–1427 bytes**, gzip **92–367**; это не production forecast.
+Actual previous source archive прочитал новый payload: **6/6 old-reader** и **6/6 new-reader**,
+по одному fake API call, exact remote pending/receipt, без render или повторной отправки.
+Full gate выполняется на frozen code; extraction/selection/legal text/provider requests не менялись.
+
+J126 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40638246968) success:
+**5227 passed**, strict mypy **494**, docs/web green. Feature branch/draft PR only;
+main/deployment по-прежнему требуют ранее запрошенного разрешения.
+
+Full gate: **5265 passed**, failures/errors/skips0; source freeze сохранён. Все 158 остальных
+runtime files byte-exact; AST repository/migrations/row readers и posting вне narrow freeze/
+_send methods, а также остального protocol, совпадает с baseline. Schema/model shape прежние.
+[Acceptance asset](../assets/audits/2026-10-28-legacy-reply-freeze/validation.json) сохраняет
+baseline reproduction, native/compatibility pairs, raw-JSON/date guards, source hashes и gates.
+Strict docs/build/link и diff checks green. Оставшиеся legacy kinds/unknown parent/multipart/
+groups этим ограниченным контрактом не объявляются переведёнными.
+
+
+<a id="j128"></a>
+### J128. Prepare every physical part of a failed legacy status reply before retry
+
+Статус: **готово**, baseline `e27327c7c5189812ad541c1f3a85bc675bfdec16`.
+Oversized legacy callback передаёт один input в Telegram adapter и не сохраняет физические части.
+Новый путь использует существующий `freeze_parts` с узким persist callback: children + failed root
+записываются в одной транзакции до pre-API checkpoint. Новая physical identity относится к
+будущей попытке, не реконструирует прошлую отправку. Parent каждого child появляется только из
+receipt предыдущей части и checkpoint'ится до его API. Held changes принадлежат leaf; act notice
+не завершается до всей цепочки. Не вводится новая очередь или схема.
+
+Repository проверяет ownership/ref/index/parent/root, queued0/no-receipt state, bounded payloads и
+точную leaf membership. Существующая часть с иным payload/shape не усыновляется; CAS failure
+откатывает подготовку всех children. Root сохраняет known target/flags/source/attempts; render day следует Clock по контракту J127.
+Default `freeze_parts` callers используют прежний writer; новый callback имеет одного явного
+legacy caller. Body rendering и HTML splitter прежние, других source/admissibility решений нет.
+
+**227 focused**, strict mypy **498**, Ruff/format green. Remote pre/post root/leaf faults,
+restore, definite failed continuation, unknown + audited confirmation, actual next reply parent,
+foreign/attempted/malformed child, orphan collision и atomic root-write failure проверены.
+При UNKNOWN ничего не auto-resend'ится; confirm не вызывает API и разрешает только следующий child.
+Reproduction на actual prior source падает без setup errors из-за отсутствия prepared part calls.
+
+**168 default native profiles**: requests/messages/all28 tables exact, phase timing differences0,
+SQL/gzip delta0, source doctors errors0. Отдельные **6 oversized legacy profiles** получают по
+3 bounded API inputs, exact canonical splitter output прежнего полного текста; model requests,
+paid results, root IDs/receipts/attempts/parent и logical outcomes сохранены. Старый fake принимал
+oversized input; успешная старая доставка в настоящий Telegram не утверждается. Fixture SQL
+increment **23048–24393 bytes**, gzip **1176–1333**, в этих шести fixtures с компактными continuation snapshots; raw files в SQL не добавлялись.
+
+Previous source и новый reader прошли по **6 chains / 18 physical calls**, exact frozen payloads /
+remote receipts и duplicate calls0, без render. Production acceptance этим не заменяется;
+unknown groups, missing root parents и oversized legacy edits остаются отдельной работой.
+Full gate выполняется на frozen code; corpus text replay для delivery-only change не требуется.
+
+J127 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40640458709) success:
+**5265 passed**, strict mypy **496**, docs/web green. Feature branch/draft PR only;
+main/deployment по-прежнему требуют ранее запрошенного разрешения.
+
+Full gate: **5301 passed**, failures/errors/skips0; final source freeze сохранён. Migrations,
+row readers и прочий repository/posting/protocol AST вне scoped methods exact. Остальные
+158 runtime files byte-exact. Дополнительный reader actual main `176c328` прошёл **6 chains /
+18 calls**, exact pending/payload/parent/receipt и duplicate0; uv.lock byte-exact. Это source +
+current dependencies на fake transport, не полный binary/deployment rollback test.
+[Acceptance asset](../assets/audits/2026-10-28-legacy-reply-parts/validation.json) пинует source,
+faults/ownership/CAS cases, native/default/compatibility evidence и gates. Strict docs/build/
+link и diff checks green. Backend и natural production acceptance не расширялись.
+
+
+<a id="j129"></a>
+### J129. Capture a missing legacy reply parent from its current owner's sent card
+
+Статус: **готово**, baseline `89f8858199ad429c4d43ef9cf00a15874d9fab8b`.
+Legacy failed reply без сохранённого parent теперь фиксирует адрес только из SENT-card того же
+publication owner/channel. Writer повторно проверяет receipt внутри atomic freeze. Уже заданный
+parent не меняется. Missing/unconfirmed/foreign/mismatched receipt не допускает API и не расходует
+attempt; это не отказ по содержанию закона. Исторический parent не реконструируется.
+
+Lookup использует текущие term/number/channel публикации: после government rollover immutable
+Bill snapshot остаётся в прежнем term, а карточка и текущий owner уже переехали. RCL scenario
+проверяет новый адрес без перезаписи сохранённого Bill. Короткие и multipart replies используют
+тот же J127/J128 freeze/checkpoint protocol; новые поля/schema/backend не вводятся.
+
+**250 focused / 5324 full passed**, failures/errors/skips0, strict mypy **500**, Ruff/format green.
+Wrong term/number/channel, pending/unknown/failed/absent card, invalid/mismatched message ID и
+retarget уже сохранённого parent отвергаются. Remote pre-API checks подтверждают новый known
+parent; source failure воспроизведён на prior source без setup errors.
+
+**168 default native profiles**: requests/messages/all28 tables exact, timing differences0,
+SQL/gzip delta0, source doctors errors0. **12 missing-parent profiles**: actual old callback
+parent совпадает с новым stored parent; canonical texts/model requests/paid results/root
+IDs/receipts/attempts/logical outcomes сохранены. Long before-input принимал только fake transport;
+успешная старая Telegram-доставка не утверждается. Fixture SQL delta **919–24392 bytes**,
+gzip **93–1335**: сюда входят HTML и новые physical parts, не только integer parent.
+
+Шесть final writer SQL snapshots **побайтно совпадают с J128**. Поэтому prior/new/main reader
+acceptance J128 переиспользуется по exact SHA; новая natural/reader acceptance не приписывается.
+Остальные159 runtime files unchanged; AST repository/migrations/readers/posting вне scoped
+methods и pure legacy policy вне reply eligibility exact. Final source freeze сохранён.
+[Acceptance asset](../assets/audits/2026-10-28-legacy-reply-parent/validation.json) пинует sources,
+reproduction, owner guards, profiles, exact snapshot reuse и gates. Corpus text replay не нужен:
+extraction/selection/normalization/provider inputs не менялись. Strict docs/build/link и diff green.
+
+J128 [PR CI](https://github.com/sobolevbel/lexinform/actions/runs/40643892565) success:
+**5301 passed**, strict mypy **498**, docs/web green. Feature branch/draft PR only;
+main/deployment по-прежнему требуют ранее запрошенного разрешения.

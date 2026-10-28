@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from lexinform.models import ResultApplication, ResultApplicationTarget
+from lexinform.models import Bill, ResultApplication, ResultApplicationTarget
 from lexinform.ports import BillRepository
 
 
@@ -31,3 +31,31 @@ def record_secondary_application(
             created_at=now,
         )
     )
+
+
+def record_retained_review_applications(
+    repo: BillRepository, original: Bill, target: Bill, *, now: datetime
+) -> None:
+    """Carry known current review receipts inside the government-row transfer transaction."""
+    retained: set[tuple[str, str]] = set()
+    for record in (
+        target.consultation_review,
+        target.commission_review,
+        target.act_application_review,
+    ):
+        if record is None or record.computation_id is None:
+            continue
+        key = record.source_key or record.context.memo_key(original.term)
+        retained.add((record.computation_id, f"{record.review.purpose}/{key}"))
+    if not retained:
+        return
+    for receipt in repo.list_result_applications(original.term, original.number):
+        address = receipt.target
+        if (
+            address is not None
+            and address.kind == "document_review"
+            and (receipt.result_id, address.ref) in retained
+        ):
+            record_secondary_application(
+                repo, target.term, target.number, receipt.result_id, target=address, now=now
+            )

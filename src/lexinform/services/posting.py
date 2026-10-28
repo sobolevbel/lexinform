@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 
 from lexinform.attention import assess_attention
 from lexinform.delivery_schedule import daily_schedule, sitting_is_close
-from lexinform.legacy_delivery import legacy_status_edit
+from lexinform.legacy_delivery import legacy_status_edit, legacy_status_reply
 from lexinform.models import (
     AgendaItem,
     Bill,
@@ -1576,15 +1576,57 @@ class Poster:
 
     def _send(self, pub_id: int, bill: Bill, send: Send) -> int | None:
         pub = self._repo.publication_by_id(pub_id)
-        if pub is not None and legacy_status_edit(pub):
-            text = self._publisher.render_delivery(pub)
-            if utf16_length(text) <= MESSAGE_LIMIT:
-                assert pub.delivery is not None, "legacy_status_edit requires its saved plan"
-                plan = pub.delivery.model_copy(
+        legacy_reply = pub is not None and legacy_status_reply(pub)
+        if pub is not None and (legacy_status_edit(pub) or legacy_reply):
+            assert pub.delivery is not None, "both legacy status predicates require a saved plan"
+            candidate = pub
+            if legacy_reply:
+                reply_to = pub.delivery.reply_to
+                if reply_to is None:
+                    parent = self._repo.get_publication(
+                        pub.term, pub.number, PublicationKind.NEW_BILL, pub.channel_id
+                    )
+                    if (
+                        parent is None
+                        or parent.status is not PublicationStatus.SENT
+                        or parent.message_id is None
+                        or parent.message_id <= 0
+                    ):
+                        raise ValueError("The legacy reply lacks its sent card receipt")
+                    reply_to = parent.message_id
+                today = self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date()
+                candidate = pub.model_copy(
+                    update={
+                        "delivery": pub.delivery.model_copy(
+                            update={"today": today, "reply_to": reply_to}
+                        )
+                    }
+                )
+            text = self._publisher.render_delivery(candidate)
+            if legacy_reply:
+                assert candidate.delivery is not None, "the reply candidate retains its plan"
+                candidate = candidate.model_copy(
+                    update={
+                        "delivery": candidate.delivery.model_copy(
+                            update={"render_origin": "legacy_snapshot"}
+                        )
+                    }
+                )
+                pub = freeze_parts(
+                    self._repo,
+                    self._clock,
+                    self._publisher,
+                    candidate,
+                    text,
+                    persist=self._repo.freeze_legacy_status_reply,
+                )
+            elif utf16_length(text) <= MESSAGE_LIMIT:
+                assert candidate.delivery is not None, "the candidate retains the saved plan"
+                plan = candidate.delivery.model_copy(
                     update={"rendered_text": text, "render_origin": "legacy_snapshot"}
                 )
                 if not self._repo.freeze_legacy_status_edit(pub_id, plan):
-                    raise ValueError("Cannot freeze the legacy status edit snapshot")
+                    raise ValueError("Cannot freeze the legacy status snapshot")
                 pub = pub.model_copy(update={"delivery": plan})
         if (
             pub is not None

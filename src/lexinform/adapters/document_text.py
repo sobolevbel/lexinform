@@ -35,6 +35,8 @@ from lexinform.models.documents import (
     OdtTextExtraction,
     PdfPartExtraction,
     PdfTextExtraction,
+    UnlocatedPartExtraction,
+    UnlocatedTextExtraction,
     WordBodyState,
     WordDetailedExtraction,
     WordPartExtraction,
@@ -655,6 +657,15 @@ _OLE_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"  # OLE2 container: legacy .doc 
 _ZIP_MAGIC = b"PK\x03\x04"  # .docx, .docm, .odt and plain archives all start like this
 
 
+@dataclass(frozen=True)
+class _PhysicalOrigins:
+    pdf_pages: list[PdfPartExtraction] | None
+    word_blocks: list[WordPartExtraction] | None
+    word_notes: list[WordPartNoteExtraction] | None
+    odt_blocks: list[OdtPartExtraction] | None
+    unlocated_text: list[UnlocatedPartExtraction] | None
+
+
 class DocumentTextExtractor:
     """Route physical formats and retain the legacy package-selection facade."""
 
@@ -687,36 +698,28 @@ class DocumentTextExtractor:
         include_word_blocks: bool = True,
         include_word_notes: bool = True,
         include_odt_blocks: bool = True,
+        include_unlocated_text: bool = True,
     ) -> ExtractedParts:
         parts: list[DocumentPart] = []
         rejected: list[str] = []
-        pdf_pages: list[PdfPartExtraction] | None = [] if include_pdf_pages else None
-        word_blocks: list[WordPartExtraction] | None = [] if include_word_blocks else None
+        origins = _PhysicalOrigins(
+            pdf_pages=[] if include_pdf_pages else None,
+            word_blocks=[] if include_word_blocks else None,
+            word_notes=[] if include_word_notes and include_word_blocks else None,
+            odt_blocks=[] if include_odt_blocks else None,
+            unlocated_text=[] if include_unlocated_text else None,
+        )
         digest = hashlib.sha256(data).hexdigest()
-        word_notes: list[WordPartNoteExtraction] | None = (
-            [] if include_word_notes and include_word_blocks else None
-        )
-        odt_blocks: list[OdtPartExtraction] | None = [] if include_odt_blocks else None
-        self._collect(
-            data,
-            (),
-            digest,
-            parts,
-            rejected,
-            [0, 0],
-            pdf_pages,
-            word_blocks,
-            word_notes,
-            odt_blocks,
-        )
+        self._collect(data, (), digest, parts, rejected, [0, 0], origins)
         return ExtractedParts(
             input_sha256=digest,
             parts=tuple(parts),
             rejected=tuple(rejected),
-            pdf_pages=tuple(pdf_pages or ()),
-            word_blocks=tuple(word_blocks or ()),
-            word_notes=tuple(word_notes or ()),
-            odt_blocks=tuple(odt_blocks or ()),
+            pdf_pages=tuple(origins.pdf_pages or ()),
+            word_blocks=tuple(origins.word_blocks or ()),
+            word_notes=tuple(origins.word_notes or ()),
+            odt_blocks=tuple(origins.odt_blocks or ()),
+            unlocated_text=tuple(origins.unlocated_text or ()),
         )
 
     def extract_document(self, data: bytes) -> ExtractedDocument:
@@ -726,6 +729,7 @@ class DocumentTextExtractor:
             include_word_blocks=False,
             include_word_notes=False,
             include_odt_blocks=False,
+            include_unlocated_text=False,
         )
         return select_document_parts(extracted, max_part_chars=self._max_part_chars)
 
@@ -780,10 +784,7 @@ class DocumentTextExtractor:
         parts: list[DocumentPart],
         rejected: list[str],
         usage: list[int],
-        pdf_pages: list[PdfPartExtraction] | None,
-        word_blocks: list[WordPartExtraction] | None,
-        word_notes: list[WordPartNoteExtraction] | None,
-        odt_blocks: list[OdtPartExtraction] | None,
+        origins: _PhysicalOrigins,
     ) -> None:
         pdf_result: PdfTextExtraction | None = None
         word_result: WordTextExtraction | None = None
@@ -794,11 +795,13 @@ class DocumentTextExtractor:
                 with zipfile.ZipFile(io.BytesIO(data)) as archive:
                     names = set(archive.namelist())
                     if "word/document.xml" in names:
-                        if word_notes is not None and isinstance(self._docx, WordNoteTextExtractor):
+                        if origins.word_notes is not None and isinstance(
+                            self._docx, WordNoteTextExtractor
+                        ):
                             detailed = self._docx.extract_with_notes(data)
                             word_result, note_result = detailed.body, detailed.notes
                             text = word_result.legacy_text
-                        elif word_blocks is not None and isinstance(
+                        elif origins.word_blocks is not None and isinstance(
                             self._docx, WordBlockTextExtractor
                         ):
                             word_result = self._docx.extract_blocks(data)
@@ -806,7 +809,9 @@ class DocumentTextExtractor:
                         else:
                             text = self._docx.extract(data)
                     elif "content.xml" in names and "mimetype" in names:
-                        if odt_blocks is not None and isinstance(self._odt, OdtBlockTextExtractor):
+                        if origins.odt_blocks is not None and isinstance(
+                            self._odt, OdtBlockTextExtractor
+                        ):
                             odt_result = self._odt.extract_odt_blocks(data)
                             text = odt_result.legacy_text
                         else:
@@ -837,10 +842,7 @@ class DocumentTextExtractor:
                                     parts,
                                     rejected,
                                     usage,
-                                    pdf_pages,
-                                    word_blocks,
-                                    word_notes,
-                                    odt_blocks,
+                                    origins,
                                 )
                             except Exception as exc:
                                 rejected.append(
@@ -852,7 +854,7 @@ class DocumentTextExtractor:
                 return
         else:
             text, pdf_result = self._extract(
-                data, depth=len(members), include_pdf_pages=pdf_pages is not None
+                data, depth=len(members), include_pdf_pages=origins.pdf_pages is not None
             )
         pages = self.pages(data)
         losses = tuple(
@@ -879,18 +881,39 @@ class DocumentTextExtractor:
             )
         )
 
-        if pdf_pages is not None and pdf_result is not None:
-            pdf_pages.append(PdfPartExtraction(part_index=len(parts) - 1, extraction=pdf_result))
-        if word_blocks is not None and word_result is not None:
-            word_blocks.append(
+        if origins.pdf_pages is not None and pdf_result is not None:
+            origins.pdf_pages.append(
+                PdfPartExtraction(part_index=len(parts) - 1, extraction=pdf_result)
+            )
+        if origins.word_blocks is not None and word_result is not None:
+            origins.word_blocks.append(
                 WordPartExtraction(part_index=len(parts) - 1, extraction=word_result)
             )
-        if word_notes is not None and note_result is not None:
-            word_notes.append(
+        if origins.word_notes is not None and note_result is not None:
+            origins.word_notes.append(
                 WordPartNoteExtraction(part_index=len(parts) - 1, extraction=note_result)
             )
-        if odt_blocks is not None and odt_result is not None:
-            odt_blocks.append(OdtPartExtraction(part_index=len(parts) - 1, extraction=odt_result))
+        if origins.odt_blocks is not None and odt_result is not None:
+            origins.odt_blocks.append(
+                OdtPartExtraction(part_index=len(parts) - 1, extraction=odt_result)
+            )
+        if origins.unlocated_text is not None:
+            head = data[:1024]
+            route: Literal["doc", "word_xml"] | None = (
+                "doc" if head.startswith(_OLE_MAGIC) else "word_xml" if _is_word_xml(head) else None
+            )
+            if route is not None:
+                origins.unlocated_text.append(
+                    UnlocatedPartExtraction(
+                        part_index=len(parts) - 1,
+                        extraction=UnlocatedTextExtraction(
+                            route=route,
+                            input_sha256=parts[-1].sha256,
+                            text_sha256=parts[-1].text_sha256,
+                            text_chars=len(text),
+                        ),
+                    )
+                )
 
 
 def _member_rank(info: ZipInfo) -> tuple[int, int]:
