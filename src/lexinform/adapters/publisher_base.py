@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from datetime import date
 
 from lexinform.adapters.telegram_format import MessageFormatter
+from lexinform.direct_delivery import DIRECT_ROOTS, direct_root_plan, validate_reader_contract
 from lexinform.models import (
     DIGEST_NUMBER,
     Bill,
@@ -27,6 +28,7 @@ from lexinform.models import (
     UpdateNews,
 )
 from lexinform.ports import PublishResult
+from lexinform.sitting_delivery import SITTING_KINDS, validate_sitting_contract
 
 
 @dataclass(frozen=True)
@@ -150,7 +152,56 @@ class RenderingPublisher(ABC):
         return self._deliver(Outgoing(PublicationKind.STATUS_UPDATE, None, text))
 
     def render_delivery(self, publication: Publication) -> str:
+        if (
+            publication.kind in DIRECT_ROOTS
+            and publication.delivery is not None
+            and publication.delivery.render_origin == "legacy_snapshot"
+            and not publication.delivery.rendered_text
+            and not publication.delivery.publication_ids
+            and not publication.delivery.group_text
+        ):
+            return self._render_direct_delivery(publication)
         return self._formatter.delivery_preview(publication)
+
+    def _render_direct_delivery(self, publication: Publication) -> str:
+        plan = direct_root_plan(publication)
+        bill = Bill.model_validate_json(plan.bill_json)
+        kind = publication.kind
+        info = PrintInfo.model_validate_json(plan.print_json) if plan.print_json else None
+        if kind is PublicationKind.NEW_BILL:
+            return self._formatter.new_bill(bill, info).text
+        if kind is PublicationKind.JOINT_BILL:
+            assert plan.primary_json is not None, "direct_root_plan requires the primary bill"
+            return self._formatter.joint_bill(
+                bill, Bill.model_validate_json(plan.primary_json), info
+            ).text
+        if kind is PublicationKind.STATUS_UPDATE:
+            return self._formatter.status_update(
+                bill,
+                StatusChange.model_validate_json(plan.change_json),
+                today=plan.today if plan.edit_message_id is not None else None,
+                with_act=plan.with_act,
+            ).text
+        if kind is PublicationKind.ACT_PUBLISHED:
+            return self._formatter.act_published(bill).text
+        if kind is PublicationKind.CONSULTATION_RESULTS:
+            return self._formatter.consultation_results(bill).text
+        assert plan.today is not None, "direct_root_plan requires the reminder's original date"
+        if kind is PublicationKind.IN_FORCE:
+            return self._formatter.in_force(bill, today=plan.today).text
+        if kind is PublicationKind.CONSULTATION_DEADLINE:
+            return self._formatter.consultation_deadline(bill, today=plan.today).text
+        if kind is PublicationKind.DECISION_DEADLINE:
+            assert plan.phase_json is not None, "direct_root_plan requires the saved phase"
+            return self._formatter.decision_deadline(
+                bill, Phase.model_validate_json(plan.phase_json), today=plan.today
+            ).text
+        assert kind is PublicationKind.HEARING_DEADLINE and plan.hearing_json is not None, (
+            "direct_root_plan admits only the six supported notice callbacks"
+        )
+        return self._formatter.hearing_deadline(
+            bill, Stage.model_validate_json(plan.hearing_json), today=plan.today
+        ).text
 
     def split_message(self, text: str) -> tuple[str, ...]:
         return self._formatter.message_parts(text)
@@ -165,6 +216,9 @@ class RenderingPublisher(ABC):
         return self._formatter.digest_layout(digest, draft=draft)
 
     def publish_prepared(self, publication: Publication) -> PublishResult:
+        validate_reader_contract(publication)
+        if publication.kind in SITTING_KINDS:
+            validate_sitting_contract(publication)
         plan = publication.delivery
         assert plan is not None and (plan.rendered_text or plan.group_text)
         bill = Bill.model_validate_json(plan.bill_json) if plan.bill_json else None
@@ -172,7 +226,7 @@ class RenderingPublisher(ABC):
             PublicationKind.AGENDA if plan.sitting_group else publication.kind,
             None if plan.sitting_group else bill,
             plan.group_text or plan.rendered_text,
-            None if plan.sitting_group else plan.reply_to,
+            None if publication.kind in SITTING_KINDS else plan.reply_to,
             Phase.model_validate_json(plan.phase_json).key
             if publication.kind is PublicationKind.DECISION_DEADLINE and plan.phase_json
             else "",

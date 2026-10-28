@@ -22,6 +22,7 @@ from typer.testing import CliRunner
 
 from lexinform.adapters.github_inbox import GitHubError
 from lexinform.adapters.sqlite_repo import SCHEMA_VERSION, SqliteBillRepository
+from lexinform.adapters.telegram import TelegramBotClient
 from lexinform.cli import app
 from lexinform.models import (
     SILENCED_BY_OPERATOR,
@@ -39,7 +40,7 @@ from lexinform.models import (
 )
 from lexinform.services.lookup import BillNotFoundError
 from tests.conftest import FIXTURES
-from tests.fakes import make_analysis
+from tests.fakes import MonotonicClock, make_analysis
 from tests.harness import rcl_project, submission, summary, wykaz_entry
 
 runner = CliRunner()
@@ -922,6 +923,68 @@ def test_preview_renders_the_card_into_the_console_without_sending_anything(
     assert result.exit_code == 0, result.output
     assert "📜 <b>Новый законопроект — druk nr 3039</b>" in result.output
     assert "chars]" in result.output
+
+
+@pytest.mark.local_http
+@pytest.mark.parametrize(
+    "destination", ["same_numeric", "reader_alias", "test_alias", "unresolved"]
+)
+def test_preview_to_checks_real_wiring_before_an_unrecorded_test_send(
+    db: Path, api: str, monkeypatch: pytest.MonkeyPatch, destination: str
+) -> None:
+    requests: list[tuple[str, dict[str, object]]] = []
+    allowed = destination == "test_alias"
+    target = "-00100123" if destination == "same_numeric" else "@destination"
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        payload: dict[str, object] = json.loads(request.content)
+        method = request.url.path.rsplit("/", 1)[-1]
+        requests.append((method, payload))
+        if method == "getChat":
+            identity: object = (
+                None if destination == "unresolved" else -100999 if allowed else -100123
+            )
+            return httpx.Response(200, json={"ok": True, "result": {"id": identity}})
+        assert method == "sendMessage" and allowed, "rejected destinations have no send API call"
+        return httpx.Response(200, json={"ok": True, "result": {"message_id": 777}})
+
+    clock = MonotonicClock()
+    client = TelegramBotClient(
+        "TOKEN", transport=httpx.MockTransport(handle), sleep=clock.sleep, monotonic=clock.monotonic
+    )
+
+    def make_client(token: str, *, base_url: str) -> TelegramBotClient:
+        return client
+
+    monkeypatch.setattr("lexinform.container.TelegramBotClient", make_client)
+    env = {
+        **_env(db, api=api),
+        "LEXINFORM_TELEGRAM_CHANNEL_ID": "-100123",
+        "LEXINFORM_TELEGRAM_BOT_TOKEN": "TOKEN",
+    }
+    expected = runner.invoke(app, ["preview", "3039"], env=env)
+    repo = SqliteBillRepository(db)
+    before = tuple(line for line in repo.dump().splitlines() if 'INTO "publications"' in line)
+    repo.close()
+
+    result = runner.invoke(app, ["preview", "3039", "--to", target], env=env)
+
+    assert result.exit_code == (0 if allowed else 1), result.output
+    sends = [payload for method, payload in requests if method == "sendMessage"]
+    if allowed:
+        assert len(sends) == 1 and sends[0]["chat_id"] == "-100999"
+        assert sends[0]["text"] == expected.output.rsplit("\n[", 1)[0].removesuffix("\n")
+        assert "reply_parameters" not in sends[0] and "reply_markup" not in sends[0]
+    else:
+        assert not sends
+        assert "reader channel" in result.output or "no valid chat id" in result.output
+    if destination == "same_numeric":
+        assert not requests
+    repo = SqliteBillRepository(db)
+    assert (
+        tuple(line for line in repo.dump().splitlines() if 'INTO "publications"' in line) == before
+    )
+    repo.close()
 
 
 def test_version_is_printed_without_building_anything(tmp_path: Path) -> None:

@@ -4,8 +4,8 @@ import pytest
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import DeliveryPlan, Publication, PublicationKind, PublicationStatus
-from tests.unit.test_legacy_status_edit_freeze import frozen
-from tests.unit.test_legacy_status_reply_freeze import saved_reply
+from tests.unit.test_direct_status_edit_freeze import frozen
+from tests.unit.test_direct_status_reply_freeze import saved_reply
 
 
 def reply_parts(
@@ -52,7 +52,7 @@ def test_qualified_legacy_root_can_freeze_the_exact_new_chain_with_release_on_it
     with repo.atomic():
         root, delivery, identities = reply_parts(repo)
         assert root.id is not None, "reply_parts persists its root"
-        assert repo.freeze_legacy_status_reply(root.id, delivery)
+        assert repo.freeze_direct_delivery(root, delivery)
 
     stored = repo.publication_by_id(root.id)
     assert stored == root.model_copy(update={"delivery": delivery})
@@ -78,7 +78,7 @@ def test_legacy_root_refuses_an_incomplete_or_ambiguous_chain(
         delivery = delivery.model_copy(update={"held_change_ids": (17,)})
     before = repo.dump()
 
-    assert not repo.freeze_legacy_status_reply(root.id, delivery)
+    assert not repo.freeze_direct_delivery(root, delivery)
 
     assert repo.dump() == before
 
@@ -111,7 +111,7 @@ def test_legacy_root_refuses_changed_child_addresses_payloads_or_release_members
     assert repo.replace_unattempted_delivery(identities[-1], leaf.delivery.model_copy(update=patch))
     before = repo.dump()
 
-    assert not repo.freeze_legacy_status_reply(root.id, delivery)
+    assert not repo.freeze_direct_delivery(root, delivery)
 
     assert repo.dump() == before
 
@@ -134,7 +134,7 @@ def test_legacy_root_never_adopts_an_already_attempted_physical_part(
     repo.mark_publication(identities[0], status)
     before = repo.dump()
 
-    assert not repo.freeze_legacy_status_reply(root.id, delivery)
+    assert not repo.freeze_direct_delivery(root, delivery)
 
     assert repo.dump() == before
 
@@ -156,6 +156,6 @@ def test_legacy_root_cannot_adopt_another_operations_physical_part(
     assert root.id is not None, "reply_parts persists its root"
     before = repo.dump()
 
-    assert not repo.freeze_legacy_status_reply(root.id, delivery)
+    assert not repo.freeze_direct_delivery(root, delivery)
 
     assert repo.dump() == before

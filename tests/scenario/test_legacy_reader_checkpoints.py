@@ -55,7 +55,7 @@ def test_legacy_status_edit_freezes_its_saved_context_at_the_remote_boundary(
 
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])
 @pytest.mark.parametrize("boundary", [1, 2])
-def test_attempted_sitting_checkpoints_preserve_exact_or_unsupported_legacy_context(
+def test_attempted_sitting_checkpoints_freeze_saved_context_in_every_mode(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: Mode, boundary: int
 ) -> None:
     world, identities = queued_world("sittings", mode)
@@ -80,16 +80,12 @@ def test_attempted_sitting_checkpoints_preserve_exact_or_unsupported_legacy_cont
     assert all(
         saved.delivery is not None
         and current.delivery
-        == (
-            saved.delivery.model_copy(
-                update={
-                    "sitting_group": identities,
-                    "group_text": text,
-                    "render_origin": "legacy_snapshot",
-                }
-            )
-            if mode != "on"
-            else saved.delivery
+        == saved.delivery.model_copy(
+            update={
+                "sitting_group": identities,
+                "group_text": text,
+                "render_origin": "legacy_snapshot",
+            }
         )
         and saved.attempts == current.attempts
         for saved, current in zip(original, rows(world, identities), strict=True)

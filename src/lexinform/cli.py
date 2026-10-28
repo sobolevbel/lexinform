@@ -530,7 +530,12 @@ def preview(
             raise typer.Exit(code=2)
         print_info = c.gateway.get_print(bill.term, bill.number) if bill.has_process else None
         if to:
-            result = c.telegram_publisher(channel_id=to).publish_new_bill(bill, print_info)
+            try:
+                publisher = c.preview_publisher(to, dry_run=False)
+                result = publisher.publish_new_bill(bill, print_info)
+            except (ValueError, RuntimeError) as exc:
+                typer.echo(str(exc), err=True)
+                raise typer.Exit(code=1) from None
             typer.echo(f"sent message {result.message_id}")
         else:
             rendered = c.formatter.new_bill(bill, print_info)

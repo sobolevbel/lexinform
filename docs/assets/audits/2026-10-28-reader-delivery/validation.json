@@ -1,0 +1,930 @@
+{
+  "baseline": "563b3e805db04301ae18f5d5e9555d51a9639b19",
+  "checkpoint_focused": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 55
+  },
+  "compatibility": {
+    "all_tables_preserved_on_restore": [
+      32
+    ],
+    "artifacts": {
+      "observers": [
+        "prepare.py",
+        "read.py",
+        "compare.py"
+      ],
+      "prepared_sql": "12 *-pending/failed/unknown.sql snapshots",
+      "reports": [
+        "current-report.json",
+        "predecessor563-report.json",
+        "predecessor0f-report.json"
+      ],
+      "reproduce": "Run prepare.py with current frozen runtime, read.py under each explicit PYTHONPATH, then compare.py"
+    },
+    "cases_per_runtime": 12,
+    "constraints": [
+      "All socket connections blocked before importing runtime code.",
+      "All reader sends use local MockTransport; no Telegram/provider/production calls.",
+      "No source/test/doc edits; only ignored out/corpus/j135/compatibility QA artifacts."
+    ],
+    "delivery_JSON_preserved": "Exact except legitimate previously unresolved continuation.reply_to binds to its saved continuation_parent message receipt; binding exact across all runtimes.",
+    "failed_future_parts_per_runtime": 8,
+    "final_direct_delivery_sha256": "9ac25e9ae337abb445d1763f2a63cb60571ec437dd78118103308a4df8e77aa4",
+    "final_posting_sha256": "237855a26e26f2f5f6020df3c8e60d2bc23aa71c1ee506cc5d64ecf86efce48b",
+    "limitations": [
+      "This is a bounded reader/storage compatibility proof, not a general schema-57 downgrade guarantee or permission to roll back the writer.",
+      "Preview guard is code-only and creates no persistent state marker. Predecessor preview methods again allow explicitly requested unrecorded sends to the reader channel; the guard does not survive reverting the code.",
+      "No provider submission, real Telegram behavior, complete pipeline, retention matrix, or production snapshot was tested."
+    ],
+    "model_sha256": {
+      "current": "6c0793844b2205a1574d5dbbc19577e31fe2f7774be482102cf2db206a436ed2",
+      "predecessor0f": "6c0793844b2205a1574d5dbbc19577e31fe2f7774be482102cf2db206a436ed2",
+      "predecessor563": "6c0793844b2205a1574d5dbbc19577e31fe2f7774be482102cf2db206a436ed2"
+    },
+    "old_new_original_API_bodies_and_parents_exact": true,
+    "pending_unknown_automatic_sends": 0,
+    "repeat_extra_sends": 0,
+    "runtime_import_roots_verified": true,
+    "runtime_versions": [
+      "current frozen candidate",
+      "563b3e805db04301ae18f5d5e9555d51a9639b19",
+      "0f archive /private/tmp/lexinform-j133-root-baseline"
+    ],
+    "schema": 57,
+    "source_freeze_files": 581,
+    "source_freeze_sha256": "33126fb57221ad88ff00c313e0b86f4696c9095c869e9dd07439bfafae7f2c2b",
+    "source_freeze_unchanged": true,
+    "status": "passed"
+  },
+  "digest_independent": {
+    "cases": [
+      {
+        "case": "none",
+        "new_minus_old_gzip_bytes": 263,
+        "new_minus_old_sql_bytes": 1383,
+        "old_new_api_calls": [
+          1,
+          1
+        ],
+        "old_new_final_gzip_bytes": [
+          9329,
+          9592
+        ],
+        "old_new_final_sql_bytes": [
+          57846,
+          59229
+        ],
+        "prior_publication_changed_fields": {
+          "2": [
+            "status",
+            "message_id",
+            "sent_at"
+          ],
+          "3": [
+            "status",
+            "message_id",
+            "sent_at",
+            "delivery_json"
+          ]
+        },
+        "prior_tables_exact": 30,
+        "restore_and_repeat_exact": true,
+        "unchanged_tables_after": 28
+      },
+      {
+        "case": "blank",
+        "new_minus_old_gzip_bytes": 187,
+        "new_minus_old_sql_bytes": 504,
+        "old_new_api_calls": [
+          1,
+          1
+        ],
+        "old_new_final_gzip_bytes": [
+          9437,
+          9624
+        ],
+        "old_new_final_sql_bytes": [
+          58782,
+          59286
+        ],
+        "prior_publication_changed_fields": {
+          "2": [
+            "status",
+            "message_id",
+            "sent_at"
+          ],
+          "3": [
+            "status",
+            "message_id",
+            "sent_at",
+            "delivery_json"
+          ]
+        },
+        "prior_tables_exact": 30,
+        "restore_and_repeat_exact": true,
+        "unchanged_tables_after": 28
+      },
+      {
+        "case": "saved",
+        "new_minus_old_gzip_bytes": 8,
+        "new_minus_old_sql_bytes": 9,
+        "old_new_api_calls": [
+          1,
+          1
+        ],
+        "old_new_final_gzip_bytes": [
+          9499,
+          9507
+        ],
+        "old_new_final_sql_bytes": [
+          58890,
+          58899
+        ],
+        "prior_publication_changed_fields": {
+          "3": [
+            "status",
+            "message_id",
+            "sent_at",
+            "delivery_json"
+          ]
+        },
+        "prior_tables_exact": 30,
+        "restore_and_repeat_exact": true,
+        "unchanged_tables_after": 29
+      },
+      {
+        "case": "oversized_unknown",
+        "new_minus_old_gzip_bytes": 112,
+        "new_minus_old_sql_bytes": 4239,
+        "old_new_api_calls": [
+          1,
+          5
+        ],
+        "old_new_final_gzip_bytes": [
+          10481,
+          10593
+        ],
+        "old_new_final_sql_bytes": [
+          87027,
+          91266
+        ],
+        "prior_publication_changed_fields": {
+          "3": [
+            "status",
+            "message_id",
+            "sent_at",
+            "delivery_json"
+          ]
+        },
+        "prior_tables_exact": 30,
+        "restore_and_repeat_exact": true,
+        "unchanged_tables_after": 28
+      },
+      {
+        "case": "oversized_known",
+        "new_minus_old_gzip_bytes": 115,
+        "new_minus_old_sql_bytes": 4239,
+        "old_new_api_calls": [
+          1,
+          5
+        ],
+        "old_new_final_gzip_bytes": [
+          10486,
+          10601
+        ],
+        "old_new_final_sql_bytes": [
+          87094,
+          91333
+        ],
+        "prior_publication_changed_fields": {
+          "2": [
+            "status",
+            "message_id",
+            "sent_at"
+          ],
+          "3": [
+            "status",
+            "message_id",
+            "sent_at",
+            "delivery_json"
+          ]
+        },
+        "prior_tables_exact": 30,
+        "restore_and_repeat_exact": true,
+        "unchanged_tables_after": 27
+      }
+    ],
+    "exclusions": [
+      "No provider, paid, production, or real Telegram calls",
+      "Existing 273 focused tests, 513-file mypy, and Ruff evidence reused; not rerun",
+      "Recovery/CAS exhaustive cases reuse frozen gate tests; observer adds original Telegram API bodies and all-table snapshots"
+    ],
+    "focused_gate_junit": [
+      {
+        "errors": "0",
+        "failures": "0",
+        "hostname": "Yauhenis-MacBook-Pro.local",
+        "name": "pytest",
+        "skipped": "0",
+        "tests": "273",
+        "time": "44.247",
+        "timestamp": "2026-10-28T13:00:25.407181+01:00"
+      }
+    ],
+    "frozen_source_and_evidence_hashes_verified": true,
+    "reproduction": [
+      "Run observe.py baseline2 with cwd/PYTHONPATH baseline archive and observe.py candidate2 with cwd/PYTHONPATH frozen candidate, using fresh output suffixes if rerunning.",
+      "UV_PROJECT_ENVIRONMENT=/private/tmp/lexinform-pr9-review/.venv UV_CACHE_DIR=/private/tmp/lexinform-pr9-uv-cache TIKTOKEN_CACHE_DIR=/Users/sobaleu/projects/lexinform/.cache/tiktoken uv run --no-sync --offline --frozen python observe.py VARIANT",
+      "Run compare.py after reports; report paths are fixed to baseline2/candidate2."
+    ],
+    "review": {
+      "CAS_raw_JSON_and_ownership_transaction": "reviewed; row equality, status/attempt/raw JSON CAS, children/sequence/ownership rollback, explicit source eligibility",
+      "attempt_budget": "same 3-attempt cap retained; audited retry eligibility preserved",
+      "balanced_HTML": "all saved body parts balanced; concatenated text content exact",
+      "patch_paths": 7,
+      "side_effects": "Only temporary files/local bare git remotes/fake World providers and MockTransport",
+      "unknown_and_recovery": "frozen focused gate reused: stale pending => unknown, no automatic resend; audited retry/confirm/dismiss preserve saved parts and unknown membership; no source edit"
+    },
+    "source_pins": {
+      "src/lexinform/adapters/publisher_base.py": {
+        "AST_exact": true,
+        "base728_sha256": "e78cb9dde861e5475feb1caff8bd47427058b83bce0d8f291616d0b95a4df843",
+        "baseline_sha256": "e78cb9dde861e5475feb1caff8bd47427058b83bce0d8f291616d0b95a4df843",
+        "bytes_exact": true
+      },
+      "src/lexinform/adapters/telegram.py": {
+        "AST_exact": true,
+        "base728_sha256": "6a1784e099c47a62669bfcfd9206b4bd6b7460409c562a5c50c464bf9a21e310",
+        "baseline_sha256": "6a1784e099c47a62669bfcfd9206b4bd6b7460409c562a5c50c464bf9a21e310",
+        "bytes_exact": true
+      },
+      "src/lexinform/services/digest.py": {
+        "AST_exact": true,
+        "base728_sha256": "e5ada0b9284ddfff60a66a83bda3a65edf48176bfe1c5eaabcf625279cda70e7",
+        "baseline_sha256": "e5ada0b9284ddfff60a66a83bda3a65edf48176bfe1c5eaabcf625279cda70e7",
+        "bytes_exact": true
+      }
+    },
+    "status": "passed"
+  },
+  "entrypoint_audit": {
+    "additional_malformed_shape_guard": "A prepared direct reader root with sitting_group/group_text is rejected before publisher API; a notice cannot be reclassified as a sitting roundup.",
+    "fail_open_edge_found_and_fixed": "An unclassified saved MESSAGE_PART previously selected checkpoint=None; Poster now rejects before pending or API.",
+    "frozen_reader_paths": [
+      "new and joint cards through PublishingService and publish_prepared",
+      "direct status replies/edits and six notices through Poster._send and publish_prepared",
+      "sitting roundups through saved group/physical-part plans before send_publications",
+      "card edits and continuations through saved physical parts and receipt parents",
+      "digest approvals, CLI publish and retries through saved digest parts"
+    ],
+    "guard_regression": "35 focused agent-worktree scenarios; 55 integrated checkpoint cases and 240 final direct-root/notices cases passed.",
+    "reader_destination_guard": "A real preview resolves numeric Telegram chat identities and refuses the reader channel before send; it has no publication row.",
+    "remaining_current_reader_live_render_bypass": false,
+    "scope_limit": "Finite static callgraph and local tests on the current reader surface; future producers need the same checkpoint-owner contract.",
+    "status": "passed_after_checkpoint_owner_guard",
+    "technical_channel_separate": [
+      "digest drafts and approval controls",
+      "operator acknowledgements and replies",
+      "run reports and workflow alerts"
+    ]
+  },
+  "evidence": {
+    "out/corpus/j135/accept.py": {
+      "bytes": 9152,
+      "sha256": "6a197a421cffe5b7b4a48baca81a413d4ebda28f0a23f8ba68de321fd92627da"
+    },
+    "out/corpus/j135/checkpoint-focused.xml": {
+      "bytes": 9935,
+      "sha256": "031bf2a1fa4265d4d956aeaee66bc62f46e44fadfb45a2113b0a0d56efae253a"
+    },
+    "out/corpus/j135/checkpoint-owner-handoff.json": {
+      "bytes": 1494,
+      "sha256": "ae03b266a4910e1fb718d10a09c435560c95ca3693da3f3981ef9dcd039ccafd"
+    },
+    "out/corpus/j135/checkpoint-owner.patch": {
+      "bytes": 3573,
+      "sha256": "57512b44b70d603f8d1389256e00d22a5d5c47019705996df94fb460bf249523"
+    },
+    "out/corpus/j135/checkpoint-owner.xml": {
+      "bytes": 6325,
+      "sha256": "295465385b1320a3eb3be1ca34e970b2989f9cdb1bfbefab134ba02cd3e48d64"
+    },
+    "out/corpus/j135/compare_defaults.py": {
+      "bytes": 7280,
+      "sha256": "9fc8df534a3c6573a8fd71d4eedc70c49058b98243b727195b26325cfdaaaf80"
+    },
+    "out/corpus/j135/compatibility/comparison.json": {
+      "bytes": 2520,
+      "sha256": "43af4dc3330ae5a66d49077a58eec5de95792b1b9e93692fcad34c149ea1350a"
+    },
+    "out/corpus/j135/default-parity.json": {
+      "bytes": 2545,
+      "sha256": "a0985e33ce0e3361a0efb9bf6e070d2111d016d7ddb5590411e4f3c219f66c57"
+    },
+    "out/corpus/j135/default_profiles.py": {
+      "bytes": 1305,
+      "sha256": "6413d3c145c104036ed89a6ec4807a8e08fecadc64c3d5bc90b551af2812a6c2"
+    },
+    "out/corpus/j135/digest-handoff.json": {
+      "bytes": 5045,
+      "sha256": "5c8e09a58bde9d2734ebdf4e9b302d21a371898c44002df23c3c95462219b32c"
+    },
+    "out/corpus/j135/digest-independent/comparison.json": {
+      "bytes": 6042,
+      "sha256": "0d93c7a8cf620b0d93864f6a8195ba6d32864f1c1811c1b6eef7e7952654121b"
+    },
+    "out/corpus/j135/digest-independent/observe.py": {
+      "bytes": 8046,
+      "sha256": "71906c04765b66ac19c4f02b24ea24de535a373b3c3f4792de3da8c7fba48945"
+    },
+    "out/corpus/j135/direct-handoff.json": {
+      "bytes": 6719,
+      "sha256": "de2424897b6b6480ab4abfe6c182c374fd196452cc682f6f9c93f1bc19b608ed"
+    },
+    "out/corpus/j135/docs.log": {
+      "bytes": 266,
+      "sha256": "dbf4c10b70a8ac7a9def9eaddf89572429ba2616d1797edabec70a80973e33cc"
+    },
+    "out/corpus/j135/focused-final.xml": {
+      "bytes": 98255,
+      "sha256": "b2520c018f7673e649bde3fd8c2655e920a6cac22878102b73f3e5a0ad8fa17f"
+    },
+    "out/corpus/j135/format-final.log": {
+      "bytes": 25,
+      "sha256": "1b321b3b746b1cbe4a6dd47c7a86aca1c422d300354caf681ad47ca056f3867a"
+    },
+    "out/corpus/j135/frozen-before-checkpoint-owner.json": {
+      "bytes": 63717,
+      "sha256": "b64f0cc360528e4a5d5b9d5be2809b61b8aed56e25e2618c81f01498ea617fb0"
+    },
+    "out/corpus/j135/frozen-before-group-guard.json": {
+      "bytes": 63839,
+      "sha256": "8cee5521d0f9792a9e38195ee672aa0dda2532db7deef3a6408699cfed44e794"
+    },
+    "out/corpus/j135/frozen-before-sitting-test-expectation.json": {
+      "bytes": 63839,
+      "sha256": "33126fb57221ad88ff00c313e0b86f4696c9095c869e9dd07439bfafae7f2c2b"
+    },
+    "out/corpus/j135/frozen-before-test-expectation.json": {
+      "bytes": 63717,
+      "sha256": "e5932f12323e5f7b2c7173c6d4e3740f368988017b697fdcdac494a63630277f"
+    },
+    "out/corpus/j135/frozen-before-update-group-scope.json": {
+      "bytes": 63839,
+      "sha256": "950d29689b4c185dfa96fbfbbd97d589cc9e5c88f4a0cc322293fec4317a2dd6"
+    },
+    "out/corpus/j135/frozen-final.json": {
+      "bytes": 63839,
+      "sha256": "b179af455ad6d4f0b0b4629a66a501ce1bd08d638fac957c22f81aca462329c6"
+    },
+    "out/corpus/j135/full.xml": {
+      "bytes": 952993,
+      "sha256": "7286258cd947ceccc6b95ebff63ec9d54c270a4bbc07b49838a6096d7c1d72d8"
+    },
+    "out/corpus/j135/group-guard-focused.xml": {
+      "bytes": 41527,
+      "sha256": "b4f79b5fb67e5047e8001e43bea2ebe2b0a45cac96e2c642b1f9b5ec1d2e6e4d"
+    },
+    "out/corpus/j135/integration-scope.json": {
+      "bytes": 886,
+      "sha256": "b2f146a38566199b302ba771f8d4a28ca9923ce6cec21868a13039580c0a348d"
+    },
+    "out/corpus/j135/local-http-final.xml": {
+      "bytes": 3413,
+      "sha256": "22b0f1035cbe7a27675dffcca39f7c92936c0ff068ec6dc5b3c53052b7efa6c7"
+    },
+    "out/corpus/j135/mypy-final.log": {
+      "bytes": 45,
+      "sha256": "273e2b6b87262fac28145643e25617c73176342a3c4831fa36613adbe866e7b8"
+    },
+    "out/corpus/j135/preview-handoff.json": {
+      "bytes": 4786,
+      "sha256": "f3d84805715c600d0634a18d79b0e0f3f32620e64b12bd8852b90856a42edbbb"
+    },
+    "out/corpus/j135/reader-effects-final-compare.py": {
+      "bytes": 5347,
+      "sha256": "7fd97e13e67af8f95e71d5880f97c9470309cffae3c7dff11848a0d97b7a73a5"
+    },
+    "out/corpus/j135/reader-effects-final-parity.json": {
+      "bytes": 7382,
+      "sha256": "d4777a14cf1ef09cffdefdad40b80078f6b46f52605c061dacd5e6cc2d6bbf38"
+    },
+    "out/corpus/j135/reader-effects-final.json": {
+      "bytes": 204015,
+      "sha256": "7db6fb1dfe74a2e8e737ccb9c50e60c3c3606c9c6cf46a6a6992e07c6527a333"
+    },
+    "out/corpus/j135/reader-effects-final.py": {
+      "bytes": 11404,
+      "sha256": "80cba049c4a9ee77733c61b8da3dd124c273c52dc80a7076ed09315e9aef430e"
+    },
+    "out/corpus/j135/reader-entrypoint-audit.json": {
+      "bytes": 1516,
+      "sha256": "6ab165e47dd36384772ff5da11bab03422c56748375d977d72f589b8c09e0a74"
+    },
+    "out/corpus/j135/repair.xml": {
+      "bytes": 28605,
+      "sha256": "ffdd6e3b21057eb6e46bdcd38c3ff0f0f796f32c76c8b79faabe31092cc9684d"
+    },
+    "out/corpus/j135/ruff-final.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "out/corpus/j135/scope.py": {
+      "bytes": 1714,
+      "sha256": "410efa37a5a1724659f3c88295a372567c1e23d5e13f31593a8c4ae3bead7500"
+    },
+    "out/corpus/j135/sitting-handoff.json": {
+      "bytes": 5861,
+      "sha256": "d4c3610c7d654c9ec2e402c33901434f13a1ac56a085111127d96385c0a091b1"
+    },
+    "out/corpus/j135/sitting-test-repair.xml": {
+      "bytes": 2965,
+      "sha256": "5de5d2eadea1304a0f22a52a00af83edbca17e317ba2fff21f2b0519b7992a60"
+    },
+    "out/corpus/j135/unchanged-runtime-qualification-reuse.json": {
+      "bytes": 1878,
+      "sha256": "ad189efea6c0ce8dab0dfb2fd6a36d510bd52d80cdfe673217812fe6a26de8d4"
+    },
+    "out/corpus/j135/unit-ahead.xml": {
+      "bytes": 425682,
+      "sha256": "cade293d86ab85895d0d97314e2e92c4219ba8771647f64ff3a7d7c21461e94d"
+    },
+    "out/corpus/j135/update-group-scope-focused.xml": {
+      "bytes": 25753,
+      "sha256": "8bd4945e9947f25f52799d3f4a794518fa3a4924cfc66176d463fbc2d94f4338"
+    }
+  },
+  "exclusions": [
+    "No live Telegram, provider, SSH or production state processing.",
+    "MockTransport and fake publisher effects prove local contracts, not functional Telegram delivery.",
+    "No raw corpus replay: extraction, selection and provider-input modules are unchanged.",
+    "Preview guard is executable code; old code rollback reopens that explicit preview path.",
+    "No historical HTML is inferred for already-attempted rows that lacked it."
+  ],
+  "focused": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 463
+  },
+  "frozen_source_and_tests": 581,
+  "full": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 5857
+  },
+  "group_guard_focused": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 240
+  },
+  "integration": {
+    "baseline": "563b3e805db04301ae18f5d5e9555d51a9639b19",
+    "changed_tracked_src": [
+      "src/lexinform/adapters/publisher_base.py",
+      "src/lexinform/adapters/sqlite_repo.py",
+      "src/lexinform/adapters/telegram.py",
+      "src/lexinform/cli.py",
+      "src/lexinform/container.py",
+      "src/lexinform/legacy_delivery.py",
+      "src/lexinform/ports.py",
+      "src/lexinform/services/commands.py",
+      "src/lexinform/services/digest.py",
+      "src/lexinform/services/posting.py",
+      "src/lexinform/services/publishing.py"
+    ],
+    "migrations_1_through_57_exact": true,
+    "new_src": [
+      "src/lexinform/direct_delivery.py",
+      "src/lexinform/services/direct_delivery.py",
+      "src/lexinform/sitting_delivery.py"
+    ],
+    "parser_extraction_selection_provider_input_modules_outside_changed_set_exact": true,
+    "schema": 57,
+    "tracked_src_files": 167,
+    "unchanged_tracked_src_files": 156
+  },
+  "local_http": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 25
+  },
+  "migrations_1_through_57_exact": true,
+  "mypy_files": 528,
+  "native": {
+    "all_32_prior_tables_exact_except_recorded_phase_timing": true,
+    "all_profiles_except_metadata_and_storage_metrics_exact": true,
+    "all_requests_and_rendered_messages_exact": true,
+    "all_six_profile_imports_pinned_to_primary": true,
+    "all_source_doctors_without_errors": true,
+    "baseline_head_sha": "563b3e805db04301ae18f5d5e9555d51a9639b19",
+    "baseline_input_files": 174,
+    "baseline_manifest_sha256": "51f77cb923e93882d8b8d55fc542d906d443af7863f29fcc10a1effbca2dc044",
+    "binding_views": 2,
+    "cases": 168,
+    "command_outcome_seconds_excluded_from_semantic_comparison": true,
+    "content_snapshot_views": 6,
+    "content_version_views": 2,
+    "edition_link_views": 8,
+    "edition_views": 8,
+    "gzip_delta": {
+      "max": 0,
+      "min": 0
+    },
+    "limits": [
+      "FakeWorld/native fixture profiles only, no real provider or Telegram calls.",
+      "Phase timings and command outcome seconds are excluded as recorded above; all reader payloads, targets and SQL rows otherwise compare exactly."
+    ],
+    "link_views": 190,
+    "network_attempts": 0,
+    "network_blocked": true,
+    "observer_source_sha256": {
+      "/Users/sobaleu/projects/lexinform/out/corpus/j135/compare_defaults.py": "9fc8df534a3c6573a8fd71d4eedc70c49058b98243b727195b26325cfdaaaf80",
+      "out/corpus/j071/projection_profile.py": "ea04424fccc679b9ad4569ec7c07cc348a73d92c29bb0aa38cb7e517d7e50f0e",
+      "out/corpus/j073/handoff_profile.py": "da7b56044237f17489d0f702a868114232c9e88a2503168ca77f2a37065365ce",
+      "out/corpus/j074/reuse_profile.py": "6a75655ca4b5fd1e4b81e049ba5e7b4a23b7ed3b75656e3584bf9563b05d3962",
+      "out/corpus/j077/explanation_profile.py": "cff55fa57bfe4df9bfe142c92c697e751720b09512c63733052c3e70632cf777",
+      "out/corpus/j078/primary_profile.py": "f11f5516c55b6993a27029c92fde9eb32075666b7c24a969a3dd849e0cad191e",
+      "out/corpus/j090/admission_flows.py": "185e456e5bc01bf5c69efe1e12c6dd15138a5d547f3e5231fbeaad386dac6801",
+      "out/corpus/j135/default_profiles.py": "6413d3c145c104036ed89a6ec4807a8e08fecadc64c3d5bc90b551af2812a6c2",
+      "out/corpus/j135/native_guard.py": "25fc875178ce8a723879e2d45d72b6d8948b8681e65b6316b1585482bea58d1a"
+    },
+    "only_new_tables": [],
+    "paid_calls": 0,
+    "prior_metadata_rows_preserved": true,
+    "read_receipt_views": 270,
+    "selection_views": 198,
+    "source_freeze_files": 581,
+    "source_freeze_sha256": "33126fb57221ad88ff00c313e0b86f4696c9095c869e9dd07439bfafae7f2c2b",
+    "source_freeze_unchanged": true,
+    "source_observation_views": 210,
+    "sql_delta": {
+      "max": 0,
+      "min": 0
+    },
+    "timing_differences": []
+  },
+  "other_tracked_source_exact": 156,
+  "reader_effects": {
+    "all_new_physical_parts_fit_4096_utf16": true,
+    "all_reader_callbacks_prepared_with_prior_html_or_group_freeze": true,
+    "baseline_reproduces_original_accepted_32_cases": true,
+    "cases": 32,
+    "cases_checked": [
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "new_bill-no-delivery",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "new_bill-snapshot",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "joint_bill-no-delivery",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "joint_bill-snapshot",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 3,
+        "before_effects": 1,
+        "case": "oversized-legacy-status-edit",
+        "contract": "old complete HTML split into frozen edit and receipt-parent continuations"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "attempted-attention-status-reply",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "attempted-attention-status-edit",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "act_published-legacy-parent-none",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "act_published-attempted-attention",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "consultation_results-legacy-parent-none",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "consultation_results-attempted-attention",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "in_force-legacy-parent-none",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "in_force-attempted-attention",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "consultation_deadline-legacy-parent-none",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "consultation_deadline-attempted-attention",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "decision_deadline-legacy-parent-none",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "decision_deadline-attempted-attention",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "hearing_deadline-legacy-parent-none",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "hearing_deadline-attempted-attention",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "attempted-ungrouped-sitting-off",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "attempted-ungrouped-sitting-on",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "attempted-legacy-digest-none",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 1,
+        "before_effects": 1,
+        "case": "attempted-legacy-digest-no-parts",
+        "contract": "authoritative saved digest HTML replaces former rebuilt text"
+      },
+      {
+        "after_effects": 0,
+        "before_effects": 0,
+        "case": "in_force-malformed-today",
+        "contract": "exact zero reader effects; malformed reminder now raises explicit ValueError"
+      },
+      {
+        "after_effects": 0,
+        "before_effects": 0,
+        "case": "decision_deadline-malformed-phase_json",
+        "contract": "exact zero reader effects; malformed reminder now raises explicit ValueError"
+      },
+      {
+        "after_effects": 0,
+        "before_effects": 0,
+        "case": "hearing_deadline-malformed-hearing_json",
+        "contract": "exact zero reader effects; malformed reminder now raises explicit ValueError"
+      },
+      {
+        "after_effects": 0,
+        "before_effects": 1,
+        "case": "malformed-notice-edit-flag-ignored-by-send-callback",
+        "contract": "malformed payload rejected before reader callback"
+      },
+      {
+        "after_effects": 0,
+        "before_effects": 1,
+        "case": "malformed-unrendered-message-part",
+        "contract": "malformed payload rejected before reader callback"
+      },
+      {
+        "after_effects": 4,
+        "before_effects": 0,
+        "case": "oversized-single-sitting-failed-off",
+        "contract": "previously unsent oversized sitting becomes frozen four-part receipt chain"
+      },
+      {
+        "after_effects": 4,
+        "before_effects": 0,
+        "case": "oversized-single-sitting-failed-on",
+        "contract": "previously unsent oversized sitting becomes frozen four-part receipt chain"
+      },
+      {
+        "after_effects": 0,
+        "before_effects": 0,
+        "case": "unsupported-act_application",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      },
+      {
+        "after_effects": 0,
+        "before_effects": 0,
+        "case": "unsupported-effective_rules",
+        "contract": "exact prior reader bytes and actual parent/edit targets"
+      }
+    ],
+    "comparison_sha256": "7fd97e13e67af8f95e71d5880f97c9470309cffae3c7dff11848a0d97b7a73a5",
+    "exact_effect_parity_cases": 26,
+    "explicit_malformed_error_changes_without_reader_effect": 3,
+    "freeze_sha256": "33126fb57221ad88ff00c313e0b86f4696c9095c869e9dd07439bfafae7f2c2b",
+    "import_modules_pinned": 182,
+    "intentional_effect_changes": 6,
+    "limits": [
+      "FakeWorld publisher effects only; no real Telegram API or provider calls.",
+      "Snapshot covers original publication rows at callbacks; remote restore and full continuation-row durability remain separate root-owned test evidence.",
+      "Saved malformed reminders now propagate explicit errors from direct calls; reader effects remain zero."
+    ],
+    "network_blocked": true,
+    "network_calls": 0,
+    "observer_sha256": "80cba049c4a9ee77733c61b8da3dd124c273c52dc80a7076ed09315e9aef430e",
+    "paid_calls": 0,
+    "source_freeze_581_unchanged": true
+  },
+  "repair": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 159
+  },
+  "reuse": {
+    "checkpoint_guard_change": [
+      "src/lexinform/services/posting.py",
+      "tests/scenario/test_delivery_checkpoint_owner.py"
+    ],
+    "earlier_interrupted_and_failfast_full_runs_not_acceptance": true,
+    "final_full_gate": "full.xml (new, after test-only repair)",
+    "final_runtime_configuration_exact_to_168_32_and_compatibility_proofs": true,
+    "group_guard_change": [
+      "src/lexinform/direct_delivery.py",
+      "tests/unit/test_fake_prepared_notices.py"
+    ],
+    "new_test_for_repair": "sitting-test-repair.xml (16 tests)",
+    "post_group_guard_gates": [
+      "group-guard-focused.xml (240 tests)",
+      "local-http-final.xml (25 tests)",
+      "final full.xml",
+      "rerun default-parity.json",
+      "rerun reader-effects-final-parity.json",
+      "rerun compatibility/comparison.json"
+    ],
+    "post_guard_gates": [
+      "checkpoint-focused.xml (55 tests)",
+      "final full.xml",
+      "rerun default-parity.json",
+      "rerun reader-effects-final-parity.json",
+      "rerun compatibility/comparison.json"
+    ],
+    "post_update_group_scope_gates": [
+      "update-group-scope-focused.xml (149 tests)",
+      "local-http-final.xml (25 tests)",
+      "final full.xml",
+      "rerun default-parity.json",
+      "rerun reader-effects-final-parity.json",
+      "rerun compatibility/comparison.json"
+    ],
+    "pre_guard_gates_disclosed": [
+      "focused-final.xml (463 tests)",
+      "local-http.xml (25 tests)",
+      "repair.xml (159 tests)"
+    ],
+    "pre_guard_test_repairs": [
+      "tests/scenario/test_legacy_reader_checkpoints.py",
+      "tests/scenario/test_new_card_freeze.py",
+      "tests/scenario/test_update_edit_remote_checkpoints.py"
+    ],
+    "runtime_configuration_exact_during_test_repairs": true,
+    "sitting_test_only_repair": [
+      "tests/unit/test_fake_prepared_sittings.py"
+    ],
+    "update_group_scope_change": [
+      "src/lexinform/direct_delivery.py",
+      "tests/unit/test_fake_prepared_updates.py"
+    ]
+  },
+  "runtime_files": {
+    "src/lexinform/adapters/publisher_base.py": {
+      "bytes": 12001,
+      "sha256": "fd352df91046a030f867aa831614c41067481a07c31048383b20a145a573a3c8"
+    },
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "bytes": 193763,
+      "sha256": "a1f644aba0c80e18b60de0fa46a3b6bd966cdefa530a3bfffc872f8e6a837a21"
+    },
+    "src/lexinform/adapters/telegram.py": {
+      "bytes": 18352,
+      "sha256": "2a3ebcf9b503042988ea15b0ab172c9db35fe73581392d0d80d3b693b86d8261"
+    },
+    "src/lexinform/cli.py": {
+      "bytes": 53587,
+      "sha256": "3d111121206ed5d37fb4f860dd8df1cbf684e778ed0c4bda0f479c92d158b807"
+    },
+    "src/lexinform/container.py": {
+      "bytes": 38748,
+      "sha256": "0a10d27c70e817802873b26b3ff98f622bbfff37e7ebf9ba65bd8c67c5a3a0a2"
+    },
+    "src/lexinform/direct_delivery.py": {
+      "bytes": 3645,
+      "sha256": "9ac25e9ae337abb445d1763f2a63cb60571ec437dd78118103308a4df8e77aa4"
+    },
+    "src/lexinform/legacy_delivery.py": {
+      "bytes": 2811,
+      "sha256": "90dd2f3a7992aaf39d1ad40d6ca7bc23aabc197aac8bf98814223ab2f4694d97"
+    },
+    "src/lexinform/ports.py": {
+      "bytes": 45220,
+      "sha256": "b5346c433554776644cf7ca9f866bedc39654bde6bc73723da5c5d67191d85d2"
+    },
+    "src/lexinform/services/commands.py": {
+      "bytes": 59126,
+      "sha256": "14c40375742ef32d0d3b8f5e9acfef6cc29af32411785ad07c9e96c6e4e85468"
+    },
+    "src/lexinform/services/digest.py": {
+      "bytes": 37651,
+      "sha256": "9aeab5629975e6a596667a50510c5b49d1f9a00d89471d3090e8ec71beed6104"
+    },
+    "src/lexinform/services/direct_delivery.py": {
+      "bytes": 1340,
+      "sha256": "bf8d989ab0c1a850ae547ab5ab3edc0206431684aab7bc458a954337a863659d"
+    },
+    "src/lexinform/services/posting.py": {
+      "bytes": 76716,
+      "sha256": "237855a26e26f2f5f6020df3c8e60d2bc23aa71c1ee506cc5d64ecf86efce48b"
+    },
+    "src/lexinform/services/publishing.py": {
+      "bytes": 28766,
+      "sha256": "5063be2bf12752b60d6b05c1c0214568706dd8346bd0dc978129bf4417279741"
+    },
+    "src/lexinform/sitting_delivery.py": {
+      "bytes": 1954,
+      "sha256": "5c359a7368ea154ba5b563d6c869fa2c574d2b60344d00d516d2563c11f93587"
+    }
+  },
+  "schema": 57,
+  "scope": "Prepare reader delivery roots before effects and guard explicit previews against the reader channel",
+  "sitting_test_repair": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 16
+  },
+  "stage": "J135",
+  "unit_ahead": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 2692
+  },
+  "update_group_scope_focused": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 149
+  }
+}

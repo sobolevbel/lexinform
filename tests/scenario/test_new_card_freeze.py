@@ -175,7 +175,7 @@ def test_multipart_card_saves_every_physical_part_before_the_first_api_call(
     )
 
 
-def test_attempted_legacy_card_without_html_keeps_the_existing_send_path(
+def test_attempted_legacy_card_freezes_its_existing_snapshot_before_sending(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     world = _world("off", PublicationKind.NEW_BILL)
@@ -195,10 +195,24 @@ def test_attempted_legacy_card_without_html_keeps_the_existing_send_path(
     )
     world.repo.mark_publication(publication_id, PublicationStatus.FAILED, count_attempt=True)
 
-    def no_prepared_send(publication: Publication) -> PublishResult:
-        raise AssertionError("attempted legacy payload must keep its existing send path")
+    original = world.repo.publication_by_id(publication_id)
+    assert original is not None, "create_publication retains the failed card identity"
+    expected = _legacy_text(world, original)
+    prepared = world.publisher.publish_prepared
+    inspected: list[int] = []
 
-    monkeypatch.setattr(world.publisher, "publish_prepared", no_prepared_send)
+    def inspect(publication: Publication) -> PublishResult:
+        saved = world.repo.publication_by_id(publication_id)
+        assert saved is not None and saved.delivery is not None, (
+            "the failed card's future physical payload is saved before its API call"
+        )
+        assert saved.status is PublicationStatus.PENDING and saved.attempts == original.attempts
+        assert saved.delivery.rendered_text == expected
+        assert saved.delivery.render_origin == "legacy_snapshot"
+        inspected.append(publication_id)
+        return prepared(publication)
+
+    monkeypatch.setattr(world.publisher, "publish_prepared", inspect)
 
     report = world.run()
 
@@ -206,4 +220,6 @@ def test_attempted_legacy_card_without_html_keeps_the_existing_send_path(
     assert len(world.publisher.new_bills) == 1
     sent = world.repo.publication_by_id(publication_id)
     assert sent is not None and sent.delivery is not None, "legacy delivery identity survives retry"
-    assert sent.status is PublicationStatus.SENT and sent.delivery.rendered_text == ""
+    assert sent.status is PublicationStatus.SENT and sent.delivery.rendered_text == expected
+    assert sent.attempts == original.attempts
+    assert inspected == [publication_id]

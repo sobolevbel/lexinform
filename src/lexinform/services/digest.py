@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from functools import partial
 from zoneinfo import ZoneInfo
 
+from lexinform.legacy_delivery import legacy_digest_root
 from lexinform.models import (
     DIGEST_NUMBER,
     DIGEST_TERM,
@@ -20,6 +21,7 @@ from lexinform.models import (
     DeliveryPlan,
     Digest,
     DigestEntry,
+    DigestPart,
     MonthFigures,
     Phase,
     Publication,
@@ -44,6 +46,7 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, Publisher, StateCheckpoint
 from lexinform.services.publications import send_publication
+from lexinform.telegram_text import split_html
 
 log = logging.getLogger(__name__)
 
@@ -246,6 +249,7 @@ class DigestService:
             week,
             lambda: self._publisher.publish_digest(week).message_id,
             publisher=self._publisher,
+            reader=True,
         )
         saved = self._repo.get_publication(
             DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, self._channel_id, ref=ref
@@ -619,12 +623,48 @@ class DigestService:
         *,
         delivery_ref: str | None = None,
         publisher: Publisher | None = None,
+        reader: bool = False,
     ) -> int | None:
         """Record the row before sending it, and the outcome after; the message id on success."""
         ref = delivery_ref or week.ref
         existing = self._repo.get_publication(
             DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, channel_id, ref=ref
         )
+        if (
+            reader
+            and channel_id == self._channel_id
+            and existing is not None
+            and not (existing.delivery and existing.delivery.digest_parts)
+        ):
+            if not legacy_digest_root(existing) or existing.id in self._attempted:
+                return None
+            assert publisher is not None, "reader digest publication supplies its publisher"
+            plan = existing.delivery
+            if plan is not None and plan.rendered_text.strip():
+                texts = split_html(plan.rendered_text)
+                parts = tuple(
+                    DigestPart(
+                        text=text,
+                        event_ids=plan.digest_event_ids if index == len(texts) - 1 else (),
+                    )
+                    for index, text in enumerate(texts)
+                )
+            else:
+                parts = publisher.render_digest_parts(week)
+            if any(
+                self._delivery_paused(source)
+                for part in parts
+                for identity in part.event_ids
+                for source in (self._repo.publication_by_id(identity),)
+                if source is not None
+            ):
+                return None
+            existing = self._repo.freeze_legacy_digest_parts(
+                existing, parts, created_at=self._clock.now()
+            )
+            if existing is None:
+                return None
+            return self._send_parts(channel_id, week, publisher, ref=ref, existing=existing)
         if (
             existing is not None
             and existing.delivery is not None

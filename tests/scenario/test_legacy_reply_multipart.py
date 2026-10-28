@@ -217,10 +217,10 @@ def test_root_cas_failure_rolls_back_every_prepared_legacy_part_before_api(
     before = world.repo.dump()
     posts = len(world.publisher.sent)
 
-    def refuse(publication_id: int, delivery: DeliveryPlan) -> bool:
+    def refuse(original: Publication, delivery: DeliveryPlan) -> bool:
         return False
 
-    monkeypatch.setattr(world.repo, "freeze_legacy_status_reply", refuse)
+    monkeypatch.setattr(world.repo, "freeze_direct_delivery", refuse)
 
     with pytest.raises(ValueError, match="Cannot change an attempted message payload"):
         send(case)

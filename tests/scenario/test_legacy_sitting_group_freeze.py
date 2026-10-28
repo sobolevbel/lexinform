@@ -4,7 +4,13 @@ from typing import Literal
 import pytest
 
 from lexinform.errors import StateCheckpointError
-from lexinform.models import Publication, PublicationKind, PublicationStatus, SittingNews
+from lexinform.models import (
+    DeliveryPlan,
+    Publication,
+    PublicationKind,
+    PublicationStatus,
+    SittingNews,
+)
 from lexinform.ports import PublishResult
 from tests.harness import World
 from tests.scenario.test_card_remote_checkpoints import (
@@ -188,12 +194,12 @@ def test_refused_legacy_group_freeze_stops_before_any_api_or_pending_write(
     before = world.repo.dump()
     posts = len(world.publisher.sent)
 
-    def refuse(members: tuple[Publication, ...], text: str) -> bool:
+    def refuse(members: tuple[Publication, ...], plans: tuple[DeliveryPlan, ...]) -> bool:
         return False
 
-    monkeypatch.setattr(world.repo, "freeze_legacy_sitting_group", refuse)
+    monkeypatch.setattr(world.repo, "freeze_sitting_delivery", refuse)
 
-    with pytest.raises(ValueError, match="Cannot freeze the legacy sitting group"):
+    with pytest.raises(ValueError, match="Cannot freeze the sitting delivery"):
         flush(world, "sittings", identities)
 
     assert world.repo.dump() == before

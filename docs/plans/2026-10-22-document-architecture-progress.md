@@ -6511,7 +6511,7 @@ allowlisted metadata, без raw logs/secrets или независимого Te
 <a id="j134"></a>
 ### J134. Separate loose-file composition and record candidate normative sets
 
-Статус: **готово локально**, full/corpus/native/compatibility gates пройдены; выпуск проверяется отдельно. Baseline `7287059ab1392374359fdb07ff6fedb8e7878cec`.
+Статус: **готово; CI/deploy проверены**, full/corpus/native/compatibility gates пройдены. Baseline `7287059ab1392374359fdb07ff6fedb8e7878cec`.
 Pure document_composition собирает уже прочитанные snapshots: required continuations,
 normative annex order/insertion, self-amendment evidence, optional support и fallback outcomes.
 TextLoader оставляет ordered IO, cache reuse и различные required/optional exception contracts.
@@ -6566,3 +6566,72 @@ wide325495chars median10.004→9.957ms, fallback2.096→2.085ms. Это лока
 DA4.2 принят; DA4.1/DA4.4/DA4.7 остаются частичными. План:74tasks,23done,6explicitN/A,
 45applicable partial/open. Организация дальнейшей работы закреплена в §1.7 плана:
 разработка следующего пакета и независимая приёмка параллельны, full gate один на final tree.
+
+J134 выпущен `563b3e805db04301ae18f5d5e9555d51a9639b19`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40683990897) и
+[auto deploy](https://github.com/sobolevbel/lexinform/actions/runs/40685055464) success.
+Actual7287059→563b3e8, restart/45s health и timer enabled подтверждены в
+[filtered proof](../assets/audits/2026-10-28-document-composition/release.json).
+Это systemd acceptance, без отдельного Telegram probe или production processing.
+
+<a id="j135"></a>
+### J135. Complete future preparation of retryable reader roots
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**. Baseline `563b3e805db04301ae18f5d5e9555d51a9639b19`.
+Пакет объединяет совместимые direct-root, legacy reader digest, sitting adoption и guard для
+`/preview`; один итоговый full gate идёт на собранном frozen tree. Перед читательским API effect
+новые/старые карточки, joint replies, status replies/edits, шесть notices и sitting roundups
+получают точный сохранённый HTML, физические части и parent/edit target. Из `Poster` удалены
+неиспользуемые callback-ветви прямой отправки. Остаточные legacy QUEUED/FAILED сохраняют IDs,
+attempts, raw semantic JSON и frozen origin; UNKNOWN не возвращаются к автоматической отправке.
+Неизвестный владелец физической части теперь даёт явную ошибку до `pending`/checkpoint/API;
+valid current и legacy card revisions сохраняют оба checkpoint.
+Подготовленный direct-root с чужой sitting-group разметкой также отвергается до API:
+обычный notice не превращается в roundup из-за некорректного сохранённого поля.
+Сохранённый `update_group` для status update остаётся допустимым: его общий текст и checkpoint
+не проходят через sitting-group запрет.
+
+Legacy digest с сохранённым HTML теперь отправляет именно сохранённое тело. Пустой прежний
+intent получает текущий layout один раз; длинный digest до первого API вызова делится на
+сохранённые части, ownership/held release остаётся за последней частью. Большой sitting singleton
+также получает frozen chain с реальными receipt parents. Неизвестное владение остаётся
+неизвестным. Для `attention=on` старой группы используется актуальный сохранённый snapshot;
+top-level roundup остаётся top-level. Некорректная форма доставки отвергается до API effect.
+
+`/preview` в реальном Telegram разрешает только отдельно проверенный тестовый chat:
+`@username` сначала разрешается в числовой ID, совпадение с reader channel, неразрешимое имя и
+ошибка проверки блокируют отправку. Команда по-прежнему не создаёт publication row. Этот guard
+не меняет dry-run/fake paths.
+
+До последних guards 463 focused tests прошли; отдельно прошли55 checkpoint,240 direct-root
+и149 update-group focused tests, 25 local HTTP tests на финальном коде, strict mypy528,
+Ruff/format green. Три старых scenario expectations и три unit expectations адаптированы;
+159 repair tests и отдельные16 sitting unit tests прошли. Последняя правка затронула только
+ожидание top-level сообщения; runtime/configuration byte-exact с повторными native/effect/
+compatibility proofs. Предыдущие fail-fast/interrupted попытки full gate не являются
+приёмкой. Весь unit-набор (2692 tests) отдельно прошёл на финальном дереве. 168 native profiles
+сохраняют все32 прежних таблицы, requests/messages/edits и
+outcomes; SQL/gzip delta0 на этих неизменённых профилях. Пять отдельных digest fixtures
+измерили прирост frozen payload: +9–4239B SQL и +8–263B gzip; повторная отправка не создаёт
+дополнительных частей или ownership. Независимый observer сравнил32 reader-effect cases:
+26 exact,6 intentional changes (длинные части и saved digest),3 malformed cases с нулём
+эффектов до/после. Все новые physical parts ≤4096 UTF-16 units. MockTransport/fakes не доказывают
+функциональную доставку в Telegram; paid/provider и production calls не выполнялись.
+
+Schema57, parser, selection, extraction, model input, raw retention и state backend неизменны.
+Corpus raw replay для reader-only изменений не требуется; source freeze и тесты old/new читателя
+покрывают соответствующие границы. На12 подготовленных schema57 dumps в каждом из трёх
+читателей (current/563/0f) сохранены все32 таблицы: pending/UNKNOWN дали0 API calls, failed
+дали8 точных old/new bodies/parents/receipts на runtime, repeat0. Это ограниченная совместимость
+сохранённых планов, не разрешение на downgrade; откат к старому коду снимет guard `/preview`.
+QA и ограничения записаны в локальном `out/corpus/j135/` и в связанном ниже asset.
+Статусы DA1 установлены по конечному аудиту reader entrypoints.
+
+5857 full tests прошли без failures/errors/skips на frozen581 source/test/config files.
+Все прочие tracked runtime files неизменны; миграции1–57 exact, schema57. Строгий
+[acceptance asset](../assets/audits/2026-10-28-reader-delivery/validation.json) фиксирует
+XML и hashes, ранее прерванные/failed full attempts как не-приёмку, scoped reuse после
+test-only ремонта, независимые native/effect/compatibility результаты и исключения.
+DA1.2/DA1.4/DA1.6 приняты локально для нынешней reader surface после конечного callgraph
+аудита и fail-closed checkpoint-owner guard. DA1.8 maintenance lock и DA1.9 hosted latency
+остаются открытыми. План:74tasks,26done,6explicitN/A,42applicable partial/open.

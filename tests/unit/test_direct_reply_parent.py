@@ -4,8 +4,8 @@ import pytest
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import Publication, PublicationKind, PublicationStatus
-from tests.unit.test_legacy_status_edit_freeze import frozen
-from tests.unit.test_legacy_status_reply_freeze import saved_reply
+from tests.unit.test_direct_status_edit_freeze import frozen
+from tests.unit.test_direct_status_reply_freeze import saved_reply
 
 
 def sent_parent(repo: SqliteBillRepository, *, patch: dict[str, object] | None = None) -> int:
@@ -30,7 +30,7 @@ def test_missing_legacy_parent_is_filled_only_from_the_same_owners_sent_card(
     sent_parent(repo)
     delivery = frozen(root).model_copy(update={"reply_to": 777})
 
-    assert repo.freeze_legacy_status_reply(root.id, delivery)
+    assert repo.freeze_direct_delivery(root, delivery)
 
     assert repo.publication_by_id(root.id) == root.model_copy(update={"delivery": delivery})
     repo.restore(repo.dump())
@@ -61,9 +61,7 @@ def test_an_unconfirmed_foreign_or_changed_card_cannot_supply_the_new_parent(
     sent_parent(repo, patch=patch)
     before = repo.dump()
 
-    assert not repo.freeze_legacy_status_reply(
-        root.id, frozen(root).model_copy(update={"reply_to": 777})
-    )
+    assert not repo.freeze_direct_delivery(root, frozen(root).model_copy(update={"reply_to": 777}))
 
     assert repo.dump() == before
 
@@ -76,9 +74,7 @@ def test_a_current_card_cannot_retarget_an_already_saved_legacy_parent(
     sent_parent(repo)
     before = repo.dump()
 
-    assert not repo.freeze_legacy_status_reply(
-        root.id, frozen(root).model_copy(update={"reply_to": 777})
-    )
+    assert not repo.freeze_direct_delivery(root, frozen(root).model_copy(update={"reply_to": 777}))
 
     assert repo.dump() == before
 
@@ -90,8 +86,6 @@ def test_an_absent_card_cannot_be_replaced_with_an_arbitrary_positive_parent(
     assert root.id is not None, "saved_reply stores its physical identity"
     before = repo.dump()
 
-    assert not repo.freeze_legacy_status_reply(
-        root.id, frozen(root).model_copy(update={"reply_to": 777})
-    )
+    assert not repo.freeze_direct_delivery(root, frozen(root).model_copy(update={"reply_to": 777}))
 
     assert repo.dump() == before

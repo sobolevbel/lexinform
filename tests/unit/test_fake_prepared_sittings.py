@@ -136,7 +136,7 @@ def test_prepared_sitting_bookkeeping_uses_its_saved_bill_snapshot(
     assert delivered.item == news.item
     assert delivered.moved_from == news.moved_from
     assert delivered.card_message_id == reply_to
-    assert publisher.sent[0].reply_to == reply_to
+    assert publisher.sent[0].reply_to is None
 
 
 @pytest.mark.parametrize("kind", [PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED])

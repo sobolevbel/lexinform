@@ -247,7 +247,7 @@ def test_edit_without_original_date_is_rejected_before_pending_or_api() -> None:
     )
     before = len(world.publisher.sent) + len(world.publisher.edited)
 
-    with pytest.raises(ValueError, match="original date"):
+    with pytest.raises(ValueError, match="original edit date"):
         world.container.poster(dry_run=False).deliver(row(world, case.identity))
 
     assert row(world, case.identity).status is PublicationStatus.QUEUED

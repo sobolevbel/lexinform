@@ -225,7 +225,7 @@ def test_unknown_frozen_sitting_waits_for_operator_and_preserves_its_exact_chain
 
 
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])
-def test_frozen_sitting_cannot_be_dropped_and_keeps_a_saved_legacy_card_reply(
+def test_frozen_sitting_cannot_be_dropped_and_keeps_saved_card_link_context(
     monkeypatch: pytest.MonkeyPatch, mode: Mode
 ) -> None:
     case = saved_sitting(mode, reply_to=42)
@@ -244,4 +244,5 @@ def test_frozen_sitting_cannot_be_dropped_and_keeps_a_saved_legacy_card_reply(
     assert result.agenda_posted == 1
     assert len(world.publisher.sent) == before + 1
     assert world.publisher.sent[-1].text == SHORT
-    assert world.publisher.sent[-1].reply_to == 42
+    assert publication(world, case.root).delivery == saved.delivery
+    assert world.publisher.sent[-1].reply_to is None

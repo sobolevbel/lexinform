@@ -149,7 +149,7 @@ def test_every_long_sitting_part_has_remote_html_and_parent_receipt_before_api(
         members = identities(durable, case.identity)
         assert len(members) == len(expected)
         assert not saved.sitting_group and not saved.group_text
-        assert saved.reply_to is None, "the first physical sitting message is top-level"
+        assert saved.reply_to == case.card_id, "the saved card receipt remains line-link context"
         assert tuple(plan(durable, identity).rendered_text for identity in members) == expected
         assert f"https://t.me/test/{case.card_id}" in "\n".join(expected)
         current = row(durable, publication.id or 0)
@@ -359,23 +359,31 @@ def test_confirming_a_long_sitting_root_unblocks_only_its_unsent_children(
 
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])
 @pytest.mark.parametrize("attempts", [0, 1])
-def test_failed_legacy_long_sitting_without_html_never_invents_new_parts(
+def test_failed_long_sitting_freezes_parts_without_rewriting_saved_context(
     mode: Mode, attempts: int
 ) -> None:
     case = queued(mode)
     world = case.world
     saved = plan(world, case.identity)
+    expected = expected_parts(case)
     world.repo.mark_publication(case.identity, PublicationStatus.FAILED, count_attempt=False)
     for _ in range(attempts):
         world.repo.mark_publication(case.identity, PublicationStatus.FAILED)
     before = len(world.publisher.sent)
-    try:
-        flush(case)
-    except ValueError as exc:
-        assert str(exc) == "Cannot change an attempted message payload"
-    assert plan(world, case.identity) == saved
-    assert not plan(world, case.identity).continuation_ids
-    assert len(world.publisher.sent) == before
+
+    flush(case)
+
+    frozen = plan(world, case.identity)
+    assert frozen == saved.model_copy(
+        update={
+            "render_origin": "legacy_snapshot",
+            "rendered_text": expected[0],
+            "continuation_ids": frozen.continuation_ids,
+        }
+    )
+    assert tuple(out.text for out in world.publisher.sent[before:]) == expected
+    assert world.publisher.sent[before].reply_to is None
+    assert row(world, case.identity).attempts == attempts
 
 
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])
@@ -405,4 +413,5 @@ def test_failed_legacy_long_sitting_with_html_keeps_its_original_target(
     assert not plan(world, case.identity).continuation_ids
     assert len(world.publisher.sent) == before + 1
     assert world.publisher.sent[-1].text == SAVED_HTML
-    assert world.publisher.sent[-1].reply_to == saved.reply_to == case.card_id
+    assert saved.reply_to == case.card_id
+    assert world.publisher.sent[-1].reply_to is None

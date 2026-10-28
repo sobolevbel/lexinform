@@ -181,9 +181,15 @@ def test_prepared_group_does_not_claim_a_single_update_delivery(
     )
     publisher = FakePublisher()
 
-    publisher.publish_prepared(publication.model_copy(update={"delivery": planned}))
+    prepared = publication.model_copy(update={"delivery": planned})
+    if group == "sittings":
+        with pytest.raises(ValueError, match="cannot carry a sitting group"):
+            publisher.publish_prepared(prepared)
+    else:
+        publisher.publish_prepared(prepared)
 
-    assert len(publisher.sent) == 1
-    assert publisher.sent[0].text == planned.group_text
+    assert len(publisher.sent) == int(group == "updates")
+    if publisher.sent:
+        assert publisher.sent[0].text == planned.group_text
     assert not publisher.updates
     assert not publisher.edited

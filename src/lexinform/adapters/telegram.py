@@ -56,6 +56,14 @@ class TelegramBotClient:
         self._sleep = sleep
         self._rate = TelegramRateLimiter(monotonic=monotonic, sleep=sleep)
 
+    def get_chat_id(self, chat_id: str) -> int:
+        """Resolve an address before a preview can be sent outside the reader channel."""
+        result = self._call("getChat", json={"chat_id": chat_id})
+        identity = result.get("id")
+        if not isinstance(identity, int) or isinstance(identity, bool) or identity == 0:
+            raise ValueError("getChat: response has no valid chat id; preview was not sent")
+        return identity
+
     def send_message(
         self,
         chat_id: str,

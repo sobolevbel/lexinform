@@ -10,12 +10,12 @@ differs from the ones the reader has already read about (`_compared`).
 """
 
 import logging
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from functools import partial
 from zoneinfo import ZoneInfo
 
 from lexinform.attention import assess_attention
+from lexinform.direct_delivery import direct_root_plan
 from lexinform.errors import ServiceUnavailableError, StateCheckpointError
 from lexinform.models import (
     SILENCED_BY_OPERATOR,
@@ -34,12 +34,12 @@ from lexinform.ports import (
     BillRepository,
     Clock,
     Publisher,
-    PublishResult,
     SejmGateway,
     StateCheckpoint,
 )
 from lexinform.services.analysis import AnalysisService, Waiting
 from lexinform.services.card_edits import edit_card
+from lexinform.services.direct_delivery import freeze_direct_root
 from lexinform.services.joint import group_of, primary_of
 from lexinform.services.message_parts import freeze_parts, send_continuations
 from lexinform.services.predecessors import rcl_predecessor
@@ -49,7 +49,6 @@ from lexinform.services.sources import fetch_print
 
 log = logging.getLogger(__name__)
 
-Send = Callable[[], PublishResult]
 CARD_KINDS = (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL)
 
 
@@ -350,7 +349,7 @@ class PublishingService:
                 created_at=self._clock.now(),
             )
         )
-        if not self._send(pub_id, bill, lambda: self._publisher.publish_new_bill(bill, print_info)):
+        if not self._send(pub_id, bill):
             return False
         self._repo.set_card_digest(pub_id, self._publisher.card_digest(bill))
         result.published += 1
@@ -426,13 +425,7 @@ class PublishingService:
                 created_at=self._clock.now(),
             )
         )
-        sent = self._send(
-            pub_id,
-            bill,
-            lambda: self._publisher.publish_joint_bill(
-                bill, card_bill, print_info, card_message_id
-            ),
-        )
+        sent = self._send(pub_id, bill)
         if not sent:
             return False
         self._repo.set_awaiting_batch(identity.term, identity.number, None)
@@ -595,22 +588,38 @@ class PublishingService:
     def _primary_of(self, bill: Bill) -> tuple[Bill, int] | None:
         return primary_of(self._repo, bill, self._channel_id)
 
-    def _send(self, pub_id: int, bill: Bill, send: Send) -> bool:
+    def _send(self, pub_id: int, bill: Bill) -> bool:
         pub = self._repo.publication_by_id(pub_id)
-        if (
-            pub is not None
-            and pub.delivery is not None
-            and not pub.delivery.rendered_text
-            and not pub.attempts
-        ):
-            pub = freeze_parts(
-                self._repo, self._clock, self._publisher, pub, self._publisher.render_delivery(pub)
-            )
-        if pub is not None and pub.delivery is not None and pub.delivery.rendered_text:
-            send = partial(self._publisher.publish_prepared, pub)
+        if pub is None or pub.delivery is None:
+            raise ValueError("The first publication lacks its stored delivery plan")
+        if not pub.delivery.rendered_text:
+            saved = direct_root_plan(pub)
+            if pub.status is PublicationStatus.QUEUED and not pub.attempts:
+                pub = freeze_parts(
+                    self._repo,
+                    self._clock,
+                    self._publisher,
+                    pub,
+                    self._publisher.render_delivery(pub),
+                )
+            else:
+                pub = freeze_direct_root(
+                    self._repo,
+                    self._clock,
+                    self._publisher,
+                    pub,
+                    reply_to=saved.reply_to,
+                )
+        assert pub.delivery is not None and pub.delivery.rendered_text, (
+            "both direct preparation paths freeze the first physical HTML before sending"
+        )
         self._repo.mark_publication(pub_id, PublicationStatus.PENDING, count_attempt=False)
         message_id = send_publication(
-            self._repo, self._clock, pub_id, send, checkpoint=self._checkpoint
+            self._repo,
+            self._clock,
+            pub_id,
+            partial(self._publisher.publish_prepared, pub),
+            checkpoint=self._checkpoint,
         )
         if message_id is None:
             return False

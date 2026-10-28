@@ -4,7 +4,7 @@ import pytest
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import DeliveryPlan, Publication, PublicationKind, PublicationStatus
-from tests.unit.test_legacy_status_edit_freeze import frozen
+from tests.unit.test_direct_status_edit_freeze import frozen
 
 KINDS = (
     PublicationKind.ACT_PUBLISHED,
@@ -46,16 +46,17 @@ def saved_notice(
 
 
 @pytest.mark.parametrize("kind", KINDS)
+@pytest.mark.parametrize("reply_to", [None, 101])
+@pytest.mark.parametrize("policy", ["legacy", "attention-v1"])
 def test_notice_writer_preserves_its_saved_day_parent_context_and_attempts(
-    repo: SqliteBillRepository, kind: PublicationKind
+    repo: SqliteBillRepository, kind: PublicationKind, reply_to: int | None, policy: str
 ) -> None:
-    original = saved_notice(repo, kind)
+    original = saved_notice(repo, kind, patch={"reply_to": reply_to, "policy_version": policy})
     assert original.id is not None, "saved_notice assigns its physical identity"
     prepared = frozen(original)
 
-    assert not repo.freeze_legacy_status_reply(original.id, prepared)
-    assert repo.freeze_legacy_notice_reply(original.id, prepared)
-    assert not repo.freeze_legacy_notice_reply(original.id, prepared)
+    assert repo.freeze_direct_delivery(original, prepared)
+    assert not repo.freeze_direct_delivery(original, prepared)
 
     expected = original.model_copy(update={"delivery": prepared})
     assert repo.publication_by_id(original.id) == expected
@@ -66,10 +67,8 @@ def test_notice_writer_preserves_its_saved_day_parent_context_and_attempts(
 @pytest.mark.parametrize(
     "patch",
     [
-        {"reply_to": None},
         {"reply_to": 0},
         {"edit_message_id": 444},
-        {"policy_version": "attention-v1"},
         {"destination": "digest_only"},
         {"group_text": "group"},
         {"sitting_group": (999,)},
@@ -93,7 +92,7 @@ def test_notice_writer_refuses_unqualified_or_already_owned_shapes(
     assert original.id is not None, "saved_notice assigns its physical identity"
     before = repo.dump()
 
-    assert not repo.freeze_legacy_notice_reply(original.id, frozen(original))
+    assert not repo.freeze_direct_delivery(original, frozen(original))
 
     assert repo.dump() == before
 
@@ -105,7 +104,7 @@ def test_dated_notice_requires_its_original_day(
     original = saved_notice(repo, kind, patch={"today": None})
     assert original.id is not None, "saved_notice assigns its physical identity"
 
-    assert not repo.freeze_legacy_notice_reply(original.id, frozen(original))
+    assert not repo.freeze_direct_delivery(original, frozen(original))
 
     assert repo.publication_by_id(original.id) == original
 
@@ -123,7 +122,7 @@ def test_reminder_requires_the_context_used_by_its_old_dispatcher(
     original = saved_notice(repo, kind, patch={field: None})
     assert original.id is not None, "saved_notice assigns its physical identity"
 
-    assert not repo.freeze_legacy_notice_reply(original.id, frozen(original))
+    assert not repo.freeze_direct_delivery(original, frozen(original))
 
     assert repo.publication_by_id(original.id) == original
 
@@ -151,9 +150,7 @@ def test_notice_freeze_changes_only_future_html_and_its_origin(
     assert original.id is not None, "saved_notice assigns its physical identity"
     before = repo.dump()
 
-    assert not repo.freeze_legacy_notice_reply(
-        original.id, frozen(original).model_copy(update=patch)
-    )
+    assert not repo.freeze_direct_delivery(original, frozen(original).model_copy(update=patch))
 
     assert repo.dump() == before
 
@@ -161,7 +158,7 @@ def test_notice_freeze_changes_only_future_html_and_its_origin(
 @pytest.mark.parametrize(
     "status", [s for s in PublicationStatus if s is not PublicationStatus.FAILED]
 )
-def test_notice_writer_refuses_unconfirmed_or_completed_operations(
+def test_notice_cas_refuses_a_state_changed_since_rendering(
     repo: SqliteBillRepository, status: PublicationStatus
 ) -> None:
     original = saved_notice(repo)
@@ -169,7 +166,7 @@ def test_notice_writer_refuses_unconfirmed_or_completed_operations(
     repo.mark_publication(original.id, status, count_attempt=False)
     before = repo.dump()
 
-    assert not repo.freeze_legacy_notice_reply(original.id, frozen(original))
+    assert not repo.freeze_direct_delivery(original, frozen(original))
 
     assert repo.dump() == before
 
@@ -189,6 +186,6 @@ def test_notice_freeze_preserves_fields_from_a_compatible_newer_writer(
     assert source.count(quoted) == 1, "the fixture has one matching physical notice"
     repo.restore(source.replace(quoted, replacement))
 
-    assert repo.freeze_legacy_notice_reply(original.id, frozen(original))
+    assert repo.freeze_direct_delivery(original, frozen(original))
 
     assert '"retain":["opaque",123]' in repo.dump()

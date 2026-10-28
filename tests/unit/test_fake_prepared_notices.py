@@ -272,9 +272,15 @@ def test_prepared_edit_group_and_continuation_do_not_record_a_notice_root(
         )
     publisher = FakePublisher()
 
-    publisher.publish_prepared(publication.model_copy(update={"delivery": plan}))
+    prepared = publication.model_copy(update={"delivery": plan})
+    if delivery in ("edit", "group"):
+        error = "cannot replace" if delivery == "edit" else "cannot carry a sitting group"
+        with pytest.raises(ValueError, match=error):
+            publisher.publish_prepared(prepared)
+    else:
+        publisher.publish_prepared(prepared)
 
     assert not any(_records(publisher).values())
-    assert len(publisher.edited) == int(delivery == "edit")
-    assert len(publisher.sent) == int(delivery != "edit")
+    assert not publisher.edited
+    assert len(publisher.sent) == int(delivery == "child")
     assert publisher.continuation_attempts == int(delivery == "child")

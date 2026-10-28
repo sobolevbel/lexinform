@@ -106,8 +106,9 @@ root membership, parent, index, bill, term and channel match. The sent root rema
 resetting only that part with an audited decision.
 A repeated command cannot queue a sent or already queued post.
 A crash during the new attempt becomes `unknown` again and needs a new decision. The saved
-facts and parent are reused; frozen HTML is replayed verbatim, while remaining semantic-only
-legacy handlers may use the current formatter. Stage roundups
+facts and parent are reused; frozen HTML is replayed verbatim. A retryable semantic-only
+legacy row uses the current formatter once to save its future physical payload before API;
+an incomplete row is rejected. Stage roundups
 also store the exact rendered HTML and all member publication IDs. `/delivery` on any member
 shows the shared message and resolves every member together; a partial group cannot be retried
 or confirmed. The saved HTML is sent once, as a top-level post, and never rebuilt from newer bills.
@@ -222,7 +223,9 @@ reply says so.
 
 `/preview BILL to=CHAT` sends the card to that chat and records nothing: no `publications` row,
 so the bill is no more published afterwards than before and the channel's own card is untouched.
-The bot has to be able to post there, and a failure is answered as one.
+The destination must be a separate test chat: the reader channel is refused, including its
+`@username` aliases. A real send resolves usernames to numeric Telegram chat IDs first and refuses
+to send if either identity cannot be verified. The bot must be able to post there; failures are answered.
 
 `/status`, `/runs` and `/cost` are what no single run report says. `/status` is the state
 between the runs: the queues as they stand, how many bills are followed, and by bill number and

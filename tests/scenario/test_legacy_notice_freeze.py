@@ -227,10 +227,10 @@ def test_legacy_notice_root_write_failure_rolls_back_children_before_api(
     before = world.repo.dump()
     posts = len(world.publisher.sent)
 
-    def refuse(publication_id: int, delivery: DeliveryPlan) -> bool:
+    def refuse(original: Publication, delivery: DeliveryPlan) -> bool:
         return False
 
-    monkeypatch.setattr(world.repo, "freeze_legacy_notice_reply", refuse)
+    monkeypatch.setattr(world.repo, "freeze_direct_delivery", refuse)
 
     with pytest.raises(ValueError, match="Cannot change an attempted message payload"):
         deliver(case)
@@ -240,39 +240,45 @@ def test_legacy_notice_root_write_failure_rolls_back_children_before_api(
 
 
 @pytest.mark.parametrize("kind", KINDS)
-def test_attempted_attention_notice_keeps_its_unfrozen_callback(
-    monkeypatch: pytest.MonkeyPatch, kind: PublicationKind
-) -> None:
+def test_attempted_attention_notice_freezes_its_callback_payload(kind: PublicationKind) -> None:
     case = queued(kind, "on")
     world = case.world
     saved = plan(world, case.identity)
-    assert saved.policy_version == "attention-v1", "the fixture uses the unsupported old policy"
+    assert saved.policy_version == "attention-v1", (
+        "the fixture preserves its attempted attention policy"
+    )
     world.repo.mark_publication(case.identity, PublicationStatus.FAILED)
-    monkeypatch.setattr(world.publisher, "publish_prepared", refuse_render)
 
     assert deliver(case)
 
-    assert plan(world, case.identity) == saved
+    frozen = plan(world, case.identity)
+    assert frozen.rendered_text == world.publisher.sent[-1].text
+    assert frozen == saved.model_copy(
+        update={"rendered_text": frozen.rendered_text, "render_origin": "legacy_snapshot"}
+    )
     assert world.publisher.sent[-1].reply_to == saved.reply_to
 
 
 @pytest.mark.parametrize("kind", KINDS)
-def test_legacy_notice_without_a_saved_parent_keeps_its_top_level_callback(
-    monkeypatch: pytest.MonkeyPatch, kind: PublicationKind
+def test_legacy_notice_without_a_saved_parent_freezes_its_top_level_payload(
+    kind: PublicationKind,
 ) -> None:
     case = queued(kind, "off")
     world = case.world
     saved = plan(world, case.identity).model_copy(update={"reply_to": None})
     assert world.repo.replace_unattempted_delivery(case.identity, saved), (
-        "the unsupported legacy fixture has never saved a parent"
+        "the legacy fixture has never saved a parent"
     )
     world.repo.mark_publication(case.identity, PublicationStatus.FAILED)
-    monkeypatch.setattr(world.publisher, "publish_prepared", refuse_render)
 
     assert deliver(case)
 
     assert world.publisher.sent[-1].reply_to is None
-    assert plan(world, case.identity) == saved
+    frozen = plan(world, case.identity)
+    assert frozen.rendered_text == world.publisher.sent[-1].text
+    assert frozen == saved.model_copy(
+        update={"rendered_text": frozen.rendered_text, "render_origin": "legacy_snapshot"}
+    )
 
 
 @pytest.mark.parametrize(
@@ -286,7 +292,7 @@ def test_legacy_notice_without_a_saved_parent_keeps_its_top_level_callback(
         (PublicationKind.HEARING_DEADLINE, "hearing_json"),
     ],
 )
-def test_incomplete_failed_legacy_notice_retains_its_saved_context_and_callback_failure(
+def test_incomplete_failed_legacy_notice_fails_closed_before_api_without_an_attempt(
     monkeypatch: pytest.MonkeyPatch, kind: PublicationKind, missing: str
 ) -> None:
     case = queued(kind, "off")
@@ -299,11 +305,12 @@ def test_incomplete_failed_legacy_notice_retains_its_saved_context_and_callback_
     monkeypatch.setattr(world.publisher, "publish_prepared", refuse_render)
     posts = len(world.publisher.sent)
 
-    assert not deliver(case)
+    with pytest.raises(ValueError, match="saved .* lacks"):
+        deliver(case)
 
     assert plan(world, case.identity) == saved
     assert len(world.publisher.sent) == posts
-    assert row(world, case.identity).attempts == 2
+    assert row(world, case.identity).attempts == 1
 
 
 def test_legacy_notice_operator_view_marks_only_the_future_payload_as_frozen() -> None:

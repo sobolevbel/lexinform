@@ -12,21 +12,18 @@ from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Literal
 
 from pydantic import TypeAdapter
 
 from lexinform.content_versions import content_delivery_mismatch
+from lexinform.direct_delivery import direct_root_plan
 from lexinform.document_editions import candidate_edition
 from lexinform.json_storage import compact_json, storage_json
-from lexinform.legacy_delivery import (
-    legacy_notice_reply,
-    legacy_sitting_member,
-    legacy_status_edit,
-    legacy_status_reply,
-)
+from lexinform.legacy_delivery import legacy_digest_root
 from lexinform.log_context import log_extra
 from lexinform.models import (
+    DIGEST_NUMBER,
+    DIGEST_TERM,
     PRE_PRINT_PREFIX,
     RCL_PREFIX,
     WYKAZ_PREFIX,
@@ -53,6 +50,7 @@ from lexinform.models import (
     DeliveryAlert,
     DeliveryPlan,
     DeliveryResolution,
+    DigestPart,
     DocumentEdition,
     DocumentReviewRecord,
     DocumentSelectionRecord,
@@ -95,7 +93,8 @@ from lexinform.models import (
     valid_mnemonic,
 )
 from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
-from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
+from lexinform.sitting_delivery import sitting_root_plan
+from lexinform.telegram_text import MESSAGE_LIMIT, split_html, utf16_length
 
 _STAGES = TypeAdapter(tuple[Stage, ...])
 _COMPACT_SNAPSHOTS: dict[str, Callable[[str], str]] = {
@@ -1921,145 +1920,76 @@ class SqliteBillRepository:
         )
         return cur.rowcount == 1
 
-    def freeze_legacy_status_edit(self, publication_id: int, delivery: DeliveryPlan) -> bool:
-        return self._freeze_legacy_delivery(publication_id, delivery, mode="status_edit")
-
-    def freeze_legacy_status_reply(self, publication_id: int, delivery: DeliveryPlan) -> bool:
-        return self._freeze_legacy_delivery(publication_id, delivery, mode="status_reply")
-
-    def freeze_legacy_notice_reply(self, publication_id: int, delivery: DeliveryPlan) -> bool:
-        return self._freeze_legacy_delivery(publication_id, delivery, mode="notice_reply")
-
-    def freeze_legacy_sitting_group(self, members: tuple[Publication, ...], text: str) -> bool:
-        identities = tuple(member.id for member in members)
-        if (
-            not members
-            or len(set(identities)) != len(identities)
-            or not text.strip()
-            or utf16_length(text) > MESSAGE_LIMIT
-            or not any(member.status is PublicationStatus.FAILED for member in members)
-        ):
+    def freeze_direct_delivery(self, original: Publication, delivery: DeliveryPlan) -> bool:
+        try:
+            saved = direct_root_plan(original)
+        except ValueError:
             return False
-        prepared: list[tuple[str, int, str, int, str]] = []
-        with self.atomic():
-            for member in members:
-                if not legacy_sitting_member(member) or member.channel_id != members[0].channel_id:
-                    return False
-                assert member.id is not None, "legacy_sitting_member requires a stored identity"
-                row = self._conn.execute(
-                    "SELECT * FROM publications WHERE id = ?", (member.id,)
-                ).fetchone()
-                if (
-                    row is None
-                    or self._row_to_publication(row) != member
-                    or self.digest_owner(member.id) is not None
-                    or self.digest_sources(member.id)
-                ):
-                    return False
-                raw: dict[str, object] = json.loads(row["delivery_json"])
-                raw.update(sitting_group=identities, group_text=text)
-                if member.status is PublicationStatus.FAILED:
-                    raw["render_origin"] = "legacy_snapshot"
-                prepared.append(
-                    (
-                        json.dumps(raw, ensure_ascii=False, separators=(",", ":")),
-                        member.id,
-                        member.status.value,
-                        member.attempts,
-                        row["delivery_json"],
-                    )
-                )
-            for parameters in prepared:
-                changed = self._conn.execute(
-                    "UPDATE publications SET delivery_json = ?"
-                    " WHERE id = ? AND status = ? AND attempts = ? AND delivery_json = ?",
-                    parameters,
-                )
-                if changed.rowcount != 1:
-                    raise ValueError("Cannot freeze a changed legacy sitting group")
-        return True
-
-    def _freeze_legacy_delivery(
-        self,
-        publication_id: int,
-        delivery: DeliveryPlan,
-        *,
-        mode: Literal["status_edit", "status_reply", "notice_reply"],
-    ) -> bool:
+        assert original.id is not None, "direct_root_plan admits only stored reader roots"
         row = self._conn.execute(
-            "SELECT * FROM publications WHERE id = ?", (publication_id,)
+            "SELECT * FROM publications WHERE id = ?", (original.id,)
         ).fetchone()
-        if row is None:
-            return False
-        original = self._row_to_publication(row)
-        eligible = {
-            "status_edit": legacy_status_edit,
-            "status_reply": legacy_status_reply,
-            "notice_reply": legacy_notice_reply,
-        }[mode](original)
-        reply = mode != "status_edit"
-        refresh_day = mode == "status_reply"
         if (
-            not eligible
+            row is None
+            or self._row_to_publication(row) != original
+            or saved.render_origin is not None
+            or delivery.render_origin != "legacy_snapshot"
             or not delivery.rendered_text.strip()
             or utf16_length(delivery.rendered_text) > MESSAGE_LIMIT
-            or delivery.render_origin != "legacy_snapshot"
-            or self.digest_owner(publication_id) is not None
-            or self.digest_sources(publication_id)
-            or (reply and (delivery.reply_to is None or delivery.reply_to <= 0))
-            or (refresh_day and delivery.today is None)
+            or self.digest_owner(original.id) is not None
+            or self.digest_sources(original.id)
         ):
             return False
-        saved = original.delivery
-        assert saved is not None, "legacy delivery predicates require a saved semantic snapshot"
         updates: dict[str, object] = {
             "rendered_text": delivery.rendered_text,
-            "render_origin": "legacy_snapshot",
+            "render_origin": delivery.render_origin,
         }
-        expected = saved.model_copy(update=updates)
-        if refresh_day:
-            expected = expected.model_copy(update={"today": delivery.today})
-        if reply:
-            if saved.reply_to is None:
-                card = self.get_publication(
-                    original.term, original.number, PublicationKind.NEW_BILL, original.channel_id
-                )
-                if (
-                    card is None
-                    or card.status is not PublicationStatus.SENT
-                    or card.message_id != delivery.reply_to
-                ):
-                    return False
-                updates["reply_to"] = delivery.reply_to
-                expected = expected.model_copy(update={"reply_to": delivery.reply_to})
-            if delivery.continuation_ids:
-                if not self._legacy_reply_parts(original, delivery):
-                    return False
-                updates.update(continuation_ids=delivery.continuation_ids, held_change_ids=())
-                expected = expected.model_copy(
-                    update={"continuation_ids": delivery.continuation_ids, "held_change_ids": ()}
-                )
-        if delivery != expected:
+        if original.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL) or (
+            original.kind is PublicationKind.STATUS_UPDATE and saved.edit_message_id is None
+        ):
+            if delivery.today is None:
+                return False
+            updates["today"] = delivery.today
+        if delivery.reply_to != saved.reply_to:
+            if original.kind is not PublicationKind.STATUS_UPDATE or saved.reply_to is not None:
+                return False
+            card = self.get_publication(
+                original.term, original.number, PublicationKind.NEW_BILL, original.channel_id
+            )
+            if (
+                card is None
+                or card.status is not PublicationStatus.SENT
+                or card.message_id is None
+                or card.message_id <= 0
+                or card.message_id != delivery.reply_to
+                or saved.edit_message_id is not None
+            ):
+                return False
+            updates["reply_to"] = delivery.reply_to
+        if delivery.continuation_ids:
+            if not self._physical_delivery_parts(original, delivery):
+                return False
+            updates.update(continuation_ids=delivery.continuation_ids, held_change_ids=())
+        if delivery != saved.model_copy(update=updates):
             return False
         raw: dict[str, object] = json.loads(row["delivery_json"])
-        raw.update(updates)
-        if refresh_day:
-            assert delivery.today is not None, "status replies require their new render day"
-            raw["today"] = delivery.today.isoformat()
+        encoded = delivery.model_dump(mode="json")
+        raw.update({key: encoded[key] for key in updates})
         changed = self._conn.execute(
             "UPDATE publications SET delivery_json = ?"
-            " WHERE id = ? AND status = 'failed' AND attempts = ? AND delivery_json = ?",
+            " WHERE id = ? AND status = ? AND attempts = ? AND delivery_json = ?",
             (
                 json.dumps(raw, ensure_ascii=False, separators=(",", ":")),
-                publication_id,
+                original.id,
+                original.status.value,
                 original.attempts,
                 row["delivery_json"],
             ),
         )
         return changed.rowcount == 1
 
-    def _legacy_reply_parts(self, original: Publication, delivery: DeliveryPlan) -> bool:
-        assert original.delivery is not None, "legacy reply predicates require the original plan"
+    def _physical_delivery_parts(self, original: Publication, delivery: DeliveryPlan) -> bool:
+        assert original.delivery is not None, "physical roots retain their original saved plan"
         identities = delivery.continuation_ids
         if len(set(identities)) != len(identities) or delivery.held_change_ids:
             return False
@@ -2100,6 +2030,82 @@ class SqliteBillRepository:
             ):
                 return False
             parent = identity
+        return True
+
+    def freeze_sitting_delivery(
+        self, members: tuple[Publication, ...], plans: tuple[DeliveryPlan, ...]
+    ) -> bool:
+        identities = tuple(member.id for member in members)
+        if not members or len(members) != len(plans) or len(set(identities)) != len(identities):
+            return False
+        prepared: list[tuple[str, int, str, int, str]] = []
+        with self.atomic():
+            for member, plan in zip(members, plans, strict=True):
+                try:
+                    saved = sitting_root_plan(member)
+                except ValueError:
+                    return False
+                if member.channel_id != members[0].channel_id:
+                    return False
+                assert member.id is not None, "sitting_root_plan requires a stored identity"
+                row = self._conn.execute(
+                    "SELECT * FROM publications WHERE id = ?", (member.id,)
+                ).fetchone()
+                if (
+                    row is None
+                    or self._row_to_publication(row) != member
+                    or self.digest_owner(member.id) is not None
+                    or self.digest_sources(member.id)
+                ):
+                    return False
+                updates: dict[str, object] = {
+                    "render_origin": "legacy_snapshot"
+                    if member.status is PublicationStatus.FAILED or member.attempts
+                    else None
+                }
+                if plan.sitting_group:
+                    if (
+                        plan.sitting_group != identities
+                        or not plan.group_text.strip()
+                        or utf16_length(plan.group_text) > MESSAGE_LIMIT
+                        or plan.group_text != plans[0].group_text
+                    ):
+                        return False
+                    updates.update(sitting_group=identities, group_text=plan.group_text)
+                else:
+                    if (
+                        len(members) != 1
+                        or not plan.rendered_text.strip()
+                        or utf16_length(plan.rendered_text) > MESSAGE_LIMIT
+                    ):
+                        return False
+                    updates["rendered_text"] = plan.rendered_text
+                    if plan.continuation_ids:
+                        if not self._physical_delivery_parts(member, plan):
+                            return False
+                        updates.update(continuation_ids=plan.continuation_ids, held_change_ids=())
+                if plan != saved.model_copy(update=updates):
+                    return False
+                raw: dict[str, object] = json.loads(row["delivery_json"])
+                encoded = plan.model_dump(mode="json")
+                raw.update({key: encoded[key] for key in updates})
+                prepared.append(
+                    (
+                        json.dumps(raw, ensure_ascii=False, separators=(",", ":")),
+                        member.id,
+                        member.status.value,
+                        member.attempts,
+                        row["delivery_json"],
+                    )
+                )
+            for parameters in prepared:
+                changed = self._conn.execute(
+                    "UPDATE publications SET delivery_json = ?"
+                    " WHERE id = ? AND status = ? AND attempts = ? AND delivery_json = ?",
+                    parameters,
+                )
+                if changed.rowcount != 1:
+                    raise ValueError("Cannot freeze a changed sitting delivery")
         return True
 
     def get_update_publication(self, change_id: int, channel_id: str) -> Publication | None:
@@ -3348,6 +3354,144 @@ class SqliteBillRepository:
                 "INSERT OR IGNORE INTO digest_event_links VALUES (?, ?)",
                 [(identity, owner_id) for identity in source_ids],
             )
+
+    def freeze_legacy_digest_parts(
+        self, original: Publication, parts: tuple[DigestPart, ...], *, created_at: datetime
+    ) -> Publication | None:
+        if not legacy_digest_root(original) or not parts:
+            return None
+        assert original.id is not None and original.ref is not None, (
+            "legacy_digest_root requires a saved week identity"
+        )
+        if any(not part.text.strip() or utf16_length(part.text) > MESSAGE_LIMIT for part in parts):
+            return None
+        source_ids = tuple(identity for part in parts for identity in part.event_ids)
+        if any(identity <= 0 for identity in source_ids) or len(set(source_ids)) != len(source_ids):
+            return None
+        saved = original.delivery
+        saved_ids = saved.digest_event_ids if saved else ()
+        saved_body = saved is not None and bool(saved.rendered_text.strip())
+        if saved_body:
+            assert saved is not None, "saved_body requires the existing HTML plan"
+            if tuple(part.text for part in parts) != split_html(saved.rendered_text):
+                return None
+            if any(
+                part.event_ids != (saved_ids if index == len(parts) - 1 else ())
+                for index, part in enumerate(parts)
+            ):
+                return None
+        elif saved_ids:
+            return None
+        with self.atomic():
+            row = self._conn.execute(
+                "SELECT * FROM publications WHERE id = ?", (original.id,)
+            ).fetchone()
+            linked = self.digest_sources(original.id)
+            if (
+                row is None
+                or self._row_to_publication(row) != original
+                or self.digest_owner(original.id) is not None
+                or (linked and {part.id for part in linked} != set(saved_ids))
+                or (linked and not saved_body)
+                or self._conn.execute(
+                    "SELECT 1 FROM publications WHERE channel_id = ?"
+                    " AND kind = 'digest' AND ref LIKE ?",
+                    (original.channel_id, original.ref + ":part:%"),
+                ).fetchone()
+                is not None
+            ):
+                return None
+            sources: dict[int, Publication] = {}
+            for identity in source_ids:
+                source = self.publication_by_id(identity)
+                if (
+                    source is None
+                    or source.channel_id != original.channel_id
+                    or source.kind is PublicationKind.DIGEST
+                    or source.status is not PublicationStatus.QUEUED
+                    or source.attempts
+                    or source.delivery is None
+                    or source.delivery.destination != "digest_only"
+                    or self.digest_owner(identity) not in (None, original.id)
+                ):
+                    return None
+                sources[identity] = source
+            identities = [original.id]
+            for index, part in enumerate(parts[1:], start=2):
+                child = Publication(
+                    term=DIGEST_TERM,
+                    number=DIGEST_NUMBER,
+                    kind=PublicationKind.DIGEST,
+                    status=PublicationStatus.QUEUED,
+                    channel_id=original.channel_id,
+                    ref=f"{original.ref}:part:{index}",
+                    created_at=created_at,
+                    delivery=DeliveryPlan(
+                        bill_json="",
+                        rendered_text=part.text,
+                        digest_event_ids=part.event_ids,
+                        policy_version="attention-v1",
+                        digest_ref=original.ref,
+                    ),
+                )
+                identity = self.create_publication(child)
+                if self.publication_by_id(identity) != child.model_copy(update={"id": identity}):
+                    raise ValueError("Cannot adopt a mismatched legacy digest part")
+                identities.append(identity)
+            raw = (
+                json.loads(row["delivery_json"])
+                if row["delivery_json"] is not None
+                else DeliveryPlan(bill_json="", policy_version="attention-v1").model_dump(
+                    mode="json"
+                )
+            )
+            raw.update(
+                rendered_text=parts[0].text,
+                digest_parts=identities,
+                digest_ref=original.ref,
+                digest_event_ids=parts[0].event_ids,
+            )
+            if not saved_body:
+                raw["render_origin"] = None
+            changed = self._conn.execute(
+                "UPDATE publications SET delivery_json = ? WHERE id = ? AND status = ?"
+                " AND attempts = ? AND delivery_json IS ?",
+                (
+                    json.dumps(raw, ensure_ascii=False, separators=(",", ":")),
+                    original.id,
+                    original.status.value,
+                    original.attempts,
+                    row["delivery_json"],
+                ),
+            )
+            if changed.rowcount != 1:
+                raise ValueError("Cannot freeze a changed legacy digest root")
+            for owner, part in zip(identities, parts, strict=True):
+                for identity in part.event_ids:
+                    linked_owner = self.digest_owner(identity)
+                    if linked_owner is None:
+                        self._conn.execute(
+                            "INSERT INTO digest_event_links VALUES (?, ?)", (identity, owner)
+                        )
+                    elif linked_owner != owner:
+                        changed = self._conn.execute(
+                            "UPDATE digest_event_links SET owner_publication_id = ?"
+                            " WHERE source_publication_id = ? AND owner_publication_id = ?",
+                            (owner, identity, original.id),
+                        )
+                        if changed.rowcount != 1:
+                            raise ValueError("Cannot move changed legacy digest ownership")
+                    if self.digest_owner(identity) != owner:
+                        raise ValueError("Cannot reserve legacy digest ownership")
+            if any(
+                self.publication_by_id(identity) != source for identity, source in sources.items()
+            ):
+                raise ValueError("Cannot retain changed legacy digest sources")
+            frozen = self.publication_by_id(original.id)
+            expected = original.model_copy(update={"delivery": DeliveryPlan.model_validate(raw)})
+            if frozen != expected:
+                raise ValueError("Cannot retain the exact legacy digest root")
+            return frozen
 
     def complete_digest_events(
         self, owner_id: int, *, message_id: int, sent_at: datetime

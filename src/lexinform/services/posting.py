@@ -17,12 +17,8 @@ from zoneinfo import ZoneInfo
 
 from lexinform.attention import assess_attention
 from lexinform.delivery_schedule import daily_schedule, sitting_is_close
-from lexinform.legacy_delivery import (
-    legacy_notice_reply,
-    legacy_sitting_member,
-    legacy_status_edit,
-    legacy_status_reply,
-)
+from lexinform.direct_delivery import DIRECT_ROOTS, direct_root_plan, validate_reader_contract
+from lexinform.legacy_delivery import legacy_status_reply
 from lexinform.models import (
     AgendaItem,
     Bill,
@@ -51,6 +47,7 @@ from lexinform.models import (
 from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway, StateCheckpoint
 from lexinform.services.card_edits import edit_card
 from lexinform.services.content_history import FORMATTER_VERSION, record_publication_content
+from lexinform.services.direct_delivery import freeze_direct_root
 from lexinform.services.message_parts import continuation_ready, freeze_parts, send_continuations
 from lexinform.services.publications import (
     card_revision_owner,
@@ -61,6 +58,7 @@ from lexinform.services.publications import (
 from lexinform.services.sources import fetch_print
 from lexinform.services.status_change_applications import record_status_change
 from lexinform.services.tracking_result import TrackingResult
+from lexinform.sitting_delivery import SITTING_KINDS, sitting_root_plan, validate_sitting_contract
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 from lexinform.usefulness import digest_reason
 
@@ -413,6 +411,7 @@ class Poster:
             assert pub.id is not None and pub.delivery is not None, "queue_sitting keeps these"
             if pub.id in self._attempted:
                 continue
+            validate_sitting_contract(pub)
             if pub.delivery.sitting_group:
                 if batch:
                     self._send_sittings(batch, news, result)
@@ -431,9 +430,16 @@ class Poster:
                     else "agenda_posted",
                 )
                 continue
+            sitting_root_plan(pub)
             if pub.delivery.policy_version == "attention-v1":
-                pub = self._refresh_attention(pub)
-                assert pub.delivery is not None
+                refreshed = self._refresh_attention(pub)
+                assert refreshed.delivery is not None, "attention refresh retains the saved plan"
+                pub = (
+                    refreshed.model_copy(update={"attention": refreshed.delivery.attention})
+                    if refreshed.delivery != pub.delivery
+                    else refreshed
+                )
+                assert pub.delivery is not None, "attention refresh retains the saved plan"
             assert pub.delivery is not None and pub.id is not None
             if (
                 pub.kind is PublicationKind.AGENDA
@@ -489,57 +495,58 @@ class Poster:
     def _send_sittings(
         self, pubs: list[Publication], news: list[SittingNews], result: TrackingResult
     ) -> None:
-        if len(pubs) == 1 and utf16_length(self._publisher.render_sittings(news)) > MESSAGE_LIMIT:
-            sent = self.deliver(pubs[0])
-            result.count_post(sent, "agenda_cancelled" if news[0].cancelled else "agenda_posted")
-            return
-        if all(
-            pub.delivery is not None and pub.status is PublicationStatus.QUEUED and not pub.attempts
-            for pub in pubs
-        ):
-            group_ids = tuple(pub.id for pub in pubs if pub.id is not None)
-            text = self._publisher.render_sittings(news)
-            with self._repo.atomic():
-                for pub in pubs:
-                    assert pub.id is not None and pub.delivery is not None
-                    planned = pub.delivery.model_copy(
-                        update={"sitting_group": group_ids, "group_text": text}
-                    )
-                    assert self._repo.replace_unattempted_delivery(pub.id, planned)
-            stored = self._repo.publication_by_id(group_ids[0])
-            assert stored is not None
+        stored = self._prepare_sitting_delivery(tuple(pubs))
+        assert stored.delivery is not None, "sitting preparation retains the root plan"
+        if stored.delivery.sitting_group:
             self._retry_sitting_group(stored, result)
             return
-        if all(legacy_sitting_member(pub) for pub in pubs):
-            if not self._repo.freeze_legacy_sitting_group(
-                tuple(pubs), self._publisher.render_sittings(news)
-            ):
-                raise ValueError("Cannot freeze the legacy sitting group")
-            assert pubs[0].id is not None, "legacy_sitting_member requires stored identities"
-            stored = self._repo.publication_by_id(pubs[0].id)
-            assert stored is not None, "the group freeze retains every saved member"
-            self._retry_sitting_group(stored, result)
-            return
-        identities: list[int] = []
-        with self._repo.atomic():
-            for pub in pubs:
-                assert pub.id is not None, "queue_sitting keeps stored rows"
-                identities.append(pub.id)
-                self._repo.mark_publication(pub.id, PublicationStatus.PENDING, count_attempt=False)
-        self._attempted.update(identities)
-        message_id = send_publications(
-            self._repo,
-            self._clock,
-            identities,
-            lambda: self._publisher.publish_sittings(news),
-            checkpoint=self._checkpoint,
-        )
-        self._count_attention(tuple(identities), message_id)
-        for pub in pubs:
-            cancelled = pub.kind is PublicationKind.AGENDA_CANCELLED
-            result.count_post(
-                message_id is not None, "agenda_cancelled" if cancelled else "agenda_posted"
+        sent = self.deliver(stored)
+        result.count_post(sent, "agenda_cancelled" if news[0].cancelled else "agenda_posted")
+
+    def _prepare_sitting_delivery(self, pubs: tuple[Publication, ...]) -> Publication:
+        plans = tuple(sitting_root_plan(pub) for pub in pubs)
+        news = tuple(SittingNews.of(pub.kind, plan) for pub, plan in zip(pubs, plans, strict=True))
+        text = self._publisher.render_sittings(news)
+        if not text.strip():
+            raise ValueError("Cannot freeze empty sitting HTML")
+        if len(pubs) == 1 and utf16_length(text) > MESSAGE_LIMIT:
+            pub = pubs[0]
+            plan = plans[0].model_copy(
+                update={
+                    "render_origin": "legacy_snapshot"
+                    if pub.status is PublicationStatus.FAILED or pub.attempts
+                    else None
+                }
             )
+            return freeze_parts(
+                self._repo,
+                self._clock,
+                self._publisher,
+                pub.model_copy(update={"delivery": plan}),
+                text,
+                persist=lambda identity, prepared: self._repo.freeze_sitting_delivery(
+                    pubs, (prepared,)
+                ),
+            )
+        identities = tuple(pub.id for pub in pubs)
+        prepared = tuple(
+            plan.model_copy(
+                update={
+                    "sitting_group": identities,
+                    "group_text": text,
+                    "render_origin": "legacy_snapshot"
+                    if pub.status is PublicationStatus.FAILED or pub.attempts
+                    else None,
+                }
+            )
+            for pub, plan in zip(pubs, plans, strict=True)
+        )
+        if not self._repo.freeze_sitting_delivery(pubs, prepared):
+            raise ValueError("Cannot freeze the sitting delivery")
+        assert pubs[0].id is not None, "sitting_root_plan requires stored identities"
+        stored = self._repo.publication_by_id(pubs[0].id)
+        assert stored is not None, "the sitting freeze retains every saved member"
+        return stored
 
     def _retry_sitting_group(self, pub: Publication, result: TrackingResult) -> None:
         assert pub.delivery is not None and pub.delivery.sitting_group
@@ -549,6 +556,7 @@ class Poster:
         members = [self._repo.publication_by_id(identity) for identity in identities]
         if any(
             member is None
+            or member.kind not in SITTING_KINDS
             or member.status not in (PublicationStatus.QUEUED, PublicationStatus.FAILED)
             or member.attempts >= self._max_attempts
             or member.channel_id != self._channel_id
@@ -558,6 +566,9 @@ class Poster:
             for member in members
         ):
             return
+        for member in members:
+            assert member is not None, "the complete sitting vector was validated above"
+            validate_sitting_contract(member)
         with self._repo.atomic():
             for identity in identities:
                 self._repo.mark_publication(
@@ -802,7 +813,7 @@ class Poster:
         assert pub is not None and pub.id is not None, "prepare stores the update and its plan"
         pub_id = pub.id
         snapshot = Bill.model_validate_json(delivery.bill_json)
-        planned_change = StatusChange.model_validate_json(delivery.change_json)
+        StatusChange.model_validate_json(delivery.change_json)
         if (
             delivery.policy_version == "attention-v1"
             and pub.status is PublicationStatus.QUEUED
@@ -810,29 +821,8 @@ class Poster:
         ):
             self._freeze(pub)
         self._attempted.add(pub_id)
-        message_id = self._send(
-            pub_id,
-            snapshot,
-            lambda reply_to: self._send_update(snapshot, planned_change, delivery, reply_to),
-        )
+        message_id = self._send(pub_id, snapshot, use_card_parent=True)
         return message_id is not None
-
-    def _send_update(
-        self, bill: Bill, change: StatusChange, delivery: DeliveryPlan, reply_to: int | None
-    ) -> int:
-        if delivery.edit_message_id is not None:
-            assert delivery.today is not None, "an edit preserves the original message's date"
-            self._publisher.edit_status_update(
-                bill,
-                change,
-                message_id=delivery.edit_message_id,
-                today=delivery.today,
-                with_act=delivery.with_act,
-            )
-            return delivery.edit_message_id
-        return self._publisher.publish_status_update(
-            bill, change, delivery.reply_to or reply_to, with_act=delivery.with_act
-        ).message_id
 
     def prepare(self, bill: Bill, change: StatusChange, *, with_act: bool = False) -> DeliveryPlan:
         assert change.id is not None, "only a change record_change stored reaches the poster"
@@ -1214,6 +1204,7 @@ class Poster:
             channel_id=self._channel_id,
             ref=ref,
             delivery=delivery,
+            attention=delivery.attention if kind in SITTING_KINDS else None,
             created_at=self._clock.now(),
             attempts=stored.attempts if stored else 0,
         )
@@ -1297,6 +1288,9 @@ class Poster:
         )
         if pub.id in self._attempted or pub.delivery.destination == "digest_only":
             return False
+        validate_reader_contract(pub)
+        if pub.kind in SITTING_KINDS:
+            validate_sitting_contract(pub)
         if pub.kind is PublicationKind.MESSAGE_PART:
             ready = continuation_ready(self._repo, pub)
             if ready is None:
@@ -1304,7 +1298,13 @@ class Poster:
             pub = ready
         assert pub.delivery is not None and pub.id is not None
         if pub.delivery.policy_version == "attention-v1":
-            pub = self._refresh_attention(pub)
+            refreshed = self._refresh_attention(pub)
+            assert refreshed.delivery is not None, "attention refresh retains the saved plan"
+            pub = (
+                refreshed.model_copy(update={"attention": refreshed.delivery.attention})
+                if pub.kind in SITTING_KINDS and refreshed.delivery != pub.delivery
+                else refreshed
+            )
             assert pub.delivery is not None and pub.id is not None
             assessment = pub.delivery.attention
             if (
@@ -1368,30 +1368,30 @@ class Poster:
         assert pub.id is not None and pub.delivery is not None
         if pub.kind is PublicationKind.AMENDMENTS_REVISION:
             pub = self._freeze(pub)
+        assert pub.delivery is not None, "freezing retains the saved delivery plan"
+        if pub.kind in SITTING_KINDS and not pub.delivery.rendered_text:
+            if not pub.delivery.sitting_group:
+                pub = self._prepare_sitting_delivery((pub,))
+            if pub.delivery is not None and pub.delivery.sitting_group:
+                self._retry_sitting_group(pub, TrackingResult())
+                current = self._repo.publication_by_id(pub.id or 0)
+                return current is not None and current.status is PublicationStatus.SENT
         assert pub.id is not None and pub.delivery is not None
         self._attempted.add(pub.id)
-        plan = pub.delivery
-        bill = Bill.model_validate_json(plan.bill_json)
-        if plan.rendered_text:
-            return (
-                self._send(pub.id, bill, lambda _: self._publisher.publish_prepared(pub).message_id)
-                is not None
-            )
-        return self._send(pub.id, bill, lambda _: self._dispatch(pub.kind, bill, plan)) is not None
+        bill = Bill.model_validate_json(pub.delivery.bill_json)
+        return self._send(pub.id, bill) is not None
 
     def _freeze(self, pub: Publication, *, keep_today: bool = False) -> Publication:
         assert pub.delivery is not None and pub.id is not None
         if pub.delivery.rendered_text:
             record_publication_content(self._repo, self._clock, pub)
             return pub
-        if (
-            pub.kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED)
-            and pub.status is PublicationStatus.QUEUED
-            and not pub.attempts
-        ):
-            text = self._publisher.render_sittings((SittingNews.of(pub.kind, pub.delivery),))
-            if utf16_length(text) > MESSAGE_LIMIT:
-                return self._freeze_sitting(pub, text)
+        if pub.kind in DIRECT_ROOTS and not pub.delivery.publication_ids:
+            direct_root_plan(pub)
+        if pub.kind in SITTING_KINDS:
+            if pub.delivery.sitting_group:
+                return pub
+            return self._prepare_sitting_delivery((pub,))
         today = (
             pub.delivery.today
             if pub.delivery.edit_message_id is not None or keep_today
@@ -1427,16 +1427,6 @@ class Poster:
             language=self._language,
         )
         return frozen
-
-    def _freeze_sitting(self, pub: Publication, text: str) -> Publication:
-        assert pub.delivery is not None, "only a saved sitting reaches the physical-part producer"
-        return freeze_parts(
-            self._repo,
-            self._clock,
-            self._publisher,
-            pub.model_copy(update={"delivery": pub.delivery.model_copy(update={"reply_to": None})}),
-            text,
-        )
 
     def _schedule(self, plan: DeliveryPlan, kind: PublicationKind) -> DeliveryPlan:
         bill = Bill.model_validate_json(plan.bill_json)
@@ -1555,109 +1545,46 @@ class Poster:
             return pub.model_copy(update={"delivery": plan})
         return pub
 
-    def _dispatch(self, kind: PublicationKind, bill: Bill, plan: DeliveryPlan) -> int:
-        reply = plan.reply_to
-        if kind is PublicationKind.STATUS_UPDATE:
-            return self._send_update(
-                bill, StatusChange.model_validate_json(plan.change_json), plan, reply
-            )
-        if kind is PublicationKind.ACT_PUBLISHED:
-            return self._publisher.publish_act_published(bill, reply).message_id
-        if kind is PublicationKind.CONSULTATION_RESULTS:
-            return self._publisher.publish_consultation_results(bill, reply).message_id
-        assert kind not in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED), (
-            "sittings go out together through queue_sitting and flush_sittings"
-        )
-        assert plan.today is not None, f"a {kind} reminder is prepared with the day it is for"
-        if kind is PublicationKind.IN_FORCE:
-            return self._publisher.publish_in_force(bill, reply, today=plan.today).message_id
-        if kind is PublicationKind.CONSULTATION_DEADLINE:
-            return self._publisher.publish_consultation_deadline(
-                bill, reply, today=plan.today
-            ).message_id
-        if kind is PublicationKind.DECISION_DEADLINE:
-            assert plan.phase_json is not None, "a decision reminder is prepared with its phase"
-            phase = Phase.model_validate_json(plan.phase_json)
-            return self._publisher.publish_decision_deadline(
-                bill, phase, reply, today=plan.today
-            ).message_id
-        assert kind is PublicationKind.HEARING_DEADLINE and plan.hearing_json is not None, (
-            f"{kind} is not dispatched above, or a hearing reminder lacks its hearing"
-        )
-        hearing = Stage.model_validate_json(plan.hearing_json)
-        return self._publisher.publish_hearing_deadline(
-            bill, hearing, reply, today=plan.today
-        ).message_id
-
-    def _send(self, pub_id: int, bill: Bill, send: Send) -> int | None:
+    def _send(self, pub_id: int, bill: Bill, *, use_card_parent: bool = False) -> int | None:
         pub = self._repo.publication_by_id(pub_id)
-        legacy_reply = pub is not None and legacy_status_reply(pub)
-        if pub is not None and legacy_notice_reply(pub):
-            assert pub.delivery is not None, "legacy notices retain their saved semantic plan"
-            candidate = pub.model_copy(
-                update={
-                    "delivery": pub.delivery.model_copy(update={"render_origin": "legacy_snapshot"})
-                }
-            )
-            pub = freeze_parts(
-                self._repo,
-                self._clock,
-                self._publisher,
-                candidate,
-                self._publisher.render_delivery(candidate),
-                persist=self._repo.freeze_legacy_notice_reply,
-            )
-        elif pub is not None and (legacy_status_edit(pub) or legacy_reply):
-            assert pub.delivery is not None, "both legacy status predicates require a saved plan"
-            candidate = pub
-            if legacy_reply:
-                reply_to = pub.delivery.reply_to
-                if reply_to is None:
-                    parent = self._repo.get_publication(
+        if pub is not None:
+            validate_reader_contract(pub)
+        if (
+            pub is not None
+            and pub.kind in DIRECT_ROOTS
+            and pub.delivery is not None
+            and not pub.delivery.rendered_text
+        ):
+            reply_to = pub.delivery.reply_to
+            if (
+                pub.kind is PublicationKind.STATUS_UPDATE
+                and pub.delivery.edit_message_id is None
+                and reply_to is None
+                and (use_card_parent or legacy_status_reply(pub))
+            ):
+                parent = (
+                    self._repo.get_publication(
                         pub.term, pub.number, PublicationKind.NEW_BILL, pub.channel_id
                     )
-                    if (
-                        parent is None
-                        or parent.status is not PublicationStatus.SENT
-                        or parent.message_id is None
-                        or parent.message_id <= 0
-                    ):
+                    if legacy_status_reply(pub)
+                    else self.card(bill)
+                )
+                if (
+                    parent is None
+                    or parent.status is not PublicationStatus.SENT
+                    or parent.message_id is None
+                    or parent.message_id <= 0
+                ):
+                    if legacy_status_reply(pub):
                         raise ValueError("The legacy reply lacks its sent card receipt")
+                else:
                     reply_to = parent.message_id
-                today = self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date()
-                candidate = pub.model_copy(
-                    update={
-                        "delivery": pub.delivery.model_copy(
-                            update={"today": today, "reply_to": reply_to}
-                        )
-                    }
+            if pub.status is PublicationStatus.QUEUED and not pub.attempts:
+                pub = self._freeze(pub, keep_today=pub.kind is not PublicationKind.STATUS_UPDATE)
+            else:
+                pub = freeze_direct_root(
+                    self._repo, self._clock, self._publisher, pub, reply_to=reply_to
                 )
-            text = self._publisher.render_delivery(candidate)
-            if legacy_reply:
-                assert candidate.delivery is not None, "the reply candidate retains its plan"
-                candidate = candidate.model_copy(
-                    update={
-                        "delivery": candidate.delivery.model_copy(
-                            update={"render_origin": "legacy_snapshot"}
-                        )
-                    }
-                )
-                pub = freeze_parts(
-                    self._repo,
-                    self._clock,
-                    self._publisher,
-                    candidate,
-                    text,
-                    persist=self._repo.freeze_legacy_status_reply,
-                )
-            elif utf16_length(text) <= MESSAGE_LIMIT:
-                assert candidate.delivery is not None, "the candidate retains the saved plan"
-                plan = candidate.delivery.model_copy(
-                    update={"rendered_text": text, "render_origin": "legacy_snapshot"}
-                )
-                if not self._repo.freeze_legacy_status_edit(pub_id, plan):
-                    raise ValueError("Cannot freeze the legacy status snapshot")
-                pub = pub.model_copy(update={"delivery": plan})
         if (
             pub is not None
             and pub.delivery is not None
@@ -1673,38 +1600,19 @@ class Poster:
                 assert pub.delivery is not None, (
                     "stored rows selected for freezing retain their plan"
                 )
-                sitting = (
-                    pub.kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED)
-                    and pub.status is PublicationStatus.QUEUED
-                )
-                text = (
-                    self._publisher.render_sittings((SittingNews.of(pub.kind, pub.delivery),))
-                    if sitting
-                    else self._publisher.render_delivery(pub)
-                )
+                text = self._publisher.render_delivery(pub)
                 if utf16_length(text) > MESSAGE_LIMIT:
-                    pub = (
-                        self._freeze_sitting(pub, text)
-                        if sitting
-                        else freeze_parts(self._repo, self._clock, self._publisher, pub, text)
-                    )
-        if pub is not None and pub.delivery is not None and pub.delivery.rendered_text:
-
-            def prepared_send(_: int | None) -> int:
-                return self._publisher.publish_prepared(pub).message_id
-
-            send = prepared_send
-        if pub is not None:
-            record_publication_content(self._repo, self._clock, pub)
-        card = self.card(bill)
-        reply_to = card.message_id if card else None
+                    pub = freeze_parts(self._repo, self._clock, self._publisher, pub, text)
+        if pub is None or pub.delivery is None or not pub.delivery.rendered_text.strip():
+            raise ValueError("The reader delivery lacks frozen physical HTML")
+        record_publication_content(self._repo, self._clock, pub)
         checkpoint = self._delivery_checkpoint(pub)
         self._repo.mark_publication(pub_id, PublicationStatus.PENDING, count_attempt=False)
         sent = send_publication(
             self._repo,
             self._clock,
             pub_id,
-            lambda: send(reply_to),
+            partial(self._publisher.publish_prepared, pub),
             checkpoint=checkpoint,
         )
 
@@ -1773,7 +1681,7 @@ class Poster:
             )
         ):
             return self._checkpoint
-        return None
+        raise ValueError("The saved reader delivery has no supported checkpoint owner")
 
     def delivery_errors(self) -> list[str]:
         return list(self._part_errors)

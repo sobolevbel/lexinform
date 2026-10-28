@@ -432,7 +432,7 @@ def test_pending_digest_dry_run_and_no_publish_do_not_push_or_send(
 
 
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])
-def test_attempted_legacy_digest_keeps_its_compatible_unfrozen_fallback(
+def test_attempted_legacy_digest_freezes_its_future_rebuilt_payload(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: Mode
 ) -> None:
     world, _ = pending_event(mode)
@@ -445,23 +445,24 @@ def test_attempted_legacy_digest_keeps_its_compatible_unfrozen_fallback(
             status=PublicationStatus.FAILED,
             ref=REF,
             created_at=world.clock.now(),
-            attempts=1,
         )
     )
+    world.repo.mark_publication(identity, PublicationStatus.FAILED)
     remote = connect(world, tmp_path)
 
-    def send(publication: Publication) -> PublishResult:
-        raise AssertionError("an attempted legacy digest keeps its original fallback")
+    def send(week: Digest, *, approve: str = "") -> PublishResult:
+        raise AssertionError("a legacy reader retry must use its frozen physical intent")
 
-    monkeypatch.setattr(world.publisher, "publish_prepared", send)
+    monkeypatch.setattr(world.publisher, "publish_digest", send)
 
     assert service_for(world).publish(REF).published
 
     fresh = restored(remote, world, tmp_path)
     row = fresh.repo.publication_by_id(identity)
-    assert row is not None and row.status is PublicationStatus.SENT and row.delivery is None, (
-        "the attempted legacy digest keeps its saved row without invented frozen HTML"
+    assert row is not None and row.status is PublicationStatus.SENT and row.delivery is not None, (
+        "the future retry retains the rebuilt physical payload"
     )
+    assert row.attempts == 1 and row.delivery.digest_parts == (identity,)
 
 
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])

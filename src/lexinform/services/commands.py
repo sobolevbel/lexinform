@@ -844,11 +844,7 @@ class CommandService:
         )
 
     def _preview_to(self, bill: Bill, print_info: PrintInfo | None, chat: str) -> str:
-        """`/preview BILL to=CHAT`: the card into a test chat, `lexinform preview --to`'s twin.
-
-        It is a card and not a publication: no `publications` row, so nothing about the channel
-        changes and the bill is no more published afterwards than before.
-        """
+        """Send an unrecorded card through the factory that excludes the reader channel."""
         if self._publisher_for is None:
             return f"cannot send to {chat}: this run publishes nowhere but its own channel"
         result = self._publisher_for(chat).publish_new_bill(bill, print_info)

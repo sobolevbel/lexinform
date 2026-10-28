@@ -6,7 +6,6 @@ import pytest
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import (
     DeliveryPlan,
-    ParticipationSnapshot,
     Publication,
     PublicationKind,
     PublicationStatus,
@@ -72,10 +71,10 @@ def test_only_html_and_its_origin_are_added_without_resetting_the_failed_attempt
     prepared = frozen(original)
 
     assert not repo.replace_unattempted_delivery(original.id, prepared)
-    assert repo.freeze_legacy_status_edit(original.id, prepared)
+    assert repo.freeze_direct_delivery(original, prepared)
 
     assert repo.publication_by_id(original.id) == original.model_copy(update={"delivery": prepared})
-    assert not repo.freeze_legacy_status_edit(original.id, prepared)
+    assert not repo.freeze_direct_delivery(original, prepared)
     fresh = SqliteBillRepository(":memory:")
     try:
         fresh.restore(repo.dump())
@@ -89,7 +88,7 @@ def test_only_html_and_its_origin_are_added_without_resetting_the_failed_attempt
 @pytest.mark.parametrize(
     "status", [state for state in PublicationStatus if state is not PublicationStatus.FAILED]
 )
-def test_other_delivery_states_cannot_be_reinterpreted_as_a_definite_failed_edit(
+def test_stale_edit_snapshot_cannot_freeze_an_operation_whose_state_changed(
     repo: SqliteBillRepository, status: PublicationStatus
 ) -> None:
     publication = saved_edit(repo)
@@ -97,7 +96,7 @@ def test_other_delivery_states_cannot_be_reinterpreted_as_a_definite_failed_edit
     repo.mark_publication(publication.id, status, count_attempt=False)
     before = repo.publication_by_id(publication.id)
 
-    assert not repo.freeze_legacy_status_edit(publication.id, frozen(publication))
+    assert not repo.freeze_direct_delivery(publication, frozen(publication))
 
     assert repo.publication_by_id(publication.id) == before
 
@@ -127,9 +126,7 @@ def test_a_freeze_cannot_change_the_saved_context_target_flags_or_physical_shape
     original = saved_edit(repo)
     assert original.id is not None, "saved_edit persists its physical identity"
 
-    assert not repo.freeze_legacy_status_edit(
-        original.id, frozen(original).model_copy(update=patch)
-    )
+    assert not repo.freeze_direct_delivery(original, frozen(original).model_copy(update=patch))
 
     assert repo.publication_by_id(original.id) == original
 
@@ -137,8 +134,6 @@ def test_a_freeze_cannot_change_the_saved_context_target_flags_or_physical_shape
 @pytest.mark.parametrize(
     "patch",
     [
-        {"policy_version": "attention-v1"},
-        {"edit_message_id": None},
         {"edit_message_id": 0},
         {"today": None},
         {"rendered_text": "existing HTML"},
@@ -154,11 +149,6 @@ def test_a_freeze_cannot_change_the_saved_context_target_flags_or_physical_shape
         {"destination": "digest_only"},
         {"absorbed_by": 999},
         {"revision_of": 999},
-        {
-            "participation": ParticipationSnapshot(
-                consultation=None, checked_at=datetime(2026, 10, 24, tzinfo=UTC)
-            )
-        },
         {"update_group": (UpdateSnapshot(publication_id=999, bill_json="{}", change_json="{}"),)},
     ],
 )
@@ -168,21 +158,22 @@ def test_incomplete_or_already_frozen_legacy_shapes_remain_unchanged(
     publication = saved_edit(repo, patch=patch)
     assert publication.id is not None, "saved_edit persists its physical identity"
 
-    assert not repo.freeze_legacy_status_edit(publication.id, frozen(publication))
+    assert not repo.freeze_direct_delivery(publication, frozen(publication))
 
     assert repo.publication_by_id(publication.id) == publication
 
 
 @pytest.mark.parametrize("kind", [PublicationKind.NEW_BILL, PublicationKind.MESSAGE_PART])
-def test_the_narrow_writer_cannot_modify_a_different_delivery_kind(
+def test_a_card_or_part_cannot_adopt_the_status_edit_contract(
     repo: SqliteBillRepository, kind: PublicationKind
 ) -> None:
     original = saved_edit(repo)
     unrelated = original.model_copy(update={"id": None, "kind": kind, "status_change_id": None})
     identity = repo.create_publication(unrelated)
     before = repo.publication_by_id(identity)
+    assert before is not None, "create_publication stores the unrelated operation"
 
-    assert not repo.freeze_legacy_status_edit(identity, frozen(unrelated))
+    assert not repo.freeze_direct_delivery(before, frozen(before))
 
     assert repo.publication_by_id(identity) == before
 
@@ -203,7 +194,7 @@ def test_freezing_preserves_unknown_delivery_fields_from_a_compatible_newer_writ
     assert source.count(quoted) == 1, "the fixture has one physical edit with this saved plan"
     repo.restore(source.replace(quoted, replacement))
 
-    assert repo.freeze_legacy_status_edit(original.id, frozen(original))
+    assert repo.freeze_direct_delivery(original, frozen(original))
 
     assert repo.dump().count("future_contract") == 1
     assert '"retain":["opaque",123]' in repo.dump()

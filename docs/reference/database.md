@@ -169,7 +169,9 @@ dump и не требует SQL-миграции.
 Если карточка или joint-ответ уже содержит `rendered_text`, повтор использует этот HTML
 при любом attention mode и legacy policy. Изменение formatter не пересобирает такой payload.
 Новые карточки сохраняют HTML до первой отправки во всех modes; все multipart-части
-готовятся заранее. Уже попытанные legacy-записи без HTML обслуживаются прежним handler.
+готовятся заранее. Допустимые старые QUEUED/FAILED строки без HTML перед следующим API effect
+сохраняют будущий физический payload из исходного контекста. Прежний отправленный HTML
+задним числом не восстанавливается; неполная форма не отправляется через callback.
 Сводка стадий хранит также `update_group` (ID и снимки участников) и готовый `group_text`;
 решение оператора применяется ко всей группе. Его `publication_ids` остаются в аудите
 после очистки отправленного payload. `wait_until` задаёт фиксированный предел ожидания
@@ -237,17 +239,21 @@ Shared checkpoint также охватывает NEW_BILL/JOINT_BILL и их ME
 failed/queued части идут через ту же границу. При post-save failure удалённый pending после
 потери runner становится unknown, а не разрешением повторить отправку. Operator retry сохраняет
 audit вместе с pending до повторного API. Attempted legacy card без HTML сохраняет прежний
-render callback; exact HTML этой старой попытки задним числом не восстанавливается.
+контекст, но перед новой попыткой фиксирует будущий HTML/parts. Exact HTML прошлой попытки
+задним числом не восстанавливается.
 
 Shared update groups и сохранённые sitting groups также checkpoint'ят всех участников до API
 и общий receipt после него. Новые sitting groups сохраняют HTML/membership в off/shadow/on;
-старые attempted legacy без membership остаются на прежнем callback.
+старые допустимые QUEUED/FAILED группы и одиночные заседания фиксируют будущий HTML/membership
+до retry. Неизвестная старая membership не выводится из похожести событий.
 
 Новые reader digests во всех attention modes сохраняют части и source membership до первого
 API. Каждая часть checkpoint'ит pending до API и receipt/source completion после него.
 Команда и финальная digest phase разделяют scope попыток: одна physical часть отправляется
 не более одного раза за запуск; следующий запуск может повторить definite failure.
-Attempted legacy digest без частей checkpoint'ит статус, сохраняя прежний render callback.
+Attempted legacy digest без частей перед retry сохраняет части: прежний сохранённый HTML
+авторитетен, а при его отсутствии текущий layout строится один раз. Источники освобождаются
+только по подтверждённой физической части; неизвестное владение не угадывается.
 Technical draft не резервирует source events и не получает reader checkpoints.
 
 CommandService checkpoint'ит started до исполнения, unhandled outcome до ответа и handled
@@ -258,7 +264,8 @@ generic reply error сохраняет прежний handled/failure-note ко�
 Новые одиночные STATUS_UPDATE без edit target сохраняют HTML и все части в off/shadow/on.
 Root и MESSAGE_PART checkpoint'ят pending до API и receipt/effects после него; последняя часть
 освобождает только saved held IDs и завершает связанный ACT_PUBLISHED. Исходный FAILED без HTML
-не сбрасывается в QUEUED и сохраняет legacy callback с checkpoints статуса.
+не сбрасывается в QUEUED; будущий HTML/parts фиксируется перед повторной отправкой без сброса
+попыток.
 Reader использует любой saved `rendered_text`, включая короткий legacy payload и edits.
 Shared attempted set сохраняется между end-of-term, commands, publishing и tracking;
 одна physical попытка за execution, следующий запуск может повторить definite failure.
@@ -267,13 +274,14 @@ Reader frozen sittings использует сохранённый HTML до re-
 legacy target. Новый длинный одиночный AGENDA/AGENDA_CANCELLED сохраняет roundup HTML с card
 link и top-level root reply_to=None, children используют receipt parent; каждый physical send
 проходит pre/post checkpoint. Frozen sitting с item_json доступен операторскому recovery
-независимо от reply. Attempted legacy noHTML не переписывается и может сохранить прежний refusal.
+независимо от reply. Attempted legacy noHTML сохраняет будущую группу/части до retry;
+старый фактический HTML не выводится из текущего formatter.
 
 Новые notices об акте, вступлении в силу, итогах консультаций и consultation/decision/hearing
 deadlines сохраняют HTML/parts и pre/post checkpoints во всех modes. Legacy dated first-send
 сохраняет plan.today; attention-v1 сохраняет прежние refresh/expiry и текущую дату при freeze.
-Attempted legacy без HTML сохраняет исходные snapshot/date/callback. Incomplete reminder
-не отправляет preview error вместо читательского сообщения.
+Attempted legacy без HTML сохраняет исходные snapshot/date и фиксирует будущий HTML.
+Incomplete reminder не отправляет preview error вместо читательского сообщения.
 
 Card revision reader использует MESSAGE_PART с frozen edit target и logical revision_of;
 legacy card/ref тоже распознаётся. Owner должен соответствовать bill/term/channel/target.
@@ -301,26 +309,22 @@ JOINT_BILL с SENT root, exact membership/parent/index и совпадающим
 Service и repository используют общий pure qualifier; root receipt и payload не переписываются.
 
 Новые status update edits также сохраняют HTML/parts и исходный today; каждый edit/child
-использует общий checkpoint. Узкий freeze для FAILED legacy edit описан ниже.
+использует общий checkpoint. Допустимый FAILED legacy edit сохраняет будущий HTML/parts
+из исходных Bill/change/today/target перед retry без сброса attempts.
 
 Сохранённые consultation/commission reviews и amendments revisions с HTML, включая parts,
 используют ту же pre/post boundary. Review-work handler пробрасывает fatal checkpoint error.
-Paused flags и прежнее отклонение FAILED legacy без HTML сохраняются.
+Paused flags и прежнее отклонение FAILED legacy review без HTML сохраняются.
 Автоматическая amendments revision создаёт свежий semantic plan из исторического контекста;
 она не наследует старые HTML, physical membership и held/digest effects исходной публикации.
 
-Legacy attempted sitting callback и STATUS_UPDATE edit без HTML также используют pre/post
-checkpoint. Их исторические HTML и shared membership не восстанавливаются из предположений;
-старый sitting без membership сохраняет per-row operator recovery.
-Одночастный FAILED STATUS_UPDATE edit с legacy policy, исходными Bill/change/today/target,
-без participation override, HTML и physical membership может сохранить первый HTML перед retry.
-Узкий writer добавляет только HTML и optional `render_origin=legacy_snapshot`; status, attempts,
-source fields, flags и target неизменны. UNKNOWN/PENDING и иные shapes не переписываются.
-Неизвестные JSON-поля сохраняются; CAS сравнивает исходный raw payload и счётчик попыток.
-Этот origin означает новый freeze сохранённого контекста, а не восстановленный HTML прежней
-попытки; `/delivery` показывает это явно. Старый reader использует обычный prepared payload.
-Некоторые attempted legacy rows без HTML сохраняют прежние callbacks. Полная граница остаётся задачей
-[архитектурного плана](../plans/2026-10-22-document-architecture.md#da1).
+Legacy freeze сохраняет raw JSON, status, attempts, IDs, source fields и target; CAS сверяет
+исходный raw payload и число попыток. `render_origin=legacy_snapshot` означает новый future
+freeze сохранённого контекста, а не восстановленный HTML старой попытки. UNKNOWN/PENDING
+не переписываются и автоматически не повторяются. Некорректный physical owner или чужая
+sitting-group разметка direct сообщения отвергается до `pending` и API. Для нынешних reader
+отправок callback без подготовленного HTML больше не используется; подробности и проверки —
+в [журнале J135](../plans/2026-10-22-document-architecture-progress.md#j135).
 
 `restore()` сначала проигрывает SQL в отдельной базе в памяти. После успешной проверки
 заменяет таблицы целевой базы, временно отключив внешние ключи, восстанавливает версию

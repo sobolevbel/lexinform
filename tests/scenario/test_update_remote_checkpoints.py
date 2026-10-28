@@ -363,7 +363,7 @@ def test_lost_final_status_part_keeps_its_audit_payload_and_effects_on_operator_
 @pytest.mark.parametrize("attempts", [0, 1])
 @pytest.mark.parametrize("long", [False, True])
 @pytest.mark.parametrize("policy", ["legacy", "attention-v1"])
-def test_failed_status_snapshot_freezes_only_qualified_legacy_replies(
+def test_failed_status_snapshot_freezes_callback_equivalent_replies(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     mode: Mode,
@@ -385,7 +385,13 @@ def test_failed_status_snapshot_freezes_only_qualified_legacy_replies(
     prepared_calls: list[int] = []
     frozen = legacy.model_copy(
         update={
-            "rendered_text": world.publisher.render_delivery(row(world, case.identity)),
+            "rendered_text": world.publisher.render_delivery(
+                row(world, case.identity).model_copy(
+                    update={
+                        "delivery": legacy.model_copy(update={"render_origin": "legacy_snapshot"})
+                    }
+                )
+            ),
             "render_origin": "legacy_snapshot",
         }
     )
@@ -423,19 +429,15 @@ def test_failed_status_snapshot_freezes_only_qualified_legacy_replies(
 
     assert send(case)
 
-    if policy == "legacy":
-        identities = [case.identity, *plan(world, case.identity).continuation_ids]
-        assert not observed and prepared_calls == identities
-        assert all(row(world, identity).status is PublicationStatus.SENT for identity in identities)
-    else:
-        assert observed == [case.identity] and not prepared_calls
-        assert plan(world, case.identity) == legacy
+    identities = [case.identity, *plan(world, case.identity).continuation_ids]
+    assert not observed and prepared_calls == identities
+    assert all(row(world, identity).status is PublicationStatus.SENT for identity in identities)
     assert row(world, case.identity).attempts == attempts
 
 
 @pytest.mark.parametrize("attempts", [0, 1])
 @pytest.mark.parametrize("policy", ["legacy", "attention-v1"])
-def test_failed_long_status_freezes_qualified_legacy_parts_without_rewriting_other_policies(
+def test_failed_long_status_freezes_all_parts_without_rewriting_its_policy(
     tmp_path: Path, attempts: int, policy: str
 ) -> None:
     case = queued(long=True)
@@ -450,17 +452,13 @@ def test_failed_long_status_freezes_qualified_legacy_parts_without_rewriting_oth
     world.container.delivery_service(dry_run=False).run()
 
     assert row(world, case.identity).status is PublicationStatus.SENT
-    if policy == "legacy":
-        saved = plan(world, case.identity)
-        assert saved.rendered_text and saved.render_origin == "legacy_snapshot"
-        assert saved.continuation_ids
-        assert all(
-            row(world, identity).status is PublicationStatus.SENT
-            for identity in saved.continuation_ids
-        )
-    else:
-        assert plan(world, case.identity) == legacy
-        assert not legacy.rendered_text and not legacy.continuation_ids
+    saved = plan(world, case.identity)
+    assert saved.rendered_text and saved.render_origin == "legacy_snapshot"
+    assert saved.policy_version == policy
+    assert saved.continuation_ids
+    assert all(
+        row(world, identity).status is PublicationStatus.SENT for identity in saved.continuation_ids
+    )
 
 
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])
@@ -482,7 +480,13 @@ def test_failed_legacy_status_edit_checkpoints_frozen_html_and_keeps_its_target(
     before_sent, before_edits = len(world.publisher.sent), len(world.publisher.edited)
     frozen = edit.model_copy(
         update={
-            "rendered_text": world.publisher.render_delivery(row(world, case.identity)),
+            "rendered_text": world.publisher.render_delivery(
+                row(world, case.identity).model_copy(
+                    update={
+                        "delivery": edit.model_copy(update={"render_origin": "legacy_snapshot"})
+                    }
+                )
+            ),
             "render_origin": "legacy_snapshot",
         }
     )

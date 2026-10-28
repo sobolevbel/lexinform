@@ -1,0 +1,76 @@
+{
+  "automatic_deploy": {
+    "conclusion": "success",
+    "created_at": "2026-10-28T12:05:54Z",
+    "event": "workflow_run",
+    "head_sha": "563b3e805db04301ae18f5d5e9555d51a9639b19",
+    "html_url": "https://github.com/sobolevbel/lexinform/actions/runs/40685055464",
+    "id": 40685055464,
+    "run_attempt": 1,
+    "status": "completed",
+    "updated_at": "2026-10-28T12:06:49Z"
+  },
+  "ci": {
+    "conclusion": "success",
+    "created_at": "2026-10-28T11:57:51Z",
+    "event": "push",
+    "head_sha": "563b3e805db04301ae18f5d5e9555d51a9639b19",
+    "html_url": "https://github.com/sobolevbel/lexinform/actions/runs/40683990897",
+    "id": 40683990897,
+    "run_attempt": 1,
+    "status": "completed",
+    "updated_at": "2026-10-28T12:05:51Z"
+  },
+  "ci_jobs": [
+    {
+      "completed_at": "2026-10-28T12:05:50Z",
+      "conclusion": "success",
+      "id": 122801567960,
+      "name": "test (3.14)",
+      "started_at": "2026-10-28T11:57:54Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-28T11:58:08Z",
+      "conclusion": "success",
+      "id": 122801568216,
+      "name": "docs",
+      "started_at": "2026-10-28T11:57:54Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-28T11:58:43Z",
+      "conclusion": "success",
+      "id": 122801568405,
+      "name": "web",
+      "started_at": "2026-10-28T11:57:54Z",
+      "status": "completed"
+    }
+  ],
+  "deploy_jobs": [
+    {
+      "completed_at": "2026-10-28T12:06:48Z",
+      "conclusion": "success",
+      "id": 122805151925,
+      "name": "deploy",
+      "started_at": "2026-10-28T12:05:57Z",
+      "status": "completed"
+    }
+  ],
+  "filtered_update_restart_lines": [
+    "2026-10-28T12:05:58.2118724Z   COMMIT: 563b3e805db04301ae18f5d5e9555d51a9639b19",
+    "2026-10-28T12:06:01.6968121Z 7287059ab139 -> 563b3e805db0",
+    "2026-10-28T12:06:47.0363978Z lexinform-listen up 45 s after restart",
+    "2026-10-28T12:06:47.4812543Z lexinform-batch-poll.timer enabled"
+  ],
+  "head_sha": "563b3e805db04301ae18f5d5e9555d51a9639b19",
+  "limitations": [
+    "Existing relay health proof is systemd restart plus 45-second survival; no independent Telegram functional test.",
+    "No SSH, rerun, manual dispatch, source or production-state mutation performed.",
+    "No memory-use claim or historical termination-cause inference."
+  ],
+  "observed_main_sha": "563b3e805db04301ae18f5d5e9555d51a9639b19",
+  "role": "release-checks",
+  "stage": "J134",
+  "verified": true
+}

@@ -47,6 +47,29 @@ def _ok(message_id: int) -> httpx.Response:
     return httpx.Response(200, json={"ok": True, "result": {"message_id": message_id}})
 
 
+@pytest.mark.parametrize("identity", [-100123, 456])
+def test_get_chat_resolves_a_username_without_sending(identity: int) -> None:
+    calls: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/botTOKEN/getChat"
+        calls.append(json.loads(request.content))
+        return httpx.Response(200, json={"ok": True, "result": {"id": identity}})
+
+    assert _client(handler).get_chat_id("@preview") == identity
+    assert calls == [{"chat_id": "@preview"}]
+
+
+@pytest.mark.parametrize("identity", [None, True, False, 0, "-100123", 1.5, {}, []])
+def test_get_chat_rejects_an_unverified_identity(identity: object) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/botTOKEN/getChat"
+        return httpx.Response(200, json={"ok": True, "result": {"id": identity}})
+
+    with pytest.raises(ValueError, match="no valid chat id; preview was not sent"):
+        _client(handler).get_chat_id("@preview")
+
+
 def test_run_report_is_a_new_message_and_the_started_one_is_deleted() -> None:
     requests: list[tuple[str, dict[str, object]]] = []
 

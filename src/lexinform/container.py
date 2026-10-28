@@ -97,6 +97,14 @@ from lexinform.settings import Settings
 LOCAL_TZ = ZoneInfo("Europe/Warsaw")
 
 
+def _numeric_chat_id(address: str) -> int | None:
+    try:
+        identity = int(address)
+    except ValueError:
+        return None
+    return identity if identity else None
+
+
 @dataclass
 class Container:
     """The wiring. Services are built once and shared (`discovery_service()` and the pipeline's
@@ -573,18 +581,34 @@ class Container:
                 tracking=self.tracking_service(dry_run=dry_run),
                 amendments=self.amendments_service(),
                 digest=self.digest_service(dry_run=dry_run),
-                publisher_for=lambda chat: self.publisher_for(chat, dry_run=dry_run),
+                publisher_for=lambda chat: self.preview_publisher(chat, dry_run=dry_run),
                 language=self.settings.output_language,
                 checkpoint=self.state_checkpoint(dry_run=dry_run),
             ),
         )
 
-    def publisher_for(self, channel_id: str, *, dry_run: bool) -> Publisher:
-        """Where `/preview BILL to=…` sends the card: that chat, or wherever this run's publisher
-        goes when there is no real one (a dry run, a test's override)."""
+    def preview_publisher(self, channel_id: str, *, dry_run: bool) -> Publisher:
+        """Unrecorded previews may leave only for a chat distinct from the reader channel."""
+        target = channel_id.strip()
+        reader = self.settings.telegram_channel_id.strip()
+        if not target or not reader:
+            raise ValueError("Cannot verify preview destination without both chat addresses")
+        if target.casefold() == reader.casefold():
+            raise ValueError("Preview cannot be sent to the reader channel; use /republish")
+        target_id = _numeric_chat_id(target)
+        reader_id = _numeric_chat_id(reader)
+        if target_id is not None and reader_id is not None and target_id == reader_id:
+            raise ValueError("Preview cannot be sent to the reader channel; use /republish")
         if dry_run or self.publisher_override is not None:
             return self.publisher(dry_run=dry_run)
-        return self.telegram_publisher(channel_id=channel_id)
+        client = self.telegram_client()
+        if target_id is None:
+            target_id = client.get_chat_id(target)
+        if reader_id is None:
+            reader_id = client.get_chat_id(reader)
+        if target_id == reader_id:
+            raise ValueError("Preview cannot be sent to the reader channel; use /republish")
+        return self.telegram_publisher(channel_id=str(target_id))
 
     def amendments_service(self) -> AmendmentsService:
         return self._once(
