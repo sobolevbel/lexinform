@@ -19,6 +19,7 @@ from lexinform.models.analysis import (
     SupplementContext,
 )
 from lexinform.models.bill import LocatedText
+from lexinform.models.computation_inputs import ComputationInputBinding
 from lexinform.models.documents import DocumentSelection
 from lexinform.models.enums import SourceKind, TextSource
 from lexinform.models.observations import DeliveryPlan
@@ -243,6 +244,15 @@ class BatchItemMeta(BaseModel):
     memo_key: str | None = None
     located: LocatedText | None = None
     text: str = ""
+    input_binding: ComputationInputBinding | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    @model_validator(mode="after")
+    def frozen_binding(self) -> Self:
+        if self.input_binding is not None and self.input_binding.reuse_key != self.memo_key:
+            raise ValueError("input binding must keep its frozen memo key")
+        return self
 
 
 class BatchJob(BaseModel):
@@ -267,6 +277,8 @@ class DigestItemMeta(BaseModel):
         default=None, pattern=r"^[0-9a-f]{64}$", exclude_if=lambda value: value is None
     )
     source_kind: SourceKind = "print"
+    source_url: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    document_number: str | None = Field(default=None, exclude_if=lambda value: value is None)
     title: str = ""
     compared_with: list[str] = Field(default_factory=list)
     review_context: ReviewContext | None = None
@@ -276,6 +288,15 @@ class DigestItemMeta(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     explanation: BatchItemMeta | None = None
+    input_binding: ComputationInputBinding | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    @model_validator(mode="after")
+    def frozen_binding(self) -> Self:
+        if self.input_binding is not None and self.input_binding.reuse_key != self.memo_key:
+            raise ValueError("input binding must keep its frozen memo key")
+        return self
 
 
 def batch_item_meta(kind: str, raw: str) -> BatchItemMeta | DigestItemMeta:
@@ -313,3 +334,33 @@ class BatchIntent(BaseModel):
     provider: BatchProvider
     state: Literal["queued", "submitting"] = "queued"
     created_at: dt.datetime
+
+    @classmethod
+    def from_request(
+        cls,
+        *,
+        request: BatchRequest,
+        meta: BatchItemMeta | DigestItemMeta,
+        provider: BatchProvider,
+        created_at: dt.datetime,
+    ) -> Self:
+        if meta.input_binding is not None:
+            raise ValueError("a new intent cannot rebind an existing input")
+        key = meta.memo_key
+        if not key:
+            raise ValueError("a new intent requires its recorded question key")
+        question = request.question
+        number = (
+            question.ctx.subject.number
+            if isinstance(question, JointQuestion)
+            else question.ctx.number
+        )
+        if request.number != number:
+            raise ValueError("a new request must belong to its question subject")
+        binding = ComputationInputBinding(term=request.term, number=number, reuse_key=key)
+        return cls(
+            request=request,
+            meta=meta.model_copy(update={"input_binding": binding}),
+            provider=provider,
+            created_at=created_at,
+        )

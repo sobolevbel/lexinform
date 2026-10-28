@@ -1,0 +1,578 @@
+{
+  "version": 1,
+  "stage": "J074",
+  "baseline": "3cd82124cf1a12427897327acefd4c2d8db5dcd5",
+  "defect": "B123",
+  "checks": {
+    "qualified_before": {
+      "sha256": "b2c32961eb1eb8d06226de395adae6477747de476101a8b38f2fef7c94bff3a8",
+      "tests": 20,
+      "failures": 8,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 2.03
+    },
+    "focused": {
+      "sha256": "e24feb1fa18b51312b8eec35004488ef41db2b0e2e5a12e97fce736115630392",
+      "tests": 71,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 2.853
+    },
+    "full": {
+      "sha256": "8f050619a154e8b5db8803a46c0b800c449d79969fbe542f0340f8e09aa383e6",
+      "tests": 4477,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 645.538
+    },
+    "normal_baseline": {
+      "sha256": "a9ebdfb8be89428f6fe549cc6f6450275742f62c50005702f85231b6beef83e1",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.185
+    },
+    "normal_current": {
+      "sha256": "a2e7ff44b6a4ee57cc65530b03d5acee289ba7f52339957acaa4db35122cad38",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.083
+    },
+    "reuse_baseline": {
+      "sha256": "41d96fb999c2b32313f1a2210e430d8a78f5acd18334162755aadc4245a634dd",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.324
+    },
+    "reuse_current": {
+      "sha256": "b0dfdb5d3ac3c7c3d79c768031d1a1f598cf76abdbd7cdd8008fcdde7fe56159",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.112
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 416 source files",
+    "ruff": "All checks passed!",
+    "format": "1 file reformatted, 416 files left unchanged"
+  },
+  "changed_runtime": [
+    {
+      "path": "src/lexinform/services/analysis.py",
+      "baseline_sha256": "091cd2b161cf44f9dbbbf3eca016c5287f9805a06ea0189864a3d36f1a99fbc8",
+      "current_sha256": "8b858a02b05cd0118b32bb51d300e141f3ff30ef13b6e744912b86dc74896f9b"
+    },
+    {
+      "path": "src/lexinform/services/computation_reuse.py",
+      "baseline_sha256": null,
+      "current_sha256": "e86109708461d92fdbe8d5aed365745df007cb31a66e5f71faafb72185c4b4c1"
+    }
+  ],
+  "unchanged_runtime": {
+    "count": 144,
+    "path_list_sha256": "074d1d3f69516e5a811fa2241c4dd70b6f298805fd7294bce71163a3bb387afc"
+  },
+  "migrations": {
+    "count": 50,
+    "all_unchanged": true,
+    "tuple_sha256": "f3d023c714c1e1a772f09e20033259f367fb9fcdf075b88cdf89557699d106ff"
+  },
+  "normal_profiles_unchanged": 12,
+  "reuse_profiles": [
+    {
+      "case": "gpt-5.1-1-amendments",
+      "requests_before": 2,
+      "requests_after": 1,
+      "results_before": 2,
+      "results_after": 1,
+      "source_answer_and_reader_projection_unchanged": true,
+      "delta": {
+        "sql_bytes": -3014,
+        "gzip_bytes": -140,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "gpt-5.1-1-supplement",
+      "requests_before": 2,
+      "requests_after": 1,
+      "results_before": 2,
+      "results_after": 1,
+      "source_answer_and_reader_projection_unchanged": true,
+      "delta": {
+        "sql_bytes": -4179,
+        "gzip_bytes": -156,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "gpt-5.1-1-joint",
+      "requests_before": 2,
+      "requests_after": 1,
+      "results_before": 2,
+      "results_after": 1,
+      "source_answer_and_reader_projection_unchanged": true,
+      "delta": {
+        "sql_bytes": -2632,
+        "gzip_bytes": -152,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "gpt-5.1-1-name",
+      "requests_before": 2,
+      "requests_after": 1,
+      "results_before": 2,
+      "results_after": 1,
+      "source_answer_and_reader_projection_unchanged": true,
+      "delta": {
+        "sql_bytes": -2592,
+        "gzip_bytes": -146,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "gpt-5.1-4-amendments",
+      "requests_before": 2,
+      "requests_after": 1,
+      "results_before": 2,
+      "results_after": 1,
+      "source_answer_and_reader_projection_unchanged": true,
+      "delta": {
+        "sql_bytes": -3014,
+        "gzip_bytes": -140,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "gpt-5.1-4-supplement",
+      "requests_before": 2,
+      "requests_after": 1,
+      "results_before": 2,
+      "results_after": 1,
+      "source_answer_and_reader_projection_unchanged": true,
+      "delta": {
+        "sql_bytes": -4179,
+        "gzip_bytes": -156,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "gpt-5.1-4-joint",
+      "requests_before": 2,
+      "requests_after": 1,
+      "results_before": 2,
+      "results_after": 1,
+      "source_answer_and_reader_projection_unchanged": true,
+      "delta": {
+        "sql_bytes": -2632,
+        "gzip_bytes": -152,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "gpt-5.1-4-name",
+      "requests_before": 2,
+      "requests_after": 1,
+      "results_before": 2,
+      "results_after": 1,
+      "source_answer_and_reader_projection_unchanged": true,
+      "delta": {
+        "sql_bytes": -2592,
+        "gzip_bytes": -146,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "claude-opus-5-5-1-amendments",
+      "requests_before": 2,
+      "requests_after": 1,
+      "results_before": 2,
+      "results_after": 1,
+      "source_answer_and_reader_projection_unchanged": true,
+      "delta": {
+        "sql_bytes": -3023,
+        "gzip_bytes": -139,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "claude-opus-5-5-1-supplement",
+      "requests_before": 2,
+      "requests_after": 1,
+      "results_before": 2,
+      "results_after": 1,
+      "source_answer_and_reader_projection_unchanged": true,
+      "delta": {
+        "sql_bytes": -4188,
+        "gzip_bytes": -158,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "claude-opus-5-5-1-joint",
+      "requests_before": 2,
+      "requests_after": 1,
+      "results_before": 2,
+      "results_after": 1,
+      "source_answer_and_reader_projection_unchanged": true,
+      "delta": {
+        "sql_bytes": -2641,
+        "gzip_bytes": -150,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "claude-opus-5-5-1-name",
+      "requests_before": 2,
+      "requests_after": 1,
+      "results_before": 2,
+      "results_after": 1,
+      "source_answer_and_reader_projection_unchanged": true,
+      "delta": {
+        "sql_bytes": -2601,
+        "gzip_bytes": -147,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "claude-opus-5-5-4-amendments",
+      "requests_before": 2,
+      "requests_after": 1,
+      "results_before": 2,
+      "results_after": 1,
+      "source_answer_and_reader_projection_unchanged": true,
+      "delta": {
+        "sql_bytes": -3023,
+        "gzip_bytes": -139,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "claude-opus-5-5-4-supplement",
+      "requests_before": 2,
+      "requests_after": 1,
+      "results_before": 2,
+      "results_after": 1,
+      "source_answer_and_reader_projection_unchanged": true,
+      "delta": {
+        "sql_bytes": -4188,
+        "gzip_bytes": -158,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "claude-opus-5-5-4-joint",
+      "requests_before": 2,
+      "requests_after": 1,
+      "results_before": 2,
+      "results_after": 1,
+      "source_answer_and_reader_projection_unchanged": true,
+      "delta": {
+        "sql_bytes": -2641,
+        "gzip_bytes": -150,
+        "sqlite_bytes": 0
+      }
+    },
+    {
+      "case": "claude-opus-5-5-4-name",
+      "requests_before": 2,
+      "requests_after": 1,
+      "results_before": 2,
+      "results_after": 1,
+      "source_answer_and_reader_projection_unchanged": true,
+      "delta": {
+        "sql_bytes": -2601,
+        "gzip_bytes": -147,
+        "sqlite_bytes": 0
+      }
+    }
+  ],
+  "rollback_reader": {
+    "commit": "3cd82124cf1a12427897327acefd4c2d8db5dcd5",
+    "snapshots": [
+      {
+        "snapshot": "normal-current/commission_review-1.sql",
+        "sha256": "63e68f513bcee472146075edef74f4f7af52468162e33bad4ac4291e6f27b906",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/commission_review-4.sql",
+        "sha256": "63e68f513bcee472146075edef74f4f7af52468162e33bad4ac4291e6f27b906",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/consultation_review-1.sql",
+        "sha256": "ed82435b504386f04b2632a602873d4f25550e4efbd7f849645fe03d4cab08f4",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/consultation_review-4.sql",
+        "sha256": "ed82435b504386f04b2632a602873d4f25550e4efbd7f849645fe03d4cab08f4",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/explanation-1.sql",
+        "sha256": "5c546b386d428e60ded44a41f0f88b8c4fbf7bd0fca471552f7d75b66af67fbc",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/explanation-4.sql",
+        "sha256": "5c546b386d428e60ded44a41f0f88b8c4fbf7bd0fca471552f7d75b66af67fbc",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/joint-1.sql",
+        "sha256": "0771fe31d3ce4e67977eeff06f0c56d40b7bcbfb0ac2686afc77711e1b82da55",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/joint-4.sql",
+        "sha256": "0771fe31d3ce4e67977eeff06f0c56d40b7bcbfb0ac2686afc77711e1b82da55",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/name-1.sql",
+        "sha256": "41ad1308b08d6b543c3f20a001d4291f7a70184acdb6ed84c61a4ba0381faa43",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/name-4.sql",
+        "sha256": "41ad1308b08d6b543c3f20a001d4291f7a70184acdb6ed84c61a4ba0381faa43",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/revision-1.sql",
+        "sha256": "ff6c8de738f53411cb7de0f72025f5774f87fb3739c9d6e4a16bf74b9f317349",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "normal-current/revision-4.sql",
+        "sha256": "ff6c8de738f53411cb7de0f72025f5774f87fb3739c9d6e4a16bf74b9f317349",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current-final/claude-opus-5-5-1-amendments.sql",
+        "sha256": "ac1d61cc1feeb0e601c24e2cc49b32ba3d817591d094406523d21b1d84266197",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current-final/claude-opus-5-5-1-joint.sql",
+        "sha256": "649f23c53582c66d80f33a09cdc19a3dba9b56a22dfd8e2e474c27e9ed0d539d",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current-final/claude-opus-5-5-1-name.sql",
+        "sha256": "41941b73d87b2d04aeac642f38c38d93ecb0cb7e6693c1d7f4f0b03bbc33f0d1",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current-final/claude-opus-5-5-1-supplement.sql",
+        "sha256": "15d74f7a5bfbccc1c2c3c509b3cc4d0c101e44f5231d3d5a1ce65ad31be99a55",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current-final/claude-opus-5-5-4-amendments.sql",
+        "sha256": "ac1d61cc1feeb0e601c24e2cc49b32ba3d817591d094406523d21b1d84266197",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current-final/claude-opus-5-5-4-joint.sql",
+        "sha256": "649f23c53582c66d80f33a09cdc19a3dba9b56a22dfd8e2e474c27e9ed0d539d",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current-final/claude-opus-5-5-4-name.sql",
+        "sha256": "41941b73d87b2d04aeac642f38c38d93ecb0cb7e6693c1d7f4f0b03bbc33f0d1",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current-final/claude-opus-5-5-4-supplement.sql",
+        "sha256": "15d74f7a5bfbccc1c2c3c509b3cc4d0c101e44f5231d3d5a1ce65ad31be99a55",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current-final/gpt-5.1-1-amendments.sql",
+        "sha256": "55daf7a71cb055b2a1375698756850429b70cc1260c9ffb87d9665e0878a6eee",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current-final/gpt-5.1-1-joint.sql",
+        "sha256": "a3c60e28a1783026a2712ec1362e9d70e0873a6b391b12568794894c4ca218e1",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current-final/gpt-5.1-1-name.sql",
+        "sha256": "58b7b1cc3057ae21d95e8ed1bad1dcfc39a4d94a23635cdb85b7a658cb5a9a66",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current-final/gpt-5.1-1-supplement.sql",
+        "sha256": "d764ad1572c0acb06c848bd0780679f572cc8d2e9b623da0b2441e68618fc4a7",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current-final/gpt-5.1-4-amendments.sql",
+        "sha256": "55daf7a71cb055b2a1375698756850429b70cc1260c9ffb87d9665e0878a6eee",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current-final/gpt-5.1-4-joint.sql",
+        "sha256": "a3c60e28a1783026a2712ec1362e9d70e0873a6b391b12568794894c4ca218e1",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current-final/gpt-5.1-4-name.sql",
+        "sha256": "58b7b1cc3057ae21d95e8ed1bad1dcfc39a4d94a23635cdb85b7a658cb5a9a66",
+        "roundtrip_equal": true
+      },
+      {
+        "snapshot": "reuse-current-final/gpt-5.1-4-supplement.sql",
+        "sha256": "d764ad1572c0acb06c848bd0780679f572cc8d2e9b623da0b2441e68618fc4a7",
+        "roundtrip_equal": true
+      }
+    ],
+    "scope": "Restore/read/dump compatibility; executing the old runtime reintroduces B123."
+  },
+  "production_restore": {
+    "source_state_commit": "f34e63e7d2446501ceee0c2595964eef1b8f48a2",
+    "scope": "Pinned fresh J073 snapshot; no further fetch or processing.",
+    "profile": {
+      "source_sha256": "73e37426e5e5753ad312994a95965d9a100d91c22488ef486c0cb802cbc3b71f",
+      "source_bytes": 19508098,
+      "sql_sha256": "73e37426e5e5753ad312994a95965d9a100d91c22488ef486c0cb802cbc3b71f",
+      "sql_bytes": 19508098,
+      "gzip_bytes": 3956213,
+      "sqlite_bytes": 20488192,
+      "restore_seconds": 0.28882029198575765,
+      "dump_seconds": 0.08862324999063276,
+      "bills": 457,
+      "analysis_records": 166,
+      "projection_sha256": "0cbe2b7191eb2dd9688f404c4dcd0940d7dfa9c6d1090caac88ba580f6496bb7",
+      "memo_sha256": "8f68b1de19cfc7ef421659465d653664765cd5d1ed9187d359f33c697c6417ce",
+      "memos": 141,
+      "schema": {
+        "tables": 19,
+        "indexes": 32,
+        "version": 50
+      },
+      "new_rows": {
+        "computation_results": 0,
+        "result_applications": 0
+      },
+      "known_bill_2699": "analyzed",
+      "integrity": "ok",
+      "foreign_key_errors": 0,
+      "scope": "Isolated restore/read; no pipeline, provider or Telegram call; no legacy history backfill."
+    }
+  },
+  "prior_release": {
+    "sha": "3cd82124cf1a12427897327acefd4c2d8db5dcd5",
+    "ci_run": 40467348173,
+    "test_job": 122065861721,
+    "docs_job": 122065861634,
+    "web_job": 122065861246,
+    "deploy_run": 40467812482,
+    "deploy_job": 122067368988,
+    "ci_proof": [
+      "2026-10-27T07:28:52.2847433Z All checks passed!",
+      "2026-10-27T07:29:02.8229302Z Success: no issues found in 414 source files",
+      "2026-10-27T07:33:03.9604280Z 4457 passed, 32 deselected, 3228 warnings in 238.84s (0:03:58)"
+    ],
+    "deploy_proof": [
+      "2026-10-27T07:33:18.5027665Z   COMMIT: 3cd82124cf1a12427897327acefd4c2d8db5dcd5",
+      "2026-10-27T07:33:21.2510091Z f3d8ae5715dd -> 3cd82124cf1a",
+      "2026-10-27T07:34:06.5406151Z lexinform-listen up 45 s after restart"
+    ]
+  },
+  "corpus": [
+    {
+      "id": "j074-ci",
+      "manifest_sha256": "c78fa137696ad961be78252c08e0889876d2bdec7a81c0791f98070336508889",
+      "observations": 7,
+      "status": "passed",
+      "command": [
+        "/Users/sobaleu/projects/lexinform/.venv/bin/python",
+        "-m",
+        "tools.corpus_check",
+        "--corpus",
+        "/Users/sobaleu/projects/lexinform/tests/fixtures/corpus_check",
+        "--output",
+        "/Users/sobaleu/projects/lexinform/out/corpus/runs/j074-ci/result.json"
+      ]
+    },
+    {
+      "id": "j074-process",
+      "manifest_sha256": "62c7a05dd76c3be3f4d26cea88558ffb8b0e5e18b4e793724a3e8b74dddb5e62",
+      "observations": 3294,
+      "status": "recorded",
+      "command": [
+        "/Users/sobaleu/projects/lexinform/.venv/bin/python",
+        "-m",
+        "tools.corpus_legacy_suites",
+        "--corpus",
+        "/Users/sobaleu/projects/lexinform-corpus",
+        "--output",
+        "/Users/sobaleu/projects/lexinform/out/corpus/runs/j074-process/result.json",
+        "--kind",
+        "process"
+      ]
+    }
+  ],
+  "process_diff": {
+    "after_manifest_sha256": "62c7a05dd76c3be3f4d26cea88558ffb8b0e5e18b4e793724a3e8b74dddb5e62",
+    "before_manifest_sha256": "dabe21bbce2988ba51865b009caf6525ec04027ab33abe6dbb08234a67522af1",
+    "changed_inputs": [],
+    "changes": [],
+    "scope": "Observation differences, not an independent legal accuracy verdict",
+    "status": "same",
+    "suite": "process",
+    "summary_changes": {},
+    "version": 1
+  },
+  "observers": [
+    {
+      "path": "out/corpus/j074/reuse_profile.py",
+      "sha256": "6a75655ca4b5fd1e4b81e049ba5e7b4a23b7ed3b75656e3584bf9563b05d3962",
+      "source": "import gzip\nimport hashlib\nimport json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom dataclasses import replace\nfrom pathlib import Path\n\nimport lexinform\nfrom lexinform.models import AmendmentsRecord, JointRecord, NameRecord, SupplementRecord\nfrom lexinform.services.analysis import Waiting\nfrom tests.harness import World\nfrom tests.scenario.test_secondary_computation_history import URL, ask\n\n\ndef snapshot(world, output, name):\n    raw = world.repo.dump().encode()\n    (output / f'{name}.sql').write_bytes(raw)\n    with closing(sqlite3.connect(':memory:')) as database:\n        database.executescript(raw.decode())\n        assert database.execute('PRAGMA integrity_check').fetchone() == ('ok',)\n        assert not database.execute('PRAGMA foreign_key_check').fetchall()\n        size = len(database.serialize())\n    return {'sql_sha256': hashlib.sha256(raw).hexdigest(), 'sql_bytes': len(raw), 'gzip_bytes': len(gzip.compress(raw, mtime=0)), 'sqlite_bytes': size, 'bill': world.bill('3039').model_dump(mode='json'), 'messages': [row.text for row in world.publisher.sent], 'edits': [row.text for row, _ in world.publisher.edited]}\n\n\ndef test_profile():\n    assert Path(lexinform.__file__).resolve().parents[2] == Path(os.environ['DA_EXPECTED_CODE']).resolve()\n    output = Path(os.environ['DA_REUSE_PROFILE_OUTPUT'])\n    output.mkdir()\n    profiles = {}\n    for model in ('gpt-5.1', 'claude-opus-5-5'):\n        for workers in (1, 4):\n            for kind in ('amendments', 'supplement', 'joint', 'name'):\n                world = World(profile='production', workers=workers, analysis_model=model, joint_model=model)\n                settings = world.container.settings.model_copy(update={'llm_amendments_model': model, 'llm_supplement_model': model})\n                world.container = replace(world.container, settings=settings, analysis_options_override=None)\n                world.analysis = world.container.analysis_service()\n                world.pipeline = world.container.pipeline(dry_run=False)\n                world.add_bill('3039', 'Projekt ustawy o cudzoziemcach')\n                world.add_bill('3040', 'Projekt ustawy o obywatelstwie')\n                world.run(track=False)\n                world.batch.resolve()\n                world.run(track=False)\n                world.gateway.files[URL] = b'%PDF-secondary'\n                world.analysis.start_run()\n                assert isinstance(ask(world, kind), Waiting)\n                world.analysis.submit_queued_batches()\n                request = world.batch.submitted[-1].model_dump(mode='json')\n                world.batch.resolve()\n                world.analysis.collect_batches()\n                world.analysis.acknowledge_batch_costs()\n                original = next(row for row in world.repo.list_computation_results(10, '3039') if row.purpose == kind)\n                assert original.provider == ('openai' if model.startswith('gpt-') else 'anthropic')\n                world.clock.advance(days=200)\n                world.repo.prune_history(before=world.clock.now(), memo_before=world.clock.now())\n                world.repo.restore(world.repo.dump())\n                assert not world.repo.load_analysis_memo()\n                world.analysis.start_run()\n                answer = ask(world, kind)\n                repeated = isinstance(answer, Waiting)\n                paid_calls = []\n                if repeated:\n                    world.analysis.submit_queued_batches()\n                    world.batch.resolve()\n                    world.analysis.collect_batches()\n                    paid_calls = [call.model_dump(mode='json') for call in world.analysis.calls]\n                    world.analysis.acknowledge_batch_costs()\n                    world.analysis.start_run()\n                    answer = ask(world, kind)\n                assert isinstance(answer, (AmendmentsRecord, SupplementRecord, JointRecord, NameRecord))\n                assert world.repo.get_computation_result(original.result_id) == original\n                name = f'{model}-{workers}-{kind}'\n                record = answer.model_dump(mode='json')\n                content = {key: record[key] for key in ('amendments', 'digest', 'comparison', 'proposal') if key in record}\n                profiles[name] = {'original_request': request, 'original_result': original.model_dump(mode='json'), 'requests': [row.model_dump(mode='json') for row in world.batch.submitted if row.call_kind == kind], 'results': [row.model_dump(mode='json') for row in world.repo.list_computation_results(10, '3039') if row.purpose == kind], 'paid_calls_after_cleanup': paid_calls, 'answer': record, 'content': content, 'snapshot': snapshot(world, output, name)}\n                world.repo.close()\n    (output / 'profiles.json').write_text(json.dumps(profiles, ensure_ascii=False, indent=2) + '\\n')\n"
+    },
+    {
+      "path": "out/corpus/j074/read_snapshots.py",
+      "sha256": "5ea43332f8643089075091652baecc2530a18a963bd5389031f3d50f693917e4",
+      "source": "import hashlib\nimport json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nimport lexinform\nfrom lexinform.adapters.sqlite_repo import SqliteBillRepository\n\nassert Path(lexinform.__file__).resolve().parents[2] == Path(os.environ['DA_EXPECTED_CODE']).resolve()\nroot = Path('out/corpus/j074')\nobservations = []\nfor directory in ('normal-current', 'reuse-current-final'):\n    for source in sorted((root / directory).glob('*.sql')):\n        raw = source.read_bytes()\n        repository = SqliteBillRepository(':memory:')\n        repository.migrate()\n        repository.restore(raw.decode())\n        with closing(sqlite3.connect(':memory:')) as database:\n            database.executescript(raw.decode())\n            owners = database.execute('SELECT term, number FROM bills').fetchall()\n            historical = database.execute('SELECT DISTINCT term, number FROM computation_results').fetchall()\n        for term, number in owners:\n            assert repository.get(term, number) is not None\n            repository.list_result_applications(term, number)\n        for term, number in historical:\n            repository.list_computation_results(term, number)\n        assert repository.dump().encode() == raw\n        repository.close()\n        observations.append({'snapshot': str(source.relative_to(root)), 'sha256': hashlib.sha256(raw).hexdigest(), 'roundtrip_equal': True})\nassert len(observations) == 28\n(root / 'rollback-reader.json').write_text(json.dumps(observations, indent=2) + '\\n')\n"
+    },
+    {
+      "path": "out/corpus/j071/projection_profile.py",
+      "sha256": "ea04424fccc679b9ad4569ec7c07cc348a73d92c29bb0aa38cb7e517d7e50f0e",
+      "source": "import gzip\nimport hashlib\nimport json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nimport lexinform\n\nfrom lexinform.models import ReviewWork\nfrom lexinform.services.tracking_result import TrackingResult\nfrom tests.harness import World\nfrom tests.scenario.test_amendments_command import published_world\nfrom tests.scenario.test_explain import commands_only\nfrom tests.scenario.test_joint_batch import joint_world\nfrom tests.scenario.test_review_computation_history import queued_review, submit_review\n\n\ndef snapshot(world, output, name, number='3039'):\n    raw = world.repo.dump().encode()\n    (output / f'{name}.sql').write_bytes(raw)\n    with closing(sqlite3.connect(':memory:')) as db:\n        db.executescript(raw.decode())\n        assert db.execute('PRAGMA integrity_check').fetchone() == ('ok',)\n        assert not db.execute('PRAGMA foreign_key_check').fetchall()\n        data = {}\n        for (table,) in db.execute(\"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name\").fetchall():\n            query = f'SELECT * FROM {table}'\n            if table == 'result_applications':\n                query += ' WHERE generation IS NOT NULL'\n            rows = sorted(json.dumps(row, ensure_ascii=False) for row in db.execute(query))\n            data[table] = hashlib.sha256(json.dumps(rows).encode()).hexdigest()\n        sqlite_bytes = len(db.serialize())\n    return {'data': data, 'sql_bytes': len(raw), 'gzip_bytes': len(gzip.compress(raw, mtime=0)), 'sqlite_bytes': sqlite_bytes, 'applications': [row.model_dump(mode='json') for row in world.repo.list_result_applications(10, number) if row.target is not None], 'requests': [request.model_dump(mode='json') for request in world.batch.submitted], 'messages': [{'kind': message.kind.value, 'text': message.text} for message in world.publisher.sent], 'edits': [{'text': message.text, 'message_id': message_id} for message, message_id in world.publisher.edited], 'replies': [outcome.model_dump(mode='json') for _, outcome in world.replier.replies]}\n\n\ndef test_profile():\n    assert Path(lexinform.__file__).resolve().parents[2] == Path(os.environ['DA_EXPECTED_CODE']).resolve()\n    output = Path(os.environ['DA_PROJECTION_PROFILE_OUTPUT'])\n    output.mkdir()\n    profiles = {}\n    for workers in (1, 4):\n        for purpose in ('consultation_review', 'commission_review'):\n            world, source, intent = queued_review(purpose, workers=workers)\n            submit_review(world, intent)\n            world.batch.resolve()\n            world.analysis.collect_batches()\n            world.analysis.start_run()\n            work = ReviewWork(memo_key=source.memo_key(10), purpose=purpose, context=source, source_key='source/1', since=world.clock.now(), baseline_day=world.clock.now().date())\n            reviews = world.container.document_reviews(dry_run=False)\n            for key in ('source/1', 'source/2'):\n                world.repo.save_review_work(10, '3039', (work.model_copy(update={'source_key': key}),))\n                reviews.advance(TrackingResult(), publish=False)\n                world.repo.restore(world.repo.dump())\n            reviews.advance(TrackingResult(), publish=False)\n            name = f'{purpose}-{workers}'\n            profiles[name] = snapshot(world, output, name)\n            world.repo.close()\n        world = joint_world(workers=workers)\n        world.run()\n        world.batch.resolve()\n        world.analysis.collect_batches()\n        world.run()\n        world.repo.restore(world.repo.dump())\n        world.run()\n        name = f'joint-{workers}'\n        profiles[name] = snapshot(world, output, name, '1929')\n        world.repo.close()\n        world = World(batch=True, batch_only=True, name_cards=True, workers=workers)\n        world.add_bill('3039', 'Projekt ustawy o cudzoziemcach')\n        world.run()\n        world.batch.resolve()\n        world.run()\n        world.batch.resolve()\n        world.analysis.collect_batches()\n        world.run()\n        world.repo.restore(world.repo.dump())\n        world.run()\n        name = f'name-{workers}'\n        profiles[name] = snapshot(world, output, name)\n        world.repo.close()\n        world, original = published_world(workers=workers)\n        world.command('/amendments 1929')\n        world.run(track=False)\n        world.batch.resolve()\n        world.analysis.collect_batches()\n        world.repo.restore(world.repo.dump())\n        world.run(track=False)\n        name = f'revision-{workers}'\n        profiles[name] = snapshot(world, output, name, '1929')\n        assert original.id is not None and len(world.repo.list_amendment_revisions(original.id)) == 1\n        world.repo.close()\n        world = World(workers=workers)\n        world.add_bill('3039', 'Projekt ustawy o cudzoziemcach')\n        world.run()\n        world.command('/explain 3039')\n        commands_only(world)\n        world.batch.resolve()\n        for _ in range(2):\n            world.command('/explain 3039')\n            commands_only(world)\n            world.repo.restore(world.repo.dump())\n        name = f'explanation-{workers}'\n        profiles[name] = snapshot(world, output, name)\n        world.repo.close()\n    (output / 'profiles.json').write_text(json.dumps(profiles, ensure_ascii=False, indent=2) + '\\n')\n"
+    }
+  ],
+  "reproduction": [
+    "Export baseline src and set PYTHONPATH to baseline/src plus the current root so both runs use the same test harness.",
+    "Run reuse_profile.py and J071 projection_profile.py through pytest -p tests.conftest with DA_EXPECTED_CODE and fresh output directories.",
+    "Compare original requests/results, normalized answers, primary Bill, reader texts and requests/results counts.",
+    "Read all 28 new snapshots through J073 and compare exact dumps.",
+    "Restore the pinned J073 production SQL independently under baseline/current and compare canonical SQL, projections, memos and sizes."
+  ],
+  "limitations": [
+    "The scope is amendments/supplement/joint/name with exact current-scope question keys; no similarity or legacy-key expansion is introduced.",
+    "Primary, document reviews and explanation have separate contracts and remain open.",
+    "Known history does not overwrite an existing legacy memo or fabricate its original request/result refs.",
+    "No schema, DTO, provider payload, legal-text extraction/selection, prompt, model setting or output-policy change.",
+    "The first profiling run called the calls property as a function and is excluded; accepted runs have final suffixes.",
+    "No raw archive, backend choice, paid experiment, production pipeline, or Telegram calls.",
+    "The process corpus remains a historical metadata snapshot, not independent human content review.",
+    "Fixture size deltas are not production-growth forecasts.",
+    "Local HTTP was not repeated because CLI, wiring and transports are unchanged."
+  ]
+}

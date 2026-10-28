@@ -19,12 +19,47 @@ for document layouts, measured reductions and unsafe shortcuts.
 
 `DocumentTextExtractor.extract_parts` returns an immutable `ExtractedParts` before legal bundle
 selection: input SHA, every extracted readable member with its chain and hashes, and physical
-unpacking failures. Roles remain unknown. `extract_document` assigns the existing roles and
-applies the existing bundle policy; `extract` remains its string interface. Format readers,
+unpacking failures. Roles remain unknown. The pure
+`document_candidates.select_document_parts` assigns roles and chooses the legal package from
+that snapshot, with an explicit `max_part_chars` selection limit. `extract_document` remains
+the compatibility facade calling physical extraction and this policy; `extract` is its string
+interface. The snapshot can serve several consumers without mutation. See
+[J087](plans/2026-10-22-document-architecture-progress.md#j087). Format readers,
 readable extensions, archive limits and physical-loss heuristics are unchanged. This in-memory
 boundary adds no stored text or raw-file archive. Block coordinates, parent-container hashes,
 versioned extraction manifests and structured failures remain work in
 [DA3](plans/2026-10-22-document-architecture.md#da3).
+
+File-version comparisons use the same pure module and `CandidateSet`. `TextLoader` downloads
+in the existing source order, refuses official identity conflicts before download, and passes
+prepared candidates to `select_candidate_versions`. The policy returns a selected input index
+and observed parts, an ambiguous selection, or no bill body so the existing fallback can run.
+The body predicate stays in the policy; the loader filters while reading to avoid retaining
+rejected bodies beyond its cache. These are transient candidates, with the existing version
+and membership rules; richer decision persistence/admissibility remains DA4. See
+[J088](plans/2026-10-22-document-architecture-progress.md#j088).
+
+`document_admissibility` defines operation-specific bill-read proposals (`bill-read-v1`) for
+prefilter and analysis. These keep the current unverified/scan/Word fallback distinctions and
+selection blockers. Prefilter and the shared analysis loader use the qualified policy after
+[J090](plans/2026-10-22-document-architecture-progress.md#j090); the `admissibility` corpus suite
+keeps recording cached-view probes through the common run registry.
+Page counts in that suite are counterfactual, not recovered history. See
+[J089](plans/2026-10-22-document-architecture-progress.md#j089).
+
+Reviews use their own `review-read-v1` admission contract for expected digest, role and partial
+input. The [operation matrix](reviews/2026-10-27-document-admission.md) includes baseline comparison
+and amendments; Senate verification keeps its specialized checks. Full-text `text-v2` identity now
+lives in pure `document_fingerprints`, with a compatible alias from `services.analysis`.
+
+`DocumentSelection.policy_version` has a compatible optional reader from
+[J092](plans/2026-10-22-document-architecture-progress.md#j092). Missing legacy values stay
+unknown and are omitted from JSON. [J093](plans/2026-10-22-document-architecture-progress.md#j093)
+labels fresh `TextLoader.select_document` decisions `document-selection-v1`, including returned
+blocked/unverified decisions, and preserves the label through text/scan/metadata preparation.
+Physical cache entries are not relabeled. This identifies the current source-selection decision;
+it never promotes evidence-backed `selected`, claims a legal edition or retrospectively dates a paid
+analysis. Original known computations keep their immutable metadata; legacy gaps are not backfilled.
 
 `PypdfTextExtractor.extract_pages` now returns `PdfTextExtraction` (`pdf-pages-v1`): input SHA,
 pypdf version, raw page text, physical `pdf-page:N:0` coordinates and per-page read errors.
@@ -73,13 +108,56 @@ Replay modes `notes` and `notes-parts` validate note and reference coordinates t
 and physical-parts APIs respectively. These origins
 do not assert retained note spans after trimming, budget fitting or provider request preparation.
 
+`OdtTextExtractor.extract_odt_blocks` exposes transient `odt-blocks-v1` metadata. Paragraphs,
+headings, rows and cells have child-index paths relative to `office:text` in `content.xml`.
+The ordered projection reproduces the exact legacy string, including empty edges and nested
+tables; no page numbers are inferred. Input/XML SHA, Python version and canonical manifest SHA
+identify the view. Ignored body/row-group nodes retain their paths and tags; they may be layout
+nodes and do not independently prove a missing legal provision. Inline notes, tracked changes
+and repeated rows/cells explicitly retain the old unresolved/unexpanded view. `body_state=read`
+certifies traversal in this view, not document completeness or an analysis/citation span.
+`ExtractedParts.odt_blocks` binds each result to its physical part by index, raw SHA and exact
+legacy text. The optional `OdtBlockTextExtractor` port leaves custom legacy adapters unchanged;
+`include_odt_blocks=False` and the ordinary `extract_document` facade collect no ODT manifest.
+No stored selection, SQL, legal-role policy or provider input changes. See
+[J117](plans/2026-10-22-document-architecture-progress.md#j117) for raw/mutation coverage.
+
+`ExtractedParts.unlocated_text` records `unlocated-text-v1` for the legacy DOC and standalone
+Word XML routes. It binds the exact input SHA, projected text SHA and character count to a
+physical part; nested and duplicate archive members keep separate links. Coordinates,
+pagination, tracked changes, note origins and field origins remain explicitly unknown or
+unlocated. The route names the selected decoder path, not a successful format/completeness
+verdict; an empty projection keeps its existing losses. No source spans are inferred from
+line breaks or substring matches. Located and unlocated records cannot claim the same part.
+`include_unlocated_text=False` and the ordinary `extract_document` facade collect no such
+metadata. It is transient and changes no SQL, legal selection or provider input.
+
 `trim_print.projection` records source positions while trimming and gives generated omission
 markers no source origin. Adjacent copied pages coalesce into one range. `selection_for_input`
-uses this map only when the entire ordered part assembly or its traced trim equals the actual
-input. Other transformations keep explicit `input coverage unknown` losses and zero ranges;
-substring presence alone does not establish exact coverage. Selection policy is unchanged.
-Budget/cost-fitting trace composition and durable PreparedInput remain in
+validates an explicit composed input map against the selected assembly SHA, length and copied
+text. Without an explicit map, it recognizes the whole assembly or its traced trim; other
+transformations retain `input coverage unknown` losses and zero ranges. Source selection
+policy remains separate from input fitting; durable PreparedInput is still tracked in
 [DA5](plans/2026-10-22-document-architecture.md#da5).
+
+With an exact prepared-input projection, a normative part counts as retained only when its
+required source ranges are covered by that part's own copied ranges. The required bill view
+uses the existing trim projection and ignores generated omission markers; edge whitespace
+keeps the prior strip behavior. Adjacent/overlapping copied ranges combine for this check.
+A matching bill or annex quoted inside another part cannot replace its missing origin.
+Known omissions retain `normative_text_omitted` and downgrade selected input to unverified;
+the original normative SHA and source facts remain unchanged. Without an input map, the
+existing coarse/unknown coverage contract remains in force.
+
+`prepared_text_input` builds a transient `PreparedTextInput` for document text before provider
+assembly. It hashes the exact emitted string and ordered source part strings; copied spans
+refer to a specific part, while separators and transform markers have system origins. Without
+a supplied projection, origins stay unknown. Coordinates are explicitly legacy string offsets,
+not physical citations; an exact map does not prove document completeness. The metadata contains
+no bodies and adds no SQLite fields or runtime producer. Optional
+`tools.replay_input_coverage --prepared-manifest` verifies these manifests in mapped compare
+mode while keeping default observations unchanged. See
+[J125](plans/2026-10-22-document-architecture-progress.md#j125).
 
 Senate amendment summaries select attachments by their extracted contents. A candidate needs
 the formal resolution heading, date, subject, affirmative amendment decision, operative changes

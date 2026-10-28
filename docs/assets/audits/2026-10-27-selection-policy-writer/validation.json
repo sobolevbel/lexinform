@@ -1,0 +1,328 @@
+{
+  "version": 1,
+  "stage": "J093",
+  "baseline": "d99702cedfc4e530a0edcc5de93895301d86430a",
+  "scope": "Record document-selection-v1 on freshly completed source-selection decisions; preserve the label in text/scan/metadata input and result paths. No historical policy inference or change of source choices.",
+  "checks": {
+    "focused": {
+      "sha256": "03d3561acc2536f9895279d75c15a077a7ece69a0a7ea706646398785336a02b",
+      "tests": 106,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.619
+    },
+    "full": {
+      "sha256": "0338cfe5802938a9172e84ef6fa5ce555c1e0615087c900f8eb2a8f750a0f98d",
+      "tests": 4818,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 601.328
+    },
+    "upgrade-control-baseline": {
+      "sha256": "6788b7c54f5922e9636d222d69b34b3fa39ecd677d5a75090252ff0d2fa7b8a5",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.124
+    },
+    "upgrade-control-current": {
+      "sha256": "71db4390d1413818f6366855cd233b28409f6b7bd2c213568824bfa63ea3f11a",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.804
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 440 source files",
+    "ruff": "All checks passed!",
+    "format": "441 files left unchanged"
+  },
+  "native": {
+    "cases": 168,
+    "all_requests_and_rendered_messages_exact": true,
+    "all_other_profile_fields_equal_except_exact_new_policy_metadata_and_storage_metrics": true,
+    "all_previous_sql_values_equal_after_exact_policy_metadata_normalization": true,
+    "tables": 20,
+    "selection_hash_pairs": 11,
+    "observation_id_pairs": 13,
+    "policy_tag_normalization_visits": 844,
+    "scope": "Only document-selection-v1 labels and hashes/IDs derived from those exact labeled selection manifests are normalized. Legal text and other SQL values compare unchanged."
+  },
+  "fixture_storage": {
+    "sql_delta": {
+      "min": 0,
+      "max": 332
+    },
+    "gzip_delta": {
+      "min": 0,
+      "max": 30
+    },
+    "unchanged_dumps": 28
+  },
+  "upgrade": {
+    "cases": 4,
+    "all_generation_application_and_computation_id_sequences_equal_baseline": true,
+    "one_new_source_metadata_association_then_stable": true,
+    "profiles": [
+      {
+        "case": "1-False",
+        "generations": [
+          2,
+          2,
+          2
+        ],
+        "applications": [
+          3,
+          4,
+          4
+        ],
+        "source_associations_increment": 1,
+        "original_paid_result_exact": true,
+        "no_provider_or_reader_calls": true,
+        "repeat_after_baseline_receipt_catchup_dump_exact": true,
+        "final_sql_delta": 776,
+        "final_gzip_delta": 129
+      },
+      {
+        "case": "1-True",
+        "generations": [
+          2,
+          2,
+          2
+        ],
+        "applications": [
+          3,
+          4,
+          4
+        ],
+        "source_associations_increment": 1,
+        "original_paid_result_exact": true,
+        "no_provider_or_reader_calls": true,
+        "repeat_after_baseline_receipt_catchup_dump_exact": true,
+        "final_sql_delta": 681,
+        "final_gzip_delta": 138
+      },
+      {
+        "case": "4-False",
+        "generations": [
+          2,
+          2,
+          2
+        ],
+        "applications": [
+          3,
+          4,
+          4
+        ],
+        "source_associations_increment": 1,
+        "original_paid_result_exact": true,
+        "no_provider_or_reader_calls": true,
+        "repeat_after_baseline_receipt_catchup_dump_exact": true,
+        "final_sql_delta": 776,
+        "final_gzip_delta": 129
+      },
+      {
+        "case": "4-True",
+        "generations": [
+          2,
+          2,
+          2
+        ],
+        "applications": [
+          3,
+          4,
+          4
+        ],
+        "source_associations_increment": 1,
+        "original_paid_result_exact": true,
+        "no_provider_or_reader_calls": true,
+        "repeat_after_baseline_receipt_catchup_dump_exact": true,
+        "final_sql_delta": 681,
+        "final_gzip_delta": 138
+      }
+    ],
+    "scope": "Identical explicit manual analyze calls after restore on both versions; the first-to-second projection receipt catch-up exists in baseline too. No production/policy backfill or provider call."
+  },
+  "rollback": {
+    "reader": "J092 d99702c",
+    "cases": 168,
+    "bill_policy_versions_read": 134,
+    "all_known_computation_json_values_preserved": true,
+    "all_sql_snapshots_exact_after_read_restore": true,
+    "state_conversion": false
+  },
+  "structural": {
+    "source_selection_body_exact_after_private_rename": true,
+    "other_loader_methods_unchanged": 10,
+    "pure_policy_module_equal_after_removing_version_constant": true,
+    "analysis_text_scan_paths_equal_after_removing_only_policy_metadata": true,
+    "other_analysis_methods_unchanged": 63,
+    "changed_src_files": [
+      "src/lexinform/document_selection.py",
+      "src/lexinform/services/analysis.py",
+      "src/lexinform/services/documents.py"
+    ],
+    "migrations_models_adapters_unchanged": true
+  },
+  "candidates": {
+    "cases": 4276,
+    "counts": {
+      "ambiguous": 123,
+      "no_candidate": 205,
+      "selected": 2273,
+      "unsupported": 669,
+      "unverified": 925,
+      "waiting": 81
+    },
+    "missing_inputs": 1383,
+    "all_existing_candidate_fields_and_input_hashes_equal": true,
+    "baseline": "Qualified J092 current, exact runtime before version writer",
+    "scope": "Cached RCL candidate decisions; not a legal gold standard or complete missing population."
+  },
+  "corpus": {
+    "ci": {
+      "observations": 7,
+      "manifest": {
+        "path": "out/corpus/runs/j093-ci/manifest.json",
+        "sha256": "7fc954ffff517eb2d4b1e13b8ed40097d9fdca6937f31cf3b4c55422538e2018"
+      },
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "7fc954ffff517eb2d4b1e13b8ed40097d9fdca6937f31cf3b4c55422538e2018",
+        "before_manifest_sha256": "866e07321b40a8a30c3bcd604d8cb221c66b3e95dd2ecde84b3e8089644ce8fc",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "ci",
+        "summary_changes": {},
+        "version": 1
+      }
+    },
+    "process": {
+      "observations": 3294,
+      "manifest": {
+        "path": "out/corpus/runs/j093-process/manifest.json",
+        "sha256": "274f180929b8fecd4d15f5e0654fbaf757213302389daa2d9e869a0c03471e44"
+      },
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "274f180929b8fecd4d15f5e0654fbaf757213302389daa2d9e869a0c03471e44",
+        "before_manifest_sha256": "c44be2051b887edfcff569adb83a2b437800e5dc8ca23f2a88c3f32ec134e2e3",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "process",
+        "summary_changes": {},
+        "version": 1
+      }
+    }
+  },
+  "baseline_provenance": {
+    "baseline_commit": "d99702cedfc4e530a0edcc5de93895301d86430a",
+    "qualified_source": "J092 current native snapshots",
+    "all_151_src_files_equal": true,
+    "flows": 168
+  },
+  "source": [
+    {
+      "path": "src/lexinform/document_selection.py",
+      "sha256": "5225fe4679dff59243341af95dabc2253138575177e00b47568b754b6daee594"
+    },
+    {
+      "path": "src/lexinform/services/documents.py",
+      "sha256": "55355bb96367b382eabc7d20d6623b6dd48b7ca80c3f0d2c4eb7763952fc54e0"
+    },
+    {
+      "path": "src/lexinform/services/analysis.py",
+      "sha256": "51bbc228724ebb79401057b8a459838e241c7ee2c37a6ec241edfbfc09069790"
+    },
+    {
+      "path": "tests/unit/test_selection_policy_version.py",
+      "sha256": "f6a55e592b0fa83ad86a29f1f62eb64cdb9e819e36a2e7cba0d0b43f9252959c"
+    },
+    {
+      "path": "tests/scenario/test_selection_policy_version.py",
+      "sha256": "445e14f883fdf737b1ef6fcf184dbeeadfdcaba447edcc7c64f4e8ab75b201bc"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "out/corpus/j093/compare_profiles.py",
+      "sha256": "59028e210e2bcd2528a7d876a7f79b8581c204f4a4e523dfb93e8c67af62d2c7"
+    },
+    {
+      "path": "out/corpus/j093/native-parity-qualified.json",
+      "sha256": "ed4d0e522688b8849933021538bec0c78e522451e4a1de8df519e4b10387d744"
+    },
+    {
+      "path": "out/corpus/j093/native_profiles.py",
+      "sha256": "da845a71947e3e43279b379ebee9d2eaa70d5b392876aea8dc9c1078de58487e"
+    },
+    {
+      "path": "out/corpus/j093/upgrade_control.py",
+      "sha256": "898afe8bfffe7a5e0f6d2e6d505de7cfdc9563e295e4c7b2c3738c772a3e9c67"
+    },
+    {
+      "path": "out/corpus/j093/upgrade-control-parity.json",
+      "sha256": "d41d7a02f143115fb307a933104077453174df820826e588587cdb5c65d925dd"
+    },
+    {
+      "path": "out/corpus/j093/qualify_rollback.py",
+      "sha256": "b2377fafe961f29d01a18c9c0757aa100ce777b727183bfbdbf9d278b2fdcec3"
+    },
+    {
+      "path": "out/corpus/j093/rollback.json",
+      "sha256": "ee0bb0a8bb532d6ad53c54ab3eb809661bc1c3f5635330c9364c17ac0d7a0b30"
+    },
+    {
+      "path": "out/corpus/j093/structural_parity.py",
+      "sha256": "6aeb1c9e933861defc6c87faa96d9b95b5c245bcf7019f8633b6306e2de52f04"
+    },
+    {
+      "path": "out/corpus/j093/structural-parity-qualified.json",
+      "sha256": "a02f60c6d819179f9d798011249947b1e55872ca585268dad06d57d6b89c615f"
+    },
+    {
+      "path": "out/corpus/j093/candidate_profile.py",
+      "sha256": "b0d68514c833861004418262a5cc35b1dfd5f20055fd8c4100306e047b2a563d"
+    },
+    {
+      "path": "out/corpus/j093/candidates-current.json",
+      "sha256": "8a6aa2cb1fd3b45f71eb80f70f6e7ba96d914d27329759cf7a9c2a1655bee5d9"
+    }
+  ],
+  "state": {
+    "schema": 51,
+    "migrations_models_and_archive_flags_unchanged": true,
+    "raw_archive_growth": 0,
+    "production_metadata_growth": "Not measured; fixture deltas reported separately, no extrapolation.",
+    "legacy_policy_backfill": false
+  },
+  "exclusions": [
+    "Policy labels identify source-selection decisions, not legal editions or the time/policy of earlier paid analysis.",
+    "Physical cache entries and unobserved legacy selections remain unversioned.",
+    "Full persisted decision provenance and DocumentEdition remain open.",
+    "The additional source association after upgrade is exact metadata history; it does not create a new paid result or generation/application behavior.",
+    "Initial direct-call observer expected exact dump too early; both versions have the same receipt catch-up. Control/failed logs are preserved.",
+    "Cached candidate replay retains 1383 missing inputs; no independent legal gold-standard claim.",
+    "Raw parsing/local HTTP not repeated: physical adapter/parser and network CLI/transports unchanged.",
+    "No model/triage/batch/Telegram or manually started production processing in the upgrade/replay checks."
+  ],
+  "reproduction": [
+    "uv run pytest -q tests/unit/test_selection_policy_version.py tests/scenario/test_selection_policy_version.py tests/unit/test_document_selection_contract.py tests/scenario/test_document_selection_contract.py",
+    "uv run pytest -q && uv run mypy && uv run ruff check src tests tools",
+    "uv run python out/corpus/j093/native_profiles.py",
+    "PYTHONPATH=src:. uv run python out/corpus/j093/compare_profiles.py",
+    "Run upgrade_control.py with pytest -p tests.conftest, baseline/current PYTHONPATH and DA_UPGRADE_MODE; use new output paths.",
+    "PYTHONPATH=out/corpus/j093/baseline/src:. uv run python out/corpus/j093/qualify_rollback.py",
+    "python out/corpus/j093/structural_parity.py",
+    "Run candidate_profile.py with DA_SELECTION_MODE=current and current src/tools PYTHONPATH; use new output paths."
+  ]
+}

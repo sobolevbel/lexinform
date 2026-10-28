@@ -33,10 +33,7 @@ class CorpusReads:
         self._io_open = io.open
 
     def require(self, path: Path) -> None:
-        resolved = path.resolve()
-        if not resolved.is_relative_to(self.root):
-            raise ValueError(f"Corpus input escapes root: {path}")
-        relative = str(resolved.relative_to(self.root))
+        relative, resolved = self._input(path)
         self.paths.add(relative)
         self.active.add(relative)
         if relative not in self.initial_sha256:
@@ -47,6 +44,16 @@ class CorpusReads:
             self.initial_sha256[relative] = digest
         if not resolved.is_file():
             self.missing.add(relative)
+
+    def _input(self, path: Path) -> tuple[str, Path]:
+        lexical = path.absolute()
+        resolved = lexical.resolve()
+        if not resolved.is_relative_to(self.root):
+            raise ValueError(f"Corpus input escapes root: {path}")
+        if lexical.name == ".env" or resolved.name == ".env":
+            raise ValueError("External replay must not read .env")
+        source = lexical if lexical.is_relative_to(self.root) else resolved
+        return str(source.relative_to(self.root)), resolved
 
     def _checked(self, file: Any, mode: str) -> None:
         if any(flag in mode for flag in "wax+"):
@@ -60,7 +67,7 @@ class CorpusReads:
         if path.name == ".env":
             raise PermissionError("External replay must not read .env")
         if path.is_relative_to(self.root):
-            self.require(path)
+            self.require(lexical)
         elif not any(path.is_relative_to(root) for root in self.allowed):
             raise PermissionError(f"External replay cannot read outside its corpus: {path}")
 
@@ -87,16 +94,20 @@ class CorpusReads:
         return stack
 
     def changed_inputs(self) -> list[str]:
-        return sorted(
-            relative
-            for relative, initial in self.initial_sha256.items()
-            if (
-                hashlib.sha256((self.root / relative).read_bytes()).hexdigest()
-                if (self.root / relative).is_file()
-                else None
-            )
-            != initial
-        )
+        changed: list[str] = []
+        for relative, initial in self.initial_sha256.items():
+            try:
+                _, path = self._input(self.root / relative)
+                current: str | None = None
+                if path.is_file():
+                    with self._open(path, "rb") as stream:
+                        current = hashlib.file_digest(stream, "sha256").hexdigest()
+            except OSError, ValueError, RuntimeError:
+                changed.append(relative)
+                continue
+            if current != initial:
+                changed.append(relative)
+        return sorted(changed)
 
 
 def blocked_network(*args: Any, **kwargs: Any) -> None:

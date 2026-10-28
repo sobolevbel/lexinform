@@ -2,10 +2,11 @@ import hashlib
 
 import pytest
 
-from lexinform.document_selection import selection_for_input
+from lexinform.document_selection import bill_selection, selection_for_input
 from lexinform.models import DocumentPart, DocumentSelection
 from lexinform.sections import PAGE_BREAK, TextBudget, trim_print
 from lexinform.text_projection import SourcePiece, TextProjection, TextSegment, project_pieces
+from tests.scenario.test_document_selection_contract import law
 
 
 def test_budget_ranges_intersect_each_selected_part_without_a_contiguous_envelope() -> None:
@@ -46,6 +47,68 @@ def test_repeated_text_in_another_part_does_not_supply_the_missing_part_range() 
         (0, 0, 0),
         (1, 0, len(text)),
     ]
+    assert "normative_text_omitted" in result.limitations
+    assert result.coverage[0].losses == ("normative part omitted from prepared input",)
+
+
+@pytest.mark.parametrize("prefix", [0, 1, 20])
+def test_support_copy_cannot_preserve_selected_completeness_for_an_omitted_bill(
+    prefix: int,
+) -> None:
+    body = law()
+    support = "Uzasadnienie\n" + body
+    selection = bill_selection(
+        DocumentSelection(
+            parts=tuple(
+                DocumentPart(
+                    role=role,
+                    url=f"https://fixture.invalid/{index}",
+                    text=text,
+                    text_sha256=hashlib.sha256(text.encode()).hexdigest(),
+                    text_end=len(text),
+                )
+                for index, (role, text) in enumerate((("bill", body), ("justification", support)))
+            )
+        ),
+        source_basis=("synthetic official source relation",),
+    )
+    assert selection.state == "selected", "law and the fixture source relation provide four facts"
+    source = PAGE_BREAK.join((body, support))
+    projection = project_pieces(
+        source,
+        (
+            SourcePiece(body[:prefix], 0),
+            SourcePiece(body, len(body) + len(PAGE_BREAK) + len("Uzasadnienie\n")),
+        ),
+    )
+
+    result = selection_for_input(selection, projection.text, projection=projection)
+
+    assert result.state == "unverified"
+    assert "normative_text_omitted" in result.limitations
+    assert result.normative_sha256 == selection.normative_sha256
+    assert all(
+        "normative part omitted from prepared input" in span.losses
+        for span in result.coverage
+        if span.stage == "analysis"
+    )
+
+
+def test_adjacent_copied_ranges_keep_full_part_coverage_without_requiring_one_segment() -> None:
+    text = law()
+    selection = DocumentSelection(parts=(DocumentPart(role="bill", text=text),))
+    split = len(text) // 2
+    projection = TextProjection(
+        text,
+        hashlib.sha256(text.encode()).hexdigest(),
+        len(text),
+        (TextSegment(0, split, 0), TextSegment(split, len(text), split)),
+    )
+
+    result = selection_for_input(selection, text, projection=projection)
+
+    assert "normative_text_omitted" not in result.limitations
+    assert not any(span.losses for span in result.coverage)
 
 
 def test_trimmed_appendix_stays_outside_budget_coverage() -> None:

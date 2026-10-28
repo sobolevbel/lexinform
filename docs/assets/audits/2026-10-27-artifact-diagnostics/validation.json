@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "stage": "J101",
+  "baseline": "cd9b7f3a5e9f8c7f5defc4c31e455bfe8a4a3604",
+  "scope": "Read-only schema-aware artifact metadata/link diagnostics and a separate known-identity size catalogue; no retained-byte or historical-demand inference.",
+  "checks": {
+    "focused": {
+      "path": "out/corpus/j101/focused-qualified.xml",
+      "sha256": "041872b7f47639d75b39195ec711f64ad749b55d9ecd43094dcd1445822022a3",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "35",
+      "time": "0.312",
+      "timestamp": "2026-10-27T21:05:10.693074+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j101/full.xml",
+      "sha256": "3a306b5595fafb76af437050dfd76aa5ed28e5d24979afacc5cf10b5d771b32f",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "4919",
+      "time": "618.107",
+      "timestamp": "2026-10-27T21:06:49.106760+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 457 source files",
+    "mypy_ci_equivalent": "Success: no issues found in 457 source files",
+    "ruff": "All checks passed!",
+    "format": "516 files left unchanged"
+  },
+  "qualification": {
+    "all_input_sql_snapshots_unchanged": true,
+    "all_native_source_and_io_diagnostics_without_errors": true,
+    "cases": 168,
+    "corpus_source_summary": {
+      "errors": 0,
+      "observation_rows": 3139,
+      "policy_recorded": 3139,
+      "purpose/prefilter": 3139,
+      "selection_rows": 3139,
+      "state/ambiguous": 101,
+      "state/selected": 1683,
+      "state/unsupported": 652,
+      "state/unverified": 653,
+      "state/waiting": 50,
+      "unlinked_artifact_rows": 0,
+      "unreferenced_selection_rows": 0
+    },
+    "measured_report_views": 324,
+    "native_io_warnings": 0,
+    "scope": "Schema/identity diagnostics over qualified fake-native snapshots and cached RCL metadata. Counts are repeated fixture views, not production traffic or independent raw/legal acceptance.",
+    "source_observation_views": 32,
+    "unmeasured_report_views": 0
+  },
+  "runtime": {
+    "baseline": "cd9b7f3a5e9f8c7f5defc4c31e455bfe8a4a3604",
+    "runtime_files": 155,
+    "all_src_files_byte_identical": true,
+    "schema": 53,
+    "migrations_ports_services_adapters_and_flags_unchanged": true
+  },
+  "production": {
+    "database_sha256": "154d52897f68672453931cebb16c3ef3cdf5e674cc7b418e6d2ba63aca64fe8c",
+    "database_unchanged": true,
+    "exact_dump_schema_without_migration": 52,
+    "io": {
+      "artifact_catalogue": {
+        "available": false,
+        "by_first_recorded_day_utc": {},
+        "scope": "Known complete-body identities; retention and past demand remain separate.",
+        "summary": {}
+      },
+      "status": "recorded",
+      "summary": {
+        "errors": 0,
+        "measured_reports": 1,
+        "rows_without_saved_report": 1,
+        "saved_reports": 380,
+        "unmeasured_reports": 379,
+        "warnings": 0
+      }
+    },
+    "scope": "Exact natural dump restored to isolated SQLite without applying current migrations; no production/model/source/Telegram work.",
+    "source": {
+      "missing_artifact_tables": [
+        "artifacts",
+        "selection_artifacts"
+      ],
+      "status": "recorded",
+      "summary": {
+        "errors": 0,
+        "observation_rows": 2,
+        "policy_recorded": 2,
+        "purpose/prefilter": 2,
+        "selection_rows": 2,
+        "state/selected": 1,
+        "state/unverified": 1,
+        "unlinked_artifact_rows": 0,
+        "unreferenced_selection_rows": 0
+      }
+    },
+    "state_pin": "dc97f63814eaa967287e7f8c834798d86b88888e"
+  },
+  "evidence": {
+    "out/corpus/j101/diagnostic-qualification.json": "0945da7f65a747376ecc5791404708e9de40c5c36cc2e00369e35e101ce05896",
+    "out/corpus/j101/runtime-parity.json": "78bbe53e8413773cf5d7c9cdf6eea324062ac944f622fb1e53c6e6ca052c572d",
+    "out/corpus/j101/production-profile.json": "36c5eff5d4d0c8323a73d675c2a722ed01e0cf76091da71f4c4ee15e1bc788ff",
+    "out/corpus/j101/ci-diff.json": "ddf842b02023940bcb62050ad5251bdb444500c108d23c3f7b6a687e49fb2e70",
+    "out/corpus/j101/process-diff.json": "7c818a4f9b0bc7106e8d967467417938c6e33a4aa7304c7f3c09ce8536dd5ede",
+    "out/corpus/j101/qualify_diagnostics.py": "df229879c36c4f02c21da3d2b1c76d164078c031ce91f9c69efeadac973f0ed9",
+    "out/corpus/j101/production_profile.py": "e7cf837020c946cf46ba05ee59f98ea82a122c8d85eeabf4f4c4b4906202e651"
+  },
+  "sources": {
+    "tools/artifact_metadata.py": "e9b0a0d3a0dc86ec35f21348eeba17ac8f8fc199e6ed7b5934a1878347c1b3a8",
+    "tools/source_history_doctor.py": "6f9604d5c9af8a50266a14a16b8aae17f38a9d93383bf1400837d8a1bb20c26c",
+    "tools/document_read_profile.py": "5fd719a2953f7ae5b97165eeb98eb1933346863466143779f438419f8118b190",
+    "tests/unit/test_source_history_doctor.py": "a76b436d1cc35702c5b3d784bba74fe2e002bff68bca9f63c2332f3ed951b837",
+    "tests/unit/test_document_read_profile.py": "1c529d8d7c18f970e90e423e3cf027135e2724c3cd8ad9e2dc98653f54db7d9b",
+    "pyproject.toml": "67f563fec177c8c68816e2e48167e661ba8dab37fcee3fce4228875bb307bf3a"
+  }
+}

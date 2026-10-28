@@ -14,6 +14,7 @@ from lexinform.models import (
     DocumentReviewRecord,
     PublicationKind,
     PublicationStatus,
+    ResultApplicationTarget,
     ReviewPurpose,
     ReviewSource,
     ReviewWork,
@@ -23,6 +24,7 @@ from lexinform.models.reviews import commission_finding_signature, review_signat
 from lexinform.ports import BillRepository, Clock, TextSource
 from lexinform.services.analysis import AnalysisService, Waiting
 from lexinform.services.posting import Poster
+from lexinform.services.result_applications import record_secondary_application
 from lexinform.services.tracking_result import TrackingResult
 
 log = logging.getLogger(__name__)
@@ -352,6 +354,16 @@ class DocumentReviews:
         }[purpose]
         with self._repo.atomic():
             self._repo.save_document_review(bill.term, bill.number, record)
+            record_secondary_application(
+                self._repo,
+                bill.term,
+                bill.number,
+                record.computation_id,
+                target=ResultApplicationTarget(
+                    kind="document_review", ref=f"{purpose}/{work.source_key or work.memo_key}"
+                ),
+                now=self._clock.now(),
+            )
             meaningful = bool(
                 record.review.consultation_findings or new_findings or record.review.effective_rules
             )

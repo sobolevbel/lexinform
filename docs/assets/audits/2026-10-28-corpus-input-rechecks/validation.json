@@ -1,0 +1,151 @@
+{
+  "stage": "J118",
+  "baseline": "1312184b96d2a015384dff70eaa09ed5e54a69ab",
+  "checks": {
+    "focused": {
+      "sha256": "ecfa05c659d540d7d79b8560daadd575cae4d0b4d18d719a551d93f4a267ac15",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "55",
+      "time": "5.020",
+      "timestamp": "2026-10-28T02:53:14.355164+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "broad": {
+      "sha256": "d0a0cbe3e0cbf6d0424d07ef9c9754b5c994970110edfd3bbfd824d1504d4137",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "149",
+      "time": "14.753",
+      "timestamp": "2026-10-28T02:55:39.618138+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "sha256": "75d40cd793507a61bb13e1a479d5b9516ecf354216226ecccf9213de3c7f54ec",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "5125",
+      "time": "667.055",
+      "timestamp": "2026-10-28T02:55:55.364961+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 483 source files",
+    "ruff": "All checks passed!",
+    "format": "479 files already formatted"
+  },
+  "sources": {
+    "tools/corpus_artifacts.py": "189ceba451fc07d2f7a15426b3f82dd5755965a12ad8ed5ec66f1c983ae2dbb6",
+    "tools/corpus_runtime.py": "3ca974344b8867f092a8ff13d58baefbcc4b26cca3a65179e73985313a99f32c",
+    "tools/replay_pdf_pages.py": "e7b0425eec0a3735a3c9cebfd4a3d329794ad712d3b743f8eb77fa0ba17721e2",
+    "tools/replay_word_blocks.py": "887ba63eea8ad770712dc46fac5d1329d34db6fdc9138f9ed4f4ec0609bd072e",
+    "tests/unit/test_corpus_runtime_reads.py": "7f1264c823f32c5a7a98ae126788a85c5be72cbdb45d6379e93a43b038b50ede",
+    "tests/unit/test_corpus_artifacts.py": "e7453b09df46fd5c28a239041b8e275830311bcf92df44773c357140ddcd5346",
+    "tests/unit/test_pdf_pages_replay.py": "8f00abed55ead4448ba56a8e7f8d25f4f60a59c046fdf2aab33c6e6a5790490d",
+    "tests/unit/test_word_blocks_replay.py": "9c62c01fbca2cf8d8fa8f485211336f42e88b6bf250295f240c96a95519d9ad9",
+    "pyproject.toml": "36085b3606ea8803e399861478e8e87c2f88f7ff8b446c7079b65c439385ebc0"
+  },
+  "qualification": {
+    "structural": {
+      "baseline": "1312184b96d2a015384dff70eaa09ed5e54a69ab",
+      "all_runtime_files_byte_identical": 160,
+      "pdf_and_word_snapshot_functions_ast_exact": true,
+      "shared_digest_function_ast_exact_to_previous_pdf_digest": true,
+      "real_raw_input_maps_exact": true,
+      "input_paths": 16341,
+      "input_bytes": 12073227147,
+      "changed_inputs": [],
+      "recheck_sample": {
+        "path": "documents/files/735602.zip",
+        "bytes": 15737127,
+        "old_python_peak_bytes": 15738592,
+        "new_python_peak_bytes": 395327,
+        "scope": "Python allocation peak during one final input recheck, not full-process RSS."
+      }
+    },
+    "inputs_before": {
+      "read_paths": 16341,
+      "raw_bytes": 12073227147,
+      "all_initial_hashes_exact_to_inventory": true,
+      "changed_inputs": [],
+      "fingerprint_map_sha256": "78feefe63519e8b3a259a027d5f33c62263a21ec61bebe5caf2bfc18c2ab0d1f",
+      "population_seconds": 26.07150687498506,
+      "sample": {
+        "path": "documents/files/735602.zip",
+        "bytes": 15737127,
+        "sha256": "8e12a163a6a2a9fb41baf4a650b38f041721518496a9c13dd29004eb9073d6fb",
+        "final_recheck_seconds": 0.007911041000625119,
+        "python_allocation_peak_bytes": 15738592
+      },
+      "scope": "Python allocation peak during the final recheck of one existing raw file, not process RSS or an archive forecast."
+    },
+    "inputs_after": {
+      "read_paths": 16341,
+      "raw_bytes": 12073227147,
+      "all_initial_hashes_exact_to_inventory": true,
+      "changed_inputs": [],
+      "fingerprint_map_sha256": "78feefe63519e8b3a259a027d5f33c62263a21ec61bebe5caf2bfc18c2ab0d1f",
+      "population_seconds": 25.841760625015013,
+      "sample": {
+        "path": "documents/files/735602.zip",
+        "bytes": 15737127,
+        "sha256": "8e12a163a6a2a9fb41baf4a650b38f041721518496a9c13dd29004eb9073d6fb",
+        "final_recheck_seconds": 0.007397291017696261,
+        "python_allocation_peak_bytes": 395327
+      },
+      "scope": "Python allocation peak during the final recheck of one existing raw file, not process RSS or an archive forecast."
+    },
+    "release": {
+      "sha": "1312184b96d2a015384dff70eaa09ed5e54a69ab",
+      "ci_run": 40615914088,
+      "deploy_run": 40616708707,
+      "evidence": [
+        {
+          "job": 122578235099,
+          "lines": [
+            "2026-10-28T01:35:17.7402466Z All checks passed!",
+            "2026-10-28T01:35:38.7939593Z Success: no issues found in 478 source files",
+            "2026-10-28T01:42:59.2870073Z 5112 passed, 32 deselected, 3614 warnings in 437.42s (0:07:17)"
+          ]
+        },
+        {
+          "job": 122580783847,
+          "lines": [
+            "2026-10-28T01:43:14.9731680Z   COMMIT: 1312184b96d2a015384dff70eaa09ed5e54a69ab",
+            "2026-10-28T01:44:03.9394819Z lexinform-listen up 45 s after restart"
+          ]
+        }
+      ]
+    }
+  },
+  "reproduction": {
+    "tests": 8,
+    "failures_on_previous_code": 5,
+    "controls": 3,
+    "protected_read_test_spy_prevented_actual_open": true
+  },
+  "evidence": {
+    "out/corpus/j118/frozen-inputs.json": "f0dd1c5971167ac3f36d42b7bdc5164c833ee7ce4788315fc2a90b7f5d576705",
+    "out/corpus/j118/reproduction.xml": "32e438e439b7e7d19d06ef816d8e1df248f4c57a2a0dd9970ac148014ec16787",
+    "out/corpus/j118/input_profile.py": "197ea16b3562c1ca66f6d85c9fef6d06e91a4099ea31cb884e8de5e2f84b1d07",
+    "out/corpus/j118/inputs-baseline.json": "0e8d8a6ddb612e73511fc4f0559fbe5d4216101f3cd2398076632958324a50fa",
+    "out/corpus/j118/inputs-current.json": "d79311352cbed68ac7c64d28158fde3153cbb86fc81868d443d1cd45ce1c6f3d",
+    "out/corpus/j118/structural_profile.py": "055dbc52cc43c084e1c2502f93c8ccfe332736dfdd0e43379cad78f0b24a57a5",
+    "out/corpus/j118/structural-parity.json": "d3d69ae03364821451f9c21a81b07fa905904836077ad40952aaa897366906f4",
+    "out/corpus/j118/release-j117.json": "0828acc77b41b799333d6b8da100a196bfb360325e0e7e8f0b1c651a224abf54",
+    "out/corpus/j118/accept.py": "71fbe9c0787814e24437112078e0c4dfa05f9564022b716304ef48abf5f46156"
+  },
+  "limitations": [
+    "Python allocation peak measured for one final recheck, not process RSS or archive cost.",
+    "No extraction, selection, normalization, paid requests, reader effects or SQL changes.",
+    "No speedup inferred from one timing sample.",
+    "Corpus guard detects ordinary input drift; the replay scripts are trusted code."
+  ]
+}

@@ -1,0 +1,198 @@
+{
+  "version": 1,
+  "stage": "J106",
+  "baseline": "c60f078ec138191e92ed9709e4f41d2f7c7a7ea8",
+  "scope": "Reader-first immutable requested-URL/complete-body metadata receipts; schema 54. No producer or legacy backfill.",
+  "checks": {
+    "focused": {
+      "path": "out/corpus/j106/focused.xml",
+      "sha256": "b86cda6f1e9723a71c7a21d33e6aba9b9d5aa43ad50734af99b221a9a1a4beff",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "77",
+      "time": "1.741",
+      "timestamp": "2026-10-27T22:52:21.971821+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j106/full.xml",
+      "sha256": "fc02cefb18e3545110c9bc5358cc3614d808e2a62077e16a47503d35125d96ad",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "4973",
+      "time": "596.880",
+      "timestamp": "2026-10-27T22:55:02.598698+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 462 source files",
+    "mypy_ci_equivalent": "Success: no issues found in 462 source files",
+    "ruff": "All checks passed!",
+    "format": "521 files left unchanged"
+  },
+  "qualification": {
+    "native": {
+      "cases": 168,
+      "all_profiles_except_metadata_and_storage_metrics_exact": true,
+      "all_requests_and_rendered_messages_exact": true,
+      "all_24_prior_tables_exact": true,
+      "prior_metadata_rows_preserved": true,
+      "source_observation_views": 210,
+      "selection_views": 198,
+      "link_views": 190,
+      "all_source_doctors_without_errors": true,
+      "sql_delta": {
+        "min": 401,
+        "max": 401
+      },
+      "gzip_delta": {
+        "min": 46,
+        "max": 70
+      }
+    },
+    "migration": {
+      "state_pin": "fe7036a09d1688d03236c936cda26c876f3ae825",
+      "original_schema": 53,
+      "new_schema": 54,
+      "all_old_table_rows_exact": true,
+      "all_bill_records_read": 462,
+      "original_dump_sha256": "ab3347e4d5f480f7befbc84c02e6c0e20a5726bfde79f1f0f5ab7d04cc1e865b",
+      "original_dump_bytes": 20313116,
+      "empty_schema_sql_delta": 401,
+      "empty_schema_gzip_delta": 106,
+      "synthetic_receipt_and_parent_sql_delta": 389,
+      "synthetic_receipt_and_parent_gzip_delta": 186,
+      "synthetic_body_bytes": 29,
+      "synthetic_body_sha256": "e73ea2142b45b54b9216556636fd25be51d4fdb3fcd2db99a3139b2518ad078f",
+      "repeat_and_restore_exact": true,
+      "body_not_in_dump": true,
+      "scope": "Fresh natural dump restored and migrated in an isolated copy; fixture bytes are synthetic, not assigned to an old production SHA. No production processing, source fetch or model calls."
+    },
+    "rollback": {
+      "reader": "J105 c60f078ec138191e92ed9709e4f41d2f7c7a7ea8",
+      "populated_schema": 54,
+      "all_sql_preserved_exact": true,
+      "schema_conversion": false
+    },
+    "structural": {
+      "baseline": "c60f078ec138191e92ed9709e4f41d2f7c7a7ea8",
+      "all_existing_repository_methods_ast_exact": true,
+      "all_53_existing_migrations_ast_exact": true,
+      "exactly_one_append_only_migration": true,
+      "all_services_parsers_policies_prompts_and_payloads_byte_identical": true,
+      "other_151_runtime_files_byte_identical": true,
+      "changed_runtime": {
+        "src/lexinform/ports.py": "a6a154bc6a8f06bf1b2971e1690e38305496528172850da38e969d04a755b10e",
+        "src/lexinform/models/__init__.py": "0716ff16661ac63acc053887c8b3896635a08c5878d7cd7be677e7d889bdec99",
+        "src/lexinform/models/artifacts.py": "0f00a6151c6fdd36655037e915d1c660117f491aff1afb5235c9695157612bdb",
+        "src/lexinform/adapters/sqlite_repo.py": "ee28be2ca708299e16035b51f49d3a3b4d8acda8f830ecd5d4e715fc55a263dd"
+      }
+    },
+    "natural": {
+      "state_pin": "fe7036a09d1688d03236c936cda26c876f3ae825",
+      "original_database_sha256": "c49e420fb8d2a1169b74701f572a66b4503fbaa8fc741ff36b1eac4379ea20fa",
+      "cycles": [
+        {
+          "term": 10,
+          "number": "2995",
+          "source_purpose": "prefilter",
+          "source_kind": "committee_report",
+          "source_state": "unverified",
+          "source_parts": 1,
+          "bill_status": "analyzed",
+          "relevant": true,
+          "score": 2,
+          "computation_id": "result-v1:a86f266384e5076b0d5d36ee67af54d5d21a2d09579244b9200dd9d811d3afc9",
+          "request_checksum_matches": true,
+          "source_and_paid_physical_membership_equal": true,
+          "publications": []
+        },
+        {
+          "term": 10,
+          "number": "RCL/12416153",
+          "source_purpose": "prefilter",
+          "source_kind": "rcl",
+          "source_state": "selected",
+          "source_parts": 3,
+          "bill_status": "analyzed",
+          "relevant": true,
+          "score": 5,
+          "computation_id": "result-v1:1cc652dfa4d7e78687b70c378641ff4c03ef5a092324c0adb67bd38f6e454600",
+          "request_checksum_matches": true,
+          "source_and_paid_physical_membership_equal": true,
+          "publications": [
+            {
+              "id": 225,
+              "kind": "new_bill",
+              "status": "sent",
+              "message_id": 144,
+              "same_result_in_frozen_snapshot": true
+            }
+          ]
+        }
+      ],
+      "scope": "Read-only natural state evidence. Saved sent/message ID and frozen-result equality are database evidence, not independent Telegram/legal/source-family acceptance. No model/source/publication calls."
+    },
+    "corpus_ci": {
+      "after_manifest_sha256": "0a536a8529094772020f9d63a2a43c73a660da0e1923886259cbc3168673637f",
+      "before_manifest_sha256": "1d8e0e1fcd61dd649d4291024698728ac84952541cea74c81b37be338e89753b",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "ci",
+      "summary_changes": {},
+      "version": 1
+    },
+    "corpus_process": {
+      "after_manifest_sha256": "0eff3b2a2c5c65ed08188495165a4afe718973cb4d241f37cb84bda221f06516",
+      "before_manifest_sha256": "ab4ee449c5e5bbf9d54ce95bea3da7132cda888fef34923d8175afcb6d62c68b",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "process",
+      "summary_changes": {},
+      "version": 1
+    }
+  },
+  "evidence": {
+    "out/corpus/j106/native-parity-qualified.json": "0971195ac79789f2e038af788dc1658737478ace04b9182b500e1f3836ad908e",
+    "out/corpus/j106/migration-parity.json": "5ef3139f400242c627ece5d8711170bd3f494c7765fa9fbb44476a4930ec2dd8",
+    "out/corpus/j106/rollback.json": "5983f5cdcf744d49cf9ce26f04f8edf9f4bfeb72ebbf3aa0b63719ef4d08abbf",
+    "out/corpus/j106/structural-parity.json": "20b0eb889744a2ddfde89af9b5e76ee2ac044a282abdbdb83c0ed60056d165d2",
+    "out/corpus/j106/natural-cycles.json": "1811f0259d7fd8f659723c645d60d1b9ebc3d2be1a1ea6b1c44fe9d54de917d9",
+    "out/corpus/j106/production-source-doctor.json": "37cbb402dd86e0c5e1e7ccec48fb7fec7368f61b5751d4c4f1832a958c3133e0",
+    "out/corpus/j106/production-read-profile.json": "28c72d2f8f196c2fceba51191b43e1d9e02735f58aadcbf07ff910fce747d1f3",
+    "out/corpus/j106/ci-diff.json": "453a16efb794f0ead372ec061ac6a418da5eaca20501427d6144726aa3845070",
+    "out/corpus/j106/process-diff.json": "bbcae26246d1752f56b67a5b7fb7f9f0e691629ebfc5fb396a1a5163cbeaf2f4",
+    "out/corpus/j106/production-state.sql": "ab3347e4d5f480f7befbc84c02e6c0e20a5726bfde79f1f0f5ab7d04cc1e865b",
+    "out/corpus/j106/populated.sql": "3f96b45bdcddb8d9325eeb053559fedcc4c58b468eb99dca6b39afa600576c85",
+    "out/corpus/j106/native_profiles.py": "b3cbf8120f9f669c49b6d997d084fe9093eb41cfb76b9eb5dcf356c38faf2e24",
+    "out/corpus/j106/compare_native_qualified.py": "c73321e3db558b5e1e9eea8f86decb4c62ee5e806dc5c3fc472a638a1ebea760",
+    "out/corpus/j106/migration_profile.py": "7b5e8935058d86492fef3882aefe2eaf30ab304174f7b2af63fb0b165543b654",
+    "out/corpus/j106/rollback_profile.py": "21f688cbea6721168b6595371c1c7a6a21c370bbaf245329a9f0993c929a258f",
+    "out/corpus/j106/structural_profile.py": "a23c0339b45a70a397526e6874518d91c2b1b314967c5e0516a0b334d14e5729",
+    "out/corpus/j106/natural_cycle.py": "aef63b1c62db974235fb8cf5af32faf0de4d83d6acf8f261ca952b99e28a3daa",
+    "out/corpus/runs/j106-ci/manifest.json": "0a536a8529094772020f9d63a2a43c73a660da0e1923886259cbc3168673637f",
+    "out/corpus/runs/j106-process/manifest.json": "0eff3b2a2c5c65ed08188495165a4afe718973cb4d241f37cb84bda221f06516"
+  },
+  "sources": {
+    "src/lexinform/models/artifacts.py": "0f00a6151c6fdd36655037e915d1c660117f491aff1afb5235c9695157612bdb",
+    "src/lexinform/models/__init__.py": "0716ff16661ac63acc053887c8b3896635a08c5878d7cd7be677e7d889bdec99",
+    "src/lexinform/ports.py": "a6a154bc6a8f06bf1b2971e1690e38305496528172850da38e969d04a755b10e",
+    "src/lexinform/adapters/sqlite_repo.py": "ee28be2ca708299e16035b51f49d3a3b4d8acda8f830ecd5d4e715fc55a263dd",
+    "tests/unit/test_artifact_reads.py": "b5a8a0ede57ecb2f9c559ef1c0d1d18d33ad01362b44ec6181d9371ee9451b9c",
+    "tests/unit/test_sqlite_repo.py": "f5f3dce1882f6d4c327be8ec0f0f214abfb7140b9a57c83dbd2f474989e7296a"
+  },
+  "limitations": [
+    "Metadata receipt does not promise retained bytes, an effective redirect URL or a reliable original download/source date.",
+    "New table starts empty; worker identity and first caller recording time are separate.",
+    "Natural RCL sent/message ID evidence is from the saved database, not independent Telegram or legal acceptance."
+  ]
+}

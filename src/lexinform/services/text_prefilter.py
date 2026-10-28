@@ -10,14 +10,22 @@ bills, which are the ones whose titles say "o zmianie niektórych ustaw".
 """
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from lexinform.concurrency import fan_out
+from lexinform.document_admissibility import prefilter_admission
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
 from lexinform.keywords import WEAK_PATTERNS, KeywordPrefilter, accept_text_hits
-from lexinform.models import Bill, BillStatus
-from lexinform.ports import BillRepository, TextSource
-from lexinform.sections import carries_the_document
+from lexinform.models import (
+    ArtifactIdentity,
+    ArtifactReadIdentity,
+    Bill,
+    BillStatus,
+    DocumentSelectionRecord,
+    TextDocument,
+)
+from lexinform.ports import BillRepository, Clock, TextSource
+from lexinform.services.document_history import DocumentSourceRead, record_source_read
 from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
 
 log = logging.getLogger(__name__)
@@ -61,6 +69,18 @@ class PrefilterLoad:
     pages: int = 0
     unanswered: bool = False
     selection_state: str = ""
+    source_document: TextDocument | None = None
+    source_selection: DocumentSelectionRecord | None = None
+    source_artifacts: tuple[ArtifactIdentity, ...] = ()
+    source_reads: tuple[ArtifactReadIdentity, ...] = ()
+
+    def __post_init__(self) -> None:
+        if (self.source_document is None) != (self.source_selection is None):
+            raise ValueError(
+                "source observation requires both catalog relations and selection metadata"
+            )
+        if (self.source_artifacts or self.source_reads) and self.source_selection is None:
+            raise ValueError("artifact observations require the source selection")
 
     @property
     def is_scan(self) -> bool:
@@ -77,11 +97,13 @@ class TextPrefilterService:
         loader: TextLoader,
         prefilter: KeywordPrefilter,
         *,
+        clock: Clock,
         min_distinct: int = 2,
         min_occurrences: int = 3,
         workers: int = 1,
     ) -> None:
         self._repo = repo
+        self._clock = clock
         self._texts = texts
         self._loader = loader
         self._prefilter = prefilter
@@ -149,13 +171,29 @@ class TextPrefilterService:
         return PrefilterLoad(None, f"text prefilter failed: {type(exc).__name__}: {exc}")
 
     def decide(self, bill: Bill, loaded: PrefilterLoad) -> bool:
-        """Store the hits (weak ones too, for tuning), the bill's next status and, for a skip,
-        the reason (`last_error`): a keyword miss and an unreadable file must stay apart.
+        """Record the source decision and its outcome together on the calling thread."""
+        with self._repo.atomic():
+            if loaded.source_selection is not None:
+                assert loaded.source_document is not None, (
+                    "PrefilterLoad requires paired source metadata"
+                )
+                record_source_read(
+                    self._repo,
+                    DocumentSourceRead(
+                        loaded.source_document,
+                        loaded.source_selection,
+                        loaded.source_artifacts,
+                        reads=loaded.source_reads,
+                    ),
+                    term=bill.term,
+                    number=bill.number,
+                    purpose="prefilter",
+                    recorded_at=self._clock.now(),
+                )
+            return self._decide(bill, loaded)
 
-        A file with pages and no text goes to the model unsearched, bounded by the per-bill cost
-        guard. A file the host would not hand over is neither: the bill stays pending and the next
-        run asks again.
-        """
+    def _decide(self, bill: Bill, loaded: PrefilterLoad) -> bool:
+        """Keep keyword misses, unavailable files and unreadable documents distinct."""
         if loaded.selection_state in ("unsupported", "ambiguous"):
             status = (
                 BillStatus.DOCUMENT_AMBIGUOUS
@@ -245,25 +283,31 @@ class TextPrefilterService:
             log.info("%s has no readable text; text prefilter skipped", bill.number)
             return PrefilterLoad(None, "text prefilter: no document to read")
         _, file = self._loader.select_document(located.document)
-        if file.selection.state == "waiting":
+        return replace(
+            self._read(file),
+            source_document=located.document,
+            source_selection=DocumentSelectionRecord.from_selection(file.selection),
+            source_artifacts=self._loader.artifacts_for_selection(file.selection),
+            source_reads=self._loader.reads_for_selection(file.selection),
+        )
+
+    def _read(self, file: LoadedFile) -> PrefilterLoad:
+        admission = prefilter_admission(
+            file.selection, file.text, pages=file.pages, min_chars=MIN_TEXT_CHARS
+        )
+        if admission == "waiting":
             return PrefilterLoad(None, "; ".join(file.selection.rejected), unanswered=True)
-        if file.selection.state in ("unsupported", "ambiguous"):
+        if admission in ("unsupported", "ambiguous"):
             return PrefilterLoad(
                 None,
-                f"text prefilter: {file.selection.state}: " + "; ".join(file.selection.rejected),
-                selection_state=file.selection.state,
+                f"text prefilter: {admission}: " + "; ".join(file.selection.rejected),
+                selection_state=admission,
             )
-        if file.text is None:
+        if admission == "no_text":
             return PrefilterLoad(None, _no_text(file), pages=file.pages)
-        if not carries_the_document(file.text, min_chars=MIN_TEXT_CHARS, pages=file.pages):
-            # The same question the analysis asks, and it has to be the same question. `TextLoader`
-            # calls a file textless only under `MIN_TEXT_CHARS`, so a print whose text layer is
-            # the letter that hands it to the Marshal — 700-1,200 characters — arrived here
-            # looking like a document, was searched for keywords that a transmittal note never
-            # contains, and was skipped. Measured over term 10 (14 Sept 2026): **91 of the 938
-            # prints** are that case, every one with pages the model could have read, and the
-            # invariant says a file keywords cannot search is not a file to drop.
+        if admission == "no_document":
             return PrefilterLoad(None, _no_document(file), pages=file.pages)
+        assert file.text is not None, "prefilter_admission admits text only for a present body"
         amendments = [part.text for part in file.selection.parts if part.role == "self_amendment"]
         return PrefilterLoad("\n\n".join((file.text, *amendments)), None)
 

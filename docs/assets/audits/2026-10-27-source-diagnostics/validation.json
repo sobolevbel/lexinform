@@ -1,0 +1,316 @@
+{
+  "version": 1,
+  "stage": "J098",
+  "baseline": "8c343d61da2e7969add1f7c753085b8702785a7d",
+  "scope": "Read-only source-history identity/ref audit, saved download-profile summary and unpaid source-selection footprint coverage.",
+  "checks": {
+    "focused": {
+      "path": "out/corpus/j098/focused-final.xml",
+      "sha256": "d62880985b62a1d12693fe6ce65e4ddc0af9dc5141001ebc0c23c4becb3c00e3",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "35",
+      "time": "0.622",
+      "timestamp": "2026-10-27T19:59:49.911017+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j098/full.xml",
+      "sha256": "5759d0f0a35080cc39a272b9cb4dc3148a275ff08dd2474d210e155f642a126d",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "4888",
+      "time": "584.072",
+      "timestamp": "2026-10-27T19:59:57.387571+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 449 source files",
+    "ruff": "All checks passed!",
+    "format": "511 files left unchanged"
+  },
+  "runtime": {
+    "baseline": "8c343d61da2e7969add1f7c753085b8702785a7d",
+    "runtime_files": 153,
+    "all_src_files_byte_identical": true,
+    "schema": 52,
+    "runtime_selection_requests_cache_retention_and_pipeline_unchanged": true
+  },
+  "qualification": {
+    "all_input_sql_snapshots_unchanged": true,
+    "all_native_source_and_io_diagnostics_without_errors": true,
+    "cases": 168,
+    "corpus_source_summary": {
+      "errors": 0,
+      "observation_rows": 3139,
+      "policy_recorded": 3139,
+      "purpose/prefilter": 3139,
+      "selection_rows": 3139,
+      "state/ambiguous": 101,
+      "state/selected": 1683,
+      "state/unsupported": 652,
+      "state/unverified": 653,
+      "state/waiting": 50,
+      "unreferenced_selection_rows": 0
+    },
+    "measured_report_views": 324,
+    "native_io_warnings": 0,
+    "scope": "Schema/identity diagnostics over qualified fake-native snapshots and cached RCL metadata. Counts are repeated fixture views, not production traffic or independent raw/legal acceptance.",
+    "source_observation_views": 32,
+    "unmeasured_report_views": 0
+  },
+  "production": {
+    "counts": {
+      "bills": 462,
+      "computation_results": 2,
+      "document_selections": 2,
+      "result_applications": 4,
+      "runs": 380,
+      "source_observations": 2
+    },
+    "database_sha256": "b208e39fd83d75560fc4144f023efd3304db8e3927d28849347c73160a1fab00",
+    "database_unchanged": true,
+    "document_reads": {
+      "status": "not_run",
+      "summary": {
+        "errors": 0,
+        "rows_without_saved_report": 1,
+        "saved_reports": 379,
+        "unmeasured_reports": 379,
+        "warnings": 0
+      }
+    },
+    "footprint": {
+      "matched_inventory_hashes": 13,
+      "matched_inventory_unique_bytes": 9585013,
+      "status": "recorded",
+      "summary": {
+        "legacy_scan_without_source_manifest": 5,
+        "observed_parts_container": 257,
+        "observed_parts_file": 39,
+        "parts_container": 18,
+        "parts_file": 101,
+        "raw_reference_occurrences": 450,
+        "review_documents": 35,
+        "review_file": 35,
+        "saved_answer_occurrences": 419,
+        "saved_columns": 662,
+        "selections": 149
+      },
+      "unique_recorded_raw_hashes": 48,
+      "unmatched_recorded_hashes": 35
+    },
+    "foreign": [],
+    "integrity": "ok",
+    "scope": "Only read a naturally produced state snapshot; no pipeline, model, source download or Telegram work.",
+    "source_doctor": {
+      "status": "recorded",
+      "summary": {
+        "errors": 0,
+        "observation_rows": 2,
+        "policy_recorded": 2,
+        "purpose/prefilter": 2,
+        "selection_rows": 2,
+        "state/selected": 1,
+        "state/unverified": 1,
+        "unreferenced_selection_rows": 0
+      }
+    },
+    "sql_bytes": 20144370,
+    "sql_sha256": "58f911cd2fec80f032e6b9c6174fe2a6d1163142b7790a6f493a2daf7eac61f2",
+    "sqlite_bytes": 21184512,
+    "state_pin": "a317e8e7db9f7d6659e802ca4ba650aecc9d6352"
+  },
+  "metadata": {
+    "actual_metadata_rows": 4,
+    "all_reads_unchanged": true,
+    "database_sha256": "b208e39fd83d75560fc4144f023efd3304db8e3927d28849347c73160a1fab00",
+    "observations": [
+      {
+        "current_analysis_present": false,
+        "current_status": "batch_pending",
+        "observed_parts": 0,
+        "owner": [
+          10,
+          "2995"
+        ],
+        "policy": "document-selection-v1",
+        "recorded_at": "2026-10-27T18:46:07+00:00",
+        "selected_parts": 1,
+        "selection_state": "unverified",
+        "source_kind": "committee_report"
+      },
+      {
+        "current_analysis_present": false,
+        "current_status": "batch_pending",
+        "observed_parts": 1,
+        "owner": [
+          10,
+          "RCL/12416153"
+        ],
+        "policy": "document-selection-v1",
+        "recorded_at": "2026-10-27T18:46:07+00:00",
+        "selected_parts": 3,
+        "selection_state": "selected",
+        "source_kind": "rcl"
+      }
+    ],
+    "scope": "Read natural production source history; contribution removes only four source-metadata INSERT lines in memory, not from a database or saved dump. No causal total-state growth or future forecast.",
+    "sql_row_contribution_bytes": 12597,
+    "whole_dump_gzip_delta_without_only_these_four_rows": 3756
+  },
+  "footprint": {
+    "baseline_code_sha256": "61fcbc92254e5aa5c2c81366c8c42b53d3f16c7b80b661c9a5efaf9a7d129adc",
+    "baseline_scope": "Old producer loaded explicitly from pinned file; shared helper/workspace fingerprints are current, and actual producer SHA is recorded here.",
+    "current_code_sha256": "6ec33d57b6982faa31d8b908f44c75e408d22db3b31696cc543a63f67b9b5f18",
+    "database_and_inventory_exact": true,
+    "matched_bytes_delta": 0,
+    "only_catalogue_difference": true,
+    "summary_deltas": {
+      "observed_parts_file": 1,
+      "parts_file": 4,
+      "raw_reference_occurrences": 5,
+      "saved_columns": 2,
+      "selections": 2
+    },
+    "unique_raw_hash_delta": 0
+  },
+  "corpus": {
+    "ci": {
+      "observations": 7,
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "813198af3a7da4214d94368d317409fed5c088e76b7e29f73e6d2402e08d14f8",
+        "before_manifest_sha256": "61400b602c206dfbb2ec0f24402fc5a335a8be15984836a8681d95cb0961fc1b",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "ci",
+        "summary_changes": {},
+        "version": 1
+      }
+    },
+    "process": {
+      "observations": 3294,
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "d0d6b4af2636e774f77de106ddb7116fb71847ce2e19d20e5de5c25938620950",
+        "before_manifest_sha256": "e9a8257dc4e1878e343dce25a40457f75da02ae21784290e6361638592b0f726",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "process",
+        "summary_changes": {},
+        "version": 1
+      }
+    }
+  },
+  "source": [
+    {
+      "path": "tools/source_history_doctor.py",
+      "sha256": "525e54de3d0a67b2f5e6e2db4bc89eb85f309a72f870c535cc26a9994bb5ee39"
+    },
+    {
+      "path": "tools/document_read_profile.py",
+      "sha256": "a840a1c3989a9d92c3ffbce518d6d6d3e38e35fde9267212c3ed3adb90fe98a9"
+    },
+    {
+      "path": "tools/measure_referenced_files.py",
+      "sha256": "6ec33d57b6982faa31d8b908f44c75e408d22db3b31696cc543a63f67b9b5f18"
+    },
+    {
+      "path": "tests/unit/test_source_history_doctor.py",
+      "sha256": "e790f0896d1c1ee38be40e69960ab010eedee0c8a743dcbf791834faee3b5067"
+    },
+    {
+      "path": "tests/unit/test_document_read_profile.py",
+      "sha256": "ae9a5adcf27989a88854419d2305fd15f9e8b4e982b7da20cff7a0a5c29b5b5c"
+    },
+    {
+      "path": "tests/unit/test_measure_referenced_files.py",
+      "sha256": "1f33665ff654efe393571859f1ce81804df8ead02c81cb37513d5deb0dcc5835"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "out/corpus/j098/production_profile.py",
+      "sha256": "9a35f60387cbe2904500670afa031e4506c131ee0237e3d4c1ceca17950e6cff"
+    },
+    {
+      "path": "out/corpus/j098/production_metadata.py",
+      "sha256": "dbc8a0ea65dd6a3c2f38d0ac1848661153879c1cfd0b7da7dc95f8b817d3a18f"
+    },
+    {
+      "path": "out/corpus/j098/qualify_diagnostics.py",
+      "sha256": "0c028333f1244975ef581e8b836a656f9dab86f372ffbe4c2f166acaf0d9c385"
+    },
+    {
+      "path": "out/corpus/j098/compare_footprint.py",
+      "sha256": "e1cfa0d00f520c62e9b6819da33fb46507fc45913e7811e688b83c2ef54e8dc1"
+    },
+    {
+      "path": "out/corpus/j098/measure_referenced_files-baseline.py",
+      "sha256": "61fcbc92254e5aa5c2c81366c8c42b53d3f16c7b80b661c9a5efaf9a7d129adc"
+    },
+    {
+      "path": "out/corpus/j098/production-profile.json",
+      "sha256": "8e56c236117c3539f837cbcc5e71000a6a8776842052f182bdb20d5aa2802792"
+    },
+    {
+      "path": "out/corpus/j098/production-metadata.json",
+      "sha256": "b65900702dbdd76c8a2bfe6c2f08c06cb055ce7e7c3bac5ed9367690f110c031"
+    },
+    {
+      "path": "out/corpus/j098/diagnostic-qualification.json",
+      "sha256": "191abcf38a21259c991f88e5a20b9807c684766d51e1ef7d46407278f6ac7558"
+    },
+    {
+      "path": "out/corpus/j098/corpus-source-doctor.json",
+      "sha256": "f3d1e3f817ae4f96ae5a639eabe8faf03170369b9e5b87854d027249beb81f0e"
+    },
+    {
+      "path": "out/corpus/j098/source-history-doctor.json",
+      "sha256": "edb0b240286d239479ca6fbf11a1835e97b8696362767147b17fde95c4d5b517"
+    },
+    {
+      "path": "out/corpus/j098/document-reads.json",
+      "sha256": "283bfb5bcc3296f185ae50295ffe4cf98d91e24af520b5422a618e4b9704fd04"
+    },
+    {
+      "path": "out/corpus/j098/referenced-files.json",
+      "sha256": "55c0775a8d93941677c17f2b984ec008aa8cf2e468c841dab39acae28bb00199"
+    },
+    {
+      "path": "out/corpus/j098/referenced-files-baseline.json",
+      "sha256": "e2751ed1658aec654d802b8a53b78d3c60bc2c645e7f0ee8dd202c146df419bc"
+    },
+    {
+      "path": "out/corpus/j098/footprint-parity.json",
+      "sha256": "fa3fab9d643a6241c750e50c99ccdb43fbaaa67004f55b797b5ac9e7a5cec050"
+    }
+  ],
+  "exclusions": [
+    "Raw availability/retention, legal accuracy and complete original-file replay are not inferred from metadata.",
+    "Native/corpus views are fixtures or cached histories, not independent production traffic.",
+    "The two natural source observations are batch_pending without analysis; completed paid/publication cycles are not claimed.",
+    "379 old reports are unmeasured and one run lacks a completed report; no zero-byte backfill.",
+    "Per-run distinct bytes cannot be summed into cross-run distinct archive size.",
+    "The four-row gzip contribution is a bounded in-memory comparison, not a causal total-state growth or future forecast.",
+    "Legacy unknown source/paid bindings stay unknown; no source/model/Telegram/manual production work.",
+    "All 153 runtime files and schema/flags/retention remain identical to J097."
+  ],
+  "reproduction": [
+    "uv run pytest -q tests/unit/test_source_history_doctor.py tests/unit/test_document_read_profile.py tests/unit/test_measure_referenced_files.py",
+    "uv run mypy --no-incremental && uv run ruff check src tests tools && uv run pytest -q",
+    "python -m tools.source_history_doctor --database CHECKPOINTED_COPY --output NEW_REPORT",
+    "python -m tools.document_read_profile --database CHECKPOINTED_COPY --output NEW_REPORT",
+    "Run production_profile.py/production_metadata.py, qualify_diagnostics.py and compare_footprint.py against their pinned inputs with fresh evidence/database paths."
+  ]
+}

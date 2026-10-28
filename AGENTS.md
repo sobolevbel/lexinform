@@ -132,7 +132,9 @@ service built once) → `cli.py` (typer).
 - Every model call except triage and change review is a batch, written down before it is sent
   (`operations.md`).
 - Operator commands are recorded before they run and never re-run (`operations.md`).
+- Editorial versions survive operational payload cleanup; corrections use original context (`operations.md`).
 - Migrations are append-only (`database.md`).
+- Projection receipts commit with their target state (`operations.md`).
 
 ## Product decisions
 

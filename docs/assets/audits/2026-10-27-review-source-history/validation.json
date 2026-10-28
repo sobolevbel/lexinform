@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "stage": "J103",
+  "baseline": "fa3e2d99a64a794b842f790b78579c2fe865fe97",
+  "scope": "Shared source-read DTO/recording helper and caller-thread capture of original review file selections independently of review admission or paid results.",
+  "checks": {
+    "focused": {
+      "path": "out/corpus/j103/focused.xml",
+      "sha256": "1009449ebe9dd5bd958a39eacfddaadb2a2db2a5cb701d01fac69230c5d78983",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "161",
+      "time": "2.780",
+      "timestamp": "2026-10-27T21:43:20.009281+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j103/full.xml",
+      "sha256": "1546073f3d6ab4b7777988c950480f98c8fc4f85641888a48a383e33784fb4fd",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "4943",
+      "time": "591.344",
+      "timestamp": "2026-10-27T21:44:00.243726+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 459 source files",
+    "mypy_ci_equivalent": "Success: no issues found in 459 source files",
+    "ruff": "All checks passed!",
+    "format": "518 files left unchanged"
+  },
+  "qualification": {
+    "native": {
+      "cases": 168,
+      "all_profiles_except_metadata_and_storage_metrics_exact": true,
+      "all_requests_and_rendered_messages_exact": true,
+      "all_20_business_tables_exact": true,
+      "prior_metadata_rows_preserved": true,
+      "source_observation_views": 198,
+      "selection_views": 186,
+      "link_views": 178,
+      "all_source_doctors_without_errors": true,
+      "sql_delta": {
+        "min": 0,
+        "max": 0
+      },
+      "gzip_delta": {
+        "min": 0,
+        "max": 0
+      }
+    },
+    "review": {
+      "cases": 32,
+      "review_context_and_requests_and_messages_exact": true,
+      "network_call_multisets_exact": true,
+      "network_call_order_excluded_for_parallel_workers": true,
+      "all_20_business_tables_exact": true,
+      "prior_metadata_rows_preserved": true,
+      "source_doctor_errors": 0,
+      "new_review_observation_views": 48,
+      "unknown_policy_view_count_not_relabelled": 24,
+      "sql_delta": {
+        "min": 0,
+        "max": 7022
+      },
+      "gzip_delta": {
+        "min": 0,
+        "max": 1013
+      },
+      "scope": "Fake-native review source reads/snapshots/digest mismatches across two purposes, compare modes and workers; repeated fixture views, no legal gold."
+    },
+    "raw": {
+      "cases": 36,
+      "all_semantic_fingerprints_exact": true,
+      "input_hashes_equal": true,
+      "review_contexts": 26,
+      "new_review_observations": 36,
+      "source_observations": 72,
+      "comparison_fields": [
+        "Bill",
+        "RunReport except phase_seconds",
+        "model contexts",
+        "requests",
+        "rendered messages",
+        "ReviewContext"
+      ],
+      "payloads_not_retained_in_this_output": true,
+      "scope": "Real bounded raw sample through surrogate print/response sources, fake-native analysis and review preparation; comparison payloads are hashed in RAM, with no input bodies in this output. No source network, paid review or independent legal gold."
+    },
+    "rollback": {
+      "reader": "J102 fa3e2d99a64a794b842f790b78579c2fe865fe97",
+      "cases": 200,
+      "legacy_report_views_read": 356,
+      "all_populated_sql_dumps_preserved_exact": true,
+      "schema_conversion": false
+    },
+    "structural": {
+      "baseline": "fa3e2d99a64a794b842f790b78579c2fe865fe97",
+      "review_admission_and_context_builder_ast_exact": true,
+      "all_other_analysis_methods_ast_exact_except_caller_recording_and_type_rename": true,
+      "prefilter_other_methods_ast_exact": true,
+      "original_history_functions_ast_exact": true,
+      "runtime_changes": {
+        "src/lexinform/services/text_prefilter.py": "7c7db69b1a3e44c322e8b089a075a51070874b9508b8b78c34cdf9574cb58501",
+        "src/lexinform/services/analysis.py": "8f994f19b2ff5adb89b9d9bf1bee4746344cba37628ac62473c9d579e5f6ed50",
+        "src/lexinform/services/document_history.py": "584c8dd569d5c6a78002de25ddca4fa7a89b56c464fe9bfc52631fea156b3614"
+      },
+      "other_152_runtime_files_byte_identical": true,
+      "models_ports_schema_extractors_source_policy_prompts_and_provider_payloads_unchanged": true
+    },
+    "corpus_ci": {
+      "after_manifest_sha256": "15250f4365fc5afcf72e453b9d77b5a94671119836285c13bdabd67d6963d56c",
+      "before_manifest_sha256": "aae6d259c327611624a03a0eb07adfeac1c95f6e928e59383536ca97a3f8b5ae",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "ci",
+      "summary_changes": {},
+      "version": 1
+    },
+    "corpus_process": {
+      "after_manifest_sha256": "2d72a49c3a6d4efabc3ed7cbac75fc0b605e806b3b62066e6db67888b907212a",
+      "before_manifest_sha256": "e1c0a4599a9259cd8784088483ca7d317efb525d6ee0c381c4a51f0f1342e026",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "process",
+      "summary_changes": {},
+      "version": 1
+    }
+  },
+  "sources": {
+    "src/lexinform/services/analysis.py": "8f994f19b2ff5adb89b9d9bf1bee4746344cba37628ac62473c9d579e5f6ed50",
+    "src/lexinform/services/document_history.py": "584c8dd569d5c6a78002de25ddca4fa7a89b56c464fe9bfc52631fea156b3614",
+    "src/lexinform/services/text_prefilter.py": "7c7db69b1a3e44c322e8b089a075a51070874b9508b8b78c34cdf9574cb58501",
+    "tests/scenario/test_review_source_history.py": "38af4404356308a7340a6a646a0b48d4fa6d4e8767dfa89ec1c7bfa0ca2eefaf"
+  },
+  "evidence": {
+    "out/corpus/j103/native-parity.json": "5921d69b27b4847c4062d1e535b6e7fd3edeaf74b3034ada4185b2a2d5b5e31b",
+    "out/corpus/j103/review-parity.json": "27ffc76cc38befe694cf35669cb99f13debba2ccf88575419e7f489064bbd7e8",
+    "out/corpus/j103/raw-parity.json": "3455de0a7aabcc25f5557802e47413cdbb53d15bf6a35fbb5b65803ca9ec5274",
+    "out/corpus/j103/rollback.json": "71fe9f8f71e0029fdd3e5abef7821eaa588ae8cef6745ff9001eb5adf3bdafa3",
+    "out/corpus/j103/structural-parity.json": "7f840f00726a6ee1780656ee7e7cb8064b729d623ffd0a3db1bd1d015925ab25",
+    "out/corpus/j103/ci-diff.json": "96eb36d28adf06eca8870da8183a0948f5a20d19fcee433122357511f0d4adb3",
+    "out/corpus/j103/process-diff.json": "e619df44b7fa46e0dbae81bd7c1f588e568b944d983c948d8bbc52048967dc02",
+    "out/corpus/j103/raw-analysis-baseline.json": "8a44347566fc9f86a0a8f75bf3f178eba6b326bda2e40622f8e4e4bed4a7a32c",
+    "out/corpus/j103/raw-analysis-current.json": "f3cb1111896d0abe68c0a0d8ecb8e9348394314309611ccd98de03f9c0c37a86",
+    "out/corpus/j103/raw_review.py": "28f0b5cab93c8b309596065e19bc3ebcbafa1cafe67f43ecbf5efb1dab5f2be8",
+    "out/corpus/j103/review_profiles.py": "a50cfc53017aee8e4093e4bf04baad9f7a96caee7a975941bf066b45af9ca29b",
+    "out/corpus/j103/compare_reviews.py": "5c31dc143b752a43c7b9e9f59519adfcb5bce8844cca6074515cce947ebb43cc",
+    "out/corpus/j103/native_profiles.py": "850fb6a70f201c91451c974f6c58b17248870bca78a85aa9f14eed2ee5f493e8",
+    "out/corpus/j103/compare_native.py": "bfe05639af4850c8c1ebd0cd6071543cbe6944b15be0b97f18bcdaf8c3818ba9",
+    "out/corpus/j103/rollback_profile.py": "18ef8baffc7d256cee574542b217425f8a72963c0d1f76d67ed6f12dece0392c",
+    "out/corpus/j103/structural_profile.py": "a098c70d1307cca9c104da2a019f88726c3d63f49ed206278248628f1df24f16",
+    "out/corpus/runs/j103-ci/manifest.json": "15250f4365fc5afcf72e453b9d77b5a94671119836285c13bdabd67d6963d56c",
+    "out/corpus/runs/j103-process/manifest.json": "2d72a49c3a6d4efabc3ed7cbac75fc0b605e806b3b62066e6db67888b907212a"
+  },
+  "limitations": [
+    "Source metadata is not a legal-admission verdict, retained body, paid-input lineage or GC pin.",
+    "Review snapshot reuse records no new physical read; legacy policy remains unknown.",
+    "Other secondary source producers remain open.",
+    "Real raw sample uses surrogate print/response consumers, not independent legal role/source-family acceptance.",
+    "J102 raw qualification artifacts locally retain full contexts/scan payloads; its no-body-export wording is corrected in the progress journal. J103 raw output retains comparison fingerprints/counts only."
+  ]
+}

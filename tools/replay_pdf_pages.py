@@ -1,7 +1,6 @@
 """Replay pinned raw PDFs through the legacy projection and physical page reader without network."""
 
 import argparse
-import hashlib
 import io
 import json
 import logging
@@ -9,7 +8,6 @@ import re
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
 from pypdf import PdfReader
 
 from lexinform.adapters.doc_text import DocTextExtractor
@@ -17,31 +15,13 @@ from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtr
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.law_digest import law_digest
 from lexinform.sections import trim_print
+from tools.corpus_artifacts import digest, observation_changes, read_artifact, write_json
+from tools.corpus_manifests import RawReplayInput, RawReplayManifest
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 
 PageReader = Literal["library", "adapter"]
-
-
-class PdfReplayInput(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid")
-
-    path: str
-    sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
-    official_ids: tuple[str, ...] = Field(min_length=1)
-    cohorts: tuple[str, ...] = Field(min_length=1)
-
-
-class PdfReplayManifest(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid")
-
-    version: Literal[1]
-    index_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
-    cases: tuple[PdfReplayInput, ...] = Field(min_length=1)
-    exclusions: tuple[str, ...] = Field(min_length=1)
-
-
-def digest(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
+PdfReplayInput = RawReplayInput
+PdfReplayManifest = RawReplayManifest
 
 
 def library_pages(data: bytes) -> dict[str, Any]:
@@ -141,18 +121,14 @@ def run(
     root, target = corpus.resolve(strict=True), output.resolve()
     if output.is_symlink() or target.exists() or target.is_relative_to(root):
         raise ValueError("Output must be a new file outside the read-only corpus")
-    if cases.name == ".env" or cases.resolve().name == ".env":
-        raise ValueError("A credential file is not a replay manifest")
-    if reference is not None and (reference.name == ".env" or reference.resolve().name == ".env"):
-        raise ValueError("A credential file is not a replay reference")
-    raw_manifest = cases.read_bytes()
+    raw_manifest = read_artifact(cases)
     manifest = PdfReplayManifest.model_validate_json(raw_manifest)
     paths = [case.path for case in manifest.cases]
     if len(paths) != len(set(paths)):
         raise ValueError("Duplicate physical input paths")
     previous = None
     if reference is not None:
-        raw = reference.read_bytes()
+        raw = read_artifact(reference)
         if digest(raw) != reference_sha256:
             raise ValueError("Reference SHA mismatch")
         previous = json.loads(raw)
@@ -195,26 +171,17 @@ def run(
                     result["page_manifests"][case.path] = page_manifest
             except Exception as exc:
                 result["errors"][case.path] = f"{type(exc).__name__}: {exc}"
-    result["changed_inputs"] = [
-        name
-        for name, initial in reads.initial_sha256.items()
-        if not (root / name).is_file() or digest((root / name).read_bytes()) != initial
-    ]
+    result["read_inputs"] = dict(sorted(reads.initial_sha256.items()))
+    result["changed_inputs"] = reads.changed_inputs()
     result["changed_code"] = before != source_fingerprints()
     if previous is not None:
         result["reference_sha256"] = reference_sha256
-        result["changes"] = [
-            name
-            for name in sorted(result["observations"].keys() | previous["observations"].keys())
-            if result["observations"].get(name) != previous["observations"].get(name)
-        ]
+        result["changes"] = observation_changes(previous["observations"], result["observations"])
     failed = (
         result["errors"] or result["changed_inputs"] or result["changed_code"] or result["changes"]
     )
     result["status"] = "failed" if failed else "passed" if previous is not None else "recorded"
-    with output.open("x") as stream:
-        json.dump(result, stream, ensure_ascii=False, sort_keys=True, indent=2)
-        stream.write("\n")
+    write_json(target, result)
     return int(bool(failed))
 
 

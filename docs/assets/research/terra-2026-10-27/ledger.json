@@ -1,0 +1,101 @@
+{
+  "budget_usd": 4.0,
+  "batches": {
+    "canary": {
+      "reserved_usd": 0.2348395,
+      "request_count": 8,
+      "status": "completed",
+      "file_id": "file-TxfzzyBJ6YB6VQkBdumVLY",
+      "batch_id": "batch_6ae0943927a08190869380cf113ea3f7",
+      "actual_usd": 0.1001545
+    },
+    "broad": {
+      "reserved_usd": 3.0472535,
+      "request_count": 81,
+      "status": "failed",
+      "file_id": "file-GVuyfPKSQnE9C4VkSJc3tU",
+      "batch_id": "batch_6ae0946a7ad0819089ddf9b5c862d3eb",
+      "actual_usd": 0
+    },
+    "broad_1": {
+      "reserved_usd": 1.6956845,
+      "request_count": 71,
+      "status": "completed",
+      "file_id": "file-3ijM94nDNdkvTFN8vmsmBE",
+      "batch_id": "batch_6ae094ddb724819097ff013fb7de5b19",
+      "actual_usd": 0.536375
+    },
+    "gpt51_paired": {
+      "reserved_usd": 0.385496875,
+      "request_count": 6,
+      "status": "completed",
+      "file_id": "file-DYAkXrXEt5kgHaQujnKjXQ",
+      "batch_id": "batch_6ae095093378819096de59a657d4f8b1",
+      "actual_usd": 0.1901555
+    },
+    "long_3139": {
+      "reserved_usd": 0.387659,
+      "request_count": 1,
+      "status": "completed",
+      "file_id": "file-SmanW3QuacXCKvPLKgdnZV",
+      "batch_id": "batch_6ae0958148548190b96518b7cd5e188c",
+      "actual_usd": 0.3531735
+    },
+    "broad_2": {
+      "reserved_usd": 0.604139,
+      "request_count": 8,
+      "status": "completed",
+      "file_id": "file-XSUbbgM3EAEMvsqeve9b4j",
+      "batch_id": "batch_6ae095aa0e7c81909a2326ee3f9fe3fe",
+      "actual_usd": 0.465789
+    },
+    "diagnostics_a": {
+      "reserved_usd": 0.506599,
+      "request_count": 22,
+      "status": "completed",
+      "file_id": "file-EFnARFJt9EnVZp2JoBp6rR",
+      "batch_id": "batch_6ae0960086608190b3124746ec31495d",
+      "actual_usd": 0.1711475
+    },
+    "metadata_corrected": {
+      "reserved_usd": 0.13412000000000002,
+      "request_count": 4,
+      "status": "completed",
+      "file_id": "file-4moUGhZyiyFdskuKBXtULU",
+      "batch_id": "batch_6ae0968739808190a567420c43c9db7c",
+      "actual_usd": 0.057384500000000005
+    },
+    "long_remaining": {
+      "reserved_usd": 0.9849220000000001,
+      "request_count": 2,
+      "status": "completed",
+      "file_id": "file-CzGt5jQVHajDCE46P7unRx",
+      "batch_id": "batch_6ae096ae13bc81908ae7bb2301018202",
+      "actual_usd": 0.9121475000000001
+    },
+    "long_needle": {
+      "reserved_usd": 0.473128,
+      "request_count": 1,
+      "status": "completed",
+      "file_id": "file-FuQpBg7vxkRe5GFTKTZdGR",
+      "batch_id": "batch_6ae09754aaa481908a16b61ae1072103",
+      "actual_usd": 0.4369065
+    },
+    "diagnostics_b": {
+      "reserved_usd": 0.3403125,
+      "request_count": 6,
+      "status": "completed",
+      "file_id": "file-SWgbqf9vyGV6wtD9dzTsfc",
+      "batch_id": "batch_6ae097c954b4819092297058b88d92e6",
+      "actual_usd": 0.233781
+    },
+    "final_corpus": {
+      "reserved_usd": 0.1337795,
+      "request_count": 1,
+      "status": "completed",
+      "file_id": "file-SZ54X5ir4F72zd6YZEfPyN",
+      "batch_id": "batch_6ae097eed1fc8190be4a31a97f440086",
+      "actual_usd": 0.113256
+    }
+  }
+}

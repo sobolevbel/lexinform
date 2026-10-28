@@ -19,6 +19,8 @@ from lexinform.models.documents import (
 from lexinform.sections import PAGE_BREAK, document_kind, trim_print
 from lexinform.text_projection import SourcePiece, TextProjection, project_pieces
 
+DOCUMENT_SELECTION_POLICY_VERSION = "document-selection-v1"
+
 
 def bill_selection(
     selection: DocumentSelection, *, source_basis: tuple[str, ...]
@@ -186,15 +188,18 @@ def selection_for_input(
         offset += len(part.text) + len(PAGE_BREAK)
         if part.role not in ("bill", "normative_annex", "normative_continuation"):
             continue
-        expected = (
-            trim_print(part.text).text
-            if part.role in ("bill", "normative_continuation")
-            else part.text
-        )
-        present = bool(expected.strip()) and expected.strip() in text
+        expected = _expected_part_projection(part)
+        present = bool(expected.text) and expected.text in text
+        spans = _part_input_ranges(projection, start, len(part.text))
+        if projection is not None:
+            required = [
+                (segment.source_start, segment.source_start + segment.end - segment.start)
+                for segment in expected.segments
+                if segment.source_start is not None
+            ]
+            present = present and _ranges_cover(spans, required)
         missing = missing or not present
         losses: tuple[str, ...] = () if present else ("normative part omitted from prepared input",)
-        spans = _part_input_ranges(projection, start, len(part.text))
         if projection is None:
             losses += ("input coverage unknown",)
         for begin, end in spans or [(0, 0)]:
@@ -219,6 +224,29 @@ def selection_for_input(
             "limitations": limitations,
             "state": "unverified" if missing and selection.state == "selected" else selection.state,
         }
+    )
+
+
+def _expected_part_projection(part: DocumentPart) -> TextProjection:
+    if part.role in ("bill", "normative_continuation"):
+        trimmed = trim_print(part.text)
+        projection = trimmed.projection
+        assert projection is not None, "trim_print records source positions on every return path"
+    else:
+        projection = project_pieces(part.text, (SourcePiece(part.text, 0),))
+    start = len(projection.text) - len(projection.text.lstrip())
+    return projection.slice(start, max(start, len(projection.text.rstrip())))
+
+
+def _ranges_cover(actual: list[tuple[int, int]], required: list[tuple[int, int]]) -> bool:
+    merged: list[tuple[int, int]] = []
+    for start, end in sorted(actual):
+        if merged and start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(end, merged[-1][1]))
+        else:
+            merged.append((start, end))
+    return bool(required) and all(
+        any(start <= begin and stop <= end for start, end in merged) for begin, stop in required
     )
 
 

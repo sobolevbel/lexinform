@@ -1,0 +1,207 @@
+{
+  "method": "Manual source-grounded checks of supplied texts and scan page, not an LLM judge or aggregate legal accuracy score. Historical model answers are fallible comparisons.",
+  "findings": [
+    {
+      "case_ids": [
+        "analysis-3141",
+        "reanalysis-RCL_12412454"
+      ],
+      "configuration": "terra-medium unchanged production prompt",
+      "severity": "material_coverage",
+      "fact": "A complete distinct eligible group, Polish-language/preparatory-course participants without another compulsory insurance title, is present in the supplied operative bill but absent from both outputs. The related reanalysis-3141 output names it with prior-summary context.",
+      "source_excerpts_file": "source-excerpts.json",
+      "confidence": [
+        0.98,
+        0.97
+      ],
+      "qualification": "Card relevance is retained; this is lost reader coverage, not a lost whole bill. Fresh GPT comparison and calibrated repairs reported separately."
+    },
+    {
+      "case_ids": [
+        "reanalysis-3008"
+      ],
+      "configuration": "terra-none/low/medium unchanged prompt",
+      "severity": "eligibility_coverage",
+      "fact": "The original variants omit a required criminal-record certificate. Medium also omits its maximum one-month age. Historical Opus names absence of convictions, but also omits document freshness.",
+      "source_excerpts_file": "source-excerpts.json",
+      "qualification": "Below publication threshold in both old reference and Terra; not counted as a lost published bill. Precision-medium names the one-month certificate."
+    },
+    {
+      "case_ids": [
+        "analysis-3150"
+      ],
+      "configuration": "terra-medium unchanged prompt, 583481 input tokens",
+      "severity": "publication_priority",
+      "fact": "Annual funding of existing programs receives score 4 and would cross min_score=3, while practical_impact itself says no new individual rights or conditions. Historical matched Opus scores 1.",
+      "qualification": "Budget figures are largely grounded. This is a rubric/news-selection failure, not an invented new entitlement. A short unchanged-funding control correctly scores 1, so short controls do not certify long-context ranking. No calibrated full-budget rerun was purchased."
+    },
+    {
+      "case_ids": [
+        "reanalysis-new-omitted_detail"
+      ],
+      "configuration": "terra-medium unchanged prompt",
+      "severity": "unsupported_revision_signal",
+      "fact": "A detail absent from a prior short summary is emitted as changes_since_previous although no old full provision establishes a legislative change.",
+      "qualification": "Synthetic stress case; confidence .48, not a proven production incident. General precision instruction repairs this specific control."
+    },
+    {
+      "case_ids": [
+        "joint-control-False",
+        "joint-heldout-filing_deadline",
+        "joint-heldout-fee"
+      ],
+      "configuration": "terra-medium unchanged prompt",
+      "severity": "shared_prompt_ambiguity",
+      "fact": "Different legal periods/deadlines/fees are correctly read but same_substance=true. Current prompt expressly allows dates or detail under same_substance.",
+      "qualification": "Do not call this intrinsic inability or a demonstrated regression versus GPT-5.1. General joint precision rule gets all nine selected real/control cases correct; only two are real description pairs."
+    },
+    {
+      "case_ids": [
+        "analysis-control-uncertain"
+      ],
+      "configuration": "terra-medium unchanged prompt",
+      "severity": "stress_control_disagreement",
+      "fact": "Incomplete synthetic immigration bill scores 2 with confidence .4 instead of the preregistered conservative score 5.",
+      "qualification": "Model explicitly says content is unknown and invents no rule. This is a gate-policy risk on incomplete inputs, not independent proof of a real important bill lost."
+    },
+    {
+      "case_ids": [
+        "analysis-3139",
+        "analysis-3140"
+      ],
+      "configuration": "terra-medium unchanged prompt",
+      "severity": "passed_selected_core_facts",
+      "fact": "Both long ratifications score 2, preserve return direction, national visa/work requirements, the ratification act versus treaty commencement distinction and no directly enforceable individual entitlement.",
+      "qualification": "Selected core facts and rubric reviewed, not exhaustive treaty legal certification."
+    },
+    {
+      "case_ids": [
+        "analysis-edge-2355"
+      ],
+      "configuration": "terra-medium unchanged prompt, 434439 input tokens",
+      "severity": "passed_needle_case",
+      "fact": "Finds EU-citizenship-state criminal checks and three-year periodicity in a long infrastructure bill, and separately identifies a rule concerning guarded foreigner centers.",
+      "qualification": "A real long-context positive for a specific foreign-worker procedure; score 2 under the rubric remains below automatic publication."
+    },
+    {
+      "case_ids": [
+        "analysis-scan-RPW-2793-2025-corrected"
+      ],
+      "configuration": "terra-medium, full 13-page PDF",
+      "severity": "passed_scan",
+      "fact": "Normative scan page 2 confirms repeal list, foster-care financing exception and 30-day vacatio. Output distinguishes loss of special grounds from possible ordinary entitlements and preserves scientific-hiring repeal.",
+      "qualification": "One full scan, not a benchmark of every scan layout; initial incorrect applicant metadata retained and corrected repeat counted separately."
+    },
+    {
+      "case_ids": [
+        "amendments-real-1929",
+        "amendments-control-proposal"
+      ],
+      "configuration": "terra-medium unchanged prompt",
+      "severity": "passed_selected_amendments",
+      "fact": "Committee recommendation to reject narrower foreigner eligibility remains a recommendation; requirement to reside in Poland throughout assistance remains proposed, not a Sejm decision.",
+      "qualification": "One real committee report and one synthetic control cannot establish all Senate and amendment formats."
+    },
+    {
+      "case_ids": [
+        "supplement-real-1319",
+        "supplement-control-position-False",
+        "supplement-control-position-True"
+      ],
+      "configuration": "terra-medium unchanged prompt",
+      "severity": "passed_selected_supplement",
+      "fact": "OSR gets supports=null; explicit government support/opposition controls get true/false. Real OSR distinguishes funding limits from guaranteed financing.",
+      "qualification": "Only one real OSR, no large current government-position holdout."
+    }
+  ],
+  "fresh_gpt_comparison": {
+    "pairs": [
+      {
+        "case_id": "analysis-1040",
+        "gpt_usd": 0.008056875,
+        "terra_usd": 0.003812,
+        "gpt_input": 4819,
+        "terra_input": 4819,
+        "gpt_output": 1009,
+        "terra_output": 561,
+        "gpt_score": 4,
+        "terra_score": 4
+      },
+      {
+        "case_id": "reanalysis-2846",
+        "gpt_usd": 0.01333875,
+        "terra_usd": 0.00711,
+        "gpt_input": 11350,
+        "terra_input": 11350,
+        "gpt_output": 1249,
+        "terra_output": 574,
+        "gpt_score": 5,
+        "terra_score": 5
+      },
+      {
+        "case_id": "reanalysis-3008",
+        "gpt_usd": 0.031675875,
+        "terra_usd": 0.023774,
+        "gpt_input": 44483,
+        "terra_input": 44483,
+        "gpt_output": 962,
+        "terra_output": 613,
+        "gpt_score": 2,
+        "terra_score": 2
+      },
+      {
+        "case_id": "analysis-950",
+        "gpt_usd": 0.05628,
+        "terra_usd": 0.039147,
+        "gpt_input": 74304,
+        "terra_input": 74304,
+        "gpt_output": 1968,
+        "terra_output": 798,
+        "gpt_score": 5,
+        "terra_score": 5
+      },
+      {
+        "case_id": "reanalysis-RCL_12412454",
+        "gpt_usd": 0.04587375,
+        "terra_usd": 0.0258795,
+        "gpt_input": 48534,
+        "terra_input": 48534,
+        "gpt_output": 3108,
+        "terra_output": 645,
+        "gpt_score": 3,
+        "terra_score": 3
+      },
+      {
+        "case_id": "analysis-fresh-3126",
+        "gpt_usd": 0.03493025,
+        "terra_usd": 0.022934,
+        "gpt_input": 42698,
+        "terra_input": 42698,
+        "gpt_output": 1836,
+        "terra_output": 634,
+        "gpt_score": 2,
+        "terra_score": 2
+      }
+    ],
+    "scores_equal": 6,
+    "material_coverage_regression": "RCL/12412454: GPT-5.1 retains language/preparatory-course participants; unchanged-prompt Terra omits them.",
+    "shared_omission": "3008: fresh GPT-5.1 and original Terra omit the criminal-record certificate.",
+    "qualification": "One draw per current model and case; source checks, not historical agreement, determine completeness. No global legal accuracy claim."
+  },
+  "precision_findings": {
+    "general_prompt_repairs": [
+      "criminal-record certificate freshness in 3008",
+      "course participant eligibility and no-other-insurance condition in RCL12412454 and 3141",
+      "EU/non-EU volunteer criminal-record regimes in 2846",
+      "month-of-suspension benefit restart in 319",
+      "conditional family scope in 950",
+      "absence-from-summary reanalysis control",
+      "all 9 joint selected controls/real pairs"
+    ],
+    "limits": [
+      "Exploratory selected cases; no independent broad precision holdout.",
+      "Long full-budget ranking failure was not retested with a budget-specific prompt.",
+      "950 precision medium requires two physical card parts."
+    ]
+  }
+}

@@ -15,8 +15,10 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
+from lexinform.content_versions import content_delivery_mismatch
 from lexinform.json_storage import compact_json, storage_json
-from lexinform.legacy_delivery import legacy_status_edit
+from lexinform.legacy_delivery import legacy_status_edit, legacy_status_reply
+from lexinform.log_context import log_extra
 from lexinform.models import (
     PRE_PRINT_PREFIX,
     RCL_PREFIX,
@@ -25,6 +27,8 @@ from lexinform.models import (
     AgendaItem,
     AmendmentsRecord,
     AnalysisRecord,
+    ArtifactMetadata,
+    ArtifactReadReceipt,
     AttentionAssessment,
     BatchIntent,
     BatchRequest,
@@ -36,10 +40,14 @@ from lexinform.models import (
     BillSubmission,
     CheckAspect,
     CommandState,
+    ComputationResult,
+    ContentSnapshot,
+    ContentVersion,
     DeliveryAlert,
     DeliveryPlan,
     DeliveryResolution,
     DocumentReviewRecord,
+    DocumentSelectionRecord,
     DocumentWork,
     Editorial,
     IncomingCommand,
@@ -56,12 +64,16 @@ from lexinform.models import (
     PublicationStatus,
     RclProject,
     ReadyAnalysis,
+    ResultApplicabilityObservation,
+    ResultApplication,
     ReviewSource,
     ReviewWork,
     RunMode,
     RunReport,
+    SelectionArtifactReference,
     SenateAct,
     SourceCheck,
+    SourceObservation,
     Stage,
     StatusChange,
     SupplementRecord,
@@ -71,7 +83,7 @@ from lexinform.models import (
     rcl_num_key,
     valid_mnemonic,
 )
-from lexinform.models.batch import BatchJob, batch_item_meta
+from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 
 _STAGES = TypeAdapter(tuple[Stage, ...])
@@ -499,6 +511,145 @@ MIGRATIONS: tuple[str, ...] = (
     """
     ALTER TABLE bills ADD COLUMN committee_documents_json TEXT;
     """,
+    """
+    CREATE TABLE computation_results (
+        result_id TEXT PRIMARY KEY,
+        provider TEXT NOT NULL,
+        batch_id TEXT NOT NULL,
+        custom_id TEXT NOT NULL,
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        result_json TEXT NOT NULL,
+        UNIQUE (provider, batch_id, custom_id)
+    );
+    CREATE INDEX ix_computation_owner ON computation_results(term, number);
+    CREATE TABLE result_applications (
+        result_id TEXT NOT NULL REFERENCES computation_results(result_id),
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        generation INTEGER NOT NULL,
+        phase TEXT NOT NULL,
+        application_json TEXT NOT NULL,
+        PRIMARY KEY (result_id, term, number, generation, phase)
+    );
+    CREATE INDEX ix_result_application_owner ON result_applications(term, number, generation);
+    """,
+    """
+    CREATE TABLE result_applications_v50 (
+        id INTEGER PRIMARY KEY,
+        result_id TEXT NOT NULL REFERENCES computation_results(result_id),
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        generation INTEGER,
+        phase TEXT NOT NULL,
+        application_json TEXT NOT NULL,
+        CHECK (
+            (generation IS NOT NULL
+             AND COALESCE(json_type(application_json, '$.target'), 'null') = 'null')
+            OR (generation IS NULL AND phase = 'projection'
+                AND json_type(application_json, '$.target') IS 'object'
+                AND json_type(application_json, '$.target.kind') IS 'text'
+                AND length(json_extract(application_json, '$.target.kind')) > 0
+                AND json_type(application_json, '$.target.ref') IS 'text'
+                AND length(json_extract(application_json, '$.target.ref')) > 0)
+        )
+    );
+    INSERT INTO result_applications_v50
+      (id, result_id, term, number, generation, phase, application_json)
+      SELECT rowid, result_id, term, number, generation, phase, application_json
+      FROM result_applications ORDER BY rowid;
+    DROP TABLE result_applications;
+    ALTER TABLE result_applications_v50 RENAME TO result_applications;
+    CREATE UNIQUE INDEX ux_result_application_generation
+      ON result_applications(result_id, term, number, generation, phase)
+      WHERE generation IS NOT NULL;
+    CREATE UNIQUE INDEX ux_result_application_target
+      ON result_applications(result_id, term, number, phase,
+          json_extract(application_json, '$.target.kind'),
+          json_extract(application_json, '$.target.ref'))
+      WHERE generation IS NULL;
+    CREATE INDEX ix_result_application_owner ON result_applications(term, number, generation);
+    """,
+    """
+    CREATE TABLE result_applicability (
+        observation_id TEXT PRIMARY KEY NOT NULL,
+        result_id TEXT NOT NULL REFERENCES computation_results(result_id),
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        observation_json TEXT NOT NULL
+    );
+    CREATE INDEX ix_result_applicability_owner ON result_applicability(term, number);
+    """,
+    """
+    CREATE TABLE document_selections (
+        selection_id TEXT PRIMARY KEY NOT NULL,
+        question TEXT NOT NULL,
+        policy_version TEXT,
+        state TEXT NOT NULL,
+        record_json TEXT NOT NULL
+    );
+    CREATE TABLE source_observations (
+        observation_id TEXT PRIMARY KEY NOT NULL,
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        purpose TEXT NOT NULL CHECK(purpose IN ('prefilter', 'analysis', 'review')),
+        selection_id TEXT NOT NULL REFERENCES document_selections(selection_id),
+        source_url TEXT NOT NULL,
+        source_kind TEXT NOT NULL,
+        observation_json TEXT NOT NULL
+    );
+    CREATE INDEX ix_source_observations_owner ON source_observations(term, number, purpose);
+    CREATE INDEX ix_source_observations_selection ON source_observations(selection_id);
+    """,
+    """
+    CREATE TABLE artifacts (
+        sha256 TEXT PRIMARY KEY NOT NULL,
+        byte_size INTEGER NOT NULL CHECK(byte_size >= 0),
+        recorded_at TEXT NOT NULL
+    );
+    CREATE INDEX ix_artifacts_recorded_at ON artifacts(recorded_at);
+    CREATE TABLE selection_artifacts (
+        selection_id TEXT NOT NULL REFERENCES document_selections(selection_id),
+        part_scope TEXT NOT NULL CHECK(part_scope IN ('parts', 'observed_parts')),
+        part_index INTEGER NOT NULL CHECK(part_index >= 0),
+        artifact_sha256 TEXT NOT NULL REFERENCES artifacts(sha256),
+        PRIMARY KEY(selection_id, part_scope, part_index)
+    );
+    CREATE INDEX ix_selection_artifacts_artifact ON selection_artifacts(artifact_sha256);
+    """,
+    """
+    CREATE TABLE artifact_reads (
+        read_id TEXT PRIMARY KEY NOT NULL,
+        requested_url TEXT NOT NULL,
+        artifact_sha256 TEXT NOT NULL REFERENCES artifacts(sha256),
+        byte_size INTEGER NOT NULL CHECK(byte_size >= 0),
+        recorded_at TEXT NOT NULL,
+        UNIQUE(requested_url, artifact_sha256)
+    );
+    CREATE INDEX ix_artifact_reads_artifact ON artifact_reads(artifact_sha256);
+    """,
+    """
+    CREATE TABLE content_snapshots (
+        snapshot_id TEXT PRIMARY KEY NOT NULL,
+        kind TEXT NOT NULL CHECK(kind IN ('bill', 'change', 'plan')),
+        payload_json TEXT NOT NULL
+    );
+    CREATE TABLE content_versions (
+        content_id TEXT PRIMARY KEY NOT NULL,
+        root_publication_id INTEGER NOT NULL,
+        previous_version_id TEXT REFERENCES content_versions(content_id),
+        bill_snapshot_id TEXT NOT NULL REFERENCES content_snapshots(snapshot_id),
+        change_snapshot_id TEXT NOT NULL REFERENCES content_snapshots(snapshot_id),
+        plan_snapshot_id TEXT NOT NULL REFERENCES content_snapshots(snapshot_id),
+        version_json TEXT NOT NULL
+    );
+    CREATE INDEX ix_content_versions_root ON content_versions(root_publication_id);
+    CREATE TABLE publication_content (
+        publication_id INTEGER PRIMARY KEY NOT NULL,
+        content_id TEXT NOT NULL REFERENCES content_versions(content_id)
+    );
+    CREATE INDEX ix_publication_content_version ON publication_content(content_id);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -868,6 +1019,594 @@ class SqliteBillRepository:
     def load_analysis_memo(self) -> dict[str, str]:
         return dict(self._conn.execute("SELECT key, record_json FROM analysis_memo"))
 
+    def save_computation_result(self, result: ComputationResult) -> None:
+        self._conn.execute(
+            "INSERT INTO computation_results"
+            " (result_id, provider, batch_id, custom_id, term, number, result_json)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+            (
+                result.result_id,
+                result.provider,
+                result.batch_id,
+                result.custom_id,
+                result.term,
+                result.number,
+                result.model_dump_json(),
+            ),
+        )
+        if self.get_computation_result(result.result_id) != result:
+            raise ValueError("an immutable computation result cannot be replaced")
+        log.debug(
+            "local computation result write",
+            extra=log_extra(
+                bill_term=result.term,
+                bill_number=result.number,
+                computation_id=result.result_id,
+                batch_id=result.batch_id,
+                custom_id=result.custom_id,
+                request_sha256=result.request_sha256,
+            ),
+        )
+
+    def get_computation_result(self, result_id: str) -> ComputationResult | None:
+        row = self._conn.execute(
+            "SELECT result_json FROM computation_results WHERE result_id = ?", (result_id,)
+        ).fetchone()
+        return ComputationResult.model_validate_json(row[0]) if row else None
+
+    def list_computation_results(
+        self, term: int, number: str, *, purpose: BatchKind | None = None
+    ) -> list[ComputationResult]:
+        query = "SELECT result_json FROM computation_results WHERE term = ? AND number = ?"
+        parameters: tuple[int | str, ...] = (term, number)
+        if purpose is not None:
+            query += " AND json_extract(result_json, '$.purpose') = ?"
+            parameters += (purpose,)
+        return [
+            ComputationResult.model_validate_json(row[0])
+            for row in self._conn.execute(query + " ORDER BY rowid", parameters)
+        ]
+
+    def save_applicability_observation(self, observation: ResultApplicabilityObservation) -> None:
+        validated = ResultApplicabilityObservation.model_validate_json(
+            observation.model_dump_json()
+        )
+        if validated.observation_id != observation.observation_id:
+            raise ValueError("an applicability observation must keep its validated identity")
+        observation = validated
+        self._conn.execute(
+            "INSERT INTO result_applicability"
+            " (observation_id, result_id, term, number, observation_json) VALUES (?, ?, ?, ?, ?)"
+            " ON CONFLICT DO NOTHING",
+            (
+                observation.observation_id,
+                observation.result_id,
+                observation.term,
+                observation.number,
+                observation.model_dump_json(),
+            ),
+        )
+        saved = self.get_applicability_observation(observation.observation_id)
+        assert saved is not None, "the insert retains the observation under its immutable identity"
+        if saved != observation.model_copy(update={"created_at": saved.created_at}):
+            raise ValueError("an immutable applicability observation cannot be replaced")
+
+    def get_applicability_observation(
+        self, observation_id: str
+    ) -> ResultApplicabilityObservation | None:
+        row = self._conn.execute(
+            "SELECT * FROM result_applicability WHERE observation_id=?", (observation_id,)
+        ).fetchone()
+        return self._applicability_observation(row) if row else None
+
+    def list_applicability_observations(
+        self, term: int, number: str
+    ) -> list[ResultApplicabilityObservation]:
+        return [
+            self._applicability_observation(row)
+            for row in self._conn.execute(
+                "SELECT * FROM result_applicability WHERE term=? AND number=? ORDER BY rowid",
+                (term, number),
+            )
+        ]
+
+    @staticmethod
+    def _applicability_observation(row: sqlite3.Row) -> ResultApplicabilityObservation:
+        observation = ResultApplicabilityObservation.model_validate_json(row["observation_json"])
+        expected = (
+            observation.observation_id,
+            observation.result_id,
+            observation.term,
+            observation.number,
+        )
+        stored = tuple(row[key] for key in ("observation_id", "result_id", "term", "number"))
+        if expected != stored:
+            raise ValueError("applicability observation columns differ from the recorded identity")
+        return observation
+
+    def save_source_observation(
+        self, selection: DocumentSelectionRecord, observation: SourceObservation
+    ) -> None:
+        selection = DocumentSelectionRecord.model_validate_json(selection.model_dump_json())
+        observation = SourceObservation.model_validate_json(observation.model_dump_json())
+        if observation.selection_id != selection.selection_id:
+            raise ValueError("a source observation must reference its exact selection metadata")
+        with self.atomic():
+            self._conn.execute(
+                "INSERT INTO document_selections"
+                " (selection_id, question, policy_version, state, record_json)"
+                " VALUES (?, ?, ?, ?, ?)"
+                " ON CONFLICT DO NOTHING",
+                (
+                    selection.selection_id,
+                    selection.selection.question,
+                    selection.selection.policy_version,
+                    selection.selection.state,
+                    selection.model_dump_json(),
+                ),
+            )
+            if self.get_document_selection(selection.selection_id) != selection:
+                raise ValueError("an immutable document selection cannot be replaced")
+            self._conn.execute(
+                "INSERT INTO source_observations"
+                " (observation_id, term, number, purpose, selection_id, source_url, source_kind,"
+                " observation_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+                (
+                    observation.observation_id,
+                    observation.term,
+                    observation.number,
+                    observation.purpose,
+                    observation.selection_id,
+                    observation.document.url,
+                    observation.document.kind,
+                    observation.model_dump_json(),
+                ),
+            )
+            saved = self.get_source_observation(observation.observation_id)
+            assert saved is not None, "the insert retains the observation under its identity"
+            if saved != observation.model_copy(update={"recorded_at": saved.recorded_at}):
+                raise ValueError("an immutable source observation cannot be replaced")
+        log.debug(
+            "local source observation write",
+            extra=log_extra(
+                bill_term=observation.term,
+                bill_number=observation.number,
+                observation_id=observation.observation_id,
+                selection_id=selection.selection_id,
+            ),
+        )
+
+    def get_document_selection(self, selection_id: str) -> DocumentSelectionRecord | None:
+        row = self._conn.execute(
+            "SELECT * FROM document_selections WHERE selection_id=?", (selection_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        record = DocumentSelectionRecord.model_validate_json(row["record_json"])
+        expected = (
+            record.selection_id,
+            record.selection.question,
+            record.selection.policy_version,
+            record.selection.state,
+        )
+        if expected != tuple(
+            row[key] for key in ("selection_id", "question", "policy_version", "state")
+        ):
+            raise ValueError("document selection columns differ from the recorded identity")
+        return record
+
+    def get_source_observation(self, observation_id: str) -> SourceObservation | None:
+        row = self._conn.execute(
+            "SELECT * FROM source_observations WHERE observation_id=?", (observation_id,)
+        ).fetchone()
+        return self._source_observation(row) if row else None
+
+    def list_source_observations(self, term: int, number: str) -> list[SourceObservation]:
+        return [
+            self._source_observation(row)
+            for row in self._conn.execute(
+                "SELECT * FROM source_observations WHERE term=? AND number=? ORDER BY rowid",
+                (term, number),
+            )
+        ]
+
+    @staticmethod
+    def _source_observation(row: sqlite3.Row) -> SourceObservation:
+        observation = SourceObservation.model_validate_json(row["observation_json"])
+        expected = (
+            observation.observation_id,
+            observation.term,
+            observation.number,
+            observation.purpose,
+            observation.selection_id,
+            observation.document.url,
+            observation.document.kind,
+        )
+        columns = (
+            "observation_id",
+            "term",
+            "number",
+            "purpose",
+            "selection_id",
+            "source_url",
+            "source_kind",
+        )
+        if expected != tuple(row[key] for key in columns):
+            raise ValueError("source observation columns differ from the recorded identity")
+        return observation
+
+    def save_content_snapshot(self, snapshot: ContentSnapshot) -> None:
+        snapshot = ContentSnapshot.model_validate_json(snapshot.model_dump_json())
+        self._conn.execute(
+            "INSERT INTO content_snapshots (snapshot_id, kind, payload_json) VALUES (?, ?, ?)"
+            " ON CONFLICT DO NOTHING",
+            (snapshot.snapshot_id, snapshot.kind, snapshot.payload_json),
+        )
+        if self.get_content_snapshot(snapshot.snapshot_id) != snapshot:
+            raise ValueError("an immutable content snapshot cannot be replaced")
+
+    def get_content_snapshot(self, snapshot_id: str) -> ContentSnapshot | None:
+        row = self._conn.execute(
+            "SELECT * FROM content_snapshots WHERE snapshot_id=?", (snapshot_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        snapshot = ContentSnapshot(kind=row["kind"], payload_json=row["payload_json"])
+        if snapshot.snapshot_id != row["snapshot_id"]:
+            raise ValueError("content snapshot columns differ from the recorded identity")
+        return snapshot
+
+    def save_content_version(self, version: ContentVersion) -> None:
+        version = ContentVersion.model_validate_json(version.model_dump_json())
+        for kind, identity in (
+            ("bill", version.bill_snapshot_id),
+            ("change", version.change_snapshot_id),
+            ("plan", version.plan_snapshot_id),
+        ):
+            snapshot = self.get_content_snapshot(identity)
+            if snapshot is None or snapshot.kind != kind:
+                raise ValueError("a content version requires matching semantic snapshots")
+        if version.previous_version_id is not None:
+            previous = self.get_content_version(version.previous_version_id)
+            if previous is None or previous.root_publication_id != version.root_publication_id:
+                raise ValueError("a content revision requires its own original history")
+        self._conn.execute(
+            "INSERT INTO content_versions (content_id, root_publication_id, previous_version_id,"
+            " bill_snapshot_id, change_snapshot_id, plan_snapshot_id, version_json)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+            (
+                version.content_id,
+                version.root_publication_id,
+                version.previous_version_id,
+                version.bill_snapshot_id,
+                version.change_snapshot_id,
+                version.plan_snapshot_id,
+                version.model_dump_json(),
+            ),
+        )
+        saved = self.get_content_version(version.content_id)
+        if saved != version.model_copy(
+            update={"recorded_at": saved.recorded_at if saved else None}
+        ):
+            raise ValueError("an immutable content version cannot be replaced")
+
+    def get_content_version(self, content_id: str) -> ContentVersion | None:
+        row = self._conn.execute(
+            "SELECT * FROM content_versions WHERE content_id=?", (content_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        version = ContentVersion.model_validate_json(row["version_json"])
+        columns = (
+            "content_id",
+            "root_publication_id",
+            "previous_version_id",
+            "bill_snapshot_id",
+            "change_snapshot_id",
+            "plan_snapshot_id",
+        )
+        expected = (
+            version.content_id,
+            version.root_publication_id,
+            version.previous_version_id,
+            version.bill_snapshot_id,
+            version.change_snapshot_id,
+            version.plan_snapshot_id,
+        )
+        if expected != tuple(row[key] for key in columns):
+            raise ValueError("content version columns differ from the recorded identity")
+        return version
+
+    def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]:
+        versions: list[ContentVersion] = []
+        for row in self._conn.execute(
+            "SELECT content_id FROM content_versions WHERE root_publication_id=? ORDER BY rowid",
+            (root_publication_id,),
+        ):
+            version = self.get_content_version(row["content_id"])
+            assert version is not None, "the selected content version exists in this snapshot"
+            versions.append(version)
+        return versions
+
+    def bind_publication_content(self, publication_id: int, content_id: str) -> None:
+        version = self.get_content_version(content_id)
+        publication = self.publication_by_id(publication_id)
+        root = self.publication_by_id(version.root_publication_id) if version else None
+        if version is None or publication is None or root is None:
+            raise ValueError("a content binding requires its publication and original")
+        if (publication.term, publication.number, publication.channel_id) != (
+            root.term,
+            root.number,
+            root.channel_id,
+        ):
+            raise ValueError("content must belong to the same publication owner")
+        plan = publication.delivery
+        if (
+            plan is None
+            or plan.rendered_text != (version.rendered_text or "")
+            or (
+                publication_id != version.root_publication_id
+                and plan.revision_of != version.root_publication_id
+            )
+        ):
+            raise ValueError("content must match the frozen physical publication")
+        if publication_id != version.root_publication_id and (
+            publication.kind is not PublicationKind.AMENDMENTS_REVISION
+            or plan.edit_message_id != root.message_id
+            or root.status is not PublicationStatus.SENT
+        ):
+            raise ValueError("a revision content binding requires its original physical target")
+        if (publication_id == version.root_publication_id) != (version.previous_version_id is None):
+            raise ValueError("a content binding must distinguish the original and its revision")
+        snapshots: dict[str, ContentSnapshot] = {}
+        for identity in (
+            version.bill_snapshot_id,
+            version.change_snapshot_id,
+            version.plan_snapshot_id,
+        ):
+            snapshot = self.get_content_snapshot(identity)
+            if snapshot is not None:
+                snapshots[identity] = snapshot
+        mismatch = content_delivery_mismatch(version, snapshots, plan)
+        if mismatch is not None:
+            label = "semantic snapshot" if mismatch in ("body", "snapshot") else "delivery context"
+            raise ValueError(f"content must match the frozen {label}")
+        self._conn.execute(
+            "INSERT INTO publication_content (publication_id, content_id) VALUES (?, ?)"
+            " ON CONFLICT DO NOTHING",
+            (publication_id, content_id),
+        )
+        if self.get_publication_content(publication_id) != version:
+            raise ValueError("a publication cannot replace its immutable content binding")
+        log.debug(
+            "local publication content binding",
+            extra=log_extra(
+                bill_term=publication.term,
+                bill_number=publication.number,
+                content_id=content_id,
+                publication_id=publication_id,
+            ),
+        )
+
+    def get_publication_content(self, publication_id: int) -> ContentVersion | None:
+        row = self._conn.execute(
+            "SELECT content_id FROM publication_content WHERE publication_id=?", (publication_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        version = self.get_content_version(row["content_id"])
+        if version is None:
+            raise ValueError("a publication content binding has lost its version")
+        return version
+
+    def list_content_publications(self, root_publication_id: int) -> list[Publication]:
+        rows = self._conn.execute(
+            "SELECT p.* FROM publications p"
+            " JOIN publication_content binding ON binding.publication_id=p.id"
+            " JOIN content_versions version ON version.content_id=binding.content_id"
+            " WHERE version.root_publication_id=? ORDER BY p.id",
+            (root_publication_id,),
+        )
+        return [self._row_to_publication(row) for row in rows]
+
+    def save_artifact_metadata(self, artifact: ArtifactMetadata) -> None:
+        artifact = ArtifactMetadata.model_validate_json(artifact.model_dump_json())
+        self._conn.execute(
+            "INSERT INTO artifacts (sha256, byte_size, recorded_at) VALUES (?, ?, ?)"
+            " ON CONFLICT DO NOTHING",
+            (artifact.sha256, artifact.byte_size, _utc_iso(artifact.recorded_at)),
+        )
+        saved = self.get_artifact_metadata(artifact.sha256)
+        assert saved is not None, "the insert retains metadata under its complete-body SHA"
+        if saved != artifact.model_copy(update={"recorded_at": saved.recorded_at}):
+            raise ValueError("an immutable artifact identity cannot change its byte size")
+
+    def get_artifact_metadata(self, sha256: str) -> ArtifactMetadata | None:
+        row = self._conn.execute("SELECT * FROM artifacts WHERE sha256=?", (sha256,)).fetchone()
+        return (
+            ArtifactMetadata(
+                sha256=row["sha256"],
+                byte_size=row["byte_size"],
+                recorded_at=datetime.fromisoformat(row["recorded_at"]),
+            )
+            if row
+            else None
+        )
+
+    def save_artifact_read(self, receipt: ArtifactReadReceipt) -> None:
+        receipt = ArtifactReadReceipt.model_validate_json(receipt.model_dump_json())
+        artifact = self.get_artifact_metadata(receipt.sha256)
+        if artifact is None or artifact.byte_size != receipt.byte_size:
+            raise ValueError("an artifact read requires matching complete-body metadata")
+        self._conn.execute(
+            "INSERT INTO artifact_reads"
+            " (read_id, requested_url, artifact_sha256, byte_size, recorded_at)"
+            " VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+            (
+                receipt.read_id,
+                receipt.requested_url,
+                receipt.sha256,
+                receipt.byte_size,
+                _utc_iso(receipt.recorded_at),
+            ),
+        )
+        saved = self.get_artifact_read(receipt.read_id)
+        assert saved is not None, "the insert retains the receipt under its immutable read identity"
+        if saved != receipt.model_copy(update={"recorded_at": saved.recorded_at}):
+            raise ValueError("an immutable artifact read receipt cannot be replaced")
+        log.debug(
+            "local artifact read write",
+            extra=log_extra(artifact_sha256=receipt.sha256, artifact_read_id=receipt.read_id),
+        )
+
+    def get_artifact_read(self, read_id: str) -> ArtifactReadReceipt | None:
+        row = self._conn.execute(
+            "SELECT * FROM artifact_reads WHERE read_id=?", (read_id,)
+        ).fetchone()
+        return self._artifact_read(row) if row is not None else None
+
+    def list_artifact_reads(
+        self, *, sha256: str | None = None, requested_url: str | None = None
+    ) -> list[ArtifactReadReceipt]:
+        clauses: list[str] = []
+        parameters: list[str] = []
+        if sha256 is not None:
+            clauses.append("artifact_sha256=?")
+            parameters.append(sha256)
+        if requested_url is not None:
+            clauses.append("requested_url=?")
+            parameters.append(requested_url)
+        query = "SELECT * FROM artifact_reads"
+        if clauses:
+            query += " WHERE " + " AND ".join(clauses)
+        return [
+            self._artifact_read(row)
+            for row in self._conn.execute(query + " ORDER BY rowid", parameters)
+        ]
+
+    @staticmethod
+    def _artifact_read(row: sqlite3.Row) -> ArtifactReadReceipt:
+        receipt = ArtifactReadReceipt(
+            requested_url=row["requested_url"],
+            sha256=row["artifact_sha256"],
+            byte_size=row["byte_size"],
+            recorded_at=datetime.fromisoformat(row["recorded_at"]),
+        )
+        if receipt.read_id != row["read_id"]:
+            raise ValueError("artifact read columns differ from the recorded identity")
+        return receipt
+
+    def save_selection_artifact(self, reference: SelectionArtifactReference) -> None:
+        reference = SelectionArtifactReference.model_validate_json(reference.model_dump_json())
+        selection = self.get_document_selection(reference.selection_id)
+        if selection is None:
+            raise ValueError("an artifact reference requires a recorded selection")
+        parts = (
+            selection.selection.parts
+            if reference.part_scope == "parts"
+            else selection.selection.observed_parts
+        )
+        if reference.part_index >= len(parts):
+            raise ValueError("an artifact reference points outside the selected part scope")
+        part = parts[reference.part_index]
+        expected = part.source_sha256
+        if reference.artifact_sha256 != expected:
+            raise ValueError("an artifact reference must match the recorded outer body identity")
+        if self.get_artifact_metadata(reference.artifact_sha256) is None:
+            raise ValueError("an artifact reference requires known complete-body metadata")
+        self._conn.execute(
+            "INSERT INTO selection_artifacts"
+            " (selection_id, part_scope, part_index, artifact_sha256) VALUES (?, ?, ?, ?)"
+            " ON CONFLICT DO NOTHING",
+            (
+                reference.selection_id,
+                reference.part_scope,
+                reference.part_index,
+                reference.artifact_sha256,
+            ),
+        )
+        saved = self._conn.execute(
+            "SELECT artifact_sha256 FROM selection_artifacts"
+            " WHERE selection_id=? AND part_scope=? AND part_index=?",
+            (reference.selection_id, reference.part_scope, reference.part_index),
+        ).fetchone()
+        if saved is None or saved[0] != reference.artifact_sha256:
+            raise ValueError("an immutable selected part cannot be rebound to different bytes")
+        log.debug(
+            "local selection artifact binding",
+            extra=log_extra(
+                selection_id=reference.selection_id, artifact_sha256=reference.artifact_sha256
+            ),
+        )
+
+    def list_selection_artifacts(self, selection_id: str) -> list[SelectionArtifactReference]:
+        return [
+            SelectionArtifactReference(
+                selection_id=row["selection_id"],
+                part_scope=row["part_scope"],
+                part_index=row["part_index"],
+                artifact_sha256=row["artifact_sha256"],
+            )
+            for row in self._conn.execute(
+                "SELECT * FROM selection_artifacts WHERE selection_id=?"
+                " ORDER BY CASE part_scope WHEN 'parts' THEN 0 ELSE 1 END, part_index",
+                (selection_id,),
+            )
+        ]
+
+    def save_result_application(self, application: ResultApplication) -> None:
+        identity = (
+            application.result_id,
+            application.term,
+            application.number,
+            application.generation,
+            application.phase,
+        )
+        self._conn.execute(
+            "INSERT INTO result_applications"
+            " (result_id, term, number, generation, phase, application_json)"
+            " VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+            (*identity, application.model_dump_json()),
+        )
+        target = application.target
+        row = self._conn.execute(
+            "SELECT application_json FROM result_applications WHERE result_id = ? AND term = ?"
+            " AND number = ? AND generation IS ? AND phase = ?"
+            " AND json_extract(application_json, '$.target.kind') IS ?"
+            " AND json_extract(application_json, '$.target.ref') IS ?",
+            (*identity, target.kind if target else None, target.ref if target else None),
+        ).fetchone()
+        if (
+            row is None
+            or ResultApplication.model_validate_json(row[0]).model_copy(
+                update={"created_at": application.created_at}
+            )
+            != application
+        ):
+            raise ValueError("an immutable result application cannot be replaced")
+        log.debug(
+            "local result application write",
+            extra=log_extra(
+                bill_term=application.term,
+                bill_number=application.number,
+                computation_id=application.result_id,
+                application_phase=application.phase,
+                application_generation=application.generation,
+                application_target_kind=target.kind if target else None,
+                application_target_ref=target.ref if target else None,
+            ),
+        )
+
+    def list_result_applications(self, term: int, number: str) -> list[ResultApplication]:
+        return [
+            ResultApplication.model_validate_json(row[0])
+            for row in self._conn.execute(
+                "SELECT application_json FROM result_applications WHERE term = ? AND number = ?"
+                " ORDER BY rowid",
+                (term, number),
+            )
+        ]
+
     def save_review_work(self, term: int, number: str, work: tuple[ReviewWork, ...]) -> None:
         self._conn.execute(
             "UPDATE bills SET review_work_json = ? WHERE term = ? AND number = ?",
@@ -1019,29 +1758,69 @@ class SqliteBillRepository:
         return cur.rowcount == 1
 
     def freeze_legacy_status_edit(self, publication_id: int, delivery: DeliveryPlan) -> bool:
+        return self._freeze_legacy_status_delivery(publication_id, delivery, reply=False)
+
+    def freeze_legacy_status_reply(self, publication_id: int, delivery: DeliveryPlan) -> bool:
+        return self._freeze_legacy_status_delivery(publication_id, delivery, reply=True)
+
+    def _freeze_legacy_status_delivery(
+        self, publication_id: int, delivery: DeliveryPlan, *, reply: bool
+    ) -> bool:
         row = self._conn.execute(
             "SELECT * FROM publications WHERE id = ?", (publication_id,)
         ).fetchone()
         if row is None:
             return False
         original = self._row_to_publication(row)
+        eligible = legacy_status_reply(original) if reply else legacy_status_edit(original)
         if (
-            not legacy_status_edit(original)
+            not eligible
             or not delivery.rendered_text.strip()
             or utf16_length(delivery.rendered_text) > MESSAGE_LIMIT
             or delivery.render_origin != "legacy_snapshot"
             or self.digest_owner(publication_id) is not None
             or self.digest_sources(publication_id)
+            or (
+                reply
+                and (delivery.today is None or delivery.reply_to is None or delivery.reply_to <= 0)
+            )
         ):
             return False
         saved = original.delivery
-        assert saved is not None, "legacy_status_edit requires a saved semantic edit snapshot"
-        if delivery != saved.model_copy(
-            update={"rendered_text": delivery.rendered_text, "render_origin": "legacy_snapshot"}
-        ):
+        assert saved is not None, "both legacy status predicates require a saved semantic snapshot"
+        updates: dict[str, object] = {
+            "rendered_text": delivery.rendered_text,
+            "render_origin": "legacy_snapshot",
+        }
+        expected = saved.model_copy(update=updates)
+        if reply:
+            expected = expected.model_copy(update={"today": delivery.today})
+            if saved.reply_to is None:
+                card = self.get_publication(
+                    original.term, original.number, PublicationKind.NEW_BILL, original.channel_id
+                )
+                if (
+                    card is None
+                    or card.status is not PublicationStatus.SENT
+                    or card.message_id != delivery.reply_to
+                ):
+                    return False
+                updates["reply_to"] = delivery.reply_to
+                expected = expected.model_copy(update={"reply_to": delivery.reply_to})
+            if delivery.continuation_ids:
+                if not self._legacy_reply_parts(original, delivery):
+                    return False
+                updates.update(continuation_ids=delivery.continuation_ids, held_change_ids=())
+                expected = expected.model_copy(
+                    update={"continuation_ids": delivery.continuation_ids, "held_change_ids": ()}
+                )
+        if delivery != expected:
             return False
         raw: dict[str, object] = json.loads(row["delivery_json"])
-        raw.update(rendered_text=delivery.rendered_text, render_origin="legacy_snapshot")
+        raw.update(updates)
+        if reply:
+            assert delivery.today is not None, "the reply eligibility check requires its render day"
+            raw["today"] = delivery.today.isoformat()
         changed = self._conn.execute(
             "UPDATE publications SET delivery_json = ?"
             " WHERE id = ? AND status = 'failed' AND attempts = ? AND delivery_json = ?",
@@ -1053,6 +1832,50 @@ class SqliteBillRepository:
             ),
         )
         return changed.rowcount == 1
+
+    def _legacy_reply_parts(self, original: Publication, delivery: DeliveryPlan) -> bool:
+        assert original.delivery is not None, "legacy_status_reply requires the original plan"
+        identities = delivery.continuation_ids
+        if len(set(identities)) != len(identities) or delivery.held_change_ids:
+            return False
+        parent = original.id
+        for index, identity in enumerate(identities, 2):
+            child = self.publication_by_id(identity)
+            if (
+                child is None
+                or child.kind is not PublicationKind.MESSAGE_PART
+                or child.status is not PublicationStatus.QUEUED
+                or child.attempts
+                or child.message_id is not None
+                or child.term != original.term
+                or child.number != original.number
+                or child.channel_id != original.channel_id
+                or child.ref != f"message/{original.id}/{index}"
+            ):
+                return False
+            plan = child.delivery
+            held = original.delivery.held_change_ids if index == len(identities) + 1 else ()
+            if (
+                plan is None
+                or not plan.rendered_text.strip()
+                or utf16_length(plan.rendered_text) > MESSAGE_LIMIT
+                or plan.continuation_parent != parent
+                or plan.continuation_root != original.id
+                or plan.continuation_index != index
+                or plan.continuation_ids
+                or plan.reply_to is not None
+                or plan.edit_message_id is not None
+                or plan.revision_of is not None
+                or plan.destination != "direct"
+                or plan.policy_version != "attention-v1"
+                or plan.publication_ids
+                or plan.digest_parts
+                or plan.digest_event_ids
+                or plan.held_change_ids != held
+            ):
+                return False
+            parent = identity
+        return True
 
     def get_update_publication(self, change_id: int, channel_id: str) -> Publication | None:
         row = self._conn.execute(
@@ -1174,6 +1997,15 @@ class SqliteBillRepository:
                 intent.created_at.isoformat(),
             ),
         )
+        log.debug(
+            "local batch intent write",
+            extra=log_extra(
+                bill_term=intent.request.term,
+                bill_number=intent.request.number,
+                custom_id=intent.request.custom_id,
+                request_sha256=intent.meta.request_sha256,
+            ),
+        )
 
     def batch_job(self, custom_id: str) -> BatchJob | None:
         submissions = self._conn.execute(
@@ -1204,6 +2036,19 @@ class SqliteBillRepository:
             since=datetime.fromisoformat(row["since"]),
             submissions=submissions,
         )
+
+    def computation_owner_terms(self, number: str, kind: BatchKind) -> tuple[int, ...]:
+        rows = self._conn.execute(
+            "SELECT term FROM llm_batch_items WHERE number = ? AND call_kind = ?"
+            " UNION SELECT json_extract(request_json, '$.term') FROM llm_batch_intents"
+            " WHERE json_extract(request_json, '$.number') = ?"
+            " AND COALESCE(json_extract(request_json, '$.question.kind'),"
+            " json_extract(request_json, '$.call_kind')) = ?"
+            " UNION SELECT term FROM computation_results WHERE number = ?"
+            " AND json_extract(result_json, '$.purpose') = ? ORDER BY term DESC",
+            (number, kind, number, kind, number, kind),
+        )
+        return tuple(int(row[0]) for row in rows)
 
     def context_rejected_batch_ids(self) -> set[str]:
         rows = self._conn.execute(
@@ -1374,6 +2219,17 @@ class SqliteBillRepository:
                 for i in items
             ],
         )
+        for item in items:
+            log.debug(
+                "local batch item write",
+                extra=log_extra(
+                    bill_term=item.term,
+                    bill_number=item.number,
+                    batch_id=item.batch_id,
+                    custom_id=item.custom_id,
+                    request_sha256=item.meta.request_sha256,
+                ),
+            )
 
     def list_open_llm_batches(self) -> list[LlmBatch]:
         rows = self._conn.execute(
@@ -2013,24 +2869,27 @@ class SqliteBillRepository:
         ).fetchone()
         return self._row_to_bill(row) if row else None
 
+    def list_government_rollover_candidates(self, term: int) -> list[Bill]:
+        return [self._row_to_bill(row) for row in self._government_rollover_rows(term)]
+
+    def _government_rollover_rows(self, term: int) -> list[sqlite3.Row]:
+        return self._conn.execute(
+            "SELECT * FROM bills WHERE term = ? AND status NOT IN (?, ?, ?, ?)"
+            " AND ((number LIKE ? AND json_extract(rcl_json, '$.print_number') IS NULL)"
+            "      OR number LIKE ?) ORDER BY number",
+            (
+                term,
+                BillStatus.LINKED.value,
+                BillStatus.BATCH_PENDING.value,
+                BillStatus.ANALYSIS_READY.value,
+                BillStatus.REANALYSIS_READY.value,
+                f"{RCL_PREFIX}%",
+                f"{WYKAZ_PREFIX}%",
+            ),
+        ).fetchall()
+
     def move_government_rows(self, from_term: int, to_term: int) -> int:
-        numbers = [
-            str(r[0])
-            for r in self._conn.execute(
-                "SELECT number FROM bills WHERE term = ? AND status NOT IN (?, ?, ?, ?)"
-                " AND ((number LIKE ? AND json_extract(rcl_json, '$.print_number') IS NULL)"
-                "      OR number LIKE ?) ORDER BY number",
-                (
-                    from_term,
-                    BillStatus.LINKED.value,
-                    BillStatus.BATCH_PENDING.value,
-                    BillStatus.ANALYSIS_READY.value,
-                    BillStatus.REANALYSIS_READY.value,
-                    f"{RCL_PREFIX}%",
-                    f"{WYKAZ_PREFIX}%",
-                ),
-            )
-        ]
+        numbers = [str(row["number"]) for row in self._government_rollover_rows(from_term)]
         if not numbers:
             return 0
         placeholders = ",".join("?" for _ in numbers)
@@ -2113,16 +2972,19 @@ class SqliteBillRepository:
             (pre_print_number, wykaz_number, term, print_number),
         )
 
-    def move_batch_work(self, term: int, from_number: str, to_number: str) -> None:
+    def move_primary_analysis_work(self, term: int, from_number: str, to_number: str) -> None:
         self._conn.execute(
             "UPDATE llm_batch_items SET number = ?"
-            " WHERE term = ? AND number = ? AND consumed_at IS NULL",
+            " WHERE term = ? AND number = ? AND consumed_at IS NULL"
+            " AND call_kind IN ('analysis', 'reanalysis')",
             (to_number, term, from_number),
         )
         self._conn.execute(
             "UPDATE llm_batch_intents SET request_json = json_set(request_json, '$.number', ?)"
             " WHERE json_extract(request_json, '$.term') = ?"
-            " AND json_extract(request_json, '$.number') = ?",
+            " AND json_extract(request_json, '$.number') = ?"
+            " AND COALESCE(json_extract(request_json, '$.question.kind'),"
+            " json_extract(request_json, '$.call_kind')) IN ('analysis', 'reanalysis')",
             (to_number, term, from_number),
         )
         self._conn.execute(
@@ -2537,6 +3399,10 @@ class SqliteBillRepository:
                 int(status is PublicationStatus.FAILED and count_attempt),
                 publication_id,
             ),
+        )
+        log.debug(
+            "local publication status write",
+            extra=log_extra(publication_id=publication_id, delivery_status=status.value),
         )
 
     def get_publication(

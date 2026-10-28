@@ -1,0 +1,740 @@
+{
+  "version": 1,
+  "stage": "J080",
+  "baseline": "0b59289521971acd3b11c16d8408fab2c341ae3d",
+  "scope": "Read-only document/review ownership doctor and shared checkpointed SQLite reader; no runtime model, service, port, schema or writer changes.",
+  "checks": {
+    "focused": {
+      "sha256": "f59ca423de7c08f6d529f708f299032f1acf0cf531953683ba4e17b808cfafe1",
+      "tests": 45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 2.596
+    },
+    "full": {
+      "sha256": "67ca22e67162caa34a9fdd6150dbc6de1e2e1fe98a581ae5843e7b9a0add8702",
+      "tests": 4651,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 656.314
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 424 source files",
+    "ruff": "All checks passed!",
+    "format": "1 file reformatted, 427 files left unchanged"
+  },
+  "unchanged_runtime": {
+    "files": 147,
+    "all_byte_identical": true,
+    "paths_sha256": "b2d32bef73c54e01715b1e12cb7b532b8ab4a9640b67594fab97ded14333ef33"
+  },
+  "changed_source": [
+    {
+      "path": "tools/request_doctor.py",
+      "sha256": "55a27975469d7902f391c019719e91f354a84acc21302d5415c8206ca17cafd8"
+    },
+    {
+      "path": "tools/sqlite_snapshot.py",
+      "sha256": "3d3d4da27eca153cd0801c0e8c3c9adf2674297c5488fc639feab26174f2ff6a"
+    },
+    {
+      "path": "tools/work_doctor.py",
+      "sha256": "69b81ed4bc7c2799cd1b2bf819afede6ab21da1d4f51913bcaac65e2e33c095a"
+    },
+    {
+      "path": "tests/scenario/test_request_doctor.py",
+      "sha256": "7e72329978e83448b429387e4f3543a8afc1af969ae2f99a3dc61921909dabc3"
+    },
+    {
+      "path": "tests/scenario/test_work_doctor.py",
+      "sha256": "fd611d7354901784e091729c27b7251204e22620470ce438c304df9a086b0065"
+    }
+  ],
+  "request_doctor_compatibility": {
+    "profiles": [
+      {
+        "case": "commission_review-1",
+        "database_sha256": "9cd4d35d5f93863c4ffd3a9ed073af259ec6bc77e2505f6cd3e3758ec6bd8939",
+        "source_sql_sha256": "e453247a5409a23cc8e0dfb55911d5e81021b8294f5947c64d7f5dd8e1072d25",
+        "report_sha256": "b3140b0b96f00c7903335da66fbdfc75f3c6f455dd4685bf0e50f2bcd4a845dd",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "fingerprints_without_retained_payload": 1,
+          "inputs_with_retained_payload": 0,
+          "intents": 0,
+          "intents_known": 0,
+          "intents_unknown": 0,
+          "items": 1,
+          "items_known": 1,
+          "items_unknown": 0,
+          "legacy_retained_payloads": 0,
+          "repeated_inputs": 0,
+          "results": 5,
+          "results_known": 2,
+          "results_unknown": 3,
+          "verified_intent_payloads": 0,
+          "warnings": 0
+        }
+      },
+      {
+        "case": "commission_review-4",
+        "database_sha256": "9cd4d35d5f93863c4ffd3a9ed073af259ec6bc77e2505f6cd3e3758ec6bd8939",
+        "source_sql_sha256": "e453247a5409a23cc8e0dfb55911d5e81021b8294f5947c64d7f5dd8e1072d25",
+        "report_sha256": "b3140b0b96f00c7903335da66fbdfc75f3c6f455dd4685bf0e50f2bcd4a845dd",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "fingerprints_without_retained_payload": 1,
+          "inputs_with_retained_payload": 0,
+          "intents": 0,
+          "intents_known": 0,
+          "intents_unknown": 0,
+          "items": 1,
+          "items_known": 1,
+          "items_unknown": 0,
+          "legacy_retained_payloads": 0,
+          "repeated_inputs": 0,
+          "results": 5,
+          "results_known": 2,
+          "results_unknown": 3,
+          "verified_intent_payloads": 0,
+          "warnings": 0
+        }
+      },
+      {
+        "case": "consultation_review-1",
+        "database_sha256": "3b186d8b562041f4859b013f5e41354e0cf31182665725acee6b3be7f8d3ef45",
+        "source_sql_sha256": "1e1423083274d6783135e61d8e9ddec3f20c6f10366fee9f2390dc2f183c6194",
+        "report_sha256": "2b8d9ec44afa1fe661319250b043e9553fc2c8fa47fd83e470aaf67ca0c5e130",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "fingerprints_without_retained_payload": 1,
+          "inputs_with_retained_payload": 0,
+          "intents": 0,
+          "intents_known": 0,
+          "intents_unknown": 0,
+          "items": 1,
+          "items_known": 1,
+          "items_unknown": 0,
+          "legacy_retained_payloads": 0,
+          "repeated_inputs": 0,
+          "results": 5,
+          "results_known": 2,
+          "results_unknown": 3,
+          "verified_intent_payloads": 0,
+          "warnings": 0
+        }
+      },
+      {
+        "case": "consultation_review-4",
+        "database_sha256": "3b186d8b562041f4859b013f5e41354e0cf31182665725acee6b3be7f8d3ef45",
+        "source_sql_sha256": "1e1423083274d6783135e61d8e9ddec3f20c6f10366fee9f2390dc2f183c6194",
+        "report_sha256": "2b8d9ec44afa1fe661319250b043e9553fc2c8fa47fd83e470aaf67ca0c5e130",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "fingerprints_without_retained_payload": 1,
+          "inputs_with_retained_payload": 0,
+          "intents": 0,
+          "intents_known": 0,
+          "intents_unknown": 0,
+          "items": 1,
+          "items_known": 1,
+          "items_unknown": 0,
+          "legacy_retained_payloads": 0,
+          "repeated_inputs": 0,
+          "results": 5,
+          "results_known": 2,
+          "results_unknown": 3,
+          "verified_intent_payloads": 0,
+          "warnings": 0
+        }
+      },
+      {
+        "case": "explanation-1",
+        "database_sha256": "e458db6748096b6593b40761e70b720e1f9395f29695df627f2a8e4d60faafa5",
+        "source_sql_sha256": "b2764f09f896cc1b438699b66ababd38ad88f59bbf9d56486b8a8e56700b805b",
+        "report_sha256": "548b9aaab8710fa2ec2034d198c91e385b7a94d7351f7e5884b2912cb46c806e",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "fingerprints_without_retained_payload": 1,
+          "inputs_with_retained_payload": 0,
+          "intents": 0,
+          "intents_known": 0,
+          "intents_unknown": 0,
+          "items": 1,
+          "items_known": 1,
+          "items_unknown": 0,
+          "legacy_retained_payloads": 0,
+          "repeated_inputs": 0,
+          "results": 4,
+          "results_known": 1,
+          "results_unknown": 3,
+          "verified_intent_payloads": 0,
+          "warnings": 0
+        }
+      },
+      {
+        "case": "explanation-4",
+        "database_sha256": "e458db6748096b6593b40761e70b720e1f9395f29695df627f2a8e4d60faafa5",
+        "source_sql_sha256": "b2764f09f896cc1b438699b66ababd38ad88f59bbf9d56486b8a8e56700b805b",
+        "report_sha256": "548b9aaab8710fa2ec2034d198c91e385b7a94d7351f7e5884b2912cb46c806e",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "fingerprints_without_retained_payload": 1,
+          "inputs_with_retained_payload": 0,
+          "intents": 0,
+          "intents_known": 0,
+          "intents_unknown": 0,
+          "items": 1,
+          "items_known": 1,
+          "items_unknown": 0,
+          "legacy_retained_payloads": 0,
+          "repeated_inputs": 0,
+          "results": 4,
+          "results_known": 1,
+          "results_unknown": 3,
+          "verified_intent_payloads": 0,
+          "warnings": 0
+        }
+      },
+      {
+        "case": "joint-1",
+        "database_sha256": "48c17f7f301170168a5009f65d559ec788f08c63d70518bcc17c2410a2427148",
+        "source_sql_sha256": "09fb9f1c561d01bf182ccb39d2a8eb7214983cb6057cb55927c74609c19a8d9a",
+        "report_sha256": "a3310fe513a50d237aaf7bcf53fbaf62426aa666f0a273f490b0fba801e0c5f3",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "fingerprints_without_retained_payload": 1,
+          "inputs_with_retained_payload": 0,
+          "intents": 0,
+          "intents_known": 0,
+          "intents_unknown": 0,
+          "items": 1,
+          "items_known": 1,
+          "items_unknown": 0,
+          "legacy_retained_payloads": 0,
+          "repeated_inputs": 0,
+          "results": 9,
+          "results_known": 3,
+          "results_unknown": 6,
+          "verified_intent_payloads": 0,
+          "warnings": 0
+        }
+      },
+      {
+        "case": "joint-4",
+        "database_sha256": "48c17f7f301170168a5009f65d559ec788f08c63d70518bcc17c2410a2427148",
+        "source_sql_sha256": "09fb9f1c561d01bf182ccb39d2a8eb7214983cb6057cb55927c74609c19a8d9a",
+        "report_sha256": "a3310fe513a50d237aaf7bcf53fbaf62426aa666f0a273f490b0fba801e0c5f3",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "fingerprints_without_retained_payload": 1,
+          "inputs_with_retained_payload": 0,
+          "intents": 0,
+          "intents_known": 0,
+          "intents_unknown": 0,
+          "items": 1,
+          "items_known": 1,
+          "items_unknown": 0,
+          "legacy_retained_payloads": 0,
+          "repeated_inputs": 0,
+          "results": 9,
+          "results_known": 3,
+          "results_unknown": 6,
+          "verified_intent_payloads": 0,
+          "warnings": 0
+        }
+      },
+      {
+        "case": "name-1",
+        "database_sha256": "2d4a3e2d4924c9f110389407b2e7d56c80e5f1f11bedf73e80084a2c51ab26e0",
+        "source_sql_sha256": "08d35a9cbeafea4d34e56e3e13c346086c927e8d8c8855e7822933b5eb379bf9",
+        "report_sha256": "c401e0dd894a0885b9a03fed896cfa5599cf895163441171b5148bd5399cdac7",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "fingerprints_without_retained_payload": 2,
+          "inputs_with_retained_payload": 0,
+          "intents": 0,
+          "intents_known": 0,
+          "intents_unknown": 0,
+          "items": 2,
+          "items_known": 2,
+          "items_unknown": 0,
+          "legacy_retained_payloads": 0,
+          "repeated_inputs": 0,
+          "results": 4,
+          "results_known": 4,
+          "results_unknown": 0,
+          "verified_intent_payloads": 0,
+          "warnings": 0
+        }
+      },
+      {
+        "case": "name-4",
+        "database_sha256": "2d4a3e2d4924c9f110389407b2e7d56c80e5f1f11bedf73e80084a2c51ab26e0",
+        "source_sql_sha256": "08d35a9cbeafea4d34e56e3e13c346086c927e8d8c8855e7822933b5eb379bf9",
+        "report_sha256": "c401e0dd894a0885b9a03fed896cfa5599cf895163441171b5148bd5399cdac7",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "fingerprints_without_retained_payload": 2,
+          "inputs_with_retained_payload": 0,
+          "intents": 0,
+          "intents_known": 0,
+          "intents_unknown": 0,
+          "items": 2,
+          "items_known": 2,
+          "items_unknown": 0,
+          "legacy_retained_payloads": 0,
+          "repeated_inputs": 0,
+          "results": 4,
+          "results_known": 4,
+          "results_unknown": 0,
+          "verified_intent_payloads": 0,
+          "warnings": 0
+        }
+      },
+      {
+        "case": "revision-1",
+        "database_sha256": "b6dc719c7937af7f7de8900e978efaa7452713fb8e98999023ab025090a83dae",
+        "source_sql_sha256": "2381727a607338faf82668669b512e0c5b352fa83cbb48649bd03d9e3fefaec4",
+        "report_sha256": "4b3f7bbca2e3ee9274c3417979b050f99d5beeb8030441891b329d0e05d937bd",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "fingerprints_without_retained_payload": 1,
+          "inputs_with_retained_payload": 0,
+          "intents": 0,
+          "intents_known": 0,
+          "intents_unknown": 0,
+          "items": 1,
+          "items_known": 1,
+          "items_unknown": 0,
+          "legacy_retained_payloads": 0,
+          "repeated_inputs": 0,
+          "results": 10,
+          "results_known": 2,
+          "results_unknown": 8,
+          "verified_intent_payloads": 0,
+          "warnings": 0
+        }
+      },
+      {
+        "case": "revision-4",
+        "database_sha256": "b6dc719c7937af7f7de8900e978efaa7452713fb8e98999023ab025090a83dae",
+        "source_sql_sha256": "2381727a607338faf82668669b512e0c5b352fa83cbb48649bd03d9e3fefaec4",
+        "report_sha256": "4b3f7bbca2e3ee9274c3417979b050f99d5beeb8030441891b329d0e05d937bd",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "fingerprints_without_retained_payload": 1,
+          "inputs_with_retained_payload": 0,
+          "intents": 0,
+          "intents_known": 0,
+          "intents_unknown": 0,
+          "items": 1,
+          "items_known": 1,
+          "items_unknown": 0,
+          "legacy_retained_payloads": 0,
+          "repeated_inputs": 0,
+          "results": 10,
+          "results_known": 2,
+          "results_unknown": 8,
+          "verified_intent_payloads": 0,
+          "warnings": 0
+        }
+      },
+      {
+        "case": "pinned-production",
+        "database_sha256": "9a657b61fe01025c9d14e838a413935c2bfb0cbcee13d4190681aa8a6116a57d",
+        "source_sql_sha256": "73e37426e5e5753ad312994a95965d9a100d91c22488ef486c0cb802cbc3b71f",
+        "report_sha256": "c9be2f81cdf544343cf96eae3f284a2f3cc8d0807f4d98b71a067ec28559ea3d",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "fingerprints_without_retained_payload": 1,
+          "inputs_with_retained_payload": 0,
+          "intents": 0,
+          "intents_known": 0,
+          "intents_unknown": 0,
+          "items": 109,
+          "items_known": 1,
+          "items_unknown": 108,
+          "legacy_retained_payloads": 0,
+          "repeated_inputs": 0,
+          "results": 399,
+          "results_known": 3,
+          "results_unknown": 396,
+          "verified_intent_payloads": 0,
+          "warnings": 0
+        }
+      }
+    ],
+    "complete_report_bytes_equal": true,
+    "all_input_hashes_unchanged": true,
+    "aggregate_sha256": "31ed35c8dafea2a4b4c6fc9f913e1e6ffa35a832d43a68511f92a229d048cc4a"
+  },
+  "production_pin": {
+    "state_commit": "f34e63e7d2446501ceee0c2595964eef1b8f48a2",
+    "sql_sha256": "73e37426e5e5753ad312994a95965d9a100d91c22488ef486c0cb802cbc3b71f",
+    "scope": "The J073 pin, not a fresh production observation. Restored checkpointed copy only.",
+    "work_doctor_report": {
+      "database_sha256": "9a657b61fe01025c9d14e838a413935c2bfb0cbcee13d4190681aa8a6116a57d",
+      "exclusions": [
+        "No source refresh, payload reconstruction, model call, submission or delivery.",
+        "No recomputation of recorded keys, legal applicability or current ELI verdict.",
+        "Owner memo counts overlap; they are not distinct rows safe to delete.",
+        "Publication linkage does not establish the configured channel or edit eligibility."
+      ],
+      "findings": [
+        {
+          "code": "document_publication_unavailable",
+          "level": "warning",
+          "ref": "document_work/amendments/133"
+        },
+        {
+          "code": "document_publication_unavailable",
+          "level": "warning",
+          "ref": "document_work/amendments/139"
+        },
+        {
+          "code": "document_publication_unavailable",
+          "level": "warning",
+          "ref": "document_work/amendments/140"
+        }
+      ],
+      "missing_tables": [],
+      "owners": [
+        {
+          "attempts": 0,
+          "change_id": 133,
+          "created_at": "2026-10-20T18:05:02+00:00",
+          "frozen_context": false,
+          "frozen_document": false,
+          "kind": "document",
+          "linked_publications": {},
+          "next_at": "2026-10-21T18:05:02+00:00",
+          "number": "2870",
+          "protected_memo_rows": 0,
+          "ref": "document_work/amendments/133",
+          "retained_delivery_payloads": 0,
+          "state": "waiting",
+          "term": 10
+        },
+        {
+          "attempts": 0,
+          "change_id": 139,
+          "created_at": "2026-10-21T18:11:13+00:00",
+          "frozen_context": false,
+          "frozen_document": false,
+          "kind": "document",
+          "linked_publications": {},
+          "next_at": "2026-10-22T18:11:13+00:00",
+          "number": "2107",
+          "protected_memo_rows": 0,
+          "ref": "document_work/amendments/139",
+          "retained_delivery_payloads": 0,
+          "state": "waiting",
+          "term": 10
+        },
+        {
+          "attempts": 0,
+          "change_id": 140,
+          "created_at": "2026-10-21T18:11:15+00:00",
+          "frozen_context": false,
+          "frozen_document": false,
+          "kind": "document",
+          "linked_publications": {},
+          "next_at": "2026-10-22T18:11:15+00:00",
+          "number": "3074",
+          "protected_memo_rows": 0,
+          "ref": "document_work/amendments/140",
+          "retained_delivery_payloads": 0,
+          "state": "waiting",
+          "term": 10
+        },
+        {
+          "baseline_day": "2026-10-14",
+          "checked_at": "2026-10-24T11:27:19+00:00",
+          "comparison_snapshot": false,
+          "kind": "review",
+          "number": "2172",
+          "protected_memo_rows": 0,
+          "purpose": "act_application",
+          "recorded_question_key": true,
+          "recorded_source_key": true,
+          "ref": "bills/10/2172/review_work/0",
+          "since": "2026-10-14T10:03:26+00:00",
+          "state": "abandoned",
+          "term": 10
+        },
+        {
+          "baseline_day": "2026-10-14",
+          "checked_at": "2026-10-24T11:27:19+00:00",
+          "comparison_snapshot": false,
+          "kind": "review",
+          "number": "2699",
+          "protected_memo_rows": 1,
+          "purpose": "act_application",
+          "recorded_question_key": true,
+          "recorded_source_key": true,
+          "ref": "bills/10/2699/review_work/0",
+          "since": "2026-10-14T10:03:26+00:00",
+          "state": "abandoned",
+          "term": 10
+        },
+        {
+          "baseline_day": "2026-10-14",
+          "checked_at": null,
+          "comparison_snapshot": false,
+          "kind": "review",
+          "number": "RCL/12398102",
+          "protected_memo_rows": 4,
+          "purpose": "consultation_review",
+          "recorded_question_key": true,
+          "recorded_source_key": true,
+          "ref": "bills/10/RCL/12398102/review_work/0",
+          "since": "2026-10-14T10:01:57+00:00",
+          "state": "context",
+          "term": 10
+        },
+        {
+          "baseline_day": "2026-10-14",
+          "checked_at": "2026-10-24T11:27:19+00:00",
+          "comparison_snapshot": false,
+          "kind": "review",
+          "number": "RCL/12402353",
+          "protected_memo_rows": 2,
+          "purpose": "consultation_review",
+          "recorded_question_key": true,
+          "recorded_source_key": true,
+          "ref": "bills/10/RCL/12402353/review_work/0",
+          "since": "2026-10-14T10:22:00+00:00",
+          "state": "abandoned",
+          "term": 10
+        },
+        {
+          "baseline_day": "2026-10-14",
+          "checked_at": "2026-10-24T11:27:19+00:00",
+          "comparison_snapshot": false,
+          "kind": "review",
+          "number": "RCL/12403003",
+          "protected_memo_rows": 3,
+          "purpose": "consultation_review",
+          "recorded_question_key": true,
+          "recorded_source_key": true,
+          "ref": "bills/10/RCL/12403003/review_work/0",
+          "since": "2026-10-14T10:22:00+00:00",
+          "state": "abandoned",
+          "term": 10
+        },
+        {
+          "baseline_day": "2026-10-14",
+          "checked_at": "2026-10-24T11:27:19+00:00",
+          "comparison_snapshot": false,
+          "kind": "review",
+          "number": "RCL/12404454",
+          "protected_memo_rows": 2,
+          "purpose": "consultation_review",
+          "recorded_question_key": true,
+          "recorded_source_key": true,
+          "ref": "bills/10/RCL/12404454/review_work/0",
+          "since": "2026-10-14T10:22:13+00:00",
+          "state": "abandoned",
+          "term": 10
+        },
+        {
+          "baseline_day": "2026-10-14",
+          "checked_at": "2026-10-24T11:27:19+00:00",
+          "comparison_snapshot": false,
+          "kind": "review",
+          "number": "RCL/12409801",
+          "protected_memo_rows": 1,
+          "purpose": "consultation_review",
+          "recorded_question_key": true,
+          "recorded_source_key": true,
+          "ref": "bills/10/RCL/12409801/review_work/0",
+          "since": "2026-10-14T10:22:16+00:00",
+          "state": "abandoned",
+          "term": 10
+        },
+        {
+          "baseline_day": "2026-10-14",
+          "checked_at": null,
+          "comparison_snapshot": false,
+          "kind": "review",
+          "number": "RCL/12411950",
+          "protected_memo_rows": 3,
+          "purpose": "consultation_review",
+          "recorded_question_key": true,
+          "recorded_source_key": true,
+          "ref": "bills/10/RCL/12411950/review_work/0",
+          "since": "2026-10-14T10:22:31+00:00",
+          "state": "context",
+          "term": 10
+        },
+        {
+          "baseline_day": "2026-10-14",
+          "checked_at": "2026-10-24T11:27:19+00:00",
+          "comparison_snapshot": false,
+          "kind": "review",
+          "number": "RCL/12412103",
+          "protected_memo_rows": 2,
+          "purpose": "consultation_review",
+          "recorded_question_key": true,
+          "recorded_source_key": true,
+          "ref": "bills/10/RCL/12412103/review_work/0",
+          "since": "2026-10-14T10:22:31+00:00",
+          "state": "abandoned",
+          "term": 10
+        }
+      ],
+      "schema_version": 50,
+      "scope": "Saved document/review ownership and dependency metadata; no repair or execution.",
+      "status": "recorded",
+      "summary": {
+        "document_rows": 3,
+        "document_waiting": 3,
+        "errors": 0,
+        "review_abandoned": 7,
+        "review_context": 2,
+        "review_owner_rows": 9,
+        "review_purpose_act_application": 2,
+        "review_purpose_consultation_review": 7,
+        "review_rows": 9,
+        "warnings": 3
+      },
+      "version": 1
+    }
+  },
+  "corpus": [
+    {
+      "id": "j080-ci",
+      "manifest_sha256": "a0099a0dd248bd33297a54a2bf6231e702c4bd514deb4bff7ba61b7c77dc0b0d",
+      "status": "passed",
+      "observations": 7,
+      "command": [
+        "/Users/sobaleu/projects/lexinform/.venv/bin/python",
+        "-m",
+        "tools.corpus_check",
+        "--corpus",
+        "/Users/sobaleu/projects/lexinform/tests/fixtures/corpus_check",
+        "--output",
+        "/Users/sobaleu/projects/lexinform/out/corpus/runs/j080-ci/result.json"
+      ]
+    },
+    {
+      "id": "j080-process",
+      "manifest_sha256": "7cd4d0bc83edcdd343673fbbbca0da756d8c38f152b47de40271f51392bb8f45",
+      "status": "recorded",
+      "observations": 3294,
+      "command": [
+        "/Users/sobaleu/projects/lexinform/.venv/bin/python",
+        "-m",
+        "tools.corpus_legacy_suites",
+        "--corpus",
+        "/Users/sobaleu/projects/lexinform-corpus",
+        "--output",
+        "/Users/sobaleu/projects/lexinform/out/corpus/runs/j080-process/result.json",
+        "--kind",
+        "process"
+      ]
+    }
+  ],
+  "process_diff": {
+    "after_manifest_sha256": "7cd4d0bc83edcdd343673fbbbca0da756d8c38f152b47de40271f51392bb8f45",
+    "before_manifest_sha256": "613790b36dc395806f837f150f64931957fc026386e820f68399711e72956864",
+    "changed_inputs": [],
+    "changes": [],
+    "scope": "Observation differences, not an independent legal accuracy verdict",
+    "status": "same",
+    "suite": "process",
+    "summary_changes": {},
+    "version": 1
+  },
+  "prior_release": {
+    "commit": "0b59289521971acd3b11c16d8408fab2c341ae3d",
+    "ci": {
+      "id": 40488439465,
+      "url": "https://github.com/sobolevbel/lexinform/actions/runs/40488439465",
+      "conclusion": "success",
+      "test_job": 122136001595,
+      "evidence": [
+        "2026-10-27T10:26:16.8238841Z All checks passed!",
+        "2026-10-27T10:26:36.9839653Z Success: no issues found in 423 source files",
+        "2026-10-27T10:33:26.6582839Z 4624 passed, 32 deselected, 3377 warnings in 406.63s (0:06:46)"
+      ]
+    },
+    "deployment": {
+      "id": 40489420492,
+      "url": "https://github.com/sobolevbel/lexinform/actions/runs/40489420492",
+      "conclusion": "success",
+      "job": 122139299048,
+      "evidence": [
+        "2026-10-27T10:33:41.2228078Z   COMMIT: 0b59289521971acd3b11c16d8408fab2c341ae3d",
+        "2026-10-27T10:33:44.3102226Z 4ed9a94403a7 -> 0b5928952197",
+        "2026-10-27T10:34:29.4859468Z lexinform-listen up 45 s after restart"
+      ]
+    }
+  },
+  "prior_runtime_release": {
+    "commit": "4ed9a94403a78f0ffe1f5dea540bf3d53b5558af",
+    "ci": {
+      "id": 40487303528,
+      "url": "https://github.com/sobolevbel/lexinform/actions/runs/40487303528",
+      "conclusion": "success",
+      "test_job": 122132193066,
+      "evidence": [
+        "2026-10-27T10:17:37.5470511Z All checks passed!",
+        "2026-10-27T10:17:57.1604177Z Success: no issues found in 423 source files",
+        "2026-10-27T10:24:33.9080354Z 4624 passed, 32 deselected, 3377 warnings in 393.87s (0:06:33)"
+      ]
+    },
+    "deployment": {
+      "id": 40488259345,
+      "url": "https://github.com/sobolevbel/lexinform/actions/runs/40488259345",
+      "conclusion": "success",
+      "job": 122135396732,
+      "evidence": [
+        "2026-10-27T10:24:50.2160377Z   COMMIT: 4ed9a94403a78f0ffe1f5dea540bf3d53b5558af",
+        "2026-10-27T10:24:53.0875540Z 9e3d891691e6 -> 4ed9a94403a7",
+        "2026-10-27T10:25:38.2701513Z lexinform-listen up 45 s after restart"
+      ]
+    }
+  },
+  "observer": {
+    "path": "out/corpus/j080/request_profile.py",
+    "sha256": "c07bf98700cd941bffd254f7b6b6d4c531a3f58ef9486e336e9fea0aa73d1d3f",
+    "source": "import hashlib\nimport json\nimport os\nfrom pathlib import Path\n\nfrom tools.request_doctor import audit\nimport tools.request_doctor\n\nassert Path(tools.request_doctor.__file__).resolve().parent.parent == Path(os.environ['DA_EXPECTED_TOOLS']).resolve()\ninputs = json.loads(Path('out/corpus/j080/inputs.json').read_text())\nreports = {}\nfor case in inputs:\n    path = Path(case['database'])\n    before = hashlib.sha256(path.read_bytes()).hexdigest()\n    reports[case['case']] = audit(path)\n    assert hashlib.sha256(path.read_bytes()).hexdigest() == before == case['database_sha256']\nPath(os.environ['DA_REQUEST_PROFILE_OUTPUT']).write_text(json.dumps(reports, ensure_ascii=False, indent=2) + '\\n')\nprint(json.dumps({'snapshots':len(reports),'unchanged_inputs':True}))\n"
+  },
+  "reproduction": [
+    "Export J079 tools/src and assert the imported request_doctor module path before the baseline observation.",
+    "Restore the 12 J078 normal SQL snapshots into closed local SQLite copies, plus the pinned production SQL.",
+    "Run the same observer with baseline and current tools; all 13 complete reports and DB hashes must match.",
+    "Run work_doctor on the pinned closed copy; verify 3 waiting documents, 9 review rows and three missing-publication-link warnings.",
+    "Run both doctor test modules for read-only and closed connection, live WAL/journal refusal, concurrent changes, frozen JSON/owner/schedule corruption, duplicate review work, unknown legacy and CLI output guards.",
+    "Run full quality gate and verify corpus code/input manifests; all src files must remain byte-identical to J079."
+  ],
+  "limitations": [
+    "This adds optional offline tooling; the production CLI, pipeline and current retry/retention policies are unchanged.",
+    "No whole-source, provider payload or legal context is copied to the work report; saved opaque question keys are not recomputed or exposed.",
+    "Missing legacy snapshots and publication linkage are warnings, not inferred data or permission to retry, edit or delete.",
+    "Review-owner memo counts overlap, including abandoned markers; they are not a deletion list.",
+    "The doctor checks JSON shape and recorded ownership, not current legal applicability, channel configuration or revision eligibility.",
+    "New computation/application graph and blob coverage remain separate DA10.2 work.",
+    "The initial work fixture had 22 setup errors and one mypy enum error. Final fixtures use fake production collect/apply and the real publication kind; these draft errors are excluded from acceptance.",
+    "No schema migration, state growth, paid model experiment, production processing, source download, Telegram action or storage-backend decision.",
+    "Local HTTP was not repeated: CLI networking, wiring and transports remain unchanged. The new offline tool has subprocess CLI tests."
+  ]
+}

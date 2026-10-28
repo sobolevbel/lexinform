@@ -77,7 +77,23 @@ ignore = ["B008"]  # typer.Option in defaults
 mypy_path = "typings"
 python_version = "3.14"
 strict = true
-files = ["src", "tests"]
+files = [
+  "src",
+  "tests",
+  "tools/source_history_doctor.py",
+  "tools/document_read_profile.py",
+  "tools/measure_referenced_files.py",
+  "tools/artifact_metadata.py",
+  "tools/content_history_doctor.py",
+  "tools/corpus_artifacts.py",
+  "tools/corpus_runtime.py",
+  "tools/corpus_runs.py",
+  "tools/work_doctor.py",
+  "tools/corpus_manifests.py",
+  "tools/replay_odt_blocks.py",
+  "tools/replay_pdf_pages.py",
+  "tools/replay_word_blocks.py",
+]
 plugins = ["pydantic.mypy"]
 warn_unreachable = true
 

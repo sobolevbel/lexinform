@@ -1,0 +1,480 @@
+{
+  "version": 1,
+  "stage": "J062",
+  "base": "d235aa69e4c7a602f2506ecfe6808fb85363f111",
+  "scope": "Atomic projection receipts in AnalysisService._persist and direct reanalyze_bill only. Other tracking/linking consumers and secondary purposes remain outside this slice.",
+  "qualified_before": {
+    "path": "out/corpus/j062/before.xml",
+    "sha256": "9d863876bd698e29094c597563923580e4ff9f51feb57973c3979547cc9f1b64",
+    "bytes": 5970,
+    "result": {
+      "tests": "5",
+      "errors": "0",
+      "failures": "5",
+      "skipped": "0",
+      "time": "0.781"
+    }
+  },
+  "initial": {
+    "path": "out/corpus/j062/initial.xml",
+    "sha256": "bbdf0ea1abf6235272651d06a5d128001962d9c4d752634e113ea23ee644b8d3",
+    "bytes": 6813,
+    "result": {
+      "tests": "40",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "1.550"
+    }
+  },
+  "focused": {
+    "path": "out/corpus/j062/focused.xml",
+    "sha256": "3e645846bb0cefe2df09e1c8892410e48f3cfc61d2fd0f22c2266326a856397a",
+    "bytes": 5792,
+    "result": {
+      "tests": "36",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "1.253"
+    }
+  },
+  "accepted_full": {
+    "path": "out/corpus/j062/tests.xml",
+    "sha256": "214479e5d667a4111e7341e9bd066a64318863b518896bcf91653af0fceee629",
+    "bytes": 662902,
+    "result": {
+      "tests": "4241",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "574.666"
+    }
+  },
+  "local_http": {
+    "path": "out/corpus/j062/local-http.xml",
+    "sha256": "7da8e77cee8d92657d4989aeb5a642a75f52c9a7185b31182553b6a49ddcab11",
+    "bytes": 2841,
+    "result": {
+      "tests": "21",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "2.167"
+    }
+  },
+  "checks": {
+    "mypy": {
+      "files": 400,
+      "path": "out/corpus/j062/mypy.log",
+      "sha256": "9d26930896e6e6d34d80e9acc88f7c74a777e33cbeb583e11b48010ba15f992f",
+      "bytes": 45
+    },
+    "ruff": {
+      "path": "out/corpus/j062/ruff.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "bytes": 19
+    },
+    "format": {
+      "path": "out/corpus/j062/format.log",
+      "sha256": "b9e37449f6aaa00be770187a1887f067ef465da7e180b55d93bf43a0174ac0b6",
+      "bytes": 28
+    },
+    "docs": {
+      "path": "out/corpus/j062/docs.log",
+      "sha256": "b7c800450f8d42901df2a6284df2a733e83784881aae0f95d616e1baccef07c8",
+      "bytes": 266
+    }
+  },
+  "source_boundaries": {
+    "preserved_migrations": 49,
+    "new_migrations": 0,
+    "unchanged": {
+      "src/lexinform/adapters/llm_openai.py": "10c2a84fcb3fc2cd1c6f80b87379655667d681b7adb6e89e021ce63effb491c4",
+      "src/lexinform/adapters/llm_anthropic.py": "eaf8dcdc3d8bd1cf5d816f291f2d8ba6d405a083cbb01bc196b5d821325cecb0",
+      "src/lexinform/adapters/llm_prompts.py": "d45409114b224c4c32c84276ff69eb35a6b74667f53b47be656483f41823bc86",
+      "src/lexinform/pricing.py": "8c473c70afeeebae02802612cecc4a4b87f17822129fbc6b46ce254435f8ecac",
+      "src/lexinform/services/documents.py": "5979ba4287bafa59320cfdb1ed526ccd9180357c4744558d435cdeaea576cab6",
+      "src/lexinform/models/scan_input.py": "736fda5637d14c2c5d7f7de19480b42dd19a73a3324910d592445c2520aeaa8e",
+      "src/lexinform/adapters/pdf_text.py": "e46eb0795a68ce41900b5837740474cbc62ce0bfdbd3c3c1822a2ccbd4754101",
+      "src/lexinform/models/documents.py": "79bf620398bbbaffdbd9c2df997344489f7c0b0d15b4c166043deb0282260c81",
+      "src/lexinform/services/analysis.py:_prepare": "dd54ea27587ae0b95511e48cdb01ccb3d8977b0b1a5bb3fd244cb3e5cdda8b51",
+      "src/lexinform/services/analysis.py:_memo_key": "ff2df27d283d5b1a2364a1802dab78937202150d6190aebe2d677e706de8c830",
+      "src/lexinform/services/analysis.py:_reused": "f5bc4769aab65ccefafdaac6842d3a8acb06904f5d7e645a24894874385bc4f3",
+      "src/lexinform/services/analysis.py:_unchanged": "f3988a4b8a0f12e715b5435d34d84703c16588c014e0ddb496c0f91f6766702a",
+      "src/lexinform/services/analysis.py:_load_scan": "932d57dcb0e084bf28d2a7cda2296437ae0523ae7608e0e212310f9db2a16a9d",
+      "src/lexinform/services/analysis.py:_load_text": "7e53c9e68baa6c7a3f9a9159d36b89109af265f55bf021042117cf3a1ec3570f",
+      "src/lexinform/models/analysis.py:Analysis": "cb1029c5735f04f396ee812b82edcd3c6ba06b90d625f7a524a974a8534f950b",
+      "src/lexinform/models/analysis.py:Amendments": "536495470bb62950e42008b33893513f8f28245190622ef9ba28c6210b3461e0",
+      "src/lexinform/models/analysis.py:DocumentDigest": "1a40ed89f441e257bff045ce5839b470d483991317395b91f565281c5a446546",
+      "src/lexinform/models/analysis.py:JointComparison": "1613a6b0177be707823ff22c32a812880f97dfac37492e6292dbf5dff163eca3",
+      "src/lexinform/models/analysis.py:BillName": "0fd50619ba3369a9e8232dacc6d2ed96e0d6f8211f6f311c9fb49082017c98e7",
+      "src/lexinform/models/analysis.py:ScannedDocument": "a26c65b361e135f731d3237b242dd311af75600e119160a6dda7a5b9fcb76d6e",
+      "src/lexinform/services/analysis.py:_consume_current": "370b45b0c0b13bd00847e1c9cef68a168577ab1fa6ac00f0ed44e14a67255680",
+      "src/lexinform/services/analysis.py:_record_collection": "6506ef5579717c015bd9e71d4b29fe81351ea605debc1d63b86df09438b133f8",
+      "src/lexinform/services/analysis.py:_charge_batch_result": "b61e0e0e36a2639d65c5348e8a3ab5e0f855c0a358fcf92f330410843f2c231d",
+      "src/lexinform/services/analysis.py:_consume_digest": "380808105cc8cd4c16808160477190d05bd4795428ffeb714239b41d4d2089de",
+      "src/lexinform/services/analysis.py:_prepare_first": "a12cb188ae8ead3c93ebef5d6a83f0bb54d2fba7e2e976ea0980d33411932b5d"
+    }
+  },
+  "production": {
+    "source_state_commit": "9d571b09a3ae5f67de441d0b503da12e412a1cde",
+    "comparison": {
+      "sql_sha256": "ff2bace0dcad14d837a82d3d1103b368861ecd9e86b1c4e0209686872b783269",
+      "delta": {
+        "sql_bytes": 0,
+        "gzip_bytes": 0,
+        "sqlite_bytes": 0
+      },
+      "bills": 457,
+      "analysis_records": 166,
+      "memos": 141,
+      "new_rows": {
+        "computation_results": 0,
+        "result_applications": 0
+      }
+    },
+    "current": {
+      "source_sha256": "d5ae656f9c26b3a639566131b085b6de8b791c71ebee75b23d3953535af9910b",
+      "source_bytes": 19951482,
+      "sql_sha256": "ff2bace0dcad14d837a82d3d1103b368861ecd9e86b1c4e0209686872b783269",
+      "sql_bytes": 19952312,
+      "gzip_bytes": 4074422,
+      "sqlite_bytes": 20930560,
+      "restore_seconds": 0.31362225000339095,
+      "dump_seconds": 0.10587412500171922,
+      "bills": 457,
+      "analysis_records": 166,
+      "projection_sha256": "7fa6760e52135e73f597e30db629624fa77a16ba8f7a7723bedaad110cfa8f33",
+      "memo_sha256": "8f68b1de19cfc7ef421659465d653664765cd5d1ed9187d359f33c697c6417ce",
+      "memos": 141,
+      "schema": {
+        "tables": 19,
+        "indexes": 30,
+        "version": 49
+      },
+      "new_rows": {
+        "computation_results": 0,
+        "result_applications": 0
+      },
+      "known_bill_2699": "analyzed",
+      "integrity": "ok",
+      "foreign_key_errors": 0,
+      "scope": "Isolated restore/read; no pipeline, provider or Telegram call; no legacy history backfill."
+    },
+    "baseline_profile": {
+      "path": "out/corpus/j061/production-root/profile.json",
+      "sha256": "acfe73223e70fc3e7d7474fe593a5eaea0cb14327a992a8e86134a2211153b64",
+      "bytes": 935
+    }
+  },
+  "state": {
+    "comparison": {
+      "fresh-pending": {
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        },
+        "history": {
+          "computation_results": 0,
+          "result_applications": 0
+        },
+        "baseline_history": {
+          "computation_results": 0,
+          "result_applications": 0
+        },
+        "behavior": "same"
+      },
+      "fresh-collected": {
+        "delta": {
+          "sql_bytes": 439,
+          "gzip_bytes": 39,
+          "sqlite_bytes": 0
+        },
+        "history": {
+          "computation_results": 1,
+          "result_applications": 2
+        },
+        "baseline_history": {
+          "computation_results": 1,
+          "result_applications": 1
+        },
+        "behavior": "same"
+      },
+      "fresh-cleaned": {
+        "delta": {
+          "sql_bytes": 439,
+          "gzip_bytes": 41,
+          "sqlite_bytes": 0
+        },
+        "history": {
+          "computation_results": 1,
+          "result_applications": 2
+        },
+        "baseline_history": {
+          "computation_results": 1,
+          "result_applications": 1
+        },
+        "behavior": "same"
+      },
+      "fresh-reanalysis": {
+        "delta": {
+          "sql_bytes": 880,
+          "gzip_bytes": 60,
+          "sqlite_bytes": 0
+        },
+        "history": {
+          "computation_results": 2,
+          "result_applications": 4
+        },
+        "baseline_history": {
+          "computation_results": 2,
+          "result_applications": 2
+        },
+        "behavior": "same"
+      },
+      "fresh-expired": {
+        "delta": {
+          "sql_bytes": 880,
+          "gzip_bytes": 57,
+          "sqlite_bytes": 0
+        },
+        "history": {
+          "computation_results": 2,
+          "result_applications": 4
+        },
+        "baseline_history": {
+          "computation_results": 2,
+          "result_applications": 2
+        },
+        "behavior": "same"
+      },
+      "fresh-repeat": {
+        "delta": {
+          "sql_bytes": 880,
+          "gzip_bytes": 56,
+          "sqlite_bytes": 0
+        },
+        "history": {
+          "computation_results": 2,
+          "result_applications": 4
+        },
+        "baseline_history": {
+          "computation_results": 2,
+          "result_applications": 2
+        },
+        "behavior": "same"
+      },
+      "superseded-pending": {
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        },
+        "history": {
+          "computation_results": 0,
+          "result_applications": 0
+        },
+        "baseline_history": {
+          "computation_results": 0,
+          "result_applications": 0
+        },
+        "behavior": "same"
+      },
+      "superseded-collected": {
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        },
+        "history": {
+          "computation_results": 1,
+          "result_applications": 1
+        },
+        "baseline_history": {
+          "computation_results": 1,
+          "result_applications": 1
+        },
+        "behavior": "same"
+      },
+      "superseded-cleaned": {
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        },
+        "history": {
+          "computation_results": 1,
+          "result_applications": 1
+        },
+        "baseline_history": {
+          "computation_results": 1,
+          "result_applications": 1
+        },
+        "behavior": "same"
+      },
+      "superseded-expired": {
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        },
+        "history": {
+          "computation_results": 1,
+          "result_applications": 1
+        },
+        "baseline_history": {
+          "computation_results": 1,
+          "result_applications": 1
+        },
+        "behavior": "same"
+      },
+      "superseded-repeat": {
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        },
+        "history": {
+          "computation_results": 1,
+          "result_applications": 1
+        },
+        "baseline_history": {
+          "computation_results": 1,
+          "result_applications": 1
+        },
+        "behavior": "same"
+      }
+    },
+    "baseline": {
+      "path": "out/corpus/j062/state-baseline/measurements.json",
+      "sha256": "df850dbcbbce22d212ec43ba07600d3b0fc94cd30a9b5f8d7bd3e54a3b60bb0d",
+      "bytes": 30886
+    },
+    "current": {
+      "path": "out/corpus/j062/state-current/measurements.json",
+      "sha256": "b362f8f25e5c2e77399e621748175585511650f001ed250a2e26e5f7c2bd8137",
+      "bytes": 30886
+    }
+  },
+  "real_record_sizes": {
+    "scope": "Existing current Bill.analysis projections only, not unique paid calls or reconstructed computation history. No writes/backfill.",
+    "database_sha256": "a9262f912268bfad710b720a763763844d597fb0d0425d83168a8625aae0ff34",
+    "records": 166,
+    "record_bytes_total": 556116,
+    "concatenated_gzip_bytes": 108393,
+    "bytes": {
+      "minimum": 1326,
+      "p50": 2169,
+      "p90": 5237,
+      "p95": 6818,
+      "maximum": 25507
+    },
+    "selection_bytes_total": 122781,
+    "largest": [
+      {
+        "term": 10,
+        "number": "RCL/12398102",
+        "record_bytes": 25507,
+        "selection_bytes": 19487
+      },
+      {
+        "term": 10,
+        "number": "RCL/12400563",
+        "record_bytes": 25415,
+        "selection_bytes": 20026
+      },
+      {
+        "term": 10,
+        "number": "RCL/12405351",
+        "record_bytes": 12124,
+        "selection_bytes": 8063
+      },
+      {
+        "term": 10,
+        "number": "RCL/12411950",
+        "record_bytes": 11291,
+        "selection_bytes": 5244
+      },
+      {
+        "term": 10,
+        "number": "RCL/12405805",
+        "record_bytes": 10577,
+        "selection_bytes": 6397
+      }
+    ],
+    "exclusions": [
+      "No input text/file/request archive estimate.",
+      "This is not the size of SQL history or a growth forecast.",
+      "Only current projections are available; superseded historical outputs cannot be counted from them."
+    ]
+  },
+  "observer_sources": {
+    "state_probe.py": {
+      "path": "out/corpus/j061/state_probe.py",
+      "sha256": "676716ff67596f98da979d9bf20a67273d43635196657b9db61e470646f27182",
+      "bytes": 3530
+    },
+    "production_profile.py": {
+      "path": "out/corpus/j061/production_profile.py",
+      "sha256": "666da1b75e2dfa252a2ac028bdc3ad346abad70bfda813fc87286a141687ac61",
+      "bytes": 2880
+    }
+  },
+  "observer_source_location": "Committed J061 validation.json observers maps names to exact runnable Python sources; use DA_PROFILE_OUTPUT and DA_STATE_SQL to choose new outputs.",
+  "size_observer": {
+    "path": "out/corpus/j062/result_sizes.py",
+    "sha256": "b50cf301f762fe7153d6b8766274fad854cdfd5a620cc9f10b1e7a6037fe8a73",
+    "bytes": 2212,
+    "source": "import gzip\nimport hashlib\nimport json\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nfrom lexinform.models import AnalysisRecord\n\nroot = Path('/Users/sobaleu/.codex/worktrees/scan-input-manifests/lexinform')\ndatabase = root / 'out/corpus/j061/production-root/restored.db'\nrows = []\npayloads = []\nwith closing(sqlite3.connect(database.as_uri() + '?mode=ro&immutable=1', uri=True)) as connection:\n    for term, number, raw in connection.execute('SELECT term, number, analysis_json FROM bills WHERE analysis_json IS NOT NULL ORDER BY term, number'):\n        record = AnalysisRecord.model_validate_json(raw)\n        payload = record.model_dump_json().encode()\n        selection = record.selection.model_dump_json().encode()\n        payloads.append(payload)\n        rows.append({'term': term, 'number': number, 'record_bytes': len(payload), 'selection_bytes': len(selection)})\nsizes = sorted(row['record_bytes'] for row in rows)\nassert sizes\npopulation = b'\\n'.join(payloads)\nreport = {\n    'scope': 'Existing current Bill.analysis projections only, not unique paid calls or reconstructed computation history. No writes/backfill.',\n    'database_sha256': hashlib.sha256(database.read_bytes()).hexdigest(),\n    'records': len(rows), 'record_bytes_total': sum(sizes),\n    'concatenated_gzip_bytes': len(gzip.compress(population, mtime=0)),\n    'bytes': {'minimum': sizes[0], 'p50': sizes[(len(sizes)-1)//2], 'p90': sizes[int((len(sizes)-1)*0.9)], 'p95': sizes[int((len(sizes)-1)*0.95)], 'maximum': sizes[-1]},\n    'selection_bytes_total': sum(row['selection_bytes'] for row in rows),\n    'largest': sorted(rows, key=lambda row: row['record_bytes'], reverse=True)[:5],\n    'exclusions': ['No input text/file/request archive estimate.', 'This is not the size of SQL history or a growth forecast.', 'Only current projections are available; superseded historical outputs cannot be counted from them.'],\n}\noutput = root / 'out/corpus/j062/result-sizes.json'\nwith output.open('x') as stream:\n    json.dump(report, stream, indent=2)\n    stream.write('\\n')\nprint(json.dumps({key: report[key] for key in ('records', 'record_bytes_total', 'concatenated_gzip_bytes', 'bytes', 'selection_bytes_total')}))\n"
+  },
+  "runs": {
+    "j062-ci": {
+      "manifest": {
+        "path": "out/corpus/runs/j062-ci/manifest.json",
+        "sha256": "469f03b7d726613d90133e128d0357a22f7f59c5e84a4bb23044cb69ca90629a",
+        "bytes": 104165
+      },
+      "status": "passed",
+      "observations": 7,
+      "snapshot": {
+        "files": 451,
+        "path": "code.tar.gz",
+        "sha256": "dfb88a38fdbe57bd95836eb511b26067c4f7a30af4728fa58c3d8074403d1d8e"
+      }
+    },
+    "j062-senate-current": {
+      "manifest": {
+        "path": "out/corpus/runs/j062-senate-current/manifest.json",
+        "sha256": "aaaf43a26aae25f9b71eb89c630d2be6249cf33c9de7ac8c0fcfdae628741840",
+        "bytes": 103899
+      },
+      "status": "recorded",
+      "observations": 816,
+      "snapshot": {
+        "files": 451,
+        "path": "code.tar.gz",
+        "sha256": "dfb88a38fdbe57bd95836eb511b26067c4f7a30af4728fa58c3d8074403d1d8e"
+      }
+    }
+  },
+  "senate_diff": {
+    "after_manifest_sha256": "aaaf43a26aae25f9b71eb89c630d2be6249cf33c9de7ac8c0fcfdae628741840",
+    "before_manifest_sha256": "c6d0b969f97356723441b5fb966384e5239b3073e82bddcea21750f5ba8d6240",
+    "changed_inputs": [],
+    "changes": [],
+    "scope": "Observation differences, not an independent legal accuracy verdict",
+    "status": "same",
+    "suite": "senate",
+    "summary_changes": {},
+    "version": 1
+  },
+  "exclusions": [
+    "No production pipeline, paid provider call, Telegram or history backfill.",
+    "Prepared or quiet source checks do not claim application.",
+    "A projection receipt does not prove delivery.",
+    "Old completed records remain unknown; newly collected legacy pending items have known result identity and possibly unknown request SHA.",
+    "Record sizes describe current projections, not unique paid calls, SQL history or a growth forecast."
+  ]
+}

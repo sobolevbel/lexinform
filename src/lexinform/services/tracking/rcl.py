@@ -30,6 +30,7 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, SejmGateway
 from lexinform.services.analysis import AnalysisService
+from lexinform.services.analysis_applications import apply_analysis
 from lexinform.services.posting import Poster
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.sources import RclTextSource, print_of_project
@@ -231,7 +232,9 @@ class RclWatcher:
         stages = rcl_stages(project)
         with self._repo.atomic():
             if fresh.analysis is not None:
-                self._repo.save_analysis(bill.term, bill.number, fresh.analysis)
+                apply_analysis(
+                    self._repo, bill.term, bill.number, fresh.analysis, now=self._clock.now()
+                )
             self._repo.save_rcl(bill.term, bill.number, project)
             self._repo.upsert_summary(
                 process_summary(project, term=bill.term), now=self._clock.now()

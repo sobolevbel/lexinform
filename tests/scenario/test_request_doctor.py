@@ -6,7 +6,7 @@ from contextlib import closing
 from pathlib import Path
 
 import pytest
-from tools import request_doctor
+from tools import sqlite_snapshot
 from tools.corpus_artifacts import digest, read_artifact
 from tools.request_doctor import audit, run
 
@@ -291,7 +291,7 @@ def test_writer_starting_after_preflight_invalidates_the_audit(
             writer.commit()
         return value
 
-    monkeypatch.setattr(request_doctor, "read_artifact", start_writer)
+    monkeypatch.setattr(sqlite_snapshot, "read_artifact", start_writer)
     try:
         report = audit(path)
     finally:

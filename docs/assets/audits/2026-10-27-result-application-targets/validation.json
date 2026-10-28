@@ -1,0 +1,1352 @@
+{
+  "version": 1,
+  "stage": "J069",
+  "baseline": "ada1415da9451694a1ca5dc3f1dbf8cfc8d201bb",
+  "scope": "Append-only schema50 and compatible explicit-target reader; production producers remain primary-only. No application backfill or new execution engine.",
+  "checks": {
+    "qualified_before": {
+      "sha256": "830a18df57e9b101c11a838f9b5da8df931b6a18b47b587e61f9d209153c745c",
+      "tests": 6,
+      "failures": 6,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.081
+    },
+    "focused": {
+      "sha256": "88addd783a915fecf5044274847722b842924639fdd5e61269990ebcbacfbcbc",
+      "tests": 88,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.813
+    },
+    "full": {
+      "sha256": "600cec6b426e3f958f142bda62dc6a0e9f13461e15751a4704978b07d96f3eae",
+      "tests": 4374,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 624.944
+    },
+    "local_http": {
+      "sha256": "4b9aaba3a73142ff61f377771434f86575dff6b6a74d05a5ff9a15adaf1444ae",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.825
+    },
+    "old_runtime_bridge": {
+      "sha256": "e327147be9d2c70f3e4c8a0bc2aea0e2f6fd7c34d4940e536e5c048776c21095",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.935
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 408 source files",
+    "ruff": "All checks passed!",
+    "format": "409 files left unchanged",
+    "docs": "Strict portal, links, anchors and contents checked; see progress journal."
+  },
+  "changed_runtime": [
+    {
+      "path": "src/lexinform/adapters/sqlite_repo.py",
+      "baseline_sha256": "2051331fad69d17f547b323b5595bfdc616dfe7ee603088ee35aec924a2ae89a",
+      "current_sha256": "816e1118912e0affc8d7ab8313567e4087abb32395f2751769f56f40b36aa8ac"
+    },
+    {
+      "path": "src/lexinform/models/__init__.py",
+      "baseline_sha256": "4d005336cf4874be02659e08d82421fef771a785c51207d3704e20d6bb7c4e93",
+      "current_sha256": "3ecf2d5d14018a2b29addfd75d26227d0b4a1838ee515492adad0f2eefc9b5ad"
+    },
+    {
+      "path": "src/lexinform/models/computations.py",
+      "baseline_sha256": "19f1a4525471d48b6b243e77f001f532ca704d53a1c6f930cd9528000a8ec0c5",
+      "current_sha256": "87bba6ea57e5c1c7d089ef6054362efdddd009423feefe11ee497b1bef4148a2"
+    }
+  ],
+  "unchanged_runtime": {
+    "count": 140,
+    "path_list_sha256": "db32d069d833863121610bd786024e0b26ff4b86c4d6308467d4bde63ea79570"
+  },
+  "migrations": {
+    "prefix_unchanged": true,
+    "baseline_count": 49,
+    "current_count": 50,
+    "prefix_sha256": [
+      "97ba28a21b6f4f8436860ba6c032c88d1cb8b48e3f72ca90db1bb5409db86561",
+      "59ea8984cc501dc40750e6d912190e3d6b1b37c34291f180b22fa97a7ad13d95",
+      "ee03de426ba3a7eea4576390967021206e46e0a43ed7e7e349d79a519b1feba3",
+      "a704008dfa4081397aecdcc168191279ed07833dc46d993f339da93d66caf1a1",
+      "4568c6af3e46bbadb150dbec765314f8ebbb323b5b5fdc857c339981e869843b",
+      "21fcb9b4033ec383a4a9da650d126fe264f9ab64815e5d0bcc71fc85b51a71d5",
+      "a3fdb0c395c237285fe2c3437c5127acb93016e645cdec9dbd3d3306029f803f",
+      "78de5bf206b60d3339d6f43f278a9e8d7e433bb7c368124eeb334fa867485c5c",
+      "e769ea8c188a1d481b02a971cd9f1df1a395c3b331083175fbc39258d21fe7d7",
+      "0be310b13524384b67ed2d25bb794eb9d2fdcb02e560e2b1c8ae91a4a8d32a7f",
+      "86dd8a64cda54d94f473d05c802876cf9098a6a6372ca32b6e3e68cea73c3e82",
+      "b81908ea3a93bb2d9a33830f09a6470c5ca59c80d3c659f923d0426a74f5558d",
+      "795c00d55607eee306bcbab0e3372734f03a05ab3ff8f74f13ff27e8092dc50d",
+      "b23257da2b65273540f29474b598bae0ed9696df558ecb488be652f69784c320",
+      "0496e4ac3b2b0fed47695ee0539112a718cf469e6550eeab5d8b12a3a0ad6db2",
+      "17b93e3af9e10a1eb3839b4d09b86588e51b14718a9a65990d348a6a059d91bf",
+      "28741b2e041f706ac7457ec4a88fa1ae710e4278b8e39c5248795fcfdc3f1aa1",
+      "a06ebf5d2275c6a45c0834ecb587e571c528b88d50c4b9486b4e6e4c3fddad8d",
+      "887ce8d4b48f32ec049397ce0bc90eac2b302c14041c4035e0d1d56855241d92",
+      "c6242d74202bc26b7ae774e0aa1e2461996f531d8cdf7d8ac5e2972891f1bb8b",
+      "8b430f60faf6e4049dd51644925728d4bbb6b27322fc409cff9a5479a414e6be",
+      "c262f8f208a95a1dcf79581a98a9b46dbfd1bb1b78c0bdebd6654e71cb947430",
+      "3d5541bed4a1ad488989bc927c33f327118ec7be2d0d283ec8e0f1e452035fc7",
+      "08dc590a5319e741862b4eeed34c8b8a2eb7b8d59966c951a3f0ea0b21ee2c80",
+      "2077508204bca36cc35d91d6df88b83ca3ff95154deb1d01a42541e31be6b83c",
+      "d022994eb96468545053616fe2b7516f0f099c7854346520ff57b6d92e6bb134",
+      "d88f0ca4c0056491a8baa70041318359304c1a8a5b99ca979a8592fbdea6f655",
+      "0f938b0d8518bc579cf0372968134da61abd9e9c4ca2d3f2c6fb6adb9deacf7d",
+      "77605b19a2653d3b3be6198049bc52c3ff81537bf61f452d6df00f0f801b5080",
+      "b564c218af2da6805fd330474f2b4c361c9bdf2528ef0398545aa156a89cd7ad",
+      "50efb612eb9362da29384a6365d3af0fe9a345f27e51212bdcda017398ba21b1",
+      "2ada162331006b42196656526d47b9d8ddeb37a9a4ca4e0b4dd81672523eca7d",
+      "67003183007a33c1b8cf2817cd948a0553ca530c43bcd056349c4481c1cb3b5a",
+      "8c1b0a6c1fb632f563ccab6bde316c29379e7adde15db27b54de1d0d72c0d9d5",
+      "73803bc1f729e96270efa927e06970d8d58ce5dedf4ee926513958c835f51274",
+      "f212e70a8809989976058edbf52d40bd549932d422692f3c5e57e716f3c2f37f",
+      "b5c80134addef9d258a8634a645a610bbf728f8fb68937ebfbabcd58cc3d38c3",
+      "d95815d35474998cdc2ab5668a12b37a667ec318dbae815ce6f2023204e1019c",
+      "c49a7a366df9ffebc6d5eae655b190437f20c963a0f36f761e073de958ba4c92",
+      "58c82690fbf71c9f88c745befa80742c1388f5f7b336671a373ebd098d1e43c6",
+      "65d6c4effdf2bb6e4000240971561cde1140f2635f93aa0469cee0f47149c77a",
+      "b2c58a7aa89e3f35603b668aa3cbed44d1b26d8dd85f9ca815fc12db014e088c",
+      "ba0a8b0b41d34fd019d3627daf4f6c2aea5aeea82a2f2acf384a936a3ed97d4c",
+      "2af4faee918bc1da0e2abb98cf12d66e270a4ab93cef85d0894ef70fcb48a63c",
+      "468a9fe04a77b524b7913aa4cfb833ef0be96d67acbf5ce131bf0bf67bb0c8de",
+      "21e6aa241d9a16106cc0c002462278ab9d9f517420c55e8e07a7c3a999538efa",
+      "06fad18d8f74e3123b36be55895641c3096de6950e9727178dcd7453d4df613c",
+      "964218f2b7df6c7455e792694b73485f5a58f1d96900a472f66a774cffed70d8",
+      "f3e58189c78ec1ac33598a0f4e0ba0a13085b0985902c0fb497e7c18a41c8226"
+    ],
+    "new_migration_sha256": "66dd84971ce8b4dd4ec21053e6c70d034e559852db7b4c5ba4c2bdeca90c9ddf"
+  },
+  "new_sql": "\n    CREATE TABLE result_applications_v50 (\n        id INTEGER PRIMARY KEY,\n        result_id TEXT NOT NULL REFERENCES computation_results(result_id),\n        term INTEGER NOT NULL,\n        number TEXT NOT NULL,\n        generation INTEGER,\n        phase TEXT NOT NULL,\n        application_json TEXT NOT NULL,\n        CHECK (\n            (generation IS NOT NULL\n             AND COALESCE(json_type(application_json, '$.target'), 'null') = 'null')\n            OR (generation IS NULL AND phase = 'projection'\n                AND json_type(application_json, '$.target') IS 'object'\n                AND json_type(application_json, '$.target.kind') IS 'text'\n                AND length(json_extract(application_json, '$.target.kind')) > 0\n                AND json_type(application_json, '$.target.ref') IS 'text'\n                AND length(json_extract(application_json, '$.target.ref')) > 0)\n        )\n    );\n    INSERT INTO result_applications_v50\n      (id, result_id, term, number, generation, phase, application_json)\n      SELECT rowid, result_id, term, number, generation, phase, application_json\n      FROM result_applications ORDER BY rowid;\n    DROP TABLE result_applications;\n    ALTER TABLE result_applications_v50 RENAME TO result_applications;\n    CREATE UNIQUE INDEX ux_result_application_generation\n      ON result_applications(result_id, term, number, generation, phase)\n      WHERE generation IS NOT NULL;\n    CREATE UNIQUE INDEX ux_result_application_target\n      ON result_applications(result_id, term, number, phase,\n          json_extract(application_json, '$.target.kind'),\n          json_extract(application_json, '$.target.ref'))\n      WHERE generation IS NULL;\n    CREATE INDEX ix_result_application_owner ON result_applications(term, number, generation);\n    ",
+  "profile_diff": {
+    "snapshots": 33,
+    "all_common_data_unchanged": true,
+    "cases": [
+      {
+        "id": "j066/amendments-cleaned.sql",
+        "sql_bytes": 977,
+        "gzip_bytes": 194,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j066/amendments-pending.sql",
+        "sql_bytes": 977,
+        "gzip_bytes": 194,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j066/amendments-settled.sql",
+        "sql_bytes": 977,
+        "gzip_bytes": 199,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j066/explanation-cleaned.sql",
+        "sql_bytes": 977,
+        "gzip_bytes": 196,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j066/explanation-pending.sql",
+        "sql_bytes": 977,
+        "gzip_bytes": 194,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j066/explanation-settled.sql",
+        "sql_bytes": 977,
+        "gzip_bytes": 196,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j066/joint-cleaned.sql",
+        "sql_bytes": 977,
+        "gzip_bytes": 193,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j066/joint-pending.sql",
+        "sql_bytes": 977,
+        "gzip_bytes": 194,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j066/joint-settled.sql",
+        "sql_bytes": 977,
+        "gzip_bytes": 196,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j066/name-cleaned.sql",
+        "sql_bytes": 977,
+        "gzip_bytes": 194,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j066/name-pending.sql",
+        "sql_bytes": 977,
+        "gzip_bytes": 193,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j066/name-settled.sql",
+        "sql_bytes": 977,
+        "gzip_bytes": 196,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j066/supplement-cleaned.sql",
+        "sql_bytes": 977,
+        "gzip_bytes": 196,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j066/supplement-pending.sql",
+        "sql_bytes": 977,
+        "gzip_bytes": 194,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j066/supplement-settled.sql",
+        "sql_bytes": 977,
+        "gzip_bytes": 220,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/act_application-claude-opus-5-5-cleaned.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 184,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/act_application-claude-opus-5-5-pending.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 186,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/act_application-claude-opus-5-5-settled.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 183,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/act_application-gpt-5.1-cleaned.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 183,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/act_application-gpt-5.1-pending.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 185,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/act_application-gpt-5.1-settled.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 184,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/commission_review-claude-opus-5-5-cleaned.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 186,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/commission_review-claude-opus-5-5-pending.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 187,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/commission_review-claude-opus-5-5-settled.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 185,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/commission_review-gpt-5.1-cleaned.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 188,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/commission_review-gpt-5.1-pending.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 187,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/commission_review-gpt-5.1-settled.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 185,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/consultation_review-claude-opus-5-5-cleaned.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 184,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/consultation_review-claude-opus-5-5-pending.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 185,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/consultation_review-claude-opus-5-5-settled.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 186,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/consultation_review-gpt-5.1-cleaned.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 187,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/consultation_review-gpt-5.1-pending.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 184,
+        "sqlite_bytes": 4096
+      },
+      {
+        "id": "j068/consultation_review-gpt-5.1-settled.sql",
+        "sql_bytes": 969,
+        "gzip_bytes": 187,
+        "sqlite_bytes": 4096
+      }
+    ]
+  },
+  "profiles": [
+    {
+      "id": "j066/amendments-cleaned.sql",
+      "input_sha256": "0d92d9031300ccabf70931903fa7fd11a4bb2511a3168c1667aba9a35afc724f",
+      "data_sha256": "d4905c84ad75b014df10642f5a3655aefa183b4bda228485d53fa726fa4f8f84",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 38250,
+        "gzip_bytes": 5991,
+        "sqlite_bytes": 323584,
+        "restore_seconds": 0.0032132500055013224,
+        "dump_seconds": 0.0005310839915182441
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 39227,
+        "gzip_bytes": 6185,
+        "sqlite_bytes": 327680,
+        "restore_seconds": 0.010481500008609146,
+        "dump_seconds": 0.0005987920012557879
+      }
+    },
+    {
+      "id": "j066/amendments-pending.sql",
+      "input_sha256": "f3279a071cf25cd5264af8bfc22833579ce662930ddfb3c015a5ddb17e3f1d76",
+      "data_sha256": "bb3b34d13564e1b2acb33cbd0f470b202af48139a3a18a14fb45d28c0071f0dd",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 60764,
+        "gzip_bytes": 8387,
+        "sqlite_bytes": 339968,
+        "restore_seconds": 0.004738792005809955,
+        "dump_seconds": 0.0006654169992543757
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 61741,
+        "gzip_bytes": 8581,
+        "sqlite_bytes": 344064,
+        "restore_seconds": 0.008124125000904314,
+        "dump_seconds": 0.0016218340024352074
+      }
+    },
+    {
+      "id": "j066/amendments-settled.sql",
+      "input_sha256": "36486a398b798905fef193812ae3847bf85b291538c8ee3abebc0b46f88bfa84",
+      "data_sha256": "f61b1a74654e61a433a2c277378c14d5f18cf84ac23e81380f2b6ef09d7e9919",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 60550,
+        "gzip_bytes": 8432,
+        "sqlite_bytes": 348160,
+        "restore_seconds": 0.003202332998625934,
+        "dump_seconds": 0.000646624990622513
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 61527,
+        "gzip_bytes": 8631,
+        "sqlite_bytes": 352256,
+        "restore_seconds": 0.005076749992440455,
+        "dump_seconds": 0.0006282919930526987
+      }
+    },
+    {
+      "id": "j066/explanation-cleaned.sql",
+      "input_sha256": "e9ed729ff5e8968434c21eff75c41c6f04bc9945bfe736e4643621b66c5a9ecd",
+      "data_sha256": "fb8c5f1639ea009357073fc78d54378c46594ed86e02fca129019228c73df8b8",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 40850,
+        "gzip_bytes": 5878,
+        "sqlite_bytes": 323584,
+        "restore_seconds": 0.0028973340085940436,
+        "dump_seconds": 0.0005262909980956465
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 41827,
+        "gzip_bytes": 6074,
+        "sqlite_bytes": 327680,
+        "restore_seconds": 0.004256707994500175,
+        "dump_seconds": 0.0013360000011743978
+      }
+    },
+    {
+      "id": "j066/explanation-pending.sql",
+      "input_sha256": "595adccc8cf115dc1cc9c3042f2ef2930b4df833f26865c86bd2f53c9a0e0888",
+      "data_sha256": "000577f922bdb25449efdada99abdb654f3ea950f0d838fe50684a2d53fd7dbc",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 62006,
+        "gzip_bytes": 8430,
+        "sqlite_bytes": 339968,
+        "restore_seconds": 0.003066958990530111,
+        "dump_seconds": 0.0013992500025779009
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 62983,
+        "gzip_bytes": 8624,
+        "sqlite_bytes": 344064,
+        "restore_seconds": 0.004520917005720548,
+        "dump_seconds": 0.0006267920107347891
+      }
+    },
+    {
+      "id": "j066/explanation-settled.sql",
+      "input_sha256": "9fb53b35131ca4b951433e06bc14ba9d98b1ab1d68be431335c65fc7a6b9aa19",
+      "data_sha256": "bdd758729e6871baf930f0d11bf231a58fda826e901265a6fd8680b653b4b01b",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 64841,
+        "gzip_bytes": 8360,
+        "sqlite_bytes": 352256,
+        "restore_seconds": 0.004615290992660448,
+        "dump_seconds": 0.0006156249874038622
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 65818,
+        "gzip_bytes": 8556,
+        "sqlite_bytes": 356352,
+        "restore_seconds": 0.004363959000329487,
+        "dump_seconds": 0.0006527920049848035
+      }
+    },
+    {
+      "id": "j066/joint-cleaned.sql",
+      "input_sha256": "8c75f7ffec1de1d8ada2b7f95bbd78e4a14de8a69777b7d858c86de526e60a2f",
+      "data_sha256": "b40cd3a8f192b17a0ca22c4248127f37e21eedd597f13254d10b065a3664f974",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 37990,
+        "gzip_bytes": 5953,
+        "sqlite_bytes": 323584,
+        "restore_seconds": 0.006176124996272847,
+        "dump_seconds": 0.000557791005121544
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 38967,
+        "gzip_bytes": 6146,
+        "sqlite_bytes": 327680,
+        "restore_seconds": 0.004189750005025417,
+        "dump_seconds": 0.0005611659871647134
+      }
+    },
+    {
+      "id": "j066/joint-pending.sql",
+      "input_sha256": "24e4227b281499900d4538f932a5abe7acf45e8f16d1552b43e41269076e5591",
+      "data_sha256": "c260a219a7e5c0003e642bd4a4044e9d1990a53cca1d440eac1ee3fa5eba36e8",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 60699,
+        "gzip_bytes": 8371,
+        "sqlite_bytes": 339968,
+        "restore_seconds": 0.003641916991909966,
+        "dump_seconds": 0.0006539590103784576
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 61676,
+        "gzip_bytes": 8565,
+        "sqlite_bytes": 344064,
+        "restore_seconds": 0.00850766699295491,
+        "dump_seconds": 0.001110915996832773
+      }
+    },
+    {
+      "id": "j066/joint-settled.sql",
+      "input_sha256": "12f495469c2237a843f2720e4b444193c6340fc6ef433d8256c68b13cfab1cda",
+      "data_sha256": "864113d7d6d4fdf910c613ac189fc6ba6aab160e4f10bfa8b0593f9786975a27",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 59978,
+        "gzip_bytes": 8386,
+        "sqlite_bytes": 348160,
+        "restore_seconds": 0.0030866249871905893,
+        "dump_seconds": 0.0008409160072915256
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 60955,
+        "gzip_bytes": 8582,
+        "sqlite_bytes": 352256,
+        "restore_seconds": 0.005632665997836739,
+        "dump_seconds": 0.0010547500132815912
+      }
+    },
+    {
+      "id": "j066/name-cleaned.sql",
+      "input_sha256": "61e191d5122029da61a12d8299ad9464fb9ce0bb325c32a45baa7d56be90af72",
+      "data_sha256": "ea12d6a9e9988359332fa269a019da6d7c39312de1f26703ec6f292ee55d324e",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 37951,
+        "gzip_bytes": 5957,
+        "sqlite_bytes": 323584,
+        "restore_seconds": 0.0032210829958785325,
+        "dump_seconds": 0.0009527910005999729
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 38928,
+        "gzip_bytes": 6151,
+        "sqlite_bytes": 327680,
+        "restore_seconds": 0.004935000004479662,
+        "dump_seconds": 0.0005414170009316877
+      }
+    },
+    {
+      "id": "j066/name-pending.sql",
+      "input_sha256": "0a2a43705860ee402b44ffc1a2d61d293482e7d6d87bedf390414b482722d578",
+      "data_sha256": "c3660c20990798319c47097324b099ea84f22aec7dfab7b53b38b32c810c193d",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 60691,
+        "gzip_bytes": 8370,
+        "sqlite_bytes": 339968,
+        "restore_seconds": 0.004421207995619625,
+        "dump_seconds": 0.0006643750093644485
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 61668,
+        "gzip_bytes": 8563,
+        "sqlite_bytes": 344064,
+        "restore_seconds": 0.004514416999882087,
+        "dump_seconds": 0.0008027080039028078
+      }
+    },
+    {
+      "id": "j066/name-settled.sql",
+      "input_sha256": "31bd7404515605d766aaac360b518202015faa45af61252b3fd9049a4d62c80f",
+      "data_sha256": "d7e81a2118b8c3b71fa6ceb621e5bb7e1470ebb066325cfd5466850ae388b86c",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 59908,
+        "gzip_bytes": 8385,
+        "sqlite_bytes": 348160,
+        "restore_seconds": 0.0032601669954601675,
+        "dump_seconds": 0.000661291996948421
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 60885,
+        "gzip_bytes": 8581,
+        "sqlite_bytes": 352256,
+        "restore_seconds": 0.00474870900507085,
+        "dump_seconds": 0.0006346250011119992
+      }
+    },
+    {
+      "id": "j066/supplement-cleaned.sql",
+      "input_sha256": "ff6207668314dd417bed0b6dbd4dd16c95e60d55252b4000ad66f6eee59c111f",
+      "data_sha256": "fb78891856ba960f5aa2650289fc9aa8d5d95f647b54d760015304d713dd8867",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 38419,
+        "gzip_bytes": 6097,
+        "sqlite_bytes": 323584,
+        "restore_seconds": 0.003042958996957168,
+        "dump_seconds": 0.0006072909891372547
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 39396,
+        "gzip_bytes": 6293,
+        "sqlite_bytes": 327680,
+        "restore_seconds": 0.004495083994697779,
+        "dump_seconds": 0.0005187909991946071
+      }
+    },
+    {
+      "id": "j066/supplement-pending.sql",
+      "input_sha256": "beb71230cf3fe2c06300b96ae6a5696872ee349c2724221035e44b11207f21f0",
+      "data_sha256": "f416b53d3dfc3c559c841414baa83b3dd051294a11ce5df03f51c70335a0eae9",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 60889,
+        "gzip_bytes": 8464,
+        "sqlite_bytes": 339968,
+        "restore_seconds": 0.0030982500029494986,
+        "dump_seconds": 0.0006545409996761009
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 61866,
+        "gzip_bytes": 8658,
+        "sqlite_bytes": 344064,
+        "restore_seconds": 0.005267458007438108,
+        "dump_seconds": 0.0007099170034052804
+      }
+    },
+    {
+      "id": "j066/supplement-settled.sql",
+      "input_sha256": "afc4f9a818fc72d8b0006a44c3a8c0427f10a99810cd4ad6bc9dcb84fa25d417",
+      "data_sha256": "7f88fee72857dbbbc0e2b17c3aab2b83c3e499cf32f61c5fe8ededc48a54576f",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 61759,
+        "gzip_bytes": 8559,
+        "sqlite_bytes": 352256,
+        "restore_seconds": 0.003075291999266483,
+        "dump_seconds": 0.0006137080054031685
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 62736,
+        "gzip_bytes": 8779,
+        "sqlite_bytes": 356352,
+        "restore_seconds": 0.008360209001693875,
+        "dump_seconds": 0.0006217499903868884
+      }
+    },
+    {
+      "id": "j068/act_application-claude-opus-5-5-cleaned.sql",
+      "input_sha256": "fc8017e6e72bc4a8d004ea6e0f36dbdf91875eade022cdaadb3f3cefe428583c",
+      "data_sha256": "b87b3d2554c1039278d2b06ea44b088b6638753b6443e8ac208ac559dff837fd",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 21705,
+        "gzip_bytes": 5405,
+        "sqlite_bytes": 290816,
+        "restore_seconds": 0.0027989999944111332,
+        "dump_seconds": 0.000418958006775938
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 22674,
+        "gzip_bytes": 5589,
+        "sqlite_bytes": 294912,
+        "restore_seconds": 0.005801667008199729,
+        "dump_seconds": 0.0009959169983631
+      }
+    },
+    {
+      "id": "j068/act_application-claude-opus-5-5-pending.sql",
+      "input_sha256": "5b205801827120ba593878397dcd1cf4711a6c049eb40231d7864a0299e7ac66",
+      "data_sha256": "b017a3811372764cb7707d180dafa9aeb3128fd52aa8899e895352cc83111864",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 27360,
+        "gzip_bytes": 6999,
+        "sqlite_bytes": 290816,
+        "restore_seconds": 0.0038548750017071143,
+        "dump_seconds": 0.0004543329996522516
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 28329,
+        "gzip_bytes": 7185,
+        "sqlite_bytes": 294912,
+        "restore_seconds": 0.004916207995847799,
+        "dump_seconds": 0.0004650000046240166
+      }
+    },
+    {
+      "id": "j068/act_application-claude-opus-5-5-settled.sql",
+      "input_sha256": "ec986dff72b5bd3609cf390f95e018731c155635ff9e0769dd3056747e683c93",
+      "data_sha256": "526eb265cf9d9d1ae0de332d1ffb8a885633e18c012cc3440a3bb8a0a7ef47ff",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 35930,
+        "gzip_bytes": 7711,
+        "sqlite_bytes": 307200,
+        "restore_seconds": 0.002766541001619771,
+        "dump_seconds": 0.0005047089944127947
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 36899,
+        "gzip_bytes": 7894,
+        "sqlite_bytes": 311296,
+        "restore_seconds": 0.004307916009565815,
+        "dump_seconds": 0.0005029170133639127
+      }
+    },
+    {
+      "id": "j068/act_application-gpt-5.1-cleaned.sql",
+      "input_sha256": "4ae95f5c63ff3744e697080bb50952725d73d653d0e454de10b7b98de8a30715",
+      "data_sha256": "6eff7a950d162ac991a36b2dd8bf84ba181df562cdd21da7a3cbf2069c7c9766",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 21696,
+        "gzip_bytes": 5401,
+        "sqlite_bytes": 290816,
+        "restore_seconds": 0.00283054199826438,
+        "dump_seconds": 0.0016511669964529574
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 22665,
+        "gzip_bytes": 5584,
+        "sqlite_bytes": 294912,
+        "restore_seconds": 0.004092959003173746,
+        "dump_seconds": 0.00046966700756456703
+      }
+    },
+    {
+      "id": "j068/act_application-gpt-5.1-pending.sql",
+      "input_sha256": "f119c18c48bdd7eee0b6ba787882f62ea01fe08a33d7e2d9c5354967c604be84",
+      "data_sha256": "8cdfcf263ccbc65d3261a87b24a47efdf733144bdd6ee7f2138459f893dc28aa",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 27357,
+        "gzip_bytes": 6996,
+        "sqlite_bytes": 290816,
+        "restore_seconds": 0.0038580419932259247,
+        "dump_seconds": 0.0006807919999118894
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 28326,
+        "gzip_bytes": 7181,
+        "sqlite_bytes": 294912,
+        "restore_seconds": 0.005764041998190805,
+        "dump_seconds": 0.000582000007852912
+      }
+    },
+    {
+      "id": "j068/act_application-gpt-5.1-settled.sql",
+      "input_sha256": "74e6aca90731b90e10ad92d935080b25eeba28ce446639ff7d0ba7a0c98b032a",
+      "data_sha256": "01037aff2c81c0b8c8c353b1c06d199d09bb0ec15c333fa8e97d361b752a3b1b",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 35921,
+        "gzip_bytes": 7704,
+        "sqlite_bytes": 307200,
+        "restore_seconds": 0.004130499990424141,
+        "dump_seconds": 0.0005335000023478642
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 36890,
+        "gzip_bytes": 7888,
+        "sqlite_bytes": 311296,
+        "restore_seconds": 0.005636874993797392,
+        "dump_seconds": 0.0005554170056711882
+      }
+    },
+    {
+      "id": "j068/commission_review-claude-opus-5-5-cleaned.sql",
+      "input_sha256": "59abf3619905975dde01c611008d75ccc8039cfade1d3413edbd732f7544b3b1",
+      "data_sha256": "aa92cf83089817da6f64cc33dc2f86ef5ddf7989aaa5426458f39545ebb45d6a",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 23092,
+        "gzip_bytes": 5709,
+        "sqlite_bytes": 294912,
+        "restore_seconds": 0.004113041999517009,
+        "dump_seconds": 0.0008500830008415505
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 24061,
+        "gzip_bytes": 5895,
+        "sqlite_bytes": 299008,
+        "restore_seconds": 0.004421000005095266,
+        "dump_seconds": 0.0004478329938137904
+      }
+    },
+    {
+      "id": "j068/commission_review-claude-opus-5-5-pending.sql",
+      "input_sha256": "d5bee731b4068285f8b3039282d6737522b81f0bccd358bef7ad72c6b95c5e77",
+      "data_sha256": "e7863f713f154cf988992f52377318f1b5cd1578317f2ce95b018c1616ba1ef3",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 28561,
+        "gzip_bytes": 7239,
+        "sqlite_bytes": 290816,
+        "restore_seconds": 0.004030041993246414,
+        "dump_seconds": 0.0004610420000972226
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 29530,
+        "gzip_bytes": 7426,
+        "sqlite_bytes": 294912,
+        "restore_seconds": 0.005532915994990617,
+        "dump_seconds": 0.0005722079949919134
+      }
+    },
+    {
+      "id": "j068/commission_review-claude-opus-5-5-settled.sql",
+      "input_sha256": "ee5d5a8e6d2ebc39724d156e628bf31228793ee4cb2bde3bc726f31c13672af2",
+      "data_sha256": "24e97b037000e04fc8f62a8e9245a94f82e239d17e3f1c183d95fb1bbeebff20",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 40335,
+        "gzip_bytes": 8080,
+        "sqlite_bytes": 315392,
+        "restore_seconds": 0.004070249997312203,
+        "dump_seconds": 0.0005765829992014915
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 41304,
+        "gzip_bytes": 8265,
+        "sqlite_bytes": 319488,
+        "restore_seconds": 0.005541083999560215,
+        "dump_seconds": 0.0005441249959403649
+      }
+    },
+    {
+      "id": "j068/commission_review-gpt-5.1-cleaned.sql",
+      "input_sha256": "22f5ffe4994a8a3f40de5bdb9de35478471d64d4a6b1d7a28ed7118258fc79a5",
+      "data_sha256": "18a15fa6cec5635a7304f49b17361b90f1d64f93e3b1b07fac89830837d52039",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 23083,
+        "gzip_bytes": 5706,
+        "sqlite_bytes": 294912,
+        "restore_seconds": 0.0038682080048602074,
+        "dump_seconds": 0.000457874994026497
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 24052,
+        "gzip_bytes": 5894,
+        "sqlite_bytes": 299008,
+        "restore_seconds": 0.005408958997577429,
+        "dump_seconds": 0.00046512500557582825
+      }
+    },
+    {
+      "id": "j068/commission_review-gpt-5.1-pending.sql",
+      "input_sha256": "bb37a87f35fc3d6a9b2cb40d35ba591c04b94076bb35a5d9a5a2da90cd824746",
+      "data_sha256": "0d4826b0d98d886a4898c4f4aa1c54e1a4ad2e6b0f6559227c85b8b6f658a78c",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 28558,
+        "gzip_bytes": 7236,
+        "sqlite_bytes": 290816,
+        "restore_seconds": 0.003309915991849266,
+        "dump_seconds": 0.0004895410093013197
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 29527,
+        "gzip_bytes": 7423,
+        "sqlite_bytes": 294912,
+        "restore_seconds": 0.005068916987511329,
+        "dump_seconds": 0.0006372089992510155
+      }
+    },
+    {
+      "id": "j068/commission_review-gpt-5.1-settled.sql",
+      "input_sha256": "1c44205bc6851ccf6877bd8006df198baff3e3edafb4db4440ac0ec30ddc1f47",
+      "data_sha256": "d13e68c9fad16deea213a79f85c7a68172811916723e009652be2999a0db6708",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 40326,
+        "gzip_bytes": 8077,
+        "sqlite_bytes": 315392,
+        "restore_seconds": 0.003649916994618252,
+        "dump_seconds": 0.0005445000133477151
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 41295,
+        "gzip_bytes": 8262,
+        "sqlite_bytes": 319488,
+        "restore_seconds": 0.004492290987400338,
+        "dump_seconds": 0.0007225000008475035
+      }
+    },
+    {
+      "id": "j068/consultation_review-claude-opus-5-5-cleaned.sql",
+      "input_sha256": "5ec89010151f63f783097f58fae2c4bca2826065a349346a9a25d1f14c23b816",
+      "data_sha256": "0cc4cb35fb7899fcdfd0ce75634baafb64cc76bc25c873050bce25ab17a99c75",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 21191,
+        "gzip_bytes": 5162,
+        "sqlite_bytes": 290816,
+        "restore_seconds": 0.0035211249924032018,
+        "dump_seconds": 0.000730582993128337
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 22160,
+        "gzip_bytes": 5346,
+        "sqlite_bytes": 294912,
+        "restore_seconds": 0.004550084006041288,
+        "dump_seconds": 0.0004751670057885349
+      }
+    },
+    {
+      "id": "j068/consultation_review-claude-opus-5-5-pending.sql",
+      "input_sha256": "cac746c6f354f6e3828e1d340c6186755a62ab2c4e28f798b9f6d6255c9a2b22",
+      "data_sha256": "b54da3ecde77d668f5dfd102248026ad57732efcc62ef83c6c12eade47c4ce45",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 27255,
+        "gzip_bytes": 6915,
+        "sqlite_bytes": 290816,
+        "restore_seconds": 0.004376457989565097,
+        "dump_seconds": 0.0008462500118184835
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 28224,
+        "gzip_bytes": 7100,
+        "sqlite_bytes": 294912,
+        "restore_seconds": 0.006503666998469271,
+        "dump_seconds": 0.0004968749999534339
+      }
+    },
+    {
+      "id": "j068/consultation_review-claude-opus-5-5-settled.sql",
+      "input_sha256": "7869400a913a3d6a03c121a4c1f5d03ef845a2acafe904dfe057cad9ea1c1dac",
+      "data_sha256": "b5bed3c2ecd9c0044170afe7b41e33deb2ef4c0ed75d5107ca1137db1a2c8477",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 34205,
+        "gzip_bytes": 7498,
+        "sqlite_bytes": 299008,
+        "restore_seconds": 0.005023166013415903,
+        "dump_seconds": 0.0009788340103114024
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 35174,
+        "gzip_bytes": 7684,
+        "sqlite_bytes": 303104,
+        "restore_seconds": 0.0057113340008072555,
+        "dump_seconds": 0.0005335839960025623
+      }
+    },
+    {
+      "id": "j068/consultation_review-gpt-5.1-cleaned.sql",
+      "input_sha256": "136bc98ecde8ec61a80fe68ad6b011fc961df4e00c766c5727c6c47fe3296322",
+      "data_sha256": "bb5eab547f5a693f4bdde9a29d531d18cead41e67aaf13143a851f4a97cee68c",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 21182,
+        "gzip_bytes": 5158,
+        "sqlite_bytes": 290816,
+        "restore_seconds": 0.003149791999021545,
+        "dump_seconds": 0.0006705829873681068
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 22151,
+        "gzip_bytes": 5345,
+        "sqlite_bytes": 294912,
+        "restore_seconds": 0.005764000001363456,
+        "dump_seconds": 0.0004713340022135526
+      }
+    },
+    {
+      "id": "j068/consultation_review-gpt-5.1-pending.sql",
+      "input_sha256": "3e90a7c6e0fa0ee584eae234232bd55318f1900c3d2fd8a958749ddd1c8a4856",
+      "data_sha256": "f44973b315e6a204872d301b851033a8ee65f2b60c1b1060d9d0c70315285287",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 27252,
+        "gzip_bytes": 6913,
+        "sqlite_bytes": 290816,
+        "restore_seconds": 0.004290041004423983,
+        "dump_seconds": 0.0007303750026039779
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 28221,
+        "gzip_bytes": 7097,
+        "sqlite_bytes": 294912,
+        "restore_seconds": 0.00641304200689774,
+        "dump_seconds": 0.0005267499946057796
+      }
+    },
+    {
+      "id": "j068/consultation_review-gpt-5.1-settled.sql",
+      "input_sha256": "3057f057592b40315d0905d91bb56ed8280b0b622d02f27107e864c5690b24e6",
+      "data_sha256": "84203b3e01f1451808584db249bb6f5acb3c2418fb29fb7a8ba7f3864ae1f991",
+      "before": {
+        "schema": 49,
+        "sql_bytes": 34196,
+        "gzip_bytes": 7495,
+        "sqlite_bytes": 299008,
+        "restore_seconds": 0.004012457997305319,
+        "dump_seconds": 0.0007386659999610856
+      },
+      "after": {
+        "schema": 50,
+        "sql_bytes": 35165,
+        "gzip_bytes": 7682,
+        "sqlite_bytes": 303104,
+        "restore_seconds": 0.005238750003627501,
+        "dump_seconds": 0.0007287920016096905
+      }
+    }
+  ],
+  "old_runtime_bridge": {
+    "code_root": "/Users/sobaleu/projects/lexinform/out/corpus/j069/baseline",
+    "schema_after_old_runtime": 50,
+    "applications": [
+      {
+        "result_id": "result-v1:e326448ef5f827de5fc74ef3e6806cea5af2b9ff5ca9fc313547f945158ed90b",
+        "term": 10,
+        "number": "3039",
+        "generation": 0,
+        "phase": "collection",
+        "outcome": "ready",
+        "reason": "current_generation",
+        "observed_generation": 0,
+        "observed_status": "batch_pending",
+        "created_at": "2026-09-07T06:00:00Z"
+      },
+      {
+        "result_id": "result-v1:e326448ef5f827de5fc74ef3e6806cea5af2b9ff5ca9fc313547f945158ed90b",
+        "term": 10,
+        "number": "3039",
+        "generation": 0,
+        "phase": "projection",
+        "outcome": "applied",
+        "reason": "batch_result",
+        "observed_generation": 0,
+        "observed_status": "analysis_ready",
+        "created_at": "2026-09-07T06:00:00Z"
+      }
+    ],
+    "submitted": 1,
+    "cards": 1,
+    "errors": []
+  },
+  "production": {
+    "state_commit": "98d0bd3267eb8c110945f8fb2d44b1414c58d211",
+    "state_committed_at": "2026-10-27T00:04:41Z",
+    "fresh_fetch_after_full_gate": true,
+    "fetch_head_matches_origin_state": true,
+    "baseline": {
+      "source_sha256": "fc267831b0a010162299b1bd500838466a6f4f6d30618d178f66ade9d416a8da",
+      "source_bytes": 19955778,
+      "sql_sha256": "fc267831b0a010162299b1bd500838466a6f4f6d30618d178f66ade9d416a8da",
+      "sql_bytes": 19955778,
+      "gzip_bytes": 4074532,
+      "sqlite_bytes": 20934656,
+      "restore_seconds": 0.3292122080019908,
+      "dump_seconds": 0.09320958399621304,
+      "bills": 457,
+      "analysis_records": 166,
+      "projection_sha256": "7fa6760e52135e73f597e30db629624fa77a16ba8f7a7723bedaad110cfa8f33",
+      "memo_sha256": "8f68b1de19cfc7ef421659465d653664765cd5d1ed9187d359f33c697c6417ce",
+      "memos": 141,
+      "schema": {
+        "tables": 19,
+        "indexes": 30,
+        "version": 49
+      },
+      "new_rows": {
+        "computation_results": 0,
+        "result_applications": 0
+      },
+      "known_bill_2699": "analyzed",
+      "integrity": "ok",
+      "foreign_key_errors": 0,
+      "scope": "Isolated restore/read; no pipeline, provider or Telegram call; no legacy history backfill."
+    },
+    "current": {
+      "source_sha256": "fc267831b0a010162299b1bd500838466a6f4f6d30618d178f66ade9d416a8da",
+      "source_bytes": 19955778,
+      "sql_sha256": "9c5ec8edee0177041cd4e6bc30778263afc66a4df9c3ece33d30130ec67d1791",
+      "sql_bytes": 19956747,
+      "gzip_bytes": 4074775,
+      "sqlite_bytes": 20938752,
+      "restore_seconds": 0.32832508299907204,
+      "dump_seconds": 0.10191500000655651,
+      "bills": 457,
+      "analysis_records": 166,
+      "projection_sha256": "7fa6760e52135e73f597e30db629624fa77a16ba8f7a7723bedaad110cfa8f33",
+      "memo_sha256": "8f68b1de19cfc7ef421659465d653664765cd5d1ed9187d359f33c697c6417ce",
+      "memos": 141,
+      "schema": {
+        "tables": 19,
+        "indexes": 32,
+        "version": 50
+      },
+      "new_rows": {
+        "computation_results": 0,
+        "result_applications": 0
+      },
+      "known_bill_2699": "analyzed",
+      "integrity": "ok",
+      "foreign_key_errors": 0,
+      "scope": "Isolated restore/read; no pipeline, provider or Telegram call; no legacy history backfill."
+    },
+    "projection_memo_and_counts_equal": true,
+    "delta": {
+      "sql_bytes": 969,
+      "gzip_bytes": 243,
+      "sqlite_bytes": 4096
+    }
+  },
+  "corpus_runs": [
+    {
+      "id": "j069-ci",
+      "manifest_sha256": "e4a100fa5f600eb08c791fdefe0bd1a065e8909afb152c40ee18471fbb259467",
+      "status": "passed",
+      "observations": 7,
+      "command": [
+        "/Users/sobaleu/projects/lexinform/.venv/bin/python",
+        "-m",
+        "tools.corpus_check",
+        "--corpus",
+        "/Users/sobaleu/projects/lexinform/tests/fixtures/corpus_check",
+        "--output",
+        "/Users/sobaleu/projects/lexinform/out/corpus/runs/j069-ci/result.json"
+      ],
+      "missing_inputs": []
+    },
+    {
+      "id": "j069-process",
+      "manifest_sha256": "2ac93e56c7622e820f2a1e063ce1c28d67478521a3660f21a3d7a8f2903734cc",
+      "status": "recorded",
+      "observations": 3294,
+      "command": [
+        "/Users/sobaleu/projects/lexinform/.venv/bin/python",
+        "-m",
+        "tools.corpus_legacy_suites",
+        "--corpus",
+        "/Users/sobaleu/projects/lexinform-corpus",
+        "--output",
+        "/Users/sobaleu/projects/lexinform/out/corpus/runs/j069-process/result.json",
+        "--kind",
+        "process"
+      ],
+      "missing_inputs": []
+    }
+  ],
+  "process_diff": {
+    "after_manifest_sha256": "2ac93e56c7622e820f2a1e063ce1c28d67478521a3660f21a3d7a8f2903734cc",
+    "before_manifest_sha256": "e5a7c3fac9ab22feb5b99c5e5dfe701f32286ca74f2cc99cd26d44fcd5e5ec14",
+    "changed_inputs": [],
+    "changes": [],
+    "scope": "Observation differences, not an independent legal accuracy verdict",
+    "status": "same",
+    "suite": "process",
+    "summary_changes": {},
+    "version": 1
+  },
+  "observers": [
+    {
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j069/snapshot_profile.py",
+      "sha256": "b447c912a05d35030a8a5f23885ecadbb86fd8553770638a9a3fbc1faa5e896d",
+      "source": "import gzip\nimport hashlib\nimport json\nimport os\nimport sqlite3\nimport time\nfrom contextlib import closing\nfrom pathlib import Path\n\nimport lexinform\nfrom lexinform.adapters.sqlite_repo import SqliteBillRepository\n\noutput=Path(os.environ['DA_SCHEMA_PROFILE_OUTPUT'])\noutput.mkdir()\nassert Path(lexinform.__file__).resolve().parents[2]==Path(os.environ['DA_EXPECTED_CODE']).resolve()\ninputs=json.loads(Path(os.environ['DA_SCHEMA_INPUTS']).read_text())\nobservations=[]\nfor source in inputs:\n    path=Path(source['path'])\n    raw=path.read_bytes()\n    repository=SqliteBillRepository(':memory:')\n    repository.migrate()\n    started=time.perf_counter()\n    repository.restore(raw.decode())\n    restore_seconds=time.perf_counter()-started\n    with closing(sqlite3.connect(':memory:')) as database:\n        database.executescript(repository.dump())\n        assert database.execute('PRAGMA integrity_check').fetchone()==('ok',)\n        assert not database.execute('PRAGMA foreign_key_check').fetchall()\n        tables=[row[0] for row in database.execute(\"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name\")]\n        data={}\n        for table in tables:\n            columns=[row[1] for row in database.execute(f'PRAGMA table_info({table})') if not(table=='result_applications' and row[1]=='id')]\n            rows=database.execute(f\"SELECT {','.join(columns)} FROM {table}\").fetchall()\n            encoded=sorted(json.dumps(row,ensure_ascii=False) for row in rows)\n            data[table]={'columns':columns,'rows':len(rows),'sha256':hashlib.sha256(json.dumps(encoded).encode()).hexdigest()}\n        owners=database.execute('SELECT term, number FROM bills ORDER BY term,number').fetchall()\n        sqlite_bytes=len(database.serialize())\n    for term,number in owners:\n        assert repository.get(term,number) is not None\n        repository.list_computation_results(term,number)\n        repository.list_result_applications(term,number)\n    started=time.perf_counter()\n    saved=repository.dump().encode()\n    dump_seconds=time.perf_counter()-started\n    observations.append({'id':source['id'],'input_sha256':hashlib.sha256(raw).hexdigest(),'schema':repository.schema_version,'data':data,'sql_sha256':hashlib.sha256(saved).hexdigest(),'sql_bytes':len(saved),'gzip_bytes':len(gzip.compress(saved,mtime=0)),'sqlite_bytes':sqlite_bytes,'restore_seconds':restore_seconds,'dump_seconds':dump_seconds})\n    repository.close()\n    assert path.read_bytes()==raw\nassert len(observations)==33\n(output/'profiles.json').write_text(json.dumps(observations,indent=2)+'\\n')\nprint(json.dumps({'snapshots':len(observations),'schema':observations[0]['schema']}))\n"
+    },
+    {
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j069/old_runtime_bridge.py",
+      "sha256": "11edbfca136fcd80024e9ec7e18e1d91576edcb21283a410a6c7ea59821eb79c",
+      "source": "import json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nimport lexinform\n\nfrom tests.harness import World\n\n\ndef test_old_runtime_finishes_primary_batch_after_forward_schema_migration() -> None:\n    assert Path(lexinform.__file__).resolve().parents[2]==Path(os.environ['DA_EXPECTED_CODE']).resolve()\n    world=World(profile='production')\n    world.add_bill('3039','Projekt ustawy o cudzoziemcach')\n    world.run(track=False)\n    assert world.repo.schema_version==49\n    with closing(sqlite3.connect(':memory:')) as migrated:\n        migrated.executescript(world.repo.dump())\n        migrated.executescript(Path(os.environ['DA_MIGRATION_SQL']).read_text()+'\\nPRAGMA user_version = 50;')\n        raw='\\n'.join(migrated.iterdump())+'\\nPRAGMA user_version = 50;\\n'\n    world.repo.restore(raw)\n    world.batch.resolve()\n\n    report=world.run(track=False)\n    applications=world.repo.list_result_applications(10,'3039')\n\n    assert not report.errors and world.repo.schema_version==50\n    assert len(world.publisher.new_bills)==1\n    assert len(applications)==2 and {row.phase for row in applications}=={'collection','projection'}\n    assert all('target' not in row.model_dump() for row in applications)\n    assert len(world.repo.list_computation_results(10,'3039'))==1\n    output=Path(os.environ['DA_BRIDGE_OUTPUT'])\n    output.write_text(json.dumps({'code_root':str(Path(lexinform.__file__).resolve().parents[2]),'schema_after_old_runtime':world.repo.schema_version,'applications':[row.model_dump(mode='json') for row in applications],'submitted':len(world.batch.submitted),'cards':len(world.publisher.new_bills),'errors':report.errors},indent=2)+'\\n')\n"
+    },
+    {
+      "path": "/Users/sobaleu/.codex/worktrees/scan-input-manifests/lexinform/out/corpus/j061/production_profile.py",
+      "sha256": "666da1b75e2dfa252a2ac028bdc3ad346abad70bfda813fc87286a141687ac61",
+      "source": "import gzip\nimport hashlib\nimport json\nimport os\nimport sqlite3\nimport time\nfrom contextlib import closing\nfrom pathlib import Path\n\nfrom lexinform.adapters.sqlite_repo import SqliteBillRepository\n\nsource = Path(os.environ[\"DA_STATE_SQL\"])\noutput = Path(os.environ[\"DA_PROFILE_OUTPUT\"])\noutput.mkdir()\nraw = source.read_bytes()\ndatabase = output / \"restored.db\"\nrepository = SqliteBillRepository(database)\nrepository.migrate()\nstart = time.perf_counter()\nrepository.restore(raw.decode())\nrestore_seconds = time.perf_counter() - start\nwith closing(sqlite3.connect(database)) as restored:\n    assert restored.execute(\"PRAGMA integrity_check\").fetchone() == (\"ok\",)\n    assert not restored.execute(\"PRAGMA foreign_key_check\").fetchall()\n    identities = restored.execute(\"SELECT term, number FROM bills ORDER BY term, number\").fetchall()\n    schema = {\n        \"tables\": restored.execute(\"SELECT count(*) FROM sqlite_master WHERE type='table'\").fetchone()[0],\n        \"indexes\": restored.execute(\"SELECT count(*) FROM sqlite_master WHERE type='index' AND sql IS NOT NULL\").fetchone()[0],\n        \"version\": restored.execute(\"PRAGMA user_version\").fetchone()[0],\n    }\n    new_rows = {\n        name: restored.execute(f\"SELECT count(*) FROM {name}\").fetchone()[0]\n        for name in (\"computation_results\", \"result_applications\")\n        if restored.execute(\"SELECT 1 FROM sqlite_master WHERE name = ?\", (name,)).fetchone()\n    }\nprojections = []\nfor term, number in identities:\n    bill = repository.get(term, number)\n    assert bill is not None\n    projections.append(bill.model_dump(mode=\"json\"))\nknown_bill = repository.get(10, \"2699\")\nassert known_bill is not None\nmemo = repository.load_analysis_memo()\nstart = time.perf_counter()\nsaved = repository.dump().encode()\ndump_seconds = time.perf_counter() - start\nrepository.close()\n(output / \"roundtrip.sql\").write_bytes(saved)\nreport = {\n    \"source_sha256\": hashlib.sha256(raw).hexdigest(), \"source_bytes\": len(raw),\n    \"sql_sha256\": hashlib.sha256(saved).hexdigest(), \"sql_bytes\": len(saved),\n    \"gzip_bytes\": len(gzip.compress(saved, mtime=0)), \"sqlite_bytes\": database.stat().st_size,\n    \"restore_seconds\": restore_seconds, \"dump_seconds\": dump_seconds,\n    \"bills\": len(projections), \"analysis_records\": sum(row[\"analysis\"] is not None for row in projections),\n    \"projection_sha256\": hashlib.sha256(json.dumps(projections, sort_keys=True).encode()).hexdigest(),\n    \"memo_sha256\": hashlib.sha256(json.dumps(memo, sort_keys=True).encode()).hexdigest(),\n    \"memos\": len(memo), \"schema\": schema, \"new_rows\": new_rows,\n    \"known_bill_2699\": known_bill.status.value,\n    \"integrity\": \"ok\", \"foreign_key_errors\": 0,\n    \"scope\": \"Isolated restore/read; no pipeline, provider or Telegram call; no legacy history backfill.\",\n}\n(output / \"profile.json\").write_text(json.dumps(report, indent=2) + \"\\n\")\nprint(json.dumps(report))\n"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "j066/amendments-cleaned.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j066/rollback-inputs/amendments-cleaned.sql"
+    },
+    {
+      "id": "j066/amendments-pending.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j066/rollback-inputs/amendments-pending.sql"
+    },
+    {
+      "id": "j066/amendments-settled.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j066/rollback-inputs/amendments-settled.sql"
+    },
+    {
+      "id": "j066/explanation-cleaned.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j066/rollback-inputs/explanation-cleaned.sql"
+    },
+    {
+      "id": "j066/explanation-pending.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j066/rollback-inputs/explanation-pending.sql"
+    },
+    {
+      "id": "j066/explanation-settled.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j066/rollback-inputs/explanation-settled.sql"
+    },
+    {
+      "id": "j066/joint-cleaned.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j066/rollback-inputs/joint-cleaned.sql"
+    },
+    {
+      "id": "j066/joint-pending.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j066/rollback-inputs/joint-pending.sql"
+    },
+    {
+      "id": "j066/joint-settled.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j066/rollback-inputs/joint-settled.sql"
+    },
+    {
+      "id": "j066/name-cleaned.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j066/rollback-inputs/name-cleaned.sql"
+    },
+    {
+      "id": "j066/name-pending.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j066/rollback-inputs/name-pending.sql"
+    },
+    {
+      "id": "j066/name-settled.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j066/rollback-inputs/name-settled.sql"
+    },
+    {
+      "id": "j066/supplement-cleaned.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j066/rollback-inputs/supplement-cleaned.sql"
+    },
+    {
+      "id": "j066/supplement-pending.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j066/rollback-inputs/supplement-pending.sql"
+    },
+    {
+      "id": "j066/supplement-settled.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j066/rollback-inputs/supplement-settled.sql"
+    },
+    {
+      "id": "j068/act_application-claude-opus-5-5-cleaned.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/act_application-claude-opus-5-5-cleaned.sql"
+    },
+    {
+      "id": "j068/act_application-claude-opus-5-5-pending.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/act_application-claude-opus-5-5-pending.sql"
+    },
+    {
+      "id": "j068/act_application-claude-opus-5-5-settled.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/act_application-claude-opus-5-5-settled.sql"
+    },
+    {
+      "id": "j068/act_application-gpt-5.1-cleaned.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/act_application-gpt-5.1-cleaned.sql"
+    },
+    {
+      "id": "j068/act_application-gpt-5.1-pending.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/act_application-gpt-5.1-pending.sql"
+    },
+    {
+      "id": "j068/act_application-gpt-5.1-settled.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/act_application-gpt-5.1-settled.sql"
+    },
+    {
+      "id": "j068/commission_review-claude-opus-5-5-cleaned.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/commission_review-claude-opus-5-5-cleaned.sql"
+    },
+    {
+      "id": "j068/commission_review-claude-opus-5-5-pending.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/commission_review-claude-opus-5-5-pending.sql"
+    },
+    {
+      "id": "j068/commission_review-claude-opus-5-5-settled.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/commission_review-claude-opus-5-5-settled.sql"
+    },
+    {
+      "id": "j068/commission_review-gpt-5.1-cleaned.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/commission_review-gpt-5.1-cleaned.sql"
+    },
+    {
+      "id": "j068/commission_review-gpt-5.1-pending.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/commission_review-gpt-5.1-pending.sql"
+    },
+    {
+      "id": "j068/commission_review-gpt-5.1-settled.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/commission_review-gpt-5.1-settled.sql"
+    },
+    {
+      "id": "j068/consultation_review-claude-opus-5-5-cleaned.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/consultation_review-claude-opus-5-5-cleaned.sql"
+    },
+    {
+      "id": "j068/consultation_review-claude-opus-5-5-pending.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/consultation_review-claude-opus-5-5-pending.sql"
+    },
+    {
+      "id": "j068/consultation_review-claude-opus-5-5-settled.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/consultation_review-claude-opus-5-5-settled.sql"
+    },
+    {
+      "id": "j068/consultation_review-gpt-5.1-cleaned.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/consultation_review-gpt-5.1-cleaned.sql"
+    },
+    {
+      "id": "j068/consultation_review-gpt-5.1-pending.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/consultation_review-gpt-5.1-pending.sql"
+    },
+    {
+      "id": "j068/consultation_review-gpt-5.1-settled.sql",
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j068/profile-current/consultation_review-gpt-5.1-settled.sql"
+    }
+  ],
+  "reproduction": [
+    "Export baseline/current source trees and use their src/root as PYTHONPATH with the same pinned uv.lock and environment.",
+    "Run snapshot_profile.py twice with DA_SCHEMA_INPUTS, DA_EXPECTED_CODE and fresh DA_SCHEMA_PROFILE_OUTPUT directories.",
+    "Run old_runtime_bridge.py with pytest -p tests.conftest from baseline; set DA_EXPECTED_CODE, DA_MIGRATION_SQL and DA_BRIDGE_OUTPUT.",
+    "Fetch origin state after the full gate; run production_profile.py with DA_STATE_SQL and separate /private/tmp DA_PROFILE_OUTPUT directories; no Settings or pipeline is needed.",
+    "uv run --no-sync --offline --frozen pytest -q",
+    "uv run --no-sync --offline --frozen pytest -q -m local_http",
+    "uv run --no-sync --offline --frozen mypy",
+    "uv run --no-sync --offline --frozen ruff check src tests tools",
+    "make docs-check DOCS='uv run --no-sync --offline --frozen --group docs'"
+  ],
+  "limitations": [
+    "No explicit-target producers are enabled; this is the reader/migration stage.",
+    "The v49 runtime bridge applies before explicit-target rows exist, not after future target writers are enabled.",
+    "Legacy v49 dumps omit hidden rowids; preserved application JSON and relative order are the actual public contract.",
+    "The first bridge observer used a noncanonical version trailer and is excluded; accepted XML/JSON use the corrected exact dump trailer.",
+    "Corpus metadata/cached/synthetic profiles retain their existing exclusions, not new independent human legal labels.",
+    "Only isolated production restore/read was performed; no manual processing, provider or Telegram calls.",
+    "Target namespaces are opaque metadata. Actual target ownership and atomic application belong to the service writing the projection.",
+    "Small snapshot deltas are not a linear production-growth forecast."
+  ]
+}

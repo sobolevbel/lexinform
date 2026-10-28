@@ -1,0 +1,181 @@
+{
+  "stage": "J117",
+  "baseline": "8e39f0629ce2ea88bb37af4b796a623a0fd8764c",
+  "checks": {
+    "focused": {
+      "sha256": "147292d07ebeadde67a4851dbd33783207b4c23af035819af37e2ec57bae62d4",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "106",
+      "time": "3.675",
+      "timestamp": "2026-10-28T02:08:47.569090+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "sha256": "b389c8e5bb05ec3d013e898c16f3f2a29aa92a864bd10c93afd92539a65bf378",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "5112",
+      "time": "606.484",
+      "timestamp": "2026-10-28T02:11:56.385087+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 478 source files",
+    "ruff": "All checks passed!",
+    "format": "474 files already formatted"
+  },
+  "sources": {
+    "src/lexinform/adapters/document_text.py": "eb78847df772a1624b7ae3ea75d293aa3d351456c40ec4ecdfe5726b802bb7de",
+    "src/lexinform/models/__init__.py": "8640d04a108355483b9b554393d2938a78c00429ac234771b244cd8b65145fac",
+    "src/lexinform/models/documents.py": "ee36f4c8b169d9970768ef7ac6ab83a968954ad9838f60af4f1b34871e77914d",
+    "src/lexinform/ports.py": "0433978c8bfa41fe0e00a0bbb00e7cedaa85896859a1956c2d35633def13630d",
+    "tests/unit/test_odt_blocks.py": "308827132db4236d84a36f892a5609851cc0d2434233010cfb0e54741727d98e"
+  },
+  "qualification": {
+    "native": {
+      "cases": 168,
+      "all_profiles_except_metadata_and_storage_metrics_exact": true,
+      "all_requests_and_rendered_messages_exact": true,
+      "all_28_prior_tables_exact_except_recorded_phase_timing": true,
+      "timing_differences": [],
+      "command_outcome_seconds_excluded_from_semantic_comparison": true,
+      "content_version_views": 2,
+      "content_snapshot_views": 6,
+      "binding_views": 2,
+      "prior_metadata_rows_preserved": true,
+      "read_receipt_views": 270,
+      "source_observation_views": 210,
+      "selection_views": 198,
+      "link_views": 190,
+      "all_source_doctors_without_errors": true,
+      "sql_delta": {
+        "min": 0,
+        "max": 0
+      },
+      "gzip_delta": {
+        "min": 0,
+        "max": 0
+      }
+    },
+    "corpus": {
+      "input_count": 1813,
+      "real_text_and_selection_inputs": 15,
+      "real_corpus_roots": 6,
+      "routing_only_roots": 1798,
+      "raw_odt_routed_parts": 8,
+      "variant_count": 9,
+      "meaningful_mutations": 5,
+      "all_profiles_exact_to_previous_code": true,
+      "all_new_origins_round_trip_and_match_xml_paths": true,
+      "body_states": {
+        "read": 17
+      },
+      "origin_views": 17,
+      "block_views": 1066,
+      "ignored_node_views": 46,
+      "verified_inventory_paths": 16341,
+      "verified_inventory_bytes": 12073227147,
+      "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+      "exclusions": [
+        "Routing-only roots use placeholder non-ODT adapters and do not qualify their extracted text or legal selection.",
+        "Direct PDF/DOC/Word roots are outside the changed ODT parser.",
+        "No independent legal labels, document completeness inference, archive or PreparedInput maps."
+      ]
+    },
+    "inputs": {
+      "rechecked_paths": 16341,
+      "raw_bytes": 12073227147,
+      "all_input_hashes_preserved": true,
+      "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666"
+    },
+    "structural": {
+      "baseline": "8e39f0629ce2ea88bb37af4b796a623a0fd8764c",
+      "changed_runtime": {
+        "src/lexinform/adapters/document_text.py": "eb78847df772a1624b7ae3ea75d293aa3d351456c40ec4ecdfe5726b802bb7de",
+        "src/lexinform/models/__init__.py": "8640d04a108355483b9b554393d2938a78c00429ac234771b244cd8b65145fac",
+        "src/lexinform/models/documents.py": "ee36f4c8b169d9970768ef7ac6ab83a968954ad9838f60af4f1b34871e77914d",
+        "src/lexinform/ports.py": "0433978c8bfa41fe0e00a0bbb00e7cedaa85896859a1956c2d35633def13630d"
+      },
+      "other_runtime_files_byte_identical": 156,
+      "all_prior_document_model_classes_ast_exact_except_additive_transient_ExtractedParts": true,
+      "schema_sql_policies_normalizers_costs_paid_payloads_and_formatters_byte_identical": true,
+      "new_manifests_transient_not_persisted": true
+    },
+    "release": {
+      "j115": {
+        "sha": "4774da8ce83e47a071453fdfaee5b0e6b19176db",
+        "ci_run": 40611560095,
+        "deploy_run": 40612101577
+      },
+      "j116": {
+        "sha": "8e39f0629ce2ea88bb37af4b796a623a0fd8764c",
+        "ci_run": 40612084715,
+        "deploy_run": 40612839027
+      },
+      "evidence": [
+        {
+          "job": 122564055980,
+          "lines": [
+            "2026-10-28T00:52:52.7023914Z All checks passed!",
+            "2026-10-28T00:53:02.8959299Z Success: no issues found in 477 source files",
+            "2026-10-28T00:57:40.7073988Z 5091 passed, 32 deselected, 3614 warnings in 275.39s (0:04:35)"
+          ]
+        },
+        {
+          "job": 122565861488,
+          "lines": [
+            "2026-10-28T00:57:55.4885142Z   COMMIT: 4774da8ce83e47a071453fdfaee5b0e6b19176db",
+            "2026-10-28T00:58:43.3610083Z lexinform-listen up 45 s after restart"
+          ]
+        },
+        {
+          "job": 122565807088,
+          "lines": [
+            "2026-10-28T00:57:54.0946917Z All checks passed!",
+            "2026-10-28T00:58:09.2408367Z Success: no issues found in 477 source files",
+            "2026-10-28T01:04:43.2147034Z 5091 passed, 32 deselected, 3614 warnings in 391.14s (0:06:31)"
+          ]
+        },
+        {
+          "job": 122568290050,
+          "lines": [
+            "2026-10-28T01:04:58.1423219Z   COMMIT: 8e39f0629ce2ea88bb37af4b796a623a0fd8764c",
+            "2026-10-28T01:05:00.6880272Z already at 8e39f0629ce2, lexinform-listen running"
+          ]
+        }
+      ]
+    }
+  },
+  "evidence": {
+    "out/corpus/j117/frozen-inputs.json": "0fbe4de780099c8f2cc38593ec57e9c96ef4f1e99a1e78700a5d147f550e9294",
+    "out/corpus/j117/input-manifest.json": "11267a588080be144585b4bf503285db2ad17ae5459a099e80c3079c87f4f5b5",
+    "out/corpus/j117/discover_inputs_v2.py": "1263678c3267c9039516143b8d3e44bd8b652f56deb6d0bfb6217a1e8b064dd7",
+    "out/corpus/j117/replay_odt_v2.py": "db0ae15762f2eadcfa72ad37a144fba54359c07a84d28023a9d60e6b3707b4d1",
+    "out/corpus/j117/odt-baseline-v2/profiles.json": "f0dab64eec400e1efbf78c3fa14a022e09557d6aa7f1ee6e0a7e303984a1aff6",
+    "out/corpus/j117/odt-current-v2/profiles.json": "f0dab64eec400e1efbf78c3fa14a022e09557d6aa7f1ee6e0a7e303984a1aff6",
+    "out/corpus/j117/odt-current-v2/origins.json": "9c364da06ae0241f6b61238cd5367b44cb2cd092af3394e14366bd492575dfe3",
+    "out/corpus/j117/compare_odt.py": "943981dac46e3271d3c1c432ff7b8ae19a12439d751406f3164a3ee8d367618e",
+    "out/corpus/j117/odt-parity.json": "63fbb75a08a9b2955e31afd97d33aaec3f19a3d09c300b016067491caf4eecf2",
+    "out/corpus/j117/native_profiles.py": "15cc227270160c6e083d6639d8452c53abec2cab2bc8c5140d8a8d0393b94cd9",
+    "out/corpus/j117/compare_native_all_tables.py": "41e61a5ef853b694685413fe9ab3073db1b04c7f8241d2398cca64acb78dde01",
+    "out/corpus/j117/native-parity-accepted.json": "ebcd5ec8f4b46ad3e25445d7eecee389c2de0520c2044c26304d9f9e2c476669",
+    "out/corpus/j117/structural_profile.py": "4e3d20910f19dd4b9370f49eea4b5746491f840538356726664918e3b6859f95",
+    "out/corpus/j117/structural-parity.json": "3545ed3ef3aa4b0f4d91d848a5432eb0d0e52c7f5975f0a51919fe7162e18db9",
+    "out/corpus/j117/recheck_corpus.py": "a23576bb64eef0199310209f9773f6a53e473b69327c275a9bbae438c95f2038",
+    "out/corpus/j117/corpus-final.json": "f5d7a2f2c0788f704995e53968e6370ee9231e7561e8702ee938e5516d7f18bf",
+    "out/corpus/j117/release-j115-j116.json": "199d171d1f4ac35b664ac2dd2c715964ec12c1c401d67ae294fb8da43dbcb22e",
+    "out/corpus/j117/accept.py": "3d451a41da85b7da7af59bc04b0c1fcb18301a371df3fc986a01a83e30abb260"
+  },
+  "limitations": [
+    "Transient physical ODT manifests are not retained extraction history or PreparedInput spans.",
+    "Legacy inline note/tracked-change/repeated-table policies are unchanged and explicitly unresolved.",
+    "Routing-only roots do not qualify their non-ODT text or legal selection.",
+    "No independent legal labels, model calls, reader API effects, SQL schema changes or archive."
+  ]
+}

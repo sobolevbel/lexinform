@@ -1,6 +1,7 @@
 # План развития обработки документов и истории результатов
 
-Составлен 22 октября 2026, уточнён 23 октября 2026. Статус: DA0 частично принят, DA1 в работе.
+Составлен 22 октября 2026; уточняется при реализации. Статус: поэтапная реализация,
+выполненные части и их приёмка отмечены в checklist ниже.
 Основание: [архитектурный аудит](../reviews/2026-10-22-document-architecture.md).
 [Журнал реализации и проверок](2026-10-22-document-architecture-progress.md).
 Проверенная при составлении версия: `bb19c248bbbf9e6c0caf876bbc78c32bbe7bd103`.
@@ -330,7 +331,7 @@ DA6–DA7 не требуют предварительно включать но
   законченный коммит не оставляет обычный падающий тест. Исправление — отдельный коммит DA5,
   после него ожидание ошибки удаляется.
   Исправлено в [J045](2026-10-22-document-architecture-progress.md#j045): обычный тест проверяет точный source span 0–512.
-- [ ] DA0.5. **Частично: [J006](2026-10-22-document-architecture-progress.md#j006), [J009](2026-10-22-document-architecture-progress.md#j009).** Свести существующие replay в один планируемый `make corpus-check` с профилями
+- [ ] DA0.5. **Частично: [J120](2026-10-22-document-architecture-progress.md#j120), ODT в общем run registry, actual input maps PDF/Word/ODT и presence/population-aware diff; [J118](2026-10-22-document-architecture-progress.md#j118), общие PDF/Word IO/comparison/final-input guards и потоковый SHA без смены snapshot algorithms; [J006](2026-10-22-document-architecture-progress.md#j006), [J009](2026-10-22-document-architecture-progress.md#j009).** Свести существующие replay в один планируемый `make corpus-check` с профилями
   extraction/selection/comparison/delivery и явно заданными corpus/output путями.
   Runner не меняет входы, отказывается перезаписывать результаты и не вызывает сеть/модели.
 - [ ] DA0.6. **Частично: [J006](2026-10-22-document-architecture-progress.md#j006), [J009](2026-10-22-document-architecture-progress.md#j009).** Manifest содержит input SHA, официальный ID/связи, raw/cached/excerpt coverage,
@@ -362,14 +363,14 @@ DA6–DA7 не требуют предварительно включать но
   конфигурации останавливает запуск sender, а не включает noop. Настройки и `.env.example`
   изменяются вместе; dry-run не делает push. Сохранить fail-closed batch protocol:
   intent `submitting` должен быть удалённо сохранён до submit провайдеру.
-- [ ] DA1.2. **Частично: [J041](2026-10-22-document-architecture-progress.md#j041), [J040](2026-10-22-document-architecture-progress.md#j040), [J011](2026-10-22-document-architecture-progress.md#j011), [J015](2026-10-22-document-architecture-progress.md#j015), [J017](2026-10-22-document-architecture-progress.md#j017), [J018](2026-10-22-document-architecture-progress.md#j018), [J020](2026-10-22-document-architecture-progress.md#j020), [J022](2026-10-22-document-architecture-progress.md#j022), [J023](2026-10-22-document-architecture-progress.md#j023), [J025](2026-10-22-document-architecture-progress.md#j025); reader-first: [J019](2026-10-22-document-architecture-progress.md#j019), [J021](2026-10-22-document-architecture-progress.md#j021), [J026](2026-10-22-document-architecture-progress.md#j026), [J027](2026-10-22-document-architecture-progress.md#j027).** Перед каждым reader API effect сохранить в существующей очереди точные HTML,
+- [ ] DA1.2. **Частично: [J129](2026-10-22-document-architecture-progress.md#j129), absent parent bound to current owner sent-card receipt; [J128](2026-10-22-document-architecture-progress.md#j128), failed legacy reply chains; [J127](2026-10-22-document-architecture-progress.md#j127), qualified failed legacy single replies; [J041](2026-10-22-document-architecture-progress.md#j041), [J040](2026-10-22-document-architecture-progress.md#j040), [J011](2026-10-22-document-architecture-progress.md#j011), [J015](2026-10-22-document-architecture-progress.md#j015), [J017](2026-10-22-document-architecture-progress.md#j017), [J018](2026-10-22-document-architecture-progress.md#j018), [J020](2026-10-22-document-architecture-progress.md#j020), [J022](2026-10-22-document-architecture-progress.md#j022), [J023](2026-10-22-document-architecture-progress.md#j023), [J025](2026-10-22-document-architecture-progress.md#j025); reader-first: [J019](2026-10-22-document-architecture-progress.md#j019), [J021](2026-10-22-document-architecture-progress.md#j021), [J026](2026-10-22-document-architecture-progress.md#j026), [J027](2026-10-22-document-architecture-progress.md#j027).** Перед каждым reader API effect сохранить в существующей очереди точные HTML,
   channel, reply/edit target, flags, physical-part identity, membership и revision target.
   Freeze обязателен и при attention off/shadow: legacy digest/sittings не остаются live-render путями.
 - [x] DA1.3. **Принято локально: [J031](2026-10-22-document-architecture-progress.md#j031), [J032](2026-10-22-document-architecture-progress.md#j032), [J033](2026-10-22-document-architecture-progress.md#j033); reader-first: [J024](2026-10-22-document-architecture-progress.md#j024), [J030](2026-10-22-document-architecture-progress.md#j030).** Перевести refresh/retag/rollover и обычные редактирования карточки на сохранённую
   операцию. Проверить reuse существующих `MESSAGE_PART`/edit target и `_edit_parts`;
   если они не выражают нужный контракт, обосновать минимальный отдельный kind в ADR.
   Не менять identity исходной карточки, которая остаётся `sent` во время исправления.
-- [ ] DA1.4. **Частично: [J041](2026-10-22-document-architecture-progress.md#j041), [J035](2026-10-22-document-architecture-progress.md#j035), [J013](2026-10-22-document-architecture-progress.md#j013), [J015](2026-10-22-document-architecture-progress.md#j015), [J017](2026-10-22-document-architecture-progress.md#j017), [J018](2026-10-22-document-architecture-progress.md#j018), [J020](2026-10-22-document-architecture-progress.md#j020), [J022](2026-10-22-document-architecture-progress.md#j022), [J023](2026-10-22-document-architecture-progress.md#j023), [J025](2026-10-22-document-architecture-progress.md#j025), [J026](2026-10-22-document-architecture-progress.md#j026).** Зафиксировать порядок: локальная транзакция frozen pending → удалённый checkpoint →
+- [ ] DA1.4. **Частично: [J129](2026-10-22-document-architecture-progress.md#j129), absent parent bound to current owner sent-card receipt; [J128](2026-10-22-document-architecture-progress.md#j128), failed legacy reply chains; [J127](2026-10-22-document-architecture-progress.md#j127), qualified failed legacy single replies; [J041](2026-10-22-document-architecture-progress.md#j041), [J035](2026-10-22-document-architecture-progress.md#j035), [J013](2026-10-22-document-architecture-progress.md#j013), [J015](2026-10-22-document-architecture-progress.md#j015), [J017](2026-10-22-document-architecture-progress.md#j017), [J018](2026-10-22-document-architecture-progress.md#j018), [J020](2026-10-22-document-architecture-progress.md#j020), [J022](2026-10-22-document-architecture-progress.md#j022), [J023](2026-10-22-document-architecture-progress.md#j023), [J025](2026-10-22-document-architecture-progress.md#j025), [J026](2026-10-22-document-architecture-progress.md#j026).** Зафиксировать порядок: локальная транзакция frozen pending → удалённый checkpoint →
   API → локальная транзакция исхода/effects → удалённый checkpoint исхода → следующий reader effect.
   Сеть и git push не выполняются внутри SQL-транзакции.
 - [x] DA1.5. **Принято локально: [J036](2026-10-22-document-architecture-progress.md#j036), [J035](2026-10-22-document-architecture-progress.md#j035); прежние fault matrices — в журнале.** У checkpoint отдельная fatal ошибка сохранения. Она не попадает в общий delivery
@@ -377,7 +378,7 @@ DA6–DA7 не требуют предварительно включать но
   Неуспех до API означает ноль вызовов Telegram. Неуспех после API останавливает следующие эффекты.
   Проверить проброс через pipeline/phases, commands и collect: изоляция ошибок фаз не должна
   проглотить persistence failure и запустить другой reader sender в том же процессе.
-- [ ] DA1.6. **Частично: [J040](2026-10-22-document-architecture-progress.md#j040), [J015](2026-10-22-document-architecture-progress.md#j015), [J017](2026-10-22-document-architecture-progress.md#j017), [J018](2026-10-22-document-architecture-progress.md#j018), [J020](2026-10-22-document-architecture-progress.md#j020), [J022](2026-10-22-document-architecture-progress.md#j022), [J023](2026-10-22-document-architecture-progress.md#j023), [J025](2026-10-22-document-architecture-progress.md#j025), [J026](2026-10-22-document-architecture-progress.md#j026).** Все части multipart готовятся до первой попытки. Дочерняя часть получает реальный
+- [ ] DA1.6. **Частично: [J128](2026-10-22-document-architecture-progress.md#j128), failed legacy reply chains; [J040](2026-10-22-document-architecture-progress.md#j040), [J015](2026-10-22-document-architecture-progress.md#j015), [J017](2026-10-22-document-architecture-progress.md#j017), [J018](2026-10-22-document-architecture-progress.md#j018), [J020](2026-10-22-document-architecture-progress.md#j020), [J022](2026-10-22-document-architecture-progress.md#j022), [J023](2026-10-22-document-architecture-progress.md#j023), [J025](2026-10-22-document-architecture-progress.md#j025), [J026](2026-10-22-document-architecture-progress.md#j026).** Все части multipart готовятся до первой попытки. Дочерняя часть получает реальный
   parent из сохранённого receipt, затем exact reply target checkpoint'ится до её API-вызова.
   Группы сохраняют все publication IDs; release держится за прежнюю физическую часть/группу.
 - [x] DA1.7. [J007](2026-10-22-document-architecture-progress.md#j007). Каждый push состояния — CAS относительно подтверждённого SHA, из которого
@@ -439,7 +440,7 @@ DA2.1 и описание текущего профиля обязательны
 и retention могут выпускаться самостоятельно на текущей SQLite. При отложенном расширении
 задачи blob store отметить неприменимыми с основанием. Это допустимое завершение DA2.
 
-- [ ] DA2.1. **Частично: [J012](2026-10-22-document-architecture-progress.md#j012), [J039](2026-10-22-document-architecture-progress.md#j039).** Измерить объёмы реально потребляемых raw файлов, повторные байты, дневной прирост,
+- [ ] DA2.1. **Частично: [J012](2026-10-22-document-architecture-progress.md#j012), [J039](2026-10-22-document-architecture-progress.md#j039), [J094](2026-10-22-document-architecture-progress.md#j094) — fresh raw/reference footprint, actual state history и [текущий профиль](../reviews/2026-10-27-storage-profile.md). [J097](2026-10-22-document-architecture-progress.md#j097) — агрегаты будущих TextLoader reads в run reports. [J101](2026-10-22-document-architecture-progress.md#j101) — schema-aware catalogue/profile diagnostics. Полный исторический поток неизвестен; [J098](2026-10-22-document-architecture-progress.md#j098) — read-only сводка этих метрик с явным unknown legacy. Natural production daily profile, direct bypasses и расширение retention остаются.** Измерить объёмы реально потребляемых raw файлов, повторные байты, дневной прирост,
   размеры dump и времени backup/restore. Страты: Sejm, RCL, Senate, ELI, ZIP, Word, сканы.
   Читать существующий корпус; отсутствие raw bytes считать исключением. Сравнить варианты
   §1.2, сроки, сжатие и резервные копии; указать пределы экстраполяции из корпуса на живой поток.
@@ -447,32 +448,32 @@ DA2.1 и описание текущего профиля обязательны
   многократные checkpoint и временный dual write, согласно §1.4.
   Зафиксировать текущий состав/retention и результаты измерения. Расширение профиля, его бюджет
   и raw backend выбираются отдельно; отсутствие этого решения не блокирует совместимые изменения.
-- [ ] DA2.2. Реализовать content-addressed store для bounded bytes: проверка SHA/размера,
+- [ ] DA2.2. **Неприменимо при текущем профиле: пользователь отложил расширение хранения; blob store не реализуется. См. [J123](2026-10-22-document-architecture-progress.md#j123).** Реализовать content-addressed store для bounded bytes: проверка SHA/размера,
   запись временного файла, atomic rename и необходимая синхронизация диска, идемпотентный put,
   проверяемый get. Пользовательский filename не участвует в пути; ZIP traversal невозможен.
-- [ ] DA2.3. Ввести SQL-метаданные `artifacts`, `source_observations` и явные связи с делами/
+- [ ] DA2.3. **Частично: [J095](2026-10-22-document-architecture-progress.md#j095), reader-first source observations и deduplicated selection metadata в schema 52; [J096](2026-10-22-document-architecture-progress.md#j096), prefilter producer; [J099](2026-10-22-document-architecture-progress.md#j099), reader artifacts/SQL part refs; [J100](2026-10-22-document-architecture-progress.md#j100), capture complete-body metadata в shared loader/prefilter/pipeline. Standalone/прочие source producers остаются.** Ввести SQL-метаданные `artifacts`, `source_observations` и явные связи с делами/
   источниками. Поддержать many-to-many: одни байты в разных наблюдениях не теряют URL/роль/дату.
   Поля, по которым нужны uniqueness/ownership/GC, доступны SQL, а не спрятаны только в JSON.
   Неизменившееся содержимое наблюдений хранится один раз; отметка повторной проверки
   не требует очередной копии полного каталога/извлечения в dump.
-- [ ] DA2.4. Для материалов, включённых в принятую политику, сохранять bounded response до
+- [ ] DA2.4. **Условная raw-часть неприменима при текущем профиле; совместимый attempt/error metadata contract остаётся применимым и открытым. См. [J123](2026-10-22-document-architecture-progress.md#j123).** Для материалов, включённых в принятую политику, сохранять bounded response до
   extraction; судьбу повреждённых/unsupported файлов определить отдельным сроком/лимитом.
   Для оборванного по лимиту скачивания хранить попытку и причину, а не SHA якобы полного файла.
   HTTP-200 rejection HTML остаётся outage источника, не успешным нормативным документом.
-- [ ] DA2.5. Сохранять использованные официальные metadata/catalog snapshots или достаточное
+- [ ] DA2.5. **Частично: [J095](2026-10-22-document-architecture-progress.md#j095), адресуемые официальные document relations в новом reader; [J096](2026-10-22-document-architecture-progress.md#j096), prefilter запись на calling thread; остальные consumers открыты.** Сохранять использованные официальные metadata/catalog snapshots или достаточное
   адресуемое evidence их связи; не скачивать весь сайт. Не сохранять credentials/cookies/secrets.
   Писать durable метаданные и архив в согласованном порядке на calling thread.
-- [ ] DA2.6. Протокол двух хранилищ: сначала объект проверен и устойчиво доступен, потом SQL ref,
+- [ ] DA2.6. **Неприменимо: в текущем профиле нет второго постоянного blob store; протокол SQL+blob условен. См. [J123](2026-10-22-document-architecture-progress.md#j123).** Протокол двух хранилищ: сначала объект проверен и устойчиво доступен, потом SQL ref,
   потом checkpoint. Orphan после неуспешного SQL допустим и убирается GC; ссылка на ещё не
   сохранённый объект недопустима. Ошибка archive write не маскируется как обычное отсутствие текста.
-- [ ] DA2.7. Для production сравнить durable filesystem и объектный backend по измерениям.
+- [ ] DA2.7. **Неприменимо сейчас: выбор backend отложен пользователем; решение не запрашивается повторно. См. [J123](2026-10-22-document-architecture-progress.md#j123).** Для production сравнить durable filesystem и объектный backend по измерениям.
   Этот выбор нужен только если профиль предусматривает blob store. Временный кэш runner
   не называется постоянным архивом. Согласовать backend, доступ, backup, лимиты и ответственность;
   до этого production archive mode выключен.
-- [ ] DA2.8. Добавить archive mode: off / record без влияния на выбор / read-from-archive.
+- [ ] DA2.8. **Неприменимо при текущем профиле без raw archive; новые archive flags не вводятся. См. [J123](2026-10-22-document-architecture-progress.md#j123).** Добавить archive mode: off / record без влияния на выбор / read-from-archive.
   Record получает те же байты текущего чтения и не делает дополнительные HTTP/LLM-запросы.
   Ошибки/счётчики и пригодность конкретного snapshot для воспроизведения видны отдельно.
-- [ ] DA2.9. Проверить export/import manifest архива вместе с dump. Для restore сверить все refs
+- [ ] DA2.9. **Неприменимо как blob manifest/backup/GC: такого store и raw retention obligations сейчас нет. SQL restore и retained pending inputs остаются обязательными в DA5/DA6/DA8/DA10. См. [J123](2026-10-22-document-architecture-progress.md#j123).** Проверить export/import manifest архива вместе с dump. Для restore сверить все refs
   и hashes ожидаемых сохранённых объектов до запуска обработки. Pending/unknown work закрепляет
   необходимые для завершения входы. Reader history закрепляет результаты/содержание, а сроки
   удержания исходных raw задаёт профиль; публикация не удерживает все оригиналы бессрочно.
@@ -498,9 +499,9 @@ paid calls или объявления материалов архивирова
 **Изменяемые места:** `models/documents.py`, extractors PDF/Word/ODT/DOC,
 `StructuredTextExtractor`, `document_text.py`, `document_facts.py`, `services/documents.py`.
 
-- [ ] DA3.1. **Частично: [J042](2026-10-22-document-architecture-progress.md#j042), [J044](2026-10-22-document-architecture-progress.md#j044), [J047](2026-10-22-document-architecture-progress.md#j047).** Отделить раскрытие контейнеров/физическое извлечение от выбора юридического комплекта.
+- [ ] DA3.1. **Частично: [J042](2026-10-22-document-architecture-progress.md#j042), [J044](2026-10-22-document-architecture-progress.md#j044), [J047](2026-10-22-document-architecture-progress.md#j047); [J087](2026-10-22-document-architecture-progress.md#j087), чистая package policy поверх physical snapshot, совместимый facade сохранён.** Отделить раскрытие контейнеров/физическое извлечение от выбора юридического комплекта.
   Возвращать все наблюдённые части, member chain, parent/container/member SHA, отклонения и limits.
-- [ ] DA3.2. **Частично: [J043](2026-10-22-document-architecture-progress.md#j043), [J044](2026-10-22-document-architecture-progress.md#j044), [J046](2026-10-22-document-architecture-progress.md#j046), [J047](2026-10-22-document-architecture-progress.md#j047), [J048](2026-10-22-document-architecture-progress.md#j048), [J049](2026-10-22-document-architecture-progress.md#j049), PDF/Word body и OOXML notes.** Ввести стабильные в пределах extraction координаты блоков: PDF page/index,
+- [ ] DA3.2. **Частично: [J043](2026-10-22-document-architecture-progress.md#j043), [J044](2026-10-22-document-architecture-progress.md#j044), [J046](2026-10-22-document-architecture-progress.md#j046), [J047](2026-10-22-document-architecture-progress.md#j047), [J048](2026-10-22-document-architecture-progress.md#j048), [J049](2026-10-22-document-architecture-progress.md#j049), PDF/Word body и OOXML notes; [J117](2026-10-22-document-architecture-progress.md#j117), ODT body paths/rows/cells и exact legacy projection; [J119](2026-10-22-document-architecture-progress.md#j119), portable raw ODT/ZIP replay с independent XML-path checks; [J121](2026-10-22-document-architecture-progress.md#j121), explicit unknown DOC/standalone XML projections без fake coordinates. Полные Word XML/DOC origins и связывание facts с новыми blocks открыты.** Ввести стабильные в пределах extraction координаты блоков: PDF page/index,
   Word XML part + paragraph/table row/cell/note, ODT/DOC собственные адреса или явный unknown.
   Word не получает выдуманную пагинацию. Между версиями экстрактора ID блока может меняться.
   Старые `DocumentFact.block_id=part:N` сохраняют прежнюю схему: нынешний validator не допускает
@@ -508,14 +509,14 @@ paid calls или объявления материалов архивирова
   PDF page records собирать до legacy whitespace projection: split готовой строки теряет
   пустые крайние страницы. Для Word адрес XML/cell/note фиксировать внутри обхода `_WordMl`,
   до склейки строк и inline notes; координаты не восстанавливать из итогового plain text.
-- [ ] DA3.3. **Частично: [J046](2026-10-22-document-architecture-progress.md#j046), Word body order/table paths и явный legacy view; [J048](2026-10-22-document-architecture-progress.md#j048), [J049](2026-10-22-document-architecture-progress.md#j049) добавляют OOXML note origins и physical links, остальные форматы остаются.** Сохранить порядок, структуру таблиц, сноски и связь с местом вызова; указать view
+- [ ] DA3.3. **Частично: [J046](2026-10-22-document-architecture-progress.md#j046), Word body order/table paths и явный legacy view; [J048](2026-10-22-document-architecture-progress.md#j048), [J049](2026-10-22-document-architecture-progress.md#j049) добавляют OOXML note origins и physical links, [J117](2026-10-22-document-architecture-progress.md#j117): ODT table paths и явные unresolved views; DOC/отдельные ODT note origins остаются.** Сохранить порядок, структуру таблиц, сноски и связь с местом вызова; указать view
   tracked changes/fields и неподдержанные объекты. «Есть текст» не доказывает полное чтение.
   Не расширять поддержку форматов скрыто внутри механического переноса.
-- [ ] DA3.4. **Частично: [J043](2026-10-22-document-architecture-progress.md#j043), [J046](2026-10-22-document-architecture-progress.md#j046), PDF/Word manifests только в памяти.** Хранить `ExtractionResult`: input ref, format, extractor/code/dependency/options versions,
+- [ ] DA3.4. **Частично: [J043](2026-10-22-document-architecture-progress.md#j043), [J046](2026-10-22-document-architecture-progress.md#j046), PDF/Word manifests только в памяти; [J117](2026-10-22-document-architecture-progress.md#j117), то же для ODT.** Хранить `ExtractionResult`: input ref, format, extractor/code/dependency/options versions,
   canonical block manifest SHA, warnings/losses/physical coverage и состояние сохранности.
   Текст и блоки сохраняются по составу/retention DA2. Новая версия экстрактора создаёт новую
   запись без перезаписи прежней; доступность её содержимого определяется профилем хранения.
-- [ ] DA3.5. **Частично: [J043](2026-10-22-document-architecture-progress.md#j043), [J046](2026-10-22-document-architecture-progress.md#j046), PDF/Word.** Первым adapter поверх блоков воспроизводит прежнюю строку и нынешние selection
+- [ ] DA3.5. **Частично: [J043](2026-10-22-document-architecture-progress.md#j043), [J046](2026-10-22-document-architecture-progress.md#j046), PDF/Word; [J117](2026-10-22-document-architecture-progress.md#j117), ODT.** Первым adapter поверх блоков воспроизводит прежнюю строку и нынешние selection
   outcomes. Удаление бизнес-выбора из физического adapter — отдельная задача DA4.
 - [ ] DA3.6. **Частично: [J055](2026-10-22-document-architecture-progress.md#j055), SHA исходника/отправленных bytes и точная contiguous page map, primary analysis/batch и triage rejection; [J057](2026-10-22-document-architecture-progress.md#j057), amendments/supplement и amendment revisions. Хранение completed derivatives остаётся.** Разделить SHA полного PDF и exact derived bytes выбранных страниц/triage window.
   Состав и срок хранения обоих определяет DA2; обязательный незавершённый request не теряет вход.
@@ -536,22 +537,22 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
 **Изменяемые места:** `services/sources.py`, `services/documents.py`, `document_selection.py`,
 `document_bundle.py`, `document_versions.py`, `document_facts.py`, source-specific selectors.
 
-- [ ] DA4.1. Сделать общий `CandidateSet` из extraction parts и официальных source relations.
+- [ ] DA4.1. **Частично: [J087](2026-10-22-document-architecture-progress.md#j087), existing ExtractedParts используется чистой package policy; [J088](2026-10-22-document-architecture-progress.md#j088), общий transient CandidateSet для archive peers и loose files. Полная provenance/disposition persistence остаётся.** Сделать общий `CandidateSet` из extraction parts и официальных source relations.
   Сохранять рассмотренные/исключённые части и основание исключения; ZIP location/filename —
   свидетельство происхождения, а не достаточное доказательство роли/редакции.
-- [ ] DA4.2. Перенести комплектование из `_select_parts` и loose-URL пути в одну чистую политику.
+- [ ] DA4.2. **Частично: [J087](2026-10-22-document-architecture-progress.md#j087), package policy вынесена из physical adapter; [J088](2026-10-22-document-architecture-progress.md#j088), loose-file version choice и диагностика в том же pure module. Remaining fallback/composition и admissibility открыты.** Перенести комплектование из `_select_parts` и loose-URL пути в одну чистую политику.
   Источники продолжают знать официальные связи, достигнутые стадии и тип события. Generic
   loader не ветвится по RCL/Sejm/Senate. Сохранить узкую проверку чужого RCL ID до download.
-- [ ] DA4.3. Сначала сохранить текущие outcomes. Затем отдельно рассматривать равенство дат
+- [x] DA4.3. **Принято: [J087](2026-10-22-document-architecture-progress.md#j087)/[J088](2026-10-22-document-architecture-progress.md#j088), raw/cached parity и meaningful mutations; изменения эвристик не включены и требуют отдельной приёмки.** Сначала сохранить текущие outcomes. Затем отдельно рассматривать равенство дат
   загрузки, folder-family и имя как эвристики кандидатов: расширение пула/смена выбора —
   поведенческое изменение с отдельным replay и записью принятого расхождения.
-- [ ] DA4.4. Решение включает question/policy version, membership, role, version, completeness,
+- [ ] DA4.4. **Частично: [J092](2026-10-22-document-architecture-progress.md#j092), совместимый optional policy-version reader; [J093](2026-10-22-document-architecture-progress.md#j093), version новых source-selection decisions и text/scan/metadata propagation. [J095](2026-10-22-document-architecture-progress.md#j095), [J096](2026-10-22-document-architecture-progress.md#j096), [J102](2026-10-22-document-architecture-progress.md#j102), [J103](2026-10-22-document-architecture-progress.md#j103), [J104](2026-10-22-document-architecture-progress.md#j104) — source metadata в prefilter, primary analysis, review и generic secondary readers, отдельно от input fitting/paid identity; [J105](2026-10-22-document-architecture-progress.md#j105) добавляет unverified physical source receipt для Senate special path, без claim legal admission. Полная decision provenance остаётся открытой.** Решение включает question/policy version, membership, role, version, completeness,
   facts/quotes, нормативные связи, support applicability и причины ожидания/конфликта.
   Минимальная дата или PDF preference не заменяют доказательство последней полной редакции.
-- [ ] DA4.5. Ввести чистую operation-specific admissibility рядом с selection. Не требовать
+- [x] DA4.5. **Принято: [J089](2026-10-22-document-architecture-progress.md#j089)/[J090](2026-10-22-document-architecture-progress.md#j090) — prefilter/analysis; [J091](2026-10-22-document-architecture-progress.md#j091) — review policy и [матрица операций](../reviews/2026-10-27-document-admission.md).** Ввести чистую operation-specific admissibility рядом с selection. Не требовать
   `selected` повсюду: у принятого текста может не быть собственной пометы `Projekt z dnia`.
   Сохранить нынешние metadata/scan/`unverified` пути до отдельного изменения политики.
-- [ ] DA4.6. Проверить общую матрицу для prefilter, analysis, comparison, amendments и reviews.
+- [x] DA4.6. **Принято: [J089](2026-10-22-document-architecture-progress.md#j089)/[J090](2026-10-22-document-architecture-progress.md#j090)/[J091](2026-10-22-document-architecture-progress.md#j091) — shadow до activation, frozen legacy parity, real-cache/hash replay, native/public contexts и Senate contract.** Проверить общую матрицу для prefilter, analysis, comparison, amendments и reviews.
   Сначала сохранять proposed decision без влияния; применять после приёмки соответствующей операции.
 - [ ] DA4.7. Адресовать выбранный нормативный комплект как `DocumentEdition`, отдельно от
   физических representations. Хранить доказанные связи `representation_of`, `supersedes`,
@@ -585,7 +586,7 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
 **Изменяемые места:** `sections.py`, `keywords.py`/excerpts, бюджет текста, `_load_text`,
 `_fit_to_budget`, `selection_for_input`, batch contexts/meta, provider request preparation.
 
-- [ ] DA5.1. **Частично: [J045](2026-10-22-document-architecture-progress.md#j045), [J050](2026-10-22-document-architecture-progress.md#j050), [J051](2026-10-22-document-architecture-progress.md#j051), trim/excerpts/budget maps и runtime initial-budget coverage.** Ввести `PreparedInput` с ordered segments: extraction/block ref, source span,
+- [ ] DA5.1. **Частично: [J045](2026-10-22-document-architecture-progress.md#j045), [J050](2026-10-22-document-architecture-progress.md#j050), [J051](2026-10-22-document-architecture-progress.md#j051), trim/excerpts/budget maps и runtime initial-budget coverage; [J125](2026-10-22-document-architecture-progress.md#j125), transient text manifest с part origins и точной emitted identity в optional offline replay. Physical refs, context/options и runtime persistence остаются.** Ввести `PreparedInput` с ordered segments: extraction/block ref, source span,
   transformation, emitted span, роль, losses. Зафиксировать идентичность итоговой строки
   и контекста; их payload хранится по DA2 с обязательной защитой незавершённых запросов.
   Для сгенерированного разделителя/инструкции указать system origin, а не фиктивную цитату источника.
@@ -599,7 +600,7 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
 - [x] DA5.3. [J045](2026-10-22-document-architecture-progress.md#j045). Исправить регрессию DA0.4: bill retained range не включает удалённый consultation
   appendix. Проверить повторяющийся фрагмент, склейку, footnotes, tables и несколько excerpts;
   одинаковый текст в другом месте не подтверждает чтение нужной нормативной части.
-- [ ] DA5.4. Разделить extraction coverage, selection completeness и actual input coverage.
+- [ ] DA5.4. **Частично: [J124](2026-10-22-document-architecture-progress.md#j124), known input map проверяет required ranges собственного part, duplicate support text не доказывает чтение пропущенного bill. Три независимых coverage views и остальные paths открыты.** Разделить extraction coverage, selection completeness и actual input coverage.
   Потерянное обязательное приложение снимает доказанную полноту после всех сокращений.
   Текст OSR/обоснования не становится нормативным baseline; предупреждение о неизвестной
   применимости поддержки доходит в prompt.
@@ -626,28 +627,36 @@ source disappearance. Изменение normalization/digest — отдельн
 **Изменяемые места:** `models/analysis.py`, `models/reviews.py`, `models/batch.py`,
 `services/analysis.py`, `document_reviews.py`, `analysis_records.py`, repository/retention.
 
-- [ ] DA6.1. Добавить immutable `computation_results` и `result_applications` с uniqueness
+- [x] DA6.1. **Реализовано: [J061](2026-10-22-document-architecture-progress.md#j061) — immutable primary results; [J062](2026-10-22-document-architecture-progress.md#j062)/[J063](2026-10-22-document-architecture-progress.md#j063) — primary applications; [J066](2026-10-22-document-architecture-progress.md#j066)/[J068](2026-10-22-document-architecture-progress.md#j068) — остальные purposes; [J069](2026-10-22-document-architecture-progress.md#j069) — target-aware application identity и совместимый reader. Инфраструктура и uniqueness готовы; подключение secondary producers остаётся DA6.2/DA6.3.** Добавить immutable `computation_results` и `result_applications` с uniqueness
   provider item/accounting и application identity. Большие входы/ответы хранить по профилю DA2:
   ссылка на архив допустима только для действительно сохранённого объекта;
   статус валидации и версия schema сохраняются. Не создавать второй batch submitter.
-- [ ] DA6.2. В одной локальной транзакции collect сохранить raw/validated result ref,
+- [ ] DA6.2. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), primary collect; [J062](2026-10-22-document-architecture-progress.md#j062), atomic projection; [J063](2026-10-22-document-architecture-progress.md#j063), RCL/linking checkpoints; [J064](2026-10-22-document-architecture-progress.md#j064), Sejm analysis/observation/delivery в одном checkpoint; [J066](2026-10-22-document-architecture-progress.md#j066), secondary history/memo/consumed и amendment revision; [J068](2026-10-22-document-architecture-progress.md#j068), review result/input/memo/consumed; [J070](2026-10-22-document-architecture-progress.md#j070), atomic applications к новым StatusChange и поздним amendments. [J071](2026-10-22-document-architecture-progress.md#j071): остальные активные secondary projection checkpoints. [J115](2026-10-22-document-architecture-progress.md#j115): government rollover и known primary source associations атомарны без rekey paid input. [J126](2026-10-22-document-architecture-progress.md#j126): current review receipts переносятся атомарно с government row при точном совпадении original result/target. Остальные secondary rollover, applicability history и raw response archive открыты.** В одной локальной транзакции collect сохранить raw/validated result ref,
   usage accounting и consumed checkpoint. Применение к проекции — отдельная идемпотентная
   транзакция, учитывающая нынешние generation, skip/reset и ownership; при tracking сохранить
   атомарность processed observation и delivery work.
-- [ ] DA6.3. Добавить совместимые result refs к актуальным analysis/review полям Bill.
+- [ ] DA6.3. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), nullable `AnalysisRecord.computation_id`; [J063](2026-10-22-document-architecture-progress.md#j063), primary projection refs при tracking/linking; [J065](2026-10-22-document-architecture-progress.md#j065), совместимый secondary reader и nullable refs. [J066](2026-10-22-document-architecture-progress.md#j066), refs пяти secondary purposes в memo и delivery. Размеры измерены, старые записи не backfilled; [J067](2026-10-22-document-architecture-progress.md#j067), reader compact review/input refs; [J068](2026-10-22-document-architecture-progress.md#j068), review writer и memo refs; [J070](2026-10-22-document-architecture-progress.md#j070), status-change targets без backfill старых supplements. [J071](2026-10-22-document-architecture-progress.md#j071): reviews/joint/name/revision/command targets. [J115](2026-10-22-document-architecture-progress.md#j115): existing primary refs переживают government rollover с new-owner receipt. [J126](2026-10-22-document-architecture-progress.md#j126): current review refs сохраняют original paid owner и new-owner receipt. Остальные secondary rollover и переход consumers к refs открыты.** Добавить совместимые result refs к актуальным analysis/review полям Bill.
   Dual write начинается с основного анализа; затем amendments/supplement/joint/reviews/
   explanation. Для secondary прежний статус Bill не меняется.
   По §1.4 измерить временную избыточность проекций/memo/results; постоянная история применения
   хранит ссылки и исход, а не ещё один полный контекст и оплаченный ответ на каждый reuse.
-- [ ] DA6.4. Сохранить memo как индекс переиспользования, не единственную историю оплаченного
-  ответа. Request fingerprint и policy reuse — разные сущности; смена prompt сама по себе
+  [J075](2026-10-22-document-architecture-progress.md#j075) добавляет compatible reader и collector
+  bridge для original input binding.
+  [J076](2026-10-22-document-architecture-progress.md#j076) включает binding для новых intents
+  всех batch purposes, сохраняя unknown legacy и отдельные collection/application coordinates.
+- [ ] DA6.4. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), новые primary results переживают memo cleanup; [J062](2026-10-22-document-architecture-progress.md#j062), memo reuse в primary service создаёт только короткий application ref; [J066](2026-10-22-document-architecture-progress.md#j066), secondary results переживают memo cleanup и reuse сохраняет ID; [J068](2026-10-22-document-architecture-progress.md#j068), то же для reviews без full input context; [J072](2026-10-22-document-architecture-progress.md#j072), RCL names после rehome/cleanup используют actual original work и paid history. [J083](2026-10-22-document-architecture-progress.md#j083): совместимый reader компактных source associations; [J084](2026-10-22-document-architecture-progress.md#j084): primary producer в общей projection transaction, quiet reuse не теряет промежуточные pointers и не добавляет повторных rows. Остальные scopes и legacy import открыты.** Сохранить memo как индекс переиспользования, не единственную историю оплаченного
+  ответа. [J074](2026-10-22-document-architecture-progress.md#j074): amendments/supplement/joint/name читают exact retained answer после memo cleanup в текущем scope. Request fingerprint и policy reuse — разные сущности; смена prompt сама по себе
   не инвалидирует старые карточки и не инициирует платные вызовы.
+  [J077](2026-10-22-document-architecture-progress.md#j077): explanation использует caller-owned
+  snapshot и recorded input binding.
+  [J078](2026-10-22-document-architecture-progress.md#j078): primary/reanalysis
+  получают caller snapshots; legacy unbound input остаётся unknown, force bypass сохраняется.
   Нынешний `_unchanged()` меняет pointer/source_checked_at: в новой истории это отдельное
   подтверждение применимости к наблюдению, а не перезапись immutable оплаченного результата.
-- [ ] DA6.5. Legacy import сохраняет существующие exact данные с `legacy` provenance.
+- [ ] DA6.5. **Частично: [J086](2026-10-22-document-architecture-progress.md#j086), read-only exact-value inventory и измерение дублей/объёма; импорт и legacy provenance reader ещё не включены.** Legacy import сохраняет существующие exact данные с `legacy` provenance.
   Не достраивать отсутствующие raw/PreparedInput из текущего URL. Из старого batch можно
   импортировать проверяемый сохранённый text, отдельно отметив отсутствие исторических байтов.
-- [ ] DA6.6. Retention разделяет operational cache, audit/result history и закреплённые blobs.
+- [ ] DA6.6. **Частично: [J073](2026-10-22-document-architecture-progress.md#j073), primary handoff сохраняет отдельные secondary subjects; перенос cache ownership и остальные retention dependencies открыты.** Retention разделяет operational cache, audit/result history и закреплённые blobs.
   Срок архивной истории и стоимость выбрать по DA2; нельзя случайно наследовать 90/180 дней.
   Pending work, публикации и revision links защищают нужные результаты/входы согласно их
   назначению; бессрочная история не означает бессрочное хранение каждого raw.
@@ -666,21 +675,21 @@ Bill и кэша. Повтор записанного результата да�
 **Изменяемые места:** `models/observations.py`, `services/amendments.py`, `posting.py`,
 `message_parts.py`, formatter, publication repository и retention.
 
-- [ ] DA7.1. Ввести `content_versions`: immutable event/source/application refs, язык,
+- [ ] DA7.1. **Частично: [J109](2026-10-22-document-architecture-progress.md#j109), snapshot/version/binding history для одиночных amendments status updates и revisions; полные source/application refs и остальные kinds остаются.** Ввести `content_versions`: immutable event/source/application refs, язык,
   semantic content и exact rendered payload/formatter version, предыдущая версия и причина.
   Physical Publication ссылается на content version; существующие IDs не пересоздаются.
   Общие source/bill/change snapshots не копируются в каждую версию содержания; переход к refs
   требует той же гарантии frozen recovery и учёта размера, что в §1.4.
-- [ ] DA7.2. Сохранить оригинальное содержание отдельно от будущей revision и operational
+- [ ] DA7.2. **Частично: [J109](2026-10-22-document-architecture-progress.md#j109), original frozen context переживает cleanup без current Bill; [J112](2026-10-22-document-architecture-progress.md#j112), новые targets не копируют unfinished work из operational payload. Полный PreparedInput/comparison history остаётся.** Сохранить оригинальное содержание отдельно от будущей revision и operational
   retry plan. Исправление использует старые bill/change/date, исходный message target и
   сохранённый PreparedInput/comparison, без запроса актуального Bill для замены прошлого.
-- [ ] DA7.3. Сначала перевести существующий single-message `/amendments`; защитить original
+- [x] DA7.3. **Принято: [J109](2026-10-22-document-architecture-progress.md#j109), single-message capture и post-retention /amendments, guards для unknown/repeated force.** Сначала перевести существующий single-message `/amendments`; защитить original
   content от retention после очистки delivery payload. Незавершённый/uncertain revision
   нельзя supersede повторной командой или сменой модели.
-- [ ] DA7.4. Затем отдельно спроектировать grouped/multipart/digest revisions: показать
+- [x] DA7.4. **Спроектировано: [J113](2026-10-22-document-architecture-progress.md#j113), [контракт](../reviews/2026-10-28-compound-content-revisions.md); activation новых producers остаётся отдельной реализацией с отказом до приёмки.** Затем отдельно спроектировать grouped/multipart/digest revisions: показать
   идентичность изменяемого содержания, все части и подтверждение результата. Пока этот
   контракт не принят и не проверен, прежний безопасный отказ сохраняется.
-- [ ] DA7.5. `/delivery` и планируемый read-only просмотр истории показывают original/current
+- [ ] DA7.5. **Частично: [J110](2026-10-22-document-architecture-progress.md#j110), read-only offline history/physical confirmation inspector; [J111](2026-10-22-document-architecture-progress.md#j111), body-free /delivery references и общая confirmation/context policy приняты для текущего single-message scope; расширение history kinds/source refs остаётся.** `/delivery` и планируемый read-only просмотр истории показывают original/current
   versions, их источники, physical attempts и operator decisions. Новые данные не превращают
   неподтверждённое редактирование в `sent`.
 
@@ -696,16 +705,16 @@ Bill и кэша. Повтор записанного результата да�
 Общее ядро не является предварительным условием архива или batch history. Текущий
 `DocumentWork` намеренно узкий; сходство нескольких полей ещё не доказывает общую семантику.
 
-- [ ] DA8.1. Сравнить минимум два реальных потребителя — поздний Senate документ и review:
+- [x] DA8.1. **Принято: [J079](2026-10-22-document-architecture-progress.md#j079), [сравнение](../reviews/2026-10-27-unfinished-work.md).** Сравнить минимум два реальных потребителя — поздний Senate документ и review:
   identity, immutable baseline, dependencies, outage, retry budget/backoff, terminal outcomes,
   source refresh, batch intent ownership и завершение effects. Записать различия.
-- [ ] DA8.2. Если общий жизненный цикл подтверждён, выделить `WorkItem` для identity,
+- [x] DA8.2. **Принято: [J079](2026-10-22-document-architecture-progress.md#j079), отказ от универсального scheduler; существующие batch/result/application/publication owners сохранены, ownership diagnostics продолжается в DA10.** Если общий жизненный цикл подтверждён, выделить `WorkItem` для identity,
   immutable inputs/dependencies, next_at, attempts, cause и result/application refs.
   Purpose handlers сохраняют собственные правила и типизированный контекст. Если нет —
   ограничиться общими ownership refs и диагностикой, зафиксировав отказ от универсализации.
-- [ ] DA8.3. Перенести один потребитель через адаптер чтения старого состояния, затем второй.
+- [ ] DA8.3. **Неприменимо при решении J079 против нового scheduler; перенос кода не заявлен выполненным.** Перенести один потребитель через адаптер чтения старого состояния, затем второй.
   В каждый момент у задачи один владелец и один submit path; dual run не создаёт два intents.
-- [ ] DA8.4. Упростить retention только после проверки зависимостей всех потребителей:
+- [ ] DA8.4. **Частично: [J079](2026-10-22-document-architecture-progress.md#j079), два потребителя и pinned legacy inventory проверены, guards сохранены. Полная dependency inventory и допустимость упрощения остаются отдельной работой.** Упростить retention только после проверки зависимостей всех потребителей:
   старый guard не удаляется, пока legacy work не исчерпан или не мигрирован доказуемо.
 
 **Проверки:** сохранённые незавершённые work до обновления, двойной запуск, late material,
@@ -746,15 +755,15 @@ flags ради различающихся контрактов. Отказ от 
 
 ### 10.1. Сквозная диагностика
 
-- [ ] DA10.1. Добавить структурированные `run_id`, bill key, observation/artifact/extraction/
+- [ ] DA10.1. **Частично: [J114](2026-10-22-document-architecture-progress.md#j114), scoped run/command context и bounded structured IDs для существующих source/result/application/content/publication writes. Extraction/PreparedInput IDs отсутствуют в нынешнем storage profile и не синтезируются; полная цепочка зависит от DA3/DA5.** Добавить структурированные `run_id`, bill key, observation/artifact/extraction/
   selection/input/result/application/content/publication IDs в логи. На первом этапе
   неприменимые поля отсутствуют; идентификаторы не извлекаются обратно из prose сообщения.
   В SQL-отчётах сохранять нужные IDs/краткие причины; подробные traces ограничивать сроком
   и объёмом, не копировать в `runs.report_json` полные документы и каждый повторный проход.
-- [ ] DA10.2. **Частично: [J060](2026-10-22-document-architecture-progress.md#j060), offline request checksum/result refs doctor, unknown legacy и сохранность snapshot.** Добавить read-only doctor для missing/corrupt blobs, dangling refs/work,
+- [ ] DA10.2. **Частично: [J060](2026-10-22-document-architecture-progress.md#j060), offline request checksum/result refs doctor, unknown legacy и сохранность snapshot; [J080](2026-10-22-document-architecture-progress.md#j080), общий checkpointed reader и document/review ownership/dependency doctor; [J081](2026-10-22-document-architecture-progress.md#j081), computation/application identities и известные projection refs; [J082](2026-10-22-document-architecture-progress.md#j082), presence inventory известных targets с сохранением opaque/исторических границ. [J085](2026-10-22-document-architecture-progress.md#j085): schema-51 source associations, identity и retained-result edges без revalidation current owner/source. [J098](2026-10-22-document-architecture-progress.md#j098): schema-52 source-history identities/refs и download-profile readers, без проверки current source contents. [J101](2026-10-22-document-architecture-progress.md#j101): schema-53 artifact metadata и exact outer-body refs; unavailable legacy tables отделены от known empty. [J106](2026-10-22-document-architecture-progress.md#j106): reader-first requested-URL/complete-body receipts, [J107](2026-10-22-document-architecture-progress.md#j107): caller-owned producer для known complete responses, включая parser failures при finish-run. [J108](2026-10-22-document-architecture-progress.md#j108): read-only receipt identity/parent/size validation и отдельный URL/body inventory. [J110](2026-10-22-document-architecture-progress.md#j110): editorial history identities/parents, frozen semantic bindings и confirmation/audit diagnostics. Blob coverage и полная dependency validation остаются.** Добавить read-only doctor для missing/corrupt blobs, dangling refs/work,
   duplicate application, stale generation, orphaned batch, missing receipt и archive coverage.
   Ремонт и повтор отправки не выполняются doctor автоматически.
-- [ ] DA10.3. Измерять возраст очередей по причинам, доли waiting/ambiguous/unsupported/unknown
+- [ ] DA10.3. **Частично: [J122](2026-10-22-document-architecture-progress.md#j122), explicit-clock read-only ages document/review owners, unknown timestamps и terminal exclusions; остальные очереди, причины/coverage и checkpoint costs открыты.** Измерять возраст очередей по причинам, доли waiting/ambiguous/unsupported/unknown
   coverage, missing required parts, cache reuse и стоимость checkpoint/archive. `/status` и
   существующие отчёты использовать прежде новой системы мониторинга.
 - [ ] DA10.4. Разделить observed latency и source latency: время от нашего обнаружения до
@@ -799,9 +808,9 @@ compatibility reader. «Выключить флаг» недостаточно �
 
 ### 10.4. Отдельная production-приёмка
 
-- [ ] DA10.5. Перед выпуском сверить actual deployment/flags и восстановить изолированную
+- [ ] DA10.5. **Частично: [J116](2026-10-22-document-architecture-progress.md#j116), actual workflow code/allowlisted flags и fresh schema55 state проверены на isolated restore. Natural file-family/purpose coverage и будущие flags остаются отдельными gates.** Перед выпуском сверить actual deployment/flags и восстановить изолированную
   копию актуального state. Ничего не включать по историческому разрешению для другой цели.
-- [ ] DA10.6. Для новой архитектурной записи включить ограниченный наблюдаемый участок,
+- [ ] DA10.6. **Частично: [J094](2026-10-22-document-architecture-progress.md#j094), реальный сохранённый metadata-only Wykaz analysis → result/collection/projection/publication snapshot. [J106](2026-10-22-document-architecture-progress.md#j106): natural file RCL source→paid result→frozen publication `sent` подтверждён по DB, без независимой Telegram/legal проверки. Остальные source families/file paths не объявлены принятыми.** Для новой архитектурной записи включить ограниченный наблюдаемый участок,
   сохранить old/candidate outcomes и проверить реальные saved queues; выбор участка определяется
   наличием типичного материала, а не удобным положительным результатом.
 - [ ] DA10.7. Не называть принятой source family/purpose, пока по ней нет завершённого цикла:

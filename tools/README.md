@@ -74,6 +74,56 @@ arguments/input. `recorded` is not a full-state health verdict. Blob coverage, s
 generation ownership and immutable result/application history remain outside this first doctor.
 Payload and legal text are not copied into the report.
 
+## Unfinished-work doctor
+
+```bash
+uv run --offline --frozen python -m tools.work_doctor \
+  --database /path/to/checkpointed-copy.db --output "$PWD/out/doctor/work.json"
+```
+
+Both doctors use `tools.sqlite_snapshot` for the same immutable reader, journal refusal and
+before/after checksum check. The work report lists document/review owners, recorded times,
+attempts, frozen-input availability, linked publication states and owner memo counts. It detects
+missing bill/change dependencies, conflicting owners/schedules, invalid saved JSON and duplicate
+review identities. Missing legacy snapshots or publication links are warnings; keys and inputs
+are never reconstructed. Empty legacy review ownership remains visible because it can still
+protect memos under the current retention rules.
+
+The report contains no legal context or provider payload. It does not refresh sources, evaluate
+current ELI applicability, repair state or submit work. Linked publications do not prove the
+configured channel or revision eligibility. Owner memo counts overlap and cannot be added or
+used as a deletion list. Exit codes match the request doctor; no saved owner rows means `not_run`.
+
+## Computation graph doctor
+
+```bash
+uv run --offline --frozen python -m tools.computation_doctor \
+  --database /path/to/checkpointed-copy.db --output "$PWD/out/doctor/computations.json"
+```
+
+This uses the same checkpointed reader and the saved-record walker shared with request doctor.
+It validates normalized computation/application records against their SQL identities and follows
+known result refs in current/ready bills, reviews, memos, status changes, frozen deliveries,
+document work and batch metadata. Missing results, inconsistent recorded request SHA and applying
+a failed result are errors. It preserves the distinction between original input, collection owner
+and application target, including term/generation changes and free reuse.
+
+Schema-51 source associations are validated against SQL identity and their retained result. A
+missing/failed result, invalid observation or damaged table is an error. Schema 50 may omit the
+new table. Historical source associations do not require a current owner and do not certify
+legal applicability, archived bytes or URL availability. Reports emit row refs, not source metadata.
+
+Known status-change/publication/command targets get a read-only row-presence observation by their
+recorded ID. A missing row/table is a warning. Joint, mnemonic and review targets show current
+owner presence; a missing historical owner does not invalidate the old receipt. Current slot
+contents are not compared to historical applications. Unsupported kinds/ref formats remain
+opaque, and opaque refs are not echoed into the report.
+
+Legacy refs/checksums stay unknown. These observations do not execute work, compare receipts to
+today's generation, or establish legal applicability, billing or complete state health. The report
+contains identities and links without copying answers or legal context. Exit codes match the
+other doctors; absent required tables or no observed records produce `not_run`.
+
 ## Exact scan-input windows
 
 ```bash
@@ -291,3 +341,110 @@ role, file validity or scan/text coverage. Research derivatives, cached text, th
 Senate HTML and ELI metadata are outside this raw-file measurement. Retention, raw compression,
 backup replication, daily growth and backend cost need separate measurements. No archive is
 created, no storage policy changes, and no network, model or production database is used.
+
+## Legacy history inventory
+
+```bash
+uv run --offline --frozen python -m tools.legacy_history \
+  --database /path/to/checkpointed-copy.db --output "$PWD/out/doctor/legacy-history.json"
+```
+
+This reads the shared saved-record catalogue, including frozen work and batch input snapshots.
+It groups exact JSON values, preserving unknown fields and the distinction between absent/null
+values, and measures canonical JSON/gzip sizes. Only hashes, sizes and source refs are reported;
+answer bodies are not emitted or imported. Recorded computation refs are observed without assuming
+paid origin. Batch receipt presence does not imply that its answer body survives, and memo keys
+are not joined to receipts to guess that identity. Missing source tables remain explicit.
+Exit codes are 0 for recorded inventory, 1 for invalid data/change during reading, 2 for no records
+or batch receipts. This is a storage measurement, not a selected archive or deletion policy.
+
+## Operation-specific admissibility shadow replay
+
+```bash
+uv run --offline --frozen python -m tools.corpus_runs run \
+  --root "$PWD/out/corpus/runs" --id admission-baseline --suite admissibility \
+  --corpus /path/to/lexinform-corpus
+```
+
+This records proposed prefilter/analysis modes from bounded gzip text caches across the declared
+families. Page counts 0/1/20 are counterfactual probes; selection remains unverified. It infers no
+historical pages, raw input or legal completeness and does not activate a runtime policy. Empty,
+unreadable and over-limit caches remain explicit observations. Input/code checksums, immutable
+outputs and before/after comparison use the common registry. See the shadow acceptance in
+[J089](../docs/plans/2026-10-22-document-architecture-progress.md#j089).
+
+Use `--suite review-admissibility` for the same bounded reader and guarded run contract with
+`review-read-v1`. Its nine role probes and page counts are counterfactual; it does not infer
+historical source roles or claim legal completeness. Expected-digest, oversize and blocked-selection
+conditions are qualified separately by unit/public-consumer cases. See the
+[operation matrix](../docs/reviews/2026-10-27-document-admission.md) and
+[J091](../docs/plans/2026-10-22-document-architecture-progress.md#j091).
+
+## Recorded physical source footprint
+
+```bash
+uv run --offline --frozen python -m tools.measure_referenced_files \
+  --database /path/to/checkpointed-copy.db \
+  --inventory /path/to/available-raw-inventory.json \
+  --output "$PWD/out/referenced-files.json"
+```
+
+The input inventory is a version-1 `measure_corpus_files` manifest, with exact SHA/size/path/family
+rows. The J094 measurement adds catalogued Senate originals with the existing `senate_sources`,
+`digest_file` and `totals` helpers; it preserves the five-family inventory separately.
+This reader uses the shared saved-record walker and immutable SQLite snapshot guard, including
+encoded bill snapshots, known computation records and unpaid selection history. It counts explicit physical fields, uses
+outer-container SHA for archive members, and keeps text/law/legacy scan digests out of raw identity.
+Source/inventory checksums and code fingerprints are preserved; bodies/URLs are not emitted.
+
+An inventory match is availability at its measurement time, not a production archive, complete
+download log or legal completeness verdict. Unknown/unmatched references stay explicit. Scan
+manifests account for source and input sizes separately without claiming retained bytes. Empty
+scope returns `not_run`; size conflicts or malformed saved data fail the report. Outputs cannot
+replace earlier artifacts or enter the declared corpus. See the
+[storage profile](../docs/reviews/2026-10-27-storage-profile.md) and
+[J094](../docs/plans/2026-10-22-document-architecture-progress.md#j094).
+
+
+## Source history doctor
+
+```bash
+uv run --offline --frozen python -m tools.source_history_doctor \
+  --database /path/to/checkpointed-copy.db --output "$PWD/out/source-history.json"
+```
+
+Checks canonical selection/observation IDs, SQL identity columns and the recorded selection refs.
+Schema-53 artifact metadata is checked for valid identity/size/time and exact outer-body part links;
+missing artifact tables are damage only from schema 53 onward. Unlinked artifacts are counted.
+Schema 51 may lack these tables; missing schema-52 tables are damage. Historical observations do
+not require a current Bill or a fresh source fetch. Unreferenced metadata is an inventory count,
+not a GC decision. No bodies, source URLs or evidence quotes are emitted. Exit codes: 0 for recorded
+scope, 1 for errors, 2 for no observed history. The common immutable snapshot guard refuses a live
+WAL/journal, and exclusive outputs preserve earlier evidence.
+
+## Document download profile
+
+```bash
+uv run --offline --frozen python -m tools.document_read_profile \
+  --database /path/to/checkpointed-copy.db --output "$PWD/out/document-reads.json"
+```
+
+Aggregates known `RunReport.document_reads` by host and run-start day in UTC. Unknown legacy reports,
+absent report payloads, unsupported metric versions and measured zero remain distinct. A naive or
+missing recording date is grouped as unknown. Incomplete metric objects fail rather than receive
+zero defaults; reports contain no source bodies or URLs. Exit codes: 0 for measured scope, 1 for
+invalid data, 2 for no supported measurements.
+
+A separate artifact catalogue reports known unique complete-body bytes and the UTC day of first
+recording. Missing tables remain unavailable; an existing empty catalogue is measured zero. These
+metadata do not establish retained bytes, original download dates or historical download demand.
+
+Completed-response bytes exclude wire overhead and unknown partial/refused bytes. Summed per-run
+distinct bytes cannot establish cross-run distinct archive size. Direct gateway reads and
+standalone CLI work outside the pipeline remain outside scope; no retention/backend or file download
+is chosen. See [J098](../docs/plans/2026-10-22-document-architecture-progress.md#j098).
+
+
+Typed diagnostic modules are explicit targets in `pyproject.toml` alongside `src` and `tests`.
+When adding one, include its file in that list so `uv run mypy` checks the tool body directly;
+importing a tool from a typed test is not a substitute for checking its own implementation.

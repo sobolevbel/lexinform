@@ -9,19 +9,29 @@ the Sejm moves on.
 import logging
 import time
 from collections.abc import Callable, Sequence
+from contextlib import ExitStack
 from datetime import datetime, timedelta
 from typing import Literal
 
 from pydantic import BaseModel
 
 from lexinform.errors import ServiceUnavailableError, StateCheckpointError
+from lexinform.log_context import log_context
 from lexinform.logging_setup import MemoryLogHandler
 from lexinform.models import PrefilterRejection, RunMode, RunReport, merge_usage
-from lexinform.ports import BillRepository, Clock, RunNotifier
+from lexinform.ports import (
+    BillRepository,
+    Clock,
+    DocumentArtifactObserver,
+    DocumentFileReadObserver,
+    DocumentReadMonitor,
+    RunNotifier,
+)
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.commands import CommandService
 from lexinform.services.digest import DigestService
 from lexinform.services.discovery import BillDiscoveryService
+from lexinform.services.document_history import record_artifact_reads, record_artifacts
 from lexinform.services.publishing import PublishingService
 from lexinform.services.rcl_discovery import RclDiscoveryService
 from lexinform.services.terms import TermResolver
@@ -90,8 +100,14 @@ class DailyPipeline:
         analysis_memo_retention_days: int = 180,
         pre_print: bool = True,
         full_track_weekday: int | None = 0,
+        document_reads: DocumentReadMonitor | None = None,
+        document_artifacts: DocumentArtifactObserver | None = None,
+        document_file_reads: DocumentFileReadObserver | None = None,
     ) -> None:
         self._repo = repo
+        self._document_reads = document_reads
+        self._document_artifacts = document_artifacts
+        self._document_file_reads = document_file_reads
         self._discovery = discovery
         self._analysis = analysis
         self._publishing = publishing
@@ -129,6 +145,10 @@ class DailyPipeline:
 
     def run(self, opts: RunOptions) -> RunReport:
         """Record phase outcomes and stop the run when its durable state checkpoint fails."""
+        with ExitStack() as trace:
+            return self._run(opts, trace)
+
+    def _run(self, opts: RunOptions, trace: ExitStack) -> RunReport:
         started = self._clock.now()
         report = RunReport(
             started_at=started,
@@ -139,6 +159,8 @@ class DailyPipeline:
         captured = MemoryLogHandler()
         captured.install()
         run_id: int | None = None
+        if self._document_reads is not None:
+            self._document_reads.reset_read_metrics()
         self._analysis.start_run(dry_run=opts.dry_run)
         self._publishing.start_run()
         if self._digest is not None:
@@ -149,6 +171,7 @@ class DailyPipeline:
             if opts.dry_run:
                 self._repo.begin()
             run_id = self._repo.start_run(report)
+            trace.enter_context(log_context(run_id=run_id))
             report.term = self._resolve_term(opts, report)
             if report.term is not None:
                 log.info(
@@ -168,6 +191,8 @@ class DailyPipeline:
         finally:
             report.finished_at = self._clock.now()
             self._phase(report, "batch status", lambda: self._batch_status(report))
+            if self._document_reads is not None:
+                report.document_reads = self._document_reads.read_metrics()
             # Every phase that asks the model goes through one `AnalysisService`, so this is the
             # whole run's spend, however it was reached, and it is recorded before the report is
             # stored — a run that fell over still says what it had spent by then.
@@ -180,6 +205,18 @@ class DailyPipeline:
             if run_id is not None:
                 try:
                     with self._repo.atomic():
+                        if self._document_artifacts is not None:
+                            record_artifacts(
+                                self._repo,
+                                self._document_artifacts.read_artifacts(),
+                                recorded_at=self._clock.now(),
+                            )
+                        if self._document_file_reads is not None:
+                            record_artifact_reads(
+                                self._repo,
+                                self._document_file_reads.read_artifact_reads(),
+                                recorded_at=self._clock.now(),
+                            )
                         self._repo.finish_run(run_id, report)
                         self._analysis.acknowledge_batch_costs()
                 except Exception as exc:

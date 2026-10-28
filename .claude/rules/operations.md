@@ -16,6 +16,8 @@ paths:
   - "src/lexinform/services/listener.py"
   - "src/lexinform/services/digest.py"
   - "src/lexinform/services/document_reviews.py"
+  - "src/lexinform/services/status_change_applications.py"
+  - "src/lexinform/services/result_applications.py"
   - "src/lexinform/services/senate_documents.py"
   - "src/lexinform/services/amendments.py"
   - "src/lexinform/services/delivery_notifier.py"
@@ -122,6 +124,22 @@ Command reference and the relay: `docs/operator-commands.md`.
   the deadline) and is cleared with the observation checkpoint. The VPS poller only hurries
   collection (`repository_dispatch: batch-ready`). A dry run submits nothing (only the triage is
   asked). `/status` names open batches and any `batch_pending` bill no batch holds.
+- **Primary computation history** retains immutable validated `analysis`/`reanalysis` results,
+  original usage and collection decisions with the consumed checkpoint (v49); past results are not backfilled.
+  Only a projection receipt confirms primary-service application; neither phase confirms publication.
+  Result IDs name provider items,
+  request hashes name inputs; memo reuse never creates a new paid computation. See `docs/state-retention.md`.
+  Services apply primary analysis only through `services.analysis_applications.apply_analysis`;
+  its receipt uses the actual target generation and shares the caller's transaction. Quiet tracking
+  of the same result adds no receipt; linking reuses its original computation ID.
+- **Secondary computation history** retains normalized results with memo/consumed checkpoint;
+  reviews use separate compact source refs, including known input on failure, without source text.
+  Collection adds no primary generation/application receipt and never changes review pause settings.
+- **Projection receipts** name the actual target and commit with its state; memo deposit/reuse alone
+  is not application. Non-primary targets use namespace/ref, never a borrowed primary generation.
+  Target identities are metadata, not executable work; unknown namespaces remain readable.
+  Status-change receipts use the saved event ID; late amendments do not backfill old supplements.
+  Secondary consumers share the metadata writer, retaining their own projection transactions.
 - **Document reviews** use separate secondary batch purposes and exact source citations.
   Participant positions never prove acceptance, project analyses never prove final-act
   applicability; commission reviews across RCL, Sejm and Senate keep proposals, recommendations and
@@ -135,3 +153,5 @@ Command reference and the relay: `docs/operator-commands.md`.
   the current bill): queue the batch with its immutable edit target, then a separate
   `amendments_revision` delivery; the original event and publication stay as audit history; repeated
   commands never supersede a pending batch or an attempted/uncertain revision delivery.
+
+- **Editorial content history** survives delivery/memo cleanup; single-message amendments restore the original frozen Bill/change/date, never today's Bill. Versions do not confirm delivery, unknown legacy payload/formatter/language stays unknown, and grouped/multipart/digest refusal remains. Bump `content_history.FORMATTER_VERSION` when changing newly rendered content semantics.

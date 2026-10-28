@@ -1,0 +1,141 @@
+{
+  "version": 1,
+  "stage": "J104",
+  "baseline": "878f889f7183c90dc94739a72716014da91cf845",
+  "scope": "Caller-owned capture of completed generic secondary source selections before committee amendments, recommendation and supplement inputs are used.",
+  "checks": {
+    "focused": {
+      "path": "out/corpus/j104/focused-accepted.xml",
+      "sha256": "55ab3d7d0fdcf189ffaade61c5ac7277ba57eba662d13980a21c8dfe41428db5",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "64",
+      "time": "2.754",
+      "timestamp": "2026-10-27T21:58:53.387989+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j104/full-accepted.xml",
+      "sha256": "c3bfdd06b7a9da4454425ac2d254b18e4472cb6f8e78c811e889818c1b4e4758",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "4951",
+      "time": "605.132",
+      "timestamp": "2026-10-27T21:58:56.810461+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 460 source files",
+    "mypy_ci_equivalent": "Success: no issues found in 460 source files",
+    "ruff": "All checks passed!",
+    "format": "1 file reformatted, 518 files left unchanged"
+  },
+  "qualification": {
+    "native": {
+      "cases": 168,
+      "all_profiles_except_metadata_and_storage_metrics_exact": true,
+      "all_requests_and_rendered_messages_exact": true,
+      "all_20_business_tables_exact": true,
+      "prior_metadata_rows_preserved": true,
+      "source_observation_views": 206,
+      "selection_views": 194,
+      "link_views": 186,
+      "all_source_doctors_without_errors": true,
+      "sql_delta": {
+        "min": 0,
+        "max": 2088
+      },
+      "gzip_delta": {
+        "min": 0,
+        "max": 272
+      }
+    },
+    "raw": {
+      "case_views": 72,
+      "unique_raw_files": 36,
+      "semantic_fingerprints_exact": true,
+      "input_hashes_equal": true,
+      "source_observations": 72,
+      "source_link_views": 280,
+      "outcome_counts": {
+        "ValueError": 17,
+        "DocumentSelectionError": 12,
+        "returned": 43
+      },
+      "comparison_excludes": [
+        "New source metadata row/link counts",
+        "Actual initial pipeline phase_seconds"
+      ],
+      "scope": "Bounded real raw files through surrogate secondary consumers with a fake metadata-only primary analysis; payload comparisons hashed in RAM. No real paid calls or independent legal role/source-family acceptance."
+    },
+    "rollback": {
+      "reader": "J103 878f889f7183c90dc94739a72716014da91cf845",
+      "cases": 168,
+      "legacy_report_views_read": 324,
+      "all_populated_sql_dumps_preserved_exact": true,
+      "schema_conversion": false
+    },
+    "structural": {
+      "baseline": "878f889f7183c90dc94739a72716014da91cf845",
+      "all_original_analysis_methods_ast_exact_after_call_adapter_expansion": true,
+      "senate_special_body_and_historical_comparison_workers_unchanged": true,
+      "other_154_runtime_files_byte_identical": true,
+      "models_schema_ports_extraction_selection_policy_prompts_and_paid_payloads_unchanged": true,
+      "analysis_sha256": "5fe1ffa1c2e4367c2205a2fb0858e5173760b7305a2f9d95d61fc46ca50152f9"
+    },
+    "corpus_ci": {
+      "after_manifest_sha256": "b261f30f7636c97372bded57ea72e05b30e123d5995ca430a54be8c10ffd76f3",
+      "before_manifest_sha256": "15250f4365fc5afcf72e453b9d77b5a94671119836285c13bdabd67d6963d56c",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "ci",
+      "summary_changes": {},
+      "version": 1
+    },
+    "corpus_process": {
+      "after_manifest_sha256": "efb135835c4bebfbb2425fd7c69e5ae7c8fcf58a480399d7b97c478fd77ee8b8",
+      "before_manifest_sha256": "2d72a49c3a6d4efabc3ed7cbac75fc0b605e806b3b62066e6db67888b907212a",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "process",
+      "summary_changes": {},
+      "version": 1
+    }
+  },
+  "sources": {
+    "src/lexinform/services/analysis.py": "5fe1ffa1c2e4367c2205a2fb0858e5173760b7305a2f9d95d61fc46ca50152f9",
+    "tests/scenario/test_secondary_source_history.py": "3553a8deeeb4449d0171d7de06a77f78fc15e15bdb61ce81c3ecf793c519e615"
+  },
+  "evidence": {
+    "out/corpus/j104/native-parity.json": "8fa810b17b773ddb315e62f63ead7a9873dae01bf1e8247a4cdad1d8f52facad",
+    "out/corpus/j104/raw-parity.json": "805dfb29a20e8a0a893240a84b2afce29f7e7a2e4aa27954863b62d82121cde8",
+    "out/corpus/j104/rollback.json": "44add8b9e7c6f4b808b30061ae023c20d85005b0eaf8e5d115cebc49f01de09f",
+    "out/corpus/j104/structural-parity.json": "cc11e088c145a24dd9457ac93af7392b42b47040294aaa2aebbd31d43d733da9",
+    "out/corpus/j104/ci-diff.json": "5efe2e968cffe2389780a5b4344192a67ab80a808b05bc1a17458ef9b943291e",
+    "out/corpus/j104/process-diff.json": "290fdb098145ab4d8512f475135fc5054b90ff3038b107ae1d6e1bdde5459a0c",
+    "out/corpus/j104/raw-secondary-qualified-baseline.json": "ce5e6da23811a518975ecabbd297c8e462818191495d7311232601f2d85c65af",
+    "out/corpus/j104/raw-secondary-qualified-current.json": "7fe346245c4c002f8449b7f8cbf554f3ce6163db1ede855d1f9b49b126b4c145",
+    "out/corpus/j104/raw_secondary_qualified.py": "a5a3178fceec1894409033df5b8add7cb2bfde3eac4de1fb37151d700ef6a11d",
+    "out/corpus/j104/native_profiles.py": "ed9a008c925ed261a26279b87c6ea1d4cde96e2bacd1bfc149e53f926dbe08d5",
+    "out/corpus/j104/compare_native.py": "14b8ffc5b62b4151a64439c2fd8422cc34d7c23327ccd9a6a14287e7a4e53b07",
+    "out/corpus/j104/rollback_profile.py": "2ac5b717b80dc42f0e172ebe89b920b7be59a93e4fd4cbb553096fa50a775a7d",
+    "out/corpus/j104/structural_profile.py": "edb7e4ca519764d0316c2deae32ff0f6765c17d54e075e317dcd85c027c43796",
+    "out/corpus/runs/j104-ci/manifest.json": "b261f30f7636c97372bded57ea72e05b30e123d5995ca430a54be8c10ffd76f3",
+    "out/corpus/runs/j104-process/manifest.json": "efb135835c4bebfbb2425fd7c69e5ae7c8fcf58a480399d7b97c478fd77ee8b8"
+  },
+  "limitations": [
+    "Senate-specific source capture and worker historical comparisons are unchanged.",
+    "No completed source decision is invented for an extractor exception before selection.",
+    "Metadata are separate from retained bodies, legal admission and actual paid input/result identity.",
+    "Raw secondary cases use surrogate source roles and a fake metadata-only primary analysis, not independent legal/source-family gold."
+  ]
+}

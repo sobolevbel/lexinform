@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 import socket
 from pathlib import Path
 from typing import Any, Never
@@ -8,6 +9,7 @@ import pytest
 from tools import replay_pdf_pages
 
 from tests.conftest import FIXTURES
+from tests.unit.test_corpus_runtime_reads import forbid_opening
 
 
 def inputs(tmp_path: Path) -> tuple[Path, Path, Path]:
@@ -59,6 +61,10 @@ def test_pinned_pdf_replay_compares_legacy_selection_and_physical_pages(tmp_path
     assert not saved["changed_inputs"] and not saved["changed_code"]
     assert len(saved["page_manifests"]["source.pdf"]) == 64
     assert saved["observations"]["source.pdf"]["physical"]["page_count"] == 17
+    assert saved["read_inputs"] == {
+        "INDEX.json": hashlib.sha256((root / "INDEX.json").read_bytes()).hexdigest(),
+        "source.pdf": hashlib.sha256(original).hexdigest(),
+    }
     assert source.read_bytes() == original
 
 
@@ -146,6 +152,35 @@ def test_replay_cannot_pass_if_its_code_changes_during_extraction(
 
     saved = json.loads(output.read_bytes())
     assert saved["status"] == "failed" and saved["changed_code"]
+
+
+def test_final_input_check_does_not_follow_a_retargeted_link_outside_the_corpus(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root, cases, source = inputs(tmp_path)
+    protected = tmp_path / "outside"
+    protected.write_text("controlled test fixture")
+    replacement = tmp_path / "replacement"
+    replacement.symlink_to(protected)
+    forbid_opening(monkeypatch, protected)
+    original = replay_pdf_pages.snapshot
+
+    def retarget(
+        data: bytes,
+        page_reader: replay_pdf_pages.PageReader,
+    ) -> tuple[dict[str, Any], str | None]:
+        result = original(data, page_reader)
+        os.replace(replacement, source)
+        return result
+
+    monkeypatch.setattr(replay_pdf_pages, "snapshot", retarget)
+    output = tmp_path / "after.json"
+
+    assert replay_pdf_pages.run(root, cases, output, page_reader="library") == 1
+
+    saved = json.loads(output.read_bytes())
+    assert saved["status"] == "failed" and saved["changed_inputs"] == ["source.pdf"]
 
 
 @pytest.mark.parametrize("argument", ["cases", "reference"])

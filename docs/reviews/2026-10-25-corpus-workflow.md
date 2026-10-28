@@ -239,3 +239,88 @@ collector/version и статусом ответа. При изменении б
 Реализация предложений и последующие измерения ведутся в
 [отдельном checklist и журнале](../plans/2026-10-25-corpus-improvements.md).
 Числа выше относятся к исходному health snapshot, не заменяются новыми результатами.
+
+
+## Общие replay guards · J118, 28 октября
+
+PDF/Word replays используют общие artifact read/write, comparison и CorpusReads final checks.
+Внутренняя символьная ссылка сохраняется как запрошенный input path: её смена не теряется
+за прежним canonical target. Повторная проверка не открывает цель вне корпуса либо `.env`
+и возвращает такой вход в changed_inputs; direct require также проверяет credential paths.
+Новые tests используют только controlled temporary fixtures.
+
+Final SHA recheck читает поток вместо целого файла. На одном существующем raw ZIP размером
+**15737127 bytes** Python allocation peak при recheck уменьшился **15738592→395327 bytes**;
+это не RSS процесса. Before/after fingerprint maps всех **16341 raw paths / 12073227147 bytes**
+совпали, changed_inputs пусты. Shared comparison различает отсутствующее наблюдение и явный
+unknown `null`; JSON/output formats и snapshot algorithms прежние.
+Подробности и gates — [J118](../plans/2026-10-22-document-architecture-progress.md#j118).
+
+
+## Проверка ODT · J119, 28 октября
+
+`tools/replay_odt_blocks.py` делает два offline прохода одной pinned raw population:
+`library` сохраняет прежнюю строку ODT, `adapter` сверяет её с block projection и проверяет
+координаты непосредственно в `content.xml`. Один вход может быть ZIP с несколькими ODT,
+вложенными архивами либо расширением, не совпадающим с содержимым. Ошибки отдельных листьев
+и archive rejections остаются наблюдениями. Популяция без успешных ODT observations не проходит.
+
+Формат cases общий с PDF replay: version 1, SHA `INDEX.json`, список path/SHA,
+official_ids/cohorts и явные exclusions. Полный путь задаётся относительно корпуса.
+Каждый output должен быть новым файлом вне корпуса; adapter требует SHA baseline и тот же
+case manifest. Сеть, записи в исходники, `.env`, изменение кода/входов блокируют приёмку.
+
+```sh
+uv run python -m tools.replay_odt_blocks --corpus /path/to/lexinform-corpus \
+  --cases /path/to/odt-cases.json --output /path/to/odt-library.json --mode library
+uv run python -m tools.replay_odt_blocks --corpus /path/to/lexinform-corpus \
+  --cases /path/to/odt-cases.json --output /path/to/odt-adapter.json --mode adapter \
+  --reference /path/to/odt-library.json --reference-sha256 BASELINE_SHA256
+```
+
+PDF/DOC/DOCX adapters здесь возвращают пустые placeholders: их текст и legal selection
+не входят в эту suite. Note origins, tracked changes, table repetitions и pagination сохраняют
+явные unresolved/unknown границы текущего ODT reader. Это machine regression oracle,
+без независимой смысловой разметки.
+
+Проверены **6 natural roots**: один raw ODT, три ZIP с семью ODT members и два rejection
+controls. Дополнительно **9 производных вариантов** одного raw ODT: wrappers и изменения даты,
+суммы, отрицания, круга лиц и ссылки. Суммарно **17 manifests / 1066 block coordinates /
+46 ignored-node coordinates**; old/new observations exact. Эти варианты не считаются новыми
+природными документами. Подробности и gates —
+[J119](../plans/2026-10-22-document-architecture-progress.md#j119).
+
+
+## Общий реестр и различия входов · J120, 28 октября
+
+[Pinned natural cases](../assets/audits/2026-10-28-odt-replay/cases.json) входят в репозиторий;
+их bytes exact совпадают с manifest проверенного J119/J120 replay. Смена INDEX требует нового
+явно проверенного поколения cases, старый файл не обновляется автоматически.
+
+ODT подключён к `tools.corpus_runs` как suite `odt`, рядом с `pdf` и `word`. Каждый запуск
+получает отдельный каталог с started/result/manifest, console log и snapshot кода.
+`verify` проверяет SHA артефактов; `diff` сравнивает завершённые generations.
+
+```sh
+uv run python -m tools.corpus_runs run --root /path/to/runs --id odt-library \
+  --suite odt --corpus /path/to/lexinform-corpus -- \
+  --cases /path/to/odt-cases.json --mode library
+uv run python -m tools.corpus_runs run --root /path/to/runs --id odt-adapter \
+  --suite odt --corpus /path/to/lexinform-corpus -- \
+  --cases /path/to/odt-cases.json --mode adapter \
+  --reference /path/to/runs/odt-library/result.json --reference-sha256 BASELINE_SHA256
+uv run python -m tools.corpus_runs verify /path/to/runs/odt-adapter
+uv run python -m tools.corpus_runs diff /path/to/runs/odt-library \
+  /path/to/runs/odt-adapter --output /path/to/odt-diff.json
+```
+
+Общий diff различает исчезнувшее observation/input и explicit unknown `null`, а также смену
+case/catalog/index manifest SHA. PDF/Word/ODT reports записывают `read_inputs`: SHA фактически
+открытых корпусных путей, включая INDEX там, где он читается. Это дополняет declared population;
+SHA не объявляет raw bytes архивированными. Прежние отчёты без поля читаются совместимо.
+Source SHA остаётся provenance, изменение версии кода само по себе не объявляется регрессией.
+
+На прежнем diff воспроизведены три false `same` и один unchanged control. Исправленные проверки
+различают все три изменения и обе стороны added/removed. Real ODT generations из J119
+проведены через registry, проверены и сравнены; observations/input maps совпадают.
+Подробности — [J120](../plans/2026-10-22-document-architecture-progress.md#j120).

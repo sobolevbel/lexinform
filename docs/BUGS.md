@@ -3,7 +3,7 @@
 ## Как пользоваться
 
 Текущие баги сгруппированы по статусу, внутри группы — по влиянию на читателя.
-Номера B1…B120 постоянные:
+Номера B1…B125 постоянные:
 старые обозначения `#4` и `B4` означают одну запись.
 `open` — воспроизведённый дефект; `candidate` — ещё не доказанная гипотеза.
 `deferred` — подтверждённый дефект, отложенный по решению владельца;
@@ -23,6 +23,73 @@ P3 не означает, что расходы можно игнорирова�
 [повторяющиеся ошибки](development/failure-patterns.md) — памятка для аудита.
 
 ## Open
+
+### B125
+
+**P3 · fixed locally · 27.10.2026.** После очистки memo/reset основной анализ повторно заказывал exact paid input.
+
+`ComputationResult` сохранял успешный ответ и original input binding, но primary prepare
+читал только operational memo. Восьмёрка primary сценариев и восемь reanalysis сценариев
+падали на J077: новый intent вместо доступного оплаченного ответа. Шесть negative controls
+проходили. Caller теперь передаёт immutable purpose snapshot до parallel prepare; worker
+не читает repository. Reuse сохраняет paid ID/SHA, а application фиксирует текущую generation.
+Changed input, unbound legacy и explicit force не получают расширенного cache hit.
+
+Проверки: `test_primary_history_reuse.py`, before **16 failed / 6 passed**, current **22 passed**;
+измерения и полный gate — [J078](plans/2026-10-22-document-architecture-progress.md#j078).
+
+### B124
+
+**P3 · fixed locally · 27.10.2026.** После очистки memo успешный `/explain` выглядел как failed batch.
+
+На J076 оплаченный explanation сохраняется в history с input binding; после 200-day memo cleanup
+тот же вопрос проходит мимо результата и получает «batch завершился с ошибкой» по состоянию
+consumed item. **4 regressions failed**, providers=2/workers=1/4. Production-инцидент не установлен.
+Caller читает history только нужного purpose и передаёт immutable snapshot в network prepare;
+pure matcher проверяет original subject/key/type, возвращая прежний paid ref без новых токенов.
+Changed question и unknown legacy binding не расширяют reuse. Primary workers не читают БД.
+Приёмка и legacy exclusions — [J077](plans/2026-10-22-document-architecture-progress.md#j077).
+
+### B123
+
+**P3 · fixed locally · 27.10.2026.** Удаление memo делало оплаченный secondary answer недоступным для reuse.
+
+После collect и operational cleanup тот же вопрос amendments/supplement/joint/name ставился
+в новый batch, хотя immutable result оставался в history. **8 regressions failed** на J073,
+workers=1/4; повторный explicit request требовал ещё одной оплаты. Production-инцидент не установлен.
+При отсутствии memo общий reader ищет validated answer по сохранённым subject, purpose и exact
+request key, проверяет record type; usage обнуляется существующим reuse contract. Изменённый
+контекст и другая каденция не переиспользуются, существующий legacy memo не получает выдуманных refs.
+Primary/reviews/explanation остаются отдельными consumers. Приёмка —
+[J074](plans/2026-10-22-document-architecture-progress.md#j074).
+
+### B122
+
+**P1 · fixed locally · 27.10.2026.** Primary handoff переносил secondary batch work с другим frozen subject.
+
+При RCL → druk `move_batch_work` менял `number` у всех незавершённых batch items и intents,
+включая document reviews. Их сохранённый `ReviewContext.number` оставался прежним; collect
+останавливался на проверке соответствия retained input и owner. Production-инцидент не установлен.
+Регрессии до исправления: **16 failed**, providers=2, workers=1/4, consultation/commission,
+queued/open. Операция переименована в `move_primary_analysis_work` и переносит только
+`analysis`/`reanalysis`, сохраняя secondary work, payload SHA и исторические результаты.
+Приёмка и ограничения — [J073](plans/2026-10-22-document-architecture-progress.md#j073).
+
+### B121
+
+**P3 · fixed locally · 27.10.2026.** Перенос RCL-проекта в новую каденцию повторно заказывал уже оплаченное имя.
+
+Fake pipeline с batch-only name backfill: primary analysis завершён, name batch отправлен;
+первый run новой каденции собирает paid name и переносит RCL-строку. `_memo_key` имени включает
+term, поэтому новый consumer пропускает прежний memo и отправляет второй name request.
+В history остаётся исходный ответ, но current editorial name ещё пуст. На коде J070 и текущем
+J071 воспроизводятся **2 name requests / 1 retained name / current name None**, без run errors.
+Production-инцидент не установлен. Probe: `out/corpus/j071/rollover_name_probe.py`, outputs
+`rollover-name-probe.json` и `rollover-name-baseline.json`.
+Исправление сохраняет исходный context key по фактическим owner terms requests/results.
+Регрессия `tests/scenario/test_rcl_name_rollover.py`: open/ready/cleaned, providers, workers=1/4,
+queued/submitting, retry budget, legacy ref и changed context. Full gate green;
+приёмка и ограничения — [J072](plans/2026-10-22-document-architecture-progress.md#j072).
 
 ### B120
 

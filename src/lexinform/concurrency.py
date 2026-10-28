@@ -7,6 +7,7 @@ calling thread, in input order, and that is where every database write happens. 
 
 from collections.abc import Callable, Iterable, Iterator
 from concurrent.futures import ThreadPoolExecutor
+from contextvars import copy_context
 from dataclasses import dataclass
 from typing import cast
 
@@ -44,7 +45,7 @@ def fan_out[T, R](
         return
     pool = ThreadPoolExecutor(max_workers=min(workers, len(todo)), thread_name_prefix="lexinform")
     try:
-        futures = [(item, pool.submit(step, item)) for item in todo]
+        futures = [(item, pool.submit(copy_context().run, step, item)) for item in todo]
         for item, future in futures:
             try:
                 yield Outcome(item, value=future.result())

@@ -17,20 +17,26 @@ import sys
 import zipfile
 import zlib
 from collections.abc import Iterator
+from dataclasses import dataclass, field
 from typing import Literal
 from xml.etree import ElementTree as ET
 from zipfile import ZipInfo
 
 from inflate64 import Inflater
 
-from lexinform.document_versions import comparable_versions, normative_annex_key, regulation_support
+from lexinform.document_candidates import select_document_parts
 from lexinform.models.documents import (
     DocumentPart,
-    DocumentSelection,
     ExtractedDocument,
     ExtractedParts,
+    OdtIgnoredNode,
+    OdtPartExtraction,
+    OdtTextBlock,
+    OdtTextExtraction,
     PdfPartExtraction,
     PdfTextExtraction,
+    UnlocatedPartExtraction,
+    UnlocatedTextExtraction,
     WordBodyState,
     WordDetailedExtraction,
     WordPartExtraction,
@@ -38,7 +44,7 @@ from lexinform.models.documents import (
     WordTextBlock,
     WordTextExtraction,
 )
-from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, text_rank, text_role
+from lexinform.models.rcl import READABLE_EXTENSIONS, text_rank
 from lexinform.models.word_notes import (
     NotePartName,
     WordNote,
@@ -47,16 +53,14 @@ from lexinform.models.word_notes import (
     WordNoteXmlPart,
 )
 from lexinform.ports import (
+    OdtBlockTextExtractor,
     PdfPageTextExtractor,
     TextExtractor,
     WordBlockTextExtractor,
     WordNoteTextExtractor,
 )
 from lexinform.sections import (
-    APPENDIX_KINDS,
     PAGE_BREAK,
-    Kind,
-    document_kind,
     reads_through_justification,
 )
 from lexinform.word_projection import legacy_word_text
@@ -91,9 +95,6 @@ _MAX_ARCHIVE_BYTES = 128_000_000
 _MAX_ARCHIVE_MEMBERS = 2048
 _MAX_XML_BYTES = 32_000_000
 _MAX_SPACES = 4096  # `<text:s text:c="N"/>`: the count is the file's to choose
-# The order the pieces of a bill package are read in: the bill, its uzasadnienie, the OSR (the
-# trimming in `sections` then drops what the analysis does not need).
-_ROLE_ORDER: dict[TextRole, int] = {"bill": 0, "justification": 1, "osr": 2}
 
 
 class _WordNoteOrigins:
@@ -489,6 +490,26 @@ class _WordMl:
                 self._inline(el, parts, path=child_path, paragraph=paragraph)
 
 
+@dataclass
+class _OdtOrigins:
+    blocks: list[OdtTextBlock] = field(default_factory=list)
+    legacy_blocks: list[str] = field(default_factory=list)
+    ignored_nodes: list[OdtIgnoredNode] = field(default_factory=list)
+
+    def record(
+        self,
+        kind: Literal["paragraph", "heading", "table_row", "table_cell"],
+        path: tuple[int, ...],
+        text: str,
+        *,
+        projected: bool,
+    ) -> None:
+        block = OdtTextBlock(kind=kind, path=path, text=text)
+        self.blocks.append(block)
+        if projected:
+            self.legacy_blocks.append(block.block_id)
+
+
 class OdtTextExtractor:
     """Paragraphs and headings of `content.xml`, tables as tab-separated rows."""
 
@@ -499,36 +520,97 @@ class OdtTextExtractor:
         return data
 
     def extract(self, data: bytes) -> str:
+        _, body, _ = self._body(data)
+        return "\n".join(_odt_blocks(body)) if body is not None else ""
+
+    def extract_odt_blocks(self, data: bytes) -> OdtTextExtraction:
+        xml, body, state = self._body(data)
+        origins = _OdtOrigins()
+        if body is not None:
+            list(_odt_blocks(body, origins=origins))
+        return OdtTextExtraction(
+            input_sha256=hashlib.sha256(data).hexdigest(),
+            xml_sha256=hashlib.sha256(xml).hexdigest(),
+            python_version=sys.version.split()[0],
+            body_state=state,
+            blocks=tuple(sorted(origins.blocks, key=lambda block: block.path)),
+            legacy_blocks=tuple(origins.legacy_blocks),
+            ignored_nodes=tuple(sorted(origins.ignored_nodes, key=lambda node: node.path)),
+        )
+
+    @staticmethod
+    def _body(
+        data: bytes,
+    ) -> tuple[bytes, ET.Element | None, Literal["read", "missing", "unsupported"]]:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             xml = _read_xml(archive, "content.xml")
         if _declares_entities(xml):
-            return ""
+            return xml, None, "unsupported"
         body = ET.fromstring(xml).find(f"{_ODT_OFFICE}body/{_ODT_OFFICE}text")
         if body is None:
             log.warning("OpenDocument file without a text body; no text")
-            return ""
-        return "\n".join(_odt_blocks(body))
+            return xml, None, "missing"
+        return xml, body, "read"
 
 
-def _odt_blocks(node: ET.Element) -> Iterator[str]:
-    for child in node:
+def _odt_blocks(
+    node: ET.Element,
+    *,
+    path: tuple[int, ...] = (),
+    origins: _OdtOrigins | None = None,
+    projected: bool = True,
+) -> Iterator[str]:
+    for index, child in enumerate(node):
+        child_path = (*path, index)
         if child.tag in (f"{_ODT_TEXT}p", f"{_ODT_TEXT}h"):
-            yield _odt_paragraph(child)
+            text = _odt_paragraph(child)
+            if origins is not None:
+                origins.record(
+                    "heading" if child.tag == f"{_ODT_TEXT}h" else "paragraph",
+                    child_path,
+                    text,
+                    projected=projected,
+                )
+            yield text
         elif child.tag == f"{_ODT_TABLE}table":
-            for row in _odt_rows(child):
-                cells = [" ".join(_odt_blocks(cell)) for cell in row if cell.tag in _ODT_CELLS]
-                yield "\t".join(cells)
+            for row, row_path in _odt_rows(child, path=child_path, origins=origins):
+                cells: list[str] = []
+                for cell_index, cell in enumerate(row):
+                    cell_path = (*row_path, cell_index)
+                    if cell.tag not in _ODT_CELLS:
+                        if origins is not None:
+                            origins.ignored_nodes.append(
+                                OdtIgnoredNode(path=cell_path, tag=cell.tag)
+                            )
+                        continue
+                    text = " ".join(
+                        _odt_blocks(cell, path=cell_path, origins=origins, projected=False)
+                    )
+                    if origins is not None:
+                        origins.record("table_cell", cell_path, text, projected=False)
+                    cells.append(text)
+                text = "\t".join(cells)
+                if origins is not None:
+                    origins.record("table_row", row_path, text, projected=projected)
+                yield text
         elif child.tag in _ODT_CONTAINERS:
-            yield from _odt_blocks(child)
+            yield from _odt_blocks(child, path=child_path, origins=origins, projected=projected)
+        elif origins is not None:
+            origins.ignored_nodes.append(OdtIgnoredNode(path=child_path, tag=child.tag))
 
 
-def _odt_rows(table: ET.Element) -> Iterator[ET.Element]:
+def _odt_rows(
+    table: ET.Element, *, path: tuple[int, ...], origins: _OdtOrigins | None
+) -> Iterator[tuple[ET.Element, tuple[int, ...]]]:
     """The rows of one table (not of the tables nested in its cells), through the row groups."""
-    for child in table:
+    for index, child in enumerate(table):
+        child_path = (*path, index)
         if child.tag == f"{_ODT_TABLE}table-row":
-            yield child
+            yield child, child_path
         elif child.tag in _ODT_ROW_GROUPS:
-            yield from _odt_rows(child)
+            yield from _odt_rows(child, path=child_path, origins=origins)
+        elif origins is not None:
+            origins.ignored_nodes.append(OdtIgnoredNode(path=child_path, tag=child.tag))
 
 
 def _space_count(value: str | None) -> int:
@@ -575,15 +657,17 @@ _OLE_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"  # OLE2 container: legacy .doc 
 _ZIP_MAGIC = b"PK\x03\x04"  # .docx, .docm, .odt and plain archives all start like this
 
 
-class DocumentTextExtractor:
-    """Routes a file by its magic bytes: PDF, Word (.docx/.docm), legacy Word (.doc), OpenDocument
-    (.odt) or a zip archive of such files (read member by member, bill first; letters, tables and
-    appendices skipped by name); anything else is empty.
+@dataclass(frozen=True)
+class _PhysicalOrigins:
+    pdf_pages: list[PdfPartExtraction] | None
+    word_blocks: list[WordPartExtraction] | None
+    word_notes: list[WordPartNoteExtraction] | None
+    odt_blocks: list[OdtPartExtraction] | None
+    unlocated_text: list[UnlocatedPartExtraction] | None
 
-    `max_member_bytes` caps the *unpacked* size of an archive member: the download limit only
-    sees the compressed bytes. `max_part_chars` is the length past which a member that does not
-    name itself is not taken for a bill text.
-    """
+
+class DocumentTextExtractor:
+    """Route physical formats and retain the legacy package-selection facade."""
 
     def __init__(
         self,
@@ -613,41 +697,41 @@ class DocumentTextExtractor:
         include_pdf_pages: bool = True,
         include_word_blocks: bool = True,
         include_word_notes: bool = True,
+        include_odt_blocks: bool = True,
+        include_unlocated_text: bool = True,
     ) -> ExtractedParts:
         parts: list[DocumentPart] = []
         rejected: list[str] = []
-        pdf_pages: list[PdfPartExtraction] | None = [] if include_pdf_pages else None
-        word_blocks: list[WordPartExtraction] | None = [] if include_word_blocks else None
-        digest = hashlib.sha256(data).hexdigest()
-        word_notes: list[WordPartNoteExtraction] | None = (
-            [] if include_word_notes and include_word_blocks else None
+        origins = _PhysicalOrigins(
+            pdf_pages=[] if include_pdf_pages else None,
+            word_blocks=[] if include_word_blocks else None,
+            word_notes=[] if include_word_notes and include_word_blocks else None,
+            odt_blocks=[] if include_odt_blocks else None,
+            unlocated_text=[] if include_unlocated_text else None,
         )
-        self._collect(data, (), digest, parts, rejected, [0, 0], pdf_pages, word_blocks, word_notes)
+        digest = hashlib.sha256(data).hexdigest()
+        self._collect(data, (), digest, parts, rejected, [0, 0], origins)
         return ExtractedParts(
             input_sha256=digest,
             parts=tuple(parts),
             rejected=tuple(rejected),
-            pdf_pages=tuple(pdf_pages or ()),
-            word_blocks=tuple(word_blocks or ()),
-            word_notes=tuple(word_notes or ()),
+            pdf_pages=tuple(origins.pdf_pages or ()),
+            word_blocks=tuple(origins.word_blocks or ()),
+            word_notes=tuple(origins.word_notes or ()),
+            odt_blocks=tuple(origins.odt_blocks or ()),
+            unlocated_text=tuple(origins.unlocated_text or ()),
         )
 
     def extract_document(self, data: bytes) -> ExtractedDocument:
         extracted = self.extract_parts(
-            data, include_pdf_pages=False, include_word_blocks=False, include_word_notes=False
+            data,
+            include_pdf_pages=False,
+            include_word_blocks=False,
+            include_word_notes=False,
+            include_odt_blocks=False,
+            include_unlocated_text=False,
         )
-        parts: list[DocumentPart] = []
-        for part in extracted.parts:
-            kind = document_kind(part.text) if part.text.strip() else "unknown"
-            parts.append(part.model_copy(update={"role": _ROLE_OF_KIND.get(kind, "unknown")}))
-        rejected = list(extracted.rejected)
-        if len(parts) == 1 and not parts[0].members:
-            part = parts[0]
-            return ExtractedDocument(
-                text=part.text,
-                selection=DocumentSelection(parts=(part,), rejected=tuple(rejected)),
-            )
-        return self._select_parts(parts, rejected)
+        return select_document_parts(extracted, max_part_chars=self._max_part_chars)
 
     def pages(self, data: bytes) -> int:
         """Only a PDF has pages of its own. A Word file paginates when it is rendered, and an
@@ -700,23 +784,24 @@ class DocumentTextExtractor:
         parts: list[DocumentPart],
         rejected: list[str],
         usage: list[int],
-        pdf_pages: list[PdfPartExtraction] | None,
-        word_blocks: list[WordPartExtraction] | None,
-        word_notes: list[WordPartNoteExtraction] | None,
+        origins: _PhysicalOrigins,
     ) -> None:
         pdf_result: PdfTextExtraction | None = None
         word_result: WordTextExtraction | None = None
         note_result: WordNoteExtraction | None = None
+        odt_result: OdtTextExtraction | None = None
         if data.startswith(_ZIP_MAGIC):
             try:
                 with zipfile.ZipFile(io.BytesIO(data)) as archive:
                     names = set(archive.namelist())
                     if "word/document.xml" in names:
-                        if word_notes is not None and isinstance(self._docx, WordNoteTextExtractor):
+                        if origins.word_notes is not None and isinstance(
+                            self._docx, WordNoteTextExtractor
+                        ):
                             detailed = self._docx.extract_with_notes(data)
                             word_result, note_result = detailed.body, detailed.notes
                             text = word_result.legacy_text
-                        elif word_blocks is not None and isinstance(
+                        elif origins.word_blocks is not None and isinstance(
                             self._docx, WordBlockTextExtractor
                         ):
                             word_result = self._docx.extract_blocks(data)
@@ -724,7 +809,13 @@ class DocumentTextExtractor:
                         else:
                             text = self._docx.extract(data)
                     elif "content.xml" in names and "mimetype" in names:
-                        text = self._odt.extract(data)
+                        if origins.odt_blocks is not None and isinstance(
+                            self._odt, OdtBlockTextExtractor
+                        ):
+                            odt_result = self._odt.extract_odt_blocks(data)
+                            text = odt_result.legacy_text
+                        else:
+                            text = self._odt.extract(data)
                     else:
                         if len(members) >= _MAX_ARCHIVE_DEPTH:
                             rejected.append(f"{members}: archive depth limit")
@@ -751,9 +842,7 @@ class DocumentTextExtractor:
                                     parts,
                                     rejected,
                                     usage,
-                                    pdf_pages,
-                                    word_blocks,
-                                    word_notes,
+                                    origins,
                                 )
                             except Exception as exc:
                                 rejected.append(
@@ -765,7 +854,7 @@ class DocumentTextExtractor:
                 return
         else:
             text, pdf_result = self._extract(
-                data, depth=len(members), include_pdf_pages=pdf_pages is not None
+                data, depth=len(members), include_pdf_pages=origins.pdf_pages is not None
             )
         pages = self.pages(data)
         losses = tuple(
@@ -792,119 +881,39 @@ class DocumentTextExtractor:
             )
         )
 
-        if pdf_pages is not None and pdf_result is not None:
-            pdf_pages.append(PdfPartExtraction(part_index=len(parts) - 1, extraction=pdf_result))
-        if word_blocks is not None and word_result is not None:
-            word_blocks.append(
+        if origins.pdf_pages is not None and pdf_result is not None:
+            origins.pdf_pages.append(
+                PdfPartExtraction(part_index=len(parts) - 1, extraction=pdf_result)
+            )
+        if origins.word_blocks is not None and word_result is not None:
+            origins.word_blocks.append(
                 WordPartExtraction(part_index=len(parts) - 1, extraction=word_result)
             )
-        if word_notes is not None and note_result is not None:
-            word_notes.append(
+        if origins.word_notes is not None and note_result is not None:
+            origins.word_notes.append(
                 WordPartNoteExtraction(part_index=len(parts) - 1, extraction=note_result)
             )
-
-    def _select_parts(self, parts: list[DocumentPart], rejected: list[str]) -> ExtractedDocument:
-        candidates: list[tuple[tuple[int, int, int, int], DocumentPart]] = []
-        supporting: list[DocumentPart] = []
-        annexes: list[DocumentPart] = []
-        for part in parts:
-            name = part.members[-1]
-            base = name.rsplit("/", 1)[-1]
-            kind = document_kind(part.text) if part.text.strip() else "unknown"
-            if kind != "bill" and _normative_annex(base, part.text):
-                annexes.append(part.model_copy(update={"role": "normative_annex"}))
-                continue
-            if kind in _NOT_THE_BILL or not part.text.strip():
-                rejected.append(f"{part.members}: {kind}")
-                continue
-            role = _ROLE_OF_KIND.get(kind) or (_member_role(base) if kind == "unknown" else None)
-            if role in ("justification", "osr"):
-                if regulation_support(part.text, name=base):
-                    rejected.append(f"{part.members}: supporting draft regulation")
-                    continue
-                supporting.append(part.model_copy(update={"role": role}))
-                continue
-            if role != "bill":
-                continue
-            if kind == "unknown" and self._max_part_chars and len(part.text) > self._max_part_chars:
-                rejected.append(f"{part.members}: unrecognised long document")
-                continue
-            rank = (
-                0 if kind == "bill" else 1,
-                len(part.members),
-                *text_rank(base, base.rsplit(".", 1)[-1].lower()),
+        if origins.odt_blocks is not None and odt_result is not None:
+            origins.odt_blocks.append(
+                OdtPartExtraction(part_index=len(parts) - 1, extraction=odt_result)
             )
-            candidates.append((rank, part.model_copy(update={"role": "bill"})))
-        if not candidates:
-            return ExtractedDocument(
-                text=PAGE_BREAK.join(p.text for p in supporting),
-                selection=DocumentSelection(
-                    observed_parts=tuple(parts),
-                    state="unsupported",
-                    parts=tuple(supporting),
-                    rejected=tuple(rejected),
-                ),
+        if origins.unlocated_text is not None:
+            head = data[:1024]
+            route: Literal["doc", "word_xml"] | None = (
+                "doc" if head.startswith(_OLE_MAGIC) else "word_xml" if _is_word_xml(head) else None
             )
-        candidates.sort(key=lambda item: (item[0], item[1].members))
-        rank, main = candidates[0]
-        peers = [p for r, p in candidates if r[0] == rank[0]]
-        confirmed = [p for p in peers if document_kind(p.text) == "bill"]
-        if len(confirmed) > 1:
-            indices = comparable_versions([p.text for p in confirmed])
-            if not indices:
-                return ExtractedDocument(
-                    selection=DocumentSelection(
-                        observed_parts=tuple(parts),
-                        state="ambiguous",
-                        parts=tuple(confirmed),
-                        rejected=tuple(rejected),
-                    )
-                )
-            main = confirmed[indices[0]]
-        family = main.members[:-1]
-        kept = [main]
-        kept.extend(
-            sorted(
-                (p for p in annexes if p.members[:-1] == family),
-                key=lambda p: normative_annex_key(p.text),
-            )
-        )
-        for role in ("justification", "osr"):
-            matches = [p for p in supporting if p.role == role and p.members[:-1] == family]
-            if matches:
-                kept.append(
-                    min(
-                        matches,
-                        key=lambda p: (
-                            text_rank(p.members[-1], p.members[-1].rsplit(".", 1)[-1].lower()),
-                            p.members,
+            if route is not None:
+                origins.unlocated_text.append(
+                    UnlocatedPartExtraction(
+                        part_index=len(parts) - 1,
+                        extraction=UnlocatedTextExtraction(
+                            route=route,
+                            input_sha256=parts[-1].sha256,
+                            text_sha256=parts[-1].text_sha256,
+                            text_chars=len(text),
                         ),
                     )
                 )
-        losses = tuple(rejected)
-        return ExtractedDocument(
-            text=PAGE_BREAK.join(p.text for p in kept),
-            selection=DocumentSelection(
-                observed_parts=tuple(parts),
-                parts=tuple(kept),
-                rejected=losses,
-                role=("bill heading",) if document_kind(main.text) == "bill" else (),
-                completeness=()
-                if losses or any(p.losses for p in kept)
-                else ("all selected members extracted",),
-            ),
-        )
-
-
-_ROLE_OF_KIND: dict[Kind, TextRole] = {
-    "bill": "bill",
-    "justification": "justification",
-    "osr": "osr",
-}
-
-_NOT_THE_BILL = APPENDIX_KINDS | {"letter"}
-"""What a package member may not be. The appendices, and a letter: inside a package the covering
-letter is a file of its own, not the opening of the document that follows it."""
 
 
 def _member_rank(info: ZipInfo) -> tuple[int, int]:
@@ -921,25 +930,6 @@ def _is_readable(name: str) -> bool:
     if not base or base.startswith(".") or name.startswith("__MACOSX/"):
         return False
     return base.rsplit(".", 1)[-1].lower() in READABLE_EXTENSIONS
-
-
-def _member_role(name: str) -> TextRole | None:
-    base = name.rsplit("/", 1)[-1]
-    if not base or base.startswith(".") or name.startswith("__MACOSX/"):
-        return None
-    if base.rsplit(".", 1)[-1].lower() not in READABLE_EXTENSIONS:
-        return None
-    return text_role(base)
-
-
-def _normative_annex(name: str, text: str) -> bool:
-    return bool(
-        re.search(
-            r"(?im)^\s*za[łl][aą]cznik[^\n]*do (?:(?:niniejszej|projektu) )?ustawy\b",
-            text[:1200],
-        )
-        or re.search(r"za[łl][aą]cznik.*do (?:(?:niniejszej|projektu) )?ustawy", name, re.I)
-    )
 
 
 def _read_xml(archive: zipfile.ZipFile, name: str) -> bytes:

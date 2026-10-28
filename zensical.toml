@@ -67,6 +67,11 @@ nav = [
   ] },
   { "Аудиты" = [
     { "Обзор" = "reviews/index.md" },
+    { "Составные исправления · 28.10" = "reviews/2026-10-28-compound-content-revisions.md" },
+    { "Профиль хранения · 27.10" = "reviews/2026-10-27-storage-profile.md" },
+    { "Допуск документов · 27.10" = "reviews/2026-10-27-document-admission.md" },
+    { "GPT‑6.1 Terra · 27.10" = "reviews/2026-10-27-terra-evaluation.md" },
+    { "Незавершённая работа · 27.10" = "reviews/2026-10-27-unfinished-work.md" },
     { "Корпус: рабочий процесс · 25.10" = "reviews/2026-10-25-corpus-workflow.md" },
     { "Архитектура документов · 22.10" = "reviews/2026-10-22-document-architecture.md" },
     { "Проверка комплекта и решение по LLM · 17.10" = "reviews/2026-10-17-document-bundle-acceptance.md" },

@@ -1,0 +1,331 @@
+{
+  "stage": "J115",
+  "baseline": "933f8d2f3f6ef31cc5888b498f7a35ea58ca569f",
+  "checks": {
+    "focused-final": {
+      "sha256": "2952e84bddc54f4c3263a4dd5ac7408fc42804b40bf0d584420cb88f9fde9e5e",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "114",
+      "time": "3.950",
+      "timestamp": "2026-10-28T01:40:55.382297+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "sha256": "9367bc53c8c9a308f0626ddc1eba9ff09de90265ac0cfcce9dfd70b34410089a",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "5091",
+      "time": "594.546",
+      "timestamp": "2026-10-28T01:41:32.105039+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "local-http": {
+      "sha256": "7686cfdece247247ab54da5995fe9d84f730b12e2cc7c6aa20a0e91d110cf9bf",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "21",
+      "time": "1.997",
+      "timestamp": "2026-10-28T01:41:33.615467+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "rollover-baseline": {
+      "sha256": "a05cee9a5c0883e822d561e2711f267d561036f6c4c4bd379872a2cc94b2f880",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "1",
+      "time": "2.451",
+      "timestamp": "2026-10-28T01:43:26.744939+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "rollover-current": {
+      "sha256": "2ba2311c0b5fa64cdde0f2fd726b4430e0fae99d108685ef361ed3301d102cd4",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "1",
+      "time": "2.001",
+      "timestamp": "2026-10-28T01:43:30.141048+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 477 source files",
+    "ruff": "All checks passed!",
+    "format": "473 files already formatted"
+  },
+  "sources": {
+    "src/lexinform/adapters/sqlite_repo.py": "91295558b02aa18646489eaf16b1ea523eec402a5851c7921879136e09c6a714",
+    "src/lexinform/ports.py": "204f026ec50cd17b5cec7a2a3d97b86c2fd30edac8d69567776d27296c391eb0",
+    "src/lexinform/services/analysis_applications.py": "d94f66ebe77619f656a197b6eb60fc3c6bf1288e422f19fa6b730486848bf568",
+    "src/lexinform/services/tracking/rollover.py": "a4f2087b4a62199cc681d5b9c4f81d92bf94b9dc7f876fe9638750b6c99c9469",
+    "tests/scenario/test_rollover_computation_history.py": "c757ac85ba4b4c824dbf2f51be8a7d4082ee27f7a2c511dcf29c8315408a4491"
+  },
+  "qualification": {
+    "native": {
+      "cases": 168,
+      "all_profiles_except_metadata_and_storage_metrics_exact": true,
+      "all_requests_and_rendered_messages_exact": true,
+      "all_28_prior_tables_exact_except_recorded_phase_timing": true,
+      "timing_differences": [
+        {
+          "case": "normal/name-4",
+          "row": 1,
+          "before": {
+            "collect batches": 0.0,
+            "commands": 0.0,
+            "discovery": 0.0,
+            "wykaz discovery": 0.0,
+            "rcl discovery": 0.0,
+            "text prefilter": 0.0,
+            "rcl consultations": 0.0,
+            "analysis": 0.0,
+            "publishing": 0.0,
+            "tracking": 0.1,
+            "submit batches": 0.0,
+            "digest": 0.0,
+            "batch status": 0.0
+          },
+          "after": {
+            "collect batches": 0.0,
+            "commands": 0.0,
+            "discovery": 0.0,
+            "wykaz discovery": 0.0,
+            "rcl discovery": 0.0,
+            "text prefilter": 0.0,
+            "rcl consultations": 0.0,
+            "analysis": 0.0,
+            "publishing": 0.0,
+            "tracking": 0.0,
+            "submit batches": 0.0,
+            "digest": 0.0,
+            "batch status": 0.0
+          }
+        }
+      ],
+      "command_outcome_seconds_excluded_from_semantic_comparison": true,
+      "content_version_views": 2,
+      "content_snapshot_views": 6,
+      "binding_views": 2,
+      "prior_metadata_rows_preserved": true,
+      "read_receipt_views": 270,
+      "source_observation_views": 210,
+      "selection_views": 198,
+      "link_views": 190,
+      "all_source_doctors_without_errors": true,
+      "sql_delta": {
+        "min": 0,
+        "max": 0
+      },
+      "gzip_delta": {
+        "min": -4,
+        "max": 0
+      }
+    },
+    "rollover": {
+      "cases": 13,
+      "requests_messages_edits_bill_snapshots_and_original_results_exact": true,
+      "all_prior_rows_preserved": true,
+      "only_new_rows_in": [
+        "result_applications",
+        "result_applicability"
+      ],
+      "schema_sql_exact": true,
+      "timing_differences": [],
+      "deltas": [
+        {
+          "case": "rcl-1-clean-False",
+          "sql_delta": 1211,
+          "gzip_delta": 138,
+          "result_applicability": 1,
+          "result_applications": 1
+        },
+        {
+          "case": "rcl-1-clean-True",
+          "sql_delta": 1211,
+          "gzip_delta": 134,
+          "result_applicability": 1,
+          "result_applications": 1
+        },
+        {
+          "case": "rcl-4-clean-False",
+          "sql_delta": 1211,
+          "gzip_delta": 138,
+          "result_applicability": 1,
+          "result_applications": 1
+        },
+        {
+          "case": "rcl-4-clean-True",
+          "sql_delta": 1211,
+          "gzip_delta": 134,
+          "result_applicability": 1,
+          "result_applications": 1
+        },
+        {
+          "case": "rcl-legacy",
+          "sql_delta": 0,
+          "gzip_delta": 0,
+          "result_applicability": 0,
+          "result_applications": 0
+        },
+        {
+          "case": "rcl-pending",
+          "sql_delta": 0,
+          "gzip_delta": 0,
+          "result_applicability": 0,
+          "result_applications": 0
+        },
+        {
+          "case": "wykaz-1-clean-False",
+          "sql_delta": 448,
+          "gzip_delta": 36,
+          "result_applicability": 0,
+          "result_applications": 1
+        },
+        {
+          "case": "wykaz-1-clean-True",
+          "sql_delta": 448,
+          "gzip_delta": 46,
+          "result_applicability": 0,
+          "result_applications": 1
+        },
+        {
+          "case": "wykaz-4-clean-False",
+          "sql_delta": 448,
+          "gzip_delta": 36,
+          "result_applicability": 0,
+          "result_applications": 1
+        },
+        {
+          "case": "wykaz-4-clean-True",
+          "sql_delta": 448,
+          "gzip_delta": 46,
+          "result_applicability": 0,
+          "result_applications": 1
+        },
+        {
+          "case": "wykaz-legacy",
+          "sql_delta": 0,
+          "gzip_delta": 0,
+          "result_applicability": 0,
+          "result_applications": 0
+        },
+        {
+          "case": "wykaz-pending",
+          "sql_delta": 0,
+          "gzip_delta": 0,
+          "result_applicability": 0,
+          "result_applications": 0
+        },
+        {
+          "case": "natural-simulated",
+          "sql_delta": 2137,
+          "gzip_delta": 145,
+          "result_applicability": 1,
+          "result_applications": 3
+        }
+      ],
+      "natural_simulation": {
+        "input_state": "fe7036a09d1688d03236c936cda26c876f3ae825",
+        "eligible_rows": 208,
+        "analysis_rows": 39,
+        "known_paid_refs": 3,
+        "new_applications": 3,
+        "new_source_associations": 1,
+        "model_and_reader_api_calls": 0
+      },
+      "sql_delta": {
+        "min": 0,
+        "max": 2137
+      },
+      "gzip_delta": {
+        "min": 0,
+        "max": 145
+      }
+    },
+    "structural": {
+      "baseline": "933f8d2f3f6ef31cc5888b498f7a35ea58ca569f",
+      "changed_runtime": {
+        "src/lexinform/adapters/sqlite_repo.py": "91295558b02aa18646489eaf16b1ea523eec402a5851c7921879136e09c6a714",
+        "src/lexinform/ports.py": "204f026ec50cd17b5cec7a2a3d97b86c2fd30edac8d69567776d27296c391eb0",
+        "src/lexinform/services/analysis_applications.py": "d94f66ebe77619f656a197b6eb60fc3c6bf1288e422f19fa6b730486848bf568",
+        "src/lexinform/services/tracking/rollover.py": "a4f2087b4a62199cc681d5b9c4f81d92bf94b9dc7f876fe9638750b6c99c9469"
+      },
+      "other_runtime_files_byte_identical": 156,
+      "all_deployed_migration_scripts_ast_exact": true,
+      "models_identities_extraction_selection_paid_payloads_and_renderers_byte_identical": true,
+      "rollover_eligibility_shared_by_reader_and_existing_move": true
+    },
+    "rollback": {
+      "reader": "933f8d2f3f6ef31cc5888b498f7a35ea58ca569f",
+      "snapshots": 13,
+      "bill_reads": 474,
+      "all_dumps_exact_without_conversion": true,
+      "new_receipts_readable": true
+    },
+    "release": {
+      "sha": "933f8d2f3f6ef31cc5888b498f7a35ea58ca569f",
+      "ci_run": 40610158748,
+      "deploy_run": 40610866847,
+      "natural_drain_run": 40610526550,
+      "evidence": [
+        {
+          "scope": "ci",
+          "lines": [
+            "2026-10-28T00:39:47.8939290Z All checks passed!",
+            "2026-10-28T00:40:02.5182148Z Success: no issues found in 476 source files",
+            "2026-10-28T00:45:59.0139287Z 5075 passed, 32 deselected, 3598 warnings in 353.90s (0:05:53)"
+          ]
+        },
+        {
+          "scope": "deploy",
+          "lines": [
+            "2026-10-28T00:46:13.3758159Z   COMMIT: 933f8d2f3f6ef31cc5888b498f7a35ea58ca569f",
+            "2026-10-28T00:47:01.8186320Z lexinform-listen up 45 s after restart"
+          ]
+        },
+        {
+          "scope": "natural drain",
+          "lines": [
+            "2026-10-28T00:43:07.6923802Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +933f8d2f3f6ef31cc5888b498f7a35ea58ca569f:refs/remotes/origin/main",
+            "2026-10-28T00:43:09.7693341Z  * [new ref]         933f8d2f3f6ef31cc5888b498f7a35ea58ca569f -> origin/main",
+            "2026-10-28T00:43:09.7770319Z 933f8d2f3f6ef31cc5888b498f7a35ea58ca569f",
+            "2026-10-28T00:43:09.9369487Z 933f8d2f3f6ef31cc5888b498f7a35ea58ca569f",
+            "2026-10-28T00:43:53.0088638Z \u001b[36;1muv run --frozen --no-dev lexinform db checkpoint \"$STATE_FILE\" --branch \"$STATE_BRANCH\"\u001b[0m"
+          ]
+        }
+      ]
+    }
+  },
+  "evidence": {
+    "out/corpus/j115/frozen-inputs.json": "0d6cbe634421d87ddbf393ea1a8e8107e9a23db5cfdfd2bb580aabd9f7f17aba",
+    "out/corpus/j115/native_profiles.py": "034be172c5c5b47d8224430ec6f2c43b3ce28564d1fca8e7f00a09f7d7120239",
+    "out/corpus/j115/compare_native_all_tables.py": "655d8ab13ca8f80b01829eb9866621c0a8a65d32bf6a0338ece8b4fd16056faf",
+    "out/corpus/j115/native-parity-accepted.json": "9dfb1c3caee2c064f5a3d3723f352191c7b87e05fb62e7ddba1f2e0134d48f3e",
+    "out/corpus/j115/rollover_profile.py": "20b0012f18f80882f47f23ca313f4a4cdebfb473be7f0a45fa977dc15740dc7b",
+    "out/corpus/j115/compare_rollover.py": "25db6409c9e659e8f3c7fa0e15ec1b5895651c9243e17d5ea50acf7b5260cbce",
+    "out/corpus/j115/rollover-parity.json": "ead45efd6d78f16e22e4f2562a0098b5072bbb536ee54d8734456fd0d7cdad12",
+    "out/corpus/j115/rollback_profile.py": "ccb1e95c41a0cb8b3bb22bb822a14d3a2c8ccc40797a400f403c05f3ab08be20",
+    "out/corpus/j115/rollback.json": "d2b91c4b31d3f44c42afa09443cf9728188b82f675628393b69c51d709d02db4",
+    "out/corpus/j115/structural_profile.py": "2e10b3cd03b9e273ba979624020a373657a603558df3b413d6d6a689aa18661d",
+    "out/corpus/j115/structural-parity.json": "325726f62aef1df898dbdf9627b24fb9a9b7a239bf3f68f34ac5b8561e6db0e4",
+    "out/corpus/j115/release-j114.json": "c48b036febb8710c45fcf4396cc409cadec1135faea6f2afa5890d3bbadd1525",
+    "out/corpus/j115/accept.py": "92c958f06038a485a1c85e79160f7163f009d4c20bfa158f16ceb70a4116a121"
+  },
+  "limitations": [
+    "Production-data rollover is an isolated future-term simulation, not a natural production cycle.",
+    "Known primary applications and stored source associations are recorded; sources are not re-read.",
+    "Original paid input/results and legacy unknowns are not re-keyed or backfilled.",
+    "No new storage backend, schema, paid calls or reader API effects.",
+    "Secondary relocation and remaining applicability history remain separate tasks."
+  ]
+}

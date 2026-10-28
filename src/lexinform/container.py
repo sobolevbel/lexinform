@@ -436,6 +436,7 @@ class Container:
                 self.text_sources(),
                 self.text_loader(),
                 self.prefilter,
+                clock=self.clock,
                 min_distinct=self.settings.text_prefilter_min_distinct,
                 min_occurrences=self.settings.text_prefilter_min_occurrences,
                 workers=self.settings.sejm_concurrency,
@@ -593,6 +594,7 @@ class Container:
                 self.gateway,
                 self.analysis_service(),
                 channel_id=self.channel_id(),
+                clock=self.clock,
             ),
         )
 
@@ -695,6 +697,7 @@ class Container:
                 self.clock,
                 gateway=self.gateway,
                 channel_id=self.channel_id(),
+                language=self.settings.output_language,
                 max_attempts=self.settings.max_publish_attempts,
                 attention_mode=self.settings.reader_attention,
                 urgent_days=self.settings.attention_urgent_days,
@@ -779,6 +782,9 @@ class Container:
                 analysis_memo_retention_days=self.settings.analysis_memo_retention_days,
                 pre_print=self.settings.pre_print_enabled,
                 full_track_weekday=self.settings.track_full_weekday,
+                document_reads=self.text_loader(),
+                document_artifacts=self.text_loader(),
+                document_file_reads=self.text_loader(),
             ),
         )
 

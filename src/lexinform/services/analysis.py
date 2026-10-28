@@ -10,15 +10,17 @@ import json
 import logging
 import re
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 from typing import Literal
 
 from pydantic import BaseModel
 
 from lexinform.analysis_records import RecordFactory, UsageFields
-from lexinform.commission_reviews import COMMISSION_ROLES, commission_text_matches
+from lexinform.commission_reviews import COMMISSION_ROLES
 from lexinform.concurrency import fan_out
+from lexinform.document_admissibility import analysis_admission, review_admission
+from lexinform.document_fingerprints import text_digest as text_digest
 from lexinform.document_input import amended_input_projection, append_self_amendments
 from lexinform.document_selection import selection_for_input
 from lexinform.document_versions import draft_version
@@ -33,7 +35,6 @@ from lexinform.errors import (
 from lexinform.keywords import KeywordPrefilter
 from lexinform.law_diff import diff_laws
 from lexinform.law_digest import law_digest
-from lexinform.law_technical import DECORATED_PAGE
 from lexinform.models import (
     AMENDMENT_SOURCES,
     FULL_TEXT_SOURCES,
@@ -58,12 +59,14 @@ from lexinform.models import (
     Category,
     ChangeContext,
     ChangedPassage,
+    ComputationResult,
     DigestItemMeta,
     DocumentDigest,
     DocumentPart,
     DocumentReview,
     DocumentReviewRecord,
     DocumentSelection,
+    DocumentSelectionRecord,
     JointBillDescription,
     JointComparison,
     JointContext,
@@ -80,9 +83,13 @@ from lexinform.models import (
     PublicationKind,
     PublicationStatus,
     ReadyAnalysis,
+    ResultApplication,
+    ResultApplicationTarget,
     ReviewContext,
     ReviewDocument,
+    ReviewInputReference,
     ReviewPurpose,
+    ReviewResultRecord,
     ReviewSource,
     ScannedDocument,
     Stage,
@@ -94,6 +101,8 @@ from lexinform.models import (
     TokenUsage,
     TriageContext,
     TriageRecord,
+    computation_id,
+    is_rcl_number,
     merge_usage,
     observe,
     provider_of,
@@ -113,6 +122,7 @@ from lexinform.models.batch import (
     NameQuestion,
     SupplementQuestion,
 )
+from lexinform.models.computations import CollectionReason, ComputationRecord
 from lexinform.ports import (
     AnalysisBackend,
     AuthorsResolver,
@@ -133,7 +143,6 @@ from lexinform.pricing import (
     input_cost,
 )
 from lexinform.sections import (
-    APPENDIX_KINDS,
     PAGE_BREAK,
     TextBudget,
     carries_the_document,
@@ -144,17 +153,30 @@ from lexinform.sections import (
     trim_print,
 )
 from lexinform.senate_documents import validate_senate_scan
+from lexinform.services.analysis_applications import apply_analysis
+from lexinform.services.computation_reuse import matching_record, retained_secondary
 from lexinform.services.cost import CostLedger
-from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
+from lexinform.services.document_history import DocumentSourceRead, record_source_read
+from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
 from lexinform.services.joint import primary_of, revive_prefilter_skips
-from lexinform.services.senate_documents import resolve_senate_document, verified_senate_text
+from lexinform.services.result_applications import record_secondary_application
+from lexinform.services.senate_documents import (
+    resolution_source_read,
+    resolve_senate_document,
+    verified_senate_text,
+)
 from lexinform.text_projection import TextProjection
 
 log = logging.getLogger(__name__)
 
 
 def _batch_records(
-    result: BatchResult, prompt_version: str, now: datetime, *, request_sha256: str | None = None
+    result: BatchResult,
+    prompt_version: str,
+    now: datetime,
+    *,
+    request_sha256: str | None = None,
+    computation_id: str | None = None,
 ) -> RecordFactory:
     return RecordFactory(
         result.model or "",
@@ -167,6 +189,7 @@ def _batch_records(
             cache_creation_input_tokens=result.cache_creation_input_tokens,
         ),
         request_sha256=request_sha256,
+        computation_id=computation_id,
     )
 
 
@@ -286,6 +309,19 @@ class Waiting:
     usage: dict[str, TokenUsage] = field(default_factory=dict)
 
 
+class _SourceReadError(Exception):
+    def __init__(self, source: DocumentSourceRead, cause: Exception) -> None:
+        super().__init__(str(cause))
+        self.source = source
+        self.cause = cause
+
+
+@dataclass(frozen=True)
+class _ReviewRead:
+    document: ReviewDocument | None
+    source_read: DocumentSourceRead | None = None
+
+
 @dataclass(frozen=True)
 class _Loaded:
     """What a document turned into for the model: its text, or its pages when it has none.
@@ -305,6 +341,7 @@ class _Loaded:
     document: TextDocument | None = None
     selection: DocumentSelection = DocumentSelection()
     projection: TextProjection | None = None
+    source_read: DocumentSourceRead | None = None
 
     @property
     def digest(self) -> str | None:
@@ -380,6 +417,7 @@ class _Prepared:
     memo_key: str | None = None
     triage_memo_key: str | None = None
     from_batch: bool = False
+    source_read: DocumentSourceRead | None = None
 
 
 _WHITESPACE = re.compile(r"\s+")
@@ -398,12 +436,6 @@ def _describe_for_comparison(bill: Bill) -> JointBillDescription:
         affected_groups=list(analysis.affected_groups),
         practical_impact=analysis.practical_impact,
     )
-
-
-def text_digest(text: str) -> str:
-    """Versioned full-text identity; bare numeric lines may be table values."""
-    normalised = _WHITESPACE.sub(" ", DECORATED_PAGE.sub("", text)).strip()
-    return "text-v2:" + hashlib.sha256(normalised.encode("utf-8")).hexdigest()
 
 
 def _same_text_read_again(previous: AnalysisRecord, fresh: AnalysisRecord) -> AnalysisRecord:
@@ -636,6 +668,12 @@ class AnalysisService:
         # Asked here and not in `_prepare`, which runs in the worker threads and never touches
         # the repository.
         carried = {bill.number for bill in candidates if self._joint_card_exists(bill)}
+        history = {
+            (bill.term, bill.number): tuple(
+                self._repo.list_computation_results(bill.term, bill.number, purpose="analysis")
+            )
+            for bill in candidates
+        }
 
         def prepare(bill: Bill) -> _Prepared:
             return self._prepare_first(
@@ -643,12 +681,13 @@ class AnalysisService:
                 triage=bill.number not in carried,
                 submit_batch=self._batches(bill)
                 and (self._options.require_batch or "analysis" in self._options.batch_kinds),
+                history=history[(bill.term, bill.number)],
             )
 
         for outcome in fan_out(candidates, prepare, workers=self._options.workers):
             bill = outcome.item
             try:
-                prepared = outcome.result()
+                prepared = self._accept_preparation(bill, outcome.result)
                 if prepared.queued:
                     if not self._enqueue(bill, prepared):
                         result.stopped = self._ledger.stopped
@@ -883,7 +922,11 @@ class AnalysisService:
         items = self._repo.list_llm_batch_items(batch.batch_id)
         if status == "failed":
             for item in items:
-                self._consume(item, BatchResult(custom_id=item.custom_id, error="batch failed"))
+                self._consume(
+                    item,
+                    BatchResult(custom_id=item.custom_id, error="batch failed"),
+                    batch.provider,
+                )
             self._repo.mark_llm_batch_collected(batch.batch_id, completed_at=now)
             self._ledger.release(batch.estimated_cost_usd)
             return True
@@ -894,13 +937,14 @@ class AnalysisService:
         for batch_result in backend.fetch_results(batch.batch_id, batch.call_kind):
             found = by_id.get(batch_result.custom_id)
             if found is not None and batch_result.custom_id not in received:
-                self._consume(found, batch_result)
+                self._consume(found, batch_result, batch.provider)
                 received.add(batch_result.custom_id)
         for custom_id, item in by_id.items():
             if custom_id not in received:
                 self._consume(
                     item,
                     BatchResult(custom_id=custom_id, error="batch item missing from results"),
+                    batch.provider,
                 )
         self._repo.mark_llm_batch_collected(batch.batch_id, completed_at=now)
         self._ledger.release(batch.estimated_cost_usd)
@@ -909,9 +953,11 @@ class AnalysisService:
     def uncertain_batch_intent_ids(self) -> list[str]:
         return [intent.request.custom_id for intent in self._repo.list_submitting_batch_intents()]
 
-    def _consume(self, item: LlmBatchItem, batch_result: BatchResult) -> None:
+    def _consume(
+        self, item: LlmBatchItem, batch_result: BatchResult, provider: BatchProvider
+    ) -> None:
         if isinstance(item.meta, DigestItemMeta):
-            self._consume_digest(item, batch_result, item.meta)
+            self._consume_digest(item, batch_result, item.meta, provider)
         else:
             now = self._clock.now()
             current = self._repo.get(item.term, item.number)
@@ -921,7 +967,12 @@ class AnalysisService:
                 and current.analysis_generation == item.meta.generation
             )
             with self._repo.atomic():
-                record = self._consume_current(item, batch_result, now, active=active)
+                record = self._consume_current(
+                    item, batch_result, now, active=active, provider=provider
+                )
+                self._record_collection(
+                    item, batch_result, record, current, provider, now, active=active
+                )
             self._charge_batch_result(item, batch_result)
             if record is not None and active:
                 self._memo.setdefault(
@@ -930,12 +981,116 @@ class AnalysisService:
         if batch_result.context_exceeded:
             self._context_rejections.add(item.custom_id)
 
+    def _record_collection(
+        self,
+        item: LlmBatchItem,
+        response: BatchResult,
+        record: AnalysisRecord | None,
+        current: Bill | None,
+        provider: BatchProvider,
+        now: datetime,
+        *,
+        active: bool,
+    ) -> None:
+        assert isinstance(item.meta, BatchItemMeta), (
+            "primary collection uses frozen analysis metadata"
+        )
+        assert item.call_kind in ("analysis", "reanalysis"), (
+            "primary metadata belongs to primary purposes"
+        )
+        result = self._retain_computation(item, response, record, provider, now)
+        reason: CollectionReason
+        if current is None:
+            reason = "bill_missing"
+        elif current.analysis_generation != item.meta.generation:
+            reason = "generation_changed"
+        elif not active:
+            reason = "inactive_status"
+        elif record is None:
+            reason = "no_validated_result"
+        else:
+            reason = "current_generation"
+        self._repo.save_result_application(
+            ResultApplication(
+                result_id=result.result_id,
+                term=item.term,
+                number=item.number,
+                generation=item.meta.generation,
+                outcome=("ready" if record is not None else "failed") if active else "superseded",
+                reason=reason,
+                observed_generation=current.analysis_generation if current else None,
+                observed_status=current.status if current else None,
+                created_at=now,
+            )
+        )
+
+    def _retain_computation(
+        self,
+        item: LlmBatchItem,
+        response: BatchResult,
+        record: ComputationRecord | None,
+        provider: BatchProvider,
+        now: datetime,
+        *,
+        review_input: ReviewInputReference | None = None,
+    ) -> ComputationResult:
+        assert item.call_kind not in ("triage", "change_review"), (
+            "only batch purposes produce durable computation items"
+        )
+        primary = isinstance(item.meta, BatchItemMeta)
+        review = item.call_kind in ("consultation_review", "commission_review", "act_application")
+        result = ComputationResult(
+            schema_version=1 if primary else 3 if review else 2,
+            provider=provider,
+            batch_id=item.batch_id,
+            custom_id=item.custom_id,
+            purpose=item.call_kind,
+            term=item.term,
+            number=item.number,
+            generation=item.meta.generation if isinstance(item.meta, BatchItemMeta) else None,
+            collected_at=now,
+            input_binding=item.meta.input_binding,
+            review_input=review_input,
+            request_sha256=item.meta.request_sha256,
+            validation="validated" if record is not None else "error",
+            record=record,
+            model=response.model,
+            usage=TokenUsage(
+                batch_input=response.input_tokens or 0,
+                batch_output=response.output_tokens or 0,
+                batch_cache_read=response.cache_read_input_tokens or 0,
+                batch_cache_creation=response.cache_creation_input_tokens or 0,
+            ),
+            error=response.error,
+            context_exceeded=response.context_exceeded,
+        )
+        self._repo.save_computation_result(result)
+        return result
+
     def _consume_digest(
-        self, item: LlmBatchItem, result: BatchResult, meta: DigestItemMeta
+        self,
+        item: LlmBatchItem,
+        result: BatchResult,
+        meta: DigestItemMeta,
+        provider: BatchProvider,
     ) -> None:
         now = self._clock.now()
+        review = item.call_kind in ("consultation_review", "commission_review", "act_application")
+        retain = review or item.call_kind in (
+            "amendments",
+            "supplement",
+            "joint",
+            "name",
+            "explanation",
+        )
         records = _batch_records(
-            result, meta.prompt_version, now, request_sha256=meta.request_sha256
+            result,
+            meta.prompt_version,
+            now,
+            request_sha256=meta.request_sha256,
+            computation_id=computation_id(provider, item.batch_id, item.custom_id)
+            if retain
+            else None,
         )
         record: (
             AnalysisRecord
@@ -998,10 +1153,16 @@ class AnalysisService:
             result = result.model_copy(update={"error": "batch answer does not match call kind"})
         if isinstance(record, (AmendmentsRecord, SupplementRecord)):
             record.scan_input = meta.scan_input
+            record.source_url = meta.source_url or ""
+        if isinstance(record, SupplementRecord):
+            record.number = meta.document_number or ""
         with self._repo.atomic():
+            revision_id = None
             if record is not None:
                 if isinstance(record, AmendmentsRecord) and meta.amendment_revision is not None:
-                    self._queue_amendment_revision(item, meta.amendment_revision, record)
+                    revision_id = self._queue_amendment_revision(
+                        item, meta.amendment_revision, record
+                    )
                 self._repo.save_analysis_memo(
                     meta.memo_key,
                     record.model_dump_json(),
@@ -1017,6 +1178,33 @@ class AnalysisService:
                         number=item.number,
                         used_at=now,
                     )
+            if retain:
+                normalized = (
+                    ReviewResultRecord.from_record(record)
+                    if isinstance(record, DocumentReviewRecord)
+                    else record
+                )
+                review_input = (
+                    ReviewInputReference.from_context(
+                        meta.review_context,
+                        term=item.term,
+                        recorded_key=meta.input_binding.reuse_key if meta.input_binding else None,
+                    )
+                    if review and meta.review_context is not None
+                    else None
+                )
+                self._retain_computation(
+                    item, result, normalized, provider, now, review_input=review_input
+                )
+            if revision_id is not None and record is not None:
+                record_secondary_application(
+                    self._repo,
+                    item.term,
+                    item.number,
+                    record.computation_id,
+                    target=ResultApplicationTarget(kind="publication", ref=str(revision_id)),
+                    now=now,
+                )
             self._repo.mark_llm_batch_item_consumed(
                 item.batch_id, item.custom_id, consumed_at=now, result=result
             )
@@ -1028,7 +1216,7 @@ class AnalysisService:
 
     def _queue_amendment_revision(
         self, item: LlmBatchItem, target: AmendmentRevisionTarget, record: AmendmentsRecord
-    ) -> None:
+    ) -> int | None:
         original = self._repo.publication_by_id(target.publication_id)
         if (
             original is None
@@ -1049,12 +1237,12 @@ class AnalysisService:
             )
             is not None
         ):
-            return
+            return None
         record.source_url = target.source_url
         change = StatusChange.model_validate_json(target.delivery.change_json)
         change.amendments = record
         delivery = target.delivery.model_copy(update={"change_json": change.model_dump_json()})
-        self._repo.create_publication(
+        return self._repo.create_publication(
             Publication(
                 term=item.term,
                 number=item.number,
@@ -1078,7 +1266,7 @@ class AnalysisService:
         force_id: str = "",
     ) -> Waiting | Publication:
         assert bill.analysis is not None
-        loaded = self._load_amendments_text(document)
+        loaded = self._load_amendments_text(bill, document)
         if not loaded.text.strip() and loaded.scan is None:
             raise ValueError("Полный текст поправок не извлечён; исправление не запущено")
         if self._too_expensive_to_digest(loaded):
@@ -1130,7 +1318,7 @@ class AnalysisService:
         now = self._clock.now()
         try:
             self._repo.save_batch_intent(
-                BatchIntent(
+                BatchIntent.from_request(
                     request=request,
                     provider=provider,
                     created_at=now,
@@ -1139,6 +1327,7 @@ class AnalysisService:
                         queued_at=now,
                         prompt_version=request.prompt_version,
                         source_kind=document.kind,
+                        source_url=document.url,
                         amendment_source=context.source_check,
                         scan_input=context.scan.scan_input if context.scan else None,
                         amendment_revision=target.model_copy(update={"delivery": delivery}),
@@ -1151,7 +1340,13 @@ class AnalysisService:
         return Waiting(now)
 
     def _consume_current(
-        self, item: LlmBatchItem, batch_result: BatchResult, now: datetime, *, active: bool
+        self,
+        item: LlmBatchItem,
+        batch_result: BatchResult,
+        now: datetime,
+        *,
+        active: bool,
+        provider: BatchProvider,
     ) -> AnalysisRecord | None:
         assert isinstance(item.meta, BatchItemMeta)
         record = None
@@ -1176,6 +1371,7 @@ class AnalysisService:
                     "law_sha256": item.meta.law_sha256,
                     "source_checked_at": now,
                     "selection": item.meta.selection,
+                    "computation_id": computation_id(provider, item.batch_id, item.custom_id),
                 }
             )
             if active:
@@ -1229,13 +1425,21 @@ class AnalysisService:
         return record
 
     def explain_bill(self, bill: Bill) -> AnalysisRecord | Waiting:
-        prepared = self._prepare(
+        prepared = self._accept_preparation(
             bill,
-            self._texts.locate(bill),
-            previous=None,
-            triage=False,
-            submit_batch=True,
-            purpose="explanation",
+            lambda: self._prepare(
+                bill,
+                self._texts.locate(bill),
+                previous=None,
+                triage=False,
+                submit_batch=True,
+                purpose="explanation",
+                history=tuple(
+                    self._repo.list_computation_results(
+                        bill.term, bill.number, purpose="explanation"
+                    )
+                ),
+            ),
         )
         if prepared.record is not None:
             assert prepared.memo_key is not None
@@ -1250,12 +1454,15 @@ class AnalysisService:
             return Waiting(job.since)
         if len((request.payload_json or "").encode()) > 100_000_000:
             raise ValueError("one batch request exceeds the 100 MB payload limit")
+        provider = prepared.batch_provider or self._options.batch_provider
+        if provider is None:
+            raise LlmUnavailableError("batch provider is unavailable for explanation")
         if not self._ledger.reserve(request.estimated_cost_usd):
             raise ValueError("Разбор не поставлен в очередь: исчерпан бюджет прогона")
         now = self._clock.now()
         try:
             self._repo.save_batch_intent(
-                BatchIntent(
+                BatchIntent.from_request(
                     request=request,
                     meta=DigestItemMeta(
                         memo_key=prepared.memo_key,
@@ -1263,7 +1470,7 @@ class AnalysisService:
                         prompt_version=request.prompt_version,
                         explanation=source.model_copy(update={"located": None, "text": ""}),
                     ),
-                    provider=prepared.batch_provider or self._options.batch_provider,
+                    provider=provider,
                     created_at=now,
                 )
             )
@@ -1284,11 +1491,19 @@ class AnalysisService:
         if ignore_cost_limit:
             self._repo.reset_bill(bill.term, bill.number, BillStatus.ANALYSIS_PENDING)
             bill = self._repo.get(bill.term, bill.number) or bill
-        prepared = self._prepare_first(
+        prepared = self._accept_preparation(
             bill,
-            cost_guard=not ignore_cost_limit,
-            triage=not self._joint_card_exists(bill),
-            submit_batch=self._options.require_batch,
+            lambda: self._prepare_first(
+                bill,
+                cost_guard=not ignore_cost_limit,
+                triage=not self._joint_card_exists(bill),
+                submit_batch=self._options.require_batch,
+                history=tuple(
+                    self._repo.list_computation_results(bill.term, bill.number, purpose="analysis")
+                )
+                if not ignore_cost_limit
+                else (),
+            ),
         )
         if prepared.queued:
             if not self._enqueue(bill, prepared):
@@ -1304,6 +1519,7 @@ class AnalysisService:
         cost_guard: bool = True,
         triage: bool = True,
         submit_batch: bool = False,
+        history: tuple[ComputationResult, ...] = (),
     ) -> _Prepared:
         if (
             cost_guard
@@ -1327,6 +1543,7 @@ class AnalysisService:
             cost_guard=cost_guard,
             triage=triage,
             submit_batch=submit_batch,
+            history=history,
         )
 
     def _joint_card_exists(self, bill: Bill) -> bool:
@@ -1363,7 +1580,20 @@ class AnalysisService:
                 "prepare_reanalysis returns a new bill only with its record"
             )
             with self._repo.atomic():
-                self._repo.save_analysis(bill.term, bill.number, fresh.analysis)
+                apply_analysis(
+                    self._repo,
+                    bill.term,
+                    bill.number,
+                    fresh.analysis,
+                    now=self._clock.now(),
+                    reason=(
+                        "batch_result"
+                        if bill.status is BillStatus.REANALYSIS_READY
+                        else "memo_reuse"
+                    )
+                    if changed
+                    else None,
+                )
                 if fresh.authors is not None:
                     self._repo.save_authors(bill.term, bill.number, fresh.authors)
         return fresh.analysis if changed else None
@@ -1387,13 +1617,21 @@ class AnalysisService:
             # Already filed and not yet collected: re-detecting it now would queue it twice.
             return bill, False
         located = LocatedText(summary=summary, document=document)
-        prepared = self._prepare(
+        prepared = self._accept_preparation(
             bill,
-            located,
-            previous=bill.analysis,
-            previous_document=previous_document or _source_of(bill.analysis),
-            submit_batch=self._batches(bill)
-            and (self._options.require_batch or "reanalysis" in self._options.batch_kinds),
+            lambda: self._prepare(
+                bill,
+                located,
+                previous=bill.analysis,
+                previous_document=previous_document or _source_of(bill.analysis),
+                submit_batch=self._batches(bill)
+                and (self._options.require_batch or "reanalysis" in self._options.batch_kinds),
+                history=tuple(
+                    self._repo.list_computation_results(
+                        bill.term, bill.number, purpose="reanalysis"
+                    )
+                ),
+            ),
         )
         if prepared.queued:
             self._enqueue(bill, prepared)
@@ -1453,6 +1691,12 @@ class AnalysisService:
         if legacy_job is not None and legacy_job.state in {"queued", "submitting", "open"}:
             return Waiting(legacy_job.since)
         cached = self._memo.get(key)
+        if cached is None:
+            retained = retained_secondary(
+                self._repo, bill.term, bill.number, question.kind, key, record_model
+            )
+            if retained is not None:
+                cached = retained.model_dump_json()
         if cached is not None:
             self._cancel_queued_digest(key)
             record = record_model.model_validate_json(cached)
@@ -1494,7 +1738,7 @@ class AnalysisService:
                 if self._ledger.reserve(request.estimated_cost_usd):
                     try:
                         self._repo.save_batch_intent(
-                            BatchIntent(
+                            BatchIntent.from_request(
                                 request=request,
                                 meta=meta.model_copy(
                                     update={
@@ -1586,7 +1830,14 @@ class AnalysisService:
             fan_out(documents, self._read_review_document, workers=self._options.workers),
             strict=True,
         ):
-            source = outcome.result()
+            try:
+                read = outcome.result()
+            except _SourceReadError as failure:
+                self._record_source_read(bill, failure.source, purpose="review")
+                raise failure.cause from failure
+            if read.source_read is not None:
+                self._record_source_read(bill, read.source_read, purpose="review")
+            source = read.document
             if source is not None:
                 sources.append(source)
             elif purpose == "commission_review":
@@ -1629,18 +1880,40 @@ class AnalysisService:
             ),
         )
 
-    def _read_review_document(self, source: ReviewSource) -> ReviewDocument | None:
+    def _read_review_document(self, source: ReviewSource) -> _ReviewRead:
         if source.snapshot is not None:
-            return source.snapshot
+            return _ReviewRead(source.snapshot)
         document = source.document
         if document.compare_versions:
             document, file = self._loader.select_document(document)
         else:
             file = self._loader.read_document(document)
+        read = DocumentSourceRead(
+            document,
+            DocumentSelectionRecord.from_selection(file.selection),
+            self._loader.artifacts_for_selection(file.selection),
+            reads=self._loader.reads_for_selection(file.selection),
+        )
+        try:
+            return _ReviewRead(self._review_document_of(source, document, file), read)
+        except Exception as exc:
+            raise _SourceReadError(read, exc) from exc
+
+    def _review_document_of(
+        self, source: ReviewSource, document: TextDocument, file: LoadedFile
+    ) -> ReviewDocument | None:
+        """Build the existing review result without changing admission or its fingerprints."""
         text = file.text or ""
-        if source.expected_digest is not None and text_digest(text) != source.expected_digest:
-            return None
-        if not commission_text_matches(source.role, text):
+        admission = review_admission(
+            file.selection,
+            text,
+            pages=file.pages,
+            min_chars=MIN_TEXT_CHARS,
+            oversize=file.oversize,
+            role=source.role,
+            expected_digest=source.expected_digest,
+        )
+        if admission in ("digest_mismatch", "role_mismatch"):
             return None
         return ReviewDocument(
             identity=source.identity if document.url == source.document.url else document.url,
@@ -1650,13 +1923,7 @@ class AnalysisService:
             text=text,
             sha256=hashlib.sha256(text.encode()).hexdigest(),
             normalized_sha256=text_digest(text),
-            complete=(
-                bool(text.strip())
-                and not file.oversize
-                and carries_the_document(text, min_chars=MIN_TEXT_CHARS, pages=file.pages)
-                and not file.selection.rejected
-                and file.selection.state not in ("ambiguous", "unsupported")
-            ),
+            complete=admission == "complete",
             file_sha256=file.sha256,
             author=source.author,
             body=source.body,
@@ -1749,7 +2016,7 @@ class AnalysisService:
             return Waiting(self._clock.now())
         try:
             self._repo.save_batch_intent(
-                BatchIntent(
+                BatchIntent.from_request(
                     request=request,
                     meta=DigestItemMeta(
                         memo_key=key,
@@ -1784,14 +2051,35 @@ class AnalysisService:
             self._loader, info, adopted_on=stage.date, titles=titles, passed_on=passed_on
         )
 
-    def _load_amendments_text(self, document: TextDocument) -> _Loaded:
+    def _load_secondary_text(self, bill: Bill, document: TextDocument) -> _Loaded:
+        """Record a secondary consumer's completed source read before using its input."""
+        try:
+            loaded = self._load_source(document, trim=False)
+        except _SourceReadError as failure:
+            self._record_source_read(bill, failure.source)
+            raise failure.cause from failure
+        if loaded.source_read is not None:
+            self._record_source_read(bill, loaded.source_read)
+        return loaded
+
+    def _load_amendments_text(self, bill: Bill, document: TextDocument) -> _Loaded:
         if document.kind != "senate_amendments":
-            loaded = self._load_text(document, trim=False)
+            loaded = self._load_secondary_text(bill, document)
             if loaded.truncated:
                 raise ValueError("Полный текст поправок комиссии не помещается в бюджет текста")
             return loaded
+
+        def observe(sha256: str | None, pages: int, text: str | None) -> None:
+            source = resolution_source_read(
+                self._loader, document, sha256=sha256, pages=pages, text=text
+            )
+            if source is not None:
+                self._record_source_read(bill, source)
+
         if document.senate is not None and document.senate.scan:
             scan = self._loader.load_scan(document.url, cover_letter=False)
+            if scan is not None:
+                observe(scan.sha256, scan.of_pages, None)
             if (
                 scan is None
                 or scan.sha256 != document.senate.sha256
@@ -1800,7 +2088,11 @@ class AnalysisService:
             ):
                 raise ValueError("Полный скан постановления не прочитан или файл изменился")
             return _Loaded("", False, "scan", scan=scan)
-        text = verified_senate_text(self._loader, document)
+        text = verified_senate_text(
+            self._loader,
+            document,
+            on_read=lambda loaded: observe(loaded.sha256, loaded.pages, loaded.text),
+        )
         budgeted = self._budget.apply(text, self._keywords.spans(text))
         if budgeted.truncated:
             raise ValueError("Полный текст поправок Сената не помещается в бюджет текста")
@@ -1815,7 +2107,7 @@ class AnalysisService:
         recommendation: TextDocument | None = None,
     ) -> AmendmentsContext | None:
         assert bill.analysis is not None
-        loaded = self._load_amendments_text(document)
+        loaded = self._load_amendments_text(bill, document)
         if not loaded.text.strip() and loaded.scan is None:
             return None
         if self._too_expensive_to_digest(loaded):
@@ -1838,7 +2130,7 @@ class AnalysisService:
         assert bill.analysis is not None
         report = None
         if recommendation is not None:
-            read = self._load_text(recommendation, trim=False)
+            read = self._load_secondary_text(bill, recommendation)
             if read.text.strip() and not read.truncated:
                 report = read.text
             else:
@@ -1885,6 +2177,7 @@ class AnalysisService:
             DigestItemMeta(
                 memo_key=key,
                 source_kind=document.kind,
+                source_url=document.url,
                 amendment_source=ctx.source_check,
                 scan_input=ctx.scan.scan_input if ctx.scan else None,
             ),
@@ -1934,7 +2227,7 @@ class AnalysisService:
             delivered.source_url = document.url
             self._remember_analysis(bill, delivery_key, delivered)
             return delivered
-        loaded = self._load_text(document, trim=False)
+        loaded = self._load_secondary_text(bill, document)
         if loaded.scan is None and (loaded.source == "metadata_only" or not loaded.text.strip()):
             return self.bare_supplement(document, number=number, title=title)
         if self._too_expensive_to_digest(loaded):
@@ -1965,6 +2258,8 @@ class AnalysisService:
                 delivery_key=delivery_key,
                 source_kind=document.kind,
                 title=title,
+                source_url=document.url,
+                document_number=number,
                 scan_input=ctx.scan.scan_input if ctx.scan else None,
             ),
             SupplementRecord,
@@ -2016,7 +2311,7 @@ class AnalysisService:
             key_changes=list(answer.key_changes),
             language=answer.mnemonic_language,
         )
-        key = _memo_key(bill, "name", ctx)
+        key = self._name_request_key(bill, ctx)
         return self._ask_or_wait(
             bill,
             NameQuestion(ctx=ctx),
@@ -2026,6 +2321,40 @@ class AnalysisService:
             lambda: self._llm.name_bill(ctx),
             may_wait=may_wait,
         )
+
+    def _name_request_key(self, bill: Bill, context: NameContext) -> str:
+        """Only known original owner terms can locate a retained RCL name question."""
+        key = _memo_key(bill, "name", context)
+        if not is_rcl_number(bill.number) or key in self._memo:
+            return key
+        terms = dict.fromkeys((bill.term, *self._repo.computation_owner_terms(bill.number, "name")))
+        results = [
+            result
+            for term in terms
+            for result in reversed(self._repo.list_computation_results(term, bill.number))
+            if result.purpose == "name"
+        ]
+        for term in terms:
+            original = bill.model_copy(
+                update={"summary": bill.summary.model_copy(update={"term": term})}
+            )
+            # NameContext has no source text, so the legacy hash preserves every name input.
+            candidates = dict.fromkeys(
+                (
+                    _memo_key(original, "name", context),
+                    _memo_key(original, "name", context, legacy=True),
+                )
+            )
+            for candidate in candidates:
+                if candidate in self._memo:
+                    return candidate
+                for result in results:
+                    if result.custom_id == candidate and isinstance(result.record, NameRecord):
+                        self._memo[candidate] = result.record.model_dump_json()
+                        return candidate
+                if self._repo.batch_job(candidate) is not None:
+                    return candidate
+        return key
 
     def _too_expensive_to_digest(self, loaded: _Loaded) -> bool:
         """The per-bill cost limit applies to a filed document too, and here it is the whole
@@ -2048,6 +2377,53 @@ class AnalysisService:
             number=number, title=title, source_kind=document.kind, source_url=document.url
         )
 
+    def _cached_analysis(
+        self,
+        bill: Bill,
+        purpose: BatchKind,
+        key: str,
+        history: tuple[ComputationResult, ...],
+        *,
+        cost_guard: bool,
+    ) -> str | None:
+        """Prepare workers read only memo and caller-supplied history snapshots."""
+        if not cost_guard:
+            return None
+        cached = self._memo.get(key)
+        if cached is None:
+            record = matching_record(history, bill.term, bill.number, purpose, key, AnalysisRecord)
+            if record is not None:
+                cached = record.model_dump_json()
+        return cached
+
+    def _accept_preparation(self, bill: Bill, prepare: Callable[[], _Prepared]) -> _Prepared:
+        """Record completed source reads on the calling thread, including failed paid work."""
+        try:
+            prepared = prepare()
+        except _SourceReadError as failure:
+            self._record_source_read(bill, failure.source)
+            raise failure.cause from failure
+        if prepared.source_read is not None:
+            self._record_source_read(bill, prepared.source_read)
+        return prepared
+
+    def _record_source_read(
+        self,
+        bill: Bill,
+        source: DocumentSourceRead,
+        *,
+        purpose: Literal["analysis", "review"] = "analysis",
+    ) -> None:
+        with self._repo.atomic():
+            record_source_read(
+                self._repo,
+                source,
+                term=bill.term,
+                number=bill.number,
+                purpose=purpose,
+                recorded_at=self._clock.now(),
+            )
+
     def _prepare(
         self,
         bill: Bill,
@@ -2059,6 +2435,7 @@ class AnalysisService:
         triage: bool = True,
         submit_batch: bool = False,
         purpose: Literal["analysis", "reanalysis", "explanation"] | None = None,
+        history: tuple[ComputationResult, ...] = (),
     ) -> _Prepared:
         """Load the text and ask the model. Network only: safe to run for several bills at once.
 
@@ -2070,7 +2447,22 @@ class AnalysisService:
         """
         document = located.document
         try:
-            loaded = self._load_text(document)
+            loaded = self._load_source(document)
+        except _SourceReadError as failure:
+            if previous is None or not isinstance(
+                failure.cause, (OrkaUnreachableError, DocumentSelectionError)
+            ):
+                raise
+            return _Prepared(
+                bill,
+                located,
+                "",
+                "metadata_only",
+                previous,
+                first=False,
+                unreadable_reason=str(failure.cause) or type(failure.cause).__name__,
+                source_read=failure.source,
+            )
         except (OrkaUnreachableError, DocumentSelectionError) as exc:
             if previous is None:
                 raise
@@ -2085,6 +2477,41 @@ class AnalysisService:
                 first=False,
                 unreadable_reason=str(exc) or type(exc).__name__,
             )
+        try:
+            prepared = self._prepare_loaded(
+                bill,
+                located,
+                loaded,
+                previous=previous,
+                previous_document=previous_document,
+                cost_guard=cost_guard,
+                triage=triage,
+                submit_batch=submit_batch,
+                purpose=purpose,
+                history=history,
+            )
+        except Exception as exc:
+            if loaded.source_read is None:
+                raise
+            raise _SourceReadError(loaded.source_read, exc) from exc
+        return replace(prepared, source_read=loaded.source_read)
+
+    def _prepare_loaded(
+        self,
+        bill: Bill,
+        located: LocatedText,
+        loaded: _Loaded,
+        *,
+        previous: AnalysisRecord | None,
+        previous_document: TextDocument | None = None,
+        cost_guard: bool = True,
+        triage: bool = True,
+        submit_batch: bool = False,
+        purpose: Literal["analysis", "reanalysis", "explanation"] | None = None,
+        history: tuple[ComputationResult, ...] = (),
+    ) -> _Prepared:
+        """Prepare a paid input from an already observed source without repository writes."""
+        document = located.document
         if loaded.document is not None:
             document = loaded.document
             located = located.model_copy(update={"document": document})
@@ -2187,7 +2614,7 @@ class AnalysisService:
                 overflow = submit_batch = True
                 fitted, key = to_overflow("the primary batch rejected the context")
         ctx = fitted.ctx
-        cached = self._memo.get(key) if cost_guard else None
+        cached = self._cached_analysis(bill, purpose, key, history, cost_guard=cost_guard)
         record: AnalysisRecord | None = None
         if cached is None and not submit_batch:
             try:
@@ -2198,7 +2625,7 @@ class AnalysisService:
                 overflow = submit_batch = True
                 fitted, key = to_overflow("the primary model rejected the context")
                 ctx = fitted.ctx
-                cached = self._memo.get(key) if cost_guard else None
+                cached = self._cached_analysis(bill, purpose, key, history, cost_guard=cost_guard)
         backend = self._overflow_batch if overflow else self._batch
         if cached is None and submit_batch and backend is None:
             raise LlmUnavailableError(
@@ -2609,7 +3036,7 @@ class AnalysisService:
             self._remember_analysis(bill, prepared.triage_memo_key, prepared.triage)
         with self._repo.atomic():
             self._repo.save_batch_intent(
-                BatchIntent(
+                BatchIntent.from_request(
                     request=prepared.batch_request,
                     meta=prepared.batch_meta.model_copy(
                         update={
@@ -2655,7 +3082,14 @@ class AnalysisService:
                 self._repo.upsert_summary(summary, now=self._clock.now())
             if authors is not None:
                 self._repo.save_authors(bill.term, bill.number, authors)
-            self._repo.save_analysis(bill.term, bill.number, prepared.record)
+            apply_analysis(
+                self._repo,
+                bill.term,
+                bill.number,
+                prepared.record,
+                now=self._clock.now(),
+                reason="batch_result" if prepared.from_batch else "memo_reuse",
+            )
             if prepared.first and located.stages is not None:
                 self._repo.save_stages(
                     bill.term, bill.number, located.stages, stage_fingerprint(located.stages)
@@ -2680,15 +3114,14 @@ class AnalysisService:
         self._memo.setdefault(key, encoded)
 
     def _load_text(self, document: TextDocument | None, *, trim: bool = True) -> _Loaded:
-        """Trimmed, budgeted text of the document — or its pages, when the file has no text in it.
+        """Preserve secondary readers' exception contract without recording a source observation."""
+        try:
+            return self._load_source(document, trim=trim)
+        except _SourceReadError as failure:
+            raise failure.cause from failure
 
-        Much of what the Sejm publishes is signed paper filed as images, whose text layer is
-        empty or holds only the transmittal letter. Such a file goes to the model as pages
-        (`scan`); the extracted text comes back either way, so the signatures are still resolved.
-
-        An outage propagates, and so does orka refusing the file: an analysis of the metadata must
-        never be what a bill with a text ends up with. `trim=False` keeps the whole text.
-        """
+    def _load_source(self, document: TextDocument | None, *, trim: bool = True) -> _Loaded:
+        """Prepare admitted text or pages, propagating failures and blocked selections."""
         if document is None:
             return _Loaded("", False, "metadata_only")
         try:
@@ -2705,29 +3138,46 @@ class AnalysisService:
                 "unsupported" if isinstance(exc, ValueError) else "waiting",
                 f"{document.url}: {type(exc).__name__}: {exc}",
             ) from exc
-        if file.selection.state in ("waiting", "ambiguous", "unsupported"):
-            raise DocumentSelectionError(file.selection.state, "; ".join(file.selection.rejected))
+        source = DocumentSourceRead(
+            document,
+            DocumentSelectionRecord.from_selection(file.selection),
+            self._loader.artifacts_for_selection(file.selection),
+            reads=self._loader.reads_for_selection(file.selection),
+        )
+        try:
+            return replace(self._load_selected(document, file, trim=trim), source_read=source)
+        except Exception as exc:
+            raise _SourceReadError(source, exc) from exc
+
+    def _load_selected(self, document: TextDocument, file: LoadedFile, *, trim: bool) -> _Loaded:
+        """Apply the existing admission and input shaping to a selected source."""
+        admission = analysis_admission(
+            file.selection, file.text, pages=file.pages, min_chars=MIN_TEXT_CHARS
+        )
+        if admission in ("waiting", "ambiguous", "unsupported"):
+            raise DocumentSelectionError(admission, "; ".join(file.selection.rejected))
         text = file.text
-        if text is None or not carries_the_document(
-            text, min_chars=MIN_TEXT_CHARS, pages=file.pages
-        ):
-            if file.pages > 0 or not text:
-                return self._load_scan(document, text or "")
-            # A format with no pages to fall back on (Word, an archive): whatever we could not
-            # find the document in this text, the text is all there will ever be, and a file of
-            # this length is not a covering letter.
-            log.info("%s: no pages to read; the text is taken as it is", document.url)
-        kind = document_kind(text)
-        if kind in APPENDIX_KINDS:
-            # The file the name pointed at turned out to be published beside the bill, not to be
-            # it: a compliance table, a consultation report, a draft regulation. Analysing it
-            # would describe the wrong document with every appearance of describing the right
-            # one. A print opening with its covering letter is not this case (`letter` is not an
-            # appendix kind), and neither is a layout we simply do not recognise.
-            log.warning(
-                "%s opens as a %s, not as the bill; using metadata only", document.url, kind
+        if admission == "scan":
+            return self._load_scan(
+                document, text or "", policy_version=file.selection.policy_version
             )
-            return _Loaded("", False, "metadata_only")
+        assert text is not None, (
+            "analysis_admission admits text or metadata only for a present body"
+        )
+        if not carries_the_document(text, min_chars=MIN_TEXT_CHARS, pages=file.pages):
+            log.info("%s: no pages to read; the text is taken as it is", document.url)
+        if admission == "metadata_only":
+            log.warning(
+                "%s opens as a %s, not as the bill; using metadata only",
+                document.url,
+                document_kind(text),
+            )
+            return _Loaded(
+                "",
+                False,
+                "metadata_only",
+                selection=DocumentSelection(policy_version=file.selection.policy_version),
+            )
         if not trim:
             budgeted = self._budget.apply(text, self._keywords.spans(text))
             return _Loaded(
@@ -2781,9 +3231,10 @@ class AnalysisService:
             projection=projection,
         )
 
-    def _load_scan(self, document: TextDocument, text: str) -> _Loaded:
-        """The document as pages, when its file carries no text of its own; metadata when it has
-        no pages either (a Word file, an archive, a PDF too big for the model to take)."""
+    def _load_scan(
+        self, document: TextDocument, text: str, *, policy_version: str | None
+    ) -> _Loaded:
+        """Read the document as pages, or preserve metadata when no scan is available."""
         scan = self._loader.load_scan(document.url, cover_letter=has_cover_letter(text))
         if scan is None:
             log.info(
@@ -2791,7 +3242,12 @@ class AnalysisService:
                 document.url,
                 len(text),
             )
-            return _Loaded(text, False, "metadata_only")
+            return _Loaded(
+                text,
+                False,
+                "metadata_only",
+                selection=DocumentSelection(policy_version=policy_version),
+            )
         log.info(
             "%s: no text, reading %d of %d page(s) as images",
             document.url,
@@ -2799,6 +3255,7 @@ class AnalysisService:
             scan.of_pages,
         )
         selection = DocumentSelection(
+            policy_version=policy_version,
             belonging=document.version_basis[:1],
             scan_input=scan.scan_input,
             parts=(

@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from tools.corpus_artifacts import digest, read_artifact, write_json
+from tools.corpus_artifacts import digest, observation_changes, read_artifact, write_json
 from tools.corpus_runtime import capture_code, code_dirty, code_version, source_fingerprints
 
 SUITES = {
@@ -18,6 +18,7 @@ SUITES = {
     "external": ("corpus_check", ("--suite", "external")),
     "pdf": ("replay_pdf_pages", ()),
     "word": ("replay_word_blocks", ()),
+    "odt": ("replay_odt_blocks", ()),
     "input": ("replay_input_coverage", ()),
     "cost": ("replay_cost_inputs", ()),
     "amendments": ("replay_amended_inputs", ()),
@@ -29,6 +30,8 @@ SUITES = {
     "review-form": ("corpus_review", ("--mode", "form")),
     "review": ("corpus_review", ("--mode", "record")),
     "candidates": ("replay_document_candidates", ()),
+    "admissibility": ("replay_admissibility", ()),
+    "review-admissibility": ("replay_admissibility", ("--operation", "review")),
     "process": ("corpus_legacy_suites", ("--kind", "process")),
     "senate": ("corpus_legacy_suites", ("--kind", "senate")),
     "scan": ("replay_scan_inputs", ()),
@@ -244,18 +247,13 @@ def compare(before: Path, after: Path, output: Path) -> dict[str, Any]:
             "before": left.get(identity),
             "after": right.get(identity),
         }
-        for identity in sorted(left.keys() | right.keys())
-        if left.get(identity) != right.get(identity)
+        for identity in observation_changes(left, right)
     ]
     old_inputs, new_inputs = (
         old.get("read_inputs", old.get("inputs", {})),
         new.get("read_inputs", new.get("inputs", {})),
     )
-    inputs = sorted(
-        key
-        for key in old_inputs.keys() | new_inputs.keys()
-        if old_inputs.get(key) != new_inputs.get(key)
-    )
+    inputs = observation_changes(old_inputs, new_inputs)
     summary = {
         key: {"before": old.get(key), "after": new.get(key)}
         for key in (
@@ -265,6 +263,9 @@ def compare(before: Path, after: Path, output: Path) -> dict[str, Any]:
             "requested_profiles",
             "scope",
             "exclusions",
+            "case_manifest_sha256",
+            "catalog_sha256",
+            "index_sha256",
         )
         if old.get(key) != new.get(key)
     }

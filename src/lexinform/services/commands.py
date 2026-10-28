@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from zoneinfo import ZoneInfo
 
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError, StateCheckpointError
+from lexinform.log_context import log_context
 from lexinform.models import (
     DISPATCHED,
     FAILING_CHECK_MIN,
@@ -33,6 +34,7 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    ResultApplicationTarget,
     SpendSnapshot,
     StatusSnapshot,
     TokenUsage,
@@ -56,11 +58,13 @@ from lexinform.ports import (
 from lexinform.pricing import cost_usd
 from lexinform.services.amendments import AmendmentsService
 from lexinform.services.analysis import AnalysisService, TooExpensiveError, Waiting
+from lexinform.services.content_inspection import inspect_content
 from lexinform.services.digest import DigestResult, DigestService
 from lexinform.services.joint import primary_of
 from lexinform.services.lookup import BillLookup, BillNotFoundError
 from lexinform.services.publications import complete_delivery
 from lexinform.services.publishing import PublishingService
+from lexinform.services.result_applications import record_secondary_application
 from lexinform.services.text_prefilter import TextPrefilterService
 from lexinform.services.tracking import StatusTrackingService, TrackingResult
 
@@ -208,15 +212,16 @@ class CommandService:
             if self._digest is not None:
                 self._digest.start_run()
         for incoming in self._inbox.pending():
-            if not self._handle_one(
-                incoming,
-                result,
-                min_score=min_score,
-                run_started_at=run_started_at,
-                publish=publish,
-                dry_run=dry_run,
-            ):
-                break
+            with log_context(command_id=incoming.update_id):
+                if not self._handle_one(
+                    incoming,
+                    result,
+                    min_score=min_score,
+                    run_started_at=run_started_at,
+                    publish=publish,
+                    dry_run=dry_run,
+                ):
+                    break
         return result
 
     def _handle_one(
@@ -296,9 +301,19 @@ class CommandService:
             outcome = CommandOutcome(
                 status=OutcomeStatus.ERROR, note=f"{type(exc).__name__}: {exc}"
             )
-        self._repo.mark_command_executed(
-            incoming.update_id, outcome=outcome.line(), at=self._clock.now()
-        )
+        with self._repo.atomic():
+            self._repo.mark_command_executed(
+                incoming.update_id, outcome=outcome.line(), at=self._clock.now()
+            )
+            if outcome.explanation is not None and outcome.bill is not None:
+                record_secondary_application(
+                    self._repo,
+                    outcome.bill.term,
+                    outcome.bill.number,
+                    outcome.explanation.computation_id,
+                    target=ResultApplicationTarget(kind="command", ref=str(incoming.update_id)),
+                    now=self._clock.now(),
+                )
         return outcome
 
     def _earlier_state(self, incoming: IncomingCommand) -> CommandState | None:
@@ -1189,6 +1204,9 @@ class CommandService:
                 if member.id is not None
             ),
             delivery_history=tuple(self._repo.delivery_resolutions(command.delivery_id)),
+            content_history=inspect_content(self._repo, publication)
+            if publication is not None
+            else None,
             note="queued for the next publishing/tracking phase" if action == "retry" else "",
         )
 

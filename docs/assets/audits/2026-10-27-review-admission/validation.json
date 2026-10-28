@@ -1,0 +1,350 @@
+{
+  "version": 1,
+  "stage": "J091",
+  "baseline": "c14d3f4fc84cd6fb0f577606abea3ef164a182a9",
+  "scope": "Qualified review admission, five-operation matrix, and a pure shared text-v2 fingerprint with preserved algorithm/import API. Runtime wiring followed recorded shadow acceptance.",
+  "checks": {
+    "focused": {
+      "sha256": "8f50c0641c642ed84572ccd3d4dddff71aad6147d8542dfd78d58559792f02a2",
+      "tests": 252,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 4.203
+    },
+    "full": {
+      "sha256": "15977d2107eaee7d64f4b8bc3914f70291c7169b973ba339c97abd373fa57774",
+      "tests": 4800,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 610.257
+    },
+    "shadow-focused-qualified": {
+      "sha256": "2a6d8a943508633cfe3391710431e745f3cc7f5299c0c307d56624a32c01c138",
+      "tests": 32,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.066
+    },
+    "reviews-baseline-qualified": {
+      "sha256": "966f10752bae01a88999ec60ca8f0f29dbea7e95db19927ca83a2884f280b353",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 7.575
+    },
+    "reviews-current": {
+      "sha256": "0a5e27fe5a7a854b58724ede67c1feddb5d8ef31e55f1f5b06a0beb1ae7850d2",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 8.017
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 438 source files",
+    "ruff": "All checks passed!",
+    "format": "440 files left unchanged"
+  },
+  "shadow": {
+    "views": 14691,
+    "review_decisions": 396657,
+    "all_shadow_decisions_equal_frozen_legacy_branches": true,
+    "all_text_v2_hashes_equal_legacy": true,
+    "text_digest_ast_body_equal": true,
+    "public_analysis_text_digest_alias_preserved": true,
+    "all_service_class_methods_unchanged_before_review_activation": true,
+    "inputs_and_code_unchanged": true,
+    "policy_sha256": "2f7cc443ccb7cfedad5b55f816158de00ae9002b45d2ad53c77a2751e4916ddd",
+    "fingerprint_sha256": "dc8d4ae050aed2c61e7b0b4c1570eab92509ef0031a8a2238da34137d971f8c2",
+    "counterfactual_pages": [
+      0,
+      1,
+      20
+    ],
+    "counterfactual_roles": [
+      "response",
+      "position",
+      "project_text",
+      "comparison_text",
+      "final_act",
+      "commission_position",
+      "commission_response",
+      "commission_minutes",
+      "commission_report"
+    ],
+    "scope": "Shadow before activation, current unverified/non-oversize/no-expected-digest view probes; historical role/page/coverage not inferred. Other gates are tested separately."
+  },
+  "public_reviews": {
+    "cases": 864,
+    "all_contexts_complete_flags_and_source_calls_equal": true,
+    "workers": [
+      1,
+      4
+    ],
+    "purposes": [
+      "consultation_review",
+      "commission_review"
+    ],
+    "role_probes": 9,
+    "body_page_cases": 8,
+    "expected_digest": [
+      "none",
+      "matching",
+      "mismatch"
+    ],
+    "no_repository_changes": true,
+    "no_provider_calls": true,
+    "scope": "Public review_context on declared fake source bodies, not a legal completeness or independent-role verdict."
+  },
+  "native": {
+    "native_flows": 168,
+    "all_profile_fields_and_sql_rows_equal": true,
+    "unchanged_analysis_methods": 71,
+    "bill_loader_unchanged": true,
+    "shadow_policy_and_fingerprint_source_unchanged_during_activation": true,
+    "bill_admission_views_equal": 14691,
+    "all_prior_bill_observations_and_input_hashes_equal": true,
+    "baseline_provenance": {
+      "baseline_commit": "c14d3f4fc84cd6fb0f577606abea3ef164a182a9",
+      "reused_qualified_source": "J090 current snapshots",
+      "all_150_src_files_equal_c14d3f4_baseline": true,
+      "manifest_sha256": "8cbbc8a1b46021f72b4f954f080a5d49934706c61ea5e5dce5c1f11bc399afd9",
+      "native_flows": 104,
+      "boundary_flows": 64
+    },
+    "scope": "Qualified J090 outputs reused only after all 150 baseline src files matched its recorded source hashes. Fresh J091 native flows compare all tables and requests/contexts/reader messages."
+  },
+  "fingerprint_mutations": {
+    "distinct_cached_texts": 12,
+    "positive_controls": 12,
+    "material_mutations": 60,
+    "all_legacy_current_digests_equal": true,
+    "all_material_changes_change_identity": true,
+    "inputs_unchanged": true,
+    "scope": "Twelve distinct actual cached RCL texts, bounded to 80k bytes. Regression probes, not independent initiatives or legal holdout."
+  },
+  "corpus": {
+    "review-shadow": {
+      "observations": 14691,
+      "manifest": {
+        "path": "out/corpus/runs/j091-review-shadow/manifest.json",
+        "sha256": "45f4320a26c5b85356417b3d0c72d661a0853f0a64d51472901bfd8b81f202fd"
+      },
+      "verified": true
+    },
+    "admissibility": {
+      "observations": 14691,
+      "manifest": {
+        "path": "out/corpus/runs/j091-admissibility/manifest.json",
+        "sha256": "8ee2861d5f01c9990f43fd366afe1d06014345bb7a788e1334123e944a48d651"
+      },
+      "verified": true
+    },
+    "ci": {
+      "observations": 7,
+      "manifest": {
+        "path": "out/corpus/runs/j091-ci/manifest.json",
+        "sha256": "3918e7b2cb4842a3641be7803664e0e69e0d24fa9c9c27575ea53aa3cb34ea2e"
+      },
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "3918e7b2cb4842a3641be7803664e0e69e0d24fa9c9c27575ea53aa3cb34ea2e",
+        "before_manifest_sha256": "929c57290dd2ae1a2f250b405a90f73d32788200b7a41982edd2d3fabfe2aed7",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "ci",
+        "summary_changes": {},
+        "version": 1
+      }
+    },
+    "process": {
+      "observations": 3294,
+      "manifest": {
+        "path": "out/corpus/runs/j091-process/manifest.json",
+        "sha256": "52cfe2812f37dc9337eab9ab44453aae1d9833fe2c682ae484961b55d8d6952b"
+      },
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "52cfe2812f37dc9337eab9ab44453aae1d9833fe2c682ae484961b55d8d6952b",
+        "before_manifest_sha256": "e9cf7523a5513d49d961dd63071a7d003a9b7dcf3d757cac588b1fd35affe294",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "process",
+        "summary_changes": {},
+        "version": 1
+      }
+    },
+    "senate": {
+      "observations": 816,
+      "manifest": {
+        "path": "out/corpus/runs/j091-senate/manifest.json",
+        "sha256": "0c713ac3c311950f33f3c02201bd434481f84d405b134e4ee8ef803219267254"
+      },
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "0c713ac3c311950f33f3c02201bd434481f84d405b134e4ee8ef803219267254",
+        "before_manifest_sha256": "aafac2ea2bc874d1a3f67f08aee7344e36e12ffbc21177531239a21add6195d0",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "senate",
+        "summary_changes": {},
+        "version": 1
+      }
+    }
+  },
+  "senate": {
+    "files": 1825,
+    "counts": {
+      "10/no_unique_stage_date": 1,
+      "10/scan_pending_verification": 4,
+      "10/selected": 165,
+      "8/no_unique_stage_date": 1,
+      "8/scan_pending_verification": 5,
+      "8/selected": 203,
+      "9/not_amendments": 90,
+      "9/scan_pending_verification": 14,
+      "9/selected": 333,
+      "mutation_probes": 4903
+    },
+    "classification": {
+      "10/amendments": 168,
+      "10/no_resolution_heading": 173,
+      "8/amendments": 383,
+      "8/missing_resolution_subject": 2,
+      "8/missing_sejm_adoption": 2,
+      "8/no_resolution_heading": 39,
+      "9/amendments": 446,
+      "9/missing_resolution_end": 10,
+      "9/missing_sejm_adoption": 2,
+      "9/no_resolution_heading": 494,
+      "9/rejection": 106
+    }
+  },
+  "source": [
+    {
+      "path": "src/lexinform/document_admissibility.py",
+      "sha256": "2f7cc443ccb7cfedad5b55f816158de00ae9002b45d2ad53c77a2751e4916ddd"
+    },
+    {
+      "path": "src/lexinform/document_fingerprints.py",
+      "sha256": "dc8d4ae050aed2c61e7b0b4c1570eab92509ef0031a8a2238da34137d971f8c2"
+    },
+    {
+      "path": "src/lexinform/services/analysis.py",
+      "sha256": "421cadd933fd5e849e855f3c4f51c304b6831ab36c5406e9c3057a36e9cbbd49"
+    },
+    {
+      "path": "tools/replay_admissibility.py",
+      "sha256": "45e3aed6a3264d12faeb4b1e02279313d914fb9dc66f97d1123d7f2c4f15d993"
+    },
+    {
+      "path": "tools/corpus_runs.py",
+      "sha256": "19d68df66be95b99c091c5f53ea99468b298fabf7e357ba4101e7958437ad46e"
+    },
+    {
+      "path": "tests/unit/test_document_admissibility.py",
+      "sha256": "bf4739bdc3cc5111d3211c02b71495be1ae7cfb5ed86d616d52e2ade5d41b52a"
+    },
+    {
+      "path": "tests/unit/test_replay_admissibility.py",
+      "sha256": "4cf33e2e83f59076dcb0706781d99b7d40b1ae6617a631aac397982b9b357d45"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "out/corpus/j091/shadow_parity.py",
+      "sha256": "068cfc7514a5f96903a2f8a3eb6df3da7e2d867789a8d5720d345a385ec77f4f"
+    },
+    {
+      "path": "out/corpus/j091/shadow-parity.json",
+      "sha256": "dbd17a0e6e4faf09b0a86f3941cce5c542c1b413f2b1225e78a645aff3155f23"
+    },
+    {
+      "path": "out/corpus/j091/native_profiles.py",
+      "sha256": "c70806c475f08c0dcf9537a6d4490c324ddc4f72d6480dd3d2e11280e856f008"
+    },
+    {
+      "path": "out/corpus/j091/compare_profiles.py",
+      "sha256": "42a63084eaadef43a8011d2af172b0bcca67a9b28984a823d94db8b4a146b0ca"
+    },
+    {
+      "path": "out/corpus/j091/native-parity.json",
+      "sha256": "5b7d8b6c96f1602da30300b792c889aa4994b4e3406f0faf67c89ce2b6ccd174"
+    },
+    {
+      "path": "out/corpus/j091/review_flows.py",
+      "sha256": "fce14abccb22c5a6b30f1ab08d0b7b1a692963c9cdfdb68e64bb0ca887804ec5"
+    },
+    {
+      "path": "out/corpus/j091/review-context-parity.json",
+      "sha256": "9a9a167e74357bc4435dbf4849a31440fe0e411ceba7ba5fa8bf10e872f92b91"
+    },
+    {
+      "path": "out/corpus/j091/fingerprint_mutations.py",
+      "sha256": "6f17898aa81d4ee7c2556486b6f1a8b1102523eb10c4d69936ce6786d888480a"
+    },
+    {
+      "path": "out/corpus/j091/fingerprint-mutations.json",
+      "sha256": "34bdb25e57bcf2876169132f443c411f405a0a86fbc8a553872ab57fcce32577"
+    },
+    {
+      "path": "out/corpus/j091/reused-baseline.json",
+      "sha256": "a24d94965cdd0d43668430779c5ea31517084216dff48c6086881ebe57082eba"
+    }
+  ],
+  "state": {
+    "schema": 51,
+    "migrations_serialization_flags_unchanged": true,
+    "production_storage_delta": 0,
+    "review_pause_settings_unchanged": true
+  },
+  "rollback": {
+    "code": "J090",
+    "state_conversion": false
+  },
+  "plan": {
+    "completed_in_this_stage": [
+      "DA4.5",
+      "DA4.6"
+    ],
+    "tasks": 74,
+    "done": 17,
+    "unchecked": 57,
+    "inapplicable_unchecked": [
+      "DA8.3"
+    ],
+    "goal": "active"
+  },
+  "exclusions": [
+    "Counterfactual role/page probes are not historical roles/pages or an independent legal holdout.",
+    "Expected-digest/oversize/selection-state guards are qualified by typed unit/public-context fixtures, not inferred from cache metadata.",
+    "Review complete preserves its existing input flag, not proof of a complete legal edition.",
+    "Twelve distinct cached mutation texts are regression probes, not independent initiatives.",
+    "Physical extraction and candidate choice are unchanged; raw ZIP reparsing is not repeated for a consumer-only stage.",
+    "Existing Senate strict validators remain active, and its 23 pending scans remain unverified.",
+    "Full decision persistence, provenance, DocumentEdition, storage/backend extension and paused purposes are outside this stage.",
+    "No paid or manually started production processing, source network download, model or Telegram call.",
+    "Local HTTP not repeated: CLI/network wiring and transports are unchanged."
+  ],
+  "reproduction": [
+    "uv run pytest -q && uv run mypy && uv run ruff check src tests tools",
+    "Run the shadow observer from its captured pre-activation source snapshot; the completed run manifest retains that exact code.",
+    "uv run python -m tools.corpus_runs run --root out/corpus/runs --suite review-admissibility --corpus ../lexinform-corpus --id NEW_ID",
+    "uv run python out/corpus/j091/native_profiles.py",
+    "python out/corpus/j091/compare_profiles.py",
+    "Run review_flows.py through pytest -p tests.conftest with baseline/current PYTHONPATH and explicit DA_EXPECTED_CODE/DA_REVIEW_OUTPUT; use new output directories.",
+    "PYTHONPATH=src:. uv run python out/corpus/j091/fingerprint_mutations.py",
+    "Use new output paths; recorded corpus evidence is immutable."
+  ]
+}

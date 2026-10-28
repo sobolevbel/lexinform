@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "cases": [
+    {
+      "path": "documents/files/584479.zip",
+      "sha256": "1ba1b05f40686650520c6b8f36fb02ff383e04ea4015f827c8757b8f89e8e72c",
+      "official_ids": [
+        "rcl:12363263",
+        "rcl-file:584479"
+      ],
+      "cohorts": [
+        "routing-rejection-control"
+      ]
+    },
+    {
+      "path": "documents/files/700362.zip",
+      "sha256": "9fd51f4645cc96c69dcd85e08badabc0bc69e90355de4ec7e146dca26957ca96",
+      "official_ids": [
+        "rcl:12387102",
+        "rcl-file:700362"
+      ],
+      "cohorts": [
+        "routing-rejection-control"
+      ]
+    },
+    {
+      "path": "documents/files/738682.zip",
+      "sha256": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef",
+      "official_ids": [
+        "rcl:12392400",
+        "rcl-file:738682"
+      ],
+      "cohorts": [
+        "odt-origin"
+      ]
+    },
+    {
+      "path": "documents/files/744252.zip",
+      "sha256": "ee2670aa2e0aacc42c346fc05dfd66dd8de245dbecd2d0fc3d29dfe6772463c4",
+      "official_ids": [
+        "rcl:12392400",
+        "rcl-file:744252"
+      ],
+      "cohorts": [
+        "odt-origin"
+      ]
+    },
+    {
+      "path": "documents/files/763369.zip",
+      "sha256": "125c7670f637d5a0e3fc8acde9ecfab77977b81ab5c9d57fb1585266ae39a18b",
+      "official_ids": [
+        "rcl:12386961",
+        "rcl-file:763369"
+      ],
+      "cohorts": [
+        "odt-origin"
+      ]
+    },
+    {
+      "path": "sejm/term10/files/1614__1614-uchwała.odt",
+      "sha256": "072d8e6cc811fbe7094369ed8ee40e36f05f363bc432318da272f35debf95722",
+      "official_ids": [
+        "druk:1614"
+      ],
+      "cohorts": [
+        "odt-origin"
+      ]
+    }
+  ],
+  "exclusions": [
+    "Pinned J117 ODT discovery cohort; 1798 routing-only roots excluded.",
+    "Machine regression oracle; no independent legal labels."
+  ]
+}

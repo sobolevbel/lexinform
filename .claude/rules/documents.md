@@ -42,8 +42,8 @@ What of a document reaches the model, with the prints each rule was derived from
   `pricing.estimate_scan_cost`), keeping the file `sha256` where a text digest would stand; a file
   with neither keeps its text. Only the letter's page is dropped (`sections.scan_page_window` when
   `sections.has_cover_letter` finds the formula; not truncation — `ScannedDocument.truncated` counts
-  only `cover_letter_pages` aside); nothing else of a scan is trimmed. The gate is
-  `AnalysisService._load_text`, the one place every document passes. The prefilter sends an
+  only `cover_letter_pages` aside); nothing else of a scan is trimmed. The admission gate is
+  `AnalysisService._load_selected`, shared by primary source capture and the `_load_text` facade. The prefilter sends an
   unsearchable scan to `analysis_pending` (`TextPrefilterResult.scans`, distinct from `unreadable` =
   no pages); skip reasons name the missed threshold. `TextLoader` alone calls a file textless only
   under `MIN_TEXT_CHARS`, which is why both stages ask `carries_the_document` instead. Before this, 91 of 938 term-10 prints (a
@@ -67,6 +67,8 @@ What of a document reaches the model, with the prints each rule was derived from
   `_bill_of_last_resort` runs only when the answer would be nothing, still refuses what `text_role`
   refuses (tabela, pismo, autopoprawka); a combined file is stored as the bill and dropped from
   extras, or the analysis pays for it twice.
+- Package/file candidate decisions belong to `document_candidates` (`CandidateSet`, `select_document_parts`, `select_candidate_versions`); `extract_parts` stays physical and must never call that policy or the legal classifier. `extract_document` is the compatible facade, with its explicit `max_part_chars` selection limit.
+- `TextLoader.select_document` labels completed decisions with `DOCUMENT_SELECTION_POLICY_VERSION`; bump it for selection behavior changes. A label identifies that decision, not the original paid analysis or a legal edition; legacy/physical-cache values stay unknown until a new selection is made.
 - **Memoized results** (`analysis_memo`) are keyed by bill identity, purpose, normalised text and
   comparison context (a scan by file digest and page window; triage has its own key), so a URL change
   never triggers a paid re-analysis; reused results charge no new tokens. Worker threads never write

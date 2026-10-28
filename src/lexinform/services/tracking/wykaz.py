@@ -30,6 +30,7 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, WykazGateway
 from lexinform.services.analysis import AnalysisService
+from lexinform.services.analysis_applications import apply_analysis
 from lexinform.services.posting import Poster
 from lexinform.services.publications import inherit_card
 from lexinform.services.rcl_projects import RclProjectReader
@@ -100,7 +101,7 @@ class WykazLinker:
                 plan.term, summary.number, plan.status, prefilter_hits=plan.prefilter_hits
             )
             if fresh.analysis is not None:
-                self._repo.save_analysis(plan.term, summary.number, fresh.analysis)
+                apply_analysis(self._repo, plan.term, summary.number, fresh.analysis, now=now)
             self._repo.link_bills(
                 plan.term, plan.number, summary.number, wykaz_number=wykaz_entry_number(plan.number)
             )

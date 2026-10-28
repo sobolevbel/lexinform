@@ -36,6 +36,15 @@ from lexinform.models.analysis import (
     merge_usage,
     usage_of,
 )
+from lexinform.models.applicability import ApplicabilitySource as ApplicabilitySource
+from lexinform.models.applicability import (
+    ResultApplicabilityObservation as ResultApplicabilityObservation,
+)
+from lexinform.models.artifacts import ArtifactIdentity as ArtifactIdentity
+from lexinform.models.artifacts import ArtifactMetadata as ArtifactMetadata
+from lexinform.models.artifacts import ArtifactReadIdentity as ArtifactReadIdentity
+from lexinform.models.artifacts import ArtifactReadReceipt as ArtifactReadReceipt
+from lexinform.models.artifacts import SelectionArtifactReference as SelectionArtifactReference
 from lexinform.models.attention import AttentionAssessment as AttentionAssessment
 from lexinform.models.batch import (
     AmendmentRevisionTarget,
@@ -100,6 +109,28 @@ from lexinform.models.commands import (
     parse_command,
     parse_reference,
 )
+from lexinform.models.computation_inputs import ComputationInputBinding as ComputationInputBinding
+from lexinform.models.computations import (
+    ComputationResult as ComputationResult,
+)
+from lexinform.models.computations import (
+    ResultApplication as ResultApplication,
+)
+from lexinform.models.computations import (
+    ResultApplicationTarget as ResultApplicationTarget,
+)
+from lexinform.models.computations import (
+    ReviewInputReference as ReviewInputReference,
+)
+from lexinform.models.computations import (
+    ReviewResultRecord as ReviewResultRecord,
+)
+from lexinform.models.computations import (
+    ReviewSourceReference as ReviewSourceReference,
+)
+from lexinform.models.computations import (
+    computation_id as computation_id,
+)
 from lexinform.models.delivery import DeliverySchedule as DeliverySchedule
 from lexinform.models.delivery_alert import DeliveryAlert as DeliveryAlert
 from lexinform.models.digest import (
@@ -116,6 +147,10 @@ from lexinform.models.digest import (
     previous_week,
     week_bounds,
 )
+from lexinform.models.document_history import DocumentSelectionRecord as DocumentSelectionRecord
+from lexinform.models.document_history import SourceObservation as SourceObservation
+from lexinform.models.document_reads import DocumentReadMetrics as DocumentReadMetrics
+from lexinform.models.document_reads import HostDocumentReads as HostDocumentReads
 from lexinform.models.documents import (
     DocumentCoverage,
     DocumentFact,
@@ -125,9 +160,15 @@ from lexinform.models.documents import (
     DocumentWork,
     ExtractedDocument,
     ExtractedParts,
+    OdtIgnoredNode,
+    OdtPartExtraction,
+    OdtTextBlock,
+    OdtTextExtraction,
     PdfPageText,
     PdfPartExtraction,
     PdfTextExtraction,
+    UnlocatedPartExtraction,
+    UnlocatedTextExtraction,
     WordDetailedExtraction,
     WordPartExtraction,
     WordPartNoteExtraction,
@@ -241,6 +282,15 @@ from lexinform.models.planning import (
     plan_bill,
     tells_only_a_text,
     text_still_matters,
+)
+from lexinform.models.prepared_input import (
+    PreparedTextInput as PreparedTextInput,
+)
+from lexinform.models.prepared_input import (
+    PreparedTextPart as PreparedTextPart,
+)
+from lexinform.models.prepared_input import (
+    PreparedTextSegment as PreparedTextSegment,
 )
 from lexinform.models.rcl import (
     RCL_STAGE_TYPE,
@@ -369,9 +419,18 @@ __all__ = [
     "DocumentLink",
     "DocumentPart",
     "DocumentSelection",
+    "PreparedTextInput",
+    "PreparedTextPart",
+    "PreparedTextSegment",
     "DocumentWork",
     "ExtractedDocument",
     "ExtractedParts",
+    "OdtIgnoredNode",
+    "OdtPartExtraction",
+    "OdtTextBlock",
+    "OdtTextExtraction",
+    "UnlocatedPartExtraction",
+    "UnlocatedTextExtraction",
     "PdfPageText",
     "PdfPartExtraction",
     "PdfTextExtraction",
@@ -458,6 +517,10 @@ __all__ = [
     "CommandName",
     "ChannelPost",
     "CommandOutcome",
+    "ContentHistoryView",
+    "ContentSnapshot",
+    "ContentVersion",
+    "ContentVersionSummary",
     "CommandState",
     "OutcomeStatus",
     "Command",
@@ -671,3 +734,8 @@ __all__ = [
     "wykaz_number",
     "wykaz_summary",
 ]
+
+from lexinform.models.content import ContentHistoryView as ContentHistoryView
+from lexinform.models.content import ContentSnapshot as ContentSnapshot
+from lexinform.models.content import ContentVersion as ContentVersion
+from lexinform.models.content import ContentVersionSummary as ContentVersionSummary

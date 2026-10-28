@@ -1,0 +1,193 @@
+{
+  "version": 1,
+  "stage": "J094",
+  "baseline": "83eadcf87c71fb3d5aa26f6378aebddb3e51bcaf",
+  "scope": "Read-only physical-reference and storage measurement; runtime, schema, retention and backend unchanged.",
+  "checks": {
+    "focused": {
+      "path": "out/corpus/j094/focused-final.xml",
+      "sha256": "e2f51f0fd1a360efa22f43391c8915cf02a89382c0768e7fcce20772543aef80",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "31",
+      "time": "0.471",
+      "timestamp": "2026-10-27T18:58:00.412912+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j094/full-final.xml",
+      "sha256": "c6d29177d7cffdd87520e585f3a225650b6aacfd07c98a99ddee53e5a38f18fe",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "4828",
+      "time": "607.871",
+      "timestamp": "2026-10-27T18:58:04.425039+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 441 source files",
+    "ruff": "All checks passed!",
+    "format": "443 files left unchanged"
+  },
+  "runtime": {
+    "runtime_files": 151,
+    "all_src_files_byte_identical": true,
+    "baseline": "83eadcf87c71fb3d5aa26f6378aebddb3e51bcaf",
+    "migrations_models_ports_adapters_services_and_flags_unchanged": true,
+    "database_sha256": "b49b2a24c7c6b390fcc928b48c73a4d0fd32d7c3cbb6f58641baa3ca603c2cfa"
+  },
+  "reference_footprint": {
+    "status": "recorded",
+    "database_sha256": "b49b2a24c7c6b390fcc928b48c73a4d0fd32d7c3cbb6f58641baa3ca603c2cfa",
+    "inventory_sha256": "14e0f2284114a03189636d4ec3c20d1f9a9a39932cedbd3ec80b2af67adb293e",
+    "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "summary": {
+      "legacy_scan_without_source_manifest": 5,
+      "observed_parts_container": 257,
+      "observed_parts_file": 37,
+      "parts_container": 18,
+      "parts_file": 90,
+      "raw_reference_occurrences": 437,
+      "review_documents": 35,
+      "review_file": 35,
+      "saved_answer_occurrences": 416,
+      "saved_columns": 651,
+      "selections": 141
+    },
+    "unique_recorded_raw_hashes": 44,
+    "matched_inventory_hashes": 13,
+    "unmatched_recorded_hashes": 31,
+    "matched_inventory_unique_bytes": 9585013,
+    "scan_input_manifest_unique_bytes": 0,
+    "scan_input_manifest_unique_hashes": 0,
+    "findings": []
+  },
+  "corpus": {
+    "ci": {
+      "observations": 7,
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "4894626373d43af322ae0e7810efbb64b3cd8f95fe858262b280efac59046024",
+        "before_manifest_sha256": "7fc954ffff517eb2d4b1e13b8ed40097d9fdca6937f31cf3b4c55422538e2018",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "ci",
+        "summary_changes": {},
+        "version": 1
+      }
+    },
+    "process": {
+      "observations": 3294,
+      "verified": true,
+      "diff": {
+        "after_manifest_sha256": "2938297b8144e1bcf045c20acbbc00f790b4b8d1963d49c77f0452f50d97f8ec",
+        "before_manifest_sha256": "274f180929b8fecd4d15f5e0654fbaf757213302389daa2d9e869a0c03471e44",
+        "changed_inputs": [],
+        "changes": [],
+        "scope": "Observation differences, not an independent legal accuracy verdict",
+        "status": "same",
+        "suite": "process",
+        "summary_changes": {},
+        "version": 1
+      }
+    }
+  },
+  "evidence": [
+    {
+      "path": "out/corpus/j094/raw-inventory.json",
+      "sha256": "c2a38fb1d827a890c860fd3295a38ebb7e97f271bc2fd38439a27bfa304f6a31"
+    },
+    {
+      "path": "out/corpus/j094/raw-inventory-six-families.json",
+      "sha256": "14e0f2284114a03189636d4ec3c20d1f9a9a39932cedbd3ec80b2af67adb293e"
+    },
+    {
+      "path": "out/corpus/j094/referenced-files-final.json",
+      "sha256": "8de7fbe95e7095ef30a61aec4a56ce66982b3d2aedf6ba6a9797fbf05b48bf48"
+    },
+    {
+      "path": "out/corpus/j094/legacy-history.json",
+      "sha256": "058770d230f3ae13ed3bcbf2da1ee29a31a30abf25b9f569439c98ec96dc8db2"
+    },
+    {
+      "path": "out/corpus/j094/computations-doctor.json",
+      "sha256": "2feb5f86f95fc1625688f1ee915fce386b3e86ce8f8ff590c4fc16859ea7bdb3"
+    },
+    {
+      "path": "out/corpus/j094/requests-doctor.json",
+      "sha256": "864c5a75e6e3eb0671447810d7ad4e9aa15e0c2c5e21653f8634f4aad914ed13"
+    },
+    {
+      "path": "out/corpus/j094/work-doctor.json",
+      "sha256": "b6a520893bc69896933593e14a592fba6f73f60703a5bee271c8ad0dafcba3cb"
+    },
+    {
+      "path": "out/corpus/j094/work-warning-baseline.json",
+      "sha256": "db84b2898723989583ba92182ac86f7136ba64dd4b59b0ea8afaea8875569701"
+    },
+    {
+      "path": "out/corpus/j094/production-cycle.json",
+      "sha256": "1d6787fd3c9258718e0887a6242507bab213f2f1d72274c2bad27b05639e194f"
+    },
+    {
+      "path": "out/corpus/j094/state-history.json",
+      "sha256": "5ef74d33377b7faf96ff23cd847dc782cc2ea7698ffc74ce0ad73d4acdb3a1a2"
+    },
+    {
+      "path": "out/corpus/j094/state-history-pack.json",
+      "sha256": "72a5fb24af50e2cfdac1e72772ca651ce00c27b88cc650ab1edd576f2718f372"
+    },
+    {
+      "path": "out/corpus/j094/augment_inventory.py",
+      "sha256": "f9517a9769efc2771b027a1c58921dce4eb8dbc9bd6fcf3a493c2540e679cd3d"
+    },
+    {
+      "path": "out/corpus/j094/state_history.py",
+      "sha256": "d0c19ae15cef439ee9dc46d37bce4539cca3c0cdafd604efaf4105cd450b2f14"
+    },
+    {
+      "path": "out/corpus/j094/pack_history.py",
+      "sha256": "0a257e20c00b73fb8a080b0dfb9f07b281e137d7a8ca0ae0289e654252b5c4f9"
+    },
+    {
+      "path": "out/corpus/j094/production_cycle.py",
+      "sha256": "65de3a171226deefe8de1111a2dd225395df1e277bc3dfd716fd0225ac7aa9f9"
+    },
+    {
+      "path": "out/corpus/checkpoints/j094/measurement.json",
+      "sha256": "397a252215a864c1173b02b3e38bb885753a568d24a21089d7cf9215bba0df44"
+    }
+  ],
+  "source": [
+    {
+      "path": "tools/measure_referenced_files.py",
+      "sha256": "73915ae26d847dad49ad25063a3b15006a2559511fbec76f1a9cfe77aa1ecaf3"
+    },
+    {
+      "path": "tests/unit/test_measure_referenced_files.py",
+      "sha256": "8e604d898c8bc452c9f7971d10bf0d627883ae47652826f8a326db6acdecec6b"
+    }
+  ],
+  "exclusions": [
+    "Historical download demand is unknown; DA2.1 remains partial.",
+    "Inventory availability is not proof of production retention or original paid bytes.",
+    "31 unmatched raw identities require provenance triage, not blind redownload.",
+    "No backend/archive/S3 decision, raw writes, paid calls or production processing.",
+    "Three work-doctor warnings predate this stage and are preserved.",
+    "Production-cycle acceptance covers one stored metadata-only Wykaz result; no independent channel/legal/file verification.",
+    "Local Git packing and filesystem checkpoint latency are not GitHub storage or network measurements."
+  ],
+  "reproduction": [
+    "uv run python -m tools.measure_referenced_files --help",
+    "uv run pytest -q tests/unit/test_measure_referenced_files.py tests/unit/test_saved_records.py",
+    "uv run pytest -q && uv run mypy && uv run ruff check src tests tools",
+    "Use the pinned raw-inventory and SQLite snapshot with new output paths; reports refuse overwrite."
+  ]
+}

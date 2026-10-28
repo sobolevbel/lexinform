@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 
 from lexinform.attention import assess_attention
 from lexinform.delivery_schedule import daily_schedule, sitting_is_close
-from lexinform.legacy_delivery import legacy_status_edit
+from lexinform.legacy_delivery import legacy_status_edit, legacy_status_reply
 from lexinform.models import (
     AgendaItem,
     Bill,
@@ -45,6 +45,7 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway, StateCheckpoint
 from lexinform.services.card_edits import edit_card
+from lexinform.services.content_history import FORMATTER_VERSION, record_publication_content
 from lexinform.services.message_parts import continuation_ready, freeze_parts, send_continuations
 from lexinform.services.publications import (
     card_revision_owner,
@@ -53,6 +54,7 @@ from lexinform.services.publications import (
     send_publications,
 )
 from lexinform.services.sources import fetch_print
+from lexinform.services.status_change_applications import record_status_change
 from lexinform.services.tracking_result import TrackingResult
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 from lexinform.usefulness import digest_reason
@@ -130,6 +132,7 @@ class Poster:
         gateway: SejmGateway,
         channel_id: str,
         max_attempts: int,
+        language: str = "ru",
         attention_mode: str = "shadow",
         urgent_days: int = 3,
         max_group: int = 5,
@@ -146,6 +149,7 @@ class Poster:
         self._gateway = gateway
         self._channel_id = channel_id
         self._max_attempts = max_attempts
+        self._language = language
         self._attention_mode = attention_mode
         self._urgent_days = urgent_days
         self._max_group = max_group
@@ -670,19 +674,8 @@ class Poster:
         return saved.completed
 
     def record_change(self, change: StatusChange) -> StatusChange | None:
-        """Write the change down before anything is said about it; None when an earlier run
-        recorded it already (the row is unique per bill and fingerprint), which is what keeps
-        the same news from going out twice.
-
-        The change comes back carrying its `id`, so the caller never has to fill it in — which
-        is half of a prologue that stood in seven places, each free to forget a piece of it.
-        (`record` is the same idea for a publication row and is a different table.)
-        """
-        change_id = self._repo.add_status_change(change)
-        if change_id is None:
-            return None
-        change.id = change_id
-        return change
+        """Store a change and its receipts, returning None for an existing fingerprint."""
+        return record_status_change(self._repo, change, now=self._clock.now())
 
     def tell(
         self,
@@ -1374,6 +1367,7 @@ class Poster:
     def _freeze(self, pub: Publication, *, keep_today: bool = False) -> Publication:
         assert pub.delivery is not None and pub.id is not None
         if pub.delivery.rendered_text:
+            record_publication_content(self._repo, self._clock, pub)
             return pub
         if (
             pub.kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED)
@@ -1407,9 +1401,17 @@ class Poster:
                 raise ValueError("The saved hearing reminder lacks its hearing")
         plan = pub.delivery.model_copy(update={"today": today})
         pub = pub.model_copy(update={"delivery": plan})
-        return freeze_parts(
+        frozen = freeze_parts(
             self._repo, self._clock, self._publisher, pub, self._publisher.render_delivery(pub)
         )
+        record_publication_content(
+            self._repo,
+            self._clock,
+            frozen,
+            formatter_version=FORMATTER_VERSION,
+            language=self._language,
+        )
+        return frozen
 
     def _freeze_sitting(self, pub: Publication, text: str) -> Publication:
         assert pub.delivery is not None, "only a saved sitting reaches the physical-part producer"
@@ -1574,15 +1576,57 @@ class Poster:
 
     def _send(self, pub_id: int, bill: Bill, send: Send) -> int | None:
         pub = self._repo.publication_by_id(pub_id)
-        if pub is not None and legacy_status_edit(pub):
-            text = self._publisher.render_delivery(pub)
-            if utf16_length(text) <= MESSAGE_LIMIT:
-                assert pub.delivery is not None, "legacy_status_edit requires its saved plan"
-                plan = pub.delivery.model_copy(
+        legacy_reply = pub is not None and legacy_status_reply(pub)
+        if pub is not None and (legacy_status_edit(pub) or legacy_reply):
+            assert pub.delivery is not None, "both legacy status predicates require a saved plan"
+            candidate = pub
+            if legacy_reply:
+                reply_to = pub.delivery.reply_to
+                if reply_to is None:
+                    parent = self._repo.get_publication(
+                        pub.term, pub.number, PublicationKind.NEW_BILL, pub.channel_id
+                    )
+                    if (
+                        parent is None
+                        or parent.status is not PublicationStatus.SENT
+                        or parent.message_id is None
+                        or parent.message_id <= 0
+                    ):
+                        raise ValueError("The legacy reply lacks its sent card receipt")
+                    reply_to = parent.message_id
+                today = self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date()
+                candidate = pub.model_copy(
+                    update={
+                        "delivery": pub.delivery.model_copy(
+                            update={"today": today, "reply_to": reply_to}
+                        )
+                    }
+                )
+            text = self._publisher.render_delivery(candidate)
+            if legacy_reply:
+                assert candidate.delivery is not None, "the reply candidate retains its plan"
+                candidate = candidate.model_copy(
+                    update={
+                        "delivery": candidate.delivery.model_copy(
+                            update={"render_origin": "legacy_snapshot"}
+                        )
+                    }
+                )
+                pub = freeze_parts(
+                    self._repo,
+                    self._clock,
+                    self._publisher,
+                    candidate,
+                    text,
+                    persist=self._repo.freeze_legacy_status_reply,
+                )
+            elif utf16_length(text) <= MESSAGE_LIMIT:
+                assert candidate.delivery is not None, "the candidate retains the saved plan"
+                plan = candidate.delivery.model_copy(
                     update={"rendered_text": text, "render_origin": "legacy_snapshot"}
                 )
                 if not self._repo.freeze_legacy_status_edit(pub_id, plan):
-                    raise ValueError("Cannot freeze the legacy status edit snapshot")
+                    raise ValueError("Cannot freeze the legacy status snapshot")
                 pub = pub.model_copy(update={"delivery": plan})
         if (
             pub is not None
@@ -1620,6 +1664,8 @@ class Poster:
                 return self._publisher.publish_prepared(pub).message_id
 
             send = prepared_send
+        if pub is not None:
+            record_publication_content(self._repo, self._clock, pub)
         card = self.card(bill)
         reply_to = card.message_id if card else None
         checkpoint = self._delivery_checkpoint(pub)

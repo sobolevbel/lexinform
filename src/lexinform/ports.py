@@ -11,6 +11,10 @@ from lexinform.models import (
     AmendmentsContext,
     AmendmentsRecord,
     AnalysisRecord,
+    ArtifactIdentity,
+    ArtifactMetadata,
+    ArtifactReadIdentity,
+    ArtifactReadReceipt,
     BackfillReport,
     BatchIntent,
     BatchRequest,
@@ -29,12 +33,17 @@ from lexinform.models import (
     CommandState,
     Committee,
     CommitteeSitting,
+    ComputationResult,
+    ContentSnapshot,
+    ContentVersion,
     DeliveryAlert,
     DeliveryPlan,
     DeliveryResolution,
     Digest,
     DigestPart,
+    DocumentReadMetrics,
     DocumentReviewRecord,
+    DocumentSelectionRecord,
     DocumentWork,
     Editorial,
     ExtractedDocument,
@@ -50,6 +59,7 @@ from lexinform.models import (
     ObservationBasis,
     ObservationMode,
     ObservedProcess,
+    OdtTextExtraction,
     PdfTextExtraction,
     Phase,
     PlenaryVoting,
@@ -63,15 +73,19 @@ from lexinform.models import (
     RclProjectSummary,
     RclStage,
     ReadyAnalysis,
+    ResultApplicabilityObservation,
+    ResultApplication,
     ReviewPurpose,
     ReviewSource,
     ReviewWork,
     RunReport,
     SejmSitting,
     SejmTerm,
+    SelectionArtifactReference,
     SenateAct,
     SittingNews,
     SourceCheck,
+    SourceObservation,
     Stage,
     StatusChange,
     SupplementContext,
@@ -85,7 +99,7 @@ from lexinform.models import (
     WordTextExtraction,
     WykazEntry,
 )
-from lexinform.models.batch import BatchJob
+from lexinform.models.batch import BatchJob, BatchKind
 from lexinform.models.report import CallKind
 
 
@@ -95,6 +109,20 @@ class Clock(Protocol):
 
 class StateCheckpoint(Protocol):
     def __call__(self) -> None: ...
+
+
+class DocumentReadMonitor(Protocol):
+    def reset_read_metrics(self) -> None: ...
+
+    def read_metrics(self) -> DocumentReadMetrics: ...
+
+
+class DocumentArtifactObserver(Protocol):
+    def read_artifacts(self) -> tuple[ArtifactIdentity, ...]: ...
+
+
+class DocumentFileReadObserver(Protocol):
+    def read_artifact_reads(self) -> tuple[ArtifactReadIdentity, ...]: ...
 
 
 class SejmGateway(Protocol):
@@ -280,6 +308,11 @@ class WordBlockTextExtractor(Protocol):
 @runtime_checkable
 class WordNoteTextExtractor(Protocol):
     def extract_with_notes(self, data: bytes) -> WordDetailedExtraction: ...
+
+
+@runtime_checkable
+class OdtBlockTextExtractor(Protocol):
+    def extract_odt_blocks(self, data: bytes) -> OdtTextExtraction: ...
 
 
 class TextExtractor(Protocol):
@@ -608,7 +641,73 @@ class BillRepository(Protocol):
 
     def load_analysis_memo(self) -> dict[str, str]: ...
 
+    def save_computation_result(self, result: ComputationResult) -> None: ...
+
+    def get_computation_result(self, result_id: str) -> ComputationResult | None: ...
+
+    def list_computation_results(
+        self, term: int, number: str, *, purpose: BatchKind | None = None
+    ) -> list[ComputationResult]: ...
+
+    def save_result_application(self, application: ResultApplication) -> None: ...
+
+    def list_result_applications(self, term: int, number: str) -> list[ResultApplication]: ...
+
+    def save_applicability_observation(
+        self, observation: ResultApplicabilityObservation
+    ) -> None: ...
+
+    def get_applicability_observation(
+        self, observation_id: str
+    ) -> ResultApplicabilityObservation | None: ...
+
+    def list_applicability_observations(
+        self, term: int, number: str
+    ) -> list[ResultApplicabilityObservation]: ...
+
     def save_review_work(self, term: int, number: str, work: tuple[ReviewWork, ...]) -> None: ...
+
+    def save_source_observation(
+        self, selection: DocumentSelectionRecord, observation: SourceObservation
+    ) -> None: ...
+
+    def get_document_selection(self, selection_id: str) -> DocumentSelectionRecord | None: ...
+
+    def get_source_observation(self, observation_id: str) -> SourceObservation | None: ...
+
+    def list_source_observations(self, term: int, number: str) -> list[SourceObservation]: ...
+
+    def save_content_snapshot(self, snapshot: ContentSnapshot) -> None: ...
+
+    def get_content_snapshot(self, snapshot_id: str) -> ContentSnapshot | None: ...
+
+    def save_content_version(self, version: ContentVersion) -> None: ...
+
+    def get_content_version(self, content_id: str) -> ContentVersion | None: ...
+
+    def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]: ...
+
+    def bind_publication_content(self, publication_id: int, content_id: str) -> None: ...
+
+    def get_publication_content(self, publication_id: int) -> ContentVersion | None: ...
+
+    def list_content_publications(self, root_publication_id: int) -> list[Publication]: ...
+
+    def save_artifact_metadata(self, artifact: ArtifactMetadata) -> None: ...
+
+    def get_artifact_metadata(self, sha256: str) -> ArtifactMetadata | None: ...
+
+    def save_artifact_read(self, receipt: ArtifactReadReceipt) -> None: ...
+
+    def get_artifact_read(self, read_id: str) -> ArtifactReadReceipt | None: ...
+
+    def list_artifact_reads(
+        self, *, sha256: str | None = None, requested_url: str | None = None
+    ) -> list[ArtifactReadReceipt]: ...
+
+    def save_selection_artifact(self, reference: SelectionArtifactReference) -> None: ...
+
+    def list_selection_artifacts(self, selection_id: str) -> list[SelectionArtifactReference]: ...
 
     def save_document_review(
         self, term: int, number: str, review: DocumentReviewRecord
@@ -688,6 +787,8 @@ class BillRepository(Protocol):
     def save_batch_intent(self, intent: BatchIntent) -> None: ...
 
     def batch_job(self, custom_id: str) -> BatchJob | None: ...
+
+    def computation_owner_terms(self, number: str, kind: BatchKind) -> tuple[int, ...]: ...
 
     def context_rejected_batch_ids(self) -> set[str]: ...
 
@@ -819,6 +920,10 @@ class BillRepository(Protocol):
     def replace_unattempted_delivery(self, publication_id: int, delivery: DeliveryPlan) -> bool: ...
 
     def freeze_legacy_status_edit(self, publication_id: int, delivery: DeliveryPlan) -> bool: ...
+
+    def freeze_legacy_status_reply(self, publication_id: int, delivery: DeliveryPlan) -> bool:
+        """The caller atomically creates any continuation chain and freezes its failed root."""
+        ...
 
     def list_joint_reply_candidates(
         self, channel_id: str, *, limit: int, max_attempts: int = 3
@@ -962,8 +1067,8 @@ class BillRepository(Protocol):
         print so its replies carry the card's tag."""
         ...
 
-    def move_batch_work(self, term: int, from_number: str, to_number: str) -> None:
-        """Hand the uncollected batch items, queued intents and ready analysis to another row."""
+    def move_primary_analysis_work(self, term: int, from_number: str, to_number: str) -> None:
+        """Hand primary analysis work to its successor while preserving secondary subjects."""
         ...
 
     def save_rcl(self, term: int, number: str, project: RclProject) -> None: ...
@@ -1017,6 +1122,10 @@ class BillRepository(Protocol):
 
     def find_wykaz(self, number: str) -> Bill | None:
         """The row of a register entry by its `WPL/UD408` number."""
+        ...
+
+    def list_government_rollover_candidates(self, term: int) -> list[Bill]:
+        """Rows eligible for the same government-only transfer as move_government_rows."""
         ...
 
     def move_government_rows(self, from_term: int, to_term: int) -> int:

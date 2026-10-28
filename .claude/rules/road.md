@@ -37,6 +37,8 @@ paths:
   new term (`bills`, `publications`, `status_changes`, `summary_json.term`) because RCL joins use the
   term-less id. Idempotent. Citizens' bills get other wording (taken over; they return as a new druk
   with a new card).
+  RCL names retain their original question key across rehome; only actual stored owners and an
+  unchanged name context permit reuse. The batch request/result is never re-keyed.
 - **"What comes next" is derived, not stored.** `models.next_phase(bill, today)` reads top-level
   stages, submission and act; the formatter dates it from `bill.agenda` (refreshed every run for
   every followed bill) or the constitutional deadline (`Phase.deadline`: Senate 30 days from the 3rd
@@ -134,7 +136,9 @@ paths:
   decisions are not successful decisions. `models/observations.py::ObservedProcess` is the immutable
   baseline (stages, closure date, `passed`, analysed document, digest, revision, `seen_supplements`)
   discovery may extend but never rewrite; Sejm checkpoints commit it together with the status-change
-  delivery work, with network calls outside that transaction. `models/planning.py::plan_bill` diffs
+  delivery work, with network calls outside that transaction. Sejm reanalysis stays prepared until
+  that checkpoint applies its record and receipt; secondary waiting keeps the ready result.
+  `models/planning.py::plan_bill` diffs
   old vs new, and **first sight (`previous is None`) yields `new_stages=()`,
   `closure_detected=False`, `decision_changed=False`**. `BillPlan.should_publish` adds
   `decision_changed` (from `decision_changes`: Senate-position outcomes, outside `_stage_key`) beside `fills_in_the_past`.

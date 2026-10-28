@@ -38,6 +38,7 @@ from lexinform.models import (
     BillSubmission,
     CommandOutcome,
     ConsultationWindow,
+    ContentHistoryView,
     DecisionState,
     Digest,
     DigestEntry,
@@ -2043,6 +2044,9 @@ class MessageFormatter:
                 f" · {esc(r.reason)}"
                 for r in outcome.delivery_history
             ]
+            if outcome.content_history is not None:
+                lines.append(f"physical attempts: {pub.attempts}")
+                lines.extend(self._content_history_lines(outcome.content_history))
             preview = self.delivery_preview(pub)
             return ["\n".join(lines), "<b>Saved snapshot preview</b>\n" + preview]
         if outcome.status is OutcomeStatus.PREVIEWED and bill is not None:
@@ -2093,6 +2097,39 @@ class MessageFormatter:
             if line
         )
         return RenderedMessage(text=self._assemble(blocks))
+
+    @staticmethod
+    def _content_history_lines(history: ContentHistoryView) -> list[str]:
+        lines = [
+            f"editorial history: root {history.root_publication_id}"
+            f" · versions {history.version_count} · integrity {history.integrity}"
+        ]
+        shown: set[str] = set()
+        for label, version in (
+            ("original", history.original),
+            ("current", history.current),
+            ("inspected", history.inspected),
+        ):
+            if version is None:
+                lines.append(label + " content: unavailable")
+                continue
+            lines.append(f"{label} content: {esc(version.content_id)}")
+            if version.content_id in shown:
+                continue
+            shown.add(version.content_id)
+            lines.append(f"bill snapshot: {esc(version.bill_snapshot_id)}")
+            lines.append(f"event snapshot: {esc(version.change_snapshot_id)}")
+            lines.append(
+                "source decisions: "
+                + (", ".join(map(esc, version.source_observation_ids)) or "unavailable")
+            )
+            lines.append(
+                "results: " + (", ".join(map(esc, version.computation_ids)) or "unavailable")
+            )
+            lines.append(f"rendered checksum: {version.rendered_sha256 or 'unavailable'}")
+        if history.ambiguous:
+            lines.append("confirmation chain branches; current content is unavailable")
+        return lines
 
     def delivery_preview(self, pub: Publication) -> str:
         plan = pub.delivery

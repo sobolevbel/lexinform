@@ -12,21 +12,35 @@ import hashlib
 import logging
 import threading
 import time
+from collections import Counter
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from urllib.parse import urlparse
 
-from lexinform.document_selection import bill_selection, deduplicate_bundle
+from lexinform.document_candidates import (
+    AmbiguousCandidates,
+    CandidateSet,
+    DocumentCandidate,
+    select_candidate_versions,
+)
+from lexinform.document_selection import (
+    DOCUMENT_SELECTION_POLICY_VERSION,
+    bill_selection,
+    deduplicate_bundle,
+)
 from lexinform.document_versions import (
-    comparable_versions,
     join_normative_parts,
     normative_annex_key,
     regulation_support,
 )
 from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
 from lexinform.models import (
+    ArtifactIdentity,
+    ArtifactReadIdentity,
     DocumentPart,
+    DocumentReadMetrics,
     DocumentSelection,
+    HostDocumentReads,
     ScanInputManifest,
     ScannedDocument,
     TextDocument,
@@ -93,6 +107,69 @@ class TextLoader:
         self._cache: dict[str, LoadedFile] = {}
         self._cache_size = cache_size
         self._lock = threading.Lock()
+        self._read_cache_hits = 0
+        self._download_metrics: dict[str, Counter[str]] = {}
+        self._seen_bodies: dict[str, int] = {}
+        self._known_bodies: dict[str, int] = {}
+        self._known_reads: dict[str, ArtifactReadIdentity] = {}
+
+    def read_artifacts(self) -> tuple[ArtifactIdentity, ...]:
+        """Known body identities survive a counter reset without retaining body bytes."""
+        with self._lock:
+            return tuple(
+                ArtifactIdentity(sha256=sha, byte_size=size)
+                for sha, size in sorted(self._known_bodies.items())
+            )
+
+    def read_artifact_reads(self) -> tuple[ArtifactReadIdentity, ...]:
+        """Return known complete-response identities without timestamps or body bytes."""
+        with self._lock:
+            return tuple(self._known_reads[key] for key in sorted(self._known_reads))
+
+    def reads_for_selection(self, selection: DocumentSelection) -> tuple[ArtifactReadIdentity, ...]:
+        sources = {
+            (part.url, part.source_sha256) for part in (*selection.parts, *selection.observed_parts)
+        }
+        with self._lock:
+            return tuple(
+                read
+                for _, read in sorted(self._known_reads.items())
+                if (read.requested_url, read.sha256) in sources
+            )
+
+    def artifacts_for_selection(self, selection: DocumentSelection) -> tuple[ArtifactIdentity, ...]:
+        sources = {part.source_sha256 for part in (*selection.parts, *selection.observed_parts)}
+        with self._lock:
+            return tuple(
+                ArtifactIdentity(sha256=sha, byte_size=self._known_bodies[sha])
+                for sha in sorted(sources)
+                if sha in self._known_bodies
+            )
+
+    def reset_read_metrics(self) -> None:
+        """The caller resets observation before starting run work without clearing cached files."""
+        with self._lock:
+            self._read_cache_hits = 0
+            self._download_metrics.clear()
+            self._seen_bodies.clear()
+
+    def read_metrics(self) -> DocumentReadMetrics:
+        with self._lock:
+            return DocumentReadMetrics(
+                cache_hits=self._read_cache_hits,
+                distinct_bodies=len(self._seen_bodies),
+                distinct_body_bytes=sum(self._seen_bodies.values()),
+                hosts={
+                    host: HostDocumentReads(
+                        attempts=counts["attempts"],
+                        completed=counts["completed"],
+                        body_bytes=counts["body_bytes"],
+                        over_limit=counts["over_limit"],
+                        failed=counts["failed"],
+                    )
+                    for host, counts in sorted(self._download_metrics.items())
+                },
+            )
 
     def load(self, url: str) -> str | None:
         """Extracted text of the file at `url`, or None when it is too big or has no text layer.
@@ -106,6 +183,7 @@ class TextLoader:
         """The same download, with what the file turned out to be."""
         with self._lock:
             if url in self._cache:
+                self._read_cache_hits += 1
                 return self._cache[url]
         loaded = self._fetch(url)
         with self._lock:
@@ -225,6 +303,15 @@ class TextLoader:
         )
 
     def select_document(self, document: TextDocument) -> tuple[TextDocument, LoadedFile]:
+        selected, loaded = self._select_document(document)
+        return selected, replace(
+            loaded,
+            selection=loaded.selection.model_copy(
+                update={"policy_version": DOCUMENT_SELECTION_POLICY_VERSION}
+            ),
+        )
+
+    def _select_document(self, document: TextDocument) -> tuple[TextDocument, LoadedFile]:
         if document.compare_versions:
             resolved = self._compare_versions(document)
             if resolved is not None:
@@ -277,6 +364,7 @@ class TextLoader:
 
     def _compare_versions(self, document: TextDocument) -> tuple[TextDocument, LoadedFile] | None:
         candidates: list[tuple[TextDocument, LoadedFile]] = []
+        prepared: list[DocumentCandidate] = []
         for candidate in (document, *document.alternatives):
             if candidate.official_link_conflict:
                 continue
@@ -286,35 +374,25 @@ class TextLoader:
                 raise
             except Exception:
                 continue
-            if file.text is not None and document_kind(file.text) == "bill":
-                candidates.append((candidate, file))
-        if not candidates:
-            return None
-        indices = comparable_versions([file.text or "" for _, file in candidates])
-        if not indices:
-            return document, LoadedFile(
-                None,
-                selection=DocumentSelection(
-                    state="ambiguous",
-                    parts=tuple(part for _, file in candidates for part in file.selection.parts),
-                    rejected=tuple(
-                        f"{candidate.url}: conflicting bill version" for candidate, _ in candidates
-                    ),
-                ),
+            item = DocumentCandidate(
+                candidate.url, file.text, file.selection.parts, file.selection.observed_parts
             )
-        candidate, _ = candidates[indices[0]]
+            if item.is_bill:
+                candidates.append((candidate, file))
+                prepared.append(item)
+        choice = select_candidate_versions(CandidateSet(tuple(prepared)))
+        if choice is None:
+            return None
+        if isinstance(choice, AmbiguousCandidates):
+            return document, LoadedFile(None, selection=choice.selection)
+        candidate, _ = candidates[choice.index]
         loaded = self._with_evidence(candidate, self.read_document(candidate))
-        observed = tuple(
-            part
-            for _, file in candidates
-            for part in (file.selection.observed_parts or file.selection.parts)
-        )
         return candidate, LoadedFile(
             loaded.text,
             pages=loaded.pages,
             oversize=loaded.oversize,
             sha256=loaded.sha256,
-            selection=loaded.selection.model_copy(update={"observed_parts": observed}),
+            selection=loaded.selection.model_copy(update={"observed_parts": choice.observed_parts}),
         )
 
     def _with_evidence(self, document: TextDocument, file: LoadedFile) -> LoadedFile:
@@ -451,11 +529,27 @@ class TextLoader:
         if download is None:
             raise ValueError(f"no downloader for host {host!r} ({url})")
         started = time.perf_counter()
+        with self._lock:
+            self._download_metrics.setdefault(host, Counter())["attempts"] += 1
         try:
             data = download(url, max_bytes=self._max_bytes)
         except AttachmentTooLargeError as exc:
+            with self._lock:
+                self._download_metrics[host]["over_limit"] += 1
             log.warning("%s; skipping text", exc)
             return None
+        except Exception:
+            with self._lock:
+                self._download_metrics[host]["failed"] += 1
+            raise
+        digest = hashlib.sha256(data).hexdigest()
+        read = ArtifactReadIdentity(sha256=digest, byte_size=len(data), requested_url=url)
+        with self._lock:
+            self._known_reads.setdefault(read.read_id, read)
+            self._download_metrics[host]["completed"] += 1
+            self._download_metrics[host]["body_bytes"] += len(data)
+            self._seen_bodies.setdefault(digest, len(data))
+            self._known_bodies.setdefault(digest, len(data))
         log.info(
             "%s: %d KB downloaded in %.1fs",
             url,

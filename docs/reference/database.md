@@ -1,13 +1,13 @@
 # База данных и миграции
 
-Статус: актуальный справочник · проверен 21 октября 2026 по локальному коду, схема **v48**.
+Статус: актуальный справочник · проверен 27 октября 2026 по локальному коду, схема **v53**.
 
 Источник истины — append-only
 [`MIGRATIONS` в sqlite_repo.py](https://github.com/sobolevbel/lexinform/blob/main/src/lexinform/adapters/sqlite_repo.py).
 `SCHEMA_VERSION = len(MIGRATIONS)`, версия конкретной базы — `PRAGMA user_version`.
-После всех миграций: **17 таблиц, 28 явных индексов
-(13 обычных и 15 уникальных), 5 внешних ключей**. Автоиндексы `PRIMARY KEY` и
-`UNIQUE` в эти 28 не входят. Копия production dump также восстановлена в v48:
+После всех миграций: **24 таблицы, 37 явных индексов
+(20 обычных и 17 уникальных), 10 внешних ключей**. Автоиндексы `PRIMARY KEY` и
+`UNIQUE` в эти 37 не входят. Копия production dump также восстановлена в v53:
 `integrity_check=ok`, `foreign_key_check` не вернул ошибок.
 
 ## Визуальная схема
@@ -20,6 +20,14 @@ HTML содержит снимок v34, включая SQL ограничени�
 
 | Таблица | Ключ | Что хранит |
 | --- | --- | --- |
+| `artifacts` (v53) | `sha256`; индекс recorded_at | Известная идентичность полного body: SHA, размер, первое время записи; без bytes, locator или retention promise. |
+| `selection_artifacts` (v53) | `(selection_id, part_scope, part_index)`; индекс artifact SHA | Проверенный outer-body ref выбранной/наблюдённой части; FK к immutable selection и artifact metadata. |
+| `document_selections` (v52) | `selection_id` | Неизменяемые метаданные решения: question, policy version, state, parts/facts/coverage; без extracted bodies и provider scan input. |
+| `source_observations` (v52) | `observation_id`; индексы owner/purpose и selection | Историческая связь дела, официальных document relations и решения; первое время записи сохраняется при повторной проверке. |
+| `artifact_reads` (v54) | `read_id`; unique requested URL/raw SHA; artifact index | Первый metadata receipt complete-body response; requested URL и время записи не являются blob location или датой публикации. |
+| `content_snapshots` (v55) | `snapshot_id`; kind + exact JSON | Общие immutable editorial Bill/change/metadata-plan snapshots; plan не копирует отдельные bodies. |
+| `content_versions` (v55) | `content_id`; root publication index; предыдущая версия | Editorial edition: semantic snapshot refs, known paid/event refs, exact rendered text либо явный unknown legacy, язык/formatter version при известности. |
+| `publication_content` (v55) | `publication_id` → `content_id` | Immutable связь физической publication с edition; не является receipt отправки. |
 | `document_work` | `key` | Поздний документ: исходное событие, исторический baseline, контекст batch, backoff и состояние. |
 | `bills` | `(term, number)` | Снимки источников, анализ, обработанное наблюдение и состояние очередей. Номер может быть druk, `RPW/…`, `RCL/…` или `WPL/…`. |
 | `status_changes` | `id`; уникальный `(term, number, new_fingerprint)` | Изменения, новые стадии, поправки и приложения. |
@@ -28,6 +36,9 @@ HTML содержит снимок v34, включая SQL ограничени�
 | `commands` | `update_id` | Команды Telegram; выполнение (`executed_at`) отделено от ответа (`handled_at`). |
 | `rcl_wykaz_numbers` | `(wykaz_number, project_id)` | Номер wykaz, проект RCL и дата создания; номера wykaz могут использоваться повторно. |
 | `analysis_memo` | `key` | Результат LLM по содержимому, цели и контексту; владелец `(term, number)` и `last_used_at`. |
+| `computation_results` (v49) | `result_id`; уникальный `(provider, batch_id, custom_id)` | Неизменяемый normalized primary/secondary result либо failure receipt, исходный usage и schema version; без файлов и полных входов. |
+| `result_applications` (v49/v50) | Local `id`; unique primary generation identity или explicit target namespace/ref | Collection decision и projection receipt; target хранится в JSON и индексируется без дополнительных columns. Primary applications используют `apply_analysis`; secondary producers ещё подключаются. Доставку не подтверждает. |
+| `result_applicability` (v51) | `observation_id`; FK на `result_id`, owner index `(term, number)` | Неизменяемая связь известного paid result с наблюдаемой версией source: URL/kind, записанные fingerprints, metadata SHA и первое время записи; без текстов, raw и копии ответа. Primary producer записывает связь атомарно с проекцией через `apply_analysis`; unknown legacy пропускается. |
 | `llm_batches` | `batch_id` | Провайдер, состояние batch, оценка стоимости и даты опроса, завершения и очистки. |
 | `llm_batch_items` | `(batch_id, custom_id)` | Задание для bill, метаданные, результат, `consumed_at` и отдельный `accounted_at`. |
 | `llm_batch_intents` | `custom_id` | Сохранённые запросы до отправки провайдеру и состояние попытки. |
@@ -41,7 +52,11 @@ HTML содержит снимок v34, включая SQL ограничени�
 SQL объявляет внешние ключи:
 `publications.status_change_id → status_changes.id` и
 `llm_batch_items.batch_id → llm_batches.batch_id`;
-`digest_event_links.source_publication_id/owner_publication_id → publications.id` (v40).
+`digest_event_links.source_publication_id/owner_publication_id → publications.id` (v40) и
+`result_applications.result_id → computation_results.result_id` (v49) и
+`result_applicability.result_id → computation_results.result_id` (v51) и
+`source_observations.selection_id → document_selections.selection_id` (v52) и
+`selection_artifacts.selection_id/artifact_sha256 → document_selections.selection_id/artifacts.sha256` (v53).
 Связи по `(term, number)`, ссылки аудита на публикацию и команду — логические,
 без `FOREIGN KEY`. Дайджест относится к неделе и каналу, а не к одному законопроекту.
 
@@ -69,6 +84,45 @@ batch context неизменяем. Старые dump получают `commissi
 из Sejm `additionalPrints`: URL, роль, орган, forum и версию метаданных. NULL в старом dump
 означает неизвестный каталог, пустой список — проверенный пустой. Первичное заполнение
 учитывает прежние `seen_supplements` и не создаёт исторический batch.
+
+V49 начинает историю новых primary collections без backfill. Результат, collection decision и
+consumed checkpoint сохраняются в существующей atomic transaction; старый usage accounting и
+generation guard сохранены. Новое nullable поле `AnalysisRecord.computation_id` совместимо со
+старыми JSON. История сохраняется после очистки memo/batch bodies; состав и временная
+избыточность dual write описаны в [retention](../state-retention.md).
+Projection receipts добавлены без новой SQL-миграции в [J062](../plans/2026-10-22-document-architecture-progress.md#j062):
+сначала `_persist` и direct `reanalyze_bill`. [J063](../plans/2026-10-22-document-architecture-progress.md#j063)
+переводит все service writes основного анализа на общий command, включая RCL/wykaz/linking;
+identity relocation при rollover остаётся открытым.
+[J066](../plans/2026-10-22-document-architecture-progress.md#j066) сохраняет secondary
+amendments/supplement/joint/name/explanation в той же таблице без новой SQL-миграции, schema v2
+в JSON и без primary generation. Secondary application receipts открыты.
+[J067](../plans/2026-10-22-document-architecture-progress.md#j067) добавляет reader review JSON v3
+с отдельными input refs и normalized answer;
+[J068](../plans/2026-10-22-document-architecture-progress.md#j068) включает их запись в review
+collection checkpoint без source text, новой SQL-миграции или изменения submit/pause settings.
+
+V50 добавляет совместимый reader explicit application targets: generation=NULL требует
+namespace/ref и projection phase. Два partial unique indexes разделяют primary и target scopes;
+SQL CHECK исключает incomplete targets и NULL-identity duplicates. Primary JSON остаётся
+прежним, порядок старых rows сохраняется. Local id не является бизнес-идентификатором.
+Новых target producers и application backfill эта миграция не включает. См.
+[J069](../plans/2026-10-22-document-architecture-progress.md#j069).
+
+V51 добавляет только reader и новую пустую таблицу applicability observations, без backfill.
+Identity включает paid ref, owner scope и source fingerprints; время первой записи исключено
+из identity. Повторное сохранение сохраняет первое время и не увеличивает dump. Записанные
+text/law fingerprints остаются opaque versioned значениями. Metadata SHA исключает текст и
+`scan_input`: исходный оплаченный scan manifest не доказывает новый фактический input.
+Изолированная свежая копия state сохранила все 457 Bill и 141 memo; прирост пустой схемы —
+350 SQL bytes / 50 gzip bytes. J082 reader сохраняет заполненную v51 побайтно при restore/dump,
+без schema downgrade. Приёмка: [J083](../plans/2026-10-22-document-architecture-progress.md#j083).
+
+[J084](../plans/2026-10-22-document-architecture-progress.md#j084) включает primary producer
+через общий `apply_analysis`: связь пишется с проекцией, включая reuse неизменного результата
+для нового source pointer. Collect и preparation без применения связи не создают.
+Отдельный дублирующий application receipt не добавляется. Rollback reader J083 сохраняет
+заполненную таблицу; source selection, paid input и current reuse policy прежние.
 
 ## Снимки и обработанное состояние
 
@@ -344,3 +398,157 @@ Canonical history привязана к тому же ELI; первичное з
 если у них нет анализа, связи с продолжением и признака завершения. Ошибка загрузки
 сохраняется для диагностики до успешной проверки. Решения оператора и содержательные
 отказы префильтра не меняются. После обновления следующий прогон повторяет загрузку файла.
+
+V52 добавляет совместимый слой чтения source observations и deduplicated selection metadata.
+Новые таблицы пусты после миграции; producers ещё не включены, старые результаты не backfilled.
+Сохраняется достаточное адресуемое evidence официальных связей (`TextDocument`), а не полный
+каталог сайта. Identity решения включает точные метаданные и policy version; observation identity
+включает owner/purpose/catalog relations/selection ref, исключая время первой записи.
+Обе записи атомарны, SQL identity columns проверяются против JSON. Полные тела и scan provider
+input отвергаются; `from_selection` сохраняет metadata view. Это не legal edition и не raw archive.
+Свежий pin `2f310768040c39deb87f9de1e40e1440cb396aad`: все 458 Bill и прежние rows сохранены,
+пустая схема +814 SQL / 201 gzip bytes; J094 reader сохраняет populated v52 dump побайтно.
+См. [J095](../plans/2026-10-22-document-architecture-progress.md#j095).
+
+[J096](../plans/2026-10-22-document-architecture-progress.md#j096) включает первый producer:
+text prefilter сохраняет завершённое source decision и outcome одной transaction. Worker
+передаёт metadata, запись идёт на calling thread в input order, время берётся из Clock.
+Новые строки не требуют paid result; missing fetch не становится успешным наблюдением.
+Повтор не создаёт историю polling и не меняет первое время. Остальные producers ещё открыты.
+
+V53 добавляет совместимый reader known complete-body metadata и нормализованных part refs.
+Точный размер не восстанавливается из text/law hashes, страниц или существующего агрегата bytes.
+Старые refs не получают guessed size/date. Первое recorded_at берётся у caller Clock и хранится
+UTC; повтор SHA/размера сохраняет первое время, конфликт размера отвергается. Ref указывает
+на точный part scope/index immutable selection; archive member SHA не подменяет container SHA.
+Обе FK цели должны существовать. Поля ownership/identity доступны SQL; это metadata projection,
+не новая derived business status, raw store или GC pin.
+
+Production producers пока не включены. Fresh state `dc97f63814eaa967287e7f8c834798d86b88888e`:
+все прежние rows и **462 Bill JSON** exact; пустая схема +709 SQL / 173 gzip bytes. J098 reader
+сохраняет populated v53 dump без schema conversion. См.
+[J099](../plans/2026-10-22-document-architecture-progress.md#j099).
+
+[J100](../plans/2026-10-22-document-architecture-progress.md#j100) включает metadata capture:
+TextLoader отдаёт уже известные complete-body SHA/size без дополнительных скачиваний. Text
+prefilter пишет metadata/refs вместе с source decision/status; pipeline добавляет остальные
+известные bodies в finish-run transaction. Metadata survive counter reset/cache reuse, без raw
+bytes; первое время сохраняется. `DocumentPart.source_sha256` — тот же outer-container/member
+выбор, без нового serialized field. Неполные/failed responses не получают guessed SHA/size.
+[J102](../plans/2026-10-22-document-architecture-progress.md#j102) добавляет observations категории
+analysis для first/re-analysis/explanation, включая standalone calls. Metadata view исходного
+selection формируется до input fitting и сохраняется после prepare, независимо от paid input/result identity. Worker возвращает metadata,
+caller transaction записывает decision/observation/known outer refs; ошибка модели сохраняет
+завершённое source decision, source outage — нет. Batch-ready reuse без нового source read не
+создаёт фиктивное observation. [J103](../plans/2026-10-22-document-architecture-progress.md#j103) использует общий
+`DocumentSourceRead`/recording helper в prefilter, primary analysis и review. Review worker
+возвращает исходный file selection и physical identities отдельно от ReviewDocument; запись
+идёт на caller thread в input order, до подготовки paid review. Snapshot reuse без нового
+чтения не создаёт observation. Неизвестный policy остаётся unknown; source history не объявляет
+файл допустимым для конкретного role/digest.
+[J104](../plans/2026-10-22-document-architecture-progress.md#j104) использует тот же writer перед
+обычными committee amendments, рекомендациями и supplements. Source metadata сохраняются до
+full-input budget refusal и подготовки model context; memo reuse без чтения не получает новый
+source observation. [J105](../plans/2026-10-22-document-architecture-progress.md#j105) отдельно сохраняет physical
+Senate source metadata: question `senate_resolution_source`, policy `senate-source-observation-v1`,
+state `unverified`, unknown role, actual raw SHA/pages/observed reader-text SHA. Expected source
+identity остаётся в `TextDocument.senate` отдельно от actual body SHA. Scan provider input не
+попадает в source metadata; subject/date/fullness/visual admission прежние. Historical-comparison
+workers этим не меняются.
+
+
+V54 добавляет reader-first `artifact_reads`: requested URL, actual complete-body SHA/size и первое
+recorded_at. Worker identity не содержит Clock; durable receipt получает время caller. Record ID
+не включает время; повтор сохраняет прежнее время и exact dump. Required parent artifact metadata
+должны иметь тот же размер; данные повторно валидируются при save, SQL identity проверяется при read.
+В таблице нет тел или model input, нет backfill по прежним selections/URL. Producer пока выключен.
+Unique URL/SHA index покрывает URL lookup; отдельный redundant URL index не добавлен. См.
+[J106](../plans/2026-10-22-document-architecture-progress.md#j106).
+
+
+[J107](../plans/2026-10-22-document-architecture-progress.md#j107) включает producer. TextLoader
+сохраняет clock-free URL/SHA/size identities без bytes; `DocumentFileReadObserver` отдаёт их caller.
+Selected/observed source parts получают matching receipts в общей source transaction; finish-run
+сохраняет прочие complete responses, включая unselected/неразобранные файлы. Registry переживает
+counter reset/cache reuse и dry-run rollback; durable recording time берётся у caller Clock.
+Failed/over-limit fetch не создаёт complete receipt. Прочие standalone reads без source/finish-run
+boundary и crash до этих boundaries ещё не покрыты. Это не source date, HTTP-header archive или
+retained blob location; новых network calls и backend flags нет.
+
+
+## История одиночных исправлений (v55)
+
+[J109](../plans/2026-10-22-document-architecture-progress.md#j109) отделяет durable editorial
+history от очищаемого delivery payload. Bill/change snapshots адресуются по kind и exact semantic JSON;
+plan snapshot содержит остальные frozen поля, без повторных Bill/change/rendered bodies.
+Content ID исключает время первой записи; повтор не меняет version или timestamp. Previous
+version обязана принадлежать тому же original publication. SQL identity columns проверяются
+при чтении; binding требует того же owner, physical edit target, того же editorial Bill/change/text и
+совместимого frozen context. Новые optional DeliveryPlan defaults не переписывают историю.
+
+Publication ID — стабильная audit identity, переживающая явный `/forget`; history не удаляется
+вместе с operational row. Поэтому refs на content/snapshots имеют FK, а publication identity
+не получает каскадного удаления. Binding не означает `sent`: подтверждение остаётся у
+Publication/operator resolution. `pending`/`unknown` не становятся доставленными из-за version.
+
+Producer охватывает одиночные status updates со стадией поправок и amendments revisions. После очистки delivery
+`/amendments` может прочитать original snapshot из истории, сохранив старые Bill/change/date и
+message target. Legacy без обеих копий получает прежний отказ; отсутствовавший исторический
+HTML/язык/formatter не реконструируется. Grouped/multipart/digest originals по-прежнему не
+редактируются этим путём; для длинной revision работает прежняя physical queue, без обещания
+полной новой content history. Нет backfill, изменения source selection, paid requests или retry.
+
+
+Editorial Bill view исключает только `review_work` и `ready_analysis`, когда они содержат
+незавершённую работу: её входы остаются у существующего owner. Summary/analysis/stages и
+остальные известные/неизвестные fields сохраняются; view не меняет original delivery payload.
+Это не document trimming и не переопределение paid input. Без operational данных source JSON
+остаётся byte-identical; для view с исключёнными work fields хранится свой exact JSON/SHA.
+
+
+## Read-only просмотр editorial history
+
+[J110](../plans/2026-10-22-document-architecture-progress.md#j110) добавляет offline inspector
+для checkpointed SQLite copy:
+
+```bash
+uv run python -m tools.content_history_doctor --database COPY.db --output NEW_REPORT.json
+uv run python -m tools.content_history_doctor --database COPY.db --publication 136 --output NEW_REPORT.json
+```
+
+Он проверяет canonical snapshot/version IDs, semantic refs и predecessor/root; пока delivery
+payload сохранён, сверяет с ним Bill/change/text/context. Physical publication owner, edit target
+и SQL identity operator decision проверяются отдельно. Отчёт показывает original/current version,
+physical status/attempts и confirm/retry/dismiss decisions, не выполняя work или repair.
+`--publication` фильтрует отображение history, validation охватывает весь snapshot.
+
+Current version выводится только из подтверждённой цепочки `sent`/message ID. Prepared/unknown
+edit не заменяет её; при повреждении current не угадывается. Отсутствие physical original оставляет
+history и warning без обещания current message. Это DB evidence, не независимая проверка Telegram.
+
+В отчёте нет rendered/source bodies, URLs или prose operator reasons. Unknown opaque refs/labels
+остаются в SQL, а в отчёте указаны counts/warnings без их содержимого. Missing legacy tables
+отличаются от known-empty schema55. Exit0 — recorded, exit1 — ошибки, exit2 — нет history для
+наблюдения; существующий output не перезаписывается, input database остаётся byte-identical.
+
+
+## Editorial metadata в `/delivery`
+
+[J111](../plans/2026-10-22-document-architecture-progress.md#j111) показывает доступные
+original/current/inspected content IDs, Bill/event snapshot refs, known source/result refs и
+rendered checksum. Summary не содержит HTML/source bodies; одинаковая версия представлена
+одной metadata записью с тремя отдельными pointers. Legacy без content binding сохраняет
+прежний ответ и JSON без нового поля.
+
+Подтверждение цепочки и сверка frozen context — общие чистые функции для repository,
+offline inspector и operator view. История читается через immutable publication/content join,
+поэтому удаление operational `delivery_json` не стирает confirmation chain. Corrupt/missing
+history не меняет physical status, не подтверждает unknown и не разрешает retry. В этом случае
+operator view помечает integrity unavailable, а offline doctor показывает точные findings.
+
+
+[J112](../plans/2026-10-22-document-architecture-progress.md#j112) использует тот же editorial
+context для новых amendments targets, даже пока original operational delivery ещё доступен.
+`review_work`/`ready_analysis` не копируются повторно в batch metadata; original payload и actual
+work owners остаются прежними. Provider context/checksum не меняется. Новая `/delivery` строка
+physical attempts относится к сохранённой publication, а не к числу content versions.

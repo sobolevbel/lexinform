@@ -42,7 +42,7 @@ jobs:
         run: make corpus-check CORPUS=tests/fixtures/corpus_check CORPUS_OUTPUT="${{ runner.temp }}/corpus-check.json"
       - name: Save corpus coverage and decisions
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: corpus-check-${{ matrix.python-version }}
           path: ${{ runner.temp }}/corpus-check.json

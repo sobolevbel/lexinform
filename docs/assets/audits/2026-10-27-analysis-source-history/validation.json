@@ -1,0 +1,156 @@
+{
+  "version": 1,
+  "stage": "J102",
+  "baseline": "2cc16ddb9d2351b441593df9ed47bb8b11f395d4",
+  "scope": "New source metadata for first analysis, re-analysis and explanation independently of later fitted input or paid identity; caller-thread writes also preserve completed reads when preparation fails.",
+  "checks": {
+    "focused": {
+      "path": "out/corpus/j102/focused-accepted.xml",
+      "sha256": "641b8614351654f4a40d8310bc6e95fe74d515c129d6a57825e5a8767c1ab701",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "90",
+      "time": "4.975",
+      "timestamp": "2026-10-27T21:32:43.922666+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    },
+    "full": {
+      "path": "out/corpus/j102/full-accepted.xml",
+      "sha256": "ba2f230a0df5bc06c94792f76dc81cf07997109a0888dc9e2bf05f15f69b00d9",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "4933",
+      "time": "585.287",
+      "timestamp": "2026-10-27T21:32:49.590774+01:00",
+      "hostname": "Yauhenis-MacBook-Pro.local"
+    }
+  },
+  "gates": {
+    "mypy": "Success: no issues found in 458 source files",
+    "mypy_ci_equivalent": "Success: no issues found in 458 source files",
+    "ruff": "All checks passed!",
+    "format": "1 file reformatted, 454 files left unchanged"
+  },
+  "qualification": {
+    "native": {
+      "cases": 168,
+      "all_profiles_except_metadata_and_storage_metrics_exact": true,
+      "all_requests_and_rendered_messages_exact": true,
+      "all_20_business_tables_exact": true,
+      "prior_metadata_rows_preserved": true,
+      "source_observation_views": 198,
+      "selection_views": 186,
+      "link_views": 178,
+      "all_source_doctors_without_errors": true,
+      "sql_delta": {
+        "min": 0,
+        "max": 4046
+      },
+      "gzip_delta": {
+        "min": 0,
+        "max": 607
+      }
+    },
+    "raw": {
+      "cases": 36,
+      "all_raw_native_bill_report_request_context_and_message_fields_except_wall_clock_timings_exact": true,
+      "input_hashes_equal": true,
+      "source_observations": 36,
+      "baseline_runtime": "/Users/sobaleu/projects/lexinform/out/corpus/j102/baseline/src/lexinform/__init__.py",
+      "baseline_analysis_sha256": "51bbc228724ebb79401057b8a459838e241c7ee2c37a6ec241edfbfc09069790",
+      "current_analysis_sha256": "50770ee844daecff90b8a92f28e2eefea3e2bb2d802108a7aa7f2e48022332a9",
+      "exclusions": [
+        "Actual report.phase_seconds depends on observed parser/runtime duration, not the injected legal clock."
+      ],
+      "scope": "Real bounded raw sample through surrogate print sources and full fake-native analysis; no source network, paid calls, retained bodies or independent legal-selection gold."
+    },
+    "rollback": {
+      "reader": "J101 2cc16ddb9d2351b441593df9ed47bb8b11f395d4",
+      "cases": 168,
+      "legacy_report_views_read": 324,
+      "all_populated_sql_dumps_preserved_exact": true,
+      "schema_conversion": false
+    },
+    "structural": {
+      "selected_file_admission_and_shaping_ast_exact": true,
+      "already_loaded_paid_preparation_ast_exact": true,
+      "all_other_original_analysis_methods_ast_exact": true,
+      "changed_original_methods": [
+        "_load_text",
+        "_prepare",
+        "analyze_bill",
+        "analyze_pending",
+        "explain_bill",
+        "prepare_reanalysis"
+      ],
+      "schema_and_extractor_and_selection_policy_unchanged": true
+    },
+    "runtime": {
+      "baseline": "2cc16ddb9d2351b441593df9ed47bb8b11f395d4",
+      "changed_runtime_files": {
+        "src/lexinform/services/analysis.py": {
+          "baseline_sha256": "51bbc228724ebb79401057b8a459838e241c7ee2c37a6ec241edfbfc09069790",
+          "current_sha256": "50770ee844daecff90b8a92f28e2eefea3e2bb2d802108a7aa7f2e48022332a9"
+        }
+      },
+      "other_154_runtime_files_byte_identical": true
+    },
+    "corpus_ci": {
+      "after_manifest_sha256": "aae6d259c327611624a03a0eb07adfeac1c95f6e928e59383536ca97a3f8b5ae",
+      "before_manifest_sha256": "56dff244edbd515ad20525879f6103b2d4fe698c28a7cd2595d939ee776c450c",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "ci",
+      "summary_changes": {},
+      "version": 1
+    },
+    "corpus_process": {
+      "after_manifest_sha256": "e1c0a4599a9259cd8784088483ca7d317efb525d6ee0c381c4a51f0f1342e026",
+      "before_manifest_sha256": "a39f51514566ddc8bb3656abe4dc60f012cbf713e5c3361f1edc0a138b438bad",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "process",
+      "summary_changes": {},
+      "version": 1
+    }
+  },
+  "evidence": {
+    "out/corpus/j102/native-parity.json": "f19c6012aacaf2c482170ca42f336c9cd46f7f1178eb7ec61079860655417707",
+    "out/corpus/j102/raw-parity-qualified.json": "ecee6cead9cfbb5be0a44ade57f649736e5bbd6c793cb8c1eeb22612f9b93116",
+    "out/corpus/j102/rollback.json": "e582e16afbbd2ccff5ae4fccc576eac59a8ab85a32b1dd255b10efa22d193e28",
+    "out/corpus/j102/structural-parity.json": "a69b0ff1575e3ea85450d2ba853259e334ded0887074df5ec9b3822721b9eecf",
+    "out/corpus/j102/runtime-diff.json": "fc579b2ec587e2e6b801d73136d05e254bbf8d0806570e8dedc6a18b4d699990",
+    "out/corpus/j102/ci-diff.json": "d9e24b9a41ade27e23526dab37b7674376cfa9817020710399db74031fee9358",
+    "out/corpus/j102/process-diff.json": "712659073b8808a65c95d27b929ed576a74748ec4ad4e35f5f454df02356f78a",
+    "out/corpus/j102/raw-analysis-baseline.json": "5f0b71356673fc9da25ef6ebd4a7551d14459cc6ba72eb3f7f67e0789d927f2e",
+    "out/corpus/j102/raw-analysis-current.json": "5d99e3375431e0e3871f03b11f74759da47afe5af7fa7aaadc63d901f3513c74",
+    "out/corpus/j102/raw_analysis.py": "57e221182c4d5e7232194c131642cdc359f1a2394bc0848d11fb5ee409490074",
+    "out/corpus/j102/qualify_raw.py": "afadb8d2997e4e7056b1ba413d2238f77abc03619f4369b46bc56fc5870398f2",
+    "out/corpus/j102/native_profiles.py": "e95360aa742796a9ded4eddb0d21e10ad88626b43b607e46fa32c2fde3dc5ffa",
+    "out/corpus/j102/compare_native.py": "5e2d0c8d580ea8995992d28edacfa612668616fc2693b7cbc4d392b9c108e554",
+    "out/corpus/j102/rollback_profile.py": "69cf420743d8da78c5ba751d2fe77815e646819eecefd50bf8db4fb03cb7c31d",
+    "out/corpus/runs/j102-ci/manifest.json": "aae6d259c327611624a03a0eb07adfeac1c95f6e928e59383536ca97a3f8b5ae",
+    "out/corpus/runs/j102-process/manifest.json": "e1c0a4599a9259cd8784088483ca7d317efb525d6ee0c381c4a51f0f1342e026"
+  },
+  "sources": {
+    "src/lexinform/services/analysis.py": "50770ee844daecff90b8a92f28e2eefea3e2bb2d802108a7aa7f2e48022332a9",
+    "tests/scenario/test_analysis_source_history.py": "2ef50a7e74750777851b2ea1fbb27eee56183d58434a706c662fd24c7666d5b8",
+    "tests/scenario/test_artifact_capture.py": "8a291b44bb22977587f1b4d984549c4205e07efa0688a363a4866945e0ce2761",
+    "tests/scenario/test_prefilter_source_history.py": "c5d6d811eeef748cd390e511e02c76bd8202f927a42598f91f6bf1fd5685c942"
+  },
+  "limitations": [
+    "No durable pre-paid checkpoint inside the prepare worker; process loss there can lose an observation.",
+    "New metadata neither retain file bodies nor infer paid legacy provenance.",
+    "Secondary/review source producers remain open.",
+    "Raw fixtures use surrogate print sources; no independent legal gold or full raw population is claimed.",
+    "Replay bundles precede only an expected-count change in the prefilter scenario; runtime is byte-identical to the qualified runtime."
+  ]
+}
