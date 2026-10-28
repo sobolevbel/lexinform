@@ -1,0 +1,284 @@
+{
+  "version": 1,
+  "stage": "J146",
+  "status": "local_acceptance_passed",
+  "base_commit": "842a91e6f80c2e9b5b52bc5b73fa068fdaca9612",
+  "minimum_reader_release": "8a76a8e4f8a021f6b195c082bf901e09cd660914",
+  "scope": "One caller-owned CLI IO report for9 explicit roots; no execution or model-accounting claim",
+  "roots": [
+    "scan",
+    "reprefilter",
+    "analyze",
+    "explain",
+    "amendments",
+    "republish",
+    "forget",
+    "reset",
+    "observe"
+  ],
+  "lifecycle": [
+    "reset/register real runs.id beforelookup",
+    "Clock/log context",
+    "caller finally afterworkers beforeclose",
+    "atomic complete artifacts+receipts+report+configured prune",
+    "original outcome/exception preserved on capture/logfailure"
+  ],
+  "gate": {
+    "tests": 6417,
+    "seconds": 217.328,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "coverage_percent": 92,
+    "mypy_files": 558,
+    "ruff": "all src/tests/tools passed",
+    "format": "624 files formatted",
+    "source_files_exact": 626,
+    "focused_tests": 68,
+    "local_http_tests": 25,
+    "local_http_seconds": 14.92,
+    "new_unit_cases": 13,
+    "new_scenario_boundary_cases": 16
+  },
+  "whole_sql_parity": {
+    "append_only_complete_identities": true,
+    "base_commit": "8a76a8e4f8a021f6b195c082bf901e09cd660914",
+    "changed_tables": [
+      {
+        "added_rows": 1,
+        "operation": "amendments",
+        "table": "runs"
+      },
+      {
+        "added_rows": 1,
+        "operation": "analyze",
+        "table": "runs"
+      },
+      {
+        "added_rows": 1,
+        "operation": "explain",
+        "table": "runs"
+      },
+      {
+        "added_rows": 1,
+        "operation": "forget",
+        "table": "artifact_reads"
+      },
+      {
+        "added_rows": 1,
+        "operation": "forget",
+        "table": "artifacts"
+      },
+      {
+        "added_rows": 1,
+        "operation": "forget",
+        "table": "runs"
+      },
+      {
+        "added_rows": 1,
+        "operation": "observe",
+        "table": "artifact_reads"
+      },
+      {
+        "added_rows": 1,
+        "operation": "observe",
+        "table": "artifacts"
+      },
+      {
+        "added_rows": 1,
+        "operation": "observe",
+        "table": "runs"
+      },
+      {
+        "added_rows": 1,
+        "operation": "reprefilter",
+        "table": "runs"
+      },
+      {
+        "added_rows": 1,
+        "operation": "republish",
+        "table": "artifact_reads"
+      },
+      {
+        "added_rows": 1,
+        "operation": "republish",
+        "table": "artifacts"
+      },
+      {
+        "added_rows": 1,
+        "operation": "republish",
+        "table": "runs"
+      },
+      {
+        "added_rows": 1,
+        "operation": "reset",
+        "table": "artifact_reads"
+      },
+      {
+        "added_rows": 1,
+        "operation": "reset",
+        "table": "artifacts"
+      },
+      {
+        "added_rows": 1,
+        "operation": "reset",
+        "table": "runs"
+      },
+      {
+        "added_rows": 1,
+        "operation": "scan",
+        "table": "runs"
+      }
+    ],
+    "evidence_sha256": {
+      "baseline.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "baseline/amendments-after.sql": "6f179038ff41a70da171b069ead4523feaadaa3b04f140dc841007f1c83d4b8d",
+      "baseline/amendments-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "baseline/analyze-after.sql": "ed39e8730989c65860d4b260828068c4e04070abe35459990ae512ff91aed800",
+      "baseline/analyze-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "baseline/callers.json": "ca0b98ba63cb86a78a6e7537a35625be486ce38f273e3f230faa61ffb2c6405e",
+      "baseline/explain-after.sql": "7eeb3ca64735300c0039abcc7b39ae8b61c007063d15a12665e2c0c5dd693764",
+      "baseline/explain-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "baseline/forget-after.sql": "003e3a45f12a7c7e81aef3e6eb235d6da9eef9596b8f64d6ce2e4b9143b9b603",
+      "baseline/forget-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "baseline/observe-after.sql": "fd1a800df653dc957f3dc8f082468b5f092dfd7135a2ae759c7c5d7a74923a43",
+      "baseline/observe-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "baseline/preview-after.sql": "6f179038ff41a70da171b069ead4523feaadaa3b04f140dc841007f1c83d4b8d",
+      "baseline/preview-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "baseline/reprefilter-after.sql": "fa051f248949adaf59972d85856d7930b4549b1326d5f4d986bbb5dd61704104",
+      "baseline/reprefilter-before.sql": "83d52081a01682a2f2ee51c5c5bd67d0fba3304ad4649ac08668e411110424b9",
+      "baseline/republish-after.sql": "003e3a45f12a7c7e81aef3e6eb235d6da9eef9596b8f64d6ce2e4b9143b9b603",
+      "baseline/republish-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "baseline/reset-after.sql": "48b6116a4cffac33d7eb536cf299156c8aaf670a8c3b559cea95d9f818a280a5",
+      "baseline/reset-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "baseline/scan-after.sql": "7ed78ab37cdd4544d6fce632a3d55304b468755747d894ac381f6a691166a52a",
+      "baseline/scan-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "baseline/show-after.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "baseline/show-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "candidate.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate/amendments-after.sql": "aa8c99c90e777241eb2c84554a87f7f5002ee4448133653b05bfb72ed6f1ecd6",
+      "candidate/amendments-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "candidate/analyze-after.sql": "e6decc53d8c3c86815179fef8292d6ad9fa49e845cc349aa29b13c078c232c40",
+      "candidate/analyze-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "candidate/callers.json": "d60b04742fa9847f86c27c443990369439c44b9e041534be7c7f0811847fbced",
+      "candidate/explain-after.sql": "5b567cc33ca2d877410b1410f0aff142775b17d3bfad83f01f58d515548e0f7a",
+      "candidate/explain-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "candidate/forget-after.sql": "41a9704f7a9a34dc842b68a2d0885cffc4f45aefcbcb9fc2928d2ab04c30df99",
+      "candidate/forget-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "candidate/observe-after.sql": "526d2ae9fd0ffc54d6155e74240810719643d4c430032035921de19780f0cf03",
+      "candidate/observe-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "candidate/preview-after.sql": "6f179038ff41a70da171b069ead4523feaadaa3b04f140dc841007f1c83d4b8d",
+      "candidate/preview-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "candidate/reprefilter-after.sql": "33bd70d3b42c72462a2bd82811504215c3e8adb3277e42de876d253cdd4d9cfe",
+      "candidate/reprefilter-before.sql": "83d52081a01682a2f2ee51c5c5bd67d0fba3304ad4649ac08668e411110424b9",
+      "candidate/republish-after.sql": "91dc5cff4b85d68c3c72ad6f06159f845c86655b11cbed3001bb92879d3cf00b",
+      "candidate/republish-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "candidate/reset-after.sql": "14b70c6b1a756fdd9a981337056b5ba63ae2feeeea89f08e9a3e47111a117a78",
+      "candidate/reset-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "candidate/scan-after.sql": "8285b3900ff0e97e680f7f799366236050c6689f2127509493e0467a77a21cc5",
+      "candidate/scan-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "candidate/show-after.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "candidate/show-before.sql": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "parity.py": "cfa57d494ee3f01c6d1782d61819877cb7b511e192238157d7a343ed43d27c34",
+      "result.json": "845a7f409642e35b61703e7a93581ea689a56a4cbfc27bd0ec3f6df9c621cc3b",
+      "verify_evidence.py": "9d65d5d6982d5a01853b7cb9420ca579f378386c53d0c798b70e2db83f009c19"
+    },
+    "existing_original_fake_callers_exact": 11,
+    "no_baseline_row_rewrites_or_deletions": true,
+    "schema_comparisons": 11,
+    "scope": "Only the existing11 World fake cases; no production state, external network, full gate or source edits",
+    "show_preview_raw_sql_exact": true,
+    "source_files_unchanged": {
+      "docs/state-retention.md": "1ef9432f89f207d34a25f57d3526a5ff8da264ed079aa815205d7121f6bf2f70",
+      "src/lexinform/cli.py": "6e3e67fe3b439df5f15cc9a9470a2681214e236f952e930dcf0c2ca442c0822f",
+      "src/lexinform/container.py": "aa28d56730aab012cfe6b5bf606e283c347448a693e8e1bae5a9e1df950fc5b2",
+      "src/lexinform/services/document_read_reporting.py": "8aab896720c7f348e3626ae3897a84e001bc182666ec2fdcb2c6d69c46ed0b10",
+      "tests/scenario/test_cli_document_read_reporting.py": "4b479448339228c21ca969df75e6aaebf1d6592f34a36b3d31f1e2a946049051",
+      "tests/unit/test_document_read_reporting.py": "ba021e7881187585b16b0b1b870673831668c40a2544c80962a0aa7d12bea07f"
+    },
+    "source_patch_sha256": "8cfe412bec41bf1249ea9295c024fd855cdbc31107aa4444806ff22987b51af8",
+    "status": "passed",
+    "unknown_preview_existing_enrollment_preserved": true,
+    "whole_table_comparisons": 418
+  },
+  "growth": {
+    "scope": "11 independent World fake callers; synthetic fixture measurements, not daily forecast",
+    "report_json_bytes_min": 1649,
+    "report_json_bytes_max": 2052,
+    "max_fixture_sql_delta": 2596,
+    "max_fixture_gzip9_mtime0_delta": 830,
+    "backfill": false,
+    "retention": "existing runs_retention_days; default90days, minimum7; no new setting"
+  },
+  "compatibility": [
+    "S1 reader already actually deployed before activation",
+    "old source/provider/publisher/stdout/exit behavior exact in11 paired callers",
+    "49 CLI function ASTs exact after removing9 capture wrappers",
+    "show andunknownpreview rawSQL exact; unknownpreview existingenrollment preserved",
+    "no duplicate inbox/pipeline owner",
+    "no new schema/model/provider/notifier/checkpoint calls"
+  ],
+  "evidence": [
+    {
+      "path": "out/corpus/j146/integrated-gate/full.xml",
+      "bytes": 1030277,
+      "sha256": "267a45500c7a931c367e29c66b3d5e2796b79eeb8b8a905b571346bec2574884"
+    },
+    {
+      "path": "out/corpus/j146/integrated-gate/check.log",
+      "bytes": 661702,
+      "sha256": "2138861a09d9c6712c9b847313c3cb90275132b37255d32d7e047c40702f270f"
+    },
+    {
+      "path": "out/corpus/j146/integrated-gate/source-freeze.json",
+      "bytes": 68653,
+      "sha256": "1d91f2d6c5e444b976282fcbbca9c6301fbd89e816c0a3ca7d1e12ba0a5f45af"
+    },
+    {
+      "path": "out/corpus/j146/final-gate/local-http.log",
+      "bytes": 180,
+      "sha256": "d96da5284a3cee43aced5ce2dec6c2060710188f1b70c6167b1f6f7e54702ee2"
+    },
+    {
+      "path": "out/corpus/j146/agent/focused.xml",
+      "bytes": 9970,
+      "sha256": "d10a9d08b0a13e3c4e57e91f5b975bb4d36179818052d8041cb1627a3d292de6"
+    },
+    {
+      "path": "out/corpus/j146/agent/frozen.json",
+      "bytes": 2992,
+      "sha256": "d0e39bf7c1039788bd2ade301235574c004bda2665f1971e93ed4baaeffa9e25"
+    },
+    {
+      "path": "out/corpus/j146/agent/j146.patch",
+      "bytes": 51493,
+      "sha256": "8cfe412bec41bf1249ea9295c024fd855cdbc31107aa4444806ff22987b51af8"
+    },
+    {
+      "path": "out/corpus/j146/agent/parity.json",
+      "bytes": 9017,
+      "sha256": "b5f130bfa0ba6643ed0cd947aaa968ecab9bb94b185c9b524f9fff642b97de98"
+    },
+    {
+      "path": "out/corpus/j146/agent/fixture-growth.csv",
+      "bytes": 1077,
+      "sha256": "65fd72d1e20ba3696c663154c1b4bb5f1389874a4bd64f9e407a9b052fdcd966"
+    },
+    {
+      "path": "out/corpus/j146/sql-parity/result.json",
+      "bytes": 177737,
+      "sha256": "845a7f409642e35b61703e7a93581ea689a56a4cbfc27bd0ec3f6df9c621cc3b"
+    },
+    {
+      "path": "out/corpus/j146/sql-parity/verification.json",
+      "bytes": 8071,
+      "sha256": "ea7e6912d74cf1444dd4790d14323ebe74bcdeb9c2ec0614a443f13cde6161cf"
+    }
+  ],
+  "limits": [
+    "DA2.4 remains partial: readonlyshow/readlookup andpreview have no new durableowner",
+    "No arbitrarydirectgateway/catalogHTTP ledger",
+    "Capture finally is not crash-proof: unfinished report remains unknown after process loss",
+    "No production processing/paid experiment or historical backfill"
+  ]
+}

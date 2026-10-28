@@ -7160,7 +7160,7 @@ messages/order и все SQL bytes exact. SQL total 7 574 128 B, gzip 9 / mtime 
 
 ### J145a. Match the full lint gate and separate its CI job
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**. CI 40760522668 остановил J145
+Статус: **реализовано, CI и обновление реле подтверждены**. CI 40760522668 остановил J145
 на 57 lint errors в observer modules: локальный статический gate проверял только выбранные
 новые tools, CI — весь каталог. Реле осталось на успешном reader 8a76; ложного deploy proof нет.
 Все шесть observers приведены к общим правилам, без suppressions. Два loop closures получили
@@ -7179,3 +7179,39 @@ focused 108. В чистом lint environment установлен только 
 artifacts exact относительно J145, без normalization; same-tree reuse passed. Independent
 review не нашло замечаний к job dependency/lock/verifier; 47 readonly checks passed.
 [Incident/fix evidence](../assets/audits/2026-10-28-native-runner/ci-lint.json).
+
+
+### J146. Capture standalone CLI document observations at the caller boundary
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**.
+Девять mutating roots регистрируют настоящий runs.id до lookup/file work: scan, reprefilter,
+analyze, explain, amendments, republish, forget, reset и observe. Clock/context и finally
+принадлежат вызывающей команде; после workers и до close одна короткая transaction сохраняет
+complete-body metadata/receipts, IO report и существующий prune. Outer rollback сохраняется.
+Ошибка finalization или log handler не заменяет исходный результат, Exception/BaseException
+или Typer exit. Report измеряет только loader IO, без выдуманного бизнес-статуса/LLM accounting.
+
+Поддерживающий reader 8a76 уже реально развёрнут. Producers не создают новых provider/notifier/
+checkpoint calls и не меняют lookup/selection/model inputs. Inbox/pipeline не получают второй
+owner. Show/read-only lookup не оборачиваются; preview сохраняет прежнее поведение, в том
+числе enrollment неизвестного дела, и не получает нового IO report.
+
+Independent review подтвердил 6 source hashes и 49 CLI ASTs после удаления 9 wrappers.
+11 paired World callers: schema/user_version и 418 whole-table comparisons проверены;
+изменились только 9 validated CLI reports, 4 append-only artifacts и 4 receipts. Старые строки
+не переписаны/не удалены; остальные 401 comparisons exact, show/preview raw SQL exact.
+Report envelope 1649–2052 B, max fixture delta 2596 SQL / 830 gzip B: это синтетические отдельные
+DB measurements, не natural daily forecast/global bound. Backfill нет; runs retention прежний.
+
+Final make check после CI/lint исправления: 6417 tests / 0 failures-errors-skips, 217.328s, coverage 92%;
+mypy 558, Ruff/format 624 по всем src/tests/tools. Focused 68, local HTTP 25 / 14.92s. Новые 13 unit
+cases проверяют общий helper; 16 caller scenarios покрывают реальные границы 9 roots и ошибки.
+[Acceptance asset](../assets/audits/2026-10-28-cli-read-capture/validation.json).
+DA2.4 partial: show/read-only lookup/preview и direct catalog HTTP не объявлены полным ledger.
+DA2.3/2.5 ещё требуют source-use relations для RCL letters, historical rereads и Senate candidates;
+повторный finalizer для уже покрытых попыток не нужен. План: 74 / 29 done / 6 N/A / 39 open.
+
+J145a commit `842a91e6f80c2e9b5b52bc5b73fa068fdaca9612` прошёл все четыре CI jobs,
+включая новый lint, и deploy. Реле перешло с8a76 на842a; health45s/timer подтверждены
+[release proof](../assets/audits/2026-10-28-native-runner/ci-lint-release.json).
+J145 включён в этот исправленный выпуск; e7 не объявляется отдельно развёрнутым.

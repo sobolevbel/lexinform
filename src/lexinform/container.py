@@ -71,6 +71,7 @@ from lexinform.services.delivery import DeliveryService
 from lexinform.services.delivery_notifier import DeliveryNotifier
 from lexinform.services.digest import DigestService
 from lexinform.services.discovery import BillDiscoveryService
+from lexinform.services.document_read_reporting import CliDocumentReadReporter
 from lexinform.services.document_reviews import DocumentReviews
 from lexinform.services.documents import TextLoader
 from lexinform.services.listener import CommandListener
@@ -199,6 +200,21 @@ class Container:
         if self.orka is not None:
             return self.orka
         return self._once("orka", OrkaClient).download
+
+    def cli_document_reads(self) -> CliDocumentReadReporter:
+        loader = self.text_loader()
+        return self._once(
+            "cli_document_reads",
+            lambda: CliDocumentReadReporter(
+                repo=self.repo,
+                clock=self.clock,
+                reads=loader,
+                downloads=loader,
+                artifacts=loader,
+                file_reads=loader,
+                retention=timedelta(days=self.settings.runs_retention_days),
+            ),
+        )
 
     def text_sources(self) -> TextSources:
         return self._once("text_sources", self._build_text_sources)

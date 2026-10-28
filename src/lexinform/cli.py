@@ -193,38 +193,39 @@ def scan(since: SinceOpt = None) -> None:
     """
     c = _container()
     try:
-        pipeline = c.pipeline(dry_run=True)
-        effective = pipeline.resolve_since(_utc(since))
-        term = c.term()
-        result = c.discovery_service().discover(term, effective)
-        over = result.over
-        wykaz_service = c.wykaz_discovery_service()
-        wykaz_new = 0
-        named_by_register: list[int] = []
-        if wykaz_service is not None:
-            wykaz_result = wykaz_service.discover(term, effective)
-            wykaz_new, named_by_register = wykaz_result.new, wykaz_result.on_rcl
-            over += wykaz_result.over
-        rcl_service = c.rcl_discovery_service()
-        rcl_new = rcl_hits = 0
-        if rcl_service is not None:
-            rcl_result = rcl_service.discover(term, effective, from_register=named_by_register)
-            rcl_new, rcl_hits = rcl_result.new, rcl_result.prefilter_hits
-            over += rcl_result.over
-        text_service = c.text_prefilter_service()
-        text_hits = (
-            text_service.run(limit=c.settings.text_prefilter_max_per_run).hits
-            if text_service
-            else 0
-        )
-        pending = c.repo.list_by_status([BillStatus.ANALYSIS_PENDING], limit=500)
-        _relay_result(
-            c,
-            f"scan completed: seen={result.seen} new={result.new} "
-            f"pre_print={result.pre_print_new} title_hits={result.prefilter_hits} "
-            f"rcl_new={rcl_new} rcl_hits={rcl_hits} text_hits={text_hits} "
-            f"wykaz_new={wykaz_new} over={over}",
-        )
+        with c.cli_document_reads().capture("scan"):
+            pipeline = c.pipeline(dry_run=True)
+            effective = pipeline.resolve_since(_utc(since))
+            term = c.term()
+            result = c.discovery_service().discover(term, effective)
+            over = result.over
+            wykaz_service = c.wykaz_discovery_service()
+            wykaz_new = 0
+            named_by_register: list[int] = []
+            if wykaz_service is not None:
+                wykaz_result = wykaz_service.discover(term, effective)
+                wykaz_new, named_by_register = wykaz_result.new, wykaz_result.on_rcl
+                over += wykaz_result.over
+            rcl_service = c.rcl_discovery_service()
+            rcl_new = rcl_hits = 0
+            if rcl_service is not None:
+                rcl_result = rcl_service.discover(term, effective, from_register=named_by_register)
+                rcl_new, rcl_hits = rcl_result.new, rcl_result.prefilter_hits
+                over += rcl_result.over
+            text_service = c.text_prefilter_service()
+            text_hits = (
+                text_service.run(limit=c.settings.text_prefilter_max_per_run).hits
+                if text_service
+                else 0
+            )
+            pending = c.repo.list_by_status([BillStatus.ANALYSIS_PENDING], limit=500)
+            _relay_result(
+                c,
+                f"scan completed: seen={result.seen} new={result.new} "
+                f"pre_print={result.pre_print_new} title_hits={result.prefilter_hits} "
+                f"rcl_new={rcl_new} rcl_hits={rcl_hits} text_hits={text_hits} "
+                f"wykaz_new={wykaz_new} over={over}",
+            )
     finally:
         c.close()
     typer.echo(
@@ -259,62 +260,67 @@ def reprefilter(
         started_at=c.clock.now(), limit=limit, include_text_skipped=include_text_skipped
     )
     try:
-        service = c.text_prefilter_service()
-        if service is None:
-            typer.echo("text prefilter is disabled (LEXINFORM_TEXT_PREFILTER_ENABLED)", err=True)
-            raise typer.Exit(code=2)
-        statuses = [BillStatus.SKIPPED_PREFILTER]
-        if include_text_skipped:
-            statuses.append(BillStatus.SKIPPED_TEXT_PREFILTER)
-        skipped = [
-            b
-            for b in c.repo.list_by_status(statuses, limit=limit)
-            if (b.has_process or (b.is_rcl and c.rcl is not None))
-            and b.last_error != SILENCED_BY_OPERATOR
-        ]
-        # `Container._once` memoises on a plain dict: a worker must never ask it for a service.
-        reader = c.rcl_reader() if c.rcl is not None else None
-        workers = c.settings.sejm_concurrency
-
-        def scanned(bill: Bill) -> tuple[Bill, PrefilterLoad]:
-            """Network only: the text a skipped RCL row no longer keeps, then the file to scan."""
-            if bill.is_rcl and reader is not None:
-                bill = bill.model_copy(update={"rcl": _rcl_text(reader, bill.number)})
-            return bill, service.load(bill)
-
-        passed: list[Bill] = []
-        for outcome in fan_out(skipped, scanned, workers=workers):
-            bill = outcome.item
-            try:
-                bill, loaded = outcome.result()
-            except ServiceUnavailableError as exc:
-                report.errors.append(exc.describe())
-                log.error("aborting the backfill: %s", exc.describe())
-                break
-            except Exception as exc:
-                loaded = service.problem(bill, exc)
-            else:
-                if bill.is_rcl and bill.rcl is not None:
-                    c.repo.save_rcl(bill.term, bill.number, bill.rcl)
-            ok = service.decide(bill, loaded)
-            if ok and bill.is_rcl:
-                passed.append(bill)
-            fresh = c.repo.get(bill.term, bill.number)
-            hits = tuple(fresh.prefilter_hits) if fresh else ()
-            report.outcomes.append(
-                BackfillOutcome(
-                    number=bill.number,
-                    title=bill.summary.title,
-                    accepted=ok,
-                    hits=hits,
-                    reason=None if ok else (fresh.last_error if fresh else None),
+        with c.cli_document_reads().capture("reprefilter"):
+            service = c.text_prefilter_service()
+            if service is None:
+                typer.echo(
+                    "text prefilter is disabled (LEXINFORM_TEXT_PREFILTER_ENABLED)", err=True
                 )
-            )
-            verdict = "PASS" if ok else "skip"
-            typer.echo(f"  {verdict}  {bill.number:>14}  [{', '.join(hits)}]  {bill.summary.title}")
-        _complete_rcl_projects(c, passed, workers=workers)
-        report.finished_at = c.clock.now()
-        _tell_the_log_channel(c, report)
+                raise typer.Exit(code=2)
+            statuses = [BillStatus.SKIPPED_PREFILTER]
+            if include_text_skipped:
+                statuses.append(BillStatus.SKIPPED_TEXT_PREFILTER)
+            skipped = [
+                b
+                for b in c.repo.list_by_status(statuses, limit=limit)
+                if (b.has_process or (b.is_rcl and c.rcl is not None))
+                and b.last_error != SILENCED_BY_OPERATOR
+            ]
+            # `Container._once` memoises on a plain dict: a worker must never ask it for a service.
+            reader = c.rcl_reader() if c.rcl is not None else None
+            workers = c.settings.sejm_concurrency
+
+            def scanned(bill: Bill) -> tuple[Bill, PrefilterLoad]:
+                """Reload an RCL skeleton's text and scan it without repository writes."""
+                if bill.is_rcl and reader is not None:
+                    bill = bill.model_copy(update={"rcl": _rcl_text(reader, bill.number)})
+                return bill, service.load(bill)
+
+            passed: list[Bill] = []
+            for outcome in fan_out(skipped, scanned, workers=workers):
+                bill = outcome.item
+                try:
+                    bill, loaded = outcome.result()
+                except ServiceUnavailableError as exc:
+                    report.errors.append(exc.describe())
+                    log.error("aborting the backfill: %s", exc.describe())
+                    break
+                except Exception as exc:
+                    loaded = service.problem(bill, exc)
+                else:
+                    if bill.is_rcl and bill.rcl is not None:
+                        c.repo.save_rcl(bill.term, bill.number, bill.rcl)
+                ok = service.decide(bill, loaded)
+                if ok and bill.is_rcl:
+                    passed.append(bill)
+                fresh = c.repo.get(bill.term, bill.number)
+                hits = tuple(fresh.prefilter_hits) if fresh else ()
+                report.outcomes.append(
+                    BackfillOutcome(
+                        number=bill.number,
+                        title=bill.summary.title,
+                        accepted=ok,
+                        hits=hits,
+                        reason=None if ok else (fresh.last_error if fresh else None),
+                    )
+                )
+                verdict = "PASS" if ok else "skip"
+                typer.echo(
+                    f"  {verdict}  {bill.number:>14}  [{', '.join(hits)}]  {bill.summary.title}"
+                )
+            _complete_rcl_projects(c, passed, workers=workers)
+            report.finished_at = c.clock.now()
+            _tell_the_log_channel(c, report)
     finally:
         c.close()
     typer.echo(f"scanned={report.scanned} accepted={len(report.accepted)}")
@@ -419,29 +425,30 @@ def analyze(
     """Analyse one bill with the LLM and store the result."""
     c = _container()
     try:
-        bill = _or_exit(lambda: c.bill_lookup().continuation(_load_bill(c, number)))
-        if bill.number != number:
-            typer.echo(f"linked: {number} → {bill.number}", err=True)
-        number = bill.number
-        if bill.status == BillStatus.ANALYZED and not force:
-            typer.echo(f"druk {number} already analysed; use --force to redo", err=True)
-        elif (
-            bill.status in (BillStatus.SKIPPED_PREFILTER, BillStatus.SKIPPED_TEXT_PREFILTER)
-            and not force
-        ):
-            typer.echo(
-                f"druk {number} was skipped by the prefilter; use --force to analyse anyway",
-                err=True,
-            )
-            raise typer.Exit(code=2)
-        else:
-            outcome = c.analysis_service().analyze_bill(bill, ignore_cost_limit=force)
-            if isinstance(outcome, Waiting):
-                typer.echo(labels_for(c.settings.output_language).analysis_queued)
-                return
-        stored = c.repo.get(bill.term, bill.number)
-        assert stored is not None, "analysis retains the requested bill"
-        bill = stored
+        with c.cli_document_reads().capture("analyze"):
+            bill = _or_exit(lambda: c.bill_lookup().continuation(_load_bill(c, number)))
+            if bill.number != number:
+                typer.echo(f"linked: {number} → {bill.number}", err=True)
+            number = bill.number
+            if bill.status == BillStatus.ANALYZED and not force:
+                typer.echo(f"druk {number} already analysed; use --force to redo", err=True)
+            elif (
+                bill.status in (BillStatus.SKIPPED_PREFILTER, BillStatus.SKIPPED_TEXT_PREFILTER)
+                and not force
+            ):
+                typer.echo(
+                    f"druk {number} was skipped by the prefilter; use --force to analyse anyway",
+                    err=True,
+                )
+                raise typer.Exit(code=2)
+            else:
+                outcome = c.analysis_service().analyze_bill(bill, ignore_cost_limit=force)
+                if isinstance(outcome, Waiting):
+                    typer.echo(labels_for(c.settings.output_language).analysis_queued)
+                    return
+            stored = c.repo.get(bill.term, bill.number)
+            assert stored is not None, "analysis retains the requested bill"
+            bill = stored
     finally:
         c.close()
     assert bill.analysis is not None, (
@@ -476,16 +483,17 @@ def amendments(
     """Queue amendment analysis and an edit of the original message after batch collection."""
     c = _container()
     try:
-        bill = _or_exit(lambda: c.bill_lookup().continuation(_load_bill(c, number)))
-        outcome = c.amendments_service().request(
-            bill,
-            publication_id=publication,
-            force_id=f"cli/{c.clock.now().isoformat()}" if force else "",
-        )
-        typer.echo(outcome.note)
-        if outcome.status is OutcomeStatus.ERROR:
-            raise typer.Exit(code=1)
-        c.analysis_service().submit_queued_batches()
+        with c.cli_document_reads().capture("amendments"):
+            bill = _or_exit(lambda: c.bill_lookup().continuation(_load_bill(c, number)))
+            outcome = c.amendments_service().request(
+                bill,
+                publication_id=publication,
+                force_id=f"cli/{c.clock.now().isoformat()}" if force else "",
+            )
+            typer.echo(outcome.note)
+            if outcome.status is OutcomeStatus.ERROR:
+                raise typer.Exit(code=1)
+            c.analysis_service().submit_queued_batches()
     finally:
         c.close()
 
@@ -495,16 +503,17 @@ def explain(number: Annotated[str, typer.Argument(help=NUMBER_HELP)]) -> None:
     """Explain a bill through batch, regardless of relevance, without reader publication."""
     c = _container()
     try:
-        ref = parse_reference(number)
-        if ref is None:
-            raise typer.BadParameter("Неизвестный формат номера законопроекта")
-        bill = _or_exit(lambda: c.bill_lookup().read_ref(ref))
-        result = c.analysis_service().explain_bill(bill)
-        if isinstance(result, Waiting):
-            typer.echo(f"Разбор ожидает batch; повторите `lexinform explain {number}` позже.")
-        else:
-            typer.echo(f"{bill.number} · {bill.summary.title}")
-            typer.echo(c.formatter.explanation(bill, result).text)
+        with c.cli_document_reads().capture("explain"):
+            ref = parse_reference(number)
+            if ref is None:
+                raise typer.BadParameter("Неизвестный формат номера законопроекта")
+            bill = _or_exit(lambda: c.bill_lookup().read_ref(ref))
+            result = c.analysis_service().explain_bill(bill)
+            if isinstance(result, Waiting):
+                typer.echo(f"Разбор ожидает batch; повторите `lexinform explain {number}` позже.")
+            else:
+                typer.echo(f"{bill.number} · {bill.summary.title}")
+                typer.echo(c.formatter.explanation(bill, result).text)
     except StateCheckpointError:
         raise
     except (ValueError, RuntimeError) as exc:
@@ -1059,26 +1068,29 @@ def republish(
     """
     c = _container()
     try:
-        bill = _load_bill(c, number)
-        if bill.analysis is None or not bill.analysis.analysis.relevant:
-            typer.echo(f"{number} has no relevant analysis; nothing to publish", err=True)
-            raise typer.Exit(code=2)
-        publishing = c.publishing_service(dry_run=False)
-        existing = publishing.card_of(bill)
-        state = f"{existing.status} (message {existing.message_id})" if existing else "none"
-        typer.echo(f"{number}: current card in {c.channel_id()}: {state}")
-        if not yes and not typer.confirm("Send the card again?"):
-            raise typer.Exit(code=1)
-        try:
-            publishing.forget_card(bill)
-        except ValueError as exc:
-            raise typer.BadParameter(str(exc)) from None
-        ok = publishing.publish_bill(bill)
-        fresh = publishing.card_of(bill)
-        typer.echo(
-            f"sent message {fresh.message_id}" if ok and fresh else "sending failed, see the log"
-        )
-        raise typer.Exit(code=0 if ok else 1)
+        with c.cli_document_reads().capture("republish"):
+            bill = _load_bill(c, number)
+            if bill.analysis is None or not bill.analysis.analysis.relevant:
+                typer.echo(f"{number} has no relevant analysis; nothing to publish", err=True)
+                raise typer.Exit(code=2)
+            publishing = c.publishing_service(dry_run=False)
+            existing = publishing.card_of(bill)
+            state = f"{existing.status} (message {existing.message_id})" if existing else "none"
+            typer.echo(f"{number}: current card in {c.channel_id()}: {state}")
+            if not yes and not typer.confirm("Send the card again?"):
+                raise typer.Exit(code=1)
+            try:
+                publishing.forget_card(bill)
+            except ValueError as exc:
+                raise typer.BadParameter(str(exc)) from None
+            ok = publishing.publish_bill(bill)
+            fresh = publishing.card_of(bill)
+            typer.echo(
+                f"sent message {fresh.message_id}"
+                if ok and fresh
+                else "sending failed, see the log"
+            )
+            raise typer.Exit(code=0 if ok else 1)
     finally:
         c.close()
 
@@ -1100,25 +1112,26 @@ def forget(
     """
     c = _container()
     try:
-        bill = _load_bill(c, number)
-        # Reading and dropping the rows is repository work; asking for the live publisher would
-        # only demand a bot token for a command whose whole point is that it sends nothing.
-        publishing = c.publishing_service(dry_run=True)
-        existing = publishing.card_of(bill)
-        if existing is None:
-            typer.echo(f"{number}: no card recorded in {c.channel_id()}; nothing to forget")
-            raise typer.Exit(code=0)
-        typer.echo(
-            f"{number}: card in {c.channel_id()}: {existing.kind} {existing.status}"
-            f" (message {existing.message_id})"
-        )
-        if not yes and not typer.confirm("Forget it, posting nothing?"):
-            raise typer.Exit(code=1)
-        try:
-            publishing.forget_card(bill)
-        except ValueError as exc:
-            raise typer.BadParameter(str(exc)) from None
-        typer.echo("forgotten; the next run decides whether the bill gets a card again")
+        with c.cli_document_reads().capture("forget"):
+            bill = _load_bill(c, number)
+            # Reading and dropping the rows is repository work; asking for the live publisher would
+            # only demand a bot token for a command whose whole point is that it sends nothing.
+            publishing = c.publishing_service(dry_run=True)
+            existing = publishing.card_of(bill)
+            if existing is None:
+                typer.echo(f"{number}: no card recorded in {c.channel_id()}; nothing to forget")
+                raise typer.Exit(code=0)
+            typer.echo(
+                f"{number}: card in {c.channel_id()}: {existing.kind} {existing.status}"
+                f" (message {existing.message_id})"
+            )
+            if not yes and not typer.confirm("Forget it, posting nothing?"):
+                raise typer.Exit(code=1)
+            try:
+                publishing.forget_card(bill)
+            except ValueError as exc:
+                raise typer.BadParameter(str(exc)) from None
+            typer.echo("forgotten; the next run decides whether the bill gets a card again")
     finally:
         c.close()
 
@@ -1139,19 +1152,20 @@ def reset(
     """
     c = _container()
     try:
-        bill = _load_bill(c, number)
-        typer.echo(f"{number}: {bill.status} (attempts {bill.analysis_attempts}) -> {to}")
-        if not yes and not typer.confirm("Apply?"):
-            raise typer.Exit(code=1)
-        c.repo.reset_bill(bill.term, bill.number, to)
-        if (
-            to is BillStatus.ANALYSIS_PENDING
-            and bill.rcl is not None
-            and not bill.rcl.text_documents()
-        ):
-            c.repo.save_rcl(bill.term, bill.number, _read_rcl_project(c, bill.number))
-            typer.echo("project documents re-read from RCL")
-        typer.echo("done")
+        with c.cli_document_reads().capture("reset"):
+            bill = _load_bill(c, number)
+            typer.echo(f"{number}: {bill.status} (attempts {bill.analysis_attempts}) -> {to}")
+            if not yes and not typer.confirm("Apply?"):
+                raise typer.Exit(code=1)
+            c.repo.reset_bill(bill.term, bill.number, to)
+            if (
+                to is BillStatus.ANALYSIS_PENDING
+                and bill.rcl is not None
+                and not bill.rcl.text_documents()
+            ):
+                c.repo.save_rcl(bill.term, bill.number, _read_rcl_project(c, bill.number))
+                typer.echo("project documents re-read from RCL")
+            typer.echo("done")
     finally:
         c.close()
 
@@ -1171,23 +1185,24 @@ def observe(
         raise typer.BadParameter(f"takes {', '.join(OBSERVATION_CHOICES)}", param_hint="--mode")
     c = _container()
     try:
-        bill = _load_bill(c, number)
-        publishing = c.publishing_service(dry_run=True)
-        has_card = publishing.has_sent_card(bill)
-        new_mode, basis = operator_observation(
-            mode.lower(),
-            bill.analysis.analysis if bill.analysis else None,
-            has_card=has_card,
-            min_score=c.settings.min_score,
-        )
-        was = observation_label(bill.observation_mode, bill.observation_basis)
-        typer.echo(f"{number}: {was} -> {observation_label(new_mode, basis)}")
-        if has_card:
-            typer.echo("the bill has a card, which is followed in full whatever its mode")
-        if not yes and not typer.confirm("Apply?"):
-            raise typer.Exit(code=1)
-        c.repo.set_observation(bill.term, bill.number, new_mode, basis)
-        typer.echo("done")
+        with c.cli_document_reads().capture("observe"):
+            bill = _load_bill(c, number)
+            publishing = c.publishing_service(dry_run=True)
+            has_card = publishing.has_sent_card(bill)
+            new_mode, basis = operator_observation(
+                mode.lower(),
+                bill.analysis.analysis if bill.analysis else None,
+                has_card=has_card,
+                min_score=c.settings.min_score,
+            )
+            was = observation_label(bill.observation_mode, bill.observation_basis)
+            typer.echo(f"{number}: {was} -> {observation_label(new_mode, basis)}")
+            if has_card:
+                typer.echo("the bill has a card, which is followed in full whatever its mode")
+            if not yes and not typer.confirm("Apply?"):
+                raise typer.Exit(code=1)
+            c.repo.set_observation(bill.term, bill.number, new_mode, basis)
+            typer.echo("done")
     finally:
         c.close()
 
