@@ -51,6 +51,7 @@ from lexinform.models import (
     DocumentSelectionRecord,
     DocumentWork,
     Editorial,
+    ExtractionResult,
     IncomingCommand,
     JointRecord,
     LlmBatch,
@@ -72,6 +73,7 @@ from lexinform.models import (
     RunMode,
     RunReport,
     SelectionArtifactReference,
+    SelectionExtractionReference,
     SenateAct,
     SourceCheck,
     SourceObservation,
@@ -650,6 +652,20 @@ MIGRATIONS: tuple[str, ...] = (
         content_id TEXT NOT NULL REFERENCES content_versions(content_id)
     );
     CREATE INDEX ix_publication_content_version ON publication_content(content_id);
+    """,
+    """
+    CREATE TABLE extraction_results (
+        extraction_id TEXT PRIMARY KEY NOT NULL,
+        artifact_sha256 TEXT NOT NULL REFERENCES artifacts(sha256),
+        recorded_at TEXT NOT NULL,
+        result_json TEXT NOT NULL CHECK(length(CAST(result_json AS BLOB)) <= 16384)
+    );
+    CREATE INDEX ix_extraction_results_artifact ON extraction_results(artifact_sha256);
+    CREATE TABLE selection_extractions (
+        selection_id TEXT NOT NULL REFERENCES document_selections(selection_id),
+        extraction_id TEXT NOT NULL REFERENCES extraction_results(extraction_id),
+        PRIMARY KEY(selection_id, extraction_id)
+    );
     """,
 )
 
@@ -1409,6 +1425,72 @@ class SqliteBillRepository:
             (root_publication_id,),
         )
         return [self._row_to_publication(row) for row in rows]
+
+    def save_extraction_result(self, result: ExtractionResult, *, recorded_at: datetime) -> None:
+        result = ExtractionResult.model_validate_json(result.model_dump_json())
+        if recorded_at.utcoffset() is None:
+            raise ValueError("extraction recording time requires a timezone")
+        if self.get_artifact_metadata(result.artifact_sha256) is None:
+            raise ValueError("an extraction requires recorded complete-body metadata")
+        self._conn.execute(
+            "INSERT INTO extraction_results"
+            " (extraction_id, artifact_sha256, recorded_at, result_json)"
+            " VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING",
+            (
+                result.result_id,
+                result.artifact_sha256,
+                _utc_iso(recorded_at),
+                result.model_dump_json(),
+            ),
+        )
+        if self.get_extraction_result(result.result_id) != result:
+            raise ValueError("an immutable extraction result cannot be replaced")
+
+    def get_extraction_result(self, result_id: str) -> ExtractionResult | None:
+        row = self._conn.execute(
+            "SELECT * FROM extraction_results WHERE extraction_id=?", (result_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        result = ExtractionResult.model_validate_json(row["result_json"])
+        if (
+            result.result_id != row["extraction_id"]
+            or result.artifact_sha256 != row["artifact_sha256"]
+        ):
+            raise ValueError("extraction columns differ from its immutable result")
+        return result
+
+    def save_selection_extraction(self, reference: SelectionExtractionReference) -> None:
+        reference = SelectionExtractionReference.model_validate_json(reference.model_dump_json())
+        selection = self.get_document_selection(reference.selection_id)
+        extraction = self.get_extraction_result(reference.extraction_id)
+        if selection is None or extraction is None:
+            raise ValueError("an extraction link requires its recorded parents")
+        sources = {
+            part.source_sha256
+            for part in (*selection.selection.parts, *selection.selection.observed_parts)
+        }
+        if (
+            extraction.artifact_sha256 != reference.artifact_sha256
+            or reference.artifact_sha256 not in sources
+        ):
+            raise ValueError("an extraction link requires the selection's exact outer body")
+        self._conn.execute(
+            "INSERT INTO selection_extractions (selection_id, extraction_id)"
+            " VALUES (?, ?) ON CONFLICT DO NOTHING",
+            (reference.selection_id, reference.extraction_id),
+        )
+        if reference not in self.list_selection_extractions(reference.selection_id):
+            raise ValueError("an immutable extraction link cannot be rebound")
+
+    def list_selection_extractions(self, selection_id: str) -> list[SelectionExtractionReference]:
+        rows = self._conn.execute(
+            "SELECT link.*, result.artifact_sha256 FROM selection_extractions link"
+            " JOIN extraction_results result ON result.extraction_id=link.extraction_id"
+            " WHERE link.selection_id=? ORDER BY link.rowid",
+            (selection_id,),
+        )
+        return [SelectionExtractionReference.model_validate(dict(row)) for row in rows]
 
     def save_artifact_metadata(self, artifact: ArtifactMetadata) -> None:
         artifact = ArtifactMetadata.model_validate_json(artifact.model_dump_json())

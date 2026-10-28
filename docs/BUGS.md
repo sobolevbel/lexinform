@@ -533,14 +533,6 @@ VIII/2864: `PrintInfo.main_pdf` возвращает шестистраничн�
 ## Исправлено локально, ожидает проверки production
 
 
-### B126
-
-**P3 · fixed locally · 28.10.2026.** Деплой реле принимал checkout HEAD за подтверждение установки.
-После SIGTERM в uv sync повтор возвращал success без sync/restart. Новый success marker и pending
-flag отделяют частично обновлённый checkout от проверенного сервиса. Регрессия падает на прежнем
-script; 16 shell recovery cases проходят после исправления. Production verification ещё ожидается.
-
-Подробности и evidence: [J131](plans/2026-10-22-document-architecture-progress.md#j131).
 
 ### B96
 
@@ -839,6 +831,9 @@ payload/attempts, включая продолжения. Выкладка эти
 законопроектов и сравнения их текстов.
 
 ## Fixed
+
+<a id="b126"></a>
+[B126: interrupted relay deployment recovery](archive/bugs.md#b126) проверен на VPS28.10.2026.
 
 Исправленные B1–B84 (кроме перечисленных выше), B50 и инцидент VPS poller — в [архиве](archive/bugs.md).
 Гипотезы B5, B10, B13, B15 отклонены при проверке, B12 закрыт без изменения кода.

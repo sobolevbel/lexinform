@@ -1,0 +1,769 @@
+{
+  "all_cohort_catalogue_budget": {
+    "after_all_inputs_once": {
+      "gzip_bytes": 1865253,
+      "gzip_sha256": "ac21be37bc5cf07fb3fba85f535ffed0cbd4321c16f2b3bd146b157f51596ffa",
+      "recorded_at_values": {
+        "artifacts": [
+          "2026-10-28T12:00:00+00:00"
+        ],
+        "extraction_results": [
+          "2026-10-28T12:00:00+00:00"
+        ]
+      },
+      "result_json_utf8_bytes": 12583733,
+      "row_counts": {
+        "analysis_memo": 0,
+        "artifact_reads": 0,
+        "artifacts": 4021,
+        "bills": 0,
+        "commands": 0,
+        "computation_results": 0,
+        "content_snapshots": 0,
+        "content_versions": 0,
+        "delivery_alerts": 0,
+        "delivery_resolutions": 0,
+        "digest_event_links": 0,
+        "document_selections": 0,
+        "document_work": 0,
+        "effective_rule_links": 0,
+        "extraction_results": 4021,
+        "llm_batch_intents": 0,
+        "llm_batch_items": 0,
+        "llm_batches": 0,
+        "publication_content": 0,
+        "publication_sequence": 1,
+        "publications": 0,
+        "rcl_wykaz_numbers": 0,
+        "result_applicability": 0,
+        "result_applications": 0,
+        "runs": 0,
+        "selection_artifacts": 0,
+        "selection_extractions": 0,
+        "source_checks": 0,
+        "source_observations": 0,
+        "status_changes": 0
+      },
+      "sql_bytes": 14028800,
+      "sql_sha256": "cfa5b13f8a01e4f8269db88836033242691813c2787dbf85779d62fc71890450",
+      "sqlite_bytes": 18833408,
+      "sqlite_wal_bytes": 0
+    },
+    "after_identical_save_365_days_later": {
+      "gzip_bytes": 1865253,
+      "gzip_sha256": "ac21be37bc5cf07fb3fba85f535ffed0cbd4321c16f2b3bd146b157f51596ffa",
+      "recorded_at_values": {
+        "artifacts": [
+          "2026-10-28T12:00:00+00:00"
+        ],
+        "extraction_results": [
+          "2026-10-28T12:00:00+00:00"
+        ]
+      },
+      "result_json_utf8_bytes": 12583733,
+      "row_counts": {
+        "analysis_memo": 0,
+        "artifact_reads": 0,
+        "artifacts": 4021,
+        "bills": 0,
+        "commands": 0,
+        "computation_results": 0,
+        "content_snapshots": 0,
+        "content_versions": 0,
+        "delivery_alerts": 0,
+        "delivery_resolutions": 0,
+        "digest_event_links": 0,
+        "document_selections": 0,
+        "document_work": 0,
+        "effective_rule_links": 0,
+        "extraction_results": 4021,
+        "llm_batch_intents": 0,
+        "llm_batch_items": 0,
+        "llm_batches": 0,
+        "publication_content": 0,
+        "publication_sequence": 1,
+        "publications": 0,
+        "rcl_wykaz_numbers": 0,
+        "result_applicability": 0,
+        "result_applications": 0,
+        "runs": 0,
+        "selection_artifacts": 0,
+        "selection_extractions": 0,
+        "source_checks": 0,
+        "source_observations": 0,
+        "status_changes": 0
+      },
+      "sql_bytes": 14028800,
+      "sql_sha256": "cfa5b13f8a01e4f8269db88836033242691813c2787dbf85779d62fc71890450",
+      "sqlite_bytes": 18833408,
+      "sqlite_wal_bytes": 0
+    },
+    "baseline_empty_schema_56": {
+      "gzip_bytes": 2693,
+      "gzip_sha256": "a5d512f76f8b1d2f457f6c3df489a4feaad1a53a057e0d861ddb3faca60e795c",
+      "recorded_at_values": {
+        "artifacts": [],
+        "extraction_results": []
+      },
+      "result_json_utf8_bytes": 0,
+      "row_counts": {
+        "analysis_memo": 0,
+        "artifact_reads": 0,
+        "artifacts": 0,
+        "bills": 0,
+        "commands": 0,
+        "computation_results": 0,
+        "content_snapshots": 0,
+        "content_versions": 0,
+        "delivery_alerts": 0,
+        "delivery_resolutions": 0,
+        "digest_event_links": 0,
+        "document_selections": 0,
+        "document_work": 0,
+        "effective_rule_links": 0,
+        "extraction_results": 0,
+        "llm_batch_intents": 0,
+        "llm_batch_items": 0,
+        "llm_batches": 0,
+        "publication_content": 0,
+        "publication_sequence": 1,
+        "publications": 0,
+        "rcl_wykaz_numbers": 0,
+        "result_applicability": 0,
+        "result_applications": 0,
+        "runs": 0,
+        "selection_artifacts": 0,
+        "selection_extractions": 0,
+        "source_checks": 0,
+        "source_observations": 0,
+        "status_changes": 0
+      },
+      "sql_bytes": 14326,
+      "sql_sha256": "b2c36ca7bfa6489bd6f26e20b639d31e8b356014175560045daf517eaf5bad66",
+      "sqlite_bytes": 417792,
+      "sqlite_wal_bytes": 0
+    },
+    "catalogue_growth": {
+      "gzip_bytes": 1862560,
+      "result_json_utf8_bytes": 12583733,
+      "sql_bytes": 14014474,
+      "sqlite_bytes": 18415616
+    },
+    "code_root": "/Users/sobaleu/projects/lexinform",
+    "code_sha": "b1d22cbc7afc33bef6f4618b70d2919e0bcfb5bb",
+    "cohorts": {
+      ".doc": 379,
+      ".docm": 491,
+      ".docx": 2564,
+      ".odt": 1,
+      ".pdf": 114,
+      ".xml": 13,
+      ".zip": 1803
+    },
+    "duplicate_paths": 1344,
+    "exclusions": [
+      "No production state or claim about observed daily reads, future editions, retention growth or deployment DB size.",
+      "No raw bytes, extracted bodies, original coordinate manifests, URLs or blob archive were stored.",
+      "Only actual ArtifactMetadata and ExtractionResult were saved; no invented selection, owner, label or source observation.",
+      "Selection/source/link rows and existing operational context, payload, paid/result history and production overlap are excluded.",
+      "Existing artifacts in production could overlap this catalogue; production inputs may differ from the pinned corpus.",
+      "Raw inputs were not reopened; pinned profile artifact/recorded-read identities and J124 byte sizes were verified.",
+      "DDL baseline is already schema 56; this is catalogue population cost, not the schema 55 to 56 migration cost."
+    ],
+    "gzip_measurement": "gzip compresslevel=9, mtime=0 over complete repository SQL dump UTF-8",
+    "input_bytes_not_stored": 3753220922,
+    "network_calls": 0,
+    "observer_path_metadata_bytes": 16264860,
+    "paid_calls": 0,
+    "paths": 5365,
+    "producer_component_code_matches": true,
+    "production_state_writes": 0,
+    "profiles_producer_code_root": "/Users/sobaleu/.codex/worktrees/extraction-results/lexinform",
+    "repeat_bytes_and_first_recorded_dates_exact": true,
+    "repeat_growth": {
+      "gzip_bytes": 0,
+      "result_json_utf8_bytes": 0,
+      "sql_bytes": 0,
+      "sqlite_bytes": 0
+    },
+    "runtime": {
+      "PYTHONPATH": "/Users/sobaleu/projects/lexinform/src:/Users/sobaleu/projects/lexinform",
+      "UV_PROJECT_ENVIRONMENT": "/private/tmp/lexinform-pr9-review/.venv",
+      "dependencies": {
+        "anthropic": "2.2.0",
+        "inflate64": "1.0.4",
+        "olefile": "0.47",
+        "openai": "3.37.0",
+        "pydantic": "2.14.1",
+        "pydantic-core": "2.50.1",
+        "pypdf": "6.17.0"
+      },
+      "executable": "/private/tmp/lexinform-pr9-review/.venv/bin/python",
+      "prefix": "/private/tmp/lexinform-pr9-review/.venv",
+      "python": "3.14.7"
+    },
+    "runtime_storage_adapter_matches_observer_adapter": false,
+    "schema_version": 56,
+    "scope": "Counterfactual all-cohort catalogue stored once; not a production forecast",
+    "script_sha256": "c115a3d217eb0def0e1de9692f871256fa6a08bf366cbc1af3e89bdeba8f80f0",
+    "seconds": 1.873899583995808,
+    "sqlite_measurement": "Main DB file after WAL TRUNCATE checkpoint; zero WAL, SHM excluded; no VACUUM",
+    "unique_artifacts": 4021,
+    "unique_extraction_results": 4021,
+    "unique_raw_input_bytes_not_stored": 3571771838,
+    "unique_result_metadata_bytes": 12583733,
+    "whole_source_fingerprint_sha256": "16d63495a921051bb482863064683818b47207779312514d6141ce9072de3362"
+  },
+  "baseline": "b1d22cbc7afc33bef6f4618b70d2919e0bcfb5bb",
+  "candidate_differing_runtime_files": [
+    "src/lexinform/legacy_delivery.py",
+    "src/lexinform/ports.py",
+    "src/lexinform/adapters/sqlite_repo.py",
+    "src/lexinform/services/posting.py"
+  ],
+  "candidate_parser_components_byte_exact": 160,
+  "candidate_storage_methods_ast_exact": true,
+  "changed_runtime": {
+    "src/lexinform/adapters/document_text.py": {
+      "bytes": 40896,
+      "sha256": "3a63919a6722541db770ab8cb7b74ab911e16dd6d558b1f9fcaa2b815d4754d0"
+    },
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "bytes": 180640,
+      "sha256": "e5df9e664d213f9dac79743c4250ecfb2c2915e06cba08d54194761a30416343"
+    },
+    "src/lexinform/extraction_records.py": {
+      "bytes": 7238,
+      "sha256": "b0378402818ed9441d5c39f7fe8fd8f8bf22376034c951dbb986dd77928120ea"
+    },
+    "src/lexinform/models/__init__.py": {
+      "bytes": 17706,
+      "sha256": "2b9c4224092daf2eb364bee3bf9b12c44c87181ade91013d038bce6896dfa285"
+    },
+    "src/lexinform/models/extractions.py": {
+      "bytes": 5587,
+      "sha256": "1d4c1c909e4a0920f992c71cb1ccc4b2341a77e19743cf4130821c23d3026db5"
+    },
+    "src/lexinform/ports.py": {
+      "bytes": 44901,
+      "sha256": "ae7e25d213f5a6ad0a0ec738b3b3665c70af2be944354d41c65e0c71026de8e3"
+    },
+    "src/lexinform/services/analysis.py": {
+      "bytes": 139954,
+      "sha256": "9925f3faf751a4ad1d0943d66be9a333cc727aceb144d8ae9491541026659e50"
+    },
+    "src/lexinform/services/document_history.py": {
+      "bytes": 4201,
+      "sha256": "e45cb9c078c7c85ce5865f7d6872a158b0b13df37f8a10219884b791add72b95"
+    },
+    "src/lexinform/services/documents.py": {
+      "bytes": 23938,
+      "sha256": "fc4869c39a8deda000ecb4129f6f5ed0d0ff4887e7b652398a8c102127eee2b0"
+    },
+    "src/lexinform/services/senate_documents.py": {
+      "bytes": 7743,
+      "sha256": "380d12d7e044c227eeb665cb56f161e5fc20497ad7871fcf0d90a3a459fe7589"
+    },
+    "src/lexinform/services/text_prefilter.py": {
+      "bytes": 15080,
+      "sha256": "6e695e89f5095df813a5994048a81b5fbe5ca9d1a82dfbd09679aa52bcad8ff1"
+    }
+  },
+  "current_environment_physical": {
+    "candidate_uv_lock_sha256": "3123e8327d56f370d31a4587df8c33d86bbc3261850c8300a3bf7b98e0ef3d2f",
+    "cases": 5365,
+    "changed_inputs": [],
+    "changed_profiles": {},
+    "cohorts": {
+      ".doc": 379,
+      ".docm": 491,
+      ".docx": 2564,
+      ".odt": 1,
+      ".pdf": 114,
+      ".xml": 13,
+      ".zip": 1803
+    },
+    "duplicate_raw_paths_verified": 1344,
+    "environment": {
+      "dependencies": {
+        "inflate64": "1.0.4",
+        "olefile": "0.47",
+        "pydantic": "2.14.1",
+        "pydantic_core": "2.50.1",
+        "pypdf": "6.17.0"
+      },
+      "executable": "/private/tmp/lexinform-pr9-review/.venv/bin/python",
+      "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+      "python": "3.14.7 (main, Sep  1 2026, 14:05:28) [Clang 22.1.3 ]"
+    },
+    "errors": {},
+    "evidence_sha256": {
+      "/Users/sobaleu/projects/lexinform/out/corpus/j124/corpus-current.json": "8a8cefa66c613dcbc7019f77465119d91855ee1abb96c7222725328dc313005b",
+      "/Users/sobaleu/projects/lexinform/out/corpus/j124/input-manifest.json": "38c8c448d6771a801eba2dcda3debe7f4d357c7db2845e4e724b320de3b016b3",
+      "/Users/sobaleu/projects/lexinform/out/corpus/j132/corpus-acceptance.json": "e374a43f496c229e479d4b2f73173638b15314405ff08c0824625a79afa5e972",
+      "/Users/sobaleu/projects/lexinform/out/corpus/j132/corpus-current.json": "0b6258b98b1286f22091482dbf673e30b24dfcc941b677a4ad0335c58b7a4959"
+    },
+    "exclusions": [
+      "No new eight-view, model/provider, SQL/native or physical delivery claims are made by this direct extractor replay.",
+      "Metadata identities and hashes are not body retention or reconstruction promises.",
+      "Candidate parser code is pinned separately from the actual current runtime dependency versions; the candidate uv.lock remains historical."
+    ],
+    "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "main_uv_lock_sha256": "7e436ac2ce804cb63490afafaa52fcccf15eee7acdf7959368814e355e925eab",
+    "metadata_bytes_min_max": [
+      2128,
+      5831
+    ],
+    "observer_sha256": "ddfe57a0cfe59d680768dbe64e2ece5070a670ee21010d2a374c232cbd4202d6",
+    "prepared_view_reuse": {
+      "freshly_executed_in_this_newenv_run": false,
+      "newenv_all_raw_extracted_and_selection_inputs_exact": true,
+      "newenv_pilot_native_full_tests": "Separate root-owned current-environment gates; not executed by this observer.",
+      "pure_transformation_code_unchanged": true,
+      "reused_view_count": 42920,
+      "supporting_full_8_view_run_environment": "shared .venv / Pydantic2.13.5; not relabeled as current dependencies"
+    },
+    "raw_bytes_verified": 3753220922,
+    "result_path": "out/corpus/j132/newenv-physical.json",
+    "result_sha256": "56e6fc4c6272c2e251428faed6c0b566c927f2fd62d4d28088be1f41ef78f719",
+    "scope": "Fresh physical extraction with current Pydantic; all paths and unique bytes are checked, while eight pure prepared views are explicitly reused only after exact extracted text and selection input identities match.",
+    "seconds": 1462.9992791670084,
+    "source_fingerprinted_files": 556,
+    "source_fingerprints_sha256": "403f1457a00ab56d738b5ee7be9785aab4ec8e267b72fe3171fa933350cf3b8a",
+    "status": "passed",
+    "unique_extraction_method_cpu_seconds": 1446.507315,
+    "unique_extraction_method_wall_seconds": 1447.255544648,
+    "unique_raw_identities_extracted": 4021
+  },
+  "default_native": {
+    "all_28_prior_tables_exact_except_recorded_phase_timing": true,
+    "all_profiles_except_metadata_and_storage_metrics_exact": true,
+    "all_requests_and_rendered_messages_exact": true,
+    "all_source_doctors_without_errors": true,
+    "binding_views": 2,
+    "cases": 168,
+    "command_outcome_seconds_excluded_from_semantic_comparison": true,
+    "content_snapshot_views": 6,
+    "content_version_views": 2,
+    "gzip_delta": {
+      "max": 103,
+      "min": 74
+    },
+    "link_views": 190,
+    "new_extraction_tables_empty_for_legacy_fake_port": true,
+    "prior_metadata_rows_preserved": true,
+    "read_receipt_views": 270,
+    "schema_version": 56,
+    "selection_views": 198,
+    "source_observation_views": 210,
+    "sql_delta": {
+      "max": 617,
+      "min": 617
+    },
+    "timing_differences": []
+  },
+  "evidence": {
+    "out/corpus/j132/accept.py": {
+      "bytes": 6862,
+      "sha256": "d7d11a4b245d7e8bbb9491800ed59c937fda7f1e435e104f47a8e70067c46a68"
+    },
+    "out/corpus/j132/accept_runtime.py": {
+      "bytes": 6685,
+      "sha256": "b9d25f50b2027080bb2793b2bea58987e3b43162c5d196fe9382a5046a4e93ef"
+    },
+    "out/corpus/j132/catalog-budget.json": {
+      "bytes": 8727,
+      "sha256": "79e696fd95989ff3e11c24966100b37abd7dd5ac32a8ebe2cd90f8a92922909d"
+    },
+    "out/corpus/j132/catalog_budget.py": {
+      "bytes": 11498,
+      "sha256": "c115a3d217eb0def0e1de9692f871256fa6a08bf366cbc1af3e89bdeba8f80f0"
+    },
+    "out/corpus/j132/compare_defaults.py": {
+      "bytes": 5253,
+      "sha256": "782b6b6c84b6cdaa3635c577b67f4538c8225e31082c3b44b8babd2fe54fc51d"
+    },
+    "out/corpus/j132/compat/new-reader.json": {
+      "bytes": 26751,
+      "sha256": "4df899dadd4e50cbe031df2db6fa8528bdcd47ea0fcdb6c0651eb3a59a8d729b"
+    },
+    "out/corpus/j132/compat/old-reader.json": {
+      "bytes": 26781,
+      "sha256": "d867164a6a77e4ad18c2598ee2ec84f6763456613c72d213b839b374e6f50d79"
+    },
+    "out/corpus/j132/compat/writer.json": {
+      "bytes": 26751,
+      "sha256": "4df899dadd4e50cbe031df2db6fa8528bdcd47ea0fcdb6c0651eb3a59a8d729b"
+    },
+    "out/corpus/j132/compatibility.py": {
+      "bytes": 2280,
+      "sha256": "f1a232b5bb57f66ded9ffb674a6e95c2ed484e7505d296a078ab3508a5c35eb5"
+    },
+    "out/corpus/j132/corpus-acceptance.json": {
+      "bytes": 65038,
+      "sha256": "e374a43f496c229e479d4b2f73173638b15314405ff08c0824625a79afa5e972"
+    },
+    "out/corpus/j132/corpus-current.json": {
+      "bytes": 25430252,
+      "sha256": "0b6258b98b1286f22091482dbf673e30b24dfcc941b677a4ad0335c58b7a4959"
+    },
+    "out/corpus/j132/default-parity.json": {
+      "bytes": 770,
+      "sha256": "016598ff00279131b504818ef37acd401d6a9cd57e4178d503df4f1cf877b248"
+    },
+    "out/corpus/j132/default_profiles.py": {
+      "bytes": 1176,
+      "sha256": "8cc0dfc36c772a26880d99ca2fa00c80e4c50ae3895d0e34e90f3a6226402b6c"
+    },
+    "out/corpus/j132/environment-audit.json": {
+      "bytes": 1787,
+      "sha256": "2f1fe4cc5ee3fc4729204de65c7455001fc816953d5291099ff4a692006b5714"
+    },
+    "out/corpus/j132/finite-scan-audit/audit.json": {
+      "bytes": 5479,
+      "sha256": "a8171a7090cc8f3558705eb0b5dbf5aa112897e97e383f7db7708cf57cf9312d"
+    },
+    "out/corpus/j132/finite-scan-audit/new-deps.xml": {
+      "bytes": 821,
+      "sha256": "5eef21e49c9c7abeadbcf2452cbb382c56cd251c7ff8414aad00fa92efcbeb62"
+    },
+    "out/corpus/j132/finite-scan-audit/probes_new_deps.py": {
+      "bytes": 2869,
+      "sha256": "3862e7e00b2e0d552757b261555b765f669bb5e38289cc2552831778b4e0775b"
+    },
+    "out/corpus/j132/fixture-size.json": {
+      "bytes": 1356,
+      "sha256": "da399ec4c3667ec8e3b3777f9c528eb820a72e3e71452329614c9b172373a731"
+    },
+    "out/corpus/j132/fixture_size.py": {
+      "bytes": 3551,
+      "sha256": "da2f29c466a130e38ab7648aab9ba2d0577acaae4772b05c65464e05ccb4ed27"
+    },
+    "out/corpus/j132/focused-integrated.xml": {
+      "bytes": 11416,
+      "sha256": "309a55663bb207df6703625d4ed0d97223fe30e8ecef6c6d3a9bbcf1f12be38a"
+    },
+    "out/corpus/j132/format-final.log": {
+      "bytes": 28,
+      "sha256": "923a82937cae4db16a407791c7d964a3a84597804f3e09c2918c58cf8ef898c4"
+    },
+    "out/corpus/j132/frozen-final.json": {
+      "bytes": 61496,
+      "sha256": "e335b237d36d2e82570d36cdaabfe4dbaba9420fbd49447bad369dd8108aef6d"
+    },
+    "out/corpus/j132/full.xml": {
+      "bytes": 864981,
+      "sha256": "68433830af9e86bcf541d7cd52571db8c9d65b1d6cca96736d8fe441b12eb207"
+    },
+    "out/corpus/j132/mypy-final.log": {
+      "bytes": 45,
+      "sha256": "e30256d1ad76ebac1470747a15c97912c5a92a33e6204c9686b11b83cee8136a"
+    },
+    "out/corpus/j132/natural-migration.json": {
+      "bytes": 577,
+      "sha256": "5467b13145894aa027af58a187283dadb6cd4c27cd68a6c8642e209657951c2c"
+    },
+    "out/corpus/j132/natural-restore-new.json": {
+      "bytes": 3099,
+      "sha256": "cd988958c0680b896d27a43d6e33381eb034e91ea79b4f75f2f121d6102ea83c"
+    },
+    "out/corpus/j132/natural-restore-old.json": {
+      "bytes": 2937,
+      "sha256": "ff0a5204df79784ccbf710ff24387c5705b81ed8476215abea8c24d8c3694910"
+    },
+    "out/corpus/j132/natural_migration.py": {
+      "bytes": 2480,
+      "sha256": "b4d505e41c99cbec5271ed49c9b456f879f800572fc5e2c4e6d1b2f2808bd3c7"
+    },
+    "out/corpus/j132/natural_restore.py": {
+      "bytes": 2461,
+      "sha256": "e27935e58372afc454d8e2792fe44458c5468d4a54c97ce1972144d8f0342841"
+    },
+    "out/corpus/j132/newenv-physical-summary.json": {
+      "bytes": 3280,
+      "sha256": "67db821557cb3f8d18511707704099536ed17e6b01087d94b59595b3507ef575"
+    },
+    "out/corpus/j132/newenv-physical.json": {
+      "bytes": 3230857,
+      "sha256": "56e6fc4c6272c2e251428faed6c0b566c927f2fd62d4d28088be1f41ef78f719"
+    },
+    "out/corpus/j132/newenv_physical.py": {
+      "bytes": 8121,
+      "sha256": "ddfe57a0cfe59d680768dbe64e2ece5070a670ee21010d2a374c232cbd4202d6"
+    },
+    "out/corpus/j132/performance-summary.json": {
+      "bytes": 2854,
+      "sha256": "0eb5593b864c1aaef9c79bac82ff9734f6616edbde857a5a65e75e34c5cea715"
+    },
+    "out/corpus/j132/performance.json": {
+      "bytes": 142273,
+      "sha256": "17361a2892178217e074e07382c90b1654b08e68a4759c5b4501457bb0f4ae6c"
+    },
+    "out/corpus/j132/performance.py": {
+      "bytes": 8375,
+      "sha256": "8b54e20464ea4120b33f5e77be8c60e89397f38d0e0ef619369cbb61c877bd41"
+    },
+    "out/corpus/j132/raw-mutations.json": {
+      "bytes": 82180,
+      "sha256": "98245ccda8fa04567763e1b5bf135f02d7eb0e4ec6b237d6d773805e91e4cfc2"
+    },
+    "out/corpus/j132/raw_mutations.py": {
+      "bytes": 9186,
+      "sha256": "8ec10ac7ec16716634d4b413e8bc91284741d23b5150672c44558d0d65b914c7"
+    },
+    "out/corpus/j132/release/relay-release.json": {
+      "bytes": 2168,
+      "sha256": "a3ec24049785a379d42c72d2178b4cb84a46c3126f3de1e08b0c291768c2926a"
+    },
+    "out/corpus/j132/replay_runtime.py": {
+      "bytes": 2778,
+      "sha256": "916a843d087c32d84404db03caa98cfdc5bc21a9a1549a5a32d101583234ba64"
+    },
+    "out/corpus/j132/ruff-final.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "out/corpus/j132/state-snapshots.xml": {
+      "bytes": 6566,
+      "sha256": "517d9e9346987c5b0ad31032ad5e13c16598a3ad3acd8c788a94a520df0d847a"
+    }
+  },
+  "frozen_python_files": 560,
+  "full": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 5465
+  },
+  "historical_eight_view_corpus": {
+    "bytes": 3753220922,
+    "cases": 5365,
+    "changed_inputs": [],
+    "changed_profiles": [],
+    "code_root": "/Users/sobaleu/.codex/worktrees/extraction-results/lexinform",
+    "cohorts": {
+      ".doc": 379,
+      ".docm": 491,
+      ".docx": 2564,
+      ".odt": 1,
+      ".pdf": 114,
+      ".xml": 13,
+      ".zip": 1803
+    },
+    "errors": {},
+    "exclusions": [
+      "All pinned RCL direct Word/XML and ZIP roots; 114 prior PDF raw inputs plus the direct ODT control.",
+      "Other PDF roots and scan-provider inputs are excluded from this text-projection gate.",
+      "Machine regression oracle, not independent legal labels or source-family production acceptance.",
+      "No raw/block retention or physical citation replay is promised by a metadata hash.",
+      "SQL/native wiring qualification follows integration; this replay observes the optional runtime extractor facade."
+    ],
+    "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "legacy_fields_compared": [
+      "core",
+      "coverage",
+      "selection_json_bytes",
+      "mapping"
+    ],
+    "metadata_bytes": {
+      "max": 5831,
+      "median": 2732,
+      "min": 2128,
+      "p95": 3997,
+      "sql_growth_measured_here": false,
+      "sum": 16264860
+    },
+    "metadata_violations": {},
+    "natural_odt_and_rejection_controls": [
+      "documents/files/584479.zip",
+      "documents/files/700362.zip",
+      "documents/files/738682.zip",
+      "documents/files/744252.zip",
+      "documents/files/763369.zip",
+      "sejm/term10/files/1614__1614-uchwa\u0142a.odt"
+    ],
+    "observer_returncode": false,
+    "omitted_summary_cases": {},
+    "prepared_views": 42920,
+    "result_path": "/Users/sobaleu/projects/lexinform/out/corpus/j132/corpus-current.json",
+    "result_sha256": "0b6258b98b1286f22091482dbf673e30b24dfcc941b677a4ad0335c58b7a4959",
+    "scope": "Frozen candidate core only; machine regression against J124, without natural production or independent legal acceptance.",
+    "seconds": 1987.724521917,
+    "status": "passed",
+    "summarized_coordinate_contracts": {
+      "odt-blocks-v1": 1,
+      "pdf-pages-v1": 816,
+      "unknown": 965,
+      "word-blocks-v1": 6147
+    }
+  },
+  "historical_local_performance": {
+    "cache_scope": "First extraction has fresh interpreter/library/metadata caches; second uses the same process. Raw bytes are loaded before timing. OS disk cache is uncontrolled and expected warm after corpus replay; no loader cache is used.",
+    "child_processes": 52,
+    "environment": {
+      "dependencies": {
+        "inflate64": "1.0.4",
+        "olefile": "0.47",
+        "pypdf": "6.17.0"
+      },
+      "executable": "/Users/sobaleu/projects/lexinform/.venv/bin/python",
+      "logical_cpu_count": 8,
+      "machine": "arm64",
+      "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+      "python": "3.14.7 (main, Sep  1 2026, 14:05:28) [Clang 22.1.3 ]"
+    },
+    "extractions": 104,
+    "limitations": [
+      "Observed local sample costs, not a hard bound across all5365 documents or a production SLA.",
+      "The sum of13 root medians describes this fixed pilot mix; it is not a measured natural production workload.",
+      "Source/block/raw bodies are not retained by metadata; RSS was not measured."
+    ],
+    "metadata_bytes": {
+      "max": 4593,
+      "median": 2749.0,
+      "min": 2731
+    },
+    "observations": {
+      "fresh_process_first_extract": {
+        "added_wall_root_max_ms": 200.252833,
+        "added_wall_root_median_ms": 5.1104585,
+        "method": {
+          "legacy": {
+            "cpu_sum_root_medians_s": 54.7773425,
+            "wall_sum_root_medians_s": 54.7862547285
+          },
+          "runtime": {
+            "cpu_sum_root_medians_s": 55.2060325,
+            "wall_sum_root_medians_s": 55.2201948755
+          }
+        },
+        "root_ratio_max": 2.6263519370235775,
+        "root_ratio_median": 1.4068372440999883
+      },
+      "same_process_second_extract": {
+        "added_wall_root_max_ms": 153.507104,
+        "added_wall_root_median_ms": 2.752667,
+        "method": {
+          "legacy": {
+            "cpu_sum_root_medians_s": 54.8178505,
+            "wall_sum_root_medians_s": 54.827805375
+          },
+          "runtime": {
+            "cpu_sum_root_medians_s": 55.186065,
+            "wall_sum_root_medians_s": 55.200591168
+          }
+        },
+        "root_ratio_max": 2.031452425480444,
+        "root_ratio_median": 1.1926778008060042
+      }
+    },
+    "performance_path": "out/corpus/j132/performance.json",
+    "performance_sha256": "17361a2892178217e074e07382c90b1654b08e68a4759c5b4501457bb0f4ae6c",
+    "repetitions_per_method_and_cache_per_root": 2,
+    "roots": 13,
+    "scope": "13 pilot raw roots only, extraction and existing package policy; local observational timing without a production SLA or independent legal acceptance.",
+    "status": "recorded",
+    "timed_scope": "Method call only under the shared read-only/network guard: extraction, package selection and, for runtime, metadata construction/validation. Extra metadata file reads also incur guard instrumentation. Imports, raw download/read, verification hashes, eight prepared views and SQL writes are outside the timed region."
+  },
+  "limitations": [
+    "ExtractionResult is bounded metadata, not an exact full execution environment or archived bodies/coordinates.",
+    "Historical/direct download coverage and complete fact-to-block history remain partial.",
+    "Original full42920 views/performance used shared Pydantic2.13; current2.14 physical replay and exact-input/unchanged-code reuse are separately stated.",
+    "Counterfactual4021-result catalogue is not production demand and excludes source/selection link costs.",
+    "No new paid experiment, human/legal labels, production processing, manual Telegram send or blob/S3 decision."
+  ],
+  "meaningful_mutations": {
+    "cases": 20,
+    "known_statutory_digest_changes": 15,
+    "odt_digest_unknown_cases": 5,
+    "old_new_profiles_exact": true,
+    "views": 160
+  },
+  "natural_migration": {
+    "gzip_after": 4133170,
+    "gzip_before": 4133051,
+    "integrity_and_fk_valid": true,
+    "migration_seconds": 0.00039362499956041574,
+    "new_tables_empty": true,
+    "original_unchanged": true,
+    "prior_tables_exact": 28,
+    "schema_after": 56,
+    "schema_before": 55,
+    "snapshot_sha256": "66ecc58b10c3e7ba2df1d4fc89be26e018539a8f94931f0c7aeaf12205f6fe2e",
+    "source_is_pinned_copy_not_new_run": true,
+    "source_state_commit": "4f19d9bf7b8035f2239dece6098c4b06942f9414",
+    "sql_after": 20316875,
+    "sql_before": 20316258,
+    "sqlite_after": 21446656,
+    "sqlite_before": 21426176
+  },
+  "natural_restore": {
+    "bill_models_read": 462,
+    "code_root": "/Users/sobaleu/projects/lexinform",
+    "gzip_bytes": 4133170,
+    "integrity_fk_valid": true,
+    "restore_seconds": 0.27286670802277513,
+    "schema": 56,
+    "snapshot_sha256": "66ecc58b10c3e7ba2df1d4fc89be26e018539a8f94931f0c7aeaf12205f6fe2e",
+    "source_unchanged": true,
+    "sql_bytes": 20316875
+  },
+  "other_runtime_files_exact_to_baseline": 153,
+  "plan_status": {
+    "applicable_partial_open": 46,
+    "done": 22,
+    "explicit_na": 6,
+    "tasks": 74
+  },
+  "prior_reader_roundtrip_all_30_tables_exact": true,
+  "scope": "Bounded runtime extraction metadata; legacy selection/provider inputs unchanged; no raw/body archive",
+  "size_fixtures": {
+    "fixtures": {
+      "one_word_block": {
+        "gzip_delta_bytes": 1023,
+        "input_bytes": 1958,
+        "metadata_bytes": 2721,
+        "omitted_parts": 0,
+        "output_chars": 1620,
+        "physical_parts": 1,
+        "repeat_sql_delta_bytes": 0,
+        "restore_exact": true,
+        "selected_parts": 1,
+        "sql_delta_bytes": 3148,
+        "sqlite_page_delta_bytes": 0,
+        "summarized_parts": 1
+      },
+      "word_3000_blocks": {
+        "gzip_delta_bytes": 1022,
+        "input_bytes": 5139245,
+        "metadata_bytes": 2730,
+        "omitted_parts": 0,
+        "output_chars": 4862999,
+        "physical_parts": 1,
+        "repeat_sql_delta_bytes": 0,
+        "restore_exact": true,
+        "selected_parts": 1,
+        "sql_delta_bytes": 3157,
+        "sqlite_page_delta_bytes": 0,
+        "summarized_parts": 1
+      },
+      "zip_41_selected_parts": {
+        "gzip_delta_bytes": 2702,
+        "input_bytes": 18960,
+        "metadata_bytes": 11655,
+        "omitted_parts": 25,
+        "output_chars": 2960,
+        "physical_parts": 41,
+        "repeat_sql_delta_bytes": 0,
+        "restore_exact": true,
+        "selected_parts": 41,
+        "sql_delta_bytes": 12082,
+        "sqlite_page_delta_bytes": 0,
+        "summarized_parts": 16
+      }
+    },
+    "scope": "Synthetic fixtures only; incremental metadata result/link over the same schema/source metadata, not production growth or raw retention."
+  },
+  "stage": "J132",
+  "strict_mypy_files": 509
+}

@@ -15,6 +15,8 @@ to the transaction that rolls back. All cutoffs are configurable in days:
 
 The [2026-10-27 storage profile](reviews/2026-10-27-storage-profile.md) measures a pinned copy,
 recorded physical refs and Git checkpoints; it does not enable a raw archive or change cutoffs.
+The [finite dependency audit](reviews/2026-10-28-retention-dependencies.md) records the decision
+to keep every existing guard through schema 56; it does not declare legacy work exhausted.
 
 | Data | Default | Rule |
 |---|---:|---|
@@ -211,8 +213,9 @@ bodies. Batch receipts and memo keys do not establish a missing paid result iden
 read-only inventory does not import or remove data. See
 [J086](plans/2026-10-22-document-architecture-progress.md#j086).
 
-A document review whose batch failed at every allowed submission keeps only its keys and a
-limitation (`ReviewWork.abandoned`): its documents go, and the same source is not asked again.
+A document review whose batch failed at every allowed submission clears `context` and
+`input_bill_json` and keeps its keys and limitation (`ReviewWork.abandoned`); an existing
+`comparison_document` snapshot remains. The same source is not asked again.
 A review the provider refused for its length keeps its documents for the overflow model.
 
 Memo writes and reuse on the calling thread refresh `last_used_at` without replacing the original
@@ -320,6 +323,31 @@ Failed/over-limit fetches produce no complete receipt. Crash before the relevant
 and unrelated standalone reads are still outside scope. See
 [J107](plans/2026-10-22-document-architecture-progress.md#j107).
 
+
+## Ограниченные extraction metadata
+
+Schema 56 сохраняет один `ExtractionResult` для известного outer input и версии metadata:
+SHA физического manifest, прежней package output string, параметры limits, component file hashes,
+доступные dependency versions и сводки максимум 16 выбранных физических частей. JSON ограничен
+16 KiB в модели и SQL; omitted count явно показывает недостающие сводки. Тысячи PDF pages или
+Word blocks не создают SQL rows на каждый block. Member names, block text, raw и error prose
+в эту запись не входят. Source selection связывается с результатом в своей caller transaction;
+неизменившийся результат и повторная проверка не дублируются.
+
+Detailed physical manifests существуют только в памяти текущего извлечения. `not_retained`,
+`manifest_not_retained`, `input_mapping=unmapped` и `completeness=not_asserted` не обещают
+исторический replay, physical citations, нормативную полноту или чтение скана моделью.
+DOC/отдельный XML и custom adapters без physical origins сохраняют explicit unknown; старые
+adapters без нового optional port не получают выдуманный результат. Перечисленные component
+hashes относятся к исходному файлу класса, не ко всему транзитивному коду или environment;
+отсутствующая file identity/version остаётся unknown. Package policy имеет отдельную версию/hash,
+а последующая source selection и provider fitting остаются самостоятельными решениями.
+
+Primary, prefilter, review и generic secondary source transactions сохраняют доступные records.
+Senate special path получает их только если общий loader действительно выполнил такое извлечение.
+Exception до результата, zero-part refusal без physical source ref и unrelated direct downloads
+не становятся сохранённым ExtractionResult. Эти metadata переживают operational cache cleanup;
+данные из старых URL и legacy state не backfilled. Raw/backend/retention decision не меняется.
 
 ## Editorial history после J109
 

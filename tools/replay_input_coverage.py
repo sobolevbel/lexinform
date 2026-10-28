@@ -13,7 +13,7 @@ from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.document_selection import bill_selection, selection_for_input
 from lexinform.keywords import KeywordPrefilter
 from lexinform.law_digest import law_digest
-from lexinform.models import DocumentSelection, PreparedTextInput
+from lexinform.models import DocumentSelection, ExtractionResult, PreparedTextInput
 from lexinform.prepared_input import prepared_text_input
 from lexinform.sections import PAGE_BREAK, TextBudget, trim_print
 from lexinform.text_projection import TextProjection
@@ -23,7 +23,13 @@ from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 from tools.replay_pdf_pages import PdfReplayManifest
 
 
-def snapshot(data: bytes, *, mapped: bool, prepared_manifest: bool = False) -> dict[str, Any]:
+def snapshot(
+    data: bytes,
+    *,
+    mapped: bool,
+    prepared_manifest: bool = False,
+    extraction_manifest: bool = False,
+) -> dict[str, Any]:
     if prepared_manifest and not mapped:
         raise ValueError("Prepared manifests require mapped replay")
     reader = DocumentTextExtractor(
@@ -33,7 +39,8 @@ def snapshot(data: bytes, *, mapped: bool, prepared_manifest: bool = False) -> d
         max_member_bytes=32_000_000,
         max_part_chars=400_000,
     )
-    extracted = reader.extract_document(data)
+    provenance = reader.extract_document_with_provenance(data) if extraction_manifest else None
+    extracted = provenance.document if provenance is not None else reader.extract_document(data)
     selected = bill_selection(extracted.selection, source_basis=())
     prepared = trim_print(extracted.text)
     keywords = KeywordPrefilter()
@@ -124,6 +131,22 @@ def snapshot(data: bytes, *, mapped: bool, prepared_manifest: bool = False) -> d
             )
             for name, text in variants.items()
         }
+    if provenance is not None:
+        encoded = provenance.result.model_dump_json()
+        restored = ExtractionResult.model_validate_json(encoded)
+        if restored != provenance.result or restored.result_id != provenance.result.result_id:
+            raise ValueError("Extraction metadata identity changed on round trip")
+        if (
+            restored.artifact_sha256 != digest(data)
+            or restored.output_text_sha256 != digest(extracted.text.encode())
+            or restored.output_chars != len(extracted.text)
+        ):
+            raise ValueError("Extraction metadata differs from its observed input or output")
+        result["extraction"] = {
+            "result_id": restored.result_id,
+            "metadata_bytes": len(encoded.encode()),
+            "manifest": restored.model_dump(mode="json"),
+        }
     return result
 
 
@@ -180,9 +203,12 @@ def run(
     reference: Path | None = None,
     reference_sha256: str | None = None,
     prepared_manifest: bool = False,
+    extraction_manifest: bool = False,
 ) -> int:
     if prepared_manifest and mode != "compare":
         raise ValueError("Prepared manifests require mapped compare mode")
+    if extraction_manifest and mode != "compare":
+        raise ValueError("Extraction manifests require pinned compare mode")
     root, target = corpus.resolve(strict=True), output.resolve()
     if output.is_symlink() or target.exists() or target.is_relative_to(root):
         raise ValueError("Output must be a new file outside the corpus")
@@ -255,7 +281,10 @@ def run(
                 if digest(data) != sha:
                     raise ValueError("Raw input SHA mismatch")
                 result["observations"][name] = snapshot(
-                    data, mapped=mode == "compare", prepared_manifest=prepared_manifest
+                    data,
+                    mapped=mode == "compare",
+                    prepared_manifest=prepared_manifest,
+                    extraction_manifest=extraction_manifest,
                 )
             except Exception as exc:
                 result["errors"][name] = f"{type(exc).__name__}: {exc}"
@@ -297,6 +326,7 @@ def main() -> None:
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--reference-sha256")
     parser.add_argument("--prepared-manifest", action="store_true")
+    parser.add_argument("--extraction-manifest", action="store_true")
     args = parser.parse_args()
     logging.basicConfig(level=logging.ERROR)
     raise SystemExit(
@@ -310,6 +340,7 @@ def main() -> None:
             reference=args.reference,
             reference_sha256=args.reference_sha256,
             prepared_manifest=args.prepared_manifest,
+            extraction_manifest=args.extraction_manifest,
         )
     )
 

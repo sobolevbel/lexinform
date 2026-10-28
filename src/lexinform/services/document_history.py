@@ -10,7 +10,9 @@ from lexinform.models import (
     ArtifactReadIdentity,
     ArtifactReadReceipt,
     DocumentSelectionRecord,
+    ExtractionResult,
     SelectionArtifactReference,
+    SelectionExtractionReference,
     SourceObservation,
     TextDocument,
 )
@@ -24,6 +26,7 @@ class DocumentSourceRead:
     selection: DocumentSelectionRecord
     artifacts: tuple[ArtifactIdentity, ...]
     reads: tuple[ArtifactReadIdentity, ...] = ()
+    extractions: tuple[ExtractionResult, ...] = ()
 
 
 def record_source_read(
@@ -45,7 +48,12 @@ def record_source_read(
         recorded_at=recorded_at,
     )
     record_document_source(
-        repo, source.selection, observation, source.artifacts, reads=source.reads
+        repo,
+        source.selection,
+        observation,
+        source.artifacts,
+        reads=source.reads,
+        extractions=source.extractions,
     )
 
 
@@ -84,11 +92,21 @@ def record_document_source(
     artifacts: tuple[ArtifactIdentity, ...],
     *,
     reads: tuple[ArtifactReadIdentity, ...] = (),
+    extractions: tuple[ExtractionResult, ...] = (),
 ) -> None:
     """Write the source and known outer-body links inside the caller's transaction."""
     record_artifacts(repo, artifacts, recorded_at=observation.recorded_at)
     record_artifact_reads(repo, reads, recorded_at=observation.recorded_at)
     repo.save_source_observation(selection, observation)
+    for extraction in extractions:
+        repo.save_extraction_result(extraction, recorded_at=observation.recorded_at)
+        repo.save_selection_extraction(
+            SelectionExtractionReference(
+                selection_id=selection.selection_id,
+                extraction_id=extraction.result_id,
+                artifact_sha256=extraction.artifact_sha256,
+            )
+        )
     scopes: tuple[SelectionPartScope, ...] = ("parts", "observed_parts")
     for scope in scopes:
         parts = (

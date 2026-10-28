@@ -40,12 +40,18 @@ from lexinform.models import (
     DocumentPart,
     DocumentReadMetrics,
     DocumentSelection,
+    ExtractionResult,
     HostDocumentReads,
     ScanInputManifest,
     ScannedDocument,
     TextDocument,
 )
-from lexinform.ports import Downloader, StructuredTextExtractor, TextExtractor
+from lexinform.ports import (
+    Downloader,
+    ProvenanceTextExtractor,
+    StructuredTextExtractor,
+    TextExtractor,
+)
 from lexinform.sections import (
     APPENDIX_KINDS,
     PAGE_BREAK,
@@ -112,6 +118,16 @@ class TextLoader:
         self._seen_bodies: dict[str, int] = {}
         self._known_bodies: dict[str, int] = {}
         self._known_reads: dict[str, ArtifactReadIdentity] = {}
+        self._extractions: dict[str, ExtractionResult] = {}
+
+    def extractions_for_selection(
+        self, selection: DocumentSelection
+    ) -> tuple[ExtractionResult, ...]:
+        sources = {part.source_sha256 for part in (*selection.parts, *selection.observed_parts)}
+        with self._lock:
+            return tuple(
+                self._extractions[sha] for sha in sorted(sources) if sha in self._extractions
+            )
 
     def read_artifacts(self) -> tuple[ArtifactIdentity, ...]:
         """Known body identities survive a counter reset without retaining body bytes."""
@@ -491,7 +507,13 @@ class TextLoader:
         if data is None:
             return LoadedFile(None, oversize=True)
         started = time.perf_counter()
-        if isinstance(self._extractor, StructuredTextExtractor):
+        if isinstance(self._extractor, ProvenanceTextExtractor):
+            observed = self._extractor.extract_document_with_provenance(data)
+            text = observed.document.text
+            selection = observed.document.selection
+            with self._lock:
+                self._extractions[observed.result.artifact_sha256] = observed.result
+        elif isinstance(self._extractor, StructuredTextExtractor):
             extracted = self._extractor.extract_document(data)
             text = extracted.text
             selection = extracted.selection

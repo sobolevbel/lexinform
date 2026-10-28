@@ -22,6 +22,7 @@ from lexinform.models import (
     Bill,
     BillStatus,
     DocumentSelectionRecord,
+    ExtractionResult,
     TextDocument,
 )
 from lexinform.ports import BillRepository, Clock, TextSource
@@ -73,13 +74,16 @@ class PrefilterLoad:
     source_selection: DocumentSelectionRecord | None = None
     source_artifacts: tuple[ArtifactIdentity, ...] = ()
     source_reads: tuple[ArtifactReadIdentity, ...] = ()
+    source_extractions: tuple[ExtractionResult, ...] = ()
 
     def __post_init__(self) -> None:
         if (self.source_document is None) != (self.source_selection is None):
             raise ValueError(
                 "source observation requires both catalog relations and selection metadata"
             )
-        if (self.source_artifacts or self.source_reads) and self.source_selection is None:
+        if (
+            self.source_artifacts or self.source_reads or self.source_extractions
+        ) and self.source_selection is None:
             raise ValueError("artifact observations require the source selection")
 
     @property
@@ -184,6 +188,7 @@ class TextPrefilterService:
                         loaded.source_selection,
                         loaded.source_artifacts,
                         reads=loaded.source_reads,
+                        extractions=loaded.source_extractions,
                     ),
                     term=bill.term,
                     number=bill.number,
@@ -289,6 +294,7 @@ class TextPrefilterService:
             source_selection=DocumentSelectionRecord.from_selection(file.selection),
             source_artifacts=self._loader.artifacts_for_selection(file.selection),
             source_reads=self._loader.reads_for_selection(file.selection),
+            source_extractions=self._loader.extractions_for_selection(file.selection),
         )
 
     def _read(self, file: LoadedFile) -> PrefilterLoad:

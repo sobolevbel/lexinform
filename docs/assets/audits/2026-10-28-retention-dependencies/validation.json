@@ -1,0 +1,221 @@
+{
+  "version": 1,
+  "scope": "DA8.4 finite retention dependency inventory; keep every existing guard",
+  "decision": "retain_all_existing_guards",
+  "original_audit": {
+    "code_sha": "1f4331a3b190a7b711414f89362dfbb22dd5b49c",
+    "schema": 55,
+    "tests": 263,
+    "all_passed": true,
+    "suites": [
+      {
+        "name": "focused",
+        "tests": 178,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "seconds": 24.446,
+        "xml_sha256": "0a8c7d932876cc0fb6faced1abdda98bcf64b660a7c35206f93619a7149f1280",
+        "case_ids_sha256": "2ff36ed1af7629f1390d13c55970f3d645692899eca922c35e52f809d48f2791",
+        "modules": [
+          "tests/scenario/test_amendments_command.py",
+          "tests/scenario/test_card_edit_retention_acceptance.py",
+          "tests/scenario/test_content_history.py",
+          "tests/scenario/test_digest_delivery.py",
+          "tests/scenario/test_rcl_name_rollover.py",
+          "tests/scenario/test_review_submission_recovery.py",
+          "tests/scenario/test_rollover_computation_history.py",
+          "tests/scenario/test_rollover_review_history.py",
+          "tests/scenario/test_state_retention.py",
+          "tests/scenario/test_work_doctor.py",
+          "tests/unit/test_state_retention.py"
+        ]
+      },
+      {
+        "name": "boundaries",
+        "tests": 85,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "seconds": 9.577,
+        "xml_sha256": "16c06c9e1f35ea2f0b9437fd1ba723a8174101dec5b94cfd5d61c2697ce5bdb4",
+        "case_ids_sha256": "56616450429462a580d878bc7ffff3682f0659ba5c5b61da1ff5c1507093345a",
+        "modules": [
+          "tests/scenario/test_auto_amendment_revision_payload.py",
+          "tests/scenario/test_document_selection_recovery_audit.py",
+          "tests/scenario/test_request_provenance.py",
+          "tests/scenario/test_secondary_computation_history.py",
+          "tests/unit/test_content_history.py"
+        ]
+      }
+    ],
+    "source_sha256": {
+      "src/lexinform/adapters/sqlite_repo.py": "b6cefbc6dc0f37db7a7752102377a405e4e1523d556ad20024c669ca2e670110",
+      "src/lexinform/services/pipeline.py": "e1face27ee245116aeffb1c0b7a52ff7c58d13b19666f2e17712427aef1c5bfe",
+      "src/lexinform/services/delivery.py": "233b308863c4f862c9762b1a3c873ae7fdebc6bb67bc837e85368346461a90be",
+      "src/lexinform/services/analysis.py": "43d61a4a04a1d9d9d8699932cd63a5336dbd20690449bacf76121d864fb36ba8",
+      "src/lexinform/services/document_reviews.py": "ef34023e36eb4e20b3d800af828a6d04ad0ef6469cca12f34c19de6174c76771",
+      "src/lexinform/services/tracking/service.py": "44095308b54e50f8376efd731372e2f34595b9f96843781994ed4f67bf0479bc",
+      "src/lexinform/services/tracking/linking.py": "97f7615261efa090b967b308838c69d8f60e111f5fdcf5b503db3bef23211744",
+      "src/lexinform/services/tracking/rollover.py": "3d881251e6a83c92811f7167cf370c63d8f1c3af05100ff5c7c0eee6c46e09ae",
+      "src/lexinform/services/amendments.py": "b318bc87536b1ec13731c0883c1dfd23aed883e1bbeb19b51d1e944dc341e4bd",
+      "src/lexinform/services/posting.py": "e3d57dc6cda3e3f70eb783fccc5436db8e88eea40e960716de65b13940146145",
+      "src/lexinform/services/publishing.py": "5061bb3d2539c5dd55dee2de0344f2d3b5456688770a2aca374cc249c6fa627a",
+      "src/lexinform/models/documents.py": "ebd3422121c38683e2e2af1d229e5ffcd809158bbe3fba71f2cca39f9b8b6be4",
+      "src/lexinform/models/reviews.py": "c9c02f306e12c8146280fbfce51c063ad498ef70958516af33e442df68dcbc2c",
+      "tools/work_doctor.py": "a57529934142e77db06d8905ce7fcb67584279220cf65c153605380b5078f883",
+      "docs/state-retention.md": "0457081f735b4e13f9fbbcba4ba2906cea6fd0cea3f95a03e77a61c4eef6baa1",
+      ".claude/rules/database.md": "bb7d0890d79a48b90f7da8aa06fb80cf81bcbce2ce696e8aa491239a6e983d46",
+      ".claude/rules/operations.md": "b5967919d2ed7ed68c1c01e89720b5854de660b33379f84b40a3c568c315652e",
+      ".claude/rules/messages.md": "458ff6a278011766177465a80b76925221b648fef6ee5dc586740bb394c009db"
+    },
+    "source_unchanged_through_audit": true,
+    "regression_function_anchors_verified": 33,
+    "input_validation_sha256": "aac060c7783281e8de8f013bce9c4d78e4545f11f2dca9da3e6dc5d2227f8b7d",
+    "input_inventory_sha256": "4e0382edbbbbdb4df7df7c231476b518dbda92ddec6fbaa207cadbfaaa249e4c"
+  },
+  "schema_56_extension": {
+    "baseline_commit": "b1d22cbc7afc33bef6f4618b70d2919e0bcfb5bb",
+    "schema": 56,
+    "table_count": 30,
+    "tables": [
+      "analysis_memo",
+      "artifact_reads",
+      "artifacts",
+      "bills",
+      "commands",
+      "computation_results",
+      "content_snapshots",
+      "content_versions",
+      "delivery_alerts",
+      "delivery_resolutions",
+      "digest_event_links",
+      "document_selections",
+      "document_work",
+      "effective_rule_links",
+      "extraction_results",
+      "llm_batch_intents",
+      "llm_batch_items",
+      "llm_batches",
+      "publication_content",
+      "publication_sequence",
+      "publications",
+      "rcl_wykaz_numbers",
+      "result_applicability",
+      "result_applications",
+      "runs",
+      "selection_artifacts",
+      "selection_extractions",
+      "source_checks",
+      "source_observations",
+      "status_changes"
+    ],
+    "existing_55_migrations_exact": true,
+    "appended_migration_sha256": "75bc57d101ecdfe65bd3f72617538cbd8f80db060adde0503066187254528396",
+    "cleanup_methods_ast": {
+      "1f4331a3b190a7b711414f89362dfbb22dd5b49c": {
+        "prune_runs": {
+          "ast_sha256": "00dda663b32b78bc221b65e598a497cc0ed8380f18a680cbeb43a23bd2c2862d",
+          "exact": true
+        },
+        "prune_history": {
+          "ast_sha256": "62f671215257a1d98a1a8c36d9b0fc351f1d2cb12ce52e61a80f83d554eb8741",
+          "exact": true
+        }
+      },
+      "b1d22cbc7afc33bef6f4618b70d2919e0bcfb5bb": {
+        "prune_runs": {
+          "ast_sha256": "00dda663b32b78bc221b65e598a497cc0ed8380f18a680cbeb43a23bd2c2862d",
+          "exact": true
+        },
+        "prune_history": {
+          "ast_sha256": "62f671215257a1d98a1a8c36d9b0fc351f1d2cb12ce52e61a80f83d554eb8741",
+          "exact": true
+        }
+      }
+    },
+    "new_metadata_writer_reader_ast_sha256": {
+      "save_extraction_result": "5f3d24e128c8a5c929e8e9ebca496b77ef6970f54740cdf2e137d7d8be3ce725",
+      "get_extraction_result": "be372865b1f0541af1cb9abfdf56d6645772aae71110e29abf102ceeee6c4573",
+      "save_selection_extraction": "5f735c81b58e4f7ea37942d4790eacedc75e927d26dc1d5c2cbf53ee2f9de9dd",
+      "list_selection_extractions": "c96451e2943397bbf7cb360c557682684ee95dad216d365e568e52ca06ec4b3d"
+    },
+    "metadata_tables": [
+      "extraction_results",
+      "selection_extractions"
+    ],
+    "foreign_keys": {
+      "extraction_results": [
+        {
+          "id": 0,
+          "seq": 0,
+          "parent_table": "artifacts",
+          "from_column": "artifact_sha256",
+          "to_column": "sha256",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        }
+      ],
+      "selection_extractions": [
+        {
+          "id": 0,
+          "seq": 0,
+          "parent_table": "extraction_results",
+          "from_column": "extraction_id",
+          "to_column": "extraction_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 0,
+          "parent_table": "document_selections",
+          "from_column": "selection_id",
+          "to_column": "selection_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        }
+      ]
+    },
+    "no_new_cleanup_rule": true,
+    "parents_and_links_retained": true,
+    "new_raw_text_block_body_retention": false,
+    "states": {
+      "bodies": "not_retained",
+      "physical_coordinates": "manifest_not_retained",
+      "input_mapping": "unmapped",
+      "completeness": "not_asserted"
+    },
+    "checks": [
+      "in-memory schema construction",
+      "integrity_check=ok",
+      "foreign_key_check empty",
+      "read-only AST/migration comparison; no mutation test required"
+    ]
+  },
+  "abandoned_review_probe": {
+    "abandoned": true,
+    "context_cleared": true,
+    "input_bill_cleared": true,
+    "comparison_document_retained": true
+  },
+  "abandoned_function_ast_sha256": "9ba80a65dbe7399b55f353c132eb06f88b1d1e97a6c21dd2e11d02b624d80b26",
+  "current_extension_source_sha256": {
+    "src/lexinform/adapters/sqlite_repo.py": "e5df9e664d213f9dac79743c4250ecfb2c2915e06cba08d54194761a30416343",
+    "src/lexinform/services/document_reviews.py": "ef34023e36eb4e20b3d800af828a6d04ad0ef6469cca12f34c19de6174c76771",
+    "src/lexinform/models/extractions.py": "1d4c1c909e4a0920f992c71cb1ccc4b2341a77e19743cf4130821c23d3026db5",
+    "src/lexinform/extraction_records.py": "b0378402818ed9441d5c39f7fe8fd8f8bf22376034c951dbb986dd77928120ea"
+  },
+  "limits": [
+    "No cleanup guard removed, lifecycle migration or legacy-work exhaustion claim",
+    "No production state reads, network or paid calls",
+    "The 263 tests belong to the schema-55 audit; extension adds structural/read-only checks, not a repeated Python test gate",
+    "Explicit forget/republish remain separate operator lifecycles",
+    "Schema-56 extraction metadata does not promise raw/text/block body archive"
+  ],
+  "policy_change": false,
+  "python_source_edits": false
+}

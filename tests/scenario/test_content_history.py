@@ -16,6 +16,7 @@ from lexinform.models import (
 from lexinform.models.bill import LocatedText
 from lexinform.services.content_history import FORMATTER_VERSION, restore_content_delivery
 from tests.scenario.test_amendments_command import published_world
+from tests.state_snapshots import dump_at_version
 
 
 def test_legacy_unfinished_input_is_not_duplicated_in_editorial_history() -> None:
@@ -34,10 +35,7 @@ def test_legacy_unfinished_input_is_not_duplicated_in_editorial_history() -> Non
             "UPDATE publications SET delivery_json=? WHERE id=?",
             (plan.model_dump_json(), original.id),
         )
-        for table in ("publication_content", "content_versions", "content_snapshots"):
-            legacy.execute("DROP TABLE " + table)
-        legacy.commit()
-        dump = "\n".join(legacy.iterdump()) + "\nPRAGMA user_version = 54;\n"
+        dump = dump_at_version(legacy, version=54)
     world.repo.restore(dump)
 
     world.command("/amendments 1929")

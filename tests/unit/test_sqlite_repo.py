@@ -1009,6 +1009,8 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     assert not repo.list_source_observations(10, "RPW/1/2026")
     assert {"artifacts", "selection_artifacts", "artifact_reads"} <= tables
     assert {"content_snapshots", "content_versions", "publication_content"} <= tables
+    assert {"extraction_results", "selection_extractions"} <= tables
+    assert not repo.list_selection_extractions("selection-v1:" + "a" * 64)
     assert not repo.list_content_versions(1)
     assert not repo.list_artifact_reads()
     assert repo.get_artifact_metadata("a" * 64) is None
@@ -1383,6 +1385,8 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
         conn.execute("DROP TABLE content_versions")
         conn.execute("DROP TABLE content_snapshots")
         conn.execute("DROP TABLE artifact_reads")
+        conn.execute("DROP TABLE selection_extractions")
+        conn.execute("DROP TABLE extraction_results")
         conn.execute("DROP TABLE selection_artifacts")
         conn.execute("DROP TABLE artifacts")
         conn.execute("DROP TABLE source_observations")

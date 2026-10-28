@@ -6364,7 +6364,7 @@ HTTP bodies, PDF blocks, JSONL или parsed batch results. Anthropic меняе
 <a id="j131"></a>
 ### J131. Recover interrupted relay deployments without a false success
 
-Статус: **готово локально; deployment ожидается**. Production incident после J130: deploy40659234925 был запущен CI для c45f3f3,
+Статус: **готово; deployment проверен**. Production incident после J130: deploy40659234925 был запущен CI для c45f3f3,
 но reset'нул checkout до1f4331a; `hatchling.build.build_editable` получил SIGTERM15. Sync завершился
 ошибкой до restart. Причина сигнала неизвестна; OOM не доказан. Следующий deploy40659847080
 вернул success/already-at, пропустив sync/restart из-за равных checkout HEAD. Это не runtime acceptance.
@@ -6385,4 +6385,67 @@ verified skip, inactive service, все3units и stale CI. Старый false-gr
 harness без сетевых/service вызовов. Full gate: **5438 passed**, failures/errors/skips0,
 strict mypy503, Ruff/format/docs green; frozen inputs unchanged.
 [Acceptance asset](../assets/audits/2026-10-28-relay-deploy-recovery/validation.json).
-Runtime Python/schema/provider inputs unchanged. Новый deployment ещё ожидается.
+Runtime Python/schema/provider inputs unchanged.
+
+Выпущено `b1d22cbc7afc33bef6f4618b70d2919e0bcfb5bb`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40663368034) success;
+[auto deploy](https://github.com/sobolevbel/lexinform/actions/runs/40664268463) подтвердил переход
+1f4331a → b1d22cb и45s после restart. Он исполнял прежний script, поэтому отдельно проверен
+[новый script](https://github.com/sobolevbel/lexinform/actions/runs/40664625566): same-HEAD sync/restart,
+45s health, timer setup и весь job success. [Следующий запуск](https://github.com/sobolevbel/lexinform/actions/runs/40664953943)
+дал корректный already-at без restart. Marker write/pending clear подтверждены завершённым
+путём нового frozen script и следующим независимым запуском, не прямым SSH-чтением файлов.
+B126 перенесён в fixed archive. Дополнительный bot run/paid provider calls не запускались.
+
+<a id="j132"></a>
+### J132. Persist bounded runtime extraction provenance
+
+Статус: **готово**, все локальные gates и cross-environment corpus qualification пройдены.
+Baseline `b1d22cbc7afc33bef6f4618b70d2919e0bcfb5bb`.
+Production TextLoader использует optional physical extraction port с прежней pure package policy;
+custom legacy extractors сохраняют совместимый путь. Новый immutable ExtractionResult хранит
+известные input/output/physical hashes, component/source-file identities, parser dependencies,
+options, format/view/counts и ограничения. Это metadata summary, не полный execution fingerprint.
+
+SQL56 добавляет extraction_results и selection_extractions. Запись идёт на calling thread вместе
+с source observation, с проверкой exact outer-body ownership и first-recorded idempotence.
+Prefilter, primary, reviews и generic secondary используют общий capture. Historical/direct
+bypasses, zero-part failures без selection ref и полная fact-to-block history остаются открытыми.
+Максимум16 selected summaries/16KiB JSON; omissions/unknown явные. Body/block/raw archive нет,
+completeness не утверждается. Source bytes и provider scan bytes имеют отдельные контракты.
+
+5465 full tests passed, failures/errors/skips0; mypy509, Ruff/format green. Первые шесть failures
+были неверно помеченными schema54/55 fixtures поверх новой schema56. Общий test helper теперь
+строит настоящую историческую schema из append-only migrations, сохраняет IDs/high-water marks
+и проверяет FK; corruption fixtures сохраняют текущую версию. Runtime migration не ослаблялась.
+
+168 native profiles: requests/messages/all28 прежних таблиц exact, timing differences0.
+Две новые таблицы пусты для legacy fake port; bootstrap SQL+617 bytes, gzip+74–103.
+Actual pinned state4f19d9b (не новый live run): все28 таблиц exact, SQL+617/gzip+119,
+SQLite+20480, integrity/FK valid. Старый schema55 reader и новый reader сохранили все30 таблиц
+scenario snapshot с настоящим DOCX adapter и fake providers с непустыми extraction rows и schema56, без API effects.
+
+5365 raw/3.753GB/42920 prepared views прошли: весь legacy profile exact, errors/input/code drift0.
+20 meaningful raw derivatives проверяют dates/amounts/negation/scope/references; 15 известных
+statutory digests меняются, ODT unknown остаётся unknown. Raw/performance measurements выполнены
+в shared Pydantic2.13 environment; отдельно freshly extracted4021 unique bodies и проверены все5365paths/input/text/selection/result identities
+в deployed Pydantic2.14 environment, errors/changes0. Transformations не менялись; свежие native/full gates
+и pilot на13 raw roots всех7formats используют deployed dependencies. Старые measurements не переименовываются.
+
+На исторической raw population metadata median2732B/p953997/max5831. Три отдельных size fixtures:
+обычный Word SQL+3148/gzip+1023; 3000-block Word SQL+3157/gzip+1022; ZIP41 с cap16 SQL+12082/gzip+2702.
+Повторная запись даёт0. Counterfactual каталог всех5365paths/4021 unique bodies: SQL+14.01MB,
+gzip+1.86MB, SQLite+18.42MB; это только artifact/extraction rows, без source/selection links и
+без прогноза production demand. Повтор через365дней —0, first times/hash exact. Raw bytes не хранятся.
+
+Local extraction-only performance: 52 fresh processes/104 calls, 13 roots; cold sum root medians
+54.786→55.220s, warm54.828→55.201s. Mixed ZIP365→519ms, поэтому overhead не считается нулевым.
+Это historical shared-env/local-cache measurements, не универсальная production latency граница.
+
+DA3.5 compatibility и DA3.6 scan identity/window contracts приняты в текущем storage profile.
+После provider receipt локальные scan items хранят metadata/checksums; SQL-only replay не обещается.
+Completed byte archive отложен по J123. DA8.4 закрыт конечным [dependency audit](../reviews/2026-10-28-retention-dependencies.md):
+все guards сохранены, текущие30таблиц учтены, cleanup AST exact. Ни DA3, ни DA8 целиком не закрыты.
+План:74 tasks,22 done,6 explicit N/A,46 applicable partial/open.
+[Acceptance asset](../assets/audits/2026-10-28-runtime-extraction/validation.json) пинует final source freeze,
+все gates, оба окружения, scope reuse, corpus/input hashes, actual state migration и budget exclusions.

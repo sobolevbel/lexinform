@@ -222,3 +222,58 @@ def test_replay_rejects_wrong_budget_origin_despite_an_unchanged_output(
     result = json.loads(after.read_bytes())
     assert result["status"] == "failed" and len(result["errors"]) == 3
     assert all("input differs" in error for error in result["errors"].values())
+
+
+def test_runtime_extraction_replay_preserves_the_existing_prepared_input_contract(
+    tmp_path: Path,
+) -> None:
+    corpus, catalog, sha, cases, word = inputs(tmp_path)
+    before, after = tmp_path / "before.json", tmp_path / "after.json"
+    data = word.read_bytes()
+    plain = replay_input_coverage.snapshot(data, mapped=True, prepared_manifest=True)
+    detailed = replay_input_coverage.snapshot(
+        data, mapped=True, prepared_manifest=True, extraction_manifest=True
+    )
+    extraction = detailed.pop("extraction")
+    assert detailed == plain
+    assert extraction["metadata_bytes"] < 16_384
+    assert extraction["manifest"]["bodies"] == "not_retained"
+    assert extraction["manifest"]["physical_coordinates"] == "manifest_not_retained"
+    assert extraction["manifest"]["input_mapping"] == "unmapped"
+    assert replay_input_coverage.run(corpus, catalog, sha, cases, before, mode="baseline") == 0
+
+    assert (
+        replay_input_coverage.run(
+            corpus,
+            catalog,
+            sha,
+            cases,
+            after,
+            mode="compare",
+            reference=before,
+            reference_sha256=hashlib.sha256(before.read_bytes()).hexdigest(),
+            prepared_manifest=True,
+            extraction_manifest=True,
+        )
+        == 0
+    )
+
+    result = json.loads(after.read_bytes())
+    assert not result["core_changes"] and not result["errors"]
+    assert all(row["extraction"]["result_id"] for row in result["observations"].values())
+
+
+def test_runtime_extraction_replay_requires_a_pinned_compatibility_reference(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="pinned compare"):
+        replay_input_coverage.run(
+            tmp_path,
+            tmp_path / "absent",
+            "0" * 64,
+            tmp_path / "absent",
+            tmp_path / "output.json",
+            mode="baseline",
+            extraction_manifest=True,
+        )
+    assert not (tmp_path / "output.json").exists()

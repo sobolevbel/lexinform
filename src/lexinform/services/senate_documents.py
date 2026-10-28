@@ -168,6 +168,7 @@ def resolution_source_read(
         DocumentSelectionRecord.from_selection(selection),
         loader.artifacts_for_selection(selection),
         reads=loader.reads_for_selection(selection),
+        extractions=loader.extractions_for_selection(selection),
     )
 
 

@@ -25,6 +25,8 @@ HTML содержит снимок v34, включая SQL ограничени�
 | `document_selections` (v52) | `selection_id` | Неизменяемые метаданные решения: question, policy version, state, parts/facts/coverage; без extracted bodies и provider scan input. |
 | `source_observations` (v52) | `observation_id`; индексы owner/purpose и selection | Историческая связь дела, официальных document relations и решения; первое время записи сохраняется при повторной проверке. |
 | `artifact_reads` (v54) | `read_id`; unique requested URL/raw SHA; artifact index | Первый metadata receipt complete-body response; requested URL и время записи не являются blob location или датой публикации. |
+| `extraction_results` (v56) | `extraction_id`; artifact FK/index; bounded JSON | Immutable metadata результата physical extraction и прежней package projection, без text/block bodies. |
+| `selection_extractions` (v56) | `(selection_id, extraction_id)`; exact outer artifact FK | Связь source selection с известным результатом извлечения; не доказывает полноту или фактический provider input. |
 | `content_snapshots` (v55) | `snapshot_id`; kind + exact JSON | Общие immutable editorial Bill/change/metadata-plan snapshots; plan не копирует отдельные bodies. |
 | `content_versions` (v55) | `content_id`; root publication index; предыдущая версия | Editorial edition: semantic snapshot refs, known paid/event refs, exact rendered text либо явный unknown legacy, язык/formatter version при известности. |
 | `publication_content` (v55) | `publication_id` → `content_id` | Immutable связь физической publication с edition; не является receipt отправки. |

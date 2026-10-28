@@ -26,6 +26,7 @@ from lexinform.models import (
 )
 from tests.fakes import FakeTextExtractor, make_amendments
 from tests.harness import REFERRED, World
+from tests.state_snapshots import dump_at_version
 
 PDF_URL = "https://api.test/sejm/term10/prints/3213/3213.pdf"
 WORD_URL = "https://api.test/sejm/term10/prints/3213/3213-uchwa%C5%82a.docx"
@@ -310,11 +311,7 @@ def test_legacy_message_without_snapshot_is_refused_before_model_call() -> None:
     w, original = published_world()
     with closing(sqlite3.connect(":memory:")) as legacy:
         legacy.executescript(w.repo.dump())
-        legacy.execute("DROP TABLE publication_content")
-        legacy.execute("DROP TABLE content_versions")
-        legacy.execute("DROP TABLE content_snapshots")
-        legacy.commit()
-        dump = "\n".join(legacy.iterdump()) + "\nPRAGMA user_version = 54;\n"
+        dump = dump_at_version(legacy, version=54)
     w.repo.restore(dump)
     future = w.clock.now() + dt.timedelta(days=365)
     w.repo.prune_history(before=future, memo_before=future)

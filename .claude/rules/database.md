@@ -41,3 +41,5 @@ Schema, tables and what each version added: `docs/reference/database.md`; retent
 - Artifact metadata records known complete-body SHA/size without a retention promise; selection links require the exact recorded outer-body identity, never a substituted member/text hash.
 
 - Artifact read receipts bind requested URLs to complete-body identities; first recording time is preserved, without legacy inference, source-date claims or retained-file promises.
+
+- Extraction history stores bounded metadata and exact source links, never block bodies or a raw-retention promise; missing origins and truncated summaries stay explicit.

@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from lexinform.adapters.sqlite_repo import SCHEMA_VERSION
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import CommandOutcome, OutcomeStatus, PublicationStatus
 from tests.scenario.test_amendments_command import published_world
@@ -110,7 +111,7 @@ def test_corrupt_optional_history_does_not_resolve_an_unknown_delivery(
         db.executescript(world.repo.dump())
         db.execute("UPDATE content_snapshots SET payload_json='bad'")
         db.commit()
-        dump = "\n".join(db.iterdump()) + "\nPRAGMA user_version = 55;\n"
+        dump = "\n".join(db.iterdump()) + f"\nPRAGMA user_version = {SCHEMA_VERSION};\n"
     world.repo.restore(dump)
 
     world.command(f"/delivery {original.id}")
@@ -154,7 +155,7 @@ def test_history_bindings_are_independent_of_retry_plans_and_check_physical_owne
         else:
             snapshot.execute("UPDATE publications SET kind='joint_bill' WHERE id=?", (revision.id,))
         snapshot.commit()
-        dump = "\n".join(snapshot.iterdump()) + "\nPRAGMA user_version = 55;\n"
+        dump = "\n".join(snapshot.iterdump()) + f"\nPRAGMA user_version = {SCHEMA_VERSION};\n"
     world.repo.restore(dump)
 
     world.command(f"/delivery {revision.id}")

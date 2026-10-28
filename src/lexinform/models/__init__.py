@@ -246,6 +246,15 @@ from lexinform.models.evidence import (
     veto_evidence,
     wykaz_evidence,
 )
+from lexinform.models.extractions import (
+    DocumentExtraction as DocumentExtraction,
+)
+from lexinform.models.extractions import (
+    ExtractionResult as ExtractionResult,
+)
+from lexinform.models.extractions import (
+    SelectionExtractionReference as SelectionExtractionReference,
+)
 from lexinform.models.ministries import (
     MINISTRIES,
     Ministry,

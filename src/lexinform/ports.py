@@ -41,12 +41,14 @@ from lexinform.models import (
     DeliveryResolution,
     Digest,
     DigestPart,
+    DocumentExtraction,
     DocumentReadMetrics,
     DocumentReviewRecord,
     DocumentSelectionRecord,
     DocumentWork,
     Editorial,
     ExtractedDocument,
+    ExtractionResult,
     IncomingCommand,
     JointContext,
     JointRecord,
@@ -82,6 +84,7 @@ from lexinform.models import (
     SejmSitting,
     SejmTerm,
     SelectionArtifactReference,
+    SelectionExtractionReference,
     SenateAct,
     SittingNews,
     SourceCheck,
@@ -293,6 +296,11 @@ class AuthorsResolver(Protocol):
 @runtime_checkable
 class StructuredTextExtractor(Protocol):
     def extract_document(self, data: bytes) -> ExtractedDocument: ...
+
+
+@runtime_checkable
+class ProvenanceTextExtractor(Protocol):
+    def extract_document_with_provenance(self, data: bytes) -> DocumentExtraction: ...
 
 
 @runtime_checkable
@@ -708,6 +716,18 @@ class BillRepository(Protocol):
     def save_selection_artifact(self, reference: SelectionArtifactReference) -> None: ...
 
     def list_selection_artifacts(self, selection_id: str) -> list[SelectionArtifactReference]: ...
+
+    def save_extraction_result(
+        self, result: ExtractionResult, *, recorded_at: datetime
+    ) -> None: ...
+
+    def get_extraction_result(self, result_id: str) -> ExtractionResult | None: ...
+
+    def save_selection_extraction(self, reference: SelectionExtractionReference) -> None: ...
+
+    def list_selection_extractions(
+        self, selection_id: str
+    ) -> list[SelectionExtractionReference]: ...
 
     def save_document_review(
         self, term: int, number: str, review: DocumentReviewRecord

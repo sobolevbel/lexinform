@@ -25,6 +25,7 @@ from zipfile import ZipInfo
 from inflate64 import Inflater
 
 from lexinform.document_candidates import select_document_parts
+from lexinform.extraction_records import extraction_component, summarize_extraction
 from lexinform.models.documents import (
     DocumentPart,
     ExtractedDocument,
@@ -44,6 +45,7 @@ from lexinform.models.documents import (
     WordTextBlock,
     WordTextExtraction,
 )
+from lexinform.models.extractions import DocumentExtraction, ExtractionOptions
 from lexinform.models.rcl import READABLE_EXTENSIONS, text_rank
 from lexinform.models.word_notes import (
     NotePartName,
@@ -732,6 +734,30 @@ class DocumentTextExtractor:
             include_unlocated_text=False,
         )
         return select_document_parts(extracted, max_part_chars=self._max_part_chars)
+
+    def extract_document_with_provenance(self, data: bytes) -> DocumentExtraction:
+        physical = self.extract_parts(data)
+        selected = select_document_parts(physical, max_part_chars=self._max_part_chars)
+        result = summarize_extraction(
+            physical,
+            selected,
+            components=(
+                extraction_component("package", self),
+                extraction_component("pdf", self._pdf),
+                extraction_component("word", self._docx),
+                extraction_component("doc", self._doc),
+                extraction_component("odt", self._odt),
+            ),
+            options=ExtractionOptions(
+                max_member_bytes=self._max_member_bytes,
+                max_part_chars=self._max_part_chars,
+                archive_depth=_MAX_ARCHIVE_DEPTH,
+                archive_bytes=_MAX_ARCHIVE_BYTES,
+                archive_members=_MAX_ARCHIVE_MEMBERS,
+                xml_bytes=_MAX_XML_BYTES,
+            ),
+        )
+        return DocumentExtraction(document=selected, result=result)
 
     def pages(self, data: bytes) -> int:
         """Only a PDF has pages of its own. A Word file paginates when it is rendered, and an

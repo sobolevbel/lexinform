@@ -5,6 +5,7 @@
 
 | Дата | Проверка | Что объясняет |
 | --- | --- | --- |
+| 28.10.2026 | [Зависимости retention](2026-10-28-retention-dependencies.md) | Inventory 30 таблиц и четырёх операций очистки; решение сохранить все guards и точная граница abandoned review |
 | 28.10.2026 | [Исправления составных сообщений](2026-10-28-compound-content-revisions.md) | DA7.4: physical owner, frozen membership, частичные receipts, конкуренция и отдельные gates включения |
 | 27.10.2026 | [Профиль хранения](2026-10-27-storage-profile.md) | Текущая SQLite, физические source refs, размер корпуса, реальные state snapshots и отдельная стоимость Git packing/checkpoint |
 | 27.10.2026 | [Допуск документов](2026-10-27-document-admission.md) | Принятый контракт J091: пять операций, separate review admission, сохранённые baseline/Senate guards и проверки переноса |

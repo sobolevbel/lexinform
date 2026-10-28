@@ -1,0 +1,67 @@
+{
+  "head_sha": "b1d22cbc7afc33bef6f4618b70d2919e0bcfb5bb",
+  "ci": {
+    "run_id": 40663368034,
+    "conclusion": "success",
+    "jobs": {
+      "web": 122731651240,
+      "docs": 122731651419,
+      "test": 122731651563
+    }
+  },
+  "automatic_deploy": {
+    "run_id": 40664268463,
+    "job_id": 122734681174,
+    "event": "workflow_run",
+    "conclusion": "success",
+    "log_lines": [
+      {
+        "line": 47,
+        "text": "2026-10-28T09:26:46.6683347Z 1f4331a3b190 -> b1d22cbc7afc"
+      },
+      {
+        "line": 48,
+        "text": "2026-10-28T09:27:34.6698165Z lexinform-listen up 45 s after restart"
+      }
+    ],
+    "durable_marker_protocol_verified": false
+  },
+  "manual_marker_verification": {
+    "run_id": 40664625566,
+    "job_id": 122735909884,
+    "event": "workflow_dispatch",
+    "conclusion": "success",
+    "log_lines": [
+      {
+        "line": 47,
+        "text": "2026-10-28T09:29:34.3776855Z b1d22cbc7afc -> b1d22cbc7afc"
+      },
+      {
+        "line": 48,
+        "text": "2026-10-28T09:30:19.7686280Z lexinform-listen up 45 s after restart"
+      },
+      {
+        "line": 49,
+        "text": "2026-10-28T09:30:20.3081919Z lexinform-batch-poll.timer enabled"
+      }
+    ],
+    "same_head_sync_restart_and_health_verified": true,
+    "marker_completion_evidence": "Complete successful execution of checked new update.sh, whose final commands atomically write the success marker and clear pending after timer success; no direct marker SSH read."
+  },
+  "idempotent_verification": {
+    "run_id": 40664953943,
+    "job_id": 122736999924,
+    "event": "workflow_dispatch",
+    "conclusion": "success",
+    "log_lines": [
+      {
+        "line": 47,
+        "text": "2026-10-28T09:31:57.8990353Z already at b1d22cbc7afc, lexinform-listen running"
+      }
+    ],
+    "same_head_legitimate_skip_verified": true,
+    "no_update_or_45_second_restart_branch": true
+  },
+  "observer_actions": "Read-only status/log inspection; no SSH, dispatch, rerun, edits, or raw environment logs.",
+  "acceptance": "CI, actual automatic update/restart, new-script same-HEAD marker bootstrap, and subsequent legitimate idempotent skip all verified."
+}

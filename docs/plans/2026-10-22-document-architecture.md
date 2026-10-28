@@ -451,7 +451,7 @@ DA2.1 и описание текущего профиля обязательны
 - [ ] DA2.2. **Неприменимо при текущем профиле: пользователь отложил расширение хранения; blob store не реализуется. См. [J123](2026-10-22-document-architecture-progress.md#j123).** Реализовать content-addressed store для bounded bytes: проверка SHA/размера,
   запись временного файла, atomic rename и необходимая синхронизация диска, идемпотентный put,
   проверяемый get. Пользовательский filename не участвует в пути; ZIP traversal невозможен.
-- [ ] DA2.3. **Частично: [J095](2026-10-22-document-architecture-progress.md#j095), reader-first source observations и deduplicated selection metadata в schema 52; [J096](2026-10-22-document-architecture-progress.md#j096), prefilter producer; [J099](2026-10-22-document-architecture-progress.md#j099), reader artifacts/SQL part refs; [J100](2026-10-22-document-architecture-progress.md#j100), capture complete-body metadata в shared loader/prefilter/pipeline. Standalone/прочие source producers остаются.** Ввести SQL-метаданные `artifacts`, `source_observations` и явные связи с делами/
+- [ ] DA2.3. **Частично: [J102–J105](2026-10-22-document-architecture-progress.md#j102) расширили capture на primary/standalone analysis, reviews, generic secondary и Senate; [J095](2026-10-22-document-architecture-progress.md#j095), reader-first source observations и deduplicated selection metadata в schema 52; [J096](2026-10-22-document-architecture-progress.md#j096), prefilter producer; [J099](2026-10-22-document-architecture-progress.md#j099), reader artifacts/SQL part refs; [J100](2026-10-22-document-architecture-progress.md#j100), capture complete-body metadata в shared loader/prefilter/pipeline. Standalone/прочие source producers остаются.** Ввести SQL-метаданные `artifacts`, `source_observations` и явные связи с делами/
   источниками. Поддержать many-to-many: одни байты в разных наблюдениях не теряют URL/роль/дату.
   Поля, по которым нужны uniqueness/ownership/GC, доступны SQL, а не спрятаны только в JSON.
   Неизменившееся содержимое наблюдений хранится один раз; отметка повторной проверки
@@ -512,13 +512,13 @@ paid calls или объявления материалов архивирова
 - [ ] DA3.3. **Частично: [J046](2026-10-22-document-architecture-progress.md#j046), Word body order/table paths и явный legacy view; [J048](2026-10-22-document-architecture-progress.md#j048), [J049](2026-10-22-document-architecture-progress.md#j049) добавляют OOXML note origins и physical links, [J117](2026-10-22-document-architecture-progress.md#j117): ODT table paths и явные unresolved views; DOC/отдельные ODT note origins остаются.** Сохранить порядок, структуру таблиц, сноски и связь с местом вызова; указать view
   tracked changes/fields и неподдержанные объекты. «Есть текст» не доказывает полное чтение.
   Не расширять поддержку форматов скрыто внутри механического переноса.
-- [ ] DA3.4. **Частично: [J043](2026-10-22-document-architecture-progress.md#j043), [J046](2026-10-22-document-architecture-progress.md#j046), PDF/Word manifests только в памяти; [J117](2026-10-22-document-architecture-progress.md#j117), то же для ODT.** Хранить `ExtractionResult`: input ref, format, extractor/code/dependency/options versions,
+- [ ] DA3.4. **Частично: [J132](2026-10-22-document-architecture-progress.md#j132), bounded versioned runtime metadata/selection refs на calling thread без body archive; historical/direct bypasses и полная history coverage остаются. [J043](2026-10-22-document-architecture-progress.md#j043), [J046](2026-10-22-document-architecture-progress.md#j046), PDF/Word manifests только в памяти; [J117](2026-10-22-document-architecture-progress.md#j117), то же для ODT.** Хранить `ExtractionResult`: input ref, format, extractor/code/dependency/options versions,
   canonical block manifest SHA, warnings/losses/physical coverage и состояние сохранности.
   Текст и блоки сохраняются по составу/retention DA2. Новая версия экстрактора создаёт новую
   запись без перезаписи прежней; доступность её содержимого определяется профилем хранения.
-- [ ] DA3.5. **Частично: [J043](2026-10-22-document-architecture-progress.md#j043), [J046](2026-10-22-document-architecture-progress.md#j046), PDF/Word; [J117](2026-10-22-document-architecture-progress.md#j117), ODT.** Первым adapter поверх блоков воспроизводит прежнюю строку и нынешние selection
+- [x] DA3.5. **Принято: [J132](2026-10-22-document-architecture-progress.md#j132), runtime physical adapter сохраняет прежние текст/selection и prepared views на5365 raw inputs; DOC/XML остаются явно unlocated. Неполные origins/history относятся к DA3.2/DA3.4.** Первым adapter поверх блоков воспроизводит прежнюю строку и нынешние selection
   outcomes. Удаление бизнес-выбора из физического adapter — отдельная задача DA4.
-- [ ] DA3.6. **Частично: [J055](2026-10-22-document-architecture-progress.md#j055), SHA исходника/отправленных bytes и точная contiguous page map, primary analysis/batch и triage rejection; [J057](2026-10-22-document-architecture-progress.md#j057), amendments/supplement и amendment revisions. Хранение completed derivatives остаётся.** Разделить SHA полного PDF и exact derived bytes выбранных страниц/triage window.
+- [x] DA3.6. **Принято при текущем профиле: [J055](2026-10-22-document-architecture-progress.md#j055), [J057](2026-10-22-document-architecture-progress.md#j057), [J132](2026-10-22-document-architecture-progress.md#j132), конечный audit всех scan producers/window metadata. Completed derivatives не архивируются по J123; SQL-only replay после provider receipt не обещается.** Разделить SHA полного PDF и exact derived bytes выбранных страниц/triage window.
   Состав и срок хранения обоих определяет DA2; обязательный незавершённый request не теряет вход.
   Для заявления exact-input replay должны быть сохранены точные отправленные bytes.
   Manifest связывает page mapping, source page count и options; неизвестное покрытие остаётся unknown.
@@ -714,7 +714,7 @@ Bill и кэша. Повтор записанного результата да�
   ограничиться общими ownership refs и диагностикой, зафиксировав отказ от универсализации.
 - [ ] DA8.3. **Неприменимо при решении J079 против нового scheduler; перенос кода не заявлен выполненным.** Перенести один потребитель через адаптер чтения старого состояния, затем второй.
   В каждый момент у задачи один владелец и один submit path; dual run не создаёт два intents.
-- [ ] DA8.4. **Частично: [J079](2026-10-22-document-architecture-progress.md#j079), два потребителя и pinned legacy inventory проверены, guards сохранены. Полная dependency inventory и допустимость упрощения остаются отдельной работой.** Упростить retention только после проверки зависимостей всех потребителей:
+- [x] DA8.4. **Принято: [конечный inventory](../reviews/2026-10-28-retention-dependencies.md), 30 таблиц schema 56, четыре cleanup operations и current/legacy consumers; решение сохранить все существующие guards. Исчерпание legacy work и упрощение SQL не заявлены.** Упростить retention только после проверки зависимостей всех потребителей:
   старый guard не удаляется, пока legacy work не исчерпан или не мигрирован доказуемо.
 
 **Проверки:** сохранённые незавершённые work до обновления, двойной запуск, late material,
@@ -755,7 +755,7 @@ flags ради различающихся контрактов. Отказ от 
 
 ### 10.1. Сквозная диагностика
 
-- [ ] DA10.1. **Частично: [J114](2026-10-22-document-architecture-progress.md#j114), scoped run/command context и bounded structured IDs для существующих source/result/application/content/publication writes. Extraction/PreparedInput IDs отсутствуют в нынешнем storage profile и не синтезируются; полная цепочка зависит от DA3/DA5.** Добавить структурированные `run_id`, bill key, observation/artifact/extraction/
+- [ ] DA10.1. **Частично: [J114](2026-10-22-document-architecture-progress.md#j114), scoped run/command context и bounded structured IDs для существующих source/result/application/content/publication writes. Extraction IDs появились в [J132](2026-10-22-document-architecture-progress.md#j132) для текущих producer scopes; PreparedInput history и полная structured-log цепочка ещё зависят от DA3/DA5.** Добавить структурированные `run_id`, bill key, observation/artifact/extraction/
   selection/input/result/application/content/publication IDs в логи. На первом этапе
   неприменимые поля отсутствуют; идентификаторы не извлекаются обратно из prose сообщения.
   В SQL-отчётах сохранять нужные IDs/краткие причины; подробные traces ограничивать сроком
