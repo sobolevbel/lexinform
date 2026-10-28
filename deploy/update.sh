@@ -21,14 +21,22 @@ POLL_TIMER=lexinform-batch-poll.timer
 POLL_SERVICE=lexinform-batch-poll.service
 
 before=$(git rev-parse HEAD)
+# Checkout HEAD can advance before dependency installation or service restart succeeds.
+deployed_file=$(git rev-parse --git-path lexinform-relay-deployed)
+deployed=$(cat "$deployed_file" 2>/dev/null || true)
+pending_file=$(git rev-parse --git-path lexinform-relay-deploy-pending)
 git fetch -q origin main
-git reset -q --hard origin/main
-after=$(git rev-parse HEAD)
+after=$(git rev-parse origin/main)
 
 wanted="${SSH_ORIGINAL_COMMAND:-}"
-if [ -n "$wanted" ] && [ "$after" != "$wanted" ]; then
-  echo "note: CI passed $wanted, origin/main is $after (deploying the latter)"
+if [ "$wanted" = "/opt/lexinform/deploy/update.sh" ]; then
+  wanted=""
 fi
+if [ -n "$wanted" ] && [ "$after" != "$wanted" ]; then
+  echo "skip: CI passed $wanted, waiting for CI on origin/main $after"
+  exit 0
+fi
+git reset -q --hard "$after"
 
 # Units live in /etc, outside the checkout: without this a change to one would never reach the
 # server (it did not, for the relay's own unit, until 2026-09-11).
@@ -38,6 +46,7 @@ sync_unit() {
   local name=$1 changed_var=$2
   local dst=/etc/systemd/system/$name
   if ! cmp -s "deploy/$name" "$dst"; then
+    : > "$pending_file"
     cp "deploy/$name" "$dst"
     reload_needed=1
     printf -v "$changed_var" 1
@@ -47,13 +56,17 @@ sync_unit() {
 sync_unit "$SERVICE.service" relay_unit_changed
 sync_unit "$POLL_SERVICE" poll_unit_changed
 sync_unit "$POLL_TIMER" poll_unit_changed
-[ "$reload_needed" = 0 ] || systemctl daemon-reload
+if [ "$reload_needed" = 1 ] || [ "$deployed" != "$after" ] || [ -f "$pending_file" ]; then
+  systemctl daemon-reload
+fi
 
-if [ "$before" = "$after" ] && [ "${relay_unit_changed:-0}" = 0 ] \
+if [ "$deployed" = "$after" ] && [ ! -f "$pending_file" ] \
   && systemctl is-active --quiet "$SERVICE"; then
   echo "already at ${after:0:12}, $SERVICE running"
 else
   echo "${before:0:12} -> ${after:0:12}"
+  : > "$pending_file"
+  export UV_CONCURRENT_DOWNLOADS=1 UV_CONCURRENT_BUILDS=1 UV_CONCURRENT_INSTALLS=1
   "$UV" sync --frozen --no-dev -q
   systemctl restart "$SERVICE"
 
@@ -70,7 +83,15 @@ fi
 
 # `enable --now` on an already-enabled, already-active timer is a no-op; on a fresh install or a
 # changed unit it (re)starts the timer, never the oneshot service the timer itself schedules.
-if [ "$poll_unit_changed" = 1 ] || ! systemctl is-enabled --quiet "$POLL_TIMER" 2>/dev/null; then
+if [ "$poll_unit_changed" = 1 ] || [ -f "$pending_file" ] \
+  || ! systemctl is-enabled --quiet "$POLL_TIMER" 2>/dev/null; then
+  : > "$pending_file"
   systemctl enable --now "$POLL_TIMER"
   echo "$POLL_TIMER enabled"
 fi
+
+marker_tmp="${deployed_file}.tmp.$$"
+trap 'rm -f "$marker_tmp"' EXIT
+printf '%s\n' "$after" > "$marker_tmp"
+mv -f "$marker_tmp" "$deployed_file"
+rm -f "$pending_file"

@@ -59,4 +59,4 @@ jobs:
           curl -sS -o /dev/null -X POST \
             "https://api.telegram.org/bot${LEXINFORM_TELEGRAM_BOT_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${LEXINFORM_TELEGRAM_LOG_CHANNEL_ID}" \
-            --data-urlencode "text=❌ lexinform: реле не обновилось, оно осталось на прежнем коде: ${RUN_URL}"
+            --data-urlencode "text=❌ lexinform: не удалось подтвердить обновление реле: ${RUN_URL}"

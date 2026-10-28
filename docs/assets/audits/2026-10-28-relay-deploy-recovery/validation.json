@@ -1,0 +1,106 @@
+{
+  "baseline": "1f4331a3b190a7b711414f89362dfbb22dd5b49c",
+  "changes": [
+    "verified deployment SHA separate from checkout HEAD",
+    "pending flag survives all partially applied operations",
+    "atomic success marker only after sync/restart/health/unit setup",
+    "same-HEAD interrupted attempts repeat installation and restart",
+    "stale CI skipped before checkout or unit mutation",
+    "documented manual SSH path preserved",
+    "uv download/build/install concurrency fixed at one",
+    "failure notification reports unconfirmed outcome"
+  ],
+  "corpus_replay": "not required for deployment script/workflow only; real local Git harness proves recovery boundaries",
+  "evidence": {
+    "out/relay-deploy-j131/accept.py": {
+      "bytes": 2842,
+      "sha256": "5092f20155fed6311f32015c9cddf0138bb43c88ef0b3fcafeb5e020636fca10"
+    },
+    "out/relay-deploy-j131/baseline-reproduction.json": {
+      "bytes": 883,
+      "sha256": "e415d184be018da6b5e0399be032bc20ae3f3b856b45ce692d9b2d8c378fec9a"
+    },
+    "out/relay-deploy-j131/docs.log": {
+      "bytes": 266,
+      "sha256": "5a6909134057b072d105191acaf75c089eb36d241f9b801181500e5033439722"
+    },
+    "out/relay-deploy-j131/focused.xml": {
+      "bytes": 2766,
+      "sha256": "16310f2477f97031e675e65bf34447f58c5436582dd2c12f2fdf63cf01846c16"
+    },
+    "out/relay-deploy-j131/format.log": {
+      "bytes": 25,
+      "sha256": "5f674353b9f314151a50f7a3620b6c46951c55c67f42bff3f1bb025fd45f47ae"
+    },
+    "out/relay-deploy-j131/frozen-inputs.json": {
+      "bytes": 55573,
+      "sha256": "68696093752dbed37c6d273f8efcdd05c8039a24464639ab4c96746e809d0ff4"
+    },
+    "out/relay-deploy-j131/full.xml": {
+      "bytes": 861771,
+      "sha256": "9431da780fcd385206e227f96a8521f900b889e2bdc6f09bd275eab2a0a0645f"
+    },
+    "out/relay-deploy-j131/incident.json": {
+      "bytes": 1146,
+      "sha256": "a32d2f5bc46f51a7d568ae1d07b4381782679976592e2bb638ee9e87a528ff38"
+    },
+    "out/relay-deploy-j131/manual-guard-reproduction.json": {
+      "bytes": 433,
+      "sha256": "b4b1788031bd44aa6ca3bc7f22f7853b144ef4d3b10afcba489748b49077c436"
+    },
+    "out/relay-deploy-j131/mypy.log": {
+      "bytes": 45,
+      "sha256": "f86218983ba252eddda2cf903723c3c306379c8735c08bce2611d44b7bc088bf"
+    },
+    "out/relay-deploy-j131/ruff.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    }
+  },
+  "focused": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 16
+  },
+  "frozen_files": 502,
+  "full": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 5438
+  },
+  "incident": {
+    "checkout_commit": "1f4331a3b190a7b711414f89362dfbb22dd5b49c",
+    "direct_ssh": "three connection timeouts; no remote diagnostic command executed",
+    "failed_job": 122717780417,
+    "failed_run": 40659234925,
+    "false_green_job": 122719838782,
+    "false_green_log": "2026-10-28T08:51:55.1274174Z already at 1f4331a3b190, lexinform-listen running",
+    "false_green_run": 40659847080,
+    "incident": "relay build interrupted and retry falsely skipped",
+    "requested_ci_commit": "c45f3f339a9902ab99aad7b91cfb861b81445f03",
+    "selected_failed_log": [
+      "2026-10-28T08:46:46.4514530Z   COMMIT: c45f3f339a9902ab99aad7b91cfb861b81445f03",
+      "2026-10-28T08:46:50.0169932Z 88dc3ea9c1af -> 1f4331a3b190",
+      "2026-10-28T08:46:57.3508833Z   \u00d7 Failed to build `lexinform @ file:///opt/lexinform`",
+      "2026-10-28T08:46:57.3509777Z   \u2570\u2500\u25b6 Call to `hatchling.build.build_editable` failed (signal: 15 (SIGTERM))"
+    ],
+    "signal_cause": "unknown; SIGTERM does not establish OOM",
+    "uv_controls_source": "https://docs.astral.sh/uv/reference/environment/#uv_concurrent_builds",
+    "verified_previous_deploy": "88dc3ea9c1afded812db76a3abb3dc4cbdd8a476"
+  },
+  "known_limits": [
+    "SIGTERM cause unconfirmed; no OOM claim",
+    "host direct SSH connection timed out",
+    "existing enabled-but-stopped timer outside successful install path",
+    "no server-side lock for overlapping manual/orphan deployments",
+    "one-version-late script execution requires verifying actual restart and new-marker path"
+  ],
+  "raw_text_or_legal_selection_change": false,
+  "runtime_python_unchanged": true,
+  "schema_changed": false,
+  "stage": "J131",
+  "status": "local_qualified_production_pending",
+  "strict_mypy_files": 503
+}

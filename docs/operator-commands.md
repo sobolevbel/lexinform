@@ -503,6 +503,12 @@ secret `MIKRUS_SSH_KEY` and runs `deploy/update.sh` on the server (fetch, reset 
 (`command="/opt/lexinform/deploy/update.sh",no-pty,…`), so it can do nothing else; the server's
 host key is pinned in the workflow. By hand, against the host the workflow names (`HOST` in
 `deploy-relay.yml`): `ssh root@… /opt/lexinform/deploy/update.sh`.
+A stale CI commit is skipped before checkout changes; the latest main commit waits for its own CI.
+The deployment records its verified SHA in `.git/lexinform-relay-deployed` only after dependency
+sync, restart, the 45-second health check and unit setup succeed. A separate
+`.git/lexinform-relay-deploy-pending` flag survives partial failures and forces a complete retry,
+even when checkout HEAD already equals main; neither file contains credentials or bot state.
+The VPS installs with download/build/install concurrency limited to one.
 The bot itself needs no deploy: every run of `daily.yml` checks out `main`.
 
 To rotate the key: `ssh-keygen -t ed25519 -N "" -f deploy_key -C lexinform-deploy`, replace the

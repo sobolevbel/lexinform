@@ -6360,3 +6360,29 @@ Git-archive прошли после восстановления metadata), loca
 168 native profiles exact, SQL/gzip delta0. SDK request/collection probes не нашли изменений
 HTTP bodies, PDF blocks, JSONL или parsed batch results. Anthropic меняет API version/auth header;
 наши requests совместимы. Это не live provider acceptance; платных вызовов не было.
+
+<a id="j131"></a>
+### J131. Recover interrupted relay deployments without a false success
+
+Статус: **готово локально; deployment ожидается**. Production incident после J130: deploy40659234925 был запущен CI для c45f3f3,
+но reset'нул checkout до1f4331a; `hatchling.build.build_editable` получил SIGTERM15. Sync завершился
+ошибкой до restart. Причина сигнала неизвестна; OOM не доказан. Следующий deploy40659847080
+вернул success/already-at, пропустив sync/restart из-за равных checkout HEAD. Это не runtime acceptance.
+Прямые read-only SSH probes не соединились; никаких диагностических команд на VPS не исполнялось.
+
+Новый script отделяет checkout от подтверждённой установки: `.git/lexinform-relay-deployed`
+записывается atomic после sync/restart/45s-health/unit setup, а pending marker сохраняется при
+частичном сбое. Оба файла содержат только deployment metadata, не данные бота и не входят в SQL.
+Повтор с тем же HEAD снова устанавливает и перезапускает сервис, если нет proof или есть pending.
+Failed same-SHA unit repair также не может использовать прежний success. Ограничен параллелизм
+uv downloads/builds/installs до1; это уменьшает разрешённую конкуренцию, не доказывает причину SIGTERM.
+Stale CI commit пропускается до reset/unit writes: следующий main ждёт собственного CI.
+Failure notification больше не утверждает старый код при неизвестном исходе restart.
+
+**16 focused shell tests passed**, real temporary Git remote + fake uv/systemctl/sleep:
+SIGTERM/exit sync, same-HEAD retry, restart/health/timer/reload faults, same-SHA repair, current
+verified skip, inactive service, все3units и stale CI. Старый false-green воспроизведён тем же
+harness без сетевых/service вызовов. Full gate: **5438 passed**, failures/errors/skips0,
+strict mypy503, Ruff/format/docs green; frozen inputs unchanged.
+[Acceptance asset](../assets/audits/2026-10-28-relay-deploy-recovery/validation.json).
+Runtime Python/schema/provider inputs unchanged. Новый deployment ещё ожидается.
