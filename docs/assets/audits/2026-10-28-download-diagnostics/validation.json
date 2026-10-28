@@ -1,0 +1,392 @@
+{
+  "baseline": "943ce8971a6861ef0824b5730f8f42132dcb3fd9",
+  "bounds_stress": {
+    "long_host": {
+      "compact_json_bytes": 1912,
+      "failure_groups_seen": 100,
+      "groups_dropped": 96,
+      "groups_retained": 4,
+      "invocations": 300,
+      "omitted_failure_count": 288,
+      "retained_failure_count": 12
+    },
+    "normal_host": {
+      "compact_json_bytes": 1576,
+      "failure_groups_seen": 100,
+      "groups_dropped": 92,
+      "groups_retained": 8,
+      "invocations": 300,
+      "omitted_failure_count": 276,
+      "retained_failure_count": 24
+    }
+  },
+  "checks": {
+    "coverage_percent": 92,
+    "focused": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 190
+    },
+    "format": "603 files left unchanged",
+    "full": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 6186
+    },
+    "full_time": {
+      "baseline": "943ce8971a6861ef0824b5730f8f42132dcb3fd9",
+      "coverage": true,
+      "started_monotonic": 263010.365148541,
+      "started_unix": 1793211645.1435509,
+      "wall_seconds": 214.5424456250039,
+      "workers": 4
+    },
+    "local_http": 25,
+    "mypy": "Success: no issues found in 549 source files",
+    "new_case_layers": {
+      "tests.scenario.test_document_download_diagnostics": 6,
+      "tests.unit.test_document_downloads": 33
+    },
+    "ruff": "All checks passed!",
+    "workers": 4
+  },
+  "evidence": {
+    "out/corpus/j142/accept.py": {
+      "bytes": 7711,
+      "sha256": "bada00064496d26d667c94447daf8b7b950de66e1af321b848bc42fae337c3af"
+    },
+    "out/corpus/j142/agent/artifacts.json": {
+      "bytes": 2270,
+      "sha256": "5629ac29c3d308c7374cb6b8204f45d4d3ad23b4e2c2e90f8446bdb2dc0c8b81"
+    },
+    "out/corpus/j142/agent/bounds-stress.json": {
+      "bytes": 463,
+      "sha256": "b3121e326557d7f7597f96f373bbc90008452f6438a78fcd719dbb9072263ebd"
+    },
+    "out/corpus/j142/agent/focused.xml": {
+      "bytes": 27391,
+      "sha256": "c4f43737833aa29501e5277f24d9040703524efad1f6cd6e896ae487af22c74b"
+    },
+    "out/corpus/j142/agent/frozen.json": {
+      "bytes": 2153,
+      "sha256": "fa7afefe675ef8fb42ec0d323007f0ddceff68de06d6b666891582f66c1482ec"
+    },
+    "out/corpus/j142/agent/j142.patch": {
+      "bytes": 49368,
+      "sha256": "633ea13fb43a250302c5704b44c6f73642da1306e1302a1c074edb644aa39683"
+    },
+    "out/corpus/j142/agent/replay-acceptance.json": {
+      "bytes": 1436,
+      "sha256": "678e900f335bb3c5e2885d3aad7ac3f78594ca5e5eff93e5ec8550c445b77631"
+    },
+    "out/corpus/j142/agent/size.json": {
+      "bytes": 1626,
+      "sha256": "ae3f85f710a35f0c779e1db36e3d049ffaa2a376644bd03cf98b93aabc6c9de4"
+    },
+    "out/corpus/j142/docs.log": {
+      "bytes": 266,
+      "sha256": "29bf1af6343c75f745f04dbd6aa0beb26974107823924f813b9db6b26d1caef1"
+    },
+    "out/corpus/j142/focused.xml": {
+      "bytes": 27391,
+      "sha256": "1bbe22b56cf7d6203a9fbc0358bf24fa689eb5e9ac03b2a6771feee0c044fd7c"
+    },
+    "out/corpus/j142/format.log": {
+      "bytes": 25,
+      "sha256": "615f0b2d2f2a9e987ca872f0f04d29daccbaae7bd9a5e3cd57364cdfd5eb3e41"
+    },
+    "out/corpus/j142/frozen-source.json": {
+      "bytes": 66351,
+      "sha256": "78590e243658ce47ab657d3aca4db5e1090329f09140bd53ffdbcd63d585d053"
+    },
+    "out/corpus/j142/full-time.json": {
+      "bytes": 199,
+      "sha256": "e3b6458abe0ffccca7cc0d37d09aff7e294c7fd5d1518519356d857c2420b629"
+    },
+    "out/corpus/j142/full.xml": {
+      "bytes": 996347,
+      "sha256": "df16bc6aa125e6fabd2f0aa1cfef6da1e5ce2febb8cb4f611321363b05017fb5"
+    },
+    "out/corpus/j142/local-http.log": {
+      "bytes": 179,
+      "sha256": "bf6a31f975686e748cba727a532df8af68cc8d4693414c3ba9ff619bb1896763"
+    },
+    "out/corpus/j142/mypy.log": {
+      "bytes": 45,
+      "sha256": "d7cf236024ea223a14a651d18332097d99485aa326e2f5bfac90cff536e9ed3d"
+    },
+    "out/corpus/j142/primary/acceptance.json": {
+      "bytes": 8727,
+      "sha256": "3d68c75142f9f75add86c5a28e6eb06bf92cc7e2923a3fe49cea0a025977cee1"
+    },
+    "out/corpus/j142/primary/artifacts.json": {
+      "bytes": 34787,
+      "sha256": "7c84ac2fadf558fb0be1d2246855f40238969e7a38c2cf0c94f13b9be480464c"
+    },
+    "out/corpus/j142/primary/baseline-compatibility.json": {
+      "bytes": 13737,
+      "sha256": "642d94fcefff861224c9d382515c79b40d1ff38b575fc94532717af6d91b0848"
+    },
+    "out/corpus/j142/primary/compare_replay.py": {
+      "bytes": 2311,
+      "sha256": "c75fcdf73ffc167f4b0c837add9dabf76509b773478cf3940f8cf30f489ca33b"
+    },
+    "out/corpus/j142/primary/native/native-parity.json": {
+      "bytes": 64878,
+      "sha256": "751c26cdadf63dfe5eeddd074c654d71c212f4183eede9becbbb32c429055e2b"
+    },
+    "out/corpus/j142/primary/replay-acceptance.json": {
+      "bytes": 1436,
+      "sha256": "678e900f335bb3c5e2885d3aad7ac3f78594ca5e5eff93e5ec8550c445b77631"
+    },
+    "out/corpus/j142/primary/replay.py": {
+      "bytes": 5944,
+      "sha256": "facc8384e20800dd18dddc6555d4b813d1086b20bd98c8df25a1c2fb5b095c05"
+    },
+    "out/corpus/j142/primary/size_probe.py": {
+      "bytes": 3088,
+      "sha256": "d41313b0d02dd3ee6f54ba4185aa904ebfe9ac2aaec1d3681d9d7fcbdb4d645c"
+    },
+    "out/corpus/j142/primary/source-freeze.json": {
+      "bytes": 66267,
+      "sha256": "5873c84c72e0237f922288e08d0fa15865d2e9f46ef29686083157be155cee77"
+    },
+    "out/corpus/j142/ruff.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    }
+  },
+  "historical_reports": {
+    "input_sha256": "eb1adcc675d9b5ed9afa77014ce091deb7470015428f29dec4bd51041cbceda0",
+    "input_unchanged": true,
+    "network_and_paid_calls": 0,
+    "new_diagnostics_remain_unknown_and_omitted": true,
+    "non_null_reports_parsed": 385,
+    "null_reports_untouched": 1,
+    "run_rows": 386
+  },
+  "independent_review": {
+    "actionable_findings": 0,
+    "scope_audit": "DailyPipeline and inbox file commands covered; scan/reprefilter and standalone file consumers lack finalization"
+  },
+  "integrated_baseline_release": {
+    "bytes": 1619,
+    "path": "docs/assets/audits/2026-10-28-corpus-release/release.json",
+    "sha256": "f01bd0e1089d3f19700055480a3a8a71c80d71a9efc50a2780af3cd673104360"
+  },
+  "limits": {
+    "adapter_http_retries_measured": false,
+    "compact_utf8_bytes": 2048,
+    "max_failure_examples": 8,
+    "report_field_envelope_bytes": 33,
+    "unit": "text_loader_download_invocation"
+  },
+  "native": {
+    "all_other_report_and_sql_bytes_exact": true,
+    "baseline": "out/corpus/j140/native/candidate",
+    "baseline_reused_after_closure_proof": true,
+    "cases": 168,
+    "groups": {
+      "admission": 64,
+      "explanation": 16,
+      "handoff": 24,
+      "normal": 12,
+      "primary": 36,
+      "reuse": 16
+    },
+    "gzip_added_bytes_max": 164,
+    "gzip_added_bytes_sum": 19250,
+    "gzip_compresslevel": 9,
+    "gzip_mtime": 0,
+    "head": "943ce8971a6861ef0824b5730f8f42132dcb3fd9",
+    "limits": [
+      "Reused J140 candidate native baseline only after exact pre-J142 runtime/config/helper/observer and non-document fixture proof.",
+      "Makefile and corpus_check README differ outside the imported/executed native closure; explicit uv pytest -n0 used.",
+      "Only validated nonempty RunReport diagnostics and phase_seconds are normalized; no other model or SQL field is removed.",
+      "Fixture-based native cases; no production processing, raw archive or HTTP-wire ledger claim."
+    ],
+    "max_diagnostic_payload_bytes": 283,
+    "measured": {
+      "derived_run_hashes_validated": 24,
+      "profile_fields": 64,
+      "profile_payload_bytes": 18112,
+      "sql_fields": 180,
+      "sql_payload_bytes": 50940
+    },
+    "network_attempts": 0,
+    "only_validated_run_diagnostics_and_phase_seconds_normalized": true,
+    "paid_calls": 0,
+    "phase_timing_differences": [],
+    "schema": 59,
+    "source_freeze_and_old_evidence_unchanged": true,
+    "sql_added_bytes_sum": 56880,
+    "status": "passed",
+    "tables": 38,
+    "v1_metrics_provider_requests_model_inputs_messages_targets_attempts_and_order_exact": true
+  },
+  "native_baseline_proof": {
+    "excluded_non_runtime_changes": [
+      "Makefile",
+      "tests/fixtures/corpus_check/README.md"
+    ],
+    "native_import_closure": {
+      "admission": {
+        "new_lexinform_modules": [
+          "lexinform.document_downloads"
+        ],
+        "test_modules_exact": true
+      },
+      "explanation": {
+        "new_lexinform_modules": [
+          "lexinform.document_downloads"
+        ],
+        "test_modules_exact": true
+      },
+      "handoff": {
+        "new_lexinform_modules": [
+          "lexinform.document_downloads"
+        ],
+        "test_modules_exact": true
+      },
+      "normal": {
+        "new_lexinform_modules": [
+          "lexinform.document_downloads"
+        ],
+        "test_modules_exact": true
+      },
+      "primary": {
+        "new_lexinform_modules": [
+          "lexinform.document_downloads"
+        ],
+        "test_modules_exact": true
+      },
+      "reuse": {
+        "new_lexinform_modules": [
+          "lexinform.document_downloads"
+        ],
+        "test_modules_exact": true
+      }
+    },
+    "proof_sha256": "642d94fcefff861224c9d382515c79b40d1ff38b575fc94532717af6d91b0848",
+    "reused": true
+  },
+  "paired_downloads": {
+    "adapters": [
+      "sejm",
+      "rcl",
+      "orka"
+    ],
+    "all_exception_type_message_cause_hashes_and_mock_request_order_exact": true,
+    "all_legacy_loaded_text_selection_and_complete_receipt_hashes_exact": true,
+    "all_v1_metrics_json_bytes_exact": true,
+    "cases": 51,
+    "corpus_download_replays": 6,
+    "corpus_pdf_files": 2,
+    "limits": [
+      "Two indexed corpus PDFs, six adapter deliveries; not a broad extraction-quality audit.",
+      "Other cases are explicit mock status/WAF/transport/stream/limit/parser/cache/routing/budget fixtures.",
+      "Diagnostics are downloader-invocation outcomes, not adapter HTTP-attempt counts.",
+      "Only metadata/hashes emitted; no raw bodies, URLs or exception messages."
+    ],
+    "max_observed_diagnostic_json_bytes": 650,
+    "network_attempts": 0,
+    "paid_calls": 0,
+    "pins": {
+      "/Users/sobaleu/projects/lexinform-corpus/INDEX.json": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+      "/Users/sobaleu/projects/lexinform-corpus/sejm/term10/autopoprawki/files/1437-A__1437-A.pdf": "eed3af166964362207014998325ba8d6748016f5ac116b651701fc02e765001e",
+      "/Users/sobaleu/projects/lexinform-corpus/sejm/term10/autopoprawki/files/672-A__672-A.pdf": "8621f66f04bd63cf1a3ec4ec5ebb77abae2e90a22abf20dff518e38eb9c79394"
+    },
+    "sources_and_pins_unchanged": true,
+    "status": "passed",
+    "v1_model_ast_exact": {
+      "DocumentReadMetrics": true,
+      "HostDocumentReads": true
+    }
+  },
+  "plan_status": {
+    "DA2.4": "partial, pipeline diagnostics complete",
+    "applicable_partial_open": 39,
+    "done": 29,
+    "explicit_not_applicable": 6,
+    "tasks": 74
+  },
+  "privacy": {
+    "only_configured_safe_hosts": true,
+    "raw_urls_bodies_messages_partial_SHA_retained": false,
+    "unknown_statuses_and_old_attempts_inferred": false
+  },
+  "remaining_DA2_4_callers": [
+    "production scan and reprefilter, including workflow backfill",
+    "standalone analyze/explain/amendments",
+    "RCL lookup/show and other lookup consumers"
+  ],
+  "retention": "Existing runs_retention_days, default90/minimum7; no new rows, table, backfill or raw/backend policy. Cap applies per report, not whole state.",
+  "schema_tables_migrations_dependencies_workflows_unchanged": true,
+  "schema_version": 1,
+  "scope": "Bounded DailyPipeline TextLoader invocation diagnostics; standalone/direct consumers remain unmeasured",
+  "source_freeze_files": 605,
+  "source_sha256": {
+    "src/lexinform/adapters/orka.py": "8a5c188f3113960cdebd833ae93578eb04861e040d020d7da9eb2dac9308d067",
+    "src/lexinform/adapters/rcl_html.py": "177309f4a4b5288785bc9ef48c8dc38f5c23a23d14328fbeb66cb8b4a1f18edd",
+    "src/lexinform/adapters/sejm_api.py": "4a95b71943f8908710ac90e357dbb3ba7e32e8c574a29500368d65cc5ea152ad",
+    "src/lexinform/container.py": "143dc449f3746bc72c8bdb7523d18bef16ad599946a6a89e375378bea58b28d8",
+    "src/lexinform/document_downloads.py": "cb5a4679b4349821a946f46b8d5120674a5231c88ea1be30f06a868b82b61020",
+    "src/lexinform/errors.py": "f69bdf23cde3f7830bc8c7836f9c513663cc46fdc7c105caace23bef850da65a",
+    "src/lexinform/models/__init__.py": "9cdb643752afe8655f12e5370a94f931fb2f0b676eaae6ebffbcf6a8bd2a8724",
+    "src/lexinform/models/document_reads.py": "523151b425c8f356a0815c9a21cc9a7587d9563ff5996f01e8b1ea9be8b5ce5c",
+    "src/lexinform/models/report.py": "170f401ca727af7fd4c8db22b3509df2c03ddf490bc9497287c5ee2e98b002ba",
+    "src/lexinform/ports.py": "cb64298d76d19bc322ac438331d4ac0242916295ac27e48dba6a636348de85b4",
+    "src/lexinform/services/documents.py": "9957d5345370964aaf766b6a1365971023e65fb3131663f3dbe3a266ca666ec3",
+    "src/lexinform/services/pipeline.py": "bc68ff023c31bfe76bcbfa388cf683ff94a651520b1c50e5e5010901a8aa3a32",
+    "tests/scenario/test_document_download_diagnostics.py": "c7d568b8fab1f706c949f7ccd757784ce58edf05aefbfc32d77443130e4cd305",
+    "tests/unit/test_document_downloads.py": "3b4e1f7fc9e2cad10fb961ab30d47ab7a2dcdd22b931ac5b90213c2b927201a3"
+  },
+  "stage": "J142",
+  "storage_counterfactual": {
+    "cases": {
+      "complete": {
+        "candidate_gzip_bytes": 4051038,
+        "candidate_sql_bytes": 20097006,
+        "control_gzip_bytes": 4049075,
+        "control_sql_bytes": 19975346,
+        "hypothetical_retained_reports": 385,
+        "max_compact_diagnostic_bytes": 283,
+        "max_groups": 0,
+        "sql_delta": 121660
+      },
+      "eight_unique_failures": {
+        "candidate_gzip_bytes": 4184392,
+        "candidate_sql_bytes": 20592501,
+        "control_gzip_bytes": 4049075,
+        "control_sql_bytes": 19975346,
+        "hypothetical_retained_reports": 385,
+        "max_compact_diagnostic_bytes": 1570,
+        "max_groups": 8,
+        "sql_delta": 617155
+      },
+      "one_failure": {
+        "candidate_gzip_bytes": 4068617,
+        "candidate_sql_bytes": 20158606,
+        "control_gzip_bytes": 4049075,
+        "control_sql_bytes": 19975346,
+        "hypothetical_retained_reports": 385,
+        "max_compact_diagnostic_bytes": 443,
+        "max_groups": 1,
+        "sql_delta": 183260
+      }
+    },
+    "compresslevel": 9,
+    "limits": [
+      "Only in-memory dummy diagnostic injection for storage measurement; no old attempts are inferred or backfilled.",
+      "Copied non-null retained report slots, varied dummy URL hashes across rows; null reports remain untouched; not a forecast of failure frequency.",
+      "The 2048-byte compact aggregate cap plus its RunReport field envelope is per report, not a global storage bound.",
+      "No SQL table, migration, backend, raw body archive, source write, network or paid call."
+    ],
+    "mtime": 0,
+    "pin_unchanged": true,
+    "source_sha256": "eb1adcc675d9b5ed9afa77014ce091deb7470015428f29dec4bd51041cbceda0"
+  },
+  "v1_model_AST_and_JSON_exact": true
+}

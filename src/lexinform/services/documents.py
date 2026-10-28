@@ -35,6 +35,7 @@ from lexinform.document_composition import (
     supporting_failure,
     supporting_part,
 )
+from lexinform.document_downloads import DocumentDownloadRecorder, download_failure
 from lexinform.document_selection import DOCUMENT_SELECTION_POLICY_VERSION
 from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
 from lexinform.models import (
@@ -42,6 +43,7 @@ from lexinform.models import (
     ArtifactReadIdentity,
     CandidateDisposition,
     CandidateDispositionTrace,
+    DocumentDownloadDiagnostics,
     DocumentPart,
     DocumentReadMetrics,
     DocumentSelection,
@@ -98,6 +100,15 @@ class TextLoader:
         self._known_bodies: dict[str, int] = {}
         self._known_reads: dict[str, ArtifactReadIdentity] = {}
         self._extractions: dict[str, ExtractionResult] = {}
+        self._download_diagnostics = DocumentDownloadRecorder()
+
+    def reset_download_diagnostics(self) -> None:
+        with self._lock:
+            self._download_diagnostics.reset()
+
+    def read_download_diagnostics(self) -> DocumentDownloadDiagnostics | None:
+        with self._lock:
+            return self._download_diagnostics.snapshot()
 
     def extractions_for_selection(
         self, selection: DocumentSelection
@@ -147,6 +158,7 @@ class TextLoader:
             self._read_cache_hits = 0
             self._download_metrics.clear()
             self._seen_bodies.clear()
+            self._download_diagnostics.reset()
 
     def read_metrics(self) -> DocumentReadMetrics:
         with self._lock:
@@ -179,6 +191,7 @@ class TextLoader:
         with self._lock:
             if url in self._cache:
                 self._read_cache_hits += 1
+                self._download_diagnostics.cache_hit()
                 return self._cache[url]
         loaded = self._fetch(url)
         with self._lock:
@@ -563,9 +576,18 @@ class TextLoader:
         return LoadedFile(text, pages=pages, sha256=digest, selection=selection)
 
     def _download(self, url: str) -> bytes | None:
-        host = urlparse(url).hostname or ""
+        with self._lock:
+            self._download_diagnostics.started()
+        try:
+            host = urlparse(url).hostname or ""
+        except ValueError:
+            with self._lock:
+                self._download_diagnostics.failure(url, None, "invalid_url", "invalid_url")
+            raise
         download = self._downloaders.get(host)
         if download is None:
+            with self._lock:
+                self._download_diagnostics.failure(url, None, "unknown_host", "unconfigured_host")
             raise ValueError(f"no downloader for host {host!r} ({url})")
         started = time.perf_counter()
         with self._lock:
@@ -575,16 +597,22 @@ class TextLoader:
         except AttachmentTooLargeError as exc:
             with self._lock:
                 self._download_metrics[host]["over_limit"] += 1
+                self._download_diagnostics.failure(
+                    url, host, "over_limit", "byte_limit", limit_bytes=exc.limit
+                )
             log.warning("%s; skipping text", exc)
             return None
-        except Exception:
+        except Exception as exc:
+            outcome, reason, status = download_failure(exc)
             with self._lock:
                 self._download_metrics[host]["failed"] += 1
+                self._download_diagnostics.failure(url, host, outcome, reason, status_code=status)
             raise
         digest = hashlib.sha256(data).hexdigest()
         read = ArtifactReadIdentity(sha256=digest, byte_size=len(data), requested_url=url)
         with self._lock:
             self._known_reads.setdefault(read.read_id, read)
+            self._download_diagnostics.completed()
             self._download_metrics[host]["completed"] += 1
             self._download_metrics[host]["body_bytes"] += len(data)
             self._seen_bodies.setdefault(digest, len(data))

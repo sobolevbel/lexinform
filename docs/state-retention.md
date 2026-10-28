@@ -308,6 +308,18 @@ bytes and cross-run distinct storage cannot be reconstructed from these counters
 [J097](plans/2026-10-22-document-architecture-progress.md#j097) and the
 [storage profile](reviews/2026-10-27-storage-profile.md#наблюдение-будущих-чтений).
 
+Pipeline reports may also retain versioned `document_download_diagnostics`, measured per
+TextLoader download invocation. Cache hits, unknown routing and known pre-send rejection remain
+separate; adapter-internal HTTP retries are unmeasured. Exact outcome/omission counts accompany
+at most eight deterministic grouped failure examples. The compact UTF-8 object is capped at
+2 KiB, plus its report-field envelope. Examples contain only URL SHA, configured safe host,
+fixed reasons, known status/limit and count; bodies, raw URLs, messages and partial-body SHA are
+absent. Workers update locked memory; the pipeline caller snapshots it in the existing final
+report transaction. Empty/unmeasured reports omit the field, with no legacy backfill or new rows.
+The existing run retention applies. Standalone scan/reprefilter, direct CLI and RCL lookup
+consumers still need their own durable finalization; this is not a complete HTTP ledger. See
+[J142](plans/2026-10-22-document-architecture-progress.md#j142).
+
 Schema 53 adds complete-body SHA/size/first-recording metadata and normalized selection-part refs.
 The reader stage creates empty tables, without production capture or legacy backfill. A metadata
 row is neither retained bytes nor a GC pin; the chosen storage profile and any required pending

@@ -42,6 +42,7 @@ from lexinform.models import (
     DeliveryResolution,
     Digest,
     DigestPart,
+    DocumentDownloadDiagnostics,
     DocumentEdition,
     DocumentExtraction,
     DocumentReadMetrics,
@@ -124,6 +125,12 @@ class DocumentReadMonitor(Protocol):
     def reset_read_metrics(self) -> None: ...
 
     def read_metrics(self) -> DocumentReadMetrics: ...
+
+
+class DocumentDownloadMonitor(Protocol):
+    def reset_download_diagnostics(self) -> None: ...
+
+    def read_download_diagnostics(self) -> DocumentDownloadDiagnostics | None: ...
 
 
 class DocumentArtifactObserver(Protocol):

@@ -6947,7 +6947,7 @@ d7d0ab30e800→ef8d9901643a, health после45s и timer enabled.
 <a id="j141"></a>
 ### J141. Run pinned corpus profiles through the shared registry
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**.
+Статус: **выпущен и проверен**.
 Baseline `ef8d9901643a81afc636f19e0554ee880e246851`.
 Opt-in `make corpus-check CORPUS_SUITE=release` сводит существующие offline replays в фиксированную
 матрицу16 jobs/4 profiles. Strict plan закрепляет INDEX, input artifacts, обязательные режимы
@@ -6996,3 +6996,55 @@ DA0.5 закрыта по tooling contract; план74tasks/29done/6explicitN/A/
 reviewed patch, full/targeted XML, sealed child manifests, plans, preflight и input/code hashes.
 Исходные подробные результаты и code snapshots остаются в immutable sidecars; JSON asset хранит
 агрегаты и refs, без копии corpus bodies или повторной полной input map.
+Release943ce897 подтверждён CI40743085289 и deploy40743661189: фактический relay transition
+ef8d9901643a→943ce8971a68, health после45s и timer enabled.
+[Filtered proof](../assets/audits/2026-10-28-corpus-release/release.json) сохранён отдельно.
+
+<a id="j142"></a>
+### J142. Retain bounded pipeline download diagnostics
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**.
+Baseline `943ce8971a6861ef0824b5730f8f42132dcb3fd9`.
+Optional versioned RunReport field измеряет TextLoader download invocations. Cache hits,
+invalid/unknown routing и known pre-send budget rejection различаются; adapter-internal HTTP
+retries не объявляются отдельными wire attempts. Старые document_reads v1 classes/JSON exact.
+Shared typed error details сохраняют прежние exception classes/messages/chains и retry/outage
+budgets; services не ветвятся по конкретному adapter. Outage не расходует bill attempts.
+
+Фиксированные caps:8 grouped failure examples и2048 compact UTF-8 bytes. Exact outcome totals
+и omitted failure counts сохраняются при deterministic eviction/size trimming. В examples есть
+только URL SHA, configured safe host, fixed reason/outcome, known status/limit и count.
+Raw URLs, messages, bodies, partial-body SHA и выдуманных timestamps нет. Полные artifact read
+receipts и selection/model inputs не меняются. Workers обновляют locked memory, pipeline caller
+сохраняет snapshot в прежнем finally/finish_run transaction. Empty/unmeasured field omitted.
+Новой схемы/таблицы, backfill, retention policy, raw/backend store или settings нет.
+
+Independent review: actionable findings0. Integrated190 focused и25 local HTTP checks прошли.
+Full6186 tests/0fail-error-skip с coverage92%, wall214.542s/4workers; mypy549, Ruff,
+format603 unchanged. Из39 новых cases33 unit проверяют accounting/cap/privacy/error contracts,
+6 scenario — pipeline caller finalization, reset/workers и dry-run rollback.
+
+Paired51 download/error cases на трёх adapters:2 indexed corpus PDFs/6 real-body deliveries
+и status/WAF/transport/stream/limit/cache/routing/budget/parser fixtures. V1 JSON, text/selection/
+complete receipts, exception/message/cause hashes и ordered requests совпадают с baseline.
+Native168 проверяет38 таблиц: только validated diagnostics и phase_seconds допускаются к
+normalization; остальные reports/SQL bytes, metrics, model/provider inputs, messages, targets,
+attempts/order exact.180 SQL reports/64 profile fields проверены; max payload283B, суммарный
+delta fixture dumps56,880SQL/19,250gzipB, max164gzipB/case. Это fixture measurements, не daily forecast.
+
+Cap stress300 failures/100 groups: normal host8 retained groups/24 failures и276 omitted,
+1576B;253-character host4/12 и288 omitted,1912B. На385 copied non-null report slots hypothetical
+completed-only: +121,660SQL/+1,963gzipB; one unique failure/slot: +183,260/+19,542B;
+eight failures/slot: +617,155/+135,317B. Это counterfactual без backfill, не global size bound.
+Старые385 reports читаются с unknown/omitted новым полем; null slot остаётся null.
+
+Scope audit оставляет DA2.4 partial: production scan/reprefilter обходят pipeline.run(), как и
+standalone analyze/explain/amendments и RCL lookup/show с чтением consultation letters.
+Здесь failed/limited observations ещё могут остаться только в памяти/logs; subsequent commands
+process их не восстанавливает. Pipeline inbox команды покрыты. Direct consultation-results HTML
+catalog не расширяет этот work item до общего HTTP ledger. Нужен отдельный общий lifecycle для
+остальных file consumers; фиктивные Bill owners и новые per-download rows не добавлены.
+[Acceptance asset](../assets/audits/2026-10-28-download-diagnostics/validation.json) связывает
+source freeze605 files, full/targeted/HTTP checks, paired/native replay и storage/stress evidence.
+Raw/report details остаются в исходных QA artifacts; asset содержит агрегаты и SHA refs.
+План74tasks/29done/6explicitN/A/39applicable partial-open: scope gap отмечен в DA2.4.

@@ -6,7 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from lexinform.models.analysis import TokenUsage
-from lexinform.models.document_reads import DocumentReadMetrics
+from lexinform.models.document_reads import DocumentDownloadDiagnostics, DocumentReadMetrics
 from lexinform.models.enums import RunMode
 
 
@@ -177,6 +177,9 @@ class RunReport(BaseModel):
     llm_calls: list[LlmCall] = Field(default_factory=list)
     phase_seconds: dict[str, float] = Field(default_factory=dict)
     document_reads: DocumentReadMetrics | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    document_download_diagnostics: DocumentDownloadDiagnostics | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
 

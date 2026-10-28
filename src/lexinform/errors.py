@@ -5,8 +5,31 @@ rejecting us as a whole. Services treat it as phase-fatal: stop the current phas
 burn per-bill retry attempts, report a clear message. Anything else is a per-bill problem.
 """
 
+from dataclasses import dataclass
+from typing import Literal, Self
 
-class ServiceUnavailableError(RuntimeError):
+DownloadFailureReason = Literal[
+    "http_status", "transport_error", "rejected_response", "failure_budget"
+]
+
+
+@dataclass(frozen=True)
+class DownloadFailureDetails:
+    reason: DownloadFailureReason
+    status_code: int | None = None
+
+
+class DownloadError(RuntimeError):
+    download_failure: DownloadFailureDetails | None = None
+
+    def with_download_details(
+        self, reason: DownloadFailureReason, *, status_code: int | None = None
+    ) -> Self:
+        self.download_failure = DownloadFailureDetails(reason, status_code)
+        return self
+
+
+class ServiceUnavailableError(DownloadError):
     system: str = "external service"
 
     def describe(self) -> str:
@@ -41,7 +64,7 @@ class SenateUnavailableError(ServiceUnavailableError):
     system = "senat.gov.pl"
 
 
-class OrkaUnreachableError(RuntimeError):
+class OrkaUnreachableError(DownloadError):
     """orka.sejm.gov.pl did not hand over the file — deliberately a per-bill problem.
 
     Imperva judges a client by its address as well as its identity and can start refusing us with
@@ -56,6 +79,9 @@ class OrkaUnreachableError(RuntimeError):
     def __init__(self, message: str, *, status_code: int | None = None) -> None:
         super().__init__(message)
         self.status_code = status_code
+        self.download_failure = (
+            DownloadFailureDetails("http_status", status_code) if status_code is not None else None
+        )
 
     @property
     def file_is_missing(self) -> bool:

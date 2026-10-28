@@ -23,6 +23,7 @@ from lexinform.ports import (
     BillRepository,
     Clock,
     DocumentArtifactObserver,
+    DocumentDownloadMonitor,
     DocumentFileReadObserver,
     DocumentReadMonitor,
     RunNotifier,
@@ -101,11 +102,13 @@ class DailyPipeline:
         pre_print: bool = True,
         full_track_weekday: int | None = 0,
         document_reads: DocumentReadMonitor | None = None,
+        document_downloads: DocumentDownloadMonitor | None = None,
         document_artifacts: DocumentArtifactObserver | None = None,
         document_file_reads: DocumentFileReadObserver | None = None,
     ) -> None:
         self._repo = repo
         self._document_reads = document_reads
+        self._document_downloads = document_downloads
         self._document_artifacts = document_artifacts
         self._document_file_reads = document_file_reads
         self._discovery = discovery
@@ -161,6 +164,8 @@ class DailyPipeline:
         run_id: int | None = None
         if self._document_reads is not None:
             self._document_reads.reset_read_metrics()
+        if self._document_downloads is not None:
+            self._document_downloads.reset_download_diagnostics()
         self._analysis.start_run(dry_run=opts.dry_run)
         self._publishing.start_run()
         if self._digest is not None:
@@ -193,6 +198,10 @@ class DailyPipeline:
             self._phase(report, "batch status", lambda: self._batch_status(report))
             if self._document_reads is not None:
                 report.document_reads = self._document_reads.read_metrics()
+            if self._document_downloads is not None:
+                report.document_download_diagnostics = (
+                    self._document_downloads.read_download_diagnostics()
+                )
             # Every phase that asks the model goes through one `AnalysisService`, so this is the
             # whole run's spend, however it was reached, and it is recorded before the report is
             # stored — a run that fell over still says what it had spent by then.

@@ -23,7 +23,7 @@ import httpx2 as httpx
 from lexinform.adapters.browser_identity import BROWSER_USER_AGENT
 from lexinform.adapters.retries import backoff_delay
 from lexinform.adapters.streams import read_bounded
-from lexinform.errors import SejmApiUnavailableError
+from lexinform.errors import DownloadError, SejmApiUnavailableError
 from lexinform.models import (
     BILL_DOCUMENT_TYPE,
     ActInfo,
@@ -66,7 +66,7 @@ def from_sejm_local(value: datetime) -> datetime:
     return value.replace(tzinfo=SEJM_TZ).astimezone(UTC)
 
 
-class SejmApiError(RuntimeError):
+class SejmApiError(DownloadError):
     """A 4xx answer for one request (missing print, bad number): a per-item problem."""
 
 
@@ -332,7 +332,7 @@ class SejmApiClient:
                 if self._failed_requests.get(host, 0) >= self.MAX_FAILED_REQUESTS:
                     raise SejmApiUnavailableError(
                         f"{host}: request failure budget exhausted; retry on the next run"
-                    )
+                    ).with_download_details("failure_budget")
             attempt += 1
             try:
                 request = self._client.build_request(method, url, params=params, headers=headers)
@@ -342,7 +342,7 @@ class SejmApiClient:
                     self._record_failure(host)
                     raise SejmApiUnavailableError(
                         f"{method} {url} failed after {attempt} attempts: {exc}"
-                    ) from exc
+                    ).with_download_details("transport_error") from exc
                 self._wait(attempt, f"{method} {url}: {exc}")
                 continue
             if response.status_code >= 500 or response.status_code == 429:
@@ -353,12 +353,14 @@ class SejmApiClient:
                 self._record_failure(host)
                 raise SejmApiUnavailableError(
                     f"{method} {url}: HTTP {response.status_code} after {attempt} attempts"
-                )
+                ).with_download_details("http_status", status_code=response.status_code)
             if response.status_code == 404 and allow_404:
                 return response
             if response.status_code >= 400:
                 response.close()
-                raise SejmApiError(f"{method} {url}: HTTP {response.status_code}")
+                raise SejmApiError(
+                    f"{method} {url}: HTTP {response.status_code}"
+                ).with_download_details("http_status", status_code=response.status_code)
             return response
 
     def _record_failure(self, host: str) -> None:

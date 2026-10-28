@@ -155,6 +155,12 @@ from lexinform.models.document_editions import (
 )
 from lexinform.models.document_history import DocumentSelectionRecord as DocumentSelectionRecord
 from lexinform.models.document_history import SourceObservation as SourceObservation
+from lexinform.models.document_reads import (
+    DocumentDownloadDiagnostics as DocumentDownloadDiagnostics,
+)
+from lexinform.models.document_reads import (
+    DocumentDownloadFailureGroup as DocumentDownloadFailureGroup,
+)
 from lexinform.models.document_reads import DocumentReadMetrics as DocumentReadMetrics
 from lexinform.models.document_reads import HostDocumentReads as HostDocumentReads
 from lexinform.models.documents import (

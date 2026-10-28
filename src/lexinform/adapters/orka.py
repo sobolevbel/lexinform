@@ -75,13 +75,15 @@ class OrkaClient:
                 if attempt > self._max_retries:
                     raise OrkaUnreachableError(
                         f"GET {url} failed after {attempt} attempt(s): {exc}"
-                    ) from exc
+                    ).with_download_details("transport_error") from exc
                 self._wait(attempt, f"GET {url}: {exc}")
                 continue
             status = response.status_code
             try:
                 if status == 404:
-                    raise OrkaUnreachableError(f"GET {url}: HTTP 404", status_code=404)
+                    raise OrkaUnreachableError(
+                        f"GET {url}: HTTP 404", status_code=404
+                    ).with_download_details("http_status", status_code=404)
                 if status >= 400:
                     refusal = f"HTTP {status} ({_waf_marks(response)})"
                 else:
@@ -97,6 +99,8 @@ class OrkaClient:
                 continue
             raise OrkaUnreachableError(
                 f"GET {url}: {refusal} after {attempt} attempts", status_code=status
+            ).with_download_details(
+                "http_status" if status >= 400 else "rejected_response", status_code=status
             )
 
     def close(self) -> None:

@@ -26,7 +26,7 @@ from bs4 import BeautifulSoup, Tag
 from lexinform.adapters.browser_identity import BROWSER_HEADERS
 from lexinform.adapters.retries import backoff_delay
 from lexinform.adapters.streams import read_bounded
-from lexinform.errors import RclUnavailableError
+from lexinform.errors import DownloadError, RclUnavailableError
 from lexinform.models import (
     RclDocument,
     RclFolder,
@@ -56,7 +56,7 @@ _PROJECT_ID = re.compile(r"/projekt/(\d+)")
 _LIST_TOTAL = re.compile(r"Lista projektów według wybranych kryteriów:\s*(\d+)")
 
 
-class RclPageError(RuntimeError):
+class RclPageError(DownloadError):
     """A page that does not look like what we expect (missing project, changed markup)."""
 
 
@@ -146,7 +146,9 @@ class RclClient:
         finally:
             response.close()
         if _is_rejected_html(body):
-            raise RclUnavailableError(f"GET {url}: request rejected by the WAF")
+            raise RclUnavailableError(
+                f"GET {url}: request rejected by the WAF"
+            ).with_download_details("rejected_response", status_code=response.status_code)
         return body
 
     def close(self) -> None:
@@ -191,7 +193,7 @@ class RclClient:
                 if attempt > retries:
                     raise self._down(
                         f"{method} {url} failed after {attempt} attempt(s): {exc}"
-                    ) from exc
+                    ).with_download_details("transport_error") from exc
                 self._wait(attempt, f"{method} {url}: {exc}")
                 continue
             if response.status_code >= 500 or response.status_code == 429:
@@ -201,13 +203,15 @@ class RclClient:
                     continue
                 raise self._down(
                     f"{method} {url}: HTTP {response.status_code} after {attempt} attempts"
-                )
+                ).with_download_details("http_status", status_code=response.status_code)
             self._unreachable_since = None
             if response.status_code == 404 and allow_404:
                 return response
             if response.status_code >= 400:
                 response.close()
-                raise RclPageError(f"{method} {url}: HTTP {response.status_code}")
+                raise RclPageError(
+                    f"{method} {url}: HTTP {response.status_code}"
+                ).with_download_details("http_status", status_code=response.status_code)
             return response
 
     def _down(self, reason: str) -> RclUnavailableError:

@@ -479,7 +479,7 @@ DA2.1 и описание текущего профиля обязательны
   Поля, по которым нужны uniqueness/ownership/GC, доступны SQL, а не спрятаны только в JSON.
   Неизменившееся содержимое наблюдений хранится один раз; отметка повторной проверки
   не требует очередной копии полного каталога/извлечения в dump.
-- [ ] DA2.4. **Условная raw-часть неприменима при текущем профиле; совместимый attempt/error metadata contract остаётся применимым и открытым. См. [J123](2026-10-22-document-architecture-progress.md#j123).** Для материалов, включённых в принятую политику, сохранять bounded response до
+- [ ] DA2.4. **Частично: [J142](2026-10-22-document-architecture-progress.md#j142), bounded attempt/error diagnostics для DailyPipeline; scan/reprefilter и standalone file consumers ещё требуют durable finalization. Условная raw-часть неприменима при текущем профиле ([J123](2026-10-22-document-architecture-progress.md#j123)); полного HTTP ledger не обещается.** Для материалов, включённых в принятую политику, сохранять bounded response до
   extraction; судьбу повреждённых/unsupported файлов определить отдельным сроком/лимитом.
   Для оборванного по лимиту скачивания хранить попытку и причину, а не SHA якобы полного файла.
   HTTP-200 rejection HTML остаётся outage источника, не успешным нормативным документом.
