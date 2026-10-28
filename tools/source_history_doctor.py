@@ -1,15 +1,19 @@
 """Check recorded source decisions and their immutable references without fetching documents."""
 
 import argparse
+import datetime as dt
 import sqlite3
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from lexinform.document_editions import candidate_edition
 from lexinform.models import (
     ArtifactMetadata,
+    DocumentEdition,
     DocumentSelectionRecord,
     SelectionArtifactReference,
+    SelectionEditionReference,
     SourceObservation,
 )
 from tools.artifact_metadata import (
@@ -23,6 +27,7 @@ from tools.sqlite_snapshot import open_snapshot
 
 _TABLES = {"document_selections", "source_observations"}
 _ARTIFACT_TABLES = {"artifacts", "selection_artifacts"}
+_EDITION_TABLES = {"document_editions", "selection_editions"}
 
 
 def audit(database: Path) -> dict[str, Any]:
@@ -53,6 +58,9 @@ def audit(database: Path) -> dict[str, Any]:
                 issue("artifact_metadata_table_unavailable", name)
         if schema >= 54 and "artifact_reads" not in tables:
             issue("artifact_read_table_unavailable", "artifact_reads")
+        if schema >= 57 or _EDITION_TABLES.intersection(tables):
+            for name in sorted(_EDITION_TABLES - tables):
+                issue("edition_metadata_table_unavailable", name)
         if "document_selections" in tables:
             for row in connection.execute(
                 "SELECT rowid AS audit_id, * FROM document_selections ORDER BY rowid"
@@ -171,20 +179,64 @@ def audit(database: Path) -> dict[str, Any]:
                     issue("artifact_read_body_unavailable", receipt.read_id)
                 elif parent.byte_size != receipt.byte_size:
                     issue("artifact_read_size_mismatch", receipt.read_id)
+        editions: dict[str, DocumentEdition] = {}
+        if "document_editions" in tables:
+            for row in connection.execute(
+                "SELECT rowid AS audit_id, * FROM document_editions ORDER BY rowid"
+            ):
+                counts["edition_rows"] += 1
+                ref = f"document_editions/{row['audit_id']}"
+                try:
+                    edition = DocumentEdition.model_validate_json(row["edition_json"])
+                except ValueError, TypeError:
+                    issue("invalid_document_edition", ref)
+                    continue
+                if (
+                    edition.edition_id != row["edition_id"]
+                    or edition.recorded_at.astimezone(dt.UTC).isoformat() != row["recorded_at"]
+                ):
+                    issue("edition_columns_mismatch", ref)
+                editions[row["edition_id"]] = edition
+        if "selection_editions" in tables:
+            for row in connection.execute(
+                "SELECT rowid AS audit_id, * FROM selection_editions ORDER BY rowid"
+            ):
+                counts["edition_link_rows"] += 1
+                ref = f"selection_editions/{row['audit_id']}"
+                try:
+                    reference = SelectionEditionReference.model_validate(
+                        {key: row[key] for key in ("selection_id", "edition_id")}
+                    )
+                except ValueError, TypeError:
+                    issue("invalid_selection_edition", ref)
+                    continue
+                selection = selections.get(reference.selection_id)
+                linked_edition = editions.get(reference.edition_id)
+                if selection is None or linked_edition is None:
+                    issue("edition_parent_unavailable", ref)
+                elif (
+                    candidate_edition(selection, recorded_at=linked_edition.recorded_at)
+                    != linked_edition
+                ):
+                    issue("edition_membership_mismatch", ref)
         if not snapshot.unchanged():
             issue("database_changed_during_audit", "database")
     counts["unreferenced_selection_rows"] = len(set(selections) - referenced)
     counts["unlinked_artifact_rows"] = len(set(artifacts) - linked_artifacts)
     counts["errors"] = len(findings)
-    observed = sum(
-        counts[name]
-        for name in (
-            "selection_rows",
-            "observation_rows",
-            "artifact_rows",
-            "artifact_link_rows",
-            "artifact_read_rows",
+    observed = (
+        sum(
+            counts[name]
+            for name in (
+                "selection_rows",
+                "observation_rows",
+                "artifact_rows",
+                "artifact_link_rows",
+                "artifact_read_rows",
+            )
         )
+        + counts.get("edition_rows", 0)
+        + counts.get("edition_link_rows", 0)
     )
     return {
         "version": 1,

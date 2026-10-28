@@ -1,0 +1,548 @@
+{
+  "baseline": "7287059ab1392374359fdb07ff6fedb8e7878cec",
+  "evidence": {
+    "out/corpus/j134/accept.py": {
+      "bytes": 4147,
+      "sha256": "a07c01fb97782801c8bd4f65644a72da409dc48ddf256f2827de3f6762a1a64e"
+    },
+    "out/corpus/j134/compare_defaults.py": {
+      "bytes": 5450,
+      "sha256": "bf6ad274609411d08b9e7426aaa24ff366ca9cc171734d06fe6fd0cee94a79e5"
+    },
+    "out/corpus/j134/compat-current.json": {
+      "bytes": 417,
+      "sha256": "f5c8c3c7986a30518c7a9067f4dae1ee24e4c4a8c81867770206ab512813d181"
+    },
+    "out/corpus/j134/compat-old56.json": {
+      "bytes": 431,
+      "sha256": "748df51f7560a2ae616b49fc6de0b0205807c1fba13dff78cd1c9ca7b15a7532"
+    },
+    "out/corpus/j134/compatibility.py": {
+      "bytes": 2116,
+      "sha256": "bca1f664903e33e4a6515d185f338db7f4b65b02c65f81be7d1c8375c537d477"
+    },
+    "out/corpus/j134/default-parity.json": {
+      "bytes": 814,
+      "sha256": "2c5c502ede322463afd57198141fd39e0e539f7ddb49413f47b69f2c18803e0a"
+    },
+    "out/corpus/j134/default_profiles.py": {
+      "bytes": 1176,
+      "sha256": "8cc0dfc36c772a26880d99ca2fa00c80e4c50ae3895d0e34e90f3a6226402b6c"
+    },
+    "out/corpus/j134/docs.log": {
+      "bytes": 266,
+      "sha256": "a6779afde5bfd8d8d754c5f804d4271d24fb885da3c221fb50591b4299e5f4c3"
+    },
+    "out/corpus/j134/focused.xml": {
+      "bytes": 99394,
+      "sha256": "9880453ad6f284aff29297de5f1560ad5dbd710d3f7694d092cc6ed9bbcf53b3"
+    },
+    "out/corpus/j134/format.log": {
+      "bytes": 25,
+      "sha256": "a464a6078c2c45ce1f14c62bddd46230c2281e8efccaa0bd69cda8c63489fbc2"
+    },
+    "out/corpus/j134/frozen-final.json": {
+      "bytes": 62523,
+      "sha256": "9bc2f024cf8d0914871521335f6a426cd65883bdd5b2385a95c8a91581ec541a"
+    },
+    "out/corpus/j134/full.xml": {
+      "bytes": 910476,
+      "sha256": "b84886e889108668c7339bbc5427b96dff036a9731a52b2619c823e55e6b4472"
+    },
+    "out/corpus/j134/independent/acceptance.json": {
+      "bytes": 6795,
+      "sha256": "5ec3f377269ec91da89a3db46b219ed5eb6e2302df168a7e56d6b0aa3b0723cd"
+    },
+    "out/corpus/j134/independent/raw-normative-acceptance.json": {
+      "bytes": 4510,
+      "sha256": "1f998bb0e80e395560810ddcdf4952bbdb566372ad7a6ec4c7e0e688764e114e"
+    },
+    "out/corpus/j134/integration-scope.json": {
+      "bytes": 1604,
+      "sha256": "c514e4e0e83256e3ddde2627bd7c1750116c5183d03d37e5e690e72dcc16db81"
+    },
+    "out/corpus/j134/metadata-fixtures/measurement.json": {
+      "bytes": 386,
+      "sha256": "c8bdd2460cf02474fecf50ab1880a9902205bc47a5d7bc35f3a0d66ec4e848d8"
+    },
+    "out/corpus/j134/metadata-fixtures/populated57.sql": {
+      "bytes": 18214,
+      "sha256": "1b3a24b5c749b7eac6352caea4dc6e61a1987c339f281a8438c2d2d099fef9f2"
+    },
+    "out/corpus/j134/mypy.log": {
+      "bytes": 45,
+      "sha256": "cf2f5ff583fd7ea14c7cbd4e9688a9383ceb81cb92299d7a74b4c9ae7310c952"
+    },
+    "out/corpus/j134/natural-current.json": {
+      "bytes": 4510,
+      "sha256": "2e40fc65238f0e24c3ff06ed4f8a32c16083c9bb40139c9062bc7d868b8d0f84"
+    },
+    "out/corpus/j134/natural-old56.json": {
+      "bytes": 4179,
+      "sha256": "54b727b45b735c629048d362c4d8537872260def4521055d0fe4d679f38b5a7e"
+    },
+    "out/corpus/j134/natural_state.py": {
+      "bytes": 3167,
+      "sha256": "9e880020985dff93cb44de8d57fdb26fc1c85aa26a0333cf9f0c35b5e6ff627a"
+    },
+    "out/corpus/j134/ruff.log": {
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    }
+  },
+  "exclusions": [
+    "Pure loose-file composition/fallback preserves behavior; this is not a new heuristic/admission acceptance.",
+    "Full candidate dispositions/provenance are not implemented: observed/rejected parts still use existing incomplete metadata/free-text paths.",
+    "Candidate Edition addresses exact recorded physical normative membership; representation_of/supersedes/adoption/legal completeness are not established.",
+    "RCL cached replay uses document-ID download stubs; their SHA is NOT a raw physical identity. These stubs are never used for the physical Edition qualification.",
+    "Missing1383 cached files, scans and absent source errors are shared explicit exclusions;85 controlled IO cases cover those branches but do not provide natural source-family acceptance.",
+    "Sejm width derives from11786 listing rows plus29 saved details; independent gateway/self-amendment enrichment outside saved metadata remains unmeasured.",
+    "No full physical extraction repeated: eight parser/selection modules match J132/commit0f5453e byte-for-byte; current-envJ132 all5365 physical evidence is reused.",
+    "Historical cache cores remain single-member; separate real two-/three-member source-contract evidence does not provide independent legal/adoption labels.",
+    "No physical archive, backend decision, legacy backfill or production processing.",
+    "Full candidate dispositions/provenance and proven semantic relations remain partial."
+  ],
+  "focused": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 490
+  },
+  "frozen_python_files": 569,
+  "full": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 5610
+  },
+  "independent_corpus": {
+    "IO_free_timings": {
+      "alternatives": {
+        "case": "12321500/11",
+        "chars": 1186,
+        "missing": 10,
+        "new_max_ms": 2.238708,
+        "new_median_ms": 2.085083,
+        "old_median_ms": 2.096042,
+        "relations": {
+          "alternatives": 9,
+          "amendment_urls": 0,
+          "extra_urls": 1,
+          "loose_total": 1,
+          "normative_urls": 0,
+          "required_urls": 0
+        },
+        "samples_each": 75
+      },
+      "loose_total": {
+        "case": "12294859/9",
+        "chars": 325495,
+        "missing": 0,
+        "new_max_ms": 10.326084,
+        "new_median_ms": 9.95675,
+        "old_median_ms": 10.004333,
+        "relations": {
+          "alternatives": 7,
+          "amendment_urls": 2,
+          "extra_urls": 2,
+          "loose_total": 5,
+          "normative_urls": 1,
+          "required_urls": 0
+        },
+        "samples_each": 75
+      }
+    },
+    "actionable_code_bugs_found": [],
+    "artifacts_sha256": {
+      "catalogue-baseline-v2.log": "e787a53e71cd09911a21d5a44f8d44efa7e5bbefcbdaa93d20dfe7e8b4d5fa5e",
+      "catalogue-baseline-worker.py": "5fec7d2e110d42c5f0ef560f4ea4c5046548cd4e88483106d11c2367b4f32be5",
+      "catalogue-baseline.json": "0274c2c3e3af1448590a023c55502a096556516a0afdf4054e7f4b203deef31a",
+      "catalogue-baseline.log": "ee9b125c5ea9d467c5760cdd47487cf59cf0772fb5458f93836dbec65837a3ea",
+      "catalogue-candidate.json": "dbf7a41217ef17828c85341e381f02f15f717f989bd6c38b2f0ba7dbe1275aa1",
+      "catalogue-candidate.log": "e787a53e71cd09911a21d5a44f8d44efa7e5bbefcbdaa93d20dfe7e8b4d5fa5e",
+      "catalogue.py": "40f3dec5a3a2283027c90446446e61a5e04fffa61fa22800b0ca9a076254dfe7",
+      "editions.json": "92e468c47e91c715861c56997c68c96659da4eb5fa1f5467ecdef68b9e5bab6f",
+      "editions.log": "09b54cb97b2dd258af090a05eecac80c0a57caaea657cba8062f085a69a78997",
+      "editions.py": "6b742e2d82f58730db596da218e242c957d4fc7e76a659f99c7d58cd763d740f",
+      "loader-baseline.json": "410919463f6f1e6ee191fafc76ee8bcbb6ffda3b315f6bd79cddd8ce20f051d1",
+      "loader-candidate.json": "1f88380be6bfc3dfbef4d48ef2e789d85d56562bfbab34b4dd1c79f3b86e79e0",
+      "multipart.json": "7d9ce04a013a43391b1a5ef2f3ebba9fd847ca335e14270e3faa4e89c2c4ef4d",
+      "multipart.py": "a91e1a80324e904e311f64c5b9d5caaa140b19ac7d51ef12ca363c4ddea9ac46",
+      "parser-reuse.json": "64a966e3ed789928e9c7c50b85e625aa8a0a3e2650e8c71ce5f4754f969bb76a",
+      "sejm-descriptors.json": "b9995d079f1235fab3a4a386a03500d6493c7f246cbb4c101ca007cd2a8ab262",
+      "sejm-details.json": "3a721542cd954b5d15570709af2f9784b8f5394ae8c72c38e62d2eaadfd11163",
+      "sejm.py": "a100a024baf0cbf3a95f982a5fc0773d98b88a75b0e39a84ef8a229ea791c4ba",
+      "sejm_details.py": "cce94e8d1c9b4d85fe5982b45f56488c76fa3ae5b5cab079adae175f2051f706",
+      "timing-baseline.json": "713973c038c7964ca0e640ba683d5af7cd3d2ddd454566e6a09c95f3e758d83c",
+      "timing-candidate.json": "5129cabb077e6943ebc30dd08027dbd38b99abf7e248b8b9ed93bc1fcbe70822",
+      "timing.py": "3aaf9c95bce0a0ee7caf392bb06bcc5f4035b66e28beb7afe9dc174bed0c74f6"
+    },
+    "baseline_commit": "0f5453e9ea447157023e8cefb24b45170291e40b",
+    "candidate_source_freeze_exact": true,
+    "closure_limitations": [
+      "Pure loose-file composition/fallback preserves behavior; this is not a new heuristic/admission acceptance.",
+      "Full candidate dispositions/provenance are not implemented: observed/rejected parts still use existing incomplete metadata/free-text paths.",
+      "Candidate Edition addresses exact recorded physical normative membership; representation_of/supersedes/adoption/legal completeness are not established.",
+      "All six positive historical cache cores contain one normative member;20 additional all-Word ZIP roots have bill/support but no positive multi-normative Edition. Multi-normative identities are exercised by meaningful unit invariants, not independently labeled corpus truth.",
+      "RCL cached replay uses document-ID download stubs; their SHA is NOT a raw physical identity. These stubs are never used for the physical Edition qualification.",
+      "Missing1383 cached files, scans and absent source errors are shared explicit exclusions;85 controlled IO cases cover those branches but do not provide natural source-family acceptance.",
+      "Sejm width derives from11786 listing rows plus29 saved details; independent gateway/self-amendment enrichment outside saved metadata remains unmeasured.",
+      "No full physical extraction repeated: eight parser/selection modules match J132/commit0f5453e byte-for-byte; current-envJ132 all5365 physical evidence is reused."
+    ],
+    "editions": {
+      "additional_small_Word_ZIP_sample": {
+        "normative_member_roots": 0,
+        "roots": 20
+      },
+      "cache_counts": {
+        "blocked_state_probes": 18,
+        "candidate_edition": 6,
+        "no_candidate_edition": 107,
+        "qualified_cache_records": 113,
+        "raw_meaningful_changed_edition": 15,
+        "raw_unknown_edition_stays_unknown": 5,
+        "selection/unsupported": 104,
+        "selection/unverified": 9,
+        "support_exclusion_probes": 18
+      },
+      "cache_records_excluded_outside_J132_raw_population": 49,
+      "observed_real_positive_member_counts": [
+        1
+      ],
+      "raw_mutation_derivatives": 20
+    },
+    "loader_control_cases": {
+      "all_IO_exception_conflict_outcomes_exact": true,
+      "cases": 85
+    },
+    "network_calls": 0,
+    "paid_calls": 0,
+    "production_or_candidate_writes": false,
+    "rcl": {
+      "cache_hits_exact": 6468,
+      "cases": 4276,
+      "changed_cases": [],
+      "counts": {
+        "ambiguous": 123,
+        "no_candidate": 205,
+        "selected": 2273,
+        "unsupported": 669,
+        "unverified": 925,
+        "waiting": 81
+      },
+      "max_relations": {
+        "alternatives": 9,
+        "amendment_urls": 4,
+        "extra_urls": 2,
+        "loose_total": 5,
+        "normative_urls": 2,
+        "required_urls": 0
+      },
+      "missing_cached_inputs": 1383,
+      "projects": 825,
+      "read_inputs_exact": true
+    },
+    "runtime_environment": "/private/tmp/lexinform-pr9-review/.venv/bin/python, Python3.14.7/Pydantic2.14.1",
+    "sejm_listing_descriptors": {
+      "counts": {
+        "no_document": 2,
+        "prints": 11786,
+        "with_document": 11784
+      },
+      "max_relations": {
+        "alternatives": 5,
+        "amendment_urls": 0,
+        "extra_urls": 0,
+        "loose_total": 1,
+        "normative_urls": 0,
+        "required_urls": 1
+      }
+    },
+    "sejm_saved_details": {
+      "counts": {
+        "saved_detail_rows": 29
+      },
+      "max_relations": {
+        "alternatives": 0,
+        "amendment_urls": 0,
+        "extra_urls": 0,
+        "loose_total": 0,
+        "normative_urls": 0,
+        "required_urls": 0
+      }
+    },
+    "status": "passed_scoped",
+    "timing_limitations": "Warm preloaded actual cache snapshots,75 samples per implementation after5 warmups, old/new processes overlap locally; indicative local costs, not an arbitrary-width performance guarantee."
+  },
+  "integration": {
+    "J133_legacy_sitting_group_retained": true,
+    "edition_repository_methods_AST_exact_to_frozen_candidate": true,
+    "first_56_migrations_AST_exact": true,
+    "only_new_migration": 57,
+    "other_runtime_exact": 158,
+    "physical_and_existing_policies_byte_exact": {
+      "src/lexinform/adapters/doc_text.py": "0216af4fddc5af723554137b27498862c2893dd1dbd7e5eeddd74f29280f7dee",
+      "src/lexinform/adapters/document_text.py": "3a63919a6722541db770ab8cb7b74ab911e16dd6d558b1f9fcaa2b815d4754d0",
+      "src/lexinform/adapters/pdf_text.py": "e46eb0795a68ce41900b5837740474cbc62ce0bfdbd3c3c1822a2ccbd4754101",
+      "src/lexinform/document_admissibility.py": "2f7cc443ccb7cfedad5b55f816158de00ae9002b45d2ad53c77a2751e4916ddd",
+      "src/lexinform/document_candidates.py": "66c7988ee6bad3d2d272308027724dfa8a1d043e4e2467736e0cdca6aa309fae",
+      "src/lexinform/document_selection.py": "2a68a911183cbbe37d01780f0b01368ae0a682889aed4a570bf365a124224b85",
+      "src/lexinform/document_versions.py": "8281abf37289fdc4d883d9764c3809b2b4cf65fd8e182b6abcaec11487a6c299",
+      "src/lexinform/extraction_records.py": "b0378402818ed9441d5c39f7fe8fd8f8bf22376034c951dbb986dd77928120ea"
+    },
+    "runtime_changed": [
+      "src/lexinform/adapters/sqlite_repo.py",
+      "src/lexinform/document_composition.py",
+      "src/lexinform/document_editions.py",
+      "src/lexinform/models/__init__.py",
+      "src/lexinform/models/document_editions.py",
+      "src/lexinform/models/document_reads.py",
+      "src/lexinform/ports.py",
+      "src/lexinform/services/document_history.py",
+      "src/lexinform/services/documents.py"
+    ],
+    "runtime_count": 167
+  },
+  "metadata_fixtures": {
+    "empty_schema_delta": {
+      "gzip": 62,
+      "sql": 492
+    },
+    "many": {
+      "gzip_delta": 294,
+      "manifest_bytes": 185,
+      "members": 2001,
+      "sql_delta": 535
+    },
+    "single": {
+      "gzip_delta": 174,
+      "manifest_bytes": 182,
+      "members": 1,
+      "sql_delta": 532
+    },
+    "two": {
+      "gzip_delta": 175,
+      "manifest_bytes": 182,
+      "members": 2,
+      "sql_delta": 532
+    }
+  },
+  "mypy_files": 518,
+  "native": {
+    "all_30_prior_tables_exact_except_recorded_phase_timing": true,
+    "all_profiles_except_metadata_and_storage_metrics_exact": true,
+    "all_requests_and_rendered_messages_exact": true,
+    "all_source_doctors_without_errors": true,
+    "binding_views": 2,
+    "cases": 168,
+    "command_outcome_seconds_excluded_from_semantic_comparison": true,
+    "content_snapshot_views": 6,
+    "content_version_views": 2,
+    "edition_link_views": 8,
+    "edition_views": 8,
+    "gzip_delta": {
+      "max": 241,
+      "min": 62
+    },
+    "link_views": 190,
+    "only_new_tables": [
+      "document_editions",
+      "selection_editions"
+    ],
+    "prior_metadata_rows_preserved": true,
+    "read_receipt_views": 270,
+    "selection_views": 198,
+    "source_observation_views": 210,
+    "sql_delta": {
+      "max": 1024,
+      "min": 492
+    },
+    "timing_differences": []
+  },
+  "natural_state_migration": {
+    "bill_models_read": 462,
+    "explicit_indexes": 42,
+    "gzip_bytes": 4133266,
+    "integrity_fk_valid": true,
+    "not_a_new_live_run": true,
+    "restore_seconds": 0.2914357910049148,
+    "roundtrip_byte_exact": true,
+    "schema": 57,
+    "source_import": "/Users/sobaleu/projects/lexinform/src/lexinform/__init__.py",
+    "source_schema": 55,
+    "source_sha256": "66ecc58b10c3e7ba2df1d4fc89be26e018539a8f94931f0c7aeaf12205f6fe2e",
+    "source_state_commit": "4f19d9bf7b8035f2239dece6098c4b06942f9414",
+    "source_unchanged": true,
+    "sql_bytes": 20317367,
+    "sqlite_bytes": 21471232,
+    "stage_delta": {
+      "gzip_bytes": 96,
+      "sql_bytes": 492,
+      "sqlite_bytes": 24576
+    }
+  },
+  "old_reader_compatibility": {
+    "current": {
+      "code_root": "/Users/sobaleu/projects/lexinform",
+      "edition_link_rows": 1,
+      "edition_rows": 1,
+      "import": "/Users/sobaleu/projects/lexinform/src/lexinform/__init__.py",
+      "integrity_fk_valid": true,
+      "restore_dump_prune_byte_exact": true,
+      "schema": 57,
+      "source_sha256": "1b3a24b5c749b7eac6352caea4dc6e61a1987c339f281a8438c2d2d099fef9f2",
+      "source_unchanged": true,
+      "stage": "current",
+      "tables": 32
+    },
+    "old56": {
+      "code_root": "/private/tmp/lexinform-j133-root-baseline",
+      "edition_link_rows": 1,
+      "edition_rows": 1,
+      "import": "/private/tmp/lexinform-j133-root-baseline/src/lexinform/__init__.py",
+      "integrity_fk_valid": true,
+      "restore_dump_prune_byte_exact": true,
+      "schema": 57,
+      "source_sha256": "1b3a24b5c749b7eac6352caea4dc6e61a1987c339f281a8438c2d2d099fef9f2",
+      "source_unchanged": true,
+      "stage": "old56",
+      "tables": 32
+    }
+  },
+  "other_runtime_files_exact": 158,
+  "raw_multi_normative_supplement": {
+    "all_legacy_outcomes_metadata_IO_metrics_exact": true,
+    "candidate_source_freeze_exact": true,
+    "cases": [
+      {
+        "case": "12390754/2",
+        "download_count": 4,
+        "edition_id": "edition-v1:afe528be3f33e249db483f22e596f4e6eb424d6462c83fa514ca3c23bba0bc58",
+        "manifest_bytes": 182,
+        "normative_member_count": 2,
+        "physical_input_bodies": {
+          "https://legislacja.rcl.gov.pl/docs//2/12390754/13089306/13089307/dokument688498.docx": {
+            "bytes": 53503,
+            "path": "documents/files/688498.docx",
+            "sha256": "981f0c81664e731d54c3c79d4951a978b03cd3adc06e7228d3c056147e67da91"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12390754/13089306/13089307/dokument688499.pdf": {
+            "bytes": 488988,
+            "path": "documents/files/688499.pdf",
+            "sha256": "fb40892a9f48917536805a6d523a72d9f230a1e46bc872c1211ba9478666ab78"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12390754/13089306/13089307/dokument688501.docx": {
+            "bytes": 30729,
+            "path": "documents/files/688501.docx",
+            "sha256": "cf13a893e5f43decb4795040fc6daabe3226956ca1a3db25cb4cda0b09757595"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12390754/13089306/13089307/dokument688506.docx": {
+            "bytes": 68240,
+            "path": "documents/files/688506.docx",
+            "sha256": "7472ccfb04dfc97a4ed1083ee9aa76f6df388ed747f2042beadeecdd3c02ef95"
+          }
+        },
+        "read_count": 5,
+        "selected_text_and_selection_metadata_exact_to_0f": true,
+        "source_selection_state": "unverified",
+        "text_chars": 113439
+      },
+      {
+        "case": "12403302/4",
+        "download_count": 5,
+        "edition_id": "edition-v1:886575b42cda586ecf814bd7c9162acddf3a7f2f79331a4bb63028c92c271e73",
+        "manifest_bytes": 182,
+        "normative_member_count": 3,
+        "physical_input_bodies": {
+          "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743326.docm": {
+            "bytes": 85167,
+            "path": "documents/files/743326.docm",
+            "sha256": "6f778ea244115859f4ad7c39876f7890af942fc9c10983b1ab2f625199f2a3a4"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743327.docx": {
+            "bytes": 34018,
+            "path": "documents/files/743327.docx",
+            "sha256": "7f2c67d29024257b2e30d757f8b0952162f6fb18be3c9a7f3df3cfd8bb5d96d5"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743328.docx": {
+            "bytes": 21550,
+            "path": "documents/files/743328.docx",
+            "sha256": "4dfba36d15a9ce155328e37bfc4bb7215964c8ed0f65be278ae503034079a965"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743329.docm": {
+            "bytes": 143128,
+            "path": "documents/files/743329.docm",
+            "sha256": "c009ff5cf12d8820a9b66375b20d03969ba849cb44bd6095e3704675c035fd13"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743330.doc": {
+            "bytes": 432640,
+            "path": "documents/files/743330.doc",
+            "sha256": "006d5f09a49eab3f07becb77d27ad75738a6ef936c3ed662343ea99543a11029"
+          }
+        },
+        "read_count": 6,
+        "selected_text_and_selection_metadata_exact_to_0f": true,
+        "source_selection_state": "unverified",
+        "text_chars": 270133
+      }
+    ],
+    "evidence_sha256": {
+      "raw-normative-baseline.json": "bdae72c35ed2825f117e17544022a661d47fc2e452b3e3d9bcba2d56c8f3f67a",
+      "raw-normative-candidate.json": "bdae72c35ed2825f117e17544022a661d47fc2e452b3e3d9bcba2d56c8f3f67a",
+      "raw-normative-candidates.json": "b5a4bd35c1593b850d97b559941a008578de611c4af3e8301bf22e19873c7637",
+      "raw_normative.py": "58147ab79c88b2e342366e9cb1e4c67ee6d6a8b48fa7c0a4e4a377e6a3689d2e"
+    },
+    "input_hashes_preserved": true,
+    "network_calls": 0,
+    "paid_calls": 0,
+    "raw_bytes_read": 1357963,
+    "remaining_gaps": [
+      "No representation/supersession/adoption/completeness relation is established.",
+      "Full candidate dispositions and natural source-family production cycles remain outside this scoped change."
+    ],
+    "scope": "Real frozen RCL official normative-role descriptors, real local raw downloads through unchanged old/current physical extractors and loaders. This is source-contract/membership evidence, not independent legal role/adoption/completeness judgment.",
+    "source_or_production_state_mutations": false,
+    "status": "passed"
+  },
+  "runtime_files": {
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "bytes": 186592,
+      "sha256": "c283ebbe13d4078566a0278433a16d0797c2cc211e34607f6d8dfb60ec3ee197"
+    },
+    "src/lexinform/document_composition.py": {
+      "bytes": 7028,
+      "sha256": "952268ed95e462f65178bcdb46fd2884654dbcca33a1276a04fa6edd3d3a3451"
+    },
+    "src/lexinform/document_editions.py": {
+      "bytes": 1523,
+      "sha256": "3df267d2864943db04d1de20b20a349cf2ce343c41b38cb3c0497c9239f64fef"
+    },
+    "src/lexinform/models/__init__.py": {
+      "bytes": 17899,
+      "sha256": "c381ae0752cb643cabc91ad018a5225bb06a62d8806489ff0d29f02456d1285f"
+    },
+    "src/lexinform/models/document_editions.py": {
+      "bytes": 1508,
+      "sha256": "48c94732ce3b9c961151587ff82a79883f43b3d8b57278afca607ed28b687ee8"
+    },
+    "src/lexinform/models/document_reads.py": {
+      "bytes": 2226,
+      "sha256": "e2a0652b1f95f8d0eb0d9b08a430ee5ecf0422123f84475fe947a6e57e0f17d9"
+    },
+    "src/lexinform/ports.py": {
+      "bytes": 45331,
+      "sha256": "2a7f61304f86a0d910cba23bf66e58ec64d6d1103e2a923374d72ac5304dfc47"
+    },
+    "src/lexinform/services/document_history.py": {
+      "bytes": 4436,
+      "sha256": "f2ca81236a8c11d5e9a4ea05d05ed05097cee921dd7d63f7c0295e3e26901e78"
+    },
+    "src/lexinform/services/documents.py": {
+      "bytes": 18632,
+      "sha256": "c345a2f79c2b9bda00ad5514384df8adda9839791b980d2a2807dd2ce2a62ef9"
+    }
+  },
+  "schema": 57,
+  "scope": "Pure loose-file composition/fallback and bounded exact candidate normative membership, without legal/admission/paid identity changes",
+  "stage": "J134"
+}

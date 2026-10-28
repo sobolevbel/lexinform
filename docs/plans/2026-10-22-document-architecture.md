@@ -229,6 +229,26 @@ consumer или обязательная ручная правка production DB
 
 Это задачи подготовки документов. Ни один пункт DA0–DA10 этими отметками не закрывается.
 
+### 1.7. Конвейер исполнения
+
+Один интегратор собирает и выпускает изменения; агенты готовят независимые пакеты в отдельных
+worktrees. QA проверяет frozen candidate, пока разработчик готовит следующий пакет. Задание
+содержит base SHA, границы ответственности/файлов и конкретные критерии; повторный аудит всего
+репозитория не нужен. Shared SQL/ports интегрирует один владелец, агенты не правят их одновременно
+в одном checkout. В handoff достаточно patch, hashes, команды/результаты и нерешённые ограничения.
+
+Полный gate запускается один раз на окончательно собранном frozen release candidate; focused
+проверки идут у разработчика, corpus/compatibility и ревью — независимо. При исправлении кода
+после freeze затронутые проверки повторяются, финальный full gate остаётся обязательным.
+Близкие совместимые изменения можно объединять в один самостоятельно deployable выпуск,
+если границы поведения и доказательства каждого изменения сохраняются. Новые исходники
+не публикуются до зелёных gates; CI/deploy предыдущего выпуска проверяются отдельно.
+
+Raw/cache evidence переиспользуется только с точными input/environment/code pins и явным scope;
+неизменный parser не заменяет проверку изменённой composition policy. Дублировать полный replay
+для неизменных компонентов или запускать второй full gate того же дерева не требуется.
+Свободный агент получает только конкретную независимую задачу, иначе остаётся без работы.
+
 ## 2. Целевые сущности и их владельцы
 
 Названия обозначают ответственность. Не требуется сразу создавать отдельную таблицу для
@@ -540,7 +560,7 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
 - [ ] DA4.1. **Частично: [J087](2026-10-22-document-architecture-progress.md#j087), existing ExtractedParts используется чистой package policy; [J088](2026-10-22-document-architecture-progress.md#j088), общий transient CandidateSet для archive peers и loose files. Полная provenance/disposition persistence остаётся.** Сделать общий `CandidateSet` из extraction parts и официальных source relations.
   Сохранять рассмотренные/исключённые части и основание исключения; ZIP location/filename —
   свидетельство происхождения, а не достаточное доказательство роли/редакции.
-- [ ] DA4.2. **Частично: [J087](2026-10-22-document-architecture-progress.md#j087), package policy вынесена из physical adapter; [J088](2026-10-22-document-architecture-progress.md#j088), loose-file version choice и диагностика в том же pure module. Remaining fallback/composition и admissibility открыты.** Перенести комплектование из `_select_parts` и loose-URL пути в одну чистую политику.
+- [x] DA4.2. **Принято: [J134](2026-10-22-document-architecture-progress.md#j134), pure loose composition/fallback с corpus/IO parity; [J087](2026-10-22-document-architecture-progress.md#j087)/[J088](2026-10-22-document-architecture-progress.md#j088), package/version policy; admission принят отдельно в DA4.5.** Перенести комплектование из `_select_parts` и loose-URL пути в одну чистую политику.
   Источники продолжают знать официальные связи, достигнутые стадии и тип события. Generic
   loader не ветвится по RCL/Sejm/Senate. Сохранить узкую проверку чужого RCL ID до download.
 - [x] DA4.3. **Принято: [J087](2026-10-22-document-architecture-progress.md#j087)/[J088](2026-10-22-document-architecture-progress.md#j088), raw/cached parity и meaningful mutations; изменения эвристик не включены и требуют отдельной приёмки.** Сначала сохранить текущие outcomes. Затем отдельно рассматривать равенство дат
@@ -554,7 +574,7 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
   Сохранить нынешние metadata/scan/`unverified` пути до отдельного изменения политики.
 - [x] DA4.6. **Принято: [J089](2026-10-22-document-architecture-progress.md#j089)/[J090](2026-10-22-document-architecture-progress.md#j090)/[J091](2026-10-22-document-architecture-progress.md#j091) — shadow до activation, frozen legacy parity, real-cache/hash replay, native/public contexts и Senate contract.** Проверить общую матрицу для prefilter, analysis, comparison, amendments и reviews.
   Сначала сохранять proposed decision без влияния; применять после приёмки соответствующей операции.
-- [ ] DA4.7. Адресовать выбранный нормативный комплект как `DocumentEdition`, отдельно от
+- [ ] DA4.7. **Частично: [J134](2026-10-22-document-architecture-progress.md#j134), bounded candidate normative-set manifest/ref; доказанные representation/supersession/proposal/adoption relations остаются.** Адресовать выбранный нормативный комплект как `DocumentEdition`, отдельно от
   физических representations. Хранить доказанные связи `representation_of`, `supersedes`,
   `proposes_change_to`, `recommendation_for` и подтверждённый исход принятия с источником.
   Начать с манифеста существующего комплекта, без универсальной онтологии всех актов.

@@ -1,8 +1,11 @@
 """Observed downloader bodies exclude wire overhead, incomplete responses and raw retention."""
 
+from dataclasses import dataclass
 from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from lexinform.models.documents import DocumentSelection
 
 
 class HostDocumentReads(BaseModel):
@@ -47,3 +50,18 @@ class DocumentReadMetrics(BaseModel):
         if self.distinct_bodies > self.completed or self.distinct_body_bytes > self.body_bytes:
             raise ValueError("distinct bodies exceed the observed completed responses")
         return self
+
+
+@dataclass(frozen=True)
+class LoadedFile:
+    """A downloaded file's existing text, scan and physical-selection snapshot."""
+
+    text: str | None
+    pages: int = 0
+    oversize: bool = False
+    sha256: str | None = None
+    selection: DocumentSelection = DocumentSelection()
+
+    @property
+    def is_scan(self) -> bool:
+        return self.text is None and self.pages > 0

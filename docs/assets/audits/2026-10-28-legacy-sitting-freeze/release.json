@@ -1,0 +1,78 @@
+{
+  "SSH_dispatch_rerun_or_source_mutation": false,
+  "ci": {
+    "conclusion": "success",
+    "created_at": "2026-10-28T11:36:12Z",
+    "event": "push",
+    "head_branch": "main",
+    "head_sha": "7287059ab1392374359fdb07ff6fedb8e7878cec",
+    "html_url": "https://github.com/sobolevbel/lexinform/actions/runs/40681234966",
+    "id": 40681234966,
+    "run_attempt": 1,
+    "status": "completed",
+    "updated_at": "2026-10-28T11:44:36Z"
+  },
+  "ci_jobs": [
+    {
+      "completed_at": "2026-10-28T11:44:36Z",
+      "conclusion": "success",
+      "id": 122792153173,
+      "name": "test (3.14)",
+      "started_at": "2026-10-28T11:36:14Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-28T11:36:59Z",
+      "conclusion": "success",
+      "id": 122792153505,
+      "name": "web",
+      "started_at": "2026-10-28T11:36:14Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-10-28T11:36:29Z",
+      "conclusion": "success",
+      "id": 122792153528,
+      "name": "docs",
+      "started_at": "2026-10-28T11:36:14Z",
+      "status": "completed"
+    }
+  ],
+  "deploy": {
+    "conclusion": "success",
+    "created_at": "2026-10-28T11:44:40Z",
+    "event": "workflow_run",
+    "head_branch": "main",
+    "head_sha": "7287059ab1392374359fdb07ff6fedb8e7878cec",
+    "html_url": "https://github.com/sobolevbel/lexinform/actions/runs/40682309244",
+    "id": 40682309244,
+    "run_attempt": 1,
+    "status": "completed",
+    "updated_at": "2026-10-28T11:45:35Z"
+  },
+  "deploy_job": {
+    "completed_at": "2026-10-28T11:45:34Z",
+    "conclusion": "success",
+    "id": 122795829144,
+    "name": "deploy",
+    "started_at": "2026-10-28T11:44:42Z",
+    "status": "completed"
+  },
+  "environment_or_secrets_saved": false,
+  "filtered_deploy_lines": [
+    "2026-10-28T11:44:43.4618888Z   COMMIT: 7287059ab1392374359fdb07ff6fedb8e7878cec",
+    "2026-10-28T11:44:47.3427075Z 0f5453e9ea44 -> 7287059ab139",
+    "2026-10-28T11:45:32.7494474Z lexinform-listen up 45 s after restart",
+    "2026-10-28T11:45:33.1930788Z lexinform-batch-poll.timer enabled"
+  ],
+  "limitations": [
+    "This verifies existing systemd health evidence, not an independent Telegram functional probe.",
+    "No RAM claim or cause of historical SSH/SIGTERM incidents is inferred."
+  ],
+  "observed_at": "2026-10-28T11:48:33.371351+00:00",
+  "proof": "Exact CI/auto-deploy SHA; remote output confirms a real checkout advance and mandatory restart branch with45-second active check and timer enable.",
+  "raw_logs_saved": false,
+  "remote_main_observed_sha": "7287059ab1392374359fdb07ff6fedb8e7878cec",
+  "status": "verified",
+  "target_sha": "7287059ab1392374359fdb07ff6fedb8e7878cec"
+}

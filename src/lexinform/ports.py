@@ -41,6 +41,7 @@ from lexinform.models import (
     DeliveryResolution,
     Digest,
     DigestPart,
+    DocumentEdition,
     DocumentExtraction,
     DocumentReadMetrics,
     DocumentReviewRecord,
@@ -84,6 +85,7 @@ from lexinform.models import (
     SejmSitting,
     SejmTerm,
     SelectionArtifactReference,
+    SelectionEditionReference,
     SelectionExtractionReference,
     SenateAct,
     SittingNews,
@@ -680,6 +682,12 @@ class BillRepository(Protocol):
     ) -> None: ...
 
     def get_document_selection(self, selection_id: str) -> DocumentSelectionRecord | None: ...
+
+    def save_selection_edition(self, selection_id: str, edition: DocumentEdition) -> None: ...
+
+    def get_document_edition(self, edition_id: str) -> DocumentEdition | None: ...
+
+    def get_selection_edition(self, selection_id: str) -> SelectionEditionReference | None: ...
 
     def get_source_observation(self, observation_id: str) -> SourceObservation | None: ...
 

@@ -349,6 +349,20 @@ Exception до результата, zero-part refusal без physical source re
 не становятся сохранённым ExtractionResult. Эти metadata переживают operational cache cleanup;
 данные из старых URL и legacy state не backfilled. Raw/backend/retention decision не меняется.
 
+## Candidate Edition metadata (v57)
+
+`document_editions` сохраняет один manifest выбранного candidate normative set, ограниченный
+1 KiB в модели и SQL. Он содержит hash/count membership, contract и первое время записи;
+метаданные частей остаются в существующем immutable selection. Каждая связь
+`selection_editions` проверяет exact parent и membership. Повторные наблюдения и URL aliases
+с тем же известным core используют прежний manifest; строки на каждую часть нет.
+
+FK parents и ссылки переживают operational cleanup. Правила очистки, body retention и backend
+не меняются. Неизвестные scans/legacy identities и unresolved source sets не получают
+предполагаемую Edition. Этот адрес не доказывает юридическую полноту, допустимость для вопроса,
+эквивалентность representations, supersession или paid-input identity. Полная provenance
+решения остаётся частичной; manifest не заполняет пропущенные candidate dispositions.
+
 ## Editorial history после J109
 
 `content_snapshots`, `content_versions` и `publication_content` не являются operational cache

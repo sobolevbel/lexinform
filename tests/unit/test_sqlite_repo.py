@@ -41,6 +41,7 @@ from lexinform.models import (
 )
 from tests.fakes import FakeLlm, make_amendments
 from tests.harness import RCL, RCL_CONSULTATION, RCL_ID, act, rcl_project, wykaz_entry
+from tests.state_snapshots import dump_at_version
 
 CHANNEL = "chan"
 
@@ -1010,6 +1011,9 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     assert {"artifacts", "selection_artifacts", "artifact_reads"} <= tables
     assert {"content_snapshots", "content_versions", "publication_content"} <= tables
     assert {"extraction_results", "selection_extractions"} <= tables
+    assert {"document_editions", "selection_editions"} <= tables
+    assert repo.get_selection_edition("selection-v1:" + "a" * 64) is None
+    assert repo.get_document_edition("edition-v1:" + "a" * 64) is None
     assert not repo.list_selection_extractions("selection-v1:" + "a" * 64)
     assert not repo.list_content_versions(1)
     assert not repo.list_artifact_reads()
@@ -1340,60 +1344,7 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
     source.upsert_summary(process, now=now)
     with sqlite3.connect(tmp_path / "old.db") as conn:
         conn.execute("UPDATE bills SET status = 'skipped_joint', analysis_attempts = 2")
-        # A database of that day, and not one of today with an older number written on it:
-        # v20 is the version v21 was written against, so everything the later migrations create
-        # goes, or the restore would replay them over objects the dump had already made.
-        conn.execute("DROP TABLE rcl_wykaz_numbers")
-        conn.execute("DROP INDEX ux_pub_digest")
-        conn.execute("DROP INDEX ix_pub_channel_sent")
-        conn.execute("ALTER TABLE bills DROP COLUMN observed_closure_date")
-        conn.execute("ALTER TABLE bills DROP COLUMN observed_process_json")
-        conn.execute("ALTER TABLE publications DROP COLUMN delivery_json")
-        conn.execute("ALTER TABLE publications DROP COLUMN attention_json")
-        conn.execute("ALTER TABLE status_changes DROP COLUMN consultation_opened")
-        conn.execute("ALTER TABLE status_changes DROP COLUMN decision_changed")
-        conn.execute("DROP TABLE analysis_memo")
-        conn.execute("DROP TABLE llm_batch_items")
-        conn.execute("DROP TABLE llm_batches")
-        conn.execute("DROP TABLE llm_batch_intents")
-        conn.execute("DROP TABLE delivery_resolutions")
-        conn.execute("DROP TABLE publication_sequence")
-        conn.execute("ALTER TABLE bills DROP COLUMN analysis_generation")
-        conn.execute("ALTER TABLE bills DROP COLUMN ready_analysis_json")
-        conn.execute("ALTER TABLE bills DROP COLUMN senate_json")
-        conn.execute("ALTER TABLE bills DROP COLUMN awaiting_batch_since")
-        conn.execute("ALTER TABLE bills DROP COLUMN observation_mode")
-        conn.execute("ALTER TABLE bills DROP COLUMN observation_basis")
-        conn.execute("ALTER TABLE bills DROP COLUMN editorial_json")
-        conn.execute("ALTER TABLE bills DROP COLUMN consultation_review_json")
-        conn.execute("ALTER TABLE bills DROP COLUMN commission_review_json")
-        conn.execute("ALTER TABLE bills DROP COLUMN committee_documents_json")
-        conn.execute("ALTER TABLE bills DROP COLUMN act_application_review_json")
-        conn.execute("ALTER TABLE bills DROP COLUMN review_work_json")
-        conn.execute("DROP INDEX ux_pub_review")
-        conn.execute("DROP INDEX ux_pub_commission_review")
-        conn.execute("DROP INDEX ux_pub_message_part")
-        conn.execute("DROP INDEX ux_pub_amendments_revision")
-        conn.execute("DROP TABLE effective_rule_links")
-        conn.execute("DROP TABLE source_checks")
-        conn.execute("DROP TABLE delivery_alerts")
-        conn.execute("DROP TABLE digest_event_links")
-        conn.execute("DROP TABLE document_work")
-        conn.execute("DROP TABLE result_applications")
-        conn.execute("DROP TABLE result_applicability")
-        conn.execute("DROP TABLE publication_content")
-        conn.execute("DROP TABLE content_versions")
-        conn.execute("DROP TABLE content_snapshots")
-        conn.execute("DROP TABLE artifact_reads")
-        conn.execute("DROP TABLE selection_extractions")
-        conn.execute("DROP TABLE extraction_results")
-        conn.execute("DROP TABLE selection_artifacts")
-        conn.execute("DROP TABLE artifacts")
-        conn.execute("DROP TABLE source_observations")
-        conn.execute("DROP TABLE document_selections")
-        conn.execute("DROP TABLE computation_results")
-        conn.execute("PRAGMA user_version = 20")
-    dump = source.dump()
+        dump = dump_at_version(conn, version=20)
     source.close()
     repo = SqliteBillRepository(tmp_path / "current.db")
     repo.migrate()

@@ -1,11 +1,11 @@
 # База данных и миграции
 
-Статус: актуальный справочник · проверен 27 октября 2026 по локальному коду, схема **v53**.
+Статус: актуальный справочник · миграции описаны по схему **v57** включительно.
 
 Источник истины — append-only
 [`MIGRATIONS` в sqlite_repo.py](https://github.com/sobolevbel/lexinform/blob/main/src/lexinform/adapters/sqlite_repo.py).
 `SCHEMA_VERSION = len(MIGRATIONS)`, версия конкретной базы — `PRAGMA user_version`.
-После всех миграций: **24 таблицы, 37 явных индексов
+Измеренный снимок **v53** от 27 октября 2026: **24 таблицы, 37 явных индексов
 (20 обычных и 17 уникальных), 10 внешних ключей**. Автоиндексы `PRIMARY KEY` и
 `UNIQUE` в эти 37 не входят. Копия production dump также восстановлена в v53:
 `integrity_check=ok`, `foreign_key_check` не вернул ошибок.
@@ -27,6 +27,8 @@ HTML содержит снимок v34, включая SQL ограничени�
 | `artifact_reads` (v54) | `read_id`; unique requested URL/raw SHA; artifact index | Первый metadata receipt complete-body response; requested URL и время записи не являются blob location или датой публикации. |
 | `extraction_results` (v56) | `extraction_id`; artifact FK/index; bounded JSON | Immutable metadata результата physical extraction и прежней package projection, без text/block bodies. |
 | `selection_extractions` (v56) | `(selection_id, extraction_id)`; exact outer artifact FK | Связь source selection с известным результатом извлечения; не доказывает полноту или фактический provider input. |
+| `document_editions` (v57) | `edition_id`; JSON ≤ 1 KiB | Immutable hash/count manifest выбранного candidate normative set; без bodies или копии selection. |
+| `selection_editions` (v57) | `selection_id`; FK selection и edition | Проверенная связь с existing source decision; полный ordered membership остаётся у selection. |
 | `content_snapshots` (v55) | `snapshot_id`; kind + exact JSON | Общие immutable editorial Bill/change/metadata-plan snapshots; plan не копирует отдельные bodies. |
 | `content_versions` (v55) | `content_id`; root publication index; предыдущая версия | Editorial edition: semantic snapshot refs, known paid/event refs, exact rendered text либо явный unknown legacy, язык/formatter version при известности. |
 | `publication_content` (v55) | `publication_id` → `content_id` | Immutable связь физической publication с edition; не является receipt отправки. |
@@ -477,6 +479,24 @@ Failed/over-limit fetch не создаёт complete receipt. Прочие stand
 boundary и crash до этих boundaries ещё не покрыты. Это не source date, HTTP-header archive или
 retained blob location; новых network calls и backend flags нет.
 
+
+## Адрес выбранного нормативного набора (v57)
+
+`DocumentEdition` с contract `candidate-normative-set-v1` хранит SHA упорядоченных
+`bill`/`normative_continuation`/`normative_annex` частей, их число и первое время записи.
+Хеш включает exact leaf/raw и extracted-text SHA, роли и диапазоны. Полный membership
+остаётся в immutable `document_selections`; `selection_editions` проверяет exact parent.
+URL, outer container, question, state и время не входят в identity. Другие bytes могут дать
+иной candidate ID без утверждения о различии юридических редакций.
+
+Manifest описывает исходный source selection до input fitting; общий writer записывает
+известный набор в caller transaction.
+При ambiguous/waiting/unsupported, неизвестных SHA или неоднозначном основном core запись
+не создаётся; legacy не backfilled. `self_amendment` остаётся отдельным предложением,
+support — в прежнем selection. Edition не заменяет admissibility, memo/paid-input identity
+и не доказывает supersession, adoption или эквивалентность представлений. Offline
+`source_history_doctor` проверяет columns, родителей и membership без repair или загрузок.
+Retention и metadata byte budget описаны в [state retention](../state-retention.md#candidate-edition-metadata-v57).
 
 ## История одиночных исправлений (v55)
 

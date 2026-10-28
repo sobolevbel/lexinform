@@ -6460,7 +6460,7 @@ allowlisted metadata/filtered lines. Это systemd acceptance, не Telegram fu
 <a id="j133"></a>
 ### J133. Freeze future legacy sitting batches before retry
 
-Статус: **готово локально**, все gates и compatibility acceptance пройдены; выпуск проверяется отдельно.
+Статус: **готово; CI/deploy проверены**, все gates и compatibility acceptance пройдены.
 Baseline `0f5453e9ea447157023e8cefb24b45170291e40b`.
 Qualified legacy AGENDA/AGENDA_CANCELLED batch с хотя бы одним FAILED member теперь сохраняет
 точные будущие HTML и ordered membership до pending/checkpoint/API. Допустимы single,
@@ -6500,3 +6500,69 @@ checkpoint rows и все30таблиц exact; одно измеренное com
 как duration difference, не скрыто как semantic parity. Миграции AST exact,160 остальных runtime
 files byte-exact. [Acceptance asset](../assets/audits/2026-10-28-legacy-sitting-freeze/validation.json)
 пинует source freeze, текущие dependencies, XML gates и complete local qualification.
+
+J133 выпущен `7287059ab1392374359fdb07ff6fedb8e7878cec`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40681234966) и
+[auto deploy](https://github.com/sobolevbel/lexinform/actions/runs/40682309244) success.
+Подтверждены actual0f5453e→7287059, restart/45s health и timer setup;
+[release proof](../assets/audits/2026-10-28-legacy-sitting-freeze/release.json) сохраняет
+allowlisted metadata, без raw logs/secrets или независимого Telegram probe.
+
+<a id="j134"></a>
+### J134. Separate loose-file composition and record candidate normative sets
+
+Статус: **готово локально**, full/corpus/native/compatibility gates пройдены; выпуск проверяется отдельно. Baseline `7287059ab1392374359fdb07ff6fedb8e7878cec`.
+Pure document_composition собирает уже прочитанные snapshots: required continuations,
+normative annex order/insertion, self-amendment evidence, optional support и fallback outcomes.
+TextLoader оставляет ordered IO, cache reuse и различные required/optional exception contracts.
+LoadedFile имеет одно определение в models; прежний service import совместим. Direct review
+по-прежнему не получает дополнительную evidence finalization. Official link conflict блокирует
+скачивание до network call. Physical adapters/candidate/version/admission policy не менялись.
+
+Schema57 добавляет compact candidate-normative-set-v1 manifest и selection→edition reference.
+Identity включает ordered normative roles, exact leaf/text SHA и ranges; полные parts/facts/quotes
+остаются в прежнем immutable selection. Это source choice до input fitting, без memo/paid identity
+либо заявления о юридической редакции. Один manifest ≤1KiB, без member array/body archive.
+Unknown/ambiguous/waiting/unsupported и неоднозначный core остаются без inferred Edition;
+self-amendment не становится consolidated bill. Caller transaction сохраняет связи, first time
+и повторную immutable identity; doctor проверяет columns/parents/membership без repair.
+
+490 focused tests passed, strict mypy518, Ruff/format green. 168 native profiles: requests,
+messages, edits/replies и все30 прежних таблиц exact, timing differences0. Новые manifest/link
+views8/8; doctors/integrity/FK valid. На тех же snapshots SQL+492–1024B/gzip+62–241B.
+Копия state4f19d9b: old56/current57 сохранили все прежние таблицы и462 Bill models;
+новые таблицы пусты, backfill нет. SQL+492B/gzip+96B/SQLite+24576B. Original unchanged,
+restore/dump byte-exact и FK/integrity valid; это прежний pinned state, не новый live run.
+Старый56 и current57 отдельно сохранили непустой32-table Edition fixture через restore/dump/
+prune byte-exact. Наличие совместимого reader не разрешает откат к старому production dump.
+
+На size fixtures manifest182–185B для1/2/2001members; row+link SQL+532–535/gzip+174–294B,
+пустая schema+492SQL/+62gzip. Body/part metadata не дублируются; цена ссылки на новый selection
+остаётся отдельной от manifest reuse. Это fixture measurements, не production demand forecast.
+
+Полные persisted dispositions/provenance и доказанные relations representation/supersession/
+proposal/adoption остаются открытыми DA4.1/DA4.4/DA4.7. Нормативная эквивалентность разных bytes
+не выводится из совпадения текста, даты, названия или источника. Backend/raw retention не меняются.
+
+5610 full tests passed, failures/errors/skips0, frozen569 Python files unchanged. Independent
+corpus gate:825RCL/4276stage cases, descriptor/text/selection/read/download/cache traces exact;
+6468cache hits,85controlled IO/conflict cases exact.1383 missing cached inputs остаются общими
+явными gaps; ID-based stubs не выдаются за raw identities. Sejm11786list rows/11784descriptors
+и29saved details использованы только для metadata width inventory, не natural text acceptance.
+
+113 historical physical cache records относятся к J132 raw population:6known cores/107none;
+49records outsidepopulation исключены.18support-exclusion и18blocked-state probes passed.
+20raw meaningful derivatives:15known Edition IDs меняются,5ODTunknown остаютсяunknown.
+Дополнительно реальные RCL12390754/stage2 и12403302/stage4:9local raw bodies/1.36MB,
+2/3normative members; old/new text113439/270133chars, metadata/IO/metrics exact. Оба выбора
+осталисьunverified; юридическая полнота/принятие не выводятся. Physical parser evidence J132
+переиспользуется по8byte-exact modules; весь прежний raw cohort заново не извлекался.
+
+Observed max loose width5, alternatives9. IO-free warm measurements75samples/implementation:
+wide325495chars median10.004→9.957ms, fallback2.096→2.085ms. Это локальное измерение с перекрытием
+процессов, не обещание для произвольной ширины;10missing fallback views обозначены явно.
+[Acceptance asset](../assets/audits/2026-10-28-document-composition/validation.json) пинует
+полные local manifests, scope reuse, реальные multi-member inputs и migration/size gates.
+DA4.2 принят; DA4.1/DA4.4/DA4.7 остаются частичными. План:74tasks,23done,6explicitN/A,
+45applicable partial/open. Организация дальнейшей работы закреплена в §1.7 плана:
+разработка следующего пакета и независимая приёмка параллельны, full gate один на final tree.

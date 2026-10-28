@@ -4,6 +4,7 @@ import datetime as dt
 from dataclasses import dataclass
 from typing import Literal
 
+from lexinform.document_editions import candidate_edition
 from lexinform.models import (
     ArtifactIdentity,
     ArtifactMetadata,
@@ -98,6 +99,9 @@ def record_document_source(
     record_artifacts(repo, artifacts, recorded_at=observation.recorded_at)
     record_artifact_reads(repo, reads, recorded_at=observation.recorded_at)
     repo.save_source_observation(selection, observation)
+    edition = candidate_edition(selection, recorded_at=observation.recorded_at)
+    if edition is not None:
+        repo.save_selection_edition(selection.selection_id, edition)
     for extraction in extractions:
         repo.save_extraction_result(extraction, recorded_at=observation.recorded_at)
         repo.save_selection_extraction(

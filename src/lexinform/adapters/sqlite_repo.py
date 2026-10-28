@@ -17,6 +17,7 @@ from typing import Literal
 from pydantic import TypeAdapter
 
 from lexinform.content_versions import content_delivery_mismatch
+from lexinform.document_editions import candidate_edition
 from lexinform.json_storage import compact_json, storage_json
 from lexinform.legacy_delivery import (
     legacy_notice_reply,
@@ -52,6 +53,7 @@ from lexinform.models import (
     DeliveryAlert,
     DeliveryPlan,
     DeliveryResolution,
+    DocumentEdition,
     DocumentReviewRecord,
     DocumentSelectionRecord,
     DocumentWork,
@@ -78,6 +80,7 @@ from lexinform.models import (
     RunMode,
     RunReport,
     SelectionArtifactReference,
+    SelectionEditionReference,
     SelectionExtractionReference,
     SenateAct,
     SourceCheck,
@@ -672,6 +675,18 @@ MIGRATIONS: tuple[str, ...] = (
         PRIMARY KEY(selection_id, extraction_id)
     );
     """,
+    """
+    CREATE TABLE document_editions (
+        edition_id TEXT PRIMARY KEY NOT NULL,
+        recorded_at TEXT NOT NULL,
+        edition_json TEXT NOT NULL CHECK(length(CAST(edition_json AS BLOB)) <= 1024)
+    );
+    CREATE TABLE selection_editions (
+        selection_id TEXT PRIMARY KEY NOT NULL REFERENCES document_selections(selection_id),
+        edition_id TEXT NOT NULL REFERENCES document_editions(edition_id)
+    );
+    CREATE INDEX ix_selection_editions_edition ON selection_editions(edition_id);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -1197,6 +1212,67 @@ class SqliteBillRepository:
                 selection_id=selection.selection_id,
             ),
         )
+
+    def save_selection_edition(self, selection_id: str, edition: DocumentEdition) -> None:
+        edition = DocumentEdition.model_validate_json(edition.model_dump_json())
+        with self.atomic():
+            selection = self.get_document_selection(selection_id)
+            if (
+                selection is None
+                or candidate_edition(selection, recorded_at=edition.recorded_at) != edition
+            ):
+                raise ValueError("an edition requires its selection's exact candidate membership")
+            self._conn.execute(
+                "INSERT INTO document_editions (edition_id, recorded_at, edition_json)"
+                " VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
+                (edition.edition_id, _utc_iso(edition.recorded_at), edition.model_dump_json()),
+            )
+            saved = self.get_document_edition(edition.edition_id)
+            if saved is None or saved != edition.model_copy(
+                update={"recorded_at": saved.recorded_at}
+            ):
+                raise ValueError("an immutable edition cannot be replaced")
+            self._conn.execute(
+                "INSERT INTO selection_editions (selection_id, edition_id)"
+                " VALUES (?, ?) ON CONFLICT DO NOTHING",
+                (selection_id, edition.edition_id),
+            )
+            reference = self.get_selection_edition(selection_id)
+            if reference != SelectionEditionReference(
+                selection_id=selection_id, edition_id=edition.edition_id
+            ):
+                raise ValueError("an immutable selection edition cannot be rebound")
+
+    def get_document_edition(self, edition_id: str) -> DocumentEdition | None:
+        row = self._conn.execute(
+            "SELECT * FROM document_editions WHERE edition_id=?", (edition_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        edition = DocumentEdition.model_validate_json(row["edition_json"])
+        if (
+            edition.edition_id != row["edition_id"]
+            or _utc_iso(edition.recorded_at) != row["recorded_at"]
+        ):
+            raise ValueError("edition columns differ from the immutable manifest")
+        return edition
+
+    def get_selection_edition(self, selection_id: str) -> SelectionEditionReference | None:
+        row = self._conn.execute(
+            "SELECT * FROM selection_editions WHERE selection_id=?", (selection_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        reference = SelectionEditionReference.model_validate(dict(row))
+        selection = self.get_document_selection(reference.selection_id)
+        edition = self.get_document_edition(reference.edition_id)
+        if (
+            selection is None
+            or edition is None
+            or candidate_edition(selection, recorded_at=edition.recorded_at) != edition
+        ):
+            raise ValueError("an edition link differs from its recorded selection membership")
+        return reference
 
     def get_document_selection(self, selection_id: str) -> DocumentSelectionRecord | None:
         row = self._conn.execute(

@@ -14,7 +14,7 @@ import threading
 import time
 from collections import Counter
 from collections.abc import Mapping
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from urllib.parse import urlparse
 
 from lexinform.document_candidates import (
@@ -23,16 +23,19 @@ from lexinform.document_candidates import (
     DocumentCandidate,
     select_candidate_versions,
 )
-from lexinform.document_selection import (
-    DOCUMENT_SELECTION_POLICY_VERSION,
-    bill_selection,
-    deduplicate_bundle,
+from lexinform.document_composition import (
+    CandidateFallback,
+    amendment_part,
+    finalize_selection,
+    finish_bundle,
+    finish_normative,
+    normative_part,
+    required_part,
+    start_bundle,
+    supporting_failure,
+    supporting_part,
 )
-from lexinform.document_versions import (
-    join_normative_parts,
-    normative_annex_key,
-    regulation_support,
-)
+from lexinform.document_selection import DOCUMENT_SELECTION_POLICY_VERSION
 from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
 from lexinform.models import (
     ArtifactIdentity,
@@ -46,19 +49,14 @@ from lexinform.models import (
     ScannedDocument,
     TextDocument,
 )
+from lexinform.models.document_reads import LoadedFile as LoadedFile
 from lexinform.ports import (
     Downloader,
     ProvenanceTextExtractor,
     StructuredTextExtractor,
     TextExtractor,
 )
-from lexinform.sections import (
-    APPENDIX_KINDS,
-    PAGE_BREAK,
-    carries_the_document,
-    document_kind,
-    scan_page_window,
-)
+from lexinform.sections import scan_page_window
 
 log = logging.getLogger(__name__)
 
@@ -67,28 +65,6 @@ MAX_SCAN_PAGES = 600
 MAX_SCAN_BYTES = 24_000_000
 """What the Messages API takes as one document: 600 pages, and 32 MB of request — which is
 base64, a third larger than the file (druk 2865 is 40 MB and does not fit)."""
-
-
-@dataclass(frozen=True)
-class LoadedFile:
-    """What one download told us about a file.
-
-    `text` is None when there is none to speak of; `pages` then says whether the file is a scan
-    (a PDF with pages to read) or nothing we can use at all (a Word file, an archive), and
-    `oversize` whether it was simply too big to fetch. The three apart are what lets a caller
-    say why a bill was skipped, and whether it should be skipped at all.
-    """
-
-    text: str | None
-    pages: int = 0
-    oversize: bool = False
-    sha256: str | None = None
-    selection: DocumentSelection = DocumentSelection()
-
-    @property
-    def is_scan(self) -> bool:
-        """No text to read, but pages a model could be shown."""
-        return self.text is None and self.pages > 0
 
 
 class TextLoader:
@@ -209,114 +185,40 @@ class TextLoader:
         return loaded
 
     def read_document(self, document: TextDocument) -> LoadedFile:
-        """The main file's text followed by the extra files' (pages separated by `PAGE_BREAK`),
-        with the main file's page count: the extras are its uzasadnienie and OSR, and it is the
-        main file a caller falls back to reading as pages. An unreadable extra file is skipped.
-        """
-        main = self.read(document.url)
-        if main.text is None or document_kind(main.text) in APPENDIX_KINDS:
-            return main
-        if main.pages and not carries_the_document(
-            main.text, min_chars=MIN_TEXT_CHARS, pages=main.pages
-        ):
-            return main
-        parts = [main.text]
-        required_parts: list[DocumentPart] = []
+        """Read loose-file snapshots in the existing IO order."""
+        bundle = start_bundle(self.read(document.url), min_chars=MIN_TEXT_CHARS)
+        if isinstance(bundle, LoadedFile):
+            return bundle
         for url in document.required_urls:
-            continuation = self.read(url)
-            if continuation.text is None:
-                return LoadedFile(
-                    None,
-                    selection=DocumentSelection(
-                        state="waiting", rejected=(f"{url}: required part unavailable",)
-                    ),
-                )
-            if document_kind(continuation.text) in APPENDIX_KINDS - {"annex"}:
-                continue
-            parts.append(continuation.text)
-            required_parts.extend(
-                part.model_copy(update={"role": "normative_continuation"})
-                for part in continuation.selection.parts
-            )
-        evidence = [*main.selection.parts, *required_parts]
-        missing = list(main.selection.rejected)
-        normative: list[str] = []
-        annex_parts: list[DocumentPart] = []
+            bundle = required_part(bundle, url, self.read(url))
+            if isinstance(bundle, LoadedFile):
+                return bundle
         for url in document.normative_urls:
             try:
                 annex = self.read(url)
             except ServiceUnavailableError:
                 raise
             except Exception:
-                return LoadedFile(
-                    None,
-                    selection=DocumentSelection(
-                        state="waiting", rejected=(f"{url}: normative annex unavailable",)
-                    ),
-                )
-            if annex.text is None:
-                return LoadedFile(
-                    None,
-                    selection=DocumentSelection(
-                        state="waiting", rejected=(f"{url}: normative annex unreadable",)
-                    ),
-                )
-            if document_kind(annex.text) in APPENDIX_KINDS - {"annex"}:
-                return LoadedFile(
-                    None,
-                    selection=DocumentSelection(
-                        state="ambiguous", rejected=(f"{url}: normative annex role not confirmed",)
-                    ),
-                )
-            normative.append(annex.text)
-            annex_parts.extend(
-                part.model_copy(update={"role": "normative_annex"})
-                for part in annex.selection.parts
-            )
-        evidence.extend(sorted(annex_parts, key=lambda p: normative_annex_key(p.text)))
-        parts[0] = join_normative_parts(parts[0], sorted(normative, key=normative_annex_key))
+                annex = None
+            bundle = normative_part(bundle, url, annex)
+            if isinstance(bundle, LoadedFile):
+                return bundle
+        bundle = finish_normative(bundle)
         for url in document.amendment_urls:
-            amendment = self.read(url)
-            if amendment.text is None:
-                return LoadedFile(
-                    None,
-                    selection=DocumentSelection(
-                        state="waiting", rejected=(f"{url}: self-amendment unavailable",)
-                    ),
-                )
-            evidence.extend(
-                part.model_copy(update={"role": "self_amendment"})
-                for part in amendment.selection.parts
-            )
+            bundle = amendment_part(bundle, url, self.read(url))
+            if isinstance(bundle, LoadedFile):
+                return bundle
         for url in document.extra_urls:
             try:
                 loaded = self.read(url)
-                extra = loaded.text
             except ServiceUnavailableError:
                 raise
             except Exception as exc:
                 log.warning("%s unreadable (%s: %s); skipped", url, type(exc).__name__, exc)
-                missing.append(f"{url}: {type(exc).__name__}")
+                bundle = supporting_failure(bundle, url, type(exc).__name__)
                 continue
-            if extra is not None and regulation_support(extra):
-                missing.append(f"{url}: supporting draft regulation")
-            elif extra is not None:
-                parts.append(extra)
-                evidence.extend(loaded.selection.parts)
-            else:
-                missing.append(f"{url}: no extracted text")
-        return LoadedFile(
-            PAGE_BREAK.join(parts),
-            pages=main.pages,
-            sha256=main.sha256,
-            selection=main.selection.model_copy(
-                update={
-                    "parts": tuple(evidence),
-                    "rejected": tuple(missing),
-                    "version": document.version_basis,
-                }
-            ),
-        )
+            bundle = supporting_part(bundle, url, loaded)
+        return finish_bundle(bundle, document)
 
     def select_document(self, document: TextDocument) -> tuple[TextDocument, LoadedFile]:
         selected, loaded = self._select_document(document)
@@ -332,13 +234,10 @@ class TextLoader:
             resolved = self._compare_versions(document)
             if resolved is not None:
                 return resolved
-        rejected: list[str] = []
-        unavailable = False
-        oversize = False
-        ambiguous = False
+        fallback = CandidateFallback()
         for candidate in (document, *document.alternatives):
             if candidate.official_link_conflict:
-                rejected.append(f"{candidate.url}: official source identity conflict")
+                fallback = fallback.conflict(candidate.url)
                 continue
             try:
                 main = self.read(candidate.url)
@@ -351,32 +250,20 @@ class TextLoader:
                     and not document.compare_versions
                 ):
                     raise
-                unavailable = unavailable or not isinstance(exc, ValueError)
-                rejected.append(f"{candidate.url}: {type(exc).__name__}: {exc}")
+                fallback = fallback.failure(
+                    candidate.url, type(exc).__name__, str(exc), invalid=isinstance(exc, ValueError)
+                )
                 continue
-            if main.text and document_kind(main.text) in APPENDIX_KINDS:
-                rejected.append(f"{candidate.url}: {document_kind(main.text)}")
-                continue
-            if (
-                main.text is None
-                and not main.is_scan
-                and (document.alternatives or document.compare_versions)
-            ):
-                oversize = oversize or main.oversize
-                ambiguous = ambiguous or main.selection.state == "ambiguous"
-                rejected.extend(main.selection.rejected)
-                reason = "download size limit" if main.oversize else "no readable body"
-                rejected.append(f"{candidate.url}: {reason}")
+            rejected = fallback.consider(
+                candidate.url,
+                main,
+                multiple=bool(document.alternatives or document.compare_versions),
+            )
+            if rejected is not None:
+                fallback = rejected
                 continue
             return candidate, self._with_evidence(candidate, self.read_document(candidate))
-        return document, LoadedFile(
-            None,
-            oversize=oversize,
-            selection=DocumentSelection(
-                state="waiting" if unavailable else "ambiguous" if ambiguous else "unsupported",
-                rejected=tuple(rejected),
-            ),
-        )
+        return document, fallback.result()
 
     def _compare_versions(self, document: TextDocument) -> tuple[TextDocument, LoadedFile] | None:
         candidates: list[tuple[TextDocument, LoadedFile]] = []
@@ -412,24 +299,7 @@ class TextLoader:
         )
 
     def _with_evidence(self, document: TextDocument, file: LoadedFile) -> LoadedFile:
-        if file.text is None or file.selection.state in ("waiting", "unsupported", "ambiguous"):
-            return file
-        text, parts = deduplicate_bundle(file.text or "", file.selection.parts)
-        file = LoadedFile(
-            text,
-            pages=file.pages,
-            oversize=file.oversize,
-            sha256=file.sha256,
-            selection=file.selection.model_copy(update={"parts": parts}),
-        )
-        selection = bill_selection(file.selection, source_basis=document.version_basis)
-        return LoadedFile(
-            file.text,
-            pages=file.pages,
-            oversize=file.oversize,
-            sha256=file.sha256,
-            selection=selection,
-        )
+        return finalize_selection(document, file)
 
     def load_scan(self, url: str, *, cover_letter: bool) -> ScannedDocument | None:
         """Return bounded PDF bytes with separate original and exact-input identities."""
