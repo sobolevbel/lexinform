@@ -190,3 +190,18 @@ DA2.5 — измерения и совместимые source/artifact/evidence 
 SQL, frozen pending inputs, результаты и зависимости retention остаются в DA5/DA6/DA8/DA10.
 Исключение blob store не разрешает удалять защищённые payload либо выдавать URL/SHA за архив.
 Дальнейшие изменения состояния по-прежнему требуют измерения dump/history growth.
+
+
+## Дополнительный естественный срез 28 октября
+
+Pin `e15b53d07ac1d20fccce9d5d931d3c89d880e4ca` проверен на отдельных копиях:
+SQL 20 378 124 B, gzip 9 / mtime 0 — 4 112 280 B, SQLite 21 663 744 B; схема 59.
+Все 38 таблиц и идентификаторы сохранились; повторный dump совпал побайтно. Production state не изменялся.
+
+Из 389 строк доступны 388 сохранённых отчётов: 4 имеют v1 read metrics, 384 остаются неизмеренными,
+1 строка без payload. Два ненулевых естественных отчёта run/collect содержат 21 completed
+response / 15 050 702 B и 12 cache hits. CLI read reports на этом pin не наблюдались.
+Это ограниченное окно записанных отчётов, не полный суточный поток или точное время requests.
+Known catalogue bodies не означают сохранённые raw bytes. Backend/retention expansion остаются
+отложенными; production overrides не читались, prune не запускался.
+[Проверяемые агрегаты и SHA](../assets/audits/2026-10-28-current-storage/validation.json).

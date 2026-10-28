@@ -389,16 +389,7 @@ class _FittedContext:
 
 @dataclass(frozen=True)
 class _Prepared:
-    """Everything an analysis needs to be written down: produced without touching the database,
-    so several bills can be prepared at the same time.
-
-    `first` marks a first analysis, which seeds the stages. Four flags say the model was not
-    asked: `unchanged` (a re-analysis found the analysed text under a new URL), `unreadable_reason`
-    (the new document was not usable — an analysis of the metadata must never replace one of a
-    text), `deferred` (the run's budget was spent; the text waits for the next run) and `queued`
-    (filed to the batch instead — `record` is None then, `batch_request`/`batch_meta` carry what
-    a submission needs).
-    """
+    """Prepared analysis work and source metadata returned to its calling owner."""
 
     bill: Bill
     located: LocatedText
@@ -665,8 +656,7 @@ class AnalysisService:
             limit=limit,
             max_attempts=self._options.max_attempts,
         )
-        # Asked here and not in `_prepare`, which runs in the worker threads and never touches
-        # the repository.
+        # First-analysis workers never write; historical reanalysis runs on the caller.
         carried = {bill.number for bill in candidates if self._joint_card_exists(bill)}
         history = {
             (bill.term, bill.number): tuple(
@@ -2439,14 +2429,7 @@ class AnalysisService:
         purpose: Literal["analysis", "reanalysis", "explanation"] | None = None,
         history: tuple[ComputationResult, ...] = (),
     ) -> _Prepared:
-        """Load the text and ask the model. Network only: safe to run for several bills at once.
-
-        The per-bill cost guard never refuses a re-analysis, only shortens it: a re-analysis
-        reads a new version of a text that already passed the guard, and a bill whose new text
-        we decline to read would keep a card describing the old one.
-
-        `submit_batch` builds a request; only `_enqueue` on the calling thread persists it.
-        """
+        """Prepare input; historical reanalysis records rereads on its calling thread."""
         document = located.document
         try:
             loaded = self._load_source(document)
@@ -2512,7 +2495,7 @@ class AnalysisService:
         purpose: Literal["analysis", "reanalysis", "explanation"] | None = None,
         history: tuple[ComputationResult, ...] = (),
     ) -> _Prepared:
-        """Prepare a paid input from an already observed source without repository writes."""
+        """Prepare paid input; caller-owned reanalysis also records current comparison sources."""
         document = located.document
         if loaded.document is not None:
             document = loaded.document
@@ -2540,7 +2523,7 @@ class AnalysisService:
                 and self._text_identity.same_text(bill, previous, document)
             )
             or (digest is not None and digest == previous.text_sha256)
-            or (law is not None and law == self._previous_law(previous, previous_document))
+            or (law is not None and law == self._previous_law(bill, previous, previous_document))
         ):
             return self._unchanged(bill, located, loaded, previous)
         if previous is not None and self._ledger.exhausted:
@@ -2759,16 +2742,13 @@ class AnalysisService:
             if previous_document and previous_document.url == source.url
             else source
         )
-        try:
-            baseline = self._load_text(document)
-            if not baseline.matches(previous):
-                return False
-            before = self._load_text(source).whole if document.extra_urls else baseline.whole
-        except ServiceUnavailableError:
-            raise
-        except Exception as exc:
-            log.warning("%s: the analysed text not re-read (%s)", source.url, exc)
+        baseline = self._reread_source(bill, document, outage_fatal=True)
+        if baseline is None or not baseline.matches(previous):
             return False
+        before = baseline.whole
+        if document.extra_urls:
+            original = self._reread_source(bill, source, outage_fatal=True)
+            before = original.whole if original is not None else None
         diff = diff_laws(before, loaded.whole) if before is not None else None
         if diff is None:
             return False
@@ -2815,17 +2795,41 @@ class AnalysisService:
         )
         return settled
 
-    def _previous_law(self, previous: AnalysisRecord, document: TextDocument | None) -> str | None:
+    def _reread_source(
+        self, bill: Bill, document: TextDocument, *, outage_fatal: bool
+    ) -> _Loaded | None:
+        """Record current reread evidence without reconstructing the previous paid input."""
+        loaded: _Loaded | None = None
+        source: DocumentSourceRead | None = None
+        error: Exception | None = None
+        wrapper: _SourceReadError | None = None
+        try:
+            loaded = self._load_source(document)
+        except _SourceReadError as failure:
+            source, error = failure.source, failure.cause
+            wrapper = failure
+        except Exception as exc:
+            error = exc
+        else:
+            source = loaded.source_read
+        if source is not None:
+            self._record_source_read(bill, source)
+        if error is not None:
+            if outage_fatal and isinstance(error, ServiceUnavailableError):
+                if wrapper is not None:
+                    raise error from wrapper
+                raise error
+            log.warning("%s: the analysed text not re-read (%s)", document.url, error)
+        return loaded
+
+    def _previous_law(
+        self, bill: Bill, previous: AnalysisRecord, document: TextDocument | None
+    ) -> str | None:
         """The stored act's digest; an older record's comes from its file if that hashes alike."""
         if previous.law_sha256 is not None or document is None or previous.text_sha256 is None:
             return previous.law_sha256
-        try:
-            loaded = self._load_text(document)
-        except Exception as exc:
-            # Best effort: an old file out of reach costs a full reading, never the phase.
-            log.warning("%s: the analysed text not re-read (%s)", document.url, exc)
-            return None
-        return loaded.law if loaded.digest == previous.text_sha256 else None
+        loaded = self._reread_source(bill, document, outage_fatal=False)
+        return loaded.law if loaded is not None and loaded.digest == previous.text_sha256 else None
 
     def _needs_overflow(self, ctx: BillContext, *, batch: bool) -> bool:
         ceiling = self._options.batch_max_input_tokens if batch else self._options.max_input_tokens

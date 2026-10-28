@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "stage": "J147",
+  "status": "local_acceptance_passed",
+  "base_commit": "f503e952e62cb78ffeee1d9bd01f7ec0c7de2b6c",
+  "scope": "Current source observations for historical comparison rereads; no previous paid provenance recovery",
+  "change": [
+    "Real Bill owner passed to previous-law reread",
+    "One typed reread helper records returned/completed-failure source metadata on caller",
+    "Existing fatal vsbest-effort outage policy and explicit wrapped/directcause chains preserved",
+    "Database writes outside read fallback; no model work bought on source persistence failure"
+  ],
+  "gate": {
+    "tests": 6431,
+    "seconds": 218.531,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "coverage_percent": 92,
+    "mypy_files": 559,
+    "ruff": "all src/tests/tools passed",
+    "format": "625 files formatted",
+    "source_files_exact": 627,
+    "focused_tests": 139,
+    "new_scenario_contract_cases": 14
+  },
+  "corpus": {
+    "paired_public_calls": 76,
+    "lanes": {
+      "cached_control": 24,
+      "cached_view": 40,
+      "physical_extractor": 12
+    },
+    "population": {
+      "controls": 6,
+      "eligible_not_selected": 578,
+      "eligible_within_explicit_caps": 588,
+      "excluded": {
+        "cached_view_over_180kB": 256,
+        "known_role_substitution_print": 3,
+        "raw_over_5MiB": 181
+      },
+      "physical_pairs": 3,
+      "pinned_j141_pairs": 1028,
+      "selected_natural_pairs": 10
+    },
+    "raw_inputs": 20,
+    "raw_bytes": 12001182,
+    "historical_J124_pin_matches": 6,
+    "fresh_raw_pins": 14,
+    "historical_extraction_links": 12,
+    "controls": "All24 controls reached change review;12 sync prepared new fake analysis and12 batch queued new requests; zero control classified quiet",
+    "whole_sql": {
+      "baseline_source_rows_subset_exact": true,
+      "foreign_key_and_integrity_checks_passed": true,
+      "non_source_tables_exact": true,
+      "schema_comparisons": 152,
+      "source_rewrites_or_deletes": 0,
+      "table_comparisons": 5776,
+      "tables": 38
+    },
+    "source_graph_additions": {
+      "artifact_reads": 72,
+      "artifacts": 72,
+      "document_editions": 36,
+      "document_selections": 72,
+      "extraction_results": 12,
+      "selection_artifacts": 96,
+      "selection_editions": 36,
+      "selection_extractions": 12,
+      "source_observations": 72
+    },
+    "business_decisions_IO_contexts_requests_exact": true,
+    "fixture_parity_pairs": 56
+  },
+  "review": "Independent boundedreview closed one latewrapped-outage causechain issue; no remaining actionable findings",
+  "evidence": [
+    {
+      "path": "out/corpus/j147/final-gate/full.xml",
+      "bytes": 1032583,
+      "sha256": "b87d3ebe43a2a886e5001f885cb10a41ed368c483b13d6aa125eeed087759567"
+    },
+    {
+      "path": "out/corpus/j147/final-gate/check.log",
+      "bytes": 660953,
+      "sha256": "b86f6ff8ca272b39de1a02e6ea7ff10fd509ea056a457ca1e4d9d2e90e6cee8d"
+    },
+    {
+      "path": "out/corpus/j147/final-gate/source-freeze.json",
+      "bytes": 68773,
+      "sha256": "60c1c5e336012505693f58e9da15cedd7a2c71c71dac027bacaee0b9eeef0dc3"
+    },
+    {
+      "path": "out/corpus/j147/agent/revision2/freeze.json",
+      "bytes": 2346,
+      "sha256": "52cfa22f56b88f6937130375e961d96e950abfb147304e6195ef9d9673079513"
+    },
+    {
+      "path": "out/corpus/j147/agent/revision2/historical-rereads.patch",
+      "bytes": 19609,
+      "sha256": "d2f329b3c0d2e919eabb909e48e158e8e55f9d12279ab0eac5b4cb326f01e08e"
+    },
+    {
+      "path": "out/corpus/j147/agent/revision2/focused.xml",
+      "bytes": 21388,
+      "sha256": "a2a239ec094d04bfcda221c8f206a59d309901842e1a4a143d1b3259597e6fb3"
+    },
+    {
+      "path": "out/corpus/j147/agent/real-corpus/handoff.json",
+      "bytes": 2464,
+      "sha256": "9495b7bc334c346fa224199ee4220710e650c80887ede1a4bdb2c8a953e9c34c"
+    },
+    {
+      "path": "out/corpus/j147/agent/real-corpus/freeze.json",
+      "bytes": 126271,
+      "sha256": "f974fd6f2f03e9ac9f0f23b47cd183cd7ff1f9e95aa7793035c5d7ccac90cbe2"
+    },
+    {
+      "path": "out/corpus/j147/agent/real-corpus/proof.json",
+      "bytes": 13064,
+      "sha256": "3de3441c0ea49a5aac2ff8cac502c7a914c6d254306fa512bbb74e7406778dfa"
+    },
+    {
+      "path": "out/corpus/j147/storage-deltas-rerun.json",
+      "bytes": 9016,
+      "sha256": "b77ba5c434f4a7ed531ca15a03a93bc355150d16c504c0dd1d255795e37770db"
+    },
+    {
+      "path": "out/corpus/j147/measure_reread_storage.py",
+      "bytes": 1661,
+      "sha256": "ff4b0ba7455675daae87a5b4c28568e183d4abc657a02040279f1228f1e22011"
+    }
+  ],
+  "limits": [
+    "No extraction/normalization/fingerprint/comparison rule, model policy or schema change",
+    "Cached view hashes are not original body identities; synthetic control response bytes labeled separately",
+    "Only append-only current source graph differs; previous paid input references remain unchanged/unknown",
+    "No natural production processing, paid experiment, raw/backend activation or backfill"
+  ],
+  "storage": {
+    "scope": "76 independent simulated caller databases; not natural daily growth",
+    "cases": 76,
+    "sql_delta_sum": 286584,
+    "gzip_delta_sum": 43259,
+    "sql_delta_max": 13151,
+    "gzip_delta_max": 1855
+  }
+}

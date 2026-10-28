@@ -7183,7 +7183,7 @@ review не нашло замечаний к job dependency/lock/verifier; 47 re
 
 ### J146. Capture standalone CLI document observations at the caller boundary
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**.
+Статус: **реализовано, CI и обновление реле подтверждены**.
 Девять mutating roots регистрируют настоящий runs.id до lookup/file work: scan, reprefilter,
 analyze, explain, amendments, republish, forget, reset и observe. Clock/context и finally
 принадлежат вызывающей команде; после workers и до close одна короткая transaction сохраняет
@@ -7215,3 +7215,44 @@ J145a commit `842a91e6f80c2e9b5b52bc5b73fa068fdaca9612` прошёл все че
 включая новый lint, и deploy. Реле перешло с8a76 на842a; health45s/timer подтверждены
 [release proof](../assets/audits/2026-10-28-native-runner/ci-lint-release.json).
 J145 включён в этот исправленный выпуск; e7 не объявляется отдельно развёрнутым.
+
+J146 `f503e952e62cb78ffeee1d9bd01f7ec0c7de2b6c`: все четыре CI jobs и deploy прошли,
+реле перешло с 842a на f503; health 45s/timer подтверждены
+[release proof](../assets/audits/2026-10-28-cli-read-capture/release.json).
+
+
+### J147. Preserve current source evidence from historical rereads
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**.
+Historical previous-law/change-review reads сохраняют returned source metadata через прежний
+caller-owned transaction с реальным Bill owner. Это текущее наблюдение, отдельно от неизменного
+предыдущего paid input. Успешные и завершённые blocked selections сохраняются; неизвестный
+источник до завершения selection не придумывается. First-analysis workers не пишут в SQL.
+Один typed helper сохраняет прежний best-effort/fatal outage порядок; DB errors проходят наружу.
+Поздняя wrapped scan-outage cause chain сохранена после independent review, direct chains прежние.
+
+139 focused и 56 paired fixture cases прошли. Real-corpus proof: 76 paired public callers,
+40 cached-view cases из 10 J141 pairs, 24 meaningful controls, 12 physical extractor cases
+(ZIP→Word, PDF→Word, Word→Word). 20 raw originals / 12 001 182 B имеют отдельные SHA pins;
+6 совпали с историческим J124, 14 закреплены заново. Cached/synthetic identities не выдаются
+за original raw. Из 1028 prior pairs 588 eligible; 440 caps/role exclusions и 578 eligible unselected
+явно сохранены. Контроли deadline/date/amount/negation/scope/reference дошли до change review;
+это проверка управляемых различий, не независимая юридическая разметка.
+
+Decisions/IO/errors/model contexts/requests/computations exact. Schema/FK/integrity и whole-SQL
+проверки прошли; старые строки не изменены. Различаются только append-only source graphs,
+в том числе 12 extraction_results / 12 links в независимых cases. Предыдущие paid refs остаются
+неизменными/unknown. Новых запросов, моделей, backend, schema или capture policy нет.
+Full make check: 6431 tests / 0 failures-errors-skips, 218.531s, coverage 92%; mypy 559,
+Ruff/format 625 по всем src/tests/tools, source freeze 627 exact.
+[Acceptance asset](../assets/audits/2026-10-28-historical-rereads/validation.json).
+
+Дополнительный [естественный срез хранения](../reviews/2026-10-27-storage-profile.md#дополнительный-естественный-срез-28-октября)
+проверен только на отдельных копиях; DA2.1 остаётся partial из-за unmeasured history и неполного
+окна/source coverage. RCL letter use и Senate candidate inspections ещё открыты в DA2.3/2.5;
+план: 74 / 29 done / 6 N/A / 39 applicable partial-open не объявляется выполненным по этому одному seam.
+
+На 76 независимых simulated DB pairs aggregate source-metadata delta составил
+286 584 SQL / 43 259 gzip B, max 13 151 SQL / 1855 gzip B на fixture. Это отдельные
+копии, не natural daily forecast и не общий предел dump. Повторный расчёт побайтно
+воспроизвёл агрегаты; source bodies/input texts не добавляются в production history.

@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "scope": "One fresh natural-state pin inspected on disposable copies; no production processing",
+  "state_commit": "e15b53d07ac1d20fccce9d5d931d3c89d880e4ca",
+  "dump_sha256": "cf9aa3aaf251e457916db371fb1a3a423473ff1d6008d8891d42188b6433cd36",
+  "schema": 59,
+  "sizes": {
+    "gzip6_mtime0_bytes": 4147622,
+    "gzip9_mtime0_bytes": 4112280,
+    "sql_bytes": 20378124,
+    "sqlite_bytes": 21663744
+  },
+  "coverage": {
+    "cache_hits": 12,
+    "cli_read_reports_observed": 0,
+    "completed_body_bytes": 15050702,
+    "document_read_measured_reports": 4,
+    "natural_loader_completions": 21,
+    "nonzero_reports": 2,
+    "not_complete_history": true,
+    "observed_modes": [
+      "run",
+      "collect"
+    ],
+    "rows": 389,
+    "rows_without_saved_report": 1,
+    "saved_reports": 388,
+    "unmeasured_saved_reports": 384
+  },
+  "all38_table_rows_and_identities_exact": true,
+  "repository_dump_byte_exact": true,
+  "fetch_count": 1,
+  "retention": "Code defaults90/90/180days; production overrides were not read; no prune run",
+  "limits": [
+    "Known completed-response bytes exclude wire overhead and unknown partial/refused bytes.",
+    "Run-start dates are recording groups, not exact request timestamps or continuous coverage.",
+    "Report default counters do not establish standalone CLI accounting.",
+    "Artifact/receipt catalogues are identities, not retained raw files or historical demand.",
+    "Raw/backend selection and retention expansion remain deferred.",
+    "No complete daily/source-format coverage, standalone CLI demand or raw-file retention established.",
+    "Synthetic local checkpoints do not measure real GitHub history growth."
+  ],
+  "evidence": [
+    {
+      "path": "out/corpus/current-storage-profile/20261028T210643Z-e15b53d07ac1/handoff-final.json",
+      "sha256": "4189df31612dc6b11c743b1817a80a45607881faf9f972e5fcd1d0d7796610da",
+      "bytes": 3200
+    },
+    {
+      "path": "out/corpus/current-storage-profile/20261028T210643Z-e15b53d07ac1/pin.json",
+      "sha256": "6d4f7b16d98cd3d16a4fd880055c63345c3b0fbaae9f59fe29ce2bd9f3f05922",
+      "bytes": 582
+    },
+    {
+      "path": "out/corpus/current-storage-profile/20261028T210643Z-e15b53d07ac1/source-freeze.json",
+      "sha256": "3d90188101950a20bc67246abc0fc060ff03caab0b9c0f70e9b6b9af6eeba220",
+      "bytes": 20029
+    },
+    {
+      "path": "out/corpus/current-storage-profile/20261028T210643Z-e15b53d07ac1/document-read-profile.json",
+      "sha256": "b8260f26c9cfca546a9ef053687be11b5adfdbdcfee3dd8d6ab06026ff3c7c40",
+      "bytes": 6206
+    },
+    {
+      "path": "out/corpus/current-storage-profile/20261028T210643Z-e15b53d07ac1/source-history-profile.json",
+      "sha256": "f9f9ee97fb772bd583db374abd4ed44416d7b0331de725e4b99a40e8f9c2b313",
+      "bytes": 1241
+    }
+  ]
+}
