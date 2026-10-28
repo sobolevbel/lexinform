@@ -88,6 +88,8 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    RclLetterUse,
+    RclLetterUseRecord,
     RclProject,
     ReadyAnalysis,
     ResultApplicabilityObservation,
@@ -753,6 +755,24 @@ MIGRATIONS: tuple[str, ...] = (
     );
     CREATE INDEX ix_source_candidate_traces_trace ON source_candidate_traces(trace_id);
     """,
+    """
+    CREATE TABLE rcl_letter_uses (
+        use_id TEXT PRIMARY KEY NOT NULL,
+        project_id INTEGER NOT NULL,
+        stage_id INTEGER,
+        stage_number INTEGER NOT NULL,
+        letter_id INTEGER NOT NULL,
+        payload_state TEXT NOT NULL CHECK(payload_state IN ('complete', 'omitted_over_limit')),
+        artifact_sha256 TEXT REFERENCES artifacts(sha256),
+        artifact_read_id TEXT REFERENCES artifact_reads(read_id),
+        extraction_id TEXT REFERENCES extraction_results(extraction_id),
+        semantic_sha256 TEXT NOT NULL,
+        recorded_at TEXT NOT NULL,
+        record_json TEXT NOT NULL CHECK(length(CAST(record_json AS BLOB)) <=
+          CASE payload_state WHEN 'omitted_over_limit' THEN 2048 ELSE 4096 END)
+    );
+    CREATE INDEX ix_rcl_letter_uses_owner ON rcl_letter_uses(project_id, stage_id, letter_id);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -928,6 +948,112 @@ def _validate_candidate_disposition_traces(connection: sqlite3.Connection) -> No
         raise ValueError("candidate trace link has a broken reference")
 
 
+class RclLetterUseRowError(ValueError):
+    def __init__(self, code: str) -> None:
+        self.code = code
+        super().__init__(code)
+
+
+def verify_rcl_letter_use_parents(connection: sqlite3.Connection, use: RclLetterUse) -> None:
+    physical = use.payload.physical
+    artifact = None
+    if physical.artifact_sha256 is not None:
+        row = connection.execute(
+            "SELECT * FROM artifacts WHERE sha256=?", (physical.artifact_sha256,)
+        ).fetchone()
+        if row is not None:
+            artifact = ArtifactMetadata(
+                sha256=row["sha256"],
+                byte_size=row["byte_size"],
+                recorded_at=datetime.fromisoformat(row["recorded_at"]),
+            )
+    read = None
+    if physical.artifact_read_id is not None:
+        row = connection.execute(
+            "SELECT * FROM artifact_reads WHERE read_id=?", (physical.artifact_read_id,)
+        ).fetchone()
+        if row is not None:
+            read = ArtifactReadReceipt(
+                sha256=row["artifact_sha256"],
+                byte_size=row["byte_size"],
+                requested_url=row["requested_url"],
+                recorded_at=datetime.fromisoformat(row["recorded_at"]),
+            )
+            if read.read_id != row["read_id"]:
+                raise ValueError("letter read parent identity mismatch")
+    extraction = None
+    if physical.extraction_id is not None:
+        row = connection.execute(
+            "SELECT * FROM extraction_results WHERE extraction_id=?", (physical.extraction_id,)
+        ).fetchone()
+        if row is not None:
+            extraction = ExtractionResult.model_validate_json(row["result_json"])
+            if (extraction.result_id, extraction.artifact_sha256) != (
+                row["extraction_id"],
+                row["artifact_sha256"],
+            ):
+                raise ValueError("letter extraction parent identity mismatch")
+    use.verify_parents(artifact, read, extraction)
+
+
+def read_rcl_letter_use(connection: sqlite3.Connection, row: sqlite3.Row) -> RclLetterUseRecord:
+    try:
+        record = RclLetterUseRecord.model_validate_json(row["record_json"])
+    except (ValueError, TypeError, IndexError) as exc:
+        raise RclLetterUseRowError("invalid_rcl_letter_use") from exc
+    official, physical = record.payload.official, record.payload.physical
+    expected = (
+        record.use_id,
+        official.project_id,
+        official.stage_id,
+        official.stage_number,
+        official.letter_id,
+        record.payload_state,
+        physical.artifact_sha256,
+        physical.artifact_read_id,
+        physical.extraction_id,
+        record.semantic_sha256,
+        _utc_iso(record.recorded_at),
+    )
+    columns = (
+        "use_id",
+        "project_id",
+        "stage_id",
+        "stage_number",
+        "letter_id",
+        "payload_state",
+        "artifact_sha256",
+        "artifact_read_id",
+        "extraction_id",
+        "semantic_sha256",
+        "recorded_at",
+    )
+    if expected != tuple(row[name] for name in columns):
+        raise RclLetterUseRowError("rcl_letter_use_columns_mismatch")
+    try:
+        verify_rcl_letter_use_parents(connection, record)
+    except (ValueError, TypeError, sqlite3.Error) as exc:
+        raise RclLetterUseRowError("rcl_letter_use_parent_mismatch") from exc
+    return record
+
+
+def _validate_rcl_letter_uses(connection: sqlite3.Connection) -> None:
+    present = connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE name='rcl_letter_uses' AND type='table'"
+    ).fetchone()
+    if present is None:
+        if connection.execute("PRAGMA user_version").fetchone()[0] >= 60:
+            raise ValueError("letter-use table is missing from its schema")
+        return
+    factory = connection.row_factory
+    connection.row_factory = sqlite3.Row
+    try:
+        for row in connection.execute("SELECT * FROM rcl_letter_uses"):
+            read_rcl_letter_use(connection, row)
+    finally:
+        connection.row_factory = factory
+
+
 class SqliteBillRepository:
     """`BillRepository` on one sqlite3 connection; JSON columns hold pydantic dumps."""
 
@@ -1029,6 +1155,7 @@ class SqliteBillRepository:
                 scratch.executescript(f"BEGIN;{migration}PRAGMA user_version = {number};COMMIT;")
             _validate_legacy_projections(scratch)
             _validate_candidate_disposition_traces(scratch)
+            _validate_rcl_letter_uses(scratch)
         finally:
             scratch.close()
         tables = [
@@ -2015,6 +2142,47 @@ class SqliteBillRepository:
             (root_publication_id,),
         )
         return [self._row_to_publication(row) for row in rows]
+
+    def save_rcl_letter_use(self, use: RclLetterUse, *, recorded_at: datetime) -> None:
+        use = RclLetterUse.model_validate_json(use.model_dump_json(exclude={"recorded_at"}))
+        if recorded_at.utcoffset() is None:
+            raise ValueError("letter-use recording time requires a timezone")
+        record = RclLetterUseRecord(**use.model_dump(), recorded_at=recorded_at.astimezone(UTC))
+        verify_rcl_letter_use_parents(self._conn, record)
+        official, physical = record.payload.official, record.payload.physical
+        self._conn.execute(
+            "INSERT INTO rcl_letter_uses VALUES (?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING",
+            (
+                record.use_id,
+                official.project_id,
+                official.stage_id,
+                official.stage_number,
+                official.letter_id,
+                record.payload_state,
+                physical.artifact_sha256,
+                physical.artifact_read_id,
+                physical.extraction_id,
+                record.semantic_sha256,
+                _utc_iso(record.recorded_at),
+                record.model_dump_json(),
+            ),
+        )
+        saved = self.get_rcl_letter_use(record.use_id)
+        if saved is None or saved.model_copy(update={"recorded_at": record.recorded_at}) != record:
+            raise ValueError("immutable letter-use metadata cannot be replaced")
+
+    def get_rcl_letter_use(self, use_id: str) -> RclLetterUseRecord | None:
+        row = self._conn.execute(
+            "SELECT * FROM rcl_letter_uses WHERE use_id=?", (use_id,)
+        ).fetchone()
+        return read_rcl_letter_use(self._conn, row) if row is not None else None
+
+    def iter_rcl_letter_uses(self, project_id: int) -> Iterator[RclLetterUseRecord]:
+        for row in self._conn.execute(
+            "SELECT * FROM rcl_letter_uses WHERE project_id=? ORDER BY stage_id,letter_id,use_id",
+            (project_id,),
+        ):
+            yield read_rcl_letter_use(self._conn, row)
 
     def save_extraction_result(self, result: ExtractionResult, *, recorded_at: datetime) -> None:
         result = ExtractionResult.model_validate_json(result.model_dump_json())

@@ -332,6 +332,15 @@ from lexinform.models.rcl import (
     rcl_project_id,
     rcl_stages,
 )
+from lexinform.models.rcl_letter_use import (
+    RclLetterUse as RclLetterUse,
+)
+from lexinform.models.rcl_letter_use import (
+    RclLetterUseObservation as RclLetterUseObservation,
+)
+from lexinform.models.rcl_letter_use import (
+    RclLetterUseRecord as RclLetterUseRecord,
+)
 from lexinform.models.report import (
     AnalysisVerdict,
     BackfillOutcome,
@@ -655,6 +664,9 @@ __all__ = [
     "RclConsultation",
     "RclDocument",
     "RclFolder",
+    "RclLetterUse",
+    "RclLetterUseObservation",
+    "RclLetterUseRecord",
     "RclProject",
     "RclProjectSummary",
     "RclStage",

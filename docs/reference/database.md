@@ -1,6 +1,6 @@
 # База данных и миграции
 
-Статус: актуальный справочник · миграции описаны по схеме **v59** включительно.
+Статус: актуальный справочник · миграции описаны по схеме **v60** включительно.
 
 Источник истины — append-only
 [`MIGRATIONS` в sqlite_repo.py](https://github.com/sobolevbel/lexinform/blob/main/src/lexinform/adapters/sqlite_repo.py).
@@ -31,6 +31,7 @@ HTML содержит снимок v34, включая SQL ограничени�
 | `selection_editions` (v57) | `selection_id`; FK selection и edition | Проверенная связь с existing source decision; полный ordered membership остаётся у selection. |
 | `candidate_disposition_traces` (v59) | Content-addressed `trace_id`; JSON ≤ 4 KiB | Теневые решения по внешним URL кандидатам, исходный запрос и известные body SHA; переполнение явно сохраняет неполное покрытие и SHA исходного набора. Без текста и влияния на выбор. |
 | `source_candidate_traces` (v59) | `(observation_id, trace_id)`; оба FK | Связывает одно source observation с несколькими различными наборами рассмотренных альтернатив без переписывания selection или observation. |
+| `rcl_letter_uses` (v60) | `use_id`; индекс project/stage/letter; nullable artifact/read/extraction FK; JSON ≤ 4 KiB | Совместимый слой чтения наблюдений разбора письма RCL и merge в памяти; producer пока не подключён. Полное metadata или явный omission ≤ 2 KiB; без Bill/Telegram owner и без обещания сохранённого применения. |
 | `content_snapshots` (v55) | `snapshot_id`; kind + exact JSON | Общие immutable editorial Bill/change/metadata-plan snapshots; plan не копирует отдельные bodies. |
 | `content_versions` (v55) | `content_id`; root publication index; предыдущая версия | Editorial edition: semantic snapshot refs, known paid/event refs, exact rendered text либо явный unknown legacy, язык/formatter version при известности. |
 | `publication_content` (v55) | `publication_id` → `content_id` | Immutable связь физической publication с edition; не является receipt отправки. |

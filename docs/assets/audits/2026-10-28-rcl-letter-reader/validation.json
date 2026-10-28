@@ -1,0 +1,292 @@
+{
+  "artifact_pins": {
+    "agent/closure.json": {
+      "bytes": 576,
+      "sha256": "d917396cdf95f51cd7835faaa8930058e49c1d83b56b9d288a3c44c1f27f1a6b"
+    },
+    "agent/focused.xml": {
+      "bytes": 24039,
+      "sha256": "53c8d130aac7793c019c3a02783c759643ee720e140598d95b945f47f4e07f59"
+    },
+    "agent/freeze.json": {
+      "bytes": 4659,
+      "sha256": "02cf49a150719e1dff2cf5d3b049e687357ae8750e6fda75a037351111e82885"
+    },
+    "agent/qualification.json": {
+      "bytes": 2390,
+      "sha256": "3c39364c1ab0d709b88582991c03cfd353d790265ef78f1749908da878916a91"
+    },
+    "final-gate-v2/check.log": {
+      "bytes": 660488,
+      "sha256": "ab4954c86cc6ca6c81f08e34f66549098ed55bf56a1fc260ab35cee206a3a0d3"
+    },
+    "final-gate-v2/full.xml": {
+      "bytes": 1049476,
+      "sha256": "38cab17cdb7d9dab9c497dc642fd2386927a773a606126ead77e68a103d993b7"
+    },
+    "final-gate-v2/source-freeze.json": {
+      "bytes": 69221,
+      "sha256": "ad411131d1056b6e1efd9f489f835d107c6b9e28eade6177f159c11c0deebee2"
+    },
+    "final-gate/source-freeze.json": {
+      "bytes": 69221,
+      "sha256": "aca49a976a594b0369ac3800074c7fcf746157f8f2f0c70ca5935e2ad24fe884"
+    },
+    "independent-review.json": {
+      "bytes": 970,
+      "sha256": "9a584d3765947cb94b28cc579514fa62b6a59826d037b848678266035ae01d42"
+    },
+    "qa/compare_native.py": {
+      "bytes": 6045,
+      "sha256": "563b62c6662d4dc2df92567896b890af1b2df046e74e31d56ed23faf2b57d3e2"
+    },
+    "qa/handoff.json": {
+      "bytes": 2320,
+      "sha256": "142b20a3c22d9724c5122c9eca62788334c6f06654b29e73eb44ea6ddb257ed4"
+    },
+    "qa/parity.json": {
+      "bytes": 60384,
+      "sha256": "7aa2b4c4c9cf88ecfefd5f50f71d00a140e135cc19dbb585bf30f21a34f9e7d1"
+    },
+    "qualify_state_copy.py": {
+      "bytes": 2684,
+      "sha256": "e1225e8ecb76799b40913931293dfe85aaaf0a2a681d7a332aceda7b8973d907"
+    },
+    "state-copy-proof.json": {
+      "bytes": 772,
+      "sha256": "7fe85ab39154b5b3b5d14d8344b8542150269373c146033a15080489df0cd2a6"
+    }
+  },
+  "baseline_main": "61e5fab54695174c81501075fe9e0ab5c2bca171",
+  "closure": {
+    "corpus_derived_437_row_scope": "cached-input counterfactual parse/merge facts with unknown body origins; not natural production demand",
+    "migration_prefix_59_byte_exact": true,
+    "new_migrations": 1,
+    "runtime_collector_observer_snapshot_writer_calls_outside_inert_helper": [],
+    "stress": {
+      "known_parent_json_excluded_record_cap": true,
+      "known_ref_record_bytes": 3163,
+      "maximum_scalar_known_refs_omission_bytes": 1735,
+      "nullable_stage_preserved": true,
+      "scope": "synthetic_metadata_capacity_probe_not_a_source_event_or_parent_verification"
+    }
+  },
+  "focused_tests": 78,
+  "frozen_agent_baseline": "f503e952e62cb78ffeee1d9bd01f7ec0c7de2b6c",
+  "full_gate": {
+    "added_scenarios": 0,
+    "added_unit_cases": 40,
+    "all_src_tests_tools_checked": true,
+    "coverage_percent": 92,
+    "mypy_source_files": 563,
+    "pytest_seconds": 216.87,
+    "ruff_format_files": 629,
+    "source_config_freeze_exact": true,
+    "source_config_freeze_files": 631,
+    "tests": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 6471
+    }
+  },
+  "independent_review": {
+    "findings": [],
+    "frozen_patch_sha256": "524d3d2f64a7caa54b14b4232d9f7a0496755229b6cf4eb35bc4218f36d9015a",
+    "independent_temporary_probes": {
+      "full_record_bytes": 2549,
+      "omitted_record_bytes": 1572
+    },
+    "limitations": [
+      "omitted full semantics cannot be revalidated",
+      "437 facts are counterfactual cached-input contexts, not natural demand",
+      "shared parent metadata is outside per-record caps",
+      "f503 preserves SQL but does not validate new RCL semantics"
+    ],
+    "reviewer": "corpus_pilot_review",
+    "scope": "independent S1 reader review; no producer, runtime, legal completeness or natural demand claim",
+    "verified": [
+      "all 11 frozen files",
+      "59-migration prefix and single append60",
+      "IDs, byte caps and exact known parent bindings",
+      "matching rejection in get/doctor/restore; restore target dump unchanged",
+      "f503 populated opaque SQL preservation byte-exact",
+      "no runtime collector imports or calls"
+    ]
+  },
+  "initial_gate": {
+    "failed": 1,
+    "following_change": {
+      "changed_files": [
+        "tests/unit/test_candidate_disposition_trace.py",
+        "tests/unit/test_rcl_letter_history.py"
+      ],
+      "reason": "restore assertions target SCHEMA_VERSION, preserving migration intent across future versions; no behavior or fixture edits",
+      "runtime_source_changes": []
+    },
+    "full_gate_repeated": true,
+    "passed": 6470,
+    "reason": "existing migration restoration test assumed current schema59; changed to SCHEMA_VERSION",
+    "tests": 6471
+  },
+  "native_replay": {
+    "all_rows_reports_provider_requests_messages_exact": true,
+    "artifacts": {
+      "out/corpus/j145a/native168/manifest.json": "023c9f31f27c7c60f1ad9ce3ad3a9ce38c3eaf060c748ababf341e60d9edb8d0",
+      "out/corpus/j148/native168/manifest.json": "38db3001c2499b0a4476f3aa4c22248083f1718af1ce96b2fdbd3d0232847973",
+      "out/corpus/j148/native168/spec.json": "05d28c0afd48876264ffc54220a3eed35fac1a595c101b5c5b47d6442a82fd51",
+      "out/corpus/j148/qa/compare_native.py": "563b62c6662d4dc2df92567896b890af1b2df046e74e31d56ed23faf2b57d3e2",
+      "out/corpus/j148/qa/parity.json": "7aa2b4c4c9cf88ecfefd5f50f71d00a140e135cc19dbb585bf30f21a34f9e7d1"
+    },
+    "baseline": "/Users/sobaleu/projects/lexinform/out/corpus/j145a/native168",
+    "candidate": "/Users/sobaleu/projects/lexinform/out/corpus/j148/native168",
+    "cases": 168,
+    "counts": {
+      "admission": 64,
+      "explanation": 16,
+      "handoff": 24,
+      "normal": 12,
+      "primary": 36,
+      "reuse": 16
+    },
+    "empty_schema60_tables": 168,
+    "final_difference_after_native_replay": "Exactly two restore-version assertions in tests changed before full v2; runtime, fixtures, observer and runner source remain byte-exact. No same-tree reuse claim across the test edits.",
+    "guard_violations": 0,
+    "gzip9_mtime0_delta_bytes_range": [
+      149,
+      240
+    ],
+    "head": "61e5fab54695174c81501075fe9e0ab5c2bca171",
+    "imports": 194,
+    "j147_source_graph_deltas": 0,
+    "normalization": "Only schema59-to60 empty rcl_letter_uses table/index/user_version and recomputed SQL-derived sizes/hashes/new empty table digest; no runs/data/report fields removed or normalized.",
+    "observed_reads": 203,
+    "observer_runner_and_environment_exact_to_baseline": true,
+    "prior_table_changes": 0,
+    "profile_changes_excluding_validated_schema_metrics": 0,
+    "reproduction": "UV_CACHE_DIR=/private/tmp/lexinform-pr9-uv-cache UV_PROJECT_ENVIRONMENT=/private/tmp/lexinform-j140-integrated/.venv PYTHONPATH=/Users/sobaleu/projects/lexinform/src:/Users/sobaleu/projects/lexinform uv run --no-sync --offline --frozen python tools/native_replay.py run --code /Users/sobaleu/projects/lexinform --output /Users/sobaleu/projects/lexinform/out/corpus/j148/native168 ; then same environment python out/corpus/j148/qa/compare_native.py (runner output must be fresh)",
+    "scope": "Fixed six native observers only, -n0; no full suite, network, paid calls, production processing, source edits, commit or push.",
+    "source_inputs_count": 707,
+    "source_unchanged": true,
+    "sql_delta_bytes_range": [
+      834,
+      834
+    ],
+    "status": "passed"
+  },
+  "patch_sha256": "524d3d2f64a7caa54b14b4232d9f7a0496755229b6cf4eb35bc4218f36d9015a",
+  "pinned_state_copy": {
+    "after": {
+      "gzip9_mtime0_bytes": 4112546,
+      "sha256": "c892208ec351dbf9da15aeac9e4667b210788fd50a124bbd4bb1eeaae146d45c",
+      "sql_bytes": 20378958
+    },
+    "before": {
+      "gzip9_mtime0_bytes": 4112280,
+      "sha256": "cf9aa3aaf251e457916db371fb1a3a423473ff1d6008d8891d42188b6433cd36",
+      "sql_bytes": 20378124
+    },
+    "delta": {
+      "gzip9_mtime0_bytes": 266,
+      "sql_bytes": 834
+    },
+    "doctor_findings": 0,
+    "new_rows": 0,
+    "old_tables_exact": 38,
+    "only_new_table": "rcl_letter_uses",
+    "roundtrip_byte_exact": true,
+    "schema_after": 60,
+    "schema_before": 59,
+    "scope": "pinned production dump on disposable local copies; no Settings, CLI, processing, network or production writes",
+    "source_state_commit": "e15b53d07ac1d20fccce9d5d931d3c89d880e4ca"
+  },
+  "qualification": {
+    "S1_reloads_all_439_facts_after_f503_roundtrip": true,
+    "baseline": "f503e952e62cb78ffeee1d9bd01f7ec0c7de2b6c",
+    "corpus_derived_counterfactual_facts": 437,
+    "corpus_derived_semantic_ids_exact_M0": true,
+    "counterfactual_cached_body_origins": "all_unknown",
+    "counterfactual_delta": {
+      "gzip_bytes": 145800,
+      "sql_bytes": 1216657,
+      "sqlite_bytes": 1847296
+    },
+    "counterfactual_population": {
+      "gzip_bytes": 149066,
+      "sql_bytes": 1234207,
+      "sql_sha256": "8fecc86c26980dd10f79ea805cd84e8b9712a8d96f3fce8c2007786d18e1b281",
+      "sqlite_bytes": 2359296
+    },
+    "empty_schema_delta": {
+      "gzip_bytes": 149,
+      "sql_bytes": 834,
+      "sqlite_bytes": 16384
+    },
+    "f503_export_sha256": "4964f00218e8b04bee25fd0055ae40d681adf0ee62f643dc3ebbf8f4c20b0ea1",
+    "f503_opaque_full_SQL_roundtrip_byte_exact": true,
+    "max_actual_record_json_bytes": 2915,
+    "not_qualified": [
+      "production state/natural daily growth",
+      "producer behavior/worker IO",
+      "read-only durability",
+      "old f503 semantic validation of new table",
+      "raw store or legal correctness"
+    ],
+    "old_RCL_model_source_exact": true,
+    "old_reader": {
+      "old_reader_schema": 59,
+      "preserved_database_schema": 60
+    },
+    "old_reader_does_not_validate_new_RCL_semantics": true,
+    "repeat_after_365_days": {
+      "bytes_delta": {
+        "gzip_bytes": 0,
+        "sql_bytes": 0,
+        "sqlite_bytes": 0
+      },
+      "rows_added": 0
+    },
+    "schema59": {
+      "gzip_bytes": 3117,
+      "sql_bytes": 16716,
+      "sql_sha256": "6aaa9177d7c5ec44ea84118bc2bc3786a4e4e7454440b5c13cbef2f257375785",
+      "sqlite_bytes": 495616
+    },
+    "schema60_empty": {
+      "gzip_bytes": 3266,
+      "sql_bytes": 17550,
+      "sql_sha256": "a1d34f8cc26b52bce9399e3b106420b616ae28f0437bb7354892a2579ac8f5f7",
+      "sqlite_bytes": 512000
+    },
+    "scope": "corpus_derived_cached_input_counterfactual_facts_not_natural_production_demand_or_saved_application",
+    "synthetic_known_and_omitted_addition": {
+      "delta_including_parents": {
+        "gzip_bytes": 1883,
+        "sql_bytes": 8484,
+        "sqlite_bytes": 8192
+      },
+      "parent_counts": {
+        "artifact_reads": 1,
+        "artifacts": 1,
+        "extraction_results": 1,
+        "rcl_letter_uses": 439
+      },
+      "parents_not_in_4096_byte_per_record_cap": true,
+      "per_use_json_bytes": [
+        2549,
+        1572
+      ],
+      "rows": 2,
+      "shared_extraction_result_json_bytes": 2719
+    }
+  },
+  "scope": [
+    "metadata reader and inert collector/writer only",
+    "no runtime emitter/flush, parser/selection change, network, paid work or production processing",
+    "counterfactual corpus sizing is not natural demand",
+    "known parent metadata is outside per-record caps",
+    "opaque predecessor preservation is not semantic validation",
+    "raw/backend/retention decisions deferred"
+  ],
+  "stage": "J148 S1 RCL letter-use reader; no producer activation"
+}

@@ -7227,7 +7227,7 @@ J146 `f503e952e62cb78ffeee1d9bd01f7ec0c7de2b6c`: все четыре CI jobs и 
 
 ### J147. Preserve current source evidence from historical rereads
 
-Статус: **локальная приёмка завершена; CI docs отказал, deploy не запускался**.
+Статус: **реализовано; docs failure исправлен, CI и обновление реле подтверждены**.
 Historical previous-law/change-review reads сохраняют returned source metadata через прежний
 caller-owned transaction с реальным Bill owner. Это текущее наблюдение, отдельно от неизменного
 предыдущего paid input. Успешные и завершённые blocked selections сохраняются; неизвестный
@@ -7267,3 +7267,56 @@ J147 commit `7516ed2a3539181f64ed233a80f1f5724c943dbd`: lint, test и web про
 Добавлены явные anchors, без изменения runtime или ослабления strict docs gate;
 реле осталось на f503 до успешного следующего выпуска.
 [Failure evidence](../assets/audits/2026-10-28-historical-rereads/ci-docs-failure.json).
+
+
+J147 с исправлением anchors выпущен в `61e5fab54695174c81501075fe9e0ab5c2bca171`: все четыре
+CI jobs и deploy прошли. Реле перешло с f503 на 61e5; health 45s/timer подтверждены
+[release proof](../assets/audits/2026-10-28-historical-rereads/release.json).
+
+
+<a id="j148"></a>
+
+### J148. Read bounded RCL letter-use history before producer activation
+
+Статус: **локальная приёмка reader завершена; CI/deploy ожидаются**.
+Одна append-only migration 60 добавляет RCL-specific metadata history с официальным
+project/stage/letter owner, без выдуманного Bill/term. Запись описывает parse и in-memory merge,
+а не сохранённое application, актуальность deadline или delivery. Optional exact body/read/
+extraction refs проверяются одним decoder в get/iterator/doctor и scratch restore до изменения
+целевой DB. Полная запись воспроизводит semantic SHA; oversized metadata заменяется явным
+omission envelope, который не притворяется полным и не может перепроверить отсутствующие поля.
+Читатель ограничивает full JSON 4096 B / omitted 2048 B; shared parent metadata считается отдельно.
+
+Collector/writer inert: RclProjectReader, Container, parser, pipeline и CLI finalizers его не
+вызывают. Не меняются запросы, paid inputs, model/parser versions, extraction/selection,
+старые RCL/Bill JSON или политика хранения raw. Следующий producer разрешён только после
+подтверждённого развёртывания этого читателя. Повторный факт сохраняет first recorded_at
+и не создаёт строку на каждый poll; старые origins остаются unknown.
+
+M0 измерил 437 corpus-derived cached-input counterfactual contexts, а не естественный спрос
+или сохранённые applications. У всех body origins unknown; max actual JSON 2915 B.
+Эта synthetic population добавила 1 216 657 SQL / 145 800 gzip B. Stress full/omission
+с known refs составили 3163/1735 B; 2719 B shared extraction fixture вне record cap.
+Через 365 дней повтор добавил 0 rows/SQL/gzip bytes. Actual f503 reader сохранил populated
+schema60 SQL byte-exact, но это opaque preservation, без semantic validation новой таблицы.
+
+На disposable копии настоящего state e15b53d0 прежние 38 таблиц/schema/rows точны.
+Пустая новая таблица добавила 834 SQL / 266 gzip B; schema60 dump/restore byte-exact,
+FK/integrity/doctor passed. Production processing не запускался. Independent review
+не нашло замечаний; отдельные пробы подтвердили одинаковый reject повреждённых parents
+в get/doctor/restore и отсутствие изменений целевого dump после отказа restore.
+
+DA2.3/DA2.5 остаются partial до producer и Senate inspection; план остаётся
+74 / 29 done / 6 N/A / 39 applicable partial-open.
+
+
+Final make check: 6471 tests / 0 failures-errors-skips, 216.87s, coverage 92%; mypy 563,
+Ruff/format 629 по всем src/tests/tools, source/config freeze 631 exact. Новые 40 unit
+cases не расширяют scenario suite. Первый full выявил одно устаревшее ожидание current schema59;
+оно и аналогичная новая проверка теперь используют SCHEMA_VERSION, затем весь gate повторён.
+
+Native replay: все 168 cases прошли; прежние строки/schema, reports, messages и provider
+inputs exact. Отличается только проверенная пустая таблица/indexes/schema60: +834 SQL B/case,
++149–240 gzip B/case. После replay изменились ровно два test assertions, runtime/fixtures/
+observer/runner exact; same-tree reuse через эту границу не заявляется.
+[Acceptance asset](../assets/audits/2026-10-28-rcl-letter-reader/validation.json).

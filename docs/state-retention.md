@@ -425,6 +425,29 @@ FK parents и ссылки переживают operational cleanup. Прави�
 эквивалентность representations, supersession или paid-input identity. Полная provenance
 решения остаётся частичной; manifest не заполняет пропущенные candidate dispositions.
 
+## RCL consultation-letter use reader (v60)
+
+`rcl_letter_uses` хранит неизменяемое metadata разбора письма и merge окна в памяти, отдельно от
+`RclConsultation`/Bill JSON. Это наблюдение source-use, а не receipt сохранённого применения,
+актуального дедлайна или отправки. В этой стадии runtime producer/collector/finalizer не подключён.
+
+Официальные project/stage/letter ID принадлежат RCL; неизвестный stage ID остаётся `None`,
+stage number не подставляется вместо ID. Известные complete body/read/extraction refs проверяются
+по существующим parent metadata. Кэшированный текст без проверенной связи с body остаётся unknown.
+Hash точного UTF-8 parser input отделён от extraction output; равенство заявляется только явно.
+
+Полная запись вместе с первым aware UTC `recorded_at` ограничена 4 KiB UTF-8. При превышении общих
+или полевых лимитов сохраняется omission ≤ 2 KiB с исходным semantic ID, официальными ключами,
+известными refs, input/output/merge hashes и причинами; отсутствующее полное metadata не считается
+перепроверенным. URL с userinfo/query/fragment и небезопасные URL сохраняют только hash/omission.
+Текст, body, каталог, exception message и платный input сюда не копируются; shared parent metadata
+не входит в лимит одной записи и учитывается отдельно.
+
+Одинаковый факт сохраняет первую запись и время; изменившиеся input/origin/components/merge context
+дают другой ID. Run/history pruning не удаляет эти metadata и родителей. Число различных фактов
+зависит от работы; постоянный общий размер БД/collector не обещан. Reader-first релиз проверяется
+до подключения producer; S2 может откатываться к этому reader без изменения публичного RCL JSON.
+
 ## Outer candidate disposition trace (v59)
 
 `candidate_disposition_traces` сохраняет теневую метаисторию нетривиального выбора внешних URL:

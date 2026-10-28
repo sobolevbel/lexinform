@@ -77,6 +77,9 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    RclLetterUse,
+    RclLetterUseObservation,
+    RclLetterUseRecord,
     RclProject,
     RclProjectSummary,
     RclStage,
@@ -756,6 +759,12 @@ class BillRepository(Protocol):
 
     def list_selection_artifacts(self, selection_id: str) -> list[SelectionArtifactReference]: ...
 
+    def save_rcl_letter_use(self, use: RclLetterUse, *, recorded_at: datetime) -> None: ...
+
+    def get_rcl_letter_use(self, use_id: str) -> RclLetterUseRecord | None: ...
+
+    def iter_rcl_letter_uses(self, project_id: int) -> Iterator[RclLetterUseRecord]: ...
+
     def save_extraction_result(
         self, result: ExtractionResult, *, recorded_at: datetime
     ) -> None: ...
@@ -1282,3 +1291,9 @@ class BillRepository(Protocol):
         ...
 
     def rollback(self) -> None: ...
+
+
+class RclLetterUseObserver(Protocol):
+    def observe_rcl_letter_use(self, observation: RclLetterUseObservation) -> None: ...
+
+    def read_rcl_letter_uses(self) -> tuple[RclLetterUseObservation, ...]: ...

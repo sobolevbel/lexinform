@@ -4,9 +4,11 @@ import argparse
 import datetime as dt
 import sqlite3
 from collections import Counter
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from lexinform.adapters.sqlite_repo import RclLetterUseRowError, read_rcl_letter_use
 from lexinform.document_editions import candidate_edition
 from lexinform.models import (
     ArtifactMetadata,
@@ -28,6 +30,26 @@ from tools.sqlite_snapshot import open_snapshot
 _TABLES = {"document_selections", "source_observations"}
 _ARTIFACT_TABLES = {"artifacts", "selection_artifacts"}
 _EDITION_TABLES = {"document_editions", "selection_editions"}
+
+
+def _audit_rcl_letters(
+    connection: sqlite3.Connection,
+    counts: Counter[str],
+    issue: Callable[[str, str], None],
+) -> None:
+    for row in connection.execute(
+        "SELECT rowid AS audit_id, * FROM rcl_letter_uses ORDER BY rowid"
+    ):
+        counts["rcl_letter_use_rows"] += 1
+        ref = f"rcl_letter_uses/{row['audit_id']}"
+        try:
+            record = read_rcl_letter_use(connection, row)
+        except RclLetterUseRowError as exc:
+            issue(exc.code, ref)
+            continue
+        counts["rcl_letter_use_" + record.payload_state] += 1
+        counts["rcl_letter_use_unknown_origin"] += record.payload.physical.artifact_sha256 is None
+        counts["rcl_letter_use_unknown_stage_id"] += record.payload.official.stage_id is None
 
 
 def audit(database: Path) -> dict[str, Any]:
@@ -61,6 +83,10 @@ def audit(database: Path) -> dict[str, Any]:
         if schema >= 57 or _EDITION_TABLES.intersection(tables):
             for name in sorted(_EDITION_TABLES - tables):
                 issue("edition_metadata_table_unavailable", name)
+        if schema >= 60 and "rcl_letter_uses" not in tables:
+            issue("rcl_letter_use_table_unavailable", "rcl_letter_uses")
+        if "rcl_letter_uses" in tables:
+            _audit_rcl_letters(connection, counts, issue)
         if "document_selections" in tables:
             for row in connection.execute(
                 "SELECT rowid AS audit_id, * FROM document_selections ORDER BY rowid"
@@ -237,6 +263,7 @@ def audit(database: Path) -> dict[str, Any]:
         )
         + counts.get("edition_rows", 0)
         + counts.get("edition_link_rows", 0)
+        + counts.get("rcl_letter_use_rows", 0)
     )
     return {
         "version": 1,
@@ -246,6 +273,7 @@ def audit(database: Path) -> dict[str, Any]:
         "missing_tables": missing,
         "missing_artifact_tables": missing_artifacts,
         "artifact_reads_available": "artifact_reads" in tables,
+        "rcl_letter_uses_available": "rcl_letter_uses" in tables,
         "summary": dict(sorted(counts.items())),
         "findings": findings,
         "scope": "Recorded source/artifact identities, SQL columns and outer-part references.",
@@ -254,6 +282,8 @@ def audit(database: Path) -> dict[str, Any]:
             "Unreferenced metadata is an inventory observation, not permission to delete it.",
             "Policy versions remain opaque; no historical policy or paid identity is inferred.",
             "No raw availability, extraction/legal completeness or provider-input replay verdict.",
+            "RCL letter-use facts describe parsing and in-memory merging, not saved applications.",
+            "Omitted RCL payloads cannot revalidate their absent full semantic metadata.",
             "No source bodies, URLs or evidence quotes in this report; no work is executed.",
         ],
     }

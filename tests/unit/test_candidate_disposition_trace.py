@@ -439,7 +439,7 @@ def test_schema_58_dump_restores_without_inferred_candidate_history(tmp_path: Pa
 
     repo.restore(old_dump)
 
-    assert repo.schema_version == SCHEMA_VERSION == 59
+    assert repo.schema_version == SCHEMA_VERSION
     assert repo.get_source_observation(source.observation_id) == source
     assert not repo.list_candidate_disposition_traces(source.observation_id)
 
