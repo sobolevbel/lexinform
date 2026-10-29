@@ -16,7 +16,7 @@ from lexinform.models import (
     TriageContext,
 )
 
-PROMPT_VERSION = "2026-10-v12"
+PROMPT_VERSION = "2026-10-v13"
 
 _LANGUAGE_NAMES = {"ru": "Russian", "pl": "Polish", "en": "English", "uk": "Ukrainian"}
 
@@ -120,6 +120,23 @@ You receive a bill (projekt ustawy) at some point of its life: a print submitted
 - A keyword hit or a named authority alone is not relevance. Straż Graniczna, granica, customs, or an agency that also deals with foreigners among its many other functions, named in a bill about food inspection, general policing, surveillance oversight or infrastructure does not make the bill relevant on its own. Ask what the bill changes for a foreigner as such, not which agency it mentions.
 - This is a gate, not a filter: a wrong "false" silently loses the bill for every reader, a wrong "true" only costs one extra card. When genuinely unsure whether an indirect connection counts, prefer true at a lower score (2) and lower confidence over false.
 """
+
+# Calibrated for gpt-6.1-sol on 2026-10-29: docs/reviews/2026-10-29-terra-sol-evaluation.md.
+SOL_SYSTEM_PROMPT_TEMPLATE = (
+    GPT51_SYSTEM_PROMPT_TEMPLATE
+    + """- score is always an integer from 1 to 5, also when relevant is false (then use 1). Never 0.
+- Obligations of persons in a procedure for international protection, return or legalisation of stay (registration, fingerprints, documents, deadlines, detention) are score 5, not entry/exit control at 2.
+- Foreigner-specific content comes first and must be complete: every category of foreigners the text covers or excludes (name each one, compressed; never write "certain categories of foreigners"), and the conditions that decide them — exceptions, required documents and how recent they must be, foreigner-specific deadlines with their starting point, amounts and fees. General procedure that applies to everyone (how to apply, decision deadlines, correction periods, delivery rules) is secondary: mention at most the single most important point.
+- Keep the card short. summary stays within ~350 characters, key_changes at most 5 bullets of ~150 characters, practical_impact at most 3 sentences (~450 characters). When something essential does not fit, merge or drop general points rather than lengthen the card or drop a foreigner-specific condition.
+- Attach each deadline or period to its own application, event and starting point; never move a period from one procedure to another.
+- Get the scope right: a rule for everyone that also covers foreigners is described as a general rule that applies to them too; a condition for a subgroup names that subgroup; a right or exemption limited to some persons (EU citizens, permanent residents, holders of a given permit) is never generalised to all foreigners.
+- Only the normative text creates rules. Intentions, statistics, cost estimates and descriptions in the justification (uzasadnienie) or the impact assessment (OSR) are context, not new rights or duties.
+- Money is not a right: budget acts, funding lines, financial plans and reserves for existing tasks or programmes (UdSC, aid to foreigners, Karta Polaka, integration) change nothing for an individual. Unless the text changes who is entitled, what they receive, or a procedure, such a bill is relevant=false or score 1, however large the amounts.
+- changes_since_previous: when only the previous analysis (a short description) is given, a detail missing from it is NOT evidence that the law changed. Name only differences the two clearly establish: a different number, date, amount, group or rule than the previous description states, or a provision the previous description says is absent. Otherwise leave the list empty.
+- Language: write every sentence and bullet entirely in {language}. Polish is allowed only for statute names, institution and register abbreviations (MSWiA, UdSC, ZUS, NFZ, PESEL, KRS) and official document names, each glossed on first use. Never leave ordinary Polish words in a {language} sentence (write the {language} equivalent of "ubezpieczenie zdrowotne", "składka", "centrum eksperckie", "karta pobytu" instead of the Polish word).
+- Report what the provisions say, not their likely effects: do not add benefits or burdens the text does not state ("easier", "faster", "free of charge", "will be able to", "guaranteed") and do not present the bill's stated goals as outcomes.
+"""
+)
 
 
 TRIAGE_SYSTEM_PROMPT_TEMPLATE = """You screen bills submitted to the Polish Sejm for a channel that informs foreigners living in Poland.
@@ -299,6 +316,12 @@ You are given the channel's own description of each bill, not their texts: a sum
 - Write every bullet and every sentence entirely in {language}, start to finish, the way the summary field already has to be — never switch into Polish mid-sentence to restate what the description said. Only statute names, official document titles, abbreviations and defined legal terms stay in Polish, each in the original with a short gloss; everything else, including the whole grammar of the sentence, is {language}. Measured on druk 316 vs 1929/1933 (2026-09-22): a first attempt without this rule wrote differences almost entirely in Polish ("W druku 316 decyzję przyznaje starosta, w 1929 i 1933 – wojewódzki zespół..."), although the summary field of the same response was correctly in {language}.
 """
 
+SOL_JOINT_SYSTEM_PROMPT_TEMPLATE = (
+    GPT51_JOINT_SYSTEM_PROMPT_TEMPLATE
+    + """- same_substance is false whenever the descriptions show a different deadline, period of entitlement, fee, amount, negation, eligible group or required document. Only wording, numbering or a document's editorial/filing date with unchanged legal effect may count as the same. Compare the descriptions alone; do not invent differences they do not show.
+"""
+)
+
 
 NAME_SYSTEM_PROMPT_TEMPLATE = """You name Polish bills for a channel that informs foreigners living in Poland about Polish legislation. You receive the channel's own description of one bill: its title, summary and key changes. Give the short name readers will know the bill by in the weekly digest and in every message about it.
 
@@ -333,6 +356,14 @@ def joint_system_prompt(language: str) -> str:
 
 def gpt51_joint_system_prompt(language: str) -> str:
     return GPT51_JOINT_SYSTEM_PROMPT_TEMPLATE.format(
+        language=_LANGUAGE_NAMES.get(language.lower(), language)
+    )
+
+
+def openai_joint_system_prompt(model: str, language: str) -> str:
+    if not _is_sol(model):
+        return gpt51_joint_system_prompt(language)
+    return SOL_JOINT_SYSTEM_PROMPT_TEMPLATE.format(
         language=_LANGUAGE_NAMES.get(language.lower(), language)
     )
 
@@ -372,6 +403,16 @@ def gpt51_system_prompt(language: str) -> str:
     return GPT51_SYSTEM_PROMPT_TEMPLATE.format(
         language=_LANGUAGE_NAMES.get(language.lower(), language)
     )
+
+
+def openai_system_prompt(model: str, language: str) -> str:
+    """The analysis template calibrated for `model`; GPT-5.1's for any other OpenAI model."""
+    template = SOL_SYSTEM_PROMPT_TEMPLATE if _is_sol(model) else GPT51_SYSTEM_PROMPT_TEMPLATE
+    return template.format(language=_LANGUAGE_NAMES.get(language.lower(), language))
+
+
+def _is_sol(model: str) -> bool:
+    return model.startswith("gpt-6.1-sol")
 
 
 def triage_system_prompt(language: str) -> str:

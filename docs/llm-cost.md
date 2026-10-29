@@ -64,12 +64,16 @@ Collected results retain it through memo reuse, quiet tracking and payload clean
 synchronous compatibility results keep unknown identity. This checksum identifies an input;
 it does not identify a unique paid invocation or retain the request body after intent cleanup.
 
-GPT-5.1 uses automatic caching without a cache-write surcharge. Both synchronous and batch
-requests use a stable key derived from the system prompt and output schema name, shared across
-bills, and request `prompt_cache_retention="24h"`. This improves opportunities for reuse without
-guaranteeing a cache hit. Other models keep their provider-default retention.
-OpenAI's `input_tokens` includes cached input; the adapter subtracts cached tokens before storing
-the uncached category. Batch pricing halves both uncached and cached rates. Historical reports
+GPT-6.1 Sol (and any GPT-5.6+ model) bills a cache write at 1.25x input, reads at 0.05x. Left
+implicit, it writes the whole input — a one-off document — at every request (2026-10-29: 7,969 of
+7,972 tokens), so requests set `prompt_cache_options.mode="explicit"` with the only breakpoint on the
+system message: the ~1,456-token prompt and schema prefix is written once per 30 minutes and read by
+the rest. GPT-5.1 uses automatic caching without a cache-write surcharge and requests
+`prompt_cache_retention="24h"`. All requests use a stable key derived from the system prompt and
+output schema name. OpenAI's `input_tokens` includes cache reads and writes; the adapter subtracts
+both before storing the uncached category and records writes as `cache_creation_input_tokens`.
+Above 272k input tokens a whole Sol request costs 2x input and 1.5x output; batch reservations
+apply it, run totals (summed per model) do not. Batch pricing halves both uncached and cached rates. Historical reports
 are not rewritten. New batch reservations assume no paid cache writes and no cache hits.
 
 Run reports show cache reads and writes across synchronous and batch calls, including zero reads
@@ -221,8 +225,8 @@ one term; financial savings alone do not justify the feature.
 
 The 28 September policy supersedes that plan's latency gate: all supported analysis calls,
 including amendments, use batch. Only triage remains synchronous. Each model selects its provider;
-GPT-5.1 context overflow is queued separately to Opus 5.5 and priced at its batch rate for the
-per-bill guard. Manual and forced commands also queue work. Waiting time and urgency never enable
+Since 2026-10-29 one model, GPT-6.1 Sol, reads up to 922k input tokens, so the overflow setting
+names the same model; earlier, GPT-5.1 context overflow was queued separately to Opus 5.5. Manual and forced commands also queue work. Waiting time and urgency never enable
 a synchronous fallback. Uncertain submissions require audited recovery. A confirmed secondary
 failure is filed once more (a batch can expire or be cancelled) unless the provider refused its
 context; a second failure uses the existing failure reporting path. This policy change provides no new production

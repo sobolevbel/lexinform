@@ -370,6 +370,7 @@ class World:
             wykaz_enabled=True,
             telegram_channel_id=CHANNEL,
             llm_analysis_model=analysis_model,
+            llm_analysis_overflow_model="claude-opus-5-5",
             llm_amendments_model="claude-opus-5-5",
             llm_supplement_model="claude-opus-5-5",
             llm_joint_model=joint_model,

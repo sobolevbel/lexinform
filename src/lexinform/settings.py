@@ -14,7 +14,7 @@ from lexinform.models.batch import BatchKind
 
 Effort = Literal["low", "medium", "high", "xhigh", "max"]
 OpenAiEffort = Literal["none", "low", "medium", "high"]
-"""GPT-5.1's own `reasoning_effort` values; it has no `xhigh`/`max`."""
+"""OpenAI `reasoning_effort` values shared by GPT-5.1 and GPT-6.1 Sol (Sol has no `none`)."""
 
 
 class Settings(BaseSettings):
@@ -116,36 +116,37 @@ class Settings(BaseSettings):
         " variable serves both this app and the openai SDK.",
     )
     llm_openai_effort: OpenAiEffort = Field(
-        default="medium", description="GPT-5.1's own reasoning effort, whichever call reaches it."
+        default="medium",
+        description="The OpenAI model's reasoning effort, whichever call reaches it.",
     )
     llm_openai_max_tokens: int = Field(
         default=8000,
-        description="GPT-5.1's own output cap, whichever call reaches it — it bills reasoning"
+        description="The OpenAI model's output cap, whichever call reaches it — it bills reasoning"
         " tokens against this too, unlike Claude's adaptive thinking, so it sits above"
         " `llm_max_tokens`.",
     )
     llm_analysis_model: str = Field(
-        default="gpt-5.1",
-        description="Model for the full per-bill analysis (`analyze()`); GPT-5.1 since"
-        " 2026-09-28 (96% agreement with Opus on relevance, zero missed bills, ~10x cheaper on"
-        " 26 real prints and one scan). A `claude-` name routes it back to Claude with Claude's"
-        " own analysis prompt.",
+        default="gpt-6.1-sol",
+        description="Model for the full per-bill analysis (`analyze()`), and for consultation,"
+        " commission and act-application reviews; GPT-6.1 Sol since 2026-10-29"
+        " (docs/reviews/2026-10-29-terra-sol-evaluation.md). A `claude-` name routes it back to"
+        " Claude with Claude's own analysis prompt.",
     )
     llm_analysis_overflow_model: str = Field(
-        default="claude-opus-5-5",
+        default="gpt-6.1-sol",
         description="Batch analysis model for inputs exceeding the primary model's context.",
     )
     llm_amendments_model: str = Field(
-        default="gpt-5.1",
+        default="gpt-6.1-sol",
         description="Model that summarises Senate/committee amendments; see `llm_analysis_model`.",
     )
     llm_supplement_model: str = Field(
-        default="gpt-5.1",
+        default="gpt-6.1-sol",
         description="Model that digests a document filed to a print (government position, OSR,"
         " an opinion); see `llm_analysis_model`.",
     )
     llm_joint_model: str = Field(
-        default="gpt-5.1",
+        default="gpt-6.1-sol",
         description="Model that compares one print of a jointly considered group with the"
         " others; see `llm_analysis_model`.",
     )

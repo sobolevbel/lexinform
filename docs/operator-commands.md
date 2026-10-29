@@ -475,8 +475,8 @@ the next scheduled run publishes it with its dump. Provider deletion remains cle
 same way it manages the relay's. Add to `.env`:
 
 ```bash
-ANTHROPIC_API_KEY=...   # Opus overflow batches
-OPENAI_API_KEY=...      # GPT-5.1 batches
+ANTHROPIC_API_KEY=...   # Anthropic batches filed before the switch to Sol
+OPENAI_API_KEY=...      # GPT-6.1 Sol batches
 ```
 
 `LEXINFORM_GITHUB_REPO`/`_TOKEN` are already there for the relay; the same Contents-scoped token

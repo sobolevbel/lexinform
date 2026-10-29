@@ -10,10 +10,16 @@ from typing import Any
 import httpx2 as httpx
 import openai
 import pytest
+import tiktoken
 from pydantic import BaseModel
 
 from lexinform.adapters.llm_openai import LlmError, LlmFatalError, OpenAiAnalyzer
-from lexinform.adapters.llm_prompts import PROMPT_VERSION, gpt51_system_prompt
+from lexinform.adapters.llm_prompts import (
+    PROMPT_VERSION,
+    build_user_prompt,
+    gpt51_system_prompt,
+    openai_system_prompt,
+)
 from lexinform.errors import LlmContextExceededError
 from lexinform.models import (
     Amendments,
@@ -64,7 +70,10 @@ def _response(
         usage=SimpleNamespace(
             input_tokens=usage.get("input_tokens"),
             output_tokens=usage.get("output_tokens"),
-            input_tokens_details=SimpleNamespace(cached_tokens=usage.get("cached_tokens")),
+            input_tokens_details=SimpleNamespace(
+                cached_tokens=usage.get("cached_tokens"),
+                cache_write_tokens=usage.get("cache_write_tokens"),
+            ),
         ),
     )
 
@@ -159,6 +168,60 @@ def test_cache_key_is_shared_across_bills_with_the_same_instructions() -> None:
     first, second = client.responses.calls
     assert first["prompt_cache_key"] == second["prompt_cache_key"]
     assert first["prompt_cache_retention"] == second["prompt_cache_retention"] == "24h"
+
+
+def test_sol_caches_only_the_system_prompt_and_records_the_write() -> None:
+    client = _client(
+        _response(
+            make_analysis().model_dump_json(),
+            input_tokens=1600,
+            cache_write_tokens=1456,
+            output_tokens=300,
+        )
+    )
+
+    record = _analyzer(client, model="gpt-6.1-sol").analyze(_ctx())
+
+    call = client.responses.calls[0]
+    assert call["prompt_cache_options"] == {"mode": "explicit"}
+    assert "prompt_cache_retention" not in call
+    assert call["input"][0] == {
+        "role": "system",
+        "content": [
+            {
+                "type": "input_text",
+                "text": openai_system_prompt("gpt-6.1-sol", "ru"),
+                "prompt_cache_breakpoint": {"mode": "explicit"},
+            }
+        ],
+    }
+    assert (record.input_tokens, record.cache_creation_input_tokens) == (144, 1456)
+
+
+def test_the_sol_batch_request_caches_only_the_system_prompt() -> None:
+    request = BatchRequest(
+        custom_id="sol",
+        term=10,
+        number="3039",
+        question=AnalysisQuestion(kind="analysis", ctx=_ctx()),
+    )
+
+    prepared = _analyzer(_client(), model="gpt-6.1-sol").prepare_request(request)
+
+    assert prepared.payload_json is not None, "prepare_request always fills the payload"
+    body = json.loads(prepared.payload_json)["body"]
+    assert body["prompt_cache_options"] == {"mode": "explicit"}
+    assert body["input"][0]["content"][0]["prompt_cache_breakpoint"] == {"mode": "explicit"}
+    assert "score is always an integer from 1 to 5" in body["input"][0]["content"][0]["text"]
+
+
+def test_sol_input_is_counted_on_o200k_base() -> None:
+    encoding = tiktoken.get_encoding("o200k_base")
+    system, prompt = openai_system_prompt("gpt-6.1-sol", "ru"), build_user_prompt(_ctx())
+
+    tokens = _analyzer(_client(), model="gpt-6.1-sol").count_input_tokens(_ctx())
+
+    assert tokens == len(encoding.encode(system)) + len(encoding.encode(prompt))
 
 
 def test_effort_none_omits_the_reasoning_param() -> None:

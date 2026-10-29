@@ -26,14 +26,20 @@ PRICES: dict[str, tuple[float, float]] = {
     "claude-sonnet-4": (3.0, 15.0),
     "claude-haiku-4": (1.0, 5.0),
     "gpt-5.1": (1.25, 10.0),
+    "gpt-6.1-sol": (2.0, 10.0),  # verified 2026-10-29; cache reads 0.05x, writes 1.25x
 }
 
 CACHE_READ_FACTOR = 0.1
+CACHE_READ_FACTORS: dict[str, float] = {"gpt-6.1-sol": 0.05}
 CACHE_WRITE_FACTOR = 1.25
+LONG_CONTEXT: dict[str, tuple[int, float, float]] = {"gpt-6.1-sol": (272_000, 2.0, 1.5)}
+"""Above the threshold a whole request costs these input/output multiples; run totals miss it."""
 CHARS_PER_TOKEN = 2.0
 TOKENS_PER_SCANNED_PAGE = 1_600
 """A page of a Sejm scan, measured with `count_tokens` on 12 Sept 2026: druk 1273's government
 position 16,157 tokens over 10 pages, its OSR 47,268 over 30, the opinion 1,622 over one."""
+SCANNED_PAGE_TOKENS: dict[str, int] = {"gpt-6.1-sol": 3_110}
+"""GPT-6.x reads a page as ~3,110 tokens: RPW 2793/2025, 13 pages, 40,404 by the server count."""
 
 
 def estimate_input_cost(chars: int, input_price_per_mtok: float) -> float:
@@ -52,22 +58,23 @@ def estimate_scan_cost(pages: int, input_price_per_mtok: float) -> float:
 
 
 def price_of(model: str) -> tuple[float, float] | None:
-    for prefix, prices in sorted(PRICES.items(), key=lambda kv: -len(kv[0])):
+    return _by_prefix(PRICES, model)
+
+
+def _by_prefix[V](table: Mapping[str, V], model: str) -> V | None:
+    for prefix, value in sorted(table.items(), key=lambda kv: -len(kv[0])):
         if model.startswith(prefix):
-            return prices
+            return value
     return None
 
 
-INPUT_TOKEN_LIMITS: dict[str, int] = {"gpt-5.1": 272_000}
+INPUT_TOKEN_LIMITS: dict[str, int] = {"gpt-5.1": 272_000, "gpt-6.1-sol": 922_000}
 """A longer input is refused whatever the output cap; Claude's 1M is past `text_budget_chars`."""
 
 
 def input_limit_of(model: str) -> int | None:
     """The most input tokens `model` accepts, None when no text this bot sends can reach it."""
-    for prefix, limit in sorted(INPUT_TOKEN_LIMITS.items(), key=lambda kv: -len(kv[0])):
-        if model.startswith(prefix):
-            return limit
-    return None
+    return _by_prefix(INPUT_TOKEN_LIMITS, model)
 
 
 def cost_usd(usage_by_model: Mapping[str, TokenUsage]) -> float | None:
@@ -78,14 +85,15 @@ def cost_usd(usage_by_model: Mapping[str, TokenUsage]) -> float | None:
         if prices is None:
             return None
         per_input, per_output = prices
+        read = _by_prefix(CACHE_READ_FACTORS, model) or CACHE_READ_FACTOR
         total += (
             usage.input * per_input
-            + usage.cache_read * per_input * CACHE_READ_FACTOR
+            + usage.cache_read * per_input * read
             + usage.cache_creation * per_input * CACHE_WRITE_FACTOR
             + usage.output * per_output
             + (
                 usage.batch_input * per_input
-                + usage.batch_cache_read * per_input * CACHE_READ_FACTOR
+                + usage.batch_cache_read * per_input * read
                 + usage.batch_cache_creation * per_input * CACHE_WRITE_FACTOR
                 + usage.batch_output * per_output
             )
@@ -112,7 +120,11 @@ def batch_reservation(model: str, *, input_tokens: int, max_output_tokens: int) 
     prices = price_of(model)
     if prices is None:
         raise ValueError(f"cannot reserve batch cost for unknown model {model}")
-    return (input_tokens * prices[0] + max_output_tokens * prices[1]) / 2_000_000
+    per_input, per_output = prices
+    long = _by_prefix(LONG_CONTEXT, model)
+    if long is not None and input_tokens > long[0]:
+        per_input, per_output = per_input * long[1], per_output * long[2]
+    return (input_tokens * per_input + max_output_tokens * per_output) / 2_000_000
 
 
 def estimate_batch_reservation(
@@ -125,5 +137,5 @@ def estimate_batch_reservation(
     max_output_tokens: int,
 ) -> float:
     estimate = max(counted_tokens or 0, prompt_chars + system_chars + 2_000)
-    estimate += scan_pages * TOKENS_PER_SCANNED_PAGE
+    estimate += scan_pages * (_by_prefix(SCANNED_PAGE_TOKENS, model) or TOKENS_PER_SCANNED_PAGE)
     return batch_reservation(model, input_tokens=estimate, max_output_tokens=max_output_tokens)

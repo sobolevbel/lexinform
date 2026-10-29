@@ -1,7 +1,13 @@
 import pytest
 
 from lexinform.models import TokenUsage
-from lexinform.pricing import batch_reservation, cost_usd, estimate_batch_reservation, price_of
+from lexinform.pricing import (
+    batch_reservation,
+    cost_usd,
+    estimate_batch_reservation,
+    input_limit_of,
+    price_of,
+)
 
 
 def test_prices_match_by_family_prefix() -> None:
@@ -50,3 +56,29 @@ def test_cost_adds_models_and_cache_categories() -> None:
     assert abs(cost - (opus + sonnet)) < 1e-9
     assert cost_usd({"claude-opus-5": TokenUsage(), "fake": TokenUsage(input=1)}) is None
     assert cost_usd({}) == 0.0
+
+
+def test_sol_reservation_doubles_input_and_raises_output_above_272k() -> None:
+    assert batch_reservation("gpt-6.1-sol", input_tokens=272_000, max_output_tokens=0) == 0.272
+    long = batch_reservation("gpt-6.1-sol", input_tokens=600_000, max_output_tokens=8000)
+    assert abs(long - (600_000 * 2.0 + 8000 * 7.5) / 1e6) < 1e-9
+    assert input_limit_of("gpt-6.1-sol") == 922_000
+
+
+def test_sol_reserves_its_own_scanned_page_tokens() -> None:
+    reserved = estimate_batch_reservation(
+        "gpt-6.1-sol",
+        counted_tokens=None,
+        prompt_chars=200,
+        system_chars=100,
+        scan_pages=13,
+        max_output_tokens=0,
+    )
+    assert reserved == batch_reservation(
+        "gpt-6.1-sol", input_tokens=2300 + 13 * 3110, max_output_tokens=0
+    )
+
+
+def test_sol_cache_reads_cost_a_twentieth_of_input() -> None:
+    cost = cost_usd({"gpt-6.1-sol": TokenUsage(cache_read=1_000_000, cache_creation=1_000_000)})
+    assert cost is not None and abs(cost - (0.05 * 2 + 1.25 * 2)) < 1e-9

@@ -17,7 +17,9 @@ from typing import Any, Literal, NotRequired, TypedDict, TypeVar
 
 import openai
 import tiktoken
+from openai.types.responses.easy_input_message_param import EasyInputMessageParam
 from openai.types.responses.response import Response
+from openai.types.responses.response_create_params import PromptCacheOptions
 from openai.types.responses.response_input_file_param import ResponseInputFileParam
 from openai.types.responses.response_input_message_content_list_param import (
     ResponseInputMessageContentListParam,
@@ -35,10 +37,10 @@ from lexinform.adapters.llm_prompts import (
     build_user_prompt,
     explanation_system_prompt,
     gpt51_amendments_system_prompt,
-    gpt51_joint_system_prompt,
     gpt51_supplement_system_prompt,
-    gpt51_system_prompt,
     name_system_prompt,
+    openai_joint_system_prompt,
+    openai_system_prompt,
 )
 from lexinform.adapters.review_prompts import (
     REVIEW_PROMPT_VERSION,
@@ -215,7 +217,7 @@ class OpenAiAnalyzer:
         self._max_output_tokens = max_output_tokens
         self._clock = clock
         self._language = output_language
-        self._system = gpt51_system_prompt(output_language)
+        self._system = openai_system_prompt(model, output_language)
 
     @property
     def _resolved_client(self) -> openai.OpenAI:
@@ -293,7 +295,7 @@ class OpenAiAnalyzer:
 
     def compare_joint(self, ctx: JointContext) -> JointRecord:
         comparison, usage = self._structured_call(
-            system=gpt51_joint_system_prompt(self._language),
+            system=openai_joint_system_prompt(self._model, self._language),
             user_prompt=build_joint_prompt(ctx),
             scan=None,
             schema_name="joint_comparison",
@@ -334,7 +336,7 @@ class OpenAiAnalyzer:
         Approximate for a scan (page-image tokens are not text tokens at all — the per-bill guard
         prices those from the page count instead, see `pricing.estimate_scan_cost`)."""
         try:
-            encoding = tiktoken.encoding_for_model(self._model)
+            encoding = _encoding(self._model)
         except Exception as exc:
             log.warning("no tiktoken encoding for %s (%s); estimating", self._model, _short(exc))
             return None
@@ -353,7 +355,7 @@ class OpenAiAnalyzer:
             else None
         )
         if isinstance(ctx, BillContext):
-            system, prompt = self._system, build_user_prompt(ctx)
+            system, prompt = openai_system_prompt(model, self._language), build_user_prompt(ctx)
             if request.call_kind == "explanation":
                 system = explanation_system_prompt(self._language)
         elif isinstance(ctx, AmendmentsContext):
@@ -371,7 +373,8 @@ class OpenAiAnalyzer:
         elif isinstance(ctx, NameContext):
             system, prompt = name_system_prompt(ctx.language), build_name_prompt(ctx)
         else:
-            system, prompt = gpt51_joint_system_prompt(self._language), build_joint_prompt(ctx)
+            system = openai_joint_system_prompt(model, self._language)
+            prompt = build_joint_prompt(ctx)
         schema_name, schema = {
             "analysis": ("analysis", _ANALYSIS_SCHEMA),
             "reanalysis": ("analysis", _ANALYSIS_SCHEMA),
@@ -394,7 +397,7 @@ class OpenAiAnalyzer:
                 "reasoning": None if self._effort == "none" else {"effort": self._effort},
                 "max_output_tokens": self._max_output_tokens,
                 "input": [
-                    {"role": "system", "content": system},
+                    _system_message(model, system),
                     {"role": "user", "content": _content(prompt, scan)},
                 ],
                 "text": {
@@ -531,7 +534,7 @@ class OpenAiAnalyzer:
             input_tokens=usage.input_tokens,
             output_tokens=usage.output_tokens,
             cache_read_input_tokens=usage.cached_tokens,
-            cache_creation_input_tokens=0,
+            cache_creation_input_tokens=usage.cache_write_tokens or 0,
         )
         try:
             if response.status != "completed":
@@ -552,7 +555,7 @@ class OpenAiAnalyzer:
         output_model: type[_T],
     ) -> tuple[_T, _Usage]:
         input_messages: ResponseInputParam = [
-            {"role": "system", "content": system},
+            _system_message(self._model, system),
             {"role": "user", "content": _content(user_prompt, scan)},
         ]
         try:
@@ -593,6 +596,13 @@ class OpenAiAnalyzer:
         return _parsed_output(response, output_model), _usage_of(response)
 
 
+def _encoding(model: str) -> tiktoken.Encoding:
+    """GPT-6.x is not in tiktoken; o200k_base matches its server count less ~190 schema tokens."""
+    if model.startswith("gpt-6"):
+        return tiktoken.get_encoding("o200k_base")
+    return tiktoken.encoding_for_model(model)
+
+
 def _content(
     user_prompt: str, scan: ScannedDocument | None
 ) -> ResponseInputMessageContentListParam:
@@ -615,19 +625,26 @@ class _Usage(BaseModel):
     input_tokens: int | None
     output_tokens: int | None
     cached_tokens: int | None
+    cache_write_tokens: int | None = None
 
     def fields(self) -> UsageFields:
         return UsageFields(
             input_tokens=self.input_tokens,
             output_tokens=self.output_tokens,
             cache_read_input_tokens=self.cached_tokens,
-            cache_creation_input_tokens=0,
+            cache_creation_input_tokens=self.cache_write_tokens or 0,
         )
 
 
 class _CacheOptions(TypedDict):
     prompt_cache_key: str
     prompt_cache_retention: NotRequired[Literal["24h"]]
+    prompt_cache_options: NotRequired[PromptCacheOptions]
+
+
+def _explicit_cache(model: str) -> bool:
+    """Implicit caching on GPT-5.6+ writes the whole one-off document at 1.25x (2026-10-29)."""
+    return model.startswith(("gpt-6", "gpt-5.6"))
 
 
 def _cache_options(model: str, system: str, schema_name: str) -> _CacheOptions:
@@ -636,7 +653,23 @@ def _cache_options(model: str, system: str, schema_name: str) -> _CacheOptions:
     }
     if model == "gpt-5.1" or model.startswith("gpt-5.1-"):
         options["prompt_cache_retention"] = "24h"
+    if _explicit_cache(model):
+        options["prompt_cache_options"] = {"mode": "explicit"}
     return options
+
+
+def _system_message(model: str, system: str) -> EasyInputMessageParam:
+    """The system turn, carrying the only cache breakpoint where caching is explicit."""
+    if not _explicit_cache(model):
+        return {"role": "system", "content": system}
+    return {
+        "role": "system",
+        "content": [
+            ResponseInputTextParam(
+                type="input_text", text=system, prompt_cache_breakpoint={"mode": "explicit"}
+            )
+        ],
+    }
 
 
 def _usage_of(response: Any) -> _Usage:
@@ -644,11 +677,13 @@ def _usage_of(response: Any) -> _Usage:
     details = getattr(usage, "input_tokens_details", None)
     total = getattr(usage, "input_tokens", None)
     cached = getattr(details, "cached_tokens", None)
-    # OpenAI includes cached tokens in input_tokens; our cost model prices disjoint categories.
+    written = getattr(details, "cache_write_tokens", None)
+    # OpenAI includes cache reads and writes in input_tokens; our cost model prices them apart.
     return _Usage(
-        input_tokens=max(0, total - (cached or 0)) if total is not None else None,
+        input_tokens=max(0, total - (cached or 0) - (written or 0)) if total is not None else None,
         output_tokens=getattr(usage, "output_tokens", None),
         cached_tokens=cached,
+        cache_write_tokens=written,
     )
 
 

@@ -74,8 +74,8 @@ What of a document reaches the model, with the prints each rule was derived from
   comparison context (a scan by file digest and page window; triage has its own key), so a URL change
   never triggers a paid re-analysis; reused results charge no new tokens. Worker threads never write
   the repository.
-- **Cost.** Opus 5.5 is $4/M input (older measurements: Opus 5 at $5); output ~1% of the bill. Texts ≥
-  `triage_min_chars` are triaged on `llm_triage_model` first; a term of candidates costs ≈$44 because
+- **Cost.** GPT-6.1 Sol is $2/M input ($1 batch, 2x above 272k tokens); the older measurements
+  below are Opus 5 at $5/M. Texts ≥ `triage_min_chars` are triaged on `llm_triage_model` first; a term of candidates costs ≈$44 because
   the triage rejects 62% (vs $118.83 untriaged: 268 keyword-passing prints, 132.9M chars → 47.5M after
   `trim_print`; bill 38.8%, uzasadnienie 45.2%, OSR points 1–4 15.9%). **A text over the per-bill
   limit is cut down by the keywords, not refused**; **a re-analysis is never refused** (refusals turn

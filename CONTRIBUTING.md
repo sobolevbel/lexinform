@@ -19,10 +19,10 @@ and `OPENAI_API_KEY` are read without a prefix; everything else is `LEXINFORM_*`
 needed with the defaults: triage stays on Claude (`LEXINFORM_LLM_TRIAGE_MODEL`, the only
 synchronous call), while analysis, amendments, filed-document digests and joint comparisons
 (`LEXINFORM_LLM_ANALYSIS_MODEL` / `_AMENDMENTS_MODEL` / `_SUPPLEMENT_MODEL` / `_JOINT_MODEL`)
-default to GPT-5.1 through its batch API; an input above GPT-5.1's 272k-token ceiling, or rejected
-for context, goes to an Opus batch (`LEXINFORM_LLM_ANALYSIS_OVERFLOW_MODEL`), whose batch price the
-per-bill cost guard uses (scans are estimated at 1,600 tokens a page; the guard shortens an
-expensive text or refuses an expensive first-analysis scan). Manual `/analyze`, `force` included,
+default to GPT-6.1 Sol through its batch API; an input above its 922k-token ceiling is cut to fit,
+and `LEXINFORM_LLM_ANALYSIS_OVERFLOW_MODEL` names the same model (scans are estimated at 1,600
+tokens a page and reserved at Sol's ~3,110; the guard shortens an expensive text or refuses an
+expensive first-analysis scan). Manual `/analyze`, `force` included,
 only acknowledges the queue; unknown submission outcomes stay pending until audited recovery. The
 legacy `LLM_BATCH_ENABLED`, `_KINDS`, `_PROVIDER`, `_SYNC_WITHIN_DAYS` and `_MAX_WAIT_HOURS`
 settings are still read but override nothing.

@@ -171,7 +171,7 @@ Telegram ◄── cards (once per bill) ◄── publish ◄──┘        �
    działy); misses get their text scanned with the same patterns (accepted on two distinct topics
    or three hits).
 3. **Analyse** the current bill text (latest adopted text, then a committee's amended text,
-   otherwise the original print) with GPT-5.1 through a structured-output schema (relevance, score,
+   otherwise the original print) with GPT-6.1 Sol through a structured-output schema (relevance, score,
    category, summary, key changes, affected groups, practical impact, effective date). The print
    is trimmed first: the bill, its justification and the core of the regulatory impact assessment
    go in; consultation reports, EU compliance tables and draft regulations (55–80% of a government
@@ -287,9 +287,9 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_LISTEN_TIMEOUT_SECONDS` | `50` | How long one `getUpdates` call of the relay waits for a post |
 | `LEXINFORM_TERM` | — | Sejm term; empty = the current one from `/sejm/term` (a new kadencja is picked up by itself), a number pins an older term |
 | `LEXINFORM_DB_PATH` | `lexinform.db` | SQLite file |
-| `LEXINFORM_LLM_ANALYSIS_MODEL` | `gpt-5.1` | Model for the full analysis; a `gpt-` name routes it to OpenAI (`OPENAI_API_KEY`) |
-| `LEXINFORM_LLM_ANALYSIS_OVERFLOW_MODEL` | `claude-opus-5-5` | Batch analysis above the primary input ceiling or after an API context rejection; uses this model's batch price for the cost guard |
-| `LEXINFORM_LLM_AMENDMENTS_MODEL` / `_SUPPLEMENT_MODEL` / `_JOINT_MODEL` | `gpt-5.1` | Models for amendment summaries, filed-document digests and joint comparisons |
+| `LEXINFORM_LLM_ANALYSIS_MODEL` | `gpt-6.1-sol` | Model for the full analysis and document reviews; a `gpt-` name routes it to OpenAI (`OPENAI_API_KEY`) |
+| `LEXINFORM_LLM_ANALYSIS_OVERFLOW_MODEL` | `gpt-6.1-sol` | Batch analysis above the primary input ceiling or after an API context rejection; uses this model's batch price for the cost guard |
+| `LEXINFORM_LLM_AMENDMENTS_MODEL` / `_SUPPLEMENT_MODEL` / `_JOINT_MODEL` | `gpt-6.1-sol` | Models for amendment summaries, filed-document digests, joint comparisons and card names |
 | `LEXINFORM_LLM_EFFORT` / `_LLM_MAX_TOKENS` | `medium` / `4000` | Claude's effort and output cap (`_LLM_OPENAI_EFFORT` / `_LLM_OPENAI_MAX_TOKENS` for GPT) |
 | `LEXINFORM_LLM_TRIAGE_MODEL` | `claude-sonnet-5` | Model for the cheap first pass on excerpts (`""` disables it) |
 | `LEXINFORM_TRIAGE_MIN_CHARS` / `_TRIAGE_MIN_CONFIDENCE` | `20000` / `0.8` | Texts shorter than this skip the triage; confidence a rejection needs |
