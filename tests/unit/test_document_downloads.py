@@ -16,6 +16,7 @@ from lexinform.document_downloads import DocumentDownloadRecorder
 from lexinform.errors import DownloadFailureReason, SejmApiUnavailableError
 from lexinform.models import DocumentDownloadDiagnostics, RunMode, RunReport
 from lexinform.models.document_reads import (
+    DOWNLOAD_FAILURE_OUTCOMES,
     MAX_DOWNLOAD_DIAGNOSTIC_BYTES,
 )
 from lexinform.ports import Downloader
@@ -384,3 +385,16 @@ def test_legacy_report_and_v1_metrics_keep_their_original_json_shape() -> None:
         },
     }
     assert reader.read_metrics().model_dump_json() == json.dumps(expected, separators=(",", ":"))
+
+
+def test_every_failure_outcome_is_a_counted_field() -> None:
+    recorder = DocumentDownloadRecorder()
+    for outcome in DOWNLOAD_FAILURE_OUTCOMES:
+        recorder.started()
+        recorder.failure(f"https://one.test/{outcome}", "one.test", outcome, "other_error")
+
+    report = recorder.snapshot()
+
+    assert report is not None and report.invocations == len(DOWNLOAD_FAILURE_OUTCOMES)
+    assert all(getattr(report, outcome) == 1 for outcome in DOWNLOAD_FAILURE_OUTCOMES)
+    assert report.unresolved == 0 and report.completed == 0

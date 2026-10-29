@@ -212,6 +212,32 @@ def selection_for_input(
                     losses=losses,
                 )
             )
+    return _with_input_coverage(selection, coverage, missing=missing)
+
+
+def paid_input_selection(
+    selection: DocumentSelection, paid: DocumentSelection
+) -> DocumentSelection | None:
+    """Paid input ranges stand for the same part texts only, never for an edited or cut one."""
+    ranges = [span for span in paid.coverage if span.stage == "analysis"]
+    if (
+        not ranges
+        or len(selection.parts) != len(paid.parts)
+        or any(
+            not part.text_sha256 or (part.role, part.text_sha256) != (old.role, old.text_sha256)
+            for part, old in zip(selection.parts, paid.parts, strict=True)
+        )
+    ):
+        return None
+    coverage = [span for span in selection.coverage if span.stage != "analysis"] + ranges
+    return _with_input_coverage(
+        selection, coverage, missing="normative_text_omitted" in paid.limitations
+    )
+
+
+def _with_input_coverage(
+    selection: DocumentSelection, coverage: list[DocumentCoverage], *, missing: bool
+) -> DocumentSelection:
     limitations: tuple[DocumentLimitation, ...] = tuple(
         reason for reason in selection.limitations if reason != "normative_text_omitted"
     )

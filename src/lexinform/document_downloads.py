@@ -11,6 +11,7 @@ from lexinform.errors import (
     ServiceUnavailableError,
 )
 from lexinform.models.document_reads import (
+    DOWNLOAD_FAILURE_OUTCOMES,
     MAX_DOWNLOAD_DIAGNOSTIC_BYTES,
     MAX_DOWNLOAD_FAILURE_GROUPS,
     DocumentDownloadDiagnostics,
@@ -112,19 +113,7 @@ class DocumentDownloadRecorder:
         if not counts["invocations"] and not counts["cache_hits"]:
             return None
         groups = [self._groups[key] for key in sorted(self._groups)]
-        failures = sum(
-            counts[key]
-            for key in (
-                "missing",
-                "over_limit",
-                "source_unavailable",
-                "refused",
-                "error",
-                "pre_send_rejected",
-                "unknown_host",
-                "invalid_url",
-            )
-        )
+        failures = sum(counts[outcome] for outcome in DOWNLOAD_FAILURE_OUTCOMES)
         base = DocumentDownloadDiagnostics(
             invocations=counts["invocations"],
             completed=counts["completed"],

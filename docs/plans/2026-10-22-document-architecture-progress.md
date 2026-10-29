@@ -7662,3 +7662,46 @@ Actual loader-read completion producer и trigger time later purposes остаю
 J155 commit `6aa24d387b3a325e1a828d49dea5fc151836f450`: все четыре CI jobs 40823453475
 и deploy 40823808285 прошли; relay c73 → 6aa2, health 45s/timer подтверждены
 [release proof](../assets/audits/2026-10-29-observed-latency/release.json).
+Proof commit `7920290a`: CI 40824207289 и deploy 40824738573 прошли.
+
+
+<a id="j156"></a>
+
+### J156. Fix confirmed review findings in models and pure modules
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 29 октября. Base `7920290a`.
+Облачное ревью части 2 diff `49ee2d0a..main` (models и чистые top-level modules, 54 файла)
+дало шесть находок; все подтверждены по коду. Исправлены пять, общий safe-URL guard Senate/RCL
+(nit 4) отложен: это рефакторинг моделей сохраняемых records. Статусы плана не меняются.
+
+`RunReport.is_empty` считал `document_reads` и `document_download_diagnostics` результатом
+execution run: с выкладки 28 октября любой pipeline run непустой, `/runs` и `lexinform runs`
+перестали скрывать холостые прогоны. Оба поля теперь пропускаются, как `phase_seconds`; ветка
+CLI reads прежняя. На 389 runs свежего state вердикт совпал с вердиктом без этих полей.
+
+Тихая перепроверка неизменного текста (`_unchanged`) перестраивала analysis-stage coverage
+из свежего view без map. При budget cut точные paid ranges заменялись на `(0,0)` и «input
+coverage unknown», после cost fitting — на полный диапазон, будто модель видела весь текст.
+`paid_input_selection` сохраняет paid ranges, `normative_text_omitted` и state, когда каждая
+selected part имеет ту же role и непустой text SHA; иначе прежний fallback. Совет ревью передать
+`loaded.projection` отклонён: он описывает budgeted, а не cost-fitted input. Backfill нет.
+
+TextFormatter ставит correlation fields на строку сообщения, а не после traceback. Три ручных
+списка download outcomes выводятся из `DownloadFailureOutcome`; список причин в
+`download_failure` — намеренное подмножество и не менялся. Docstring `PrintInfo.main_pdf`
+сокращён до одной строки, история уже в rules sejm-api.
+
+Корпус: 969 PDF друков term 10, 685 с normative part (261 без неё, 23 без текста); реальные
+extractor, trim и TextBudget, cost fitting имитирован excerpts 600/2400 как в replay_input_coverage.
+Вынос хвоста `selection_for_input` exact с HEAD в 3808/3808 сравнений. Старый `_unchanged`:
+без cut equal 685; budget 24000 unknown 475 / equal 210; budget 1000 unknown 685; после fitting
+overstated 685 (без budget), 210 overstated + 475 unknown (24000), unknown 383 (1000). Новый
+во всех строках равен paid по ranges/state/limitations, fallback 0. Prod state: 21 из 170
+records имеют analysis ranges с hashed parts; 149 legacy идут прежним путём; записей, уже
+испорченных «unknown», нет. Schema, flags, provider input и решения отбора не менялись.
+
+Падали до исправления: 2 scenario coverage cases, 3 для пустых runs, 1 для traceback; ещё
+5 unit cases на границы reuse и guard на outcomes, прежние списки были полны. Full make check:
+6645 tests / 0 failures-errors-skips, 256.55s; mypy 573, Ruff/format 640 по src/tests/tools.
+[Acceptance asset](../assets/audits/2026-10-29-review-part2-fixes/validation.json).
+План **74 / 32 done / 6 explicit N/A / 36 applicable open**.

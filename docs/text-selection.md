@@ -149,6 +149,12 @@ Known omissions retain `normative_text_omitted` and downgrade selected input to 
 the original normative SHA and source facts remain unchanged. Without an input map, the
 existing coarse/unknown coverage contract remains in force.
 
+A quiet re-check of an unchanged text keeps the paid record's analysis ranges, its omission
+limitation and state when every selected part has the same role and text SHA; the fresh view's
+ranges would describe the budgeted text, not a cost-fitted paid input. Parts without hashes or
+with another text fall back to the fresh computation. See
+[J156](plans/2026-10-22-document-architecture-progress.md#j156).
+
 `prepared_text_input` builds a transient `PreparedTextInput` for document text before provider
 assembly. It hashes the exact emitted string and ordered source part strings; copied spans
 refer to a specific part, while separators and transform markers have system origins. Without

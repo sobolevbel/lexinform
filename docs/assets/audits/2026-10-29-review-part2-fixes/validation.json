@@ -1,0 +1,102 @@
+{
+  "stage": "J156",
+  "status": "accepted_locally",
+  "base": "7920290afd1b4dfa144ef35e72e0a8f5c4944b8a",
+  "review": {
+    "scope": "49ee2d0a..7920290a for src/lexinform/models and pure top-level modules, 54 files",
+    "findings": 6,
+    "confirmed": 6,
+    "fixed": [1, 2, 3, 5, 6],
+    "deferred": {
+      "4": "Shared Senate/RCL safe-URL guard: refactor of persisted record models, owner deferred"
+    },
+    "rejected_suggestion": "Passing loaded.projection in _unchanged would describe the budgeted text, not a cost-fitted paid input"
+  },
+  "fixes": [
+    {
+      "finding": 1,
+      "change": "RunReport.is_empty skips document_reads and document_download_diagnostics for execution runs",
+      "production_state": {
+        "state_commit": "a5a3f68e4c94f89d5a5aa30a0f90eb469c1c45ae",
+        "runs": 389,
+        "verdict_equal_to_pre_field_verdict": 389,
+        "runs_wrongly_non_empty_before_fix": 1
+      }
+    },
+    {
+      "finding": 2,
+      "change": "Quiet unchanged re-check keeps paid analysis ranges, omission limitation and state when every part keeps role and non-empty text SHA",
+      "production_state": {
+        "analysis_records": 170,
+        "with_analysis_ranges_and_hashed_parts": 21,
+        "legacy_without_ranges": 149,
+        "records_already_unknown": 0
+      },
+      "corpus": {
+        "population": "lexinform-corpus sejm/term10/files {n}__{n}.pdf",
+        "files": 969,
+        "replayed": 685,
+        "excluded": {"no_normative_part": 261, "no_text": 23},
+        "cost_fitting": "simulated with sections.excerpts head 600 / max 2400, as replay_input_coverage cost-1",
+        "refactor_exact_with_head": "3808/3808",
+        "old_unchanged_vs_paid": {
+          "trim/same": {"equal": 685},
+          "budget-24000/same": {"unknown": 475, "equal": 210},
+          "budget-1000/same": {"unknown": 685},
+          "trim/cost_fitted": {"overstated": 685},
+          "budget-24000/cost_fitted": {"overstated": 210, "unknown": 475},
+          "budget-1000/cost_fitted": {"unknown": 383}
+        },
+        "new_unchanged_equals_paid": "all rows, state and limitations equal, fallback 0"
+      }
+    },
+    {"finding": 3, "change": "TextFormatter.formatMessage puts correlation fields on the message line before any traceback"},
+    {"finding": 5, "change": "DOWNLOAD_FAILURE_OUTCOMES derived from the Literal feeds the recorder sum and both validator checks; download_failure reason subset unchanged"},
+    {"finding": 6, "change": "PrintInfo.main_pdf docstring reduced to one line"}
+  ],
+  "evidence": {
+    "replay_unchanged.py": {
+      "path": "out/corpus/j156/replay_unchanged.py",
+      "sha256": "9dc29d8d1012090ae6fc6ee84f81faaf0b88158ba028221a23d7b820f5e855c5"
+    },
+    "unchanged-replay.json": {
+      "path": "out/corpus/j156/unchanged-replay.json",
+      "sha256": "890b0580f5787eef8f2de1df4933472fc37c7011d4707d51e1db51eed517bd1d"
+    },
+    "head_document_selection.py": {
+      "path": "out/corpus/j156/head_document_selection.py",
+      "sha256": "2a68a911183cbbe37d01780f0b01368ae0a682889aed4a570bf365a124224b85"
+    }
+  },
+  "source": {
+    "src/lexinform/document_selection.py": "4f4d9def180fd4b1f10cf31e6f6dd8550055629711dec49ac7c318275f7ac622",
+    "src/lexinform/services/analysis.py": "b4f3e92699154c51d169264f354b7e607aa0d5c154de0147463cd7f60ff76e0f",
+    "src/lexinform/models/report.py": "ccecafc6d8c71adc04845f8ee01d028ed9c9901a925399b80f0717d62ce1c8d1",
+    "src/lexinform/logging_setup.py": "a1ef7fd107be9b0cef149f88effc532fb6212890142457dafb28702df1469c8d",
+    "src/lexinform/document_downloads.py": "cdec1638fd8a3f9a624b31644d4a4e9189ca6c39c1e1352a19126f6117c6e1fd",
+    "src/lexinform/models/document_reads.py": "1d6f259e81e05898f0b7422a8e9e9b1154a032c5a6e91531ba44c5bae5c6af8e",
+    "src/lexinform/models/sejm.py": "29aa00b28d93df012ed747010937dcfbd9277b615e9a3f9d7064d4dc1e7d1430"
+  },
+  "checks": {
+    "new_tests": "Failed before the fix: 2 scenario coverage, 3 empty-run, 1 traceback; added guards: 5 unit reuse-boundary cases and 1 outcome-list case (the old lists were complete)",
+    "full_gate": {
+      "command": "make check ARGS=\"--junitxml=... -x\"",
+      "tests": 6645,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 256.55,
+      "mypy_files": 573,
+      "ruff_format_files": 640,
+      "junit": {
+        "path": "out/corpus/j156/full.xml",
+        "sha256": "f248c830a0c0aae17ae982c16b767ef329936258a92cd8102f31f12925d99adb"
+      }
+    }
+  },
+  "boundaries": [
+    "No backfill of existing records; no schema, flag, provider input or selection decision change",
+    "Cost fitting in the corpus replay is a simulation, not the production fitter",
+    "Review parts 1 and 3 (adapters/wiring and services) were not run"
+  ]
+}

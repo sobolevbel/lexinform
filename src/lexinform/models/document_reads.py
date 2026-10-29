@@ -1,7 +1,7 @@
 """Observed downloader bodies exclude wire overhead, incomplete responses and raw retention."""
 
 from dataclasses import dataclass
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal, Self, get_args
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -63,6 +63,7 @@ DownloadFailureOutcome = Literal[
     "unknown_host",
     "invalid_url",
 ]
+DOWNLOAD_FAILURE_OUTCOMES: tuple[DownloadFailureOutcome, ...] = get_args(DownloadFailureOutcome)
 DownloadDiagnosticReason = Literal[
     "http_status",
     "transport_error",
@@ -132,16 +133,7 @@ class DocumentDownloadDiagnostics(BaseModel):
 
     @model_validator(mode="after")
     def bounded_accounting(self) -> Self:
-        failures = (
-            self.missing
-            + self.over_limit
-            + self.source_unavailable
-            + self.refused
-            + self.error
-            + self.pre_send_rejected
-            + self.unknown_host
-            + self.invalid_url
-        )
+        failures = sum(getattr(self, outcome) for outcome in DOWNLOAD_FAILURE_OUTCOMES)
         if self.completed + failures + self.unresolved != self.invocations:
             raise ValueError("download diagnostics do not account for loader invocations")
         if sum(group.count for group in self.examples) + self.omitted_failures != failures:
@@ -149,16 +141,7 @@ class DocumentDownloadDiagnostics(BaseModel):
         identities = {group.model_dump_json(exclude={"count"}) for group in self.examples}
         if len(identities) != len(self.examples):
             raise ValueError("download diagnostic groups must be unique")
-        for outcome in (
-            "missing",
-            "over_limit",
-            "source_unavailable",
-            "refused",
-            "error",
-            "pre_send_rejected",
-            "unknown_host",
-            "invalid_url",
-        ):
+        for outcome in DOWNLOAD_FAILURE_OUTCOMES:
             if sum(group.count for group in self.examples if group.outcome == outcome) > getattr(
                 self, outcome
             ):

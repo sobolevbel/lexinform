@@ -261,6 +261,8 @@ class RunReport(BaseModel):
                 "batch_requests_queued",
                 "batch_requests_uncertain",
                 "phase_seconds",
+                "document_reads",
+                "document_download_diagnostics",
             }
         )
 

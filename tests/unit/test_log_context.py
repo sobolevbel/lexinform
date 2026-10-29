@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 
 import pytest
 
@@ -83,3 +84,17 @@ def test_plain_record_without_context_keeps_its_existing_text() -> None:
     assert TextFormatter("%(message)s").format(record) == "unchanged"
     payload: dict[str, object] = json.loads(JsonFormatter().format(record))
     assert set(payload) == {"ts", "level", "logger", "msg"}
+
+
+def test_error_record_keeps_its_fields_on_the_message_line() -> None:
+    try:
+        raise ValueError("boom")
+    except ValueError:
+        record = logging.makeLogRecord(
+            {"msg": "failed", "exc_info": sys.exc_info(), "correlation": {"run_id": 5}}
+        )
+
+    lines = TextFormatter("%(message)s").format(record).splitlines()
+
+    assert lines[0] == 'failed | {"run_id": 5}'
+    assert lines[1] == "Traceback (most recent call last):" and lines[-1] == "ValueError: boom"

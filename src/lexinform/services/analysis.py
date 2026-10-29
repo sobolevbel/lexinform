@@ -23,7 +23,7 @@ from lexinform.concurrency import fan_out
 from lexinform.document_admissibility import analysis_admission, review_admission
 from lexinform.document_fingerprints import text_digest as text_digest
 from lexinform.document_input import amended_input_projection, append_self_amendments
-from lexinform.document_selection import selection_for_input
+from lexinform.document_selection import paid_input_selection, selection_for_input
 from lexinform.document_versions import draft_version
 from lexinform.errors import (
     BatchNotSubmittedError,
@@ -2758,9 +2758,10 @@ class AnalysisService:
         """The analysis stands for the new document: only the pointer and its digests move."""
         document = located.document
         assert document is not None, "a text digest comes only from a document that was read"
-        selection = _reused_selection(
-            selection_for_input(loaded.selection, loaded.text).without_text(), previous.selection
-        )
+        current = paid_input_selection(loaded.selection, previous.selection)
+        if current is None:
+            current = selection_for_input(loaded.selection, loaded.text)
+        selection = _reused_selection(current.without_text(), previous.selection)
         pointer = previous.model_copy(
             update={
                 "source_url": document.url,

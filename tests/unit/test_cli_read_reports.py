@@ -82,6 +82,20 @@ def test_operation_labels_and_zero_measurements_do_not_make_an_active_read_repor
     ).is_empty
 
 
+@pytest.mark.parametrize("mode", [RunMode.RUN, RunMode.TRACK, RunMode.COLLECT])
+def test_read_measurements_alone_do_not_make_an_execution_run_a_result(mode: RunMode) -> None:
+    idle = RunReport(
+        started_at=NOW,
+        since=NOW,
+        mode=mode,
+        document_reads=DocumentReadMetrics(cache_hits=3),
+        document_download_diagnostics=DocumentDownloadDiagnostics(invocations=1, completed=1),
+    )
+
+    assert idle.is_empty
+    assert not idle.model_copy(update={"discovered": 1}).is_empty
+
+
 def test_current_reader_restores_future_reports_without_moving_the_watermark(
     repo: SqliteBillRepository,
 ) -> None:

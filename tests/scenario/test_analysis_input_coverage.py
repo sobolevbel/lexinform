@@ -1,7 +1,7 @@
 import pytest
 
 from lexinform.errors import LlmContextExceededError
-from lexinform.models import BillContext
+from lexinform.models import BillContext, TextDocument
 from lexinform.models.batch import BatchItemMeta
 from lexinform.pricing import INPUT_TOKEN_LIMITS
 from tests.fakes import FakeBatchBackend, FakeTextExtractor
@@ -169,3 +169,32 @@ def test_overflow_cost_fitting_uses_the_original_input_and_its_ranges(
         "the fake freezes the provider context before submission"
     )
     assert "projection" not in request.payload_json
+
+
+@pytest.mark.parametrize("cut", ["budget", "cost"])
+def test_an_unchanged_recheck_keeps_the_paid_input_ranges(cut: str) -> None:
+    filler = "x" * 6000 if cut == "budget" else "x" * 200_000
+    source = law() + "\n" + filler + " cudzoziemcy " + "z" * (len(filler) // 2)
+    world = World(
+        extractor=FakeTextExtractor(source),
+        text_budget_chars=1000 if cut == "budget" else 1_000_000,
+        max_bill_cost_usd=0 if cut == "budget" else 0.30,
+    )
+    world.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    world.run(track=False)
+    paid = world.bill("3039").analysis
+    assert paid is not None and paid.source_url is not None, "the first text was analysed"
+    world.clock.advance(days=1)
+
+    result = world.analysis.reanalyze_bill(
+        world.bill("3039"), TextDocument(url=paid.source_url, kind=paid.source_kind)
+    )
+
+    saved = world.bill("3039").analysis
+    assert result is None and saved is not None and len(world.llm.contexts) == 1
+    assert saved.source_checked_at == world.clock.now() and saved.created_at == paid.created_at
+    assert saved.selection.coverage == paid.selection.coverage
+    omitted = "normative_text_omitted"
+    assert (omitted in saved.selection.limitations) == (omitted in paid.selection.limitations)
+    ranges = [span for span in saved.selection.coverage if span.stage == "analysis"]
+    assert ranges and not any("input coverage unknown" in span.losses for span in ranges)

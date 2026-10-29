@@ -4,6 +4,7 @@ import json
 import logging
 import sys
 from datetime import UTC, datetime
+from typing import override
 
 from lexinform.log_context import correlation_fields, current_log_fields
 
@@ -18,8 +19,9 @@ class CorrelationFilter(logging.Filter):
 
 
 class TextFormatter(logging.Formatter):
-    def format(self, record: logging.LogRecord) -> str:
-        text = super().format(record)
+    @override
+    def formatMessage(self, record: logging.LogRecord) -> str:
+        text = super().formatMessage(record)
         fields = correlation_fields(getattr(record, "correlation", None))
         if fields:
             text += " | " + json.dumps(fields, ensure_ascii=False, sort_keys=True)

@@ -2,7 +2,7 @@ import hashlib
 
 import pytest
 
-from lexinform.document_selection import bill_selection, selection_for_input
+from lexinform.document_selection import bill_selection, paid_input_selection, selection_for_input
 from lexinform.models import DocumentPart, DocumentSelection
 from lexinform.sections import PAGE_BREAK, TextBudget, trim_print
 from lexinform.text_projection import SourcePiece, TextProjection, TextSegment, project_pieces
@@ -147,3 +147,34 @@ def test_input_map_cannot_use_a_foreign_identity_or_forged_copied_text(wrong: st
 
     with pytest.raises(ValueError, match="selected text assembly"):
         selection_for_input(selection, text, projection=projection)
+
+
+@pytest.mark.parametrize("change", [None, "text", "unhashed", "role", "unpaid"])
+def test_paid_ranges_are_reused_only_for_the_same_part_texts(change: str | None) -> None:
+    body = "USTAWA\nArt. 1. " + "a" * 600
+    digest = hashlib.sha256(body.encode()).hexdigest()
+    part = DocumentPart(role="bill", text=body, text_sha256=digest)
+    budget = TextBudget(300).apply(body, [])
+    assert budget.projection is not None, "TextBudget supplies an exact map"
+    paid = selection_for_input(
+        DocumentSelection(state="selected", parts=(part,)),
+        budget.text,
+        projection=budget.projection,
+    ).without_text()
+    if change == "unpaid":
+        paid = paid.model_copy(update={"coverage": ()})
+    current = part.model_copy(
+        update={
+            "text_sha256": {"text": "0" * 64, "unhashed": ""}.get(change or "", digest),
+            "role": "normative_annex" if change == "role" else "bill",
+        }
+    )
+
+    reused = paid_input_selection(DocumentSelection(state="selected", parts=(current,)), paid)
+
+    if change is not None:
+        assert reused is None
+    else:
+        assert reused is not None and reused.coverage == paid.coverage
+        assert reused.limitations == paid.limitations == ("normative_text_omitted",)
+        assert reused.state == "unverified" and reused.parts[0].text == body
