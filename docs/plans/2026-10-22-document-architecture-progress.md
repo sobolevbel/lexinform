@@ -7657,3 +7657,8 @@ message_id делает исходную карточку shared_or_reused. Эт
 [Acceptance asset](../assets/audits/2026-10-29-observed-latency/validation.json).
 Actual loader-read completion producer и trigger time later purposes остаются DA10.4.
 План **74 / 32 done / 6 explicit N/A / 36 applicable open**.
+
+
+J155 commit `6aa24d387b3a325e1a828d49dea5fc151836f450`: все четыре CI jobs 40823453475
+и deploy 40823808285 прошли; relay c73 → 6aa2, health 45s/timer подтверждены
+[release proof](../assets/audits/2026-10-29-observed-latency/release.json).
