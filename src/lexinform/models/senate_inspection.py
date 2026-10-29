@@ -150,6 +150,7 @@ InspectionReason = Literal[
     "unsupported_extension",
     "word_precedence",
     "after_outage",
+    "after_failure",
     "stage_not_eligible",
 ]
 
@@ -200,6 +201,7 @@ class SenateCandidateInspection(_Fact):
                 "unsupported_extension",
                 "word_precedence",
                 "after_outage",
+                "after_failure",
                 "stage_not_eligible",
             ):
                 raise ValueError("unattempted candidates require their exact skip reason")
@@ -249,6 +251,7 @@ class SenateCandidateInspection(_Fact):
             "unsupported_extension",
             "word_precedence",
             "after_outage",
+            "after_failure",
             "stage_not_eligible",
             "missing",
             "read_error",

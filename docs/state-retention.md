@@ -433,6 +433,9 @@ skip, equivalence groups и итог выбора/отказа/ошибки. И�
 locators; отсутствующие в API Stage/Attachment IDs не придумываются. Physical source facts
 остаются unverified, отдельно от legal admission, прежнего paid input и сохранённого применения.
 Collector/writer инертен: producer в resolver, container, CLI и pipeline не подключён.
+Reader различает `after_failure` для непрочитанных после non-outage abort descriptors и
+`after_outage` для source outage. Отмена не становится доказательством недоступности источника;
+новый reason допустим только у unattempted filter fact. Producer требует этого reader после deploy.
 
 Полная запись вместе с первым aware UTC timestamp ограничена 8 KiB UTF-8. Переполнение сохраняет
 whole omission ≤ 2 KiB с semantic/universe/context/decision hashes, counts, итогом/chosen identity

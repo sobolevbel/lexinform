@@ -1,0 +1,81 @@
+{
+  "stage": "J153 compatible reader for non-outage Senate abort history",
+  "baseline": "bb31e9baad8c67c762d4fb3c69cb0fe0116adbe9",
+  "contract": {
+    "new_reason": "after_failure",
+    "allowed_state": "unattempted filter only",
+    "schema_changed": false,
+    "runtime_capture_active": false,
+    "old_defaults_and_identity_algorithms_unchanged": true
+  },
+  "independent_review": {
+    "checks": {
+      "focused": {
+        "errors": "0",
+        "failures": "0",
+        "hostname": "Yauhenis-MacBook-Pro.local",
+        "name": "pytest",
+        "skipped": "0",
+        "tests": "2",
+        "time": "0.154",
+        "timestamp": "2026-10-29T01:26:15.238524+01:00"
+      },
+      "full_or_native_or_network": false,
+      "new_reason": "unattempted filter only; rejected for inspected/read_error/inspection_error",
+      "production_delta": "three literal allow/forbid sites only; no defaults/schema/ID/producer change"
+    },
+    "diff_sha256": "5ec6c0865e65b43597577115dacd23f6b9341fa07da48260c4dfae79c446ed4a",
+    "findings": [],
+    "limits": [
+      "Producer review remains open pending revised freeze",
+      "No deployment claim"
+    ],
+    "scope": "J153 reader-only after_failure compatibility extension",
+    "source": {
+      "src/lexinform/models/senate_inspection.py": "5f42b1a960bb2015943c6ab2be3d60e6d8e471aa79bc11b9fb5384fd8925fce8",
+      "tests/unit/test_senate_inspection.py": "dbf9fc0a10ab99acee24eba0739935b03ce299c15b403b1b77c60daf4437d549"
+    }
+  },
+  "existing_population": {
+    "status": "all_existing_records_and_SQL_byte_exact",
+    "input_sql": {
+      "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/out/corpus/senate-inspection-s2/candidate-final/populated.sql",
+      "sha256": "8208bf881dff3421439f4c9e8b2cb2198947df7d4f17c473e81bdaa6c9a5b6dd",
+      "bytes": 7105723
+    },
+    "records": 775,
+    "restored_dump_byte_exact": true,
+    "every_record_json_byte_exact": true,
+    "doctor_findings": 0,
+    "schema": 61,
+    "limitations": [
+      "Counterfactual saved J153 producer-v1 cohort; not production history or a fresh extractor/parser replay.",
+      "No producer or schema changes in this reader extension."
+    ]
+  },
+  "full_gate": {
+    "status": "passed",
+    "tests": 6574,
+    "failures_errors_skips": 0,
+    "seconds": 250.92,
+    "coverage_percent": 92,
+    "mypy_files": 570,
+    "ruff_format_files": 636,
+    "source_config_frozen_files": 638,
+    "new_unit_cases": 2,
+    "new_scenarios": 0
+  },
+  "pins": {
+    "out/corpus/j153-independent-review/reader-review.json": "5af454d6f7fb1ebbfe84d88a820bbbdc0796bf527b98b0bd6f09f95d33599fcf",
+    "out/corpus/j153-reader/populated-v2/validation.json": "9688541f16e0a882704612160b5fa2f5a6614c1762c09a9fb849b854fae60d46",
+    "out/corpus/j153-independent-review/cancellation-probe.json": "d78983bd0b792b2605da7b8b434d62074989a2896c5120f9869a4b143318775b",
+    "out/corpus/j153-reader/final-gate/source-freeze.json": "97cca0251d605128beca0e7bb0ff34511b84e48df9f8cf5a2c8f09cd45b44f5e"
+  },
+  "limits": [
+    "New full after_failure records need this reader; deployed8e is not claimed to read that new reason.",
+    "No producer, schema, backfill, raw storage, backend or retention change.",
+    "775-record replay is saved counterfactual metadata, not fresh extraction or production demand.",
+    "The first replay attempt passed row/JSON/dump equality but doctor rejected its still-open read connection WAL; corrected v2 closes it before doctor; failed evidence retained."
+  ],
+  "docs_check": "strict build, links, anchors, resources and contents passed"
+}

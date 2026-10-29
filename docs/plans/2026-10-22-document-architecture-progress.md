@@ -7510,3 +7510,37 @@ Ruff/format 636 по src/tests/tools; все 638 frozen source/config files то
 case, новых scenario нет. Source/input DB hashes независимой проверки неизменны.
 [Acceptance asset](../assets/audits/2026-10-29-rcl-bound-omission/validation.json).
 DA2.3/DA2.5 остаются partial до Senate capture; план 74 / 31 done / 6 N/A / 37 open.
+
+
+J152 commit `bb31e9baad8c67c762d4fb3c69cb0fe0116adbe9`: все четыре CI jobs 40793196294
+и deploy 40793806579 прошли; relay 8e24 → bb31, health 45s/timer подтверждены
+[release proof](../assets/audits/2026-10-29-rcl-bound-omission/release.json).
+
+
+<a id="j153"></a>
+
+### J153. Read non-outage Senate aborts before producer activation
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются; producer не активирован**, 29 октября.
+При review следующего producer обнаружено: active pre-body KeyboardInterrupt описывался как
+source_unavailable, а оставшиеся descriptors — after_outage. Отмена не доказывает outage.
+Public facade/finalizer control с двумя descriptors подтвердил это до релиза; original exception
+object/cause оставались прежними. Producer отдельно исправляется и получит следующий этап J154.
+
+Совместимый reader добавляет `after_failure` только для unattempted filter facts; completed
+inspection не может использовать skip reason. Три Literal/allow-forbid additions, без migration,
+default/ID изменений или нового capture. После actual reader deploy producer сможет сохранять
+точный non-outage abort; старый8e не заявляется reader для full facts с новым reason.
+
+Два новых unit cases проверяют complete/omitted cancellation history, get/doctor/scratch restore,
+первое время, quiet repeat +365 дней и отказ от inspected-after_failure. Независимый review без
+findings; оба новых cases отдельно прошли у reviewer. На сохранённой counterfactual популяции
+775 facts каждый record JSON и весь SQL остались byte-exact, doctor без findings. Свежая extraction
+не выполнялась; отмены не выдаются за natural observed corpus demand.
+[Acceptance asset](../assets/audits/2026-10-29-senate-abort-reader/validation.json).
+План 74 / 31 done / 6 N/A / 37 open; Senate producer остаётся открытым.
+
+
+J153 final make check: 6574 tests / 0 failures-errors-skips, 250.92s, coverage 92%; mypy 570,
+Ruff/format 636 по src/tests/tools, 638 frozen source/config files exact. Два новых unit cases,
+новых scenario нет. Strict docs/link/anchor/resource/build checks прошли.

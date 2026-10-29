@@ -942,3 +942,76 @@ def test_opaque_link_manifest_cannot_be_rewritten_under_an_unchanged_identity(
         target.restore(corrupt)
     assert target.dump() == valid
     target.close()
+
+
+@pytest.mark.parametrize("omitted", [False, True])
+def test_nonoutage_abort_history_roundtrips_without_claiming_source_outage(
+    tmp_path: Path, *, omitted: bool
+) -> None:
+    data = payload(name=("ą" * 6000 + ".docx") if omitted else "3213-uchwala.docx").model_dump(
+        mode="json"
+    )
+    first = SenateInspectionCandidate.model_validate(data["universe"][0])
+    with pytest.raises(ValueError, match="skip or failed read"):
+        SenateInspectionCandidate.model_validate(
+            {
+                **first.model_dump(),
+                "inspection": {**first.inspection.model_dump(), "reason": "after_failure"},
+            }
+        )
+    active = SenateInspectionCandidate.model_validate(
+        {
+            "descriptor": first.descriptor.model_dump(),
+            "inspection": {
+                "phase": "word",
+                "attempted": True,
+                "state": "read_error",
+                "reason": "read_error",
+                "error_class": "KeyboardInterrupt",
+            },
+        }
+    )
+    remaining = SenateInspectionCandidate.model_validate(
+        {
+            "descriptor": {
+                **first.descriptor.model_dump(),
+                "index": 1,
+                "name": "other.pdf",
+            },
+            "inspection": {
+                "phase": "filter",
+                "attempted": False,
+                "state": "unattempted",
+                "reason": "after_failure",
+            },
+        }
+    )
+    data.update(
+        universe=[active.model_dump(), remaining.model_dump()],
+        phases=[],
+        result={
+            "outcome": "propagated_failure",
+            "descriptor_index": None,
+            "identity": None,
+            "error_class": "KeyboardInterrupt",
+        },
+    )
+    value = SenateInspectionPayload.model_validate(data)
+    record = SenateInspectionRecord.of(value)
+    assert isinstance(record.payload, SenateInspectionOmission) == omitted
+    observation = SenateInspectionObservation(record, value.physical_links())
+    repo = repository(tmp_path)
+    record_senate_inspections(repo, (observation,), recorded_at=NOW)
+    saved = repo.get_senate_inspection(record.inspection_id)
+    assert saved is not None, "The caller committed the exact abort observation"
+    assert saved.payload == record.payload
+    before = repo.dump()
+    record_senate_inspections(repo, (observation,), recorded_at=NOW + dt.timedelta(days=365))
+    assert repo.dump() == before
+    restored = SqliteBillRepository(tmp_path / "restored.db")
+    restored.restore(before)
+    assert restored.dump() == before
+    assert restored.get_senate_inspection(record.inspection_id) == saved
+    restored.close()
+    repo.close()
+    assert audit(tmp_path / "history.db")["findings"] == []
