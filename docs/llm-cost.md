@@ -72,8 +72,10 @@ the rest. GPT-5.1 uses automatic caching without a cache-write surcharge and req
 `prompt_cache_retention="24h"`. All requests use a stable key derived from the system prompt and
 output schema name. OpenAI's `input_tokens` includes cache reads and writes; the adapter subtracts
 both before storing the uncached category and records writes as `cache_creation_input_tokens`.
-Above 272k input tokens a whole Sol request costs 2x input and 1.5x output; batch reservations
-apply it, run totals (summed per model) do not. Batch pricing halves both uncached and cached rates. Historical reports
+Above 272k input tokens a whole Sol request costs 2x input and 1.5x output: each such call is summed
+under `gpt-6.1-sol:long` (`models.usage_key`) and priced at that tier, and batch reservations and the
+per-bill guard apply it. A scanned page is ~3,110 Sol tokens against GPT-5.1's ~760, so routing,
+reservations and the guard count pages at the analysis model's own rate (`pricing.scan_page_tokens`). Batch pricing halves both uncached and cached rates. Historical reports
 are not rewritten. New batch reservations assume no paid cache writes and no cache hits.
 
 Run reports show cache reads and writes across synchronous and batch calls, including zero reads

@@ -142,6 +142,7 @@ from lexinform.pricing import (
     estimate_scan_cost,
     format_usd,
     input_cost,
+    tiered,
 )
 from lexinform.sections import (
     PAGE_BREAK,
@@ -286,6 +287,9 @@ class AnalysisOptions:
     overflow_max_input_tokens: int | None = None
     overflow_model: str = "claude-opus-5-5"
     overflow_provider: BatchProvider = "anthropic"
+    scan_page_tokens: int = TOKENS_PER_SCANNED_PAGE
+    long_input_tier: tuple[int, float] | None = None
+    overflow_long_input_tier: tuple[int, float] | None = None
     prompt_version: str = ""
     max_bill_cost_usd: float = 0.0
     max_run_cost_usd: float = 0.0
@@ -362,11 +366,18 @@ class _Loaded:
             self.digest is not None and self.digest == record.text_sha256
         )
 
-    def estimate(self, input_price: float) -> float:
+    def estimate(
+        self,
+        input_price: float,
+        page_tokens: int = TOKENS_PER_SCANNED_PAGE,
+        tier: tuple[int, float] | None = None,
+    ) -> float:
         """What the model will charge to read it, before it is asked."""
         if self.scan is not None:
-            return estimate_scan_cost(self.scan.pages, input_price)
-        return estimate_input_cost(len(self.text), input_price)
+            cost = estimate_scan_cost(self.scan.pages, input_price, page_tokens)
+            return tiered(cost, self.scan.pages * page_tokens, tier)
+        cost = estimate_input_cost(len(self.text), input_price)
+        return tiered(cost, int(len(self.text) / CHARS_PER_TOKEN), tier)
 
     def measure(self, tokens: int | None) -> str:
         """What the price was worked out from, for the record a skipped bill keeps."""
@@ -2410,7 +2421,10 @@ class AnalysisService:
             return False
         if self._options.require_batch:
             price *= 0.5
-        return loaded.estimate(price) > limit
+        return (
+            loaded.estimate(price, self._options.scan_page_tokens, self._options.long_input_tier)
+            > limit
+        )
 
     def bare_supplement(
         self, document: TextDocument, *, number: str, title: str
@@ -2891,7 +2905,7 @@ class AnalysisService:
             self._batch if batch and self._batch is not None else self._llm
         )
         if ctx.scan is not None:
-            tokens = ctx.scan.pages * TOKENS_PER_SCANNED_PAGE
+            tokens = ctx.scan.pages * self._options.scan_page_tokens
         else:
             counted = counter.count_input_tokens(ctx)
             tokens = counted if counted is not None else int(len(ctx.text) / CHARS_PER_TOKEN)
@@ -2920,11 +2934,13 @@ class AnalysisService:
         counter: AnalysisBackend | BatchBackend = (
             self._batch if batch and self._batch is not None else self._llm
         )
+        tier = self._options.long_input_tier
         if overflow:
             assert self._overflow_batch is not None
             counter = self._overflow_batch
             price = self._options.overflow_input_price_usd_per_mtok
             ceiling = self._options.overflow_max_input_tokens
+            tier = self._options.overflow_long_input_tier
         if batch and price is not None:
             price *= 0.5
         if not limit:
@@ -2933,11 +2949,15 @@ class AnalysisService:
             return fitted
         tokens = None if loaded.scan is not None else counter.count_input_tokens(ctx)
         if tokens is None:
-            cost = loaded.estimate(price) if price is not None else 0.0
+            cost = (
+                loaded.estimate(price, self._options.scan_page_tokens, tier)
+                if price is not None
+                else 0.0
+            )
             if cost > limit and first:
                 raise TooExpensiveError(cost, limit, measure=loaded.measure(None))
             return fitted
-        cost = input_cost(tokens, price) if price is not None else 0.0
+        cost = tiered(input_cost(tokens, price), tokens, tier) if price is not None else 0.0
         over_by = max(cost / limit if limit else 0.0, tokens / ceiling if ceiling else 0.0)
         if over_by <= 1:
             return fitted
@@ -2969,10 +2989,10 @@ class AnalysisService:
             first
             and counted is not None
             and price is not None
-            and input_cost(counted, price) > limit
+            and tiered(input_cost(counted, price), counted, tier) > limit
         ):
             raise TooExpensiveError(
-                input_cost(counted, price),
+                tiered(input_cost(counted, price), counted, tier),
                 limit,
                 measure=f"{counted} tokens after trimming to {len(reduced.text)} chars",
             )

@@ -63,7 +63,7 @@ from lexinform.ports import (
     TextExtractor,
     WykazGateway,
 )
-from lexinform.pricing import input_limit_of, price_of
+from lexinform.pricing import input_limit_of, long_input_tier, price_of, scan_page_tokens
 from lexinform.sections import TextBudget
 from lexinform.services.amendments import AmendmentsService
 from lexinform.services.analysis import AnalysisOptions, AnalysisService
@@ -403,6 +403,9 @@ class Container:
             overflow_max_input_tokens=input_limit_of(self.settings.llm_analysis_overflow_model),
             overflow_model=self.settings.llm_analysis_overflow_model,
             overflow_provider=provider_of(self.settings.llm_analysis_overflow_model),
+            scan_page_tokens=scan_page_tokens(self.settings.llm_analysis_model),
+            long_input_tier=long_input_tier(self.settings.llm_analysis_model),
+            overflow_long_input_tier=long_input_tier(self.settings.llm_analysis_overflow_model),
             batch_max_input_tokens=input_limit_of(self.settings.llm_analysis_model),
             prompt_version=PROMPT_VERSION,
             max_bill_cost_usd=self.settings.max_analysis_cost_usd,

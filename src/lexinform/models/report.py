@@ -5,7 +5,7 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, Field, model_validator
 
-from lexinform.models.analysis import TokenUsage
+from lexinform.models.analysis import TokenUsage, usage_key
 from lexinform.models.document_reads import DocumentDownloadDiagnostics, DocumentReadMetrics
 from lexinform.models.enums import RunMode
 
@@ -81,8 +81,9 @@ class LlmCall(BaseModel):
     def usage(self) -> dict[str, TokenUsage]:
         """What it cost, in the shape `pricing.cost_usd` prices (which cannot be imported here:
         `pricing` reads these models)."""
+        prompt = self.input_tokens + self.cache_read_input_tokens + self.cache_creation_input_tokens
         return {
-            self.model: TokenUsage(
+            usage_key(self.model, prompt): TokenUsage(
                 input=self.input_tokens,
                 output=self.output_tokens,
                 cache_read=self.cache_read_input_tokens,

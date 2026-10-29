@@ -16,7 +16,7 @@ per-bill cost estimate is built on before a model is asked to count; GPT-5.1's o
 
 from collections.abc import Mapping
 
-from lexinform.models import TokenUsage
+from lexinform.models import LONG_CONTEXT, LONG_CONTEXT_SUFFIX, TokenUsage
 
 PRICES: dict[str, tuple[float, float]] = {
     "claude-opus-5-5": (4.0, 20.0),
@@ -32,8 +32,6 @@ PRICES: dict[str, tuple[float, float]] = {
 CACHE_READ_FACTOR = 0.1
 CACHE_READ_FACTORS: dict[str, float] = {"gpt-6.1-sol": 0.05}
 CACHE_WRITE_FACTOR = 1.25
-LONG_CONTEXT: dict[str, tuple[int, float, float]] = {"gpt-6.1-sol": (272_000, 2.0, 1.5)}
-"""Above the threshold a whole request costs these input/output multiples; run totals miss it."""
 CHARS_PER_TOKEN = 2.0
 TOKENS_PER_SCANNED_PAGE = 1_600
 """A page of a Sejm scan, measured with `count_tokens` on 12 Sept 2026: druk 1273's government
@@ -52,9 +50,25 @@ def input_cost(tokens: int, input_price_per_mtok: float) -> float:
     return tokens / 1_000_000 * input_price_per_mtok
 
 
-def estimate_scan_cost(pages: int, input_price_per_mtok: float) -> float:
+def estimate_scan_cost(
+    pages: int, input_price_per_mtok: float, page_tokens: int = TOKENS_PER_SCANNED_PAGE
+) -> float:
     """What sending a scanned document of `pages` costs, before the call is made."""
-    return pages * TOKENS_PER_SCANNED_PAGE / 1_000_000 * input_price_per_mtok
+    return pages * page_tokens / 1_000_000 * input_price_per_mtok
+
+
+def scan_page_tokens(model: str) -> int:
+    return _by_prefix(SCANNED_PAGE_TOKENS, model) or TOKENS_PER_SCANNED_PAGE
+
+
+def long_input_tier(model: str) -> tuple[int, float] | None:
+    """The input threshold above which `model` bills a whole request at a multiple of its price."""
+    long = _by_prefix(LONG_CONTEXT, model)
+    return (long[0], long[1]) if long is not None else None
+
+
+def tiered(cost: float, tokens: int, tier: tuple[int, float] | None) -> float:
+    return cost * tier[1] if tier is not None and tokens > tier[0] else cost
 
 
 def price_of(model: str) -> tuple[float, float] | None:
@@ -81,11 +95,15 @@ def cost_usd(usage_by_model: Mapping[str, TokenUsage]) -> float | None:
     """Total cost of a run, or None when any model is not in the price list."""
     total = 0.0
     for model, usage in usage_by_model.items():
-        prices = price_of(model)
+        base = model.removesuffix(LONG_CONTEXT_SUFFIX)
+        prices = price_of(base)
         if prices is None:
             return None
         per_input, per_output = prices
-        read = _by_prefix(CACHE_READ_FACTORS, model) or CACHE_READ_FACTOR
+        long = _by_prefix(LONG_CONTEXT, base)
+        if long is not None and model.endswith(LONG_CONTEXT_SUFFIX):
+            per_input, per_output = per_input * long[1], per_output * long[2]
+        read = _by_prefix(CACHE_READ_FACTORS, base) or CACHE_READ_FACTOR
         total += (
             usage.input * per_input
             + usage.cache_read * per_input * read
@@ -137,5 +155,5 @@ def estimate_batch_reservation(
     max_output_tokens: int,
 ) -> float:
     estimate = max(counted_tokens or 0, prompt_chars + system_chars + 2_000)
-    estimate += scan_pages * (_by_prefix(SCANNED_PAGE_TOKENS, model) or TOKENS_PER_SCANNED_PAGE)
+    estimate += scan_pages * scan_page_tokens(model)
     return batch_reservation(model, input_tokens=estimate, max_output_tokens=max_output_tokens)

@@ -142,8 +142,8 @@ service built once) → `cli.py` (typer).
   calibrated prompt), batch provider `openai`, one model up to its 922k-token input (the overflow
   setting names the same model). Its prompt cache is explicit, one breakpoint on the system message:
   left implicit, every one-off document is written to the cache at 1.25x input. Triage of texts ≥ 20k
-  chars on `claude-sonnet-5` (synchronous, ~1 cent a bill). Scans routed at 1,600 tokens a page,
-  reserved at Sol's ~3,110. Urgency and waiting never buy a synchronous call.
+  chars on `claude-sonnet-5` (synchronous, ~1 cent a bill). Scans counted at the analysis model's
+  tokens a page (Sol ~3,110). Urgency and waiting never buy a synchronous call.
 - `min_score` 3. Text prefilter: 2 distinct patterns or 3 hits; weak patterns (Straż Graniczna,
   "legalizacja", "nierezydent") never decide alone; everyone's registers and benefits (PESEL,
   mObywatel, NFZ, 800+, prawo jazdy, Kodeks wyborczy) are deliberately not patterns. The keyword

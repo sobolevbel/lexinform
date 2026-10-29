@@ -1,12 +1,15 @@
 import pytest
 
-from lexinform.models import TokenUsage
+from lexinform.models import LlmCall, TokenUsage
 from lexinform.pricing import (
     batch_reservation,
     cost_usd,
     estimate_batch_reservation,
     input_limit_of,
+    long_input_tier,
     price_of,
+    scan_page_tokens,
+    tiered,
 )
 
 
@@ -82,3 +85,32 @@ def test_sol_reserves_its_own_scanned_page_tokens() -> None:
 def test_sol_cache_reads_cost_a_twentieth_of_input() -> None:
     cost = cost_usd({"gpt-6.1-sol": TokenUsage(cache_read=1_000_000, cache_creation=1_000_000)})
     assert cost is not None and abs(cost - (0.05 * 2 + 1.25 * 2)) < 1e-9
+
+
+def test_a_long_sol_call_is_summed_and_priced_at_its_long_tier() -> None:
+    short = LlmCall(
+        number="1", kind="analysis", model="gpt-6.1-sol", input_tokens=200_000, batched=True
+    )
+    long = LlmCall(
+        number="2",
+        kind="analysis",
+        model="gpt-6.1-sol",
+        input_tokens=583_000,
+        cache_read_input_tokens=1_000,
+        output_tokens=600,
+        batched=True,
+    )
+
+    assert list(short.usage) == ["gpt-6.1-sol"] and list(long.usage) == ["gpt-6.1-sol:long"]
+    cost = cost_usd(long.usage)
+    assert cost is not None
+    expected = (583_000 * 4.0 + 1_000 * 4.0 * 0.05 + 600 * 15.0) / 2 / 1e6
+    assert abs(cost - expected) < 1e-9
+
+
+def test_scan_and_long_tier_helpers_follow_the_model() -> None:
+    assert scan_page_tokens("gpt-6.1-sol") == 3110 and scan_page_tokens("gpt-5.1") == 1600
+    assert long_input_tier("gpt-6.1-sol") == (272_000, 2.0) and long_input_tier("gpt-5.1") is None
+    assert (
+        tiered(1.0, 300_000, (272_000, 2.0)) == 2.0 and tiered(1.0, 272_000, (272_000, 2.0)) == 1.0
+    )

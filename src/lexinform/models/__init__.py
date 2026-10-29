@@ -7,6 +7,8 @@ does.
 """
 
 from lexinform.models.analysis import (
+    LONG_CONTEXT,
+    LONG_CONTEXT_SUFFIX,
     Amendments,
     AmendmentsContext,
     AmendmentsRecord,
@@ -34,6 +36,7 @@ from lexinform.models.analysis import (
     TriageRecord,
     UsageRecord,
     merge_usage,
+    usage_key,
     usage_of,
 )
 from lexinform.models.applicability import ApplicabilitySource as ApplicabilitySource
@@ -686,6 +689,8 @@ __all__ = [
     "StatusChange",
     "TextDocument",
     "TextSource",
+    "LONG_CONTEXT",
+    "LONG_CONTEXT_SUFFIX",
     "TokenUsage",
     "Triage",
     "TriageContext",
@@ -766,6 +771,7 @@ __all__ = [
     "veto_outcome",
     "veto_stood",
     "VetoOutcome",
+    "usage_key",
     "usage_of",
     "BILL_KIND",
     "REGISTER_PAGE_URL",

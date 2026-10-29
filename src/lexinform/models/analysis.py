@@ -56,6 +56,19 @@ class Analysis(BaseModel):
         return any(change.strip() for change in self.changes_since_previous)
 
 
+LONG_CONTEXT: dict[str, tuple[int, float, float]] = {"gpt-6.1-sol": (272_000, 2.0, 1.5)}
+"""Model prefix → (input threshold, input and output price multiples) of its long-context tier."""
+LONG_CONTEXT_SUFFIX = ":long"
+
+
+def usage_key(model: str, input_tokens: int) -> str:
+    """The key a request's tokens are summed under: its long tier when its input exceeds it."""
+    for prefix, (threshold, _, _) in LONG_CONTEXT.items():
+        if model.startswith(prefix) and input_tokens > threshold:
+            return model + LONG_CONTEXT_SUFFIX
+    return model
+
+
 class TokenUsage(BaseModel):
     """Tokens of one or more requests to one model, in the API's own categories; `input` is the
     uncached part of it."""
@@ -467,8 +480,16 @@ UsageRecord = (
 
 def usage_of(record: UsageRecord) -> dict[str, TokenUsage]:
     """A record's tokens under its model, the shape `merge_usage` and `cost_usd` take."""
+    prompt = sum(
+        tokens or 0
+        for tokens in (
+            record.input_tokens,
+            record.cache_read_input_tokens,
+            record.cache_creation_input_tokens,
+        )
+    )
     return {
-        record.model: TokenUsage(
+        usage_key(record.model, prompt): TokenUsage(
             input=record.input_tokens or 0,
             output=record.output_tokens or 0,
             cache_read=record.cache_read_input_tokens or 0,
