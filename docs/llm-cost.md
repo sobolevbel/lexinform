@@ -4,6 +4,13 @@ Extracted from `CLAUDE.md` on 2026-09-14: the price of a run, the guard rails an
 behind them. Read it when changing `AnalysisService`, `pricing.py`,
 `sections.excerpts`/`TextBudget` or any cost setting.
 
+## Terra и Sol: калибровка 29 октября 2026
+
+[Отчёт](reviews/2026-10-29-terra-sol-evaluation.md): по профилю production Sol `medium` для всех
+анализов стоит ≈ $6,2 в месяц, как GPT‑5.1 + Opus, при заметно лучшем качестве; Terra `low` для
+входов ≤ 272k и Sol для длинных — ≈ $4,1. Модели 6.x без explicit-кеша пишут в кеш весь документ
+по ×1,25, а скан считают в ~4 раза дороже. Production-модели не менялись.
+
 ## Terra: корпусный тест 27 октября 2026
 
 [Отчёт о GPT‑6.1 Terra](reviews/2026-10-27-terra-evaluation.md): 130 Batch-запросов

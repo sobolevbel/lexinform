@@ -67,6 +67,7 @@ nav = [
   ] },
   { "Аудиты" = [
     { "Обзор" = "reviews/index.md" },
+    { "GPT‑6.1 Terra и Sol · 29.10" = "reviews/2026-10-29-terra-sol-evaluation.md" },
     { "Зависимости retention · 28.10" = "reviews/2026-10-28-retention-dependencies.md" },
     { "Составные исправления · 28.10" = "reviews/2026-10-28-compound-content-revisions.md" },
     { "Профиль хранения · 27.10" = "reviews/2026-10-27-storage-profile.md" },

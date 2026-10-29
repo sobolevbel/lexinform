@@ -1,0 +1,17 @@
+{
+ "archive": "evidence.tar.xz",
+ "archive_sha256": "7c795e8ed951fa54730f02c6b6694dac285102fa489c91c516cf59385be37e0f",
+ "archive_bytes": 4409776,
+ "paid_requests": {
+  "generation": 1697,
+  "grading": 1504,
+  "adjudication": 257,
+  "keys_openai": 16,
+  "keys_anthropic": 54
+ },
+ "usage_cost_usd": {
+  "openai": 66.25,
+  "anthropic": 6.0352
+ },
+ "pending_requests": 0
+}

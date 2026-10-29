@@ -1,0 +1,31 @@
+{
+ "production_change": false,
+ "recommendation": "Replace GPT-5.1 and Opus 5.5 with gpt-6.1-sol medium and a calibrated prompt (v2 + hard length limits + protection-procedure rubric rule), after adapter/accounting changes and a shadow run.",
+ "cheaper_alternative": "gpt-6.1-terra low (v3t) for inputs <=272k tokens, gpt-6.1-sol for longer inputs",
+ "not_recommended": [
+  "Terra for inputs >272k (3139 scored 4 instead of 2)",
+  "calibrated GPT-5.1 v2g (missed Eurodac on holdout)"
+ ],
+ "monthly_usd": {
+  "current": 6.2,
+  "sol_all": 6.23,
+  "terra_short_sol_long": 4.06,
+  "gpt51_plus_sol_overflow": 5.23
+ },
+ "required_changes": [
+  "explicit prompt_cache_options with system-only breakpoint",
+  "pricing.py entries incl. long tier and cache writes",
+  "input limit 922k; token counting via /responses/input_tokens",
+  "separate setting for review kinds or their own test",
+  "scan token estimate ~4x for 6.x",
+  "rubric rule for protection/return procedure obligations"
+ ],
+ "untested": [
+  "consultation_review",
+  "commission_review",
+  "act_application",
+  "explanation",
+  "triage",
+  "change_review"
+ ]
+}

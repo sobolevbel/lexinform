@@ -5,6 +5,7 @@
 
 | Дата | Проверка | Что объясняет |
 | --- | --- | --- |
+| 29.10.2026 | [GPT‑6.1 Terra и Sol: калибровка и замена](2026-10-29-terra-sol-evaluation.md) | 1 697 генераций, три прогона финальных конфигураций, сверка ошибок по источнику и сценарии замены GPT‑5.1 и Opus 5.5 |
 | 28.10.2026 | [Зависимости retention](2026-10-28-retention-dependencies.md) | Inventory 30 таблиц и четырёх операций очистки; решение сохранить все guards и точная граница abandoned review |
 | 28.10.2026 | [Исправления составных сообщений](2026-10-28-compound-content-revisions.md) | DA7.4: physical owner, frozen membership, частичные receipts, конкуренция и отдельные gates включения |
 | 27.10.2026 | [Профиль хранения](2026-10-27-storage-profile.md) | Текущая SQLite, физические source refs, размер корпуса, реальные state snapshots и отдельная стоимость Git packing/checkpoint |

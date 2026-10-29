@@ -1,0 +1,95 @@
+{
+ "profile": {
+  "analysis": {
+   "n": 17.0,
+   "in": 751591.0,
+   "cached": 6656.0,
+   "out": 27177.0
+  },
+  "supplement": {
+   "n": 1.0,
+   "in": 24182.0,
+   "cached": 0.0,
+   "out": 878.0
+  },
+  "reanalysis": {
+   "n": 24.0,
+   "in": 1133074.0,
+   "cached": 8192.0,
+   "out": 63517.0
+  },
+  "consultation_review": {
+   "n": 12.0,
+   "in": 749611.0,
+   "cached": 598016.0,
+   "out": 94234.0
+  },
+  "act_application": {
+   "n": 5.0,
+   "in": 65359.0,
+   "cached": 63360.0,
+   "out": 35740.0
+  },
+  "amendments": {
+   "n": 9.0,
+   "in": 44406.0,
+   "cached": 1664.0,
+   "out": 20798.0
+  },
+  "explanation": {
+   "n": 1.0,
+   "in": 43539.0,
+   "cached": 0.0,
+   "out": 3497.0
+  },
+  "name": {
+   "n": 25.0,
+   "in": 14247.0,
+   "cached": 0.0,
+   "out": 7821.0
+  }
+ },
+ "scenarios": {
+  "GPT-5.1 prod": {
+   "output_ratio_vs_gpt51": 1.0,
+   "pairs": 81,
+   "main_month_usd": 3.077,
+   "long_on_same_model_usd": null
+  },
+  "GPT-5.1 calibrated": {
+   "output_ratio_vs_gpt51": 1.265,
+   "pairs": 76,
+   "main_month_usd": 3.414,
+   "long_on_same_model_usd": null
+  },
+  "Terra low v3t": {
+   "output_ratio_vs_gpt51": 0.352,
+   "pairs": 81,
+   "main_month_usd": 1.91,
+   "long_on_same_model_usd": 1.072
+  },
+  "Terra low v1": {
+   "output_ratio_vs_gpt51": 0.375,
+   "pairs": 76,
+   "main_month_usd": 1.924,
+   "long_on_same_model_usd": 1.072
+  },
+  "Sol medium v2": {
+   "output_ratio_vs_gpt51": 0.557,
+   "pairs": 81,
+   "main_month_usd": 4.081,
+   "long_on_same_model_usd": 2.147
+  },
+  "Sol medium prod": {
+   "output_ratio_vs_gpt51": 0.473,
+   "pairs": 76,
+   "main_month_usd": 3.974,
+   "long_on_same_model_usd": 2.146
+  },
+  "Opus overflow (current)": {
+   "long_month_usd": 3.118,
+   "long_calls_per_month": 2.26,
+   "long_tokens_openai": 1069684
+  }
+ }
+}

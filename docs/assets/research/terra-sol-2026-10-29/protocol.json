@@ -1,0 +1,33 @@
+{
+ "date": "2026-10-29",
+ "budgets_usd": {
+  "openai": 69.0,
+  "anthropic": 3.0
+ },
+ "spent_usd": {
+  "openai": 66.2503,
+  "anthropic": 6.0352
+ },
+ "git_head": "259bd92b41fbbb38e229ebea188e2c1dc551d59d",
+ "prompt_version": "2026-10-v12",
+ "state_commit": "6164bb0b1c51af5bc4c3b8e8bdd5035cf8943b37",
+ "sets": {
+  "calib_real": 34,
+  "calib_synth": 22,
+  "holdout": 20,
+  "large": 5,
+  "long": 5,
+  "secondary": 14,
+  "names": 14
+ },
+ "holdout_selection": "random.Random(20261029): 10 of 29 keyword-passing prints amending foreigner-related acts (ISAP), 10 of 135 other keyword-passing prints; 6k-400k chars; never in Luna/Terra cases",
+ "holdout_decisions_sha256": "4f4d947a0998dc5c42c627297f3252ecdad4a5924dabe56c6f971c0fd56a1746",
+ "tiers": "Batch for first GPT-5.1 runs; flex (Batch price) for the rest after 6.x Batch queues stalled",
+ "cache": "6.x explicit mode without breakpoints unless a probe; GPT-5.1 production prompt_cache_key + 24h",
+ "grading": "gpt-5.4 blind grading against verified keys; flagged wrong statements adjudicated by gpt-5.4 on source passages; manual spot checks",
+ "final_configs": {
+  "gpt-5.1": "g51-med (production prompt)",
+  "sol": "s-med-v2 (medium, prompt v2)",
+  "terra": "t-low-v3t (low, prompt v3t)"
+ }
+}
