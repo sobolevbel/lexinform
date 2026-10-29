@@ -121,6 +121,9 @@ paths:
   no new text, hand-over to the President. The card is still re-rendered and the digest lists it.
   Committee referral, RCL consultation stage, the President's signature and anything urgent stay
   posts. (30 updates sent by 21 Oct 2026: 9 would have gone to the digest.)
+- **A card is one message** (2026-10-29): over 4,096 characters, `MessageFormatter.new_bill` shortens
+  the model's fields in `CARD_FIELD_CAPS` steps (groups, bullets, sentences; the entry-into-force
+  rule before its list of exceptions) and never splits; a card that fits is rendered unchanged.
 - **Multipart deliveries** freeze every physical part before the first attempt, wait for the saved
   parent and keep parent payloads while a continuation is unfinished (`message_part`,
   `DeliveryPlan.continuation_*`; see `docs/reference/database.md`).

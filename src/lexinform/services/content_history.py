@@ -14,7 +14,7 @@ from lexinform.models import (
 from lexinform.models.content import editorial_bill_snapshot
 from lexinform.ports import BillRepository, Clock
 
-FORMATTER_VERSION = "telegram-format-v1"
+FORMATTER_VERSION = "telegram-format-v2"
 
 
 def restore_content_delivery(repo: BillRepository, content: ContentVersion) -> DeliveryPlan:

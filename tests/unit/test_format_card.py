@@ -235,14 +235,53 @@ def test_card_preserves_long_blocks_for_lossless_physical_parts(
     analysis.summary = "с" * summary_len
     analysis.practical_impact = ""
     analysis.key_changes = ["и" * change_len] * n_changes
+    fmt = MessageFormatter("ru", single_message_cards=False)
 
-    text = MessageFormatter("ru").new_bill(bill_of(process_3039, analysis), print_3039).text
+    text = fmt.new_bill(bill_of(process_3039, analysis), print_3039).text
 
     for part in split_html(text):
         assert_telegram_html(part)
     assert analysis.summary in text
     assert all(change in text for change in analysis.key_changes)
     assert "PrzebiegProc.xsp?nr=3039" in text and "#kadencja10druk3039" in text  # fixed parts
+
+
+@pytest.mark.parametrize(
+    ("n_changes", "change_len", "summary_len"), [(12, 400, 3000), (30, 200, 500), (1, 10, 20000)]
+)
+def test_a_long_card_is_shortened_into_one_message(
+    process_3039: ProcessDetail,
+    print_3039: PrintInfo,
+    n_changes: int,
+    change_len: int,
+    summary_len: int,
+) -> None:
+    analysis = make_analysis()
+    analysis.summary = "Сводка. " * (summary_len // 8)
+    analysis.practical_impact = ""
+    analysis.key_changes = ["и" * change_len] * n_changes
+    analysis.affected_groups = ["иностранцы с длинным условием " * 10] * 8
+    analysis.effective_date = (
+        "«Закон вступает в силу 1 октября 2026 года, за исключением: " + "ст. 1 " * 300
+    )
+
+    text = MessageFormatter("ru").new_bill(bill_of(process_3039, analysis), print_3039).text
+
+    assert split_html(text) == (text,)
+    assert_telegram_html(text)
+    assert "Закон вступает в силу 1 октября 2026 года…" in text
+    assert "PrzebiegProc.xsp?nr=3039" in text and "#kadencja10druk3039" in text  # fixed parts
+
+
+def test_a_card_that_fits_is_not_shortened(
+    process_3039: ProcessDetail, print_3039: PrintInfo
+) -> None:
+    bill = bill_of(process_3039)
+
+    fitted = MessageFormatter("ru").new_bill(bill, print_3039).text
+    lossless = MessageFormatter("ru", single_message_cards=False).new_bill(bill, print_3039).text
+
+    assert fitted == lossless
 
 
 def test_card_groups_short_facts_and_separates_paragraphs(

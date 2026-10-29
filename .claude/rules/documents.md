@@ -38,8 +38,8 @@ What of a document reaches the model, with the prints each rule was derived from
 - **Scans and covering letters.** `sections.carries_the_document` is asked by both prefilter and
   analysis: it cuts the transmittal letter (`without_cover_letter`) and judges density — under 300
   characters a page (`MIN_CHARS_PER_PAGE`) is a photograph. A textless file with pages goes to the
-  model as pages (`ScannedDocument`, `text_source="scan"`, ~1,600 tokens and $0.008 a page, priced by
-  `pricing.estimate_scan_cost`), keeping the file `sha256` where a text digest would stand; a file
+  model as pages (`ScannedDocument`, `text_source="scan"`, ~3,110 Sol tokens and ~$0.003 a batch page,
+  `pricing.scan_page_tokens`, priced by `pricing.estimate_scan_cost`), keeping the file `sha256` where a text digest would stand; a file
   with neither keeps its text. Only the letter's page is dropped (`sections.scan_page_window` when
   `sections.has_cover_letter` finds the formula; not truncation — `ScannedDocument.truncated` counts
   only `cover_letter_pages` aside); nothing else of a scan is trimmed. The admission gate is
@@ -52,7 +52,7 @@ What of a document reaches the model, with the prints each rule was derived from
   first `triage_scan_pages` (8) pages cut from the downloaded bytes (`TextLoader.first_pages`, no
   second fetch): ~$0.044 a scan on Sonnet 5 (18/18 correct rejections on Haiku). The prompt states how
   many pages of how many are attached and asks for lower confidence instead of a guess; an unsure
-  verdict passes the bill on. The per-bill guard stops a scan at ~250 pages.
+  verdict passes the bill on. Sol's 922k-token input ends a scan at ~295 pages, before the $2 guard.
 - **A committee report is the bill only when it attaches one** — `proposal` "załączony projekt"
   (`Stage.carries_bill_text`); "odrzucić projekt ustawy" and "uchwalić projekt ustawy bez poprawek"
   attach none (else a bill would be re-analysed on the motion to reject it). What follows the

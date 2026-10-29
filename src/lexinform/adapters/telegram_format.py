@@ -424,6 +424,7 @@ class MessageFormatter:
         support_url: str = "",
         sponsor_url: str = "",
         attention_enabled: bool = False,
+        single_message_cards: bool = True,
     ) -> None:
         """`today` dates "what comes next", the countdowns and the consultation tag when a
         message method is not given the day explicitly: production passes the run's clock in
@@ -437,6 +438,7 @@ class MessageFormatter:
         self._support_url = support_url
         self._sponsor_url = sponsor_url
         self._attention_enabled = attention_enabled
+        self._single_message_cards = single_message_cards
         self._language = language
 
     def superseded_card_part(self) -> str:
@@ -448,6 +450,15 @@ class MessageFormatter:
         """The card. `today` decides whether the public consultation still counts as open."""
         if bill.analysis is None:
             raise ValueError(f"bill {bill.number} has no analysis")
+        text = self._card_text(bill, print_info, today)
+        for caps in CARD_FIELD_CAPS if self._single_message_cards else ():
+            if length(text) <= MESSAGE_LIMIT:
+                break
+            text = self._card_text(_clipped_analysis(bill, caps), print_info, today)
+        return RenderedMessage(text=text)
+
+    def _card_text(self, bill: Bill, print_info: PrintInfo | None, today: dt.date | None) -> str:
+        assert bill.analysis is not None, "new_bill renders only an analysed bill"
         a = bill.analysis.analysis
         lb = self._labels
         today = today or self._today()
@@ -498,7 +509,7 @@ class MessageFormatter:
                 self._card_tags(bill, today),
             ],
         )
-        return RenderedMessage(text=text)
+        return text
 
     def _card_header(self, bill: Bill, today: dt.date) -> str:
         lb = self._labels
@@ -3599,6 +3610,69 @@ def _verdict_ref(verdict: AnalysisVerdict) -> str:
 
 def _sitting_order(news: SittingNews) -> tuple[dt.date, dt.time, str]:
     return (news.item.date, news.item.start_time or dt.time.min, news.bill.number)
+
+
+@dataclass(frozen=True)
+class CardFieldCaps:
+    groups: int
+    group_chars: int
+    changes: int
+    change_chars: int
+    summary_chars: int
+    practical_chars: int
+    effective_chars: int
+
+
+CARD_FIELD_CAPS = (
+    CardFieldCaps(4, 80, 5, 160, 300, 350, 200),
+    CardFieldCaps(3, 60, 4, 120, 220, 250, 120),
+    CardFieldCaps(0, 0, 3, 100, 150, 200, 80),
+)
+"""Tighter steps for the model's fields while a card exceeds one message; a card is never split."""
+
+
+def _clipped_analysis(bill: Bill, caps: CardFieldCaps) -> Bill:
+    assert bill.analysis is not None, "new_bill renders only an analysed bill"
+    a = bill.analysis.analysis
+    clipped = a.model_copy(
+        update={
+            "summary": _clip_sentences(a.summary, caps.summary_chars),
+            "key_changes": [
+                _clip_words(c, caps.change_chars) for c in a.key_changes[: caps.changes]
+            ],
+            "affected_groups": [
+                _clip_words(g, caps.group_chars) for g in a.affected_groups[: caps.groups]
+            ],
+            "practical_impact": _clip_sentences(a.practical_impact, caps.practical_chars),
+            "effective_date": _clip_clause(a.effective_date, caps.effective_chars)
+            if a.effective_date
+            else a.effective_date,
+        }
+    )
+    record = bill.analysis.model_copy(update={"analysis": clipped})
+    return bill.model_copy(update={"analysis": record})
+
+
+def _clip_clause(text: str, limit: int) -> str:
+    """The main rule only: an entry-into-force date is cut before its list of exceptions."""
+    text = text.strip().strip('«»"')
+    if len(text) <= limit:
+        return text
+    match = re.search(r"[,;:(]", text[20:limit])
+    return text[: 20 + match.start()].rstrip() + "…" if match else _clip_words(text, limit)
+
+
+def _clip_sentences(text: str, limit: int) -> str:
+    """Whole sentences up to `limit`; a first sentence longer than that is cut at a word."""
+    text = text.strip()
+    if len(text) <= limit:
+        return text
+    kept = ""
+    for sentence in re.split(r"(?<=[.!?])\s+", text):
+        if len(kept) + len(sentence) + 1 > limit:
+            break
+        kept = f"{kept} {sentence}".strip()
+    return kept or _clip_words(text, limit)
 
 
 def _clip(text: str, limit: int) -> str:

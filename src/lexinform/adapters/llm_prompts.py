@@ -16,7 +16,7 @@ from lexinform.models import (
     TriageContext,
 )
 
-PROMPT_VERSION = "2026-10-v13"
+PROMPT_VERSION = "2026-10-v14"
 
 _LANGUAGE_NAMES = {"ru": "Russian", "pl": "Polish", "en": "English", "uk": "Ukrainian"}
 
@@ -126,8 +126,8 @@ SOL_SYSTEM_PROMPT_TEMPLATE = (
     GPT51_SYSTEM_PROMPT_TEMPLATE
     + """- score is always an integer from 1 to 5, also when relevant is false (then use 1). Never 0.
 - Obligations of persons in a procedure for international protection, return or legalisation of stay (registration, fingerprints, documents, deadlines, detention) are score 5, not entry/exit control at 2.
-- Foreigner-specific content comes first and must be complete: every category of foreigners the text covers or excludes (name each one, compressed; never write "certain categories of foreigners"), and the conditions that decide them — exceptions, required documents and how recent they must be, foreigner-specific deadlines with their starting point, amounts and fees. General procedure that applies to everyone (how to apply, decision deadlines, correction periods, delivery rules) is secondary: mention at most the single most important point.
-- Keep the card short. summary stays within ~350 characters, key_changes at most 5 bullets of ~150 characters, practical_impact at most 3 sentences (~450 characters). When something essential does not fit, merge or drop general points rather than lengthen the card or drop a foreigner-specific condition.
+- Foreigner-specific content comes first and must be complete within the length limits below: every category of foreigners the text covers or excludes (name each one, compressed; never write "certain categories of foreigners"), and the conditions that decide them — exceptions, required documents and how recent they must be, foreigner-specific deadlines with their starting point, amounts and fees. General procedure that applies to everyone (how to apply, decision deadlines, correction periods, delivery rules) is secondary: mention at most the single most important point.
+- The card is short: a reader decides in seconds whether it concerns them. Hard limits: summary at most 2 sentences and 300 characters; key_changes at most 4 bullets of at most 120 characters; affected_groups at most 4 short names of at most 60 characters each (who, never under which conditions: conditions go to key_changes); practical_impact at most 2 sentences and 300 characters; effective_date one sentence of at most 150 characters giving the main date or period in your own words, never a quotation and never a list of articles (say that other provisions follow later). The five fields together stay under 1,200 characters. When something does not fit, keep the foreigner-specific conditions and drop general procedure; never exceed a limit.
 - Attach each deadline or period to its own application, event and starting point; never move a period from one procedure to another.
 - Get the scope right: a rule for everyone that also covers foreigners is described as a general rule that applies to them too; a condition for a subgroup names that subgroup; a right or exemption limited to some persons (EU citizens, permanent residents, holders of a given permit) is never generalised to all foreigners.
 - Only the normative text creates rules. Intentions, statistics, cost estimates and descriptions in the justification (uzasadnienie) or the impact assessment (OSR) are context, not new rights or duties.

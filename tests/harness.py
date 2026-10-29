@@ -323,6 +323,7 @@ class World:
         attention_roundup: Literal["run", "daily"] = "run",
         attention_daily_hour: int = 18,
         name_cards: bool = False,
+        single_message_cards: bool = False,
     ) -> None:
         self.clock = FixedClock()
         self.repo = empty_repository()
@@ -343,6 +344,7 @@ class World:
             channel=CHANNEL,
             support_url=SUPPORT_URL,
             attention_enabled=reader_attention == "on",
+            single_message_cards=single_message_cards,
         )
         self.publisher = FakePublisher(
             fail_on=fail_publish,
