@@ -497,9 +497,9 @@ V2 identity связывает opaque full semantic SHA, весь retained paylo
 coordinated замена допустимых refs под прежним ID отклоняется до изменения restore target.
 
 Factory `of_bound` требует исходный complete payload: legacy omission не upcast'ится. Полные
-факты сохраняют старый v1 ID/JSON; новая factory инертна и пока не вызывается runtime producer.
-Текущий `of` продолжает создавать v1. Нет backfill, новой migration или увеличения 4/2 KiB caps.
-V2-capable reader должен быть реально развёрнут до переключения новых omitted facts на v2.
+факты сохраняют старый v1 ID/JSON. Runtime producer вызывает `of_bound`: только новые omitted
+факты получают v2; legacy factory `of` продолжает создавать v1. Нет backfill, новой migration
+или увеличения 4/2 KiB caps. V2-capable reader 8e24 реально развёрнут до writer activation.
 Старый 2a6e reader отклоняет v2 на scratch preflight; после writer activation rollback сохраняет
 этот совместимый reader. Проверенный schema60 opaque roundtrip Senate records относится к
 snapshot с прежними RCL identities и не обещает чтения будущих RCL v2 старым кодом.

@@ -160,7 +160,7 @@ def rcl_letter_observation(
         error_class=type(error).__name__ if error is not None else None,
     )
     return RclLetterUseObservation(
-        use=RclLetterUse.of(payload), artifact=artifact, read=read, extraction=extraction
+        use=RclLetterUse.of_bound(payload), artifact=artifact, read=read, extraction=extraction
     )
 
 

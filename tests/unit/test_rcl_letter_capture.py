@@ -222,3 +222,48 @@ def test_rcl_parent_envelope_omits_unsafe_receipt_and_keeps_exact_body_extractio
             record_rcl_letter_uses(repo, (observation,), recorded_at=NOW + dt.timedelta(days=1))
         assert repo.list_artifact_reads() == existing
     repo.close()
+
+
+def test_live_reader_binds_new_omission_and_preserves_window_and_existing_full_fact(
+    tmp_path: Path,
+) -> None:
+    reader, project, observer, loader = capture_reader(physical=True)
+    expected = reader.consultation(project)
+    (full,) = observer.read_rcl_letter_uses()
+    assert full.use.payload_state == "complete"
+    assert full.use.use_id.startswith("rcl-letter-use-v1:")
+    stage = project.stages[0]
+    folder = stage.folders[0]
+    long_name = "Pismo " + "ą" * 300 + ".pdf"
+    document = folder.documents[0].model_copy(update={"name": long_name})
+    stage = stage.model_copy(
+        update={"folders": (folder.model_copy(update={"documents": (document,)}),)}
+    )
+    project = project.model_copy(update={"stages": (stage,)})
+
+    assert reader.consultation(project) == expected
+    observations = observer.read_rcl_letter_uses()
+    assert len(observations) == 2 and full in observations
+    (omitted,) = tuple(item for item in observations if item.use.payload_state != "complete")
+    assert omitted.use.use_id.startswith("rcl-letter-use-v2:")
+    assert omitted.use.retained_identity_bound
+    assert omitted.artifact == full.artifact and omitted.extraction == full.extraction
+    assert loader.read_metrics().cache_hits == 1
+    repo = SqliteBillRepository(tmp_path / "live.db")
+    repo.migrate()
+    with repo.atomic():
+        record_rcl_letter_uses(repo, observations, recorded_at=NOW)
+    before = repo.dump()
+    assert long_name not in before
+    assert reader.consultation(project) == expected
+    with repo.atomic():
+        record_rcl_letter_uses(
+            repo, observer.read_rcl_letter_uses(), recorded_at=NOW + dt.timedelta(days=365)
+        )
+    assert repo.dump() == before
+    record = repo.get_rcl_letter_use(omitted.use.use_id)
+    assert record is not None and record.retained_identity_bound, (
+        "The actual reader's bounded omission was committed with its exact parent metadata"
+    )
+    assert record.recorded_at == NOW
+    repo.close()

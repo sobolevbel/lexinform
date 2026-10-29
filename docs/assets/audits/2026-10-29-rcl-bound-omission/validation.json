@@ -1,0 +1,85 @@
+{
+  "stage": "J152 activate bound identities for new RCL omissions",
+  "baseline": "8e24c472c46ade0d6adafa0d9a8650b5536a3b2c",
+  "reader_release": "../2026-10-29-source-history-readers/release.json",
+  "full_gate": {
+    "tests": 6572,
+    "failures_errors_skips": 0,
+    "seconds": 224.86,
+    "coverage_percent": 92,
+    "mypy_files": 570,
+    "ruff_format_files": 636,
+    "source_config_frozen_files": 638,
+    "new_unit_cases": 1,
+    "new_scenarios": 0
+  },
+  "independent_review": {
+    "artifacts": {
+      "out/corpus/j152/qa/metadata-replay.json": {
+        "bytes": 25677,
+        "sha256": "0917fc3dbe32ec6df7fdb810365ff0c8beab4e651042de7a165b8ed5e013d4e9"
+      },
+      "out/corpus/j152/qa/replay_metadata.py": {
+        "bytes": 8494,
+        "sha256": "3647896d10ed03823746a335d74f0070ee21a201d3dd66d83f0cbbe6e90aa299"
+      }
+    },
+    "complete_facts_byte_exact": 874,
+    "control_bound_minus_legacy_storage": {
+      "cached": {
+        "gzip9_mtime0_bytes": 15664,
+        "sql_bytes": 0
+      },
+      "raw": {
+        "gzip9_mtime0_bytes": 15891,
+        "sql_bytes": 0
+      }
+    },
+    "control_v2_record_max_utf8_bytes": 1641,
+    "head": "8e24c472c46ade0d6adafa0d9a8650b5536a3b2c",
+    "input_schemas": {
+      "cached": 60,
+      "raw": 60
+    },
+    "known_physical_field_tampers_rejected": 437,
+    "limits": [
+      "All complete facts stay v1. Controls are label-only oversized descriptor metadata, not natural observations, original body/extraction reinterpretation or daily demand.",
+      "Factory control payload/semantic equality and equal SQL lengths are measured; the independent v2 hash adds observed gzip entropy.",
+      "Control SQLite baselines normalize both lanes to the same current schema61; no schema change belongs to this2-file J152 patch.",
+      "Only readonly snapshots and in-memory repositories were used; no saved DB or corpus writes."
+    ],
+    "natural_factory_and_quiet_store_SQL_growth": 0,
+    "one_appended_public_reader_fixture_only": true,
+    "original_DB_SQL_matches_frozen_J150_gzip_SQL": {
+      "cached": true,
+      "raw": true
+    },
+    "owned_diff_exactly_two_files": [
+      "src/lexinform/services/rcl_letter_history.py",
+      "tests/unit/test_rcl_letter_capture.py"
+    ],
+    "raw_extractor_parser_loader_replays": 0,
+    "release_prerequisite": "Root must independently verify reader8e24 actually deployed before push; this QA does not claim deployment.",
+    "reproduction": "UV_CACHE_DIR=/private/tmp/lexinform-pr9-uv-cache UV_PROJECT_ENVIRONMENT=/private/tmp/lexinform-j140-integrated/.venv PYTHONPATH=primary/src:primary uv run --no-sync --offline --frozen python -B out/corpus/j152/qa/replay_metadata.py (use fresh ignored output; preserve original evidence).",
+    "retained_payload_tampers_rejected": 874,
+    "reviewer_full_network_paid_production_calls": false,
+    "runtime_dispatch_only_of_to_of_bound": true,
+    "source_and_input_DBS_unchanged": true,
+    "source_files": {
+      "src/lexinform/services/rcl_letter_history.py": "1c4bf7f52d21e84437a782a6a7aa42ba46fe143de742dcffccf0497ef26c6518",
+      "tests/unit/test_rcl_letter_capture.py": "ba0b046007345b6b69cb298925417b3f1f9d412a8a140ea6c52e75d7275d01f2"
+    },
+    "status": "review_and_bounded_metadata_replay_passed",
+    "synthetic_oversized_controls": 874
+  },
+  "pins": {
+    "out/corpus/j152/qa/handoff.json": "ed4c50bf5c89335b64a80be61dd5d523079800158b7185a1f2e951d69dccc3a6",
+    "out/corpus/j152/final-gate/source-freeze.json": "705e9a708d5f2ecf0570fcba86725271b74c0ab9c5cef8b03705dd555c905988"
+  },
+  "limits": [
+    "No fresh raw extractor/parser or native168 replay for this factory-dispatch-only change; bounded metadata replay covers the changed component.",
+    "Old full v1 facts remain byte-exact; no backfill, schema, caps, retention or backend change.",
+    "New omitted v2 rows require the already deployed v2 reader for rollback.",
+    "Synthetic oversized descriptor controls are not observed production omission frequency or daily growth."
+  ]
+}

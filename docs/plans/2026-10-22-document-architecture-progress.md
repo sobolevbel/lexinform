@@ -7478,3 +7478,35 @@ Ruff/format 636 по src/tests/tools, source/config freeze 638 exact. Добав
 proofs имеют свои точные source pins.
 [Acceptance asset](../assets/audits/2026-10-29-source-history-readers/validation.json).
 Новые writers включаются после реального CI/deploy этого reader. План: 74 / 31 done / 6 N/A / 37 open.
+
+
+J151 commit `8e24c472c46ade0d6adafa0d9a8650b5536a3b2c`: все четыре CI jobs 40789404058
+и deploy 40790038690 прошли; actual relay transition 2a6e → 8e24, health 45s/timer подтверждены
+[release proof](../assets/audits/2026-10-29-source-history-readers/release.json).
+
+
+<a id="j152"></a>
+
+### J152. Bind newly captured RCL omissions after compatible reader deployment
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 29 октября.
+Runtime producer переключён с `of` на `of_bound` после подтверждённого reader deployment 8e24.
+Новые omitted facts связывают весь retained payload с opaque semantic SHA; полные v1 facts/JSON
+и legacy factory прежние. Один public-reader unit case проверяет long descriptor, прежнее окно,
+точных родителей, cache hit, сохранение первого времени и отсутствие роста при повторе +365 дней.
+Нет backfill, schema/caps/retention/backend изменений; rollback сохраняет v2-capable reader.
+
+Независимый review без findings. Component replay на frozen J150 cached/raw metadata:
+437 + 437 complete facts сохранили точные v1 IDs/JSON, quiet SQL growth 0. По 437 synthetic
+oversized-descriptor controls в каждой lane: payload/semantic SHA прежние, retained v2 binding
+проверено, max timestamped record 1641 B < 2 KiB. 874 retained-output и 437 known physical-size
+tampers отклонены. Это controls, не natural omission frequency. SQL length delta 0; gzip delta
+15 664 / 15 891 B для двух независимых 437-control populations, не прогноз роста production.
+Parser/extractor/loader повторно не запускались: меняется только factory dispatch. Native168
+заново не прогонялся; прежний replay J151 не выдаётся за same-code proof нового writer.
+
+Full make check: 6572 tests / 0 failures-errors-skips, 224.86s, coverage 92%; mypy 570,
+Ruff/format 636 по src/tests/tools; все 638 frozen source/config files точны. Один новый unit
+case, новых scenario нет. Source/input DB hashes независимой проверки неизменны.
+[Acceptance asset](../assets/audits/2026-10-29-rcl-bound-omission/validation.json).
+DA2.3/DA2.5 остаются partial до Senate capture; план 74 / 31 done / 6 N/A / 37 open.
