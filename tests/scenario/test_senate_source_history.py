@@ -20,6 +20,8 @@ def senate_observations(world: World) -> list[SourceObservation]:
         o
         for o in world.repo.list_source_observations(10, "1929")
         if o.document.kind == "senate_amendments"
+        and (selection := world.repo.get_document_selection(o.selection_id)) is not None
+        and selection.selection.question == "senate_resolution_source"
     ]
 
 
@@ -43,7 +45,9 @@ def test_senate_source_metadata_is_separate_from_admission_and_written_on_the_ca
     save = world.repo.save_source_observation
 
     def record(selection: DocumentSelectionRecord, observation: SourceObservation) -> None:
-        if observation.document.kind == "senate_amendments":
+        if observation.document.kind == "senate_amendments" and (
+            selection.selection.question == "senate_resolution_source"
+        ):
             threads.append(threading.get_ident())
         save(selection, observation)
 

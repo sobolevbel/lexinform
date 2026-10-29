@@ -72,6 +72,7 @@ from lexinform.services.delivery import DeliveryService
 from lexinform.services.delivery_notifier import DeliveryNotifier
 from lexinform.services.digest import DigestService
 from lexinform.services.discovery import BillDiscoveryService
+from lexinform.services.document_history import SourceHistoryPair
 from lexinform.services.document_read_reporting import CliDocumentReadReporter
 from lexinform.services.document_reviews import DocumentReviews
 from lexinform.services.documents import TextLoader
@@ -83,6 +84,7 @@ from lexinform.services.publishing import PublishingService
 from lexinform.services.rcl_discovery import RclDiscoveryService
 from lexinform.services.rcl_letter_history import RclLetterHistoryPersistence, RclLetterUseCollector
 from lexinform.services.rcl_projects import RclProjectReader
+from lexinform.services.senate_history import SenateInspectionCollector, SenateInspectionPersistence
 from lexinform.services.signatories import SejmAuthorsResolver
 from lexinform.services.sources import (
     RclTextSource,
@@ -255,11 +257,16 @@ class Container:
         return self._once("rcl_letter_uses", RclLetterUseCollector)
 
     def source_history(self) -> SourceHistoryPersistence | None:
+        return self._once("source_history", self._source_history)
+
+    def _source_history(self) -> SourceHistoryPersistence:
+        senate = SenateInspectionPersistence(self.senate_inspections())
         if self.rcl is None:
-            return None
-        return self._once(
-            "source_history", lambda: RclLetterHistoryPersistence(self.rcl_letter_uses())
-        )
+            return senate
+        return SourceHistoryPair(RclLetterHistoryPersistence(self.rcl_letter_uses()), senate)
+
+    def senate_inspections(self) -> SenateInspectionCollector:
+        return self._once("senate_inspections", SenateInspectionCollector)
 
     def rcl_discovery_service(self) -> RclDiscoveryService | None:
         if self.rcl is None:
@@ -446,6 +453,7 @@ class Container:
             batch_checkpoint=(
                 checkpoint if self.settings.llm_batch_state_file is not None else None
             ),
+            senate_inspections=self.senate_inspections(),
         )
 
     def discovery_service(self) -> BillDiscoveryService:

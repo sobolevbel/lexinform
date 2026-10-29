@@ -155,6 +155,7 @@ from lexinform.models.document_editions import (
 )
 from lexinform.models.document_history import DocumentSelectionRecord as DocumentSelectionRecord
 from lexinform.models.document_history import SourceObservation as SourceObservation
+from lexinform.models.document_history import SourceObservationIdentity as SourceObservationIdentity
 from lexinform.models.document_reads import (
     DocumentDownloadDiagnostics as DocumentDownloadDiagnostics,
 )

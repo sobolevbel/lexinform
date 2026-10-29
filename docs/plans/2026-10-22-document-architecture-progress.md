@@ -7544,3 +7544,63 @@ findings; оба новых cases отдельно прошли у reviewer. Н�
 J153 final make check: 6574 tests / 0 failures-errors-skips, 250.92s, coverage 92%; mypy 570,
 Ruff/format 636 по src/tests/tools, 638 frozen source/config files exact. Два новых unit cases,
 новых scenario нет. Strict docs/link/anchor/resource/build checks прошли.
+
+
+J153 commit `de97a8002d7910da5a52c172b1897ae68a5964cc`: все четыре CI jobs 40794521795
+и deploy 40795040317 прошли; relay bb31 → de97, health 45s/timer подтверждены
+[release proof](../assets/audits/2026-10-29-senate-abort-reader/release.json).
+
+
+<a id="j154"></a>
+
+### J154. Capture actual Senate candidate inspection at caller boundaries
+
+Статус: **локальная приёмка завершена; commit/CI/deploy ожидаются**, 29 октября.
+Min-reader de97 уже реально развёрнут. Tracking, delayed document retry и amendments request
+передают actual Bill owner. Resolver наблюдает существующие ветки один раз: ordered descriptors,
+reached inspection/reasons/groups/outcome и known complete body/read/extraction refs. Scope до
+resolver completion; последующее text/scan verification остаётся J105, legal admission не выводится.
+
+SourceObservationIdentity отделяет pure ID от настоящего caller timestamp, сохраняя прежние
+SourceObservation field order/JSON/IDs. Дубликаты selection объединяют совместимые actual parents;
+каждый descriptor сохраняет собственный junction. Caller резервирует owner input order до fan_out,
+явный close/join завершает workers до persistence. Завершённые unconsumed worker facts сохраняются;
+новый hook не меняет прежний result/exception/cause. Fixed two-writer composition не вводит registry
+или source branch в generic owners. После rollback отсутствующий owner проверяется SELECT1;
+ложное enrollment и deserialization mutable Bill ради presence не добавляются.
+
+Review до релиза исправило две ошибки: unsafe URL из hash-only envelope мог добавляться через
+новый generic source/selection graph; отмена описывалась как source outage. Новый producer сохраняет
+для unsafe URL exact body/URL-free extraction без новых read/source/selection refs, не придумывая
+safe URL. Inherited loader-wide CLI/J105 receipt behavior прежний; его prospective privacy fix
+остаётся отдельной DA2.5 задачей. `read_error`/`after_failure` отличаются от подтверждённого outage;
+completed-body inspection_error сохраняет фактический physical graph. Reader de97 включён раньше.
+
+190 focused, independent revised review и восемь независимых public cancellation/privacy controls
+прошли. Ordinary 775-row SQL revision1→2 exact. Корпус: 759 cached contexts / 929 originals,
+62 395 521 B, 3708 data pins; отдельно 16 true-raw contexts (8 DOCX/8 PDF) и 112 meaningful mutations.
+775 records / 992 links / 18 known extraction junctions; cached max record 6879 B с timestamp,
+0 omissions в этой популяции, synthetic full/omitted controls отдельно. Все 775 repeat +365 дней
+и get/doctor/restore exact. 14 paired public cases сохраняют IO/errors, model/batch views,
+messages/reports и прежние SQL rows; workers1/4 exact. Это counterfactual cohort, не natural demand.
+Общий populated SQL 7 105 723 B / gzip 1 305 173 B; shared parents учитываются вне 8/2 KiB record caps.
+
+Native168 against de97: 166 SQL artifacts byte-exact; только revision-1/revision-4 добавили
+по 2 facts + 2 links, без parents. Все прежние rows/schema/reports/paid inputs/messages и
+24 RCL v1 records exact. Per changed fixture +7609 SQL / +1473 gzip9-mtime0 B; direct повтор
+не растёт. Нормализованы только проверенные SQL-derived metrics и два новых table digests.
+
+Final make check на pinned export: 6605 tests / 0 failures-errors-skips, 262.96s, coverage 92%;
+mypy 572, Ruff/format 638 по src/tests/tools, 640 source/config pins exact. Новые 11 unit cases
+и 20 boundary scenarios; прежние cases не удалены. Local HTTP 25 passed / 3.63s.
+Export сохраняет primary source guards параллельной physical M0; перед commit обязателен
+copy-back только owned files и byte-exact check всего проверенного source/config closure.
+[Acceptance asset](../assets/audits/2026-10-29-senate-inspection-capture/validation.json).
+DA2.3 closure ожидает actual producer release; DA2.5 остаётся partial до shared metadata privacy fix.
+План пока 74 / 31 done / 6 N/A / 37 open.
+
+
+J154 copy-back выполнен после завершения physical M0 public phase: все 5365 paths проверены,
+13 source pins сохранялись до конца. В primary перенесены только 19 owned patch paths;
+все 640 source/config files совпали с прошедшим gate export побайтно. De97 reader/model и два
+reader controls, J152 RCL dispatch сохранены. Полный gate повторно для тех же bytes не запускался.

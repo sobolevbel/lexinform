@@ -14,7 +14,17 @@ from tools.source_history_doctor import audit
 
 from lexinform.adapters.sqlite_repo import MIGRATIONS, SCHEMA_VERSION, SqliteBillRepository
 from lexinform.concurrency import fan_out
-from lexinform.models import ProcessSummary, SourceObservation, TextDocument
+from lexinform.models import (
+    ArtifactIdentity,
+    ArtifactReadIdentity,
+    Attachment,
+    ExtractionResult,
+    PrintInfo,
+    ProcessSummary,
+    SourceObservation,
+    Stage,
+    TextDocument,
+)
 from lexinform.models.senate_inspection import (
     SenateInspectionCandidate,
     SenateInspectionEvidence,
@@ -28,13 +38,20 @@ from lexinform.models.senate_inspection import (
     SenateInspectionUrl,
     senate_sha256,
 )
-from lexinform.services.documents import TextLoader
+from lexinform.sections import TextBudget
+from lexinform.senate_documents import inspect_senate_resolution
+from lexinform.services.analysis import AnalysisOptions, AnalysisService
+from lexinform.services.documents import LoadedFile, TextLoader
 from lexinform.services.senate_documents import resolution_source_read
 from lexinform.services.senate_history import (
     SenateInspectionCollector,
     SenateInspectionObservation,
+    SenateInspectionPersistence,
     record_senate_inspections,
 )
+from lexinform.services.senate_inspection import SenateInspectionCapture
+from lexinform.services.sources import SejmTextSource
+from tests.fakes import FakeLlm, FakeSejmGateway, FixedClock
 from tests.unit.test_physical_extraction import docx, extractor
 
 NOW = dt.datetime(2026, 10, 28, tzinfo=dt.UTC)
@@ -942,6 +959,218 @@ def test_opaque_link_manifest_cannot_be_rewritten_under_an_unchanged_identity(
         target.restore(corrupt)
     assert target.dump() == valid
     target.close()
+
+
+def test_history_reuse_skips_rolled_back_owner_without_loading_an_existing_aggregate(
+    tmp_path: Path,
+) -> None:
+    repo = repository(tmp_path)
+    collector = SenateInspectionCollector()
+    repo.begin()
+    repo.upsert_summary(
+        ProcessSummary(
+            term=10,
+            number="temporary",
+            title="Temporary",
+            document_type="projekt ustawy",
+            change_date=NOW,
+        ),
+        now=NOW,
+    )
+    value = payload().model_copy(
+        update={"owner": payload().owner.model_copy(update={"number": "temporary"})}
+    )
+    collector.observe(
+        SenateInspectionObservation(SenateInspectionRecord.of(value), value.physical_links())
+    )
+    repo.rollback()
+    assert not repo.bill_exists(10, "temporary")
+    known = known_observation()
+    collector.observe(known)
+    with closing(sqlite3.connect(tmp_path / "history.db")) as db, db:
+        db.execute("UPDATE bills SET summary_json='not JSON' WHERE number='1929'")
+    assert repo.bill_exists(10, "1929")
+    with pytest.raises(ValueError):
+        repo.get(10, "1929")
+    with repo.atomic():
+        SenateInspectionPersistence(collector).persist_source_history(repo, recorded_at=NOW)
+    assert repo.get_senate_inspection(known.record.inspection_id) is not None
+    assert not tuple(repo.iter_senate_inspections(10, "temporary"))
+    repo.close()
+
+
+def test_duplicate_selection_preserves_each_actual_extraction_parent(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = repository(tmp_path)
+    owner = repo.get(10, "1929")
+    assert owner is not None, "The fixture explicitly enrolled its real Bill owner"
+    body = docx(escape(TEXT.replace("\f", "\n")))
+
+    def download(url: str, *, max_bytes: int | None = None) -> bytes:
+        return body
+
+    loader = TextLoader({"api.sejm.gov.pl": download}, extractor(), max_bytes=5 * 1024 * 1024)
+    loaded = loader.read(URL)
+    artifact, receipt, result = loader.file_origins(URL, loaded)
+    assert artifact is not None and result is not None, (
+        "The real Word extractor returned exact physical metadata"
+    )
+    alternate = result.model_copy(update={"package_policy_source_sha256": "f" * 64})
+    index = 0
+
+    def origins(
+        self: TextLoader, url: str, value: LoadedFile
+    ) -> tuple[ArtifactIdentity | None, ArtifactReadIdentity | None, ExtractionResult | None]:
+        nonlocal index
+        index += 1
+        return artifact, receipt, result if index == 1 else alternate
+
+    monkeypatch.setattr(TextLoader, "file_origins", origins)
+    value = payload()
+    info = PrintInfo(
+        term=10,
+        number="3213",
+        title=value.context.print_title,
+        attachments=tuple(
+            Attachment(print_number="3213", name=name, url=URL)
+            for name in ("first.docx", "alias.docx")
+        ),
+    )
+    collector = SenateInspectionCollector()
+    capture = SenateInspectionCapture(
+        owner,
+        info,
+        Stage.model_validate(value.context.stage.model_dump()),
+        titles=(SUBJECT,),
+        passed_on=None,
+        resolver_source=__file__,
+        observe=collector.observe,
+    )
+    evidence = inspect_senate_resolution(loaded.text or "", word_eof=True)
+    assert evidence.complete and evidence.adopted_on is not None, (
+        "The real Word fixture contains a full Senate resolution"
+    )
+    for descriptor_index in (0, 1):
+        capture.start(descriptor_index, "word")
+        capture.read(loader, URL, loaded)
+        capture.inspected(
+            evidence, word_eof=True, reason="", normalized=" ".join(evidence.text.split())
+        )
+    capture.phase("word", incomplete=False)
+    capture.result("matching_equivalent_word", 0)
+    capture.finish(
+        TextDocument.model_validate(
+            {
+                "url": URL,
+                "kind": "senate_amendments",
+                "senate": {
+                    "sha256": artifact.sha256,
+                    "subject": evidence.subject,
+                    "adopted_on": evidence.adopted_on,
+                    "word_eof": True,
+                },
+            }
+        ),
+        None,
+    )
+    snapshots = collector.snapshot()
+    assert len(snapshots) == 1 and len(snapshots[0].sources) == 1
+    assert {link.extraction_id for link in snapshots[0].links} == {
+        result.result_id,
+        alternate.result_id,
+    }
+    assert len(snapshots[0].sources[0].extractions) == 2
+    record_senate_inspections(repo, snapshots, recorded_at=NOW)
+    assert repo.get_senate_inspection(snapshots[0].record.inspection_id) is not None
+    repo.restore(repo.dump())
+    repo.close()
+
+
+@pytest.mark.parametrize("omitted", [False, True])
+@pytest.mark.parametrize(
+    "suffix", ["", "?token=SECRET_SENATE_CREDENTIAL", "#SECRET_SENATE_CREDENTIAL", "userinfo"]
+)
+def test_public_capture_never_persists_unsafe_urls_and_keeps_url_free_body_parents(
+    tmp_path: Path,
+    suffix: str,
+    omitted: bool,
+) -> None:
+    repo = repository(tmp_path)
+    owner = repo.get(10, "1929")
+    assert owner is not None, "The public producer receives the enrolled Bill owner"
+    url = (
+        URL.replace("https://", "https://user:SECRET_SENATE_CREDENTIAL@")
+        if suffix == "userinfo"
+        else URL + suffix
+    )
+    safe = suffix == ""
+    body = docx(escape(TEXT.replace("\f", "\n")))
+    calls: list[str] = []
+
+    def download(url: str, *, max_bytes: int | None = None) -> bytes:
+        calls.append(url)
+        return body
+
+    loader = TextLoader({"api.sejm.gov.pl": download}, extractor(), max_bytes=5 * 1024 * 1024)
+    collector = SenateInspectionCollector()
+    analysis = AnalysisService(
+        repo,
+        SejmTextSource(FakeSejmGateway()),
+        loader,
+        FakeLlm(),
+        FixedClock(NOW),
+        AnalysisOptions(),
+        text_budget=TextBudget(60000),
+        senate_inspections=collector,
+    )
+    template = payload()
+    stage = Stage.model_validate(template.context.stage.model_dump())
+    info = PrintInfo(
+        term=10,
+        number="3213",
+        title=template.context.print_title,
+        attachments=(
+            Attachment(
+                print_number="3213",
+                name=("ą" * 6000 if omitted else "resolution") + ".docx",
+                url=url,
+            ),
+        ),
+    )
+    selected = analysis.senate_amendments_document(info, stage, titles=(SUBJECT,), owner=owner)
+    assert selected is not None and selected.url == url and selected.senate is not None
+    assert selected.senate.sha256 == hashlib.sha256(body).hexdigest() and calls == [url]
+    snapshots = collector.snapshot()
+    assert len(snapshots) == 1
+    link = snapshots[0].links[0]
+    assert link.artifact_sha256 == selected.senate.sha256 and link.artifact_bytes == len(body)
+    assert link.extraction_id is not None
+    assert (link.artifact_read_id is not None) is safe
+    assert (link.selection_id is not None) is safe
+    assert (link.observation_id is not None) is safe
+    assert len(snapshots[0].sources) == int(safe)
+    assert len(snapshots[0].extractions) == int(not safe)
+    with repo.atomic():
+        SenateInspectionPersistence(collector).persist_source_history(repo, recorded_at=NOW)
+    saved = repo.get_senate_inspection(snapshots[0].record.inspection_id)
+    assert saved is not None and (saved.coverage == "omitted_over_limit") is omitted
+    script = repo.dump()
+    assert "SECRET_SENATE_CREDENTIAL" not in script
+    assert repo.get_extraction_result(link.extraction_id) is not None
+    assert (not repo.list_source_observations(10, "1929")) is (not safe)
+    repo.restore(script)
+    assert repo.dump() == script
+    repeated = analysis.senate_amendments_document(info, stage, titles=(SUBJECT,), owner=owner)
+    assert repeated == selected and calls == [url]
+    with repo.atomic():
+        SenateInspectionPersistence(collector).persist_source_history(
+            repo, recorded_at=NOW + dt.timedelta(days=365)
+        )
+    assert repo.dump() == script
+    repo.close()
+    assert not audit(tmp_path / "history.db")["findings"]
 
 
 @pytest.mark.parametrize("omitted", [False, True])

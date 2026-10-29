@@ -43,6 +43,16 @@ class DocumentSourceRead:
     candidate_trace: CandidateDispositionTrace | None = None
 
 
+@dataclass(frozen=True)
+class SourceHistoryPair:
+    first: SourceHistoryPersistence
+    second: SourceHistoryPersistence
+
+    def persist_source_history(self, repo: BillRepository, *, recorded_at: dt.datetime) -> None:
+        self.first.persist_source_history(repo, recorded_at=recorded_at)
+        self.second.persist_source_history(repo, recorded_at=recorded_at)
+
+
 def record_source_read(
     repo: BillRepository,
     source: DocumentSourceRead,

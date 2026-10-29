@@ -1234,6 +1234,14 @@ class SqliteBillRepository:
                             (compact, row["term"], row["number"]),
                         )
 
+    def bill_exists(self, term: int, number: str) -> bool:
+        return (
+            self._conn.execute(
+                "SELECT 1 FROM bills WHERE term=? AND number=?", (term, number)
+            ).fetchone()
+            is not None
+        )
+
     def get(self, term: int, number: str) -> Bill | None:
         row = self._conn.execute(
             "SELECT * FROM bills WHERE term = ? AND number = ?", (term, number)

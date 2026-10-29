@@ -432,10 +432,13 @@ FK parents и ссылки переживают operational cleanup. Прави�
 skip, equivalence groups и итог выбора/отказа/ошибки. Индексы и hashes descriptors — локальные
 locators; отсутствующие в API Stage/Attachment IDs не придумываются. Physical source facts
 остаются unverified, отдельно от legal admission, прежнего paid input и сохранённого применения.
-Collector/writer инертен: producer в resolver, container, CLI и pipeline не подключён.
-Reader различает `after_failure` для непрочитанных после non-outage abort descriptors и
-`after_outage` для source outage. Отмена не становится доказательством недоступности источника;
-новый reason допустим только у unattempted filter fact. Producer требует этого reader после deploy.
+Resolver наблюдает существующие ветки один раз: producer вызывается tracking, отложенным
+document work и amendments request с настоящим Bill owner. Сбор clock-free; finish hook пишет
+metadata на вызывающем потоке после явного join workers, включая завершённые непрочитанные outcomes.
+Повторные descriptor links сохраняются, общий physical selection graph записывается один раз.
+SourceObservationIdentity не требует времени; SourceObservation получает настоящий aware timestamp
+при записи, сохраняя прежние IDs/JSON. После rollback отсутствующий owner не создаётся; finish
+проверяет только существование identity row. Позднее text/scan verification остаётся отдельным J105.
 
 Полная запись вместе с первым aware UTC timestamp ограничена 8 KiB UTF-8. Переполнение сохраняет
 whole omission ≤ 2 KiB с semantic/universe/context/decision hashes, counts, итогом/chosen identity
@@ -449,10 +452,17 @@ hashes и immutable manifest физических связей. Отсутств
 
 Каждый известный complete candidate body сохраняет точный artifact parent и descriptor-index
 link, включая omitted records. Source/selection/read/extraction IDs nullable, пока реально
-неизвестны; известные parents проверяются по owner, actual outer SHA/size и точному URL hash.
+неизвестны или опущены для unsafe URL; retained parents проверяются по owner, actual outer SHA/size
+и точному URL hash.
 Известные source observations требуют своего physical selection/artifact/extraction graph.
 Reader-text SHA не доказывает равенство extraction output или provider input. Обработка URL/body
 в существующих J105 parents прежняя; новые envelopes не редактируют и не заменяют старые parents.
+При unsafe requested URL этот producer сохраняет exact body/extraction parents без новых
+read/source/selection refs. Общие loader-wide receipts и последующий J105 сохраняют свой точный
+requested URL по прежнему контракту. Безопасный URL вместо исходного не придумывается.
+Min-reader de97 с `after_failure` развёрнут до producer; новый reason допустим только у unattempted
+filter fact. Непрочитанные descriptors получают `after_failure` после отмены/обычной ошибки; `after_outage`
+сохраняется для фактического ServiceUnavailableError/nonmissing OrkaUnreachableError.
 
 Повторный факт сохраняет первое время; вновь известные parent metadata меняют immutable identity.
 Run/history pruning сохраняет записи и shared parents. JSON caps не включают shared artifact/read/

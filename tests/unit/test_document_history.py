@@ -1,4 +1,5 @@
 import datetime as dt
+import hashlib
 import json
 import sqlite3
 from pathlib import Path
@@ -12,6 +13,7 @@ from lexinform.models import (
     DocumentSelection,
     DocumentSelectionRecord,
     SourceObservation,
+    SourceObservationIdentity,
     TextDocument,
 )
 
@@ -58,6 +60,37 @@ def test_source_history_preserves_catalog_relations_without_bodies_or_paid_ident
     assert record.selection.state == "unverified"
     assert "computation_id" not in source.model_dump_json()
     assert "retained" not in source.model_dump_json()
+
+
+def test_clock_free_source_identity_preserves_the_existing_record_bytes_and_id() -> None:
+    source = observation(decision())
+    values = source.model_dump(mode="json")
+    identity_values = {key: value for key, value in values.items() if key != "recorded_at"}
+    identity = SourceObservationIdentity.model_validate(identity_values)
+    expected = (
+        "source-observation-v1:"
+        + hashlib.sha256(
+            json.dumps(
+                identity_values, sort_keys=True, ensure_ascii=False, separators=(",", ":")
+            ).encode()
+        ).hexdigest()
+    )
+    assert identity.observation_id == source.observation_id == expected
+    assert tuple(values) == (
+        "schema_version",
+        "term",
+        "number",
+        "purpose",
+        "document",
+        "selection_id",
+        "recorded_at",
+    )
+    assert (
+        SourceObservation(**identity.model_dump(), recorded_at=NOW).model_dump_json()
+        == source.model_dump_json()
+    )
+    with pytest.raises(ValidationError):
+        SourceObservationIdentity.model_validate(values)
 
 
 def test_selection_record_rejects_bodies_even_after_unvalidated_copy() -> None:

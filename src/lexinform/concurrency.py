@@ -5,7 +5,7 @@ calling thread, in input order, and that is where every database write happens. 
 `workers=1` nothing is threaded, so both modes behave identically.
 """
 
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Generator, Iterable
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import copy_context
 from dataclasses import dataclass
@@ -32,7 +32,7 @@ class Outcome[T, R]:
 
 def fan_out[T, R](
     items: Iterable[T], step: Callable[[T], R], *, workers: int
-) -> Iterator[Outcome[T, R]]:
+) -> Generator[Outcome[T, R]]:
     """Apply `step` to every item, up to `workers` at a time; yield outcomes in input order.
 
     Stopping the iteration early (for example on an outage) cancels the items not started yet

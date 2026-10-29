@@ -6,6 +6,7 @@ re-analysed first and the update also lists what changed.
 """
 
 import logging
+from contextlib import closing
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -546,41 +547,44 @@ class StatusTrackingService:
         queued for Telegram, and a metadata-only bill asks the model nothing.
         """
         followed = [bill for bill in tracked if bill.has_process]
-        for outcome in fan_out(followed, self._fetch, workers=self._options.workers):
-            bill = outcome.item
-            if deliver:
-                result.checked += 1
-            else:
-                result.observed += 1
-            try:
-                found = outcome.result()
-                detail = found.detail
-                change = self._detect(bill, found, result, may_wait=may_wait, deliver=deliver)
-            except ServiceUnavailableError as exc:
-                self._check_done(bill, ok=False, outage=True)
-                result.abort(exc)
-                return
-            except Exception as exc:
-                self._check_done(bill, ok=False)
-                result.failed += 1
-                log.exception("tracking druk %s failed: %s", bill.number, exc)
-                continue
-            self._check_done(bill, ok=True)
-            if change is not None:
-                result.changed += 1
-            try:
-                if not deliver:
-                    self._acts.check(bill, detail, result, publish=False)
+        if self._analysis is not None:
+            self._analysis.reserve_senate_inspections(tuple(followed))
+        with closing(fan_out(followed, self._fetch, workers=self._options.workers)) as outcomes:
+            for outcome in outcomes:
+                bill = outcome.item
+                if deliver:
+                    result.checked += 1
+                else:
+                    result.observed += 1
+                try:
+                    found = outcome.result()
+                    detail = found.detail
+                    change = self._detect(bill, found, result, may_wait=may_wait, deliver=deliver)
+                except ServiceUnavailableError as exc:
+                    self._check_done(bill, ok=False, outage=True)
+                    result.abort(exc)
+                    return
+                except Exception as exc:
+                    self._check_done(bill, ok=False)
+                    result.failed += 1
+                    log.exception("tracking druk %s failed: %s", bill.number, exc)
                     continue
-                self._post_news(bill, detail, change, result, publish=publish)
-            except StateCheckpointError:
-                raise
-            except ServiceUnavailableError as exc:
-                result.abort(exc, failed=True)
-                return
-            except Exception as exc:
-                result.failed += 1
-                log.exception("posting for druk %s failed: %s", bill.number, exc)
+                self._check_done(bill, ok=True)
+                if change is not None:
+                    result.changed += 1
+                try:
+                    if not deliver:
+                        self._acts.check(bill, detail, result, publish=False)
+                        continue
+                    self._post_news(bill, detail, change, result, publish=publish)
+                except StateCheckpointError:
+                    raise
+                except ServiceUnavailableError as exc:
+                    result.abort(exc, failed=True)
+                    return
+                except Exception as exc:
+                    result.failed += 1
+                    log.exception("posting for druk %s failed: %s", bill.number, exc)
 
     def _check_done(self, bill: Bill, *, ok: bool, outage: bool = False) -> None:
         self._repo.record_check(
@@ -779,9 +783,11 @@ class StatusTrackingService:
         stage = amendments_stage(changed)
         if stage is None:
             return None
-        return self._document_for_stage(stage, detail)
+        return self._document_for_stage(bill, stage, detail)
 
-    def _document_for_stage(self, stage: Stage, detail: ProcessDetail) -> AmendmentsSource | None:
+    def _document_for_stage(
+        self, bill: Bill, stage: Stage, detail: ProcessDetail
+    ) -> AmendmentsSource | None:
         assert self._analysis is not None
         return amendments_source(
             self._gateway,
@@ -790,6 +796,7 @@ class StatusTrackingService:
             detail.stages,
             term=detail.term,
             titles=(detail.title_final or "", detail.title),
+            owner=bill,
         )
 
     def _retry_documents(self, result: TrackingResult, *, publish: bool, may_wait: bool) -> None:
@@ -854,7 +861,7 @@ class StatusTrackingService:
         detail = ProcessDetail.model_validate_json(work.detail_json)
         stage = Stage.model_validate_json(work.stage_json)
         if work.document_json is None or work.context_json is None:
-            found = self._document_for_stage(stage, detail)
+            found = self._document_for_stage(historical, stage, detail)
             if found is None:
                 self._defer_document(work, "amendments document not confirmed")
                 return

@@ -39,7 +39,7 @@ class DocumentSelectionRecord(BaseModel):
         return _identity("selection-v1:", self.model_dump(mode="json"))
 
 
-class SourceObservation(BaseModel):
+class SourceObservationIdentity(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     schema_version: Literal[1] = 1
@@ -48,6 +48,15 @@ class SourceObservation(BaseModel):
     purpose: Literal["prefilter", "analysis", "review"]
     document: TextDocument
     selection_id: str = Field(pattern=r"^selection-v1:[0-9a-f]{64}$")
+
+    @property
+    def observation_id(self) -> str:
+        return _identity(
+            "source-observation-v1:", self.model_dump(mode="json", exclude={"recorded_at"})
+        )
+
+
+class SourceObservation(SourceObservationIdentity):
     recorded_at: dt.datetime
 
     @model_validator(mode="after")
@@ -55,9 +64,3 @@ class SourceObservation(BaseModel):
         if self.recorded_at.utcoffset() is None:
             raise ValueError("the recording time requires a timezone")
         return self
-
-    @property
-    def observation_id(self) -> str:
-        return _identity(
-            "source-observation-v1:", self.model_dump(mode="json", exclude={"recorded_at"})
-        )

@@ -4,6 +4,7 @@ import logging
 import re
 from collections.abc import Callable
 from pathlib import PurePosixPath
+from typing import Literal
 
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
 from lexinform.models import (
@@ -22,6 +23,7 @@ from lexinform.senate_documents import (
 )
 from lexinform.services.document_history import DocumentSourceRead
 from lexinform.services.documents import LoadedFile, TextLoader
+from lexinform.services.senate_inspection import SenateInspectionCapture
 
 log = logging.getLogger(__name__)
 
@@ -33,36 +35,62 @@ def resolve_senate_document(
     adopted_on: dt.date,
     titles: tuple[str, ...],
     passed_on: dt.date | None = None,
+    capture: SenateInspectionCapture | None = None,
 ) -> TextDocument | None:
     subjects = [senate_subject(info.title)]
     for title in titles:
         match = re.search(r"\bprojekt\s+ustawy\b", title, re.I)
         subjects.append(title[match.end() :] if match else title)
     keys = {senate_subject_key(subject) for subject in subjects if subject}
+    if capture is not None:
+        capture.subjects(tuple(dict.fromkeys(subject for subject in subjects if subject)))
     visual: list[TextDocument] = []
+    visual_indices: list[int] = []
     # Word has explicit body structure; the PDF may contain a readable cover and scanned pages.
     for extensions in ({".docx", ".docm", ".odt", ".doc"}, {".pdf"}):
         candidates: list[tuple[TextDocument, str]] = []
+        candidate_indices: list[int] = []
         incomplete = False
-        for attachment in info.attachments:
+        for index, attachment in enumerate(info.attachments):
             if attachment.print_number != info.number:
+                if capture is not None:
+                    capture.skip(index, "foreign_print")
                 continue
             if PurePosixPath(attachment.name).suffix.casefold() not in extensions:
+                if capture is not None and PurePosixPath(attachment.name).suffix.casefold() not in {
+                    ".docx",
+                    ".docm",
+                    ".odt",
+                    ".doc",
+                    ".pdf",
+                }:
+                    capture.skip(index, "unsupported_extension")
                 continue
+            phase: Literal["word", "pdf"] = "pdf" if ".pdf" in extensions else "word"
+            if capture is not None:
+                capture.start(index, phase)
             try:
                 loaded = loader.read(attachment.url)
-            except ServiceUnavailableError:
+            except ServiceUnavailableError as exc:
+                if capture is not None:
+                    capture.failed(exc, "source_unavailable")
                 raise
             except OrkaUnreachableError as exc:
+                if capture is not None:
+                    capture.failed(exc, "missing" if exc.file_is_missing else "source_unavailable")
                 if not exc.file_is_missing:
                     raise
                 log.warning("Senate attachment unavailable: %s", attachment.url)
                 incomplete = True
                 continue
             except Exception as exc:
+                if capture is not None:
+                    capture.failed(exc, "read_error")
                 log.warning("Senate attachment %s unreadable: %s", attachment.url, exc)
                 incomplete = True
                 continue
+            if capture is not None:
+                capture.read(loader, attachment.url, loaded)
             word_eof = not attachment.is_pdf and loaded.pages == 0
             evidence = inspect_senate_resolution(loaded.text or "", word_eof=word_eof)
             reason = evidence.limitation
@@ -113,6 +141,14 @@ def resolve_senate_document(
                             ),
                         )
                     )
+                    visual_indices.append(index)
+                if capture is not None:
+                    capture.inspected(
+                        evidence,
+                        word_eof=word_eof,
+                        reason=reason or "missing_hash",
+                        visual=bool(visual_indices and visual_indices[-1] == index),
+                    )
                 continue
             assert evidence.adopted_on is not None
             candidates.append(
@@ -130,13 +166,38 @@ def resolve_senate_document(
                     re.sub(r"\s+", " ", evidence.text).strip(),
                 )
             )
+            candidate_indices.append(index)
+            if capture is not None:
+                capture.inspected(
+                    evidence, word_eof=word_eof, reason="", normalized=candidates[-1][1]
+                )
+        if capture is not None:
+            capture.phase("pdf" if ".pdf" in extensions else "word", incomplete=incomplete)
         if candidates:
             if incomplete or len({text for _, text in candidates}) != 1:
+                if capture is not None:
+                    capture.result(
+                        "incomplete_competing_phase"
+                        if incomplete
+                        else "conflicting_competing_phase"
+                    )
                 log.warning("Senate print %s: unresolved competing attachments", info.number)
                 if ".pdf" in extensions:
                     return None
                 continue
+            if capture is not None:
+                capture.result(
+                    "matching_equivalent_pdf"
+                    if ".pdf" in extensions
+                    else "matching_equivalent_word",
+                    candidate_indices[0],
+                )
             return candidates[0][0]
+    if capture is not None:
+        if len(visual) == 1:
+            capture.result("unique_visual_fallback", visual_indices[0])
+        elif visual:
+            capture.result("nonunique_visual_fallback")
     return visual[0] if len(visual) == 1 else None
 
 

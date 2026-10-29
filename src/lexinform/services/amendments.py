@@ -44,6 +44,7 @@ def amendments_source(
     *,
     term: int,
     titles: tuple[str, ...],
+    owner: Bill | None = None,
 ) -> AmendmentsSource | None:
     """A report on the Senate's amendments lists only votes: the resolution is read with it."""
     senate = stage if stage.stage_type == "SenatePosition" else None
@@ -67,6 +68,7 @@ def amendments_source(
         senate,
         titles=titles,
         passed_on=adoption_before_senate(stages, info.document_date or senate.date),
+        owner=owner,
     )
     if document is None:
         return None
@@ -139,6 +141,7 @@ class AmendmentsService:
                 snapshot.stages,
                 term=bill.term,
                 titles=(snapshot.summary.title,),
+                owner=bill,
             )
             if source is None:
                 raise ValueError("Полный текст поправок Сената не подтверждён по содержимому")

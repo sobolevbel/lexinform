@@ -1,0 +1,664 @@
+{
+  "stage": "J154 actual Senate inspection capture",
+  "baseline": "de97a8002d7910da5a52c172b1897ae68a5964cc",
+  "minimum_reader_release": "../2026-10-29-senate-abort-reader/release.json",
+  "integration": {
+    "source_root": "/Users/sobaleu/projects/lexinform/out/corpus/j154/candidate-source",
+    "frozen_source_config_files": 640,
+    "builder_patch_sha256": "6c2f12b5b26032cdb88ada8ec953af5011e626abe682e3918613fefc804d067b",
+    "builder_base": "8e24c472c46ade0d6adafa0d9a8650b5536a3b2c",
+    "additive_differences": [
+      "preserve J152 RCL bound dispatch",
+      "preserve J153 after_failure reader and2 appended unit controls",
+      "retain active RCL paragraph and truthful de97 reader minimum in docs"
+    ],
+    "copy_back_and_exact_byte_check": {
+      "status": "all640 tested source/config files byte-exact in primary",
+      "owned_patch_paths_copied": 19
+    },
+    "qualification_used_pinned_export_while_primary_M0_sources_held": true,
+    "physical_M0_source_hold_ended_before_copy_back": true
+  },
+  "full_gate": {
+    "status": "passed",
+    "tests": 6605,
+    "failures_errors_skips": 0,
+    "seconds": 262.96,
+    "coverage_percent": 92,
+    "mypy_files": 572,
+    "ruff_format_files": 638,
+    "new_unit_cases": 11,
+    "new_boundary_scenarios": 20,
+    "removed_cases": 0,
+    "local_http_tests": 25,
+    "local_http_seconds": 3.63
+  },
+  "independent_review": {
+    "base": "8e24c472c46ade0d6adafa0d9a8650b5536a3b2c",
+    "closed_findings": [
+      {
+        "issue": "unsafe new source/selection parents",
+        "proof": "6 independent public CLI controls: unsafe new source graphs omitted; exact inherited receipts preserved; official safe graph retained; builder8 real-extractor full/omitted controls verified and scope inspected"
+      },
+      {
+        "issue": "cancellation mislabeled as outage",
+        "proof": "2 independent two-descriptor public caller controls: read_error/inspection_error + after_failure, exact exception object/cause and known-body link count"
+      }
+    ],
+    "delta": {
+      "bytes": 16988,
+      "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/out/corpus/senate-inspection-s2/revision2/revision1-to-revision2.patch",
+      "sha256": "99721a468dfcb4f17906ba629af3cade5d1d647da891aca61c6882d8ff7e0a18"
+    },
+    "findings": [],
+    "freeze": {
+      "bytes": 13132,
+      "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/out/corpus/senate-inspection-s2/revision2/source-freeze.json",
+      "sha256": "e6a883baab32e9a76d2ec128827fc981b4f6d49f55aa60d8836ca78b3f352e31"
+    },
+    "independent_controls": {
+      "cancellation": {
+        "bytes": 1428,
+        "path": "/Users/sobaleu/projects/lexinform/out/corpus/j153-independent-review/cancellation-probe-final.json",
+        "sha256": "917238cc87c5aa3a540ada498ec94bc62e8516f0e3e83a51fb2196262a2b7cf4"
+      },
+      "privacy": {
+        "bytes": 4728,
+        "path": "/Users/sobaleu/projects/lexinform/out/corpus/j153-independent-review/unsafe-parent-official-probe-6b509326.json",
+        "sha256": "66182f4ea5f782c26cd2694a989a511888f4f32ab2e0a375bd7500005a4a3024"
+      }
+    },
+    "limits": [
+      "No independent full/native/corpus rerun; root owns combined acceptance",
+      "Ordinary775 corpus parity does not establish failure reason compatibility with8e; de97 reader required",
+      "Inherited shared receipts may retain unsafe URLs; DA2.5 privacy followup remains separate and partial",
+      "No source edits/network/production/paid calls/commit"
+    ],
+    "minimum_reader": "de97a8002d7910da5a52c172b1897ae68a5964cc",
+    "patch": {
+      "bytes": 75756,
+      "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/out/corpus/senate-inspection-s2/revision2/j154-senate-producer.patch",
+      "sha256": "6c2f12b5b26032cdb88ada8ec953af5011e626abe682e3918613fefc804d067b"
+    },
+    "reviewed_builder_proofs": {
+      "ordinary775": {
+        "bytes": 535,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/out/corpus/senate-inspection-s2/revision2/ordinary-compatibility.json",
+        "sha256": "7a64934277c4fcdfae68cc08aa746cf17fe171d5d4d21be9e2dbba9e3a061f21"
+      },
+      "privacy8": {
+        "bytes": 6938,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/out/corpus/senate-inspection-s2/revision2/privacy-probe.json",
+        "sha256": "bccf76f013d436cef98027d7d1991384eb97bdaecfd5f3735309acfffafe4877"
+      },
+      "qualification": {
+        "bytes": 4776,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/out/corpus/senate-inspection-s2/revision2/qualification.json",
+        "sha256": "a33a468df6f1e9c1a669bc00414da60a5dff654d522719a05ab64b2b1fa99bc1"
+      }
+    },
+    "source": {
+      "docs/reference/database.md": {
+        "bytes": 65883,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/docs/reference/database.md",
+        "sha256": "7d4ecdd283bd619eca2a4c76abfcff9cc31780153a9fc222fcdef5e7b797fd97"
+      },
+      "docs/state-retention.md": {
+        "bytes": 55661,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/docs/state-retention.md",
+        "sha256": "c33f18633dbbd974f6917ade1d9a6d22becdb7690df5a1b23b1c168bbbfbe5c3"
+      },
+      "src/lexinform/adapters/sqlite_repo.py": {
+        "bytes": 231758,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/src/lexinform/adapters/sqlite_repo.py",
+        "sha256": "cccdca39d9d965ec4e63055eb908e087f6e81a4eb12e9d76f21d6daa6b564a11"
+      },
+      "src/lexinform/concurrency.py": {
+        "bytes": 2265,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/src/lexinform/concurrency.py",
+        "sha256": "f1cfd43c924221b72fc86d57deeba8c37c571d293efc9a2ef84e244f81ce062f"
+      },
+      "src/lexinform/container.py": {
+        "bytes": 40561,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/src/lexinform/container.py",
+        "sha256": "d4f23b56aced2b1171eb0bc74d04c79e0bb00563b79a6864e6f2609a1427b527"
+      },
+      "src/lexinform/models/__init__.py": {
+        "bytes": 19287,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/src/lexinform/models/__init__.py",
+        "sha256": "c71a189e26d2f21c3df6179a6db00530df9a20b73b5149a985ffceb9f15cd65c"
+      },
+      "src/lexinform/models/document_history.py": {
+        "bytes": 2310,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/src/lexinform/models/document_history.py",
+        "sha256": "f91c4b566636553f12426d2e173663da5974385e00523532c0851128c4e4bd21"
+      },
+      "src/lexinform/ports.py": {
+        "bytes": 47568,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/src/lexinform/ports.py",
+        "sha256": "67d9d87eb3d7e2eb53b83cb06ce623b7fc2dc0d71cc414a7b49f5eaff2334606"
+      },
+      "src/lexinform/services/amendments.py": {
+        "bytes": 12244,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/src/lexinform/services/amendments.py",
+        "sha256": "f1571bffd23eed2ba1a896770941705550f26d353dee45a268d0d7c62fa40e21"
+      },
+      "src/lexinform/services/analysis.py": {
+        "bytes": 141945,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/src/lexinform/services/analysis.py",
+        "sha256": "0c7f6e053b9c7e7b7c0e823545c6631a55079a56c1deba89635544c8785cb13e"
+      },
+      "src/lexinform/services/document_history.py": {
+        "bytes": 5633,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/src/lexinform/services/document_history.py",
+        "sha256": "7bb5e03e6fe7485863bf7aeaf40a6c8ff85c90360fa458fc6425ab66f5a539a2"
+      },
+      "src/lexinform/services/senate_documents.py": {
+        "bytes": 10579,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/src/lexinform/services/senate_documents.py",
+        "sha256": "aa5fd17f64530581f99a2ff5e03376bbc2ffd95858ace3aa4aa1db474e31c344"
+      },
+      "src/lexinform/services/senate_history.py": {
+        "bytes": 5172,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/src/lexinform/services/senate_history.py",
+        "sha256": "4f7cce4003d73d96a3a67a4e811cef0b178781c2ff9dcbc33802bfde78634b67"
+      },
+      "src/lexinform/services/senate_inspection.py": {
+        "bytes": 14951,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/src/lexinform/services/senate_inspection.py",
+        "sha256": "6b5093260e580d666abbad4728cc73b612905d6d646fc2926d7ed0ca3fd45e75"
+      },
+      "src/lexinform/services/tracking/service.py": {
+        "bytes": 50311,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/src/lexinform/services/tracking/service.py",
+        "sha256": "ccac47b1721e424352d8e8e660d2f669269c2a87488f9fd410535b7dcd17ae79"
+      },
+      "tests/scenario/test_senate_inspection_capture.py": {
+        "bytes": 10210,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/tests/scenario/test_senate_inspection_capture.py",
+        "sha256": "7f92d23f912626e6169f8ede1da75997faa2da7bec1847c784d9c46b95f83619"
+      },
+      "tests/scenario/test_senate_source_history.py": {
+        "bytes": 6340,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/tests/scenario/test_senate_source_history.py",
+        "sha256": "06bbe0a79ceb574e37ca5619736bbabe2a97e9d59dc939763ef5908987c81cfa"
+      },
+      "tests/unit/test_document_history.py": {
+        "bytes": 8310,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/tests/unit/test_document_history.py",
+        "sha256": "67feafde8b12b13ad84fa4f7d03a8c5617f556091411bc8691a2765c4995f911"
+      },
+      "tests/unit/test_senate_inspection.py": {
+        "bytes": 45084,
+        "path": "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/tests/unit/test_senate_inspection.py",
+        "sha256": "c7ab93272a24bdc538688007ede7443bd0cdba997a661f230ef6eafe94a61955"
+      }
+    },
+    "source_and_builder_evidence_unchanged": true,
+    "stage": "J154 revised Senate producer",
+    "status": "review complete; no remaining actionable producer findings",
+    "verified_builder_evidence_files": 20,
+    "verified_source_files": 19
+  },
+  "native168": {
+    "all_prior_sql_rows_exact": true,
+    "baseline_manifest": {
+      "bytes": 158915,
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j154/native-baseline/manifest.json",
+      "sha256": "d0c12a1eafacf9cbb75e2d54718e1bbdb34f5577cf959ccbfa7c2a0c05111730"
+    },
+    "candidate_manifest": {
+      "bytes": 159577,
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j154/native-candidate/manifest.json",
+      "sha256": "6f6a6ec7a0820d6988fccacb5ab50292e665f25ff84677ee8c81271b52cbd2a3"
+    },
+    "cases": 168,
+    "changed_cases": [
+      "normal/revision-1.sql",
+      "normal/revision-4.sql"
+    ],
+    "evidence": {
+      "compare_native.py": {
+        "bytes": 9767,
+        "path": "/Users/sobaleu/projects/lexinform/out/corpus/j154/qa/compare_native.py",
+        "sha256": "3f5b9f84d46dae253dfd2c5d681892214046630c0053f679907dfdf684d1c357"
+      },
+      "parity.json": {
+        "bytes": 81424,
+        "path": "/Users/sobaleu/projects/lexinform/out/corpus/j154/qa/parity.json",
+        "sha256": "600d38b424f3e70189ec35c79eee38accedd07639a83984b6adb1be0be3c3cdf"
+      },
+      "rcl-identity.json": {
+        "bytes": 5502,
+        "path": "/Users/sobaleu/projects/lexinform/out/corpus/j154/qa/rcl-identity.json",
+        "sha256": "5a5e800af507db808e293f394dee88715b3924e3a0484342a0b77668bf699890"
+      },
+      "rcl_identity_check.py": {
+        "bytes": 1560,
+        "path": "/Users/sobaleu/projects/lexinform/out/corpus/j154/qa/rcl_identity_check.py",
+        "sha256": "fc889c47250c2968b7632c223f6e8ddd2e07d62177e6a1123a65b1480fe79a41"
+      }
+    },
+    "findings": [],
+    "gzip_bytes_added": 2946,
+    "gzip_options": {
+      "compresslevel": 9,
+      "mtime": 0
+    },
+    "limits": [
+      "No full/native replay/network/paid/production/source edit/commit",
+      "Aggregate size is the sum across independent fixture databases, not natural daily growth",
+      "Only SQL-derived profile sizes and the two validated Senate table hashes differ; no generic report/data normalization"
+    ],
+    "new_facts_across_independent_fixtures": 4,
+    "new_links_across_independent_fixtures": 4,
+    "new_metadata_get_doctor_restore_and365day_quiet_repeat": true,
+    "new_parent_rows": 0,
+    "paid_model_messages_reports_exact": true,
+    "per_changed_fixture": {
+      "gzip9_mtime0_bytes_added": 1473,
+      "sql_bytes_added": 7609
+    },
+    "rcl_rows_unchanged_validated_v1": 24,
+    "same_cases_runner_environment": true,
+    "schema": 61,
+    "schema_all_exact": true,
+    "scope": "Independent comparison and read-only validation of existing native168 artifacts; no replay",
+    "source_export_files_unchanged": 640,
+    "source_freeze": {
+      "bytes": 70251,
+      "path": "/Users/sobaleu/projects/lexinform/out/corpus/j154/final-gate/source-freeze.json",
+      "sha256": "b82ccd110a903e4ff88bf3bf874fda0c675b2f01cb7f30c73671b2d46ca0c70e"
+    },
+    "sql_byte_exact_cases": 166,
+    "sql_bytes_added": 15218,
+    "status": "passed",
+    "unique_new_inspection_ids": 2,
+    "workers1_4_SQL_and_new_IDs_exact": true
+  },
+  "corpus_qualification": {
+    "all_prior_SQL_rows_exact_no_deletes_or_rewrites": true,
+    "all_schema_exact": true,
+    "base": "8e24c472c46ade0d6adafa0d9a8650b5536a3b2c",
+    "cached_max_record_bytes": 6879,
+    "cached_omissions": 0,
+    "cached_ordered_IO_and_documents_exact": true,
+    "cached_public_facade_contexts": 759,
+    "cached_repeat_after365days_SQL_exact": true,
+    "corpus_growth": {
+      "artifact_reads": 929,
+      "artifacts": 929,
+      "document_selections": 929,
+      "extraction_results": 18,
+      "selection_artifacts": 929,
+      "selection_extractions": 18,
+      "senate_inspection_sources": 992,
+      "senate_inspections": 775,
+      "source_observations": 974
+    },
+    "current_shared_restore_and_every_record_link_get_exact": true,
+    "data_changed": [],
+    "deployed8e_reader_populated_SQL_roundtrip_exact": true,
+    "doctor_without_findings": true,
+    "input_data_pins": 3708,
+    "limits": [
+      "cached759 lane performs no fresh extraction/OCR; actual raw16 uses current real extractor",
+      "No provider calls/model inputs executed; public scenario lane separately qualifies model/batch views",
+      "Raw/body/source/extraction history is observed current capture, never historical paid-input recovery",
+      "Historical finite cohort plus synthetic public owners is counterfactual growth, not natural demand",
+      "Baseline helper mutation controls use actual admitted resolution text, not untrimmed physical text with covers/furniture",
+      "Complete-body metadata does not promise retained raw files or legal admission"
+    ],
+    "meaningful_mutation_probes": 112,
+    "public_cases": 14,
+    "public_growth": {
+      "command/workers1": {
+        "senate_inspection_sources": 2,
+        "senate_inspections": 2
+      },
+      "command/workers4": {
+        "senate_inspection_sources": 2,
+        "senate_inspections": 2
+      },
+      "conflict/workers1": {
+        "senate_inspection_sources": 2,
+        "senate_inspections": 1
+      },
+      "conflict/workers4": {
+        "senate_inspection_sources": 2,
+        "senate_inspections": 1
+      },
+      "rejected/workers1": {
+        "senate_inspection_sources": 1,
+        "senate_inspections": 1
+      },
+      "rejected/workers4": {
+        "senate_inspection_sources": 1,
+        "senate_inspections": 1
+      },
+      "text/workers1": {
+        "senate_inspection_sources": 1,
+        "senate_inspections": 1
+      },
+      "text/workers4": {
+        "senate_inspection_sources": 1,
+        "senate_inspections": 1
+      },
+      "visual/workers1": {
+        "senate_inspection_sources": 1,
+        "senate_inspections": 1
+      },
+      "visual/workers4": {
+        "senate_inspection_sources": 1,
+        "senate_inspections": 1
+      },
+      "word_pdf/workers1": {
+        "senate_inspection_sources": 2,
+        "senate_inspections": 1
+      },
+      "word_pdf/workers4": {
+        "senate_inspection_sources": 2,
+        "senate_inspections": 1
+      },
+      "wrong_subject/workers1": {
+        "senate_inspection_sources": 1,
+        "senate_inspections": 1
+      },
+      "wrong_subject/workers4": {
+        "senate_inspection_sources": 1,
+        "senate_inspections": 1
+      }
+    },
+    "public_requests_model_views_report_except_phase_seconds_publisher_IO_exact": true,
+    "public_workers1_4_whole_results_and_SQL_exact": true,
+    "raw_chosen_formats": {
+      ".docx": 8,
+      ".pdf": 8
+    },
+    "raw_contexts": 16,
+    "raw_document_and_IO_exact": true,
+    "raw_original_bytes": 62395521,
+    "raw_originals": 929,
+    "record_counts": {
+      "inspections": 775,
+      "junctions": 992,
+      "known_extraction_junctions": 18
+    },
+    "status": "passed",
+    "table_storage": {
+      "artifact_reads": {
+        "insert_gzip_bytes": 83897,
+        "insert_sql_bytes": 271228
+      },
+      "artifacts": {
+        "insert_gzip_bytes": 40762,
+        "insert_sql_bytes": 124538
+      },
+      "candidate_disposition_traces": {
+        "insert_gzip_bytes": 21,
+        "insert_sql_bytes": 1
+      },
+      "document_editions": {
+        "insert_gzip_bytes": 21,
+        "insert_sql_bytes": 1
+      },
+      "document_selections": {
+        "insert_gzip_bytes": 121244,
+        "insert_sql_bytes": 837113
+      },
+      "extraction_results": {
+        "insert_gzip_bytes": 5742,
+        "insert_sql_bytes": 53313
+      },
+      "selection_artifacts": {
+        "insert_gzip_bytes": 73911,
+        "insert_sql_bytes": 185800
+      },
+      "selection_editions": {
+        "insert_gzip_bytes": 21,
+        "insert_sql_bytes": 1
+      },
+      "selection_extractions": {
+        "insert_gzip_bytes": 1524,
+        "insert_sql_bytes": 3708
+      },
+      "senate_inspection_sources": {
+        "insert_gzip_bytes": 299282,
+        "insert_sql_bytes": 666316
+      },
+      "senate_inspections": {
+        "insert_gzip_bytes": 542522,
+        "insert_sql_bytes": 3603210
+      },
+      "source_observations": {
+        "insert_gzip_bytes": 99575,
+        "insert_sql_bytes": 797352
+      }
+    },
+    "total_populated_gzip_bytes": 1305173,
+    "total_populated_sql_bytes": 7105723
+  },
+  "privacy_and_cancellation_controls": {
+    "cases": [
+      {
+        "all_produced_SQL_secret_free": true,
+        "case": "safe",
+        "get_doctor_restore_repeat_passed": true,
+        "link": [
+          "0cd075df358016b32c3ebd05cb52836f1808208b389fbf195cebcabb561230db",
+          40014,
+          "extraction-v1:21e9c59d4db0a3436c302bd859a04a1119be2b84e4563d73284063401c8f4eb6",
+          "artifact-read-v1:594a3ce1afc49ff78e7a8ae5f40e5dc58d711d3080b5030f6ad716f4a53a910b",
+          "selection-v1:9aac7998341f65ddfff0a4e7050a7ef9f67bc2f8c8f0c9a14b881559bf75b222",
+          "source-observation-v1:4e6fc7801e587b52ecd63be485e709e087d93d00e15bfacf53aa71d7754088dd"
+        ],
+        "omitted": false,
+        "rows": {
+          "artifact_reads": 1,
+          "artifacts": 1,
+          "document_selections": 1,
+          "extraction_results": 1,
+          "selection_extractions": 1,
+          "senate_inspection_sources": 1,
+          "senate_inspections": 1,
+          "source_observations": 1
+        },
+        "sql_sha256": "280cd0f792f14b1703bfdf1a01ea0afc79e506a614b79dc1ea502db60e953203"
+      },
+      {
+        "all_produced_SQL_secret_free": true,
+        "case": "query",
+        "get_doctor_restore_repeat_passed": true,
+        "link": [
+          "0cd075df358016b32c3ebd05cb52836f1808208b389fbf195cebcabb561230db",
+          40014,
+          "extraction-v1:21e9c59d4db0a3436c302bd859a04a1119be2b84e4563d73284063401c8f4eb6",
+          null,
+          null,
+          null
+        ],
+        "omitted": false,
+        "rows": {
+          "artifact_reads": 0,
+          "artifacts": 1,
+          "document_selections": 0,
+          "extraction_results": 1,
+          "selection_extractions": 0,
+          "senate_inspection_sources": 1,
+          "senate_inspections": 1,
+          "source_observations": 0
+        },
+        "sql_sha256": "52d9b542a068cc6d7f886093703c536b57b4598f15c4faac887906cf80cd6028"
+      },
+      {
+        "all_produced_SQL_secret_free": true,
+        "case": "fragment",
+        "get_doctor_restore_repeat_passed": true,
+        "link": [
+          "0cd075df358016b32c3ebd05cb52836f1808208b389fbf195cebcabb561230db",
+          40014,
+          "extraction-v1:21e9c59d4db0a3436c302bd859a04a1119be2b84e4563d73284063401c8f4eb6",
+          null,
+          null,
+          null
+        ],
+        "omitted": false,
+        "rows": {
+          "artifact_reads": 0,
+          "artifacts": 1,
+          "document_selections": 0,
+          "extraction_results": 1,
+          "selection_extractions": 0,
+          "senate_inspection_sources": 1,
+          "senate_inspections": 1,
+          "source_observations": 0
+        },
+        "sql_sha256": "9c62f54a26f9af374d1b18626658da6fb18b70fc5f0c53eb1d123998c656dbf9"
+      },
+      {
+        "all_produced_SQL_secret_free": true,
+        "case": "userinfo",
+        "get_doctor_restore_repeat_passed": true,
+        "link": [
+          "0cd075df358016b32c3ebd05cb52836f1808208b389fbf195cebcabb561230db",
+          40014,
+          "extraction-v1:21e9c59d4db0a3436c302bd859a04a1119be2b84e4563d73284063401c8f4eb6",
+          null,
+          null,
+          null
+        ],
+        "omitted": false,
+        "rows": {
+          "artifact_reads": 0,
+          "artifacts": 1,
+          "document_selections": 0,
+          "extraction_results": 1,
+          "selection_extractions": 0,
+          "senate_inspection_sources": 1,
+          "senate_inspections": 1,
+          "source_observations": 0
+        },
+        "sql_sha256": "8281b563ee9a1d574fb0dfc4018fcb9e031318f7cd191910fe222f6cd2c9dd4f"
+      },
+      {
+        "all_produced_SQL_secret_free": true,
+        "case": "safe",
+        "get_doctor_restore_repeat_passed": true,
+        "link": [
+          "0cd075df358016b32c3ebd05cb52836f1808208b389fbf195cebcabb561230db",
+          40014,
+          "extraction-v1:21e9c59d4db0a3436c302bd859a04a1119be2b84e4563d73284063401c8f4eb6",
+          "artifact-read-v1:594a3ce1afc49ff78e7a8ae5f40e5dc58d711d3080b5030f6ad716f4a53a910b",
+          "selection-v1:9aac7998341f65ddfff0a4e7050a7ef9f67bc2f8c8f0c9a14b881559bf75b222",
+          "source-observation-v1:4e6fc7801e587b52ecd63be485e709e087d93d00e15bfacf53aa71d7754088dd"
+        ],
+        "omitted": true,
+        "rows": {
+          "artifact_reads": 1,
+          "artifacts": 1,
+          "document_selections": 1,
+          "extraction_results": 1,
+          "selection_extractions": 1,
+          "senate_inspection_sources": 1,
+          "senate_inspections": 1,
+          "source_observations": 1
+        },
+        "sql_sha256": "40270394f8772b60b3a5278d330394fbb385d65edf449baf36e4a07bf32411f5"
+      },
+      {
+        "all_produced_SQL_secret_free": true,
+        "case": "query",
+        "get_doctor_restore_repeat_passed": true,
+        "link": [
+          "0cd075df358016b32c3ebd05cb52836f1808208b389fbf195cebcabb561230db",
+          40014,
+          "extraction-v1:21e9c59d4db0a3436c302bd859a04a1119be2b84e4563d73284063401c8f4eb6",
+          null,
+          null,
+          null
+        ],
+        "omitted": true,
+        "rows": {
+          "artifact_reads": 0,
+          "artifacts": 1,
+          "document_selections": 0,
+          "extraction_results": 1,
+          "selection_extractions": 0,
+          "senate_inspection_sources": 1,
+          "senate_inspections": 1,
+          "source_observations": 0
+        },
+        "sql_sha256": "9310762191151338a005db1c6773910bbe16e9302e233f6855888e0c1afba350"
+      },
+      {
+        "all_produced_SQL_secret_free": true,
+        "case": "fragment",
+        "get_doctor_restore_repeat_passed": true,
+        "link": [
+          "0cd075df358016b32c3ebd05cb52836f1808208b389fbf195cebcabb561230db",
+          40014,
+          "extraction-v1:21e9c59d4db0a3436c302bd859a04a1119be2b84e4563d73284063401c8f4eb6",
+          null,
+          null,
+          null
+        ],
+        "omitted": true,
+        "rows": {
+          "artifact_reads": 0,
+          "artifacts": 1,
+          "document_selections": 0,
+          "extraction_results": 1,
+          "selection_extractions": 0,
+          "senate_inspection_sources": 1,
+          "senate_inspections": 1,
+          "source_observations": 0
+        },
+        "sql_sha256": "1db8c3d0aec2c9a68ac04cb6fad36c9a2d64999b4c252a9669469cf85d44a688"
+      },
+      {
+        "all_produced_SQL_secret_free": true,
+        "case": "userinfo",
+        "get_doctor_restore_repeat_passed": true,
+        "link": [
+          "0cd075df358016b32c3ebd05cb52836f1808208b389fbf195cebcabb561230db",
+          40014,
+          "extraction-v1:21e9c59d4db0a3436c302bd859a04a1119be2b84e4563d73284063401c8f4eb6",
+          null,
+          null,
+          null
+        ],
+        "omitted": true,
+        "rows": {
+          "artifact_reads": 0,
+          "artifacts": 1,
+          "document_selections": 0,
+          "extraction_results": 1,
+          "selection_extractions": 0,
+          "senate_inspection_sources": 1,
+          "senate_inspections": 1,
+          "source_observations": 0
+        },
+        "sql_sha256": "801858ac88ce4904bace57a67a8ea74a4ed17ba389ecc5985c27124c67eb45f3"
+      }
+    ],
+    "scope": "Actual public AnalysisService facade plus Senate-only persistence hook, real DOCX extractor and explicitly enrolled synthetic owner; inherited loader-wide/J105/CLI exact receipts are outside this whole-SQL assertion",
+    "status": "passed"
+  },
+  "pins": {
+    "out/corpus/j153-independent-review/final-review.json": "c6e95ed12b0a6a0f7b4d0f7f97c2bab583d7552ce0a3a0a3c1b73e2a52b05f1c",
+    "out/corpus/j154/qa/handoff.json": "61d71907c21bdbc3d19b7f3f013d61dae886ada578802643850bb97c819be25e",
+    "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/out/corpus/senate-inspection-s2/revision2/qualification.json": "a33a468df6f1e9c1a669bc00414da60a5dff654d522719a05ab64b2b1fa99bc1",
+    "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/out/corpus/senate-inspection-s2/revision2/privacy-probe.json": "bccf76f013d436cef98027d7d1991384eb97bdaecfd5f3735309acfffafe4877",
+    "out/corpus/j154/final-gate/source-freeze.json": "b82ccd110a903e4ff88bf3bf874fda0c675b2f01cb7f30c73671b2d46ca0c70e",
+    "/Users/sobaleu/.codex/worktrees/legacy-maintenance-planner/lexinform/out/corpus/senate-inspection-s2/revision2/handoff.json": "f23d5a39cc08d96e00c86f99abdfc48c86301fddd570e7f1b7ef160ee1e44832"
+  },
+  "limits": [
+    "759 cached contexts are not fresh extraction;16 actual-raw contexts/112 mutations have explicit source/input pins and exclusions.",
+    "775-record growth is a synthetic historical cohort, not natural production demand or paid-input recovery.",
+    "New capture suppresses unsafe source/read/selection refs; inherited global CLI/J105 requested-URL receipt behavior is unchanged and has a separate DA2.5 privacy followup.",
+    "No schema, parser/admission/model input, raw-retention or backend change.",
+    "Producer scope ends at resolver completion; later scan/text verification remains J105.",
+    "Old8e ordinary775 roundtrip does not claim old-reader compatibility for the new after_failure reason; min-reader de97 was deployed first."
+  ],
+  "docs_check": "strict build/link/anchor/resource/content checks passed after copy-back"
+}

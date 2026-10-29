@@ -10,6 +10,7 @@ import json
 import logging
 import re
 from collections.abc import Callable
+from contextlib import suppress
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 from typing import Literal
@@ -165,6 +166,8 @@ from lexinform.services.senate_documents import (
     resolve_senate_document,
     verified_senate_text,
 )
+from lexinform.services.senate_history import SenateInspectionCollector
+from lexinform.services.senate_inspection import SenateInspectionCapture
 from lexinform.text_projection import TextProjection
 
 log = logging.getLogger(__name__)
@@ -521,6 +524,7 @@ class AnalysisService:
         batch: BatchBackend | None = None,
         batch_resolver: Callable[[BatchProvider], BatchBackend | None] | None = None,
         batch_checkpoint: StateCheckpoint | None = None,
+        senate_inspections: SenateInspectionCollector | None = None,
     ) -> None:
         self._repo = repo
         self._texts = texts
@@ -537,6 +541,7 @@ class AnalysisService:
         self._batch = batch
         self._batch_resolver = batch_resolver
         self._batch_checkpoint = batch_checkpoint
+        self._senate_inspections = senate_inspections
         self._dry_run = False
         self._restored_collected: set[str] = set()
         self._accounted_items: set[tuple[str, str]] = set()
@@ -2025,6 +2030,10 @@ class AnalysisService:
             raise
         return Waiting(self._clock.now())
 
+    def reserve_senate_inspections(self, bills: tuple[Bill, ...]) -> None:
+        if self._senate_inspections is not None:
+            self._senate_inspections.reserve(tuple((bill.term, bill.number) for bill in bills))
+
     def senate_amendments_document(
         self,
         info: PrintInfo,
@@ -2032,16 +2041,58 @@ class AnalysisService:
         *,
         titles: tuple[str, ...],
         passed_on: date | None = None,
+        owner: Bill | None = None,
     ) -> TextDocument | None:
+        capture = None
         if (
-            stage.date is None
-            or stage.print_number != info.number
-            or stage.position not in ("wniósł poprawki", "wniósł poprawkę")
+            self._senate_inspections is not None
+            and owner is not None
+            and (
+                owner.term == info.term
+                and stage.print_number == info.number
+                and stage.stage_type == "SenatePosition"
+            )
         ):
-            return None
-        return resolve_senate_document(
-            self._loader, info, adopted_on=stage.date, titles=titles, passed_on=passed_on
-        )
+            try:
+                self.reserve_senate_inspections((owner,))
+                capture = SenateInspectionCapture(
+                    owner,
+                    info,
+                    stage,
+                    titles=titles,
+                    passed_on=passed_on,
+                    resolver_source=resolve_senate_document.__code__.co_filename,
+                    observe=self._senate_inspections.observe,
+                )
+            except BaseException as exc:
+                with suppress(BaseException):
+                    log.warning("Senate inspection capture failed (%s)", type(exc).__name__[:128])
+        document = None
+        error = None
+        try:
+            if (
+                stage.date is None
+                or stage.print_number != info.number
+                or stage.position not in ("wniósł poprawki", "wniósł poprawkę")
+            ):
+                if capture is not None:
+                    capture.result("guard_rejected")
+                return None
+            document = resolve_senate_document(
+                self._loader,
+                info,
+                adopted_on=stage.date,
+                titles=titles,
+                passed_on=passed_on,
+                capture=capture,
+            )
+            return document
+        except BaseException as exc:
+            error = exc
+            raise
+        finally:
+            if capture is not None:
+                capture.finish(document, error)
 
     def _load_secondary_text(self, bill: Bill, document: TextDocument) -> _Loaded:
         """Record a secondary consumer's completed source read before using its input."""
