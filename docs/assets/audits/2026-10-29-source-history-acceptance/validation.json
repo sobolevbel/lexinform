@@ -1,0 +1,73 @@
+{
+  "task": "DA2.3",
+  "status": "accepted_current_metadata_only_profile",
+  "runtime": "c73d7fa799a098e32e91c1e07a5f825fbaedd12f",
+  "release": "../2026-10-29-senate-inspection-capture/release.json",
+  "requirements": [
+    {
+      "requirement": "Addressable artifact/source metadata with known bill or official-source ownership",
+      "evidence": [
+        "schema52 source_observations owner/purpose/selection columns",
+        "schema53 artifacts plus selection_artifacts",
+        "schema60 RCL project/stage/letter and body/read/extraction columns",
+        "schema61 Senate owner/resolution columns and descriptor-index junctions"
+      ],
+      "status": "proved"
+    },
+    {
+      "requirement": "Many-to-many body/source/URL roles without inventing dates or official IDs",
+      "evidence": [
+        "artifact_reads requested-URL/body identities",
+        "selection_artifacts and selection_extractions",
+        "source observations retain actual document context; source relation and physical body separate",
+        "RCL unknown stage ID stays null; Senate descriptor index/hash never becomes official ID"
+      ],
+      "status": "proved"
+    },
+    {
+      "requirement": "Uniqueness/ownership/GC references queryable in SQL",
+      "evidence": [
+        "explicit primary/foreign keys and indexed owners in schema52-61",
+        "RCL artifact_sha256/artifact_read_id/extraction_id are SQL columns",
+        "Senate descriptor physical/source/read/extraction junctions are SQL columns"
+      ],
+      "status": "proved"
+    },
+    {
+      "requirement": "Quiet repeats do not copy full snapshots on new Clock time alone",
+      "evidence": [
+        "J150 paired public cached/raw repeats +365days add zero SQL",
+        "J152 874 complete facts/quiet metadata factory equality",
+        "J154 775-record public-facade repeat and native direct repeat preserve IDs/dumps"
+      ],
+      "status": "proved"
+    },
+    {
+      "requirement": "Current applicable pipeline/CLI/history and special source capture is wired and deployable",
+      "evidence": [
+        "J095-J105 ordinary prefilter/primary/review/secondary source capture",
+        "J146 nine mutating CLI owners; J147 historical rereads",
+        "J150/J152 actual RCL use; J154 ordered Senate resolver capture",
+        "actual exact CI and relay transition de97 to c73 verified"
+      ],
+      "status": "proved"
+    }
+  ],
+  "qualified_evidence": [
+    "../2026-10-29-senate-inspection-capture/validation.json",
+    "../2026-10-29-rcl-bound-omission/validation.json",
+    "../2026-10-28-rcl-letter-capture/validation.json",
+    "../2026-10-29-source-history-readers/validation.json"
+  ],
+  "assessment_pin": {
+    "path": "out/corpus/da2-acceptance-audit/source-catalog-assessment.md",
+    "sha256": "530917e204b43408a05be87833def8424a52418ada2718131acb6d2f80ff921e"
+  },
+  "boundaries": [
+    "Current metadata-only storage profile accepted by J149; no raw/backend/retention expansion.",
+    "Current capture only; unavailable historical bodies/extraction/provenance remain unknown.",
+    "Read-only/show/preview and loss before caller finalization retain the accepted J149 scope.",
+    "DA2.5 remains partial for prospective shared receipt/source metadata privacy.",
+    "Natural file-family/purpose production-cycle coverage remains a separate DA10.6/10.7 acceptance; this does not assert every family naturally processed on this release."
+  ]
+}

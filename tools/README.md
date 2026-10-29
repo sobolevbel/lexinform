@@ -120,6 +120,13 @@ current ELI applicability, repair state or submit work. Linked publications do n
 configured channel or revision eligibility. Owner memo counts overlap and cannot be added or
 used as a deletion list. Exit codes match the request doctor; no saved owner rows means `not_run`.
 
+`--observed-at` (timezone required) adds `work_ages` for nonterminal owners and a versioned
+`latencies` section; without it the report is unchanged. Latency rows measure only saved clocks:
+discovery (`first_seen_at` or the update's `detected_at`) to our result collection, projection
+receipt or confirmed send. Read completion is unavailable, official availability is known only
+for a Wykaz plan's own announcement, and manual, shared or legacy deliveries stay unknown with a
+reason. Rows mix records with per-owner markers, so they are not a success-rate denominator.
+
 ## Computation graph doctor
 
 ```bash

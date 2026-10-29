@@ -1,0 +1,100 @@
+{
+  "task": "DA10.4",
+  "stage": "J155",
+  "status": "partial_read_only_report_accepted",
+  "base": "c73d7fa799a098e32e91c1e07a5f825fbaedd12f",
+  "contract": [
+    "Default work audit unchanged; explicit observed_at adds version 1 typed latencies beside work_ages",
+    "Discovery is bills.first_seen_at or the update's status_changes.detected_at; collection, projection receipt and confirmed send are separate endpoints",
+    "Only primary analysis is timed from discovery; reanalysis and secondary purposes are trigger_event_unbound",
+    "Actual read completion is unavailable; recorded_at, run and finalization clocks are never substituted",
+    "Official availability only for a Wykaz plan row's own announcement, minute precision, Europe/Warsaw",
+    "Manual confirmation, shared message without explicit membership, legacy plans and unbound destinations stay unknown with a reason",
+    "No runtime producer, migration, Settings, CLI, DB write or run-report persistence"
+  ],
+  "review": {
+    "agent_revision": 2,
+    "root_findings_closed": [
+      "J122 scenario test failed on the new opt-in section; it was outside the agent's focused selection and now asserts both sections",
+      "Reanalysis and amendments were timed from the card's first discovery (26 and 30 days on real state); now trigger_event_unbound",
+      "Application rows carry the bound result purpose",
+      "digest_parts are separate physical messages, not shared membership; the branch was unreachable and output is unchanged"
+    ],
+    "accepted_limit": "A message_part edit revision reusing the card message_id makes the original card shared_or_reused: lost measurement, never a false value"
+  },
+  "state": {
+    "state_commit": "a5a3f68e4c94f89d5a5aa30a0f90eb469c1c45ae",
+    "sql_sha256": "8b81b8dccff82c12a87481495c0f628f56d9afc70a7aadb52a8b4e727f4b1515",
+    "sql_bytes": 20382485,
+    "restored_schema": 61,
+    "db_sha256_before_after": "da46ab348da7a3ac28d3d1837f20e2495b67be7aeeb611e8da404bdea853e376",
+    "observed_at": "2026-10-29T12:00:00Z",
+    "latency_rows": 2091,
+    "missing_schema": [],
+    "groups": [
+      {"metric": "read_completed", "rows": 477, "known": 0, "unknown": {"read_completion_unavailable": 477}},
+      {"metric": "analysis_collected", "rows": 477, "known": 4, "unknown": {"legacy_result_unbound": 164, "missing_result": 307, "trigger_event_unbound": 2}},
+      {"metric": "analysis_applied", "rows": 477, "known": 4, "unknown": {"missing_application": 471, "trigger_event_unbound": 2}},
+      {"metric": "delivery", "rows": 183, "known": 52, "unknown": {"delivery_unconfirmed": 4, "legacy_delivery_unbound": 26, "missing_event_anchor": 75, "shared_message_without_membership": 26}},
+      {"metric": "source_discovery", "rows": 477, "known": 6, "unknown": {"official_availability_unknown": 471}}
+    ],
+    "known_delivery_starts": {"status_changes.detected_at": 41, "bills.first_seen_at": 11},
+    "known_delivery_classes": {"recorded_confirmation": 50, "recorded_shared_membership": 2},
+    "default_report_exact_c73_tool": true,
+    "opt_in_report_exact_c73_except_latencies": true,
+    "latencies_json_bytes": 964503,
+    "sql_dump_growth_bytes": 0
+  },
+  "evidence": {
+    "state-report.json": {
+      "path": "out/corpus/j155/root/state-report.json",
+      "bytes": 1287061,
+      "sha256": "cdedbc2cf65cda5710e4eac8047a0be8a739fc8e30ef16d98ea52a6bb151a84e"
+    },
+    "state-default.json": {
+      "path": "out/corpus/j155/root/state-default.json",
+      "bytes": 7517,
+      "sha256": "cb073c5c66d6c09f977680347f870055db6c86168eadbb588d1b1713cbd2d7ce"
+    },
+    "baseline_work_doctor.py": {
+      "path": "out/corpus/j155/root/baseline_work_doctor.py",
+      "bytes": 13944,
+      "sha256": "a57529934142e77db06d8905ce7fcb67584279220cf65c153605380b5078f883"
+    },
+    "agent_handoff": {
+      "path": "out/corpus/j155/agent/handoff.json",
+      "note": "Revision 2 frozen before root review; pinned historical e15b53d0 replay is superseded by the fresh state above"
+    }
+  },
+  "source": {
+    "tools/observed_latency.py": "47008ad878c1d26c905404163dd7ea277c54c78a2aee3b3cc3b6059e9f5dc400",
+    "tools/work_doctor.py": "8fbe5a720ec807997a37d39f553550f904184758f5b6263e436228f15d8a5843",
+    "tests/unit/test_observed_latency.py": "4edc50b29a3a73a5d20e79ad5858012992767cd364355bb2cf1dda2f6ed54eeb",
+    "tests/scenario/test_work_doctor.py": "a893e84bbcb17c2971bbd03ca1f5d129886c1332261ab4e21b2f81ceda6f5427"
+  },
+  "checks": {
+    "focused": "71 passed: test_observed_latency, test_work_ages, test_work_doctor",
+    "unit_cases_added": 28,
+    "full_gate": {
+      "command": "make check ARGS=\"--junitxml=... -x\"",
+      "tests": 6633,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 254.65,
+      "mypy_files": 573,
+      "ruff_format_files": 640,
+      "coverage": "not collected",
+      "junit": {
+        "path": "out/corpus/j155/root/full.xml",
+        "sha256": "18c32507232e758e63fbd1573da0314109ddfea6b9d3aed921ea3543dcdb0f83"
+      }
+    }
+  },
+  "boundaries": [
+    "DA10.4 remains partial until an actual loader-read completion producer exists",
+    "Trigger time of reanalysis and secondary purposes is not recorded; those rows stay unknown",
+    "Official availability beyond a Wykaz plan's own announcement remains unknown",
+    "No network, paid, Telegram or production calls; offline report only"
+  ]
+}

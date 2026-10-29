@@ -11,6 +11,7 @@ from typing import Any
 
 from lexinform.models import DocumentWork, ReviewWork
 from tools.corpus_artifacts import write_json
+from tools.observed_latency import observed_latency
 from tools.sqlite_snapshot import open_snapshot
 
 _REQUIRED = {"bills", "document_work", "status_changes", "publications", "analysis_memo"}
@@ -256,6 +257,7 @@ def audit(database: Path, *, observed_at: datetime | None = None) -> dict[str, A
         if not missing:
             result.documents(connection)
             result.reviews(connection)
+        latencies = observed_latency(connection, observed_at) if observed_at is not None else None
         if not snapshot.unchanged():
             result.issue("database_changed_during_audit", "database")
     result.findings.sort(key=lambda item: (item["level"], item["code"], item["ref"]))
@@ -290,6 +292,8 @@ def audit(database: Path, *, observed_at: datetime | None = None) -> dict[str, A
         report["work_ages"] = work_ages(
             result.owners, observed_at, complete=not missing and not result.counts["errors"]
         )
+        assert latencies is not None, "The explicit observation clock enables latency inspection"
+        report["latencies"] = latencies.model_dump(mode="json")
     return report
 
 

@@ -7604,3 +7604,56 @@ J154 copy-back выполнен после завершения physical M0 publ
 13 source pins сохранялись до конца. В primary перенесены только 19 owned patch paths;
 все 640 source/config files совпали с прошедшим gate export побайтно. De97 reader/model и два
 reader controls, J152 RCL dispatch сохранены. Полный gate повторно для тех же bytes не запускался.
+
+
+J154 commit `c73d7fa799a098e32e91c1e07a5f825fbaedd12f`: все четыре CI jobs 40797178693
+и deploy 40797789854 прошли; relay de97 → c73, health 45s/timer подтверждены
+[release proof](../assets/audits/2026-10-29-senate-inspection-capture/release.json).
+DA2.3 закрыт конечной проверкой metadata/source SQL structure, ownership/uniqueness/parent refs,
+активных caller boundaries и quiet repeats — [acceptance](../assets/audits/2026-10-29-source-history-acceptance/validation.json).
+DA2.5 privacy остаётся partial, natural source-family/purpose production-cycle acceptance в
+DA10.6/10.7 этим не объявлена. План теперь **74 / 32 done / 6 explicit N/A / 36 applicable open**.
+
+
+<a id="j155"></a>
+
+### J155. Read-only observed and source latency report
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 29 октября. Base c73, DA10.4 partial.
+Read-only work doctor с явным `--observed-at` добавляет versioned `latencies` рядом с J122
+work ages; без clock отчёт byte-exact с c73. `tools/observed_latency.py` читает только
+сохранённые часы: `bills.first_seen_at` или `detected_at` события → `ComputationResult.collected_at`,
+projection `ResultApplication.created_at` и `publications.sent_at`. Wykaz `Data publikacji` →
+обнаружение только для собственного plan row (минута, Europe/Warsaw); RCL/druk, унаследовавшие
+план, не получают чужую дату. Read completion недоступно: recorded_at, run и finalization
+clocks не подставляются. Runtime, schema, Settings, CLI и production не менялись; tool не пишет DB.
+
+Неизвестное остаётся unknown с причиной, без clamp: missing/naive/invalid/future/reversed clocks,
+stale/future generation, identity mismatch, cross-owner result, application before collection,
+missing owner/event anchor, unconfirmed или unbound destination, manual confirmation (resolved_at
+не время send), shared/reused message без explicit membership, legacy plan. Shared send засчитан
+только по explicit sitting/update group или digest_event_links с тем же channel/message/sent_at
+и проверенным frozen owner. Недоступные tables/columns отделены от known-empty. Rows смешивают
+records и per-owner markers, поэтому не являются denominator успеха.
+
+Root review revision 2 закрыл три пункта. Прежний J122 scenario test падал на новом opt-in поле:
+focused selection агента его не включала, теперь тест требует оба раздела и отсутствие маркера.
+Reanalysis и amendments мерились от первого обнаружения карточки (26 и 30 дней на реальном state):
+trigger time не сохранён, поэтому они `trigger_event_unbound`; application rows получили purpose.
+`digest_parts` — отдельные физические сообщения, не shared membership; ветка была недостижима
+(frozen owner digest всегда invalid), вывод не изменился.
+
+Свежий state `a5a3f68e` (schema 61, SQL 20 382 485 B) на disposable restore: 2091 rows.
+Read 0/477 known; collected 4/477 и applied 4/477 (по 2 trigger_event_unbound); delivery 52/183
+(41 от события, 11 новых карточек; 50 own + 2 update group); source 6/477, все Wykaz plans.
+Default и прежние opt-in sections exact с c73 tool, DB SHA до/после неизменен. Большинство
+unknown deliveries — legacy rows и edit revisions: правка карточки через message_part с тем же
+message_id делает исходную карточку shared_or_reused. Это консервативная потеря измерения, не
+ложное значение. Dump не растёт: нет migration и записи; отчёт 964 503 B JSON только offline.
+
+71 focused (latency, J122 ages, work doctor scenarios). Full make check на итоговых bytes:
+6633 tests / 0 failures-errors-skips, 254.65s; mypy 573, Ruff/format 640 по src/tests/tools.
+Новые 28 unit cases и одно усиленное J122 scenario; coverage в этом прогоне не собирался.
+[Acceptance asset](../assets/audits/2026-10-29-observed-latency/validation.json).
+Actual loader-read completion producer и trigger time later purposes остаются DA10.4.
+План **74 / 32 done / 6 explicit N/A / 36 applicable open**.

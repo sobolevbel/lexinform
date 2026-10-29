@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 from tools import sqlite_snapshot
 from tools.corpus_artifacts import read_artifact
+from tools.observed_latency import ObservedLatencyReport
 from tools.sqlite_snapshot import open_snapshot
 from tools.work_doctor import audit, run
 
@@ -133,12 +134,15 @@ def test_work_ages_are_opt_in_and_preserve_the_existing_audit(
     legacy = audit(path)
     report = audit(path, observed_at=observed)
     ages = report.pop("work_ages")
+    latencies = ObservedLatencyReport.model_validate(report.pop("latencies"))
 
-    assert report == legacy and "work_ages" not in legacy
+    assert report == legacy and "work_ages" not in legacy and "latencies" not in legacy
+    assert latencies.observed_at == observed and latencies.coverage == "partial"
     assert ages["nonterminal_owners"] == 3 and ages["coverage"] == "recorded"
     assert all(group["oldest_seconds"] == 172800 for group in ages["groups"])
     assert ages["excluded_terminal_owners"] == {"review/abandoned": 1}
-    assert MARKER not in json.dumps(ages) and path.read_bytes() == before
+    assert MARKER not in json.dumps(ages) and MARKER not in latencies.model_dump_json()
+    assert path.read_bytes() == before
 
 
 def test_work_age_metrics_do_not_turn_broken_dependencies_into_complete_coverage(
