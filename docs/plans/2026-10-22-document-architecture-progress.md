@@ -7705,3 +7705,8 @@ records имеют analysis ranges с hashed parts; 149 legacy идут преж
 6645 tests / 0 failures-errors-skips, 256.55s; mypy 573, Ruff/format 640 по src/tests/tools.
 [Acceptance asset](../assets/audits/2026-10-29-review-part2-fixes/validation.json).
 План **74 / 32 done / 6 explicit N/A / 36 applicable open**.
+
+
+J156 commit `fa09b3f2780e5d606ab758578bc588f1a83464fc`: все четыре CI jobs 40830180647
+и deploy 40830715885 прошли; relay 7920 → fa09, health 45s/timer подтверждены
+[release proof](../assets/audits/2026-10-29-review-part2-fixes/release.json).
