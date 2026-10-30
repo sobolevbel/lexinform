@@ -1,0 +1,22 @@
+{
+  "actual_table_delta": {
+    "extraction_results": [
+      1,
+      2
+    ]
+  },
+  "all_other_tables_exact": true,
+  "body_pins_exact": true,
+  "dump_restore_quiet_repeat_plus365_exact": true,
+  "existing_observed_results_and_IDs_exact": true,
+  "gzip9_mtime0_bytes_delta": 295,
+  "limits": [
+    "Finite synthetic actual-document control, not production demand/retention forecast",
+    "Prior pipeline already retained required emptyZIP result; fix adds missing mainDOCX result. CLI fully blocked path retains both via finalization",
+    "Only existing known-body-owned current loader results, no raw bytes or extra extraction"
+  ],
+  "run_report_except_phase_seconds_exact": true,
+  "scope": "One public workers4 real DOCX + required emptyZIP block, normalized only phase_seconds values in saved run JSON; both actual known bodies and ExtractionResults, no raw retention or natural-demand forecast",
+  "sql_bytes_delta": 2882,
+  "two_bodies_two_extractions_no_graph": true
+}

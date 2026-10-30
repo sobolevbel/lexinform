@@ -289,6 +289,41 @@ def test_persisted_envelope_budget_includes_timestamp_and_wrapper() -> None:
         PhysicalMetadata.of(header)
 
 
+def exact_cap_header(name_length: int) -> PhysicalMetadata:
+    header = PhysicalHeaders(
+        body_sha=ROOT_SHA,
+        central_directory_sha256="b" * 64,
+        central_directory_span=(0, 1),
+        archive_comment=(0, None),
+        rows=(header_row("x" * name_length),),
+    )
+    return PhysicalMetadata(
+        metadata_id=physical_sha256(header.model_dump(mode="json")),
+        kind="headers",
+        body_sha256=ROOT_SHA,
+        header_id=None,
+        metadata=header,
+        recorded_at=NOW,
+    )
+
+
+def test_exact_cap_repeat_validates_with_the_persisted_first_recording_time(
+    repo: SqliteBillRepository,
+) -> None:
+    small = exact_cap_header(1)
+    record = exact_cap_header(1 + 32768 - small.budget_bytes)
+    assert record.budget_bytes == 32768
+    repo.save_physical_metadata(record, recorded_at=NOW)
+    before = repo.dump()
+
+    repo.save_physical_metadata(record, recorded_at=NOW + dt.timedelta(microseconds=1))
+
+    assert repo.dump() == before
+    saved = repo.get_physical_metadata(record.metadata_id)
+    assert saved is not None, "the first save retained its exact-cap immutable header"
+    assert saved.recorded_at == NOW and saved.budget_bytes == 32768
+
+
 def test_structural_schedule_and_local_request_failures_roll_back(
     repo: SqliteBillRepository,
 ) -> None:

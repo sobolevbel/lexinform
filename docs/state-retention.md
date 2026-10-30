@@ -330,9 +330,9 @@ UTF-8 объект ограничен 2 KiB плюс envelope поля отчё�
 Будущая shared URL policy сохраняет исходные допущенные bytes, включая credential-free URL без
 query на configured/fake origins. Query требует известного из кода official host/path/key/value
 contract; непроверенный query/identifier contract явно опускается без upstream/legal вердикта.
-Policy пока не подключена к receipts или source assembly, не ищет secrets в произвольном тексте
-и не переопределяет историческую валидацию RCL/Senate envelopes. Их более строгий query admission
-остаётся прежним. Будущий producer применяет пересечение policies до новых IDs, независимо
+J158 подключает policy к loader receipts, J161 — к generic primary/review/prefilter graph factories.
+Она не ищет secrets в произвольном тексте и не переопределяет историческую валидацию RCL/Senate envelopes. Их более строгий query admission
+остаётся прежним. Будущий specialized producer применяет пересечение policies до новых IDs, независимо
 сохраняет complete body и URL-free extraction, передаёт omission source/selection refs в prepared
 metadata без dangling links. Для opaque failure prose нужен явный flag в месте создания, без
 изменения actual IO, parser/model input или rejection messages. Reader optional поля должен быть
@@ -655,3 +655,10 @@ opaque full-observation SHA; неизвестный SHA остаётся unknown
 component hashes и явно проверенные audit-ID deltas, сохраняя business text/selection/model-input/IO.
 Активация producer требует развёрнутого reader, populated predecessor restore и отдельной проверки
 caller-owned failure finalization: публичный метод не возвращает sidecar после исключения.
+
+J161 отделяет known physical results от admitted source graph: существующие pipeline/CLI finalizers
+сохраняют все known-body-owned URL-free extraction results, включая blocked compositions. Known
+warm-cache inventory остаётся known inventory, не новой download activity. Paid/business payloads
+и historical rows не переписываются; specialized RCL/Senate graph admission — отдельный этап.
+J162 добавляет только инертный header builder/scope, без extractor hooks. J163 сохраняет validated
+первое время при exact-cap повторе; допустимый32768B старый envelope не получает новый timestamp.

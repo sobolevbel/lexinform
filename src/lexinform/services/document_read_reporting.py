@@ -66,6 +66,8 @@ class CliDocumentReadReporter:
             reads = self.file_reads.read_artifact_reads()
             with self.repo.atomic():
                 record_artifacts(self.repo, artifacts, recorded_at=finished)
+                for extraction in self.artifacts.read_extraction_results():
+                    self.repo.save_extraction_result(extraction, recorded_at=finished)
                 record_artifact_reads(self.repo, reads, recorded_at=finished)
                 if self.source_history is not None:
                     persist_source_history(self.repo, self.source_history, recorded_at=finished)

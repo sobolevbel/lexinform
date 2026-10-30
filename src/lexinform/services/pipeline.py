@@ -234,6 +234,10 @@ class DailyPipeline:
                                 self._document_artifacts.read_artifacts(),
                                 recorded_at=self._clock.now(),
                             )
+                            for extraction in self._document_artifacts.read_extraction_results():
+                                self._repo.save_extraction_result(
+                                    extraction, recorded_at=report.finished_at
+                                )
                         if self._document_file_reads is not None:
                             record_artifact_reads(
                                 self._repo,

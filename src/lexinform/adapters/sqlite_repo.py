@@ -2217,9 +2217,20 @@ class SqliteBillRepository:
         recorded_at: datetime,
     ) -> None:
         stamp = physical_recorded_at(recorded_at)
+        first_times: dict[str, datetime] = {}
+        existing_reader = PhysicalInventoryReader(self._conn)
+        for item in metadata:
+            row = self._conn.execute(
+                "SELECT 1 FROM physical_metadata WHERE metadata_id=?", (item.metadata_id,)
+            ).fetchone()
+            first = existing_reader.read(item.metadata_id).recorded_at if row else recorded_at
+            assert first is not None, "the physical reader guarantees persisted recording times"
+            first_times[item.metadata_id] = first
         records = tuple(
             PhysicalMetadata.model_validate_json(
-                item.model_copy(update={"recorded_at": recorded_at}).model_dump_json()
+                item.model_copy(
+                    update={"recorded_at": first_times[item.metadata_id]}
+                ).model_dump_json()
             )
             for item in metadata
         )

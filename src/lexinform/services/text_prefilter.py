@@ -17,17 +17,11 @@ from lexinform.document_admissibility import prefilter_admission
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
 from lexinform.keywords import WEAK_PATTERNS, KeywordPrefilter, accept_text_hits
 from lexinform.models import (
-    ArtifactIdentity,
-    ArtifactReadIdentity,
     Bill,
     BillStatus,
-    CandidateDispositionTrace,
-    DocumentSelectionRecord,
-    ExtractionResult,
-    TextDocument,
 )
 from lexinform.ports import BillRepository, Clock, TextSource
-from lexinform.services.document_history import DocumentSourceRead, record_source_read
+from lexinform.services.document_history import SourceReadCapture, record_source_read
 from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
 
 log = logging.getLogger(__name__)
@@ -71,25 +65,7 @@ class PrefilterLoad:
     pages: int = 0
     unanswered: bool = False
     selection_state: str = ""
-    source_document: TextDocument | None = None
-    source_selection: DocumentSelectionRecord | None = None
-    source_artifacts: tuple[ArtifactIdentity, ...] = ()
-    source_reads: tuple[ArtifactReadIdentity, ...] = ()
-    source_extractions: tuple[ExtractionResult, ...] = ()
-    source_candidate_trace: CandidateDispositionTrace | None = None
-
-    def __post_init__(self) -> None:
-        if (self.source_document is None) != (self.source_selection is None):
-            raise ValueError(
-                "source observation requires both catalog relations and selection metadata"
-            )
-        if (
-            self.source_artifacts
-            or self.source_reads
-            or self.source_extractions
-            or self.source_candidate_trace is not None
-        ) and self.source_selection is None:
-            raise ValueError("artifact observations require the source selection")
+    source_read: SourceReadCapture | None = None
 
     @property
     def is_scan(self) -> bool:
@@ -182,20 +158,10 @@ class TextPrefilterService:
     def decide(self, bill: Bill, loaded: PrefilterLoad) -> bool:
         """Record the source decision and its outcome together on the calling thread."""
         with self._repo.atomic():
-            if loaded.source_selection is not None:
-                assert loaded.source_document is not None, (
-                    "PrefilterLoad requires paired source metadata"
-                )
+            if loaded.source_read is not None:
                 record_source_read(
                     self._repo,
-                    DocumentSourceRead(
-                        loaded.source_document,
-                        loaded.source_selection,
-                        loaded.source_artifacts,
-                        reads=loaded.source_reads,
-                        extractions=loaded.source_extractions,
-                        candidate_trace=loaded.source_candidate_trace,
-                    ),
+                    loaded.source_read,
                     term=bill.term,
                     number=bill.number,
                     purpose="prefilter",
@@ -293,15 +259,12 @@ class TextPrefilterService:
                 )
             log.info("%s has no readable text; text prefilter skipped", bill.number)
             return PrefilterLoad(None, "text prefilter: no document to read")
-        _, file = self._loader.select_document(located.document)
+        resolved, file = self._loader.select_document(located.document)
         return replace(
             self._read(file),
-            source_document=located.document,
-            source_selection=DocumentSelectionRecord.from_selection(file.selection),
-            source_artifacts=self._loader.artifacts_for_selection(file.selection),
-            source_reads=self._loader.reads_for_selection(file.selection),
-            source_extractions=self._loader.extractions_for_selection(file.selection),
-            source_candidate_trace=file.candidate_trace,
+            source_read=self._loader.capture_source_read(
+                located.document, resolved, file, record_requested_document=True
+            ),
         )
 
     def _read(self, file: LoadedFile) -> PrefilterLoad:

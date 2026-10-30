@@ -97,16 +97,18 @@ def test_completed_unsupported_selection_and_source_outage_remain_distinct(outag
     if outage:
         world.gateway.outages.add("download")
 
-    world.run(track=False)
+    report = world.run(track=False)
 
     observed = world.repo.list_source_observations(10, "4100")
-    assert len(observed) == (0 if outage else 1)
+    assert not observed
     assert not world.llm.contexts
     if not outage:
         assert world.bill("4100").status is BillStatus.DOCUMENT_UNSUPPORTED
-        selected = world.repo.get_document_selection(observed[0].selection_id)
-        assert selected is not None, "completed unsupported selection has independent metadata"
-        assert selected.selection.state == "unsupported"
+        assert world.repo.list_artifact_reads()
+        assert report.metadata_url_omissions is not None
+        assert report.metadata_url_omissions.reasons[0].reason == "opaque_failure_prose"
+    else:
+        assert not world.repo.list_artifact_reads() and report.metadata_url_omissions is None
 
 
 @pytest.mark.parametrize("failure", [RuntimeError("bad answer"), LlmUnavailableError("down")])

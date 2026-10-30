@@ -1,0 +1,45 @@
+{
+  "stages": [
+    "J161",
+    "J162",
+    "J163"
+  ],
+  "base": "0472ccf9506a93d078f189576a8a4d6470d2577f",
+  "generic_focus": 117,
+  "finalizer_focus": 34,
+  "header_focus": 18,
+  "first_time_focus": 101,
+  "independent_reviews": "Cross-reviews closed lifetime-context and blocked-composition findings; root exact-cap bug fixed and independently reviewed; no open findings",
+  "generic_scope": "Primary/review/prefilter graph factories and trace gate; original/resolved URL inputs, metadata-only prose flag, physical-only typed capture",
+  "finalizer_scope": "Known current loader body-owned URL-free results, including truthful warm cache inventory, persisted by existing caller atomic finalizers",
+  "header_scope": "Two inert new modules/tests, no existing extraction component edits, no runtime hooks",
+  "timestamp_scope": "Existing persisted first time validated through structural reader before repeat incoming budget validation, no model/schema/cap tightening",
+  "full_gate": {
+    "tests_passed": 6838,
+    "seconds": 237.663,
+    "coverage_percent": 92,
+    "mypy_files": 590,
+    "ruff_format_files": 657,
+    "source_config_pins": 657,
+    "frozen_bytes_exact": true,
+    "docs_check": "passed"
+  },
+  "limits": [
+    "Specialized RCL/Senate capture remains separate; business and frozen paid payload URLs unchanged",
+    "Cached real text qualification does not claim fresh raw extraction or unavailable complete-body origins",
+    "Header M0 proof uses saved observed headers; no raw/archive/worker hooks activated",
+    "Finite extraction control growth is not a production forecast; no raw/backend or retention decision"
+  ],
+  "priority_revision": {
+    "focused_passed": 161,
+    "all_four_failing_modules_included": true,
+    "deterministic_reasons_preserve_graphs": true,
+    "arbitrary_exception_message_omits_source_graph": true,
+    "trace_has_no_rejection_prose": true,
+    "oversized_URL_refusal_explicit": true,
+    "specialized_WIP_excluded": true,
+    "independent_review": "physical_reader_review closure without findings"
+  },
+  "qualification_scope": "Generic parity rerun after prose revision; isolated finalizer SQL delta/recovery proof predates prose revision, whose finalizer code/known-result enumeration remain unchanged",
+  "first_full_attempt": "6827passed/10failed; overbroad opaque flags corrected and normal history restored, all4failed modules in161focused; complete revised full gate passed"
+}

@@ -2,9 +2,14 @@ import hashlib
 
 import pytest
 
-from lexinform.models import BillStatus
+from lexinform.models import BillStatus, DocumentSelection, ExtractedDocument
 from tests.fakes import FakeTextExtractor
 from tests.harness import World
+
+
+class UnreadableTextExtractor(FakeTextExtractor):
+    def extract_document(self, data: bytes) -> ExtractedDocument:
+        return ExtractedDocument(selection=DocumentSelection(state="unsupported"))
 
 
 @pytest.mark.parametrize("workers", [1, 4])
@@ -67,12 +72,12 @@ def test_body_identity_survives_a_dry_run_and_a_warm_cache_without_another_downl
 
 @pytest.mark.parametrize("outage", [False, True])
 def test_completed_unreadable_body_and_failed_fetch_are_distinct(outage: bool) -> None:
-    world = World(extractor=FakeTextExtractor(error=ValueError("unsupported")))
+    world = World(extractor=UnreadableTextExtractor(""))
     world.add_bill("4100", "Projekt ustawy o podatku")
     if outage:
         world.gateway.outages.add("download")
 
-    world.run(track=False)
+    report = world.run(track=False)
 
     artifact = world.repo.get_artifact_metadata(hashlib.sha256(b"%PDF").hexdigest())
     assert (artifact is None) == outage
@@ -81,3 +86,4 @@ def test_completed_unreadable_body_and_failed_fetch_are_distinct(outage: bool) -
         observed = world.repo.list_source_observations(10, "4100")
         assert len(observed) == 1
         assert not world.repo.list_selection_artifacts(observed[0].selection_id)
+        assert report.metadata_url_omissions is None

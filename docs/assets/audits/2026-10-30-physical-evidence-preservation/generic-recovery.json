@@ -1,0 +1,21 @@
+{
+  "doctor_status": "recorded",
+  "graph_tables_empty": [
+    "document_selections",
+    "source_observations",
+    "candidate_disposition_traces",
+    "source_candidate_traces",
+    "document_editions",
+    "selection_editions",
+    "selection_artifacts",
+    "selection_extractions"
+  ],
+  "physical_artifacts": 1,
+  "quiet_repeat_plus365_exact": true,
+  "safe_receipts": 1,
+  "scope": "Controlled real DOCX physical extraction with unsafe unattempted metadata alternative; no corpus/natural-demand claim",
+  "sql_bytes": 22630,
+  "sql_sha256": "98dbeb347612d8472092ce7327523db040b80a923d15eb709e9d36966a36c24c",
+  "typed_get_dump_restore_exact": true,
+  "url_free_extractions": 1
+}

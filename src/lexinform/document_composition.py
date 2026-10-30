@@ -1,6 +1,6 @@
 """Compose existing loose-file snapshots without downloads or question-specific admission."""
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Literal
 
 from lexinform.document_selection import bill_selection, deduplicate_bundle
@@ -23,6 +23,7 @@ class BundleAssembly:
     missing: tuple[str, ...]
     normative: tuple[str, ...] = ()
     annex_parts: tuple[DocumentPart, ...] = ()
+    opaque_failure_prose: bool = field(default=False, compare=False, repr=False)
 
 
 def start_bundle(main: LoadedFile, *, min_chars: int) -> BundleAssembly | LoadedFile:
@@ -30,7 +31,13 @@ def start_bundle(main: LoadedFile, *, min_chars: int) -> BundleAssembly | Loaded
         return main
     if main.pages and not carries_the_document(main.text, min_chars=min_chars, pages=main.pages):
         return main
-    return BundleAssembly(main, (main.text,), main.selection.parts, main.selection.rejected)
+    return BundleAssembly(
+        main,
+        (main.text,),
+        main.selection.parts,
+        main.selection.rejected,
+        opaque_failure_prose=main.opaque_failure_prose,
+    )
 
 
 def required_part(
@@ -105,7 +112,10 @@ def amendment_part(
 def supporting_part(bundle: BundleAssembly, url: str, file: LoadedFile) -> BundleAssembly:
     extra = file.text
     if extra is not None and regulation_support(extra):
-        return replace(bundle, missing=(*bundle.missing, f"{url}: supporting draft regulation"))
+        return replace(
+            bundle,
+            missing=(*bundle.missing, f"{url}: supporting draft regulation"),
+        )
     if extra is not None:
         return replace(
             bundle, texts=(*bundle.texts, extra), evidence=(*bundle.evidence, *file.selection.parts)
@@ -122,6 +132,7 @@ def finish_bundle(bundle: BundleAssembly, document: TextDocument) -> LoadedFile:
         PAGE_BREAK.join(bundle.texts),
         pages=bundle.main.pages,
         sha256=bundle.main.sha256,
+        opaque_failure_prose=bundle.opaque_failure_prose,
         selection=bundle.main.selection.model_copy(
             update={
                 "parts": bundle.evidence,
@@ -142,6 +153,7 @@ def finalize_selection(document: TextDocument, file: LoadedFile) -> LoadedFile:
         pages=file.pages,
         oversize=file.oversize,
         sha256=file.sha256,
+        opaque_failure_prose=file.opaque_failure_prose,
         selection=bill_selection(selection, source_basis=document.version_basis),
     )
 
@@ -152,9 +164,13 @@ class CandidateFallback:
     unavailable: bool = False
     oversize: bool = False
     ambiguous: bool = False
+    opaque_failure_prose: bool = field(default=False, compare=False, repr=False)
 
     def conflict(self, url: str) -> CandidateFallback:
-        return replace(self, rejected=(*self.rejected, f"{url}: official source identity conflict"))
+        return replace(
+            self,
+            rejected=(*self.rejected, f"{url}: official source identity conflict"),
+        )
 
     def failure(
         self, url: str, error_type: str, message: str, *, invalid: bool
@@ -163,11 +179,15 @@ class CandidateFallback:
             self,
             unavailable=self.unavailable or not invalid,
             rejected=(*self.rejected, f"{url}: {error_type}: {message}"),
+            opaque_failure_prose=True,
         )
 
     def consider(self, url: str, file: LoadedFile, *, multiple: bool) -> CandidateFallback | None:
         if file.text and document_kind(file.text) in APPENDIX_KINDS:
-            return replace(self, rejected=(*self.rejected, f"{url}: {document_kind(file.text)}"))
+            return replace(
+                self,
+                rejected=(*self.rejected, f"{url}: {document_kind(file.text)}"),
+            )
         if file.text is None and not file.is_scan and multiple:
             reason = "download size limit" if file.oversize else "no readable body"
             return replace(
@@ -175,6 +195,7 @@ class CandidateFallback:
                 oversize=self.oversize or file.oversize,
                 ambiguous=self.ambiguous or file.selection.state == "ambiguous",
                 rejected=(*self.rejected, *file.selection.rejected, f"{url}: {reason}"),
+                opaque_failure_prose=self.opaque_failure_prose or file.opaque_failure_prose,
             )
         return None
 
@@ -182,6 +203,7 @@ class CandidateFallback:
         return LoadedFile(
             None,
             oversize=self.oversize,
+            opaque_failure_prose=self.opaque_failure_prose,
             selection=DocumentSelection(
                 state="waiting"
                 if self.unavailable
@@ -194,4 +216,7 @@ class CandidateFallback:
 
 
 def _blocked(state: Literal["waiting", "ambiguous"], reason: str) -> LoadedFile:
-    return LoadedFile(None, selection=DocumentSelection(state=state, rejected=(reason,)))
+    return LoadedFile(
+        None,
+        selection=DocumentSelection(state=state, rejected=(reason,)),
+    )

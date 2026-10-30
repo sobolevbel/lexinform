@@ -142,6 +142,10 @@ def test_pipeline_finally_keeps_body_and_omission_after_unsafe_url_parser_failur
     assert not world.repo.list_artifact_reads() and not world.llm.contexts
     assert world.repo.get_artifact_metadata(hashlib.sha256(b"%PDF").hexdigest()) is not None
     assert report.metadata_url_omissions is not None, "pipeline finally snapshots actual omissions"
-    assert report.metadata_url_omissions.total == world.gateway.calls.count(f"download:{url}") == 2
-    assert report.metadata_url_omissions.reasons[0].reason == "unrecognized_query"
+    assert world.gateway.calls.count(f"download:{url}") == 2
+    assert report.metadata_url_omissions.total == 5
+    assert {item.reason: item.count for item in report.metadata_url_omissions.reasons} == {
+        "opaque_failure_prose": 1,
+        "unrecognized_query": 4,
+    }
     assert "PRIVATE" not in report.metadata_url_omissions.model_dump_json()

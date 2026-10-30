@@ -1,0 +1,61 @@
+{
+  "actual_arbitrary_prose_fallback_graphs_omitted": 24,
+  "business_snapshots_exact": 986,
+  "class_only_supporting_failure_graphs_exact": 24,
+  "corpus_pins": 940,
+  "input_code_options_pins_unchanged": true,
+  "limits": [
+    "No raw extraction/body SHA inferred from cached text",
+    "42 current INDEX prints absent from pinned prints metadata excluded",
+    "Controls are not natural omission demand",
+    "Historical original requested/prose history not invented"
+  ],
+  "ordinary_admitted_graphs_exact": 938,
+  "public_paired_business_exact": 8,
+  "public_table_deltas": {
+    "parser_failure/1": [
+      "candidate_disposition_traces",
+      "document_selections",
+      "source_candidate_traces",
+      "source_observations"
+    ],
+    "parser_failure/4": [
+      "candidate_disposition_traces",
+      "document_selections",
+      "source_candidate_traces",
+      "source_observations"
+    ],
+    "prefilter_unsafe/1": [
+      "document_editions",
+      "document_selections",
+      "selection_artifacts",
+      "selection_editions",
+      "source_observations"
+    ],
+    "prefilter_unsafe/4": [
+      "document_editions",
+      "document_selections",
+      "selection_artifacts",
+      "selection_editions",
+      "source_observations"
+    ],
+    "safe/1": [],
+    "safe/4": [],
+    "unsafe/1": [
+      "document_editions",
+      "document_selections",
+      "selection_artifacts",
+      "selection_editions",
+      "source_observations"
+    ],
+    "unsafe/4": [
+      "document_editions",
+      "document_selections",
+      "selection_artifacts",
+      "selection_editions",
+      "source_observations"
+    ]
+  },
+  "scope": "Same frozen real cached text and24+24 explicit controlled failures; only actual arbitrary str(exc) source graphs omitted; source trace guard itself ignores prose because trace payload has none",
+  "workers1_4_business_and_diagnostics_exact": true
+}

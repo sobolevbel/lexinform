@@ -49,6 +49,7 @@ from lexinform.models import (
     DocumentPart,
     DocumentReadMetrics,
     DocumentSelection,
+    DocumentSelectionRecord,
     ExtractionResult,
     HostDocumentReads,
     MetadataUrlOmissions,
@@ -65,6 +66,12 @@ from lexinform.ports import (
     TextExtractor,
 )
 from lexinform.sections import scan_page_window
+from lexinform.services.document_history import (
+    DocumentSourceRead,
+    PhysicalSourceRead,
+    SourceReadCapture,
+)
+from lexinform.source_graph_admission import source_graph_admission, source_graph_url_decisions
 
 log = logging.getLogger(__name__)
 
@@ -140,6 +147,15 @@ class TextLoader:
         with self._lock:
             return tuple(self._known_reads[key] for key in sorted(self._known_reads))
 
+    def read_extraction_results(self) -> tuple[ExtractionResult, ...]:
+        """Known URL-free results share the retained body inventory's cache-origin scope."""
+        with self._lock:
+            return tuple(
+                self._extractions[sha]
+                for sha in sorted(self._extractions)
+                if sha in self._known_bodies
+            )
+
     def file_origins(
         self, url: str, loaded: LoadedFile
     ) -> tuple[ArtifactIdentity | None, ArtifactReadIdentity | None, ExtractionResult | None]:
@@ -179,6 +195,56 @@ class TextLoader:
                 for sha in sorted(sources)
                 if sha in self._known_bodies
             )
+
+    def capture_source_read(
+        self,
+        requested: TextDocument,
+        resolved: TextDocument,
+        file: LoadedFile,
+        *,
+        record_requested_document: bool = False,
+    ) -> SourceReadCapture:
+        physical = PhysicalSourceRead(
+            self.artifacts_for_selection(file.selection),
+            self.reads_for_selection(file.selection),
+            self.extractions_for_selection(file.selection),
+        )
+        admitted = True
+        for decision in source_graph_url_decisions(
+            requested,
+            resolved,
+            file.selection,
+            opaque_failure_prose=file.opaque_failure_prose,
+        ):
+            if decision.reason is not None:
+                admitted = False
+                self._metadata_url_omissions.observe(
+                    decision.reason, requested_url_sha256=decision.requested_url_sha256
+                )
+        if not admitted:
+            artifact, read, extraction = self.file_origins(resolved.url, file)
+            artifacts = {item.sha256: item for item in physical.artifacts}
+            reads = {item.read_id: item for item in physical.reads}
+            extractions = {item.result_id: item for item in physical.extractions}
+            if artifact is not None:
+                artifacts.setdefault(artifact.sha256, artifact)
+            if read is not None:
+                reads.setdefault(read.read_id, read)
+            if extraction is not None:
+                extractions.setdefault(extraction.result_id, extraction)
+            return PhysicalSourceRead(
+                tuple(artifacts[key] for key in sorted(artifacts)),
+                tuple(reads[key] for key in sorted(reads)),
+                tuple(extractions[key] for key in sorted(extractions)),
+            )
+        return DocumentSourceRead(
+            requested if record_requested_document else resolved,
+            DocumentSelectionRecord.from_selection(file.selection),
+            physical.artifacts,
+            reads=physical.reads,
+            extractions=physical.extractions,
+            candidate_trace=file.candidate_trace,
+        )
 
     def reset_read_metrics(self) -> None:
         """The caller resets observation before starting run work without clearing cached files."""
@@ -269,12 +335,21 @@ class TextLoader:
         dispositions: list[CandidateDisposition] = []
         selected, loaded, result, reason = self._select_document(document, dispositions)
         try:
-            trace = CandidateDispositionTrace.from_decisions(
-                document,
-                tuple(dispositions),
-                result=result,
-                reason=reason,
-                selection_state=loaded.selection.state,
+            trace = (
+                CandidateDispositionTrace.from_decisions(
+                    document,
+                    tuple(dispositions),
+                    result=result,
+                    reason=reason,
+                    selection_state=loaded.selection.state,
+                )
+                if source_graph_admission(
+                    document,
+                    selected,
+                    loaded.selection,
+                    opaque_failure_prose=False,
+                ).admitted
+                else None
             )
         except Exception:
             log.warning("candidate disposition trace omitted after metadata failure")
@@ -482,6 +557,7 @@ class TextLoader:
                 selection=loaded.selection.model_copy(
                     update={"observed_parts": choice.observed_parts}
                 ),
+                opaque_failure_prose=loaded.opaque_failure_prose,
             ),
             "selected",
             "version_choice",

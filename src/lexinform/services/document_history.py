@@ -44,6 +44,16 @@ class DocumentSourceRead:
 
 
 @dataclass(frozen=True)
+class PhysicalSourceRead:
+    artifacts: tuple[ArtifactIdentity, ...]
+    reads: tuple[ArtifactReadIdentity, ...] = ()
+    extractions: tuple[ExtractionResult, ...] = ()
+
+
+type SourceReadCapture = DocumentSourceRead | PhysicalSourceRead
+
+
+@dataclass(frozen=True)
 class SourceHistoryPair:
     first: SourceHistoryPersistence
     second: SourceHistoryPersistence
@@ -55,7 +65,7 @@ class SourceHistoryPair:
 
 def record_source_read(
     repo: BillRepository,
-    source: DocumentSourceRead,
+    source: SourceReadCapture,
     *,
     term: int,
     number: str,
@@ -63,6 +73,12 @@ def record_source_read(
     recorded_at: dt.datetime,
 ) -> None:
     """Record a consumer's source metadata inside its caller-owned transaction."""
+    if isinstance(source, PhysicalSourceRead):
+        record_artifacts(repo, source.artifacts, recorded_at=recorded_at)
+        record_artifact_reads(repo, source.reads, recorded_at=recorded_at)
+        for extraction in source.extractions:
+            repo.save_extraction_result(extraction, recorded_at=recorded_at)
+        return
     observation = SourceObservation(
         term=term,
         number=number,

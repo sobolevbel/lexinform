@@ -67,7 +67,6 @@ from lexinform.models import (
     DocumentReview,
     DocumentReviewRecord,
     DocumentSelection,
-    DocumentSelectionRecord,
     JointBillDescription,
     JointComparison,
     JointContext,
@@ -158,7 +157,7 @@ from lexinform.senate_documents import validate_senate_scan
 from lexinform.services.analysis_applications import apply_analysis
 from lexinform.services.computation_reuse import matching_record, retained_secondary
 from lexinform.services.cost import CostLedger
-from lexinform.services.document_history import DocumentSourceRead, record_source_read
+from lexinform.services.document_history import SourceReadCapture, record_source_read
 from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
 from lexinform.services.joint import primary_of, revive_prefilter_skips
 from lexinform.services.result_applications import record_secondary_application
@@ -317,7 +316,7 @@ class Waiting:
 
 
 class _SourceReadError(Exception):
-    def __init__(self, source: DocumentSourceRead, cause: Exception) -> None:
+    def __init__(self, source: SourceReadCapture, cause: Exception) -> None:
         super().__init__(str(cause))
         self.source = source
         self.cause = cause
@@ -326,7 +325,7 @@ class _SourceReadError(Exception):
 @dataclass(frozen=True)
 class _ReviewRead:
     document: ReviewDocument | None
-    source_read: DocumentSourceRead | None = None
+    source_read: SourceReadCapture | None = None
 
 
 @dataclass(frozen=True)
@@ -348,7 +347,7 @@ class _Loaded:
     document: TextDocument | None = None
     selection: DocumentSelection = DocumentSelection()
     projection: TextProjection | None = None
-    source_read: DocumentSourceRead | None = None
+    source_read: SourceReadCapture | None = None
 
     @property
     def digest(self) -> str | None:
@@ -422,7 +421,7 @@ class _Prepared:
     memo_key: str | None = None
     triage_memo_key: str | None = None
     from_batch: bool = False
-    source_read: DocumentSourceRead | None = None
+    source_read: SourceReadCapture | None = None
 
 
 _WHITESPACE = re.compile(r"\s+")
@@ -1890,18 +1889,12 @@ class AnalysisService:
         if source.snapshot is not None:
             return _ReviewRead(source.snapshot)
         document = source.document
+        requested = document
         if document.compare_versions:
             document, file = self._loader.select_document(document)
         else:
             file = self._loader.read_document(document)
-        read = DocumentSourceRead(
-            document,
-            DocumentSelectionRecord.from_selection(file.selection),
-            self._loader.artifacts_for_selection(file.selection),
-            reads=self._loader.reads_for_selection(file.selection),
-            extractions=self._loader.extractions_for_selection(file.selection),
-            candidate_trace=file.candidate_trace,
-        )
+        read = self._loader.capture_source_read(requested, document, file)
         try:
             return _ReviewRead(self._review_document_of(source, document, file), read)
         except Exception as exc:
@@ -2467,7 +2460,7 @@ class AnalysisService:
     def _record_source_read(
         self,
         bill: Bill,
-        source: DocumentSourceRead,
+        source: SourceReadCapture,
         *,
         purpose: Literal["analysis", "review"] = "analysis",
     ) -> None:
@@ -2866,7 +2859,7 @@ class AnalysisService:
     ) -> _Loaded | None:
         """Record current reread evidence without reconstructing the previous paid input."""
         loaded: _Loaded | None = None
-        source: DocumentSourceRead | None = None
+        source: SourceReadCapture | None = None
         error: Exception | None = None
         wrapper: _SourceReadError | None = None
         try:
@@ -3202,6 +3195,7 @@ class AnalysisService:
         """Prepare admitted text or pages, propagating failures and blocked selections."""
         if document is None:
             return _Loaded("", False, "metadata_only")
+        requested = document
         try:
             document, file = self._loader.select_document(document)
         except ServiceUnavailableError:
@@ -3216,14 +3210,7 @@ class AnalysisService:
                 "unsupported" if isinstance(exc, ValueError) else "waiting",
                 f"{document.url}: {type(exc).__name__}: {exc}",
             ) from exc
-        source = DocumentSourceRead(
-            document,
-            DocumentSelectionRecord.from_selection(file.selection),
-            self._loader.artifacts_for_selection(file.selection),
-            reads=self._loader.reads_for_selection(file.selection),
-            extractions=self._loader.extractions_for_selection(file.selection),
-            candidate_trace=file.candidate_trace,
-        )
+        source = self._loader.capture_source_read(requested, document, file)
         try:
             return replace(self._load_selected(document, file, trim=trim), source_read=source)
         except Exception as exc:

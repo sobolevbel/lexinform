@@ -1,6 +1,6 @@
 """Observed downloader bodies exclude wire overhead, incomplete responses and raw retention."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Annotated, Literal, Self, get_args
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -161,6 +161,7 @@ class LoadedFile:
     sha256: str | None = None
     selection: DocumentSelection = DocumentSelection()
     candidate_trace: CandidateDispositionTrace | None = None
+    opaque_failure_prose: bool = field(default=False, compare=False, repr=False)
 
     @property
     def is_scan(self) -> bool:

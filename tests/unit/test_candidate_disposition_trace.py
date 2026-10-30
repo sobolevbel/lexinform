@@ -238,9 +238,12 @@ def test_overlarge_request_keeps_selected_file_and_records_explicit_omission() -
     selected, loaded = reader.select_document(requested)
 
     assert selected == chosen and loaded.text == law()
-    trace = loaded.candidate_trace
-    assert trace is not None and trace.coverage == "omitted_over_limit"
-    assert trace.result == "selected" and trace.omitted_dispositions == 2
+    assert loaded.candidate_trace is None
+    capture = reader.capture_source_read(requested, selected, loaded)
+    assert capture.artifacts and capture.reads
+    diagnostic = reader.read_metadata_url_omissions()
+    assert diagnostic is not None and diagnostic.total == 1
+    assert diagnostic.reasons[0].reason == "oversized_url"
     assert gateway.calls == ["download:" + chosen.url]
 
 

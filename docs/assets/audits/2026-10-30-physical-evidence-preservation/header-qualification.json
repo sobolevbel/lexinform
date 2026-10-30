@@ -1,0 +1,13 @@
+{
+  "full_payloads_exact": 13108,
+  "headers": 13108,
+  "input_sha256": "d3c9b619da000d9ebeb4169cb493d5fe1dd71486dbfb5ccf444d9c16412a2335",
+  "input_unchanged": true,
+  "max_envelope_bytes": 26563,
+  "new_omissions": 0,
+  "payload_ids_exact": 13108,
+  "rows": 251742,
+  "scope": "Saved M0 observed header data only; no archive opens, raw reads, walker, extractor or runtime hook activation",
+  "seconds": 9.010471416986547,
+  "status": "qualified"
+}

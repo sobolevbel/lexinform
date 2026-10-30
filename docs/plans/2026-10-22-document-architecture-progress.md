@@ -7844,3 +7844,88 @@ J158 commit `93ccd839a61ceb4319ed3298e4c1e384ce7ee732`: все четыре CI j
 J159/J160 final make check: 6801 passed / 236.70s, coverage92%; strict mypy584 files,
 Ruff/format651 по src/tests/tools; все 651 source/config pins exact.40 новых unit cases,
 новых scenarios нет. Strict docs checks прошли. Producer обоих компонентов остаётся выключенным.
+
+
+J159/J160 commit `0472ccf9506a93d078f189576a8a4d6470d2577f`: все четыре CI jobs 41028972342
+и deploy 41029645296 прошли; relay93cc →0472, health45s/timer подтверждены
+[release proof](../assets/audits/2026-10-30-inert-metadata-foundations/release.json). Physical producer
+и generic graph gating не активированы этим выпуском.
+
+
+<a id="j161"></a>
+
+### J161. Guard generic source graphs and retain physical results independently
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября.
+Base `0472ccf9`. Original requested и resolved documents проверяются до trace и selection/source IDs.
+Metadata-only opaque flag выставляется для произвольного exception message в composition; исходные
+strings/errors и business selection не меняются. Admitted graph сохраняет прежние identities;
+отклонённый возвращает typed PhysicalSourceRead без graph/edition/trace/junction refs. Prefilter
+явно сохраняет прежний original catalog context, не заменяя его resolved document в safe graph.
+
+117 focused прошли, включая6 новых capture units и6 public scenarios. Пинованный cached term10:
+938 обычных +24 optional-failure +24 fallback-failure =986 business outcomes byte/hash exact,
+все938 ordinary и24 class-only support graph payloads/IDs exact;24 arbitrary-prose fallback graphs
+omitted.940 data pins,
+source/options pins unchanged.42 prints вне snapshot исключены. Это cached text, без новой raw
+extraction или выдуманных body origins.8 paired World cases: provider/batch/messages/calls exact,
+workers1/4 business/diagnostics exact; safe SQL exact, остальные различия только graph/ref tables.
+Get/doctor/restore/+365repeat сохраняют actual physical recovery без graph refs.
+
+Cross-review обнаружило существовавшую потерю extraction history у blocked composition без sha/
+parts. Existing artifact observer теперь отдаёт known URL-free results, отфильтрованные по known
+body IDs; pipeline/CLI callers сохраняют их после parent artifacts в той же транзакции. Нет URL
+maps, per-owner inference, нового extraction или raw bytes.34 focused прошли, включая3 CLI units
+и2 pipeline workers cases; rollback failed write сохраняет старый state. Actual DOCX+required
+emptyZIP control:2 bodies/2 results/no graph. Прежде World сохранял1 result, теперь2; delta+2882 SQL/
++295 gzip B. Все остальные tables/report/results/IDs exact после удаления phase_seconds;
+get/restore/+365repeat exact. Known-cache inventory не выдаётся за новое activity/read timing.
+Root и independent cross-review findings закрыты. Specialized RCL/Senate capture, paid/business
+payload URLs и arbitrary prose/path privacy не переопределяются; DA2.5 остаётся partial.
+[Acceptance assets](../assets/audits/2026-10-30-physical-evidence-preservation/validation.json).
+
+<a id="j162"></a>
+
+### J162. Add inert bounded header capture foundation
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября.
+Два новых файла, без изменений extractor/component sources или runtime hooks. Online builder
+сохраняет bounded prefix и streaming canonical full hash только при завершённом наблюдении;
+прерывание/append guard failure оставляет unknown full hash и явную incomplete metadata.
+Per-call ContextVar scope снимается при BaseException, finalizer не подменяет исходную ошибку.
+Independent review воспроизвело revival через copied context на том же thread после exit:
+active owner теперь сбрасывается до reset/finalization; normal/failure copied-context controls
+проходят.18 focused, strict mypy/Ruff зелёные. Saved M0:13108 headers/251742 rows, все payloads/IDs
+exact,0 omissions,max26563 B,9.01s,input unchanged. Tiny lifetime delta не меняет builder/streaming
+AST, поэтому этот proof переиспользован. Никакого raw read/walker/SQL/caller activation нет.
+
+<a id="j163"></a>
+
+### J163. Preserve first time when repeating exact-cap physical metadata
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября.
+Root воспроизвёл edge: valid32768B envelope с whole-second first time сохранялся, но repeat с
+microsecond time падал до lookup — новый timestamp удлинял JSON. Writer теперь берёт validated
+persisted first time через общий structural reader до incoming envelope validation. Immutable
+comparison/corruption checks и caller-clock validation остаются; cap/model/schema не меняются.
+Старые legitimate envelopes не отвергаются новой более строгой исторической policy.
+Red-before-fix control теперь подтверждает exact dump/get/first time при repeat;101 focused и
+независимые17 focused прошли. План74 /32done /6N/A /36open.
+
+
+Первый J161–J163 full gate выявил10 metadata-history ожиданий: первоначальный opaque flag был
+слишком широким. Исправлено: URL+fixed/class-only reason сохраняет прежнюю историю, только
+произвольный str(exc) создаёт opaque flag. Trace хранит requested URLs/закрытые codes/hash,
+без selection rejection prose: его preflight проверяет URLs независимо от этого flag.
+Нормальные overflow/rollback/restore assertions сохранены.5000-byte URL теперь явно проверяет
+oversized_url diagnostic/no trace/physical retention. Structured-unreadable fixture сохраняет
+ВСЕ прежние body/source/no-selection-artifact assertions; настоящий ValueError privacy case
+по-прежнему требует omitted graph/body retention.161 focused, включая все4 упавших модуля,
+прошли;986 cached business snapshots exact,962 допустимых graphs exact/24 prose omissions.
+Independent cross-review закрыт без findings. Полный gate повторяется на revised frozen bytes.
+
+
+J161–J163 final make check: 6838 passed / 237.66s, coverage92%; strict mypy590 files,
+Ruff/format657 по src/tests/tools. Все 657 frozen source/config files exact. Cross-reviews
+закрыты; strict docs/link/anchor/resource checks прошли. Specialized URL capture ещё не включён;
+header foundation инертна, raw/backend/retention не менялись.
