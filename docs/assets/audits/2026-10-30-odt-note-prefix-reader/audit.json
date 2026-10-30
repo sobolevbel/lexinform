@@ -1,0 +1,43 @@
+{
+  "code_locations": [
+    "adapters/doc_text.py:29-37,110-143,171-194,212-240,294-319",
+    "models/documents.py:485-503",
+    "extraction_records.py:_with_odt_note_status",
+    "tests/unit/test_doc_text.py:161-175"
+  ],
+  "criterion": "DA3.3 preserve order/table structure/notes and call associations; declare views/unsupported; no silent format expansion",
+  "evidence_sha256": {
+    "docs/assets/audits/2026-10-28-unlocated-text/validation.json": "38c6700a6a17397c3357e04a7ad15da5f31501c1ca29e20b2c680b8f0c7d8b3d",
+    "docs/assets/audits/2026-10-30-odt-note-status-producer/qualification.json": "07e7b650d99bb54b849cbb09daf5bd161aa3440ced1e922c76b751460ce92d7b",
+    "src/lexinform/adapters/doc_text.py": "0216af4fddc5af723554137b27498862c2893dd1dbd7e5eeddd74f29280f7dee",
+    "src/lexinform/extraction_records.py": "57969b027e15f91e958c28a976b05f1724c7397620ed407e6bc7a1bda6422fd8",
+    "src/lexinform/models/documents.py": "ebd3422121c38683e2e2af1d229e5ffcd809158bbe3fba71f2cca39f9b8b6be4",
+    "src/lexinform/models/extractions.py": "9a69549d7a2f1a6144227c715833fd205f4784d75387db50d6f7f9f9aea00dd6",
+    "tests/unit/test_doc_text.py": "2a0c06c1cf827e5d4089982e196792968468b860cf8d238d88b3843ece6354cd"
+  },
+  "findings": {
+    "coverage": "Pinned J193/J196:6natural roots/8ODTphysical/4notes+4calls; default selected1status0notes.9derivatives/8statuses0notes. No natural selected note-rich/separate-ref generalization.",
+    "doc_gap": "No CP-to-note-call association or durable table geometry; field results retained/codes removed; tracked changes and unsupported objects unknown",
+    "doc_stories": "text+footnotes+endnotes, not ccpText only; skipped headers/comments/textboxes",
+    "normalization_risk": "Code-derived, not fresh corpus proof: changing reference placement/target with identical story contents can leave extracted text identical because reference mark is discarded and reference tables unparsed",
+    "odt_gap": "Actual native transient paths/spans/links exist, but persisted bounded status/hash has contents=not_retained; no recoverable historical origin manifest"
+  },
+  "next_boundary": {
+    "acceptance": [
+      "exact physical_index/input/body binding",
+      "retained prefix with honest omitted/dangling-target availability",
+      "actual persisted JSON readable after restore and365d cache reuse",
+      "unchanged text/selection/provider/oldphysicalhash and oldprefix; zeroextraIO"
+    ],
+    "budget": "Proposed <=4096B per result inside existing16384B; no text/newtable/backend; drop optional origins before old summary prefix",
+    "does_not_close": [
+      "DOC call associations/table origins",
+      "unbounded full note-link retention",
+      "natural selected note-rich/separate-reference coverage"
+    ],
+    "scope": "Reader-first optional bounded existing ODT origins prefix in existing ExtractionResult JSON; writer only after actual reader deploy"
+  },
+  "operations": "read-only source/proof metadata; no raw/replay/network/full/paid/body output",
+  "source_commit": "600f68559bcd676d0960128d8d4ed824ae958a33",
+  "verdict": "partial"
+}

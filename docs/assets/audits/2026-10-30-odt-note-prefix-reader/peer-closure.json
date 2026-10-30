@@ -1,0 +1,30 @@
+{
+  "status": "approved-inert-reader",
+  "source3_pins_verified": {
+    "src/lexinform/models/__init__.py": "975b5ff2475b58915a5d9a86fce1b16c8ae7b74ef50867ee744141165e395f53",
+    "src/lexinform/models/extractions.py": "a1c0c67d1bf352ebdab07c590d4621d567b608c725096fe46a02b9bc9ce51192",
+    "tests/unit/test_odt_note_prefix.py": "8fc5b74792ceed41da5ed0f50c2e05d32b5964790684b63f4e17f9977000c742"
+  },
+  "handoff_sha256": "bf639eb008ca88a01009efae4b66b4227852d3e7503cebeb5155afecb03418ae",
+  "freeze_sha256": "4ca99988789f2e21f56f160c7b9a9aa943bc9cd4101b2ca9a67c155a231e41e1",
+  "patch_sha256": "264880ef8b8c4b38d2c31abe93027336e8028c9f004a481f7ddfd5e6c0fe562f",
+  "focused_passed": 80,
+  "independent_controls": [
+    "typed outer aggregate >4096 bytes rejects before serialization",
+    "missing association downgrades to unverified when definition inventory dropped",
+    "typed outer prefix rejects untyped emitted slot before serialization"
+  ],
+  "independent_count": 3,
+  "review": [
+    "4096 aggregate ASCII envelopes and existing16384 total; bounded raw/typed preflight, iterable final cap before outer serialization",
+    "Captured status remains original hash/counts/coverage; stored prefix uses its own origins hash/counts/coverage; full captured count retention requires equal source hash",
+    "Actual physical index/input/body/status binding and original block witness kinds/path/char range; no trimmed-summary bound inference",
+    "Existing event-prefix order/ancestor/association validation reused, discarded definition inventory cannot claim resolved or missing",
+    "prefix_retained iff prefix exists; absent old JSON/IDs/Word behavior remains; old-reader PRESENT barrier"
+  ],
+  "limits": [
+    "Writer/capture/source-body witness truth remains future deployed-writer responsibility",
+    "Partial capture hash cannot reconstruct discarded graph or entire body",
+    "No source edits/full/raw/SQL/provider/network runs by peer"
+  ]
+}

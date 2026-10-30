@@ -7,12 +7,22 @@ from typing import Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from lexinform.models.documents import ExtractedDocument
-from lexinform.models.odt_notes import MAX_ODT_NOTE_EVENTS
+from lexinform.models.odt_notes import (
+    MAX_ODT_NOTE_EVENTS,
+    Count,
+    OdtEmittedSpan,
+    OdtNoteCall,
+    OdtNoteEntry,
+    OdtNoteOrigins,
+    Path,
+)
+from lexinform.models.odt_notes import _width as odt_note_metadata_width
 
 MAX_EXTRACTION_METADATA_BYTES = 16_384
 MAX_EXTRACTION_PART_SUMMARIES = 16
 MAX_WORD_VIEW_STATUS_BYTES = 512
 MAX_ODT_NOTE_STATUS_BYTES = 1024
+MAX_ODT_NOTE_PREFIX_BYTES = 4096
 
 
 class ExtractionComponent(BaseModel):
@@ -62,8 +72,90 @@ class WordViewStatus(BaseModel):
         return self
 
 
+class OdtNoteBlockBound(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    path: Path
+    kind: Literal["paragraph", "heading"]
+    chars: Count
+
+
+class OdtNotePrefix(BaseModel):
+    """Stored event coverage and hash describe this prefix, independently of captured status."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    version: Literal["odt-note-prefix-v1"] = "odt-note-prefix-v1"
+    physical_index: Count
+    origins: OdtNoteOrigins
+    blocks: tuple[OdtNoteBlockBound, ...] = Field(max_length=MAX_ODT_NOTE_EVENTS)
+
+    @model_validator(mode="before")
+    @classmethod
+    def preflight(cls, value: object) -> object:
+        if _odt_prefix_bytes(value) > MAX_ODT_NOTE_PREFIX_BYTES:
+            raise ValueError("stored ODT note prefix exceeds its 4096-byte profile")
+        return value
+
+    @model_validator(mode="after")
+    def block_witnesses(self) -> Self:
+        if not isinstance(self.origins, OdtNoteOrigins):
+            raise ValueError("stored ODT origins require their typed model")
+        OdtNoteOrigins.model_validate(self.origins)
+        for block in self.blocks:
+            if not isinstance(block, OdtNoteBlockBound):
+                raise ValueError("stored ODT block bounds require their typed model")
+            OdtNoteBlockBound.model_validate(block)
+        paths = [block.path for block in self.blocks]
+        if paths != sorted(set(paths)):
+            raise ValueError("stored ODT block witnesses must be unique and ordered")
+        records = (*self.origins.entries, *self.origins.calls)
+        if set(paths) != {record.block_path for record in records}:
+            raise ValueError("stored ODT witnesses must describe exactly their referenced blocks")
+        bounds = {block.path: block.chars for block in self.blocks}
+        if any(
+            record.emitted is not None and record.emitted.end > bounds[record.block_path]
+            for record in records
+        ):
+            raise ValueError("stored ODT spans exceed their original block witness")
+        return self
+
+
+def _odt_prefix_bytes(value: object) -> int:
+    if isinstance(value, dict):
+        if len(value) > 4:
+            raise ValueError("stored ODT prefix contains too many fields")
+        value = {"version": "odt-note-prefix-v1", **value}
+        origins = value.get("origins")
+        if isinstance(origins, dict):
+            if len(origins) > len(OdtNoteOrigins.model_fields):
+                raise ValueError("stored ODT origins contain too many fields")
+            origins = dict(origins)
+            for name, field in OdtNoteOrigins.model_fields.items():
+                if name not in origins and not field.is_required():
+                    origins[name] = field.get_default()
+            value["origins"] = origins
+    size = odt_note_metadata_width(value)
+    if isinstance(value, OdtNotePrefix):
+        origins = value.origins
+        if not isinstance(origins, OdtNoteOrigins) or any(
+            not isinstance(block, OdtNoteBlockBound) for block in value.blocks
+        ):
+            raise ValueError("constructed ODT prefix requires typed origins and block bounds")
+        if any(not isinstance(entry, OdtNoteEntry) for entry in origins.entries) or any(
+            not isinstance(call, OdtNoteCall) for call in origins.calls
+        ):
+            raise ValueError("constructed ODT prefix requires typed event records")
+        if any(
+            record.emitted is not None and not isinstance(record.emitted, OdtEmittedSpan)
+            for record in (*origins.entries, *origins.calls)
+        ):
+            raise ValueError("constructed ODT prefix requires typed emitted ranges")
+    return size
+
+
 class OdtNoteStatus(BaseModel):
-    """Origin hashes retain no coordinates and prove no full XML coverage."""
+    """Counts and hash describe original capture, independently of any stored origin prefix."""
 
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
@@ -79,7 +171,7 @@ class OdtNoteStatus(BaseModel):
     retained_notes: int = Field(strict=True, ge=0, le=2**63 - 1)
     retained_calls: int = Field(strict=True, ge=0, le=2**63 - 1)
     coverage: Literal["complete", "partial", "unknown"]
-    contents: Literal["not_retained"] = "not_retained"
+    contents: Literal["not_retained", "prefix_retained"] = "not_retained"
     xml_completeness: Literal["not_asserted"] = "not_asserted"
 
     @model_validator(mode="after")
@@ -147,6 +239,10 @@ class ExtractedPartSummary(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    odt_note_prefix: OdtNotePrefix | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     @model_validator(mode="after")
     def status_requires_known_manifest(self) -> Self:
         if self.word_view_status is not None:
@@ -176,7 +272,57 @@ class ExtractedPartSummary(BaseModel):
                 raise ValueError(
                     "ODT note status requires its actual input and legacy body manifest"
                 )
+        if self.odt_note_prefix is not None:
+            if not isinstance(self.odt_note_prefix, OdtNotePrefix):
+                raise ValueError("constructed ODT summary requires its typed stored prefix")
+            if _odt_prefix_bytes(self.odt_note_prefix) > MAX_ODT_NOTE_PREFIX_BYTES:
+                raise ValueError("stored ODT note prefix exceeds its 4096-byte profile")
+            prefix = OdtNotePrefix.model_validate(self.odt_note_prefix)
+            status = self.odt_note_status
+            if status is None or status.contents != "prefix_retained":
+                raise ValueError("stored ODT prefix requires an explicit captured content status")
+            stored = prefix.origins
+            if (
+                prefix.physical_index != self.physical_index
+                or stored.input_sha256 != self.sha256
+                or stored.body_manifest_sha256 != self.manifest_sha256
+                or stored.walk_state != status.known_walk
+                or (stored.note_count, stored.call_count)
+                != (status.observed_notes, status.observed_calls)
+                or len(stored.entries) > status.retained_notes
+                or len(stored.calls) > status.retained_calls
+            ):
+                raise ValueError(
+                    "stored ODT prefix differs from its actual part or captured counts"
+                )
+            if (len(stored.entries), len(stored.calls)) == (
+                status.retained_notes,
+                status.retained_calls,
+            ) and stored.retained_manifest_sha256 != status.retained_manifest_sha256:
+                raise ValueError("untruncated stored ODT origins must match the captured hash")
+        elif self.odt_note_status is not None and self.odt_note_status.contents != "not_retained":
+            raise ValueError("retained ODT content status requires its stored prefix")
         return self
+
+
+def _odt_prefix_budget(parts: object) -> None:
+    if not isinstance(parts, (tuple, list)):
+        return
+    if len(parts) > MAX_EXTRACTION_PART_SUMMARIES:
+        raise ValueError("extraction summaries exceed their existing part limit")
+    size = 0
+    for part in parts:
+        prefix = (
+            part.odt_note_prefix
+            if isinstance(part, ExtractedPartSummary)
+            else part.get("odt_note_prefix")
+            if isinstance(part, dict)
+            else None
+        )
+        if prefix is not None:
+            size += _odt_prefix_bytes(prefix)
+            if size > MAX_ODT_NOTE_PREFIX_BYTES:
+                raise ValueError("stored ODT origin prefixes exceed the aggregate 4096-byte cap")
 
 
 class ExtractionResult(BaseModel):
@@ -210,12 +356,26 @@ class ExtractionResult(BaseModel):
     def result_id(self) -> str:
         return "extraction-v1:" + hashlib.sha256(self.model_dump_json().encode()).hexdigest()
 
+    @model_validator(mode="before")
+    @classmethod
+    def stored_odt_prefix_budget(cls, value: object) -> object:
+        parts = (
+            value.selected_parts
+            if isinstance(value, cls)
+            else value.get("selected_parts", ())
+            if isinstance(value, dict)
+            else ()
+        )
+        _odt_prefix_budget(parts)
+        return value
+
     @model_validator(mode="after")
     def bounded_summary(self) -> Self:
         if len(self.selected_parts) > MAX_EXTRACTION_PART_SUMMARIES:
             raise ValueError("extraction summaries exceed their existing part limit")
+        _odt_prefix_budget(self.selected_parts)
         for part in self.selected_parts:
-            if part.odt_note_status is not None:
+            if part.odt_note_status is not None or part.odt_note_prefix is not None:
                 ExtractedPartSummary.model_validate(part)
         indices = [part.physical_index for part in self.selected_parts]
         if len(set(indices)) != len(indices) or any(

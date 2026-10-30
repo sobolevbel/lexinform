@@ -1,0 +1,54 @@
+{
+  "base": "600f68559bcd676d0960128d8d4ed824ae958a33",
+  "checks": {
+    "diff": "clean",
+    "focused": 80,
+    "format": "clean",
+    "logs": {
+      "compatibility.json": "db56098f0da9a57eefaa5b138b018b0b54f25c7ea7b66564769ae423e468d398",
+      "focused.log": "030934763fb38db5065a678d6a3b06407edd4a29f90a40eb5effc67dbd93c200",
+      "mypy.log": "8228fcc5ce46d42d01caf3cd941f4e9c5f2bcc372bb5b147a2f0572d2dd675a8"
+    },
+    "mypy_paths": 3,
+    "new": 23,
+    "ruff": "clean"
+  },
+  "compatibility": "old absent JSON/resultID exact; WordViewStatus AST exact; previous600f reader rejects presentprefix/newcontents. Futurewriter MUST wait actualreaderdeploy.",
+  "contract": {
+    "associations": "existing conservative resolver; discarded definitioninventory cannotretain resolved/missing; embeddedtargets/ancestry/globalorder existing typedvalidator reused",
+    "bounds": "original referenced block lengths only, no trimmed summarychars inference; bounds witnesses are structuralmetadata, not independently recovered original bodies",
+    "budget": "4096 compact ASCII JSON bytes per aggregate set ofprefixenvelopes inside existing16384B result; sourcecapture profile remains32768B",
+    "capture_status": "counts/coverage/retained_manifest_sha256 remain ORIGINALCAPTURE; contents prefix_retained iff typedprefixpresent",
+    "envelope": [
+      "version odt-note-prefix-v1",
+      "explicit physical_index",
+      "existing OdtNoteOrigins",
+      "original block path/kind/chars witnesses"
+    ],
+    "field": "ExtractedPartSummary.odt_note_prefix: OdtNotePrefix|None; None omitted",
+    "identity": "actualpartindex/input/body/status binding; storedcounts cannotexceed capturedretainedcounts; fullcaptured counts imply identical sourcecapturedhash",
+    "stored_prefix": "original observedtotals retained; entries/calls are global eventprefix; coverage and origins.retained_manifest_sha256 describe reprojected storedprefix"
+  },
+  "freeze_sha256": "4ca99988789f2e21f56f160c7b9a9aa943bc9cd4101b2ca9a67c155a231e41e1",
+  "limitations": [
+    "No runtime producer/adapter/cache/SQL/DDL/text/provider/parser/render changes or activation.",
+    "Partial originalcapturedhash remains recorded witness; unavailable discarded originalgraph cannotbe reconstructed or independently recomputed from prefix.",
+    "Whole physical block manifest/body remains notretained; bounded notecoordinate subset does not assert fullXML/body recovery.",
+    "Original block witness correctness against actualsourcebody is futurewriter responsibility using existing OdtNotedParts binding; this reader validates retained shape/ranges/available identities only.",
+    "DOC call/storygap and natural note-rich evidence unchanged/open; no raw/full/paid/network/production checks."
+  ],
+  "patch_sha256": "264880ef8b8c4b38d2c31abe93027336e8028c9f004a481f7ddfd5e6c0fe562f",
+  "preflight": "source32KiB bounded width helper reused before newmodel serialization; individual4096 cap before Pydanticchild construction; aggregatecap before normalrawlist/typed result processing and again after iterable coercion. Oversize event/path/string inputs fail without serializer entry. Typed outer knownnested slots failclosed.",
+  "preimages": {
+    "src/lexinform/models/__init__.py": "2cc658ba657e46697531eb838860bc22a621b56b23ff80633929ab106609d69c",
+    "src/lexinform/models/extractions.py": "9a69549d7a2f1a6144227c715833fd205f4784d75387db50d6f7f9f9aea00dd6",
+    "tests/unit/test_odt_note_prefix.py": null
+  },
+  "source_hold": "Exactly3 paths held until peer/root integration; all priorout/stashes preserved.",
+  "source_pins": {
+    "src/lexinform/models/__init__.py": "975b5ff2475b58915a5d9a86fce1b16c8ae7b74ef50867ee744141165e395f53",
+    "src/lexinform/models/extractions.py": "a1c0c67d1bf352ebdab07c590d4621d567b608c725096fe46a02b9bc9ce51192",
+    "tests/unit/test_odt_note_prefix.py": "8fc5b74792ceed41da5ed0f50c2e05d32b5964790684b63f4e17f9977000c742"
+  },
+  "stage": "Inert bounded ODT originprefix reader only"
+}

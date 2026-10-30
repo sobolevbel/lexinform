@@ -268,6 +268,8 @@ from lexinform.models.extractions import (
 from lexinform.models.extractions import (
     ExtractionResult as ExtractionResult,
 )
+from lexinform.models.extractions import OdtNoteBlockBound as OdtNoteBlockBound
+from lexinform.models.extractions import OdtNotePrefix as OdtNotePrefix
 from lexinform.models.extractions import OdtNoteStatus as OdtNoteStatus
 from lexinform.models.extractions import (
     SelectionExtractionReference as SelectionExtractionReference,
@@ -489,6 +491,8 @@ __all__ = [
     "OdtNoteCall",
     "OdtNoteEntry",
     "OdtNoteOrigins",
+    "OdtNoteBlockBound",
+    "OdtNotePrefix",
     "OdtNoteStatus",
     "OdtNotedParts",
     "OdtPartNoteOrigins",

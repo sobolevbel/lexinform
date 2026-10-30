@@ -9161,3 +9161,40 @@ Final gate:7551tests/272.653s/92%,mypy659/Ruff727;744source/config pins exact. J
 [recipe](../assets/audits/2026-10-30-odt-note-status-producer/recipe.json).
 
 [J195 exact CI/relay](../assets/audits/2026-10-30-odt-note-status-reader/release.json).
+
+
+<a id="j197"></a>
+
+## J197 — inert retained ODT origin-prefix reader
+
+Optional omitted-None odt_note_prefix сохраняет existing OdtNoteOrigins, physical index и
+original block(path/kind/char-length) witnesses. Aggregate4096 ASCII JSON bytes на весь result
+внутри existing16KiB, не4096накаждыйpart. До allocations проверяются raw/typed widths и
+counts; после iterable conversion cap проверяется снова. Typed child/emitted slots revalidate.
+
+Status hash/counts/coverage относятся к original capture, stored prefix имеет собственный
+recomputed manifest hash и coverage. Full captured event count требует совпадения hash;
+truncation не увеличивает captured retained counts. prefix_retained iff prefix присутствует.
+Global event prefix, entry-before-call, ancestor closure и conservative association сохраняются:
+выброшенная definition inventory не разрешает resolved/missing. Emitted ranges ограничены
+original block witnesses, не trimmed summary chars. Text/raw/нового store/DDL нет.
+
+Author80focused/23new/strict3 и peer80+3 public controls green. До freeze найдены и исправлены
+nested typed-slot и iterator aggregate-cap bypass; старые NoneJSON/result IDs/Word AST exact.
+Writer/adapter/parser/cache/SQL не меняются. PRESENTnewpayload несовместим со старым reader:
+будущий writer ждёт actual deployment. Этот этап сам ничего не сохраняет и не объявляет
+historical origins доступными в прежних данных.
+
+DA3.3 audit: legacy DOC читает text+footnote+endnote stories; refmark removal/reference-table
+mapping не дают полной связи с вызовом. Возможная невидимость перемещения вызова для linear
+text — code-derived observation, не новый corpus/legal verdict. ODTstatus hash/counts не
+восстанавливают graph. Remaining gaps не закрыты переименованием unsupported profile.
+
+Final gate:7574tests/272.025s/92%,mypy660/Ruff728;745source/config pins exact. J196 exact CI/relay verified. Staged archive docs gate перед commit.
+
+[Qualification](../assets/audits/2026-10-30-odt-note-prefix-reader/qualification.json),
+[peer](../assets/audits/2026-10-30-odt-note-prefix-reader/peer-closure.json),
+[integration](../assets/audits/2026-10-30-odt-note-prefix-reader/integration.json),
+[gap audit](../assets/audits/2026-10-30-odt-note-prefix-reader/report.md),
+[prefix contract](../assets/audits/2026-10-30-odt-note-prefix-reader/odt-prefix-contract.md),
+[J196 exact CI/relay](../assets/audits/2026-10-30-odt-note-status-producer/release.json).
