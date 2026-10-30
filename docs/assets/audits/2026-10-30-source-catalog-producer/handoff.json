@@ -1,0 +1,66 @@
+{
+  "activation_barrier": "Rootverifiedactualreader65deploy6d6905cc5d5134d0edc9db6c605ba52e253f4ea4; integration stillrequiresindependentreview/rootfull",
+  "base_head": "399a5defa1adbabc3fae8c7c12fb5e3278bb811e",
+  "delta_from_revision1_sha256": "e7fcb3fce439d9ecf91475d3a809184c8df7e046298fc4bb05385526820646c8",
+  "freeze_sha256": "8bf096116002e024831f7beff759ddf45dfa6d65cb92b7291f2eac0c4e2215ca",
+  "limits": [
+    "No reader8modifications/SourceObsFKweakening/backfill/raw/backend/settings",
+    "NativeSejm/RCLcompare-version blocked-return remainsoldtruthfulselection/J168evidence, no inventedunknownselectionattempt",
+    "PrivateRCLBaseException is actualnongeneric-returncontrol; ordinaryfileparserblocked-return notrelabeled",
+    "Pairedhistoricalpublicactor uses explicitlycontrolledoptionallegacy-lawhashmissing toreachactualhistoricalread; notproductiondemand",
+    "No commit/push/primary/full/network/paid calls"
+  ],
+  "merge_points": [
+    "PhysicalStageBownsneutralorderhelper/SourceOmissionCollector ordering methods; thispatchdoesnoteditthose, onlyinit/resetcatalogdictionary2lines",
+    "PhysicalStageBmirrorsidentical SourceOmissionScope._failure_class/read_failed +TextLoader._observe_source_failure+readbare-reraisehook; mergeidenticalseams ratherthanduplicateorreplacewholefile",
+    "OwnScope catalog_document/freeze/failure/selection/parents/catalog_observation; Collector.scope/finalization/catalog_snapshot; loaderdomainAPIs/capturemarker; callercombinedorderedpersistencecallback"
+  ],
+  "owned_paths": [
+    "src/lexinform/container.py",
+    "src/lexinform/services/documents.py",
+    "src/lexinform/services/source_catalog_attempts.py",
+    "src/lexinform/services/source_omissions.py",
+    "tests/scenario/test_source_catalog_capture.py",
+    "tests/unit/test_source_catalog_capture.py"
+  ],
+  "patch_sha256": "d2b3ddffb45d60c3db1a5aeef22ea9499e5f94303572638265d4bc9c8e6a3998",
+  "previous_freeze": "revision1/",
+  "proofs": [
+    "focused.log",
+    "public-parity.json",
+    "public-baseline.json",
+    "public-candidate.json",
+    "cached-parity.json",
+    "cached-baseline.json",
+    "cached-candidate.json",
+    "base/handoff.json"
+  ],
+  "qualification": {
+    "actual_runtime_recovery_cases": 12,
+    "cached_controlled_single_source_failures": 24,
+    "cached_pins": 940,
+    "cached_rows": 1010,
+    "final_public_and_cached_source_pins_exact": true,
+    "focused": 117,
+    "growth": "12actualcontrolledruntimecases: percase1887\u20132810SQLbytes/461\u2013748gzipbytes, zero365plusrepeatgrowth; notproductiondemand",
+    "new_scenario": 4,
+    "new_unit": 16,
+    "paired_public_cases": 14,
+    "public_source_pins_exact_current": true,
+    "ruff": "check+formatcheck passed",
+    "strict_mypy": 6
+  },
+  "reader65_baseline_eight_unchanged_excluded": [
+    "docs/reference/database.md",
+    "src/lexinform/adapters/source_catalog_attempts.py",
+    "src/lexinform/adapters/sqlite_repo.py",
+    "src/lexinform/models/__init__.py",
+    "src/lexinform/models/source_catalog_attempts.py",
+    "src/lexinform/ports.py",
+    "tests/unit/test_source_catalog_attempts.py",
+    "tools/source_history_doctor.py"
+  ],
+  "repair": "UTF8unsupporteddescriptor suffix trimmed toactual existingpartialprefix/fullASCIIviewSHA/count, retentionIDrecomputed; catalog+attemptJSONroundtripvalidatedbeforepublication; nofalseURLreason/owner/body/selection",
+  "revision": 2,
+  "status": "frozen/qualifiedrevision2 awaitingindependentclosure"
+}

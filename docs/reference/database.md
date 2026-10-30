@@ -644,7 +644,9 @@ raw URL/prose не копируются. Metadata setup/update/teardown failures
 Инертный reader65 добавляет `source_catalog_snapshots`, `source_catalog_attempts` и
 `source_catalog_attempt_parents` для безопасного официального descriptor, чтение которого
 завершилось ошибкой до появления selection. Существующие `SourceObservation`, JSON/ID и
-обязательный selection FK не меняются. Runtime producer пока не подключён.
+обязательный selection FK не меняются. J173 подключает producer после подтверждённого
+reader65 deployment: actual safe catalog заморожен до IO; только реальные pre-return failures
+получают unknown selection. Полученный actual selected/blocked capture подавляет новую попытку.
 
 Catalog хранится отдельно и разделяется повторными попытками: snapshot ID связывает version,
 canonical-ASCII hash полного observed `TextDocument`, явный URL policy version,

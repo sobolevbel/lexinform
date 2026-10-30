@@ -8235,3 +8235,78 @@ J171 final `make check`:7001 passed/245.226s, coverage92%; mypy608,
 Ruff/format675, все675 source/config pins exact.26 новых unit cases, новых scenarios нет;
 strict docs checks прошли. [Validation](../assets/audits/2026-10-30-source-catalog-reader/validation.json).
 Producer не активирован; план74 /32done /6N/A /36open.
+
+
+J171 commit `6d6905cc5d5134d0edc9db6c605ba52e253f4ea4`: все четыре CI jobs и actual
+relay399a5def →6d6905cc, health45s/timer подтверждены
+[release proof](../assets/audits/2026-10-30-source-catalog-reader/release.json).
+Reader65 развёрнут перед positive safe read-failure producer; его callsite qualification ещё открыта.
+
+J170 дополнен counterfactual subset с actual accepted StageA runtime recipe вместо QA recipe:
+7 roots/115metadata/112parents на том же412e state, schema65 перед/после. Delta231272SQL/+39502gzip,
+zero+365growth/get/restore twice. [Runtime recipe subset](../assets/audits/2026-10-30-physical-population-profile/runtime-subset-profile.json).
+Это по-прежнему7/34 current body coverage и NULL extraction association, не historical provenance,
+полный runtime-consumer forecast или закрытие activation gate. Новых raw reads нет.
+
+
+<a id="j175"></a>
+
+### J175. Complete the ExtractionResult storage acceptance audit
+
+Независимый item-by-item [audit](../assets/audits/2026-10-30-extraction-result-completion/audit.json)
+и root code check закрывают DA3.4 в ранее выбранном bounded metadata-only профиле. J132
+field/availability/immutable summary contract вместе с J147 historical rereads, J154 specialized
+refs и J161 global known-result finalizers закрывает прежние actual caller gaps. Pipeline/CLI
+caller transactions сохраняют actual complete-body parents и все known results даже при privacy
+rejection/zero selection; новая версия добавляет запись, first time/repeat стабильны. Это reuse
+уже квалифицированных доказательств и current-code audit, не новый raw/natural/paid прогон.
+DOC/XML explicit unknown, physical execution, fact-to-block origins и raw storage не закрываются
+этим пунктом. План74 /33done /6N/A /35open; новая runtime behavior не добавлена.
+
+
+<a id="j173"></a>
+
+### J173. Preserve actual safe source catalogs when reading fails before selection
+
+Reader65 реально развёрнут до producer. Safe generic scope замораживает actual typed catalog
+до IO; actual read failure hook сохраняет первый error class до business wrappers/caught
+missing-file conversion. Caller связывает Bill только при enrollment, иначе source_reference.
+Unknown selection не подменяется empty/blocked selection; actual capture_source_read подавляет
+новую попытку. Native Sejm/RCL compare-version fallback по-прежнему сохраняет настоящий
+blocked result/J168 evidence, а не fake pre-return attempt.
+
+Positive catalog и privacy bundles объединяются по actual input slots в общей caller transaction:
+actual parents/reads/extractions → snapshot → attempt. Catalog dedup, first time, quiet repeats
+и unknown body relations сохраняются; shared inventory не восстанавливает owner associations.
+Исходные exception object/cause/единственный business call не меняются, metadata failures
+изолированы. No raw retention/backend/backfill/new selection FK.
+
+Initial6path freeze2eb1735f прошёл independent18controls и root был интегрирован для full gate.
+Дополнительный fault probe выявил valid safe descriptor с lone surrogate в version_basis:
+модель строилась, но caller JSON serialization ломалась. Gate остановлен до source edits
+(exact pytest97196; pre-prefix-serialization-repair-qa), этот запуск не считается зелёным.
+Existing reader65 partial-prefix contract позволяет сохранить actual full ASCII view SHA,
+owner/error/available parents, опустив неподдерживаемый descriptor suffix вплоть до zero prefix.
+Producer-only repair и финальные pins/qualification фиксируются ниже; whole-frame discard
+этого известного representational case не считается выполнением DA2.5.
+
+
+J173 revision2: producer-only serializable_catalog обрезает только неподдерживаемый suffix
+и пересчитывает existing retention ID; full ASCII view/count/policy/owner/error/actual parents
+сохраняются. Root/child surrogate cases проверяют partial prefix, отсутствие false URI reason,
+original exception/cause, doctor/restore/quiet repeat. Exact6path freeze8bf09611, full patch
+d2b3ddff и repair delta e7fcb3fc independently closed6repaircontrols; root code review прошёл.
+117focused/16newunit+4scenario, strict6file checks прошли.14paired public+1010cached/940pins
+повторены на actual final source; business/IO/paid/messages/oldtables/IDs exact.12 actual
+controlled producer cases get/doctor/restore2/+365quiet:1887–2810SQL/461–748gzip B, не forecast.
+[Evidence](../assets/audits/2026-10-30-source-catalog-producer/handoff.json),
+[final DA2.5 audit](../assets/audits/2026-10-30-source-catalog-producer/completion-audit.json).
+Audit рекомендует закрыть DA2.5 после exact revision2 integration/fresh full gate; natural
+production acceptance и physical execution остаются отдельно. Reader8baseline unchanged.
+
+
+J173 final `make check`:7021 passed/251.508s, coverage92%; mypy611, Ruff/format678,
+все678 source/config pins exact.16 новых unit cases/4 actual caller scenarios; strict docs
+прошли. [Validation](../assets/audits/2026-10-30-source-catalog-producer/validation.json).
+DA2.5 отмечен выполненным по exact revision2 integration/fresh full и независимому requirement
+audit; deploy/natural acceptance отдельно. Вместе с J175: план74 /34done /6N/A /34open.

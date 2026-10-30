@@ -1,0 +1,26 @@
+{
+  "stage": "J173",
+  "base": "6d6905cc5d5134d0edc9db6c605ba52e253f4ea4",
+  "full_gate": {
+    "tests": 7021,
+    "failures": 0,
+    "skipped": 0,
+    "seconds": 251.508,
+    "coverage_percent": 92,
+    "mypy_files": 611,
+    "ruff_files": 678,
+    "source_config_pins_exact": 678
+  },
+  "new_units": 16,
+  "new_scenarios": 4,
+  "exact_revision2_freeze": "8bf096116002e024831f7beff759ddf45dfa6d65cb92b7291f2eac0c4e2215ca",
+  "independent_review": "closed initial18controls plus6 currentrepaircontrols",
+  "reader65_actual_deploy_prerequisite": "verified6d6905cc5d5134d0edc9db6c605ba52e253f4ea4",
+  "DA2_5_completion": "requirements_met_in_qualified_revision2",
+  "limits": [
+    "No physicalStageBactivation",
+    "No raw/backend/backfill/retentiondecision",
+    "Controlledcases andcachedreplay do notprove naturalfamilyacceptance",
+    "Initialfullgateaborted andpreserved, notcountedgreen"
+  ]
+}

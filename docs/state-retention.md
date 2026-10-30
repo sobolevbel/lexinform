@@ -683,3 +683,12 @@ events и bounded partial-input bridge без новой схемы. Scope failu
 result/exception; pending telemetry не выдаётся за failed read. Default capture off, calling loader/
 cache/SQL wiring отдельно. До активации нужны actual-consumer populated SQL/gzip и repeat gates;
 per-root512KiB cap не ограничивает общий рост дампа. Raw/backend/retention этим не выбираются.
+
+
+J173 сохраняет safe official descriptor перед IO и actual failed read до построения selection:
+shared SourceCatalogSnapshot, actual owner/purpose/errorclass, unknown selection и known-available
+parents. Caller atomically объединяет positive/privacy facts в input order; исходные ошибки и
+успешные flows не меняются. Если descriptor не сериализуется в UTF-8, сохраняются actual full
+ASCII view SHA/count/policy и честный сериализуемый prefix, вплоть до zero descriptors; новая
+retention identity/partial coverage не выдаёт это за unsafe URL. Snapshot/attempt roundtrip
+проверяется до публикации. Старый mandatory selection FK, raw/backend и retention неизменны.

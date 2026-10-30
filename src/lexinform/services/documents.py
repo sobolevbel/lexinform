@@ -74,6 +74,7 @@ from lexinform.services.document_history import (
     PhysicalSourceRead,
     SourceReadCapture,
 )
+from lexinform.services.source_catalog_attempts import SourceCatalogObservation
 from lexinform.services.source_omissions import (
     SourceOmissionCollector,
     SourceOmissionInput,
@@ -132,6 +133,7 @@ class TextLoader:
             return self._source_omissions.scope(
                 owner,
                 role="generic",
+                catalog_document=document,
                 view=view,
                 decisions=decisions,
             )
@@ -175,6 +177,24 @@ class TextLoader:
     ) -> R:
         with self._source_omissions.observed_input(slot):
             return step(item)
+
+    def read_source_catalog_attempts(self) -> tuple[SourceCatalogObservation, ...]:
+        return self._source_omissions.catalog_snapshot()
+
+    def _observe_source_failure(self, error: BaseException) -> None:
+        scope = None
+        try:
+            scope = self._source_omissions.current()
+            if scope is not None:
+                with scope.capture():
+                    scope.read_failed(error)
+        except BaseException as metadata_error:
+            if scope is not None:
+                scope.failed = True
+            with suppress(BaseException):
+                log.warning(
+                    "source failure capture unavailable (%s)", type(metadata_error).__name__[:128]
+                )
 
     def read_source_omissions(self) -> tuple[SourceOmissionObservation, ...]:
         return self._source_omissions.snapshot()
@@ -305,6 +325,7 @@ class TextLoader:
         scope = self._source_omissions.current()
         if scope is not None and scope.role == "generic":
             with scope.capture():
+                scope.selection_observed()
                 scope.update(
                     self._omission_view(requested, resolved, file),
                     source_graph_url_decisions(
@@ -411,7 +432,11 @@ class TextLoader:
         if cached is not None:
             self._observe_omission_file(url, cached)
             return cached
-        loaded = self._fetch(url)
+        try:
+            loaded = self._fetch(url)
+        except BaseException as error:
+            self._observe_source_failure(error)
+            raise
         with self._lock:
             if len(self._cache) >= self._cache_size:
                 self._cache.pop(next(iter(self._cache)))

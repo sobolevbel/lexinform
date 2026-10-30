@@ -1,0 +1,433 @@
+{
+  "enrolled/ordinary/1": {
+    "attempts": 0,
+    "business_io_paid_messages_exact": true,
+    "changed_tables": [],
+    "classes": [],
+    "growth": {
+      "gzip_bytes": 0,
+      "scope": "actual controlled runtime producer rows vs same program state with only3featuretables emptied; not production demand",
+      "sql_bytes": 0
+    },
+    "owners": [],
+    "parents": [],
+    "recovery": null
+  },
+  "enrolled/ordinary/4": {
+    "attempts": 0,
+    "business_io_paid_messages_exact": true,
+    "changed_tables": [],
+    "classes": [],
+    "growth": {
+      "gzip_bytes": 0,
+      "scope": "actual controlled runtime producer rows vs same program state with only3featuretables emptied; not production demand",
+      "sql_bytes": 0
+    },
+    "owners": [],
+    "parents": [],
+    "recovery": null
+  },
+  "enrolled/outage/1": {
+    "attempts": 1,
+    "business_io_paid_messages_exact": true,
+    "changed_tables": [
+      "source_catalog_attempts",
+      "source_catalog_snapshots"
+    ],
+    "classes": [
+      "SejmApiUnavailableError"
+    ],
+    "growth": {
+      "gzip_bytes": 658,
+      "scope": "actual controlled runtime producer rows vs same program state with only3featuretables emptied; not production demand",
+      "sql_bytes": 1923
+    },
+    "owners": [
+      {
+        "kind": "bill",
+        "number": "4100",
+        "purpose": "analysis",
+        "term": 10
+      }
+    ],
+    "parents": [
+      0
+    ],
+    "recovery": {
+      "doctor_status": "recorded",
+      "get_exact": true,
+      "repeat365plus_zero_growth": true,
+      "restore_twice_exact": true
+    }
+  },
+  "enrolled/outage/4": {
+    "attempts": 1,
+    "business_io_paid_messages_exact": true,
+    "changed_tables": [
+      "source_catalog_attempts",
+      "source_catalog_snapshots"
+    ],
+    "classes": [
+      "SejmApiUnavailableError"
+    ],
+    "growth": {
+      "gzip_bytes": 658,
+      "scope": "actual controlled runtime producer rows vs same program state with only3featuretables emptied; not production demand",
+      "sql_bytes": 1923
+    },
+    "owners": [
+      {
+        "kind": "bill",
+        "number": "4100",
+        "purpose": "analysis",
+        "term": 10
+      }
+    ],
+    "parents": [
+      0
+    ],
+    "recovery": {
+      "doctor_status": "recorded",
+      "get_exact": true,
+      "repeat365plus_zero_growth": true,
+      "restore_twice_exact": true
+    }
+  },
+  "enrolled/parser/1": {
+    "attempts": 1,
+    "business_io_paid_messages_exact": true,
+    "changed_tables": [
+      "source_catalog_attempt_parents",
+      "source_catalog_attempts",
+      "source_catalog_snapshots"
+    ],
+    "classes": [
+      "ValueError"
+    ],
+    "growth": {
+      "gzip_bytes": 667,
+      "scope": "actual controlled runtime producer rows vs same program state with only3featuretables emptied; not production demand",
+      "sql_bytes": 2487
+    },
+    "owners": [
+      {
+        "kind": "bill",
+        "number": "4100",
+        "purpose": "analysis",
+        "term": 10
+      }
+    ],
+    "parents": [
+      1
+    ],
+    "recovery": {
+      "doctor_status": "recorded",
+      "get_exact": true,
+      "repeat365plus_zero_growth": true,
+      "restore_twice_exact": true
+    }
+  },
+  "enrolled/parser/4": {
+    "attempts": 1,
+    "business_io_paid_messages_exact": true,
+    "changed_tables": [
+      "source_catalog_attempt_parents",
+      "source_catalog_attempts",
+      "source_catalog_snapshots"
+    ],
+    "classes": [
+      "ValueError"
+    ],
+    "growth": {
+      "gzip_bytes": 667,
+      "scope": "actual controlled runtime producer rows vs same program state with only3featuretables emptied; not production demand",
+      "sql_bytes": 2487
+    },
+    "owners": [
+      {
+        "kind": "bill",
+        "number": "4100",
+        "purpose": "analysis",
+        "term": 10
+      }
+    ],
+    "parents": [
+      1
+    ],
+    "recovery": {
+      "doctor_status": "recorded",
+      "get_exact": true,
+      "repeat365plus_zero_growth": true,
+      "restore_twice_exact": true
+    }
+  },
+  "enrolled/prefilter/1": {
+    "attempts": 1,
+    "business_io_paid_messages_exact": true,
+    "changed_tables": [
+      "source_catalog_attempt_parents",
+      "source_catalog_attempts",
+      "source_catalog_snapshots"
+    ],
+    "classes": [
+      "ValueError"
+    ],
+    "growth": {
+      "gzip_bytes": 666,
+      "scope": "actual controlled runtime producer rows vs same program state with only3featuretables emptied; not production demand",
+      "sql_bytes": 2489
+    },
+    "owners": [
+      {
+        "kind": "bill",
+        "number": "4100",
+        "purpose": "prefilter",
+        "term": 10
+      }
+    ],
+    "parents": [
+      1
+    ],
+    "recovery": {
+      "doctor_status": "recorded",
+      "get_exact": true,
+      "repeat365plus_zero_growth": true,
+      "restore_twice_exact": true
+    }
+  },
+  "enrolled/prefilter/4": {
+    "attempts": 1,
+    "business_io_paid_messages_exact": true,
+    "changed_tables": [
+      "source_catalog_attempt_parents",
+      "source_catalog_attempts",
+      "source_catalog_snapshots"
+    ],
+    "classes": [
+      "ValueError"
+    ],
+    "growth": {
+      "gzip_bytes": 666,
+      "scope": "actual controlled runtime producer rows vs same program state with only3featuretables emptied; not production demand",
+      "sql_bytes": 2489
+    },
+    "owners": [
+      {
+        "kind": "bill",
+        "number": "4100",
+        "purpose": "prefilter",
+        "term": 10
+      }
+    ],
+    "parents": [
+      1
+    ],
+    "recovery": {
+      "doctor_status": "recorded",
+      "get_exact": true,
+      "repeat365plus_zero_growth": true,
+      "restore_twice_exact": true
+    }
+  },
+  "historical/actual-caller": {
+    "attempts": 1,
+    "business_io_paid_messages_exact": true,
+    "changed_tables": [
+      "source_catalog_attempts",
+      "source_catalog_snapshots"
+    ],
+    "classes": [
+      "KeyError"
+    ],
+    "growth": {
+      "gzip_bytes": 461,
+      "scope": "actual controlled runtime producer rows vs same program state with only3featuretables emptied; not production demand",
+      "sql_bytes": 1887
+    },
+    "owners": [
+      {
+        "kind": "bill",
+        "number": "4100",
+        "purpose": "analysis",
+        "term": 10
+      }
+    ],
+    "parents": [
+      0
+    ],
+    "recovery": {
+      "doctor_status": "recorded",
+      "get_exact": true,
+      "repeat365plus_zero_growth": true,
+      "restore_twice_exact": true
+    }
+  },
+  "private/3039": {
+    "attempts": 1,
+    "business_io_paid_messages_exact": true,
+    "changed_tables": [
+      "source_catalog_attempt_parents",
+      "source_catalog_attempts",
+      "source_catalog_snapshots"
+    ],
+    "classes": [
+      "ValueError"
+    ],
+    "growth": {
+      "gzip_bytes": 735,
+      "scope": "actual controlled runtime producer rows vs same program state with only3featuretables emptied; not production demand",
+      "sql_bytes": 2593
+    },
+    "owners": [
+      {
+        "kind": "source_reference",
+        "number": "3039",
+        "purpose": "analysis",
+        "term": 10
+      }
+    ],
+    "parents": [
+      1
+    ],
+    "recovery": {
+      "doctor_status": "recorded",
+      "get_exact": true,
+      "repeat365plus_zero_growth": true,
+      "restore_twice_exact": true
+    }
+  },
+  "private/RCL/12414100": {
+    "attempts": 1,
+    "business_io_paid_messages_exact": true,
+    "changed_tables": [
+      "source_catalog_attempt_parents",
+      "source_catalog_attempts",
+      "source_catalog_snapshots"
+    ],
+    "classes": [
+      "ProbeCancelled"
+    ],
+    "growth": {
+      "gzip_bytes": 748,
+      "scope": "actual controlled runtime producer rows vs same program state with only3featuretables emptied; not production demand",
+      "sql_bytes": 2810
+    },
+    "owners": [
+      {
+        "kind": "source_reference",
+        "number": "RCL/12414100",
+        "purpose": "analysis",
+        "term": 10
+      }
+    ],
+    "parents": [
+      1
+    ],
+    "recovery": {
+      "doctor_status": "recorded",
+      "get_exact": true,
+      "repeat365plus_zero_growth": true,
+      "restore_twice_exact": true
+    }
+  },
+  "private/RPW/29075/2026": {
+    "attempts": 1,
+    "business_io_paid_messages_exact": true,
+    "changed_tables": [
+      "source_catalog_attempt_parents",
+      "source_catalog_attempts",
+      "source_catalog_snapshots"
+    ],
+    "classes": [
+      "ValueError"
+    ],
+    "growth": {
+      "gzip_bytes": 730,
+      "scope": "actual controlled runtime producer rows vs same program state with only3featuretables emptied; not production demand",
+      "sql_bytes": 2644
+    },
+    "owners": [
+      {
+        "kind": "source_reference",
+        "number": "RPW/29075/2026",
+        "purpose": "analysis",
+        "term": 10
+      }
+    ],
+    "parents": [
+      1
+    ],
+    "recovery": {
+      "doctor_status": "recorded",
+      "get_exact": true,
+      "repeat365plus_zero_growth": true,
+      "restore_twice_exact": true
+    }
+  },
+  "private/missingRPW": {
+    "attempts": 1,
+    "business_io_paid_messages_exact": true,
+    "changed_tables": [
+      "source_catalog_attempts",
+      "source_catalog_snapshots"
+    ],
+    "classes": [
+      "OrkaUnreachableError"
+    ],
+    "growth": {
+      "gzip_bytes": 735,
+      "scope": "actual controlled runtime producer rows vs same program state with only3featuretables emptied; not production demand",
+      "sql_bytes": 2074
+    },
+    "owners": [
+      {
+        "kind": "source_reference",
+        "number": "RPW/29075/2026",
+        "purpose": "analysis",
+        "term": 10
+      }
+    ],
+    "parents": [
+      0
+    ],
+    "recovery": {
+      "doctor_status": "recorded",
+      "get_exact": true,
+      "repeat365plus_zero_growth": true,
+      "restore_twice_exact": true
+    }
+  },
+  "review/actual-caller": {
+    "attempts": 1,
+    "business_io_paid_messages_exact": true,
+    "changed_tables": [
+      "source_catalog_attempts",
+      "source_catalog_snapshots"
+    ],
+    "classes": [
+      "SejmApiUnavailableError"
+    ],
+    "growth": {
+      "gzip_bytes": 513,
+      "scope": "actual controlled runtime producer rows vs same program state with only3featuretables emptied; not production demand",
+      "sql_bytes": 1891
+    },
+    "owners": [
+      {
+        "kind": "bill",
+        "number": "4100",
+        "purpose": "review",
+        "term": 10
+      }
+    ],
+    "parents": [
+      0
+    ],
+    "recovery": {
+      "doctor_status": "recorded",
+      "get_exact": true,
+      "repeat365plus_zero_growth": true,
+      "restore_twice_exact": true
+    }
+  }
+}

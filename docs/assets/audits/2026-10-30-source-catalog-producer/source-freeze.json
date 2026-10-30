@@ -1,0 +1,8 @@
+{
+  "src/lexinform/container.py": "e2a95c2799f6e0f1c4e313c6c38db54be1080f75f2aedc32581caa381baf3be6",
+  "src/lexinform/services/documents.py": "53cd5d267e429b6a791a685832fab81fc39f71573d3d4b3a293e32abda7210c3",
+  "src/lexinform/services/source_catalog_attempts.py": "d91468157f3c3b700df58d57837caa9f7fabffef3d5121adf7a6d236bcc33d98",
+  "src/lexinform/services/source_omissions.py": "596d3e109916456c3ce341190fb55149d4336f4d42264e7bd57e7671e931cb7c",
+  "tests/scenario/test_source_catalog_capture.py": "f6da9d8b8bea734c02adc52d49f2dbcaccadcdf8ae1941b579c2efe2cf684ddc",
+  "tests/unit/test_source_catalog_capture.py": "12cb9033644f5f242652ff17f9d00f54f871830675dd94d160b9e762a9ac650c"
+}

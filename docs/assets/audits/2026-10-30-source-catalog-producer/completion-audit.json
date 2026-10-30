@@ -1,0 +1,53 @@
+{
+  "task": "DA2.5",
+  "verdict": "requirements_met_in_qualified_revision2",
+  "release_gate": "Root must integrate exact revision2 delta and pass its fresh full gate before marking delivered; this audit does not claim deployment or natural production acceptance.",
+  "requirement": "Сохранять использованные официальные metadata/catalog snapshots или достаточное адресуемое evidence их связи; не скачивать весь сайт. Не сохранять credentials/cookies/secrets. Писать durable метаданные и архив в согласованном порядке на calling thread.",
+  "source_evidence": {
+    "producer_revision2_freeze": "8bf096116002e024831f7beff759ddf45dfa6d65cb92b7291f2eac0c4e2215ca",
+    "producer_full_patch": "d2b3ddffb45d60c3db1a5aeef22ea9499e5f94303572638265d4bc9c8e6a3998",
+    "files": 6,
+    "reader65_actual_deployment": "6d6905cc5d5134d0edc9db6c605ba52e253f4ea4"
+  },
+  "completed": [
+    {
+      "path": "Ordinary successful/blocked prefilter, primary, review, secondary, CLI and historical rereads",
+      "evidence": "Actual owner/purpose TextDocument+selection snapshots and bounded candidate trace/evidence remain. A real returned selected/blocked selection suppresses unknown-selection attempts; native Sejm/RCL compare-version fallback remains its existing selection/J168 evidence, not a fabricated failed attempt."
+    },
+    {
+      "path": "Safe pre-return failures: former audit gap",
+      "evidence": "SourceCatalogSnapshot freezes the actual safe descriptor view before IO, with URL-policy-v1/canonical-ASCII full-view hash and typed bounded prefix. SourceCatalogAttempt records actual owner/purpose, read_failed, first actual bounded error class and explicitly unknown selection. Download/no-body failures retain zero actually available parents; parser failures retain known complete body/read/result parents. Current Bill/global digest no longer substitutes for historical descriptor ownership."
+    },
+    {
+      "path": "Actual private/review/historical branches",
+      "evidence": "Actual Sejm text_after3/private RPW/private RCL BaseException, enrolled prefilter, review and historical callers are qualified. Caught Orka missing-file return to metadata-only still records the failed attempt before wrapper/return. Private contexts use source_reference without fictitious Bill enrollment; unavailable selection/body/source links are not invented."
+    },
+    {
+      "path": "Privacy refusals and specialized RCL/Senate",
+      "evidence": "J168 actual owner/view/reasons/known-parent evidence survives generic unsafe graph and invalid-Unicode whole-capture refusal. RCL ordinary letter-use preserves official project/nullable stage/letter and before/result/after windows; Senate preserves actual owner/resolution, ordered descriptors/outcomes. Invalid UTF-8 has no fabricated requested-URL hash; no credentials/cookies/raw exception prose enter these new evidence rows."
+    },
+    {
+      "path": "Unsupported descriptor serialization",
+      "evidence": "Revision2 preserves owner/full ASCII view hash/count/policy/error/parents while trimming only an unserializable descriptor suffix, possibly to zero retained descriptors, with a new retention-bound catalog ID and explicit partial coverage. Catalog+attempt JSON roundtrip is checked before publication. This is not a false unsafe-URL/opaque-prose reason or whole-frame loss."
+    },
+    {
+      "path": "Durability/profile",
+      "evidence": "Actual input slots and joined workers precede caller-thread merged privacy/positive persistence. Parents precede dependent catalog/attempt refs atomically with Clock. Shared catalogs deduplicate; first times/quiet repeats survive; <=32 descriptors/parents and8KiB envelopes retain actual full hashes/counts. Existing SourceObservation selection FK/old JSON/IDs stay unchanged."
+    }
+  ],
+  "qualification": {
+    "reused_J168": "28 independent controls;21 paired cases;986cached/940pins;874RCL+775Senate retained facts.",
+    "current_positive": "117 focused;16new unit/4scenario;14 paired business/IO/paid/messages+oldtables exact;1010cached/940pins exact;24 controlled pre-return frames, no invented raw/body identity.",
+    "recovery": "12actual controlled runtime cases get/doctor/restore twice/+365 quiet;1887–2810SQL/461–748gzip bytes per case, not production demand.",
+    "independent_repair": "6current pins exact;6 targeted repair/metadata-failure/nested controls passed. Earlier18 unit/scenario controls covered unchanged producer paths."
+  },
+  "remaining_requirement_gaps": [],
+  "boundaries": [
+    "If upstream never returned an official descriptor, do not invent one. This is unavailable evidence, not an already-used descriptor silently lost.",
+    "Unexpected metadata-hook faults discard untrusted frames and preserve business/cause; no crash-proof global wire ledger is claimed.",
+    "Legacy missing provenance stays unknown; no backfill or retrospective secret scrubbing.",
+    "Physical StageB/caller/cache execution graphs, raw/block retention/backend and source-family natural-cycle acceptance remain separate tasks."
+  ],
+  "recommendation": "After exact revision2 root integration/full gate, mark DA2.5 complete for the accepted prospective metadata-only profile; cite J154/J161/J164/J168, reader65 and current positive catalog producer qualification. Preserve separate deployment/natural acceptance status.",
+  "audit_limits": "No new tests beyond the bounded repair cross-review; no raw/network/paid/production processing or source edits. Reviewed existing proofs rather than replaying them."
+}

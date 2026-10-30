@@ -263,7 +263,10 @@ class Container:
     def _source_history(self) -> SourceHistoryPersistence:
         senate = SourceHistoryPair(
             SenateInspectionPersistence(self.senate_inspections()),
-            SourceOmissionPersistence(self.text_loader().read_source_omissions),
+            SourceOmissionPersistence(
+                self.text_loader().read_source_omissions,
+                self.text_loader().read_source_catalog_attempts,
+            ),
         )
         if self.rcl is None:
             return senate

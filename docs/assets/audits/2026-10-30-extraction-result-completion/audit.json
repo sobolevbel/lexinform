@@ -1,0 +1,70 @@
+{
+  "task": "DA3.4",
+  "verdict": "accepted_current_metadata_only_profile",
+  "requirement": "Хранить ExtractionResult: input ref, format, extractor/code/dependency/options versions, canonical block manifest SHA, warnings/losses/physical coverage и состояние сохранности. Текст и блоки сохраняются по составу/retention DA2. Новая версия экстрактора создаёт новую запись без перезаписи прежней; доступность её содержимого определяется профилем хранения.",
+  "assessment": "The J132 historical/direct/zero-selection persistence caveat is stale after J147, J150/J154 and J161. No concrete current mutating-consumer bypass of a completed production ExtractionResult was found. Full fact-to-block coordinates remain DA3.2, not an additional DA3.4 storage requirement.",
+  "requirements": [
+    {
+      "item": "Input/format/version identity",
+      "actual": "ExtractionResult.artifact_sha256 references known complete-body metadata. Components identify five actual roles through qualified-name/source-file hashes; dependencies record Python/pypdf/olefile/inflate64 versions, unavailable values explicit. Options and package-policy version/source SHA bind the extraction. Per-part formats/views distinguish PDF/Word/ODT/DOC/Word XML/unknown.",
+      "code": [
+        "models/extractions.py",
+        "extraction_records.py:65",
+        "adapters/document_text.py:extract_document_with_provenance"
+      ]
+    },
+    {
+      "item": "Manifest/warnings/losses/physical coverage",
+      "actual": "Canonical physical manifest covers all physical part summaries. Retained selected summaries include block/page manifest SHA, counts, error/limitation/loss summaries; Word includes body+notes manifest identity. Rejected material has count/hash. Max16 selected summaries/16KiB, omitted-selected count explicit; this is bounded metadata, not a full execution trace or verbatim warning log.",
+      "code": [
+        "extraction_records.py:summarize_extraction",
+        "models/extractions.py:ExtractionResult.bounded_summary"
+      ]
+    },
+    {
+      "item": "Availability",
+      "actual": "Explicit bodies=not_retained, physical_coordinates=manifest_not_retained, input_mapping=unmapped, completeness=not_asserted. DOC/standalone XML have actual route/unlocated manifest and unknown coordinates/fields/notes, not a missing result. DA2 excludes permanent raw/block archives; mandatory pending payload protection remains separate."
+    },
+    {
+      "item": "Runtime persistence and ownership",
+      "actual": "Production TextLoader uses ProvenanceTextExtractor; its known URL-free results survive independently of admitted source graphs. Pipeline and mutating CLI finalizers save complete-body parents then every known result in the caller transaction with Clock. Generic prefilter/primary/review/secondary/history and RCL/Senate observations also attach actual results; blocked/unsafe source graphs do not suppress independent extraction persistence.",
+      "code": [
+        "services/documents.py:_fetch/read_extraction_results",
+        "services/pipeline.py:224-250",
+        "services/document_read_reporting.py:56-75",
+        "services/document_history.py",
+        "services/rcl_letter_history.py",
+        "services/senate_history.py"
+      ]
+    },
+    {
+      "item": "Immutable versions/quiet repeats",
+      "actual": "Result ID hashes the versioned metadata including code/dependencies/options/manifests. Repository requires existing exact body metadata, INSERT ON CONFLICT preserves prior rows/first recording time, and typed read checks result/body IDs. New versions append; no legacy paid-input provenance is inferred.",
+      "code": [
+        "adapters/sqlite_repo.py:save_extraction_result/get_extraction_result/save_selection_extraction"
+      ]
+    }
+  ],
+  "reviewed_evidence": [
+    "J132:5365 raw paths/4021 unique bodies,42920 prepared views; deployed-dependency identity validation; metadata cap/growth,old-state/reader/quiet-repeat checks.",
+    "J147:76 paired callers including12 actual extraction results/links from historical rereads; prior paid refs unchanged.",
+    "J150/J154:actual RCL/Senate use with extraction refs and caller finalization.",
+    "J161 physical-evidence preservation:34focused; actual DOCX+required emptyZIP stores2bodies/2results/no graph; workers1/4,CLI,rollback,restore,+365repeat. Delta2882SQL/295gzip; other business/state results unchanged."
+  ],
+  "not_gaps": [
+    "Read-only show/lookup/preview and arbitrary library calls intentionally have no implicit history owner or Container.close flush.",
+    "Legacy custom extractors without the optional provenance port do not fabricate results.",
+    "No completed extraction after a raised parser failure: retain only actually observed body/read facts; do not invent an ExtractionResult.",
+    "Scan page-count/cropping manifests are separate derivatives under DA3.6."
+  ],
+  "separate_open_work": [
+    "DA3.2/DA3.3 richer origins and versioned fact-to-block binding",
+    "Physical execution graph/cache/caller activation",
+    "Raw/block retention/backend decisions"
+  ],
+  "recommendation": {
+    "checkbox": "Mark DA3.4 complete for the accepted bounded metadata-only profile.",
+    "annotation": "J132 versioned summary plus J147/J154/J161 caller and independent finalization close historical/direct/zero-selection gaps; coordinate completeness, physical execution and raw retention remain separately scoped."
+  },
+  "limits": "Read-only code/proof audit; no new tests, raw extraction, network, paid calls, full gate, production processing or source edits. Existing reviewed proofs reused, not rebranded as new natural-cycle acceptance."
+}

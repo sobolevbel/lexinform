@@ -14,10 +14,14 @@ from lexinform.metadata_omissions import MetadataUrlOmissionCollector
 from lexinform.metadata_urls import MetadataUrlDecision
 from lexinform.models import ArtifactIdentity, ArtifactReadIdentity, ExtractionResult
 from lexinform.models.metadata_omissions import MetadataUrlOmissions
+from lexinform.models.sejm import TextDocument
+from lexinform.models.source_catalog_attempts import SourceCatalogAttempt, SourceCatalogSnapshot
 from lexinform.models.source_omissions import (
+    BillOmissionOwner,
     SourceMetadataOmission,
     SourceOmissionOwner,
     SourceOmissionParent,
+    SourceReferenceOmissionOwner,
     source_omission_sha256,
 )
 from lexinform.ports import BillRepository
@@ -25,6 +29,11 @@ from lexinform.services.document_history import (
     record_artifact_reads,
     record_artifacts,
     record_source_omission,
+)
+from lexinform.services.source_catalog_attempts import (
+    SourceCatalogObservation,
+    record_catalog_observation,
+    serializable_catalog,
 )
 from lexinform.source_omission_frames import source_omission_record
 
@@ -72,6 +81,7 @@ class SourceOmissionScope:
         role: Literal["generic", "rcl", "senate"],
         view: object,
         decisions: Iterable[MetadataUrlDecision],
+        catalog_document: TextDocument | None = None,
     ) -> None:
         self.collector = collector
         self.owner = owner
@@ -85,8 +95,13 @@ class SourceOmissionScope:
         self._extractions: dict[str, ExtractionResult] = {}
         self._view_sha256 = ""
         self._diagnostics: MetadataUrlOmissions | None = None
+        self._catalog: SourceCatalogSnapshot | None = None
+        self._failure_class: str | None = None
+        self._selection_observed = False
         with self.capture():
             self.update(view, decisions)
+            if role == "generic" and self._diagnostics is None and catalog_document is not None:
+                self._catalog = serializable_catalog(SourceCatalogSnapshot.of(catalog_document))
 
     @contextmanager
     def capture(self) -> Iterator[None]:
@@ -118,9 +133,14 @@ class SourceOmissionScope:
         if result.artifact_sha256 in self._artifacts:
             self._extractions.setdefault(result.result_id, result)
 
-    def observation(self) -> SourceOmissionObservation | None:
-        if self.failed or self._diagnostics is None:
-            return None
+    def read_failed(self, error: BaseException) -> None:
+        if self._failure_class is None:
+            self._failure_class = type(error).__name__
+
+    def selection_observed(self) -> None:
+        self._selection_observed = True
+
+    def parents(self) -> tuple[SourceOmissionParent, ...]:
         parents: list[SourceOmissionParent] = []
         for sha in sorted(self._artifacts):
             reads = [item for item in self._reads.values() if item.sha256 == sha]
@@ -145,11 +165,39 @@ class SourceOmissionScope:
                             extraction_id=extraction.result_id if extraction else None,
                         )
                     )
+        return tuple(parents)
+
+    def catalog_observation(self) -> SourceCatalogObservation | None:
+        if (
+            self.failed
+            or self._catalog is None
+            or self._selection_observed
+            or self._failure_class is None
+            or not isinstance(self.owner, (BillOmissionOwner, SourceReferenceOmissionOwner))
+        ):
+            return None
+        catalog = serializable_catalog(self._catalog)
+        attempt = SourceCatalogAttempt.of(
+            self.owner, catalog.catalog_id, self._failure_class, self.parents()
+        )
+        attempt = SourceCatalogAttempt.model_validate_json(attempt.model_dump_json())
+        return SourceCatalogObservation(
+            catalog,
+            attempt,
+            tuple(self._artifacts[key] for key in sorted(self._artifacts)),
+            tuple(self._reads[key] for key in sorted(self._reads)),
+            tuple(self._extractions[key] for key in sorted(self._extractions)),
+            self.order,
+        )
+
+    def observation(self) -> SourceOmissionObservation | None:
+        if self.failed or self._diagnostics is None:
+            return None
         record = source_omission_record(
             self.owner,
             source_view_sha256=self._view_sha256,
             diagnostics=self._diagnostics,
-            parents=tuple(parents),
+            parents=self.parents(),
         )
         return SourceOmissionObservation(
             record,
@@ -164,11 +212,13 @@ class SourceOmissionCollector:
     def __init__(self) -> None:
         self._lock = Lock()
         self._records: dict[str, SourceOmissionObservation] = {}
+        self._catalog_attempts: dict[str, SourceCatalogObservation] = {}
         self._phase = 0
 
     def reset(self) -> None:
         with self._lock:
             self._records.clear()
+            self._catalog_attempts.clear()
             self._phase = 0
 
     def _input(self) -> SourceOmissionInput | None:
@@ -296,6 +346,7 @@ class SourceOmissionCollector:
         role: Literal["generic", "rcl", "senate"],
         view: object,
         decisions: Iterable[MetadataUrlDecision],
+        catalog_document: TextDocument | None = None,
     ) -> Iterator[SourceOmissionScope | None]:
         if _DISABLED.get():
             with self.suspended():
@@ -303,7 +354,14 @@ class SourceOmissionCollector:
             return
         scope = None
         try:
-            scope = SourceOmissionScope(self, owner, role=role, view=view, decisions=decisions)
+            scope = SourceOmissionScope(
+                self,
+                owner,
+                role=role,
+                view=view,
+                decisions=decisions,
+                catalog_document=catalog_document,
+            )
             scope.order = self._order()
         except BaseException as exc:
             if scope is not None:
@@ -314,6 +372,11 @@ class SourceOmissionCollector:
         token = _ACTIVE.set(scope)
         try:
             yield scope
+        except BaseException as error:
+            if scope is not None:
+                with scope.capture():
+                    scope.read_failed(error)
+            raise
         finally:
             if scope is not None:
                 scope.active = False
@@ -321,24 +384,42 @@ class SourceOmissionCollector:
             if scope is not None and not scope.failed:
                 with scope.capture():
                     observation = scope.observation()
+                    catalog = scope.catalog_observation()
                     if observation is not None:
                         with self._lock:
                             previous = self._records.get(observation.record.omission_id)
                             if previous is None or observation.order < previous.order:
                                 self._records[observation.record.omission_id] = observation
+                    if catalog is not None:
+                        with self._lock:
+                            earlier = self._catalog_attempts.get(catalog.attempt.attempt_id)
+                            if earlier is None or catalog.order < earlier.order:
+                                self._catalog_attempts[catalog.attempt.attempt_id] = catalog
 
     def snapshot(self) -> tuple[SourceOmissionObservation, ...]:
         with self._lock:
             return tuple(sorted(self._records.values(), key=lambda item: item.order))
 
+    def catalog_snapshot(self) -> tuple[SourceCatalogObservation, ...]:
+        with self._lock:
+            return tuple(sorted(self._catalog_attempts.values(), key=lambda item: item.order))
+
 
 @dataclass(frozen=True)
 class SourceOmissionPersistence:
     read: Callable[[], tuple[SourceOmissionObservation, ...]]
+    read_catalog: Callable[[], tuple[SourceCatalogObservation, ...]] | None = None
 
     def persist_source_history(self, repo: BillRepository, *, recorded_at: dt.datetime) -> None:
+        catalogs = self.read_catalog() if self.read_catalog is not None else ()
+        observations: list[SourceOmissionObservation | SourceCatalogObservation] = list(self.read())
+        observations.extend(catalogs)
+        observations.sort(key=lambda item: item.order)
         with repo.atomic():
-            for observation in self.read():
+            for observation in observations:
+                if isinstance(observation, SourceCatalogObservation):
+                    record_catalog_observation(repo, observation, recorded_at=recorded_at)
+                    continue
                 record_artifacts(repo, observation.artifacts, recorded_at=recorded_at)
                 record_artifact_reads(repo, observation.reads, recorded_at=recorded_at)
                 for result in observation.extractions:
