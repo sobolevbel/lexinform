@@ -1,0 +1,5 @@
+{
+  "src/lexinform/extraction_records.py": "88eb5941a6ade291bdc57e899ba8cc333b87b5e56434e446089844f45c8efe13",
+  "tests/unit/test_odt_note_prefix_producer.py": "9cb276fc4c35aa7328b73d35bfedc583b5bf16bd6d2ed2e28edf596f7406c0f9",
+  "tests/unit/test_odt_note_status_producer.py": "39da0f109cd55be3a6eb442206ee146aafb396f9a20f72c29ea302828eb38818"
+}

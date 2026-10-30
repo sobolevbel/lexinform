@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "index_sha256": "452852e1539f82dd1f29a55d2ff4763afaa7f4130b533a4d4e3d6814401e66d5",
+  "cases": [
+    {
+      "path": "original.bin",
+      "sha256": "072d8e6cc811fbe7094369ed8ee40e36f05f363bc432318da272f35debf95722",
+      "official_ids": [
+        "druk:1614"
+      ],
+      "cohorts": [
+        "synthetic-original"
+      ]
+    },
+    {
+      "path": "renamed-member.bin",
+      "sha256": "6c41fbec2c3ee6213073cfca9d7614cf945390ee6aaafb9cb6df3336c312e343",
+      "official_ids": [
+        "druk:1614"
+      ],
+      "cohorts": [
+        "synthetic-renamed-member"
+      ]
+    },
+    {
+      "path": "nested.bin",
+      "sha256": "feba507cf3d472df81f192004ddb3d62fafaf4fa83e6edafe5939c5b2f257d26",
+      "official_ids": [
+        "druk:1614"
+      ],
+      "cohorts": [
+        "synthetic-nested"
+      ]
+    },
+    {
+      "path": "nested-four.bin",
+      "sha256": "004e1ce74cb9d1d5553ce414db788ec9114fdd79331f28a0e7cce14c8cc017f9",
+      "official_ids": [
+        "druk:1614"
+      ],
+      "cohorts": [
+        "synthetic-nested-four"
+      ]
+    },
+    {
+      "path": "date.bin",
+      "sha256": "ca4ad25ff6e2e588fd35144bd9ad20c127956a63b635c0edcf4a32749b96d6b7",
+      "official_ids": [
+        "druk:1614"
+      ],
+      "cohorts": [
+        "synthetic-date"
+      ]
+    },
+    {
+      "path": "amount.bin",
+      "sha256": "6debeadd5824bcc899132955fbc9b99c9a1ef2d81d1f3b165d8d9d9fce40c170",
+      "official_ids": [
+        "druk:1614"
+      ],
+      "cohorts": [
+        "synthetic-amount"
+      ]
+    },
+    {
+      "path": "negation.bin",
+      "sha256": "49b5934e9abbd5854115f575854dc57afe9d35db9049d8c3a7dd20f1a89cd974",
+      "official_ids": [
+        "druk:1614"
+      ],
+      "cohorts": [
+        "synthetic-negation"
+      ]
+    },
+    {
+      "path": "scope.bin",
+      "sha256": "59e910906131413e01859cfc3ce7ac32149177b4c5da59c34d581b5f9d2e0430",
+      "official_ids": [
+        "druk:1614"
+      ],
+      "cohorts": [
+        "synthetic-scope"
+      ]
+    },
+    {
+      "path": "reference.bin",
+      "sha256": "11ae19e2b3989fe70661085e433f1587b545e935f458843291830f2d7f1f68e8",
+      "official_ids": [
+        "druk:1614"
+      ],
+      "cohorts": [
+        "synthetic-reference"
+      ]
+    }
+  ],
+  "exclusions": [
+    "Synthetic copies derived from one real ODT; not natural corpus coverage."
+  ]
+}

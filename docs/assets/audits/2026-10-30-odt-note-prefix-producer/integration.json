@@ -1,0 +1,17 @@
+{
+  "stage": "J199",
+  "base": "f9b841968ff00598e038c38efabf9da154ece2e9",
+  "author3_exact": true,
+  "protected_paths_unchanged": [
+    "src/lexinform/models/extractions.py",
+    "src/lexinform/models/batch.py",
+    "src/lexinform/models/__init__.py",
+    "src/lexinform/adapters/document_text.py",
+    "src/lexinform/adapters/sqlite_repo.py",
+    "src/lexinform/ports.py",
+    "src/lexinform/services/content_sources.py",
+    "src/lexinform/services/analysis.py"
+  ],
+  "scope": "Bounded ODT origin-prefix pure-helper writer only. ActualJ197 reader deployed; no adapter/SQL/cache/body/provider/selection changes.",
+  "proof_note": "Authorhandoff next retains stale pending text; final6+9/byte proof and peerclosure establish completion. Author103focused vs actual peersixfile118 distinct counts; no natural selectednote-positive claim."
+}

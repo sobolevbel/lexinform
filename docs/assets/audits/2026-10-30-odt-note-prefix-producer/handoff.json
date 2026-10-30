@@ -1,0 +1,84 @@
+{
+  "base": "63a23d6a643edbf5dc3eb1da523a69d564c61580",
+  "checks": {
+    "diff": "clean",
+    "focused": 103,
+    "format": "clean",
+    "logs": {
+      "focused.log": "d83028c075184d55da49e944d9109cc86501ba1b2f68318840fe26a3d07e41dd",
+      "mypy.log": "8228fcc5ce46d42d01caf3cd941f4e9c5f2bcc372bb5b147a2f0572d2dd675a8"
+    },
+    "mypy": 3,
+    "new": 7,
+    "ruff": "clean"
+  },
+  "cohorts": {
+    "natural": {
+      "case_manifest_sha256": "2ce1ac6cb30dff66526502ab8bf213a70a90c4504a23220c8a649e2c4d21fd5b",
+      "changed_code": false,
+      "changed_inputs": [],
+      "default_selected_note_count": 0,
+      "default_selected_statuses": 1,
+      "errors": {},
+      "odt_physical_leaves": 8,
+      "old_observation_changes": [],
+      "prefix_eligible_natural_notes": 0,
+      "reference_sha256": "55283c06e2849e01ca0288159ae5feb4cfe924f9d462b563c0ed1048a59e8861",
+      "report_sha256": "487759ecd60e3f0584a0b23a91d60591b3f3d541491d055db7be9b877b79f1a4",
+      "roots": 6,
+      "status": "passed"
+    },
+    "variants": {
+      "case_manifest_sha256": "6dc55e22b95a4c20069c2194ab7a66d8d7b790f7bbfe1e05070a8234fe7f700b",
+      "changed_code": false,
+      "changed_inputs": [],
+      "default_selected_note_count": 0,
+      "default_selected_statuses": 8,
+      "errors": {},
+      "odt_physical_leaves": 9,
+      "old_observation_changes": [],
+      "prefix_eligible_natural_notes": 0,
+      "reference_sha256": "0f473bc6e5f1ffafbf6348a3fe3f0d180e0f9cbe78a976aca5542a24403f9454",
+      "report_sha256": "6fa09834b31ce09cf30882b7616e511d2d82a74737c3f46b59975cd22f5ebe70",
+      "roots": 9,
+      "status": "passed"
+    }
+  },
+  "contract": "Required oldvalidatedstatusresult first; capturedgraph/actualbody corroboratedonce; longestglobal-eventprefix, conservative associations, actualoriginalblockbounds, physicalorder/originalsummaryslots, aggregate4KiBASCII+16KiBwholejson; no usefulfit ornewmetadataException returns oldstatusresult; cancellationpropagates. Legacyphysicalmanifest excludesnewprefix.",
+  "freeze_sha256": "5378ea87e23a02583bc5b19c4989cc4295432d3ea391e75617e7f864e08d9769",
+  "intentional_old_test_change": "Only actualpositivecontents expectation changes not_retained\u2192prefix_retained and asserts presence; all prior text/selection/provider/physical/cache checks remain.",
+  "limitations": [
+    "Native6+9 selectednotes remain0; synthetic actualnative1note and24note/forwardref cases are prospective positive proof, no naturalnote-rich/production acceptance.",
+    "Measured +1069B is controlled ExtractionResult JSON only, no SQL/gzip/history/performance-growth claim.",
+    "Sourcecomponent adapter files unchanged; writer purehelper sourcehash is pinned explicitly. No extractor text/selection/provider changes.",
+    "No reader/adapter/cache/SQL/DDL/store/backfill changes. Existing365d cache test now retains prefix in same frozenresult and restore/quietrepeat dump.",
+    "Actual deployed J197reader63a gate required beforeRootwriter activation/integration; no full/prod/paid/network/raw expansion."
+  ],
+  "metadata_delta": {
+    "aggregate_prefix_bound": true,
+    "baseline_status_result_bytes": 3372,
+    "captured_notes": 1,
+    "delta_metadata_json_bytes": 1069,
+    "input_sha256": "0a6f0b53163551562842154dfdc335b3371de8f4dc0d46af01128b02cf2831d9",
+    "old_physical_manifest_exact": true,
+    "prefix_ascii_json_bytes": 1047,
+    "prefix_result_bytes": 4441,
+    "scope": "controlled realnative extraction+synthetic note ODT; metadataJSON only, no SQLgrowth/perf/naturalproviderclaim",
+    "whole_result_bound": true
+  },
+  "metadata_delta_sha256": "d0c2baa6a5803dc9fa8a8a65191d5d8df452e25b4542f0958afaec5567434c92",
+  "next": "Singleauthorized6+9 finalfrozen-source replay +metadata-byte delta pending; source3 held. ActualJ197readerdeploy required beforeRootactivation/integration.",
+  "patch_sha256": "1ffca64668842e7d7923e7ef344b985c92365ec57686b1cfc0ad4c9d108e772d",
+  "preimages": {
+    "src/lexinform/extraction_records.py": "57969b027e15f91e958c28a976b05f1724c7397620ed407e6bc7a1bda6422fd8",
+    "tests/unit/test_odt_note_prefix_producer.py": null,
+    "tests/unit/test_odt_note_status_producer.py": "b4732280276734fe29c8c93ddac7c00b74dda0a19a6210637f73688679dc89fa"
+  },
+  "scope": "Writer purehelper only +new7unit +2line intentional existingstatus expectation extension; no adapter/reader/cache/SQL changes.",
+  "source_hold": true,
+  "source_pins": {
+    "src/lexinform/extraction_records.py": "88eb5941a6ade291bdc57e899ba8cc333b87b5e56434e446089844f45c8efe13",
+    "tests/unit/test_odt_note_prefix_producer.py": "9cb276fc4c35aa7328b73d35bfedc583b5bf16bd6d2ed2e28edf596f7406c0f9",
+    "tests/unit/test_odt_note_status_producer.py": "39da0f109cd55be3a6eb442206ee146aafb396f9a20f72c29ea302828eb38818"
+  }
+}

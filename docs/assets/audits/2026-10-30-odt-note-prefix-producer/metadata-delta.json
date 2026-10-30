@@ -1,0 +1,12 @@
+{
+  "aggregate_prefix_bound": true,
+  "baseline_status_result_bytes": 3372,
+  "captured_notes": 1,
+  "delta_metadata_json_bytes": 1069,
+  "input_sha256": "0a6f0b53163551562842154dfdc335b3371de8f4dc0d46af01128b02cf2831d9",
+  "old_physical_manifest_exact": true,
+  "prefix_ascii_json_bytes": 1047,
+  "prefix_result_bytes": 4441,
+  "scope": "controlled realnative extraction+synthetic note ODT; metadataJSON only, no SQLgrowth/perf/naturalproviderclaim",
+  "whole_result_bound": true
+}

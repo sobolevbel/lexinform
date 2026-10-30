@@ -50,7 +50,8 @@ def test_default_provenance_keeps_text_selection_physical_identity_and_frozen_fa
     status = observed.result.selected_parts[0].odt_note_status
     assert status is not None, "native provenance has the actual same-pass ODT companion"
     assert status.observed_notes == status.observed_calls == 1
-    assert status.contents == "not_retained" and status.xml_completeness == "not_asserted"
+    assert status.contents == "prefix_retained" and status.xml_completeness == "not_asserted"
+    assert observed.result.selected_parts[0].odt_note_prefix is not None
     assert observed.result.selected_parts[0].limitations == baseline.selected_parts[0].limitations
     assert len(observed.result.model_dump_json().encode()) <= 16384
     backend = FakeBatchBackend()

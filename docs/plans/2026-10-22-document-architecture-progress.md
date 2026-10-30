@@ -9239,3 +9239,42 @@ Final gate:7618tests/272.215s/92%,mypy662/Ruff730;747source/config pins exact. S
 [read-only query proof](../assets/audits/2026-10-30-content-source-resolver/query-proof.json).
 
 [J197 exact CI/relay](../assets/audits/2026-10-30-odt-note-prefix-reader/release.json) verified before next push.
+
+
+<a id="j199"></a>
+
+## J199 — bounded ODT note-origin prefix writer
+
+После actual deploy J197 включён pure-helper writer: original capture/body corroborated один
+раз, затем сохраняется longest global event prefix в пределах aggregate4KiB ASCII и whole
+ExtractionResult16KiB. Части посещаются в physical order и остаются на исходных summary slots.
+Original paragraph/heading block bounds, ancestor closure, entry-before-call и conservative
+association сохраняются. Удалённая definition inventory больше не доказывает resolved/missing.
+Status hash/counts относятся к original capture, prefix имеет собственные hash/coverage.
+Если полезный prefix не помещается или optional enrichment падает с Exception, прежний
+validated status result остаётся; cancellation propagates.
+
+Legacy physical manifest исключает новый prefix. Adapter/parser/SQL/cache/body/selection/
+provider input не меняются; старые cached results остаются прежними. Writer не перечитывает
+XML и не добавляет raw storage. Required old validation выполнена до optional enrichment.
+
+Author103focused/7new и peer118six-file+4 public controls green; source3 exact. Final replay:
+6natural roots/8ODT leaves и9derivatives/9leaves, business/input drift0, INDEX exact. Natural
+selected1status/0notes и variants8statuses/0notes не дают положительной natural coverage.
+Controlled actual-native1note: result3372→4441B (+1069B), prefix1047ASCII B, oldphysicalhash
+exact. Это JSON metadata measurement, не SQL/gzip/performance или production-size claim.
+Raw replay reports остаются в out; versioned recipe/pins/compact proof проверены. Stale
+handoff.next с pending superseded actual final proofs/peer closure, immutable handoff сохранён.
+
+Final gate:7625tests/267.475s/92%,mypy663/Ruff731;748source/config pins exact. DA3.3 остаётся
+partial: legacyDOC reference/story provenance и остальные acceptance gaps не закрыты.
+Staged archive docs gate перед commit; exact J198 CI/actual relay verified before next push.
+
+[Qualification](../assets/audits/2026-10-30-odt-note-prefix-producer/qualification.json),
+[peer](../assets/audits/2026-10-30-odt-note-prefix-producer/peer-closure.json),
+[integration](../assets/audits/2026-10-30-odt-note-prefix-producer/integration.json),
+[corpus proof](../assets/audits/2026-10-30-odt-note-prefix-producer/corpus-proof.json),
+[replay recipe](../assets/audits/2026-10-30-odt-note-prefix-producer/recipe.json),
+[controlled bytes](../assets/audits/2026-10-30-odt-note-prefix-producer/metadata-delta.json).
+
+[J198 exact CI/relay](../assets/audits/2026-10-30-content-source-resolver/release.json) verified.

@@ -14,15 +14,26 @@ from lexinform.models.documents import ExtractedDocument, ExtractedParts, WordDe
 from lexinform.models.extractions import (
     MAX_EXTRACTION_METADATA_BYTES,
     MAX_EXTRACTION_PART_SUMMARIES,
+    MAX_ODT_NOTE_PREFIX_BYTES,
     ExtractedPartSummary,
     ExtractionComponent,
     ExtractionDependency,
     ExtractionOptions,
     ExtractionResult,
+    OdtNoteBlockBound,
+    OdtNotePrefix,
     OdtNoteStatus,
+    _odt_prefix_bytes,
     extraction_metadata_sha256,
 )
-from lexinform.models.odt_notes import OdtNotedParts, OdtPartNoteOrigins
+from lexinform.models.odt_notes import (
+    OdtNoteCall,
+    OdtNotedParts,
+    OdtNoteEntry,
+    OdtNoteOrigins,
+    OdtPartNoteOrigins,
+    odt_note_association,
+)
 from lexinform.models.word_view_capture import WordPartViewStatus, WordViewExtraction
 
 
@@ -190,7 +201,9 @@ def summarize_extraction(
         summary = ExtractedPartSummary.model_validate(fields)
         identities.append(
             extraction_metadata_sha256(
-                summary.model_dump(mode="json", exclude={"word_view_status", "odt_note_status"})
+                summary.model_dump(
+                    mode="json", exclude={"word_view_status", "odt_note_status", "odt_note_prefix"}
+                )
             )
         )
         key = (part.sha256, part.members)
@@ -236,17 +249,20 @@ def summarize_extraction(
     if not odt_origins:
         return baseline
     try:
-        return _with_odt_note_status(baseline, physical, odt_origins)
+        captured_parts = OdtNotedParts(legacy=physical, odt_notes=odt_origins)
+        status_result = _with_odt_note_status(baseline, captured_parts)
     except Exception:
         return baseline
+    try:
+        return _with_odt_note_prefix(status_result, captured_parts)
+    except Exception:
+        return status_result
 
 
 def _with_odt_note_status(
     baseline: ExtractionResult,
-    physical: ExtractedParts,
-    offered: tuple[OdtPartNoteOrigins, ...],
+    linked: OdtNotedParts,
 ) -> ExtractionResult:
-    linked = OdtNotedParts(legacy=physical, odt_notes=offered)
     origins = {part.part_index: part.extraction for part in linked.odt_notes}
     retained = list(baseline.selected_parts)
     for index, summary in enumerate(retained):
@@ -274,3 +290,87 @@ def _with_odt_note_status(
         retained[index] = retained[index].model_copy(update={"odt_note_status": None})
         candidate = baseline.model_copy(update={"selected_parts": tuple(retained)})
     return ExtractionResult.model_validate(candidate)
+
+
+def _with_odt_note_prefix(baseline: ExtractionResult, linked: OdtNotedParts) -> ExtractionResult:
+    sources = {item.part_index: item.extraction for item in linked.odt_notes}
+    bodies = {item.part_index: item.extraction for item in linked.legacy.odt_blocks}
+    retained = list(baseline.selected_parts)
+    result = baseline
+    used = 0
+    for slot, summary in sorted(enumerate(retained), key=lambda item: item[1].physical_index):
+        status = summary.odt_note_status
+        source = sources.get(summary.physical_index)
+        if status is None or source is None or not (source.entries or source.calls):
+            continue
+        needed = {record.block_path for record in (*source.entries, *source.calls)}
+        bounds = {
+            block.path: OdtNoteBlockBound(path=block.path, kind=block.kind, chars=len(block.text))
+            for block in bodies[summary.physical_index].blocks
+            if block.path in needed and block.kind in ("paragraph", "heading")
+        }
+        events = sorted((*source.entries, *source.calls), key=lambda record: record.order)
+        for size in range(len(events), 0, -1):
+            selected = events[:size]
+            entries = tuple(record for record in selected if isinstance(record, OdtNoteEntry))
+            calls = []
+            for record in selected:
+                if isinstance(record, OdtNoteCall):
+                    association, target = odt_note_association(
+                        record.kind,
+                        record.path,
+                        record.identity,
+                        entries,
+                        inventory_complete=source.walk_state == "finished"
+                        and source.note_count == len(entries),
+                    )
+                    calls.append(
+                        record.model_copy(
+                            update={"association": association, "target_path": target}
+                        )
+                    )
+            coverage = (
+                "unknown"
+                if source.walk_state == "unavailable"
+                else "complete"
+                if source.walk_state == "finished"
+                and (len(entries), len(calls)) == (source.note_count, source.call_count)
+                else "partial"
+            )
+            stored = OdtNoteOrigins.model_validate(
+                source.model_copy(
+                    update={"entries": entries, "calls": tuple(calls), "coverage": coverage}
+                )
+            )
+            paths = {record.block_path for record in selected}
+            witnesses = tuple(bounds[path] for path in sorted(paths))
+            offered = {
+                "physical_index": summary.physical_index,
+                "origins": stored,
+                "blocks": witnesses,
+            }
+            try:
+                width = _odt_prefix_bytes(offered)
+            except ValueError:
+                continue
+            if used + width > MAX_ODT_NOTE_PREFIX_BYTES:
+                continue
+            prefix = OdtNotePrefix(
+                physical_index=summary.physical_index, origins=stored, blocks=witnesses
+            )
+            enriched = summary.model_copy(
+                update={
+                    "odt_note_status": status.model_copy(update={"contents": "prefix_retained"}),
+                    "odt_note_prefix": prefix,
+                }
+            )
+            candidate_parts = retained.copy()
+            candidate_parts[slot] = enriched
+            candidate = baseline.model_copy(update={"selected_parts": tuple(candidate_parts)})
+            if len(candidate.model_dump_json().encode()) > MAX_EXTRACTION_METADATA_BYTES:
+                continue
+            result = ExtractionResult.model_validate(candidate)
+            retained = candidate_parts
+            used += width
+            break
+    return result

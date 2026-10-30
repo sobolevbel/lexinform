@@ -1,0 +1,59 @@
+{
+  "corpus_INDEX_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "cohorts": {
+    "natural": {
+      "case_manifest_sha256": "2ce1ac6cb30dff66526502ab8bf213a70a90c4504a23220c8a649e2c4d21fd5b",
+      "changed_code": false,
+      "changed_inputs": [],
+      "default_selected_note_count": 0,
+      "default_selected_statuses": 1,
+      "errors": {},
+      "odt_physical_leaves": 8,
+      "old_observation_changes": [],
+      "prefix_eligible_natural_notes": 0,
+      "reference_sha256": "55283c06e2849e01ca0288159ae5feb4cfe924f9d462b563c0ed1048a59e8861",
+      "report_sha256": "487759ecd60e3f0584a0b23a91d60591b3f3d541491d055db7be9b877b79f1a4",
+      "roots": 6,
+      "status": "passed"
+    },
+    "variants": {
+      "case_manifest_sha256": "6dc55e22b95a4c20069c2194ab7a66d8d7b790f7bbfe1e05070a8234fe7f700b",
+      "changed_code": false,
+      "changed_inputs": [],
+      "default_selected_note_count": 0,
+      "default_selected_statuses": 8,
+      "errors": {},
+      "odt_physical_leaves": 9,
+      "old_observation_changes": [],
+      "prefix_eligible_natural_notes": 0,
+      "reference_sha256": "0f473bc6e5f1ffafbf6348a3fe3f0d180e0f9cbe78a976aca5542a24403f9454",
+      "report_sha256": "6fa09834b31ce09cf30882b7616e511d2d82a74737c3f46b59975cd22f5ebe70",
+      "roots": 9,
+      "status": "passed"
+    }
+  },
+  "metadata_delta": {
+    "aggregate_prefix_bound": true,
+    "baseline_status_result_bytes": 3372,
+    "captured_notes": 1,
+    "delta_metadata_json_bytes": 1069,
+    "input_sha256": "0a6f0b53163551562842154dfdc335b3371de8f4dc0d46af01128b02cf2831d9",
+    "old_physical_manifest_exact": true,
+    "prefix_ascii_json_bytes": 1047,
+    "prefix_result_bytes": 4441,
+    "scope": "controlled realnative extraction+synthetic note ODT; metadataJSON only, no SQLgrowth/perf/naturalproviderclaim",
+    "whole_result_bound": true
+  },
+  "reports": {
+    "natural": {
+      "path": "/Users/sobaleu/.codex/worktrees/locked-state-maintenance/lexinform/out/corpus/odt-note-prefix-producer/final/natural.json",
+      "sha256": "487759ecd60e3f0584a0b23a91d60591b3f3d541491d055db7be9b877b79f1a4",
+      "bytes": 195041
+    },
+    "variants": {
+      "path": "/Users/sobaleu/.codex/worktrees/locked-state-maintenance/lexinform/out/corpus/odt-note-prefix-producer/final/variants.json",
+      "sha256": "6fa09834b31ce09cf30882b7616e511d2d82a74737c3f46b59975cd22f5ebe70",
+      "bytes": 122517
+    }
+  }
+}
