@@ -10,6 +10,7 @@ from lexinform.models.documents import ExtractedDocument
 
 MAX_EXTRACTION_METADATA_BYTES = 16_384
 MAX_EXTRACTION_PART_SUMMARIES = 16
+MAX_WORD_VIEW_STATUS_BYTES = 512
 
 
 class ExtractionComponent(BaseModel):
@@ -36,6 +37,27 @@ class ExtractionOptions(BaseModel):
     archive_bytes: int = Field(ge=0)
     archive_members: int = Field(ge=0)
     xml_bytes: int = Field(ge=0)
+
+
+class WordViewStatus(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    version: Literal["word-legacy-view-status-v1"] = "word-legacy-view-status-v1"
+    scope: Literal["legacy-visited-word-nodes"] = "legacy-visited-word-nodes"
+    known_walk: Literal["finished", "interrupted"]
+    xml_completeness: Literal["not_asserted"] = "not_asserted"
+    fields_view: Literal["legacy_unresolved"] = "legacy_unresolved"
+    changes_view: Literal["legacy_unresolved"] = "legacy_unresolved"
+    observed_skipped_blocks: int = Field(strict=True, ge=0, le=2**63 - 1)
+    observed_unclassified_nodes: int = Field(strict=True, ge=0, le=2**63 - 1)
+    observed_legacy_recursion: int = Field(strict=True, ge=0, le=2**63 - 1)
+    observed_ignored_fallbacks: int = Field(strict=True, ge=0, le=2**63 - 1)
+
+    @model_validator(mode="after")
+    def bounded_status(self) -> Self:
+        if len(self.model_dump_json().encode()) > MAX_WORD_VIEW_STATUS_BYTES:
+            raise ValueError("Word view status exceeds its serialized byte limit")
+        return self
 
 
 class ExtractedPartSummary(BaseModel):
@@ -69,6 +91,25 @@ class ExtractedPartSummary(BaseModel):
     ] = Field(max_length=8)
     loss_count: int = Field(ge=0)
     losses_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    word_view_status: WordViewStatus | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    @model_validator(mode="after")
+    def status_requires_word(self) -> Self:
+        if self.word_view_status is not None:
+            if not isinstance(self.word_view_status, WordViewStatus):
+                raise ValueError("Constructed Word summary requires its typed view status")
+            WordViewStatus.model_validate(self.word_view_status)
+        if self.word_view_status is not None and (
+            self.format != "word"
+            or self.coordinates != "word-blocks-v1"
+            or self.text_view != "legacy-word-body-v1"
+            or self.manifest_sha256 is None
+            or self.block_count is None
+        ):
+            raise ValueError("Word view status requires an actual Word legacy manifest summary")
+        return self
 
 
 class ExtractionResult(BaseModel):

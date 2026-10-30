@@ -1,0 +1,93 @@
+{
+  "actual_inline_parity": {
+    "bills": 483,
+    "cost_rows": 172,
+    "doctor_errors": {
+      "computation": 0,
+      "source": 0
+    },
+    "doctors_sha256": "c5e107e6a4c3bcd22a64d6e58471f828cf6cf0ebccf2ee98f6a65e5dff92a3d5",
+    "driver_sha256": "e4ae5c8ef97f3cb19d2a75ffbc7de812a0a0bdf876d098076fd1625eefc2ddab",
+    "dump_sha256": "ca74597f81677f78c0cbba1e8ff37ad14b6b3ad5bd158d3698b04dc282b015b5",
+    "gzip_bytes": 4191374,
+    "list_status_rows": 483,
+    "memo_rows": 155,
+    "paid_results": 9,
+    "physical_sha256": "ff05fada222b39fc5f13242d00d2624be4b2676b17f1029737e87b6033938780",
+    "publications": 194,
+    "quiet_read_sql_growth": 0,
+    "restore_twice_exact": true,
+    "seconds": 6.094797959027346,
+    "snapshot_sha256": "0deedbec7901652fc3753cf24d8b7c7967a486ab24965e22feb039185f7e7c6e",
+    "source_sha256": "a39d69e7306d97c7307e7b9a263a71a7f5c646be590815d68860ada2064eaae2",
+    "sql_bytes": 20889343,
+    "status": "qualified_inline_only"
+  },
+  "census": {
+    "actual_paid_purposes": {
+      "amendments": 1,
+      "analysis": 6,
+      "reanalysis": 1,
+      "supplement": 1
+    },
+    "actual_primary_slots": {
+      "analysis_json": 172,
+      "record_json": 74
+    },
+    "driver_sha256": "9ab96fce6070c298dc3ed4090e1f2dc4ce721b983707180be4e4e643bf0e3861",
+    "eligible_count": 14,
+    "reasons": {
+      "eligible": 14,
+      "unknown_current_result_or_request": 232
+    },
+    "source_sql_untouched": true,
+    "status": "census_only_no_substitution"
+  },
+  "counterfactual14": {
+    "actual_ready_slots": 0,
+    "after_gzip_bytes": 4167885,
+    "after_sql_bytes": 20790307,
+    "all155_memo_values_exact": true,
+    "all9_paid_results_and_all_other_tables_unchanged": true,
+    "bad_reference_restore_preserves_original": true,
+    "before_gzip_bytes": 4191374,
+    "before_sql_bytes": 20889343,
+    "counterfactual_sql_sha256": "8830b168325578669ce35173ce1bbb44162aadf9a0df2203827683ed2266104d",
+    "current_slots": 7,
+    "distinct_paid_primary_results": 7,
+    "doctors_errors": 0,
+    "driver_sha256": "d0411f29d9f46b623e284a6d0b7f59a590672188feef1b1dfbb11fe43098adb5",
+    "gzip_delta": -23489,
+    "original_input_sha256": "a39d69e7306d97c7307e7b9a263a71a7f5c646be590815d68860ada2064eaae2",
+    "primary_memo_slots": 7,
+    "public_get_list_search_cost_tracked_fields_exact": true,
+    "reader_seconds": 7.138156125030946,
+    "restore_twice_quiet": true,
+    "scope": "Counterfactual14 actual restored412e eligible slots; no runtime writer/backfill/production claim",
+    "sql_delta": -99036
+  },
+  "counterfactual_other_columns_within_changed_tables_exact": true,
+  "driver_pins": {
+    "census.py": "9ab96fce6070c298dc3ed4090e1f2dc4ce721b983707180be4e4e643bf0e3861",
+    "counterfactual.py": "d0411f29d9f46b623e284a6d0b7f59a590672188feef1b1dfbb11fe43098adb5",
+    "read_profile.py": "e4ae5c8ef97f3cb19d2a75ffbc7de812a0a0bdf876d098076fd1625eefc2ddab"
+  },
+  "input_sql_before_after_exact": true,
+  "not_run": [
+    "raw extraction",
+    "provider/paid/network",
+    "production processing",
+    "broad full gate",
+    "commits/pushes"
+  ],
+  "payload_size_only": {
+    "maximum_reference_envelope_bytes": 396,
+    "previous_projection_json_bytes": 104010,
+    "reference_envelope_bytes": 4974
+  },
+  "predecessor_seconds": 5.689432000042871,
+  "reviewed_handoff_sha256": "97ec2a71d33ff9a963ce9d2079a68b6f77c1226ebb4bdd7cb0dc321737aa524e",
+  "scope": "Actual restored412e inline profile and manual counterfactual14 corroborated slots, 7actual paid primary results. No writer/backfill/live activation/global growth forecast; zero actual READY refs. Original all9paid rows and frozen/publication/editorial/state payloads exact.",
+  "source13_before_after_exact": true,
+  "status": "qualified_metadata_reader_only"
+}

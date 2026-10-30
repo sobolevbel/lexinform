@@ -1,11 +1,12 @@
 """Exact legacy values and observed locations without inferred computation provenance."""
 
 import hashlib
-import json
 from datetime import datetime
 from typing import Self, cast
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
+
+from lexinform.json_storage import canonical_json, read_json
 
 LEGACY_ANSWER_FIELDS = frozenset(
     {"analysis", "amendments", "digest", "comparison", "proposal", "review"}
@@ -15,30 +16,12 @@ LEGACY_REFERENCE_FIELDS = frozenset(
 )
 
 
-def _unique_object(pairs: list[tuple[str, JsonValue]]) -> dict[str, JsonValue]:
-    result: dict[str, JsonValue] = {}
-    for key, value in pairs:
-        if key in result:
-            raise ValueError("duplicate JSON object key")
-        result[key] = value
-    return result
-
-
-def _invalid_constant(value: str) -> None:
-    raise ValueError("non-finite JSON number")
-
-
 def legacy_json(raw: str) -> JsonValue:
-    return cast(
-        JsonValue,
-        json.loads(raw, object_pairs_hook=_unique_object, parse_constant=_invalid_constant),
-    )
+    return read_json(raw)
 
 
 def canonical_legacy_json(value: JsonValue) -> str:
-    return json.dumps(
-        value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False
-    )
+    return canonical_json(value)
 
 
 def has_legacy_marker(value: JsonValue) -> bool:

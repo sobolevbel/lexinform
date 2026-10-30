@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from lexinform.adapters.primary_projections import primary_projection_issues
 from lexinform.models import ComputationResult, ResultApplicabilityObservation, ResultApplication
 from tools.application_targets import application_target
 from tools.corpus_artifacts import write_json
@@ -175,6 +176,11 @@ class ComputationAudit:
             for item in saved_records(value, column.ref, encoded_fields=BILL_SNAPSHOT_FIELDS):
                 if isinstance(item, SavedRecordIssue):
                     self.issue(item.code, item.ref)
+                elif "modern_primary_ref" in item.value:
+                    self.counts["modern_primary_projection_refs"] += 1
+                    identity = item.value["modern_primary_ref"]
+                    if isinstance(identity, str):
+                        self.refs.setdefault(identity, []).append(item.ref)
                 elif "computation_id" in item.value or is_saved_answer(item.value):
                     self.reference(item.value, item.ref)
 
@@ -221,6 +227,8 @@ def audit(database: Path) -> dict[str, Any]:
             elif schema >= 51:
                 result.issue("applicability_table_unavailable", "result_applicability")
             result.projections(connection, tables)
+            for code, ref in primary_projection_issues(connection):
+                result.issue(code, ref)
         if not snapshot.unchanged():
             result.issue("database_changed_during_audit", "database")
     result.findings.sort(key=lambda item: (item["code"], item["ref"]))

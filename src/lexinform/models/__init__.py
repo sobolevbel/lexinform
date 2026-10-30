@@ -271,6 +271,7 @@ from lexinform.models.extractions import (
 from lexinform.models.extractions import (
     SelectionExtractionReference as SelectionExtractionReference,
 )
+from lexinform.models.extractions import WordViewStatus as WordViewStatus
 from lexinform.models.input_receipts import PrimaryInputReceipt as PrimaryInputReceipt
 from lexinform.models.legacy_results import LegacyResultImport as LegacyResultImport
 from lexinform.models.legacy_results import LegacyResultOccurrence as LegacyResultOccurrence
@@ -499,6 +500,7 @@ __all__ = [
     "WordStructureExtraction",
     "WordPartStructureExtraction",
     "WordStructuredParts",
+    "WordViewStatus",
     "WordSemanticStructureExtraction",
     "WordSemanticBlock",
     "WordSemanticCall",

@@ -5,6 +5,11 @@ from datetime import datetime
 from lexinform.models import AnalysisRecord, Bill, ResultApplicabilityObservation, ResultApplication
 from lexinform.models.computations import ProjectionReason
 from lexinform.ports import BillRepository
+from lexinform.primary_projections import (
+    ProjectionOwner,
+    has_primary_application,
+    primary_record_matches,
+)
 from lexinform.services.result_applications import record_selected_name_application
 
 
@@ -60,3 +65,24 @@ def record_analysis_application(
             created_at=now,
         )
     )
+
+
+def record_moved_primary_application(
+    repo: BillRepository, original: Bill, target_term: int, *, now: datetime
+) -> None:
+    """The caller confirms the row move before a compact target can be hydrated."""
+    record = original.analysis
+    if record is None or record.computation_id is None:
+        return
+    if not primary_record_matches(record, repo.get_computation_result(record.computation_id)):
+        return
+    if not has_primary_application(
+        tuple(repo.list_result_applications(original.term, original.number)),
+        record.computation_id,
+        ProjectionOwner(original.term, original.number),
+    ):
+        return
+    carried = original.model_copy(
+        update={"summary": original.summary.model_copy(update={"term": target_term})}
+    )
+    record_analysis_application(repo, carried, record, now=now, reason="retained_result")

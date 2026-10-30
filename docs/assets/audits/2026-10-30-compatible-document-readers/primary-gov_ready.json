@@ -1,0 +1,11 @@
+{
+  "actual_collection_ready_receipt": true,
+  "eligible_government_rows_before": 0,
+  "generation_matches_result": true,
+  "no_inferred_alias_or_projection_authorization": true,
+  "owner_new_absent": true,
+  "owner_old_ready_exact": true,
+  "rehomed": 0,
+  "source_status": "analysis_ready",
+  "status": "lawful-gov-ready-excluded-from-move"
+}

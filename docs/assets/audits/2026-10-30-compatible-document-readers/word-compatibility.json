@@ -1,0 +1,12 @@
+{
+  "base": "a655bbaf448c27abc11e9a5d89f635e41afe8160",
+  "base_model_sha256": "1d4c1c909e4a0920f992c71cb1ccc4b2341a77e19743cf4130821c23d3026db5",
+  "deployment_barrier": "Compatible reader must actually deploy before any producer; old reader rejects presentstatus. Old rows remain readable/exact, no backfill or silent rewrite.",
+  "new_offered_result_id": "extraction-v1:f3e9d416b4e680e81d327e5ac8a8d1d69115e7abb1ac2dcd0343f27bcd4dfdb1",
+  "old_none_json_and_result_ID_exact": true,
+  "old_reader_rejects_new_status": true,
+  "old_result_id": "extraction-v1:a01da6af3cb5c5683ece1f33b995042b73b8288e7e54eb10ea8deb2d6a69b19f",
+  "producer_off": true,
+  "runtime_default_field_absent": true,
+  "status_bytes": 324
+}

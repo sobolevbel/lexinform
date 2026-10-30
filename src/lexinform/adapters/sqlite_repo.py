@@ -23,6 +23,11 @@ from lexinform.adapters.physical_history import (
     physical_recorded_at,
     validate_physical_inventory,
 )
+from lexinform.adapters.primary_projections import (
+    PrimaryProjectionReader,
+    validate_primary_cost_projections,
+    validate_primary_projections,
+)
 from lexinform.adapters.senate_history import (
     SenateInspectionRowError,
     read_senate_inspection,
@@ -153,6 +158,7 @@ from lexinform.models.senate_inspection import SenateInspectionLink, SenateInspe
 from lexinform.models.source_catalog_attempts import SourceCatalogAttempt, SourceCatalogSnapshot
 from lexinform.models.source_omissions import SourceMetadataOmission
 from lexinform.name_binding import bind_mnemonic
+from lexinform.primary_projections import ProjectionOwner
 from lexinform.saved_records import CONTEXT_RESULT_TABLES
 from lexinform.sitting_delivery import sitting_root_plan
 from lexinform.telegram_text import MESSAGE_LIMIT, split_html, utf16_length
@@ -1148,8 +1154,22 @@ class SqliteBillRepository:
         columns = cursor.description
         if columns is None:
             return sqlite3.Row(cursor, row)
+        values = {column[0]: value for column, value in zip(columns, row, strict=True)}
+        term, number = values.get("term"), values.get("number")
+        owner = (
+            ProjectionOwner(term, number)
+            if isinstance(term, int) and isinstance(number, str)
+            else None
+        )
+        reader = PrimaryProjectionReader(self._conn)
+        generation = values.get("analysis_generation")
         materialized = tuple(
-            read_legacy_json(value, self.get_legacy_result)
+            reader.materialize(
+                column[0],
+                read_legacy_json(value, self.get_legacy_result),
+                owner,
+                generation if isinstance(generation, int) else None,
+            )
             if column[0] in LEGACY_PROJECTION_COLUMNS and isinstance(value, str)
             else value
             for column, value in zip(columns, row, strict=True)
@@ -1232,6 +1252,7 @@ class SqliteBillRepository:
             for number, migration in enumerate(MIGRATIONS[version:], start=version + 1):
                 scratch.executescript(f"BEGIN;{migration}PRAGMA user_version = {number};COMMIT;")
             _validate_legacy_projections(scratch)
+            validate_primary_projections(scratch)
             _validate_candidate_disposition_traces(scratch)
             _validate_rcl_letter_uses(scratch)
             validate_senate_inspections(scratch)
@@ -1416,7 +1437,7 @@ class SqliteBillRepository:
     def save_analysis(self, term: int, number: str, record: AnalysisRecord) -> None:
         """Store `record`; an equal model, not equal bytes, keeps the status and the generation."""
         row = self._conn.execute(
-            "SELECT analysis_json, status FROM bills WHERE term = ? AND number = ?",
+            "SELECT analysis_json, status, term, number FROM bills WHERE term = ? AND number = ?",
             (term, number),
         ).fetchone()
         if row is None:
@@ -1507,7 +1528,12 @@ class SqliteBillRepository:
         )
 
     def load_analysis_memo(self) -> dict[str, str]:
-        return dict(self._conn.execute("SELECT key, record_json FROM analysis_memo"))
+        return {
+            row["key"]: row["record_json"]
+            for row in self._conn.execute(
+                "SELECT key, record_json, term, number FROM analysis_memo"
+            )
+        }
 
     def get_legacy_result(self, value_id: str) -> LegacyResultValue | None:
         return _read_legacy_result(self._conn, value_id)
@@ -5298,10 +5324,16 @@ class SqliteBillRepository:
         return [RunReport.model_validate_json(r[0]) for r in rows]
 
     def most_expensive_analyses(self, *, limit: int) -> list[Bill]:
+        validate_primary_cost_projections(self._conn)
         rows = self._conn.execute(
             """
             WITH ranked AS (
                 SELECT b.*, CASE
+                    WHEN json_type(b.analysis_json, '$.modern_primary_ref') IS NOT NULL
+                        THEN CASE WHEN json_type(b.analysis_json, '$.observation.input_tokens')
+                            IS NOT NULL
+                            THEN json_extract(b.analysis_json, '$.observation.input_tokens')
+                            ELSE json_extract(c.result_json, '$.record.input_tokens') END
                     WHEN json_type(b.analysis_json, '$.legacy_result_ref') IS NULL
                         THEN json_extract(b.analysis_json, '$.input_tokens')
                     WHEN json_type(b.analysis_json, '$.projection_overrides.input_tokens')
@@ -5315,6 +5347,8 @@ class SqliteBillRepository:
                 END AS analysis_input_tokens
                 FROM bills b LEFT JOIN legacy_result_values v
                     ON v.value_id = json_extract(b.analysis_json, '$.legacy_result_ref')
+                LEFT JOIN computation_results c
+                    ON c.result_id = json_extract(b.analysis_json, '$.modern_primary_ref')
             )
             SELECT * FROM ranked WHERE analysis_input_tokens IS NOT NULL
             ORDER BY analysis_input_tokens DESC, term, number

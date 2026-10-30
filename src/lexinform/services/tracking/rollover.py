@@ -15,7 +15,10 @@ import logging
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import Bill, PublicationStatus, StatusChange
 from lexinform.ports import BillRepository, Clock
-from lexinform.services.analysis_applications import record_analysis_application
+from lexinform.services.analysis_applications import (
+    record_analysis_application,
+    record_moved_primary_application,
+)
 from lexinform.services.posting import Poster, Told
 from lexinform.services.result_applications import (
     record_retained_name_application,
@@ -41,9 +44,20 @@ class TermRollover:
         with self._repo.atomic():
             carried = self._repo.list_government_rollover_candidates(previous)
             moved = self._repo.move_government_rows(previous, current)
+            if moved != len(carried):
+                raise ValueError("government move count differs from the selected owner snapshots")
             for original in carried:
+                record_moved_primary_application(
+                    self._repo, original, current, now=self._clock.now()
+                )
                 target = self._repo.get(current, original.number)
                 assert target is not None, "move_government_rows transfers each eligible row"
+                if (
+                    target.analysis != original.analysis
+                    or target.analysis_generation != original.analysis_generation
+                    or target.editorial != original.editorial
+                ):
+                    raise ValueError("the moved government projection differs from its snapshot")
                 if original.analysis is not None:
                     record_analysis_application(
                         self._repo,

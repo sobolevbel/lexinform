@@ -8691,3 +8691,49 @@ ODT note/call gaps остаются в DA3.3; future fact→block mapping отн
 [independent closure](../assets/audits/2026-10-30-prepared-input-reader/independent-closure.json),
 [coordinate audit](../assets/audits/2026-10-30-prepared-input-reader/coordinate-closure-audit.json),
 [Word release](../assets/audits/2026-10-30-word-semantic-retention/release.json).
+
+<a id="j186"></a>
+
+## J186 — compatible compact-primary and bounded Word-status readers
+
+Modern tagged primary refs сохраняют immutable paid record/request/schema/raw-record digest
+и ограниченные observation/accounting overrides. Reader валидирует indexed owner/receipts,
+current и READY роли отдельно, public get/list/search/equal-save/memo/cost, doctor/restore.
+Default callers продолжают писать inline; writer/backfill/DDL/LLM schema changes отсутствуют.
+Neutral duplicate-safe finite JSON/canonical helpers переиспользуются legacy и modern paths.
+
+Government move в существующей atomic transaction проверяет selected/moved count и
+пишет corroborated target primary receipt до target hydration; mismatch откатывает всё.
+211focused/32new и independent7+actual collected-only government READY control green.
+Active READY/BATCH states не переносятся government rollover. Transitive READY не
+поддержан: первоначальный writer сохраняет все READY inline до отдельной transport/fallback
+qualification. Current/memo projection receipts не заменяют collection proof. Frozen
+provider/pending/delivery/content snapshots остаются inline; изменённые answer views нельзя
+компактировать как исходный paid body.
+
+WordViewStatus reader добавляет optional<=512B status только actual legacy Word summary;
+known visited walk и четыре disposition counters не доказывают full XML или потерю
+юридических фактов.41focused/30new, maxvalid399B; None JSON/result IDs и16KiB cap exact.
+Peer review нашёл typed-parent bypass: negative child count и rawdict после model_copy.
+REV3 revalidates child и отвергает nonmodel typed slot; оба repro+6controls green.
+Producer/collector/runtime Word changes в этот commit не входят.
+
+Actual412e:483Bill/list,155memo,172cost rows,194publications,9paid results, все physical
+tables/doctors exact;0errors, restore2/quiet repeat, SQL20889343B/gzip4191374B unchanged.
+Census:14corroborated slots=7current+7memo/7paid primary,232unknown;0actualREADY.
+Отдельная manual counterfactual14 сохраняет public values/field presence, все прочие
+columns/tables/paid/frozen/editorial data, doctor0, restore2; corrupt/missing parent restore
+сохраняет обе DB. SQL−99036B, gzip−23489B (4191374→4167885), projection JSON104010→4974B,
+maxref396B. Это format qualification, не runtime/backfill/global savings forecast.
+Single local timings5.69/6.09/7.14s не являются performance forecast; raw SQL/source13 exact.
+
+Root combined723source/config pins exact:7298tests/257.466s/92%, mypy638/Ruff706.
+J185 exact CI и actual relay verified до следующего reader release. Reader-first barrier
+сохраняется: старый reader отвергает новый Word status/ref; rollback требует совместимого
+reader либо сохранённого snapshot. Source/raw/provider/paid production processing не запускались.
+
+[Qualification](../assets/audits/2026-10-30-compatible-document-readers/qualification.json),
+[actual state](../assets/audits/2026-10-30-compatible-document-readers/actual-state-qualification.json),
+[primary peer](../assets/audits/2026-10-30-compatible-document-readers/primary-closure.json),
+[Word peer](../assets/audits/2026-10-30-compatible-document-readers/word-independent-closure.json),
+[J185 release](../assets/audits/2026-10-30-prepared-input-reader/release.json).

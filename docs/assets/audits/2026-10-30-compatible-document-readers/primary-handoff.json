@@ -1,0 +1,108 @@
+{
+  "base": "a757c4d540428926810660a53835f4534061ae80",
+  "source_paths": {
+    "src/lexinform/adapters/primary_projections.py": {
+      "sha256": "457ab4b66d78bf41d8d9fbf9ef6b81518daeca072ed4069af08a11c018797b01",
+      "bytes": 8273
+    },
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "sha256": "130fd20cc3ff700a11288068b93ae1a032c264bb285c26f5abda89c43685c63f",
+      "bytes": 246680
+    },
+    "src/lexinform/json_storage.py": {
+      "sha256": "ccc8196a5c01ffcf927029d022a95e8bfcfe1d87e647e52750557016d8e3c297",
+      "bytes": 1981
+    },
+    "src/lexinform/models/legacy_results.py": {
+      "sha256": "1811e955119c3f749f24ae6695d2d6386b7877c6c5e7e09450ef680e85ec95af",
+      "bytes": 5042
+    },
+    "src/lexinform/models/primary_projections.py": {
+      "sha256": "a8578d89219465c7d0b016450dec23818a73c2f5da6e6953e9b400cac2b6ded1",
+      "bytes": 1384
+    },
+    "src/lexinform/primary_projections.py": {
+      "sha256": "074a4cc2886d3767e912e5b6759e55b1d3700085b9f548a0247ea1aa783ede0b",
+      "bytes": 6615
+    },
+    "src/lexinform/services/analysis_applications.py": {
+      "sha256": "96e2c542eb26c1293531a7e47a8d4809c6ad3ff16829707415317ac74937adbb",
+      "bytes": 3164
+    },
+    "src/lexinform/services/tracking/rollover.py": {
+      "sha256": "d85b4f17040080205f7993cf3104c564a55181bcc36849cd03b6c260d1746389",
+      "bytes": 6762
+    },
+    "tests/primary_projections.py": {
+      "sha256": "f47d73fe38f00b1b18b21d2b719500f79548d8d616ee505f9d9b31ad78a4d79e",
+      "bytes": 1257
+    },
+    "tests/scenario/test_primary_projection_transfer_reader.py": {
+      "sha256": "cb7ac7145251dd831e473c58cfb7a0a39df15d77a4dcda4551dd070dbd16b1fc",
+      "bytes": 6311
+    },
+    "tests/unit/test_primary_projection_reader.py": {
+      "sha256": "fa146656e87398d098203ab628b1fa2fc711c9f2668d7a73a66d938c68b191f1",
+      "bytes": 11919
+    },
+    "tests/unit/test_primary_projections.py": {
+      "sha256": "6ecbb3704c4f159ff7591bf98e0ebce913819598c5907ce75c68f20e1b79d714",
+      "bytes": 8676
+    },
+    "tools/computation_doctor.py": {
+      "sha256": "791dea8443132c65ff5adfe60151fd46911704530b40c339f9ddffe251884a12",
+      "bytes": 13090
+    }
+  },
+  "patch_sha256": "7f8be6d8a797b7f8accf951c6de04b04a49a4f995d317acca8a1d0c75cc3cf04",
+  "scope": "Modern primary compact reader first; no reference writer/backfill/DDL/LLM schema/raw/archive activation.",
+  "checks": {
+    "focused_passed": 211,
+    "new_controls": 32,
+    "existing_legacy_rollover_review_name_controls": 179,
+    "strict_mypy": "13 paths GREEN",
+    "ruff_check_format": "13 paths GREEN",
+    "git_diff_check": "GREEN",
+    "MIGRATIONS_AST_exact": true,
+    "Analysis_LLM_schema_bytes_exact": true
+  },
+  "focused_command": "PYTHONPATH=$PWD/src:$PWD /private/tmp/lexinform-j140-integrated/.venv/bin/python -m pytest -q tests/unit/test_primary_projections.py tests/unit/test_primary_projection_reader.py tests/scenario/test_primary_projection_transfer_reader.py tests/unit/test_legacy_results.py tests/unit/test_legacy_history.py tests/unit/test_legacy_projection_writes.py tests/scenario/test_rollover_computation_history.py tests/scenario/test_rollover_review_history.py tests/scenario/test_selected_name_binding.py",
+  "boundaries": {
+    "models.primary_projections": "Exact version1 result/request/schema/raw retained-record canonical hash plus restricted observation map. No LLM schema change.",
+    "primary_projections": "Pure typed resolver. Immutable paid body/input facts; mutable source URL/kind/check/selection/text/law/revision retained separately. Accounting original four values or all4zero actual _reused. Raw field presence/defaults preserved; no body/input regeneration.",
+    "adapters.primary_projections": "Actual indexed consumer owner. Current foreign: known target primary application OR reciprocal persisted link + source primary application. READY separate exact source collection/ready receipt + original result and actual consumer generation; collection never authorizes current. No result history scan.",
+    "sqlite_repo": "Existing row/memo/equal-save readers carry owner; cost validates modern refs before ranking projected accounting. Physical scratch restore checks before touching current DB. Save APIs remain inline.",
+    "rollover": "Existing atomic move count must equal selected snapshots. Corroborated immutable original/source primary receipt records same retained-result target receipt after move before get. Hydrated analysis/generation/editorial must match carried snapshot; failure rolls back all. Unknown/legacy inline behavior retained.",
+    "doctor": "Existing computation doctor counts modern refs; independent physical validator checks exact admitted positions, index/parent identities and frozen encoded snapshots. Unsupported positions fail.",
+    "json_storage": "Existing duplicate-safe/finite JSON parser/canonical serialization moved to neutral shared helpers; legacy public wrappers retain behavior."
+  },
+  "controls": [
+    "Current source/text/law/selection/revision differs lawfully from paid input; immutable body/model/input facts cannot be overridden.",
+    "Raw paid record unknown usage/default absence survives digest and public field-set hydration.",
+    "Public get/current/ready/memo/cost/dump/restore2; malformed ref doctor and failed restore preserve both DBs.",
+    "Actual fake-paid RCL/Wykaz native current projections survive cleanup, two rollovers, quiet repeat and restore without rekeying paid records.",
+    "Receipt fault, moved-count mismatch and changed target projection roll back owner move+new receipt.",
+    "Same government number without recorded transfer does not authorize foreign ref.",
+    "Actual ordinary reciprocal link + source receipt permits current read before target receipt; first foreign apply remains inline.",
+    "Native ready work move inline/compact; original collection+alias+exact generation required, missing/stale fails."
+  ],
+  "producer_barrier": [
+    "Reader release precedes any runtime references.",
+    "First foreign write before known alias/receipt must stay inline; no nullable-ID/same-number inference.",
+    "Changed-answer _same_text_read_again and clipped delivery views stay inline unless exactly equal to paid body; no answer patch mechanism.",
+    "Frozen requests/batch contexts/delivery/content snapshots stay inline. Only current, ready.record and root primary memo positions admitted.",
+    "Selection metadata can still be large; later writer needs explicit cap/savings plus populated SQL/gzip qualification. Parent result/application retention is required; no raw archive decision/backfill."
+  ],
+  "reuse": {
+    "stash": "5f588c554c5c7e88c40c4484b8d0e7606f8e359a",
+    "all_prior_stashes_preserved": true,
+    "all_out_preserved": true,
+    "base": "a757c4d540428926810660a53835f4534061ae80"
+  },
+  "not_run": [
+    "broad full gate",
+    "raw replay",
+    "paid/network/production processing",
+    "commit/push"
+  ]
+}

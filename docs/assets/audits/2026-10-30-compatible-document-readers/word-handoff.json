@@ -1,0 +1,54 @@
+{
+  "barrier": "Oldextra-forbid reader rejectsnewstatus. Actuallydeploynewreader beforeproducer; oldabsent JSON/resultIDs exact, no oldrowrewrite. Inertstagehasnoproducer.",
+  "base": "a655bbaf448c27abc11e9a5d89f635e41afe8160",
+  "checks": {
+    "compatibility": "out/corpus/word-default-view-reader/compatibility.json",
+    "compatibility_sha256": "4b462fa18a6c84564a19a1bf991b16fa0c37e15b22e2377611504de859de4eff",
+    "diff_clean": true,
+    "focused_log": "out/corpus/word-default-view-reader/focused-rev3.log",
+    "focused_tests": 41,
+    "format": "3 files already formatted",
+    "mypy": "Success: no issues found in 3 source files",
+    "mypy_files": 3,
+    "new_units": 30,
+    "ruff": "All checks passed!"
+  },
+  "contract": {
+    "bytes": 512,
+    "counts": "4strictnonnegative63bitactualdispositioncounters, no inferredtotals",
+    "known_walk": [
+      "finished",
+      "interrupted"
+    ],
+    "max_valid_state_bytes": 399,
+    "model": "WordViewStatus",
+    "no_fullXML_or_lost_legal_fact_counts": true,
+    "optional_summary_field": "word_view_status; Noneexcluded, absentunknown",
+    "producer_or_collector_or_ports_or_SQLwriter_changes": false,
+    "scope": "OnlyobservedlegacyvisitedWordwalk; finishedisnotfullXML, interruptedcountsareobservedprefix",
+    "summary_coherence": "formatword+word-blocks-v1+legacy-word-body-v1+actualmanifestSHA+bodycount required"
+  },
+  "exclusions": [
+    "No source/projection/provider/payload/paid/runtime default change",
+    "No raw/full/network/paid/commit/push",
+    "16KiBoutercap andomitted_selected_parts semantics unchanged",
+    "No headers/drawings/fullXML/no legal factloss verdict",
+    "ODTnotes outsidephase"
+  ],
+  "freeze_sha256": "f9e7710d55f9158a4e637a77c5af3adcf09bc333ab52633a1504684d98f1ac7d",
+  "overlap": "models.__init__ onlynewWordViewStatus import+__all__ item; mergehunk, neverwholefile",
+  "owned": [
+    "src/lexinform/models/extractions.py",
+    "src/lexinform/models/__init__.py",
+    "tests/unit/test_word_view_status.py"
+  ],
+  "patch_sha256": "317500f6adadaecb4a07a4df0509c2c0d0978addd249443075771f2862c394cf",
+  "repair": "Nestedtypedcorruptstatus andrawdictstatus failclosed infeature-onlySummaryvalidator; no blanketoldfield revalidation",
+  "revision": 3,
+  "source_pins": {
+    "src/lexinform/models/__init__.py": "7ca2c415f07dfeac4cc951900288b93f3c3fdca74a18e26adbe5eaab629c9657",
+    "src/lexinform/models/extractions.py": "d43464c097a0492fcb3d245403a94cf344aee85cdce86d76da06281ca9788e6f",
+    "tests/unit/test_word_view_status.py": "3faa886733259591d2e81d1ee5c7e40dd1e8735a7ea80e58b7614dffdf9633af"
+  },
+  "status": "frozen-inert-reader-awaiting-independent-review"
+}

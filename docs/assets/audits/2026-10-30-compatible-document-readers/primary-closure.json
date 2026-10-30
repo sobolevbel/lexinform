@@ -1,0 +1,89 @@
+{
+  "additional_actual_fake_government_ready_control": {
+    "actual_collection_ready_receipt": true,
+    "eligible_government_rows_before": 0,
+    "generation_matches_result": true,
+    "no_inferred_alias_or_projection_authorization": true,
+    "owner_new_absent": true,
+    "owner_old_ready_exact": true,
+    "rehomed": 0,
+    "source_status": "analysis_ready",
+    "status": "lawful-gov-ready-excluded-from-move"
+  },
+  "checks": [
+    "Immutablepaidbody/input/schema/rawshape andapplicationrole checks; allowedobservation/accounting only",
+    "Foreigncurrent actualreciprocal persistedalias+sourceprimaryprojectionreceipt orknowntargetreceipt; no number/URLguess",
+    "Ready exactresult/consumer generation+actualdirectalias/sourcecollection-ready; currentprojectionreceipt isnotcollectionpermission",
+    "Confirmedgovcurrentmove recordsactualpriorledgerreceiptbeforefirsttargethydrate; count/receipt/projectionmismatchrollbackwholemove",
+    "Current/ready/memo/costSQL/get/doctor/sharedscratchrestore preserveexistingtarget; originalinline readable"
+  ],
+  "findings": [],
+  "focused_controls": 7,
+  "focused_log_sha256": "c3e773730bfbadca84cdbc0607343f2eac6a8c5c3201707d066be12e9985b945",
+  "gov_proof_sha256": "097a91c75243031f31e7cf6617fd0693277ca690c66596dca47e9c0a9068fcc5",
+  "handoff_sha256": "97ec2a71d33ff9a963ce9d2079a68b6f77c1226ebb4bdd7cb0dc321737aa524e",
+  "patch_sha256": "7f8be6d8a797b7f8accf951c6de04b04a49a4f995d317acca8a1d0c75cc3cf04",
+  "scope": "read-only exact13source closure;7focused+1finiteactualgovREADY control, no broadfull/raw/network/paid/sourceedits; out-only driver setupfaults preserved separately",
+  "source_paths": {
+    "src/lexinform/adapters/primary_projections.py": {
+      "bytes": 8273,
+      "sha256": "457ab4b66d78bf41d8d9fbf9ef6b81518daeca072ed4069af08a11c018797b01"
+    },
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "bytes": 246680,
+      "sha256": "130fd20cc3ff700a11288068b93ae1a032c264bb285c26f5abda89c43685c63f"
+    },
+    "src/lexinform/json_storage.py": {
+      "bytes": 1981,
+      "sha256": "ccc8196a5c01ffcf927029d022a95e8bfcfe1d87e647e52750557016d8e3c297"
+    },
+    "src/lexinform/models/legacy_results.py": {
+      "bytes": 5042,
+      "sha256": "1811e955119c3f749f24ae6695d2d6386b7877c6c5e7e09450ef680e85ec95af"
+    },
+    "src/lexinform/models/primary_projections.py": {
+      "bytes": 1384,
+      "sha256": "a8578d89219465c7d0b016450dec23818a73c2f5da6e6953e9b400cac2b6ded1"
+    },
+    "src/lexinform/primary_projections.py": {
+      "bytes": 6615,
+      "sha256": "074a4cc2886d3767e912e5b6759e55b1d3700085b9f548a0247ea1aa783ede0b"
+    },
+    "src/lexinform/services/analysis_applications.py": {
+      "bytes": 3164,
+      "sha256": "96e2c542eb26c1293531a7e47a8d4809c6ad3ff16829707415317ac74937adbb"
+    },
+    "src/lexinform/services/tracking/rollover.py": {
+      "bytes": 6762,
+      "sha256": "d85b4f17040080205f7993cf3104c564a55181bcc36849cd03b6c260d1746389"
+    },
+    "tests/primary_projections.py": {
+      "bytes": 1257,
+      "sha256": "f47d73fe38f00b1b18b21d2b719500f79548d8d616ee505f9d9b31ad78a4d79e"
+    },
+    "tests/scenario/test_primary_projection_transfer_reader.py": {
+      "bytes": 6311,
+      "sha256": "cb7ac7145251dd831e473c58cfb7a0a39df15d77a4dcda4551dd070dbd16b1fc"
+    },
+    "tests/unit/test_primary_projection_reader.py": {
+      "bytes": 11919,
+      "sha256": "fa146656e87398d098203ab628b1fa2fc711c9f2668d7a73a66d938c68b191f1"
+    },
+    "tests/unit/test_primary_projections.py": {
+      "bytes": 8676,
+      "sha256": "6ecbb3704c4f159ff7591bf98e0ebce913819598c5907ce75c68f20e1b79d714"
+    },
+    "tools/computation_doctor.py": {
+      "bytes": 13090,
+      "sha256": "791dea8443132c65ff5adfe60151fd46911704530b40c339f9ddffe251884a12"
+    }
+  },
+  "source_pins_exact_before_after": true,
+  "status": "independent-exact13-reader-closed-green",
+  "writer_barrier": [
+    "Inertreader only; existingwriters remaininline, no compactwriter/DDL/backfill/frozenpayloadrewrite",
+    "Current/memo carriedprojection receipts donot authorize READY collection",
+    "READYdirectalias-only: transitiveREADYpermission unsupported. Firstfutureproducer MUSTleaveforeign/transitiveREADY inline unlessseparatelyqualifiedtransferpolicy+compatiblereaderexists",
+    "LawfulgovREADY statuses areexcludedfromtermrollover; confirmedcurrentbridge mustnotinfercollectionpermission"
+  ]
+}
