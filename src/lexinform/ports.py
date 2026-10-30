@@ -111,6 +111,8 @@ from lexinform.models import (
     UpdateNews,
     Vote,
     WordDetailedExtraction,
+    WordStructuredExtraction,
+    WordStructuredParts,
     WordTextExtraction,
     WykazEntry,
 )
@@ -351,6 +353,18 @@ class WordBlockTextExtractor(Protocol):
 @runtime_checkable
 class WordNoteTextExtractor(Protocol):
     def extract_with_notes(self, data: bytes) -> WordDetailedExtraction: ...
+
+
+@runtime_checkable
+class WordStructureTextExtractor(Protocol):
+    def extract_with_structure(self, data: bytes) -> WordStructuredExtraction: ...
+
+
+@runtime_checkable
+class WordStructuredPartsExtractor(Protocol):
+    def extract_parts_with_word_structure(
+        self, data: bytes, *, include_pdf_pages: bool = True
+    ) -> WordStructuredParts: ...
 
 
 @runtime_checkable

@@ -1,0 +1,43 @@
+{
+  "all_qualifies_same_frozen_revision": true,
+  "base": "a1dc3b705c5599819d8b4fa9d8c68404715a56bd",
+  "change": "Optional PDF metadata flag preserves actual old comparison options; no diagnostic filtering/sourcebehavior regression",
+  "corpus_proof_sha256": "ef5f22c10d29288afbcc6c9a7b4d9b03db7668590bec821856a70441ac2d048d",
+  "driver_faults_preserved": [
+    "focused-first.log collected from installed PRIMARY before explicit PYTHONPATH; ignored as qualification",
+    "first local focused false ValueError propagation expectation corrected to existing rejected-part contract; no production behavior repair"
+  ],
+  "freeze_sha256": "7a73660ff7a9bc61beff95bfa2ad2c230a03d9edb39293b1d18ef97138e7f011",
+  "native_proof_sha256": "97205935cef11a0424557940ca7915b64b1082cdaf3c695440ec36c20de73d0f",
+  "owned": [
+    "src/lexinform/models/word_structure.py",
+    "src/lexinform/models/__init__.py",
+    "src/lexinform/ports.py",
+    "src/lexinform/adapters/document_text.py",
+    "tools/replay_word_blocks.py",
+    "tests/unit/test_word_structure_parts.py"
+  ],
+  "patch_sha256": "045ecd4b9c2d2822f5248296cebe93b451936ed2524a1c3767caf89fcffbc4c0",
+  "proof": "out/corpus/word-origin-carrier/qualification-summary.json",
+  "proof_sha256": "e81509fae645683f859f526ae669da0ff6fe942bde20ff2ae340bbb92e19d5b7",
+  "qualification": {
+    "docx_wordml_ast_exact_base": true,
+    "focused_cases": 116,
+    "focused_log": "out/corpus/word-origin-carrier/focused-rev2.log",
+    "format": "6 files already formatted",
+    "mypy": "Success: no issues found in 6 source files",
+    "no_raw_full_commit_push": true,
+    "ruff": "All checks passed!"
+  },
+  "revision": 2,
+  "semantics": "optin transient companion only; legacy ExtractedParts JSON unchanged; actual same-pass OOXML physical-index/input/body/note bindings; custom/failure remains unknown; no SQL/default activation/fact coordinates or v2 budget",
+  "source_pins": {
+    "src/lexinform/adapters/document_text.py": "16405d4c131c22c621e6cc8470e15ea07192f2fba2e95a8b8c920e577cd70c7a",
+    "src/lexinform/models/__init__.py": "a571f927b1340ff1d04705be329931fcf65c157b70f1fd8cf9486549c99a0580",
+    "src/lexinform/models/word_structure.py": "819bafb5b0f132b1bfeff2e291dc91b48e03ee5e06e00fb416cfb466d7297667",
+    "src/lexinform/ports.py": "6e74d7264923c8062c8e668f9130c628f544157a2d909f80b4faa9bc61c7b77a",
+    "tests/unit/test_word_structure_parts.py": "bd5966e5f7a033626f9fd4efa14e38d469a453fd7ed17474f5915ca0afc93482",
+    "tools/replay_word_blocks.py": "944bac8ebdf5cc58283632908b6877a3e4a6a1de6f61eb9b039cc1d82c147789"
+  },
+  "status": "qualified-frozen-ready-for-root-integration"
+}

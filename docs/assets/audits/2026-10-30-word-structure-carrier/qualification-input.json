@@ -1,0 +1,6 @@
+{
+  "driver_sha256": "24089768b554121021d8d9c6570b320273434315980be74d5b885424898fc6dc",
+  "independent_review": "exact6pins rev2 green9targeted controls, URLreviewer",
+  "scope": "Onecandidate-onlyWord3055+11fixedZIP74bindings+56existingvariants; oldexactfingerprintbaselines reused; PDFmetadataFalse; no baseline lanes rerun",
+  "source_freeze_sha256": "7a73660ff7a9bc61beff95bfa2ad2c230a03d9edb39293b1d18ef97138e7f011"
+}

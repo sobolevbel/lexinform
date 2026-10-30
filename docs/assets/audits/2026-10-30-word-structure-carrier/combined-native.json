@@ -1,0 +1,33 @@
+{
+  "actual_adapter_sha256": "9de18013fe9423f444ab21fe30be59b6bb6dae8e2f2785867c1b5ba838c7dbc1",
+  "driver_sha256": {
+    "runtime_profile.py": "c015189ac8dc30a51b9cf9e8f4d0d9949f0039db38f1d4fb00d32dd6b640ad4e",
+    "word_probe.py": "e02fd27d1c08985efc08ec535b44e1f2a289bd56913fb24288d52acc235dfe38"
+  },
+  "frozen_root_sources": 708,
+  "include_pdf_pages": false,
+  "independent_XML_paths_and_JSON_roundtrip": true,
+  "legacy_selection_trim_digest_provider_hashes_exact_old": true,
+  "native": {
+    "actual_current_recipe_ids": [
+      "f9320160bdcfca0906b69472ec7bf101154b2089b1ab7d6831094278d87c5683"
+    ],
+    "business_workers_IO_parity": true,
+    "cache_repeat365_zero_SQL_growth_get_doctor_restore_twice": true,
+    "captures": 13,
+    "metadata": 74,
+    "nonphysical_SQL_unchanged_except_known_artifact_parents": true,
+    "raw_bytes": 400412,
+    "raw_controls": 9
+  },
+  "native_companion_word_cases": 4,
+  "no_big_matrix_or_Settings_env_network_paid_full_source_edits": true,
+  "old_pins_and_recipes_not_normalized": true,
+  "proof_sha256": {
+    "runtime-profile.json": "cbf24aba7637d25bc554982b1e1645ecdd0715a29aba36121314865072bfbced",
+    "word-proof.json": "f5a2b0821ee56b39eff5db7d30c309da66dcf8cd010d5257cea899d5fb082510"
+  },
+  "source_freeze_exact_before_after": true,
+  "source_freeze_sha256": "8abe36af544a9b1ee5855ebccd924216d6a87becf5bc2a03882e310c3c4565a2",
+  "status": "qualified"
+}

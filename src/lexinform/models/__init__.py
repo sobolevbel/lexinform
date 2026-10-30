@@ -495,6 +495,8 @@ __all__ = [
     "WordDetailedExtraction",
     "WordStructuredExtraction",
     "WordStructureExtraction",
+    "WordPartStructureExtraction",
+    "WordStructuredParts",
     "WordStructureBlock",
     "WordStructureCall",
     "WordStructureSupport",
@@ -812,8 +814,12 @@ from lexinform.models.source_omissions import SourceMetadataOmission as SourceMe
 from lexinform.models.source_omissions import (
     SourceReferenceOmissionOwner as SourceReferenceOmissionOwner,
 )
+from lexinform.models.word_structure import (
+    WordPartStructureExtraction as WordPartStructureExtraction,
+)
 from lexinform.models.word_structure import WordStructureBlock as WordStructureBlock
 from lexinform.models.word_structure import WordStructureCall as WordStructureCall
 from lexinform.models.word_structure import WordStructuredExtraction as WordStructuredExtraction
+from lexinform.models.word_structure import WordStructuredParts as WordStructuredParts
 from lexinform.models.word_structure import WordStructureExtraction as WordStructureExtraction
 from lexinform.models.word_structure import WordStructureSupport as WordStructureSupport

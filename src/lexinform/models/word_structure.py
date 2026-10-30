@@ -6,7 +6,7 @@ from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from lexinform.models.documents import WordDetailedExtraction
+from lexinform.models.documents import ExtractedParts, WordDetailedExtraction
 from lexinform.models.word_notes import WordNote, WordNoteCall, WordNoteXmlPart
 
 WordXmlPart = Literal["word/document.xml", "word/footnotes.xml", "word/endnotes.xml"]
@@ -209,4 +209,37 @@ class WordStructuredExtraction(BaseModel):
                     raise ValueError("Word structure call target belongs to another note")
                 if call.state != ("expanded" if note.text else "empty"):
                     raise ValueError("Word structure target state differs from its actual text")
+        return self
+
+
+class WordPartStructureExtraction(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    part_index: Count
+    extraction: WordStructureExtraction
+
+
+class WordStructuredParts(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    legacy: ExtractedParts
+    word_structure: tuple[WordPartStructureExtraction, ...] = ()
+
+    @model_validator(mode="after")
+    def structures_refer_to_actual_legacy_parts(self) -> Self:
+        legacy = ExtractedParts.model_validate(self.legacy.model_dump())
+        bodies = {record.part_index: record.extraction for record in legacy.word_blocks}
+        notes = {record.part_index: record.extraction for record in legacy.word_notes}
+        previous = -1
+        for record in self.word_structure:
+            index = record.part_index
+            if index <= previous or index not in bodies or index not in notes:
+                raise ValueError(
+                    "Word structure requires unique ordered physical body and note links"
+                )
+            WordStructuredExtraction(
+                legacy=WordDetailedExtraction(body=bodies[index], notes=notes[index]),
+                structure=record.extraction,
+            )
+            previous = index
         return self

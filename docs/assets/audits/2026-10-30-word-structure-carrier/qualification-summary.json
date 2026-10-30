@@ -1,0 +1,89 @@
+{
+  "actual_reached_nested_word_bindings": 74,
+  "base": "a1dc3b705c5599819d8b4fa9d8c68404715a56bd",
+  "candidate_driver_sha256": "24089768b554121021d8d9c6570b320273434315980be74d5b885424898fc6dc",
+  "checks": {
+    "focused": 116,
+    "independent_review": "Root+URLreviewer9targeted exactrev2 green",
+    "mypy_files": 6,
+    "ruff_format_diff_clean": true,
+    "source_pins_unchanged": true
+  },
+  "corpus_proof_sha256": "ef5f22c10d29288afbcc6c9a7b4d9b03db7668590bec821856a70441ac2d048d",
+  "independent_XML_paths_and_companion_roundtrips": true,
+  "legacy_JSON_selection_trim_digest_provider_hashes_exact": true,
+  "limits": [
+    "Closed existing3055Word+11fixedZIP/74reachedWord+56existingderivatives only; no wholeZIPdiscovery/download",
+    "No complete coordinate/fact-block map claim; v1partial retainedprefix remains bounded",
+    "Transientcompanion optinonly; no SQL/defaultactivation/readerfactchanges",
+    "Changed actual source/physicalrecipe components recorded without oldidentity substitution"
+  ],
+  "meaningful_existing_variants": 56,
+  "meaningful_kinds": [
+    "control",
+    "deadline",
+    "amount",
+    "negation",
+    "scope",
+    "reference",
+    "date"
+  ],
+  "native_driver_sha256": "3a05943fb3d04303913b4dc8888e0266dd375618aab622d92763bfb12bb8f50e",
+  "native_proof_sha256": "97205935cef11a0424557940ca7915b64b1082cdaf3c695440ec36c20de73d0f",
+  "native_smoke": {
+    "actual_current_recipe_ids": [
+      "4507a8833662ea869ac1e546eb8062f9eb67bf46bfb708efb69a023b131b589a"
+    ],
+    "business_workers_IO_parity": true,
+    "cache_repeat365_zeroSQLgrowth_restore_twice_doctor_green": true,
+    "captures": 13,
+    "metadata": 74,
+    "raw_bytes": 400412,
+    "raw_controls": 9
+  },
+  "native_word_bindings": 3053,
+  "nested_fixed_roots": 11,
+  "old_baseline_lanes_not_replayed": true,
+  "old_pins_or_component_recipe_IDs_not_normalized": true,
+  "patch_sha256": "045ecd4b9c2d2822f5248296cebe93b451936ed2524a1c3767caf89fcffbc4c0",
+  "raw_word_bytes": 405287109,
+  "raw_word_inputs": 3055,
+  "sidecar_v1": {
+    "budget_unchanged": [
+      4096,
+      524288
+    ],
+    "complete": 900,
+    "counters": {
+      "blocks": {
+        "observed": 1991043,
+        "retained": 169404
+      },
+      "calls": {
+        "observed": 5320,
+        "retained": 1388
+      },
+      "support": {
+        "observed": 29198143,
+        "retained": 2957405
+      }
+    },
+    "partial": 2153,
+    "unknown_full_hash_for_partial": true
+  },
+  "single_candidate_only_pass": true,
+  "source_freeze_sha256": "7a73660ff7a9bc61beff95bfa2ad2c230a03d9edb39293b1d18ef97138e7f011",
+  "source_pins": {
+    "src/lexinform/adapters/document_text.py": "16405d4c131c22c621e6cc8470e15ea07192f2fba2e95a8b8c920e577cd70c7a",
+    "src/lexinform/models/__init__.py": "a571f927b1340ff1d04705be329931fcf65c157b70f1fd8cf9486549c99a0580",
+    "src/lexinform/models/word_structure.py": "819bafb5b0f132b1bfeff2e291dc91b48e03ee5e06e00fb416cfb466d7297667",
+    "src/lexinform/ports.py": "6e74d7264923c8062c8e668f9130c628f544157a2d909f80b4faa9bc61c7b77a",
+    "tests/unit/test_word_structure_parts.py": "bd5966e5f7a033626f9fd4efa14e38d469a453fd7ed17474f5915ca0afc93482",
+    "tools/replay_word_blocks.py": "944bac8ebdf5cc58283632908b6877a3e4a6a1de6f61eb9b039cc1d82c147789"
+  },
+  "status": "qualified",
+  "unchanged_previous_errors": {
+    "documents/files/657792.docx": "ValueError",
+    "documents/files/657796.docx": "ValueError"
+  }
+}

@@ -25,16 +25,6 @@ from tools.corpus_artifacts import digest, observation_changes, read_artifact, w
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 
 
-class StructuredWordReader(DocxTextExtractor):
-    def __init__(self) -> None:
-        self.structures: list[WordStructuredExtraction] = []
-
-    def extract_with_notes(self, data: bytes) -> WordDetailedExtraction:
-        result = self.extract_with_structure(data)
-        self.structures.append(result)
-        return result.legacy
-
-
 def verify_structure(data: bytes, result: WordStructuredExtraction) -> dict[str, Any]:
     restored = WordStructuredExtraction.model_validate_json(result.model_dump_json())
     if restored != result:
@@ -144,12 +134,40 @@ def snapshot(
     with_notes: bool = False,
     with_structure: bool = False,
 ) -> tuple[dict[str, Any], dict[str, Any] | None]:
-    reader = StructuredWordReader() if with_structure else DocxTextExtractor()
+    reader = DocxTextExtractor()
+    structured: WordStructuredExtraction | None = None
     result = None
     detailed = None
     try:
         if adapter:
-            if with_notes:
+            if with_structure:
+                if physical_parts:
+                    carrier = DocumentTextExtractor(
+                        PypdfTextExtractor(), reader, DocTextExtractor()
+                    ).extract_parts_with_word_structure(data, include_pdf_pages=False)
+                    legacy = carrier.legacy
+                    if (len(legacy.parts), len(carrier.word_structure)) != (
+                        1,
+                        1,
+                    ) or legacy.rejected:
+                        raise ValueError(
+                            "A single Word input requires one actual physical structure"
+                        )
+                    linked = carrier.word_structure[0]
+                    if linked.part_index != 0:
+                        raise ValueError("Word structure must bind its actual physical input")
+                    detailed = WordDetailedExtraction(
+                        body=legacy.word_blocks[0].extraction,
+                        notes=legacy.word_notes[0].extraction,
+                    )
+                    structured = WordStructuredExtraction(
+                        legacy=detailed, structure=linked.extraction
+                    )
+                else:
+                    structured = reader.extract_with_structure(data)
+                    detailed = structured.legacy
+                result = detailed.body
+            elif with_notes:
                 detailed = (
                     physical_notes(data, reader)
                     if physical_parts
@@ -260,9 +278,8 @@ def snapshot(
             "losses": notes.losses,
         }
     if with_structure:
-        if not isinstance(reader, StructuredWordReader) or len(reader.structures) != 1:
+        if structured is None:
             raise ValueError("Word structure must describe its one actual physical invocation")
-        structured = reader.structures[0]
         if structured.legacy != detailed:
             raise ValueError("Word structure differs from its actual physical legacy manifests")
         physical["structure"] = verify_structure(data, structured)

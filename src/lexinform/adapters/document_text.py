@@ -77,7 +77,13 @@ from lexinform.models.word_notes import (
     WordNoteExtraction,
     WordNoteXmlPart,
 )
-from lexinform.models.word_structure import WordStructuredExtraction, WordStructureView
+from lexinform.models.word_structure import (
+    WordPartStructureExtraction,
+    WordStructuredExtraction,
+    WordStructuredParts,
+    WordStructureExtraction,
+    WordStructureView,
+)
 from lexinform.physical_header_capture import PhysicalHeaderBuilder
 from lexinform.physical_walk_capture import (
     PhysicalWalkCapture,
@@ -90,6 +96,7 @@ from lexinform.ports import (
     TextExtractor,
     WordBlockTextExtractor,
     WordNoteTextExtractor,
+    WordStructureTextExtractor,
 )
 from lexinform.sections import PAGE_BREAK
 from lexinform.word_projection import legacy_word_text
@@ -854,6 +861,7 @@ class _PhysicalOrigins:
     word_notes: list[WordPartNoteExtraction] | None
     odt_blocks: list[OdtPartExtraction] | None
     unlocated_text: list[UnlocatedPartExtraction] | None
+    word_structure: list[WordPartStructureExtraction] | None = None
 
 
 class DocumentTextExtractor:
@@ -890,8 +898,6 @@ class DocumentTextExtractor:
         include_odt_blocks: bool = True,
         include_unlocated_text: bool = True,
     ) -> ExtractedParts:
-        parts: list[DocumentPart] = []
-        rejected: list[str] = []
         origins = _PhysicalOrigins(
             pdf_pages=[] if include_pdf_pages else None,
             word_blocks=[] if include_word_blocks else None,
@@ -899,6 +905,27 @@ class DocumentTextExtractor:
             odt_blocks=[] if include_odt_blocks else None,
             unlocated_text=[] if include_unlocated_text else None,
         )
+        return self._extract_parts(data, origins)
+
+    def extract_parts_with_word_structure(
+        self, data: bytes, *, include_pdf_pages: bool = True
+    ) -> WordStructuredParts:
+        origins = _PhysicalOrigins(
+            pdf_pages=[] if include_pdf_pages else None,
+            word_blocks=[],
+            word_notes=[],
+            odt_blocks=[],
+            unlocated_text=[],
+            word_structure=[],
+        )
+        legacy = self._extract_parts(data, origins)
+        return WordStructuredParts(
+            legacy=legacy, word_structure=tuple(origins.word_structure or ())
+        )
+
+    def _extract_parts(self, data: bytes, origins: _PhysicalOrigins) -> ExtractedParts:
+        parts: list[DocumentPart] = []
+        rejected: list[str] = []
         digest = hashlib.sha256(data).hexdigest()
         capture = current_physical_walk_capture()
         if capture is not None:
@@ -1058,6 +1085,7 @@ class DocumentTextExtractor:
         pdf_result: PdfTextExtraction | None = None
         word_result: WordTextExtraction | None = None
         note_result: WordNoteExtraction | None = None
+        structure_result: WordStructureExtraction | None = None
         odt_result: OdtTextExtraction | None = None
         if data.startswith(_ZIP_MAGIC):
             try:
@@ -1067,7 +1095,19 @@ class DocumentTextExtractor:
                         capture = current_physical_walk_capture()
                         if capture is not None and type(self._docx) is not DocxTextExtractor:
                             _physical_event(capture, capture.opaque_helper)
-                        if origins.word_notes is not None and isinstance(
+                        if origins.word_structure is not None and isinstance(
+                            self._docx, WordStructureTextExtractor
+                        ):
+                            structured = _physical_format(
+                                partial(self._docx.extract_with_structure, data)
+                            )
+                            word_result, note_result = (
+                                structured.legacy.body,
+                                structured.legacy.notes,
+                            )
+                            structure_result = structured.structure
+                            text = word_result.legacy_text
+                        elif origins.word_notes is not None and isinstance(
                             self._docx, WordNoteTextExtractor
                         ):
                             detailed = _physical_format(
@@ -1182,6 +1222,10 @@ class DocumentTextExtractor:
         if origins.word_notes is not None and note_result is not None:
             origins.word_notes.append(
                 WordPartNoteExtraction(part_index=len(parts) - 1, extraction=note_result)
+            )
+        if origins.word_structure is not None and structure_result is not None:
+            origins.word_structure.append(
+                WordPartStructureExtraction(part_index=len(parts) - 1, extraction=structure_result)
             )
         if origins.odt_blocks is not None and odt_result is not None:
             origins.odt_blocks.append(

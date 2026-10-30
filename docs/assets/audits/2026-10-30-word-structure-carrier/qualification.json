@@ -1,0 +1,9 @@
+{
+  "scope": "Native same-pass optional WordStructuredParts companion with strict actualpart/body/note/input bindings; no second legacy carrier/schema/SQL/fact mapping/defaultactivation",
+  "patch_sha256": "045ecd4b9c2d2822f5248296cebe93b451936ed2524a1c3767caf89fcffbc4c0",
+  "independent_review": "Root exact6diff green; option mismatch discovered before raw, fixed include_pdf_pagesdefaultTrue/runnerFalse; URLreviewer exactrev2pins+9targeted controls green, old19 controls retained",
+  "qualification": "ONEcandidate-only3055Word+11fixedZIP74Wordbindings+56existingvariants vs saved baselines, not old4lanes replay; independentXMLpaths/strictcompanion roundtrip; v1partialcounts unchanged900complete2153partial",
+  "root_merge": "Git3way clean atopJ180; adapterAST exactly qualifiedcarrierrev2 plus3previouslyphysicalqualifiedreplacements; other5SHAexact. Actualcombinedf9320160...native13/74+4Word companion cases separatelyqualified; no oldcomponent/recipe identity substitution.",
+  "full_gate": "../2026-10-30-review-carrier-gate/qualification.json",
+  "limits": "No full coordinate map/merged geometry/newfact spans or SQL retention. V1retainedprefix unchanged; semantic-first v2 budget is separate nextstage."
+}

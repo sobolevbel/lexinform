@@ -8535,3 +8535,37 @@ unbound; durable candidates0, matches0 до/после cleanup108memos/125delive
 [Qualification](../assets/audits/2026-10-30-review-history-reuse/qualification.json),
 [saved-context proof](../assets/audits/2026-10-30-review-history-reuse/saved-context-qualification.json),
 [shared gate](../assets/audits/2026-10-30-review-carrier-gate/qualification.json).
+
+
+<a id="j182"></a>
+
+## J182 — native Word structure companion and replay consumer
+
+`WordStructuredParts` содержит прежний `ExtractedParts` и typed part-bound structures;
+старый JSON/IDs не расширяется. Native optional capability собирает companion в существующем
+`_collect` проходе, один раз на actual OOXML leaf; валидатор связывает ordered unique
+physical part index/input/body/note hashes и прежний WordStructuredExtraction. Custom/failure
+сохраняют unknown/старый rejection или original exception, без второго чтения/вымышленной
+геометрии. Existing replay runner использует native capability вместо временного подкласса.
+Нет Container/default/SQL/facts activation, отдельного framework или v2-budget изменения.
+
+104 initial focused и Root static review; перед raw обнаружилось option mismatch: прежние
+drivers отключали PDF page manifests, новый opt-in API включал их. Rev2 добавляет только
+`include_pdf_pages=True` keyword, runner задаёт False; остальные options совпадают. После
+116 focused/strict6 и независимого exact6/9control review выполнен один candidate-only
+проход3055Word/11ZIP/56readyvariants против сохранённых baselines, прежние4lanes не повторены.
+3053 native bindings и те же2 ValueError;74 actual nested Word bindings; legacy/physicalJSON,
+selection/trim/digest/provider hashes exact, independentXMLpaths/roundtrips green.
+V1sidecar unchanged:900complete/2153partial,169404/1991043blocks,1388/5320calls;
+полная карта/новые fact spans не объявляются, semantic-firstv2 — отдельный этап.
+
+Root Git3way clean с J180: actualadapter AST равен carrierrev2+ровно3 ранее принятым
+physical replacements;other5SHA exact. Finalactualstandardrecipe `f9320160…`,9raw400412B,
+13captures/74metadata и4Word cases через native companion: workers/IO/sourceSQL,
+cache+365/get/doctor/restore2 и oldprovider hashes exact;708pins unchanged.
+Общий gate J181/J182:7141tests/256.898s/92%,mypy623/Ruff691. Полный corpus-proof с
+per-case hashes сохранён отдельно; trackedindex/summary фиксируют егоSHA и baselinepins.
+[Qualification](../assets/audits/2026-10-30-word-structure-carrier/qualification.json),
+[corpus summary](../assets/audits/2026-10-30-word-structure-carrier/qualification-summary.json),
+[proof index](../assets/audits/2026-10-30-word-structure-carrier/corpus-proof-index.json),
+[combined native](../assets/audits/2026-10-30-word-structure-carrier/combined-native.json).
