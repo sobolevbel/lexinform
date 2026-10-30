@@ -1290,6 +1290,27 @@ INSERT INTO "llm_batches" VALUES('batch_6ae0f2f167ac81909998461d26252119','opena
 INSERT INTO "llm_batches" VALUES('batch_6ae245f072e08190a36457785b64b260','openai','amendments','2026-10-28T18:58:56+00:00','ended','2026-10-28T19:12:04+00:00','2026-10-28T19:12:04+00:00',1,0.046539375,'2026-10-28T19:12:11+00:00');
 INSERT INTO "llm_batches" VALUES('batch_6ae3994c0c9c8190a7f09698b0ce03a9','openai','analysis','2026-10-29T19:06:52+00:00','ended','2026-10-29T19:12:02+00:00','2026-10-29T19:12:02+00:00',2,1.401986,'2026-10-29T19:12:08+00:00');
 INSERT INTO "llm_batches" VALUES('batch_6ae39e62bd84819086ebc77ca05d75db','openai','supplement','2026-10-29T19:28:34+00:00','ended','2026-10-29T19:33:08+00:00','2026-10-29T19:33:08+00:00',1,0.092734,'2026-10-29T19:33:15+00:00');
+CREATE TABLE physical_captures (
+    capture_id TEXT PRIMARY KEY NOT NULL,
+    artifact_sha256 TEXT NOT NULL REFERENCES artifacts(sha256),
+    recipe_id TEXT NOT NULL REFERENCES physical_metadata(metadata_id),
+    inventory_id TEXT NOT NULL REFERENCES physical_metadata(metadata_id),
+    execution_id TEXT NOT NULL REFERENCES physical_metadata(metadata_id),
+    extraction_id TEXT REFERENCES extraction_results(extraction_id),
+    recorded_at TEXT NOT NULL,
+    record_json TEXT NOT NULL CHECK(json_valid(record_json) AND
+      length(CAST(record_json AS BLOB)) <= 1024)
+);
+CREATE TABLE physical_metadata (
+    metadata_id TEXT PRIMARY KEY NOT NULL,
+    kind TEXT NOT NULL CHECK(kind IN ('headers','graph','unit','execution','recipe')),
+    body_sha256 TEXT,
+    header_id TEXT REFERENCES physical_metadata(metadata_id) DEFERRABLE INITIALLY DEFERRED,
+    coverage TEXT NOT NULL CHECK(coverage IN ('complete','partial')),
+    recorded_at TEXT NOT NULL,
+    record_json TEXT NOT NULL CHECK(json_valid(record_json) AND
+      length(CAST(record_json AS BLOB)) <= 32768)
+);
 CREATE TABLE publication_content (
         publication_id INTEGER PRIMARY KEY NOT NULL,
         content_id TEXT NOT NULL REFERENCES content_versions(content_id)
@@ -2905,6 +2926,7 @@ INSERT INTO "runs" VALUES(398,'2026-10-29T20:52:29+00:00','2026-10-29T20:59:30+0
 INSERT INTO "runs" VALUES(399,'2026-10-29T23:34:35+00:00','2026-10-29T23:34:35+00:00','2026-10-29T23:34:35+00:00','deliveries',1,'{"started_at":"2026-10-29T23:34:35Z","finished_at":"2026-10-29T23:34:35Z","since":"2026-10-29T23:34:35Z","mode":"deliveries","term":null,"discovery_ok":false,"discovered":0,"pre_print_discovered":0,"rcl_discovered":0,"rcl_prefilter_hits":0,"wykaz_discovered":0,"over_on_arrival":0,"linked":0,"prefilter_hits":0,"prefilter_rejected":null,"prefilter_details":[],"text_prefilter_checked":0,"text_prefilter_hits":0,"text_prefilter_scans":0,"text_prefilter_unreadable":0,"text_prefilter_unanswered":0,"acts_published":0,"in_force_posted":0,"consultation_reminders":0,"hearing_reminders":0,"decision_reminders":0,"held":0,"cards_refreshed":0,"digest_drafted":false,"digest_reader_parts":0,"digest_events_covered":0,"consultation_results_posted":0,"consultation_reviews_posted":0,"commission_reviews_posted":0,"act_reviews_posted":0,"effective_rule_messages":0,"amendment_messages_updated":0,"message_parts_sent":0,"agenda_posted":0,"agenda_cancelled":0,"discontinued":0,"rehomed":0,"analyzed":0,"triaged_out":0,"analysis_failures":0,"analysis_skipped_cost":0,"analysis_unanswered":0,"joint_revived":0,"notes":[],"rejected":[],"commands_handled":0,"commands_failed":0,"commands":[],"published":0,"joint_published":0,"updates":0,"update_events":0,"attention":{"digest_queued_events":6,"digest_awaiting_approval":6,"digest_oldest_minutes":22347},"reanalyzed":0,"tracked":0,"batch_waiting":0,"batch_requests_submitted":0,"batch_requests_pending":0,"batch_requests_queued":0,"batch_requests_uncertain":0,"errors":[],"llm_input_tokens":0,"llm_output_tokens":0,"llm_usage":{},"llm_calls":[],"phase_seconds":{}}',0);
 INSERT INTO "runs" VALUES(400,'2026-10-30T02:55:38+00:00','2026-10-30T02:55:39+00:00','2026-10-30T02:55:38+00:00','deliveries',1,'{"started_at":"2026-10-30T02:55:38Z","finished_at":"2026-10-30T02:55:39Z","since":"2026-10-30T02:55:38Z","mode":"deliveries","term":null,"discovery_ok":false,"discovered":0,"pre_print_discovered":0,"rcl_discovered":0,"rcl_prefilter_hits":0,"wykaz_discovered":0,"over_on_arrival":0,"linked":0,"prefilter_hits":0,"prefilter_rejected":null,"prefilter_details":[],"text_prefilter_checked":0,"text_prefilter_hits":0,"text_prefilter_scans":0,"text_prefilter_unreadable":0,"text_prefilter_unanswered":0,"acts_published":0,"in_force_posted":0,"consultation_reminders":0,"hearing_reminders":0,"decision_reminders":0,"held":0,"cards_refreshed":0,"digest_drafted":false,"digest_reader_parts":0,"digest_events_covered":0,"consultation_results_posted":0,"consultation_reviews_posted":0,"commission_reviews_posted":0,"act_reviews_posted":0,"effective_rule_messages":0,"amendment_messages_updated":0,"message_parts_sent":0,"agenda_posted":0,"agenda_cancelled":0,"discontinued":0,"rehomed":0,"analyzed":0,"triaged_out":0,"analysis_failures":0,"analysis_skipped_cost":0,"analysis_unanswered":0,"joint_revived":0,"notes":[],"rejected":[],"commands_handled":0,"commands_failed":0,"commands":[],"published":0,"joint_published":0,"updates":0,"update_events":0,"attention":{"digest_queued_events":6,"digest_awaiting_approval":6,"digest_oldest_minutes":22548},"reanalyzed":0,"tracked":0,"batch_waiting":0,"batch_requests_submitted":0,"batch_requests_pending":0,"batch_requests_queued":0,"batch_requests_uncertain":0,"errors":[],"llm_input_tokens":0,"llm_output_tokens":0,"llm_usage":{},"llm_calls":[],"phase_seconds":{}}',0);
 INSERT INTO "runs" VALUES(401,'2026-10-30T07:16:33+00:00','2026-10-30T07:18:26+00:00','2026-10-28T20:52:29+00:00','run',1,'{"started_at":"2026-10-30T07:16:33Z","finished_at":"2026-10-30T07:18:26Z","since":"2026-10-28T20:52:29Z","mode":"run","term":10,"discovery_ok":true,"discovered":0,"pre_print_discovered":0,"rcl_discovered":0,"rcl_prefilter_hits":0,"wykaz_discovered":0,"over_on_arrival":0,"linked":0,"prefilter_hits":0,"prefilter_rejected":[],"prefilter_details":[],"text_prefilter_checked":0,"text_prefilter_hits":0,"text_prefilter_scans":0,"text_prefilter_unreadable":0,"text_prefilter_unanswered":0,"acts_published":0,"in_force_posted":0,"consultation_reminders":0,"hearing_reminders":0,"decision_reminders":0,"held":0,"cards_refreshed":1,"digest_drafted":false,"digest_reader_parts":0,"digest_events_covered":0,"consultation_results_posted":0,"consultation_reviews_posted":0,"commission_reviews_posted":0,"act_reviews_posted":0,"effective_rule_messages":0,"amendment_messages_updated":0,"message_parts_sent":0,"agenda_posted":0,"agenda_cancelled":0,"discontinued":0,"rehomed":0,"analyzed":0,"triaged_out":0,"analysis_failures":0,"analysis_skipped_cost":0,"analysis_unanswered":0,"joint_revived":0,"notes":[],"rejected":[],"commands_handled":0,"commands_failed":0,"commands":[],"published":0,"joint_published":0,"updates":0,"update_events":0,"attention":{"digest_queued_events":6,"digest_awaiting_approval":6,"digest_oldest_minutes":22811,"continuation_messages":0},"reanalyzed":0,"tracked":13,"batch_waiting":0,"batch_requests_submitted":0,"batch_requests_pending":0,"batch_requests_queued":0,"batch_requests_uncertain":0,"errors":[],"llm_input_tokens":0,"llm_output_tokens":0,"llm_usage":{},"llm_calls":[],"phase_seconds":{"collect batches":0.0,"commands":0.0,"discovery":0.3,"wykaz discovery":8.2,"rcl discovery":2.6,"text prefilter":0.0,"rcl consultations":0.0,"analysis":0.0,"publishing":0.0,"tracking":100.9,"submit batches":0.0,"digest":0.0,"batch status":0.0},"document_reads":{"schema_version":1,"cache_hits":0,"distinct_bodies":0,"distinct_body_bytes":0,"hosts":{}}}',1);
+INSERT INTO "runs" VALUES(402,'2026-10-30T10:27:10+00:00','2026-10-30T10:27:10+00:00','2026-10-30T10:27:10+00:00','deliveries',1,'{"started_at":"2026-10-30T10:27:10Z","finished_at":"2026-10-30T10:27:10Z","since":"2026-10-30T10:27:10Z","mode":"deliveries","term":null,"discovery_ok":false,"discovered":0,"pre_print_discovered":0,"rcl_discovered":0,"rcl_prefilter_hits":0,"wykaz_discovered":0,"over_on_arrival":0,"linked":0,"prefilter_hits":0,"prefilter_rejected":null,"prefilter_details":[],"text_prefilter_checked":0,"text_prefilter_hits":0,"text_prefilter_scans":0,"text_prefilter_unreadable":0,"text_prefilter_unanswered":0,"acts_published":0,"in_force_posted":0,"consultation_reminders":0,"hearing_reminders":0,"decision_reminders":0,"held":0,"cards_refreshed":0,"digest_drafted":false,"digest_reader_parts":0,"digest_events_covered":0,"consultation_results_posted":0,"consultation_reviews_posted":0,"commission_reviews_posted":0,"act_reviews_posted":0,"effective_rule_messages":0,"amendment_messages_updated":0,"message_parts_sent":0,"agenda_posted":0,"agenda_cancelled":0,"discontinued":0,"rehomed":0,"analyzed":0,"triaged_out":0,"analysis_failures":0,"analysis_skipped_cost":0,"analysis_unanswered":0,"joint_revived":0,"notes":[],"rejected":[],"commands_handled":0,"commands_failed":0,"commands":[],"published":0,"joint_published":0,"updates":0,"update_events":0,"attention":{"digest_queued_events":6,"digest_awaiting_approval":6,"digest_oldest_minutes":23000},"reanalyzed":0,"tracked":0,"batch_waiting":0,"batch_requests_submitted":0,"batch_requests_pending":0,"batch_requests_queued":0,"batch_requests_uncertain":0,"errors":[],"llm_input_tokens":0,"llm_output_tokens":0,"llm_usage":{},"llm_calls":[],"phase_seconds":{}}',0);
 CREATE TABLE selection_artifacts (
         selection_id TEXT NOT NULL REFERENCES document_selections(selection_id),
         part_scope TEXT NOT NULL CHECK(part_scope IN ('parts', 'observed_parts')),
@@ -3298,6 +3320,26 @@ INSERT INTO "source_checks" VALUES(10,'RCL/12416153','process','2026-10-29T19:43
 INSERT INTO "source_checks" VALUES(10,'2995','process','2026-10-29T19:45:45+00:00','2026-10-29T19:45:45+00:00',0,NULL);
 INSERT INTO "source_checks" VALUES(10,'RPW/36403/2026','process','2026-10-30T07:16:48+00:00','2026-10-30T07:16:48+00:00',0,NULL);
 INSERT INTO "source_checks" VALUES(10,'RCL/12408601','process','2026-10-30T07:18:04+00:00','2026-10-30T07:18:04+00:00',0,NULL);
+CREATE TABLE source_metadata_omissions (
+    omission_id TEXT PRIMARY KEY NOT NULL,
+    owner_kind TEXT NOT NULL CHECK(owner_kind IN ('bill','rcl_letter','senate')),
+    owner_term INTEGER,
+    owner_number TEXT,
+    purpose TEXT,
+    project_id INTEGER,
+    stage_id INTEGER,
+    stage_number INTEGER,
+    letter_id INTEGER,
+    resolution_term INTEGER,
+    resolution_number TEXT,
+    source_view_sha256 TEXT NOT NULL,
+    parent_count INTEGER NOT NULL CHECK(parent_count>=0),
+    parents_sha256 TEXT NOT NULL,
+    recorded_at TEXT NOT NULL,
+    record_json TEXT NOT NULL CHECK(json_valid(record_json) AND
+      length(CAST(record_json AS BLOB))<=8192),
+    FOREIGN KEY(owner_term,owner_number) REFERENCES bills(term,number)
+);
 CREATE TABLE source_observations (
         observation_id TEXT PRIMARY KEY NOT NULL,
         term INTEGER NOT NULL,
@@ -3327,6 +3369,15 @@ INSERT INTO "source_observations" VALUES('source-observation-v1:58c05ffc4a2cdfd2
 INSERT INTO "source_observations" VALUES('source-observation-v1:017503b84cee36b6cc993b9ec3f92aa79a5352784af261aab89a7a2bf33e4d95',10,'RCL/12408601','analysis','selection-v1:238b126a4ee6e7ac2a79617623bd586415913145d2d0b80580c798e86ed06209','https://legislacja.rcl.gov.pl/docs//2/12408601/13194357/13194358/dokument769078.pdf','rcl','{"schema_version":1,"term":10,"number":"RCL/12408601","purpose":"analysis","document":{"url":"https://legislacja.rcl.gov.pl/docs//2/12408601/13194357/13194358/dokument769078.pdf","kind":"rcl","extra_urls":["https://legislacja.rcl.gov.pl/docs//2/12408601/13194357/13194358/dokument769079.pdf","https://legislacja.rcl.gov.pl/docs//2/12408601/13194357/13194358/dokument769080.pdf"],"senate":null,"alternatives":[],"compare_versions":true,"normative_urls":[],"required_urls":[],"amendment_urls":[],"version_basis":["rcl/12408601/stage/13194357","Projekt 20.03.2026."],"official_link_conflict":false},"selection_id":"selection-v1:238b126a4ee6e7ac2a79617623bd586415913145d2d0b80580c798e86ed06209","recorded_at":"2026-10-29T19:01:45Z"}');
 INSERT INTO "source_observations" VALUES('source-observation-v1:25a8fec9d194e69a9c218b92c2a2cd51ae712bf9809ecdc2a121b2629d443a11',10,'RPW/36403/2026','analysis','selection-v1:8fa2d0c43eb270517a5a70ae9c54a311f8cea8f832c03702456025c04e552077','https://orka.sejm.gov.pl/Druki10ka.nsf/Projekty/10-RPW-36403-2026/$file/10-RPW-36403-2026.pdf','print','{"schema_version":1,"term":10,"number":"RPW/36403/2026","purpose":"analysis","document":{"url":"https://orka.sejm.gov.pl/Druki10ka.nsf/Projekty/10-RPW-36403-2026/$file/10-RPW-36403-2026.pdf","kind":"print","extra_urls":[],"senate":null,"alternatives":[],"compare_versions":false,"normative_urls":[],"required_urls":[],"amendment_urls":[],"version_basis":[],"official_link_conflict":false},"selection_id":"selection-v1:8fa2d0c43eb270517a5a70ae9c54a311f8cea8f832c03702456025c04e552077","recorded_at":"2026-10-29T19:01:45Z"}');
 INSERT INTO "source_observations" VALUES('source-observation-v1:73a2e1ab3cd27c48080c6de312180ad325c68e2f4439b95d5d6cc4827f6c0ff6',10,'3205','analysis','selection-v1:c1c041571510368e5b17efddcf7ac59061638ea36ddd0c077fff379ece2fba0c','https://api.sejm.gov.pl/sejm/term10/prints/3205-001/3205-001.pdf','impact_assessment','{"schema_version":1,"term":10,"number":"3205","purpose":"analysis","document":{"url":"https://api.sejm.gov.pl/sejm/term10/prints/3205-001/3205-001.pdf","kind":"impact_assessment","extra_urls":[],"senate":null,"alternatives":[],"compare_versions":false,"normative_urls":[],"required_urls":[],"amendment_urls":[],"version_basis":[],"official_link_conflict":false},"selection_id":"selection-v1:c1c041571510368e5b17efddcf7ac59061638ea36ddd0c077fff379ece2fba0c","recorded_at":"2026-10-29T19:28:03Z"}');
+CREATE TABLE source_omission_parents (
+    omission_id TEXT NOT NULL REFERENCES source_metadata_omissions(omission_id),
+    ordinal INTEGER NOT NULL CHECK(ordinal>=0 AND ordinal<32),
+    artifact_sha256 TEXT NOT NULL REFERENCES artifacts(sha256),
+    artifact_read_id TEXT REFERENCES artifact_reads(read_id),
+    extraction_id TEXT REFERENCES extraction_results(extraction_id),
+    source_observation_id TEXT REFERENCES source_observations(observation_id),
+    PRIMARY KEY(omission_id,ordinal)
+);
 CREATE TABLE status_changes (
         id INTEGER PRIMARY KEY,
         term INTEGER NOT NULL,
@@ -3601,5 +3652,116 @@ CREATE INDEX ix_source_candidate_traces_trace ON source_candidate_traces(trace_i
 CREATE INDEX ix_rcl_letter_uses_owner ON rcl_letter_uses(project_id, stage_id, letter_id);
 CREATE INDEX ix_senate_inspections_owner
       ON senate_inspections(owner_term, owner_number, resolution_number);
+CREATE INDEX ix_physical_metadata_body ON physical_metadata(body_sha256,kind);
+CREATE INDEX ix_physical_metadata_header ON physical_metadata(header_id);
+CREATE UNIQUE INDEX ux_physical_capture_without_extraction ON physical_captures
+  (artifact_sha256,recipe_id,inventory_id,execution_id) WHERE extraction_id IS NULL;
+CREATE UNIQUE INDEX ux_physical_capture_with_extraction ON physical_captures
+  (artifact_sha256,recipe_id,inventory_id,execution_id,extraction_id)
+  WHERE extraction_id IS NOT NULL;
+CREATE INDEX ix_physical_capture_artifact ON physical_captures(artifact_sha256);
+CREATE INDEX ix_physical_capture_recipe ON physical_captures(recipe_id);
+CREATE INDEX ix_physical_capture_inventory ON physical_captures(inventory_id);
+CREATE INDEX ix_physical_capture_execution ON physical_captures(execution_id);
+CREATE INDEX ix_physical_capture_extraction ON physical_captures(extraction_id);
+CREATE VIEW physical_header_rows AS
+  SELECT m.metadata_id AS header_id,m.body_sha256 AS parent_body_sha256,
+    CAST(r.key AS INTEGER) AS ordinal,
+    json_extract(r.value,'$[0]') AS original_name,
+    COALESCE(json_extract(r.value,'$[1]'),json_extract(r.value,'$[0]')) AS runtime_name,
+    json_extract(r.value,'$[2]') AS declared_bytes,
+    json_extract(r.value,'$[3]') AS compressed_bytes,
+    json_extract(r.value,'$[4]') AS method,json_extract(r.value,'$[5]') AS flags,
+    json_extract(r.value,'$[6]') AS crc32
+  FROM physical_metadata m,json_each(m.record_json,'$.metadata.rows') r
+  WHERE m.kind='headers';
+CREATE VIEW physical_graph_edges AS
+  SELECT m.metadata_id AS parent_id,m.body_sha256 AS parent_body_sha256,m.header_id,
+    CAST(e.key AS INTEGER) AS ordinal,
+    json_extract(e.value,'$[0]') AS child_body_sha256,
+    json_extract(e.value,'$[1]') AS child_id
+  FROM physical_metadata m,json_each(m.record_json,'$.metadata.edges') e
+  WHERE m.kind='graph';
+CREATE VIEW physical_execution_units AS
+  SELECT metadata_id AS unit_id,body_sha256,header_id,
+    json_extract(record_json,'$.metadata.graph') AS graph_id
+  FROM physical_metadata WHERE kind='unit';
+CREATE VIEW physical_contexts AS
+  SELECT x.metadata_id AS execution_id,CAST(c.key AS INTEGER) AS context_index,
+    json_extract(c.value,'$[0]') AS parent_context,
+    json_extract(c.value,'$[1]') AS parent_ordinal,
+    json_extract(c.value,'$[2]') AS physical_index,
+    json_extract(c.value,'$[3]') AS unit_id,
+    json_extract(u.record_json,'$.metadata.graph') AS graph_id
+  FROM physical_metadata x,json_each(x.record_json,'$.metadata.contexts') c
+  LEFT JOIN physical_metadata u ON u.metadata_id=json_extract(c.value,'$[3]')
+  WHERE x.kind='execution';
+CREATE VIEW physical_requests AS
+  WITH requests AS (
+    SELECT x.metadata_id AS execution_id,CAST(s.key AS INTEGER) AS request_index,
+      json_extract(s.value,'$[0]') AS context_index,
+      json_extract(s.value,'$[1]') AS local_index,u.header_id,
+      json_extract(u.record_json,'$.metadata.requests[' ||
+        json_extract(s.value,'$[1]') || ']') AS request
+    FROM physical_metadata x,json_each(x.record_json,'$.metadata.requests') s
+    LEFT JOIN physical_contexts c ON c.execution_id=x.metadata_id
+      AND c.context_index=json_extract(s.value,'$[0]')
+    LEFT JOIN physical_metadata u ON u.metadata_id=c.unit_id
+    WHERE x.kind='execution'
+  ) SELECT execution_id,request_index,context_index,local_index,header_id,
+    json_extract(request,'$[0]') AS mode,json_extract(request,'$[1]') AS request_form,
+    json_extract(request,'$[2]') AS requested,
+    json_extract(request,'$[3]') AS lookup_ordinal,
+    json_extract(request,'$[4]') AS outcome,
+    json_extract(request,'$[6]') AS known_body_sha256 FROM requests;
+CREATE VIEW physical_opens AS
+  WITH opens AS (
+    SELECT x.metadata_id AS execution_id,CAST(s.key AS INTEGER) AS open_index,
+      json_extract(s.value,'$[0]') AS context_index,
+      json_extract(s.value,'$[1]') AS local_index,u.header_id,
+      json_extract(u.record_json,'$.metadata.opens[' ||
+        json_extract(s.value,'$[1]') || ']') AS opened
+    FROM physical_metadata x,json_each(x.record_json,'$.metadata.opens') s
+    LEFT JOIN physical_contexts c ON c.execution_id=x.metadata_id
+      AND c.context_index=json_extract(s.value,'$[0]')
+    LEFT JOIN physical_metadata u ON u.metadata_id=c.unit_id
+    WHERE x.kind='execution'
+  ) SELECT execution_id,open_index,context_index,local_index,header_id,
+    json_extract(opened,'$[0]') AS local_request_index,
+    json_extract(opened,'$[1]') AS request_form,json_extract(opened,'$[2]') AS requested,
+    json_extract(opened,'$[3]') AS actual_read_ordinal,
+    json_extract(opened,'$[4]') AS outcome FROM opens;
+CREATE VIEW physical_parts AS
+  SELECT x.metadata_id AS execution_id,CAST(p.key AS INTEGER) AS physical_index,
+    json_extract(p.value,'$[0]') AS context_index,
+    json_extract(p.value,'$[1]') AS text_sha256,
+    json_extract(p.value,'$[2]') AS losses_sha256
+  FROM physical_metadata x,json_each(x.record_json,'$.metadata.physical') p
+  WHERE x.kind='execution';
+CREATE VIEW physical_recipe_code AS
+  SELECT m.metadata_id AS recipe_id,json_extract(c.value,'$.path') AS path,
+    json_extract(c.value,'$.sha256') AS source_sha256
+  FROM physical_metadata m,json_each(m.record_json,'$.metadata.code_files') c
+  WHERE m.kind='recipe';
+CREATE VIEW physical_metadata_refs AS
+  SELECT metadata_id AS owner_id,header_id AS target_id,'header' AS relation
+    FROM physical_metadata WHERE header_id IS NOT NULL
+  UNION SELECT parent_id,child_id,'member' FROM physical_graph_edges
+    WHERE child_id IS NOT NULL
+  UNION SELECT unit_id,graph_id,'graph' FROM physical_execution_units
+  UNION SELECT execution_id,unit_id,'context' FROM physical_contexts;
+CREATE VIEW physical_capture_refs AS
+  SELECT capture_id,recipe_id AS target_id,'recipe' AS relation FROM physical_captures
+  UNION ALL SELECT capture_id,inventory_id,'inventory' FROM physical_captures
+  UNION ALL SELECT capture_id,execution_id,'execution' FROM physical_captures;
+CREATE INDEX ix_source_omissions_owner
+  ON source_metadata_omissions(owner_term,owner_number,purpose);
+CREATE INDEX ix_source_omissions_rcl ON source_metadata_omissions(project_id,stage_id,letter_id);
+CREATE INDEX ix_source_omissions_senate
+  ON source_metadata_omissions(resolution_term,resolution_number);
+CREATE INDEX ix_source_omission_artifact ON source_omission_parents(artifact_sha256);
+CREATE INDEX ix_source_omission_read ON source_omission_parents(artifact_read_id);
+CREATE INDEX ix_source_omission_extraction ON source_omission_parents(extraction_id);
+CREATE INDEX ix_source_omission_source ON source_omission_parents(source_observation_id);
 COMMIT;
-PRAGMA user_version = 61;
+PRAGMA user_version = 63;
