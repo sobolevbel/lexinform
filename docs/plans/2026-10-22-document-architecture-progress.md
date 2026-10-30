@@ -8737,3 +8737,47 @@ reader либо сохранённого snapshot. Source/raw/provider/paid prod
 [primary peer](../assets/audits/2026-10-30-compatible-document-readers/primary-closure.json),
 [Word peer](../assets/audits/2026-10-30-compatible-document-readers/word-independent-closure.json),
 [J185 release](../assets/audits/2026-10-30-prepared-input-reader/release.json).
+
+<a id="j187"></a>
+
+## J187 — prospective compact primary projections and memo
+
+CURRENT analysis и root primary memo при обычном сохранении используют общий pure helper:
+same paid owner, indexed immutable result/request/schema/raw-record digest, минимальные
+observation differences, точный recursive JSON/field-presence round-trip, cap8192 UTF-8
+и строго положительная экономия. Ineligible/foreign/READY/secondary/frozen inputs остаются
+inline; архивные ответы и старые неизвестные identities не реконструируются. Bulk backfill нет.
+
+Primary collection сохраняет parent и collection receipt до memo внутри прежней atomic
+transaction. Ошибка memo SQL откатывает parent/receipt/memo/READY/consumed до accounting.
+Memo conflict сохраняет первоначальный ответ; COALESCE owner transfer сначала материализует
+его под прежним владельцем. Equal-save generation/status, legacy preservation и paid rows
+сохраняют прежний смысл.335focused/31new и независимые8controls прошли.
+
+Первый полный gate выявил11 пропущенных совместимостей до commit. Direct public government
+move теперь атомарно материализует CURRENT перед сменой owner; service ledger bridge остаётся
+аудированным, новых разрешений reader не получает. Shared reader подключён к observed_latency,
+включая query-only native/inline clocks. Doctor одинаково считает known refs, inline и modern
+corruption controls сохранены.420focused и117 regression controls green; исходные failed gate
+и прежние source/qualification evidence сохранены.
+
+Повторная paired actual412e qualification вызывает одинаковые PUBLIC7current+7memo saves
+в olda400 и candidate. Все14 естественно compact; maxref384B. Public/get/list/search/status/
+generation/editorial/recursive shapes для483Bill,155memo,172cost rows,194publications и все
+9paid/results/applications/frozen tables совпадают. Различаются только current/memo JSON:
+SQL20889343→20790020B (−99323), gzip4191374→4167842B (−23532), payload104010→4687B.
+Quiet saves, owner/conflict, doctor0, restore2 и corrupt-parent restore preservation green.
+PUBLIC move226government rows и patched latency совпадают; observed coverage остаётся partial.
+232unknown-ID slots и0actualREADY явно исключены. Это prospective-copy qualification, не
+production backfill или общий прогноз экономии.
+
+Root full7336tests/268.481s/92%, mypy640/Ruff708;725source/config pins exact.
+Staged Git archive docs gate выполняется до commit. Reader a400 уже прошёл exact CI и actual
+relay; rollback с новыми refs требует совместимого reader либо сохранённого snapshot. Word
+producer/performance и prepared-input restore guard сюда не включены. DA6 остаётся открытым
+по конкретным ownership/lifetime задачам, универсальный bodyRef не добавляется без требования.
+
+[Qualification](../assets/audits/2026-10-30-primary-projection-writer/qualification.json),
+[actual prospective state](../assets/audits/2026-10-30-primary-projection-writer/actual-state-qualification.json),
+[remaining audit](../assets/audits/2026-10-30-primary-projection-writer/remaining-audit.json),
+[reader release](../assets/audits/2026-10-30-compatible-document-readers/release.json).

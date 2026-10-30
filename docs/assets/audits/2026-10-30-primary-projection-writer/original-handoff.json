@@ -1,0 +1,82 @@
+{
+  "base": "a400c38f5cdf42b327118999eac304ce57fc94ea",
+  "worktree": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform",
+  "scope": "Prospective SAME-paid-owner CURRENT and root primary memo writer; READY/foreign/frozen/secondary stay inline. No DDL/flags/backfill/paid calls.",
+  "source_paths": {
+    "src/lexinform/adapters/primary_projections.py": {
+      "sha256": "f1a99add39c1cf7c96415a69d51c549d6f05ccc0aa2bee1cc10eab742cf63f79",
+      "bytes": 8810
+    },
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "sha256": "5cc189d037796f401e0c52d2a9a749e92daa012b982a03493d996050f1b5464c",
+      "bytes": 248252
+    },
+    "src/lexinform/primary_projections.py": {
+      "sha256": "d9aae68605e199c8820f40fa3579b88693b58544bd97feb9a2a59d502fd5bf58",
+      "bytes": 8597
+    },
+    "src/lexinform/services/analysis.py": {
+      "sha256": "07f55bf4836ffe563e712f1a4f2f6aef98f1acd546cc738624328ce7f0159509",
+      "bytes": 150007
+    },
+    "tests/scenario/test_primary_projection_writer.py": {
+      "sha256": "0d6f922bcaefeb4b7a8675304a3bcca25c4e56e7dc05a815e60e68fb30f9abbc",
+      "bytes": 5172
+    },
+    "tests/unit/test_primary_projection_reader.py": {
+      "sha256": "d5ce2ed2b4a25c69609182d2eb4cd70242d31bc5a3a40541998012f28e000044",
+      "bytes": 11914
+    },
+    "tests/unit/test_primary_projection_writer.py": {
+      "sha256": "1c4f014d4b64c84473e462aed9940e8e11967c3c004f93c4ed88f407d54019c3",
+      "bytes": 16387
+    }
+  },
+  "checks": {
+    "focused_passed": 335,
+    "new_writer_controls": 31,
+    "strict_mypy": "7 paths GREEN",
+    "ruff_check_format": "7 paths GREEN",
+    "git_diff_check": "GREEN",
+    "MIGRATIONS_AST_exact": true,
+    "unchanged_schema_and_storage_sources": {
+      "src/lexinform/models/analysis.py": "229ca857e9fe05149bca8293c3f8cec26c2984e4e1ed97d5f90432251f40944d",
+      "src/lexinform/models/computations.py": "7c0f1afdad77bad985dbe3af5b2636cd152687d7353ea1cde9555d26d094db2a",
+      "src/lexinform/models/primary_projections.py": "a8578d89219465c7d0b016450dec23818a73c2f5da6e6953e9b400cac2b6ded1",
+      "src/lexinform/json_storage.py": "ccc8196a5c01ffcf927029d022a95e8bfcfe1d87e647e52750557016d8e3c297"
+    }
+  },
+  "reuse": {
+    "base": "a400c38f5cdf42b327118999eac304ce57fc94ea",
+    "preserved_dirty_stash": "0f53bee166ff8f7cd2b0c599ca60717940c85e24",
+    "prior_stashes_exact": true,
+    "out_preserved": true,
+    "clean_after_reuse": true
+  },
+  "patches": {
+    "writer.patch": "6c8d824f7062b3d935d4568e8e8a86420c77dced0815288d307581bcac8b272e",
+    "writer-core.patch": "7fb2729129a605f48bdd09841aacf9b0be8d93c1e746b73a2157f61fef83a991",
+    "analysis-order.patch": "bb9a8eba28ef10161c97f52b6d6a9ae95daf27bc2fd486f6f4dcc3801fc7aae9"
+  },
+  "analysis_hunk": {
+    "base_source_sha256": "f1b7543d897bf3e9915954cbf9ad28d68526cf90b53c57fbb3a3914b647d5907",
+    "current_source_sha256": "07f55bf4836ffe563e712f1a4f2f6aef98f1acd546cc738624328ce7f0159509",
+    "scope": "Move only active primary memo persistence after _record_collection inside the same existing atomic block. READY order and postcommit memory/charge unchanged."
+  },
+  "contract": {
+    "baseline": "Exact encoded prospective inline output after actual _preserve_legacy_json; no storage_json substitution.",
+    "pure": "Raw immutable retained-record SHA, allowed minimal observation overrides, exact recursive JSON/public-presence roundtrip, 8192 UTF-8 bytes and strictly positive byte saving else unchanged inline.",
+    "indexed": "Only computation_id-indexed immutable result lookup; result/indexed identity validation; no history scan or worker writes.",
+    "memo": "Existing answer always wins. Same-owner prospective refresh may compact that original answer; owner transfer materializes original existing compact answer before metadata update. Corrupt existing refs remain errors.",
+    "collection": "Actual primary batch parent+collection receipt precede memo inside existing atomic. SQL fault rolls back parent/receipt/memo/READY/consumed, with no paid charge before commit."
+  },
+  "not_run": [
+    "peer approval pending",
+    "broad full gate",
+    "actual-state writer qualification",
+    "raw extraction/replay",
+    "provider/paid/network",
+    "production processing",
+    "commit/push"
+  ]
+}

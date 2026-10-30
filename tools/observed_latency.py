@@ -8,6 +8,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from lexinform.adapters.primary_projections import PrimaryProjectionReader
 from lexinform.models import (
     AnalysisRecord,
     Bill,
@@ -19,6 +20,7 @@ from lexinform.models import (
 from lexinform.models.batch import BatchKind
 from lexinform.models.commands import DeliveryResolution
 from lexinform.models.wykaz import WykazEntry
+from lexinform.primary_projections import ProjectionOwner
 
 Metric = Literal[
     "read_completed", "analysis_collected", "analysis_applied", "delivery", "source_discovery"
@@ -100,13 +102,20 @@ def _time(value: object, observed: dt.datetime) -> tuple[dt.datetime | None, str
     return stamp, None
 
 
-def _projection_matches(bill: sqlite3.Row, result: ComputationResult) -> bool:
+def _projection_matches(
+    connection: sqlite3.Connection, bill: sqlite3.Row, result: ComputationResult
+) -> bool:
     columns = set(bill.keys())
     if "analysis_json" not in columns or not bill["analysis_json"]:
         return False
     try:
-        record = AnalysisRecord.model_validate_json(bill["analysis_json"])
-    except ValueError:
+        encoded = PrimaryProjectionReader(connection).materialize(
+            "analysis_json",
+            bill["analysis_json"],
+            ProjectionOwner(bill["term"], bill["number"]),
+        )
+        record = AnalysisRecord.model_validate_json(encoded)
+    except ValueError, sqlite3.Error:
         return False
     return (
         record.computation_id == result.result_id and record.request_sha256 == result.request_sha256
@@ -320,7 +329,7 @@ class _Inventory:
                 bill = self.bills.get(owner)
                 projection = False
                 if bill is not None and result is not None:
-                    projection = _projection_matches(bill, result)
+                    projection = _projection_matches(self.connection, bill, result)
                     if result.generation is not None and not self.generation_available:
                         reason = reason or "generation_schema_unavailable"
                     if (
@@ -425,7 +434,9 @@ class _Inventory:
                         and bill is not None
                         and self.generation_available
                         and app.generation != bill["analysis_generation"]
-                        and (result is None or not _projection_matches(bill, result))
+                        and (
+                            result is None or not _projection_matches(self.connection, bill, result)
+                        )
                     ):
                         reason = reason or "stale_generation"
                     if bill is not None and result is not None and result.purpose != "analysis":

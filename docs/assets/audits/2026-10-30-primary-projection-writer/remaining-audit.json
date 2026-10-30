@@ -1,0 +1,22 @@
+{
+  "verdict": "Substantial literal DA6.2/3/4 contracts are implemented; global ownership and §1.4 closure remain open. Inline READY or the absence of universal bodyRef is not, by itself, a failed criterion.",
+  "proven": {
+    "DA6.2": "All ten batch purposes retain immutable normalized results, original usage, request/input binding and consumed state atomically. Primary projection checks status/generation/skip/reset; secondary application receipts name their actual status-change, review, joint, editorial, command or revision target. Sejm/RCL/Wykaz/linking checkpoints couple application with processed observations/delivery work. Run-cost acknowledgement is separately recoverable, not incorrectly claimed inside collection SQL.",
+    "DA6.3": "Compatible computation IDs and dual writes exist across primary, amendments, supplement, joint, reviews, explanation and selected names; secondary collection preserves Bill status. Integrated prospective writer now compacts same-paid-owner CURRENT/root-primary memo after parent persistence; READY and foreign cases intentionally remain inline. Actual matched public saves produced 7+7 references, preserved recursive field presence, and saved 99323 SQL/23532 gzip bytes. This integrated writer awaits the shared release gate; no production activation claim.",
+    "DA6.4": "Durable same-owner cleanup fallback covers primary/reanalysis/explanation, four secondary purposes and schema3 reviews with exact caller input/binding. RCL naming recovers original-owner work. Reuse preserves result identity, adds no paid computation; applicability observations preserve mutable source findings separately. Known current primary/review/name receipts transfer atomically without rekeying paid ownership."
+  },
+  "remaining": [
+    "Concrete Wykaz pending/collected-name-after-rehome ticket remains: selected-current-name transfer does not locate unconsumed original naming work. Fix and qualify actual producer, cleanup/repeat/restore and negative ownership cases.",
+    "Finish a purpose-by-owner closure matrix. Historical replaced reviews and other foreign-owner fallback are deliberately restricted; whether an actual producer needs an explicit bridge remains unproved. Do not infer permission or invent blanket cross-term reuse.",
+    "§1.4: inventory remaining persistent result/current-review/joint/name copies versus bounded pending READY and retention-governed memo. Existing size profiles and primary14 savings do not prove every duplicate temporary: document lifetime, deletion/transition conditions, growth under versions/reuse/cleanup, state-history and checkpoint costs. Universal bodyRef is an implementation option, not the literal dual-write requirement.",
+    "Keep raw archive user-deferred. Unavailable legacy provenance remains unknown; production legacy import is DA6.5, not an invented dependency for prospective guarantees."
+  ],
+  "evidence": [
+    "docs/plans/2026-10-22-document-architecture.md:§1.4,DA6.2–4",
+    "services/analysis.py:_consume,_consume_digest,_name_request_key; analysis_applications; result_applications; status_change_applications; computation_reuse",
+    "committed:J061–J084,J115,J126,J181,J183,J186",
+    "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/modern-primary-writer/actual-state-1/qualification.json",
+    "out/corpus/da6-after-name/wykaz-pending-name-ticket.json"
+  ],
+  "boundary": "Read-only audit; no new tests, source edits, full/raw/paid/production runs or checkbox changes."
+}

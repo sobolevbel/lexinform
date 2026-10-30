@@ -154,7 +154,7 @@ def test_missing_owner_and_refs_in_frozen_snapshots_are_rejected_at_known_positi
     connection.close()
 
 
-def test_equal_public_resave_keeps_generation_without_enabling_reference_writer(
+def test_equal_public_resave_keeps_generation_with_same_owner_reference_writer(
     tmp_path: Path,
     process_3039: ProcessDetail,
 ) -> None:
@@ -180,7 +180,7 @@ def test_equal_public_resave_keeps_generation_without_enabling_reference_writer(
     )
     with sqlite3.connect(path) as connection:
         raw = connection.execute("SELECT analysis_json FROM bills").fetchone()[0]
-        assert "modern_primary_ref" not in raw
+        assert "modern_primary_ref" in raw
         assert not list(primary_projection_issues(connection))
     repo.close()
 

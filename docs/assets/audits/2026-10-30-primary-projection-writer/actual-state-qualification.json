@@ -1,0 +1,200 @@
+{
+  "actual_ready_slots": 0,
+  "actual_target_candidates": 14,
+  "all_other_tables_exact": true,
+  "bad_parent_restore_preserves_existing_target": {
+    "missing_parent": {
+      "error_class": "PrimaryProjectionError",
+      "target_preserved": true
+    },
+    "wrong_retained_record_digest": {
+      "error_class": "PrimaryProjectionError",
+      "target_preserved": true
+    }
+  },
+  "candidate": {
+    "gzip9_mtime0_bytes": 4167842,
+    "sql_bytes": 20790020
+  },
+  "candidate_reasons": {
+    "compact": 14
+  },
+  "changed_columns": {
+    "analysis_memo": [
+      "record_json"
+    ],
+    "bills": [
+      "analysis_json"
+    ]
+  },
+  "compact_current": 7,
+  "compact_memo": 7,
+  "counts": {
+    "bills": 483,
+    "cost_rows": 172,
+    "memo_rows": 155,
+    "paid_results": 9,
+    "publications": 194
+  },
+  "doctors": {
+    "baseline": {
+      "computation": 0,
+      "source": 0
+    },
+    "candidate": {
+      "computation": 0,
+      "source": 0
+    }
+  },
+  "driver_pins": {
+    "compare.py": "4ce56b5f14e395b7a1a18b78e515202af6b9103782b4f866c987fae8068ab0b8",
+    "prospective.py": "b721027eb785be3a401de893c3524edcca6be58fd2bc1caff18804ff8e3b8a78",
+    "reused/census.json": "4c38fe3c03c39835a843ad4fd0fe8b80dda4bf40876ed4cc004d14484e2a62e5",
+    "reused/read_profile.py": "e4ae5c8ef97f3cb19d2a75ffbc7de812a0a0bdf876d098076fd1625eefc2ddab"
+  },
+  "expected_old_save_public_deltas": {
+    "applicability_observations": 0,
+    "applications": 0,
+    "bills": 0,
+    "memo": 0,
+    "publications": 0,
+    "results": 0
+  },
+  "fallbacks": [],
+  "frozen_and_application_and_publication_rows_exact": true,
+  "gzip9_mtime0_delta": -23532,
+  "matched_old_future_writes": {
+    "gzip9_mtime0_bytes": 4191374,
+    "sql_bytes": 20889343
+  },
+  "native_direct_government_move_exact": {
+    "foreign_current_inline_without_new_permission": true,
+    "original_paid_rows_exact": true,
+    "rows": 226
+  },
+  "not_run": [
+    "broad full gate",
+    "raw extraction/replay",
+    "provider/paid/network",
+    "production processing",
+    "backfill",
+    "commits/pushes"
+  ],
+  "observed_latency_exact": {
+    "coverage": "partial",
+    "groups": [
+      {
+        "known": 0,
+        "metric": "read_completed",
+        "rows": 483,
+        "unknown": {
+          "read_completion_unavailable": 483
+        }
+      },
+      {
+        "known": 6,
+        "metric": "analysis_collected",
+        "rows": 483,
+        "unknown": {
+          "legacy_result_unbound": 163,
+          "missing_result": 311,
+          "trigger_event_unbound": 3
+        }
+      },
+      {
+        "known": 6,
+        "metric": "analysis_applied",
+        "rows": 483,
+        "unknown": {
+          "missing_application": 474,
+          "trigger_event_unbound": 3
+        }
+      },
+      {
+        "known": 54,
+        "metric": "delivery",
+        "rows": 194,
+        "unknown": {
+          "delivery_unconfirmed": 5,
+          "legacy_delivery_unbound": 25,
+          "missing_event_anchor": 82,
+          "shared_message_without_membership": 28
+        }
+      },
+      {
+        "known": 6,
+        "metric": "source_discovery",
+        "rows": 483,
+        "unknown": {
+          "official_availability_unknown": 477
+        }
+      }
+    ],
+    "missing_schema": [],
+    "no_private_input_fields": true,
+    "observed_at": "2026-10-30T00:00:00Z",
+    "report_sha256": "8f546a2d377076bfba44e8f0fadc5876d074ca38601c5a57b2baff547d751d12",
+    "tool_sha256": "0ce86095b600824888b6d935ee40bf6160568ef30c98333face6a38c65992dd1"
+  },
+  "original_paid_raw_digests_exact": true,
+  "outside_write_scope": "232 other actual primary census slots have unknown current result/request and were not resaved or claimed as writer-qualified; actual READY count zero.",
+  "public_and_recursive_field_presence_exact": true,
+  "quiet_resave_and_memo_coalesce_owner_transfer_exact": true,
+  "restore_twice_exact": true,
+  "scope": "Disposable restored412e copies: exact a400 old writer vs frozen eleven-path candidate; matched 7 existing CURRENT and 7 root primary memo public saves. No scan/backfill/runtime processing/paid/raw activation.",
+  "source11_exact_before_after": true,
+  "source_paths": {
+    "src/lexinform/adapters/primary_projections.py": {
+      "bytes": 8810,
+      "sha256": "f1a99add39c1cf7c96415a69d51c549d6f05ccc0aa2bee1cc10eab742cf63f79"
+    },
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "bytes": 248363,
+      "sha256": "8877a0e333ef809a668150e55aa1dabc5b14b5f904b41198be43575271929f33"
+    },
+    "src/lexinform/primary_projections.py": {
+      "bytes": 8597,
+      "sha256": "d9aae68605e199c8820f40fa3579b88693b58544bd97feb9a2a59d502fd5bf58"
+    },
+    "src/lexinform/services/analysis.py": {
+      "bytes": 150007,
+      "sha256": "07f55bf4836ffe563e712f1a4f2f6aef98f1acd546cc738624328ce7f0159509"
+    },
+    "tests/scenario/test_computation_doctor.py": {
+      "bytes": 12348,
+      "sha256": "009eeefb0046b2d2d1df7d7d649578137a70d8f7f8a7a4f31e8ff2ba77436c51"
+    },
+    "tests/scenario/test_primary_projection_writer.py": {
+      "bytes": 5172,
+      "sha256": "0d6f922bcaefeb4b7a8675304a3bcca25c4e56e7dc05a815e60e68fb30f9abbc"
+    },
+    "tests/unit/test_observed_latency.py": {
+      "bytes": 21966,
+      "sha256": "5204e1e9ff20a3db6ff4387044b1e55131e8b9c914c334cb0f5a744d3b188a98"
+    },
+    "tests/unit/test_primary_projection_reader.py": {
+      "bytes": 11914,
+      "sha256": "d5ce2ed2b4a25c69609182d2eb4cd70242d31bc5a3a40541998012f28e000044"
+    },
+    "tests/unit/test_primary_projection_writer.py": {
+      "bytes": 19477,
+      "sha256": "9bbeadb7030f06d77e193fe889ba22eb030410cdd1d7ae79c3d7f03ca4dda58f"
+    },
+    "tools/computation_doctor.py": {
+      "bytes": 13205,
+      "sha256": "6748e2bbf570903c2b7e103c1147e1eecdfe20975d8381907674691807789a71"
+    },
+    "tools/observed_latency.py": {
+      "bytes": 28251,
+      "sha256": "0ce86095b600824888b6d935ee40bf6160568ef30c98333face6a38c65992dd1"
+    }
+  },
+  "source_sha256_before_after": "a39d69e7306d97c7307e7b9a263a71a7f5c646be590815d68860ada2064eaae2",
+  "sql_delta": -99323,
+  "status": "qualified_actual_matched_public_prospective_writer",
+  "target_raw_payload_bytes": {
+    "max_reference_bytes": 384,
+    "new": 4687,
+    "old": 104010
+  }
+}

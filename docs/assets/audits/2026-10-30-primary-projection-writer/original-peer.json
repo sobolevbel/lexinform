@@ -1,0 +1,47 @@
+{
+  "checks": [
+    "Exact prospectiveinline output afterlegacy preservation; recursivefieldpresence roundtrip, UTF8<=8192andpositivesaving elseoriginalinline",
+    "Same-paid-ownerCURRENT/rootprimarymemo only; READY/foreign/secondary/frozen remaininline",
+    "Existingmemo originalanswer wins conflicts; effectiveCOALESCEowner transfer materializesbeforemetadatachange; corruptreferenceerrors propagatenotfallback",
+    "Paidresult indexedlookup validatesrawrecord/indexidentity; SQLerrors andcancellationarenotoptionalcompactionfallback",
+    "Actualactiveprimarycollection parent+receipt precedememo insideexistingouteratomic; memoSQLfault rollsbackparent/receipt/READY/memo/consumed beforepaidcharge, secondaryroute unchanged"
+  ],
+  "findings": [],
+  "focused_log_sha256": "406e77655ff48336475153846c13d9d3fab03b52df9c5420f497e7bb6b6ac662",
+  "handoff_sha256": "d1aa9b55777c7fcb8626249c7981add52bf04d595115c4b1e02ddc0d75c83309",
+  "independent_controls": 8,
+  "patch_sha256": "6c8d824f7062b3d935d4568e8e8a86420c77dced0815288d307581bcac8b272e",
+  "scope": "Exact7readonlypeerreview;8selectedpure/publicboundaries, no full/raw/paid/network/actual-statewriter/DDL/backfill/sourceedits. Oldmanual14refsnotusedaswriterproof.",
+  "source_pins": {
+    "src/lexinform/adapters/primary_projections.py": {
+      "bytes": 8810,
+      "sha256": "f1a99add39c1cf7c96415a69d51c549d6f05ccc0aa2bee1cc10eab742cf63f79"
+    },
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "bytes": 248252,
+      "sha256": "5cc189d037796f401e0c52d2a9a749e92daa012b982a03493d996050f1b5464c"
+    },
+    "src/lexinform/primary_projections.py": {
+      "bytes": 8597,
+      "sha256": "d9aae68605e199c8820f40fa3579b88693b58544bd97feb9a2a59d502fd5bf58"
+    },
+    "src/lexinform/services/analysis.py": {
+      "bytes": 150007,
+      "sha256": "07f55bf4836ffe563e712f1a4f2f6aef98f1acd546cc738624328ce7f0159509"
+    },
+    "tests/scenario/test_primary_projection_writer.py": {
+      "bytes": 5172,
+      "sha256": "0d6f922bcaefeb4b7a8675304a3bcca25c4e56e7dc05a815e60e68fb30f9abbc"
+    },
+    "tests/unit/test_primary_projection_reader.py": {
+      "bytes": 11914,
+      "sha256": "d5ce2ed2b4a25c69609182d2eb4cd70242d31bc5a3a40541998012f28e000044"
+    },
+    "tests/unit/test_primary_projection_writer.py": {
+      "bytes": 16387,
+      "sha256": "1c4f014d4b64c84473e462aed9940e8e11967c3c004f93c4ed88f407d54019c3"
+    }
+  },
+  "source_pins_exact_before_after": true,
+  "status": "independent-exact7-writer-closed-green"
+}

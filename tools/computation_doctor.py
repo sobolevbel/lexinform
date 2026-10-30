@@ -178,9 +178,13 @@ class ComputationAudit:
                     self.issue(item.code, item.ref)
                 elif "modern_primary_ref" in item.value:
                     self.counts["modern_primary_projection_refs"] += 1
-                    identity = item.value["modern_primary_ref"]
-                    if isinstance(identity, str):
-                        self.refs.setdefault(identity, []).append(item.ref)
+                    self.reference(
+                        {
+                            "computation_id": item.value["modern_primary_ref"],
+                            "request_sha256": item.value.get("request_sha256"),
+                        },
+                        item.ref,
+                    )
                 elif "computation_id" in item.value or is_saved_answer(item.value):
                     self.reference(item.value, item.ref)
 

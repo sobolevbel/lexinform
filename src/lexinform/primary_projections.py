@@ -42,6 +42,7 @@ class PrimaryProjectionSource:
 
 
 PrimarySourceReader = Callable[[str], PrimaryProjectionSource | None]
+MAX_PRIMARY_PROJECTION_BYTES = 8192
 
 
 def retained_record_sha256(result_json: str) -> str:
@@ -160,6 +161,58 @@ def primary_record_matches(record: AnalysisRecord, result: ComputationResult | N
         and record.model_dump(exclude=set(PRIMARY_OBSERVATION_FIELDS))
         == result.record.model_dump(exclude=set(PRIMARY_OBSERVATION_FIELDS))
     )
+
+
+def compact_primary_projection(
+    raw: str,
+    source: PrimaryProjectionSource | None,
+    owner: ProjectionOwner,
+    *,
+    max_bytes: int = MAX_PRIMARY_PROJECTION_BYTES,
+) -> str:
+    if source is None:
+        return raw
+    try:
+        value = read_json(raw)
+        record = AnalysisRecord.model_validate(value)
+    except ValueError, TypeError, OverflowError, RecursionError:
+        return raw
+    result = ComputationResult.model_validate_json(source.result_json)
+    if ProjectionOwner(result.term, result.number) != owner or not primary_record_matches(
+        record, result
+    ):
+        return raw
+    paid = read_json(source.result_json)
+    if not isinstance(value, dict) or not isinstance(paid, dict):
+        return raw
+    retained = paid.get("record")
+    if not isinstance(retained, dict) or result.request_sha256 is None:
+        return raw
+    if result.schema_version not in (1, 2):
+        return raw
+    observation = {
+        key: item
+        for key, item in value.items()
+        if key in PRIMARY_OBSERVATION_FIELDS and (key not in retained or item != retained[key])
+    }
+    reference = PrimaryProjectionReference(
+        modern_primary_ref=result.result_id,
+        request_sha256=result.request_sha256,
+        result_schema_version=result.schema_version,
+        retained_record_sha256=retained_record_sha256(source.result_json),
+        observation=observation,
+    )
+    encoded = canonical_json(reference.model_dump(mode="json", exclude_defaults=True))
+    try:
+        materialized = read_primary_json(encoded, lambda _: source, PrimaryProjectionContext(owner))
+        if canonical_json(read_json(materialized)) != canonical_json(value):
+            return raw
+        size = len(encoded.encode("utf-8"))
+        if size > max_bytes or size >= len(raw.encode("utf-8")):
+            return raw
+    except ValueError, TypeError, OverflowError, RecursionError:
+        return raw
+    return encoded
 
 
 def _accounting_matches(record: AnalysisRecord, paid: AnalysisRecord) -> bool:

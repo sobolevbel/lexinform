@@ -1448,6 +1448,14 @@ class SqliteBillRepository:
             BillStatus.BATCH_PENDING.value,
             BillStatus.REANALYSIS_READY.value,
         )
+        encoded = self._preserve_legacy_json(
+            record.model_dump_json(),
+            "SELECT analysis_json FROM bills WHERE term = ? AND number = ?",
+            (term, number),
+        )
+        encoded = PrimaryProjectionReader(self._conn).compact(
+            encoded, ProjectionOwner(term, number)
+        )
         self._conn.execute(
             """
             UPDATE bills SET analysis_json = ?,
@@ -1458,11 +1466,7 @@ class SqliteBillRepository:
             WHERE term = ? AND number = ?
             """,
             (
-                self._preserve_legacy_json(
-                    record.model_dump_json(),
-                    "SELECT analysis_json FROM bills WHERE term = ? AND number = ?",
-                    (term, number),
-                ),
+                encoded,
                 0 if same else 1,
                 same,
                 row["status"] if keeps else BillStatus.ANALYZED.value,
@@ -3005,14 +3009,44 @@ class SqliteBillRepository:
         number: str | None = None,
         used_at: datetime | None = None,
     ) -> None:
-        self._conn.execute(
-            "INSERT INTO analysis_memo(key, record_json, term, number, last_used_at)"
-            " VALUES (?, ?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET"
-            " term = COALESCE(excluded.term, analysis_memo.term),"
-            " number = COALESCE(excluded.number, analysis_memo.number),"
-            " last_used_at = COALESCE(excluded.last_used_at, analysis_memo.last_used_at)",
-            (key, record_json, term, number, _iso(used_at)),
-        )
+        with self.atomic():
+            cursor = self._conn.cursor()
+            cursor.row_factory = sqlite3.Row
+            try:
+                previous = cursor.execute(
+                    "SELECT record_json, term, number FROM analysis_memo WHERE key=?", (key,)
+                ).fetchone()
+            finally:
+                cursor.close()
+            reader = PrimaryProjectionReader(self._conn)
+            if previous is None:
+                if term is not None and number is not None:
+                    record_json = reader.compact(record_json, ProjectionOwner(term, number))
+            else:
+                record_json = previous["record_json"]
+                old_owner = (previous["term"], previous["number"])
+                new_owner = (
+                    term if term is not None else previous["term"],
+                    number if number is not None else previous["number"],
+                )
+                materialized = reader.materialize(
+                    "record_json",
+                    record_json,
+                    ProjectionOwner(*old_owner) if None not in old_owner else None,
+                )
+                if old_owner != new_owner:
+                    record_json = materialized
+                elif None not in old_owner:
+                    record_json = reader.compact(record_json, ProjectionOwner(*old_owner))
+            self._conn.execute(
+                "INSERT INTO analysis_memo(key, record_json, term, number, last_used_at)"
+                " VALUES (?, ?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET"
+                " record_json = excluded.record_json,"
+                " term = COALESCE(excluded.term, analysis_memo.term),"
+                " number = COALESCE(excluded.number, analysis_memo.number),"
+                " last_used_at = COALESCE(excluded.last_used_at, analysis_memo.last_used_at)",
+                (key, record_json, term, number, _iso(used_at)),
+            )
 
     def save_update_delivery(self, change_id: int, channel_id: str, delivery: DeliveryPlan) -> None:
         self._conn.execute(
@@ -4282,13 +4316,19 @@ class SqliteBillRepository:
         ).fetchall()
 
     def move_government_rows(self, from_term: int, to_term: int) -> int:
-        numbers = [str(row["number"]) for row in self._government_rollover_rows(from_term)]
-        if not numbers:
-            return 0
-        placeholders = ",".join("?" for _ in numbers)
-        # A savepoint works in autocommit mode and inside a dry run's open transaction alike.
-        self._conn.execute("SAVEPOINT rehome")
-        try:
+        with self.atomic():
+            rows = self._government_rollover_rows(from_term)
+            numbers = [str(row["number"]) for row in rows]
+            if not numbers:
+                return 0
+            placeholders = ",".join("?" for _ in numbers)
+            if from_term != to_term:
+                for row in rows:
+                    self._conn.execute(
+                        "UPDATE bills SET analysis_json=? WHERE term=? AND number=?"
+                        " AND json_type(analysis_json, '$.modern_primary_ref') IS NOT NULL",
+                        (row["analysis_json"], from_term, row["number"]),
+                    )
             for table in ("publications", "status_changes", "source_checks"):
                 self._conn.execute(
                     f"UPDATE {table} SET term = ? WHERE term = ? AND number IN ({placeholders})",
@@ -4299,12 +4339,7 @@ class SqliteBillRepository:
                 f" WHERE term = ? AND number IN ({placeholders})",
                 (to_term, to_term, from_term, *numbers),
             )
-        except Exception:
-            self._conn.execute("ROLLBACK TO rehome")
-            self._conn.execute("RELEASE rehome")
-            raise
-        self._conn.execute("RELEASE rehome")
-        return len(numbers)
+            return len(numbers)
 
     # Sejm rows the chamber never finished with: no closure, not passed. The government's own
     # rows (RCL projects, wykaz entries) are not bound to a term and a new Sejm does not end

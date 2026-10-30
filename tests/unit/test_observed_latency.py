@@ -106,14 +106,28 @@ def publication(repo: SqliteBillRepository, bill: Bill, *, change_id: int | None
     )
 
 
+@pytest.mark.parametrize("inline", [False, True])
 def test_exact_collection_application_and_send_clocks_have_distinct_meanings(
     repository: SqliteBillRepository,
+    inline: bool,
 ) -> None:
     analyzed(repository)
     bill = repository.get(10, "3039")
     assert bill is not None, "The arranged owner has an applied analysis"
     publication(repository, bill)
     with closing(copy(repository)) as connection:
+        if inline:
+            assert bill.analysis is not None, "The arranged owner has its retained analysis"
+            connection.execute(
+                "UPDATE bills SET analysis_json=? WHERE term=10 AND number='3039'",
+                (bill.analysis.model_dump_json(),),
+            )
+            connection.commit()
+        else:
+            encoded = connection.execute(
+                "SELECT analysis_json FROM bills WHERE term=10 AND number='3039'"
+            ).fetchone()[0]
+            assert "modern_primary_ref" in json.loads(encoded)
         before = connection.serialize()
         connection.execute("PRAGMA query_only=ON")
         report = observed_latency(connection, OBSERVED)

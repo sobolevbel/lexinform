@@ -1002,6 +1002,14 @@ class AnalysisService:
                 self._record_collection(
                     item, batch_result, record, current, provider, now, active=active
                 )
+                if record is not None and active:
+                    self._repo.save_analysis_memo(
+                        item.meta.memo_key or item.custom_id,
+                        record.model_dump_json(),
+                        term=item.term,
+                        number=item.number,
+                        used_at=now,
+                    )
             self._charge_batch_result(item, batch_result)
             if record is not None and active:
                 self._memo.setdefault(
@@ -1404,13 +1412,6 @@ class AnalysisService:
                 }
             )
             if active:
-                self._repo.save_analysis_memo(
-                    item.meta.memo_key or item.custom_id,
-                    record.model_dump_json(),
-                    term=item.term,
-                    number=item.number,
-                    used_at=now,
-                )
                 if item.meta.located is not None:
                     self._repo.save_ready_analysis(
                         item.term,

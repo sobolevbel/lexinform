@@ -10,6 +10,7 @@ from lexinform.primary_projections import (
     PrimaryProjectionError,
     PrimaryProjectionSource,
     ProjectionOwner,
+    compact_primary_projection,
     read_primary_json,
 )
 from lexinform.saved_records import (
@@ -31,6 +32,19 @@ class PrimaryProjectionReader:
             return list(cursor.execute(sql, parameters))
         finally:
             cursor.close()
+
+    def compact(self, raw: str, owner: ProjectionOwner) -> str:
+        try:
+            value = read_json(raw)
+        except ValueError, TypeError, OverflowError, RecursionError:
+            return raw
+        if not isinstance(value, dict):
+            return raw
+        identifier = value.get("computation_id")
+        if not isinstance(identifier, str):
+            return raw
+        source = self._source(identifier, (), ready=False)
+        return compact_primary_projection(raw, source, owner)
 
     def _aliases(self, owner: ProjectionOwner) -> tuple[ProjectionOwner, ...]:
         rows = self._rows(

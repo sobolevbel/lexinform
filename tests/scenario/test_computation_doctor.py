@@ -83,6 +83,27 @@ def test_graph_preserves_paid_results_and_frozen_references_without_exposing_inp
     assert path.read_bytes() == before and sorted(tmp_path.iterdir()) == files
 
 
+def test_modern_and_explicit_inline_projections_have_identical_known_reference_counts(
+    computed_world: World, tmp_path: Path
+) -> None:
+    path = snapshot(computed_world, tmp_path)
+    compact = audit(path)
+    record = computed_world.bill("3039").analysis
+    assert record is not None, "the computed fixture has a current primary analysis"
+    with closing(sqlite3.connect(path)) as database, database:
+        database.execute("UPDATE bills SET analysis_json=?", (record.model_dump_json(),))
+        for key, value in computed_world.repo.load_analysis_memo().items():
+            database.execute("UPDATE analysis_memo SET record_json=? WHERE key=?", (value, key))
+
+    inline = audit(path)
+
+    assert compact["findings"] == inline["findings"] == []
+    assert compact["summary"]["projection_refs_known"] == inline["summary"]["projection_refs_known"]
+    assert compact["references"] == inline["references"]
+    assert compact["summary"]["modern_primary_projection_refs"] >= 2
+    assert inline["summary"].get("modern_primary_projection_refs", 0) == 0
+
+
 @pytest.mark.parametrize(
     ("query", "code"),
     [
@@ -119,6 +140,14 @@ def test_graph_preserves_paid_results_and_frozen_references_without_exposing_inp
             "UPDATE bills SET analysis_json=json_set(analysis_json, '$.request_sha256', 'broken')",
             "projection_request_mismatch",
         ),
+        (
+            "UPDATE bills SET analysis_json=json_set(analysis_json, '$.modern_primary_ref', 'broken')",
+            "invalid_modern_primary_projection",
+        ),
+        (
+            "UPDATE bills SET analysis_json=json_set(analysis_json, '$.request_sha256', 'broken')",
+            "invalid_modern_primary_projection",
+        ),
         ("UPDATE analysis_memo SET record_json='{'", "invalid_json"),
         (
             "UPDATE publications SET delivery_json=json_set(delivery_json, '$.bill_json', '{')",
@@ -139,6 +168,10 @@ def test_graph_errors_are_reported_without_repair(
 ) -> None:
     path = snapshot(computed_world, tmp_path)
     with closing(sqlite3.connect(path)) as database, database:
+        if code in ("invalid_computation_reference", "projection_request_mismatch"):
+            record = computed_world.bill("3039").analysis
+            assert record is not None, "the paid fixture retains the inline corruption baseline"
+            database.execute("UPDATE bills SET analysis_json=?", (record.model_dump_json(),))
         database.execute(query)
     before = path.read_bytes()
 
