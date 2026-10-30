@@ -486,6 +486,8 @@ DA2.1 и описание текущего профиля обязательны
 - [ ] DA2.5. **Частично: source/catalog evidence ordinary consumers, CLI/historical rereads, RCL letters и ordered Senate inspection сохраняется через caller boundaries; конечная проверка [J154](2026-10-22-document-architecture-progress.md#j154). Prospective privacy общих receipt/source/selection metadata остаётся открытой: inherited requested-URL receipts могут сохранять unsafe URL. Подавление новых unsafe Senate refs этого не исправляет; immutable старые rows не переписываются.** Сохранять использованные официальные metadata/catalog snapshots или достаточное
   адресуемое evidence их связи; не скачивать весь сайт. Не сохранять credentials/cookies/secrets.
   Писать durable метаданные и архив в согласованном порядке на calling thread.
+  [J157](2026-10-22-document-architecture-progress.md#j157): inert shared URL policy и bounded omission reader; runtime privacy producer ещё не включён.
+
 - [ ] DA2.6. **Неприменимо: в текущем профиле нет второго постоянного blob store; протокол SQL+blob условен. См. [J123](2026-10-22-document-architecture-progress.md#j123).** Протокол двух хранилищ: сначала объект проверен и устойчиво доступен, потом SQL ref,
   потом checkpoint. Orphan после неуспешного SQL допустим и убирается GC; ссылка на ещё не
   сохранённый объект недопустима. Ошибка archive write не маскируется как обычное отсутствие текста.

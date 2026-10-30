@@ -1,0 +1,43 @@
+{
+  "stage": "J157",
+  "base": "e6e8d033320e4733455664965b40abb4d521f9a2",
+  "scope": "Inert prospective URL policy and optional bounded omission report reader; no runtime producer or migration",
+  "qualification": {
+    "actual_repository_selection_fixture_urls": 35,
+    "admitted": 68188,
+    "all_input_data_pins_unchanged": true,
+    "focused_passed": 165,
+    "mypy_source_files": 577,
+    "new_diagnostic_get_restore_repeat": true,
+    "normal_official_query_bytes_preserved": 4907,
+    "old_c73_SQL_and_absent_field_report_JSON_byte_exact": true,
+    "old_populated_records": 775,
+    "pinned_metadata_files": 841,
+    "ruff_formatted_files": 565,
+    "stress_diagnostic_bytes": 1918,
+    "stress_retained_examples": 7,
+    "unique_urls": 68202,
+    "unqualified_contract_omissions": 14
+  },
+  "independent_review": "Root policy/model/collector review; subagent integration regression fixed and 94 focused tests pass",
+  "full_gate": {
+    "tests_passed": 6751,
+    "seconds": 278.76,
+    "coverage_percent": 92,
+    "mypy_files": 578,
+    "ruff_format_files": 645,
+    "frozen_python_and_config_files": 645,
+    "frozen_bytes_unchanged": true,
+    "docs_check": "passed",
+    "local_http": "not required for inert policy and reader; no CLI transport changes"
+  },
+  "limitations": [
+    "S1 inert: no application URL capture privacy change until separately qualified S2 wiring",
+    "Known URL schemas do not certify arbitrary path/prose credential absence",
+    "Older typed readers discard the optional unknown field; deploy J156 reader before producing it",
+    "Run report restore stays opaque as existing code; typed model/list_runs readers enforce cap/coherence, no new scratch report validation",
+    "No historical scrub/backfill, no raw retention promise, no natural omission demand claim",
+    "No full gate, network, production/paid calls, commit or push performed"
+  ],
+  "revision3_handoff_sha256": "989acf134a2bd51b50dd9f8aae69a10643d7ec23b4d5b8d8e5929d872af00afd"
+}

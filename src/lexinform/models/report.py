@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, model_validator
 from lexinform.models.analysis import TokenUsage, usage_key
 from lexinform.models.document_reads import DocumentDownloadDiagnostics, DocumentReadMetrics
 from lexinform.models.enums import RunMode
+from lexinform.models.metadata_omissions import MetadataUrlOmissions
 
 
 class AnalysisVerdict(BaseModel):
@@ -199,6 +200,10 @@ class RunReport(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    metadata_url_omissions: MetadataUrlOmissions | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     @model_validator(mode="after")
     def cli_read_scope(self) -> Self:
         if (self.mode is RunMode.CLI_READS) != (self.cli_read_operation is not None):
@@ -234,6 +239,7 @@ class RunReport(BaseModel):
             return not (
                 self.errors
                 or self.notes
+                or self.metadata_url_omissions is not None
                 or downloads is not None
                 and (downloads.invocations or downloads.cache_hits)
                 or reads is not None
@@ -262,6 +268,7 @@ class RunReport(BaseModel):
                 "batch_requests_queued",
                 "batch_requests_uncertain",
                 "phase_seconds",
+                "metadata_url_omissions",
                 "document_reads",
                 "document_download_diagnostics",
             }

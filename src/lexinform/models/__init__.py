@@ -274,6 +274,7 @@ from lexinform.models.extractions import (
 from lexinform.models.legacy_results import LegacyResultImport as LegacyResultImport
 from lexinform.models.legacy_results import LegacyResultOccurrence as LegacyResultOccurrence
 from lexinform.models.legacy_results import LegacyResultValue as LegacyResultValue
+from lexinform.models.metadata_omissions import MetadataUrlOmissions as MetadataUrlOmissions
 from lexinform.models.ministries import (
     MINISTRIES,
     Ministry,

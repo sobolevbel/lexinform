@@ -7710,3 +7710,36 @@ records имеют analysis ranges с hashed parts; 149 legacy идут преж
 J156 commit `fa09b3f2780e5d606ab758578bc588f1a83464fc`: все четыре CI jobs 40830180647
 и deploy 40830715885 прошли; relay 7920 → fa09, health 45s/timer подтверждены
 [release proof](../assets/audits/2026-10-29-review-part2-fixes/release.json).
+
+
+<a id="j157"></a>
+
+### J157. Add inert metadata URL policy and bounded omission reader
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября. Base `e6e8d033`.
+Reader-first этап DA2.5: чистая prospective policy допускает исходные bytes URL без переписывания;
+query требует известного official host/path/key/value contract. Userinfo, control characters
+(включая encoded U+2028/U+2029), fragment и непроверенные query contracts дают явную причину.
+Исторические RCL/Senate validators, source IDs, IO и model inputs не изменены; runtime wiring нет.
+
+Optional `metadata_url_omissions` отсутствует в прежнем JSON. Диагностика ограничена 2 KiB,
+восемью reason counters и восемью детерминированными частичными hash-only примерами с точным
+остатком observations. Невалидный UTF-8 не получает выдуманный SHA. Collector хранит ограниченное
+число identities; overflow отклоняется до изменения counters. Ни новых таблиц, ни роста dump
+при выключенном producer. Run retention прежний; restore сохраняет opaque report JSON,
+а typed reader проверяет accounting/cap. Старый typed reader может отбросить новое поле.
+
+Корпусная qualification сохранённого policy freeze: 841 metadata files, 68 202 unique URL values;
+68 188 admitted, 14 вне проверенного query/identifier contract без вердикта о валидности upstream.
+4907 official query URLs и 35 fixture URLs сохраняют исходные bytes. Старые 775 populated records
+и absent-field report JSON byte-exact; новый diagnostic проходит get/restore/quiet repeat.
+Stress envelope 1918 B. На review интеграции исправлен telemetry-only `is_empty`: diagnostic не
+делает обычный холостой execution непустым, CLI reads сохраняет отдельную семантику.
+94 focused tests и strict mypy/Ruff прошли у reviewer; root проверил policy/model/collector.
+[Acceptance asset](../assets/audits/2026-10-30-metadata-url-reader/validation.json).
+DA2.5 остаётся partial до отдельного producer; план 74 / 32 done / 6 N/A / 36 open.
+
+
+J157 final make check: 6751 passed / 278.76s, coverage 92%; strict mypy 578 files,
+Ruff/format 645 по src/tests/tools. Все 645 pinned Python/config files неизменны после gate.
+Strict docs/link/anchor/resource checks прошли. Никакие runtime capture paths не включены.

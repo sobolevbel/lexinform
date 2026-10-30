@@ -320,6 +320,25 @@ The existing run retention applies. Standalone scan/reprefilter, direct CLI and 
 consumers still need their own durable finalization; this is not a complete HTTP ledger. See
 [J142](plans/2026-10-22-document-architecture-progress.md#j142).
 
+J157 добавляет inert reader поля `metadata_url_omissions` и collector без Clock; runtime producer
+пока не заполняет поле. Отсутствующая metadata сохраняет прежние public/stored JSON bytes.
+Диагностика v1 считает omission observations: точные суммы по фиксированным причинам, не более
+восьми детерминированных частичных hash-only примеров и точный остаток observations. Компактный
+UTF-8 объект ограничен 2 KiB плюс envelope поля отчёта; URL и exception prose отсутствуют.
+Не кодируемый в UTF-8 URL не имеет SHA и явно отмечается `invalid_unicode`. Действует run retention.
+
+Будущая shared URL policy сохраняет исходные допущенные bytes, включая credential-free URL без
+query на configured/fake origins. Query требует известного из кода official host/path/key/value
+contract; непроверенный query/identifier contract явно опускается без upstream/legal вердикта.
+Policy пока не подключена к receipts или source assembly, не ищет secrets в произвольном тексте
+и не переопределяет историческую валидацию RCL/Senate envelopes. Их более строгий query admission
+остаётся прежним. Будущий producer применяет пересечение policies до новых IDs, независимо
+сохраняет complete body и URL-free extraction, передаёт omission source/selection refs в prepared
+metadata без dangling links. Для opaque failure prose нужен явный flag в месте создания, без
+изменения actual IO, parser/model input или rejection messages. Reader optional поля должен быть
+развёрнут до producer: старый typed reader может отбросить незнакомое поле, хотя dump/restore
+сохраняет его opaque stored JSON.
+
 Schema 53 adds complete-body SHA/size/first-recording metadata and normalized selection-part refs.
 The reader stage creates empty tables, without production capture or legacy backfill. A metadata
 row is neither retained bytes nor a GC pin; the chosen storage profile and any required pending
