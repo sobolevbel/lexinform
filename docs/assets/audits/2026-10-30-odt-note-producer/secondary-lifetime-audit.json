@@ -1,0 +1,159 @@
+{
+  "scope": "DA6.3/1.4 residual secondary duplication and lifetime; read-only source and existing copy metadata only",
+  "head": "1b3319b6b43784ccddfa8a3651b43832caf43245",
+  "status": "open",
+  "rows": [
+    {
+      "purpose": "amendments",
+      "Bill": "no standalone answer field",
+      "memo": "full AmendmentsRecord + computation_id",
+      "frozen": "status_changes.amendments_json and delivery.change_json; revisions also retain it",
+      "exit": "memo conditional cutoff; ordinary delivery conditional cutoff; status/revision/editorial history has no automatic cutoff"
+    },
+    {
+      "purpose": "supplement",
+      "Bill": "supplements_json is seen print numbers only",
+      "memo": "full SupplementRecord + computation_id; content/delivery alias may duplicate it",
+      "frozen": "status_changes.supplements_json and delivery.change_json",
+      "exit": "same conditional memo/delivery cutoffs; event/history remains"
+    },
+    {
+      "purpose": "joint",
+      "Bill": "full JointRecord in joint_json until replaced; no timer",
+      "memo": "full JointRecord + computation_id",
+      "frozen": "full Bill snapshots can carry selected current comparison",
+      "exit": "current replacement; frozen snapshot/history retained"
+    },
+    {
+      "purpose": "name",
+      "Bill": "selected/proposed/previous Mnemonic copies name/basis plus binding; not entire paid proposal/fallback/usage",
+      "memo": "full NameRecord + computation_id",
+      "frozen": "Bill editorial snapshots preserve actual selection",
+      "exit": "editorial history/selection retained; memo conditional cutoff"
+    },
+    {
+      "purpose": "explanation",
+      "Bill": "does not replace current analysis",
+      "memo": "full AnalysisRecord + computation_id",
+      "frozen": "command application is a short target receipt; no new reader publication required",
+      "exit": "memo conditional cutoff; paid history remains"
+    },
+    {
+      "purpose": "consultation_review",
+      "Bill": "full DocumentReviewRecord: review answer + original context + current applicability fields",
+      "memo": "full DocumentReviewRecord; paid schema3 keeps compact answer/input metadata, not complete context",
+      "frozen": "Bill/delivery/content snapshots preserve rendering/evidence context",
+      "exit": "current replacement; protected memo cleanup; frozen history remains"
+    },
+    {
+      "purpose": "commission_review",
+      "Bill": "same review representation/lifetime",
+      "memo": "same review representation",
+      "frozen": "same review context contract",
+      "exit": "same review lifetime"
+    },
+    {
+      "purpose": "act_application",
+      "Bill": "legacy current review remains; new producer paused",
+      "memo": "compatible retained review representation",
+      "frozen": "legacy payloads/history preserved; no active producer assertion",
+      "exit": "same protected history policy"
+    }
+  ],
+  "shared_lifetime": {
+    "memo_days_default": 180,
+    "memo_cutoff": "last_used_at older than cutoff AND safe owner/status/no pending work/publication/batch; unknown ownership and protected work can keep it indefinitely",
+    "sent_delivery_days_default": 90,
+    "delivery_exceptions": "amendments_revision, unresolved child/digest members and incomplete Senate work; sent cleanup only",
+    "permanent": "computation_results/result_applications, status changes, content snapshots/versions, current Bill fields have no generic automatic expiry",
+    "applications": "result_applications carry refs/outcome/target; no full paid answer copy"
+  },
+  "existing_copy_metadata": {
+    "path": "out/corpus/j192-revision-work-reader/actual-state/merged/copy.db",
+    "sha256": "a165b87d071477fbb5db4921f7b58bd49d49c29f6b5f4bbbb875fa4af706da2c",
+    "paid_purpose_counts": {
+      "analysis": 6,
+      "reanalysis": 1,
+      "amendments": 1,
+      "supplement": 1
+    },
+    "known_secondary_memo_rows_utf8_bytes": {
+      "amendments": [
+        1,
+        2041
+      ],
+      "supplement": [
+        2,
+        4934
+      ]
+    },
+    "current_review_context_answer_bytes": {
+      "consultation_review": [
+        470606,
+        15428
+      ],
+      "commission_review": [
+        0,
+        0
+      ],
+      "act_application": [
+        1393,
+        4302
+      ]
+    },
+    "current_joint_rows_bytes": [
+      2,
+      2853
+    ],
+    "limitation": "Natural sample has no retained paid joint/name/explanation/review parent; no eligibility or future byte saving inferred.",
+    "known_secondary_memo_same_paid_owner_counts": {
+      "amendments": {
+        "rows": 1,
+        "same_paid_owner": 1
+      },
+      "supplement": {
+        "rows": 2,
+        "same_paid_owner": 2
+      }
+    }
+  },
+  "ranked_next": {
+    "rank": 1,
+    "change": "Reader-first compatible same-owner supplement-memo reference; prospective writer after compatible deploy. One purpose/slot only.",
+    "seams": [
+      "SqliteBillRepository.save_analysis_memo/load_analysis_memo and legacy row reader",
+      "AnalysisService._consume_digest parent-before-memo within existing atomic block for fresh eligible supplement writes"
+    ],
+    "gate": [
+      "exact inline recursive JSON/field-presence/public API roundtrip",
+      "immutable original result/request/schema/accounting",
+      "positive UTF8 envelope/SQL/gzip saving; otherwise inline",
+      "known paid owner + indexed parent lookup; foreign/unknown inline",
+      "restore missing/corrupt parent preserves target; doctor clean; memo owner/conflict and rollback unchanged"
+    ],
+    "size_scope": "Only 4934B observed candidate supplement memo payload; measure actual encoded savings before activation; no fleet extrapolation",
+    "excluded": [
+      "current reviews/full contexts",
+      "status changes/publication/content snapshot rewriting",
+      "universal bodyRef",
+      "backfill or paid calls"
+    ]
+  },
+  "source_pins": {
+    "src/lexinform/services/analysis.py": "7d9783464e9a8ba1ae0a0829d5a7590efcb4f6e6b6f239e177b7db1ab20c28a3",
+    "src/lexinform/adapters/sqlite_repo.py": "3778a3eabc4b7d7afb8b1b06840d61dd048aca6111ebdb8c055931f3cce54053",
+    "src/lexinform/models/analysis.py": "229ca857e9fe05149bca8293c3f8cec26c2984e4e1ed97d5f90432251f40944d",
+    "src/lexinform/models/computations.py": "7c0f1afdad77bad985dbe3af5b2636cd152687d7353ea1cde9555d26d094db2a",
+    "src/lexinform/models/reviews.py": "c9c02f306e12c8146280fbfce51c063ad498ef70958516af33e442df68dcbc2c",
+    "src/lexinform/models/editorial.py": "a9498f6ad8545f898265c23be81fd6fd55e92e6a791147bb677f62b38e40cfba",
+    "src/lexinform/services/content_history.py": "b7b3e66dca8ae07de718295c9aee5485f1a5e8e1a2461c53cc0b52c6052ca056",
+    "src/lexinform/services/document_reviews.py": "86f0b60ecad387eb12548c24595d4409772d558d68d13d2d25377e957680b9c9",
+    "src/lexinform/settings.py": "3fcd16b608194b1f2cb6bcc87a2b8213f668ed980f1693621f9ee93658e10df3"
+  },
+  "not_run": [
+    "source edits",
+    "tests/full gate",
+    "raw/large corpus",
+    "provider/network/production processing"
+  ]
+}

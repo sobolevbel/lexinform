@@ -1,0 +1,20 @@
+{
+  "stage": "J193",
+  "base": "1b3319b6b43784ccddfa8a3651b43832caf43245",
+  "author_exact": {
+    "src/lexinform/adapters/document_text.py": true,
+    "src/lexinform/odt_notes.py": true,
+    "src/lexinform/ports.py": false,
+    "tests/unit/test_odt_note_capture.py": true,
+    "tools/replay_odt_blocks.py": true
+  },
+  "ports_merge": "Patch adds ODT protocol imports/interfaces while retaining existing revision-work repository methods",
+  "J192_guards_unchanged": {
+    "src/lexinform/adapters/document_work.py": "4779fc32d4565453d17f08805ab971aca2204e6009b2f8bd7f7f0098f48bd62a",
+    "src/lexinform/adapters/sqlite_repo.py": "3778a3eabc4b7d7afb8b1b06840d61dd048aca6111ebdb8c055931f3cce54053",
+    "src/lexinform/models/revision_work.py": "a808efbdfaadc77d09a210096188e68829ab11c919154b3bd7e4bd354388710d",
+    "src/lexinform/models/__init__.py": "9139c1bfd09c9822d801e452ce1f052edab22fb72e8754274db7ded7f5268ee6"
+  },
+  "root_fifth_review": "Independent XML path/attribute/ancestor checks; plain itertext oracle restricted to control-free nodes, naturally observed control-bearing notes do not claim plain span proof. Default replay keys/options unchanged unless explicit note_origins. Extra replay pass not production IO.",
+  "raw_replay": "Reused exact author frozen6+9, no duplicate Root replay; extractor/helper/test/tool exact current source; ports differs only retainedJ192method/export additions."
+}

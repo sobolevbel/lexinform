@@ -1,0 +1,62 @@
+{
+  "status": "approved-final5",
+  "core_peer": "core-closure.json",
+  "core_peer_sha256": "30142d7a964e313cb48b14fb8023b6be7bee0849e504d2e9fd2a370fc9f77009",
+  "handoff_sha256": "3b9b3071802f553a064bf14c914e406796ace8d5058a46b94a9cc716e2eb5b27",
+  "source_pins": {
+    "src/lexinform/adapters/document_text.py": "25be440c73817b3b66dd71192d561ce4f523c75ca8e42cca1409093210f4f5fc",
+    "src/lexinform/odt_notes.py": "0d62149d8794c77a2f421ca5a17638cf9f447991aa3ec8adea2223b27ae10a46",
+    "src/lexinform/ports.py": "09f1ba8c5d0cc06f97b3cd633178d941f3b366268d9a827245c963c0876d78e8",
+    "tests/unit/test_odt_note_capture.py": "e6bf85613ca8546f11fc54633f8733b4e42960043dc5c521977e251c4e723a83",
+    "tools/replay_odt_blocks.py": "b3ed063cc96dc67c56293cf50afedf73a0ed27b3daf7c0cb0f79c56dbcf6bd3c"
+  },
+  "core4_exact_REV3": true,
+  "fifth_diff_review": "Opt-in replay flag only; baseline defaults preserved, explicit include_pdf_pages=False, second native pass and independent XML oracle limited to qualification. Whole source fingerprint map includes new collector/adapter/port/test/tool; no code/input drift.",
+  "qualification_metadata": {
+    "natural": {
+      "status": "passed",
+      "changed_code": false,
+      "changed_inputs": [],
+      "errors": {},
+      "changes": [],
+      "source_map_type": "dict",
+      "core5_sources_exact": true
+    },
+    "variant": {
+      "status": "passed",
+      "changed_code": false,
+      "changed_inputs": [],
+      "errors": {},
+      "changes": [],
+      "source_map_type": "dict",
+      "core5_sources_exact": true
+    }
+  },
+  "natural_scope": {
+    "independent_plain_spans": 0,
+    "independent_xml_paths": 8,
+    "input_or_code_drift": false,
+    "legacy_business_changes": 0,
+    "note_bearing_unique_inputs": 4,
+    "observed_calls": 4,
+    "observed_notes": 4,
+    "odt_leaves": 8,
+    "roots": 6
+  },
+  "variant_scope": {
+    "independent_plain_spans": 0,
+    "independent_xml_paths": 0,
+    "input_or_code_drift": false,
+    "legacy_business_changes": 0,
+    "note_bearing_unique_inputs": 0,
+    "observed_calls": 0,
+    "observed_notes": 0,
+    "odt_leaves": 9,
+    "roots": 9
+  },
+  "limits": [
+    "Peer did not replay raw inputs/full/provider/state.",
+    "Natural4notes/4embeddedcalls/8pathchecks;0natural plain-span proof and no representative note-rich/separate-reference claim.",
+    "Future fact/block/runtime/default activation remains outside scope."
+  ]
+}

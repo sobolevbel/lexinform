@@ -1,0 +1,78 @@
+{
+  "api": "Opt-in native extract_with_note_origins returns body+optionalorigins; physical extract_parts_with_odt_notes returns validated carrier. Ordinary APIs/SQL/summary/defaultactivation unchanged; no producer attached to current runtime caller.",
+  "base": "352c3d375fe1b937d1016cd8bcb106c645793d6d",
+  "constraints": [
+    "Exact native only; custom/inherited/instance/class overrides execute actual old boundary and remain unknown.",
+    "Valid empty carrier before optional metadata enrichment; no model_construct, Exception-only failopen, control-flow cancellation/parser object/cause propagate.",
+    "Single production parse/read; replay deliberately compares a second native pass and independent XML oracle.",
+    "32KiB/64events/64path/256ASCIIstring profile; reserve future fields before retention; bounded counters continue afterprefix; no reference guessing.",
+    "Natural proof is narrow4note/4embeddedcall occurrences only; no representative note-rich/real separate-ref coverage claim.",
+    "No fact\u2192block/default/SQL/summary/archive/backend activation; codecomponent sourcehashes change honestly."
+  ],
+  "core_peer_sha256": "30142d7a964e313cb48b14fb8023b6be7bee0849e504d2e9fd2a370fc9f77009",
+  "core_revision": "core-review-3/handoff.json",
+  "corpus": {
+    "natural": {
+      "independent_plain_spans": 0,
+      "independent_xml_paths": 8,
+      "input_or_code_drift": false,
+      "legacy_business_changes": 0,
+      "note_bearing_unique_inputs": 4,
+      "observed_calls": 4,
+      "observed_notes": 4,
+      "odt_leaves": 8,
+      "roots": 6
+    },
+    "variant": {
+      "independent_plain_spans": 0,
+      "independent_xml_paths": 0,
+      "input_or_code_drift": false,
+      "legacy_business_changes": 0,
+      "note_bearing_unique_inputs": 0,
+      "observed_calls": 0,
+      "observed_notes": 0,
+      "odt_leaves": 9,
+      "roots": 9
+    }
+  },
+  "default_business_delta": 0,
+  "focused": {
+    "format": "green",
+    "new": 24,
+    "passed": 63,
+    "ruff": "green",
+    "strict_files": 5
+  },
+  "freeze_sha256": "6d749e9a8c6715aaa93a145134a404c3dde3f1e56abd72d7a1269c6166276753",
+  "patch_sha256": "5588cb0da8e388007d82e1c97e4d501a033da7aa317605aa8a6066eaf525984b",
+  "proofs": {
+    "natural": {
+      "case_manifest_sha256": "2ce1ac6cb30dff66526502ab8bf213a70a90c4504a23220c8a649e2c4d21fd5b",
+      "path": "out/corpus/odt-note-producer/qualification/natural.json",
+      "sha256": "7b1a7712a70d880b4ff2c3fdfa30ccb02336914a1a8ab04a32cef13d07790ecd"
+    },
+    "variant": {
+      "case_manifest_sha256": "6dc55e22b95a4c20069c2194ab7a66d8d7b790f7bbfe1e05070a8234fe7f700b",
+      "path": "out/corpus/odt-note-producer/qualification/variant.json",
+      "sha256": "7fe2947b85628f2b1069273cc8e3de2381e16752b32e21197999d02e8e8bd7f2"
+    }
+  },
+  "rollout_reader": "Root verified J191352c3d actualdeployment; producer remains opt-in and awaits final5peer/Rootgate.",
+  "source_pins": {
+    "src/lexinform/adapters/document_text.py": "25be440c73817b3b66dd71192d561ce4f523c75ca8e42cca1409093210f4f5fc",
+    "src/lexinform/odt_notes.py": "0d62149d8794c77a2f421ca5a17638cf9f447991aa3ec8adea2223b27ae10a46",
+    "src/lexinform/ports.py": "09f1ba8c5d0cc06f97b3cd633178d941f3b366268d9a827245c963c0876d78e8",
+    "tests/unit/test_odt_note_capture.py": "e6bf85613ca8546f11fc54633f8733b4e42960043dc5c521977e251c4e723a83",
+    "tools/replay_odt_blocks.py": "b3ed063cc96dc67c56293cf50afedf73a0ed27b3daf7c0cb0f79c56dbcf6bd3c"
+  },
+  "status": "final5-frozen-peer-core-closed",
+  "synthetic_oracle_sha256": "0696cea613b297110f4bbd4abd3d9bef01704b1d54c035aef9829fa772a1a378",
+  "unchanged_source_pins": {
+    "src/lexinform/extraction_records.py": "7a9d6e7b0d4e8fbc429da0dd4a368829928164f18fbe75ff23257be830c4f8a0",
+    "src/lexinform/models/documents.py": "ebd3422121c38683e2e2af1d229e5ffcd809158bbe3fba71f2cca39f9b8b6be4",
+    "src/lexinform/models/extractions.py": "d43464c097a0492fcb3d245403a94cf344aee85cdce86d76da06281ca9788e6f",
+    "src/lexinform/models/odt_notes.py": "57cdf55ef8a68f9facda19abe447793a388c095afb3f413cf00a82ac874bc6db",
+    "src/lexinform/services/analysis.py": "7d9783464e9a8ba1ae0a0829d5a7590efcb4f6e6b6f239e177b7db1ab20c28a3",
+    "src/lexinform/services/documents.py": "eb7128197b671a942c173017b716a52e1436de2dc5b121f2e0ea6f03488d3be4"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "cases": [
+    {
+      "calls": 2,
+      "case": "plain",
+      "legacy_parity": true,
+      "notes": 1,
+      "plain_spans": 3
+    },
+    {
+      "calls": 3,
+      "case": "nested",
+      "legacy_parity": true,
+      "notes": 2,
+      "plain_spans": 5
+    },
+    {
+      "calls": 1,
+      "case": "controls",
+      "legacy_parity": true,
+      "notes": 1,
+      "plain_spans": 0
+    }
+  ],
+  "controlled_only": true,
+  "natural_coverage_claim": false
+}

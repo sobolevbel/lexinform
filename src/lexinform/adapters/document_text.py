@@ -19,7 +19,7 @@ import sys
 import zipfile
 import zlib
 from collections.abc import Callable, Iterator
-from contextlib import AbstractContextManager, contextmanager
+from contextlib import AbstractContextManager, contextmanager, suppress
 from dataclasses import dataclass, field
 from functools import partial
 from typing import IO, Literal
@@ -56,6 +56,7 @@ from lexinform.models.documents import (
     WordTextExtraction,
 )
 from lexinform.models.extractions import DocumentExtraction, ExtractionOptions
+from lexinform.models.odt_notes import OdtNotedParts, OdtNoteOrigins, OdtPartNoteOrigins
 from lexinform.models.physical_inventory import (
     DecodedPath,
     HeaderRow,
@@ -86,6 +87,7 @@ from lexinform.models.word_structure import (
     WordStructureView,
 )
 from lexinform.models.word_view_capture import WordPartViewStatus, WordViewExtraction
+from lexinform.odt_notes import OdtAppendParts, OdtNoteCollector, OdtNoteFrame, odt_note_event
 from lexinform.physical_header_capture import PhysicalHeaderBuilder
 from lexinform.physical_walk_capture import (
     PhysicalWalkCapture,
@@ -821,6 +823,7 @@ class _OdtOrigins:
     blocks: list[OdtTextBlock] = field(default_factory=list)
     legacy_blocks: list[str] = field(default_factory=list)
     ignored_nodes: list[OdtIgnoredNode] = field(default_factory=list)
+    notes: OdtNoteCollector | None = None
 
     def record(
         self,
@@ -850,11 +853,27 @@ class OdtTextExtractor:
         return "\n".join(_odt_blocks(body)) if body is not None else ""
 
     def extract_odt_blocks(self, data: bytes) -> OdtTextExtraction:
+        return self._read(data, None)[0]
+
+    def extract_with_note_origins(
+        self, data: bytes
+    ) -> tuple[OdtTextExtraction, OdtNoteOrigins | None]:
+        if not _native_odt_notes(self):
+            return self.extract_odt_blocks(data), None
+        try:
+            notes = OdtNoteCollector()
+        except Exception:
+            notes = None
+        return self._read(data, notes)
+
+    def _read(
+        self, data: bytes, notes: OdtNoteCollector | None
+    ) -> tuple[OdtTextExtraction, OdtNoteOrigins | None]:
         xml, body, state = self._body(data)
-        origins = _OdtOrigins()
+        origins = _OdtOrigins(notes=notes)
         if body is not None:
             list(_odt_blocks(body, origins=origins))
-        return OdtTextExtraction(
+        extracted = OdtTextExtraction(
             input_sha256=hashlib.sha256(data).hexdigest(),
             xml_sha256=hashlib.sha256(xml).hexdigest(),
             python_version=sys.version.split()[0],
@@ -863,6 +882,12 @@ class OdtTextExtractor:
             legacy_blocks=tuple(origins.legacy_blocks),
             ignored_nodes=tuple(sorted(origins.ignored_nodes, key=lambda node: node.path)),
         )
+        observed = (
+            odt_note_event(notes, partial(_finish_odt_notes, notes, extracted))
+            if notes is not None
+            else None
+        )
+        return extracted, observed
 
     @staticmethod
     def _body(
@@ -879,6 +904,34 @@ class OdtTextExtractor:
         return xml, body, "read"
 
 
+def _finish_odt_notes(notes: OdtNoteCollector, body: OdtTextExtraction) -> OdtNoteOrigins | None:
+    value = notes.finish(body)
+    return OdtNoteOrigins.model_validate(value) if value is not None else None
+
+
+_NATIVE_ODT_EXTRACT = OdtTextExtractor.extract
+_NATIVE_ODT_BLOCKS = OdtTextExtractor.extract_odt_blocks
+_NATIVE_ODT_NOTES = OdtTextExtractor.extract_with_note_origins
+_NATIVE_ODT_READ = OdtTextExtractor._read
+_NATIVE_ODT_BODY = OdtTextExtractor._body
+
+
+def _native_odt_notes(value: object) -> bool:
+    return (
+        type(value) is OdtTextExtractor
+        and getattr(value, "_body", None) is _NATIVE_ODT_BODY
+        and all(
+            getattr(getattr(value, name, None), "__func__", None) is method
+            for name, method in (
+                ("extract", _NATIVE_ODT_EXTRACT),
+                ("_read", _NATIVE_ODT_READ),
+                ("extract_odt_blocks", _NATIVE_ODT_BLOCKS),
+                ("extract_with_note_origins", _NATIVE_ODT_NOTES),
+            )
+        )
+    )
+
+
 def _odt_blocks(
     node: ET.Element,
     *,
@@ -889,7 +942,7 @@ def _odt_blocks(
     for index, child in enumerate(node):
         child_path = (*path, index)
         if child.tag in (f"{_ODT_TEXT}p", f"{_ODT_TEXT}h"):
-            text = _odt_paragraph(child)
+            text = _odt_paragraph(child, path=child_path, notes=origins.notes if origins else None)
             if origins is not None:
                 origins.record(
                     "heading" if child.tag == f"{_ODT_TEXT}h" else "paragraph",
@@ -955,14 +1008,39 @@ def _declares_entities(xml: bytes) -> bool:
     return True
 
 
-def _odt_paragraph(p: ET.Element) -> str:
+def _odt_paragraph(
+    p: ET.Element, *, path: tuple[int, ...] = (), notes: OdtNoteCollector | None = None
+) -> str:
     parts: list[str] = [p.text or ""]
-    _odt_inline(p, parts)
+    if notes is not None:
+        tracked = odt_note_event(notes, lambda: OdtAppendParts(p.text or "", notes))
+        if tracked is not None:
+            parts = tracked
+    _odt_inline(p, parts, notes=notes, path=path, paragraph=path, block=path)
     return "".join(parts)
 
 
-def _odt_inline(node: ET.Element, parts: list[str]) -> None:
-    for el in node:
+def _odt_inline(
+    node: ET.Element,
+    parts: list[str],
+    *,
+    notes: OdtNoteCollector | None = None,
+    path: tuple[int, ...] | None = None,
+    paragraph: tuple[int, ...] | None = None,
+    block: tuple[int, ...] = (),
+    parent: OdtNoteFrame | None = None,
+) -> None:
+    for index, el in enumerate(node):
+        located = (
+            odt_note_event(notes, partial(notes.child, path, index)) if notes is not None else None
+        )
+        frame = (
+            odt_note_event(
+                notes, partial(_odt_note_enter, notes, el, located, paragraph, block, parent, parts)
+            )
+            if notes is not None
+            else None
+        )
         if el.tag == f"{_ODT_TEXT}tab":
             parts.append("\t")
         elif el.tag == f"{_ODT_TEXT}line-break":
@@ -974,9 +1052,44 @@ def _odt_inline(node: ET.Element, parts: list[str]) -> None:
         else:
             if el.text:
                 parts.append(el.text)
-            _odt_inline(el, parts)  # spans, links, notes: their text, then their children
+            _odt_inline(
+                el,
+                parts,
+                notes=notes,
+                path=located,
+                paragraph=located if el.tag in (_ODT_TEXT + "p", _ODT_TEXT + "h") else paragraph,
+                block=block,
+                parent=frame if frame is not None and frame.entry is not None else parent,
+            )
+        if notes is not None and isinstance(parts, OdtAppendParts):
+            odt_note_event(notes, partial(_odt_note_leave, notes, frame, parts))
         if el.tail:
             parts.append(el.tail)
+
+
+def _odt_note_enter(
+    notes: OdtNoteCollector,
+    node: ET.Element,
+    path: tuple[int, ...] | None,
+    paragraph: tuple[int, ...] | None,
+    block: tuple[int, ...],
+    parent: OdtNoteFrame | None,
+    parts: list[str],
+) -> OdtNoteFrame | None:
+    return notes.enter(
+        node,
+        path,
+        paragraph,
+        block,
+        parent,
+        parts.position if isinstance(parts, OdtAppendParts) else 0,
+    )
+
+
+def _odt_note_leave(
+    notes: OdtNoteCollector, frame: OdtNoteFrame | None, parts: OdtAppendParts
+) -> None:
+    notes.leave(frame, parts.position)
 
 
 _OLE_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"  # OLE2 container: legacy .doc (also .xls, .ppt)
@@ -993,6 +1106,7 @@ class _PhysicalOrigins:
     word_structure: list[WordPartStructureExtraction] | None = None
     semantic_word_structure: bool = False
     word_view_status: list[WordPartViewStatus] | None = None
+    odt_notes: list[OdtPartNoteOrigins] | None = None
 
 
 class DocumentTextExtractor:
@@ -1037,6 +1151,30 @@ class DocumentTextExtractor:
             unlocated_text=[] if include_unlocated_text else None,
         )
         return self._extract_parts(data, origins)
+
+    def extract_parts_with_odt_notes(
+        self, data: bytes, *, include_pdf_pages: bool = True
+    ) -> OdtNotedParts:
+        if (
+            type(self) is not DocumentTextExtractor
+            or getattr(self.extract_parts, "__func__", None) is not _NATIVE_PHYSICAL_PARTS
+        ):
+            legacy = self.extract_parts(data, include_pdf_pages=include_pdf_pages)
+            return OdtNotedParts(legacy=legacy, odt_notes=())
+        origins = _PhysicalOrigins(
+            pdf_pages=[] if include_pdf_pages else None,
+            word_blocks=[],
+            word_notes=[],
+            odt_blocks=[],
+            unlocated_text=[],
+            odt_notes=[],
+        )
+        legacy = self._extract_parts(data, origins)
+        empty = OdtNotedParts(legacy=legacy, odt_notes=())
+        try:
+            return OdtNotedParts(legacy=legacy, odt_notes=tuple(origins.odt_notes or ()))
+        except Exception:
+            return empty
 
     def extract_parts_with_word_structure(
         self, data: bytes, *, include_pdf_pages: bool = True
@@ -1252,6 +1390,7 @@ class DocumentTextExtractor:
         structure_result: WordStructureExtraction | WordSemanticStructureExtraction | None = None
         view_result: WordViewExtraction | None = None
         odt_result: OdtTextExtraction | None = None
+        odt_notes: OdtNoteOrigins | None = None
         if data.startswith(_ZIP_MAGIC):
             try:
                 with _physical_zip(data) as archive:
@@ -1328,7 +1467,17 @@ class DocumentTextExtractor:
                         capture = current_physical_walk_capture()
                         if capture is not None and type(self._odt) is not OdtTextExtractor:
                             _physical_event(capture, capture.opaque_helper)
-                        if origins.odt_blocks is not None and isinstance(
+                        if (
+                            origins.odt_notes is not None
+                            and len(origins.odt_notes) < 64
+                            and _native_odt_notes(self._odt)
+                            and isinstance(self._odt, OdtTextExtractor)
+                        ):
+                            odt_result, odt_notes = _physical_format(
+                                partial(self._odt.extract_with_note_origins, data)
+                            )
+                            text = odt_result.legacy_text
+                        elif origins.odt_blocks is not None and isinstance(
                             self._odt, OdtBlockTextExtractor
                         ):
                             odt_result = _physical_format(
@@ -1447,6 +1596,11 @@ class DocumentTextExtractor:
             origins.odt_blocks.append(
                 OdtPartExtraction(part_index=len(parts) - 1, extraction=odt_result)
             )
+        if origins.odt_notes is not None and odt_notes is not None:
+            with suppress(Exception):
+                origins.odt_notes.append(
+                    OdtPartNoteOrigins(part_index=len(parts) - 1, extraction=odt_notes)
+                )
         if origins.unlocated_text is not None:
             head = data[:1024]
             route: Literal["doc", "word_xml"] | None = (
@@ -1885,3 +2039,6 @@ def _physical_recipe(
             options=options,
         )
     )
+
+
+_NATIVE_PHYSICAL_PARTS = DocumentTextExtractor.extract_parts

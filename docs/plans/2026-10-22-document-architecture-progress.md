@@ -8982,3 +8982,49 @@ Final gate:7460tests/263.145s/92%,mypy653/Ruff721;738source/config pins exact. O
 [consumer inventory](../assets/audits/2026-10-30-revision-application-work-reader/consumer-inventory.json).
 
 [J191 exact CI/relay](../assets/audits/2026-10-30-odt-note-reader/release.json).
+
+
+<a id="j193"></a>
+
+## J193 — opt-in same-pass ODT note/call capture
+
+Native extract_with_note_origins и physical extract_parts_with_odt_notes наблюдают existing
+parse/walk/append operations, не добавляя production XML/ZIP read. Returned legacy values
+и default APIs прежние; consumer в runtime/SQL/summary не подключён. Child paths, nearest
+paragraph/block, entry→embedded call, before-tail emitted spans, note IDs/classes и unique
+exact-ID references связаны с actual input/XML/body/physical index. Prefix bounded до
+allocation:64events/32KiB, counters продолжаются; incomplete inventory не доказывает
+уникальность или отсутствие target. No substring inference и full-XML/legal coverage promise.
+
+Custom/inherited/instance/class public overrides вызывают actual old boundary и остаются
+unknown. Metadata Exception выключает дополнительный capture; cancellation и parser cause
+сохраняются. Peer поймал2ошибки до full: model_construct bypassed carrier validation и
+сравнение с mutable class method могло обойти override. Required empty carrier теперь
+валидируется перед optional enrichment; native method identity captured once. Оба regression
+контроля red-before/green-after; core+fifth runner independent review closed.
+
+Author63focused/24new, strict5/Ruff/format green; Root63focused/preflight green.
+Один replay pinned J1196natural+9derivatives:17ODTleaves,0businessdelta/0input/index/code drift.
+Natural subset содержит4unique note-bearing inputs:4notes/4embedded calls,8independent XML
+path checks. Natural notes содержат controls: independent plain-itertext span oracle для них
+не заявлен. Synthetic plain/nested cases отдельно проверяют8spans, literal control cases —
+unit tests. Rich-note/real separate-ref generalization и независимых legal labels нет.
+Runner делает отдельный comparison pass/XML oracle только в qualification, не в production.
+Root переиспользует frozen replay при exact extractor/helper/test/tool source; ports merge
+сохраняет J192interfaces, повтор300KiB reports остаётся в out, в docs — compact evidence.
+
+DA6.3 residual audit:2same-owner supplement memos всего4934B; отдельный bespoke format ради
+этой экономии отложен. Frozen editorial/delivery context нельзя удалить как cache, а schema3
+review result не хранит весь comparison input. Это не закрывает DA6.3; следующий refactor
+должен оправдывать сложность и использовать existing reference machinery.
+
+Final gate:7483tests/273.802s/92%,mypy655/Ruff723;740source/config pins exact. Staged archive docs gate перед commit.
+
+[Qualification](../assets/audits/2026-10-30-odt-note-producer/qualification.json),
+[handoff](../assets/audits/2026-10-30-odt-note-producer/handoff.json),
+[peer](../assets/audits/2026-10-30-odt-note-producer/peer-closure.json),
+[integration](../assets/audits/2026-10-30-odt-note-producer/integration.json),
+[synthetic oracle](../assets/audits/2026-10-30-odt-note-producer/synthetic-oracle.json),
+[replay recipe](../assets/audits/2026-10-30-odt-note-producer/recipe.json),
+[lifetime audit](../assets/audits/2026-10-30-odt-note-producer/secondary-lifetime-report.md),
+[J192 exact CI/relay](../assets/audits/2026-10-30-revision-application-work-reader/release.json).

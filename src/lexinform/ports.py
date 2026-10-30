@@ -69,6 +69,8 @@ from lexinform.models import (
     ObservationBasis,
     ObservationMode,
     ObservedProcess,
+    OdtNotedParts,
+    OdtNoteOrigins,
     OdtTextExtraction,
     PdfTextExtraction,
     Phase,
@@ -389,6 +391,20 @@ class WordStructuredPartsExtractor(Protocol):
 @runtime_checkable
 class OdtBlockTextExtractor(Protocol):
     def extract_odt_blocks(self, data: bytes) -> OdtTextExtraction: ...
+
+
+@runtime_checkable
+class OdtNoteTextExtractor(Protocol):
+    def extract_with_note_origins(
+        self, data: bytes
+    ) -> tuple[OdtTextExtraction, OdtNoteOrigins | None]: ...
+
+
+@runtime_checkable
+class OdtNotedPartsExtractor(Protocol):
+    def extract_parts_with_odt_notes(
+        self, data: bytes, *, include_pdf_pages: bool = True
+    ) -> OdtNotedParts: ...
 
 
 class TextExtractor(Protocol):

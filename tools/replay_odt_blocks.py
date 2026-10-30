@@ -10,7 +10,7 @@ from typing import Any, Literal
 from xml.etree import ElementTree as ET
 
 from lexinform.adapters.document_text import DocumentTextExtractor, OdtTextExtractor
-from lexinform.models import OdtTextExtraction
+from lexinform.models import OdtNoteCall, OdtNoteEntry, OdtNoteOrigins, OdtTextExtraction
 from tools.corpus_artifacts import digest, observation_changes, read_artifact, write_json
 from tools.corpus_manifests import RawReplayManifest
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
@@ -122,7 +122,84 @@ def verify_manifest(data: bytes, extracted: OdtTextExtraction) -> dict[str, Any]
     }
 
 
-def snapshot(data: bytes, mode: Mode) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+def verify_note_origins(
+    data: bytes, body_manifest: OdtTextExtraction, value: OdtNoteOrigins
+) -> dict[str, int]:
+    if (value.input_sha256, value.xml_sha256, value.body_manifest_sha256) != (
+        body_manifest.input_sha256,
+        body_manifest.xml_sha256,
+        body_manifest.manifest_sha256,
+    ):
+        raise ValueError("ODT origins differ from their actual body/input manifest")
+    if body_manifest.body_state != "read":
+        if value.walk_state != "unavailable":
+            raise ValueError("Unreadable ODT body cannot claim available note origins")
+        return {"verified_note_paths": 0, "verified_call_paths": 0, "verified_plain_spans": 0}
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        xml = archive.read("content.xml")
+    root = ET.fromstring(xml).find(OFFICE + "body/" + OFFICE + "text")
+    if root is None:
+        if value.walk_state != "unavailable":
+            raise ValueError("ODT notes without a body must remain unavailable")
+        return {"verified_note_paths": 0, "verified_call_paths": 0, "verified_plain_spans": 0}
+    blocks = {block.path: block for block in body_manifest.blocks}
+    plain_spans = 0
+    records: tuple[OdtNoteEntry | OdtNoteCall, ...] = (*value.entries, *value.calls)
+    for record in records:
+        node = xml_node(root, record.path)
+        expected = TEXT + (
+            "note" if isinstance(record, OdtNoteEntry) or record.kind == "embedded" else "note-ref"
+        )
+        if node.tag != expected:
+            raise ValueError("ODT note/call path does not address its actual XML node")
+        if xml_node(root, record.paragraph_path).tag not in (TEXT + "p", TEXT + "h"):
+            raise ValueError("ODT note paragraph path does not address an actual paragraph")
+        identity = node.get(TEXT + ("id" if expected == TEXT + "note" else "ref-name"))
+        if record.identity != identity:
+            raise ValueError("ODT note identity differs from its actual XML attribute")
+        span = record.emitted
+        if span is not None and not any(
+            child.tag in (TEXT + "s", TEXT + "tab", TEXT + "line-break", TEXT + "soft-page-break")
+            for child in node.iter()
+        ):
+            if blocks[record.block_path].text[span.start : span.end] != "".join(node.itertext()):
+                raise ValueError(
+                    "ODT observed append range differs from independent plain XML text"
+                )
+            plain_spans += 1
+    for note in value.entries:
+        node = xml_node(root, note.path)
+        if note.note_class != node.get(TEXT + "note-class"):
+            raise ValueError("ODT note class differs from its observed XML attribute")
+        for path, tag in ((note.citation_path, "note-citation"), (note.body_path, "note-body")):
+            if path is not None and xml_node(root, path).tag != TEXT + tag:
+                raise ValueError("ODT note child path differs from its actual XML kind")
+        ancestors = [
+            note.path[:i]
+            for i in range(1, len(note.path))
+            if xml_node(root, note.path[:i]).tag == TEXT + "note"
+        ]
+        if note.parent_note_path != (ancestors[-1] if ancestors else None):
+            raise ValueError("ODT nested note differs from its actual nearest ancestor")
+    for call in value.calls:
+        if call.target_path is not None:
+            target = xml_node(root, call.target_path)
+            if (
+                target.tag != TEXT + "note"
+                or call.kind == "reference"
+                and target.get(TEXT + "id") != call.identity
+            ):
+                raise ValueError("ODT call target differs from its actual XML definition")
+    return {
+        "verified_note_paths": len(value.entries),
+        "verified_call_paths": len(value.calls),
+        "verified_plain_spans": plain_spans,
+    }
+
+
+def snapshot(
+    data: bytes, mode: Mode, *, note_origins: bool = False
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     observer = BlockObserver() if mode == "adapter" else LibraryObserver()
     routing = RoutingOnly()
     extracted = DocumentTextExtractor(routing, routing, routing, observer).extract_parts(
@@ -151,6 +228,28 @@ def snapshot(data: bytes, mode: Mode) -> tuple[dict[str, Any], list[dict[str, An
                     **verify_manifest(observer.payloads[part.sha256], manifest),
                 }
             )
+    if note_origins:
+        if not isinstance(observer, BlockObserver):
+            raise ValueError("ODT note qualification requires its adapter baseline")
+        native = DocumentTextExtractor(routing, routing, routing).extract_parts_with_odt_notes(
+            data, include_pdf_pages=False
+        )
+        if native.legacy != extracted:
+            raise ValueError("Opt-in ODT origins changed actual legacy physical values")
+        if len(native.odt_notes) != len(native.legacy.odt_blocks):
+            raise ValueError("Reached native ODT leaves must retain known or unavailable origins")
+        bodies = {part.part_index: part.extraction for part in native.legacy.odt_blocks}
+        for linked in native.odt_notes:
+            value = linked.extraction
+            verified = verify_note_origins(
+                observer.payloads[value.input_sha256], bodies[linked.part_index], value
+            )
+            for item in physical:
+                if item["part_index"] == linked.part_index:
+                    item["note_origins"] = value.model_dump(mode="json")
+                    item["note_origins_manifest_sha256"] = value.retained_manifest_sha256
+                    item["full_note_origins_manifest_sha256"] = value.full_manifest_sha256
+                    item.update(verified)
     return core, physical
 
 
@@ -162,6 +261,7 @@ def run(
     mode: Mode,
     reference: Path | None = None,
     reference_sha256: str | None = None,
+    note_origins: bool = False,
 ) -> int:
     root, target = corpus.resolve(strict=True), output.resolve()
     if output.is_symlink() or target.exists() or target.is_relative_to(root):
@@ -185,6 +285,8 @@ def run(
             raise ValueError("Reference ODT population differs")
     elif reference is not None or reference_sha256 is not None:
         raise ValueError("Library baseline does not accept a reference")
+    if note_origins and mode != "adapter":
+        raise ValueError("ODT note qualification requires explicit adapter mode")
     before = source_fingerprints()
     result: dict[str, Any] = {
         "suite": "odt-blocks-v1",
@@ -204,6 +306,13 @@ def run(
         "errors": {},
         "changes": [],
     }
+    if note_origins:
+        result["note_origins_opt_in"] = True
+        result["exclusions"].append(
+            "Driver performs a separate native comparison pass and independent XML oracle; "
+            "production opt-in API remains one parse/read. Natural note-rich coverage "
+            "is not inferred."
+        )
     reads = CorpusReads(root)
     successful = 0
     with reads.guard():
@@ -217,7 +326,11 @@ def run(
                 data = path.read_bytes()
                 if digest(data) != case.sha256:
                     raise ValueError("ODT input SHA mismatch")
-                core, physical = snapshot(data, mode)
+                core, physical = (
+                    snapshot(data, mode, note_origins=True)
+                    if note_origins
+                    else snapshot(data, mode)
+                )
                 result["observations"][case.path] = core
                 result["physical"][case.path] = physical
                 successful += sum(attempt["error_type"] is None for attempt in core["attempts"])
@@ -247,6 +360,7 @@ def main() -> None:
     parser.add_argument("--mode", choices=("library", "adapter"), required=True)
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--reference-sha256")
+    parser.add_argument("--note-origins", action="store_true")
     args = parser.parse_args()
     logging.basicConfig(level=logging.ERROR)
     raise SystemExit(
@@ -257,6 +371,7 @@ def main() -> None:
             mode=args.mode,
             reference=args.reference,
             reference_sha256=args.reference_sha256,
+            note_origins=args.note_origins,
         )
     )
 
