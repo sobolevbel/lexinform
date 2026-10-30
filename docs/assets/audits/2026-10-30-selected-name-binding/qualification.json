@@ -1,0 +1,24 @@
+{
+  "scope": "Prospective paid selected-name binding and source-receipt-corroborated atomic rollover/link inheritance; existingeditorialJSON only, noDDL/LLMschema/archive",
+  "patch_sha256": "81f217da6e1f841d884f869fb2ee1b8ea49412e88514cc8f439c1c143b819654",
+  "independent_review": "Root exact11review+URL exact11pins/8focused controls green;128focused/27new/strict11; BillName/MIGRATIONS AST unchanged",
+  "actual_state": "412e old/candidate readers483bills/47editorials/194publications/9paidrows+refs+receipts exact;47oldnames remainunknown, no retroactive receipts;quietresavezeroSQL/gzip,restore2. Separatecounterfactual transfer+1102SQL/+39gzip,repeatzero,original9paidrowsunchanged. No naturalboundname claim.",
+  "full_gate": {
+    "suites": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "7168",
+        "time": "257.380",
+        "timestamp": "2026-10-30T16:43:02.491290+01:00"
+      }
+    ],
+    "coverage_percent": 92,
+    "mypy_files": 626,
+    "ruff_formatted_files": 694,
+    "source_config_freeze_paths": 711,
+    "unchanged": true
+  }
+}

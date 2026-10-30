@@ -36,6 +36,7 @@ from lexinform.models import (
 from lexinform.ports import BillRepository, Clock, ProjectResolver, SejmGateway, WykazGateway
 from lexinform.services.predecessors import absorb_submission, rcl_predecessor
 from lexinform.services.rcl_projects import RclProjectReader
+from lexinform.services.result_applications import record_retained_name_application
 from lexinform.services.sources import print_of_project
 from lexinform.services.terms import TermResolver
 
@@ -343,7 +344,11 @@ class BillLookup:
         work with and the entry joins its thread. Without this the entry would get a card of its
         own saying "waiting for a druk number", possibly for something already in force."""
         printed = self._repo.get(pre.term, print_number) or self._fetch(pre.term, print_number)
-        self._repo.link_bills(pre.term, pre.number, printed.number, wykaz_number=wykaz_number)
+        with self._repo.atomic():
+            self._repo.link_bills(pre.term, pre.number, printed.number, wykaz_number=wykaz_number)
+            target = self._repo.get(pre.term, printed.number)
+            if target is not None:
+                record_retained_name_application(self._repo, pre, target, now=self._clock.now())
         log.info("%s is druk %s; linked", pre.number, printed.number)
         return self._stored(printed)
 

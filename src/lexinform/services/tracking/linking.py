@@ -28,6 +28,7 @@ from lexinform.services.analysis import AnalysisService
 from lexinform.services.analysis_applications import apply_analysis
 from lexinform.services.posting import Poster
 from lexinform.services.publications import inherit_card
+from lexinform.services.result_applications import record_retained_name_application
 from lexinform.services.sources import RclTextSource, SejmTextSource, fetch_print
 from lexinform.services.tracking.acts import ActWatcher
 from lexinform.services.tracking.stages import StageEnricher, change_key
@@ -192,6 +193,9 @@ class Linker:
                 print_number,
                 wykaz_number=pre.rcl.wykaz_number if pre.rcl is not None else None,
             )
+            target = self._repo.get(pre.term, print_number)
+            if target is not None:
+                record_retained_name_application(self._repo, pre, target, now=self._clock.now())
         result.linked += 1
         stale = self._poster.card(pre)
         if stale is not None and stale.status is PublicationStatus.SENT:
@@ -254,6 +258,9 @@ class Linker:
             print_number,
             wykaz_number=pre.rcl.wykaz_number if pre.rcl is not None else None,
         )
+        target = self._repo.get(pre.term, print_number)
+        if target is not None:
+            record_retained_name_application(self._repo, pre, target, now=now)
 
     def _render_card(
         self,

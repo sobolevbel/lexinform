@@ -152,6 +152,7 @@ from lexinform.models.physical_inventory import PhysicalCapture, PhysicalMetadat
 from lexinform.models.senate_inspection import SenateInspectionLink, SenateInspectionRecord
 from lexinform.models.source_catalog_attempts import SourceCatalogAttempt, SourceCatalogSnapshot
 from lexinform.models.source_omissions import SourceMetadataOmission
+from lexinform.name_binding import bind_mnemonic
 from lexinform.saved_records import CONTEXT_RESULT_TABLES
 from lexinform.sitting_delivery import sitting_root_plan
 from lexinform.telegram_text import MESSAGE_LIMIT, split_html, utf16_length
@@ -1468,7 +1469,16 @@ class SqliteBillRepository:
                 selected_at=record.created_at,
                 provisional=record.text_source == "metadata_only",
             )
-            self.save_editorial(term, number, bill.editorial.select(candidate))
+            editorial = bill.editorial.select(candidate)
+            if editorial.mnemonic is candidate and record.computation_id is not None:
+                editorial = editorial.model_copy(
+                    update={
+                        "mnemonic": bind_mnemonic(
+                            candidate, record, self.get_computation_result(record.computation_id)
+                        )
+                    }
+                )
+            self.save_editorial(term, number, editorial)
 
     def save_editorial(self, term: int, number: str, editorial: Editorial) -> None:
         self._conn.execute(

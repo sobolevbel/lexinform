@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from lexinform.models import Bill, ResultApplication, ResultApplicationTarget
+from lexinform.name_binding import mnemonic_matches_result
 from lexinform.ports import BillRepository
 
 
@@ -59,3 +60,54 @@ def record_retained_review_applications(
             record_secondary_application(
                 repo, target.term, target.number, receipt.result_id, target=address, now=now
             )
+
+
+def record_selected_name_application(
+    repo: BillRepository, original: Bill, target: Bill, *, now: datetime
+) -> None:
+    """Record only the paid name that this transaction actually selected."""
+    selected = target.editorial.mnemonic
+    if (
+        selected is None
+        or selected == original.editorial.mnemonic
+        or selected.computation_id is None
+        or not mnemonic_matches_result(
+            selected, repo.get_computation_result(selected.computation_id)
+        )
+    ):
+        return
+    record_secondary_application(
+        repo,
+        target.term,
+        target.number,
+        selected.computation_id,
+        target=ResultApplicationTarget(kind="editorial", ref="mnemonic"),
+        now=now,
+    )
+
+
+def record_retained_name_application(
+    repo: BillRepository, original: Bill, target: Bill, *, now: datetime
+) -> None:
+    """Carry only the current bound name and its exact source projection receipt."""
+    selected = target.editorial.mnemonic
+    if (
+        selected is None
+        or selected != original.editorial.mnemonic
+        or selected.computation_id is None
+        or not mnemonic_matches_result(
+            selected, repo.get_computation_result(selected.computation_id)
+        )
+    ):
+        return
+    address = ResultApplicationTarget(kind="editorial", ref="mnemonic")
+    if any(
+        receipt.result_id == selected.computation_id
+        and receipt.target == address
+        and receipt.phase == "projection"
+        and receipt.outcome == "applied"
+        for receipt in repo.list_result_applications(original.term, original.number)
+    ):
+        record_secondary_application(
+            repo, target.term, target.number, selected.computation_id, target=address, now=now
+        )

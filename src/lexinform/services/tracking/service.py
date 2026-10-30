@@ -30,7 +30,6 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
-    ResultApplicationTarget,
     Stage,
     StatusChange,
     TextDocument,
@@ -46,6 +45,7 @@ from lexinform.models import (
     valid_mnemonic,
 )
 from lexinform.models.source_checks import observation_for
+from lexinform.name_binding import bind_mnemonic
 from lexinform.ports import (
     BillRepository,
     Clock,
@@ -63,7 +63,7 @@ from lexinform.services.delivery import DeliveryService
 from lexinform.services.document_reviews import DocumentReviews
 from lexinform.services.posting import Poster
 from lexinform.services.rcl_projects import RclProjectReader
-from lexinform.services.result_applications import record_secondary_application
+from lexinform.services.result_applications import record_selected_name_application
 from lexinform.services.source_omissions import SourceOmissionInput
 from lexinform.services.sources import SejmTextSource, fetch_print
 from lexinform.services.status_change_applications import apply_status_change_amendments
@@ -687,14 +687,24 @@ class StatusTrackingService:
                 origin="backfill",
             )
             with self._repo.atomic():
-                self._repo.save_editorial(bill.term, bill.number, bill.editorial.select(candidate))
-                record_secondary_application(
-                    self._repo,
-                    bill.term,
-                    bill.number,
-                    record.computation_id,
-                    target=ResultApplicationTarget(kind="editorial", ref="mnemonic"),
-                    now=self._clock.now(),
+                current = self._repo.get(bill.term, bill.number)
+                if current is None:
+                    continue
+                editorial = current.editorial.select(candidate)
+                if editorial.mnemonic is candidate and record.computation_id is not None:
+                    editorial = editorial.model_copy(
+                        update={
+                            "mnemonic": bind_mnemonic(
+                                candidate,
+                                record,
+                                self._repo.get_computation_result(record.computation_id),
+                            )
+                        }
+                    )
+                self._repo.save_editorial(bill.term, bill.number, editorial)
+                selected = current.model_copy(update={"editorial": editorial})
+                record_selected_name_application(
+                    self._repo, current, selected, now=self._clock.now()
                 )
             log.info("%s named %r", bill.number, name)
 

@@ -1,0 +1,47 @@
+{
+  "actual_state": {
+    "all_bill_editorial_publication_knownref_and_receipt_snapshots_exact": true,
+    "before_seconds": 3.958081458986271,
+    "bills": 483,
+    "candidate_seconds": 3.664107124961447,
+    "dump_restore_twice_exact": true,
+    "editorial_rows": 47,
+    "natural_bound_matches": 0,
+    "paid_results": 9,
+    "paid_results_unchanged": 9,
+    "publications": 194,
+    "quiet_resave_sql_gzip_growth": [
+      0,
+      0
+    ],
+    "retroactive_editorial_receipts": 0,
+    "snapshot_sha256": "18ccffc2184c721b65e424df5abc24b64d7ec7d01d77a0a0226f3efd12c970cd",
+    "unbound_current_names": 47,
+    "unknown_refs_omitted_in_legacy_json": true
+  },
+  "baseline": "exactf25 archive; candidate exactindependentlyreviewed11patch81f217da6e1f841d884f869fb2ee1b8ea49412e88514cc8f439c1c143b819654",
+  "controlled_driver_sha256": "441f2907c2ec0e1674192a00235b28a15f94c48284f32813d79177a823432fbd",
+  "controlled_positive": {
+    "driver_sha256": "441f2907c2ec0e1674192a00235b28a15f94c48284f32813d79177a823432fbd",
+    "new_owner_receipts": 1,
+    "original_input_unchanged": true,
+    "original_paid_results_unchanged": 9,
+    "quiet_repeat_growth": 0,
+    "restore_twice_exact": true,
+    "scope": "Synthetic known paid name +two previouslyabsent disposable owner rows on actual412e backdrop. Not natural existing bound name or actualprovider/productionprocessing.",
+    "seconds": 4.477063875005115,
+    "status": "qualified_counterfactual_only",
+    "synthetic_result_id": "result-v1:5f6ac9c5886cc640db8ec2ca49cf740202ff6dc18f16563fe5563466b5ee3f98",
+    "transfer_only_gzip_delta": 39,
+    "transfer_only_sql_delta": 1102,
+    "whole_control_gzip_delta": 760,
+    "whole_control_sql_delta": 4639
+  },
+  "guards": "NoSettings/.env/network/paid/productionprocessing/raw reads. Newdrivers on disposable restored412e copies only; originalSQL and11source pins verifiedbefore/after. Existing47names remainunbound; no naturalpositive transfer claim.",
+  "original_sql_bytes": 20886677,
+  "original_sql_sha256": "a39d69e7306d97c7307e7b9a263a71a7f5c646be590815d68860ada2064eaae2",
+  "original_sql_unchanged": true,
+  "reader_driver_sha256": "1a91d7b99a70340bd1acf2e3f6bec55660a18260f6574016ebf835bccff2828d",
+  "source11_before_after_exact": true,
+  "status": "qualified"
+}

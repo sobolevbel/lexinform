@@ -5,6 +5,7 @@ from datetime import datetime
 from lexinform.models import AnalysisRecord, Bill, ResultApplicabilityObservation, ResultApplication
 from lexinform.models.computations import ProjectionReason
 from lexinform.ports import BillRepository
+from lexinform.services.result_applications import record_selected_name_application
 
 
 def apply_analysis(
@@ -20,6 +21,9 @@ def apply_analysis(
         before = repo.get(term, number)
         repo.save_analysis(term, number, record)
         if before is not None:
+            selected = repo.get(term, number)
+            if selected is not None:
+                record_selected_name_application(repo, before, selected, now=now)
             record_analysis_application(repo, before, record, now=now, reason=reason)
 
 

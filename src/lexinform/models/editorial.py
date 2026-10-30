@@ -1,7 +1,7 @@
 import datetime as dt
 import re
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 def valid_mnemonic(value: str) -> bool:
@@ -30,6 +30,12 @@ class Mnemonic(BaseModel):
     command_update_id: int | None = None
     actor_id: int | None = None
     author_signature: str | None = None
+    computation_id: str | None = Field(
+        default=None, pattern=r"^result-v1:[0-9a-f]{64}$", exclude_if=lambda value: value is None
+    )
+    request_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$", exclude_if=lambda value: value is None
+    )
 
 
 class PriorityOverride(BaseModel):

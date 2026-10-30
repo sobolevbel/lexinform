@@ -1,0 +1,81 @@
+{
+  "acceptance": [
+    "Actualfakepaidbackfill currentselected\u2192cleanup/restore\u219210to11to12 quietrepeat; exactrefs/originalusage/oldreceipts remain.",
+    "ActualfakepaidprimaryWykazname transfers; lateranalysis createsunboundproposal orsame-name no-op withoutrebinding; primaryreceipt failure rollsbackwholeprojection.",
+    "Manualsame/differentname rename unbound; previoushistory retainsownbinding, currentname cannotborrowoldreceipt.",
+    "Unknown/mismatchedrequest/result/basis/current paidrecordidentity/source receipt declinebinding/transfer.",
+    "Lookup andtrackingadopt/owncard actuallinkpaths transferselectedname; receipt failure rollsbackinheritance inbothcallerfamilies."
+  ],
+  "base": "f25cfc829134cd731c8c69c712b16c7c645b1419",
+  "checks": {
+    "BillName_AST_exact": true,
+    "MIGRATIONS_AST_exact": true,
+    "focused_passed": 128,
+    "git_diff_check": "green",
+    "new_tests": 27,
+    "ruff": "11paths check/format green",
+    "strict_mypy": "11owned paths green"
+  },
+  "contract": "Prospective omitted-unknown result/request refs onlyonactual newlyselected Mnemonic. Candidate must corroborate known validated immutablepaidresult +record/request IDs +paidselected name/basis andprimarylanguage. No resultbinding fromtext/origin/history alone. Same-name selectno-op/proposed/manualrename do notmint newbindings. Oldunboundname staysunknown. Originalpaidrow/owner/request/usage untouched.",
+  "open_qualification": "Root independent static/focused review, then coalesced full/release; no corpus changes or full raw replay required for nullable editorial metadata/projection wiring.",
+  "patch_sha256": "81f217da6e1f841d884f869fb2ee1b8ea49412e88514cc8f439c1c143b819654",
+  "responsibility_boundaries": {
+    "name_binding.py": "Pure paid-source corroboration only; no ports/SQL/Clock/services.",
+    "result_applications": "Selected-name mint checks changedactualprojection+currentknownbinding; transfer additionallyrequires carriedexactcurrentname+matchingactualsourceeditorial receipt. No blanketoldreceipt copy.",
+    "rollover/linking/lookup": "Helper inside existingrollover atomic andtrackinglinktwo branches; lookuplink nowatomic. Bothactualcaller families covered; repeatedrollovers follow currentboundname+source receipt without rewritingoriginal paidowner.",
+    "sqlite_repo.save_analysis": "Binds only the first actuallyselected candidate to knownpaidrow; no service imports. Receipt belongs existingservice apply_analysis atomic Clock seam.",
+    "tracking._name": "Freshreload/select/bind/store/receipt withincalleratomic; skipped/missing/proposed/no-op cannotmintreceipt."
+  },
+  "reuse_safety": {
+    "prior_stashes_preserved": 12,
+    "qualified_physical4_and_allout_preserved": true,
+    "scoped_stash": "efdf27d2658f7d7c2354746fc2f392490f9e1dcc"
+  },
+  "source_paths": {
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "bytes": 245098,
+      "sha256": "99db45f2cad0583a0349c6d4e36a841f7966cdb055250b303a3371bd9192e3b6"
+    },
+    "src/lexinform/models/editorial.py": {
+      "bytes": 2407,
+      "sha256": "a9498f6ad8545f898265c23be81fd6fd55e92e6a791147bb677f62b38e40cfba"
+    },
+    "src/lexinform/name_binding.py": {
+      "bytes": 1861,
+      "sha256": "35515ba961cc315e3878327766d48adbcb9b2afc877940745b007791bb62ea6b"
+    },
+    "src/lexinform/services/analysis_applications.py": {
+      "bytes": 2175,
+      "sha256": "d9d4ef3a00ea5e7910f8035f9146aa0e48419733c2fd38502714062d240bce40"
+    },
+    "src/lexinform/services/lookup.py": {
+      "bytes": 17190,
+      "sha256": "54095dd3bc948c99ceebe91aa8894e5bf17155b24295797ec1515a6e46d59ea2"
+    },
+    "src/lexinform/services/result_applications.py": {
+      "bytes": 3799,
+      "sha256": "39065d428d818d0d8e2b8e87a5c1c111d62724412b31485abd869252e6cd57cd"
+    },
+    "src/lexinform/services/tracking/linking.py": {
+      "bytes": 13500,
+      "sha256": "cf97d6f3f4694fbd6037020d54fe7942b787f9e247e9c909d5c357390055aca3"
+    },
+    "src/lexinform/services/tracking/rollover.py": {
+      "bytes": 6097,
+      "sha256": "de6c8936c3bf61332e73869bfab9bbac6bc94a2cc0d233acf3bae49ec577f7ba"
+    },
+    "src/lexinform/services/tracking/service.py": {
+      "bytes": 51508,
+      "sha256": "b51eef4ad5d15d362eaa1dc5dc85d99290ff0a4fd098dc64873ab030a91dcbee"
+    },
+    "tests/scenario/test_selected_name_binding.py": {
+      "bytes": 10659,
+      "sha256": "97df2c8965adc63c4042e36fb81be95fb75e3f32d70ef2d9ab0984d070c4002a"
+    },
+    "tests/unit/test_name_binding.py": {
+      "bytes": 8659,
+      "sha256": "200caad66e4b0a3fa1edb4aabbc66702b2b11d19b4b366f0d0bc275e1eedf9d4"
+    }
+  },
+  "status": "frozen candidate for independent review; no full/raw/commit/push"
+}

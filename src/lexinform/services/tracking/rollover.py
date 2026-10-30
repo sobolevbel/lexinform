@@ -17,7 +17,10 @@ from lexinform.models import Bill, PublicationStatus, StatusChange
 from lexinform.ports import BillRepository, Clock
 from lexinform.services.analysis_applications import record_analysis_application
 from lexinform.services.posting import Poster, Told
-from lexinform.services.result_applications import record_retained_review_applications
+from lexinform.services.result_applications import (
+    record_retained_name_application,
+    record_retained_review_applications,
+)
 from lexinform.services.tracking.stages import synthetic_key
 from lexinform.services.tracking_result import TrackingResult
 
@@ -50,6 +53,9 @@ class TermRollover:
                         reason="retained_result",
                     )
                 record_retained_review_applications(
+                    self._repo, original, target, now=self._clock.now()
+                )
+                record_retained_name_application(
                     self._repo, original, target, now=self._clock.now()
                 )
         if moved:

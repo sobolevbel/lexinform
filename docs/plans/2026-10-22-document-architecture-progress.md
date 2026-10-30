@@ -8569,3 +8569,42 @@ per-case hashes сохранён отдельно; trackedindex/summary фикс
 [corpus summary](../assets/audits/2026-10-30-word-structure-carrier/qualification-summary.json),
 [proof index](../assets/audits/2026-10-30-word-structure-carrier/corpus-proof-index.json),
 [combined native](../assets/audits/2026-10-30-word-structure-carrier/combined-native.json).
+
+
+J180 `f25cfc829134cd731c8c69c712b16c7c645b1419`: четыре exact CI jobs и actual relay
+`a1dc3b70 → f25cfc82`, health45s/timer подтверждены
+[release proof](../assets/audits/2026-10-30-physical-policy/release.json).
+
+
+J181/J182 head `28cd1acae73596c2f5194285c515057e5c0b1c7f`: четыре exact CI jobs и
+actual relay `f25cfc82 → 28cd1aca`, health45s/timer подтверждены
+[release proof](../assets/audits/2026-10-30-word-structure-carrier/release.json).
+
+<a id="j183"></a>
+
+## J183 — prospective selected-name result binding
+
+Nullable omitted-unknown computation/request refs живут в existing `editorial_json`,
+не в LLM `BillName` schema; миграций/архива нет. Actual primary analysis и paid backfill
+связывают только candidate, который действительно выбран. Proposal/same-name select no-op
+не меняют provenance; ручной rename, включая same-name, остаётся unbound; history хранит
+собственную прежнюю provenance. Pure helper corroborates validated result/record/request,
+actual name/basis и primary language, без вывода refs из написания/старых receipts.
+
+Projection receipt коммитится с фактическим selection в caller Clock/atomic seam; adapter
+не импортирует services. Rollover/repeated term, оба tracking link paths и lookup link
+переносят лишь текущий carried bound name с его actual source editorial receipt.
+Original result owner/usage/request не меняются. Повтор идемпотентен; failure rollback
+защищает primary/backfill/link/rollover projection. DA6.2/DA6.3 остаются partial до closure
+audit остальных scopes и фактического перехода consumers к refs.
+
+128 focused/27new, strict11 и независимый exact11/8control review green; BillName и
+MIGRATIONS AST unchanged. State412e metadata replay:483Bills/47Editorial/194publications/
+all9paidresults+refs+receipts old/candidate exact;47currentnames remainunknown,0retroactive
+receipts. Quiet47editorial resave даёт+0SQL/+0gzip, restore2exact; original20886677B SQL
+unchanged. Отдельный counterfactual knownname+2absentowners+transfer: wholecontrol+4639SQL/
++760gzip; transfer-only+1102SQL/+39gzip, quietrepeat0, restore2 и9originalpaidrows exact.
+Это не natural bound-name acceptance. Settings/network/providers не использовались.
+Full7168tests/257.380s/92%, mypy626/Ruff694,711frozen source/config inputs unchanged.
+[Qualification](../assets/audits/2026-10-30-selected-name-binding/qualification.json),
+[state proof](../assets/audits/2026-10-30-selected-name-binding/current-state-handoff.json).
