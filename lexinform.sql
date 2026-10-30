@@ -2927,6 +2927,7 @@ INSERT INTO "runs" VALUES(399,'2026-10-29T23:34:35+00:00','2026-10-29T23:34:35+0
 INSERT INTO "runs" VALUES(400,'2026-10-30T02:55:38+00:00','2026-10-30T02:55:39+00:00','2026-10-30T02:55:38+00:00','deliveries',1,'{"started_at":"2026-10-30T02:55:38Z","finished_at":"2026-10-30T02:55:39Z","since":"2026-10-30T02:55:38Z","mode":"deliveries","term":null,"discovery_ok":false,"discovered":0,"pre_print_discovered":0,"rcl_discovered":0,"rcl_prefilter_hits":0,"wykaz_discovered":0,"over_on_arrival":0,"linked":0,"prefilter_hits":0,"prefilter_rejected":null,"prefilter_details":[],"text_prefilter_checked":0,"text_prefilter_hits":0,"text_prefilter_scans":0,"text_prefilter_unreadable":0,"text_prefilter_unanswered":0,"acts_published":0,"in_force_posted":0,"consultation_reminders":0,"hearing_reminders":0,"decision_reminders":0,"held":0,"cards_refreshed":0,"digest_drafted":false,"digest_reader_parts":0,"digest_events_covered":0,"consultation_results_posted":0,"consultation_reviews_posted":0,"commission_reviews_posted":0,"act_reviews_posted":0,"effective_rule_messages":0,"amendment_messages_updated":0,"message_parts_sent":0,"agenda_posted":0,"agenda_cancelled":0,"discontinued":0,"rehomed":0,"analyzed":0,"triaged_out":0,"analysis_failures":0,"analysis_skipped_cost":0,"analysis_unanswered":0,"joint_revived":0,"notes":[],"rejected":[],"commands_handled":0,"commands_failed":0,"commands":[],"published":0,"joint_published":0,"updates":0,"update_events":0,"attention":{"digest_queued_events":6,"digest_awaiting_approval":6,"digest_oldest_minutes":22548},"reanalyzed":0,"tracked":0,"batch_waiting":0,"batch_requests_submitted":0,"batch_requests_pending":0,"batch_requests_queued":0,"batch_requests_uncertain":0,"errors":[],"llm_input_tokens":0,"llm_output_tokens":0,"llm_usage":{},"llm_calls":[],"phase_seconds":{}}',0);
 INSERT INTO "runs" VALUES(401,'2026-10-30T07:16:33+00:00','2026-10-30T07:18:26+00:00','2026-10-28T20:52:29+00:00','run',1,'{"started_at":"2026-10-30T07:16:33Z","finished_at":"2026-10-30T07:18:26Z","since":"2026-10-28T20:52:29Z","mode":"run","term":10,"discovery_ok":true,"discovered":0,"pre_print_discovered":0,"rcl_discovered":0,"rcl_prefilter_hits":0,"wykaz_discovered":0,"over_on_arrival":0,"linked":0,"prefilter_hits":0,"prefilter_rejected":[],"prefilter_details":[],"text_prefilter_checked":0,"text_prefilter_hits":0,"text_prefilter_scans":0,"text_prefilter_unreadable":0,"text_prefilter_unanswered":0,"acts_published":0,"in_force_posted":0,"consultation_reminders":0,"hearing_reminders":0,"decision_reminders":0,"held":0,"cards_refreshed":1,"digest_drafted":false,"digest_reader_parts":0,"digest_events_covered":0,"consultation_results_posted":0,"consultation_reviews_posted":0,"commission_reviews_posted":0,"act_reviews_posted":0,"effective_rule_messages":0,"amendment_messages_updated":0,"message_parts_sent":0,"agenda_posted":0,"agenda_cancelled":0,"discontinued":0,"rehomed":0,"analyzed":0,"triaged_out":0,"analysis_failures":0,"analysis_skipped_cost":0,"analysis_unanswered":0,"joint_revived":0,"notes":[],"rejected":[],"commands_handled":0,"commands_failed":0,"commands":[],"published":0,"joint_published":0,"updates":0,"update_events":0,"attention":{"digest_queued_events":6,"digest_awaiting_approval":6,"digest_oldest_minutes":22811,"continuation_messages":0},"reanalyzed":0,"tracked":13,"batch_waiting":0,"batch_requests_submitted":0,"batch_requests_pending":0,"batch_requests_queued":0,"batch_requests_uncertain":0,"errors":[],"llm_input_tokens":0,"llm_output_tokens":0,"llm_usage":{},"llm_calls":[],"phase_seconds":{"collect batches":0.0,"commands":0.0,"discovery":0.3,"wykaz discovery":8.2,"rcl discovery":2.6,"text prefilter":0.0,"rcl consultations":0.0,"analysis":0.0,"publishing":0.0,"tracking":100.9,"submit batches":0.0,"digest":0.0,"batch status":0.0},"document_reads":{"schema_version":1,"cache_hits":0,"distinct_bodies":0,"distinct_body_bytes":0,"hosts":{}}}',1);
 INSERT INTO "runs" VALUES(402,'2026-10-30T10:27:10+00:00','2026-10-30T10:27:10+00:00','2026-10-30T10:27:10+00:00','deliveries',1,'{"started_at":"2026-10-30T10:27:10Z","finished_at":"2026-10-30T10:27:10Z","since":"2026-10-30T10:27:10Z","mode":"deliveries","term":null,"discovery_ok":false,"discovered":0,"pre_print_discovered":0,"rcl_discovered":0,"rcl_prefilter_hits":0,"wykaz_discovered":0,"over_on_arrival":0,"linked":0,"prefilter_hits":0,"prefilter_rejected":null,"prefilter_details":[],"text_prefilter_checked":0,"text_prefilter_hits":0,"text_prefilter_scans":0,"text_prefilter_unreadable":0,"text_prefilter_unanswered":0,"acts_published":0,"in_force_posted":0,"consultation_reminders":0,"hearing_reminders":0,"decision_reminders":0,"held":0,"cards_refreshed":0,"digest_drafted":false,"digest_reader_parts":0,"digest_events_covered":0,"consultation_results_posted":0,"consultation_reviews_posted":0,"commission_reviews_posted":0,"act_reviews_posted":0,"effective_rule_messages":0,"amendment_messages_updated":0,"message_parts_sent":0,"agenda_posted":0,"agenda_cancelled":0,"discontinued":0,"rehomed":0,"analyzed":0,"triaged_out":0,"analysis_failures":0,"analysis_skipped_cost":0,"analysis_unanswered":0,"joint_revived":0,"notes":[],"rejected":[],"commands_handled":0,"commands_failed":0,"commands":[],"published":0,"joint_published":0,"updates":0,"update_events":0,"attention":{"digest_queued_events":6,"digest_awaiting_approval":6,"digest_oldest_minutes":23000},"reanalyzed":0,"tracked":0,"batch_waiting":0,"batch_requests_submitted":0,"batch_requests_pending":0,"batch_requests_queued":0,"batch_requests_uncertain":0,"errors":[],"llm_input_tokens":0,"llm_output_tokens":0,"llm_usage":{},"llm_calls":[],"phase_seconds":{}}',0);
+INSERT INTO "runs" VALUES(403,'2026-10-30T16:49:46+00:00','2026-10-30T16:49:46+00:00','2026-10-30T16:49:46+00:00','deliveries',1,'{"started_at":"2026-10-30T16:49:46Z","finished_at":"2026-10-30T16:49:46Z","since":"2026-10-30T16:49:46Z","mode":"deliveries","term":null,"discovery_ok":false,"discovered":0,"pre_print_discovered":0,"rcl_discovered":0,"rcl_prefilter_hits":0,"wykaz_discovered":0,"over_on_arrival":0,"linked":0,"prefilter_hits":0,"prefilter_rejected":null,"prefilter_details":[],"text_prefilter_checked":0,"text_prefilter_hits":0,"text_prefilter_scans":0,"text_prefilter_unreadable":0,"text_prefilter_unanswered":0,"acts_published":0,"in_force_posted":0,"consultation_reminders":0,"hearing_reminders":0,"decision_reminders":0,"held":0,"cards_refreshed":0,"digest_drafted":false,"digest_reader_parts":0,"digest_events_covered":0,"consultation_results_posted":0,"consultation_reviews_posted":0,"commission_reviews_posted":0,"act_reviews_posted":0,"effective_rule_messages":0,"amendment_messages_updated":0,"message_parts_sent":0,"agenda_posted":0,"agenda_cancelled":0,"discontinued":0,"rehomed":0,"analyzed":0,"triaged_out":0,"analysis_failures":0,"analysis_skipped_cost":0,"analysis_unanswered":0,"joint_revived":0,"notes":[],"rejected":[],"commands_handled":0,"commands_failed":0,"commands":[],"published":0,"joint_published":0,"updates":0,"update_events":0,"attention":{"digest_queued_events":6,"digest_awaiting_approval":6,"digest_oldest_minutes":23382},"reanalyzed":0,"tracked":0,"batch_waiting":0,"batch_requests_submitted":0,"batch_requests_pending":0,"batch_requests_queued":0,"batch_requests_uncertain":0,"errors":[],"llm_input_tokens":0,"llm_output_tokens":0,"llm_usage":{},"llm_calls":[],"phase_seconds":{}}',0);
 CREATE TABLE selection_artifacts (
         selection_id TEXT NOT NULL REFERENCES document_selections(selection_id),
         part_scope TEXT NOT NULL CHECK(part_scope IN ('parts', 'observed_parts')),
@@ -3115,6 +3116,42 @@ INSERT INTO "source_candidate_traces" VALUES('source-observation-v1:2c6f6ceccb11
 INSERT INTO "source_candidate_traces" VALUES('source-observation-v1:d590a6e199a7bfd4811c148f6018e1518d1c0814e1a2ac0c8e3049a0062796ee','candidate-trace-v1:392293490512a5b576ca8da71e40109d8dd478fe85f28720c234ba67e050e588');
 INSERT INTO "source_candidate_traces" VALUES('source-observation-v1:9668406f76826c85af93bc159322f6a0760267beb1a925516605d41ceafa506a','candidate-trace-v1:e2dea13f0b3c67b1eb30b827258fa2e8289ddd74b8944e3e1a18ad4b5f453e5e');
 INSERT INTO "source_candidate_traces" VALUES('source-observation-v1:e50a2acad64e9d686a2b00f82060aea7efd06da5b083126bd57028fcb79dcd0e','candidate-trace-v1:7609635753f2e9399bcac607ee6acc9af0248b00edfab7d66d512db8aa7b4547');
+CREATE TABLE source_catalog_attempt_parents (
+    attempt_id TEXT NOT NULL REFERENCES source_catalog_attempts(attempt_id),
+    ordinal INTEGER NOT NULL CHECK(ordinal>=0 AND ordinal<32),
+    artifact_sha256 TEXT NOT NULL REFERENCES artifacts(sha256),
+    artifact_read_id TEXT REFERENCES artifact_reads(read_id),
+    extraction_id TEXT REFERENCES extraction_results(extraction_id),
+    PRIMARY KEY(attempt_id,ordinal)
+);
+CREATE TABLE source_catalog_attempts (
+    attempt_id TEXT PRIMARY KEY NOT NULL,
+    catalog_id TEXT NOT NULL REFERENCES source_catalog_snapshots(catalog_id),
+    owner_kind TEXT NOT NULL CHECK(owner_kind IN ('bill','source_reference')),
+    owner_term INTEGER,
+    owner_number TEXT,
+    source_term INTEGER,
+    source_number TEXT,
+    purpose TEXT NOT NULL CHECK(purpose IN ('prefilter','analysis','review')),
+    source_key TEXT,
+    status TEXT NOT NULL CHECK(status='read_failed'),
+    error_class TEXT NOT NULL,
+    parent_count INTEGER NOT NULL CHECK(parent_count>=0),
+    parents_sha256 TEXT NOT NULL,
+    recorded_at TEXT NOT NULL,
+    record_json TEXT NOT NULL CHECK(json_valid(record_json) AND
+      length(CAST(record_json AS BLOB))<=8192),
+    FOREIGN KEY(owner_term,owner_number) REFERENCES bills(term,number)
+);
+CREATE TABLE source_catalog_snapshots (
+    catalog_id TEXT PRIMARY KEY NOT NULL,
+    source_view_sha256 TEXT NOT NULL,
+    descriptor_count INTEGER NOT NULL CHECK(descriptor_count>0),
+    coverage TEXT NOT NULL CHECK(coverage IN ('complete','partial')),
+    recorded_at TEXT NOT NULL,
+    record_json TEXT NOT NULL CHECK(json_valid(record_json) AND
+      length(CAST(record_json AS BLOB))<=8192)
+);
 CREATE TABLE source_checks (
         term INTEGER NOT NULL,
         number TEXT NOT NULL,
@@ -3322,7 +3359,7 @@ INSERT INTO "source_checks" VALUES(10,'RPW/36403/2026','process','2026-10-30T07:
 INSERT INTO "source_checks" VALUES(10,'RCL/12408601','process','2026-10-30T07:18:04+00:00','2026-10-30T07:18:04+00:00',0,NULL);
 CREATE TABLE source_metadata_omissions (
     omission_id TEXT PRIMARY KEY NOT NULL,
-    owner_kind TEXT NOT NULL CHECK(owner_kind IN ('bill','rcl_letter','senate')),
+    owner_kind TEXT NOT NULL CHECK(owner_kind IN ('bill','rcl_letter','senate','source_reference')),
     owner_term INTEGER,
     owner_number TEXT,
     purpose TEXT,
@@ -3332,6 +3369,10 @@ CREATE TABLE source_metadata_omissions (
     letter_id INTEGER,
     resolution_term INTEGER,
     resolution_number TEXT,
+    source_term INTEGER,
+    source_number TEXT,
+    source_purpose TEXT,
+    source_key TEXT,
     source_view_sha256 TEXT NOT NULL,
     parent_count INTEGER NOT NULL CHECK(parent_count>=0),
     parents_sha256 TEXT NOT NULL,
@@ -3763,5 +3804,17 @@ CREATE INDEX ix_source_omission_artifact ON source_omission_parents(artifact_sha
 CREATE INDEX ix_source_omission_read ON source_omission_parents(artifact_read_id);
 CREATE INDEX ix_source_omission_extraction ON source_omission_parents(extraction_id);
 CREATE INDEX ix_source_omission_source ON source_omission_parents(source_observation_id);
+CREATE INDEX ix_source_omissions_reference
+  ON source_metadata_omissions(source_term,source_number,source_purpose);
+CREATE INDEX ix_source_omissions_source_key ON source_metadata_omissions(source_key);
+CREATE INDEX ix_source_catalog_view ON source_catalog_snapshots(source_view_sha256);
+CREATE INDEX ix_source_attempt_owner ON source_catalog_attempts(owner_term,owner_number,purpose);
+CREATE INDEX ix_source_attempt_reference
+  ON source_catalog_attempts(source_term,source_number,purpose);
+CREATE INDEX ix_source_attempt_key ON source_catalog_attempts(source_key);
+CREATE INDEX ix_source_attempt_catalog ON source_catalog_attempts(catalog_id);
+CREATE INDEX ix_source_attempt_artifact ON source_catalog_attempt_parents(artifact_sha256);
+CREATE INDEX ix_source_attempt_read ON source_catalog_attempt_parents(artifact_read_id);
+CREATE INDEX ix_source_attempt_extraction ON source_catalog_attempt_parents(extraction_id);
 COMMIT;
-PRAGMA user_version = 63;
+PRAGMA user_version = 65;
