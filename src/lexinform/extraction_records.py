@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Literal
 
 from lexinform.document_candidates import select_document_parts
-from lexinform.models.documents import ExtractedDocument, ExtractedParts
+from lexinform.models.documents import ExtractedDocument, ExtractedParts, WordDetailedExtraction
 from lexinform.models.extractions import (
     MAX_EXTRACTION_METADATA_BYTES,
     MAX_EXTRACTION_PART_SUMMARIES,
@@ -21,6 +21,7 @@ from lexinform.models.extractions import (
     ExtractionResult,
     extraction_metadata_sha256,
 )
+from lexinform.models.word_view_capture import WordPartViewStatus, WordViewExtraction
 
 
 @lru_cache(maxsize=32)
@@ -68,12 +69,44 @@ def summarize_extraction(
     *,
     components: tuple[ExtractionComponent, ...],
     options: ExtractionOptions,
+    word_views: tuple[WordPartViewStatus, ...] = (),
 ) -> ExtractionResult:
     pdf = {part.part_index: part.extraction for part in physical.pdf_pages}
     word = {part.part_index: part.extraction for part in physical.word_blocks}
     odt = {part.part_index: part.extraction for part in physical.odt_blocks}
     unlocated = {part.part_index: part.extraction for part in physical.unlocated_text}
     notes = {part.part_index: part.extraction for part in physical.word_notes}
+    views = {}
+    word_manifests: dict[int, tuple[str, str | None]] = {}
+    for offered in word_views:
+        linked = WordPartViewStatus.model_validate(offered)
+        index = linked.part_index
+        if (
+            index in views
+            or index not in word
+            or index not in notes
+            or index >= len(physical.parts)
+        ):
+            raise ValueError("Word view status requires a unique actual physical legacy part")
+        body, note = word[index], notes[index]
+        body_manifest, notes_manifest = body.manifest_sha256, note.manifest_sha256
+        word_manifests[index] = (body_manifest, notes_manifest)
+        if (
+            physical.parts[index].sha256,
+            body.input_sha256,
+            body_manifest,
+            notes_manifest,
+        ) != (
+            linked.input_sha256,
+            linked.input_sha256,
+            linked.body_manifest_sha256,
+            linked.notes_manifest_sha256,
+        ):
+            raise ValueError("Word view status differs from its actual input/body/note identities")
+        WordViewExtraction(
+            legacy=WordDetailedExtraction(body=body, notes=note), status=linked.status
+        )
+        views[index] = linked.status
     identities: list[str] = []
     selected_summaries: list[ExtractedPartSummary] = []
     selected_keys = Counter((part.sha256, part.members) for part in selected.selection.parts)
@@ -106,17 +139,22 @@ def summarize_extraction(
             )
         elif index in word:
             body = word[index]
+            manifests = word_manifests.get(index)
+            if manifests is None:
+                manifests = (
+                    body.manifest_sha256,
+                    notes[index].manifest_sha256 if index in notes else None,
+                )
             fields.update(
                 format="word",
                 coordinates=body.version,
                 text_view=body.text_view,
-                manifest_sha256=extraction_metadata_sha256(
-                    (body.manifest_sha256, notes[index].manifest_sha256 if index in notes else None)
-                ),
+                manifest_sha256=extraction_metadata_sha256(manifests),
                 block_count=len(body.blocks),
                 error_count=(body.body_state != "read")
                 + (len(notes[index].losses) if index in notes else 0),
                 limitations=(),
+                word_view_status=views.get(index),
             )
         elif index in odt:
             open_document = odt[index]
@@ -147,7 +185,11 @@ def summarize_extraction(
                 ),
             )
         summary = ExtractedPartSummary.model_validate(fields)
-        identities.append(extraction_metadata_sha256(summary.model_dump(mode="json")))
+        identities.append(
+            extraction_metadata_sha256(
+                summary.model_dump(mode="json", exclude={"word_view_status"})
+            )
+        )
         key = (part.sha256, part.members)
         if selected_keys[key]:
             selected_summaries.append(summary)
@@ -168,6 +210,15 @@ def summarize_extraction(
         selected_parts=tuple(selected_summaries[:MAX_EXTRACTION_PART_SUMMARIES]),
         omitted_selected_parts=max(0, len(selected_summaries) - MAX_EXTRACTION_PART_SUMMARIES),
     )
+    if views:
+        for index in range(len(result.selected_parts) - 1, -1, -1):
+            if len(result.model_dump_json().encode()) <= MAX_EXTRACTION_METADATA_BYTES:
+                break
+            summary = result.selected_parts[index]
+            if summary.word_view_status is not None:
+                retained = list(result.selected_parts)
+                retained[index] = summary.model_copy(update={"word_view_status": None})
+                result = result.model_copy(update={"selected_parts": tuple(retained)})
     while (
         result.selected_parts
         and len(result.model_dump_json().encode()) > MAX_EXTRACTION_METADATA_BYTES

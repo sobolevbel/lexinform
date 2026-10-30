@@ -1,0 +1,67 @@
+{
+  "actual_recipe_ids": [
+    "1210fee9ac2f8429b2e89cc40efbdb56c494e1ee582e27e339482fc010950385"
+  ],
+  "actual_state_input_sha256": "f6414c27514ab3571b9774b88d18a89946398b073cf0aa65e8ab6666900eecfe",
+  "all732_source_pins_exact_before_after": true,
+  "all_original0278_rows_preserved": true,
+  "cache_plus365_no_IO_or_SQL_growth": true,
+  "driver_sha256": "16fba025f5e577b16db5c417edce8db6df59dc953d2bfaa8957a0240a42037de",
+  "exit_code": 0,
+  "previous_native_business_delta": [
+    {
+      "current": "97da714526a56222b94b808e162f82ae8d4fa13ff33e5cc6f0904c41f488a688",
+      "old": "852f23afc3d4860c43a6433f16bfa037a2084f92549d815734c87a524a09f9a9",
+      "path": "/generic/1/selection/parts/0/container_sha256"
+    },
+    {
+      "current": "97da714526a56222b94b808e162f82ae8d4fa13ff33e5cc6f0904c41f488a688",
+      "old": "852f23afc3d4860c43a6433f16bfa037a2084f92549d815734c87a524a09f9a9",
+      "path": "/generic/1/selection/parts/0/sha256"
+    },
+    {
+      "current": "2089558ea4fa9331029a2b3104df3714914d8a27a5dce8426c3cc63eb92ee558",
+      "old": "1a5e62d06705552f81a535ddccfc3fcfc38f31b17b786c9471b9cf98be79ff9f",
+      "path": "/generic/1/selection/parts/1/container_sha256"
+    },
+    {
+      "current": "2089558ea4fa9331029a2b3104df3714914d8a27a5dce8426c3cc63eb92ee558",
+      "old": "1a5e62d06705552f81a535ddccfc3fcfc38f31b17b786c9471b9cf98be79ff9f",
+      "path": "/generic/1/selection/parts/1/sha256"
+    },
+    {
+      "current": "97da714526a56222b94b808e162f82ae8d4fa13ff33e5cc6f0904c41f488a688",
+      "old": "852f23afc3d4860c43a6433f16bfa037a2084f92549d815734c87a524a09f9a9",
+      "path": "/generic/1/sha256"
+    },
+    {
+      "current": "98a5d9b5bf4f67d488f2d529ef3c8826ce34148ebb1a6d5b649828d1dfcce1ea",
+      "old": "32dd184149cedcf65612f752edf4f6945cdb744ee226db41db59208ceac45540",
+      "path": "/senate/0/senate/sha256"
+    }
+  ],
+  "previous_native_comparison_scope": "OnlysixactualnewsyntheticZIPinput/selectionhashfields differ; everyotherbusinessfield/text andallninepinnedrawbusinessrecords exact. Syntheticdocx fixtures aregeneratedanew byqualifieddriver, nooldhashorIDnormalization. Aninitialout-onlyassertofentireoldbusinessobject equalitywasoverstrong; preservedthisexplicitdelta,no replay/sourcechange.",
+  "public_get_doctor_restore2_exact": true,
+  "raw_bytes": 400412,
+  "raw_controls": 9,
+  "runtime_proof_sha256": "e38dfec8d590916fe337735c3b5bc1699656d0c9ec2c472f09b76ef6a3e8c7d6",
+  "scope": "ActualmergedRoot732source onfreshcopied0278; samefixed9raw/13contexts74metadata,onONLY1/4. No old/off/3055/profileloops/sourceedits/Settings/env/realprovider/network/productionwrites. ActualrecipeIDsrecordedwithoutnormalization; no newSQLgrowthforecast.",
+  "session": 77777,
+  "source_freeze_732_sha256": "efce1be8edb136b5ec317d2896aea6d1391a640e8d3612558f2de6b4c262d83f",
+  "status": "qualified",
+  "word_status_counts": {
+    "status-on-1": {
+      "extraction_results_with_word_status": 8,
+      "finished": 10,
+      "interrupted": 0,
+      "retained_word_statuses": 10
+    },
+    "status-on-4": {
+      "extraction_results_with_word_status": 8,
+      "finished": 10,
+      "interrupted": 0,
+      "retained_word_statuses": 10
+    }
+  },
+  "workers1_4_business_and_all_SQL_rows_equal": true
+}

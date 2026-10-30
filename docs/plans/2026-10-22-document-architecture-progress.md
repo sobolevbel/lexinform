@@ -8827,3 +8827,50 @@ Multipart/block input profiles и полная DA5 lifetime цепочка ос�
 [guard peer](../assets/audits/2026-10-30-runtime-input-receipts/guard-independent-review.json),
 [fresh state](../assets/audits/2026-10-30-runtime-input-receipts/guard-fresh0278-qualification.json),
 [J187 release](../assets/audits/2026-10-30-primary-projection-writer/release.json).
+
+<a id="j189"></a>
+
+## J189 — bounded default Word view diagnostics
+
+Actual native provenance path собирает четыре disposition counters в прежнем XML walk.
+Status-only hooks не создают coordinate events/path/tag inventory/JSON; typed transient
+carrier связывает actual input/body/note manifests и physical index. Plain extract_parts,
+Word text/notes, coordinate v1/v2, legacy body/note/physical manifests, selection/admission,
+DocumentPart.losses и provider bytes прежние. Custom/inherited/instance overrides не обходятся.
+
+Optional WordViewStatus<=512B сообщает только observed legacy visited walk: finished не
+означает full XML или отсутствие пропущенных юридических фактов. Fields/changes остаются
+legacy-unresolved; отсутствие metadata означает unknown.16KiB outer cap сначала удаляет
+optional tail statuses, сохраняя прежний prefix summaries/omission semantics. Cancel repair
+пропускает точные KeyboardInterrupt/SystemExit и восстанавливает ContextVar; cleanup сохраняет
+active parser error/cause. Обычные metadata faults не меняют бизнес-результат.
+
+Profile-driven bounded namespace classification сокращает лишние QName allocations; cache
+только для существующих3Word namespaces, unsupported namespace не размножает untrusted URI.
+Global/model cache, unchecked DTO и ослабление crypto/legacy validation не вводились.
+Исходные ревизии/profiles/raw evidence сохранены.8 independent final controls green.
+
+Final candidate3055Word/3053valid +те же2DEFAULT blockedempty; fixed11ZIP/74bindings и
+56meaningful variants совпадают с savedREV2 status и всеми business records. Старые lanes
+не перезапускались; final повтор после classifier code change был отдельным qualified run.
+Controlled412e status-off/on при physicalobserver active в обеих ветках: +3471B SQL/+136B
+gzip, repeat/cache365zero. Root merged732 на fresh0278:9raw400412B/13contexts74metadata,
+workers1/4 ALLSQL/business equal, get/doctor/restore2 и все старые строки сохранены.
+Шесть input/container SHA заново созданных synthetic DOCX отличаются от старого probe;
+все прочие бизнес-поля и9pinned raw cases точны. Delta явно сохранён без ID normalization.
+
+Диагностика имеет измеренную CPU стоимость. Isolated16 REV2 +25.5%, hash-reuse REV3 +24.2%;
+final embedded16 +27.9% к reused isolated baseline получен в другом harness context.
+Ускорение и production forecast не заявляются; overhead принят как стоимость нового
+ограниченного наблюдения, строгие проверки сохранены. Это не заявление о нулевой
+performance regression; дальнейшая оптимизация остаётся возможностью по профилю.
+
+Root full7409tests/266.136s/92%, mypy647/Ruff715;732source/config pins exact.
+J188 exact CI/actual relay verified до release. Staged archive docs gate перед commit.
+DA3.3 остаётся открыт для ODT notes и иных явно недоказанных structure/view guarantees.
+
+[Qualification](../assets/audits/2026-10-30-word-default-view/qualification.json),
+[corpus](../assets/audits/2026-10-30-word-default-view/qualification-summary.json),
+[merged native](../assets/audits/2026-10-30-word-default-view/combined-native.json),
+[performance context](../assets/audits/2026-10-30-word-default-view/journal-performance.md),
+[J188 release](../assets/audits/2026-10-30-runtime-input-receipts/release.json).

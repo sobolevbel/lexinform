@@ -1,0 +1,96 @@
+{
+  "all_saved_REV2_status_and_fullbusiness_hashes_exact": true,
+  "candidate_driver_sha256": "954cd736a310b5bf1c1a1f7bdc29fa7dde4f5aa682d685a80f929d96f756081d",
+  "candidate_proof_sha256": "96e27cde066abcf34041f8ff465a4b88f1f72c28f3a6842c5008c58630fb5aae",
+  "exclusions": [
+    "Visitedlegacywalkfinished notfullXML/semantic/legalcompleteness.",
+    "Same2knownmalformedDEFAULTblocked inputs retained, no falseWordfinished.",
+    "OldSQL/gzipstatus-onlydelta3471/136 remainshistoricalREV2proof, notrelabeledREV6measurement.",
+    "Actualsourcecomponent/physicalrecipeIDs maychange andarenotnormalized; savedbusiness/statusrecordsareexact."
+  ],
+  "finite16_untraced_embedded": {
+    "cpu_ratio": 1.2792581752474321,
+    "new": {
+      "cpu_seconds": 3.783359999999971,
+      "wall_seconds": 3.786899957980495
+    },
+    "old": {
+      "cpu_seconds": 2.957464,
+      "wall_seconds": 2.9589362077531405
+    },
+    "old_reused_proof_sha256": "92fc0f9759268fcb19726d25b1910d6dcd40670ff616b5fe790fe78412825b27",
+    "scope": "Onlycurrentcandidate16timings embeddedinfullsinglepass; olda400previousqualifiedsameinputs/options untracedbaseline reused, no newoldbenchmarkpair/iterations. Notproductionforecast.",
+    "wall_ratio": 1.2798180467892095
+  },
+  "groups": {
+    "leaves": {
+      "captured_statuses": 3053,
+      "captured_unknown": 0,
+      "dispositions": {
+        "observed_ignored_fallbacks": 66,
+        "observed_legacy_recursion": 8958065,
+        "observed_skipped_blocks": 657156,
+        "observed_unclassified_nodes": 14330466
+      },
+      "finished": 3053,
+      "inputs": 3055,
+      "interrupted": 0,
+      "old_summary_omissions": 0,
+      "optional_cap_drops": 0,
+      "retained_statuses": 3053
+    },
+    "mutations": {
+      "captured_statuses": 56,
+      "captured_unknown": 0,
+      "dispositions": {
+        "observed_ignored_fallbacks": 0,
+        "observed_legacy_recursion": 89152,
+        "observed_skipped_blocks": 7091,
+        "observed_unclassified_nodes": 107583
+      },
+      "finished": 56,
+      "inputs": 56,
+      "interrupted": 0,
+      "old_summary_omissions": 0,
+      "optional_cap_drops": 0,
+      "retained_statuses": 56
+    },
+    "nested": {
+      "captured_statuses": 74,
+      "captured_unknown": 0,
+      "dispositions": {
+        "observed_ignored_fallbacks": 1,
+        "observed_legacy_recursion": 156768,
+        "observed_skipped_blocks": 11193,
+        "observed_unclassified_nodes": 276070
+      },
+      "finished": 74,
+      "inputs": 11,
+      "interrupted": 0,
+      "old_summary_omissions": 0,
+      "optional_cap_drops": 0,
+      "retained_statuses": 24
+    }
+  },
+  "native_actual_recipe_ids": [
+    "1210fee9ac2f8429b2e89cc40efbdb56c494e1ee582e27e339482fc010950385"
+  ],
+  "native_current_driver_sha256": "62638a21e66246930da3664d47dd4a1d897c5593ed4e1af411da611f6a9d3886",
+  "native_current_proof_sha256": "51d2605e260976ac5af6f89d77c36762d33f0d1a931c5eea15bd81040a714963",
+  "native_status": "qualified13/74workers1/4getdoctorrestore2cache365alloldrowspreserved",
+  "saved_REV2_candidate_proof_sha256": "68ca65fe897c44f78d4ec5ab429389e4f718c3302b433a558313b323c064dc7d",
+  "scope": "RootapprovedONEfinalcandidate-only3055+fixed11ZIP74+56variants afterprofile-drivenstatusclassifierchange. Entirestatus+businesshashrecords exactsavedREV2. OldREV2/3proofs preserved; nooldlanes/newstrata/paid/network/productionwrites. FinalnativeonONLY13contexts/74same9raw400412B; copied412e,workers1/4/getdoctor/cache365/restore2/alloldrowspreserved. No status-offgrowthremeasurement.",
+  "source_freeze_sha256": "1063b4e911950baface8f2ceba971969b9794800fb0c4542dd54a26c7bd84bd7",
+  "source_inputs_oldartifacts_unchanged": true,
+  "source_pins": {
+    "src/lexinform/adapters/document_text.py": "1fb603a8253fbde3b4a7ae667cf69dea69f0c3d7e17f5e8a66a9d636b00f25d1",
+    "src/lexinform/extraction_records.py": "7a9d6e7b0d4e8fbc429da0dd4a368829928164f18fbe75ff23257be830c4f8a0",
+    "src/lexinform/models/word_view_capture.py": "5beb482540f9b26863cc4476bf9bdae77f2e2395513979fa1f8a453febd9655d",
+    "src/lexinform/ports.py": "6544427f9ada35a50b76c707545f03a53690c8c5e47915f5ca2736fef9377706",
+    "src/lexinform/word_structure.py": "ed4ad3535d22973ed9c8d4db724ecac0d82f23be0193f9fa2af32ea5268d8480",
+    "tests/unit/test_word_view_producer.py": "9a4507bb3579cedd3a59c4124bbd79eec1044ae479dd3536bfb1b23cbb6a2f4b",
+    "tests/unit/test_word_view_status.py": "e86db3b6a046c0b99db41dbbc0e1516228e05150cb3d1fa59f29e3af7f7b39d6"
+  },
+  "standalone_patch_sha256": "e72e6b0a5cd2844f2b457caf9fd5c3f793013e96d0131df016a15ed0749ff13f",
+  "status": "qualified"
+}

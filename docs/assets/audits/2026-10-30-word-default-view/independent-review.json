@@ -1,0 +1,15 @@
+{
+  "checks": [
+    "Finite QName sets built only for existing3 Word namespaces and status-only profile; unsupported namespace uses unchanged old classifier.",
+    "Recognized inline skipped views have zero effects on four status counters; ignored fallback/unknown recursed/unknown leaf preserved.",
+    "Coordinate v1/v2 classification stays unchanged; no observer computes no unused recognized tuple, no extra walk.",
+    "Six namespace/depth/note/fallback cases,8192-byte unsupported note namespace,old physical manifest control all pass."
+  ],
+  "freeze_sha256": "1063b4e911950baface8f2ceba971969b9794800fb0c4542dd54a26c7bd84bd7",
+  "independent_controls": 8,
+  "no_raw_full_or_source_edits": true,
+  "patch_sha256": "e72e6b0a5cd2844f2b457caf9fd5c3f793013e96d0131df016a15ed0749ff13f",
+  "review_scope": "Revision3\u21926 only classifier optimization plus unsupported namespace guard; prior status lifecycle/manifest closure retained.",
+  "source_pins_exact": true,
+  "status": "closed-no-findings"
+}

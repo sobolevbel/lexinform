@@ -3,9 +3,16 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
+from lexinform import extraction_records
+from lexinform.document_candidates import select_document_parts
 from lexinform.models import WordViewStatus
 from lexinform.models import extractions as models
-from lexinform.models.extractions import ExtractedPartSummary, ExtractionResult
+from lexinform.models.extractions import (
+    ExtractedPartSummary,
+    ExtractionComponent,
+    ExtractionOptions,
+    ExtractionResult,
+)
 from tests.unit.test_physical_extraction import docx, extractor
 
 
@@ -22,7 +29,15 @@ def status(known_walk: str = "finished") -> WordViewStatus:
 
 
 def result() -> ExtractionResult:
-    return extractor().extract_document_with_provenance(docx("USTAWA Art. 1. Cudzoziemiec.")).result
+    physical = extractor().extract_parts(docx("USTAWA Art. 1. Cudzoziemiec."))
+    return extraction_records.summarize_extraction(
+        physical,
+        select_document_parts(physical, max_part_chars=None),
+        components=(ExtractionComponent(role="package", qualified_name_sha256="a" * 64),),
+        options=ExtractionOptions(
+            archive_depth=1, archive_bytes=1024, archive_members=10, xml_bytes=1024
+        ),
+    )
 
 
 @pytest.mark.parametrize("walk", ["finished", "interrupted"])
@@ -109,7 +124,7 @@ def test_absent_status_is_unknown_and_preserves_old_json_and_result_identity() -
     assert restored.model_dump_json() == raw and restored.result_id == observed.result_id
 
 
-def test_optional_status_is_reader_only_and_never_changes_default_producer() -> None:
+def test_optional_reader_field_does_not_invent_status_on_the_legacy_fixture() -> None:
     observed = result()
     payload = observed.model_dump(mode="json")
     payload["selected_parts"][0]["word_view_status"] = status().model_dump(mode="json")

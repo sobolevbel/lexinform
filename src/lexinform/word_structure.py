@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from lexinform.models.documents import WordDetailedExtraction
+from lexinform.models.extractions import WordViewStatus
 from lexinform.models.word_notes import WordNoteCall
 from lexinform.models.word_structure import (
     SEMANTIC_BYTE_QUOTAS,
@@ -49,6 +50,7 @@ class WordStructureCollector:
         max_events: int = 4096,
         max_bytes: int = 524288,
         retention: WordRetention = "event-prefix-v1",
+        _view_status_only: bool = False,
     ) -> None:
         if (
             type(max_events) is not int
@@ -63,6 +65,14 @@ class WordStructureCollector:
             and (max_bytes != 524288 or max_events < 3)
         ):
             raise ValueError("Semantic Word retention requires its bounded versioned profile")
+        self._view_status_only = _view_status_only
+        self._view_failed = False
+        self._view_counts = {
+            "skipped_blocks": 0,
+            "unclassified_nodes": 0,
+            "legacy_recursion": 0,
+            "ignored_fallbacks": 0,
+        }
         self.retention = retention
         self._orders: list[int] = []
         self._semantic_order = 0
@@ -84,6 +94,80 @@ class WordStructureCollector:
         self._limited = False
         self._thread: int | None = None
         self._entered = False
+
+    @classmethod
+    def for_view_status(cls) -> WordStructureCollector:
+        return cls(_view_status_only=True)
+
+    @property
+    def collects_coordinates(self) -> bool:
+        return not self._view_status_only
+
+    def finish_view_status(self, legacy: WordDetailedExtraction) -> WordViewStatus | None:
+        if not self._view_status_only:
+            raise ValueError("View status requires its actual status-only observer")
+        if self._view_failed:
+            return None
+        finished = legacy.body.body_state == "read" and all(
+            part.state == "read" for part in legacy.notes.parts
+        )
+        return WordViewStatus(
+            known_walk="finished" if finished else "interrupted",
+            observed_skipped_blocks=self._view_counts["skipped_blocks"],
+            observed_unclassified_nodes=self._view_counts["unclassified_nodes"],
+            observed_legacy_recursion=self._view_counts["legacy_recursion"],
+            observed_ignored_fallbacks=self._view_counts["ignored_fallbacks"],
+        )
+
+    @contextmanager
+    def view_scope(self) -> Iterator[None]:
+        token = _CURRENT.set(None)
+        entered = False
+        context = None
+        active_error: BaseException | None = None
+        try:
+            try:
+                context = self.scope()
+                context.__enter__()
+                entered = True
+            except Exception:
+                self._view_failed = True
+                _CURRENT.set(None)
+            try:
+                yield
+            except BaseException as error:
+                active_error = error
+                raise
+        finally:
+            try:
+                if entered and context is not None:
+                    try:
+                        context.__exit__(None, None, None)
+                    except BaseException as error:
+                        if active_error is None and not isinstance(error, Exception):
+                            raise
+                        self._view_failed = True
+            finally:
+                _CURRENT.reset(token)
+
+    def report_support(
+        self,
+        path: tuple[int, ...],
+        tag: str,
+        child_count: int,
+        view: WordStructureView,
+        *,
+        recognized: bool = True,
+    ) -> None:
+        if not self._view_status_only:
+            self.support(path, tag, child_count, view, recognized=recognized)
+            return
+        if self._view_failed:
+            return
+        try:
+            self.support(path, tag, child_count, view, recognized=recognized)
+        except Exception:
+            self._view_failed = True
 
     @contextmanager
     def scope(self) -> Iterator[None]:
@@ -238,6 +322,15 @@ class WordStructureCollector:
     ) -> None:
         if self._thread != threading.get_ident():
             return
+        if self._view_status_only:
+            if view == "skipped_block":
+                self._view_counts["skipped_blocks"] += 1
+            if view == "ignored_fallback":
+                self._view_counts["ignored_fallbacks"] += 1
+            if not recognized:
+                field = "legacy_recursion" if view == "recursed" else "unclassified_nodes"
+                self._view_counts[field] += 1
+            return
         if len(tag) > 4096 and self.retention == "event-prefix-v1":
             self._counts["support"] += 1
             self._limited = True
@@ -266,6 +359,8 @@ class WordStructureCollector:
         path: tuple[int, ...],
         text: str,
     ) -> None:
+        if self._view_status_only:
+            return
         self.observe(
             _Event(
                 "block",
@@ -289,6 +384,8 @@ class WordStructureCollector:
         expanded: bool,
     ) -> None:
         if self._thread != threading.get_ident():
+            return
+        if self._view_status_only:
             return
         if len(identity) > self.max_bytes and self.retention == "event-prefix-v1":
             self._counts["call"] += 1
@@ -430,6 +527,15 @@ class WordStructureCollector:
             records.sort(key=lambda entry: int(str(entry["order"])))
             values["observed_stream_sha256"] = structure_sha256(records)
         return WordStructureExtraction.model_validate(values)
+
+
+@contextmanager
+def suspend_word_structure() -> Iterator[None]:
+    token = _CURRENT.set(None)
+    try:
+        yield
+    finally:
+        _CURRENT.reset(token)
 
 
 def current_word_structure() -> WordStructureCollector | None:

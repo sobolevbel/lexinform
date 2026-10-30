@@ -122,6 +122,7 @@ from lexinform.models.physical_inventory import PhysicalCapture, PhysicalMetadat
 from lexinform.models.report import CallKind
 from lexinform.models.senate_inspection import SenateInspectionLink, SenateInspectionRecord
 from lexinform.models.source_catalog_attempts import SourceCatalogAttempt, SourceCatalogSnapshot
+from lexinform.models.word_view_capture import WordViewExtraction
 from lexinform.physical_observations import OrderedPhysicalObservation
 
 
@@ -353,6 +354,11 @@ class WordBlockTextExtractor(Protocol):
 @runtime_checkable
 class WordNoteTextExtractor(Protocol):
     def extract_with_notes(self, data: bytes) -> WordDetailedExtraction: ...
+
+
+@runtime_checkable
+class WordViewTextExtractor(Protocol):
+    def extract_with_view_status(self, data: bytes) -> WordViewExtraction: ...
 
 
 @runtime_checkable

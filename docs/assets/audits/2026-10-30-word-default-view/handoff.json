@@ -1,0 +1,64 @@
+{
+  "barrier": "Readeractualdeploy prerequisite metperRoot J186a400CI/relayverification; candidate stillrequiresindependentrev2closure+Rootapproval before corpus/SQL/full/integration.",
+  "base": "a655bbaf448c27abc11e9a5d89f635e41afe8160+exactReader3REV3",
+  "checks": {
+    "delta_sha256": "c7ddfb9282bdb7d3a7d8684bb56e8ad2bebf7d89fcbe2f9170fcbe5d5a15e897",
+    "diff_check": true,
+    "focused": 191,
+    "mypy": "Success:noissues2changedfiles",
+    "new_namespace_depth_controls": 7,
+    "old_new_classifier_synthetic_sha256": "a63922e46553aeb20025cc3cf4104ce0a7c6f4565c81f62039c9c2520a0d1028",
+    "ruff": "Allcheckspassed",
+    "test_expectation_correction": "UnsupportednotehasTWOunclassifiednodes(rootandentry); frozenREV3/newpublicsyntheticJSONexact; initialoneassertionfailurepreserved, correctedonecontrolpassedother190alreadygreen"
+  },
+  "contract": {
+    "binding": "inputsha/bodymanifest/notemanifest/physicalindex actualcorroborated beforecompactsummary",
+    "custom": "inheritedWordcap cannotbypass oldWordoverride; custompackagepublicextract_partsoverrides honored; unknownopaque nofake status",
+    "default_path": "NativeexactDocumentTextExtractor provenance only; plainextract_parts/WordText/Notes andv1/v2 APIs unchanged",
+    "metadata_faults": "OrdinaryExceptiononly failopen. CancellationBaseExceptionpropagatesexact exceptcleanup mustpreserve alreadyactive originalparsererror/cause; ContextVarrestoredfinally. No oldphysicalguard changes.",
+    "old_physical_manifest": "H(old compactsummary JSON explicitlyexcludingword_view_status), samebody+notes digest; statusonlynewoptionalExtractionResultJSON/resultID",
+    "outer_cap": "16KiB unchanged; optionaltailstatuses removedbeforeoldfullsummaryomissionloop, oldselectedprefix kept; absentunknown withnoresidualstatushash",
+    "status": "fixed4observeddispositions; status-only hooks noevents/paths/hash/JSON allocation; absentunknown; nosemantic/fullXML claims"
+  },
+  "exclusions": [
+    "ODTnotes outscope",
+    "No raw backend/retention decision",
+    "No currentfact/selection/admission/DocumentPart.losses/provider changes",
+    "No corpus CPU/SQLgrowth orcoverageclaims yet; requireseparateapproval/sourcefreeze qualification"
+  ],
+  "freeze_sha256": "1063b4e911950baface8f2ceba971969b9794800fb0c4542dd54a26c7bd84bd7",
+  "owned": [
+    "src/lexinform/word_structure.py",
+    "src/lexinform/models/word_view_capture.py",
+    "src/lexinform/ports.py",
+    "src/lexinform/adapters/document_text.py",
+    "src/lexinform/extraction_records.py",
+    "tests/unit/test_word_view_producer.py",
+    "tests/unit/test_word_view_status.py"
+  ],
+  "patch_sha256": "e72e6b0a5cd2844f2b457caf9fd5c3f793013e96d0131df016a15ed0749ff13f",
+  "phase_test_delta": "tests/unit/test_word_view_status.py onlyauthorizedhelper useslegacyextract_parts+pure summary(nostatus), preservingoldNone/JSON/corruptionreadercontrols; actualnewdefaultpresence tested innewproducer module. OriginalReader3REV3patch/evidence unchanged.",
+  "preimages": {
+    "src/lexinform/adapters/document_text.py": "85056ece94dd4087d5e4b9204120c4e4036cebb3d5048675cc42e249e343ab62",
+    "src/lexinform/extraction_records.py": "b0378402818ed9441d5c39f7fe8fd8f8bf22376034c951dbb986dd77928120ea",
+    "src/lexinform/models/word_view_capture.py": null,
+    "src/lexinform/ports.py": "3f663a5467d979b4c7c5fec23844f150bd6e751c358ca2d6da4509dcc0312d59",
+    "src/lexinform/word_structure.py": "1e957b5378b49a53342f5bb22b0495dd172ca3d177c9bcaee146d22a762848d8",
+    "tests/unit/test_word_view_producer.py": null,
+    "tests/unit/test_word_view_status.py": "3faa886733259591d2e81d1ee5c7e40dd1e8735a7ea80e58b7614dffdf9633af"
+  },
+  "reader_patch_excluded": true,
+  "required_reader_freeze_sha256": "f9e7710d55f9158a4e637a77c5af3adcf09bc333ab52633a1504684d98f1ac7d",
+  "revision": 6,
+  "revision_note": "Bounded per_WordMl KNOWN3namespace finiteknown-tagsets statusonly; arbitraryunsupportednamespacefallbackoldclassifier, recognizedinlinezero-counterviewsskipped; fallback/unknownrecursion/leafcounts exact. v1/v2 detailedcoordinateclassification stayssame; noobserver avoidsrecognizedtuples. REV3localdigestreuse preserved; modelvalidation unchanged. Independentreview/candidatecorpus pending.",
+  "source_pins": {
+    "src/lexinform/adapters/document_text.py": "1fb603a8253fbde3b4a7ae667cf69dea69f0c3d7e17f5e8a66a9d636b00f25d1",
+    "src/lexinform/extraction_records.py": "7a9d6e7b0d4e8fbc429da0dd4a368829928164f18fbe75ff23257be830c4f8a0",
+    "src/lexinform/models/word_view_capture.py": "5beb482540f9b26863cc4476bf9bdae77f2e2395513979fa1f8a453febd9655d",
+    "src/lexinform/ports.py": "6544427f9ada35a50b76c707545f03a53690c8c5e47915f5ca2736fef9377706",
+    "src/lexinform/word_structure.py": "ed4ad3535d22973ed9c8d4db724ecac0d82f23be0193f9fa2af32ea5268d8480",
+    "tests/unit/test_word_view_producer.py": "9a4507bb3579cedd3a59c4124bbd79eec1044ae479dd3536bfb1b23cbb6a2f4b",
+    "tests/unit/test_word_view_status.py": "e86db3b6a046c0b99db41dbbc0e1516228e05150cb3d1fa59f29e3af7f7b39d6"
+  },
+  "status": "frozen-candidate-awaiting-independent-review-before-raw-SQL-full"
+}

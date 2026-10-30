@@ -85,6 +85,7 @@ from lexinform.models.word_structure import (
     WordStructureExtraction,
     WordStructureView,
 )
+from lexinform.models.word_view_capture import WordPartViewStatus, WordViewExtraction
 from lexinform.physical_header_capture import PhysicalHeaderBuilder
 from lexinform.physical_walk_capture import (
     PhysicalWalkCapture,
@@ -99,10 +100,15 @@ from lexinform.ports import (
     WordNoteTextExtractor,
     WordSemanticStructureTextExtractor,
     WordStructureTextExtractor,
+    WordViewTextExtractor,
 )
 from lexinform.sections import PAGE_BREAK
 from lexinform.word_projection import legacy_word_text
-from lexinform.word_structure import WordStructureCollector, current_word_structure
+from lexinform.word_structure import (
+    WordStructureCollector,
+    current_word_structure,
+    suspend_word_structure,
+)
 
 log = logging.getLogger(__name__)
 
@@ -225,6 +231,23 @@ class DocxTextExtractor:
         body = self._blocks(data, notes=notes)
         return self._detailed(body, notes)
 
+    def extract_with_view_status(self, data: bytes) -> WordViewExtraction:
+        try:
+            collector = WordStructureCollector.for_view_status()
+        except Exception:
+            with suspend_word_structure():
+                legacy = self.extract_with_notes(data)
+            return WordViewExtraction(legacy=legacy, status=None)
+        notes = _WordNoteOrigins()
+        with collector.view_scope():
+            body = self._blocks(data, notes=notes)
+        legacy = self._detailed(body, notes)
+        try:
+            status = collector.finish_view_status(legacy)
+        except Exception:
+            status = None
+        return WordViewExtraction(legacy=legacy, status=status)
+
     def extract_with_structure(
         self, data: bytes, *, max_events: int = 4096, max_bytes: int = 524288
     ) -> WordStructuredExtraction:
@@ -310,12 +333,14 @@ class DocxTextExtractor:
                 reader = _WordMl(namespace)
                 if structure is not None:
                     structure.part = path
-                    structure.support((), root.tag, len(root), "part_root", recognized=supported)
+                    structure.report_support(
+                        (), root.tag, len(root), "part_root", recognized=supported
+                    )
                 for index, note in enumerate(root):
                     identity = note.get(reader.tag("id"))
                     if structure is not None:
-                        structure.support(
-                            (index,),
+                        structure.report_support(
+                            (index,) if structure.collects_coordinates else (),
                             note.tag,
                             len(note),
                             "note_entry" if identity is not None else "skipped_missing_id",
@@ -324,7 +349,10 @@ class DocxTextExtractor:
                     if identity is not None:
                         text = "\n".join(
                             reader.blocks(
-                                note, structure_path=(index,) if structure is not None else None
+                                note,
+                                structure_path=(index,)
+                                if structure is not None and structure.collects_coordinates
+                                else None,
                             )
                         )
                         notes[f"{tag}/{identity}"] = text
@@ -349,7 +377,7 @@ class DocxTextExtractor:
             state = "missing"
         if structure is not None:
             structure.part = "word/document.xml"
-            structure.support(
+            structure.report_support(
                 (), root.tag, len(root), "part_root", recognized=state != "unsupported"
             )
         return (
@@ -472,6 +500,41 @@ class _WordMl:
         self._blocks = blocks
         self._projection = projection
         self._structure = current_word_structure()
+        self._status_inline_tags = (
+            frozenset(
+                self.tag(name)
+                for name in (
+                    "t",
+                    "tab",
+                    "br",
+                    "cr",
+                    "lastRenderedPageBreak",
+                    "footnoteReference",
+                    "endnoteReference",
+                    "footnote",
+                    "endnote",
+                )
+            )
+            if self._structure is not None
+            and not self._structure.collects_coordinates
+            and namespace in _WORDML_NAMESPACES
+            else None
+        )
+        wrappers = (
+            frozenset((self.tag("sdt"), self.tag("sdtContent"), *_TRANSPARENT))
+            if self._status_inline_tags is not None
+            else frozenset()
+        )
+        self._status_block_tags = (
+            wrappers | {self.tag("p"), self.tag("tbl")}
+            if self._status_inline_tags is not None
+            else None
+        )
+        self._status_direct_tags = (
+            {name: wrappers | {self.tag(name)} for name in ("tr", "tc")}
+            if self._status_inline_tags is not None
+            else {}
+        )
 
     def tag(self, name: str) -> str:
         return f"{self._ns}{name}"
@@ -485,22 +548,37 @@ class _WordMl:
         structure_path: tuple[int, ...] | None = None,
     ) -> Iterator[str]:
         """Paragraphs and logical table rows in the current legacy Word view."""
-        observed = path if path is not None else structure_path
-        if self._structure is not None and observed is not None and node.tag == self.tag("body"):
-            self._structure.support(observed, node.tag, len(node), "structural")
+        observed = (
+            (path if path is not None else structure_path)
+            if self._structure is None or self._structure.collects_coordinates
+            else None
+        )
+        if (
+            self._structure is not None
+            and node.tag == self.tag("body")
+            and (observed is not None or not self._structure.collects_coordinates)
+        ):
+            self._structure.report_support(observed or (), node.tag, len(node), "structural")
         for index, child in enumerate(node):
             child_path = (*path, index) if path is not None else None
             located = (*observed, index) if observed is not None else None
-            recognized = child.tag in (
-                self.tag("p"),
-                self.tag("tbl"),
-                self.tag("sdt"),
-                self.tag("sdtContent"),
-                *_TRANSPARENT,
-            )
-            if self._structure is not None and located is not None:
-                self._structure.support(
-                    located,
+            if self._structure is not None and (
+                located is not None or not self._structure.collects_coordinates
+            ):
+                recognized = (
+                    child.tag in self._status_block_tags
+                    if self._status_block_tags is not None
+                    else child.tag
+                    in (
+                        self.tag("p"),
+                        self.tag("tbl"),
+                        self.tag("sdt"),
+                        self.tag("sdtContent"),
+                        *_TRANSPARENT,
+                    )
+                )
+                self._structure.report_support(
+                    located or (),
                     child.tag,
                     len(child),
                     "structural" if recognized else "skipped_block",
@@ -528,7 +606,11 @@ class _WordMl:
         project: bool = False,
         structure_path: tuple[int, ...] | None = None,
     ) -> None:
-        if self._structure is not None and structure_path is not None:
+        if (
+            self._structure is not None
+            and self._structure.collects_coordinates
+            and structure_path is not None
+        ):
             self._structure.block(kind, structure_path, text)
         if self._blocks is None or self._projection is None or path is None:
             return
@@ -562,19 +644,31 @@ class _WordMl:
         path: tuple[int, ...] | None,
         structure_path: tuple[int, ...] | None = None,
     ) -> Iterator[tuple[ET.Element, tuple[int, ...] | None, tuple[int, ...] | None]]:
-        observed = path if path is not None else structure_path
+        observed = (
+            (path if path is not None else structure_path)
+            if self._structure is None or self._structure.collects_coordinates
+            else None
+        )
         for index, child in enumerate(node):
             child_path = (*path, index) if path is not None else None
             located = (*observed, index) if observed is not None else None
-            recognized = child.tag in (
-                self.tag(name),
-                self.tag("sdt"),
-                self.tag("sdtContent"),
-                *_TRANSPARENT,
-            )
-            if self._structure is not None and located is not None:
-                self._structure.support(
-                    located,
+            if self._structure is not None and (
+                located is not None or not self._structure.collects_coordinates
+            ):
+                tags = self._status_direct_tags.get(name)
+                recognized = (
+                    child.tag in tags
+                    if tags is not None
+                    else child.tag
+                    in (
+                        self.tag(name),
+                        self.tag("sdt"),
+                        self.tag("sdtContent"),
+                        *_TRANSPARENT,
+                    )
+                )
+                self._structure.report_support(
+                    located or (),
                     child.tag,
                     len(child),
                     "structural" if recognized else "skipped_block",
@@ -613,12 +707,18 @@ class _WordMl:
         structure_path: tuple[int, ...] | None = None,
         structure_paragraph: tuple[int, ...] | None = None,
     ) -> None:
-        observed = path if path is not None else structure_path
+        observed = (
+            (path if path is not None else structure_path)
+            if self._structure is None or self._structure.collects_coordinates
+            else None
+        )
         for index, el in enumerate(node):
             child_path = (*path, index) if path is not None else None
             located = (*observed, index) if observed is not None else None
-            if self._structure is not None and located is not None:
-                self._support_inline(el, located)
+            if self._structure is not None and (
+                located is not None or not self._structure.collects_coordinates
+            ):
+                self._support_inline(el, located or ())
             if el.tag == _MC_FALLBACK:
                 continue
             if el.tag == self.tag("t"):
@@ -671,6 +771,21 @@ class _WordMl:
         structure = self._structure
         if structure is None:
             return
+        if self._status_inline_tags is not None:
+            if node.tag in self._status_inline_tags:
+                return
+            structure.report_support(
+                path,
+                node.tag,
+                len(node),
+                "ignored_fallback"
+                if node.tag == _MC_FALLBACK
+                else "recursed"
+                if len(node)
+                else "ignored_leaf",
+                recognized=node.tag == _MC_FALLBACK,
+            )
+            return
         view: WordStructureView
         if node.tag == _MC_FALLBACK:
             view = "ignored_fallback"
@@ -690,7 +805,7 @@ class _WordMl:
         elif node.tag in (self.tag("footnote"), self.tag("endnote")):
             view = "inline_note"
         else:
-            structure.support(
+            structure.report_support(
                 path,
                 node.tag,
                 len(node),
@@ -698,7 +813,7 @@ class _WordMl:
                 recognized=False,
             )
             return
-        structure.support(path, node.tag, len(node), view)
+        structure.report_support(path, node.tag, len(node), view)
 
 
 @dataclass
@@ -877,6 +992,7 @@ class _PhysicalOrigins:
     unlocated_text: list[UnlocatedPartExtraction] | None
     word_structure: list[WordPartStructureExtraction] | None = None
     semantic_word_structure: bool = False
+    word_view_status: list[WordPartViewStatus] | None = None
 
 
 class DocumentTextExtractor:
@@ -993,7 +1109,22 @@ class DocumentTextExtractor:
         return select_document_parts(extracted, max_part_chars=self._max_part_chars)
 
     def extract_document_with_provenance(self, data: bytes) -> DocumentExtraction:
-        physical = self.extract_parts(data)
+        views: list[WordPartViewStatus] = []
+        if (
+            type(self) is DocumentTextExtractor
+            and getattr(self.extract_parts, "__func__", None) is DocumentTextExtractor.extract_parts
+        ):
+            origins = _PhysicalOrigins(
+                pdf_pages=[],
+                word_blocks=[],
+                word_notes=[],
+                odt_blocks=[],
+                unlocated_text=[],
+                word_view_status=views,
+            )
+            physical = self._extract_parts(data, origins)
+        else:
+            physical = self.extract_parts(data)
         selected = select_document_parts(physical, max_part_chars=self._max_part_chars)
         result = summarize_extraction(
             physical,
@@ -1005,6 +1136,7 @@ class DocumentTextExtractor:
                 extraction_component("doc", self._doc),
                 extraction_component("odt", self._odt),
             ),
+            word_views=tuple(views),
             options=ExtractionOptions(
                 max_member_bytes=self._max_member_bytes,
                 max_part_chars=self._max_part_chars,
@@ -1118,6 +1250,7 @@ class DocumentTextExtractor:
         word_result: WordTextExtraction | None = None
         note_result: WordNoteExtraction | None = None
         structure_result: WordStructureExtraction | WordSemanticStructureExtraction | None = None
+        view_result: WordViewExtraction | None = None
         odt_result: OdtTextExtraction | None = None
         if data.startswith(_ZIP_MAGIC):
             try:
@@ -1127,7 +1260,30 @@ class DocumentTextExtractor:
                         capture = current_physical_walk_capture()
                         if capture is not None and type(self._docx) is not DocxTextExtractor:
                             _physical_event(capture, capture.opaque_helper)
-                        if origins.semantic_word_structure and isinstance(
+                        if (
+                            origins.word_view_status is not None
+                            and (
+                                type(self._docx) is DocxTextExtractor
+                                and getattr(
+                                    getattr(self._docx, "extract_with_notes", None),
+                                    "__func__",
+                                    None,
+                                )
+                                is DocxTextExtractor.extract_with_notes
+                                or type(self._docx) is not DocxTextExtractor
+                                and "extract_with_view_status" in type(self._docx).__dict__
+                            )
+                            and isinstance(self._docx, WordViewTextExtractor)
+                        ):
+                            view_result = _physical_format(
+                                partial(self._docx.extract_with_view_status, data)
+                            )
+                            word_result, note_result = (
+                                view_result.legacy.body,
+                                view_result.legacy.notes,
+                            )
+                            text = word_result.legacy_text
+                        elif origins.semantic_word_structure and isinstance(
                             self._docx, WordSemanticStructureTextExtractor
                         ):
                             structured = _physical_format(
@@ -1268,6 +1424,20 @@ class DocumentTextExtractor:
         if origins.word_notes is not None and note_result is not None:
             origins.word_notes.append(
                 WordPartNoteExtraction(part_index=len(parts) - 1, extraction=note_result)
+            )
+        if (
+            origins.word_view_status is not None
+            and view_result is not None
+            and view_result.status is not None
+        ):
+            origins.word_view_status.append(
+                WordPartViewStatus(
+                    part_index=len(parts) - 1,
+                    input_sha256=view_result.legacy.body.input_sha256,
+                    body_manifest_sha256=view_result.legacy.body.manifest_sha256,
+                    notes_manifest_sha256=view_result.legacy.notes.manifest_sha256,
+                    status=view_result.status,
+                )
             )
         if origins.word_structure is not None and structure_result is not None:
             origins.word_structure.append(
