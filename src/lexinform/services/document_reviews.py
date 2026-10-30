@@ -109,6 +109,17 @@ class DocumentReviews:
                     return
                 original = Bill.model_validate_json(pending.input_bill_json)
                 bill = bill.model_copy(update={"analysis": original.analysis})
+        fresh = self._repo.get(bill.term, bill.number) or bill
+        prior = {
+            "consultation_review": fresh.consultation_review,
+            "commission_review": fresh.commission_review,
+            "act_application": fresh.act_application_review,
+        }[purpose]
+        comparison_document = (
+            next((doc for doc in prior.context.documents if doc.role == "comparison_text"), None)
+            if purpose in ("consultation_review", "commission_review") and prior is not None
+            else None
+        )
         payload = bill.model_dump_json(
             exclude={
                 "last_checked_at",
@@ -118,16 +129,17 @@ class DocumentReviews:
                 "act_application_review",
             }
         )
-        key = "review-input:" + hashlib.sha256((purpose + payload).encode()).hexdigest()
-        fresh = self._repo.get(bill.term, bill.number) or bill
-        prior = {
-            "consultation_review": fresh.consultation_review,
-            "commission_review": fresh.commission_review,
-            "act_application": fresh.act_application_review,
-        }[purpose]
-        if prior is not None and prior.source_key == key and not force_check:
+        identity = purpose + payload
+        legacy_key = "review-input:" + hashlib.sha256(identity.encode()).hexdigest()
+        if purpose == "consultation_review" and comparison_document is not None:
+            identity += "\ncomparison-document:" + comparison_document.model_dump_json()
+        key = "review-input:" + hashlib.sha256(identity.encode()).hexdigest()
+        if prior is not None and prior.source_key in (key, legacy_key) and not force_check:
             return
-        if any(work.memo_key == key or work.source_key == key for work in fresh.review_work):
+        if any(
+            work.memo_key in (key, legacy_key) or work.source_key in (key, legacy_key)
+            for work in fresh.review_work
+        ):
             return
         day = self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date()
         work = ReviewWork(
@@ -146,11 +158,7 @@ class DocumentReviews:
             source_key=key,
             source_fingerprint=source_fingerprint,
             act_eli=bill.act.eli if bill.act is not None else None,
-            comparison_document=next(
-                (doc for doc in prior.context.documents if doc.role == "comparison_text"), None
-            )
-            if purpose == "commission_review" and prior is not None
-            else None,
+            comparison_document=comparison_document,
         )
         if purpose == "commission_review":
             pending = next((item for item in fresh.review_work if item.purpose == purpose), None)

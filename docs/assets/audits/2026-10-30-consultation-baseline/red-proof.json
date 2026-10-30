@@ -1,0 +1,10 @@
+{
+  "baseline": "078b4c5c151a7698180e6bce689db5de75ee4732",
+  "scope": "Only document_reviews.py reverted in disposable source copy; actual public regression tests, no primary edits",
+  "failed_cases": [
+    "test_consultation_work_retains_comparison_across_restore_and_later_review",
+    "test_unchanged_legacy_consultation_review_does_not_request_a_new_batch",
+    "test_consultation_source_identity_binds_the_retained_comparison"
+  ],
+  "source_copy_removed": true
+}

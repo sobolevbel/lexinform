@@ -1,0 +1,34 @@
+{
+  "scope": "DA5.7 actual retained consultation comparison snapshot reuse; no new storage/backend/schema or review activation",
+  "source_sha256": {
+    "src/lexinform/services/document_reviews.py": "86f0b60ecad387eb12548c24595d4409772d558d68d13d2d25377e957680b9c9",
+    "tests/scenario/test_consultation_review_baseline.py": "3bfd7b1cdf1b4e44915e8293a0bcd2bee0aeb9d8816d330eb60ab2e59dd13c96"
+  },
+  "independent_review": "url_reader_review: exact two-path review green; new3public tests independently passed; immutable snapshot/newidentity, legacy completed/pending dedup and forcednewwork checked",
+  "focused_cases": 107,
+  "regression_proof": "All3new public tests fail with only service restored to078 in disposable source copy; legacy unchanged tests in focused selection pass current code",
+  "actual_state": "2 retained consultation records,0comparison_text; old/new complete SQL equal after request-only construction and restore in disposable memory repositories",
+  "no_natural_demand_claim": true,
+  "limits": "Preserves only real saved comparison documents. Legacy unavailable bodies stay unavailable; no automatic paid replay or retrospective reconstruction.",
+  "full_gate": {
+    "xml_suites": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "7024",
+        "time": "245.138",
+        "timestamp": "2026-10-30T14:54:57.424259+01:00",
+        "hostname": "Yauhenis-MacBook-Pro.local"
+      }
+    ],
+    "mypy_source_files": 612,
+    "ruff_formatted_files": 679,
+    "source_freeze_paths": 679,
+    "source_freeze_unchanged": true,
+    "coverage_total": [
+      "TOTAL                                                  28792   1756   9784   1230    92%"
+    ]
+  }
+}

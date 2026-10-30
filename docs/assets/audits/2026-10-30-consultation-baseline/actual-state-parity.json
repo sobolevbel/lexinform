@@ -1,0 +1,11 @@
+{
+  "scope": "Actual retained consultation records from read-only state412e9635; request construction only in disposable memory repos, no processing/network/paid/sends",
+  "state_sha": "412e9635b84c196732c9bec2b38a878fee120ee6",
+  "sql_sha256": "a39d69e7306d97c7307e7b9a263a71a7f5c646be590815d68860ada2064eaae2",
+  "actual_consultation_records": 2,
+  "actual_retained_comparison_documents": 0,
+  "old_new_complete_sql_equal": true,
+  "restore_roundtrip_equal": true,
+  "original_input_unchanged": true,
+  "limits": "No natural retained comparison exists in these two actual records; positive snapshot behavior is controlled public regression coverage, not claimed natural production demand."
+}

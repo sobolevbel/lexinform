@@ -644,7 +644,7 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
 - [ ] DA5.6. **Частично: [J058](2026-10-22-document-architecture-progress.md#j058), общий freeze сохранённого provider payload и проверка его SHA-256 до отправки/при restore; [J059](2026-10-22-document-architecture-progress.md#j059), исходный SHA остаётся в batch metadata и оплаченных результатах после submit/cleanup. Legacy остаётся unknown.** При постановке batch фиксировать PreparedInput ref, сериализованный request либо
   достаточный проверяемый request manifest, исходный prompt/schema/options. После submit
   не пересобирать контекст из свежего Bill. Provider-specific payload остаётся у adapter.
-- [ ] DA5.7. Использовать сохранённый нормативный baseline там, где он сохранён выбранным профилем.
+- [x] DA5.7. **[J176](2026-10-22-document-architecture-progress.md#j176): consultation work теперь переносит реальный сохранённый comparison document; существующие commission/retry snapshots и legacy hash guards сохраняются. Нет реконструкции отсутствующих архивных тел или активации отложенного хранения.** Использовать сохранённый нормативный baseline там, где он сохранён выбранным профилем.
   Live URL для legacy разрешает только нынешнюю осторожную проверку хеша; неподтверждённый
   старый текст не восстанавливается по похожести и не выдаётся за исторический вход.
 

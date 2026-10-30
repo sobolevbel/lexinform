@@ -8310,3 +8310,37 @@ J173 final `make check`:7021 passed/251.508s, coverage92%; mypy611, Ruff/format6
 прошли. [Validation](../assets/audits/2026-10-30-source-catalog-producer/validation.json).
 DA2.5 отмечен выполненным по exact revision2 integration/fresh full и независимому requirement
 audit; deploy/natural acceptance отдельно. Вместе с J175: план74 /34done /6N/A /34open.
+
+
+J173 commit `078b4c5c151a7698180e6bce689db5de75ee4732`: все четыре CI jobs и actual
+relay `6d6905cc → 078b4c5c`, health 45s/timer подтверждены
+[release proof](../assets/audits/2026-10-30-source-catalog-producer/release.json).
+DA2.5 delivered; natural family-cycle acceptance остаётся отдельно.
+
+
+<a id="j176"></a>
+
+## J176 — retained consultation comparison snapshot
+
+DA5.7 закрыт в текущем профиле хранения. Новый consultation review терял уже сохранённый
+`comparison_text`: bill snapshot исключает предыдущий review, а `comparison_document` раньше
+копировался только для commission. Теперь work хранит реальный comparison document, новый
+ключ связан с этим immutable input; advance использует существующую snapshot-ветку без
+повторного чтения baseline URL. Старые completed/pending keys совместимы: обновление кода
+не инициирует платную повторную проверку и не дополняет старый pending отсутствующим input.
+Паузы purposes, схемы и выбранный профиль хранения не меняются.
+
+Три public Container-регрессии проверяют restore/retry, смену последующего review и URL,
+изменение отрицания в baseline, force и legacy pending. Все три падают на изолированной
+копии прежнего service `078b4c5c`; текущие 107 focused проходят. Независимый review
+подтвердил точные два source SHA. На read-only snapshot `412e9635` есть два consultation
+record, оба без comparison document: request-only old/new на disposable in-memory repos
+даёт одинаковый полный SQL и restore. Это проверка совместимости, не natural demand
+для сохранённого baseline и не восстановление исторического текста.
+
+Full gate: 7024 tests, 245.138s, 92% coverage; mypy 612, Ruff/format 679; source freeze
+679 paths, включая pyproject/lock, не изменился.
+[Qualification](../assets/audits/2026-10-30-consultation-baseline/qualification.json),
+[red proof](../assets/audits/2026-10-30-consultation-baseline/red-proof.json),
+[actual-state parity](../assets/audits/2026-10-30-consultation-baseline/actual-state-parity.json).
+Ни network, ни paid calls, ни processing/sends production при qualification не запускались.
