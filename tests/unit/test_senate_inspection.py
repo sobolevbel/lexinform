@@ -184,7 +184,7 @@ def known_observation(
             "reader_text_sha256": source.selection.selection.parts[0].text_sha256,
             "source_observation_id": observation.observation_id,
             "selection_id": source.selection.selection_id,
-            "artifact_read_id": source.reads[0].read_id,
+            "artifact_read_id": source.reads[0].read_id if source.reads else None,
             "extraction_id": source.extractions[0].result_id,
         }
     )
@@ -654,10 +654,13 @@ def test_later_known_parents_produce_a_new_immutable_fact(tmp_path: Path) -> Non
 def test_credential_query_does_not_leak_into_new_record_or_junction(tmp_path: Path) -> None:
     repo = repository(tmp_path)
     observed = known_observation(omitted=True, url=URL + "?token=SECRET")
+    assert observed.links[0].artifact_read_id is None
     record_senate_inspections(repo, (observed,), recorded_at=NOW)
     saved = repo.get_senate_inspection(observed.record.inspection_id)
     assert saved is not None, "The explicit fixture writer saved its known parents and record"
     assert "SECRET" not in saved.model_dump_json()
+    assert repo.get_artifact_metadata(observed.links[0].artifact_sha256) is not None
+    assert not repo.list_artifact_reads()
     assert all(
         "SECRET" not in link.model_dump_json()
         for link in repo.list_senate_inspection_links(saved.inspection_id)

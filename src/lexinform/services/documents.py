@@ -38,6 +38,8 @@ from lexinform.document_composition import (
 from lexinform.document_downloads import DocumentDownloadRecorder, download_failure
 from lexinform.document_selection import DOCUMENT_SELECTION_POLICY_VERSION
 from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
+from lexinform.metadata_omissions import MetadataUrlOmissionCollector
+from lexinform.metadata_urls import metadata_url_decision
 from lexinform.models import (
     ArtifactIdentity,
     ArtifactReadIdentity,
@@ -49,6 +51,7 @@ from lexinform.models import (
     DocumentSelection,
     ExtractionResult,
     HostDocumentReads,
+    MetadataUrlOmissions,
     ScanInputManifest,
     ScannedDocument,
     TextDocument,
@@ -101,14 +104,19 @@ class TextLoader:
         self._known_reads: dict[str, ArtifactReadIdentity] = {}
         self._extractions: dict[str, ExtractionResult] = {}
         self._download_diagnostics = DocumentDownloadRecorder()
+        self._metadata_url_omissions = MetadataUrlOmissionCollector()
 
     def reset_download_diagnostics(self) -> None:
         with self._lock:
             self._download_diagnostics.reset()
+            self._metadata_url_omissions.reset()
 
     def read_download_diagnostics(self) -> DocumentDownloadDiagnostics | None:
         with self._lock:
             return self._download_diagnostics.snapshot()
+
+    def read_metadata_url_omissions(self) -> MetadataUrlOmissions | None:
+        return self._metadata_url_omissions.snapshot()
 
     def extractions_for_selection(
         self, selection: DocumentSelection
@@ -179,6 +187,7 @@ class TextLoader:
             self._download_metrics.clear()
             self._seen_bodies.clear()
             self._download_diagnostics.reset()
+            self._metadata_url_omissions.reset()
 
     def read_metrics(self) -> DocumentReadMetrics:
         with self._lock:
@@ -629,14 +638,24 @@ class TextLoader:
                 self._download_diagnostics.failure(url, host, outcome, reason, status_code=status)
             raise
         digest = hashlib.sha256(data).hexdigest()
-        read = ArtifactReadIdentity(sha256=digest, byte_size=len(data), requested_url=url)
         with self._lock:
-            self._known_reads.setdefault(read.read_id, read)
+            self._known_bodies.setdefault(digest, len(data))
+        decision = metadata_url_decision(url)
+        if decision.reason is None:
+            read = ArtifactReadIdentity(sha256=digest, byte_size=len(data), requested_url=url)
+            with self._lock:
+                self._known_reads.setdefault(read.read_id, read)
+        else:
+            self._metadata_url_omissions.observe(
+                decision.reason,
+                requested_url_sha256=decision.requested_url_sha256,
+                artifact_sha256=digest,
+            )
+        with self._lock:
             self._download_diagnostics.completed()
             self._download_metrics[host]["completed"] += 1
             self._download_metrics[host]["body_bytes"] += len(data)
             self._seen_bodies.setdefault(digest, len(data))
-            self._known_bodies.setdefault(digest, len(data))
         log.info(
             "%s: %d KB downloaded in %.1fs",
             url,

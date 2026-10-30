@@ -267,7 +267,9 @@ def test_completed_download_survives_parser_failure_and_scan_derivatives_add_no_
     with pytest.raises(ValueError, match="broken"):
         reader.read(URL)
     assert diagnostics(reader).completed == 1 and diagnostics(reader).error == 0
-    assert len(reader.read_artifact_reads()) == 1
+    assert len(reader.read_artifacts()) == 1 and not reader.read_artifact_reads()
+    omissions = reader.read_metadata_url_omissions()
+    assert omissions is not None and omissions.total == 1
     reader = TextLoader(
         {"one.test": gateway.download}, FakeTextExtractor("", page_count=30), max_bytes=1000
     )

@@ -1,0 +1,58 @@
+{
+  "behavior": [
+    "Known complete body registered before prospective URL decision and ArtifactReadIdentity/read_id",
+    "Admitted original URL bytes/read identity unchanged; unsafe new receipt omitted, exact known body and URL-free ExtractionResult retained",
+    "One omission observation per real completed response, not URL/artifact count; cache hits never recount",
+    "Existing download-monitor reset/finalization interface captures bounded omission report in Pipeline.finally and CLI reporter, workers never write SQL",
+    "No body identity or metadata omission for failed/incomplete response; parser failure preserves original exception and complete-body observation"
+  ],
+  "diff_check": "passed",
+  "focused_passed": 89,
+  "freeze_sha256": "965fbd3f51829eb76a3e41c6eb48805780602a444f6d348bee3ec4ccf0f3eabb",
+  "limits": [
+    "No source/selection graph filtering: those historical capture paths can still contain unsafe URLs; this is not complete application privacy",
+    "No IO/parser/legal selection/model/batch/payload semantics changed for qualified encodable URLs",
+    "Unencodable requested URLs no longer fail solely during receipt read_id encoding; actual business parser/transport exceptions stay unwrapped",
+    "No historical validation/backfill/schema/raw-byte retention changes",
+    "No corpus extraction/trim/normalization change; prior frozen policy841-file URL qualification reused because policy bytes unchanged"
+  ],
+  "mypy": "Success: no issues found in 578 source files",
+  "new_cases": {
+    "scenario": 2,
+    "unit": 8
+  },
+  "next": "Shared prospective source-selection graph assembler before IDs, opaque-failure flag at construction site; separate qualified stage",
+  "patch_sha256": "34f49cdff478147c2b64698d5547e2201fed9fcd428ae4151cdc8159db772880",
+  "paths": [
+    "src/lexinform/ports.py",
+    "src/lexinform/services/document_read_reporting.py",
+    "src/lexinform/services/documents.py",
+    "src/lexinform/services/pipeline.py",
+    "tests/scenario/test_artifact_read_capture.py",
+    "tests/unit/test_document_downloads.py",
+    "tests/unit/test_document_read_reporting.py",
+    "tests/unit/test_loader_metadata_urls.py"
+  ],
+  "ruff": "8 owned Python paths check/format passed",
+  "slice": "Prospective TextLoader requested-URL receipt admission",
+  "test_changes": [
+    "Existing worker/caller reporting uniqueness fixture changed unknown fake query to distinct queryless path; preserves receipt ownership intent",
+    "Existing diagnostics secret-query test now asserts retained body+omission rather than unsafe receipt",
+    "New worker scenario observes actual two parser-failing downloads, workers1/4 exact count2"
+  ],
+  "stage": "J158",
+  "handoff_sha256": "5161cc4cabffe5521b26761c4b9a4ab2d623665a0e9d1e5c8770b96f05f20a00",
+  "root_review": "Four source paths, new tests and public file-origin lookup reviewed; no findings",
+  "full_gate": {
+    "tests_passed": 6761,
+    "seconds": 236.084,
+    "coverage_percent": 92,
+    "mypy_files": 579,
+    "ruff_format_files": 646,
+    "source_config_pins": 646,
+    "source_bytes_exact": true,
+    "docs_check": "passed"
+  },
+  "first_full_attempt": "6760 passed, one failed Senate helper indexing absent unsafe receipt; helper corrected and leak assertions strengthened; 70 focused then complete gate rerun",
+  "independent_review": "physical_reader_review: body-beforeURL, exception/cache/locks/reset/caller SQL reviewed without findings"
+}

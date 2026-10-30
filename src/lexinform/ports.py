@@ -61,6 +61,7 @@ from lexinform.models import (
     LlmBatch,
     LlmBatchItem,
     LocatedText,
+    MetadataUrlOmissions,
     Mp,
     NameContext,
     NameRecord,
@@ -135,6 +136,8 @@ class DocumentDownloadMonitor(Protocol):
     def reset_download_diagnostics(self) -> None: ...
 
     def read_download_diagnostics(self) -> DocumentDownloadDiagnostics | None: ...
+
+    def read_metadata_url_omissions(self) -> MetadataUrlOmissions | None: ...
 
 
 class DocumentArtifactObserver(Protocol):

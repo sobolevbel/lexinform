@@ -7743,3 +7743,43 @@ DA2.5 остаётся partial до отдельного producer; план 74 /
 J157 final make check: 6751 passed / 278.76s, coverage 92%; strict mypy 578 files,
 Ruff/format 645 по src/tests/tools. Все 645 pinned Python/config files неизменны после gate.
 Strict docs/link/anchor/resource checks прошли. Никакие runtime capture paths не включены.
+
+
+<a id="j158"></a>
+
+### J158. Capture admitted loader receipts without losing complete body metadata
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября. Base `3a05deb4`.
+Узкий producer использует J157 reader: TextLoader сохраняет known complete body до проверки
+URL и создания read identity. Unsafe новый receipt опускается; exact body и URL-free extraction
+сохраняются независимо. Одна omission observation соответствует реальному complete response,
+а не distinct URL/file; cache hit не добавляет observation. Failed/incomplete response не
+получает выдуманный body SHA. Parser exception остаётся исходным объектом.
+
+Bounded diagnostic сохраняется существующими Pipeline.finally и CLI reporter через download
+monitor; workers меняют только память, caller сохраняет report/body. Новый Container, protocol
+или migration не нужны. 89 focused tests прошли: 8 новых unit cases и 2 worker cases;
+strict mypy/Ruff зелёные. Root проверил четыре source paths и file-origin lookup.
+Source/selection graphs ещё могут содержать unsafe URLs: DA2.5 остаётся partial. Historical
+rows/validators, selection и provider payload не переписываются. Для некодируемого UTF-8 URL
+устранена incidental ошибка metadata read_id.encode; transport/parser errors остаются прежними.
+Policy bytes точны J157, его 841-file qualification переиспользована; extraction/normalization
+не менялись, новая extraction корпуса не заявляется.
+[Acceptance asset](../assets/audits/2026-10-30-loader-url-receipts/validation.json).
+План 74 / 32 done / 6 N/A / 36 open.
+
+
+J157 commit `3a05deb4e6a2b524c9dc35a74ed6ea69231ce1e2`: все четыре CI jobs 41026256239
+и deploy 41026665779 прошли; actual relay e6e8 → 3a05, health 45s/timer подтверждены
+[release proof](../assets/audits/2026-10-30-metadata-url-reader/release.json). Reader развёрнут до J158 producer.
+
+
+Первый J158 full gate нашёл один несовместимый Senate fixture helper: он индексировал
+`source.reads[0]` даже для deliberately unsafe token URL. Helper теперь допускает фактическое
+отсутствие receipt; прежние leak assertions сохранены и усилены проверками no receipt/known body.
+70 focused Senate/loader cases прошли; полный gate повторяется на итоговых test bytes.
+
+
+J158 final make check: 6761 passed / 236.08s, coverage 92%; strict mypy 579 files,
+Ruff/format 646 по src/tests/tools. Все 646 source/config pins exact. Independent review
+body/error/cache/lock/caller boundaries без findings. Strict docs checks прошли.

@@ -122,3 +122,26 @@ def test_standalone_primary_source_transaction_records_its_actual_read() -> None
     reads = world.repo.list_artifact_reads()
     assert len(reads) == 1 and reads[0].requested_url == print_url("4100")
     assert world.repo.get_artifact_metadata(reads[0].sha256) is not None
+
+
+@pytest.mark.parametrize("workers", [1, 4])
+def test_pipeline_finally_keeps_body_and_omission_after_unsafe_url_parser_failure(
+    workers: int,
+) -> None:
+    world = World(workers=workers, extractor=FakeTextExtractor(error=ValueError("parser failed")))
+    world.add_bill("4100", "Projekt ustawy o cudzoziemcach")
+    original = world.gateway.prints["4100"]
+    url = print_url("4100") + "?token=PRIVATE"
+    world.gateway.prints["4100"] = original.model_copy(
+        update={"attachments": (original.attachments[0].model_copy(update={"url": url}),)}
+    )
+    world.gateway.files[url] = b"%PDF"
+
+    report = world.run(track=False)
+
+    assert not world.repo.list_artifact_reads() and not world.llm.contexts
+    assert world.repo.get_artifact_metadata(hashlib.sha256(b"%PDF").hexdigest()) is not None
+    assert report.metadata_url_omissions is not None, "pipeline finally snapshots actual omissions"
+    assert report.metadata_url_omissions.total == world.gateway.calls.count(f"download:{url}") == 2
+    assert report.metadata_url_omissions.reasons[0].reason == "unrecognized_query"
+    assert "PRIVATE" not in report.metadata_url_omissions.model_dump_json()

@@ -133,7 +133,7 @@ def test_caller_registers_before_workers_and_finishes_metadata_on_its_thread(
             assert not saved(repo, clock) and "'cli_reads'" in repo.dump()
             assert not repo.list_artifact_reads()
             for outcome in fan_out(
-                [f"{URL}?part={n}" for n in range(4)], reader.read, workers=workers
+                [f"{URL}/part-{n}.pdf" for n in range(4)], reader.read, workers=workers
             ):
                 outcome.result()
             clock.advance(seconds=5)

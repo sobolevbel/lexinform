@@ -61,6 +61,7 @@ class CliDocumentReadReporter:
             report.finished_at = finished
             report.document_reads = self.reads.read_metrics()
             report.document_download_diagnostics = self.downloads.read_download_diagnostics()
+            report.metadata_url_omissions = self.downloads.read_metadata_url_omissions()
             artifacts = self.artifacts.read_artifacts()
             reads = self.file_reads.read_artifact_reads()
             with self.repo.atomic():

@@ -320,8 +320,8 @@ The existing run retention applies. Standalone scan/reprefilter, direct CLI and 
 consumers still need their own durable finalization; this is not a complete HTTP ledger. See
 [J142](plans/2026-10-22-document-architecture-progress.md#j142).
 
-J157 добавляет inert reader поля `metadata_url_omissions` и collector без Clock; runtime producer
-пока не заполняет поле. Отсутствующая metadata сохраняет прежние public/stored JSON bytes.
+J157 добавляет reader поля `metadata_url_omissions` и collector без Clock. J158 заполняет
+его для omitted requested-URL receipts общего загрузчика через pipeline/CLI finalizers. Отсутствующая metadata сохраняет прежние public/stored JSON bytes.
 Диагностика v1 считает omission observations: точные суммы по фиксированным причинам, не более
 восьми детерминированных частичных hash-only примеров и точный остаток observations. Компактный
 UTF-8 объект ограничен 2 KiB плюс envelope поля отчёта; URL и exception prose отсутствуют.
@@ -622,3 +622,7 @@ SQL-read-only show и читающие lookup API не получают запи
 минимальной версией для отката: старый `RunReport` отвергает новый режим. Откат к более старой версии
 требует отдельного плана совместимого состояния; удаление истории не является автоматическим
 шагом отката. Отключение записи сохраняет поддержку чтения и существующие строки.
+
+J158 проверяет prospective URL policy перед новым loader receipt; complete body metadata
+сохраняется независимо до этой проверки. Cache reuse не считается новой omission observation.
+Source/selection graph privacy остаётся отдельным этапом; historical rows не переписываются.

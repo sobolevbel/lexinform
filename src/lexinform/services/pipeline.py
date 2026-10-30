@@ -213,6 +213,9 @@ class DailyPipeline:
                 report.document_download_diagnostics = (
                     self._document_downloads.read_download_diagnostics()
                 )
+                report.metadata_url_omissions = (
+                    self._document_downloads.read_metadata_url_omissions()
+                )
             # Every phase that asks the model goes through one `AnalysisService`, so this is the
             # whole run's spend, however it was reached, and it is recorded before the report is
             # stored — a run that fell over still says what it had spent by then.
