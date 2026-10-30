@@ -1,0 +1,38 @@
+{
+  "barrier": "Literal f232 reader rejects present new optionalstatus; reader must actuallydeploy before runtimewriter. NoneJSON/resultIDs and WordstatusAST exact.",
+  "base": "f2329102cb92d6065ec3770ab08caa13525c1611",
+  "before_red_sha256": "54e3d99f436ae148382e109938fe3ff0f4701dfa5551da40b664ab5b9dd68d5c",
+  "compatibility_sha256": "e4cc63bb44f1066a02772036f6b4b10e5b54ae36682483a95524ecba7cdc8956",
+  "contract": "Optional omitted-None OdtNoteStatus in ExtractedPartSummary; <=1024B, measured maximum-counter fixture594B (finished walk); strict63bit observed/retainedcounts, existingorigins-v1 cap64, finished/interrupted/unavailable coverage consistency. Retainedmanifest hash identifies metadata only, contentsnot_retained/XMLnot_asserted. Input/body SHA mustmatch actualexisting ODT summary fields/version/view/knownblockcount; no inventedXMLSHA slot.",
+  "focused": {
+    "format": "green",
+    "new_collected_cases": 35,
+    "passed": 65,
+    "ruff": "green",
+    "strict_files": 3
+  },
+  "freeze_sha256": "a288f81f286303ef6b4573dd24e7cca735da648f73adc4730f292539834a6d9d",
+  "not_changed": [
+    "adapters",
+    "extraction_records",
+    "runtime",
+    "cache",
+    "SQL",
+    "outer16KiB/16partlimits"
+  ],
+  "not_run": [
+    "raw/corpusreplay",
+    "full",
+    "provider/paid/production",
+    "commit/push"
+  ],
+  "patch_sha256": "a891c87fde9c0ae6faefcbc7ec685d0517fef20d7420373e2cdddb24f1782611",
+  "repair": "Outer ExtractionResult validates only parts with PRESENT newODTstatus before serialization; enforce existing declared16part limit first before bounded traversal. No global revalidate_instances change; absent/Word fields untouched. Two publictyped/rawdict regressions REDbefore/GREENafter, validtypedouterrevalidation added.",
+  "reuse": "../odt-note-status-reader-base/handoff.json",
+  "source_pins": {
+    "src/lexinform/models/__init__.py": "2cc658ba657e46697531eb838860bc22a621b56b23ff80633929ab106609d69c",
+    "src/lexinform/models/extractions.py": "9a69549d7a2f1a6144227c715833fd205f4784d75387db50d6f7f9f9aea00dd6",
+    "tests/unit/test_odt_note_status.py": "4df9b59daf0026999560304edeb2d491292be2288a4be172826744edc370364f"
+  },
+  "status": "revision2-frozen-peer-required"
+}

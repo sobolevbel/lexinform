@@ -1,0 +1,29 @@
+{
+  "status": "approved",
+  "finding_closed": "Outer typed ExtractionResult now revalidates only PRESENT ODT status summaries before serialization; negative typed child and raw dict slot reject, valid typed result revalidates.",
+  "handoff_sha256": "6c91d2220bcf7a1f856da6de70e9f17a91daeb0b9538532da00dd311ae56c177",
+  "patch_sha256": "a891c87fde9c0ae6faefcbc7ec685d0517fef20d7420373e2cdddb24f1782611",
+  "freeze_sha256": "a288f81f286303ef6b4573dd24e7cca735da648f73adc4730f292539834a6d9d",
+  "focused_target_cases": 4,
+  "original_independent_controls": "Two originally accepted invalid outer cases now reject; valid outer result preserved.",
+  "WordViewStatus_AST_exact_to_f232": true,
+  "compatibility": "Absent/None old JSON and result IDs unchanged; 16-part cap checked before traversal. No global revalidation policy or old Word status change.",
+  "reader_barrier": "PRESENT new field requires actual compatible reader deployment before writer; default writer remains off.",
+  "evidence": {
+    "revision2-focused.xml": "cb3a03aab0c1f2657ec068114883ba799f02dbc437acc222ef3b328f7505c899",
+    "revision2-focused.log": "c4b808d34f4db00b333696dec1f3a43a2887d8bfe0cb7af07a3cb98ff43a7830",
+    "review-1.json": "4b55dd338010d2bc606397f020460504c3a8cb385095076f1a618848c9be04a8"
+  },
+  "not_run": [
+    "source edits",
+    "broad/full suite",
+    "raw/corpus/provider/state/network",
+    "additional adversarial scope"
+  ],
+  "source3_pins_verified": {
+    "src/lexinform/models/__init__.py": "2cc658ba657e46697531eb838860bc22a621b56b23ff80633929ab106609d69c",
+    "src/lexinform/models/extractions.py": "9a69549d7a2f1a6144227c715833fd205f4784d75387db50d6f7f9f9aea00dd6",
+    "tests/unit/test_odt_note_status.py": "4df9b59daf0026999560304edeb2d491292be2288a4be172826744edc370364f"
+  },
+  "source_hold": "Author REV2 source3 held; exact pinned bytes verified immediately after independent target tests."
+}

@@ -7,10 +7,12 @@ from typing import Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from lexinform.models.documents import ExtractedDocument
+from lexinform.models.odt_notes import MAX_ODT_NOTE_EVENTS
 
 MAX_EXTRACTION_METADATA_BYTES = 16_384
 MAX_EXTRACTION_PART_SUMMARIES = 16
 MAX_WORD_VIEW_STATUS_BYTES = 512
+MAX_ODT_NOTE_STATUS_BYTES = 1024
 
 
 class ExtractionComponent(BaseModel):
@@ -60,6 +62,52 @@ class WordViewStatus(BaseModel):
         return self
 
 
+class OdtNoteStatus(BaseModel):
+    """Origin hashes retain no coordinates and prove no full XML coverage."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    version: Literal["odt-note-status-v1"] = "odt-note-status-v1"
+    origins_version: Literal["odt-note-origins-v1"] = "odt-note-origins-v1"
+    scope: Literal["legacy-visited-content.xml"] = "legacy-visited-content.xml"
+    known_walk: Literal["finished", "interrupted", "unavailable"]
+    input_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    body_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    retained_manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    observed_notes: int = Field(strict=True, ge=0, le=2**63 - 1)
+    observed_calls: int = Field(strict=True, ge=0, le=2**63 - 1)
+    retained_notes: int = Field(strict=True, ge=0, le=2**63 - 1)
+    retained_calls: int = Field(strict=True, ge=0, le=2**63 - 1)
+    coverage: Literal["complete", "partial", "unknown"]
+    contents: Literal["not_retained"] = "not_retained"
+    xml_completeness: Literal["not_asserted"] = "not_asserted"
+
+    @model_validator(mode="after")
+    def observed_prefix(self) -> Self:
+        if (
+            self.retained_notes > self.observed_notes
+            or self.retained_calls > self.observed_calls
+            or self.retained_notes + self.retained_calls > MAX_ODT_NOTE_EVENTS
+        ):
+            raise ValueError("ODT note status requires the bounded actual retained prefix")
+        complete = self.known_walk == "finished" and (self.observed_notes, self.observed_calls) == (
+            self.retained_notes,
+            self.retained_calls,
+        )
+        expected = (
+            "unknown" if self.known_walk == "unavailable" else "complete" if complete else "partial"
+        )
+        if (
+            self.coverage != expected
+            or self.known_walk == "unavailable"
+            and (self.observed_notes or self.observed_calls)
+        ):
+            raise ValueError("ODT note status coverage must describe only its observed walk")
+        if len(self.model_dump_json().encode()) > MAX_ODT_NOTE_STATUS_BYTES:
+            raise ValueError("ODT note status exceeds its 1024-byte metadata limit")
+        return self
+
+
 class ExtractedPartSummary(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -95,8 +143,12 @@ class ExtractedPartSummary(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    odt_note_status: OdtNoteStatus | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     @model_validator(mode="after")
-    def status_requires_word(self) -> Self:
+    def status_requires_known_manifest(self) -> Self:
         if self.word_view_status is not None:
             if not isinstance(self.word_view_status, WordViewStatus):
                 raise ValueError("Constructed Word summary requires its typed view status")
@@ -109,6 +161,21 @@ class ExtractedPartSummary(BaseModel):
             or self.block_count is None
         ):
             raise ValueError("Word view status requires an actual Word legacy manifest summary")
+        if self.odt_note_status is not None:
+            if not isinstance(self.odt_note_status, OdtNoteStatus):
+                raise ValueError("Constructed ODT summary requires its typed note status")
+            value = OdtNoteStatus.model_validate(self.odt_note_status)
+            if (
+                self.format != "odt"
+                or self.coordinates != "odt-blocks-v1"
+                or self.text_view != "legacy-odt-body-v1"
+                or self.block_count is None
+                or self.manifest_sha256 != value.body_manifest_sha256
+                or self.sha256 != value.input_sha256
+            ):
+                raise ValueError(
+                    "ODT note status requires its actual input and legacy body manifest"
+                )
         return self
 
 
@@ -145,6 +212,11 @@ class ExtractionResult(BaseModel):
 
     @model_validator(mode="after")
     def bounded_summary(self) -> Self:
+        if len(self.selected_parts) > MAX_EXTRACTION_PART_SUMMARIES:
+            raise ValueError("extraction summaries exceed their existing part limit")
+        for part in self.selected_parts:
+            if part.odt_note_status is not None:
+                ExtractedPartSummary.model_validate(part)
         indices = [part.physical_index for part in self.selected_parts]
         if len(set(indices)) != len(indices) or any(
             index >= self.physical_part_count for index in indices

@@ -1,0 +1,19 @@
+{
+  "stage": "J195",
+  "base": "80025409e02a7e4aed9489d14d8dd3e34153325e",
+  "runtime_paths_unchanged": [
+    "src/lexinform/adapters/document_text.py",
+    "src/lexinform/extraction_records.py",
+    "src/lexinform/services/analysis.py",
+    "src/lexinform/services/revision_applications.py",
+    "src/lexinform/adapters/document_work.py",
+    "src/lexinform/adapters/sqlite_repo.py",
+    "src/lexinform/ports.py"
+  ],
+  "scope": "Inert optional bounded ODT note diagnostic reader, omittedNone defaults, no writer/adapter/cache/SQL or body-manifest changes. Public outer known-status validation only, not a generic revalidation change.",
+  "source_pins": {
+    "src/lexinform/models/extractions.py": "9a69549d7a2f1a6144227c715833fd205f4784d75387db50d6f7f9f9aea00dd6",
+    "src/lexinform/models/__init__.py": "2cc658ba657e46697531eb838860bc22a621b56b23ff80633929ab106609d69c",
+    "tests/unit/test_odt_note_status.py": "4df9b59daf0026999560304edeb2d491292be2288a4be172826744edc370364f"
+  }
+}

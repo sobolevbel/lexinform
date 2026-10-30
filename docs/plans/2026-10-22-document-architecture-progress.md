@@ -9088,3 +9088,39 @@ Final gate:7506tests/265.873s/92%,mypy657/Ruff725;742source/config pins exact. J
 [finite DA6.2 audit](../assets/audits/2026-10-30-revision-application-runtime/closure-audit.json),
 [J193 exact CI/relay](../assets/audits/2026-10-30-odt-note-producer/release.json),
 [test-count correction](../assets/audits/2026-10-30-odt-note-producer/test-count-correction.json).
+
+
+<a id="j195"></a>
+
+## J195 — inert bounded ODT note-status reader
+
+Optional ExtractedPartSummary.odt_note_status ограничен1024B и отсутствует в прежнем JSON
+при None. Диагностика описывает существующий origins-v1 visited walk: observed/retained counts,
+coverage и retained manifest SHA, explicit contents=not_retained и XML not_asserted. Input SHA,
+body manifest SHA, ODTformat/view/coordinates/blockcount corroborated существующими part fields;
+отдельного XML slot нет, его не выдумываем. Hash не обещает восстановление transient paths/spans.
+
+35new collection cases/65focused, strict3/Ruff и peer closed. Peer нашёл outer typed-slot gap:
+ExtractionResult.model_copy/model_validate мог пропускать известный invalid ODTstatus при
+валидирующемся внутреннем summary. Narrow outer guard перепроверяет только PRESENTODTstatus
+после existing16part preflight; before-red2/green2 и validouter control подтверждены.
+Нет глобальной revalidation policy или Word status изменения. Absent/NoneJSON/result IDs,
+WordViewStatus AST и old real-fixture inputs byteexact; runtime/adapter/SQL/cache writers untouched.
+Старый reader отвергает PRESENTfield, поэтому следующий writer ждёт actual reader deployment.
+
+Root source3 exact; J194runtime/restore/ports и J193ODTproducer сохранены byteexact.
+Corpusextraction не повторялась: extraction/trimming/normalization/selection/comparison code
+не меняется. Writer, default capture,16KiB fitting/cache behavior относятся к следующему этапу.
+
+Final gate:7541tests/274.664s/92%,mypy658/Ruff726;743source/config pins exact. Staged archive docs gate перед commit.
+
+[Qualification](../assets/audits/2026-10-30-odt-note-status-reader/qualification.json),
+[peer](../assets/audits/2026-10-30-odt-note-status-reader/peer-closure.json),
+[integration](../assets/audits/2026-10-30-odt-note-status-reader/integration.json).
+
+
+J194 actual release80025409 подтверждён: exact CI, remote main и relay restart/timer proof.
+Literal DA6.2 закрыт: единственный remaining revision collect/application exception устранён;
+10kinds/unchanged consumer proofs и отдельная durable recovery transaction проверены.
+DA6.3 lifetime и DA10.7 natural/disabled-act cycles не выданы за выполненные.
+[Release proof](../assets/audits/2026-10-30-revision-application-runtime/release.json).

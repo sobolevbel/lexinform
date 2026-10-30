@@ -268,6 +268,7 @@ from lexinform.models.extractions import (
 from lexinform.models.extractions import (
     ExtractionResult as ExtractionResult,
 )
+from lexinform.models.extractions import OdtNoteStatus as OdtNoteStatus
 from lexinform.models.extractions import (
     SelectionExtractionReference as SelectionExtractionReference,
 )
@@ -488,6 +489,7 @@ __all__ = [
     "OdtNoteCall",
     "OdtNoteEntry",
     "OdtNoteOrigins",
+    "OdtNoteStatus",
     "OdtNotedParts",
     "OdtPartNoteOrigins",
     "OdtPartExtraction",
