@@ -8655,3 +8655,39 @@ green;712pins unchanged. Full7207tests/258.370s/92%,mypy627/Ruff695. Докум�
 [corpus summary](../assets/audits/2026-10-30-word-semantic-retention/qualification-summary.json),
 [comparison index](../assets/audits/2026-10-30-word-semantic-retention/retention-comparison-index.json),
 [combined native](../assets/audits/2026-10-30-word-semantic-retention/combined-native.json).
+
+<a id="j185"></a>
+
+## J185 — bounded prepared-input reader before the runtime producer
+
+Optional `BatchItemMeta.prepared_input_receipt` и pure builder связывают actual frozen
+context/request с single loose text source и проверенными copied ranges. Full ordered map
+SHA/count вычисляются streaming; retained prefix<=32segments и whole envelope<=8192B.
+Absent projection остаётся unknown; physical/block origins unmapped, exclusions unknown,
+completeness not asserted. Corroborated selection/artifact/extraction refs optional;
+отсутствующие legacy parent records не реконструируются. Runtime producer пока отсутствует.
+
+Independent review и64focused/29new units green; old None JSON/payload/IDs/bindings exact.
+19distinct actual savedJ125 source/view/maps на4pinned DOC/XML/DOCM/DOCX cache bodies:
+map SHA/count/copied spans exact;4missing-map unknown и4forged-span refusals. Controlled
+fake provider requests не называются natural runtime coverage. Maxreceipt1009B,
+traced builder peak21053B; natural>32maps в малой страте нет, cap proof synthetic отдельно.
+Original5J125modules unchanged. Raw extraction/download/paid calls не выполнялись.
+
+Root merged exports сохраняют Wordv2;715source/config pins exact после full gate:
+7236tests/258.609s/92%, mypy630/Ruff698. Old reader теряет новый optional
+receipt при rewrite: reader deployment должен предшествовать writer; rollback после
+producer требует совместимого reader либо сохранённого snapshot. SQL/default producer
+не активированы. Wordv2 a655bbaf: exact CI и actual relay transition/restart45/timer verified.
+
+DA3.2 закрыт по literal bounded native-coordinate contract: versioned PDF page/index до
+whitespace projection, Word XML paragraph/table/note addresses из actual walk, ODT body
+paths и explicit unknown DOC/XML. Сохранение полной XML-карты не обещается; SQL хранит
+bounded summary, повторное извлечение требует оригинала. Default Word view coverage и
+ODT note/call gaps остаются в DA3.3; future fact→block mapping относится к DA4/DA9.
+
+[Qualification](../assets/audits/2026-10-30-prepared-input-reader/qualification.json),
+[cached corpus proof](../assets/audits/2026-10-30-prepared-input-reader/corpus-qualification.json),
+[independent closure](../assets/audits/2026-10-30-prepared-input-reader/independent-closure.json),
+[coordinate audit](../assets/audits/2026-10-30-prepared-input-reader/coordinate-closure-audit.json),
+[Word release](../assets/audits/2026-10-30-word-semantic-retention/release.json).

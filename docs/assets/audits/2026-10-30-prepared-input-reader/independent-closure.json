@@ -1,0 +1,19 @@
+{
+  "checks": [
+    "Online builder preserves only32 segments, chunked source/context/request/map hashing; bounded envelope and reader preflight before segment validation",
+    "Full map hash/count arise only from actual observed projection; unknown projection has no invented totals or selection/body claims",
+    "Copied source bytes and actual request/context corroborated; known body/extraction/selection refs checked by pure builder",
+    "BatchIntent offered primary receipt cannot fall back into alternate union meta; typed corrupt primary meta rejected",
+    "NoneJSON/oldJ125/providerpayload unchanged; no block/physical/completeness claims",
+    "Reader-first producer OFF required; rollback oldreader drops future optional receipt, not forward-compatible preservation"
+  ],
+  "findings": [],
+  "focused_controls": 8,
+  "freeze_sha256": "dcdcfb67a7c872e6acecb7b145ee9579f379e3c70d48c56f191cec1fa5975965",
+  "handoff_sha256": "4f827b3a7df049b9d1f75a74eaa5d5144b46d4dc7231c5e418a2988fc7fa4b4c",
+  "patch_sha256": "70249a14608de68f3fb9df6d4af4fa00e949f7c3ce7cf1c06a8c8dbe0120272a",
+  "scope": "Exact5 inertreader review only; no runtime writer/source edits/full/raw/network/paid; no claim beyond frozenoffered context/request pair",
+  "source_pins_exact_before_after": true,
+  "status": "independently-reviewed-green",
+  "test_log_sha256": "406e77655ff48336475153846c13d9d3fab03b52df9c5420f497e7bb6b6ac662"
+}

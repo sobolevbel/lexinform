@@ -1,0 +1,77 @@
+{
+  "base": "28cd1acae73596c2f5194285c515057e5c0b1c7f",
+  "checks": {
+    "diff_check": "green",
+    "focused_modules": [
+      "test_input_receipts",
+      "test_prepared_text_input",
+      "test_batch_intent",
+      "test_batch_payload_identity"
+    ],
+    "focused_passed": 64,
+    "mypy_owned": 5,
+    "new_units": 29,
+    "pytest_seconds": 2.27,
+    "ruff_owned": 5
+  },
+  "compatibility_proof": "compatibility.json",
+  "contract": "Corroborates actual frozen primary question context+serialized request hashes; exact source/projection/copied ranges; ordered J125-compatible map SHA/count streamed past bounded prefix. Optional known metadata selection/body/extraction must match actual loose source; absent/hashless legacy refs remain unknown. Known extraction needs actual matching whole-body output and selected part. BatchIntent validates offered receipt against actual question and payload, including malformed primary meta refusing union fallback.",
+  "exclusions": [
+    "No runtime writer enabled",
+    "No multipart/package/scan profile",
+    "No block/physical origin or exclusion inference",
+    "No paid/source/body archive or new storage",
+    "No full/raw/network/paid run",
+    "No claim of old-reader preserving unknown new receipt field",
+    "Pure builder binds the offered frozen context and request pair; it does not rerender or parse provider-specific prompt content"
+  ],
+  "freeze_sha256": "dcdcfb67a7c872e6acecb7b145ee9579f379e3c70d48c56f191cec1fa5975965",
+  "future_writer_seams": [
+    "AnalysisService._prepare after _fit_to_budget and the single backend.prepare_request; original loaded.selection before fit +actual fitted.projection and admitted current parents",
+    "Caller _accept_preparation/_enqueue persists parents and optional metadata in existing transaction; no re-prepare/rekey/new submitter"
+  ],
+  "owned": [
+    "src/lexinform/input_receipts.py",
+    "src/lexinform/models/__init__.py",
+    "src/lexinform/models/batch.py",
+    "src/lexinform/models/input_receipts.py",
+    "tests/unit/test_input_receipts.py"
+  ],
+  "patch_sha256": "70249a14608de68f3fb9df6d4af4fa00e949f7c3ce7cf1c06a8c8dbe0120272a",
+  "preimages": {
+    "src/lexinform/input_receipts.py": null,
+    "src/lexinform/models/__init__.py": "a571f927b1340ff1d04705be329931fcf65c157b70f1fd8cf9486549c99a0580",
+    "src/lexinform/models/batch.py": "3b08fc537384a600be6e6d75c8fff26740e4e01d93220912c2d5a7161bf0dee4",
+    "src/lexinform/models/input_receipts.py": null,
+    "tests/unit/test_input_receipts.py": null
+  },
+  "profile": {
+    "block_and_physical_origins": "unmapped",
+    "coordinates": "legacy_part_text_v1",
+    "exclusions": "unknown",
+    "input_completeness": "not_asserted",
+    "optional_field": "BatchItemMeta.prepared_input_receipt",
+    "profile": "primary-single-part-text-v1",
+    "segments": 32,
+    "serialized_bytes": 8192
+  },
+  "rollback_limitation": "Old exact28 reader ignores/drops prospective optional receipt on rewrite, preserving request/payload/binding/business metadata; absent None JSON is exact. Reader deploy must precede producer. Snapshot preservation/compatible reader required when retaining newly emitted receipts across rollback.",
+  "scope": "INERT reader and pure builder only; no runtime caller/writer, provider bytes, paid IDs, schema, projections or backend changes.",
+  "source_pins": {
+    "src/lexinform/input_receipts.py": "81a3fcbd29a3ceed01aaf36028d20a8192d50fa496acc0e3d33f5be900181f4f",
+    "src/lexinform/models/__init__.py": "786285a0be2cc68babc7aa59881871b956683d78b1f31195b1361ff6814e50c7",
+    "src/lexinform/models/batch.py": "e875ce0836ab85b4f5cda78469135126989eed1cad838eb03205a562e9d32920",
+    "src/lexinform/models/input_receipts.py": "8444dc745ee41380d3284e9b2d6a4965a67e087934d17d86c9d6204a04663a7b",
+    "tests/unit/test_input_receipts.py": "fa8d22ae8e688826679187f6e3c22f5503846c32668e7f6896cd131920c48d3a"
+  },
+  "status": "frozen-awaiting-independent-review; no commit/push",
+  "unchanged": {
+    "pyproject.toml": "621e61dd1e87aa07a9d1b2ab37fcb678e36696cc737c0342c52399a5c41cd25b",
+    "src/lexinform/adapters/sqlite_repo.py": "aee1a23e1aa6f8cd6605ab9e847a5b86b773ea4a9404a85cd4050a708b3f332a",
+    "src/lexinform/models/prepared_input.py": "b65cf7ac6eb777a563ba2b8708a1093c72db36b04f24ec8a6a56541b5a318083",
+    "src/lexinform/ports.py": "6e74d7264923c8062c8e668f9130c628f544157a2d909f80b4faa9bc61c7b77a",
+    "src/lexinform/prepared_input.py": "79dce80e62b8c76c16a3c3a4b11613d6cc84010afb0eec5fc5547313c863ba55",
+    "src/lexinform/services/analysis.py": "f1b7543d897bf3e9915954cbf9ad28d68526cf90b53c57fbb3a3914b647d5907",
+    "uv.lock": "7c705f291b0fdc70cea72f41cc0cf1bd9799ba1abef228c6a89b9218b17afa24"
+  }
+}

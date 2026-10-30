@@ -1,0 +1,23 @@
+{
+  "base": "28cd1acae73596c2f5194285c515057e5c0b1c7f",
+  "old_batch_source_sha256": "3b08fc537384a600be6e6d75c8fff26740e4e01d93220912c2d5a7161bf0dee4",
+  "old_none_json_exact": true,
+  "old_reader_payload_binding_business_meta_exact": true,
+  "rollback_limitation": "The old reader ignores and drops the new optional receipt on rewrite; no writer is enabled in this stage. Preserve snapshots or deploy a compatible reader before later producer activation.",
+  "synthetic_online_bound": [
+    {
+      "observed_segments": 200,
+      "retained_segments": 32,
+      "receipt_bytes": 3473,
+      "traced_peak_bytes": 44997
+    },
+    {
+      "observed_segments": 20000,
+      "retained_segments": 32,
+      "receipt_bytes": 3479,
+      "traced_peak_bytes": 40837
+    }
+  ],
+  "network_paid_settings": false,
+  "full_raw_replay": false
+}

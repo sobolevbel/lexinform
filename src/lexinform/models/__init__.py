@@ -271,6 +271,7 @@ from lexinform.models.extractions import (
 from lexinform.models.extractions import (
     SelectionExtractionReference as SelectionExtractionReference,
 )
+from lexinform.models.input_receipts import PrimaryInputReceipt as PrimaryInputReceipt
 from lexinform.models.legacy_results import LegacyResultImport as LegacyResultImport
 from lexinform.models.legacy_results import LegacyResultOccurrence as LegacyResultOccurrence
 from lexinform.models.legacy_results import LegacyResultValue as LegacyResultValue
@@ -474,6 +475,7 @@ __all__ = [
     "DocumentPart",
     "DocumentSelection",
     "PreparedTextInput",
+    "PrimaryInputReceipt",
     "PreparedTextPart",
     "PreparedTextSegment",
     "DocumentWork",

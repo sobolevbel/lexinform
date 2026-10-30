@@ -22,6 +22,11 @@ from lexinform.models.bill import LocatedText
 from lexinform.models.computation_inputs import ComputationInputBinding
 from lexinform.models.documents import DocumentSelection
 from lexinform.models.enums import SourceKind, TextSource
+from lexinform.models.input_receipts import (
+    PrimaryInputReceipt,
+    input_text_sha256,
+    primary_context_sha256,
+)
 from lexinform.models.observations import DeliveryPlan
 from lexinform.models.report import CallKind
 from lexinform.models.reviews import DocumentReview, ReviewContext
@@ -247,11 +252,21 @@ class BatchItemMeta(BaseModel):
     input_binding: ComputationInputBinding | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    prepared_input_receipt: PrimaryInputReceipt | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @model_validator(mode="after")
     def frozen_binding(self) -> Self:
         if self.input_binding is not None and self.input_binding.reuse_key != self.memo_key:
             raise ValueError("input binding must keep its frozen memo key")
+        receipt = self.prepared_input_receipt
+        if (
+            receipt is not None
+            and self.request_sha256 is not None
+            and receipt.request_sha256 != self.request_sha256
+        ):
+            raise ValueError("Input receipt must identify the frozen batch request")
         return self
 
 
@@ -334,6 +349,43 @@ class BatchIntent(BaseModel):
     provider: BatchProvider
     state: Literal["queued", "submitting"] = "queued"
     created_at: dt.datetime
+
+    @model_validator(mode="before")
+    @classmethod
+    def receipt_meta_cannot_fall_back(cls, value: object) -> object:
+        if isinstance(value, dict):
+            meta = value.get("meta")
+            if (
+                isinstance(meta, dict)
+                and meta.get("prepared_input_receipt") is not None
+                or isinstance(meta, BatchItemMeta)
+                and meta.prepared_input_receipt is not None
+            ):
+                BatchItemMeta.model_validate(meta)
+        return value
+
+    @model_validator(mode="after")
+    def actual_input_receipt(self) -> Self:
+        if not isinstance(self.meta, BatchItemMeta) or self.meta.prepared_input_receipt is None:
+            return self
+        receipt = self.meta.prepared_input_receipt
+        request = self.request
+        if not isinstance(request.question, AnalysisQuestion) or request.call_kind not in (
+            "analysis",
+            "reanalysis",
+        ):
+            raise ValueError("Primary receipts require their actual primary question")
+        ctx = request.question.ctx
+        if (
+            request.payload_json is None
+            or receipt.request_sha256 != request.payload_sha256
+            or input_text_sha256(request.payload_json) != receipt.request_sha256
+            or receipt.context_sha256 != primary_context_sha256(ctx)
+            or receipt.text_sha256 != input_text_sha256(ctx.text)
+            or receipt.text_chars != len(ctx.text)
+        ):
+            raise ValueError("Input receipt differs from the frozen request and context")
+        return self
 
     @classmethod
     def from_request(
