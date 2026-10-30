@@ -8344,3 +8344,42 @@ Full gate: 7024 tests, 245.138s, 92% coverage; mypy 612, Ruff/format 679; source
 [red proof](../assets/audits/2026-10-30-consultation-baseline/red-proof.json),
 [actual-state parity](../assets/audits/2026-10-30-consultation-baseline/actual-state-parity.json).
 Ни network, ни paid calls, ни processing/sends production при qualification не запускались.
+
+
+J176 commit `27cb71e95edc5f9adf37a09a4d52389c7c1780d7`: четыре CI jobs и actual relay
+`078b4c5c → 27cb71e9`, health 45s/timer подтверждены
+[release proof](../assets/audits/2026-10-30-consultation-baseline/release.json).
+
+
+<a id="j177"></a>
+
+## J177 — bounded native physical caller history
+
+Actual walk J169 подключён к TextLoader, cache, generic/support, RCL consultation, Senate
+и CLI callers. Collector переносит immutable observations из workers; SQL и Clock остаются
+на caller после join, в реальном input order. Shared neutral ordering объединяет порядок
+privacy/catalog и physical outcomes. Parent artifacts/extraction проверяются до capture;
+повторный cache использует исходный physical observation без нового walk. Custom extractor
+не получает выдуманный physical graph. Observer setup/reset/cleanup/diagnostics не подменяют
+бизнес-результат; original exception/cause и уже sealed facts сохраняются.
+
+Пул ограничен 16 MiB/256 logical observations на проход, сохраняет детерминированный ранний
+input prefix. Runtime metadata capture принят в этих bounds: raw тела/новый backend/архив
+не добавлены, массового backfill нет. J173 catalog revision2/reader65 сохранены: 15 domain
+AST exact, standalone delta 14 paths совпал после интеграции и format. Независимый review
+закрыл три найденных сбоя и шесть repair controls; 58 focused merge cases прошли.
+
+Final recipe `9cc13e3b…` проверен на девяти pinned raw controls/400412B и actual native
+generic/support/RCL/Senate flow: 13 captures, 74 metadata. На schema65 небольшой популяции
+дельта +111075 SQL/+18376 gzip. Повтор на disposable восстановленном state `412e9635`:
+4198009 → 4217521 gzip (+19512), 20939397 → 21050472 SQL (+111075). Controlled upserts
+3039/1929 пересекаются с реальными строками: это явный counterfactual backdrop, не natural
+demand или прогноз целого корпуса. Off/on business/source SQL и workers1/4 all-SQL/order
+совпадают; cache repeat — нулевой рост, doctor 0 → 0, два restore exact, исходный SQL неизменён.
+
+Full gate: 7038 tests/247.926s/92%; mypy 616, Ruff/format 683; freeze683 с pyproject/lock
+не изменился. Прежняя полная StageA4017-root qualification не объявляется replay текущих
+новых component/recipe hashes. DA3.1 остаётся partial до отдельной проверки границы policy.
+[Qualification](../assets/audits/2026-10-30-physical-callers/qualification.json),
+[final handoff](../assets/audits/2026-10-30-physical-callers/final-handoff.json),
+[populated backdrop](../assets/audits/2026-10-30-physical-callers/populated-handoff.json).

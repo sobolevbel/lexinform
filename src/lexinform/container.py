@@ -45,6 +45,7 @@ from lexinform.clock import SystemClock
 from lexinform.errors import StateCheckpointError
 from lexinform.keywords import KeywordPrefilter
 from lexinform.models import BatchProvider, provider_of
+from lexinform.physical_observations import PhysicalObservationCollector
 from lexinform.ports import (
     BatchBackend,
     BillRepository,
@@ -78,6 +79,7 @@ from lexinform.services.document_reviews import DocumentReviews
 from lexinform.services.documents import TextLoader
 from lexinform.services.listener import CommandListener
 from lexinform.services.lookup import BillLookup
+from lexinform.services.physical_history import PhysicalHistoryPersistence
 from lexinform.services.pipeline import DailyPipeline
 from lexinform.services.posting import Poster
 from lexinform.services.publishing import PublishingService
@@ -196,7 +198,12 @@ class Container:
                 max_member_bytes=max_bytes,
                 max_part_chars=self.settings.max_part_chars,
             )
-            self._loader = TextLoader(downloaders, extractor, max_bytes=max_bytes)
+            self._loader = TextLoader(
+                downloaders,
+                extractor,
+                max_bytes=max_bytes,
+                physical_factory=PhysicalObservationCollector,
+            )
         return self._loader
 
     def orka_downloader(self) -> Downloader:
@@ -219,6 +226,7 @@ class Container:
                 file_reads=loader,
                 retention=timedelta(days=self.settings.runs_retention_days),
                 source_history=self.source_history(),
+                physical=loader,
             ),
         )
 
@@ -263,9 +271,12 @@ class Container:
     def _source_history(self) -> SourceHistoryPersistence:
         senate = SourceHistoryPair(
             SenateInspectionPersistence(self.senate_inspections()),
-            SourceOmissionPersistence(
-                self.text_loader().read_source_omissions,
-                self.text_loader().read_source_catalog_attempts,
+            SourceHistoryPair(
+                SourceOmissionPersistence(
+                    self.text_loader().read_source_omissions,
+                    self.text_loader().read_source_catalog_attempts,
+                ),
+                PhysicalHistoryPersistence(self.text_loader()),
             ),
         )
         if self.rcl is None:
@@ -857,6 +868,7 @@ class Container:
                 document_downloads=self.text_loader(),
                 document_artifacts=self.text_loader(),
                 document_file_reads=self.text_loader(),
+                document_physical=self.text_loader(),
                 source_history=self.source_history(),
             ),
         )

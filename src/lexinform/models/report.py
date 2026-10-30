@@ -6,7 +6,11 @@ from typing import Literal, Self
 from pydantic import BaseModel, Field, model_validator
 
 from lexinform.models.analysis import TokenUsage, usage_key
-from lexinform.models.document_reads import DocumentDownloadDiagnostics, DocumentReadMetrics
+from lexinform.models.document_reads import (
+    DocumentDownloadDiagnostics,
+    DocumentPhysicalDiagnostics,
+    DocumentReadMetrics,
+)
 from lexinform.models.enums import RunMode
 from lexinform.models.metadata_omissions import MetadataUrlOmissions
 
@@ -204,6 +208,10 @@ class RunReport(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    document_physical_diagnostics: DocumentPhysicalDiagnostics | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     @model_validator(mode="after")
     def cli_read_scope(self) -> Self:
         if (self.mode is RunMode.CLI_READS) != (self.cli_read_operation is not None):
@@ -271,6 +279,7 @@ class RunReport(BaseModel):
                 "metadata_url_omissions",
                 "document_reads",
                 "document_download_diagnostics",
+                "document_physical_diagnostics",
             }
         )
 

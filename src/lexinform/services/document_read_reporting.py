@@ -14,6 +14,7 @@ from lexinform.ports import (
     DocumentArtifactObserver,
     DocumentDownloadMonitor,
     DocumentFileReadObserver,
+    DocumentPhysicalObserver,
     DocumentReadMonitor,
     SourceHistoryPersistence,
 )
@@ -36,6 +37,7 @@ class CliDocumentReadReporter:
     file_reads: DocumentFileReadObserver
     retention: dt.timedelta
     source_history: SourceHistoryPersistence | None = None
+    physical: DocumentPhysicalObserver | None = None
 
     @contextmanager
     def capture(self, operation: CliReadOperation) -> Iterator[None]:
@@ -71,6 +73,11 @@ class CliDocumentReadReporter:
                 record_artifact_reads(self.repo, reads, recorded_at=finished)
                 if self.source_history is not None:
                     persist_source_history(self.repo, self.source_history, recorded_at=finished)
+                if self.physical is not None:
+                    with suppress(BaseException):
+                        report.document_physical_diagnostics = (
+                            self.physical.read_physical_diagnostics()
+                        )
                 self.repo.finish_run(run_id, report)
                 self.repo.prune_runs(before=finished - self.retention)
         except BaseException as exc:

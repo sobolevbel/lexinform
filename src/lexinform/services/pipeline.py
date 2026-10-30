@@ -29,6 +29,7 @@ from lexinform.ports import (
     DocumentArtifactObserver,
     DocumentDownloadMonitor,
     DocumentFileReadObserver,
+    DocumentPhysicalObserver,
     DocumentReadMonitor,
     RunNotifier,
     SourceHistoryPersistence,
@@ -114,6 +115,7 @@ class DailyPipeline:
         document_downloads: DocumentDownloadMonitor | None = None,
         document_artifacts: DocumentArtifactObserver | None = None,
         document_file_reads: DocumentFileReadObserver | None = None,
+        document_physical: DocumentPhysicalObserver | None = None,
         source_history: SourceHistoryPersistence | None = None,
     ) -> None:
         self._repo = repo
@@ -121,6 +123,7 @@ class DailyPipeline:
         self._document_downloads = document_downloads
         self._document_artifacts = document_artifacts
         self._document_file_reads = document_file_reads
+        self._document_physical = document_physical
         self._source_history = source_history
         self._discovery = discovery
         self._analysis = analysis
@@ -248,6 +251,11 @@ class DailyPipeline:
                             persist_source_history(
                                 self._repo, self._source_history, recorded_at=report.finished_at
                             )
+                        if self._document_physical is not None:
+                            with suppress(BaseException):
+                                report.document_physical_diagnostics = (
+                                    self._document_physical.read_physical_diagnostics()
+                                )
                         self._repo.finish_run(run_id, report)
                         self._analysis.acknowledge_batch_costs()
                 except SourceHistoryPersistenceError as exc:

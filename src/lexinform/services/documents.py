@@ -13,9 +13,9 @@ import logging
 import threading
 import time
 from collections import Counter
-from collections.abc import Callable, Mapping
-from contextlib import AbstractContextManager, suppress
-from dataclasses import replace
+from collections.abc import Callable, Iterator, Mapping
+from contextlib import AbstractContextManager, contextmanager, suppress
+from dataclasses import dataclass, replace
 from typing import Literal
 from urllib.parse import urlparse
 
@@ -60,8 +60,16 @@ from lexinform.models import (
     TextDocument,
 )
 from lexinform.models.candidate_trace import CandidateTraceReason, CandidateTraceResult
+from lexinform.models.document_reads import DocumentPhysicalDiagnostics
 from lexinform.models.document_reads import LoadedFile as LoadedFile
 from lexinform.models.source_omissions import SourceOmissionOwner
+from lexinform.observation_order import ObservationOrder
+from lexinform.physical_observations import (
+    OrderedPhysicalObservation,
+    PhysicalInvocation,
+    PhysicalObservationCollector,
+)
+from lexinform.physical_walk_capture import PhysicalWalkObservation, suspend_physical_walk_capture
 from lexinform.ports import (
     Downloader,
     ProvenanceTextExtractor,
@@ -92,6 +100,18 @@ MAX_SCAN_BYTES = 24_000_000
 base64, a third larger than the file (druk 2865 is 40 MB and does not fit)."""
 
 
+@dataclass(frozen=True)
+class _DownloadedDocument:
+    data: bytes
+    artifact: ArtifactIdentity
+
+
+@dataclass(frozen=True)
+class _CachedDocument:
+    file: LoadedFile
+    observation: PhysicalWalkObservation | None = None
+
+
 class TextLoader:
     """Text of remote documents, one download per URL per run.
 
@@ -107,11 +127,12 @@ class TextLoader:
         *,
         max_bytes: int,
         cache_size: int = 32,
+        physical_factory: Callable[[ObservationOrder], PhysicalObservationCollector] | None = None,
     ) -> None:
         self._downloaders = dict(downloaders)
         self._extractor = extractor
         self._max_bytes = max_bytes
-        self._cache: dict[str, LoadedFile] = {}
+        self._cache: dict[str, _CachedDocument] = {}
         self._cache_size = cache_size
         self._lock = threading.Lock()
         self._read_cache_hits = 0
@@ -122,7 +143,16 @@ class TextLoader:
         self._extractions: dict[str, ExtractionResult] = {}
         self._download_diagnostics = DocumentDownloadRecorder()
         self._metadata_url_omissions = MetadataUrlOmissionCollector()
-        self._source_omissions = SourceOmissionCollector()
+        self._observation_order = ObservationOrder()
+        self._source_omissions = SourceOmissionCollector(self._observation_order)
+        self._physical: PhysicalObservationCollector | None = None
+        self._physical_setup_failed = False
+        self._physical_reset_failed = False
+        if physical_factory is not None:
+            try:
+                self._physical = physical_factory(self._observation_order)
+            except BaseException:
+                self._physical_setup_failed = True
 
     def source_omission_scope(
         self, owner: SourceOmissionOwner, document: TextDocument
@@ -170,7 +200,10 @@ class TextLoader:
         except BaseException as exc:
             with suppress(BaseException):
                 log.warning("source omission inputs unavailable (%s)", type(exc).__name__[:128])
-            return tuple(None for _ in owners)
+            try:
+                return self._source_omissions.unavailable_inputs(owners)
+            except BaseException:
+                return tuple(None for _ in owners)
 
     def run_source_omission_input[T, R](
         self, slot: SourceOmissionInput | None, step: Callable[[T], R], item: T
@@ -195,6 +228,100 @@ class TextLoader:
                 log.warning(
                     "source failure capture unavailable (%s)", type(metadata_error).__name__[:128]
                 )
+
+    def _physical_note_failure(self, reason: str) -> None:
+        try:
+            if self._physical is not None:
+                self._physical.note_failure(reason)
+                return
+        except BaseException:
+            pass
+        self._physical_setup_failed = True
+
+    def read_physical_observations(self) -> tuple[OrderedPhysicalObservation, ...]:
+        if self._physical is None or self._physical_reset_failed:
+            return ()
+        try:
+            return self._physical.snapshot()
+        except BaseException:
+            self._physical_note_failure("snapshot_unavailable")
+            return ()
+
+    def read_physical_diagnostics(self) -> DocumentPhysicalDiagnostics | None:
+        diagnostics = None
+        if self._physical is not None and not self._physical_reset_failed:
+            try:
+                diagnostics = self._physical.diagnostics()
+            except BaseException:
+                self._physical_setup_failed = True
+        if self._physical_setup_failed or self._physical_reset_failed:
+            if diagnostics is not None:
+                reasons = dict(diagnostics.reasons)
+                if len(reasons) < 8:
+                    reasons["observer_callback_unavailable"] = 1
+                return diagnostics.model_copy(
+                    update={
+                        "unknown_remainders": True,
+                        "observer_failures": diagnostics.observer_failures + 1,
+                        "reasons": reasons,
+                    }
+                )
+            return DocumentPhysicalDiagnostics(
+                observer_failures=1,
+                unknown_remainders=True,
+                reasons={"observer_setup_unavailable": 1},
+            )
+        return diagnostics
+
+    def reset_physical_observations(self) -> None:
+        if self._physical is not None:
+            try:
+                self._physical.reset()
+                self._physical_reset_failed = False
+                self._physical_setup_failed = False
+            except BaseException:
+                self._physical_reset_failed = True
+                self._physical_note_failure("reset_unavailable")
+
+    @contextmanager
+    def _physical_invocation(
+        self, artifact: ArtifactIdentity
+    ) -> Iterator[PhysicalInvocation | None]:
+        if self._physical is None or self._physical_reset_failed:
+            if self._physical_setup_failed or self._physical_reset_failed:
+                with suspend_physical_walk_capture():
+                    yield None
+            else:
+                yield None
+            return
+        manager = None
+        invocation = None
+        try:
+            candidate = self._physical.invocation(artifact)
+            invocation = candidate.__enter__()
+            manager = candidate
+        except BaseException:
+            self._physical_note_failure("invocation_setup_unavailable")
+        body_error: BaseException | None = None
+        try:
+            if manager is None:
+                with suspend_physical_walk_capture():
+                    yield None
+            else:
+                yield invocation
+        except BaseException as error:
+            body_error = error
+            raise
+        finally:
+            if manager is not None:
+                try:
+                    manager.__exit__(
+                        type(body_error) if body_error is not None else None,
+                        body_error,
+                        body_error.__traceback__ if body_error is not None else None,
+                    )
+                except BaseException:
+                    self._physical_note_failure("invocation_cleanup_unavailable")
 
     def read_source_omissions(self) -> tuple[SourceOmissionObservation, ...]:
         return self._source_omissions.snapshot()
@@ -227,6 +354,7 @@ class TextLoader:
             self._download_diagnostics.reset()
             self._metadata_url_omissions.reset()
             self._source_omissions.reset()
+            self.reset_physical_observations()
 
     def read_download_diagnostics(self) -> DocumentDownloadDiagnostics | None:
         with self._lock:
@@ -395,6 +523,7 @@ class TextLoader:
             self._download_diagnostics.reset()
             self._metadata_url_omissions.reset()
             self._source_omissions.reset()
+            self.reset_physical_observations()
 
     def read_metrics(self) -> DocumentReadMetrics:
         with self._lock:
@@ -430,17 +559,27 @@ class TextLoader:
                 self._read_cache_hits += 1
                 self._download_diagnostics.cache_hit()
         if cached is not None:
-            self._observe_omission_file(url, cached)
-            return cached
+            if (
+                self._physical is not None
+                and not self._physical_reset_failed
+                and cached.file.sha256 is not None
+            ):
+                try:
+                    self._physical.cached(cached.observation)
+                except BaseException:
+                    self._physical_note_failure("cache_callback_unavailable")
+            self._observe_omission_file(url, cached.file)
+            return cached.file
         try:
-            loaded = self._fetch(url)
+            fetched = self._fetch(url)
         except BaseException as error:
             self._observe_source_failure(error)
             raise
+        loaded = fetched.file
         with self._lock:
             if len(self._cache) >= self._cache_size:
                 self._cache.pop(next(iter(self._cache)))
-            self._cache[url] = loaded
+            self._cache[url] = fetched
         self._observe_omission_file(url, loaded)
         return loaded
 
@@ -717,9 +856,10 @@ class TextLoader:
 
     def load_scan(self, url: str, *, cover_letter: bool) -> ScannedDocument | None:
         """Return bounded PDF bytes with separate original and exact-input identities."""
-        data = self._download(url)
-        if data is None:
+        downloaded = self._download(url)
+        if downloaded is None:
             return None
+        data = downloaded.data
         pages = self._extractor.pages(data)
         if pages <= 0:
             return None
@@ -745,7 +885,7 @@ class TextLoader:
                 MAX_SCAN_BYTES // 1024,
             )
             return None
-        source_sha = hashlib.sha256(data).hexdigest()
+        source_sha = downloaded.artifact.sha256
         return ScannedDocument(
             data=base64.standard_b64encode(selected).decode("ascii"),
             pages=window.count,
@@ -786,57 +926,69 @@ class TextLoader:
             }
         )
 
-    def _fetch(self, url: str) -> LoadedFile:
-        data = self._download(url)
-        if data is None:
-            return LoadedFile(None, oversize=True)
+    def _fetch(self, url: str) -> _CachedDocument:
+        downloaded = self._download(url)
+        if downloaded is None:
+            return _CachedDocument(LoadedFile(None, oversize=True))
+        data, artifact = downloaded.data, downloaded.artifact
         started = time.perf_counter()
-        if isinstance(self._extractor, ProvenanceTextExtractor):
-            observed = self._extractor.extract_document_with_provenance(data)
-            text = observed.document.text
-            selection = observed.document.selection
-            with self._lock:
-                self._extractions[observed.result.artifact_sha256] = observed.result
-            scope = self._source_omissions.current()
-            if (
-                scope is not None
-                and observed.result.artifact_sha256 == hashlib.sha256(data).hexdigest()
-            ):
-                with scope.capture():
-                    scope.extraction(observed.result)
-        elif isinstance(self._extractor, StructuredTextExtractor):
-            extracted = self._extractor.extract_document(data)
-            text = extracted.text
-            selection = extracted.selection
-        else:
-            text = self._extractor.extract(data)
-            selection = DocumentSelection(
-                parts=(
-                    DocumentPart(
-                        sha256=hashlib.sha256(data).hexdigest(),
-                        text=text,
-                        text_end=len(text),
-                        text_sha256=hashlib.sha256(text.encode()).hexdigest(),
-                    ),
+        with self._physical_invocation(artifact) as invocation:
+            if isinstance(self._extractor, ProvenanceTextExtractor):
+                observed = self._extractor.extract_document_with_provenance(data)
+                text = observed.document.text
+                selection = observed.document.selection
+                with self._lock:
+                    self._extractions[observed.result.artifact_sha256] = observed.result
+                if invocation is not None:
+                    try:
+                        invocation.bind_extraction(observed.result)
+                    except BaseException:
+                        if self._physical is not None:
+                            self._physical_note_failure("extraction_callback_unavailable")
+                scope = self._source_omissions.current()
+                if scope is not None and observed.result.artifact_sha256 == artifact.sha256:
+                    with scope.capture():
+                        scope.extraction(observed.result)
+            elif isinstance(self._extractor, StructuredTextExtractor):
+                extracted = self._extractor.extract_document(data)
+                text = extracted.text
+                selection = extracted.selection
+            else:
+                text = self._extractor.extract(data)
+                selection = DocumentSelection(
+                    parts=(
+                        DocumentPart(
+                            sha256=artifact.sha256,
+                            text=text,
+                            text_end=len(text),
+                            text_sha256=hashlib.sha256(text.encode()).hexdigest(),
+                        ),
+                    )
                 )
+            selection = selection.model_copy(
+                update={
+                    "parts": tuple(
+                        part.model_copy(update={"url": url}) for part in selection.parts
+                    ),
+                    "observed_parts": tuple(
+                        part.model_copy(update={"url": url}) for part in selection.observed_parts
+                    ),
+                }
             )
-        selection = selection.model_copy(
-            update={
-                "parts": tuple(part.model_copy(update={"url": url}) for part in selection.parts),
-                "observed_parts": tuple(
-                    part.model_copy(update={"url": url}) for part in selection.observed_parts
-                ),
-            }
-        )
-        digest = hashlib.sha256(data).hexdigest()
-        pages = self._extractor.pages(data)
-        log.info("%s: %d chars extracted in %.1fs", url, len(text), time.perf_counter() - started)
-        if len(text.strip()) < MIN_TEXT_CHARS:
-            log.warning("%s yielded almost no text (%d chars, %d pages)", url, len(text), pages)
-            return LoadedFile(None, pages=pages, sha256=digest, selection=selection)
-        return LoadedFile(text, pages=pages, sha256=digest, selection=selection)
+            digest = artifact.sha256
+            pages = self._extractor.pages(data)
+            log.info(
+                "%s: %d chars extracted in %.1fs", url, len(text), time.perf_counter() - started
+            )
+            if len(text.strip()) < MIN_TEXT_CHARS:
+                log.warning("%s yielded almost no text (%d chars, %d pages)", url, len(text), pages)
+                loaded = LoadedFile(None, pages=pages, sha256=digest, selection=selection)
+            else:
+                loaded = LoadedFile(text, pages=pages, sha256=digest, selection=selection)
 
-    def _download(self, url: str) -> bytes | None:
+        return _CachedDocument(loaded, invocation.observation if invocation is not None else None)
+
+    def _download(self, url: str) -> _DownloadedDocument | None:
         with self._lock:
             self._download_diagnostics.started()
         try:
@@ -870,12 +1022,13 @@ class TextLoader:
                 self._download_diagnostics.failure(url, host, outcome, reason, status_code=status)
             raise
         digest = hashlib.sha256(data).hexdigest()
+        artifact = ArtifactIdentity(sha256=digest, byte_size=len(data))
         with self._lock:
             self._known_bodies.setdefault(digest, len(data))
         scope = self._source_omissions.current()
         if scope is not None:
             with scope.capture():
-                scope.artifact(ArtifactIdentity(sha256=digest, byte_size=len(data)))
+                scope.artifact(artifact)
         decision = metadata_url_decision(url)
         if decision.reason is None:
             read = ArtifactReadIdentity(sha256=digest, byte_size=len(data), requested_url=url)
@@ -901,4 +1054,4 @@ class TextLoader:
             len(data) // 1024,
             time.perf_counter() - started,
         )
-        return data
+        return _DownloadedDocument(data, artifact)

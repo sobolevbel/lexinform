@@ -1,0 +1,17 @@
+{
+  "src/lexinform/services/source_omissions.py:SourceOmissionScope": true,
+  "src/lexinform/services/source_omissions.py:SourceOmissionPersistence": true,
+  "src/lexinform/services/source_omissions.py:SourceOmissionCollector.scope": true,
+  "src/lexinform/services/source_omissions.py:SourceOmissionCollector.snapshot": true,
+  "src/lexinform/services/source_omissions.py:SourceOmissionCollector.catalog_snapshot": true,
+  "src/lexinform/services/documents.py:TextLoader.source_omission_scope": true,
+  "src/lexinform/services/documents.py:TextLoader.metadata_omission_scope": true,
+  "src/lexinform/services/documents.py:TextLoader.capture_source_read": true,
+  "src/lexinform/services/documents.py:TextLoader.read_source_catalog_attempts": true,
+  "src/lexinform/services/documents.py:TextLoader._observe_source_failure": true,
+  "src/lexinform/ports.py:BillRepository.save_source_catalog_snapshot": true,
+  "src/lexinform/ports.py:BillRepository.get_source_catalog_snapshot": true,
+  "src/lexinform/ports.py:BillRepository.save_source_catalog_attempt": true,
+  "src/lexinform/ports.py:BillRepository.get_source_catalog_attempt": true,
+  "src/lexinform/ports.py:BillRepository.list_source_catalog_attempts": true
+}

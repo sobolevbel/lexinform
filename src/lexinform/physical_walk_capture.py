@@ -106,10 +106,11 @@ class PhysicalWalkObservation:
     failure_class: str | None
     draft: PhysicalWalkDraft | None = None
     limitations: tuple[str, ...] = ()
+    extraction: ExtractionResult | None = None
 
 
 class PhysicalWalkCapture:
-    def __init__(self) -> None:
+    def __init__(self, artifact: ArtifactIdentity | None = None) -> None:
         self.observation: PhysicalWalkObservation | None = None
         self._capacity = MAX_OBSERVATION_BYTES
         self._bytes = 0
@@ -119,7 +120,7 @@ class PhysicalWalkCapture:
         self._walk_complete = False
         self._unavailable: str | None = None
         self._failure: str | None = None
-        self._artifact: ArtifactIdentity | None = None
+        self._artifact: ArtifactIdentity | None = artifact
         self._recipe: PhysicalMetadata | None = None
         self._assembler: PhysicalRootAssembler | None = None
         self._stack: list[PhysicalWalkContext] = []
@@ -161,6 +162,7 @@ class PhysicalWalkCapture:
                     self._failure,
                     self._draft(),
                     tuple(sorted(self._limitations)),
+                    self._extraction,
                 )
             self._stack.clear()
             self._assembler = None
@@ -199,14 +201,19 @@ class PhysicalWalkCapture:
         self._bytes += size + fixed
         return True
 
-    def start(self, data: bytes) -> None:
+    def start(self, data: bytes, *, sha256: str | None = None) -> None:
         if self._started:
             self.unavailable("multiple_extractor_invocations")
             return
         self._started = True
-        self._artifact = ArtifactIdentity(
-            sha256=hashlib.sha256(data).hexdigest(), byte_size=len(data)
+        actual = ArtifactIdentity(
+            sha256=sha256 if sha256 is not None else hashlib.sha256(data).hexdigest(),
+            byte_size=len(data),
         )
+        if self._artifact is not None and self._artifact != actual:
+            self.unavailable("invocation_root_differs")
+            return
+        self._artifact = actual
         self._assembler = PhysicalRootAssembler(self._artifact)
 
     def recipe(self, record: PhysicalMetadata) -> None:
@@ -225,8 +232,19 @@ class PhysicalWalkCapture:
         try:
             retained = self.reserve((), fixed=1024)
             if retained:
-                body = ArtifactIdentity(
-                    sha256=hashlib.sha256(data).hexdigest(), byte_size=len(data)
+                known = (
+                    parent.known.get(parent.active_ordinal)
+                    if parent is not None and parent.active_ordinal is not None
+                    else self._artifact
+                    if parent is None
+                    else None
+                )
+                body = (
+                    known
+                    if known is not None and known.byte_size == len(data)
+                    else ArtifactIdentity(
+                        sha256=hashlib.sha256(data).hexdigest(), byte_size=len(data)
+                    )
                 )
         except BaseException as exc:
             self.unavailable("context_identity_unavailable", exc)
@@ -528,6 +546,7 @@ class PhysicalWalkCapture:
             self._failure,
             self._draft() if self._unavailable is not None or capacity_prefix else None,
             tuple(sorted(self._limitations)),
+            self._extraction,
         )
 
     def _draft(self) -> PhysicalWalkDraft | None:

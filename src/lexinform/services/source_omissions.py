@@ -4,7 +4,7 @@ import datetime as dt
 import logging
 import threading
 from collections.abc import Callable, Iterable, Iterator
-from contextlib import ExitStack, contextmanager, suppress
+from contextlib import contextmanager, suppress
 from contextvars import ContextVar
 from dataclasses import dataclass
 from threading import Lock
@@ -24,6 +24,7 @@ from lexinform.models.source_omissions import (
     SourceReferenceOmissionOwner,
     source_omission_sha256,
 )
+from lexinform.observation_order import ObservationInput, ObservationOrder
 from lexinform.ports import BillRepository
 from lexinform.services.document_history import (
     record_artifact_reads,
@@ -52,15 +53,27 @@ class SourceOmissionInput:
     ) -> None:
         self.collector = collector
         self.subject = subject
-        self.order = order
-        self.active = False
-        self.thread: int | None = None
-        self.children = 0
+        self.slot = ObservationInput(collector.ordering, order)
+        self.capture_disabled = False
+
+    @property
+    def order(self) -> tuple[int, ...]:
+        return self.slot.order
+
+    @property
+    def active(self) -> bool:
+        return self.slot.active
+
+    @active.setter
+    def active(self, value: bool) -> None:
+        self.slot.active = value
+
+    @property
+    def thread(self) -> int | None:
+        return self.slot.thread
 
     def child(self) -> tuple[int, ...]:
-        value = self.order + (self.children,)
-        self.children += 1
-        return value
+        return self.slot.child()
 
 
 @dataclass(frozen=True)
@@ -209,17 +222,17 @@ class SourceOmissionScope:
 
 
 class SourceOmissionCollector:
-    def __init__(self) -> None:
+    def __init__(self, ordering: ObservationOrder | None = None) -> None:
         self._lock = Lock()
         self._records: dict[str, SourceOmissionObservation] = {}
         self._catalog_attempts: dict[str, SourceCatalogObservation] = {}
-        self._phase = 0
+        self.ordering = ordering or ObservationOrder()
 
     def reset(self) -> None:
         with self._lock:
             self._records.clear()
             self._catalog_attempts.clear()
-            self._phase = 0
+            self.ordering.reset()
 
     def _input(self) -> SourceOmissionInput | None:
         current = _INPUT.get()
@@ -230,23 +243,30 @@ class SourceOmissionCollector:
                 and current.collector is self
                 and current.active
                 and current.thread == threading.get_ident()
+                and self.ordering.current() is current.slot
             )
             else None
         )
 
     def reserve(self, owners: tuple[SourceOmissionOwner, ...]) -> tuple[SourceOmissionInput, ...]:
         current = self._input()
-        with self._lock:
-            prefix: tuple[int, ...]
-            if current is None:
-                prefix = (self._phase,)
-                self._phase += 1
-            else:
-                prefix = current.child()
+        prefix = self.ordering.prefix(current.child if current is not None else None)
         return tuple(
             SourceOmissionInput(self, owner, prefix + (index,))
             for index, owner in enumerate(owners)
         )
+
+    def unavailable_inputs(
+        self, owners: tuple[SourceOmissionOwner, ...]
+    ) -> tuple[SourceOmissionInput, ...]:
+        slots = self.ordering.reserve(len(owners))
+        result = tuple(
+            SourceOmissionInput(self, owner, slot.order)
+            for owner, slot in zip(owners, slots, strict=True)
+        )
+        for item in result:
+            item.capture_disabled = True
+        return result
 
     @contextmanager
     def disabled(self) -> Iterator[None]:
@@ -266,13 +286,15 @@ class SourceOmissionCollector:
             with self.disabled():
                 yield
             return
-        slot.active = True
-        slot.thread = threading.get_ident()
         token = _INPUT.set(slot)
         try:
-            yield
+            with self.ordering.input(slot.slot):
+                if slot.capture_disabled:
+                    with self.disabled():
+                        yield
+                else:
+                    yield
         finally:
-            slot.active = False
             _INPUT.reset(token)
 
     @contextmanager
@@ -280,26 +302,15 @@ class SourceOmissionCollector:
         active_token = _ACTIVE.set(None)
         input_token = _INPUT.set(_INPUT.get())
         disabled_token = _DISABLED.set(_DISABLED.get() or slot is None)
-        stack = ExitStack()
         try:
-            try:
-                stack.enter_context(self.input(slot))
-            except BaseException as exc:
-                _ACTIVE.set(None)
-                _INPUT.set(None)
-                _DISABLED.set(True)
-                with suppress(BaseException):
-                    log.warning("source omission input unavailable (%s)", type(exc).__name__[:128])
-            try:
+            with self.ordering.protected_input(
+                slot.slot if slot is not None else None, lambda: self.input(slot)
+            ) as entered:
+                if not entered:
+                    _ACTIVE.set(None)
+                    _INPUT.set(None)
+                    _DISABLED.set(True)
                 yield
-            finally:
-                try:
-                    stack.close()
-                except BaseException as exc:
-                    with suppress(BaseException):
-                        log.warning(
-                            "source omission input cleanup failed (%s)", type(exc).__name__[:128]
-                        )
         finally:
             if slot is not None:
                 slot.active = False
@@ -309,12 +320,7 @@ class SourceOmissionCollector:
 
     def _order(self) -> tuple[int, ...]:
         current = self._input()
-        with self._lock:
-            if current is not None:
-                return current.child()
-            order = (self._phase, 0)
-            self._phase += 1
-            return order
+        return self.ordering.next(current.child if current is not None else None)
 
     def current(self) -> SourceOmissionScope | None:
         scope = _ACTIVE.get()

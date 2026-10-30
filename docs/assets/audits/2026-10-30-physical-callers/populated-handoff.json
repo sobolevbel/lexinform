@@ -1,0 +1,35 @@
+{
+  "active_gzip_bytes": 4217521,
+  "active_sql_bytes": 21050472,
+  "actual_captures": 13,
+  "actual_recipe_ids": [
+    "9cc13e3b0a2a4ae5db9934788f34d6a78fc594245feb98b4437c1f76b740ac32"
+  ],
+  "cache_repeat_zero_growth": true,
+  "doctor_baseline_findings": [],
+  "doctor_findings_unchanged": true,
+  "driver": "/Users/sobaleu/.codex/worktrees/checkpoint-metrics/lexinform/out/corpus/physical-caller-current-078/scratch/out/corpus/physical-caller-populated-412e/runtime_profile.py",
+  "driver_sha256": "7f7a7bd9c8fd254129af19e9848313d540fc82917b156d921e9301ef59899223",
+  "inactive_gzip_bytes": 4198009,
+  "inactive_sql_bytes": 20939397,
+  "incremental_physical_gzip_bytes": 19512,
+  "incremental_physical_sql_bytes": 111075,
+  "no_source_primary_changes": true,
+  "owner_collisions": {
+    "1929": true,
+    "3039": true
+  },
+  "profile": "/Users/sobaleu/.codex/worktrees/checkpoint-metrics/lexinform/out/corpus/physical-caller-current-078/scratch/out/corpus/physical-caller-populated-412e/runtime-profile.json",
+  "profile_sha256": "7041f9e519d7b63d941265d517d3f8d3bc11794e9d0f9092bc4746a79ffa7a72",
+  "restore_twice_unchanged": true,
+  "schema": 65,
+  "scope": "Counterfactual fixed13 native consumer contexts on disposable copies of actual state412e restored/migrated65; no production processing or natural global population forecast. Controlled upserts occur in all off/on copies; collisions explicitly listed.",
+  "source14_unchanged": true,
+  "source_patch_sha256": "677dc88cd56fdcaa186dc5c804396a84443041e583ae3479e88100d1bbfd18a0",
+  "state_sql_bytes": 20886677,
+  "state_sql_sha256": "a39d69e7306d97c7307e7b9a263a71a7f5c646be590815d68860ada2064eaae2",
+  "state_sql_unchanged": true,
+  "status": "qualified",
+  "unique_metadata": 74,
+  "workers_1_4_sql_business_order_parity": true
+}

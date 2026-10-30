@@ -166,3 +166,19 @@ class LoadedFile:
     @property
     def is_scan(self) -> bool:
         return self.text is None and self.pages > 0
+
+
+class DocumentPhysicalDiagnostics(BaseModel):
+    """Pending facts and unavailable references are distinct from new extractor invocations."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    invocations: int = Field(default=0, ge=0)
+    cache_reuses: int = Field(default=0, ge=0)
+    captured: int = Field(default=0, ge=0)
+    partial: int = Field(default=0, ge=0)
+    unavailable: int = Field(default=0, ge=0)
+    dropped: int = Field(default=0, ge=0)
+    observer_failures: int = Field(default=0, ge=0)
+    unknown_remainders: bool = False
+    reasons: dict[str, int] = Field(default_factory=dict, max_length=8)

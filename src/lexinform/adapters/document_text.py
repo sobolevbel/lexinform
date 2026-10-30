@@ -743,7 +743,7 @@ class DocumentTextExtractor:
         digest = hashlib.sha256(data).hexdigest()
         capture = current_physical_walk_capture()
         if capture is not None:
-            _physical_event(capture, partial(capture.start, data))
+            _physical_event(capture, partial(capture.start, data, sha256=digest))
             _physical_event(capture, lambda: capture.recipe(self._physical_recipe(origins)))
         walk_complete = False
         try:

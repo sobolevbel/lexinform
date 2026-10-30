@@ -115,10 +115,12 @@ from lexinform.models import (
     WykazEntry,
 )
 from lexinform.models.batch import BatchJob, BatchKind
+from lexinform.models.document_reads import DocumentPhysicalDiagnostics
 from lexinform.models.physical_inventory import PhysicalCapture, PhysicalMetadata
 from lexinform.models.report import CallKind
 from lexinform.models.senate_inspection import SenateInspectionLink, SenateInspectionRecord
 from lexinform.models.source_catalog_attempts import SourceCatalogAttempt, SourceCatalogSnapshot
+from lexinform.physical_observations import OrderedPhysicalObservation
 
 
 class Clock(Protocol):
@@ -147,6 +149,14 @@ class DocumentArtifactObserver(Protocol):
     def read_artifacts(self) -> tuple[ArtifactIdentity, ...]: ...
 
     def read_extraction_results(self) -> tuple[ExtractionResult, ...]: ...
+
+
+class DocumentPhysicalObserver(Protocol):
+    def reset_physical_observations(self) -> None: ...
+
+    def read_physical_observations(self) -> tuple[OrderedPhysicalObservation, ...]: ...
+
+    def read_physical_diagnostics(self) -> DocumentPhysicalDiagnostics | None: ...
 
 
 class DocumentFileReadObserver(Protocol):

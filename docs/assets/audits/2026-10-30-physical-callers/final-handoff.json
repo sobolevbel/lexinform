@@ -1,0 +1,112 @@
+{
+  "activation": "Isolated candidate only; root growth approval still required.",
+  "applies_unchanged_to": "27cb71e9 (all14 preimage bytes verified exact078)",
+  "base": "078b4c5c151a7698180e6bce689db5de75ee4732",
+  "checks": {
+    "current078_focused": 58,
+    "initial_focused": 141,
+    "owned_mypy": "14 paths green",
+    "owned_ruff": "14 paths check/format green"
+  },
+  "compatibility": {
+    "changes": "Only neutral ordering replaces old phase/input implementation; current catalog state/reset, all source role/policy/finalization APIs, reader65 protocol methods retained. Container composes both catalog and physical history. No replacement of older whole files.",
+    "current_catalog_revision_2_preserved": true,
+    "protected_domain_asts": "/Users/sobaleu/.codex/worktrees/checkpoint-metrics/lexinform/out/corpus/physical-caller-current-078/preserved-domain-ast.json"
+  },
+  "driver": {
+    "path": "/Users/sobaleu/.codex/worktrees/checkpoint-metrics/lexinform/out/corpus/physical-caller-current-078/scratch/out/corpus/physical-caller-qualification/runtime_profile.py",
+    "repeat": "Copy driver into a fresh scratch/out/corpus/<new-name>/ directory at the same depth; run with PYTHONPATH=<scratch>/src:<scratch>. It refuses existing result directories; fixed raw controls/manifests remain pinned.",
+    "sha256": "1877cfd4fa9836af9e77ff031fe4df0cd5692a10796f660eb7c91469208fb73e"
+  },
+  "method_merge_notes": {
+    "container.py": "Both SourceOmissionPersistence(read_omissions, read_catalog_attempts) and PhysicalHistoryPersistence retained inside SourceHistoryPair.",
+    "documents.py": "Source catalog scope/capture/read-failure/read-catalog methods ASTs exact current078; own physical invocation/cache/private download identity carrier and neutral slot fallback.",
+    "ports.py": "Reader65 catalog imports/methods retained plus separate physical observer protocol.",
+    "source_omissions.py": "SourceOmissionScope/SourceOmissionPersistence and Collector scope/snapshot/catalog_snapshot ASTs exact current078; combine catalog state/clear with neutral ordering state/reset."
+  },
+  "original_independent_review": {
+    "closure": "URL reviewer exact14 pins +6 repair controls green",
+    "handoff_sha256": "7d4eb71e89b723a7d777f542ca3e3f197dff40804033b13108b9e88ee8ef0586",
+    "patch_sha256": "5e0bc772f52857caec2379a3cf2d33f932f923276f0693e941a17c4e4e4e3640"
+  },
+  "patch_sha256": "677dc88cd56fdcaa186dc5c804396a84443041e583ae3479e88100d1bbfd18a0",
+  "paths": {
+    "src/lexinform/adapters/document_text.py": {
+      "bytes": 59008,
+      "sha256": "a1891211a866afc7ab67099cc83a9b6c0b85f7e1c8b86d9eff52a5559821badd"
+    },
+    "src/lexinform/container.py": {
+      "bytes": 41633,
+      "sha256": "ed37d0873eb4c3bb73f85653ac627f8fc3ff6e247b4ed89a19abe5b7b3f7ecc5"
+    },
+    "src/lexinform/models/document_reads.py": {
+      "bytes": 7007,
+      "sha256": "f70001423e2d3dd91bde87a087cbe9eda9fb1f10aa7b6fcd915897704e877d4d"
+    },
+    "src/lexinform/models/report.py": {
+      "bytes": 11017,
+      "sha256": "753b128596655630a0ee29e4b371447a54ceecaaf8a6d6a14a9f763b02b3a7a9"
+    },
+    "src/lexinform/observation_order.py": {
+      "bytes": 3518,
+      "sha256": "6d8b0caa799cf4b4c4937dc6ccea3cf739a20a212d0b9c2b2fb5ef299f20294a"
+    },
+    "src/lexinform/physical_observations.py": {
+      "bytes": 9538,
+      "sha256": "b5c768f5f562bd245db5c2ae2e6fb56175eba41893bce6765beda186c9a1f3c7"
+    },
+    "src/lexinform/physical_walk_capture.py": {
+      "bytes": 22614,
+      "sha256": "403a422218b15759a1a0cefc1f3e8fbe19b17304d6209a40ef28e2b21461b9d5"
+    },
+    "src/lexinform/ports.py": {
+      "bytes": 49942,
+      "sha256": "8602c45f2b5cda1da53e3f3fc163848cfc2247bfbbba87cd46d5bcba47c4e4a8"
+    },
+    "src/lexinform/services/document_read_reporting.py": {
+      "bytes": 3320,
+      "sha256": "431f07c8dea06bfd90ad6805b4724876b6c185b6986775e9507894e71aecde8b"
+    },
+    "src/lexinform/services/documents.py": {
+      "bytes": 44141,
+      "sha256": "eb7128197b671a942c173017b716a52e1436de2dc5b121f2e0ea6f03488d3be4"
+    },
+    "src/lexinform/services/physical_history.py": {
+      "bytes": 2229,
+      "sha256": "3cf9990590ca3588a9738d19ac95f8bc4c52c0ad3d0faab58e7f94a29b228fbb"
+    },
+    "src/lexinform/services/pipeline.py": {
+      "bytes": 29985,
+      "sha256": "0e73721ea2908e2021833dfaf05285d4ef495eb3f1967be95c2d07c510c61d47"
+    },
+    "src/lexinform/services/source_omissions.py": {
+      "bytes": 16449,
+      "sha256": "8db9bcd9dcf46930d486e269dd91e3520e118bce47f93948dcde5ffbefb26bbd"
+    },
+    "tests/unit/test_physical_callers.py": {
+      "bytes": 19027,
+      "sha256": "453d8159ae403cf0ce83a00d5060242f8ac85ae47005017958770cd0d3eccb88"
+    }
+  },
+  "profile": {
+    "actual_captures": 13,
+    "actual_recipe_ids": [
+      "9cc13e3b0a2a4ae5db9934788f34d6a78fc594245feb98b4437c1f76b740ac32"
+    ],
+    "business_source_sql_parity": true,
+    "doctor_restore_twice": "green",
+    "gzip_increment": 18376,
+    "path": "/Users/sobaleu/.codex/worktrees/checkpoint-metrics/lexinform/out/corpus/physical-caller-current-078/scratch/out/corpus/physical-caller-qualification/runtime-profile.json",
+    "raw_bytes": 400412,
+    "raw_controls": 9,
+    "repeat_zero_growth": true,
+    "schema": 65,
+    "scope": "Actual controlled native consumer contexts on disposable schema65; no natural production population/global growth forecast or activation approval.",
+    "sha256": "227305f86d27f66ac2b07e8719bf920de6051f6a682102066351215496799943",
+    "sql_increment": 111075,
+    "unique_metadata": 74,
+    "workers_1_4_sql_order_equal": true
+  },
+  "source_review": "Original pin2 independently closed; current078 mechanical merge preserves15 catalog/domain ASTs exactly. 58 focused physical/omission/catalog controls green, owned strict mypy/Ruff green.",
+  "status": "Qualified standalone Stage B delta; root integrated full/growth activation approval remain separate."
+}

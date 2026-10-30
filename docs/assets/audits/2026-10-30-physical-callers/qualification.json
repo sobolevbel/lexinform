@@ -1,0 +1,31 @@
+{
+  "scope": "Bounded default native physical observation transport and caller-owned persistence; current source catalog revision2 and reader65 preserved",
+  "patch_sha256": "677dc88cd56fdcaa186dc5c804396a84443041e583ae3479e88100d1bbfd18a0",
+  "independent_review": "Original14pin2 and6repair controls green; current078mechanical merge preserves15catalog/domainASTs exactly;14final sourcepins matched root before and afterfull",
+  "focused_merge_cases": 58,
+  "per_run_limits": {
+    "logical_observations": 256,
+    "pending_bytes": 16777216
+  },
+  "full_gate": {
+    "suites": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "7038",
+        "time": "247.926",
+        "timestamp": "2026-10-30T15:06:56.626707+01:00",
+        "hostname": "Yauhenis-MacBook-Pro.local"
+      }
+    ],
+    "mypy_source_files": 616,
+    "ruff_formatted_files": 683,
+    "source_freeze_paths": 683,
+    "unchanged": true,
+    "coverage_percent": 92
+  },
+  "growth_acceptance": "Bounded13actual-native-context counterfactual on restored currentstate412e/schema65:74metadata,+111075SQL/+19512gzip; workers1/4 all SQL/order+business parity,repeatzero,doctor0\u21920,restore2; existing3039/1929controlled upserts explicit. Root accepts metadata-only default capture within these limits.",
+  "limits": "No new raw body archive/backend/backfill, natural demand acceptance or global growth forecast. Older StageA4017root qualification is not relabeled a whole-corpus replay of this new component/recipe; final13native-context source/recipe hashes are separately pinned."
+}

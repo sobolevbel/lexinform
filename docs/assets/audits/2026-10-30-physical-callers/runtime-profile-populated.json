@@ -1,0 +1,475 @@
+{
+  "baseline_doctor_findings": [],
+  "business_parity": true,
+  "corpus_inputs": {
+    "INDEX.json": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "documents/files/539235.docx": "5cab4189b4883aaabf351a4b807b3ca7b736f75e80177b31dfef199689317384",
+    "documents/files/653551.zip": "a03fb959194d0769c4f2ef673ca6c970baa523f4d0853c97874aae5a7ae0bb77",
+    "documents/files/668487.zip": "664d11e97ddb90fd73e537bd9d598a443896341be1d899b8bf36e9734b71d0d2",
+    "documents/files/679039.xml": "9b952c552a46ee99b11d16ecd12efaf648946eea1c8629cf4a02307a752f4af9",
+    "documents/files/709230.zip": "c1aa5cd0b987c5aebf5ad2b56d83698d6891232b772f5bb9e44905f552e48ce4",
+    "documents/files/719028.docm": "3d2d9acb40d8fdca61cd3f50e1a21f9cb1b8c188f7183ec7954f3cf7a4ed1c4f",
+    "documents/files/749808.pdf": "62c5c6d32af114c3d1d4ef578bf95d6dda0f240dac59a5edb1d6d353896ef436",
+    "documents/files/765000.doc": "58fd3d8ebfbda80cf9cd0aa35f64c9c33a3a70e399d281ce2db7a2d2523cd0ff",
+    "sejm/term10/files/1614__1614-uchwa\u0142a.odt": "072d8e6cc811fbe7094369ed8ee40e36f05f363bc432318da272f35debf95722"
+  },
+  "driver_sha256": "7f7a7bd9c8fd254129af19e9848313d540fc82917b156d921e9301ef59899223",
+  "owner_collisions": {
+    "1929": true,
+    "3039": true
+  },
+  "preexisting_rows_preserved": true,
+  "raw_bytes": 400412,
+  "raw_controls": 9,
+  "results": {
+    "active-1": {
+      "actual_recipe_ids": [
+        "9cc13e3b0a2a4ae5db9934788f34d6a78fc594245feb98b4437c1f76b740ac32"
+      ],
+      "after_gzip_bytes": 4217521,
+      "after_sql_bytes": 21050472,
+      "before_gzip_bytes": 4191142,
+      "before_sql_bytes": 20883710,
+      "cache_repeat_sql_unchanged": true,
+      "capture_envelope_bytes": 7618,
+      "captures": 13,
+      "doctor": {
+        "artifact_reads_available": true,
+        "database_sha256": "f9a7a147502088c1bcc85429558aa682cd5d54afd73bd9e14e575b247928262e",
+        "exclusions": [
+          "Current owner/source contents do not revalidate historical decisions.",
+          "Unreferenced metadata is an inventory observation, not permission to delete it.",
+          "Policy versions remain opaque; no historical policy or paid identity is inferred.",
+          "No raw availability, extraction/legal completeness or provider-input replay verdict.",
+          "RCL letter-use facts describe parsing and in-memory merging, not saved applications.",
+          "Senate inspection facts do not certify admission, paid inputs or saved applications.",
+          "Omitted Senate universe/context metadata cannot be completely revalidated.",
+          "Omitted RCL payloads cannot revalidate their absent full semantic metadata.",
+          "Legacy v1 RCL omissions have unbound refs; v2 binds retained metadata only.",
+          "No source bodies, URLs or evidence quotes in this report; no work is executed."
+        ],
+        "findings": [],
+        "missing_artifact_tables": [],
+        "missing_tables": [],
+        "rcl_letter_uses_available": true,
+        "schema_version": 65,
+        "scope": "Recorded source/artifact identities, SQL columns and outer-part references.",
+        "senate_inspections_available": true,
+        "status": "recorded",
+        "summary": {
+          "artifact_link_rows": 92,
+          "artifact_read_rows": 52,
+          "artifact_rows": 86,
+          "edition_link_rows": 12,
+          "edition_rows": 12,
+          "errors": 0,
+          "observation_rows": 21,
+          "physical_captures_rows": 13,
+          "physical_metadata_rows": 74,
+          "policy_recorded": 19,
+          "purpose/analysis": 8,
+          "purpose/prefilter": 13,
+          "rcl_letter_use_complete": 3,
+          "rcl_letter_use_rows": 3,
+          "rcl_letter_use_unknown_origin": 0,
+          "rcl_letter_use_unknown_stage_id": 0,
+          "selection_rows": 19,
+          "senate_inspection_complete": 1,
+          "senate_inspection_link_rows": 1,
+          "senate_inspection_rows": 1,
+          "source_catalog_attempt_parents_rows": 0,
+          "source_catalog_attempts_rows": 0,
+          "source_catalog_snapshots_rows": 0,
+          "state/selected": 4,
+          "state/unverified": 15,
+          "unlinked_artifact_rows": 51,
+          "unreferenced_selection_rows": 0
+        },
+        "version": 1
+      },
+      "downloads": 13,
+      "enabled": true,
+      "incremental_physical_gzip_bytes": 19512,
+      "incremental_physical_sql_bytes": 111075,
+      "metadata_envelope_bytes": 74355,
+      "order": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          3,
+          0
+        ],
+        [
+          0,
+          4,
+          0
+        ],
+        [
+          0,
+          5,
+          0
+        ],
+        [
+          0,
+          6,
+          0
+        ],
+        [
+          0,
+          7,
+          0
+        ],
+        [
+          0,
+          8,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "restore_twice_unchanged": true,
+      "schema": 65,
+      "sql_delta": 166762,
+      "unique_metadata": 74,
+      "workers": 1
+    },
+    "active-4": {
+      "actual_recipe_ids": [
+        "9cc13e3b0a2a4ae5db9934788f34d6a78fc594245feb98b4437c1f76b740ac32"
+      ],
+      "after_gzip_bytes": 4217521,
+      "after_sql_bytes": 21050472,
+      "before_gzip_bytes": 4191142,
+      "before_sql_bytes": 20883710,
+      "cache_repeat_sql_unchanged": true,
+      "capture_envelope_bytes": 7618,
+      "captures": 13,
+      "doctor": {
+        "artifact_reads_available": true,
+        "database_sha256": "f9a7a147502088c1bcc85429558aa682cd5d54afd73bd9e14e575b247928262e",
+        "exclusions": [
+          "Current owner/source contents do not revalidate historical decisions.",
+          "Unreferenced metadata is an inventory observation, not permission to delete it.",
+          "Policy versions remain opaque; no historical policy or paid identity is inferred.",
+          "No raw availability, extraction/legal completeness or provider-input replay verdict.",
+          "RCL letter-use facts describe parsing and in-memory merging, not saved applications.",
+          "Senate inspection facts do not certify admission, paid inputs or saved applications.",
+          "Omitted Senate universe/context metadata cannot be completely revalidated.",
+          "Omitted RCL payloads cannot revalidate their absent full semantic metadata.",
+          "Legacy v1 RCL omissions have unbound refs; v2 binds retained metadata only.",
+          "No source bodies, URLs or evidence quotes in this report; no work is executed."
+        ],
+        "findings": [],
+        "missing_artifact_tables": [],
+        "missing_tables": [],
+        "rcl_letter_uses_available": true,
+        "schema_version": 65,
+        "scope": "Recorded source/artifact identities, SQL columns and outer-part references.",
+        "senate_inspections_available": true,
+        "status": "recorded",
+        "summary": {
+          "artifact_link_rows": 92,
+          "artifact_read_rows": 52,
+          "artifact_rows": 86,
+          "edition_link_rows": 12,
+          "edition_rows": 12,
+          "errors": 0,
+          "observation_rows": 21,
+          "physical_captures_rows": 13,
+          "physical_metadata_rows": 74,
+          "policy_recorded": 19,
+          "purpose/analysis": 8,
+          "purpose/prefilter": 13,
+          "rcl_letter_use_complete": 3,
+          "rcl_letter_use_rows": 3,
+          "rcl_letter_use_unknown_origin": 0,
+          "rcl_letter_use_unknown_stage_id": 0,
+          "selection_rows": 19,
+          "senate_inspection_complete": 1,
+          "senate_inspection_link_rows": 1,
+          "senate_inspection_rows": 1,
+          "source_catalog_attempt_parents_rows": 0,
+          "source_catalog_attempts_rows": 0,
+          "source_catalog_snapshots_rows": 0,
+          "state/selected": 4,
+          "state/unverified": 15,
+          "unlinked_artifact_rows": 51,
+          "unreferenced_selection_rows": 0
+        },
+        "version": 1
+      },
+      "downloads": 13,
+      "enabled": true,
+      "incremental_physical_gzip_bytes": 19512,
+      "incremental_physical_sql_bytes": 111075,
+      "metadata_envelope_bytes": 74355,
+      "order": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          3,
+          0
+        ],
+        [
+          0,
+          4,
+          0
+        ],
+        [
+          0,
+          5,
+          0
+        ],
+        [
+          0,
+          6,
+          0
+        ],
+        [
+          0,
+          7,
+          0
+        ],
+        [
+          0,
+          8,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "restore_twice_unchanged": true,
+      "schema": 65,
+      "sql_delta": 166762,
+      "unique_metadata": 74,
+      "workers": 4
+    },
+    "inactive-1": {
+      "actual_recipe_ids": [],
+      "after_gzip_bytes": 4198009,
+      "after_sql_bytes": 20939397,
+      "before_gzip_bytes": 4191142,
+      "before_sql_bytes": 20883710,
+      "cache_repeat_sql_unchanged": true,
+      "capture_envelope_bytes": 0,
+      "captures": 0,
+      "doctor": {
+        "artifact_reads_available": true,
+        "database_sha256": "9fb7eb28bb985d845b6093af69816d8523a5f0c387282457be87a6c78b1d0b66",
+        "exclusions": [
+          "Current owner/source contents do not revalidate historical decisions.",
+          "Unreferenced metadata is an inventory observation, not permission to delete it.",
+          "Policy versions remain opaque; no historical policy or paid identity is inferred.",
+          "No raw availability, extraction/legal completeness or provider-input replay verdict.",
+          "RCL letter-use facts describe parsing and in-memory merging, not saved applications.",
+          "Senate inspection facts do not certify admission, paid inputs or saved applications.",
+          "Omitted Senate universe/context metadata cannot be completely revalidated.",
+          "Omitted RCL payloads cannot revalidate their absent full semantic metadata.",
+          "Legacy v1 RCL omissions have unbound refs; v2 binds retained metadata only.",
+          "No source bodies, URLs or evidence quotes in this report; no work is executed."
+        ],
+        "findings": [],
+        "missing_artifact_tables": [],
+        "missing_tables": [],
+        "rcl_letter_uses_available": true,
+        "schema_version": 65,
+        "scope": "Recorded source/artifact identities, SQL columns and outer-part references.",
+        "senate_inspections_available": true,
+        "status": "recorded",
+        "summary": {
+          "artifact_link_rows": 92,
+          "artifact_read_rows": 52,
+          "artifact_rows": 52,
+          "edition_link_rows": 12,
+          "edition_rows": 12,
+          "errors": 0,
+          "observation_rows": 21,
+          "physical_captures_rows": 0,
+          "physical_metadata_rows": 0,
+          "policy_recorded": 19,
+          "purpose/analysis": 8,
+          "purpose/prefilter": 13,
+          "rcl_letter_use_complete": 3,
+          "rcl_letter_use_rows": 3,
+          "rcl_letter_use_unknown_origin": 0,
+          "rcl_letter_use_unknown_stage_id": 0,
+          "selection_rows": 19,
+          "senate_inspection_complete": 1,
+          "senate_inspection_link_rows": 1,
+          "senate_inspection_rows": 1,
+          "source_catalog_attempt_parents_rows": 0,
+          "source_catalog_attempts_rows": 0,
+          "source_catalog_snapshots_rows": 0,
+          "state/selected": 4,
+          "state/unverified": 15,
+          "unlinked_artifact_rows": 17,
+          "unreferenced_selection_rows": 0
+        },
+        "version": 1
+      },
+      "downloads": 13,
+      "enabled": false,
+      "metadata_envelope_bytes": 0,
+      "order": [],
+      "restore_twice_unchanged": true,
+      "schema": 65,
+      "sql_delta": 55687,
+      "unique_metadata": 0,
+      "workers": 1
+    },
+    "inactive-4": {
+      "actual_recipe_ids": [],
+      "after_gzip_bytes": 4198009,
+      "after_sql_bytes": 20939397,
+      "before_gzip_bytes": 4191142,
+      "before_sql_bytes": 20883710,
+      "cache_repeat_sql_unchanged": true,
+      "capture_envelope_bytes": 0,
+      "captures": 0,
+      "doctor": {
+        "artifact_reads_available": true,
+        "database_sha256": "9fb7eb28bb985d845b6093af69816d8523a5f0c387282457be87a6c78b1d0b66",
+        "exclusions": [
+          "Current owner/source contents do not revalidate historical decisions.",
+          "Unreferenced metadata is an inventory observation, not permission to delete it.",
+          "Policy versions remain opaque; no historical policy or paid identity is inferred.",
+          "No raw availability, extraction/legal completeness or provider-input replay verdict.",
+          "RCL letter-use facts describe parsing and in-memory merging, not saved applications.",
+          "Senate inspection facts do not certify admission, paid inputs or saved applications.",
+          "Omitted Senate universe/context metadata cannot be completely revalidated.",
+          "Omitted RCL payloads cannot revalidate their absent full semantic metadata.",
+          "Legacy v1 RCL omissions have unbound refs; v2 binds retained metadata only.",
+          "No source bodies, URLs or evidence quotes in this report; no work is executed."
+        ],
+        "findings": [],
+        "missing_artifact_tables": [],
+        "missing_tables": [],
+        "rcl_letter_uses_available": true,
+        "schema_version": 65,
+        "scope": "Recorded source/artifact identities, SQL columns and outer-part references.",
+        "senate_inspections_available": true,
+        "status": "recorded",
+        "summary": {
+          "artifact_link_rows": 92,
+          "artifact_read_rows": 52,
+          "artifact_rows": 52,
+          "edition_link_rows": 12,
+          "edition_rows": 12,
+          "errors": 0,
+          "observation_rows": 21,
+          "physical_captures_rows": 0,
+          "physical_metadata_rows": 0,
+          "policy_recorded": 19,
+          "purpose/analysis": 8,
+          "purpose/prefilter": 13,
+          "rcl_letter_use_complete": 3,
+          "rcl_letter_use_rows": 3,
+          "rcl_letter_use_unknown_origin": 0,
+          "rcl_letter_use_unknown_stage_id": 0,
+          "selection_rows": 19,
+          "senate_inspection_complete": 1,
+          "senate_inspection_link_rows": 1,
+          "senate_inspection_rows": 1,
+          "source_catalog_attempt_parents_rows": 0,
+          "source_catalog_attempts_rows": 0,
+          "source_catalog_snapshots_rows": 0,
+          "state/selected": 4,
+          "state/unverified": 15,
+          "unlinked_artifact_rows": 17,
+          "unreferenced_selection_rows": 0
+        },
+        "version": 1
+      },
+      "downloads": 13,
+      "enabled": false,
+      "metadata_envelope_bytes": 0,
+      "order": [],
+      "restore_twice_unchanged": true,
+      "schema": 65,
+      "sql_delta": 55687,
+      "unique_metadata": 0,
+      "workers": 4
+    }
+  },
+  "scope": "Counterfactual controlled native contexts on populated restored state412e/schema65; existing3039/1929 summaries may be replaced only on disposable copies. Not actual production processing, natural population/global forecast or activation approval. No new full raw replay, paid, network or Settings. All runs use actual current component/recipe IDs, never old ID substitution.",
+  "source_pins": {
+    "src/lexinform/adapters/document_text.py": "a1891211a866afc7ab67099cc83a9b6c0b85f7e1c8b86d9eff52a5559821badd",
+    "src/lexinform/container.py": "ed37d0873eb4c3bb73f85653ac627f8fc3ff6e247b4ed89a19abe5b7b3f7ecc5",
+    "src/lexinform/models/document_reads.py": "f70001423e2d3dd91bde87a087cbe9eda9fb1f10aa7b6fcd915897704e877d4d",
+    "src/lexinform/models/report.py": "753b128596655630a0ee29e4b371447a54ceecaaf8a6d6a14a9f763b02b3a7a9",
+    "src/lexinform/observation_order.py": "6d8b0caa799cf4b4c4937dc6ccea3cf739a20a212d0b9c2b2fb5ef299f20294a",
+    "src/lexinform/physical_observations.py": "b5c768f5f562bd245db5c2ae2e6fb56175eba41893bce6765beda186c9a1f3c7",
+    "src/lexinform/physical_walk_capture.py": "403a422218b15759a1a0cefc1f3e8fbe19b17304d6209a40ef28e2b21461b9d5",
+    "src/lexinform/ports.py": "8602c45f2b5cda1da53e3f3fc163848cfc2247bfbbba87cd46d5bcba47c4e4a8",
+    "src/lexinform/services/document_read_reporting.py": "431f07c8dea06bfd90ad6805b4724876b6c185b6986775e9507894e71aecde8b",
+    "src/lexinform/services/documents.py": "eb7128197b671a942c173017b716a52e1436de2dc5b121f2e0ea6f03488d3be4",
+    "src/lexinform/services/physical_history.py": "3cf9990590ca3588a9738d19ac95f8bc4c52c0ad3d0faab58e7f94a29b228fbb",
+    "src/lexinform/services/pipeline.py": "0e73721ea2908e2021833dfaf05285d4ef495eb3f1967be95c2d07c510c61d47",
+    "src/lexinform/services/source_omissions.py": "8db9bcd9dcf46930d486e269dd91e3520e118bce47f93948dcde5ffbefb26bbd",
+    "tests/unit/test_physical_callers.py": "453d8159ae403cf0ce83a00d5060242f8ac85ae47005017958770cd0d3eccb88"
+  },
+  "state_input_sha256": "a39d69e7306d97c7307e7b9a263a71a7f5c646be590815d68860ada2064eaae2",
+  "status": "qualified",
+  "synthetic_fixture_bytes": 44698,
+  "workers_1_4_all_sql_rows_equal": true
+}
