@@ -1,0 +1,58 @@
+{
+  "actual_runtime_enqueue_claim": false,
+  "corruptions": {
+    "full_map_sha256": {
+      "restore_rejected": true,
+      "source_file_unchanged": true,
+      "target_unchanged": true
+    },
+    "payload_sha256": {
+      "restore_rejected": true,
+      "source_file_unchanged": true,
+      "target_unchanged": true
+    }
+  },
+  "driver_sha256": "de50214357286592ed81966f07ac95ba572a4ad11b260959c13ad932ba3a5bc9",
+  "limits": [
+    "Revalidates already-qualified controlled fake-request populated snapshots; no new cached extraction, runtime enqueue, provider work or natural production receipt claim.",
+    "Prior original3194-row/483-real-Bill parity and immutable paid/editorial evidence retained; new read-only guards preserve the exact complete snapshot bytes."
+  ],
+  "new_raw_or_provider_work": false,
+  "original_positive_proof_sha256": "ce56c44ef4e8a44365cb5d7f6b7cec93dc316398d012a81afa0d380a2713c17e",
+  "profiles": {
+    "baseline": {
+      "bills_including_controlled_fixtures": 502,
+      "doctor_status": "recorded",
+      "frozen_requests": 19,
+      "gzip_bytes": 4391729,
+      "queued_controlled_fixtures": 19,
+      "quiet_exact": true,
+      "receipts": 0,
+      "restore_twice_exact": true,
+      "sql_bytes": 21909878,
+      "sql_sha256": "4c9343fd72b0c94355dfae235ec3bf44908765c9b08312c9e5497d26e4fa53e7"
+    },
+    "candidate": {
+      "bills_including_controlled_fixtures": 502,
+      "doctor_status": "recorded",
+      "frozen_requests": 19,
+      "gzip_bytes": 4396440,
+      "queued_controlled_fixtures": 19,
+      "quiet_exact": true,
+      "receipts": 19,
+      "restore_twice_exact": true,
+      "sql_bytes": 21928131,
+      "sql_sha256": "366429fedc1616e4de6a0d81cfde42bcd4fb2f85e9c2ed322ee0ca1e5139bdcb"
+    }
+  },
+  "receipt_only_incremental": {
+    "gzip_bytes": 4711,
+    "sql_bytes": 18253
+  },
+  "source_input_pins": {
+    "baseline": "4c9343fd72b0c94355dfae235ec3bf44908765c9b08312c9e5497d26e4fa53e7",
+    "candidate": "366429fedc1616e4de6a0d81cfde42bcd4fb2f85e9c2ed322ee0ca1e5139bdcb"
+  },
+  "source_pins_unchanged": true,
+  "status": "guard-qualified-existing-positive-snapshots"
+}

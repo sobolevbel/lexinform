@@ -8781,3 +8781,49 @@ producer/performance и prepared-input restore guard сюда не включе�
 [actual prospective state](../assets/audits/2026-10-30-primary-projection-writer/actual-state-qualification.json),
 [remaining audit](../assets/audits/2026-10-30-primary-projection-writer/remaining-audit.json),
 [reader release](../assets/audits/2026-10-30-compatible-document-readers/release.json).
+
+<a id="j188"></a>
+
+## J188 — prospective input receipts with restore integrity checks
+
+После единственного provider prepare runtime связывает actual frozen request/context с original
+selection до fitting и итоговой projection. Только parents из этого captured read могут стать
+known refs; ambiguity/unsupported остаются unknown/absent. Caller сохраняет source history в
+прежнем отдельном checkpoint, затем optional receipt вместе с intent/status в enqueue atomic.
+Original valid intent создаётся до enrichment; обычные metadata/log faults не ломают работу.
+KeyboardInterrupt/SystemExit не подавляются: Root finding исправлен до интеграции; exact
+object/cause, отсутствие queue/submit/status writes и rollback подтверждены.
+
+Receipt<=8192 UTF-8 bytes/32 retained segments; full ordered map hash/count streaming, copied
+spans проверены. Physical/block origins unmapped, exclusions unknown, completeness not asserted.
+Новый body archive/storage backend не появляется, дополнительные provider calls отсутствуют.
+103focused/23new и Root6 cancellation/failure controls green.19 distinct savedJ125 maps
+на4cached sources прошли helper без raw extraction; controlled fake contexts/requests явно
+отделены от natural production. Reader был реально deploy до producer.
+
+Finite paired412e copies с19 одинаковыми controlled intents: receipt-only +18253B SQL/+4711B
+gzip; original3194rows/483typedBills, paid/publication/editorial/frozen данные неизменны.
+Quiet repeat, restore2 и3doctors exact. Это ограниченная counterfactual qualification,
+не восстановление request из старого paid answer и не прогноз общего роста.
+
+Public restore preflight обнаружил принятие corrupt map/request и замену target. Новый shared
+adapter validator используется scratch restore до изменения target и computation doctor:
+known retained payload SHA проверяется также без receipt; receipt-bearing intents проверяют
+actual context/request и row identity, items — retained metadata/known SHA без реконструкции
+удалённого context. Indexed known parents должны существовать и соответствовать связи.
+Legacy unknown остаётся unknown.55focused/14new и независимые8controls green; исходные
+request/map corruptions теперь не меняют target/source. Cleanup, missing/wrong parents,
+старые snapshots и fresh0278 (483Bills/194pub/9paid/118items/0intents) проходят restore2/doctor.
+
+Root narrow3way merge сохранил current/memo/government/primary restore checks и known-ref
+doctor counters. AST подтверждает только _prepare_loaded/_enqueue и repository.restore
+изменения существующих методов; parent-first collection J187 byte-semantics сохранены.
+Full7373tests/269.006s/92%, mypy645/Ruff713;730source/config pins exact.
+J187 exact CI и actual relay verified; staged Git archive docs gate выполняется до commit.
+Multipart/block input profiles и полная DA5 lifetime цепочка остаются открытыми.
+
+[Qualification](../assets/audits/2026-10-30-runtime-input-receipts/qualification.json),
+[controlled populated state](../assets/audits/2026-10-30-runtime-input-receipts/runtime-positive-qualification.json),
+[guard peer](../assets/audits/2026-10-30-runtime-input-receipts/guard-independent-review.json),
+[fresh state](../assets/audits/2026-10-30-runtime-input-receipts/guard-fresh0278-qualification.json),
+[J187 release](../assets/audits/2026-10-30-primary-projection-writer/release.json).

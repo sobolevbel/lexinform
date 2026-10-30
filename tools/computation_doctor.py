@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from lexinform.adapters.input_receipts import input_snapshot_checks
 from lexinform.adapters.primary_projections import primary_projection_issues
 from lexinform.models import ComputationResult, ResultApplicabilityObservation, ResultApplication
 from tools.application_targets import application_target
@@ -223,6 +224,12 @@ def audit(database: Path) -> dict[str, Any]:
             for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
         missing = sorted(_REQUIRED - tables)
+        for check in input_snapshot_checks(connection):
+            result.counts["input_snapshot_rows"] += 1
+            result.counts["input_receipts"] += check.receipt
+            result.counts["frozen_requests"] += check.frozen_request
+            if check.code is not None:
+                result.issue(check.code, check.ref)
         if not missing:
             result.computations(connection)
             result.applications(connection, tables)
@@ -246,6 +253,7 @@ def audit(database: Path) -> dict[str, Any]:
             "applicability_rows",
             "projection_refs_known",
             "projection_refs_unknown",
+            "input_snapshot_rows",
         )
     )
     status = (

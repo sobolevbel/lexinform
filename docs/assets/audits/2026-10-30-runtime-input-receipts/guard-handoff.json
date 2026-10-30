@@ -1,0 +1,28 @@
+{
+  "contract": "Shared adapter-only typed/known-frozen request and primary-receipt checks before scratch target replacement, reused by computation doctor; exact known parent existence/content/index/junction corroboration. Unknown legacy hashes/refs remain unknown, no erased item context reconstruction, no owner/provider inference from model name. No writes, new schema or services dependency.",
+  "focused": {
+    "format": "green",
+    "new": 14,
+    "passed": 55,
+    "ruff": "green",
+    "strict_files": 4
+  },
+  "integration": "Apply limited SQLite import/restore hunks only, preserve modern Root current/memo writer; whole-file base differs. Prior Reader5 and IP4REV2 frozen source pins verified unchanged.",
+  "patch_sha256": "311efd4e9776a06f56e5659b523c02e64dd3ae45e6ea2b11a4216e25e53c2853",
+  "paths": [
+    "src/lexinform/adapters/input_receipts.py",
+    "src/lexinform/adapters/sqlite_repo.py",
+    "tools/computation_doctor.py",
+    "tests/unit/test_input_receipt_validation.py"
+  ],
+  "qualification": "Prior populated positive proof retained; peer review and new guard validation of those existing copied snapshots queued. No new raw/provider/natural-runtime claim.",
+  "restore_only_patch_sha256": "6ed4e594285e655465f28f5316fe0419114a2c17175528e1292eb72a00bf5b35",
+  "source_freeze_sha256": "a03ada615e0f66e4b2bcaab2af9edb749f22d6374928a9446e017bfb82e6ea90",
+  "source_pins": {
+    "src/lexinform/adapters/input_receipts.py": "c86fc71685009fc0985ebb482a9e1d57e119017aff18a575cf9ff3080cc8c92c",
+    "src/lexinform/adapters/sqlite_repo.py": "a17a5556ddae7e43f2d61ca29238074dcf2ded3af40b3001e31ee8461718a6cc",
+    "tests/unit/test_input_receipt_validation.py": "315196b3b95b0dabb55bbca928bb78a8e36162b3ac699f6785c2aef64edab51a",
+    "tools/computation_doctor.py": "08a7df26e3aa0ac45cff63ea46c679e80a45430d3ebfbad9483bc5c7eb7d9c15"
+  },
+  "status": "frozen-focused-green-peer-required"
+}

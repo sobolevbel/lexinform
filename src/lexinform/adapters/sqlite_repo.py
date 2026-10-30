@@ -17,6 +17,7 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
+from lexinform.adapters.input_receipts import validate_input_snapshots
 from lexinform.adapters.physical_history import (
     PHYSICAL_INVENTORY_MIGRATION,
     PhysicalInventoryReader,
@@ -1247,6 +1248,7 @@ class SqliteBillRepository:
             scratch.executescript(script)
             # A dump cut at a statement boundary replays cleanly and fails only in the migrations.
             version = _dump_version(script)
+            validate_input_snapshots(scratch)
             validate_source_omissions(scratch)
             validate_catalog_attempts(scratch)
             for number, migration in enumerate(MIGRATIONS[version:], start=version + 1):
@@ -1259,6 +1261,7 @@ class SqliteBillRepository:
             validate_physical_inventory(scratch)
             validate_source_omissions(scratch)
             validate_catalog_attempts(scratch)
+            validate_input_snapshots(scratch)
         finally:
             scratch.close()
         tables = [

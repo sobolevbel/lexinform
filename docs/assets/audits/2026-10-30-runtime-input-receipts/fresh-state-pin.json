@@ -1,0 +1,16 @@
+{
+  "state_commit": "0278c2d619d422f053fb299f3b6d5fa13f37b11b",
+  "raw_sql_sha256": "f6414c27514ab3571b9774b88d18a89946398b073cf0aa65e8ab6666900eecfe",
+  "raw_sql_bytes": 20891091,
+  "restored_schema": 65,
+  "counts": {
+    "bills": 483,
+    "llm_batch_intents": 0,
+    "llm_batch_items": 118,
+    "computation_results": 9,
+    "publications": 194
+  },
+  "pending_state_counts": [],
+  "restored_dump_sha256": "a97a9bde25624d9edd144f9efcf0bd948b7cde30bef3923501286b8cb2b6d31e",
+  "scope": "Read-only Git snapshot restore; no processing/Settings/provider or raw downloads"
+}

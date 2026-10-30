@@ -1,0 +1,33 @@
+{
+  "doctor_findings": [],
+  "doctor_summary": {
+    "applicability_rows": 5,
+    "application_collection": 7,
+    "application_outcome_applied": 9,
+    "application_outcome_ready": 7,
+    "application_projection": 9,
+    "application_rows": 16,
+    "errors": 0,
+    "input_binding_known": 9,
+    "projection_refs_known": 28,
+    "projection_refs_unknown": 420,
+    "purpose_amendments": 1,
+    "purpose_analysis": 6,
+    "purpose_reanalysis": 1,
+    "purpose_supplement": 1,
+    "request_sha_known": 9,
+    "result_rows": 9,
+    "result_validated": 9,
+    "saved_columns": 704,
+    "target_present": 2,
+    "warnings": 0
+  },
+  "queued_intents": 0,
+  "raw_bytes": 20891091,
+  "raw_source_sha256": "f6414c27514ab3571b9774b88d18a89946398b073cf0aa65e8ab6666900eecfe",
+  "restore_twice_exact": true,
+  "restored_schema_sql_sha256": "a97a9bde25624d9edd144f9efcf0bd948b7cde30bef3923501286b8cb2b6d31e",
+  "scope": "Fresh0278 actual state restored with frozen prospective guard; no processing/provider/raw work. Current/memo/government Root code remains separately preserved at integration; new guard validates known receipts/requests only.",
+  "source_pins_unchanged": true,
+  "status": "recorded"
+}

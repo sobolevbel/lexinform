@@ -79,6 +79,7 @@ from lexinform.models import (
     LocatedText,
     NameContext,
     NameRecord,
+    PrimaryInputReceipt,
     PrintInfo,
     ProcessSummary,
     Publication,
@@ -166,6 +167,10 @@ from lexinform.services.computation_reuse import (
 from lexinform.services.cost import CostLedger
 from lexinform.services.document_history import SourceReadCapture, record_source_read
 from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
+from lexinform.services.input_receipts import (
+    capture_primary_input_receipt,
+    enrich_primary_input_intent,
+)
 from lexinform.services.joint import primary_of, revive_prefilter_skips
 from lexinform.services.result_applications import record_secondary_application
 from lexinform.services.senate_documents import (
@@ -431,6 +436,7 @@ class _Prepared:
     triage_memo_key: str | None = None
     from_batch: bool = False
     source_read: SourceReadCapture | None = None
+    input_receipt: PrimaryInputReceipt | None = None
 
 
 _WHITESPACE = re.compile(r"\s+")
@@ -2854,6 +2860,23 @@ class AnalysisService:
                         unreadable_reason="both primary and overflow models rejected the context",
                     )
                 raise LlmContextExceededError("overflow batch also rejected the input context")
+            request = backend.prepare_request(
+                BatchRequest(
+                    custom_id=custom_id,
+                    term=bill.term,
+                    number=bill.number,
+                    question=AnalysisQuestion(kind=purpose, ctx=ctx),
+                    model=self._options.overflow_model if overflow else "",
+                )
+            )
+            receipt = None
+            try:
+                receipt = capture_primary_input_receipt(
+                    request, loaded.selection, fitted.projection, loaded.source_read
+                )
+            except Exception:
+                with suppress(Exception):
+                    log.warning("Prepared input receipt omitted (capture_failed)")
             return _Prepared(
                 bill,
                 located,
@@ -2866,15 +2889,8 @@ class AnalysisService:
                 batch_provider=(
                     self._options.overflow_provider if overflow else self._options.batch_provider
                 ),
-                batch_request=backend.prepare_request(
-                    BatchRequest(
-                        custom_id=custom_id,
-                        term=bill.term,
-                        number=bill.number,
-                        question=AnalysisQuestion(kind=purpose, ctx=ctx),
-                        model=self._options.overflow_model if overflow else "",
-                    )
-                ),
+                batch_request=request,
+                input_receipt=receipt,
                 batch_meta=BatchItemMeta(
                     overflow=overflow,
                     input_chars=len(ctx.text),
@@ -3274,18 +3290,21 @@ class AnalysisService:
         if prepared.triage_memo_key is not None and prepared.triage is not None:
             self._remember_analysis(bill, prepared.triage_memo_key, prepared.triage)
         with self._repo.atomic():
-            self._repo.save_batch_intent(
-                BatchIntent.from_request(
-                    request=prepared.batch_request,
-                    meta=prepared.batch_meta.model_copy(
-                        update={
-                            "prompt_version": prepared.batch_request.prompt_version,
-                        }
-                    ),
-                    provider=prepared.batch_provider or self._options.batch_provider or "anthropic",
-                    created_at=self._clock.now(),
-                )
+            intent = BatchIntent.from_request(
+                request=prepared.batch_request,
+                meta=prepared.batch_meta.model_copy(
+                    update={"prompt_version": prepared.batch_request.prompt_version}
+                ),
+                provider=prepared.batch_provider or self._options.batch_provider or "anthropic",
+                created_at=self._clock.now(),
             )
+            if prepared.input_receipt is not None:
+                try:
+                    intent = enrich_primary_input_intent(intent, prepared.input_receipt)
+                except Exception:
+                    with suppress(Exception):
+                        log.warning("Prepared input receipt omitted (enrichment_failed)")
+            self._repo.save_batch_intent(intent)
             self._repo.set_status(bill.term, bill.number, BillStatus.BATCH_PENDING)
         return True
 

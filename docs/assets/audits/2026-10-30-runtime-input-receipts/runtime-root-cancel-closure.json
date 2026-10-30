@@ -1,0 +1,10 @@
+{
+  "status": "green",
+  "scope": "Root own review after cancellation finding; six actual correct-source ordinary-fault/cancellation public controls",
+  "tests": 6,
+  "freeze_sha256": "835f715f63998da6959361f21e04da8b66010fb37f8bfc776db0697a8a0d161c",
+  "patch_sha256": "948a0e77a6663d71e6eec56e7484203a9f992cac14b3bcca61ee6846511bf72d",
+  "log_sha256": "700bc0322b00f8e8db3ce495047983b54ab27ab59ed1fedac05f3aeba47dae24",
+  "prior_harness_fault": "First command omitted PYTHONPATH and imported primary checkout; failed output preserved, terminal command corrected; not a source regression",
+  "source_pins_exact": true
+}

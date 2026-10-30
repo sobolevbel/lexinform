@@ -1,0 +1,219 @@
+{
+  "actual_runtime_enqueue_claim": false,
+  "controlled_fake_requests": true,
+  "driver_sha256": "1ce31637a59084b40d9061da9a428dbb741301dd9aadd8bc5ac628f8be056aef",
+  "fixtures": 19,
+  "limits": [
+    "Public original-intent + actual capture/enrichment helper + public atomic repository fixture construction; no private service enqueue or invented natural descriptors. Actual caller/native-parent/workers behavior covered by exact103 focused controls.",
+    "Every queued fixture is controlled, not reconstructed historical paid payload; no provider adapter preparation/submission or Settings construction.",
+    "All original populated rows retained byte-for-byte after current-schema restore;483 original typedBill views exact, not a new production run.",
+    "Corrupt request/map scratch-restore preflight currently fails barrier; no claim qualification complete until repaired."
+  ],
+  "profiles": {
+    "baseline": {
+      "all_original_rows_retained": true,
+      "doctors": {
+        "content": {
+          "findings": [],
+          "missing_tables": [],
+          "status": "recorded",
+          "summary": {
+            "binding_rows": 1,
+            "errors": 0,
+            "snapshot_rows": 3,
+            "version_rows": 1,
+            "warnings": 0
+          }
+        },
+        "sources": {
+          "findings": [],
+          "missing_tables": [],
+          "status": "recorded",
+          "summary": {
+            "artifact_link_rows": 89,
+            "artifact_read_rows": 39,
+            "artifact_rows": 39,
+            "edition_link_rows": 12,
+            "edition_rows": 12,
+            "errors": 0,
+            "observation_rows": 19,
+            "physical_captures_rows": 0,
+            "physical_metadata_rows": 0,
+            "policy_recorded": 17,
+            "purpose/analysis": 6,
+            "purpose/prefilter": 13,
+            "rcl_letter_use_complete": 2,
+            "rcl_letter_use_rows": 2,
+            "rcl_letter_use_unknown_origin": 0,
+            "rcl_letter_use_unknown_stage_id": 0,
+            "selection_rows": 17,
+            "senate_inspection_link_rows": 0,
+            "source_catalog_attempt_parents_rows": 0,
+            "source_catalog_attempts_rows": 0,
+            "source_catalog_snapshots_rows": 0,
+            "state/selected": 4,
+            "state/unverified": 13,
+            "unlinked_artifact_rows": 7,
+            "unreferenced_selection_rows": 0
+          }
+        },
+        "work": {
+          "findings": [
+            {
+              "code": "document_publication_unavailable",
+              "level": "warning",
+              "ref": "document_work/amendments/133"
+            },
+            {
+              "code": "document_publication_unavailable",
+              "level": "warning",
+              "ref": "document_work/amendments/139"
+            },
+            {
+              "code": "document_publication_unavailable",
+              "level": "warning",
+              "ref": "document_work/amendments/140"
+            },
+            {
+              "code": "document_publication_unavailable",
+              "level": "warning",
+              "ref": "document_work/amendments/188"
+            }
+          ],
+          "missing_tables": [],
+          "status": "recorded",
+          "summary": {
+            "document_rows": 4,
+            "document_waiting": 4,
+            "errors": 0,
+            "review_abandoned": 7,
+            "review_context": 2,
+            "review_owner_rows": 9,
+            "review_purpose_act_application": 2,
+            "review_purpose_consultation_review": 7,
+            "review_rows": 9,
+            "warnings": 4
+          }
+        }
+      },
+      "gzip_bytes": 4391729,
+      "original_bill_count": 483,
+      "original_bill_view_sha256": "159c0d7d1797791b9ca0ae7a2cef0d7ebc7adb15689a375251a78500af0cb23b",
+      "original_row_count": 3194,
+      "queued_fixture_count": 19,
+      "quiet_repeat_exact": true,
+      "restore_seconds": null,
+      "restore_twice_exact": true,
+      "resumed_existing_fixture_copy": true,
+      "sql_bytes": 21909878,
+      "sql_sha256": "4c9343fd72b0c94355dfae235ec3bf44908765c9b08312c9e5497d26e4fa53e7"
+    },
+    "candidate": {
+      "all_original_rows_retained": true,
+      "doctors": {
+        "content": {
+          "findings": [],
+          "missing_tables": [],
+          "status": "recorded",
+          "summary": {
+            "binding_rows": 1,
+            "errors": 0,
+            "snapshot_rows": 3,
+            "version_rows": 1,
+            "warnings": 0
+          }
+        },
+        "sources": {
+          "findings": [],
+          "missing_tables": [],
+          "status": "recorded",
+          "summary": {
+            "artifact_link_rows": 89,
+            "artifact_read_rows": 39,
+            "artifact_rows": 39,
+            "edition_link_rows": 12,
+            "edition_rows": 12,
+            "errors": 0,
+            "observation_rows": 19,
+            "physical_captures_rows": 0,
+            "physical_metadata_rows": 0,
+            "policy_recorded": 17,
+            "purpose/analysis": 6,
+            "purpose/prefilter": 13,
+            "rcl_letter_use_complete": 2,
+            "rcl_letter_use_rows": 2,
+            "rcl_letter_use_unknown_origin": 0,
+            "rcl_letter_use_unknown_stage_id": 0,
+            "selection_rows": 17,
+            "senate_inspection_link_rows": 0,
+            "source_catalog_attempt_parents_rows": 0,
+            "source_catalog_attempts_rows": 0,
+            "source_catalog_snapshots_rows": 0,
+            "state/selected": 4,
+            "state/unverified": 13,
+            "unlinked_artifact_rows": 7,
+            "unreferenced_selection_rows": 0
+          }
+        },
+        "work": {
+          "findings": [
+            {
+              "code": "document_publication_unavailable",
+              "level": "warning",
+              "ref": "document_work/amendments/133"
+            },
+            {
+              "code": "document_publication_unavailable",
+              "level": "warning",
+              "ref": "document_work/amendments/139"
+            },
+            {
+              "code": "document_publication_unavailable",
+              "level": "warning",
+              "ref": "document_work/amendments/140"
+            },
+            {
+              "code": "document_publication_unavailable",
+              "level": "warning",
+              "ref": "document_work/amendments/188"
+            }
+          ],
+          "missing_tables": [],
+          "status": "recorded",
+          "summary": {
+            "document_rows": 4,
+            "document_waiting": 4,
+            "errors": 0,
+            "review_abandoned": 7,
+            "review_context": 2,
+            "review_owner_rows": 9,
+            "review_purpose_act_application": 2,
+            "review_purpose_consultation_review": 7,
+            "review_rows": 9,
+            "warnings": 4
+          }
+        }
+      },
+      "gzip_bytes": 4396440,
+      "original_bill_count": 483,
+      "original_bill_view_sha256": "159c0d7d1797791b9ca0ae7a2cef0d7ebc7adb15689a375251a78500af0cb23b",
+      "original_row_count": 3194,
+      "queued_fixture_count": 19,
+      "quiet_repeat_exact": true,
+      "restore_seconds": 0.3391225410159677,
+      "restore_twice_exact": true,
+      "resumed_existing_fixture_copy": false,
+      "sql_bytes": 21928131,
+      "sql_sha256": "366429fedc1616e4de6a0d81cfde42bcd4fb2f85e9c2ed322ee0ca1e5139bdcb"
+    }
+  },
+  "raw_source_sha256": "a39d69e7306d97c7307e7b9a263a71a7f5c646be590815d68860ada2064eaae2",
+  "reader5_unchanged": true,
+  "receipt_only_incremental": {
+    "gzip_bytes": 4711,
+    "sql_bytes": 18253
+  },
+  "source4_unchanged": true,
+  "status": "positive-proof-green-restore-corruption-barrier-still-open",
+  "unknown_parent_refs": true
+}

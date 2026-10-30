@@ -1,0 +1,42 @@
+{
+  "status": "peer_green_no_findings",
+  "patch_sha256": "311efd4e9776a06f56e5659b523c02e64dd3ae45e6ea2b11a4216e25e53c2853",
+  "source_freeze_sha256": "a03ada615e0f66e4b2bcaab2af9edb749f22d6374928a9446e017bfb82e6ea90",
+  "source4_exact_before_after": true,
+  "related_IP4_freezes_unchanged": {
+    "out/corpus/runtime-input-receipt/source-freeze.json": "dcdcfb67a7c872e6acecb7b145ee9579f379e3c70d48c56f191cec1fa5975965",
+    "out/corpus/primary-input-runtime/source-freeze.json": "835f715f63998da6959361f21e04da8b66010fb37f8bfc776db0697a8a0d161c"
+  },
+  "controls": {
+    "passed": 8,
+    "names": [
+      "test_legacy_unknown_without_receipt_is_not_guessed",
+      "test_complete_map_corruption_refuses_before_target_touch",
+      "test_known_payload_without_receipt_is_verified",
+      "test_known_parent_metadata_and_junctions_restore_without_raw_extraction",
+      "test_false_body_junction_is_rejected_even_with_existing_other_body",
+      "test_indexed_parent_columns_cannot_disagree_with_saved_record",
+      "test_item_known_request_sha_must_match_its_receipt",
+      "test_consumed_cleaned_item_does_not_reconstruct_old_context"
+    ],
+    "scope": "Public restore and shared computation doctor on controlled metadata copies; negative target/source/snapshot immutability, two restore roundtrips on positives. No raw extraction/provider/full gate."
+  },
+  "static_review": [
+    "Scratch validation runs before target table/view removal, before migration and after migration; parent and layout failures cannot enter target replacement.",
+    "Known frozen BatchRequest hash is verified with or without receipt. Intent receipt binds actual retained request/context; submitted metadata checks known SHA without rebuilding context from receiver/text after cleanup.",
+    "Known selection/artifact/extraction IDs validate indexed JSON fields, exact source part/body/text/count and present selection-artifact/extraction junctions. No inferred legacy parent or fake unknown value.",
+    "Adapter uses typed models/SQLite only; no service dependency, new DDL, writes or BaseException suppression. Doctor and restore share the same closed diagnostics."
+  ],
+  "merge_barrier": "Apply only guard adapter + import/pre/post scratch hooks and doctor input-check additions. Preserve Root26e modern RowFactory, current/memo writers, modern-ref counts/validation and primary-projection restore checks; never replace whole stale sqlite_repo/computation_doctor files.",
+  "initial_harness_corrections": "First execution assumed unknown-only doctor must be recorded (correct is not_run/zero errors), and consumed items were listed by an unconsumed-only API. Corrected only independent driver; original attempt retained. No product failure or source repair.",
+  "driver_sha256": "19e9128b112c9ec8ef977146f436b3de8a2f87e4736126f54fb0a58b6f50f89a",
+  "junit_sha256": "51aeb64684b014987d1e2359b1dbd590be95996b9e8f193aa90034544e201db3",
+  "not_run": [
+    "full gate",
+    "raw extraction/replay",
+    "paid/provider/network",
+    "production",
+    "source edits",
+    "commits/pushes"
+  ]
+}

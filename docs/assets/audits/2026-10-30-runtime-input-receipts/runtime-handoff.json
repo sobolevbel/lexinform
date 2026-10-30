@@ -1,0 +1,85 @@
+{
+  "activation_barrier": "Root verified actual compatible reader release a400c38f5cdf42b327118999eac304ce57fc94ea; own producer still not integrated/activated, requires peer fix closure and finite SQL/gzip qualification first.",
+  "base": "28cd1acae73596c2f5194285c515057e5c0b1c7f",
+  "checks": {
+    "diff_check": "green",
+    "focused_passed": 103,
+    "format_owned": 4,
+    "mypy_owned": 4,
+    "new_tests": 23,
+    "public_scenario_new": 14,
+    "ruff_owned": 4,
+    "seconds": 5.17,
+    "unit_new": 9
+  },
+  "contract": "One existing provider preparation; guarded pure receipt capture from original loaded.selection/fitted.projection and only this captured read. Missing/ambiguous references unknown, unsupported profiles absent. Caller source-history admission transaction remains before separate enqueue transaction. Construct original valid operational intent first; only optional enrichment fail-open. SQL/source/backend exceptions unchanged, no worker SQL/Clock. Only closed bounded reason logs, guarded logging failure.",
+  "control_flow_repair": "Only Exception is fail-open in NEW capture/enrichment/logging guards. KeyboardInterrupt/SystemExit/GeneratorExit propagate unchanged. Two actual public caller KeyboardInterrupt controls retain exact object+cause; no queue/submit/status mutation, enqueue atomic rollback.",
+  "failure_controls": [
+    "ValueError metadata capture/enrichment fail-open",
+    "RuntimeError metadata logging double fault fail-open",
+    "KeyboardInterrupt capture and enrichment exact propagation/object/cause/no queue or submit",
+    "original source/backend/SQL exception objects propagate"
+  ],
+  "freeze_sha256": "835f715f63998da6959361f21e04da8b66010fb37f8bfc776db0697a8a0d161c",
+  "owned": [
+    "src/lexinform/services/analysis.py",
+    "src/lexinform/services/input_receipts.py",
+    "tests/scenario/test_primary_input_receipts.py",
+    "tests/unit/test_primary_input_receipt_capture.py"
+  ],
+  "patch_sha256": "948a0e77a6663d71e6eec56e7484203a9f992cac14b3bcca61ee6846511bf72d",
+  "pending": [
+    "Independent review of exact4 frozen sources",
+    "Actual-state finite counterfactual SQL/gzip/quiet/restore qualification only after peer-review approval",
+    "Root reader deploy verification and final gate/release"
+  ],
+  "positive_controls": [
+    "native loose-file workers1/4 real source/body/extraction parents precede intent, input-order/caller-thread writes, single prepare, restore+quiet repeat",
+    "physical-only actual unsafe-URL graph refusal retains independent known body/extraction only, no graph ref/private URL in receipt",
+    "original submitted payload/model/key/cost/generation/binding/business metadata exact with capture disabled baseline",
+    "unknown/ambiguous captured parents, unsupported package/explanation/scan-label, false receipt enrichment rejected"
+  ],
+  "preimages_on_reader5_overlay": {
+    "src/lexinform/services/analysis.py": "f1b7543d897bf3e9915954cbf9ad28d68526cf90b53c57fbb3a3914b647d5907",
+    "src/lexinform/services/input_receipts.py": null,
+    "tests/scenario/test_primary_input_receipts.py": null,
+    "tests/unit/test_primary_input_receipt_capture.py": null
+  },
+  "prior_revision_preserved": "revision1/ exact source/evidence/patch; no old evidence overwritten",
+  "proofs": {
+    "cached19": "corpus-qualification.json",
+    "cached19_sha256": "e0854e6c0b99055b1ae152179eeb5a66ded51977d180e8cf11bcda85b8359a5e",
+    "cached_driver": "cached_helper_qualification.py",
+    "cached_driver_sha256": "4122fd92eb91aab9bc01739a4c6f9a09f38bba2933287c874b180c1e684b1f13"
+  },
+  "qualification_reuse": "19-map helper/J125/Reader5 proof retained unchanged in revision1; helper source byte SHA identical. Only AnalysisService control-flow guards and tests changed; fresh103focused covers exact current source. No corpus extraction repeated.",
+  "reader5_unchanged": true,
+  "required_reader_patch_sha256": "70249a14608de68f3fb9df6d4af4fa00e949f7c3ce7cf1c06a8c8dbe0120272a",
+  "required_reader_source_pins": {
+    "src/lexinform/input_receipts.py": "81a3fcbd29a3ceed01aaf36028d20a8192d50fa496acc0e3d33f5be900181f4f",
+    "src/lexinform/models/__init__.py": "786285a0be2cc68babc7aa59881871b956683d78b1f31195b1361ff6814e50c7",
+    "src/lexinform/models/batch.py": "e875ce0836ab85b4f5cda78469135126989eed1cad838eb03205a562e9d32920",
+    "src/lexinform/models/input_receipts.py": "8444dc745ee41380d3284e9b2d6a4965a67e087934d17d86c9d6204a04663a7b",
+    "tests/unit/test_input_receipts.py": "fa8d22ae8e688826679187f6e3c22f5503846c32668e7f6896cd131920c48d3a"
+  },
+  "revision": 2,
+  "revision2_delta_sha256": "e92b3a539a3ad1f7b84f687abbc121ca1be084f8e11a0622b07f1c8870a26c8e",
+  "source_pins": {
+    "src/lexinform/services/analysis.py": "df72aaebbcc4cd957c66f87b6dbb9e3f90e1e1bf95b3f0ba9d427866d5124919",
+    "src/lexinform/services/input_receipts.py": "78f6206fefcdade51a30d01a5dd0e5b196fee7821cebf6aa019a41738f8310e5",
+    "tests/scenario/test_primary_input_receipts.py": "16b0de095f119c0a8b68b2976ce4411b42954918e7321ab19a2ce672dcbfa411",
+    "tests/unit/test_primary_input_receipt_capture.py": "16bf439915660b672547013436222243c20586c23dc65b2b71bcae6901bff9f4"
+  },
+  "status": "revision2-frozen-awaiting-narrow-peer-control-flow-closure; no SQLgrowth/raw/full/paid/commit",
+  "unchanged_boundaries": [
+    "Reader5 all exact",
+    "No source/extraction/trim/projection/provider logic change",
+    "No schema/ports/backend/raw retention change",
+    "No paid/prod/network/full/commit/push"
+  ],
+  "verified_reader_release": {
+    "authority": "Root explicit verified message",
+    "commit": "a400c38f5cdf42b327118999eac304ce57fc94ea",
+    "proof": "/Users/sobaleu/projects/lexinform/out/corpus/j186-compatible-readers/release/check-1.json"
+  }
+}
