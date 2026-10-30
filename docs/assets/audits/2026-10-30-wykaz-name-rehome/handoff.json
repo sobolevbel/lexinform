@@ -1,0 +1,61 @@
+{
+  "base": "26e8d01f9ef93b761392518c4738f95af5a5ab40",
+  "source_paths": {
+    "src/lexinform/services/analysis.py": {
+      "sha256": "9b41f22af0e7c25ce7d9f91b85d2c3d73d770f8abbe1d0dc73b9b13df3b374e8",
+      "bytes": 149999
+    },
+    "tests/scenario/test_wykaz_name_rollover.py": {
+      "sha256": "8a6f3939733a853227462e85a1883a23d14fd88b443cf1a49ccf4dc0a98e3645",
+      "bytes": 7096
+    }
+  },
+  "patch_sha256": "309c073ab231d827766c4554e0118269e4a92e70c8df5f3c10e27af4fddb0b2c",
+  "name_scope_patch_sha256": "02381e464c6029655038bb1830a1b05338728a4ed1dd63792803a6c16ee8cb41",
+  "reuse": {
+    "base": "26e8d01f9ef93b761392518c4738f95af5a5ab40",
+    "preserved_source11_stash": "1edcc38cb9cbabf537a0a1a5ee01cc3802a721a1",
+    "all_prior_stashes_preserved": true,
+    "all_out_preserved": true,
+    "clean_after_reuse": true
+  },
+  "checks": {
+    "before_cases": 7,
+    "before_failed": 3,
+    "before_passed": 4,
+    "focused_passed": 81,
+    "new_cases": 7,
+    "strict_mypy": "2 paths GREEN",
+    "ruff_check_format": "2 paths GREEN",
+    "git_diff_check": "GREEN",
+    "memo_key_AST_exact": true,
+    "schema_SQL_models_and_existing_RCL_tests_exact": {
+      "tests/scenario/test_rcl_name_rollover.py": "0e90899e7029b5b8f31ebe78930030b4a294235a4abe3429ddf0828b5848ce64",
+      "src/lexinform/adapters/sqlite_repo.py": "8877a0e333ef809a668150e55aa1dabc5b14b5f904b41198be43575271929f33",
+      "src/lexinform/models/analysis.py": "229ca857e9fe05149bca8293c3f8cec26c2984e4e1ed97d5f90432251f40944d",
+      "src/lexinform/models/batch.py": "e875ce0836ab85b4f5cda78469135126989eed1cad838eb03205a562e9d32920",
+      "src/lexinform/models/computations.py": "7c0f1afdad77bad985dbe3af5b2636cd152687d7353ea1cde9555d26d094db2a"
+    }
+  },
+  "red_controls": [
+    "test_queued_wykaz_name_keeps_original_request_without_preparing_again_after_rollover",
+    "test_collected_wykaz_name_survives_cleanup_then_applies_to_new_owner_once[gpt-5.1]",
+    "test_collected_wykaz_name_survives_cleanup_then_applies_to_new_owner_once[claude-opus-5-5]"
+  ],
+  "contract": {
+    "implementation": "Only widen the existing original-owner gate to Bill.is_rcl or Bill.is_wykaz, update one-line government docstring, remove unused source-specific import. No new queries/schema/framework, reuse/hash/provider policies unchanged.",
+    "queued": "Actual Wykaz pipeline creates a queued name before term rollover; original captured term/request/provider stays unchanged, no extra prepare, one submit/paid result.",
+    "collected": "Both fake providers: collected original name survives memo+operational cleanup, restore and real rollover; selected mnemonic carries original result and exactly one new-owner editorial receipt. Repeat/restore produces no new paid call or receipt.",
+    "negative": "All four NameContext dimensions (title, summary, key_changes, language) start distinct work; unchanged existing same-number Sejm negative plus full RCL worker1/4/provider/uncertain controls remain green.",
+    "public_boundary": "Bill domain properties qualify persistent pre-print government identity; government_path was not used and printed bills never receive general foreign fallback."
+  },
+  "integration": "Merge limited name-scope hunk/import only into Root IP4 analysis.py; do not replace whole stale source file.",
+  "not_run": [
+    "broad full gate",
+    "raw/normalization/corpus replay (unchanged)",
+    "paid/provider/network",
+    "production",
+    "commits/pushes"
+  ],
+  "red_scope": "Base26e, before final post-repeat/full-receipt/no-cost assertions; the three failing queued/reuse assertions are unchanged."
+}

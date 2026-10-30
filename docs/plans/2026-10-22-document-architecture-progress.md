@@ -8874,3 +8874,36 @@ DA3.3 остаётся открыт для ODT notes и иных явно нед
 [merged native](../assets/audits/2026-10-30-word-default-view/combined-native.json),
 [performance context](../assets/audits/2026-10-30-word-default-view/journal-performance.md),
 [J188 release](../assets/audits/2026-10-30-runtime-input-receipts/release.json).
+
+<a id="j190"></a>
+
+## J190 — retain Wykaz naming scope across government term rollover
+
+Existing original-owner lookup распространяется с RCL на Bill.is_wykaz. Полный NameContext
+и current/legacy memo keys остаются прежними; terms берутся только из actual retained
+intents/items/paid results. government_path не используется: printed government Sejm bills
+не получают новое разрешение. Schema, request contents, model prompts и paid identities прежние.
+
+Queued request сохраняет original term/provider/key без дополнительного prepare. Collected
+answer после cleanup/restore выбирается с явным selected new-owner receipt; исходные paid
+result/request/usage неизменны, повтор не создаёт вызов. Смена title/summary/changes/language
+не переиспользует старый ответ; numeric Sejm остаётся вне predicate. Из7 новых случаев старый
+код проваливал3; после исправления81focused green, независимые6 runtime controls прошли.
+Existing RCL tests, memo-key AST, SQL и models byteexact. Worker/provider варианты проверяют
+реальные lifecycle seams без платных запросов.
+
+Root narrow3way merge меняет только _name_request_key среди существующих методов. Parent-first
+primary collect и input receipt/restore guards сохранены. Full7416tests/267.137s/92%,
+mypy648/Ruff716;733source/config pins exact. Word f2d exact CI/relay verified до следующего
+release. Staged Git archive docs gate выполняется перед commit.
+
+DA6.2 audit остаётся OPEN: amendment revision создаёт QUEUED target projection+receipt в
+collect atomic, а literal plan требует отдельной recoverable application transaction. SENT
+publication не меняется, но эта boundary пока не реализована. Disabled act producer не
+включается ради checkbox; actual delivery cycles DA10.7 не доказываются fake tests.
+§1.4 persistent duplication lifetime — отдельная задача DA6.3, не скрытый универсальный bodyRef.
+
+[Qualification](../assets/audits/2026-10-30-wykaz-name-rehome/qualification.json),
+[peer](../assets/audits/2026-10-30-wykaz-name-rehome/independent-closure.json),
+[atomic purpose audit](../assets/audits/2026-10-30-wykaz-name-rehome/atomic-purpose-audit.json),
+[Word release](../assets/audits/2026-10-30-word-default-view/release.json).

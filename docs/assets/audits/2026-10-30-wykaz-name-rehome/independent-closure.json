@@ -1,0 +1,40 @@
+{
+  "explicit_author_src_PYTHONPATH_package_file_asserted": true,
+  "findings": [],
+  "focused_log_sha256": "700bc0322b00f8e8db3ce495047983b54ab27ab59ed1fedac05f3aeba47dae24",
+  "handoff_sha256": "40d3159fd2f5de64da9177f88678003790b609f8d3fd68b7d87f7a969d5af9e2",
+  "independent_runtime_controls": 6,
+  "independent_runtime_nodes": [
+    "queuedactualWykazintent retainedoriginalterm/request, no extra prepare afterrollover",
+    "collectedAnthropicactualWykazname retainedaftercleanup/restore, originalpaid/request/usage/onecurrentownereditorialreceipt/repeats",
+    "fourchangedcontextdimensionstitle/summary/key_changes/languagenewrequests"
+  ],
+  "integration": "Applyonlyoneeligibility/docstring/importhunk plusnewscenarios; do notcopywholeanalysis.py overRootIP/runtimewriterchanges.",
+  "not_run": [
+    "full",
+    "raw",
+    "paid/network",
+    "actualstatewrites",
+    "sourceedits",
+    "commit/push"
+  ],
+  "patch_sha256": "309c073ab231d827766c4554e0118269e4a92e70c8df5f3c10e27af4fddb0b2c",
+  "source_pins": {
+    "src/lexinform/services/analysis.py": {
+      "bytes": 149999,
+      "sha256": "9b41f22af0e7c25ce7d9f91b85d2c3d73d770f8abbe1d0dc73b9b13df3b374e8"
+    },
+    "tests/scenario/test_wykaz_name_rollover.py": {
+      "bytes": 7096,
+      "sha256": "8a6f3939733a853227462e85a1883a23d14fd88b443cf1a49ccf4dc0a98e3645"
+    }
+  },
+  "source_pins_exact_before_after": true,
+  "static_checks": [
+    "OnlyRCLorWykazdomaineligibility, no government_path/blanketforeignnumber/Sejmfallback. PriorRCLpredicateequivalent; same-numberSejmnegativefileunchangedandread, notadditionalruntimecase.",
+    "Termscomefromactualpurpose/name intents/items/computation_results, currenttermplusrecordedoriginalterms; wholecanonicalnamecontext+term+purposehashmatchrequired. No guessedtermrange orsourceURL alias.",
+    "_memo_key ASTexactbase; contextidentity/memo/retry/provider/guard/schema/SQL/modelcontractsunchanged. No originalpaidrecord/currentrequestrewrite.",
+    "Author81focusedcoversbothprovidersandunchangedRCL/Sejmcontrols; thisreadonlypeerused6targetedboundaries, no duplicatedfullmatrix."
+  ],
+  "status": "independent-exact2-closed-green"
+}

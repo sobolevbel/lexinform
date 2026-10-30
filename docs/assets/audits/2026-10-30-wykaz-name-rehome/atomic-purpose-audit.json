@@ -1,0 +1,94 @@
+{
+  "verdict": "DA6.2 remains OPEN: revision exception below prevents universally separate application. No further required-owner gap demonstrated; unsupported historical foreign reuse is not permission to extend policy.",
+  "snapshot": {
+    "head": "f2dce0bcc7cbbf71455750fc76267cd907885709",
+    "batch_enum": "src/lexinform/models/batch.py",
+    "analysis_sha256": "7d9783464e9a8ba1ae0a0829d5a7590efcb4f6e6b6f239e177b7db1ab20c28a3"
+  },
+  "collection": {
+    "P": "_consume atomic: READY/status, normalized result, collection decision, memo, usage, consumed. Generation/status mismatch retains superseded paid answer.",
+    "S": "_consume_digest atomic: normalized result or error, input reference, memo, original usage, consumed; primary status unchanged. Run-ledger acknowledgement is separate recoverable accounting, not claimed inside SQL."
+  },
+  "columns": [
+    "collect",
+    "required owner",
+    "projection",
+    "proof"
+  ],
+  "purposes": {
+    "analysis": [
+      "P",
+      "current owner+generation; carried current requires known original receipt",
+      "apply_analysis",
+      "P"
+    ],
+    "reanalysis": [
+      "P",
+      "current owner+generation; pending original owner stays captured",
+      "tracking observation/delivery",
+      "P,T"
+    ],
+    "explanation": [
+      "S",
+      "caller-owned frozen input; exact same-owner binding",
+      "command/update_id + executed marker",
+      "S,A"
+    ],
+    "amendments": [
+      "S",
+      "original event or frozen revision publication owner",
+      "status_change/id; revision publication/id (exception)",
+      "S,E,A"
+    ],
+    "supplement": [
+      "S",
+      "same-owner exact input; saved event identity",
+      "status_change/id",
+      "S,E"
+    ],
+    "joint": [
+      "S",
+      "same-owner exact comparison context",
+      "Bill.joint target",
+      "S,A"
+    ],
+    "consultation_review": [
+      "S",
+      "same-owner exact review context; current carried review needs source receipt",
+      "document_review/source scope",
+      "R,A,O"
+    ],
+    "commission_review": [
+      "S",
+      "same-owner exact comparison/context; carried current receipt only",
+      "document_review/source scope",
+      "R,A,O"
+    ],
+    "act_application": [
+      "S",
+      "same-owner exact context/ELI; disabled producer",
+      "collector proven; enabled application cycle OPEN",
+      "R"
+    ],
+    "name": [
+      "S",
+      "RCL/Wykaz original known work; exact NameContext; same-number Sejm denied",
+      "selected editorial/mnemonic; source receipt on transfer",
+      "S,A,N"
+    ]
+  },
+  "projection_policy": "Primary _record_collection/_ready reject reset/skip/stale generation before application. Secondary uses explicit generationless targets, never borrowed primary generation. Caller target/context/ELI/pause guards apply; exact receipts commit with state, repeat is idempotent.",
+  "proofs": {
+    "P": "tests/scenario/test_computation_history.py::test_old_answer_does_not_become_current_after_an_operator_decision; test_result_applications.py::test_projection_receipt_failure_keeps_the_ready_result_retryable",
+    "S": "tests/scenario/test_secondary_computation_history.py::test_secondary_answer_survives_collect_restore_reuse_and_operational_cleanup",
+    "R": "tests/scenario/test_review_computation_history.py::test_review_history_retains_paid_output_and_compact_input_across_reuse_and_cleanup (all3 purposes; act manually registered)",
+    "A": "tests/scenario/test_secondary_projection_applications.py (review/joint/name/revision/command rollback); tests/unit/test_result_application_targets.py",
+    "E": "tests/scenario/test_status_change_applications.py; services/status_change_applications.py",
+    "T": "tests/scenario/test_sejm_analysis_checkpoint.py::test_sejm_analysis_and_application_share_the_observation_checkpoint; test_tracking_result_applications.py; test_delivery_checkpoints.py",
+    "O": "tests/scenario/test_rollover_computation_history.py; test_rollover_review_history.py; test_selected_name_binding.py; services/tracking/{rollover,linking,wykaz}.py",
+    "N": "tests/scenario/test_wykaz_name_rollover.py + test_rcl_name_rollover.py; Wykaz81 focused/strict2 + independent6 accepted; integrated, full/release pending at dispatch"
+  },
+  "exception": "_consume_digest calls _queue_amendment_revision and writes publication-target application inside collection atomic. It creates frozen QUEUED delivery, preserves original SENT publication, sends later. test_secondary_projection_applications.py::test_revision_receipt_failure_does_not_consume_or_queue_the_result proves coupled rollback. Separate durable application recovery must precede literal closure.",
+  "separate_open": "DA6.3/section1.4 persistent duplication lifetime/removal/measurement remains separate. DA10.7 actual source/purpose delivery-recovery cycles are not proved by fakes; act enabled application proof remains absent. Raw archive follows deferred DA2 profile.",
+  "boundary": "Read-only source/proof audit; no new tests/full/raw/paid/state/processing, no checkbox edits."
+}

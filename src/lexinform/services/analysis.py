@@ -105,7 +105,6 @@ from lexinform.models import (
     TriageContext,
     TriageRecord,
     computation_id,
-    is_rcl_number,
     merge_usage,
     observe,
     provider_of,
@@ -2534,9 +2533,9 @@ class AnalysisService:
         )
 
     def _name_request_key(self, bill: Bill, context: NameContext) -> str:
-        """Only known original owner terms can locate a retained RCL name question."""
+        """Only known original owner terms can locate a retained government name question."""
         key = _memo_key(bill, "name", context)
-        if not is_rcl_number(bill.number) or key in self._memo:
+        if not (bill.is_rcl or bill.is_wykaz) or key in self._memo:
             return key
         terms = dict.fromkeys((bill.term, *self._repo.computation_owner_terms(bill.number, "name")))
         results = [
