@@ -1,0 +1,221 @@
+{
+  "base": "1b3319b6b43784ccddfa8a3651b43832caf43245",
+  "driver_sha256": "8e1b91e67136d7078b866eef3697f9d9e0a91d91ece581282f3504f22a0d31a3",
+  "legacy_meta_default_byteexact": true,
+  "paired_public_preservation": [
+    "paid normalized result/usage",
+    "bill",
+    "original SENT publication",
+    "revision delivery",
+    "frozen provider request",
+    "call accounting",
+    "all other table rows"
+  ],
+  "rows": [
+    {
+      "stage": "published",
+      "sql_old": 90758,
+      "sql_new": 90758,
+      "sql_delta": 0,
+      "gzip_old": 15311,
+      "gzip_new": 15311,
+      "gzip_delta": 0,
+      "new_work_rows": 0,
+      "snapshot_counts_old": {
+        "bill": 1,
+        "change": 1,
+        "plan": 1
+      },
+      "snapshot_counts_new": {
+        "bill": 1,
+        "change": 1,
+        "plan": 1
+      },
+      "changed_tables": [],
+      "payload_bytes_old": {
+        "document_work": 0,
+        "content_snapshots": 8094,
+        "llm_batch_items": 0
+      },
+      "payload_bytes_new": {
+        "document_work": 0,
+        "content_snapshots": 8094,
+        "llm_batch_items": 0
+      }
+    },
+    {
+      "stage": "queued",
+      "sql_old": 109912,
+      "sql_new": 110974,
+      "sql_delta": 1062,
+      "gzip_old": 17464,
+      "gzip_new": 17486,
+      "gzip_delta": 22,
+      "new_work_rows": 0,
+      "snapshot_counts_old": {
+        "bill": 1,
+        "change": 1,
+        "plan": 1
+      },
+      "snapshot_counts_new": {
+        "bill": 1,
+        "change": 1,
+        "plan": 2
+      },
+      "changed_tables": [
+        "content_snapshots"
+      ],
+      "payload_bytes_old": {
+        "document_work": 0,
+        "content_snapshots": 8094,
+        "llm_batch_items": 9644
+      },
+      "payload_bytes_new": {
+        "document_work": 0,
+        "content_snapshots": 9018,
+        "llm_batch_items": 9644
+      }
+    },
+    {
+      "stage": "collected",
+      "sql_old": 123039,
+      "sql_new": 116331,
+      "sql_delta": -6708,
+      "gzip_old": 18348,
+      "gzip_new": 18254,
+      "gzip_delta": -94,
+      "new_work_rows": 1,
+      "snapshot_counts_old": {
+        "bill": 1,
+        "change": 1,
+        "plan": 1
+      },
+      "snapshot_counts_new": {
+        "bill": 1,
+        "change": 1,
+        "plan": 2
+      },
+      "changed_tables": [
+        "content_snapshots",
+        "document_work",
+        "llm_batch_items"
+      ],
+      "payload_bytes_old": {
+        "document_work": 0,
+        "content_snapshots": 8094,
+        "llm_batch_items": 9644
+      },
+      "payload_bytes_new": {
+        "document_work": 947,
+        "content_snapshots": 9018,
+        "llm_batch_items": 737
+      }
+    },
+    {
+      "stage": "quiet_repeat",
+      "sql_old": 123039,
+      "sql_new": 116331,
+      "sql_delta": -6708,
+      "gzip_old": 18348,
+      "gzip_new": 18254,
+      "gzip_delta": -94,
+      "new_work_rows": 1,
+      "snapshot_counts_old": {
+        "bill": 1,
+        "change": 1,
+        "plan": 1
+      },
+      "snapshot_counts_new": {
+        "bill": 1,
+        "change": 1,
+        "plan": 2
+      },
+      "changed_tables": [
+        "content_snapshots",
+        "document_work",
+        "llm_batch_items"
+      ],
+      "payload_bytes_old": {
+        "document_work": 0,
+        "content_snapshots": 8094,
+        "llm_batch_items": 9644
+      },
+      "payload_bytes_new": {
+        "document_work": 947,
+        "content_snapshots": 9018,
+        "llm_batch_items": 737
+      }
+    },
+    {
+      "stage": "sent",
+      "sql_old": 125023,
+      "sql_new": 118315,
+      "sql_delta": -6708,
+      "gzip_old": 18441,
+      "gzip_new": 18347,
+      "gzip_delta": -94,
+      "new_work_rows": 1,
+      "snapshot_counts_old": {
+        "bill": 1,
+        "change": 1,
+        "plan": 1
+      },
+      "snapshot_counts_new": {
+        "bill": 1,
+        "change": 1,
+        "plan": 2
+      },
+      "changed_tables": [
+        "content_snapshots",
+        "document_work",
+        "llm_batch_items"
+      ],
+      "payload_bytes_old": {
+        "document_work": 0,
+        "content_snapshots": 8094,
+        "llm_batch_items": 9644
+      },
+      "payload_bytes_new": {
+        "document_work": 947,
+        "content_snapshots": 9018,
+        "llm_batch_items": 737
+      }
+    },
+    {
+      "stage": "cleanup_restore2",
+      "sql_old": 102146,
+      "sql_new": 95438,
+      "sql_delta": -6708,
+      "gzip_old": 17040,
+      "gzip_new": 16953,
+      "gzip_delta": -87,
+      "new_work_rows": 1,
+      "snapshot_counts_old": {
+        "bill": 1,
+        "change": 1,
+        "plan": 1
+      },
+      "snapshot_counts_new": {
+        "bill": 1,
+        "change": 1,
+        "plan": 2
+      },
+      "changed_tables": [
+        "content_snapshots",
+        "document_work",
+        "llm_batch_items"
+      ],
+      "payload_bytes_old": {
+        "document_work": 0,
+        "content_snapshots": 8094,
+        "llm_batch_items": 9622
+      },
+      "payload_bytes_new": {
+        "document_work": 947,
+        "content_snapshots": 9018,
+        "llm_batch_items": 715
+      }
+    }
+  ],
+  "scope": "Controlled public World/Container fakes only; zero natural revision-work acceptance, no raw/provider/network/state/paid calls."
+}

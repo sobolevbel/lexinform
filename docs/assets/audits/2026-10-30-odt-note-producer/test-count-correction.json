@@ -1,0 +1,7 @@
+{
+  "actual_new_cases": 23,
+  "correction": "Update journal metadata in next stage; no separate CI commit requested.",
+  "evidence": "pytest --collect-only -o addopts= tests/unit/test_odt_note_capture.py:23tests; no test execution",
+  "prior_author_handoff_new24_is_off_by_one": true,
+  "root_gate_delta": "J1927460\u2192J1937483 =23"
+}

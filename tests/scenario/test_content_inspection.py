@@ -156,6 +156,28 @@ def test_history_bindings_are_independent_of_retry_plans_and_check_physical_owne
             snapshot.execute("UPDATE publications SET kind='joint_bill' WHERE id=?", (revision.id,))
         snapshot.commit()
         dump = "\n".join(snapshot.iterdump()) + f"\nPRAGMA user_version = {SCHEMA_VERSION};\n"
+        if damage != "removed_payloads":
+            protected = world.repo.dump()
+            with pytest.raises(ValueError, match="revision_application_publication_mismatch"):
+                world.repo.restore(dump)
+            assert world.repo.dump() == protected
+            snapshot.execute(
+                "DELETE FROM document_work WHERE"
+                " json_extract(work_json, '$.kind')='amendment_revision_application'"
+            )
+            snapshot.execute(
+                "UPDATE llm_batch_items SET meta_json="
+                " json_remove(meta_json, '$.revision_application_work_key')"
+            )
+            assert snapshot.execute(
+                "SELECT COUNT(*) FROM document_work WHERE"
+                " json_extract(work_json, '$.kind')='amendment_revision_application'"
+            ).fetchone() == (0,)
+            snapshot.commit()
+            legacy_dump = (
+                "\n".join(snapshot.iterdump()) + f"\nPRAGMA user_version = {SCHEMA_VERSION};\n"
+            )
+            dump = legacy_dump
     world.repo.restore(dump)
 
     world.command(f"/delivery {revision.id}")

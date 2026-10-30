@@ -1,0 +1,37 @@
+{
+  "words": 135,
+  "batch_kinds": [
+    "analysis",
+    "reanalysis",
+    "explanation",
+    "amendments",
+    "supplement",
+    "joint",
+    "consultation_review",
+    "commission_review",
+    "act_application",
+    "name"
+  ],
+  "primary_and_review_guard_AST_exact": [
+    "_consume",
+    "_consume_current",
+    "_record_collection",
+    "_retain_computation",
+    "review_enabled"
+  ],
+  "secondary_other_purposes_AST_exact": true,
+  "unchanged_application_consumers": [
+    "src/lexinform/services/analysis_applications.py",
+    "src/lexinform/services/result_applications.py",
+    "src/lexinform/services/status_change_applications.py",
+    "src/lexinform/services/document_reviews.py",
+    "src/lexinform/services/publishing.py",
+    "src/lexinform/services/commands.py",
+    "src/lexinform/services/tracking/service.py",
+    "src/lexinform/services/tracking/linking.py",
+    "src/lexinform/services/tracking/rollover.py",
+    "src/lexinform/services/lookup.py"
+  ],
+  "scope": "Read-only audit of PRIMARY candidate before narrow payload repair; checkbox recommendation conditional on repair/full/release.",
+  "sha256": "f6dc6f3c4f14773c395de129e3cd1203f3612ea21d40ed7f47a1f01c520d0924"
+}

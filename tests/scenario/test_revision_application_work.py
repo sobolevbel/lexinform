@@ -27,6 +27,8 @@ from lexinform.models import (
     computation_id,
 )
 from lexinform.models.revision_work import decode_document_work
+from lexinform.sections import TextBudget
+from lexinform.services.analysis import AnalysisService
 from tests.fakes import make_amendments
 from tests.harness import World
 from tests.scenario.test_amendments_command import SENATE, published_world
@@ -179,16 +181,31 @@ def test_frozen_identity_cannot_change_while_lifecycle_can_block_and_resume(
     assert world.repo.list_revision_application_work(due=work.next_at) == [resumed]
 
 
-def test_runtime_does_not_consume_or_dispatch_inert_application_work(
+def test_runtime_applies_retained_work_without_an_open_batch_or_provider(
     work_case: tuple[World, AmendmentRevisionApplicationWork],
 ) -> None:
     world, work = work_case
     world.repo.save_revision_application_work(work)
     world.clock.advance(days=30)
-    world.run()
-    assert world.repo.get_revision_application_work(work.key) == work
-    assert not world.repo.list_amendment_revisions(work.original_publication_id)
+    service = AnalysisService(
+        world.repo,
+        world.container.text_sources(),
+        world.container.text_loader(),
+        world.llm,
+        world.clock,
+        world.container.analysis_options(),
+        text_budget=TextBudget(world.container.settings.text_budget_chars),
+    )
+    service.collect_batches()
+    completed = world.repo.get_revision_application_work(work.key)
+    assert completed is not None and completed.state == "complete", (
+        "local application is independent of configured provider collection"
+    )
+    assert len(world.repo.list_amendment_revisions(work.original_publication_id)) == 1
     assert not world.repo.list_document_work(due=world.clock.now())
+    before = world.repo.dump()
+    service.collect_batches()
+    assert world.repo.dump() == before and not service.calls
 
 
 @pytest.mark.parametrize("field", ["request", "plan", "bill"])

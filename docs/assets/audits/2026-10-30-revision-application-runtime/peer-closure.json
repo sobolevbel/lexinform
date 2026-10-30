@@ -1,0 +1,64 @@
+{
+  "status": "approved",
+  "base": "1b3319b6b43784ccddfa8a3651b43832caf43245",
+  "source12_pins_before_after": {
+    "docs/state-retention.md": "2a8ca9fd7b4d37bb4056ebf427e344c03d44002be2836e7174d390186e8d1fd7",
+    "src/lexinform/adapters/document_work.py": "9ec83acece93681b7f503ff1b4a9bbbaa7fddccf843621f3608d7a17a32744bb",
+    "src/lexinform/adapters/sqlite_repo.py": "eedfbe5ee2314ad18b2461e6486239398cfd4384e9bc969dc41d2f16f4be4699",
+    "src/lexinform/models/batch.py": "ede550faf9756cd863a9ed17f1da2fab928984c0e910d193fa2ba748c9284252",
+    "src/lexinform/ports.py": "f7783f8d7d959a7c93e5e82832d12718199e378ddccf6b8f1a82cf7142f5de36",
+    "src/lexinform/services/amendments.py": "3efd780b9a3d7c1015f72baa9e61cd8ba135cc9ed4d8e9b552d1cd8b02550a7e",
+    "src/lexinform/services/analysis.py": "c1a0122467cd6d6b4a41ef3f31c0af43a58fa5653761e713d2dd0b6d00d8b848",
+    "src/lexinform/services/revision_applications.py": "95cbcb6eefcf7d938c2296561cf726e4b1e79500faa7528897fb3098c3f190fe",
+    "tests/scenario/test_revision_application_runtime.py": "b8acbda180b4f14c8cce1ffbf3b3ce7640f1016d9ba4b021331f14e07160624b",
+    "tests/scenario/test_revision_application_work.py": "35cd5aff5da9ebe6e71b56bcb44a505ab243bf5e56dbc32e42123eec143ae260",
+    "tests/scenario/test_secondary_projection_applications.py": "7b7310c3d235e79f436c7d7b0b7eafdc94101f58c548a16b432ab630a24694e4",
+    "tools/work_doctor.py": "982b1292b6050e886b8bb299f227418f437a2beb421947f11ad854c927cc6d3d"
+  },
+  "handoff_sha256": "eee2ab213a6afd3117a84162e3a9019eb77d146f14e83309c3b9d2816a37c08d",
+  "freeze_sha256": "0af68d151e06cd71fac2daf4ae2433c3f224f9e7aa29e385500fca862b5098b5",
+  "patch_sha256": "85449250dc506d42ef727d7c713fac44bf3d5bd141045c5c6c8e9da2cc8a44cb",
+  "focused_passed": 207,
+  "independent_controls": {
+    "count": 7,
+    "scope": [
+      "public worker1/4 projection/result parity plus caller thread and Clock",
+      "known pointer with unconsumed item, different custom ID, different batch ID, different request SHA: shared doctor failure + pretarget restore preservation",
+      "missing legacy captured context retains validated paid answer/usage/full old target and explicit problem without inferred new work",
+      "checkpoint failure after collect commits consumed/paid/work before apply; restore/providerless local recovery exactly once, no prepare/no charge"
+    ]
+  },
+  "reviewed_contract": {
+    "collect": "Normalized sourceURL, original validated paid result/usage, memo, work/pointer and consumed checkpoint share atomic collect; parent/primary semantics unchanged.",
+    "apply": "Pre-poll/post-checkpoint local drain, separate atomic QUEUED revision + target receipt + completion; faults roll back only application and retry without provider.",
+    "admission": "Explicit printed process and captured owner before prepare; pending/blocked work blocks source/force even future due time; literal link/move helpers do not retarget printed publication.",
+    "lifecycle": "Reset/skip preserves captured historical correction; message change blocks without rebase. Missing/corrupt known refs fail; genuinely unadmitted legacy remains retained unknown.",
+    "storage": "Small work pointer replaces full consumed target; existing Bill/change snapshots reused, semantic plan metadata only; no generic scheduler/schema.",
+    "rollback": "Work-aware drain and pending runtime required after handoff; inert reader parse compatibility alone does not preserve runtime semantics."
+  },
+  "controlled_size": {
+    "qualification_sha256": "7da6434b14d3f94e75234a8fd09714f5030368bef3f1288c9225e41cdf04d967",
+    "peak_SQL_delta": 1062,
+    "peak_gzip_delta": 22,
+    "collected_SQL_delta": -6708,
+    "collected_gzip_delta": -94,
+    "cleanup_SQL_delta": -6708,
+    "cleanup_gzip_delta": -87,
+    "scope": "Author matched fake lifecycle proof only; no natural positive work/fleet projection claimed."
+  },
+  "evidence": {
+    "focused.xml": "c25b6712a69a33279cf0ea3cccb04e1acbbef9c9697fbfec069421f602905f69",
+    "focused.log": "d7d62962727e3d2a0012d01f4d27e4031fd6d3e614f53bf26d51a419fe549e11",
+    "controls.xml": "9a8a62ebce5e3aca074ad221a7d9ef4e6c3bca92ff8bd275464a2ed50099ff75",
+    "controls.log": "83a1593c5b5783693fe3006d1f6597bcb4f3a5968f23b59481ee09a0477f910a",
+    "test_independent_controls.py": "2d162efd8e0692f39f020d0391cc7345a46602ea0f13971cee1b1e4088fa353f"
+  },
+  "not_run": [
+    "source edits",
+    "full gate",
+    "raw/corpus replay",
+    "actual state/production",
+    "real provider/paid/network",
+    "private adversarial scope expansion"
+  ]
+}

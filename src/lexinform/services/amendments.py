@@ -99,6 +99,8 @@ class AmendmentsService:
         self, bill: Bill, *, publication_id: int | None = None, force_id: str = ""
     ) -> CommandOutcome:
         try:
+            if not bill.has_process:
+                raise ValueError("Исправление поправок доступно только для законопроекта Сейма")
             original = self._original(bill, publication_id)
             assert original.id is not None and original.delivery is not None
             content = record_publication_content(self._repo, self._clock, original)
@@ -128,6 +130,11 @@ class AmendmentsService:
             if waiting is not None:
                 return self._waiting_outcome(bill, original.id, waiting)
             snapshot = Bill.model_validate_json(original.delivery.bill_json)
+            if not snapshot.has_process or (snapshot.term, snapshot.number) != (
+                bill.term,
+                bill.number,
+            ):
+                raise ValueError("Исторический снимок принадлежит другому законопроекту")
             if snapshot.analysis is None:
                 raise ValueError("В историческом снимке сообщения нет анализа законопроекта")
             change = StatusChange.model_validate_json(original.delivery.change_json)
@@ -224,6 +231,9 @@ class AmendmentsService:
         return original
 
     def _pending(self, publication_id: int) -> Waiting | None:
+        application = self._analysis.pending_amendment_revision(publication_id)
+        if application is not None:
+            return Waiting(application)
         for intent in (
             *self._repo.list_queued_batch_intents(),
             *self._repo.list_submitting_batch_intents(),

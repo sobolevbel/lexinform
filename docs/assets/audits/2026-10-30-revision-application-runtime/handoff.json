@@ -1,0 +1,156 @@
+{
+  "base": "1b3319b6b43784ccddfa8a3651b43832caf43245",
+  "source_paths": {
+    "docs/state-retention.md": {
+      "sha256": "2a8ca9fd7b4d37bb4056ebf427e344c03d44002be2836e7174d390186e8d1fd7",
+      "bytes": 67394
+    },
+    "src/lexinform/adapters/document_work.py": {
+      "sha256": "9ec83acece93681b7f503ff1b4a9bbbaa7fddccf843621f3608d7a17a32744bb",
+      "bytes": 12087
+    },
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "sha256": "eedfbe5ee2314ad18b2461e6486239398cfd4384e9bc969dc41d2f16f4be4699",
+      "bytes": 253904
+    },
+    "src/lexinform/models/batch.py": {
+      "sha256": "ede550faf9756cd863a9ed17f1da2fab928984c0e910d193fa2ba748c9284252",
+      "bytes": 14161
+    },
+    "src/lexinform/ports.py": {
+      "sha256": "f7783f8d7d959a7c93e5e82832d12718199e378ddccf6b8f1a82cf7142f5de36",
+      "bytes": 51578
+    },
+    "src/lexinform/services/amendments.py": {
+      "sha256": "3efd780b9a3d7c1015f72baa9e61cd8ba135cc9ed4d8e9b552d1cd8b02550a7e",
+      "bytes": 12879
+    },
+    "src/lexinform/services/analysis.py": {
+      "sha256": "c1a0122467cd6d6b4a41ef3f31c0af43a58fa5653761e713d2dd0b6d00d8b848",
+      "bytes": 149833
+    },
+    "src/lexinform/services/revision_applications.py": {
+      "sha256": "95cbcb6eefcf7d938c2296561cf726e4b1e79500faa7528897fb3098c3f190fe",
+      "bytes": 9161
+    },
+    "tests/scenario/test_revision_application_runtime.py": {
+      "sha256": "b8acbda180b4f14c8cce1ffbf3b3ce7640f1016d9ba4b021331f14e07160624b",
+      "bytes": 16443
+    },
+    "tests/scenario/test_revision_application_work.py": {
+      "sha256": "35cd5aff5da9ebe6e71b56bcb44a505ab243bf5e56dbc32e42123eec143ae260",
+      "bytes": 17579
+    },
+    "tests/scenario/test_secondary_projection_applications.py": {
+      "sha256": "7b7310c3d235e79f436c7d7b0b7eafdc94101f58c548a16b432ab630a24694e4",
+      "bytes": 12205
+    },
+    "tools/work_doctor.py": {
+      "sha256": "982b1292b6050e886b8bb299f227418f437a2beb421947f11ad854c927cc6d3d",
+      "bytes": 15887
+    }
+  },
+  "patch_sha256": "85449250dc506d42ef727d7c713fac44bf3d5bd141045c5c6c8e9da2cc8a44cb",
+  "reader_release": "Root verified actual J192 CI/relay: PRIMARY out/corpus/j192-revision-work-reader/release/check-2.json",
+  "approved_contract": "approved-contract.md",
+  "reuse": {
+    "base": "1b3319b6b43784ccddfa8a3651b43832caf43245",
+    "stash": "b7b00624a68832e0613edf522d8b954e7ce92547",
+    "prior_stashes_preserved": 22,
+    "prior_outputs_preserved": true,
+    "source8": {
+      "docs/state-retention.md": {
+        "sha256": "660c9de0c921dc38f7e413e1fb174068da7bdae8a993617f5269dfc3e31880c4",
+        "bytes": 66145
+      },
+      "src/lexinform/adapters/document_work.py": {
+        "sha256": "4779fc32d4565453d17f08805ab971aca2204e6009b2f8bd7f7f0098f48bd62a",
+        "bytes": 9710
+      },
+      "src/lexinform/adapters/sqlite_repo.py": {
+        "sha256": "3778a3eabc4b7d7afb8b1b06840d61dd048aca6111ebdb8c055931f3cce54053",
+        "bytes": 251508
+      },
+      "src/lexinform/models/__init__.py": {
+        "sha256": "8debf4e05bbf0c6b128486b8b38e50cc76b2eff31db2c235777fe4bda6f47fd1",
+        "bytes": 22558
+      },
+      "src/lexinform/models/revision_work.py": {
+        "sha256": "a808efbdfaadc77d09a210096188e68829ab11c919154b3bd7e4bd354388710d",
+        "bytes": 2945
+      },
+      "src/lexinform/ports.py": {
+        "sha256": "b79fff5e2ae367649097688f081f0cb5c5b299664d842234ebfbfda82f57053b",
+        "bytes": 51321
+      },
+      "tests/scenario/test_revision_application_work.py": {
+        "sha256": "5a7225f917c0c5d8b00d1cdefedc4f788a3374266e9603f2dfa38b92b0dedc5f",
+        "bytes": 16889
+      },
+      "tools/work_doctor.py": {
+        "sha256": "c8cb0777d0fb5a2fe4ff1b639e1241cfd6e84731eafe30670a89ca237fd746da",
+        "bytes": 15650
+      }
+    }
+  },
+  "focused": {
+    "passed": 207,
+    "new_runtime_cases": 20,
+    "strict_paths": 11,
+    "ruff_format_diff": "GREEN",
+    "command": "pytest -q -n 0 --no-cov tests/scenario/test_revision_application_runtime.py tests/scenario/test_secondary_projection_applications.py tests/scenario/test_secondary_computation_history.py tests/scenario/test_amendments_command.py tests/scenario/test_revision_application_work.py tests/scenario/test_auto_amendment_revision_payload.py tests/scenario/test_rollover_computation_history.py tests/scenario/test_primary_work_handoff.py tests/scenario/test_work_doctor.py tests/unit/test_work_ages.py"
+  },
+  "source_guards": {
+    "MIGRATIONS_AST_exact": true,
+    "protected_methods": {
+      "_consume": "AST exact",
+      "_consume_current": "AST exact",
+      "_record_collection": "AST exact",
+      "_retain_computation": "AST exact",
+      "_prepare": "AST exact",
+      "_prepare_loaded": "AST exact",
+      "_enqueue": "AST exact",
+      "_persist": "AST exact",
+      "_memo_key": "AST exact",
+      "move_government_rows": "AST exact",
+      "link_bills": "AST exact",
+      "move_primary_analysis_work": "AST exact"
+    },
+    "byteexact": {
+      "src/lexinform/models/revision_work.py": "a808efbdfaadc77d09a210096188e68829ab11c919154b3bd7e4bd354388710d",
+      "src/lexinform/models/content.py": "6e89283afb99245e4909db0a86b1b09c67c9267716b14ce78d0035e293d56f34",
+      "src/lexinform/models/analysis.py": "229ca857e9fe05149bca8293c3f8cec26c2984e4e1ed97d5f90432251f40944d",
+      "src/lexinform/services/tracking/service.py": "b51eef4ad5d15d362eaa1dc5dc85d99290ff0a4fd098dc64873ab030a91dcbee",
+      "src/lexinform/services/tracking/linking.py": "cf97d6f3f4694fbd6037020d54fe7942b787f9e247e9c909d5c357390055aca3",
+      "src/lexinform/services/tracking/rollover.py": "d85b4f17040080205f7993cf3104c564a55181bcc36849cd03b6c260d1746389",
+      "src/lexinform/services/pipeline.py": "0e73721ea2908e2021833dfaf05285d4ef495eb3f1967be95c2d07c510c61d47",
+      "src/lexinform/container.py": "ed37d0873eb4c3bb73f85653ac627f8fc3ff6e247b4ed89a19abe5b7b3f7ecc5",
+      "src/lexinform/settings.py": "3fcd16b608194b1f2cb6bcc87a2b8213f668ed980f1693621f9ee93658e10df3"
+    }
+  },
+  "semantics": {
+    "capture": "Exact printed frozen owner/target admission before prepare; snapshot values captured before sole provider prepare and persisted with intent. Bill/change dedup existing editorial objects; plan is a small body-free semantic template.",
+    "collect": "Normalize source_url before memo/paid retention. Paid result/original usage/memo/consumed/work/handoff atomic. New handoff replaces heavy target with a validated work-key pointer; unsupported legacy preserves original metadata and paid answer with explicit problem.",
+    "apply": "Local service drains before provider polling and after collection checkpoint, even no open batch/provider and poll outage. Separate atomic QUEUED publication/target receipt/completion; no network/worker writes or direct clock.",
+    "failure": "Collect faults roll all back. Apply faults retain exact paid+usage/memo/consumed/work; retry/cleanup/restore local succeeds once without new charge. Interruptions preserve exact instance and corresponding transaction boundary.",
+    "ownership": "Printed-only producers cannot satisfy government rollover selection; literal link_bills changes Bill links only. Tests prove no pub/work owner rewrite under literal helpers, no strict-reader weakening. Unsupported legacy never gets new v1 transferable work.",
+    "current_state": "Current primary skip/reset does not rebase historical correction. Changed physical message blocks waiting work; force/source/prepare blocked by waiting/blocked work regardless due time.",
+    "known_refs": "Shared restore/doctor now validate consumed handoff pointer+result/batch/custom/owner/request association; missing work fails scratch before target mutation.",
+    "rollback": "After handoff, preserve work-aware pending/drain runtime or quiesce producers/commands and reconcile. Inert v1 parse ability alone is insufficient."
+  },
+  "size_qualification": "size-qualification.json",
+  "size_summary": {
+    "peak_queued_SQL_delta": 1062,
+    "peak_queued_gzip_delta": 22,
+    "collected_SQL_delta": -6708,
+    "collected_gzip_delta": -94,
+    "cleanup_SQL_delta": -6708,
+    "cleanup_gzip_delta": -87,
+    "new_work_json_bytes": 947,
+    "bill_change_snapshot_counts_equal": true,
+    "all_common_public_paid_request_usage_rows_equal": true,
+    "quiet_repeat_delta": 0
+  },
+  "scope": "Controlled fakes only; natural actual9paid has0revision-work, not claimed as positive. No full/raw/paid/provider/network/production/state/commit/push.",
+  "ready_for_peer": true
+}

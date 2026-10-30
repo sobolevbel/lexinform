@@ -9003,7 +9003,7 @@ unknown. Metadata Exception выключает дополнительный capt
 валидируется перед optional enrichment; native method identity captured once. Оба regression
 контроля red-before/green-after; core+fifth runner independent review closed.
 
-Author63focused/24new, strict5/Ruff/format green; Root63focused/preflight green.
+Author63focused/23new, strict5/Ruff/format green; Root63focused/preflight green.
 Один replay pinned J1196natural+9derivatives:17ODTleaves,0businessdelta/0input/index/code drift.
 Natural subset содержит4unique note-bearing inputs:4notes/4embedded calls,8independent XML
 path checks. Natural notes содержат controls: independent plain-itertext span oracle для них
@@ -9028,3 +9028,63 @@ Final gate:7483tests/273.802s/92%,mypy655/Ruff723;740source/config pins exact. S
 [replay recipe](../assets/audits/2026-10-30-odt-note-producer/recipe.json),
 [lifetime audit](../assets/audits/2026-10-30-odt-note-producer/secondary-lifetime-report.md),
 [J192 exact CI/relay](../assets/audits/2026-10-30-revision-application-work-reader/release.json).
+
+
+<a id="j194"></a>
+
+## J194 — separate recoverable amendment-revision application
+
+AmendmentRevisionApplications отделяет immutable paid collect от QUEUED correction projection.
+Collect transaction сохраняет normalized result/source URL, memo, original usage, consumed,
+durable waiting/blocked work и малый batch→work pointer. Historical Bill/change/plan refs
+зафиксированы до prepare; body-free semantic plan и существующие editorial snapshots dedup.
+Separate application transaction создаёт QUEUED publication, exact target receipt и completion
+вместе. Сбой apply сохраняет paid answer/work, повтор без provider/prepare/charge создаёт
+ровно одну projection. Сбой collect по-прежнему откатывает checkpoint. Original SENT event
+и payload не переписываются, физическая доставка сохраняет existing uncertainty rules.
+
+Caller-thread drain вызывается до provider polling и после collection checkpoint; отсутствие
+open batch/provider и poll outage не препятствуют local recovery. Waiting/blocked lookup
+предшествует source/prepare/force. Current primary skip/reset не подменяет historical correction
+новым Bill; смена physical target блокирует работу. Новые producers допускают только printed
+Bill.has_process с тем же captured owner: literal government mover не выбирает эти rows,
+link_bills оставляет STATUS_UPDATE owner прежним. Unsupported legacy сохраняет paid answer,
+исходный target и explicit problem; строгий storage validator не ослаблен ради rehome.
+
+Heavy collected target metadata заменяется validated work-key pointer. Scratch restore и
+work doctor проверяют actual item/result/work/owner/request association; known dangling pointer
+не заменяет target DB. После первого handoff rollback требует work-aware pending/drain runtime
+либо quiesced producers/commands и reconciliation; одной parse-совместимости inert reader мало.
+Нет нового submitter/scheduler/DDL, adapter imports в service или worker SQL/Clock writes.
+
+Author207focused/strict11/Ruff и peer207+7 independent controls green: workers1/4 calling-thread
+parity, четыре item→work corruption controls, checkpoint failure и provider-free recovery.
+Matched fake old/new сохраняет paid/request/usage/Bill/original/revision+other rows. Queue peak
++1062SQL/+22gzip; collected−6708SQL/−94gzip;365d cleanup−6708/−87. Work947B, plan924B,
+metadata9644→737B; Bill/change snapshots dedup1each, quiet repeat0. Это controlled fake
+lifecycle; natural revision-work cycle не выдуман. Fresh state8022b0a59f73:487Bills/196publications/9paid/118items/0intents/4legacywork; все48tables/sqlite_master/restored dump и487typed digests exact baseline f232/candidate. Три doctor дают0errors, work сохраняет4baseline warnings; modern work/handoffs0.
+
+Первый full нашёл3 content-inspection failures (7500passed), release gate не засчитан.
+Completed work теперь принимает actual bound/index-checked editorial version при отсутствующем
+operational payload: exact frozen Bill/revised change/target и actual receipt проверяются;
+missing/unrelated binding отвергается. Owner/kind checks остаются строгими. Corrupt inspector
+fixtures сначала доказывают modern restore rejection/target preservation, затем explicit legacy
+profile сохраняет прежние inspection assertions. Post-fix fresh-state public restore/487typed
+Bills/3doctors повторён и exact baseline.
+
+J193 new-case tally исправлен: collection-only и full7460→7483 подтверждают23, не24;
+original author handoff сохранён, correction artifact явно supersedes только count metadata.
+
+Final gate:7506tests/265.873s/92%,mypy657/Ruff725;742source/config pins exact. J193 exact CI/relay verified. Staged archive docs gate перед commit.
+
+[Qualification](../assets/audits/2026-10-30-revision-application-runtime/qualification.json),
+[peer](../assets/audits/2026-10-30-revision-application-runtime/peer-closure.json),
+[integration](../assets/audits/2026-10-30-revision-application-runtime/integration.json),
+[size comparison](../assets/audits/2026-10-30-revision-application-runtime/size-qualification.json),
+[actual state](../assets/audits/2026-10-30-revision-application-runtime/actual-state.json),
+[post-fix state](../assets/audits/2026-10-30-revision-application-runtime/post-fix-state.json),
+[payload fix](../assets/audits/2026-10-30-revision-application-runtime/payload-fix.json),
+[fix peer closure](../assets/audits/2026-10-30-revision-application-runtime/fix-peer-closure.json),
+[finite DA6.2 audit](../assets/audits/2026-10-30-revision-application-runtime/closure-audit.json),
+[J193 exact CI/relay](../assets/audits/2026-10-30-odt-note-producer/release.json),
+[test-count correction](../assets/audits/2026-10-30-odt-note-producer/test-count-correction.json).

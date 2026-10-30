@@ -298,6 +298,14 @@ class DigestItemMeta(BaseModel):
     compared_with: list[str] = Field(default_factory=list)
     review_context: ReviewContext | None = None
     amendment_revision: AmendmentRevisionTarget | None = None
+    revision_application_work_key: str | None = Field(
+        default=None,
+        pattern=r"^amendment-revision-application-v1:[0-9a-f]{64}$",
+        exclude_if=lambda value: value is None,
+    )
+    revision_application_problem: str | None = Field(
+        default=None, min_length=1, max_length=256, exclude_if=lambda value: value is None
+    )
     amendment_source: SenateResolutionIdentity | None = None
     scan_input: ScanInputManifest | None = Field(
         default=None, exclude_if=lambda value: value is None

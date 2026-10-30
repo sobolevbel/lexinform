@@ -1,0 +1,43 @@
+{
+  "stage": "J194",
+  "base": "f2329102cb92d6065ec3770ab08caa13525c1611",
+  "ports_merge": "Retains J193 ODT imports/protocols; adds runtime revision application repository operations",
+  "J193_ODT_paths_unchanged": [
+    "src/lexinform/adapters/document_text.py",
+    "src/lexinform/odt_notes.py",
+    "src/lexinform/models/odt_notes.py",
+    "src/lexinform/models/__init__.py",
+    "tools/replay_odt_blocks.py"
+  ],
+  "full_scope": "Runtime amendment correction collect/apply separation; no batch submitter, source retrieval, content rendering or migration changes",
+  "author_exact_before_fix": {
+    "docs/state-retention.md": true,
+    "src/lexinform/adapters/document_work.py": true,
+    "src/lexinform/adapters/sqlite_repo.py": true,
+    "src/lexinform/models/batch.py": true,
+    "src/lexinform/ports.py": false,
+    "src/lexinform/services/amendments.py": true,
+    "src/lexinform/services/analysis.py": true,
+    "src/lexinform/services/revision_applications.py": true,
+    "tests/scenario/test_revision_application_runtime.py": true,
+    "tests/scenario/test_revision_application_work.py": true,
+    "tests/scenario/test_secondary_projection_applications.py": true,
+    "tools/work_doctor.py": true
+  },
+  "final_fix3_exact": {
+    "src/lexinform/adapters/document_work.py": {
+      "sha256": "d3681e07f5aab1d11080bb07bbc6e689e8f2b50ddded7ee2f79671c27bab1a14",
+      "bytes": 13073
+    },
+    "tests/scenario/test_content_inspection.py": {
+      "sha256": "6a2df9e41be4f24928d49be1e4669e937818e0bc3c3240f2158278cca026eb8b",
+      "bytes": 8827
+    },
+    "tests/scenario/test_revision_application_runtime.py": {
+      "sha256": "bc0303d67f0e13e7b58fada4ba7f2f515fe34f1eee95c6b3fd56899b0533c9f5",
+      "bytes": 19160
+    }
+  },
+  "first_full": "3content_inspection failures/7500passed; rejected releasegate",
+  "fix_contract": "Editorial retained binding substitutes missing operational delivery only with exact indexedversion/Bill/paid revisedchange/target+receipt; strict owner/kind/ref guards unchanged. Explicitlegacy inspectorfixture preserves originalcontrols after modernrestore rejection."
+}

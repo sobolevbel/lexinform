@@ -1,0 +1,43 @@
+{
+  "status": "approved",
+  "scope": "Narrow fix-1 completed-work editorial fallback; no remaining blockers.",
+  "fix_source3_pins_verified": {
+    "src/lexinform/adapters/document_work.py": {
+      "sha256": "d3681e07f5aab1d11080bb07bbc6e689e8f2b50ddded7ee2f79671c27bab1a14",
+      "bytes": 13073
+    },
+    "tests/scenario/test_content_inspection.py": {
+      "sha256": "6a2df9e41be4f24928d49be1e4669e937818e0bc3c3240f2158278cca026eb8b",
+      "bytes": 8827
+    },
+    "tests/scenario/test_revision_application_runtime.py": {
+      "sha256": "bc0303d67f0e13e7b58fada4ba7f2f515fe34f1eee95c6b3fd56899b0533c9f5",
+      "bytes": 19160
+    }
+  },
+  "other_original12_paths_exact": true,
+  "handoff_sha256": "9d52f588845a74b251ff7e069ef8c6c1c5e5fc94374ae94f379a60e96065af1b",
+  "delta_patch_sha256": "e4604ba9633f835ab3a8930215299d24f203ad3f2b76771576910fb68b52dc40",
+  "freeze_sha256": "223416c112851c55dfff4db095cdf68ecde7d832310ce3b5338e86c3be8da5bd",
+  "focused_passed": 169,
+  "all_content_inspection_cases": 8,
+  "new_cleanup_controls": 3,
+  "review": {
+    "cleanup": "Missing operational revision payload is accepted only through its actual indexed ContentVersion binding, matched ID/SQL columns, revision reason/root, exact frozen Bill ref and paid amended change, semantic physical target and existing receipt. No version or current context is inferred.",
+    "strictness": "Present delivery behavior unchanged; publication owner/kind/ref and receipt checks remain mandatory before fallback. Missing/unrelated editorial binding rejects restore before target mutation and appears in work doctor.",
+    "legacy_inspector": "Wrong owner/kind controls first assert strict modern restore rejection and target preservation, then explicitly remove modern work/pointer in a legacy fixture and preserve old public inspector assertions.",
+    "lifecycle": "Both operational payloads removed: valid binding supports doctor/restore twice; repeat collection leaves paid/accounting/publications unchanged.",
+    "layers": "Adapter depends on models/indexed SQLite only; no service import, writer/usage/schema changes."
+  },
+  "evidence": {
+    "fix1-focused.xml": "e49fcc446b16e099462429424dce2f6169bfe3731bb73a6aaad9a104d6b4defe",
+    "fix1-focused.log": "a14a5d36e67b69ce803d66c6e9d2b2a2d572001bc7f31c00a11c2a9f508a490c"
+  },
+  "not_run": [
+    "source edits",
+    "full gate",
+    "fresh actual state duplication",
+    "raw/provider/network/production",
+    "private additional probes"
+  ]
+}

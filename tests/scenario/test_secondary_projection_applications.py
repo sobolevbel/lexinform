@@ -208,7 +208,7 @@ def test_amendment_revision_receipt_names_the_new_publication() -> None:
     assert world.repo.publication_by_id(original.id) == original
 
 
-def test_revision_receipt_failure_does_not_consume_or_queue_the_result(
+def test_revision_receipt_failure_preserves_collected_result_and_retryable_work(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     world, original = published_world()
@@ -226,12 +226,18 @@ def test_revision_receipt_failure_does_not_consume_or_queue_the_result(
             world.analysis.collect_batches()
 
     assert not world.repo.list_amendment_revisions(original.id)
-    assert not world.repo.list_computation_results(10, "1929")
-    assert not applications(world, "1929") and world.repo.list_open_llm_batches()
+    retained = world.repo.list_computation_results(10, "1929")
+    assert len(retained) == 1
+    work = world.repo.list_revision_application_work(publication_id=original.id)
+    assert len(work) == 1 and work[0].state == "waiting"
+    assert not applications(world, "1929") and not world.repo.list_open_llm_batches()
+    charged = list(world.analysis.calls)
     world.repo.restore(world.repo.dump())
     world.analysis.collect_batches()
     assert len(world.repo.list_amendment_revisions(original.id)) == 1
     assert len(applications(world, "1929")) == 1 and len(world.batch.submitted) == 1
+    assert world.repo.list_computation_results(10, "1929") == retained
+    assert world.analysis.calls == charged
 
 
 @pytest.mark.parametrize("workers", [1, 4])

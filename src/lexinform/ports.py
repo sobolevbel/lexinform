@@ -696,8 +696,17 @@ class BillRepository(Protocol):
     ) -> AmendmentRevisionApplicationWork | None: ...
 
     def list_revision_application_work(
-        self, *, due: datetime
+        self, *, due: datetime | None = None, publication_id: int | None = None
     ) -> list[AmendmentRevisionApplicationWork]: ...
+
+    def save_revision_application_handoff(
+        self,
+        batch_id: str,
+        custom_id: str,
+        *,
+        work_key: str | None = None,
+        problem: str | None = None,
+    ) -> None: ...
 
     def migrate(self) -> None: ...
 

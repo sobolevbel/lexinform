@@ -1,0 +1,21 @@
+{
+  "status": "exact",
+  "source_state": "8022b0a59f732bf457ec0e1bdcc5b672299e7e64",
+  "source_sql_sha256": "7923ecc082b83ffe79ffa931151b67dac3c88e2acd92cc46ff57fafd9c2e6505",
+  "scope": "Post-fix current PRIMARY public restore/dump,487typed Bills and3readonlydoctors equal frozenf232baseline; no processing/provider paths.",
+  "dump_sha256": "7233df739d2bbb0373d1cfee23ac21b474177857fb5faad90303c1588ef5515f",
+  "typed_bill_count": 487,
+  "typed_bill_digest": "822e281093fe74d4d37be40dbc5c62e3db83db5a0fa2a86e4772ba029299fab7",
+  "baseline_doctors_exact": true,
+  "imports": {
+    "repo": "/Users/sobaleu/projects/lexinform/src/lexinform/adapters/sqlite_repo.py",
+    "work": "/Users/sobaleu/projects/lexinform/tools/work_doctor.py",
+    "computation": "/Users/sobaleu/projects/lexinform/tools/computation_doctor.py",
+    "content": "/Users/sobaleu/projects/lexinform/tools/content_history_doctor.py"
+  },
+  "fixed_source_pins": {
+    "src/lexinform/adapters/document_work.py": "d3681e07f5aab1d11080bb07bbc6e689e8f2b50ddded7ee2f79671c27bab1a14",
+    "tests/scenario/test_content_inspection.py": "6a2df9e41be4f24928d49be1e4669e937818e0bc3c3240f2158278cca026eb8b",
+    "tests/scenario/test_revision_application_runtime.py": "bc0303d67f0e13e7b58fada4ba7f2f515fe34f1eee95c6b3fd56899b0533c9f5"
+  }
+}

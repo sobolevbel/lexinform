@@ -1,0 +1,63 @@
+{
+  "scope": "Narrow completed-work editorial fallback and preservation of existing content-inspector controls; no writer/paid/schema changes.",
+  "preimage_candidate_patch_sha256": "85449250dc506d42ef727d7c713fac44bf3d5bd141045c5c6c8e9da2cc8a44cb",
+  "preimage_paths": {
+    "src/lexinform/adapters/document_work.py": {
+      "sha256": "9ec83acece93681b7f503ff1b4a9bbbaa7fddccf843621f3608d7a17a32744bb",
+      "bytes": 12087
+    },
+    "tests/scenario/test_content_inspection.py": {
+      "sha256": "1dc8fa9e5b5fc01dd1a25b85e73648e3a875d86fa14b1abfb59da504743395e6",
+      "bytes": 7787
+    },
+    "tests/scenario/test_revision_application_runtime.py": {
+      "sha256": "b8acbda180b4f14c8cce1ffbf3b3ce7640f1016d9ba4b021331f14e07160624b",
+      "bytes": 16443
+    }
+  },
+  "source_paths": {
+    "src/lexinform/adapters/document_work.py": {
+      "sha256": "d3681e07f5aab1d11080bb07bbc6e689e8f2b50ddded7ee2f79671c27bab1a14",
+      "bytes": 13073
+    },
+    "tests/scenario/test_content_inspection.py": {
+      "sha256": "6a2df9e41be4f24928d49be1e4669e937818e0bc3c3240f2158278cca026eb8b",
+      "bytes": 8827
+    },
+    "tests/scenario/test_revision_application_runtime.py": {
+      "sha256": "bc0303d67f0e13e7b58fada4ba7f2f515fe34f1eee95c6b3fd56899b0533c9f5",
+      "bytes": 19160
+    }
+  },
+  "delta_patch_sha256": "e4604ba9633f835ab3a8930215299d24f203ad3f2b76771576910fb68b52dc40",
+  "checks": {
+    "focused": 169,
+    "new_missing_payload_controls": 3,
+    "all_content_inspection_cases": "GREEN including removed_payloads/wrong_owner/wrong_kind",
+    "mypy_paths": 3,
+    "ruff_format_diff": "GREEN"
+  },
+  "behavior": "Present revision delivery keeps existing target checks. Absent delivery uses its actual bound/index-checked ContentVersion, exact frozen bill/revised change and semantic target, then existing actual publication receipt. Missing/unrelated editorial bindings fail pretarget; owner/kind/ref conditions unchanged. No invented version, no permanent operational payload dependency.",
+  "fixtures": "Wrong owner/kind first prove modern public restore fails and preserves target; then explicit legacy profile removes modern work/handoff only and retains all original public content-inspector assertions.",
+  "control_sources_unchanged": {
+    "docs/state-retention.md": "2a8ca9fd7b4d37bb4056ebf427e344c03d44002be2836e7174d390186e8d1fd7",
+    "src/lexinform/adapters/sqlite_repo.py": "eedfbe5ee2314ad18b2461e6486239398cfd4384e9bc969dc41d2f16f4be4699",
+    "src/lexinform/models/batch.py": "ede550faf9756cd863a9ed17f1da2fab928984c0e910d193fa2ba748c9284252",
+    "src/lexinform/ports.py": "f7783f8d7d959a7c93e5e82832d12718199e378ddccf6b8f1a82cf7142f5de36",
+    "src/lexinform/services/amendments.py": "3efd780b9a3d7c1015f72baa9e61cd8ba135cc9ed4d8e9b552d1cd8b02550a7e",
+    "src/lexinform/services/analysis.py": "c1a0122467cd6d6b4a41ef3f31c0af43a58fa5653761e713d2dd0b6d00d8b848",
+    "src/lexinform/services/revision_applications.py": "95cbcb6eefcf7d938c2296561cf726e4b1e79500faa7528897fb3098c3f190fe",
+    "tests/scenario/test_revision_application_work.py": "35cd5aff5da9ebe6e71b56bcb44a505ab243bf5e56dbc32e42123eec143ae260",
+    "tests/scenario/test_secondary_projection_applications.py": "7b7310c3d235e79f436c7d7b0b7eafdc94101f58c548a16b432ab630a24694e4",
+    "tools/work_doctor.py": "982b1292b6050e886b8bb299f227418f437a2beb421947f11ad854c927cc6d3d"
+  },
+  "fresh_actual_state": "PRIMARY out/corpus/j194-revision-application-runtime/actual-state/proof.json:487Bill/196pub/9paid all48tables+dump+3doctors baseline/current exact;0natural newwork, read compatibility only. Captured before narrow fix.",
+  "not_run": [
+    "full",
+    "raw",
+    "provider/paid",
+    "production",
+    "commit/push"
+  ],
+  "ready_for_peer": true
+}

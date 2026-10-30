@@ -111,6 +111,7 @@ from lexinform.models import (
     DeliveryAlert,
     DeliveryPlan,
     DeliveryResolution,
+    DigestItemMeta,
     DigestPart,
     DocumentEdition,
     DocumentReviewRecord,
@@ -5257,15 +5258,60 @@ class SqliteBillRepository:
         return work
 
     def list_revision_application_work(
-        self, *, due: datetime
+        self, *, due: datetime | None = None, publication_id: int | None = None
     ) -> list[AmendmentRevisionApplicationWork]:
-        rows = self._conn.execute(
-            "SELECT * FROM document_work WHERE state='waiting' AND next_at <= ?"
-            " ORDER BY next_at, key",
-            (_utc_iso(due),),
-        ).fetchall()
+        query = "SELECT * FROM document_work WHERE state IN ('waiting','blocked')"
+        parameters: tuple[object, ...] = ()
+        if due is not None:
+            query += " AND state='waiting' AND next_at <= ?"
+            parameters += (_utc_iso(due),)
+        if publication_id is not None:
+            query += " AND json_extract(work_json, '$.original_publication_id')=?"
+            parameters += (publication_id,)
+        rows = self._conn.execute(query + " ORDER BY next_at, key", parameters).fetchall()
         work = [read_document_work(self._conn, row) for row in rows]
         return [item for item in work if isinstance(item, AmendmentRevisionApplicationWork)]
+
+    def save_revision_application_handoff(
+        self,
+        batch_id: str,
+        custom_id: str,
+        *,
+        work_key: str | None = None,
+        problem: str | None = None,
+    ) -> None:
+        if (work_key is None) == (problem is None):
+            raise ValueError("a revision handoff requires work or an explicit problem")
+        row = self._conn.execute(
+            "SELECT * FROM llm_batch_items WHERE batch_id=? AND custom_id=?",
+            (batch_id, custom_id),
+        ).fetchone()
+        if row is None or row["call_kind"] != "amendments":
+            raise ValueError("a revision handoff requires its retained amendments item")
+        item = _row_to_llm_batch_item(row)
+        if not isinstance(item.meta, DigestItemMeta) or item.meta.amendment_revision is None:
+            raise ValueError("a revision handoff requires its captured target")
+        if work_key is not None:
+            work = self.get_revision_application_work(work_key)
+            if work is None or (work.term, work.number, work.request_key) != (
+                item.term,
+                item.number,
+                item.custom_id,
+            ):
+                raise ValueError("a revision handoff requires matching persisted work")
+            retained = self.get_computation_result(work.result_id)
+            if retained is None or (retained.batch_id, retained.custom_id) != (batch_id, custom_id):
+                raise ValueError("a revision handoff requires its actual retained result")
+            meta = item.meta.model_copy(
+                update={"amendment_revision": None, "revision_application_work_key": work_key}
+            )
+        else:
+            meta = item.meta.model_copy(update={"revision_application_problem": problem})
+        meta = DigestItemMeta.model_validate_json(meta.model_dump_json())
+        self._conn.execute(
+            "UPDATE llm_batch_items SET meta_json=? WHERE batch_id=? AND custom_id=?",
+            (meta.model_dump_json(), batch_id, custom_id),
+        )
 
     def list_status_changes(self, term: int, number: str) -> list[StatusChange]:
         rows = self._conn.execute(

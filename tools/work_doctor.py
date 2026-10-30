@@ -9,7 +9,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from lexinform.adapters.document_work import DocumentWorkRowError, read_document_work
+from lexinform.adapters.document_work import (
+    DocumentWorkRowError,
+    read_document_work,
+    revision_handoff_checks,
+)
 from lexinform.models import AmendmentRevisionApplicationWork, ReviewWork
 from tools.corpus_artifacts import write_json
 from tools.observed_latency import observed_latency
@@ -98,6 +102,10 @@ class WorkAudit:
         self.findings.append({"code": code, "ref": ref, "level": level})
 
     def documents(self, connection: sqlite3.Connection) -> None:
+        for ref, code in revision_handoff_checks(connection):
+            self.counts["revision_application_handoffs"] += 1
+            if code is not None:
+                self.issue(code, ref)
         for row in connection.execute("SELECT * FROM document_work ORDER BY key"):
             ref = f"document_work/{row['key']}"
             self.counts["document_rows"] += 1

@@ -1,5 +1,7 @@
 """Validate both document-work consumers and indexed frozen parents without executing them."""
 
+import hashlib
+import json
 import sqlite3
 from collections.abc import Iterator
 from datetime import datetime
@@ -11,6 +13,7 @@ from lexinform.models import (
     ContentSnapshot,
     ContentVersion,
     DeliveryPlan,
+    DigestItemMeta,
     DocumentWork,
     ResultApplication,
     ResultApplicationTarget,
@@ -55,6 +58,46 @@ def _snapshot(connection: sqlite3.Connection, identity: str, kind: str) -> Conte
     if snapshot.kind != kind or snapshot.snapshot_id != identity:
         raise DocumentWorkRowError("revision_application_snapshot_mismatch")
     return snapshot
+
+
+def _bound_version(connection: sqlite3.Connection, publication_id: int) -> ContentVersion | None:
+    binding = next(
+        _rows(
+            connection,
+            "SELECT content_id FROM publication_content WHERE publication_id=?",
+            (publication_id,),
+        ),
+        None,
+    )
+    if binding is None:
+        return None
+    row = _one(
+        connection,
+        "SELECT * FROM content_versions WHERE content_id=?",
+        (binding["content_id"],),
+        "revision_application_content_missing",
+    )
+    version = ContentVersion.model_validate_json(row["version_json"])
+    if (
+        version.content_id,
+        version.root_publication_id,
+        version.previous_version_id,
+        version.bill_snapshot_id,
+        version.change_snapshot_id,
+        version.plan_snapshot_id,
+    ) != tuple(
+        row[name]
+        for name in (
+            "content_id",
+            "root_publication_id",
+            "previous_version_id",
+            "bill_snapshot_id",
+            "change_snapshot_id",
+            "plan_snapshot_id",
+        )
+    ):
+        raise DocumentWorkRowError("revision_application_content_mismatch")
+    return version
 
 
 def validate_revision_application_work(
@@ -103,42 +146,10 @@ def validate_revision_application_work(
         raise DocumentWorkRowError("revision_application_original_owner_mismatch")
     if original["kind"] != "status_update":
         raise DocumentWorkRowError("revision_application_original_owner_mismatch")
-    binding = next(
-        _rows(
-            connection,
-            "SELECT content_id FROM publication_content WHERE publication_id=?",
-            (work.original_publication_id,),
-        ),
-        None,
-    )
-    if binding is not None:
-        version_row = _one(
-            connection,
-            "SELECT * FROM content_versions WHERE content_id=?",
-            (binding["content_id"],),
-            "revision_application_content_missing",
-        )
-        version = ContentVersion.model_validate_json(version_row["version_json"])
+    version = _bound_version(connection, work.original_publication_id)
+    if version is not None:
         if (
-            version.content_id != binding["content_id"]
-            or (
-                version.root_publication_id,
-                version.previous_version_id,
-                version.bill_snapshot_id,
-                version.change_snapshot_id,
-                version.plan_snapshot_id,
-            )
-            != tuple(
-                version_row[name]
-                for name in (
-                    "root_publication_id",
-                    "previous_version_id",
-                    "bill_snapshot_id",
-                    "change_snapshot_id",
-                    "plan_snapshot_id",
-                )
-            )
-            or version.root_publication_id != work.original_publication_id
+            version.root_publication_id != work.original_publication_id
             or version.bill_snapshot_id != work.bill_snapshot_id
             or version.change_snapshot_id != work.change_snapshot_id
         ):
@@ -190,9 +201,25 @@ def validate_revision_application_work(
             f"amendments/{work.original_publication_id}/{work.request_key}",
         ):
             raise DocumentWorkRowError("revision_application_publication_mismatch")
-        if revision["delivery_json"] is None:
-            raise DocumentWorkRowError("revision_application_publication_mismatch")
-        delivered = DeliveryPlan.model_validate_json(revision["delivery_json"])
+        if revision["delivery_json"] is not None:
+            delivered = DeliveryPlan.model_validate_json(revision["delivery_json"])
+        else:
+            retained = _bound_version(connection, work.revision_publication_id)
+            if (
+                retained is None
+                or retained.reason != "amendments_revision"
+                or retained.root_publication_id != work.original_publication_id
+                or retained.bill_snapshot_id != work.bill_snapshot_id
+            ):
+                raise DocumentWorkRowError("revision_application_publication_mismatch")
+            retained_change = StatusChange.model_validate_json(
+                _snapshot(connection, retained.change_snapshot_id, "change").payload_json
+            )
+            if retained_change != change.model_copy(update={"amendments": result.record}):
+                raise DocumentWorkRowError("revision_application_publication_mismatch")
+            delivered = DeliveryPlan.model_validate_json(
+                _snapshot(connection, retained.plan_snapshot_id, "plan").payload_json
+            )
         if (
             delivered.revision_of != work.original_publication_id
             or delivered.edit_message_id != work.message_id
@@ -247,3 +274,54 @@ def read_document_work(
 def validate_document_work(connection: sqlite3.Connection) -> None:
     for row in _rows(connection, "SELECT * FROM document_work ORDER BY key"):
         read_document_work(connection, row)
+    for _, code in revision_handoff_checks(connection):
+        if code is not None:
+            raise DocumentWorkRowError(code)
+
+
+def revision_handoff_checks(connection: sqlite3.Connection) -> Iterator[tuple[str, str | None]]:
+    if not next(
+        _rows(connection, "SELECT 1 FROM sqlite_master WHERE name='llm_batch_items'"), None
+    ):
+        return
+    for row in _rows(
+        connection,
+        "SELECT * FROM llm_batch_items WHERE"
+        " json_extract(meta_json, '$.revision_application_work_key') IS NOT NULL",
+    ):
+        identity = json.dumps([row["batch_id"], row["custom_id"]], separators=(",", ":"))
+        ref = "llm_batch_items/" + hashlib.sha256(identity.encode()).hexdigest()
+        code = None
+        try:
+            meta = DigestItemMeta.model_validate_json(row["meta_json"])
+            saved = _one(
+                connection,
+                "SELECT * FROM document_work WHERE key=?",
+                (meta.revision_application_work_key,),
+                "revision_application_handoff_missing",
+            )
+            work = read_document_work(connection, saved)
+            if (
+                not isinstance(work, AmendmentRevisionApplicationWork)
+                or row["call_kind"] != "amendments"
+                or row["consumed_at"] is None
+                or meta.amendment_revision is not None
+                or meta.revision_application_problem is not None
+                or (row["term"], row["number"], row["custom_id"], meta.request_sha256)
+                != (work.term, work.number, work.request_key, work.request_sha256)
+            ):
+                raise DocumentWorkRowError("revision_application_handoff_mismatch")
+            result_row = _one(
+                connection,
+                "SELECT result_json FROM computation_results WHERE result_id=?",
+                (work.result_id,),
+                "revision_application_result_missing",
+            )
+            result = ComputationResult.model_validate_json(result_row["result_json"])
+            if result.batch_id != row["batch_id"]:
+                raise DocumentWorkRowError("revision_application_handoff_mismatch")
+        except DocumentWorkRowError as exc:
+            code = str(exc)
+        except ValueError:
+            code = "invalid_revision_application_handoff"
+        yield ref, code

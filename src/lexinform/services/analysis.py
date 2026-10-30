@@ -84,10 +84,8 @@ from lexinform.models import (
     ProcessSummary,
     Publication,
     PublicationKind,
-    PublicationStatus,
     ReadyAnalysis,
     ResultApplication,
-    ResultApplicationTarget,
     ReviewContext,
     ReviewDocument,
     ReviewInputReference,
@@ -96,7 +94,6 @@ from lexinform.models import (
     ReviewSource,
     ScannedDocument,
     Stage,
-    StatusChange,
     SupplementContext,
     SupplementRecord,
     TextDocument,
@@ -171,7 +168,7 @@ from lexinform.services.input_receipts import (
     enrich_primary_input_intent,
 )
 from lexinform.services.joint import primary_of, revive_prefilter_skips
-from lexinform.services.result_applications import record_secondary_application
+from lexinform.services.revision_applications import AmendmentRevisionApplications
 from lexinform.services.senate_documents import (
     resolution_source_read,
     resolve_senate_document,
@@ -566,6 +563,7 @@ class AnalysisService:
         self._batch_resolver = batch_resolver
         self._batch_checkpoint = batch_checkpoint
         self._senate_inspections = senate_inspections
+        self._revision_applications = AmendmentRevisionApplications(repo, clock)
         self._dry_run = False
         self._restored_collected: set[str] = set()
         self._accounted_items: set[tuple[str, str]] = set()
@@ -906,6 +904,7 @@ class AnalysisService:
         back to the status the normal pipeline reads: `_prepare` will find the same memo key it
         queued and finish for free, with no new model call — this is the only place that reads
         one back."""
+        self._revision_applications.drain()
         if self._batch is None:
             return
         errors: list[str] = []
@@ -919,9 +918,10 @@ class AnalysisService:
                 collected |= self._collect_batch(batch, backend)
             except ServiceUnavailableError as exc:
                 errors.append(f"{batch.provider}/{batch.batch_id}: {exc}")
+        if not self._dry_run and collected and self._batch_checkpoint is not None:
+            self._batch_checkpoint()
+        self._revision_applications.drain()
         if not self._dry_run:
-            if collected and self._batch_checkpoint is not None:
-                self._batch_checkpoint()
             errors.extend(self._forget_collected(checkpointed=self._batch_checkpoint is not None))
         if errors:
             raise LlmUnavailableError("; ".join(errors))
@@ -986,6 +986,9 @@ class AnalysisService:
 
     def uncertain_batch_intent_ids(self) -> list[str]:
         return [intent.request.custom_id for intent in self._repo.list_submitting_batch_intents()]
+
+    def pending_amendment_revision(self, publication_id: int) -> datetime | None:
+        return self._revision_applications.pending(publication_id)
 
     def _consume(
         self, item: LlmBatchItem, batch_result: BatchResult, provider: BatchProvider
@@ -1196,15 +1199,12 @@ class AnalysisService:
         if isinstance(record, (AmendmentsRecord, SupplementRecord)):
             record.scan_input = meta.scan_input
             record.source_url = meta.source_url or ""
+        if isinstance(record, AmendmentsRecord) and meta.amendment_revision is not None:
+            record.source_url = meta.amendment_revision.source_url
         if isinstance(record, SupplementRecord):
             record.number = meta.document_number or ""
         with self._repo.atomic():
-            revision_id = None
             if record is not None:
-                if isinstance(record, AmendmentsRecord) and meta.amendment_revision is not None:
-                    revision_id = self._queue_amendment_revision(
-                        item, meta.amendment_revision, record
-                    )
                 self._repo.save_analysis_memo(
                     meta.memo_key,
                     record.model_dump_json(),
@@ -1238,15 +1238,8 @@ class AnalysisService:
                 self._retain_computation(
                     item, result, normalized, provider, now, review_input=review_input
                 )
-            if revision_id is not None and record is not None:
-                record_secondary_application(
-                    self._repo,
-                    item.term,
-                    item.number,
-                    record.computation_id,
-                    target=ResultApplicationTarget(kind="publication", ref=str(revision_id)),
-                    now=now,
-                )
+            if isinstance(record, AmendmentsRecord) and meta.amendment_revision is not None:
+                self._revision_applications.retain(item, meta.amendment_revision, record, now=now)
             self._repo.mark_llm_batch_item_consumed(
                 item.batch_id, item.custom_id, consumed_at=now, result=result
             )
@@ -1255,47 +1248,6 @@ class AnalysisService:
             self._memo.setdefault(meta.memo_key, record.model_dump_json())
             if meta.delivery_key:
                 self._memo[meta.delivery_key] = record.model_dump_json()
-
-    def _queue_amendment_revision(
-        self, item: LlmBatchItem, target: AmendmentRevisionTarget, record: AmendmentsRecord
-    ) -> int | None:
-        original = self._repo.publication_by_id(target.publication_id)
-        if (
-            original is None
-            or original.status is not PublicationStatus.SENT
-            or original.message_id != target.delivery.edit_message_id
-            or original.channel_id != target.channel_id
-            or (original.term, original.number) != (item.term, item.number)
-        ):
-            raise ValueError("The original amendment message no longer matches its saved target")
-        ref = f"amendments/{target.publication_id}/{item.custom_id}"
-        if (
-            self._repo.get_publication(
-                item.term,
-                item.number,
-                PublicationKind.AMENDMENTS_REVISION,
-                target.channel_id,
-                ref=ref,
-            )
-            is not None
-        ):
-            return None
-        record.source_url = target.source_url
-        change = StatusChange.model_validate_json(target.delivery.change_json)
-        change.amendments = record
-        delivery = target.delivery.model_copy(update={"change_json": change.model_dump_json()})
-        return self._repo.create_publication(
-            Publication(
-                term=item.term,
-                number=item.number,
-                kind=PublicationKind.AMENDMENTS_REVISION,
-                status=PublicationStatus.QUEUED,
-                channel_id=target.channel_id,
-                ref=ref,
-                created_at=self._clock.now(),
-                delivery=delivery,
-            )
-        )
 
     def revise_amendments(
         self,
@@ -1307,6 +1259,14 @@ class AnalysisService:
         recommendation: TextDocument | None = None,
         force_id: str = "",
     ) -> Waiting | Publication:
+        if not bill.has_process:
+            raise ValueError("Amendment corrections require a Sejm process")
+        captured = Bill.model_validate_json(target.delivery.bill_json)
+        if not captured.has_process or (captured.term, captured.number) != (bill.term, bill.number):
+            raise ValueError("The frozen amendment snapshot belongs to another owner")
+        pending = self._revision_applications.pending(target.publication_id)
+        if pending is not None:
+            return Waiting(pending)
         assert bill.analysis is not None
         loaded = self._load_amendments_text(bill, document)
         if not loaded.text.strip() and loaded.scan is None:
@@ -1345,6 +1305,9 @@ class AnalysisService:
         backend = self._batch_resolver(provider) if self._batch_resolver else self._batch
         if not model or backend is None:
             raise LlmUnavailableError("batch backend is unavailable for amendments")
+        frozen, snapshots = self._revision_applications.freeze(
+            bill, target, amendment_key=content_key
+        )
         request = backend.prepare_request(
             BatchRequest(
                 custom_id=key,
@@ -1356,26 +1319,28 @@ class AnalysisService:
         )
         if not self._ledger.reserve(request.estimated_cost_usd):
             raise ValueError("Бюджет прогона исчерпан; повторите команду в следующем прогоне")
-        delivery = target.delivery.model_copy(update={"amendment_key": content_key})
         now = self._clock.now()
         try:
-            self._repo.save_batch_intent(
-                BatchIntent.from_request(
-                    request=request,
-                    provider=provider,
-                    created_at=now,
-                    meta=DigestItemMeta(
-                        memo_key=key,
-                        queued_at=now,
-                        prompt_version=request.prompt_version,
-                        source_kind=document.kind,
-                        source_url=document.url,
-                        amendment_source=context.source_check,
-                        scan_input=context.scan.scan_input if context.scan else None,
-                        amendment_revision=target.model_copy(update={"delivery": delivery}),
-                    ),
+            with self._repo.atomic():
+                for snapshot in snapshots:
+                    self._repo.save_content_snapshot(snapshot)
+                self._repo.save_batch_intent(
+                    BatchIntent.from_request(
+                        request=request,
+                        provider=provider,
+                        created_at=now,
+                        meta=DigestItemMeta(
+                            memo_key=key,
+                            queued_at=now,
+                            prompt_version=request.prompt_version,
+                            source_kind=document.kind,
+                            source_url=document.url,
+                            amendment_source=context.source_check,
+                            scan_input=context.scan.scan_input if context.scan else None,
+                            amendment_revision=frozen,
+                        ),
+                    )
                 )
-            )
         except Exception:
             self._ledger.release(request.estimated_cost_usd)
             raise

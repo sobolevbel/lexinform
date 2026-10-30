@@ -576,6 +576,20 @@ unknown and is not recreated. Edit eligibility remains a later application check
 and dispatcher. The first new-format row requires a compatible reader for rollback: older readers
 may restore its SQL but cannot consume that work. Reader deployment alone creates no such rows.
 
+The prospective producer admits only printed Sejm corrections and their exact historical owner.
+Snapshot values are frozen before request preparation and persisted with the intent; identical
+bill/change snapshots deduplicate existing editorial history. Collection normalizes the original
+source URL before retaining the paid record, then commits result/memo/usage/consumed and small
+application work together. Its consumed metadata replaces the full revision target with a work-key
+reference checked by restore and doctor. Unsupported legacy targets keep their paid result and
+original metadata with an explicit application problem; they do not acquire transferable work.
+Local application drains before polling and after collection, including without an open batch or
+provider. Its separate transaction creates QUEUED publication, target receipt and completion;
+delivery remains later. Changed physical targets block without rebasing, and primary skip/reset
+does not rewrite the historical correction. Original SENT identities remain unchanged.
+After the first handoff, runtime rollback must retain work-aware pending/drain behavior or stop
+producers and commands until outstanding work is reconciled; v1 read compatibility alone is insufficient.
+
 `content_snapshots`, `content_versions` и `publication_content` не являются operational cache
 и не очищаются вместе с sent delivery JSON через 90 дней или settled memo через 180.
 Совпадающий frozen Bill хранится один раз и переиспользуется revision; change и plan имеют
