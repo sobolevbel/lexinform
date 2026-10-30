@@ -1,0 +1,32 @@
+{
+  "meaningful_mutations": {
+    "all_needles_preserved": true,
+    "all_provider_text_and_law_digests_differ_from_unmodified": true,
+    "baseline_candidate_equal": true,
+    "driver_sha256": "996863d2a7674d78ef750439ed521f9d2704a0fe77dcbb824bf680db5099e592",
+    "families": [
+      "date",
+      "amount",
+      "negation",
+      "scope",
+      "reference"
+    ],
+    "initial_fixture_rejection": "Preserved mutation-attempt1.json; short fixture had no digest in both versions, extended only synthetic fixture. Actual corpus pass untouched.",
+    "profiles": 6
+  },
+  "native": {
+    "actual_captures": 13,
+    "actual_extraction_parents_and_get": true,
+    "doctor_restore_twice": true,
+    "profile": "../physical-policy-native9/runtime-profile.json",
+    "profile_sha256": "27458d5562d3a5d18591528290fac0cef46fcea58cbf17cf6b929a8daf67d725",
+    "raw_bytes": 400412,
+    "raw_controls": 9,
+    "repeat_zero_growth": true,
+    "standard_recipe_ids": [
+      "072b672c57fa7b81d4468867e5575789d370a7a69a76c55e8615ce066bd203f9"
+    ],
+    "unique_metadata": 74,
+    "workers_1_4_sql_business_order_equal": true
+  }
+}

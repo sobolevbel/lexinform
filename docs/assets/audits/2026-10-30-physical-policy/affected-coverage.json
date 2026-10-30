@@ -1,0 +1,14 @@
+{
+  "extension_counts": {
+    ".doc": 220,
+    ".pdf": 114,
+    ".xml": 12,
+    ".zip": 1568
+  },
+  "roots": 1914,
+  "saved_actual_depth_limit_roots": 0,
+  "saved_actual_nested_roots": 1568,
+  "saved_actual_unpacking_limit_roots": 0,
+  "saved_deflate64_header_roots": 4,
+  "scope": "Coverage derived only from frozen previous actualM0 observations; current replay independently verifies exact baseline/candidate actual context/unit references and order, not a discovery/read of all archives."
+}

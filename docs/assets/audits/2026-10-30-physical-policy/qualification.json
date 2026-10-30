@@ -1,0 +1,32 @@
+{
+  "scope": "DA3.1 physical extraction/legal package selection boundary in actual bounded native profile; no archive/backend or completeness inference",
+  "patch_sha256": "d060a0a46ae03e181803ae9aef1fa77b1f64e3c67baad7c5fde12e59f679a1b3",
+  "independent_review": "Root exact4diff review fixed unknown-page suppression; guarded pages<=0 +negativecontrol; final4source/Word AST checked; independent actual merged boundary/native closure",
+  "root_merge": "Originaladaptercontext patch did not apply against Word imports; no mutation oncheck. Only3 exactadapter replacements made; other3SHAexact; qualifiedDocumentTextExtractor AST exact and RootDocx/_WordMl AST unchanged. Actualcombinedrecipe ed52197f... separately qualified, originalQA recipe not relabeled.",
+  "corpus_roots": 1914,
+  "one_pass_seconds": 1509.624,
+  "unexpected_deltas": 0,
+  "factual_loss_parts": 109,
+  "factual_loss_roots": 83,
+  "version_only_roots": 1831,
+  "coverage": "114priorPDF +1568actualnestedPDF/DOC roots+220DOC+12XML;2103unchangedWord/ODT/ZIP-only viaobservedroutes/protectedAST;4prioroversizedexcluded. FouractualDeflate64headers. No real depth/unpacking-limit claims: syntheticactualbranchcontrols only.",
+  "legacy_business": "Allselectedtext/JSON/trim/prefilter/provider variants/decisions exact; otherlosses/traversal/request/open/rejection order exact; zero prefix reduction",
+  "full_gate": {
+    "suites": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "7089",
+        "time": "287.845",
+        "timestamp": "2026-10-30T16:09:12.032192+01:00"
+      }
+    ],
+    "coverage_percent": 92,
+    "mypy_files": 620,
+    "ruff_formatted_files": 688,
+    "source_config_freeze_paths": 705,
+    "freeze_unchanged": true
+  }
+}

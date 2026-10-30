@@ -8463,3 +8463,46 @@ high-water RSS, не incremental scratch RSS/hosted benchmark/global forecast.
 [current-state proof](../assets/audits/2026-10-30-locked-maintenance/current-state-handoff.json),
 [guards](../assets/audits/2026-10-30-locked-maintenance/actual-state-guards.json),
 [shared gate](../assets/audits/2026-10-30-word-maintenance-gate/qualification.json).
+
+
+J178/J179: head `a1dc3b705c5599819d8b4fa9d8c68404715a56bd` включает оба owned commits;
+четыре exact CI jobs и actual relay `ac7c5744 → a1dc3b70`, health45s/timer подтверждены
+[release proof](../assets/audits/2026-10-30-locked-maintenance/release.json).
+
+
+<a id="j180"></a>
+
+## J180 — physical PDF coverage independent of legal interpretation
+
+DA3.1 закрыт в согласованном bounded native профиле. Физический `_collect_content` всегда
+фиксирует измеренное pages/chunks mismatch, включая blank text. Прежнее исключение для
+целого акта с uzasadnienie и прежняя blank projection живут только в pure candidate policy.
+Нельзя скрыть sentinel при unknown pages<=0; прочие losses и immutable physical snapshot
+не меняются. Legacy `extract_document`/provenance остаются facades поверх physical+policy.
+Root проверил reachable physical calls: юридического classifier/selector в обходе нет;
+устаревший private `_zip` delegate недостижим из actual ZIP route, unused rank не вызывается.
+Observed parent/container/member SHA, ordinal и limits предоставляет существующий companion;
+старый root смысл `container_sha256` не переименован в выдуманный immediate parent.
+
+После независимого Root review: 108 focused/strict4; 10 synthetic oldselectedJSON exact.
+Один frozen raw pass 1914 unique roots/2878552247B за1509.624s: 114PDF+1568actualnested
+PDF/DOC roots+220DOC/12XML conservative superset. 2103 observed-unaffected Word/ODT/ZIP-only
+и четыре oversized исключены явно. Четыре actual Deflate64 headers; native depth/unpacking
+limits в M0 не наблюдались, их покрывают synthetic actual-branch controls, не real-corpus claim.
+
+Все selected text/JSON/trim/prefilter/provider variants/решения и other losses/order exact.
+83 roots получили ожидаемую физическую диагностику: 92 blank parts/66 roots,17 justification
+parts/17 roots. Остальные1831 — только actual component/policy version changes. Inventory1914
+exact, execution changes ровно83, unexpected0, prefix reductions0; все1914 result/capture IDs
+меняются честно. Source/index/master manifest/M0 pins unchanged. Пять семантических мутаций
+дат/сумм/отрицаний/scope/ссылок сохраняются после fit и меняют law/provider digests.
+
+Root объединил только import/loss hunks с текущим Word module; qualified physical class AST
+exact, Word class AST сохранён. Actual merged standard recipe `ed52197f…`:9raw400412B,
+13native captures/74metadata, off/on source/business SQL и workers1/4 order exact; cachequiet,
+doctor/restore2 green. Corpus QA subclass recipe не выдаётся за production recipe.
+Full7089/287.845s/92%, mypy620/Ruff688,705inputfreeze unchanged;1914 и3055 не повторялись.
+[Qualification](../assets/audits/2026-10-30-physical-policy/qualification.json),
+[raw summary](../assets/audits/2026-10-30-physical-policy/affected-summary.json),
+[coverage](../assets/audits/2026-10-30-physical-policy/affected-coverage.json),
+[merged native](../assets/audits/2026-10-30-physical-policy/merged-native.json).

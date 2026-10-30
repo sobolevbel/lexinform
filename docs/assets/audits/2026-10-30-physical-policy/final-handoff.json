@@ -1,0 +1,93 @@
+{
+  "additional_controls": {
+    "meaningful_mutations": {
+      "all_needles_preserved": true,
+      "all_provider_text_and_law_digests_differ_from_unmodified": true,
+      "baseline_candidate_equal": true,
+      "driver_sha256": "996863d2a7674d78ef750439ed521f9d2704a0fe77dcbb824bf680db5099e592",
+      "families": [
+        "date",
+        "amount",
+        "negation",
+        "scope",
+        "reference"
+      ],
+      "initial_fixture_rejection": "Preserved mutation-attempt1.json; short fixture had no digest in both versions, extended only synthetic fixture. Actual corpus pass untouched.",
+      "profiles": 6
+    },
+    "native": {
+      "actual_captures": 13,
+      "actual_extraction_parents_and_get": true,
+      "doctor_restore_twice": true,
+      "profile": "../physical-policy-native9/runtime-profile.json",
+      "profile_sha256": "27458d5562d3a5d18591528290fac0cef46fcea58cbf17cf6b929a8daf67d725",
+      "raw_bytes": 400412,
+      "raw_controls": 9,
+      "repeat_zero_growth": true,
+      "standard_recipe_ids": [
+        "072b672c57fa7b81d4468867e5575789d370a7a69a76c55e8615ce066bd203f9"
+      ],
+      "unique_metadata": 74,
+      "workers_1_4_sql_business_order_equal": true
+    }
+  },
+  "corpus": {
+    "driver_sha256": "01371fa793ae3d5766a6bf751056f278575dfa4ebbc563d42dd67d973cd3862a",
+    "elapsed_seconds": 1509.6240149160149,
+    "execution_changed_only_expected_loss_roots": 83,
+    "index_source_manifest_m0_and_source4_unchanged": true,
+    "inventory_exact_roots": 1914,
+    "legacy_text_selection_json_trim_prefilter_provider_text_variants_decisions_exact": true,
+    "manifest_sha256": "786c661800f8ba30d4263753c80d1cbcd5c0f924f4b2a9b85e14f300fbae1100",
+    "one_pass": true,
+    "other_physical_losses_and_context_request_open_rejection_order_exact": true,
+    "physical_part_delta_classes": {
+      "blank_text_mismatch": 92,
+      "legacy_justification_exception": 17
+    },
+    "raw_bytes": 2878552247,
+    "root_delta_classes": {
+      "blank_text_mismatch": 66,
+      "component_and_policy_version_only": 1831,
+      "legacy_justification_exception": 17
+    },
+    "roots": 1914,
+    "selected_summary_prefix_reductions": 0,
+    "summary_sha256": "81add89fde0d1b9c1497e74c8164193475506c88d113035b07380e31228a688e",
+    "truthful_actual_result_and_capture_id_changes": 1914,
+    "unexpected_deltas": 0
+  },
+  "exclusions": {
+    "native_deflate64_header_roots": 4,
+    "oversized_prior_exclusions": 4,
+    "scope": "Existing J124 pinned cohort:114 priorPDF roots +1568nestedZIP roots with actual non_zip contexts +conservative220DOC/12XML; other PDF populations not added. Saved M0 contains no native depth/unpacking-limit cases; existing focused synthetic actual-branch depth/member/duplicate/CRC controls qualify those bounds, without claiming native real-corpus limit coverage.",
+    "unaffected_saved_route_roots": 2103,
+    "unchanged_word_classes_ast_exact": true
+  },
+  "integration_notes": "Only adapter import + _collect_content loss hunk overlaps Word carrier. Preserve Word actor _PhysicalOrigins/facade/dispatch/binding additions; no Docx._read/_WordMl edits. Package policy and related4source tests from frozen patch. Parent will run combined full and obtain final combined component/recipe identity after any additional independently qualified code merge.",
+  "patch_path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/physical-policy-boundary/review-2/candidate.patch",
+  "patch_sha256": "d060a0a46ae03e181803ae9aef1fa77b1f64e3c67baad7c5fde12e59f679a1b3",
+  "performed": "108 focused, strict owned mypy/Ruff,10 fixed synthetic old selectedJSON exact,6 mutation profiles (5meaningful families) exact; ONE1914 affected raw pass; bounded native9 real inputs/13consumer captures. No full/primary edits/commit/push/network/paid/raw retention.",
+  "qualification_recipe_scope": "Corpus uses a bounded QA observer subclass recording actual part pages/chunks/blank/loss hashes without retaining text. Those actual QA recipes are labelled and are not standard producer recipes. Separate native13 consumer probe uses the actual standard capture recipe072b672c57fa7b81d4468867e5575789d370a7a69a76c55e8615ce066bd203f9; actual extraction parents/get/doctor/restore/repeat verified. No forged/stamped historical versions.",
+  "reviewed_handoff_sha256": "b6721a6131050f7b80bd0f8e279a2178f1aaa8f5b14099f9738cc2a6f3edfc16",
+  "source_base": "ac7c57448bc4113d88ea6fc1c2821cd75b3f0323",
+  "source_paths": {
+    "src/lexinform/adapters/document_text.py": {
+      "bytes": 58828,
+      "sha256": "a0dca4282bc9aa56acdd0df4de0b33a49f066edac49acef95d7fb8d98a46c335"
+    },
+    "src/lexinform/document_candidates.py": {
+      "bytes": 8428,
+      "sha256": "ca28ef1781046130146ff875e5f12a1bf9139d7df66493c27142793d298f2919"
+    },
+    "tests/unit/test_document_candidates.py": {
+      "bytes": 8075,
+      "sha256": "87bcb6bec8474dfbd870466cfa85f4a038ab1cb9df5926c18239bfcd5a15ae9b"
+    },
+    "tests/unit/test_document_text.py": {
+      "bytes": 26609,
+      "sha256": "26381ba2f64786f097531476030474582621f9e0b8c4c9dd1001a71014d9fa09"
+    }
+  },
+  "status": "qualified; ready for root integration/full gate"
+}

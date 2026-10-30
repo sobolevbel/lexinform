@@ -1,0 +1,32 @@
+{
+  "actual_native_consumer_captures": 13,
+  "actual_standard_producer_recipe_ids": [
+    "ed52197f6bf83a38f0d0ce0ca9b955b7ccf01bc4e81a742fef3c3dbc0a47411f"
+  ],
+  "boundary": {
+    "companion": "Actual bounded header/graph/unit/order/recipe provides observed parent/container/member SHA, ordinals, dispositions/limits and explicit omission/unknown states, through standard observer and atomic caller persistence. DocumentPart.container_sha256 retains root meaning; no inferred immediate-parent SHA or fake absent/custom capture.",
+    "compatibility_facades": "extract_document and extract_document_with_provenance perform pure selection after physical extraction; private _zip is a legacy facade delegate, unreachable from actual _collect ZIP route (ZIP handled first). Unused _member_rank is not called by native traversal.",
+    "legal_projection": "document_candidates._legacy_losses preserves sentinel for pages<=0; only known-page blank or exact prior chunks<pages+justification condition suppresses that sentinel in projected copies. Other physical losses and original frozen snapshot remain.",
+    "reachable_physical_entries": "extract_parts\u2192_collect\u2192_collect_content contain no legal classifier/package selector/reads_through_justification; native Word/PDF/ODT helpers only extract format data. Physical mismatch persists independently of content, including blank text."
+  },
+  "business_and_source_sql_off_on_exact": true,
+  "cache_repeat_zero_growth": true,
+  "diagnostic_growth_only": {
+    "gzip": 18378,
+    "sql": 111075
+  },
+  "doctor_restore_twice": "green",
+  "driver_sha256": "06498d83d4092020a461cbe4b4afabe7ba856dd3f85f86110cb80d0f54fee88b",
+  "imports": "lexinform.__file__ asserted PRIMARY/src/lexinform/__init__.py",
+  "metadata": 74,
+  "no_source_checkbox_full_raw_paid_changes": true,
+  "profile_sha256": "07f40bcfa0aaa1038af2f2461b95b8c5bd87c0e2e24a1ebb95073c50d21719f5",
+  "qualification_relationship": "Single1914 baselineac7\u2192candidate corpus proof remains its explicitly pinned source scope. Merged PRIMARY classAST matches that qualified DocumentTextExtractor, existing Word classes unchanged by physical hunk; this final native probe verifies actual merged source705/recipe without rerunning1914 or Word3055.",
+  "raw_bytes": 400412,
+  "raw_controls": 9,
+  "scope": "DA3.1 accepted bounded native physical extraction + truthful companion observation, not universal custom/historical data or complete unvisited archive contents.",
+  "source705_before_after_exact": true,
+  "source_freeze_sha256": "33cbc558cd8fbbdbb4ad348867b5a52e20ead4793afc21d4b5911e9885802fd7",
+  "status": "independent merged native closure; root owns checkbox/full/release",
+  "workers1_4_all_sql_and_order_exact": true
+}

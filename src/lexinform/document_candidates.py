@@ -13,7 +13,13 @@ from lexinform.models.documents import (
     ExtractedParts,
 )
 from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, text_rank, text_role
-from lexinform.sections import APPENDIX_KINDS, PAGE_BREAK, Kind, document_kind
+from lexinform.sections import (
+    APPENDIX_KINDS,
+    PAGE_BREAK,
+    Kind,
+    document_kind,
+    reads_through_justification,
+)
 
 _ROLE_OF_KIND: dict[Kind, TextRole] = {
     "bill": "bill",
@@ -97,7 +103,11 @@ def select_document_parts(
     parts: list[DocumentPart] = []
     for part in extracted.parts:
         kind = document_kind(part.text) if part.text.strip() else "unknown"
-        parts.append(part.model_copy(update={"role": _ROLE_OF_KIND.get(kind, "unknown")}))
+        parts.append(
+            part.model_copy(
+                update={"role": _ROLE_OF_KIND.get(kind, "unknown"), "losses": _legacy_losses(part)}
+            )
+        )
     rejected = list(extracted.rejected)
     if len(parts) == 1 and not parts[0].members:
         part = parts[0]
@@ -106,6 +116,17 @@ def select_document_parts(
             selection=DocumentSelection(parts=(part,), rejected=tuple(rejected)),
         )
     return _select_parts(parts, rejected, max_part_chars=max_part_chars)
+
+
+def _legacy_losses(part: DocumentPart) -> tuple[str, ...]:
+    mismatch = "text page coverage differs from the PDF page count"
+    if part.pages <= 0 or mismatch not in part.losses:
+        return part.losses
+    if not part.text.strip() or (
+        len(part.text.split(PAGE_BREAK)) < part.pages and reads_through_justification(part.text)
+    ):
+        return tuple(loss for loss in part.losses if loss != mismatch)
+    return part.losses
 
 
 def _select_parts(

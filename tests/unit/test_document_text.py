@@ -3,6 +3,9 @@
 import io
 import zipfile
 
+import pytest
+
+from lexinform import document_candidates
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import (
     DocumentTextExtractor,
@@ -596,3 +599,29 @@ def test_textless_pages_after_an_act_without_its_reasons_are_a_loss() -> None:
     part = extractor.extract_document(b"%PDF-1.7").selection.parts[0]
 
     assert part.losses == (_COVERAGE,)
+
+
+@pytest.mark.parametrize(
+    ("text", "pages", "expected"),
+    [
+        (_BODY, 8, (_COVERAGE,)),
+        (_BODY.split(PAGE_BREAK, 1)[0], 8, (_COVERAGE,)),
+        (_BODY, 1, (_COVERAGE,)),
+        ("", 8, ("no extracted text", _COVERAGE)),
+        (_BODY, 3, ()),
+    ],
+    ids=["through-reasons", "incomplete-act", "extra-chunks", "blank", "matching-count"],
+)
+def test_physical_coverage_is_measured_without_legal_interpretation(
+    monkeypatch: pytest.MonkeyPatch, text: str, pages: int, expected: tuple[str, ...]
+) -> None:
+    def legal_interpretation(text: str) -> bool:
+        raise AssertionError("physical extraction must not call the legal coverage exception")
+
+    monkeypatch.setattr(document_candidates, "reads_through_justification", legal_interpretation)
+    runtime = DocumentTextExtractor(
+        FakeTextExtractor(text, page_count=pages), DocxTextExtractor(), DocTextExtractor()
+    )
+    physical = runtime.extract_parts(b"%PDF-1.7 physical coverage")
+    assert physical.parts[0].losses == expected
+    assert physical.parts[0].role == "unknown"

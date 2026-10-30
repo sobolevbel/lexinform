@@ -1,3 +1,7 @@
+from typing import Literal
+
+import pytest
+
 from lexinform.document_candidates import (
     AmbiguousCandidates,
     CandidateSet,
@@ -6,11 +10,20 @@ from lexinform.document_candidates import (
     select_candidate_versions,
     select_document_parts,
 )
-from lexinform.models import DocumentPart, ExtractedParts
+from lexinform.models import DocumentPart, DocumentSelection, ExtractedDocument, ExtractedParts
+from lexinform.sections import PAGE_BREAK
 
 BILL = (
     "USTAWA\nz dnia 1 stycznia 2026 r.\no cudzoziemcach\nArt. 1. Cudzoziemiec otrzymuje 200 zł.\n"
 )
+WHOLE_ACT = PAGE_BREAK.join(
+    (
+        BILL,
+        "Art. 2. Ustawa wchodzi w życie po upływie 30 dni od dnia ogłoszenia.",
+        "UZASADNIENIE\nProjekt zmienia zasady pobytu.",
+    )
+)
+COVERAGE_LOSS = "text page coverage differs from the PDF page count"
 
 
 def test_selection_preserves_the_physical_snapshot_for_other_consumers() -> None:
@@ -122,3 +135,74 @@ def test_physical_parts_share_body_classification_without_trusting_a_filename_ro
     candidates = CandidateSet.from_parts((labelled, bill))
     assert candidates.bill_indices() == (1,)
     assert candidates.entries[1].parts == candidates.entries[1].observed_parts == (bill,)
+
+
+@pytest.mark.parametrize(
+    ("text", "pages", "losses", "expected", "role"),
+    [
+        (WHOLE_ACT, 8, (COVERAGE_LOSS,), (), "bill"),
+        (WHOLE_ACT, 8, (COVERAGE_LOSS, "missing note"), ("missing note",), "bill"),
+        (WHOLE_ACT, 1, (COVERAGE_LOSS,), (COVERAGE_LOSS,), "bill"),
+        (
+            WHOLE_ACT.split(PAGE_BREAK, 1)[0],
+            8,
+            (COVERAGE_LOSS,),
+            (COVERAGE_LOSS,),
+            "bill",
+        ),
+        ("", 8, ("no extracted text", COVERAGE_LOSS), ("no extracted text",), "unknown"),
+        (
+            "",
+            0,
+            ("no extracted text", COVERAGE_LOSS),
+            ("no extracted text", COVERAGE_LOSS),
+            "unknown",
+        ),
+    ],
+    ids=[
+        "through-reasons",
+        "other-loss-kept",
+        "extra-chunks",
+        "incomplete-act",
+        "blank",
+        "unknown-count",
+    ],
+)
+def test_coverage_projection_preserves_legacy_selected_json_and_physical_snapshot(
+    text: str,
+    pages: int,
+    losses: tuple[str, ...],
+    expected: tuple[str, ...],
+    role: Literal["bill", "unknown"],
+) -> None:
+    part = DocumentPart(text=text, pages=pages, losses=losses)
+    physical = ExtractedParts(input_sha256="a" * 64, parts=(part,))
+    before = physical.model_dump_json()
+    expected_document = ExtractedDocument(
+        text=text,
+        selection=DocumentSelection(
+            parts=(part.model_copy(update={"role": role, "losses": expected}),)
+        ),
+    )
+    selected = select_document_parts(physical, max_part_chars=400000)
+    assert selected.model_dump_json() == expected_document.model_dump_json()
+    assert physical.model_dump_json() == before
+
+
+def test_package_coverage_projection_preserves_legacy_completeness_and_observed_parts() -> None:
+    part = DocumentPart(text=WHOLE_ACT, pages=8, losses=(COVERAGE_LOSS,), members=("projekt.pdf",))
+    physical = ExtractedParts(input_sha256="a" * 64, parts=(part,))
+    before = physical.model_dump_json()
+    projected = part.model_copy(update={"role": "bill", "losses": ()})
+    expected = ExtractedDocument(
+        text=WHOLE_ACT,
+        selection=DocumentSelection(
+            parts=(projected,),
+            observed_parts=(projected,),
+            role=("bill heading",),
+            completeness=("all selected members extracted",),
+        ),
+    )
+    selected = select_document_parts(physical, max_part_chars=400000)
+    assert selected.model_dump_json() == expected.model_dump_json()
+    assert physical.model_dump_json() == before

@@ -91,10 +91,7 @@ from lexinform.ports import (
     WordBlockTextExtractor,
     WordNoteTextExtractor,
 )
-from lexinform.sections import (
-    PAGE_BREAK,
-    reads_through_justification,
-)
+from lexinform.sections import PAGE_BREAK
 from lexinform.word_projection import legacy_word_text
 from lexinform.word_structure import WordStructureCollector, current_word_structure
 
@@ -1153,8 +1150,8 @@ class DocumentTextExtractor:
             if pages and not page.strip()
         ) + tuple(re.findall(r"\[nieodczytany przypis [^\]]+\]", text))
         chunks = len(text.split(PAGE_BREAK))
-        # The PDF extractor strips textless edge pages: past a whole act and its reasons, annexes.
-        if pages and chunks != pages and not (chunks < pages and reads_through_justification(text)):
+        losses = losses if text.strip() else ("no extracted text",)
+        if pages and chunks != pages:
             losses += ("text page coverage differs from the PDF page count",)
         parts.append(
             DocumentPart(
@@ -1167,7 +1164,7 @@ class DocumentTextExtractor:
                 pages=pages,
                 page_start=1 if pages else None,
                 page_end=pages or None,
-                losses=losses if text.strip() else ("no extracted text",),
+                losses=losses,
             )
         )
 

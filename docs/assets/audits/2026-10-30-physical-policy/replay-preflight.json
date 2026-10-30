@@ -1,0 +1,25 @@
+{
+  "baseline": "ac7c57448bc4113d88ea6fc1c2821cd75b3f0323 archive exact source",
+  "driver_sha256": "01371fa793ae3d5766a6bf751056f278575dfa4ebbc563d42dd67d973cd3862a",
+  "manifest_sha256": "786c661800f8ba30d4263753c80d1cbcd5c0f924f4b2a9b85e14f300fbae1100",
+  "once_only": true,
+  "source_pins": {
+    "src/lexinform/adapters/document_text.py": {
+      "bytes": 58828,
+      "sha256": "a0dca4282bc9aa56acdd0df4de0b33a49f066edac49acef95d7fb8d98a46c335"
+    },
+    "src/lexinform/document_candidates.py": {
+      "bytes": 8428,
+      "sha256": "ca28ef1781046130146ff875e5f12a1bf9139d7df66493c27142793d298f2919"
+    },
+    "tests/unit/test_document_candidates.py": {
+      "bytes": 8075,
+      "sha256": "87bcb6bec8474dfbd870466cfa85f4a038ab1cb9df5926c18239bfcd5a15ae9b"
+    },
+    "tests/unit/test_document_text.py": {
+      "bytes": 26609,
+      "sha256": "26381ba2f64786f097531476030474582621f9e0b8c4c9dd1001a71014d9fa09"
+    }
+  },
+  "synthetic_process_smoke": "green; blank actual PDF2pages, exact downstream +intended physical delta"
+}
