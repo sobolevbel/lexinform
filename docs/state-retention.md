@@ -626,3 +626,32 @@ SQL-read-only show и читающие lookup API не получают запи
 J158 проверяет prospective URL policy перед новым loader receipt; complete body metadata
 сохраняется независимо до этой проверки. Cache reuse не считается новой omission observation.
 Source/selection graph privacy остаётся отдельным этапом; historical rows не переписываются.
+
+## Физический инвентарь: совместимый reader (v62)
+
+`physical_metadata` и `physical_captures` добавляют только чтение и явный repository API;
+extractor, TextLoader, Container и вызывающие команды пока не записывают эти строки.
+Это описание наблюдённых физических фактов, отдельно от candidate policy, admission,
+оплаченного input и применения результата. `scope=observed` не подтверждает полный обход архива.
+
+Закрытые записи сохраняют header universe, непосредственные parent/ordinal links, известные SHA
+полных payload и порядок чтений. Original/runtime names и actual read ordinal остаются разными
+полями. Непрочитанные тела и недоступные заголовки не получают выдуманных identities. Extras/comments
+представлены длиной и SHA, без opaque bytes. Нет source text, raw store или backend promise.
+
+Каждый capture принадлежит настоящему `artifacts.sha256`, с nullable actual extraction association.
+Recipe хранится отдельно и остаётся доступным без extraction: реализации, source-file hashes,
+Python/dependency versions и эффективные options/limits. Неизвестные legacy recipes не достраиваются.
+SQL views раскрывают все сохранённые metadata refs для ownership/reachability проверок; getters,
+save, doctor и scratch restore используют общий structural reader без повторного walker/classifier.
+
+Лимиты относятся к UTF-8 JSON envelope вместе с recording timestamp: 32 KiB на metadata,
+1 KiB на capture, 512 KiB на distinct transitive union capture вместе с recipe. SQL/index/WAL
+занимают отдельное место. Partial identity связывает retained fields, owner, counters и известный
+opaque full-observation SHA; неизвестный SHA остаётся unknown, partial не считается полным архивом.
+Повторная запись сохраняет первое время; timestamps не входят в IDs. Автоматической очистки нет.
+
+Старые ExtractionResult JSON/IDs не меняются. Будущий producer должен записывать настоящие новые
+component hashes и явно проверенные audit-ID deltas, сохраняя business text/selection/model-input/IO.
+Активация producer требует развёрнутого reader, populated predecessor restore и отдельной проверки
+caller-owned failure finalization: публичный метод не возвращает sidecar после исключения.

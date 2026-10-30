@@ -1,0 +1,35 @@
+{
+  "rows": [
+    {
+      "header_index": false,
+      "pairs": 1000,
+      "seconds": 0.045086750003974885
+    },
+    {
+      "header_index": false,
+      "pairs": 2000,
+      "seconds": 0.17815616697771475
+    },
+    {
+      "header_index": false,
+      "pairs": 4000,
+      "seconds": 0.7076466250000522
+    },
+    {
+      "header_index": true,
+      "pairs": 1000,
+      "seconds": 0.00256958301179111
+    },
+    {
+      "header_index": true,
+      "pairs": 2000,
+      "seconds": 0.0054980829590931535
+    },
+    {
+      "header_index": true,
+      "pairs": 4000,
+      "seconds": 0.011241415981203318
+    }
+  ],
+  "scope": "Isolated deferred self-FK mechanism; not a forecast of root save time"
+}

@@ -566,7 +566,7 @@ def test_incomplete_universe_and_conflicting_phase_result_facts_are_rejected(
 
 def test_schema_sixty_prefix_and_sql_byte_caps_are_preserved(tmp_path: Path) -> None:
     repo = repository(tmp_path)
-    assert SCHEMA_VERSION == len(MIGRATIONS) == 61
+    assert SCHEMA_VERSION == len(MIGRATIONS) >= 61
     repo.close()
     with closing(sqlite3.connect(tmp_path / "history.db")) as db, db:
         for state, count in (("complete", 4097), ("omitted_over_limit", 1025)):

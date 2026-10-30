@@ -1,0 +1,16 @@
+{
+  "decisions": {
+    "admitted": 974
+  },
+  "input_sql_sha256": "23b806ac902bfcd5ef29cda0b876f5dc6b7a707a8ee0bf24ce63c6bbcdfc72f5",
+  "input_unchanged": true,
+  "limits": [
+    "Original requested view unavailable: saved document supplied for both views only to qualify retained fields",
+    "opaque_failure_prose=False is a controlled URL-only check, not proof that historical prose was safe",
+    "No raw extraction, production/network/model work or historical migration",
+    "These are retained counterfactual inspection records, not natural demand"
+  ],
+  "observations": 974,
+  "scope": "Saved source-observation URL fields only; no original requested universe or opaque-prose history is inferred",
+  "selection_records": 929
+}

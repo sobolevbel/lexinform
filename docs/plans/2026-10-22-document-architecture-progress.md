@@ -7783,3 +7783,64 @@ J157 commit `3a05deb4e6a2b524c9dc35a74ed6ea69231ce1e2`: все четыре CI j
 J158 final make check: 6761 passed / 236.08s, coverage 92%; strict mypy 579 files,
 Ruff/format 646 по src/tests/tools. Все 646 source/config pins exact. Independent review
 body/error/cache/lock/caller boundaries без findings. Strict docs checks прошли.
+
+
+<a id="j159"></a>
+
+### J159. Add inert bounded physical inventory reader
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября. Base `93ccd839`.
+Append-only schema62 добавляет physical metadata/captures и структурные views. Closed typed records:
+headers, graph, container execution, root order и shared recipe с code/dependency/options refs.
+Root всегда actual artifact; extraction association nullable, без фиктивного результата.
+Repository/get/doctor/shared scratch restore проверяют IDs, ownership, parent refs, cycles,
+первое recording time и caps; walker/selection policy не перезапускаются. Runtime producer нет.
+
+Лимиты целого UTF-8 envelope: metadata32 KiB/capture1 KiB/root distinct union512 KiB с recipe.
+Partial records связывают retained fields и omission counters; неизвестный full SHA остаётся unknown.
+100 focused tests прошли. Independent review выявило TEXT artifact size вместо числа: get/doctor/
+restore теперь возвращают typed diagnostic, target restore сохранён. EXPLAIN и замеры выявили
+отсутствующий self-FK child index: добавлены header и четыре capture FK indexes. Запись54 198
+records теперь16.59s; unindexed попытка прервана спустя более6min, успешного baseline benchmark нет.
+
+Captured M0 без raw reads/extraction:54 197 прежних payload IDs exact +1 actual QA observer recipe,
+4017 captures с явным counterfactual extraction=None. Get/repeat+365d/restore twice exact.
+Max envelopes H26563/G11426/unit14096/order23233/recipe3404/capture510 B; root union452164 B.
+Whole scratch SQL95 443 611 B/gzip21 578 326 B включает parents, это не production forecast.
+Final parent guard отдельно проверен doctor на всей популяции, DB SHA unchanged.
+Exact predecessor3a05 store против62 на pinned schema59: все41 прежних таблиц/3003rows/87 schema
+objects exact, только две пустые feature tables и indexes/views/version; delta+7019 SQL/+1479 gzip B.
+Store между3a05 и93ccd839 не менялся. Doctor, migration repeat и двойной restore exact.
+[Acceptance assets](../assets/audits/2026-10-30-inert-metadata-foundations/validation.json).
+DA3 physical producer остаётся открытым; raw backend не выбран.
+
+<a id="j160"></a>
+
+### J160. Add inert pure source graph admission
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября.
+Pure helper проверяет original requested/resolved TextDocument URL fields и alternatives,
+selected/observed part URLs и evidence source URLs до graph IDs. Empty physical URL остаётся
+unknown; empty document URL rejected. Explicit opaque_failure_prose flag исключает graph,
+не сканируя и не сохраняя prose. Result содержит bounded hash-only omissions J157, counts —
+field occurrences. Нет model/schema/ID изменений, registry или runtime callers.
+19 новых unit cases;113 focused вместе с policy/collector прошли. Retained-field cohort:
+974 observations/929 selections, все известные URL admitted, SQL unchanged. Original requested
+universe и opaque-prose history недоступны: их не реконструировали. Root и independent reviewer
+проверили integration без findings. J159/J160 объединены только для одного exact полного gate;
+ни physical producer, ни graph gating этим выпуском не включаются. DA2.5 остаётся partial.
+План74 /32done /6N/A /36open.
+
+
+J158 commit `93ccd839a61ceb4319ed3298e4c1e384ce7ee732`: все четыре CI jobs 41027748582
+и deploy 41028185083 прошли; relay3a05 →93cc, health45s/timer подтверждены
+[release proof](../assets/audits/2026-10-30-loader-url-receipts/release.json).
+
+Первый совместный J159/J160 full gate:6800 passed и один старый assert ровноschema61.
+Он теперь допускает append-only successors; отдельный physical test сохраняет hash первых61
+миграций. Все прежние Senate SQL caps assertions сохранены.102 focused прошли; full повторяется.
+
+
+J159/J160 final make check: 6801 passed / 236.70s, coverage92%; strict mypy584 files,
+Ruff/format651 по src/tests/tools; все 651 source/config pins exact.40 новых unit cases,
+новых scenarios нет. Strict docs checks прошли. Producer обоих компонентов остаётся выключенным.

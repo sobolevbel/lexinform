@@ -944,6 +944,8 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     assert revived is not None and revived.status is BillStatus.TEXT_PREFILTER_PENDING
     assert revived.last_error == reason
     assert repo.last_discovery_started_at() is not None  # v2 backfill: ok -> discovery_ok
+    assert list(repo.iter_physical_captures()) == []
+    assert repo.get_physical_metadata("a" * 64) is None
     with sqlite3.connect(tmp_path / "current.db") as conn:
         publications = {r[1] for r in conn.execute("PRAGMA table_info(publications)")}
         bills = {r[1] for r in conn.execute("PRAGMA table_info(bills)")}

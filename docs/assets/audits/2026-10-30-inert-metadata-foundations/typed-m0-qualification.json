@@ -1,0 +1,34 @@
+{
+  "SQL_bytes": 95443611,
+  "association_scope": "4017 real captured roots, explicit extraction_id=None counterfactual associations; real historical extraction payloads not imported or fabricated",
+  "captures": 4017,
+  "extraction_calls": 0,
+  "get_roundtrip_exact": true,
+  "gzip9_mtime0_bytes": 21578326,
+  "initial_save_seconds": 16.589896708959714,
+  "kinds": {
+    "execution": 4017,
+    "graph": 18536,
+    "headers": 13108,
+    "recipe": 1,
+    "unit": 18536
+  },
+  "max_capture_bytes": 510,
+  "max_envelope_bytes": {
+    "execution": 23233,
+    "graph": 11426,
+    "headers": 26563,
+    "recipe": 3404,
+    "unit": 14096
+  },
+  "max_root_union_bytes": 452164,
+  "metadata_count": 54198,
+  "old_payload_ids_exact": 54197,
+  "quiet_repeat_exact": true,
+  "raw_reads": 0,
+  "recipe_scope": "Frozen actual M0 QA observer recipe, not current implementation or future producer recipe",
+  "restore_twice_exact": true,
+  "source_sha256": "d3c9b619da000d9ebeb4169cb493d5fe1dd71486dbfb5ccf444d9c16412a2335",
+  "source_unchanged": true,
+  "status": "qualified"
+}

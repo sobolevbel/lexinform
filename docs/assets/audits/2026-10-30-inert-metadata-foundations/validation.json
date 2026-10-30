@@ -1,0 +1,40 @@
+{
+  "stages": [
+    "J159",
+    "J160"
+  ],
+  "base": "93ccd839a61ceb4319ed3298e4c1e384ce7ee732",
+  "scope": "Inert physical metadata reader and pure source graph admission helper; no producer activation",
+  "physical_patch_sha256": "f81c6ba2e7ca1d3ed382a34c53d641dd8b31279dad8e4db11b60c662448cde0f",
+  "physical_predecessor_scope": "Schema61 store unchanged between qualified3a05 and93ccd839; all41 preexisting tables/3003rows/87 schema objects exact; schema62 empty tables only",
+  "physical_focused_passed": 100,
+  "graph_focused_passed": 113,
+  "graph_new_unit_cases": 19,
+  "graph_retained_field_cohort": {
+    "observations": 974,
+    "selection_records": 929,
+    "all_retained_url_fields_admitted": true,
+    "original_requested_universe": "unknown",
+    "opaque_prose_history": "unknown",
+    "SQL_unchanged": true
+  },
+  "independent_integrated_review": "physical_reader_review: frozen pins, model/port preservation and pure helper reviewed without findings",
+  "full_gate": {
+    "tests_passed": 6801,
+    "seconds": 236.703,
+    "coverage_percent": 92,
+    "mypy_files": 584,
+    "ruff_format_files": 651,
+    "source_config_pins": 651,
+    "frozen_bytes_exact": true,
+    "docs_check": "passed"
+  },
+  "limitations": [
+    "Captured M0 records reused; no fresh raw extraction or original extraction payload import",
+    "NULL extraction associations are counterfactual; no invented provenance",
+    "Physical archive producer, actual failure finalization and generic graph admission wiring remain separate",
+    "Whole disposable populated cohort SQL/gzip is not a production growth forecast",
+    "No raw storage/backend decision or retention change"
+  ],
+  "first_full_attempt": "6800passed; historical test assumed exactly schema61; changed to append-only compatible assertion, first61 migration hash remains independently pinned;102 focused and full gate rerun"
+}

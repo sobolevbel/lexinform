@@ -304,6 +304,16 @@ from lexinform.models.phases import (
     stalled_days,
     window_closes_within,
 )
+from lexinform.models.physical_inventory import PhysicalCapture as PhysicalCapture
+from lexinform.models.physical_inventory import PhysicalCaptureRecipe as PhysicalCaptureRecipe
+from lexinform.models.physical_inventory import (
+    PhysicalContainerExecution as PhysicalContainerExecution,
+)
+from lexinform.models.physical_inventory import PhysicalGraph as PhysicalGraph
+from lexinform.models.physical_inventory import PhysicalHeaders as PhysicalHeaders
+from lexinform.models.physical_inventory import PhysicalMetadata as PhysicalMetadata
+from lexinform.models.physical_inventory import PhysicalOmission as PhysicalOmission
+from lexinform.models.physical_inventory import PhysicalRootOrder as PhysicalRootOrder
 from lexinform.models.planning import (
     BillPlan,
     observation_of,

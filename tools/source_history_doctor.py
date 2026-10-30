@@ -8,6 +8,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from lexinform.adapters.physical_history import physical_inventory_issues
 from lexinform.adapters.senate_history import SenateInspectionRowError, read_senate_inspection
 from lexinform.adapters.sqlite_repo import RclLetterUseRowError, read_rcl_letter_use
 from lexinform.document_editions import candidate_edition
@@ -120,6 +121,17 @@ def audit(database: Path) -> dict[str, Any]:
                 issue("senate_inspection_table_unavailable", name)
         if senate_tables <= tables:
             _audit_senate_inspections(connection, counts, issue)
+        physical_tables = {"physical_metadata", "physical_captures"}
+        if schema >= 62 or physical_tables.intersection(tables):
+            for name in sorted(physical_tables - tables):
+                issue("physical_inventory_table_missing", name)
+        if physical_tables <= tables:
+            for name in sorted(physical_tables):
+                counts[name + "_rows"] = connection.execute(
+                    f"SELECT COUNT(*) FROM {name}"
+                ).fetchone()[0]
+            for code, ref in physical_inventory_issues(connection):
+                issue(code, ref)
         if "document_selections" in tables:
             for row in connection.execute(
                 "SELECT rowid AS audit_id, * FROM document_selections ORDER BY rowid"
@@ -299,6 +311,8 @@ def audit(database: Path) -> dict[str, Any]:
         + counts.get("rcl_letter_use_rows", 0)
         + counts.get("senate_inspection_rows", 0)
         + counts.get("senate_inspection_link_rows", 0)
+        + counts.get("physical_metadata_rows", 0)
+        + counts.get("physical_captures_rows", 0)
     )
     return {
         "version": 1,

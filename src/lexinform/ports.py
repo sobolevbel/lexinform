@@ -114,6 +114,7 @@ from lexinform.models import (
     WykazEntry,
 )
 from lexinform.models.batch import BatchJob, BatchKind
+from lexinform.models.physical_inventory import PhysicalCapture, PhysicalMetadata
 from lexinform.models.report import CallKind
 from lexinform.models.senate_inspection import SenateInspectionLink, SenateInspectionRecord
 
@@ -764,6 +765,28 @@ class BillRepository(Protocol):
     def save_selection_artifact(self, reference: SelectionArtifactReference) -> None: ...
 
     def list_selection_artifacts(self, selection_id: str) -> list[SelectionArtifactReference]: ...
+
+    def save_physical_inventory(
+        self,
+        metadata: tuple[PhysicalMetadata, ...] = (),
+        captures: tuple[PhysicalCapture, ...] = (),
+        *,
+        recorded_at: datetime,
+    ) -> None: ...
+
+    def save_physical_metadata(
+        self, metadata: PhysicalMetadata, *, recorded_at: datetime
+    ) -> None: ...
+
+    def get_physical_metadata(self, metadata_id: str) -> PhysicalMetadata | None: ...
+
+    def save_physical_capture(self, capture: PhysicalCapture, *, recorded_at: datetime) -> None: ...
+
+    def get_physical_capture(self, capture_id: str) -> PhysicalCapture | None: ...
+
+    def iter_physical_captures(
+        self, artifact_sha256: str | None = None
+    ) -> Iterator[PhysicalCapture]: ...
 
     def save_senate_inspection(
         self,

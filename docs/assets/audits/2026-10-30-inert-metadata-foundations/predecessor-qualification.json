@@ -1,0 +1,60 @@
+{
+  "SQL_bytes": [
+    20380708,
+    20387727
+  ],
+  "SQL_delta_bytes": 7019,
+  "candidate_patch_sha256": "f81c6ba2e7ca1d3ed382a34c53d641dd8b31279dad8e4db11b60c662448cde0f",
+  "doctor_prior_fields_exact_after_explicit_schema_DB_SHA_zero_new_counts_normalization": true,
+  "doctor_status": [
+    "recorded",
+    "recorded"
+  ],
+  "dump_restore_twice_exact": true,
+  "fresh_extraction_claim": false,
+  "gzip9_mtime0_bytes": [
+    4112971,
+    4114450
+  ],
+  "gzip_delta_bytes": 1479,
+  "input_sha256": "cf9aa3aaf251e457916db371fb1a3a423473ff1d6008d8891d42188b6433cd36",
+  "input_unchanged": true,
+  "migrate_repeat_exact": true,
+  "new_empty_tables": [
+    "physical_metadata",
+    "physical_captures"
+  ],
+  "new_schema_objects": {
+    "ix_physical_capture_artifact": "index",
+    "ix_physical_capture_execution": "index",
+    "ix_physical_capture_extraction": "index",
+    "ix_physical_capture_inventory": "index",
+    "ix_physical_capture_recipe": "index",
+    "ix_physical_metadata_body": "index",
+    "ix_physical_metadata_header": "index",
+    "physical_capture_refs": "view",
+    "physical_captures": "table",
+    "physical_contexts": "view",
+    "physical_execution_units": "view",
+    "physical_graph_edges": "view",
+    "physical_header_rows": "view",
+    "physical_metadata": "table",
+    "physical_metadata_refs": "view",
+    "physical_opens": "view",
+    "physical_parts": "view",
+    "physical_recipe_code": "view",
+    "physical_requests": "view",
+    "ux_physical_capture_with_extraction": "index",
+    "ux_physical_capture_without_extraction": "index"
+  },
+  "predecessor_commit": "3a05deb4e6a2b524c9dc35a74ed6ea69231ce1e2",
+  "preexisting_row_count": 3003,
+  "preexisting_schema_objects_exact": 87,
+  "preexisting_tables_exact": 41,
+  "schema_versions": [
+    61,
+    62
+  ],
+  "scope": "Disposable public init/restore/migrate from pinned schema59 into exact predecessor61 and candidate62; no Settings/.env/processing/providers/production writes; all old table schemas/typed row value bytes/JSON/IDs exact",
+  "status": "qualified"
+}

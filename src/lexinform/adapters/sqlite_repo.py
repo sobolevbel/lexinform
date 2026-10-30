@@ -17,6 +17,12 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
+from lexinform.adapters.physical_history import (
+    PHYSICAL_INVENTORY_MIGRATION,
+    PhysicalInventoryReader,
+    physical_recorded_at,
+    validate_physical_inventory,
+)
 from lexinform.adapters.senate_history import (
     SenateInspectionRowError,
     read_senate_inspection,
@@ -122,6 +128,7 @@ from lexinform.models import (
 )
 from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
 from lexinform.models.legacy_results import canonical_legacy_json, legacy_json
+from lexinform.models.physical_inventory import PhysicalCapture, PhysicalMetadata
 from lexinform.models.senate_inspection import SenateInspectionLink, SenateInspectionRecord
 from lexinform.saved_records import CONTEXT_RESULT_TABLES
 from lexinform.sitting_delivery import sitting_root_plan
@@ -815,6 +822,7 @@ MIGRATIONS: tuple[str, ...] = (
         PRIMARY KEY(inspection_id, descriptor_index)
     );
     """,
+    PHYSICAL_INVENTORY_MIGRATION,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -1199,6 +1207,7 @@ class SqliteBillRepository:
             _validate_candidate_disposition_traces(scratch)
             _validate_rcl_letter_uses(scratch)
             validate_senate_inspections(scratch)
+            validate_physical_inventory(scratch)
         finally:
             scratch.close()
         tables = [
@@ -1211,6 +1220,12 @@ class SqliteBillRepository:
         # so foreign-key enforcement must be off while the script runs.
         self._conn.execute("PRAGMA foreign_keys = OFF")
         try:
+            views = [
+                row[0]
+                for row in self._conn.execute("SELECT name FROM sqlite_master WHERE type='view'")
+            ]
+            for name in views:
+                self._conn.execute('DROP VIEW IF EXISTS "' + name.replace('"', '""') + '"')
             for name in tables:
                 self._conn.execute(f'DROP TABLE IF EXISTS "{name}"')
             self._conn.executescript(script)
@@ -2193,6 +2208,113 @@ class SqliteBillRepository:
             (root_publication_id,),
         )
         return [self._row_to_publication(row) for row in rows]
+
+    def save_physical_inventory(
+        self,
+        metadata: tuple[PhysicalMetadata, ...] = (),
+        captures: tuple[PhysicalCapture, ...] = (),
+        *,
+        recorded_at: datetime,
+    ) -> None:
+        stamp = physical_recorded_at(recorded_at)
+        records = tuple(
+            PhysicalMetadata.model_validate_json(
+                item.model_copy(update={"recorded_at": recorded_at}).model_dump_json()
+            )
+            for item in metadata
+        )
+        receipts = tuple(
+            PhysicalCapture.model_validate_json(
+                item.model_copy(update={"recorded_at": recorded_at}).model_dump_json()
+            )
+            for item in captures
+        )
+        with self.atomic():
+            for record in records:
+                self._conn.execute(
+                    "INSERT INTO physical_metadata VALUES (?,?,?,?,?,?,?) ON CONFLICT DO NOTHING",
+                    (
+                        record.metadata_id,
+                        record.kind,
+                        record.body_sha256,
+                        record.header_id,
+                        record.coverage,
+                        stamp,
+                        record.model_dump_json(),
+                    ),
+                )
+            reader = PhysicalInventoryReader(self._conn)
+            for record in records:
+                saved = reader.read(record.metadata_id)
+                if saved.model_dump(exclude={"recorded_at"}) != record.model_dump(
+                    exclude={"recorded_at"}
+                ):
+                    raise ValueError("immutable physical metadata cannot be replaced")
+            for capture in receipts:
+                existing = self._conn.execute(
+                    "SELECT 1 FROM physical_captures WHERE capture_id=?", (capture.capture_id,)
+                ).fetchone()
+                if existing is None:
+                    reader.verify_capture(capture)
+                self._conn.execute(
+                    "INSERT INTO physical_captures VALUES (?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING",
+                    (
+                        capture.capture_id,
+                        capture.artifact_sha256,
+                        capture.recipe_id,
+                        capture.inventory_id,
+                        capture.execution_id,
+                        capture.extraction_id,
+                        stamp,
+                        capture.model_dump_json(),
+                    ),
+                )
+                row = self._conn.execute(
+                    "SELECT * FROM physical_captures WHERE capture_id=?", (capture.capture_id,)
+                ).fetchone()
+                if row is None:
+                    raise ValueError(
+                        "physical capture conflicts with a different immutable identity"
+                    )
+                saved_capture = reader.capture(row)
+                if saved_capture.model_dump(exclude={"recorded_at"}) != capture.model_dump(
+                    exclude={"recorded_at"}
+                ):
+                    raise ValueError("immutable physical capture cannot be replaced")
+
+    def save_physical_metadata(self, metadata: PhysicalMetadata, *, recorded_at: datetime) -> None:
+        self.save_physical_inventory((metadata,), recorded_at=recorded_at)
+
+    def get_physical_metadata(self, metadata_id: str) -> PhysicalMetadata | None:
+        if (
+            self._conn.execute(
+                "SELECT 1 FROM physical_metadata WHERE metadata_id=?", (metadata_id,)
+            ).fetchone()
+            is None
+        ):
+            return None
+        return PhysicalInventoryReader(self._conn).read(metadata_id)
+
+    def save_physical_capture(self, capture: PhysicalCapture, *, recorded_at: datetime) -> None:
+        self.save_physical_inventory(captures=(capture,), recorded_at=recorded_at)
+
+    def get_physical_capture(self, capture_id: str) -> PhysicalCapture | None:
+        row = self._conn.execute(
+            "SELECT * FROM physical_captures WHERE capture_id=?", (capture_id,)
+        ).fetchone()
+        return PhysicalInventoryReader(self._conn).capture(row) if row is not None else None
+
+    def iter_physical_captures(
+        self, artifact_sha256: str | None = None
+    ) -> Iterator[PhysicalCapture]:
+        rows = self._conn.execute(
+            "SELECT * FROM physical_captures WHERE (? IS NULL OR artifact_sha256=?)"
+            " ORDER BY capture_id",
+            (artifact_sha256, artifact_sha256),
+        )
+        reader = PhysicalInventoryReader(self._conn)
+        for row in rows:
+            yield reader.capture(row)
 
     def save_senate_inspection(
         self,

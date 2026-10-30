@@ -1,0 +1,6 @@
+{
+  "status": "recorded",
+  "seconds": 10.063063916983083,
+  "database_unchanged": true,
+  "scope": "Final strict parent guard over entire saved typed M0 cohort; original full roundtrip proof ran same schema before parent validation was tightened"
+}
