@@ -1,0 +1,26 @@
+{
+  "base": "1c145aaf",
+  "paths": {
+    "src/lexinform/adapters/physical_history.py": {
+      "sha256": "b4847dd490509a504cb23f4f7f370083047ddf71f57ff23320bcd66b095b0619",
+      "bytes": 30412
+    },
+    "tests/unit/test_physical_inventory.py": {
+      "sha256": "c85b9ec1f4bf4c52c0ff2d2a0e5db90261c475da5569867028c7b218cf235bd2",
+      "bytes": 35288
+    }
+  },
+  "patch_sha256": "2322f6b440a2893235e5313c9455a56999f66133c517eb768a7e8bd7b186ce48",
+  "focused_passed": 52,
+  "focused_failures": 0,
+  "new_unit_cases": 5,
+  "postformat_new_controls_passed": 5,
+  "strict_mypy_files": 2,
+  "ruff_format": "passed",
+  "assembler_frozen_paths_unchanged": 5,
+  "apply_check": true,
+  "repro_closed": "Existing catalog childsize999 vs complete request/header1000 now rejected by get/doctor/scratchrestore; targetdump unchanged. Retained member declaration checked without request, complete request checked without retained header row, nested header span checked against existing catalog size.",
+  "scope": "No models/migrations/payloadIDs/raw/parser/IO/SQL producer changes. Missing childcatalog row remains unknown; returned_length_differs supplies no complete SHA and is exempt; omitted header sizes not inferred. Existing reader records remain unchanged.",
+  "integration": "3 negative modes exercise public get/doctor/scratchrestore target preservation +positive exact/repeated restore;2 positive controls preserve unknown sizes and returned mismatch; baselineexisting missingchildcatalog fixture stillpasses.",
+  "limits": "No full gate/raw/new downloads/population replay/commit/primary edits. Original assembler5pathfreeze and other checkoutdirty files unchanged."
+}

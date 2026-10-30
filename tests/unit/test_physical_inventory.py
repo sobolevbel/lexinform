@@ -6,6 +6,7 @@ from collections.abc import Iterator
 from contextlib import closing
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 import pytest
 from tools.source_history_doctor import audit
@@ -742,3 +743,208 @@ def test_named_read_resolution_is_not_replaced_by_enumerated_or_lookup_ordinal(
         assert connection.execute("SELECT actual_read_ordinal FROM physical_opens").fetchone() == (
             1,
         )
+
+
+def known_member_case(
+    evidence: Literal["member_header", "complete_request", "nested_header", "unknown_size"],
+) -> tuple[Case, tuple[PhysicalMetadata, ...]]:
+    child_body = "b" * 64
+    full_header = PhysicalHeaders(
+        body_sha=ROOT_SHA,
+        central_directory_sha256="c" * 64,
+        central_directory_span=(0, 20),
+        archive_comment=(0, None),
+        rows=(header_row("child.bin", 100),),
+    )
+    header = PhysicalMetadata.of(full_header)
+    if evidence != "member_header":
+        header = PhysicalMetadata.of(
+            full_header.model_copy(update={"rows": ()}),
+            omission=PhysicalOmission(
+                reason="missing_metadata",
+                full_metadata_sha256=None,
+                omitted=(PhysicalOmittedCount(field="rows", count=1),),
+            ),
+        )
+    child_header = (
+        PhysicalMetadata.of(
+            PhysicalHeaders(
+                body_sha=child_body,
+                central_directory_sha256="d" * 64,
+                central_directory_span=(0, 20),
+                archive_comment=(0, None),
+                rows=(),
+            )
+        )
+        if evidence == "nested_header"
+        else None
+    )
+    child = PhysicalMetadata.of(
+        PhysicalGraph(
+            body_sha=child_body,
+            header=child_header.metadata_id if child_header else None,
+            edges=(),
+        )
+    )
+    graph = PhysicalMetadata.of(
+        PhysicalGraph(
+            body_sha=ROOT_SHA,
+            header=header.metadata_id,
+            edges=((child_body, child.metadata_id),),
+        )
+    )
+    unit = PhysicalMetadata.of(
+        PhysicalContainerExecution(
+            graph=graph.metadata_id,
+            route="archive",
+            propagated_error=None,
+            format_error=None,
+            statuses=("member_complete",),
+            requests=(("member", "ordinal", 0, 0, "complete", 100, child_body, None),)
+            if evidence == "complete_request"
+            else (),
+            opens=(),
+        ),
+        body_sha256=ROOT_SHA,
+        header_id=header.metadata_id,
+    )
+    child_unit = PhysicalMetadata.of(
+        PhysicalContainerExecution(
+            graph=child.metadata_id,
+            route="archive" if child_header else "non_zip",
+            propagated_error=None,
+            format_error=None,
+            statuses=(),
+            requests=(),
+            opens=(),
+        ),
+        body_sha256=child_body,
+        header_id=child_header.metadata_id if child_header else None,
+    )
+    order = PhysicalMetadata.of(
+        PhysicalRootOrder(
+            contexts=((None, None, None, unit.metadata_id), (0, 0, None, child_unit.metadata_id)),
+            requests=((0, 0),) if evidence == "complete_request" else (),
+            opens=(),
+            physical=(),
+            zip_failures=(),
+            legacy_rejections=(0, "d" * 64),
+        ),
+        body_sha256=ROOT_SHA,
+    )
+    code = recipe()
+    capture = PhysicalCapture.of(
+        artifact_sha256=ROOT_SHA,
+        recipe_id=code.metadata_id,
+        inventory_id=graph.metadata_id,
+        execution_id=order.metadata_id,
+    )
+    extras = (child, child_unit) + ((child_header,) if child_header else ())
+    return Case(header, graph, unit, order, code, capture), extras
+
+
+@pytest.mark.parametrize("evidence", ["member_header", "complete_request", "nested_header"])
+def test_known_child_size_corruption_fails_get_doctor_restore_without_replacing_target(
+    tmp_path: Path,
+    evidence: Literal["member_header", "complete_request", "nested_header"],
+) -> None:
+    path = tmp_path / "known-child-size.db"
+    repository = SqliteBillRepository(path)
+    repository.migrate()
+    value, extras = known_member_case(evidence)
+    child_body = "b" * 64
+    for body, size in ((ROOT_SHA, 1000), (child_body, 100)):
+        repository.save_artifact_metadata(
+            ArtifactMetadata(sha256=body, byte_size=size, recorded_at=NOW)
+        )
+    repository.save_physical_inventory((*value.records, *extras), (value.capture,), recorded_at=NOW)
+    good = repository.dump()
+    repository.close()
+    with closing(sqlite3.connect(path)) as connection, connection:
+        connection.execute(
+            "UPDATE artifacts SET byte_size=? WHERE sha256=?",
+            (19 if evidence == "nested_header" else 99, child_body),
+        )
+    damaged = SqliteBillRepository(path)
+    with pytest.raises(PhysicalInventoryRowError, match="physical_parent_mismatch"):
+        damaged.get_physical_capture(value.capture.capture_id)
+    broken = damaged.dump()
+    damaged.close()
+    assert audit(path)["status"] == "failed"
+    target = SqliteBillRepository(":memory:")
+    target.migrate()
+    target.restore(good)
+    before = target.dump()
+    with pytest.raises(PhysicalInventoryRowError, match="physical_parent_mismatch"):
+        target.restore(broken)
+    assert target.dump() == before
+    target.restore(before)
+    assert target.dump() == before
+    assert target.get_physical_capture(value.capture.capture_id) is not None
+    target.close()
+
+
+def test_unavailable_member_size_is_not_inferred_from_omitted_header_rows(
+    repo: SqliteBillRepository,
+) -> None:
+    value, extras = known_member_case("unknown_size")
+    for body, size in ((ROOT_SHA, 1000), ("b" * 64, 99)):
+        repo.save_artifact_metadata(ArtifactMetadata(sha256=body, byte_size=size, recorded_at=NOW))
+    repo.save_physical_inventory((*value.records, *extras), (value.capture,), recorded_at=NOW)
+    before = repo.dump()
+    repo.restore(before)
+    assert repo.dump() == before
+    assert repo.get_physical_capture(value.capture.capture_id) is not None
+
+
+def test_returned_length_mismatch_does_not_borrow_a_known_complete_body(
+    repo: SqliteBillRepository,
+) -> None:
+    original = case()
+    assert isinstance(original.header.metadata, PhysicalHeaders), "the fixture retains its header"
+    header = PhysicalMetadata.of(
+        original.header.metadata.model_copy(update={"rows": (header_row("child.bin", 99),)})
+    )
+    graph = PhysicalMetadata.of(
+        PhysicalGraph(body_sha=ROOT_SHA, header=header.metadata_id, edges=((None, None),))
+    )
+    unit = PhysicalMetadata.of(
+        PhysicalContainerExecution(
+            graph=graph.metadata_id,
+            route="archive",
+            propagated_error=None,
+            format_error=None,
+            statuses=("member_returned_length_differs",),
+            requests=(("member", "ordinal", 0, 0, "returned_length_differs", 100, None, None),),
+            opens=(),
+        ),
+        body_sha256=ROOT_SHA,
+        header_id=header.metadata_id,
+    )
+    order = PhysicalMetadata.of(
+        PhysicalRootOrder(
+            contexts=((None, None, None, unit.metadata_id),),
+            requests=((0, 0),),
+            opens=(),
+            physical=(),
+            zip_failures=(),
+            legacy_rejections=(0, "d" * 64),
+        ),
+        body_sha256=ROOT_SHA,
+    )
+    capture = PhysicalCapture.of(
+        artifact_sha256=ROOT_SHA,
+        recipe_id=original.recipe.metadata_id,
+        inventory_id=graph.metadata_id,
+        execution_id=order.metadata_id,
+    )
+    repo.save_artifact_metadata(ArtifactMetadata(sha256="b" * 64, byte_size=100, recorded_at=NOW))
+    save(repo, Case(header, graph, unit, order, original.recipe, capture))
+    before = repo.dump()
+    repo.restore(before)
+    assert repo.dump() == before
+    assert repo.get_physical_capture(capture.capture_id) is not None
+    stored = repo.get_physical_metadata(unit.metadata_id)
+    assert stored is not None, "the retained actual read remains available after restore"
+    assert isinstance(stored.metadata, PhysicalContainerExecution)
+    assert stored.metadata.requests[0][5:7] == (100, None)

@@ -7998,6 +7998,8 @@ Reader63 producer по-прежнему выключен: аудит private exp
 source-reference owner без Bill enrollment, требующий совместимого reader64 перед полным producer.
 
 
+<a id="j167"></a>
+
 ### J167 — inert reader64 для source reference без Bill enrollment
 
 Private `explain` для Sejm/RPW/RCL получает реальный source reference без регистрации Bill;
@@ -8019,3 +8021,57 @@ Final `make check`:6887 passed/253.089s, coverage92%, mypy594, Ruff/format661;
 и [migration proof](../assets/audits/2026-10-30-source-reference-reader/migration.json).
 Producer выключен; actual reader64 deployment обязателен перед его активацией. DA2.5 partial,
 план74 /32done /6N/A /36open.
+
+
+J167 commit `1c145aaf50858de69c0c477068dbcbddc4a45355`: все четыре CI jobs41045309099
+прошли; actual relay4ec69a81 →1c145aaf, health45s/timer подтверждены
+[release proof](../assets/audits/2026-10-30-source-reference-reader/release.json).
+Совместимый reader64 развёрнут; отдельный owner omission producer ещё не выпущен.
+
+
+<a id="j165"></a>
+
+### J165. Assemble bounded physical roots from actual supplied observations
+
+Pure assembler разделён на inputs, streaming encoding, independent integrity proofs и сборку.
+Actual supplied headers/requests/opens/parts/context order дают child-first graph/unit dependencies
+и отдельный actual global root order; recipe берётся из actual supplied observation. Ни runtime hooks,
+ни SQL/Clock в этом API нет. Контекстам не приписывается порядок по обходу готового графа.
+
+Overflow сохраняет честный минимальный rooted prefix с actual counts; known child suffix
+опускается целиком, без fake null child или выдуманного complete hash. До range/model/JSON
+expansion проверяются budgets; строки кодируются chunks1024. Independent1MiB logical proof
+проверяет distinct addresses, SHA/size, parent binding и global order после metadata eviction.
+Это не RSS guarantee. Если integrity proof не помещается, явный capacity gap не утверждает
+непроверенные distinct counts. Known complete member size проверяется по retained header даже
+без optional readlog; returned_length_differs и omitted unknown size остаются честными.
+
+65 focused/25 assembler cases и strict5file checks прошли; independent11 controls закрыли три
+исходных замечания и public typed get/save/doctor/restore-repeat для partial known child/hugeprefix.
+2**63−1 universe и2MB name не разворачиваются в память; tracemalloc controls peak<4MB.
+Final saved M0:4017roots/20614contexts,54197 payload/IDs и прежние root IDs exact;
+0 unknown known-body sizes/0gaps,49.13s, max root union с recipe/capture454215B.
+Это replay сохранённых typed observations с их original observer recipe, не свежий raw run
+и не current runtime producer recipe. [Evidence](../assets/audits/2026-10-30-physical-assembler/handoff.json).
+
+Дополнительный corruption control выявил pre-existing reader gap: изменение child artifact
+byte_size при неизменных complete request/header проходило get/doctor/scratch restore.
+Начальный общий gate остановлен до source edits и сохранён как pre-reader-corroboration-qa;
+этот запуск не считается зелёным. Narrow reader repair и final gate фиксируются ниже.
+Runtime producer ещё не активирован; StageA walk capture и последующая caller wiring отдельны.
+
+
+J165 reader repair сверяет known catalog byte_size с retained member/header, complete request
+и каждым retained nested header span. Отсутствующий historical child catalog остаётся unknown;
+никакого backfill/new FK/size inference. `returned_length_differs` не выдаётся за complete member.
+3 corruption modes теперь отвергаются get/doctor/scratch restore без замены target; unknown
+catalog, omitted declared size и truthful length mismatch проходят.52 focused, strict2file checks
+и root patch review прошли; пять assembler source pins неизменны.
+[Repair evidence](../assets/audits/2026-10-30-physical-assembler/reader-repair.json).
+
+
+J165 final `make check`:6917 passed/252.661s, coverage92%; mypy599, Ruff/format666,
+все666 source/config pins exact.30 новых unit cases, новых scenarios нет; strict docs checks
+прошли. [Final validation](../assets/audits/2026-10-30-physical-assembler/validation.json).
+Schema/backend/raw retention не меняются; runtime graph producer ещё открыт.
+План74 /32done /6N/A /36open.

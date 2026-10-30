@@ -1,0 +1,25 @@
+{
+  "contexts": 20614,
+  "gaps": 0,
+  "known_parent_occurrences": 54886,
+  "manifest_sha256": "38c8c448d6771a801eba2dcda3debe7f4d357c7db2845e4e724b320de3b016b3",
+  "max_envelope_bytes": {
+    "execution": 23233,
+    "graph": 11426,
+    "headers": 26563,
+    "recipe": 3404,
+    "unit": 14096
+  },
+  "max_known_parent_identity_JSON_bytes": 28613,
+  "max_root_union_with_recipe_and_capture_bytes": 454215,
+  "metadata_payloads_and_IDs_exact": 54197,
+  "old_inventory_and_execution_IDs_exact": 4017,
+  "recipe_scope": "Supplied exact original M0 observer recipe, not current assembler/producer recipe",
+  "roots": 4017,
+  "scope": "Read-only saved typed contexts/events/global slots; child-first dependency order is not reconstructed event interleaving; root sizes from immutable original input-manifest bytes/SHA, child sizes only actual complete helper requests; no SQL writes/raw reads/extraction/hooks/Clock",
+  "seconds": 49.13042279204819,
+  "source_sha256": "d3c9b619da000d9ebeb4169cb493d5fe1dd71486dbfb5ccf444d9c16412a2335",
+  "source_unchanged": true,
+  "status": "qualified",
+  "unresolved_known_sizes": 0
+}

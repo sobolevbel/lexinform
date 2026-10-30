@@ -293,6 +293,23 @@ class PhysicalInventoryReader:
             raise PhysicalInventoryRowError("physical_reference_kind")
         return record, record.metadata
 
+    def _known_body_size(self, identity: str) -> int | None:
+        artifact = self.connection.execute(
+            "SELECT * FROM artifacts WHERE sha256=?", (identity,)
+        ).fetchone()
+        if artifact is None:
+            return None
+        try:
+            if type(artifact["byte_size"]) is not int:
+                raise ValueError("known complete bodies require integer byte sizes")
+            return ArtifactMetadata(
+                sha256=artifact["sha256"],
+                byte_size=artifact["byte_size"],
+                recorded_at=dt.datetime.fromisoformat(artifact["recorded_at"]),
+            ).byte_size
+        except (ValueError, TypeError) as exc:
+            raise PhysicalInventoryRowError("physical_capture_artifact_invalid") from exc
+
     def _validate(self, record: PhysicalMetadata) -> None:
         try:
             self._relationships(record)
@@ -317,14 +334,27 @@ class PhysicalInventoryReader:
                     "rows", len(header.metadata.rows)
                 ):
                     raise ValueError("graph edges must retain the observed header universe")
+                known_size = self._known_body_size(payload.body_sha)
+                if (
+                    known_size is not None
+                    and header.metadata.central_directory_span[1] > known_size
+                ):
+                    raise ValueError("container header exceeds its known complete body size")
             for body, child_id in payload.edges:
                 if child_id is not None and self._graph(child_id)[0].body_sha256 != body:
                     raise ValueError("child graph differs from its known member body")
             if payload.header is not None:
                 parent_header = self.typed(payload.header, "headers").metadata
                 if isinstance(parent_header, PhysicalHeaders):
-                    for index, (_, child_id) in enumerate(payload.edges):
-                        if child_id is None or index >= len(parent_header.rows):
+                    for index, (body, child_id) in enumerate(payload.edges):
+                        if index >= len(parent_header.rows):
+                            continue
+                        known_size = self._known_body_size(body) if body is not None else None
+                        if known_size is not None and known_size != parent_header.rows[index][2]:
+                            raise ValueError(
+                                "member header differs from its known complete body size"
+                            )
+                        if child_id is None:
                             continue
                         child_graph = self._graph(child_id)[1]
                         if child_graph.header is not None:
@@ -361,6 +391,10 @@ class PhysicalInventoryReader:
             opened = [item[3] for item in unit.opens if item[0] == index and item[4] == "opened"]
             targets = opened or ([lookup] if lookup is not None else [])
             if outcome == "complete":
+                assert body is not None, "the typed complete request requires its full body SHA"
+                known_size = self._known_body_size(body)
+                if known_size is not None and known_size != request[5]:
+                    raise ValueError("complete read differs from its known complete body size")
                 if not targets:
                     raise ValueError("known member bodies require a recorded occurrence")
                 for target in targets:

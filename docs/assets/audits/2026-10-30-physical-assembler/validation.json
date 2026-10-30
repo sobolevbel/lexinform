@@ -1,0 +1,28 @@
+{
+  "stage": "J165",
+  "base": "1c145aaf50858de69c0c477068dbcbddc4a45355",
+  "full_gate": {
+    "tests": 6917,
+    "failures": 0,
+    "skipped": 0,
+    "seconds": 252.661,
+    "coverage_percent": 92,
+    "mypy_files": 599,
+    "ruff_files": 666,
+    "source_config_pins_exact": 666
+  },
+  "new_unit_cases": 30,
+  "new_scenarios": 0,
+  "independent_assembler_controls": 11,
+  "reader_repair_root_review": "passed",
+  "docs_check": "passed",
+  "runtime_physical_producer_enabled": false,
+  "schema_change": false,
+  "scratch": "out/corpus/j165-physical-assembler/qa",
+  "limits": [
+    "Saved M0 observation replay, not fresh raw extraction",
+    "Current stage has no walk/caller producer",
+    "Logical proof budget is not a Python RSS bound",
+    "Initial superseded full gate stopped and preserved, not counted green"
+  ]
+}

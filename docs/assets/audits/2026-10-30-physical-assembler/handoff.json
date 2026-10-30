@@ -1,0 +1,80 @@
+{
+  "bounded_controls": [
+    "2**63-1 header universe, small actualbody/events, guarded expansion, tracemalloc peak<4MB",
+    "2MB supplied requested-name input, no whole-payload copy, peak<4MB",
+    "duplicate address/conflicting body aftereviction rejected; missingparent/global-order corruption rejected",
+    "65537 supplied events exceed proof-work budget before copying; gap has0 verified addresses",
+    "independent declared-size mismatch rejects optional-readlog absence; returned mismatch/unknown-size cases retained truthfully"
+  ],
+  "closed_review_findings": [
+    "preflight count/encoded-value bounds before graph/unit/order copies; canonical streams1024char strings and fixed model fields, no full model_dump for probes/hash",
+    "independent bounded integrity proofs survive metadata eviction; context count is unique verified address count, body SHA-size consistency and parent/member ownership stayactive; global event order uses bounded bytearray duplicate proofs",
+    "complete known member size corroborates available header declarations without requiring readlog; honest returned_length_differs retains size with no invented complete SHA; omitted sizes not guessed"
+  ],
+  "focused_tests": 65,
+  "integrity_budget": "1MiB logical fixed-width proof reservations plus bounded transient facts, not Python RSS guarantee; over-cap/unverified input returns explicit integrity_proof_capacity gap, no exact omission-count claim",
+  "new_assembler_cases": 25,
+  "next": [
+    "independent review closure",
+    "root integrated full gate/release",
+    "actual hooks with truthful source-SHA deltas and full paired raw cohort before modified extractor release"
+  ],
+  "overflow": "Minimum structurally valid rooted prefix, empty suffixes with exact proven omission counts; no replacement known-child null; actual materialized full hash retained, unavailable hash explicit; typedreader save/get/scratchrestore covered",
+  "patch_sha256": "0e0fc2def9162c8970cd8601dbd290c715c78c69350ef2b209dfd0d518419054",
+  "paths": {
+    "src/lexinform/physical_assembly_encoding.py": {
+      "bytes": 2908,
+      "sha256": "e43ee093c8ffeec375c1f17eda401945d6230abcb9e77959f67f86401514d22c"
+    },
+    "src/lexinform/physical_assembly_inputs.py": {
+      "bytes": 1186,
+      "sha256": "f4ddaa153bc3898080efc308b102a429540834eb77009eaeb910b6bda5fc282a"
+    },
+    "src/lexinform/physical_assembly_integrity.py": {
+      "bytes": 15122,
+      "sha256": "60da98a35bffc3a14176b4a65d9a8854906e6a27e3bf3df16ed964d885c97287"
+    },
+    "src/lexinform/physical_root_assembly.py": {
+      "bytes": 25132,
+      "sha256": "ce4b67248519efc934ec9aeef6330ec34f31adbc6c48efc5575cd74174a5360a"
+    },
+    "tests/unit/test_physical_root_assembly.py": {
+      "bytes": 28293,
+      "sha256": "d322a7f3e4168fb895cf1cdf7ac891289dca9f3d6f55d6b9fefb73e8dba40ffe"
+    }
+  },
+  "prior_packages_preserved": [
+    "complete-only-attempt/",
+    "pre-online-bound-attempt/",
+    "header foundation revision2 and first-time writer fix"
+  ],
+  "ruff_format": "clean",
+  "saved_m0": {
+    "contexts": 20614,
+    "gaps": 0,
+    "known_parent_occurrences": 54886,
+    "manifest_sha256": "38c8c448d6771a801eba2dcda3debe7f4d357c7db2845e4e724b320de3b016b3",
+    "max_envelope_bytes": {
+      "execution": 23233,
+      "graph": 11426,
+      "headers": 26563,
+      "recipe": 3404,
+      "unit": 14096
+    },
+    "max_known_parent_identity_JSON_bytes": 28613,
+    "max_root_union_with_recipe_and_capture_bytes": 454215,
+    "metadata_payloads_and_IDs_exact": 54197,
+    "old_inventory_and_execution_IDs_exact": 4017,
+    "recipe_scope": "Supplied exact original M0 observer recipe, not current assembler/producer recipe",
+    "roots": 4017,
+    "scope": "Read-only saved typed contexts/events/global slots; child-first dependency order is not reconstructed event interleaving; root sizes from immutable original input-manifest bytes/SHA, child sizes only actual complete helper requests; no SQL writes/raw reads/extraction/hooks/Clock",
+    "seconds": 49.13042279204819,
+    "source_sha256": "d3c9b619da000d9ebeb4169cb493d5fe1dd71486dbfb5ccf444d9c16412a2335",
+    "source_unchanged": true,
+    "status": "qualified",
+    "unresolved_known_sizes": 0
+  },
+  "scope": "New pure modules/tests only. No existing extractor/component/codefingerprint sources or primary edited; no runtime hooks/Clock/SQL in implementation, no raw reads/full gate/commit. QA shared-reader restore uses disposable SQLite only.",
+  "status": "qualified_for_independent_closure_not_release",
+  "strict_mypy_files": 5
+}
