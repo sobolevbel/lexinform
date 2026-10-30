@@ -8,7 +8,11 @@ from pathlib import Path
 import pytest
 from tools.source_history_doctor import audit
 
-from lexinform.adapters.source_omissions import SourceOmissionRowError
+from lexinform.adapters.source_omissions import (
+    SOURCE_OMISSION_COLUMNS,
+    SourceOmissionRowError,
+    omission_values,
+)
 from lexinform.adapters.sqlite_repo import MIGRATIONS, SqliteBillRepository
 from lexinform.metadata_omissions import MetadataUrlOmissionCollector
 from lexinform.models import (
@@ -29,6 +33,7 @@ from lexinform.models.source_omissions import (
     SenateOmissionOwner,
     SourceMetadataOmission,
     SourceOmissionParent,
+    SourceReferenceOmissionOwner,
     source_omission_canonical,
     source_omission_sha256,
 )
@@ -39,7 +44,11 @@ BODY = "a" * 64
 
 
 def omission(
-    owner: BillOmissionOwner | RclOmissionOwner | SenateOmissionOwner | None = None,
+    owner: BillOmissionOwner
+    | RclOmissionOwner
+    | SenateOmissionOwner
+    | SourceReferenceOmissionOwner
+    | None = None,
     *,
     parents: tuple[SourceOmissionParent, ...] = (),
 ) -> SourceMetadataOmission:
@@ -532,3 +541,205 @@ def test_senate_known_source_requires_actual_analysis_resolution_role(
         with pytest.raises(SourceOmissionRowError):
             repository.save_source_metadata_omission(fact, recorded_at=NOW)
         assert repository.dump() == before
+
+
+@pytest.mark.parametrize("number", ["3039", "RPW/34574/2026", "rcl:123"])
+def test_source_reference_owner_retains_actual_unenrolled_context_without_bill(
+    repository: SqliteBillRepository, number: str
+) -> None:
+    owner = SourceReferenceOmissionOwner(term=10, number=number, purpose="analysis")
+    fact = omission(owner, parents=(SourceOmissionParent(artifact_sha256=BODY),))
+    assert repository.get(10, number) is None
+    repository.save_source_metadata_omission(fact, recorded_at=NOW)
+    stored = repository.get_source_metadata_omission(fact.omission_id)
+    assert stored is not None, "official source-reference owner needs no enrolled Bill"
+    assert stored.owner == owner and repository.get(10, number) is None
+    assert owner.source_key == "source-reference-v1:" + source_omission_sha256(
+        {"term": 10, "number": number, "purpose": "analysis"}
+    )
+    before = repository.dump()
+    repository.save_source_metadata_omission(fact, recorded_at=NOW + dt.timedelta(days=365))
+    repository.restore(before)
+    repository.restore(before)
+    assert repository.dump() == before and repository.get(10, number) is None
+
+
+def test_reference_key_and_identity_bind_actual_context_not_an_inferred_family() -> None:
+    owner = SourceReferenceOmissionOwner(term=10, number="RPW/42/2026", purpose="analysis")
+    alternate = SourceReferenceOmissionOwner(term=10, number="RPW/42/2026", purpose="review")
+    assert owner.source_key != alternate.source_key
+    assert omission(owner).omission_id != omission(alternate).omission_id
+    assert "family" not in owner.model_dump() and "url" not in owner.model_dump()
+
+
+def test_source_reference_known_source_checks_context_without_bill_enrollment(
+    repository: SqliteBillRepository,
+) -> None:
+    selection = DocumentSelectionRecord.from_selection(
+        DocumentSelection(parts=(DocumentPart(url="https://source.test/draft", sha256=BODY),))
+    )
+    observation = SourceObservation(
+        term=10,
+        number="3039",
+        purpose="analysis",
+        document=TextDocument(url="https://source.test/draft", kind="print"),
+        selection_id=selection.selection_id,
+        recorded_at=NOW,
+    )
+    repository.save_source_observation(selection, observation)
+    repository.save_selection_artifact(
+        SelectionArtifactReference(
+            selection_id=selection.selection_id,
+            part_scope="parts",
+            part_index=0,
+            artifact_sha256=BODY,
+        )
+    )
+    parent = SourceOmissionParent(
+        artifact_sha256=BODY,
+        source_observation_id=observation.observation_id,
+        source_relation="known",
+    )
+    fact = omission(
+        SourceReferenceOmissionOwner(term=10, number="3039", purpose="analysis"), parents=(parent,)
+    )
+    repository.save_source_metadata_omission(fact, recorded_at=NOW)
+    assert repository.get(10, "3039") is None
+    before = repository.dump()
+    for owner in (
+        SourceReferenceOmissionOwner(term=10, number="3039", purpose="review"),
+        SourceReferenceOmissionOwner(term=10, number="9999", purpose="analysis"),
+    ):
+        with pytest.raises(SourceOmissionRowError):
+            repository.save_source_metadata_omission(
+                omission(owner, parents=(parent,)), recorded_at=NOW
+            )
+        assert repository.dump() == before
+
+
+@pytest.mark.parametrize("column", ["source_term", "source_number", "source_purpose", "source_key"])
+def test_source_reference_columns_cannot_rebind_context(tmp_path: Path, column: str) -> None:
+    path = tmp_path / "reference.db"
+    repo = SqliteBillRepository(path)
+    repo.migrate()
+    fact = omission(SourceReferenceOmissionOwner(term=10, number="3039", purpose="analysis"))
+    repo.save_source_metadata_omission(fact, recorded_at=NOW)
+    good = repo.dump()
+    repo.close()
+    with closing(sqlite3.connect(path)) as connection, connection:
+        connection.execute(
+            f"UPDATE source_metadata_omissions SET {column}=?",
+            (11 if column == "source_term" else "other",),
+        )
+    damaged = SqliteBillRepository(path)
+    with pytest.raises(SourceOmissionRowError):
+        damaged.get_source_metadata_omission(fact.omission_id)
+    broken = damaged.dump()
+    damaged.close()
+    assert audit(path)["status"] != "recorded"
+    target = SqliteBillRepository(":memory:")
+    target.migrate()
+    target.restore(good)
+    before = target.dump()
+    with pytest.raises(SourceOmissionRowError):
+        target.restore(broken)
+    assert target.dump() == before
+    target.close()
+
+
+def source_omission_v63_fixture(path: Path) -> tuple[str, SourceMetadataOmission]:
+    fact = omission(
+        RclOmissionOwner(project_id=12, stage_id=None, stage_number=None, letter_id=None),
+        parents=(SourceOmissionParent(artifact_sha256=BODY),),
+    )
+    record = SourceMetadataOmission.model_validate_json(
+        fact.model_copy(update={"recorded_at": NOW}).model_dump_json()
+    )
+    with closing(sqlite3.connect(path)) as connection, connection:
+        for version, migration in enumerate(MIGRATIONS[:63], start=1):
+            connection.executescript(f"{migration}PRAGMA user_version={version};")
+        connection.execute("INSERT INTO artifacts VALUES (?,?,?)", (BODY, 100, NOW.isoformat()))
+        connection.execute(
+            "INSERT INTO source_metadata_omissions ("
+            + ",".join((*SOURCE_OMISSION_COLUMNS, "record_json"))
+            + ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (*omission_values(record, reference_columns=False), record.model_dump_json()),
+        )
+        connection.execute(
+            "INSERT INTO source_omission_parents VALUES (?,?,?,?,?,?)",
+            (record.omission_id, 0, BODY, None, None, None),
+        )
+        connection.commit()
+        return "\n".join(connection.iterdump()) + "\nPRAGMA user_version = 63;\n", record
+
+
+def test_populated_actual63_layout_remains_readable_and_restores_without_identity_changes(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "old63.db"
+    script, record = source_omission_v63_fixture(path)
+    old = SqliteBillRepository(path)
+    assert old.schema_version == 63
+    assert old.get_source_metadata_omission(record.omission_id) == record
+    old.close()
+    assert audit(path)["status"] == "recorded"
+    current = SqliteBillRepository(":memory:")
+    current.migrate()
+    current.restore(script)
+    assert current.schema_version >= 64
+    assert current.get_source_metadata_omission(record.omission_id) == record
+    before = current.dump()
+    current.save_source_metadata_omission(record, recorded_at=NOW + dt.timedelta(days=365))
+    current.restore(before)
+    current.restore(before)
+    assert current.dump() == before
+    current.close()
+
+
+def test_restore_rejects_invalid63_layout_before_migration_can_rebuild_it(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "old63-invalid.db"
+    good, record = source_omission_v63_fixture(path)
+    with closing(sqlite3.connect(path)) as connection, connection:
+        connection.execute("DROP INDEX ix_source_omissions_rcl")
+        broken = "\n".join(connection.iterdump()) + "\nPRAGMA user_version = 63;\n"
+    assert audit(path)["status"] != "recorded"
+    target = SqliteBillRepository(":memory:")
+    target.migrate()
+    target.restore(good)
+    before = target.dump()
+    with pytest.raises(SourceOmissionRowError, match="schema_mismatch"):
+        target.restore(broken)
+    assert target.dump() == before
+    assert target.get_source_metadata_omission(record.omission_id) == record
+    target.close()
+
+
+def test_declared64_with_actual63_layout_fails_get_doctor_and_restore(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "version-layout-mismatch.db"
+    good, record = source_omission_v63_fixture(path)
+    with closing(sqlite3.connect(path)) as connection, connection:
+        connection.execute("PRAGMA user_version=64")
+    damaged = SqliteBillRepository(path)
+    with pytest.raises(SourceOmissionRowError):
+        damaged.get_source_metadata_omission(record.omission_id)
+    damaged.close()
+    assert audit(path)["status"] != "recorded"
+    broken = good.replace("PRAGMA user_version = 63;", "PRAGMA user_version = 64;")
+    assert broken != good
+    target = SqliteBillRepository(":memory:")
+    target.migrate()
+    target.restore(good)
+    before = target.dump()
+    with pytest.raises(SourceOmissionRowError, match="schema_mismatch"):
+        target.restore(broken)
+    assert target.dump() == before
+    assert target.get_source_metadata_omission(record.omission_id) == record
+    reference = omission(SourceReferenceOmissionOwner(term=10, number="3039", purpose="analysis"))
+    target.save_source_metadata_omission(reference, recorded_at=NOW)
+    assert target.get_source_metadata_omission(reference.omission_id) is not None
+    assert target.get(10, "3039") is None
+    target.close()

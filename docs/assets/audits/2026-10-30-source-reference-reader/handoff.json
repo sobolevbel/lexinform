@@ -1,0 +1,54 @@
+{
+  "base": "4ec69a81",
+  "paths": [
+    "src/lexinform/models/source_omissions.py",
+    "src/lexinform/adapters/source_omissions.py",
+    "src/lexinform/adapters/sqlite_repo.py",
+    "src/lexinform/models/__init__.py",
+    "tests/unit/test_source_omissions.py",
+    "docs/reference/database.md",
+    "docs/state-retention.md"
+  ],
+  "patch_sha256": "8c65e665cac431d521b06022401c04010c812c6e0b67c887ced4d1c18b347e47",
+  "freeze_sha256": "7b61b2c2a44d8833f85cf0c52d8d1eab6210a11b19728d131d24fc704bfc38c9",
+  "new_unit_cases": 12,
+  "own_unit_cases": 36,
+  "focused_passed": null,
+  "focused_failures": 0,
+  "strict_mypy_files": 5,
+  "ruff_format": "passed",
+  "qualification": "qualification.json",
+  "prefix63_literal_exact": true,
+  "counterfactual_populated63_facts": 3,
+  "old_json_ids_firsttimes_parentlinks_exact": true,
+  "actual63layout_get_doctor": true,
+  "restore_prevalidates_source_layout_before_migration": true,
+  "sql_migration_delta_bytes": 317,
+  "gzip9_mtime0_delta_bytes": 58,
+  "contract": [
+    "Closed source_reference owner carries actual term/number/purpose and derived canonical source-reference-v1 context key, no inferredfamily or URLparse",
+    "Separate SQL source_term/source_number/source_purpose/source_key indexedcolumns; originalBillFKcolumnsNULL forsource_reference only; trackedBill/Senate constraints unchanged",
+    "Twofeaturetables copied/recreated/copied in appendmigration64, all63literal scripts unchanged, oldJSON/IDs/times/parents preserved",
+    "Knownsource relation requires exactactualcontext/purpose + typedselection/body bridge without Bill enrollment",
+    "Actual63and64 layout validation chooses known tablecapability; malformedknownlayout rejected before scratchmigration can rebuild it",
+    "No producer/calleractivation; actualreader64deployment required before privateexplanation omissioncapture"
+  ],
+  "limits": [
+    "Synthetic populated63 facts are counterfactual, not production demand",
+    "Pinnedlegacy43tables retained; onlyfeaturemetadataDDLwidened and2indexes added",
+    "No producer,parentinference,paidcalls,prodprocessing,newbackend orrawretention",
+    "No rootfull/commit/push inagenttask"
+  ],
+  "revision": 2,
+  "original_evidence_preserved": true,
+  "revised_paths": [
+    "src/lexinform/adapters/source_omissions.py",
+    "tests/unit/test_source_omissions.py"
+  ],
+  "revision_focused_passed": 62,
+  "original_focused_passed": 146,
+  "strict_mypy_files_revision": 2,
+  "predecessor_qualification": "../qualification.json",
+  "review_fix": "Declaredschema>=64nowrequiresactual64layout beforeget/doctor/restore. Legitimateactual63layoutremainsreadableandupgrades; loweredlegacycapabilityfixturewithactual64tablesstillworks. Onepubliccorruptioncontrolchecksget/doctor/restoretargetpreservation pluspositive63upgrade/newreferencewrite.",
+  "qualification_reuse": "Original146focused/pass and isolatedpopulated63+legacyqualification retained; revisiononlyadds schema-version/layout consistency andonecontrol, no model/migration/writer changes. Narrow62cases passed, no full/population replay claimed."
+}

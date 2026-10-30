@@ -615,3 +615,21 @@ Get/save/doctor/scratch restore сверяют immutable ID, indexed JSON, owner
 body ownership. Первый UTC timestamp исключён из ID и сохраняется при повторе, включая envelope
 на границе лимита. Reader разворачивается раньше producer; пустые таблицы не создают provenance
 для прежних observations. Retention/backends/raw bytes этим этапом не меняются.
+
+## Official source reference owners (v64)
+
+Reader64 добавляет closed owner `source_reference` для реального term/number/purpose,
+используемого SourceObservation, когда Bill не зарегистрирован (private explanation).
+`source-reference-v1` key —canonical identity этих полей, не hash URL/ответа/отсутствующего файла.
+Ни source family из URL, ни fictitious Bill/run owner не выводятся.
+
+Append-only migration64 пересоздаёт только две omission tables с копированием всех прежних
+records/parent links/IDs/first times. Для нового kind отдельные `source_term`, `source_number`,
+`source_purpose`, `source_key` доступны в SQL и indexed; Bill owner columns остаются NULL.
+Настоящий Bill FK и Senate restrictions прежние. Known source refs нового owner требуют точного
+context/purpose и прежнего typed selection/body corroboration, без enrollment.
+
+Reader и doctor поддерживают actual63 и64 layouts; scratch restore проверяет сохранённую layout
+до миграции, затем повторно после неё. Новые context fields не добавляются в прежние JSON/IDs.
+Producer выключен: использование source_reference требует развёрнутого reader64 и отдельной
+приёмки actual callsites, включая private explanation без регистрации дела.

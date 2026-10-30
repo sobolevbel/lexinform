@@ -1,0 +1,23 @@
+{
+  "stage": "J167",
+  "base": "4ec69a8142a6ada818d2ec454784963460ce9b9c",
+  "full_gate": {
+    "tests": 6887,
+    "failures": 0,
+    "skipped": 0,
+    "seconds": 253.089,
+    "coverage_percent": 92,
+    "mypy_files": 594,
+    "ruff_files": 661
+  },
+  "new_unit_cases": 12,
+  "new_scenarios": 0,
+  "independent_revision2_review": "closed",
+  "producer_enabled": false,
+  "scratch": "out/corpus/j167-source-reference-reader/qa",
+  "limits": [
+    "No producer activation",
+    "No raw retention or backend decision",
+    "No production processing or paid calls"
+  ]
+}

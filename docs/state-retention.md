@@ -667,3 +667,7 @@ Schema63 добавляет только inert reader owner-bound source omissio
 known-available physical parent manifest, explicit unknown source relation и immutable first time.
 Нет backfill, producer или новой очистки; это metadata history без обещания raw retention.
 Подробный контракт: [Owner-bound omissions](reference/database.md#owner-bound-omissions-v63).
+
+Reader64 сохраняет omission evidence незарегистрированного official source reference без создания
+Bill: separate actual context/key и known-available parents; прежние records/retention неизменны.
+Это совместимый reader без producer: [Official source owners](reference/database.md#official-source-reference-owners-v64).

@@ -16,6 +16,7 @@ from lexinform.models.source_omissions import (
     RclOmissionOwner,
     SenateOmissionOwner,
     SourceMetadataOmission,
+    SourceReferenceOmissionOwner,
 )
 
 SOURCE_OMISSION_MIGRATION = """
@@ -77,20 +78,67 @@ SOURCE_OMISSION_COLUMNS = (
 )
 
 
+SOURCE_REFERENCE_COLUMNS = (
+    *SOURCE_OMISSION_COLUMNS[:11],
+    "source_term",
+    "source_number",
+    "source_purpose",
+    "source_key",
+    *SOURCE_OMISSION_COLUMNS[11:],
+)
+SOURCE_REFERENCE_OMISSION_LAYOUT = (
+    SOURCE_OMISSION_MIGRATION.replace(
+        "('bill','rcl_letter','senate')", "('bill','rcl_letter','senate','source_reference')"
+    ).replace(
+        "    source_view_sha256 TEXT NOT NULL,",
+        "    source_term INTEGER,\n    source_number TEXT,\n    source_purpose TEXT,\n"
+        "    source_key TEXT,\n    source_view_sha256 TEXT NOT NULL,",
+    )
+    + """
+CREATE INDEX ix_source_omissions_reference
+  ON source_metadata_omissions(source_term,source_number,source_purpose);
+CREATE INDEX ix_source_omissions_source_key ON source_metadata_omissions(source_key);
+"""
+)
+_OMISSION_COPY_COLUMNS = ",".join((*SOURCE_OMISSION_COLUMNS, "record_json"))
+SOURCE_REFERENCE_OMISSION_MIGRATION = (
+    """
+CREATE TABLE source_omission_records_copy AS SELECT * FROM source_metadata_omissions;
+CREATE TABLE source_omission_parents_copy AS SELECT * FROM source_omission_parents;
+DROP TABLE source_omission_parents;
+DROP TABLE source_metadata_omissions;
+"""
+    + SOURCE_REFERENCE_OMISSION_LAYOUT
+    + (
+        "INSERT INTO source_metadata_omissions ("
+        + _OMISSION_COPY_COLUMNS
+        + ") SELECT "
+        + _OMISSION_COPY_COLUMNS
+        + " FROM source_omission_records_copy;"
+    )
+    + """
+INSERT INTO source_omission_parents SELECT * FROM source_omission_parents_copy;
+DROP TABLE source_omission_parents_copy;
+DROP TABLE source_omission_records_copy;
+"""
+)
+
+
 class SourceOmissionRowError(ValueError):
     pass
 
 
-def omission_values(record: SourceMetadataOmission) -> tuple[object, ...]:
+def omission_values(
+    record: SourceMetadataOmission, *, reference_columns: bool = True
+) -> tuple[object, ...]:
     owner = record.owner
-    bill = not isinstance(owner, RclOmissionOwner)
     rcl = owner if isinstance(owner, RclOmissionOwner) else None
     senate = owner if owner.kind == "senate" else None
-    return (
+    values = (
         record.omission_id,
         owner.kind,
-        owner.term if bill and not isinstance(owner, RclOmissionOwner) else None,
-        owner.number if bill and not isinstance(owner, RclOmissionOwner) else None,
+        owner.term if isinstance(owner, (BillOmissionOwner, SenateOmissionOwner)) else None,
+        owner.number if isinstance(owner, (BillOmissionOwner, SenateOmissionOwner)) else None,
         owner.purpose if isinstance(owner, BillOmissionOwner) else None,
         rcl.project_id if rcl else None,
         rcl.stage_id if rcl else None,
@@ -102,6 +150,20 @@ def omission_values(record: SourceMetadataOmission) -> tuple[object, ...]:
         record.parent_count,
         record.parents_sha256,
         record.recorded_at.isoformat() if record.recorded_at else None,
+    )
+
+    if not reference_columns:
+        if isinstance(owner, SourceReferenceOmissionOwner):
+            raise ValueError("source-reference owners require the compatible schema64 reader")
+        return values
+    reference = owner if isinstance(owner, SourceReferenceOmissionOwner) else None
+    return (
+        *values[:11],
+        reference.term if reference else None,
+        reference.number if reference else None,
+        reference.purpose if reference else None,
+        reference.source_key if reference else None,
+        *values[11:],
     )
 
 
@@ -151,12 +213,17 @@ def read_source_omission(
 ) -> SourceMetadataOmission:
     try:
         record = SourceMetadataOmission.model_validate_json(row["record_json"])
-        if record.recorded_at is None or omission_values(record) != tuple(
-            row[key] for key in SOURCE_OMISSION_COLUMNS
-        ):
+        row_columns = tuple(row.keys())
+        reference_columns = "source_key" in row_columns
+        if not reference_columns and connection.execute("PRAGMA user_version").fetchone()[0] >= 64:
+            raise ValueError("declared schema64 requires the actual source-reference layout")
+        columns = SOURCE_REFERENCE_COLUMNS if reference_columns else SOURCE_OMISSION_COLUMNS
+        if record.recorded_at is None or omission_values(
+            record, reference_columns=reference_columns
+        ) != tuple(row[key] for key in columns):
             raise ValueError("source omission indexed columns differ from its immutable record")
         if (
-            not isinstance(record.owner, RclOmissionOwner)
+            isinstance(record.owner, (BillOmissionOwner, SenateOmissionOwner))
             and connection.execute(
                 "SELECT 1 FROM bills WHERE term=? AND number=?",
                 (record.owner.term, record.owner.number),
@@ -269,7 +336,7 @@ def read_source_omission(
                 ) != (record.owner.term, record.owner.number):
                     raise ValueError("source omission observation belongs to another bill")
                 if (
-                    isinstance(record.owner, BillOmissionOwner)
+                    isinstance(record.owner, (BillOmissionOwner, SourceReferenceOmissionOwner))
                     and observation.purpose != record.owner.purpose
                 ):
                     raise ValueError("source omission observation has another purpose")
@@ -300,7 +367,19 @@ def read_source_omission(
 
 def source_omission_issues(connection: sqlite3.Connection) -> Iterator[tuple[str, str]]:
     expected = {}
-    for statement in SOURCE_OMISSION_MIGRATION.split(";"):
+    columns = {
+        row["name"] for row in connection.execute("PRAGMA table_info(source_metadata_omissions)")
+    }
+    if (
+        "source_key" not in columns
+        and connection.execute("PRAGMA user_version").fetchone()[0] >= 64
+    ):
+        yield "source_omission_schema_mismatch", "source_metadata_omissions"
+        return
+    layout = (
+        SOURCE_REFERENCE_OMISSION_LAYOUT if "source_key" in columns else SOURCE_OMISSION_MIGRATION
+    )
+    for statement in layout.split(";"):
         tokens = statement.split()
         if tokens:
             expected[tokens[2]] = " ".join(tokens)

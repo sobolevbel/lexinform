@@ -32,6 +32,8 @@ from lexinform.adapters.senate_history import (
 )
 from lexinform.adapters.source_omissions import (
     SOURCE_OMISSION_MIGRATION,
+    SOURCE_REFERENCE_COLUMNS,
+    SOURCE_REFERENCE_OMISSION_MIGRATION,
     SourceOmissionRowError,
     omission_values,
     read_source_omission,
@@ -832,6 +834,7 @@ MIGRATIONS: tuple[str, ...] = (
     """,
     PHYSICAL_INVENTORY_MIGRATION,
     SOURCE_OMISSION_MIGRATION,
+    SOURCE_REFERENCE_OMISSION_MIGRATION,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -1210,6 +1213,7 @@ class SqliteBillRepository:
             scratch.executescript(script)
             # A dump cut at a statement boundary replays cleanly and fails only in the migrations.
             version = _dump_version(script)
+            validate_source_omissions(scratch)
             for number, migration in enumerate(MIGRATIONS[version:], start=version + 1):
                 scratch.executescript(f"BEGIN;{migration}PRAGMA user_version = {number};COMMIT;")
             _validate_legacy_projections(scratch)
@@ -2235,7 +2239,9 @@ class SqliteBillRepository:
                 omission.model_copy(update={"recorded_at": stamp}).model_dump_json()
             )
             self._conn.execute(
-                "INSERT INTO source_metadata_omissions VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO source_metadata_omissions ("
+                + ",".join((*SOURCE_REFERENCE_COLUMNS, "record_json"))
+                + ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (*omission_values(record), record.model_dump_json()),
             )
             for index, parent in enumerate(record.parents):

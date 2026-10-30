@@ -7940,7 +7940,7 @@ J161–J163 commit `b5619040ba31f565742e921f4b4ae16e7fb59dab`: все четыр
 
 ### J164. Apply prospective URL policy at specialized capture boundaries
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября. Base `b5619040`.
+Статус: **выпущено; CI и actual relay deploy подтверждены**, 30 октября. Base `b5619040`.
 RCL letter/before/result/after metadata и Senate descriptor universe проходят preflight до
 новых specialized IDs. Encodable shared-policy refusal использует существующий omitted_unsafe
 с exact original SHA, пересекая прежний stricter domain admission. Invalid UTF-8 не получает
@@ -7962,7 +7962,7 @@ ordinary IDs меняются только из-за настоящих componen
 
 ### J166. Add inert owner-bound source omission reader
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября. J165 assembler ещё в работе.
+Статус: **выпущено; CI и actual relay deploy подтверждены**, 30 октября. J165 assembler ещё в работе.
 DA2.5 audit выявил: PhysicalSourceRead и partial run examples не сохраняют адресуемую owner/source
 связь при omitted graph. Append-only63 добавляет source_metadata_omissions/source_omission_parents.
 Closed owners: actual Bill+purpose, official RCL project/nullable stage/letter, Senate actual Bill+
@@ -7989,3 +7989,33 @@ J164/J166 final make check: 6875 passed / 243.97s, coverage92%; strict mypy594 f
 Ruff/format661 по src/tests/tools. Все 661 source/config pins exact.37 новых unit cases,
 новых scenarios нет; strict docs/link/anchor/resource checks прошли. Reader63 producer выключен;
 J165 assembler не входит в этот выпуск.
+
+
+J164/J166 commit `4ec69a8142a6ada818d2ec454784963460ce9b9c`: все четыре CI jobs 41040720502
+и deploy 41041424325 прошли; actual relayb561 →4ec6, health45s/timer подтверждены
+[release proof](../assets/audits/2026-10-30-specialized-omission-readers/release.json).
+Reader63 producer по-прежнему выключен: аудит private explain выявил дополнительный реальный
+source-reference owner без Bill enrollment, требующий совместимого reader64 перед полным producer.
+
+
+### J167 — inert reader64 для source reference без Bill enrollment
+
+Private `explain` для Sejm/RPW/RCL получает реальный source reference без регистрации Bill;
+это существующий контракт, проверяемый `test_explain`. Reader63 с Bill FK не покрывал этот путь.
+Закрытый owner `source_reference` хранит actual term/number/purpose и canonical context key;
+отдельные индексируемые SQL columns не создают фиктивный Bill. Старые Bill/Senate FK сохранены,
+known source/body relation по-прежнему проверяет actual context, purpose и typed selection bridge.
+Append-only64 расширяет две feature tables; literal migrations1–63 неизменны.
+
+На pinned legacy state43 tables/3003rows сохранены; на actual63 predecessor с тремя
+counterfactual facts record JSON, IDs, first times, indexed columns и parent links exact.
+Get/doctor actual63, upgrade/restore twice и quiet repeat прошли; delta+317SQL/+58gzip9-mtime0 B.
+Cross-review нашло dump с declared64 и actual63 layout: теперь get/doctor/restore отвергают
+несогласованную схему до замены target; legitimate63 upgrade остаётся рабочим. Original146 focused
+и population proof сохранены; revision2 отдельно62 focused и independent repair controls прошли.
+
+Final `make check`:6887 passed/253.089s, coverage92%, mypy594, Ruff/format661;
+12 новых unit cases, новых scenarios нет. [Evidence](../assets/audits/2026-10-30-source-reference-reader/validation.json)
+и [migration proof](../assets/audits/2026-10-30-source-reference-reader/migration.json).
+Producer выключен; actual reader64 deployment обязателен перед его активацией. DA2.5 partial,
+план74 /32done /6N/A /36open.

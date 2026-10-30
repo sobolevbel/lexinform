@@ -1,0 +1,9 @@
+{
+  "src/lexinform/models/source_omissions.py": "9c233bc285963f2b724a4f93ac003c892062ae868fc1e0499046c0ddd2481dc1",
+  "src/lexinform/adapters/source_omissions.py": "33d9984ac001206f02831d37049ada8cf369edd9c5fa9d8775c7d35973368517",
+  "src/lexinform/adapters/sqlite_repo.py": "5334eed658868a56edc92dbc23b0731e6c7cc414ce7f4a90738e911329725b86",
+  "src/lexinform/models/__init__.py": "68f2c6c2ae06a5e1283df599c930fc866f78d67cac0bb54d46d1dd16aae2c788",
+  "tests/unit/test_source_omissions.py": "330eb74ff61568674e384966cffa4d091a27d79922b5bca97cf701764d462320",
+  "docs/reference/database.md": "52dacdf60a7e441b648174cd5754c39b9719e8728bd7c3b77d64e72f564a9bd4",
+  "docs/state-retention.md": "3b9fb115823d546eb15149b07b506c23604f9c06c10dc75a2ac100580e1c6d06"
+}

@@ -39,6 +39,19 @@ class BillOmissionOwner(_Fact):
     purpose: Literal["prefilter", "analysis", "review"]
 
 
+class SourceReferenceOmissionOwner(_Fact):
+    kind: Literal["source_reference"] = "source_reference"
+    term: Positive
+    number: BillNumber
+    purpose: Literal["prefilter", "analysis", "review"]
+
+    @property
+    def source_key(self) -> str:
+        return "source-reference-v1:" + source_omission_sha256(
+            self.model_dump(mode="json", exclude={"kind"})
+        )
+
+
 class RclOmissionOwner(_Fact):
     kind: Literal["rcl_letter"] = "rcl_letter"
     project_id: Positive
@@ -56,7 +69,8 @@ class SenateOmissionOwner(_Fact):
 
 
 SourceOmissionOwner = Annotated[
-    BillOmissionOwner | RclOmissionOwner | SenateOmissionOwner, Field(discriminator="kind")
+    BillOmissionOwner | RclOmissionOwner | SenateOmissionOwner | SourceReferenceOmissionOwner,
+    Field(discriminator="kind"),
 ]
 
 
@@ -109,7 +123,10 @@ class SourceMetadataOmission(_Fact):
     def of(
         cls,
         *,
-        owner: BillOmissionOwner | RclOmissionOwner | SenateOmissionOwner,
+        owner: BillOmissionOwner
+        | RclOmissionOwner
+        | SenateOmissionOwner
+        | SourceReferenceOmissionOwner,
         source_view: object,
         diagnostics: MetadataUrlOmissions,
         parents: tuple[SourceOmissionParent, ...] = (),
