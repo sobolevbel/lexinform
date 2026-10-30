@@ -1248,9 +1248,10 @@ class DocumentTextExtractor:
 
     def extract_document_with_provenance(self, data: bytes) -> DocumentExtraction:
         views: list[WordPartViewStatus] = []
+        odt_notes: list[OdtPartNoteOrigins] = []
         if (
             type(self) is DocumentTextExtractor
-            and getattr(self.extract_parts, "__func__", None) is DocumentTextExtractor.extract_parts
+            and getattr(self.extract_parts, "__func__", None) is _NATIVE_PHYSICAL_PARTS
         ):
             origins = _PhysicalOrigins(
                 pdf_pages=[],
@@ -1259,6 +1260,7 @@ class DocumentTextExtractor:
                 odt_blocks=[],
                 unlocated_text=[],
                 word_view_status=views,
+                odt_notes=odt_notes,
             )
             physical = self._extract_parts(data, origins)
         else:
@@ -1275,6 +1277,7 @@ class DocumentTextExtractor:
                 extraction_component("odt", self._odt),
             ),
             word_views=tuple(views),
+            odt_origins=tuple(odt_notes),
             options=ExtractionOptions(
                 max_member_bytes=self._max_member_bytes,
                 max_part_chars=self._max_part_chars,

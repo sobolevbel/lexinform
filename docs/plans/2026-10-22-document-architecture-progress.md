@@ -9124,3 +9124,40 @@ Literal DA6.2 закрыт: единственный remaining revision collect/
 10kinds/unchanged consumer proofs и отдельная durable recovery transaction проверены.
 DA6.3 lifetime и DA10.7 natural/disabled-act cycles не выданы за выполненные.
 [Release proof](../assets/audits/2026-10-30-revision-application-runtime/release.json).
+
+
+<a id="j196"></a>
+
+## J196 — bounded default ODT note diagnostics
+
+Native provenance extraction включает существующий same-pass ODT companion и передаёт его
+в summarize_extraction. Required old validated ExtractionResult строится первым; optional
+Exception-only enrichment добавляет status только для actual selected physical index +input/body
+hash. Invalid обязательный baseline, backend/selection/parser errors и cancellation не скрываются.
+Custom/inherited/class/instance public overrides остаются actual+unknown. Текст/selection/provider
+inputs и legacy physical manifest прежние; фактические codecomponent SHA меняются честно.
+
+Per-status≤1024B и global summary16KiB/16parts: новое ODT diagnostic удаляется первым,
+old selected prefix/Word metadata не вытесняются. Persisted hash/count/status помечен
+contents=not_retained, XML not_asserted; никакой32KiB origin manifest/blob не копируется.
+Новых SQL/backend/cache/service paths нет. Old cache сохраняет unknown, known cache — original
+metadata; quiet/365d/dump-restore проверки показывают zeroIO/неизменныйdump, без fresh claims.
+Контролируемый FakeBatchBackend.prepare_request сериализует тот же frozen context/payload/hash;
+realSDK/naturalprovider proof и production/performance или SQLgrowth estimate не заявлены.
+
+Author96focused/10new/strict4/Ruff и peer10+5 public controls green; actual oneXMLparse/read
+проверен отдельно от qualification driver. На finalsource один J1196+9 replay:17ODTleaves,
+0oldbusinessdelta/input/index/code drift. Natural defaultselection даёт1status с0notes/calls;
+4physical note-bearing companions не выбраны прежней policy. Variants:8statuses с0notes/calls.
+Positive selected note1/call1 — controlled native fixture; note-rich/natural selected-note
+coverage не выдумана. Maximum observed result3375B, raw reports остаются в out; compact recipe,
+cohort pins и review сохранены. Deployment writer требует actual J195reader proof.
+
+Final gate:7551tests/272.653s/92%,mypy659/Ruff727;744source/config pins exact. J195 exact CI/relay verified before writer push. Staged archive docs gate перед commit.
+
+[Qualification](../assets/audits/2026-10-30-odt-note-status-producer/qualification.json),
+[peer](../assets/audits/2026-10-30-odt-note-status-producer/peer-closure.json),
+[integration](../assets/audits/2026-10-30-odt-note-status-producer/integration.json),
+[recipe](../assets/audits/2026-10-30-odt-note-status-producer/recipe.json).
+
+[J195 exact CI/relay](../assets/audits/2026-10-30-odt-note-status-reader/release.json).

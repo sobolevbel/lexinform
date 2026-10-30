@@ -1,0 +1,15 @@
+{
+  "stage": "J196",
+  "base": "1ac3a37206d8ff3160dcfb2aa2d0770fba4ebc54",
+  "author4_and_reader3_exact": true,
+  "runtime_paths_unchanged": [
+    "src/lexinform/services/analysis.py",
+    "src/lexinform/services/revision_applications.py",
+    "src/lexinform/services/documents.py",
+    "src/lexinform/adapters/document_work.py",
+    "src/lexinform/adapters/sqlite_repo.py",
+    "src/lexinform/ports.py"
+  ],
+  "rollout_barrier": "Local qualification only. Do not push/activate before actual J1951ac3a372 reader CI+relay verified.",
+  "scope": "Native same-walk ODT status in bounded metadata; required baseline precedes optional enrichment, no extra source IO/selection/provider/body/cache/SQL changes; no full origin retention."
+}

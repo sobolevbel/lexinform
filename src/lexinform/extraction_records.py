@@ -19,8 +19,10 @@ from lexinform.models.extractions import (
     ExtractionDependency,
     ExtractionOptions,
     ExtractionResult,
+    OdtNoteStatus,
     extraction_metadata_sha256,
 )
+from lexinform.models.odt_notes import OdtNotedParts, OdtPartNoteOrigins
 from lexinform.models.word_view_capture import WordPartViewStatus, WordViewExtraction
 
 
@@ -70,6 +72,7 @@ def summarize_extraction(
     components: tuple[ExtractionComponent, ...],
     options: ExtractionOptions,
     word_views: tuple[WordPartViewStatus, ...] = (),
+    odt_origins: tuple[OdtPartNoteOrigins, ...] = (),
 ) -> ExtractionResult:
     pdf = {part.part_index: part.extraction for part in physical.pdf_pages}
     word = {part.part_index: part.extraction for part in physical.word_blocks}
@@ -187,7 +190,7 @@ def summarize_extraction(
         summary = ExtractedPartSummary.model_validate(fields)
         identities.append(
             extraction_metadata_sha256(
-                summary.model_dump(mode="json", exclude={"word_view_status"})
+                summary.model_dump(mode="json", exclude={"word_view_status", "odt_note_status"})
             )
         )
         key = (part.sha256, part.members)
@@ -229,4 +232,45 @@ def summarize_extraction(
                 "omitted_selected_parts": result.omitted_selected_parts + 1,
             }
         )
-    return ExtractionResult.model_validate_json(result.model_dump_json())
+    baseline = ExtractionResult.model_validate_json(result.model_dump_json())
+    if not odt_origins:
+        return baseline
+    try:
+        return _with_odt_note_status(baseline, physical, odt_origins)
+    except Exception:
+        return baseline
+
+
+def _with_odt_note_status(
+    baseline: ExtractionResult,
+    physical: ExtractedParts,
+    offered: tuple[OdtPartNoteOrigins, ...],
+) -> ExtractionResult:
+    linked = OdtNotedParts(legacy=physical, odt_notes=offered)
+    origins = {part.part_index: part.extraction for part in linked.odt_notes}
+    retained = list(baseline.selected_parts)
+    for index, summary in enumerate(retained):
+        value = origins.get(summary.physical_index)
+        if value is None:
+            continue
+        status = OdtNoteStatus(
+            known_walk=value.walk_state,
+            input_sha256=value.input_sha256,
+            body_manifest_sha256=value.body_manifest_sha256,
+            retained_manifest_sha256=value.retained_manifest_sha256,
+            observed_notes=value.note_count,
+            observed_calls=value.call_count,
+            retained_notes=len(value.entries),
+            retained_calls=len(value.calls),
+            coverage=value.coverage,
+        )
+        retained[index] = ExtractedPartSummary.model_validate(
+            summary.model_copy(update={"odt_note_status": status})
+        )
+    candidate = baseline.model_copy(update={"selected_parts": tuple(retained)})
+    for index in range(len(retained) - 1, -1, -1):
+        if len(candidate.model_dump_json().encode()) <= MAX_EXTRACTION_METADATA_BYTES:
+            break
+        retained[index] = retained[index].model_copy(update={"odt_note_status": None})
+        candidate = baseline.model_copy(update={"selected_parts": tuple(retained)})
+    return ExtractionResult.model_validate(candidate)

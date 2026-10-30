@@ -10,7 +10,16 @@ from typing import Any, Literal
 from xml.etree import ElementTree as ET
 
 from lexinform.adapters.document_text import DocumentTextExtractor, OdtTextExtractor
-from lexinform.models import OdtNoteCall, OdtNoteEntry, OdtNoteOrigins, OdtTextExtraction
+from lexinform.document_candidates import select_document_parts
+from lexinform.extraction_records import summarize_extraction
+from lexinform.models import (
+    OdtNoteCall,
+    OdtNotedParts,
+    OdtNoteEntry,
+    OdtNoteOrigins,
+    OdtTextExtraction,
+)
+from lexinform.models.extractions import MAX_EXTRACTION_METADATA_BYTES, ExtractionResult
 from tools.corpus_artifacts import digest, observation_changes, read_artifact, write_json
 from tools.corpus_manifests import RawReplayManifest
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
@@ -197,8 +206,82 @@ def verify_note_origins(
     }
 
 
+def verify_default_status(data: bytes, native: OdtNotedParts) -> dict[str, Any]:
+    routing = RoutingOnly()
+    reader = DocumentTextExtractor(routing, routing, routing)
+    plain = reader.extract_document(data)
+    observed = reader.extract_document_with_provenance(data)
+    expected = select_document_parts(native.legacy, max_part_chars=None)
+    if observed.document != plain or observed.document != expected:
+        raise ValueError("Default ODT diagnostics changed actual selected text or selection")
+    baseline = summarize_extraction(
+        native.legacy,
+        expected,
+        components=observed.result.components,
+        options=observed.result.options,
+    )
+    actual = ExtractionResult.model_validate_json(observed.result.model_dump_json())
+    if actual.model_dump(exclude={"selected_parts"}) != baseline.model_dump(
+        exclude={"selected_parts"}
+    ):
+        raise ValueError("Default ODT diagnostics changed required extraction metadata")
+    if [part.model_dump(exclude={"odt_note_status"}) for part in actual.selected_parts] != [
+        part.model_dump() for part in baseline.selected_parts
+    ]:
+        raise ValueError("Default ODT diagnostics changed the retained legacy summary prefix")
+    known = {item.part_index: item.extraction for item in native.odt_notes}
+    statuses: list[dict[str, Any]] = []
+    for part in actual.selected_parts:
+        status = part.odt_note_status
+        origin = known.get(part.physical_index)
+        if status is None:
+            if (
+                origin is not None
+                and len(baseline.model_dump_json().encode()) + 1024 < MAX_EXTRACTION_METADATA_BYTES
+            ):
+                raise ValueError("Known selected ODT provenance is unexpectedly absent")
+            continue
+        if origin is None or (
+            status.input_sha256,
+            status.body_manifest_sha256,
+            status.retained_manifest_sha256,
+            status.known_walk,
+            status.observed_notes,
+            status.observed_calls,
+            status.retained_notes,
+            status.retained_calls,
+            status.coverage,
+        ) != (
+            origin.input_sha256,
+            origin.body_manifest_sha256,
+            origin.retained_manifest_sha256,
+            origin.walk_state,
+            origin.note_count,
+            origin.call_count,
+            len(origin.entries),
+            len(origin.calls),
+            origin.coverage,
+        ):
+            raise ValueError("Default ODT diagnostics differ from actual physical companions")
+        statuses.append({"physical_index": part.physical_index, **status.model_dump(mode="json")})
+    size = len(actual.model_dump_json().encode())
+    if size > MAX_EXTRACTION_METADATA_BYTES:
+        raise ValueError("Default ODT summary exceeds its existing metadata bound")
+    return {
+        "document_text_sha256": digest(observed.document.text.encode()),
+        "selection_sha256": digest(observed.document.selection.model_dump_json().encode()),
+        "physical_manifest_sha256": actual.physical_manifest_sha256,
+        "summary_bytes": size,
+        "selected_physical_indices": [part.physical_index for part in actual.selected_parts],
+        "statuses": statuses,
+        "component_sources": {
+            component.role: component.source_file_sha256 for component in actual.components
+        },
+    }
+
+
 def snapshot(
-    data: bytes, mode: Mode, *, note_origins: bool = False
+    data: bytes, mode: Mode, *, note_origins: bool = False, note_status: bool = False
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     observer = BlockObserver() if mode == "adapter" else LibraryObserver()
     routing = RoutingOnly()
@@ -228,7 +311,7 @@ def snapshot(
                     **verify_manifest(observer.payloads[part.sha256], manifest),
                 }
             )
-    if note_origins:
+    if note_origins or note_status:
         if not isinstance(observer, BlockObserver):
             raise ValueError("ODT note qualification requires its adapter baseline")
         native = DocumentTextExtractor(routing, routing, routing).extract_parts_with_odt_notes(
@@ -250,6 +333,8 @@ def snapshot(
                     item["note_origins_manifest_sha256"] = value.retained_manifest_sha256
                     item["full_note_origins_manifest_sha256"] = value.full_manifest_sha256
                     item.update(verified)
+        if note_status and physical:
+            physical[0]["default_provenance"] = verify_default_status(data, native)
     return core, physical
 
 
@@ -262,6 +347,7 @@ def run(
     reference: Path | None = None,
     reference_sha256: str | None = None,
     note_origins: bool = False,
+    note_status: bool = False,
 ) -> int:
     root, target = corpus.resolve(strict=True), output.resolve()
     if output.is_symlink() or target.exists() or target.is_relative_to(root):
@@ -285,7 +371,7 @@ def run(
             raise ValueError("Reference ODT population differs")
     elif reference is not None or reference_sha256 is not None:
         raise ValueError("Library baseline does not accept a reference")
-    if note_origins and mode != "adapter":
+    if (note_origins or note_status) and mode != "adapter":
         raise ValueError("ODT note qualification requires explicit adapter mode")
     before = source_fingerprints()
     result: dict[str, Any] = {
@@ -313,6 +399,13 @@ def run(
             "production opt-in API remains one parse/read. Natural note-rich coverage "
             "is not inferred."
         )
+    if note_status:
+        result["default_note_status"] = True
+        result["exclusions"].append(
+            "Additional default-provenance/plain comparison passes verify selected text/selection, "
+            "actual index/input/body/status, required metadata and old physical identity. "
+            "No real SDK/provider request, representative note-rich or production coverage claim."
+        )
     reads = CorpusReads(root)
     successful = 0
     with reads.guard():
@@ -327,7 +420,9 @@ def run(
                 if digest(data) != case.sha256:
                     raise ValueError("ODT input SHA mismatch")
                 core, physical = (
-                    snapshot(data, mode, note_origins=True)
+                    snapshot(data, mode, note_status=True)
+                    if note_status
+                    else snapshot(data, mode, note_origins=True)
                     if note_origins
                     else snapshot(data, mode)
                 )
@@ -361,6 +456,7 @@ def main() -> None:
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--reference-sha256")
     parser.add_argument("--note-origins", action="store_true")
+    parser.add_argument("--note-status", action="store_true")
     args = parser.parse_args()
     logging.basicConfig(level=logging.ERROR)
     raise SystemExit(
@@ -372,6 +468,7 @@ def main() -> None:
             reference=args.reference,
             reference_sha256=args.reference_sha256,
             note_origins=args.note_origins,
+            note_status=args.note_status,
         )
     )
 

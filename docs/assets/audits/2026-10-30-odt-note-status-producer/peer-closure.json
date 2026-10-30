@@ -1,0 +1,102 @@
+{
+  "status": "approved-code-activation-gated",
+  "source4_pins_verified": {
+    "src/lexinform/adapters/document_text.py": "2b909e7072dd4a75b0234365b60366ce76837153de7721ae9841404ecfb0ff80",
+    "src/lexinform/extraction_records.py": "57969b027e15f91e958c28a976b05f1724c7397620ed407e6bc7a1bda6422fd8",
+    "tests/unit/test_odt_note_status_producer.py": "b4732280276734fe29c8c93ddac7c00b74dda0a19a6210637f73688679dc89fa",
+    "tools/replay_odt_blocks.py": "d5a27783c3154f28f5e4f5512dff620d617fa086dd7c7bdd5e5064567fdf8d8c"
+  },
+  "reader3_REV2_pins_verified": {
+    "src/lexinform/models/__init__.py": "2cc658ba657e46697531eb838860bc22a621b56b23ff80633929ab106609d69c",
+    "src/lexinform/models/extractions.py": "9a69549d7a2f1a6144227c715833fd205f4784d75387db50d6f7f9f9aea00dd6",
+    "tests/unit/test_odt_note_status.py": "4df9b59daf0026999560304edeb2d491292be2288a4be172826744edc370364f"
+  },
+  "core3_exact_to_reviewed_freeze": true,
+  "handoff_sha256": "437ba3ac556974afaf9bf73fe6d130cbc7d7e99f8247d189801f6a75a52a4fa5",
+  "freeze_sha256": "064ff3aebe58b8e37d8e5c82be052e5a65f71d89307eac148ed1981f9bf3b305",
+  "patch_sha256": "bfae7c30e896eae17c73a879a48626282bfa5e989c5e1d49929ec6f7d7b33de4",
+  "peer_focused_passed": 10,
+  "peer_independent_controls": [
+    "invalid input_sha256 falls back to exact validated baseline",
+    "invalid body_manifest_sha256 falls back to exact validated baseline",
+    "invalid part_index falls back to exact validated baseline",
+    "invalid mandatory baseline is not swallowed by optional enrichment",
+    "inherited public custom boundary retains actual business and unknown status"
+  ],
+  "peer_independent_count": 5,
+  "review": {
+    "baseline": "Required old validated ExtractionResult exists before guarded optional enrichment. Invalid mandatory data still raises.",
+    "bindings": "Exact physical index and validated input/body manifest; duplicate identical inputs cannot lend status to another part.",
+    "caps": "Status <=1024B; existing16KiB/16part prefix preserved, optional new statuses removed first. Word status/old limitations stay; new diagnostics excluded from legacy physical manifest.",
+    "capability_errors": "Captured actual public method guards, inherited/class/instance overrides stay actual+unknown; ordinary metadataException falls back to exact baseline; cancellation/parser/selection exception identity preserved.",
+    "cache_payload": "Existing tests qualify original known status/unknown legacy cache with one download and quiet source recording at365d; controlled FakeBatchBackend payload/context/hash parity, no real provider/performance claim.",
+    "fourth_tool": "Qualification-only additional native/plain/XML passes, pinned6+9 source maps exact; source defaults preserved and corpus overflow is not generalized from small cohorts."
+  },
+  "qualification_metadata": {
+    "natural": {
+      "sha256": "19a6d83e9282f643200af33b1f7711e5719438190948e0a567c58921b6f3e98a",
+      "code4_reader3_exact": true,
+      "status": "passed",
+      "input_code_drift": false,
+      "business_changes": 0
+    },
+    "variants": {
+      "sha256": "d03f9390a51c7e5d47bfb4e097765c6f666a9dd763649b82dbae077673a5d70e",
+      "code4_reader3_exact": true,
+      "status": "passed",
+      "input_code_drift": false,
+      "business_changes": 0
+    }
+  },
+  "coverage": {
+    "natural": {
+      "case_manifest_sha256": "2ce1ac6cb30dff66526502ab8bf213a70a90c4504a23220c8a649e2c4d21fd5b",
+      "changed_code": false,
+      "changed_inputs": {},
+      "changed_observations": 0,
+      "default_selected_calls": 0,
+      "default_selected_notes": 0,
+      "default_selected_statuses": 1,
+      "errors": {},
+      "known_optin_call_count": 4,
+      "known_optin_note_count": 4,
+      "max_result_json_bytes": 3375,
+      "odt_physical_leaves": 8,
+      "pinned_reference_sha256": "55283c06e2849e01ca0288159ae5feb4cfe924f9d462b563c0ed1048a59e8861",
+      "report_sha256": "19a6d83e9282f643200af33b1f7711e5719438190948e0a567c58921b6f3e98a",
+      "roots": 6
+    },
+    "variants": {
+      "case_manifest_sha256": "6dc55e22b95a4c20069c2194ab7a66d8d7b790f7bbfe1e05070a8234fe7f700b",
+      "changed_code": false,
+      "changed_inputs": {},
+      "changed_observations": 0,
+      "default_selected_calls": 0,
+      "default_selected_notes": 0,
+      "default_selected_statuses": 8,
+      "errors": {},
+      "known_optin_call_count": 0,
+      "known_optin_note_count": 0,
+      "max_result_json_bytes": 3375,
+      "odt_physical_leaves": 9,
+      "pinned_reference_sha256": "0f473bc6e5f1ffafbf6348a3fe3f0d180e0f9cbe78a976aca5542a24403f9454",
+      "report_sha256": "d03f9390a51c7e5d47bfb4e097765c6f666a9dd763649b82dbae077673a5d70e",
+      "roots": 9
+    },
+    "positive": "Synthetic actual native selected note1/call1; natural selected statuses have0notes/calls.",
+    "limits": "No natural selected note-rich/separate-reference, fullXML, recoverable-coordinate, natural performance or production claim."
+  },
+  "activation_barrier": "Root must verify actual J195 reader deployment before integrating/deploying default writer. Peer approves frozen code only.",
+  "evidence": {
+    "focused.log": "7040371af15613c02e821ec0eecc1d1330f691ace4cef93a41bfa358822c4103",
+    "focused.xml": "04418ad606f82f794e2bfe90320921c89c03d190401a5680ceae806a44cdf7f1",
+    "controls.json": "fed03d865fd2770eee44bb30022a2a65f955d005774631ac93520503020ffda9"
+  },
+  "not_run": [
+    "source edits",
+    "full suite",
+    "raw replay duplication",
+    "real provider/network/production",
+    "new SQL/cache backend"
+  ]
+}
