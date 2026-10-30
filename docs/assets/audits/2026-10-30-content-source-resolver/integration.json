@@ -1,0 +1,14 @@
+{
+  "stage": "J198",
+  "base": "63a23d6a643edbf5dc3eb1da523a69d564c61580",
+  "author5_exact": true,
+  "runtime_paths_unchanged": [
+    "src/lexinform/models/extractions.py",
+    "src/lexinform/models/__init__.py",
+    "src/lexinform/extraction_records.py",
+    "src/lexinform/adapters/document_text.py",
+    "src/lexinform/services/analysis.py",
+    "src/lexinform/services/revision_applications.py"
+  ],
+  "scope": "Inert frozen-primary-context source resolver and two indexed reads, no history writer/capture/DDL. Optionaltyped queued_at reader only; current producer omits it, so currentnaturalchain unknown. No rawJSON sidechannel or queue-time fallback."
+}

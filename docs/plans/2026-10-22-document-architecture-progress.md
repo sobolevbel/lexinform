@@ -9198,3 +9198,44 @@ Final gate:7574tests/272.025s/92%,mypy660/Ruff728;745source/config pins exact. J
 [gap audit](../assets/audits/2026-10-30-odt-note-prefix-reader/report.md),
 [prefix contract](../assets/audits/2026-10-30-odt-note-prefix-reader/odt-prefix-contract.md),
 [J196 exact CI/relay](../assets/audits/2026-10-30-odt-note-status-producer/release.json).
+
+
+<a id="j198"></a>
+
+## J198 — inert frozen-primary-context source resolver
+
+ContentSourceAudit различает known/unknown/invalid, ограничен1ID/256B и имеет explicit scope
+frozen_primary_context/analysis. Два indexed read-only accessor читают exact consumed provider/
+batch/custom item с frozen-generation projection receipt и максимум2 observation по owner/
+purpose/selection. Нет current-Bill/catalog/URL/SHA lookup, owner-history scan или first-match
+при ambiguity. Frozen paid record/request/input binding, prepared receipt, selection и owner
+corroborated; amendment-source coverage этим не подтверждается.
+
+Peer воспроизвёл temporal backfill: observation после queue, но до collection ошибочно давала
+known. RED→GREEN фикс требует original frozen queue cutoff. В primary BatchItemMeta timestamp
+раньше вообще отсутствовал: BatchIntent.created_at не копировался в item. Добавлен только
+optional omitted-None typed queued_at READER; from_intent/producer не меняются. Поэтому
+CURRENTNATURAL primary chains остаются unknown, положительные stamped fixtures — explicitly
+synthetic future metadata. Missing/naive queue unknown; queue после collection invalid;
+observation после queue unknown. RawJSON sidechannel/collection/submission/now fallback нет.
+
+Author135focused/44resolver cases/strict5 и peer originalregression+44cases green. У source
+истории нет нового writer, renderer, DDL или capture activation; SQL/cancellation errors
+propagate. Controlled audit6SELECT/207B, SQL/gzip delta0, cleanup/restore unchanged. OldNone
+metadata bytes/payload/receipt parity доказаны отдельно. Known contradictions не выдаются
+за отсутствующие данные. DA7.5 остаётся partial: queue capture и content-ref writer впереди.
+
+Root source5exact; J197prefixreader, J196defaultODTcapture и J194applications preserved.
+Это metadata reader/audit: corpus extraction/selection/normalization/comparison не меняется,
+новых raw/paid/production прогонов нет.
+
+Final gate:7618tests/272.215s/92%,mypy662/Ruff730;747source/config pins exact. Staged archive docs gate перед commit.
+
+[Qualification](../assets/audits/2026-10-30-content-source-resolver/qualification.json),
+[peer](../assets/audits/2026-10-30-content-source-resolver/peer-closure.json),
+[integration](../assets/audits/2026-10-30-content-source-resolver/integration.json),
+[causal seams](../assets/audits/2026-10-30-content-source-resolver/causal-seams.json),
+[legacy parity](../assets/audits/2026-10-30-content-source-resolver/legacy-proof.json),
+[read-only query proof](../assets/audits/2026-10-30-content-source-resolver/query-proof.json).
+
+[J197 exact CI/relay](../assets/audits/2026-10-30-odt-note-prefix-reader/release.json) verified before next push.

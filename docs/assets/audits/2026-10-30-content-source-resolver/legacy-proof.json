@@ -1,0 +1,11 @@
+{
+  "baseline_model_sha256": "ede550faf9756cd863a9ed17f1da2fab928984c0e910d193fa2ba748c9284252",
+  "legacy_meta_exact_bytes_equal": true,
+  "default_intent_exact_bytes_equal": true,
+  "default_submitted_item_exact_bytes_equal": true,
+  "none_omitted": true,
+  "provider_payload_exact_bytes_and_sha_equal": true,
+  "receipt_exact_bytes_and_selection_id_equal": true,
+  "current_primary_writer_retains_queue_time": false,
+  "witness_scope": "reader_only; positive timestamp fixtures are synthetic future metadata"
+}

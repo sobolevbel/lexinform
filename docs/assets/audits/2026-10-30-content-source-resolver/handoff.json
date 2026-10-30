@@ -1,0 +1,114 @@
+{
+  "base": "1ac3a37206d8ff3160dcfb2aa2d0770fba4ebc54",
+  "worktree": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform",
+  "frozen_at": "2026-10-30T21:48:16.247016+00:00",
+  "source_pins": {
+    "src/lexinform/adapters/sqlite_repo.py": "a1639efa1b6dc52763a8fd43f16c596903154a82717567f3686f6524c59f90a4",
+    "src/lexinform/ports.py": "c30050d80e07b82c10567c5e02e0b3983852ed4a2f3ec888ec3394f3c29c024f",
+    "src/lexinform/models/batch.py": "53d004478ccbbfc6b4182d8144bcab86ee133db6088f8ca061b7fc64c8adc0f4",
+    "src/lexinform/services/content_sources.py": "468e7d3889df08ab051e302845d10c28ca61e9c8fb1819db708b2d1de4c6c8d7",
+    "tests/unit/test_content_sources.py": "f81523a0c9637f42e5340b5f89107dd78d40ab9b3a1f3d2f3ac203a166831f60"
+  },
+  "patch": {
+    "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/candidate.patch",
+    "sha256": "dd4e3f063d0f6ba6d5a27e45c3622c70b214a52a1bb55cc72e2d091319f1b137",
+    "bytes": 33414
+  },
+  "fix_patch": {
+    "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/fix.patch",
+    "sha256": "7e1792336741d2fff1bfebbb10d21c6e3e4596a04db2e3f0d24c252220e389ab",
+    "bytes": 6860
+  },
+  "qa": {
+    "focused_passed": 135,
+    "resolver_controls": 44,
+    "mypy_files": 5,
+    "ruff": "green",
+    "format": "green",
+    "diff_check": "green"
+  },
+  "source_hold": true,
+  "scope": "LOCAL INERT reader/audit only; current default primary producer has no original queue witness",
+  "prior_frozen4": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/before/handoff.json",
+  "independent_red": {
+    "test": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/independent-review/test_observation_queue_cutoff.py",
+    "log": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/independent-review/queue-cutoff-before.log",
+    "xml": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/independent-review/queue-cutoff-before.xml"
+  },
+  "proofs": {
+    "focused.xml": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/focused.xml",
+      "sha256": "a6a734461288096adc68e294b83406e8f190bbb02b763b20b87300f991af4a8a"
+    },
+    "focused.log": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/focused.log",
+      "sha256": "f2a2851fd07d932c49660c7f57aef37289927105e202692b6b4a7a987b70a9ff"
+    },
+    "mypy.log": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/mypy.log",
+      "sha256": "e317872697c2cbfdefa321527a6efe73290dff3a390b0fa8723b87092eccba6a"
+    },
+    "ruff.log": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/ruff.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "format.log": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/format.log",
+      "sha256": "f114d83b30c5c657ee43a847a45bafccaea255d82673feb87c26d252c61e29c1"
+    },
+    "diff-check.log": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/diff-check.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "legacy-proof.py": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/legacy-proof.py",
+      "sha256": "0c70221f89fea6b7fd5d6a0351c11f9b5ec49700d42575279049f9c43124bc32"
+    },
+    "legacy-proof.json": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/legacy-proof.json",
+      "sha256": "3696877e7421b1fe4e43e52a9c4c86c0e5e4fbf7106d16289f8cf41cce971c9a"
+    },
+    "legacy-proof.log": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/legacy-proof.log",
+      "sha256": "bcc5436189273a314bb9803cdaa38a8975c2b2702102e5ee9827441cd277e7f4"
+    },
+    "query-proof.py": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/query-proof.py",
+      "sha256": "6ed0b7d602d502ba42f48bbd7d93662d26f8a8ac06d01b919fedc79a275ae3ba"
+    },
+    "query-proof.json": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/query-proof.json",
+      "sha256": "9bd8d9789cb62aaf7157f8fd6520925b155f4dc2da1daefe87882b4bfa596341"
+    },
+    "query-proof.log": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/query-proof.log",
+      "sha256": "2d896715fb6dca58606a4b74a5b549542bcbb7337eddcd3868b356c7850fefd2"
+    },
+    "causal-seams.json": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/causal-seams.json",
+      "sha256": "3b0c4b1d7da19dbd7c1b836077f6c14b276be9653b9c86e8367b01511750a318"
+    },
+    "contract.md": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/contract.md",
+      "sha256": "46f1a13732955178a8568767f21e77bc771760d870477122a1dad04236fd198f"
+    },
+    "report.md": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/content-source-resolver/queue-fix/report.md",
+      "sha256": "3a1be9bd068388e8602c81a772d9f88876d1ad8883c7e2fc643a6f59e5c8d0dd"
+    }
+  },
+  "limitations": [
+    "No primary producer captures queued_at in this slice; its current unchanged format stays unknown.",
+    "Positive typed timestamps are explicitly synthetic future metadata.",
+    "No ContentVersion source reference writer, restore/doctor activation or rendering change.",
+    "No natural-delivery or complete amendment/input-origin coverage claim.",
+    "No raw JSON side channel or submitted/collection/current-time queue fallback."
+  ],
+  "forbidden_actions_not_performed": [
+    "full suite",
+    "raw/network/provider/paid calls",
+    "production/state processing",
+    "commit",
+    "push"
+  ]
+}

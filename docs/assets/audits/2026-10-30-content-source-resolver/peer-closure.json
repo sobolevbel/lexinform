@@ -1,0 +1,47 @@
+{
+  "decision": "approved-inert-reader-only",
+  "handoff_sha256": "2b910f192c3275993f5415bed9051ce61f9bb176ff0b49483787c2080da1c3eb",
+  "freeze_sha256": "3cbca7bba26196774ef66463b08c36f8a259e81b847982ddf43f3ff93756e2c4",
+  "patch_sha256": "dd4e3f063d0f6ba6d5a27e45c3622c70b214a52a1bb55cc72e2d091319f1b137",
+  "source_pins": {
+    "src/lexinform/adapters/sqlite_repo.py": "a1639efa1b6dc52763a8fd43f16c596903154a82717567f3686f6524c59f90a4",
+    "src/lexinform/ports.py": "c30050d80e07b82c10567c5e02e0b3983852ed4a2f3ec888ec3394f3c29c024f",
+    "src/lexinform/models/batch.py": "53d004478ccbbfc6b4182d8144bcab86ee133db6088f8ca061b7fc64c8adc0f4",
+    "src/lexinform/services/content_sources.py": "468e7d3889df08ab051e302845d10c28ca61e9c8fb1819db708b2d1de4c6c8d7",
+    "tests/unit/test_content_sources.py": "f81523a0c9637f42e5340b5f89107dd78d40ab9b3a1f3d2f3ac203a166831f60"
+  },
+  "source_hold_verified_after_peer": true,
+  "peer_tests": {
+    "resolver44": 44,
+    "queue-cutoff-after": 1
+  },
+  "accepted_blocker": "Original public probe falsely resolved a source observation after queue but before collection; same retained probe now passes with unknown/observation_after_queue.",
+  "review": [
+    "Optional typed BatchItemMeta.queued_at omitted None; no raw JSON side channel or writer capture/from_intent changes",
+    "Missing/naive queue or collection chronology remains unknown; queue after collected_at invalid; observation after queue unknown",
+    "Current default primary producer retains no queue witness, therefore remains unknown; positive known fixtures explicitly future metadata",
+    "Frozen original snapshot + paid/request/provider/indexed consumed item and exact projection-generation/selection/same-owner unique-observation chain; no current Bill, latest or URL/SHA guessing",
+    "Indexed PK/unique projection-generation lookup plus selection-index LIMIT2; read-only SQL, unchanged dump, SQL/control-flow exceptions preserved",
+    "Output internal bounded one-ID metadata; observed207B; optional artifact/extraction origins are not claimed complete"
+  ],
+  "author_evidence_reviewed": {
+    "focused": 135,
+    "legacy_exact": {
+      "baseline_model_sha256": "ede550faf9756cd863a9ed17f1da2fab928984c0e910d193fa2ba748c9284252",
+      "legacy_meta_exact_bytes_equal": true,
+      "default_intent_exact_bytes_equal": true,
+      "default_submitted_item_exact_bytes_equal": true,
+      "none_omitted": true,
+      "provider_payload_exact_bytes_and_sha_equal": true,
+      "receipt_exact_bytes_and_selection_id_equal": true,
+      "current_primary_writer_retains_queue_time": false,
+      "witness_scope": "reader_only; positive timestamp fixtures are synthetic future metadata"
+    },
+    "query_metadata_sha256": "9bd8d9789cb62aaf7157f8fd6520925b155f4dc2da1daefe87882b4bfa596341"
+  },
+  "limits": [
+    "No capture/source-reference writer, amendment provenance, restore activation, rendering or schema change",
+    "No current native known-chain claim; no natural-delivery/complete-origin claim",
+    "Peer performed no source edits, full suite, raw replay, network, production or provider/paid calls"
+  ]
+}

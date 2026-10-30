@@ -1,0 +1,5 @@
+The inert resolver audits only frozen_primary_context/analysis. A known chain requires original paid owner/provider/batch/custom/request/binding, exact frozen projection receipt, consumed primary input receipt, its selection, a unique matching observation and an aware retained original queued_at. Observation after queue is unknown; queue after collection is invalid. Missing/naive queue or collection chronology is unknown; no submitted_at, collected_at or current-time fallback supplies the queue witness.
+
+The current primary producer does not retain queued_at: BatchIntent.created_at is not copied into primary item metadata and submission deletes the intent. Its unchanged metadata format therefore remains unknown. The optional typed BatchItemMeta.queued_at field is reader compatibility only; None is omitted. Positive stamped fixtures are synthetic future metadata, not current producer or natural-delivery evidence.
+
+A later separately qualified producer must capture that original witness before source references can be written to ContentVersion. No writer, from_intent capture, rendering, schema/DDL, observer or activation change is included here.

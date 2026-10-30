@@ -95,6 +95,7 @@ from lexinform.models import (
     ArtifactReadReceipt,
     AttentionAssessment,
     BatchIntent,
+    BatchProvider,
     BatchRequest,
     BatchResult,
     BatchStatus,
@@ -2034,6 +2035,19 @@ class SqliteBillRepository:
             )
         ]
 
+    def source_observations_for_selection(
+        self, term: int, number: str, selection_id: str
+    ) -> list[SourceObservation]:
+        return [
+            self._source_observation(row)
+            for row in self._conn.execute(
+                "SELECT * FROM source_observations INDEXED BY ix_source_observations_selection"
+                " WHERE selection_id=? AND term=?"
+                " AND number=? AND purpose='analysis' ORDER BY rowid LIMIT 2",
+                (selection_id, term, number),
+            )
+        ]
+
     def save_candidate_disposition_trace(
         self, observation_id: str, trace: CandidateDispositionTrace
     ) -> None:
@@ -3705,6 +3719,60 @@ class SqliteBillRepository:
             (batch_id,),
         ).fetchall()
         return [_row_to_llm_batch_item(r) for r in rows]
+
+    def get_consumed_primary_input(
+        self, provider: BatchProvider, batch_id: str, custom_id: str, generation: int
+    ) -> LlmBatchItem | None:
+        row = self._conn.execute(
+            "SELECT i.*, b.provider AS batch_provider, r.result_id AS paid_id,"
+            " r.provider AS paid_provider, r.batch_id AS paid_batch, r.custom_id AS paid_custom,"
+            " r.term AS paid_term, r.number AS paid_number, r.result_json AS paid_json,"
+            " a.application_json AS projection_json"
+            " FROM llm_batch_items i JOIN llm_batches b ON b.batch_id=i.batch_id"
+            " LEFT JOIN computation_results r ON r.provider=? AND r.batch_id=i.batch_id"
+            " AND r.custom_id=i.custom_id LEFT JOIN result_applications a"
+            " ON a.result_id=r.result_id AND a.term=r.term AND a.number=r.number"
+            " AND a.generation=? AND a.phase='projection' WHERE i.batch_id=? AND i.custom_id=?"
+            " AND i.consumed_at IS NOT NULL",
+            (provider, generation, batch_id, custom_id),
+        ).fetchone()
+        if row is None:
+            return None
+        if row["batch_provider"] != provider or row["paid_json"] is None:
+            raise ValueError("consumed item and original provider/computation disagree")
+        result = ComputationResult.model_validate_json(row["paid_json"])
+        if (
+            result.result_id,
+            result.provider,
+            result.batch_id,
+            result.custom_id,
+            result.term,
+            result.number,
+        ) != tuple(
+            row[key]
+            for key in (
+                "paid_id",
+                "paid_provider",
+                "paid_batch",
+                "paid_custom",
+                "paid_term",
+                "paid_number",
+            )
+        ):
+            raise ValueError("retained computation columns disagree with its original identity")
+        if row["projection_json"] is None:
+            return None
+        application = ResultApplication.model_validate_json(row["projection_json"])
+        if (
+            application.result_id,
+            application.term,
+            application.number,
+            application.generation,
+            application.phase,
+            application.target,
+        ) != (result.result_id, result.term, result.number, generation, "projection", None):
+            raise ValueError("frozen primary target differs from its projection receipt")
+        return _row_to_llm_batch_item(row)
 
     def mark_llm_batch_item_consumed(
         self,

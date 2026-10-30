@@ -1,0 +1,36 @@
+{
+  "scope": "synthetic_public_repository_metadata_only",
+  "natural_delivery_claim": false,
+  "audit": {
+    "state": "known",
+    "reason": "exact_metadata_chain",
+    "source_observation_ids": [
+      "source-observation-v1:2efdab40aea51755285040819f4c2c1deae48a59e3d10283d50833f6a9803983"
+    ],
+    "scope": "frozen_primary_context/analysis"
+  },
+  "encoded_utf8_bytes": 207,
+  "read_statements_for_two_audits": 12,
+  "all_statements_select": true,
+  "dump_sha_before": "7d30dafe2fa2a5e9087982374c18e5b97b8eb71d272210de3cc51e3d5fbab954",
+  "dump_sha_after": "7d30dafe2fa2a5e9087982374c18e5b97b8eb71d272210de3cc51e3d5fbab954",
+  "sql_bytes_delta": 0,
+  "gzip_bytes_delta": 0,
+  "query_plans": {
+    "get_consumed_primary_input": {
+      "sql": "SELECT i.*, b.provider AS batch_provider, r.result_id AS paid_id, r.provider AS paid_provider, r.batch_id AS paid_batch, r.custom_id AS paid_custom, r.term AS paid_term, r.number AS paid_number, r.result_json AS paid_json, a.application_json AS projection_json FROM llm_batch_items i JOIN llm_batches b ON b.batch_id=i.batch_id LEFT JOIN computation_results r ON r.provider=? AND r.batch_id=i.batch_id AND r.custom_id=i.custom_id LEFT JOIN result_applications a ON a.result_id=r.result_id AND a.term=r.term AND a.number=r.number AND a.generation=? AND a.phase='projection' WHERE i.batch_id=? AND i.custom_id=? AND i.consumed_at IS NOT NULL",
+      "details": [
+        "SEARCH i USING INDEX sqlite_autoindex_llm_batch_items_1 (batch_id=? AND custom_id=?)",
+        "SEARCH b USING INDEX sqlite_autoindex_llm_batches_1 (batch_id=?)",
+        "SEARCH r USING INDEX sqlite_autoindex_computation_results_2 (provider=? AND batch_id=? AND custom_id=?) LEFT-JOIN",
+        "SEARCH a USING INDEX ux_result_application_generation (result_id=? AND term=? AND number=? AND generation=? AND phase=?) LEFT-JOIN"
+      ]
+    },
+    "source_observations_for_selection": {
+      "sql": "SELECT * FROM source_observations INDEXED BY ix_source_observations_selection WHERE selection_id=? AND term=? AND number=? AND purpose='analysis' ORDER BY rowid LIMIT 2",
+      "details": [
+        "SEARCH source_observations USING INDEX ix_source_observations_selection (selection_id=?)"
+      ]
+    }
+  }
+}

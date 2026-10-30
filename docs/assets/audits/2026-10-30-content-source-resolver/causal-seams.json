@@ -1,0 +1,27 @@
+{
+  "analysis_source_sha256": "c1a0122467cd6d6b4a41ef3f31c0af43a58fa5653761e713d2dd0b6d00d8b848",
+  "source_capture_before_enqueue": [
+    "parallel outcomes -> _accept_preparation -> _record_source_read -> _enqueue",
+    "synchronous _accept_preparation completes before its queue construction"
+  ],
+  "current_primary_producer_retains_queue_time": false,
+  "current_default_primary_format_resolves": "unknown/queue_time_unknown",
+  "writer_method_ast_unchanged": {
+    "BatchIntent.from_request": {
+      "before": "e9d2dea62c6dd2ca9549f3498b576cd39b2ee563ebfc61d16c56e9f723948f62",
+      "after": "e9d2dea62c6dd2ca9549f3498b576cd39b2ee563ebfc61d16c56e9f723948f62"
+    },
+    "LlmBatchItem.from_intent": {
+      "before": "58124bc3325f43ed1cef41ba821cc4cffd100a5fa4f51fe598b498d41da08433",
+      "after": "58124bc3325f43ed1cef41ba821cc4cffd100a5fa4f51fe598b498d41da08433"
+    }
+  },
+  "actual_code_refs": {
+    "caller_accept_then_enqueue": "src/lexinform/services/analysis.py:721",
+    "source_read_finalization": "src/lexinform/services/analysis.py:2577",
+    "intent_created_at_only": "src/lexinform/services/analysis.py:3243",
+    "submission_deletes_intents": "src/lexinform/services/analysis.py:897",
+    "single_primary_accept_then_enqueue": "src/lexinform/services/analysis.py:1494"
+  },
+  "future_writer_required": "Persist original aware queue time after caller source finalization; no fallback or historical reconstruction."
+}

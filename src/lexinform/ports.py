@@ -18,6 +18,7 @@ from lexinform.models import (
     ArtifactReadReceipt,
     BackfillReport,
     BatchIntent,
+    BatchProvider,
     BatchRequest,
     BatchResult,
     BatchStatus,
@@ -826,6 +827,10 @@ class BillRepository(Protocol):
 
     def list_source_observations(self, term: int, number: str) -> list[SourceObservation]: ...
 
+    def source_observations_for_selection(
+        self, term: int, number: str, selection_id: str
+    ) -> list[SourceObservation]: ...
+
     def save_candidate_disposition_trace(
         self, observation_id: str, trace: CandidateDispositionTrace
     ) -> None: ...
@@ -1079,6 +1084,10 @@ class BillRepository(Protocol):
         consumed_at: datetime,
         result: BatchResult | None = None,
     ) -> None: ...
+
+    def get_consumed_primary_input(
+        self, provider: BatchProvider, batch_id: str, custom_id: str, generation: int
+    ) -> LlmBatchItem | None: ...
 
     def list_unaccounted_batch_items(self) -> list[LlmBatchItem]: ...
 

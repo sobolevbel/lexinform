@@ -252,6 +252,7 @@ class BatchItemMeta(BaseModel):
     input_binding: ComputationInputBinding | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    queued_at: dt.datetime | None = Field(default=None, exclude_if=lambda value: value is None)
     prepared_input_receipt: PrimaryInputReceipt | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
