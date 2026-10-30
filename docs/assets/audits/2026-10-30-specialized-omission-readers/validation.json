@@ -1,0 +1,40 @@
+{
+  "stages": [
+    "J164",
+    "J166"
+  ],
+  "base": "b5619040ba31f565742e921f4b4ae16e7fb59dab",
+  "specialized_focused_passed": 227,
+  "specialized_new_unit_cases": 13,
+  "specialized_new_scenarios": 0,
+  "specialized_retained_records": {
+    "RCL": 874,
+    "Senate": 775,
+    "URL_fields": 4595,
+    "old_JSON_ID_SQL_repeat_exact": true
+  },
+  "specialized_public_pairs": 11,
+  "reader_focused_passed": 114,
+  "reader_new_unit_cases": 24,
+  "reader_scope": "Inert schema63 owner-bound hash-only source metadata omissions, no caller/producer activation",
+  "reader_independent_review": "revision3 closed junction corruption, Senate context and emptyhash default defects; nine targeted controls passed",
+  "full_gate": {
+    "tests_passed": 6875,
+    "seconds": 243.974,
+    "coverage_percent": 92,
+    "mypy_files": 594,
+    "ruff_format_files": 661,
+    "source_config_pins": 661,
+    "frozen_bytes_exact": true,
+    "docs_check": "passed"
+  },
+  "limits": [
+    "DA2.5 remains partial until owner-bound omission producer is implemented and qualified after reader63 deploy",
+    "Historical URL validators/rows remain unchanged; no whole-app or business/paid payload privacy claim",
+    "Retained ordinary factory replay does not rerun bodies/parsers/resolvers",
+    "Fresh ordinary capture IDs truthfully include changed merge/resolver source component SHA",
+    "RCL unknown official details stay null; known_available parent scope does not mean all used bodies",
+    "Physical assembler J165 remains separate work, not part of this gate",
+    "Raw backend/storage/retention unchanged"
+  ]
+}

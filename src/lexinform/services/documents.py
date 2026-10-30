@@ -39,7 +39,7 @@ from lexinform.document_downloads import DocumentDownloadRecorder, download_fail
 from lexinform.document_selection import DOCUMENT_SELECTION_POLICY_VERSION
 from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
 from lexinform.metadata_omissions import MetadataUrlOmissionCollector
-from lexinform.metadata_urls import metadata_url_decision
+from lexinform.metadata_urls import MetadataUrlDecision, metadata_url_decision
 from lexinform.models import (
     ArtifactIdentity,
     ArtifactReadIdentity,
@@ -124,6 +124,14 @@ class TextLoader:
 
     def read_metadata_url_omissions(self) -> MetadataUrlOmissions | None:
         return self._metadata_url_omissions.snapshot()
+
+    def observe_metadata_url(self, url: str) -> MetadataUrlDecision:
+        decision = metadata_url_decision(url)
+        if decision.reason is not None:
+            self._metadata_url_omissions.observe(
+                decision.reason, requested_url_sha256=decision.requested_url_sha256
+            )
+        return decision
 
     def extractions_for_selection(
         self, selection: DocumentSelection

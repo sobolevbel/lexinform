@@ -13,6 +13,7 @@ from typing import Concatenate, Literal
 from lexinform import senate_documents as inspection_code
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
 from lexinform.extraction_records import component_code
+from lexinform.metadata_urls import metadata_url_decision
 from lexinform.models import (
     Bill,
     DocumentPart,
@@ -47,6 +48,17 @@ from lexinform.services.senate_history import SenateInspectionObservation
 
 log = logging.getLogger(__name__)
 Phase = Literal["word", "pdf"]
+
+
+def captured_senate_url(value: str) -> SenateInspectionUrl:
+    decision = metadata_url_decision(value)
+    if decision.reason is None:
+        return SenateInspectionUrl.of(value)
+    if decision.requested_url_sha256 is None:
+        raise ValueError("an unencodable Senate metadata URL has no exact UTF-8 identity")
+    return SenateInspectionUrl(
+        value=None, state="omitted_unsafe", sha256=decision.requested_url_sha256
+    )
 
 
 def _capture_fact[**P](
@@ -103,7 +115,7 @@ class SenateInspectionCapture:
                 index=index,
                 print_number=item.print_number,
                 name=item.name,
-                url=SenateInspectionUrl.of(item.url),
+                url=captured_senate_url(item.url),
             )
             for index, item in enumerate(info.attachments)
         )
@@ -170,7 +182,7 @@ class SenateInspectionCapture:
                 artifact_bytes=artifact.byte_size,
                 extraction_id=extraction.result_id if extraction else None,
             )
-            if not SenateInspectionUrl.safe(url):
+            if not SenateInspectionUrl.safe(url) or not metadata_url_decision(url).admitted:
                 if extraction is not None:
                     previous_extraction = self._extractions.setdefault(
                         extraction.result_id, extraction

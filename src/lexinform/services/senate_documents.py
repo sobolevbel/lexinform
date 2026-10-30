@@ -10,7 +10,6 @@ from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
 from lexinform.models import (
     DocumentPart,
     DocumentSelection,
-    DocumentSelectionRecord,
     PrintInfo,
     SenateResolutionIdentity,
     TextDocument,
@@ -224,13 +223,10 @@ def resolution_source_read(
             ),
         ),
     )
-    return DocumentSourceRead(
-        document,
-        DocumentSelectionRecord.from_selection(selection),
-        loader.artifacts_for_selection(selection),
-        reads=loader.reads_for_selection(selection),
-        extractions=loader.extractions_for_selection(selection),
+    source = loader.capture_source_read(
+        document, document, LoadedFile(text, pages=pages, sha256=sha256, selection=selection)
     )
+    return source if isinstance(source, DocumentSourceRead) else None
 
 
 def verified_senate_text(

@@ -589,3 +589,29 @@ context для новых amendments targets, даже пока original operati
 `review_work`/`ready_analysis` не копируются повторно в batch metadata; original payload и actual
 work owners остаются прежними. Provider context/checksum не меняется. Новая `/delivery` строка
 physical attempts относится к сохранённой publication, а не к числу content versions.
+
+## Owner-bound omissions (v63)
+
+Reader-only schema63 добавляет `source_metadata_omissions` и `source_omission_parents` без runtime
+producer или backfill. Closed owner: Bill с purpose, официальный RCL project/stage/letter context
+или actual Bill с Senate resolution print. Bill/Senate owners имеют настоящий FK; неизвестные
+RCL stage/letter IDs остаются NULL. Owner/context, parent count/hash и первое время доступны SQL.
+
+Весь record ограничен8 KiB, retained known-parent links —32. `source_view_sha256` обозначает
+`canonical-json-ascii-v1` (sort keys, ensure_ascii=True, allow_nan=False), поэтому корректно
+различает исходные Python codepoints, включая lone surrogate. Это не SHA UTF-8 URL, wire response
+или файла. Исходные URL/prose/credentials не сохраняются; fixed reason accounting и частичные
+hash-only examples остаются ограниченным диагностическим представлением.
+
+Manifest описывает только действительно известные physical parents: actual artifact SHA,
+optional matching read/extraction/source observation. Known source relation требует точного
+Bill/purpose и retained selection/body relation с проверкой scope/index либо typed extraction
+ID/body. Для Senate это analysis source с ролью senate_amendments; связь конкретного resolution
+number из SourceObservation не выводится. RCL context без подтверждённого Bill не выводит
+такую связь. Отсутствующая source relation —unknown. Полный manifest SHA сверяется с retained
+links; partial содержит observed total и opaque full-manifest hash без обещания all-used coverage.
+
+Get/save/doctor/scratch restore сверяют immutable ID, indexed JSON, owner, parent manifest и
+body ownership. Первый UTC timestamp исключён из ID и сохраняется при повторе, включая envelope
+на границе лимита. Reader разворачивается раньше producer; пустые таблицы не создают provenance
+для прежних observations. Retention/backends/raw bytes этим этапом не меняются.

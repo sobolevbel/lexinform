@@ -10,6 +10,7 @@ from typing import Any
 
 from lexinform.adapters.physical_history import physical_inventory_issues
 from lexinform.adapters.senate_history import SenateInspectionRowError, read_senate_inspection
+from lexinform.adapters.source_omissions import source_omission_issues
 from lexinform.adapters.sqlite_repo import RclLetterUseRowError, read_rcl_letter_use
 from lexinform.document_editions import candidate_edition
 from lexinform.models import (
@@ -131,6 +132,13 @@ def audit(database: Path) -> dict[str, Any]:
                     f"SELECT COUNT(*) FROM {name}"
                 ).fetchone()[0]
             for code, ref in physical_inventory_issues(connection):
+                issue(code, ref)
+        omission_tables = {"source_metadata_omissions", "source_omission_parents"}
+        if schema >= 63 or omission_tables.intersection(tables):
+            for name in sorted(omission_tables - tables):
+                issue("source_omission_table_missing", name)
+        if omission_tables <= tables:
+            for code, ref in source_omission_issues(connection):
                 issue(code, ref)
         if "document_selections" in tables:
             for row in connection.execute(

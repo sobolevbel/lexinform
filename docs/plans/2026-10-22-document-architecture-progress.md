@@ -7716,7 +7716,7 @@ J156 commit `fa09b3f2780e5d606ab758578bc588f1a83464fc`: все четыре CI j
 
 ### J157. Add inert metadata URL policy and bounded omission reader
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября. Base `e6e8d033`.
+Статус: **выпущено; CI и actual relay deploy подтверждены**, 30 октября. Base `e6e8d033`.
 Reader-first этап DA2.5: чистая prospective policy допускает исходные bytes URL без переписывания;
 query требует известного official host/path/key/value contract. Userinfo, control characters
 (включая encoded U+2028/U+2029), fragment и непроверенные query contracts дают явную причину.
@@ -7749,7 +7749,7 @@ Strict docs/link/anchor/resource checks прошли. Никакие runtime cap
 
 ### J158. Capture admitted loader receipts without losing complete body metadata
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября. Base `3a05deb4`.
+Статус: **выпущено; CI и actual relay deploy подтверждены**, 30 октября. Base `3a05deb4`.
 Узкий producer использует J157 reader: TextLoader сохраняет known complete body до проверки
 URL и создания read identity. Unsafe новый receipt опускается; exact body и URL-free extraction
 сохраняются независимо. Одна omission observation соответствует реальному complete response,
@@ -7789,7 +7789,7 @@ body/error/cache/lock/caller boundaries без findings. Strict docs checks пр
 
 ### J159. Add inert bounded physical inventory reader
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября. Base `93ccd839`.
+Статус: **выпущено; CI и actual relay deploy подтверждены**, 30 октября. Base `93ccd839`.
 Append-only schema62 добавляет physical metadata/captures и структурные views. Closed typed records:
 headers, graph, container execution, root order и shared recipe с code/dependency/options refs.
 Root всегда actual artifact; extraction association nullable, без фиктивного результата.
@@ -7818,7 +7818,7 @@ DA3 physical producer остаётся открытым; raw backend не выб
 
 ### J160. Add inert pure source graph admission
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября.
+Статус: **выпущено; CI и actual relay deploy подтверждены**, 30 октября.
 Pure helper проверяет original requested/resolved TextDocument URL fields и alternatives,
 selected/observed part URLs и evidence source URLs до graph IDs. Empty physical URL остаётся
 unknown; empty document URL rejected. Explicit opaque_failure_prose flag исключает graph,
@@ -7856,7 +7856,7 @@ J159/J160 commit `0472ccf9506a93d078f189576a8a4d6470d2577f`: все четыре
 
 ### J161. Guard generic source graphs and retain physical results independently
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября.
+Статус: **выпущено; CI и actual relay deploy подтверждены**, 30 октября.
 Base `0472ccf9`. Original requested и resolved documents проверяются до trace и selection/source IDs.
 Metadata-only opaque flag выставляется для произвольного exception message в composition; исходные
 strings/errors и business selection не меняются. Admitted graph сохраняет прежние identities;
@@ -7888,7 +7888,7 @@ payload URLs и arbitrary prose/path privacy не переопределяютс
 
 ### J162. Add inert bounded header capture foundation
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября.
+Статус: **выпущено; CI и actual relay deploy подтверждены**, 30 октября.
 Два новых файла, без изменений extractor/component sources или runtime hooks. Online builder
 сохраняет bounded prefix и streaming canonical full hash только при завершённом наблюдении;
 прерывание/append guard failure оставляет unknown full hash и явную incomplete metadata.
@@ -7903,7 +7903,7 @@ AST, поэтому этот proof переиспользован. Никако�
 
 ### J163. Preserve first time when repeating exact-cap physical metadata
 
-Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября.
+Статус: **выпущено; CI и actual relay deploy подтверждены**, 30 октября.
 Root воспроизвёл edge: valid32768B envelope с whole-second first time сохранялся, но repeat с
 microsecond time падал до lookup — новый timestamp удлинял JSON. Writer теперь берёт validated
 persisted first time через общий structural reader до incoming envelope validation. Immutable
@@ -7929,3 +7929,63 @@ J161–J163 final make check: 6838 passed / 237.66s, coverage92%; strict mypy590
 Ruff/format657 по src/tests/tools. Все 657 frozen source/config files exact. Cross-reviews
 закрыты; strict docs/link/anchor/resource checks прошли. Specialized URL capture ещё не включён;
 header foundation инертна, raw/backend/retention не менялись.
+
+
+J161–J163 commit `b5619040ba31f565742e921f4b4ae16e7fb59dab`: все четыре CI jobs 41034441032
+и deploy 41035137341 прошли; actual relay0472 →b561, health45s/timer подтверждены
+[release proof](../assets/audits/2026-10-30-physical-evidence-preservation/release.json).
+
+
+<a id="j164"></a>
+
+### J164. Apply prospective URL policy at specialized capture boundaries
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября. Base `b5619040`.
+RCL letter/before/result/after metadata и Senate descriptor universe проходят preflight до
+новых specialized IDs. Encodable shared-policy refusal использует существующий omitted_unsafe
+с exact original SHA, пересекая прежний stricter domain admission. Invalid UTF-8 не получает
+выдуманный URL SHA: specialized observation пропускается, bounded diagnostic сохраняет причину.
+J105 resolution_source_read использует generic admission без новой domain-only host restriction;
+configured/fake origins сохраняют прежний contract. Bodies/URL-free extractions независимы.
+Historical .safe/.of validators и immutable rows не меняются. Reader fixture строит legacy
+DocumentSourceRead напрямую, сохраняя все прежние assertions и actual optional-read guard.
+
+227 focused, включая4 прежних regression modules;13 новых unit cases/0 новых scenarios.
+Retained874 RCL +775 Senate facts/4595 URL fields: payloads/IDs/SQL/+365repeat exact. Это replay
+сохранённых metadata, без повторного body/parser/resolver.11 paired public cases: consultation
+business hashes/windows, provider/batch/messages/IO exact, workers1/4 diagnostics exact. Fresh
+ordinary IDs меняются только из-за настоящих components.merge_sha256/resolver_sha256;
+оба SHA сверены с actual source bytes. Specialized prototype не закрывает owner-evidence gap.
+[Acceptance assets](../assets/audits/2026-10-30-specialized-omission-readers/validation.json).
+
+<a id="j166"></a>
+
+### J166. Add inert owner-bound source omission reader
+
+Статус: **локальная приёмка завершена; CI/deploy ожидаются**, 30 октября. J165 assembler ещё в работе.
+DA2.5 audit выявил: PhysicalSourceRead и partial run examples не сохраняют адресуемую owner/source
+связь при omitted graph. Append-only63 добавляет source_metadata_omissions/source_omission_parents.
+Closed owners: actual Bill+purpose, official RCL project/nullable stage/letter, Senate actual Bill+
+resolution. Real Bill FK, owner columns/indexes, known_available parent scope без fake source refs.
+Exact observed source view hash явно canonical-json-ascii-v1: поддерживает escaped Python surrogates,
+не выдаётся за raw URL UTF-8/body/wire SHA. Никаких raw URL/prose/credentials в новой записи.
+Envelope<=8KiB/32 retained parents; exact actual full parent count/manifest, partial scope явный.
+First aware UTC time исключён из identity; exact-cap repeat не меняет первый timestamp/dump.
+Typed save/get/doctor/shared scratch restore проверяют refs, indexed/JSON identity и caps.
+
+Cross-review воспроизвело ложную source/body связь через повреждённый SQL bridge. Reader теперь
+сверяет actual part_scope/index/sourceSHA и typed extractionID/indexed body/selection membership.
+Senate known source требует sameBill+analysis+senate_amendments, без URL/номер inference.
+Пустой supplied parent manifest SHA не заменяется retained hash; он отвергается.24 новых unit
+cases/114 focused, strict owned checks и9 independent repair controls прошли. Original freezes
+сохранены. Literal migration/writer не менялись при repair: schema62 predecessor proof переиспользован;
+43 old tables/3003rows/108schemaobjects exact, input unchanged, repeat/restore twice exact, doctorrecorded.
+Две новые пустые таблицы: delta+1881SQL/+416gzip9-mtime0 B, без backfill/producer/caller activation.
+Этот reader должен реально развернуться до отдельного producer. DA2.5 остаётся partial;
+план74 /32done /6N/A /36open.
+
+
+J164/J166 final make check: 6875 passed / 243.97s, coverage92%; strict mypy594 files,
+Ruff/format661 по src/tests/tools. Все 661 source/config pins exact.37 новых unit cases,
+новых scenarios нет; strict docs/link/anchor/resource checks прошли. Reader63 producer выключен;
+J165 assembler не входит в этот выпуск.

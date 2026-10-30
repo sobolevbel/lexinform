@@ -800,3 +800,4 @@ from lexinform.models.content import ContentHistoryView as ContentHistoryView
 from lexinform.models.content import ContentSnapshot as ContentSnapshot
 from lexinform.models.content import ContentVersion as ContentVersion
 from lexinform.models.content import ContentVersionSummary as ContentVersionSummary
+from lexinform.models.source_omissions import SourceMetadataOmission as SourceMetadataOmission

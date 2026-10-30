@@ -18,6 +18,9 @@ from lexinform.models import (
     ArtifactIdentity,
     ArtifactReadIdentity,
     Attachment,
+    DocumentPart,
+    DocumentSelection,
+    DocumentSelectionRecord,
     ExtractionResult,
     PrintInfo,
     ProcessSummary,
@@ -41,8 +44,8 @@ from lexinform.models.senate_inspection import (
 from lexinform.sections import TextBudget
 from lexinform.senate_documents import inspect_senate_resolution
 from lexinform.services.analysis import AnalysisOptions, AnalysisService
+from lexinform.services.document_history import DocumentSourceRead
 from lexinform.services.documents import LoadedFile, TextLoader
-from lexinform.services.senate_documents import resolution_source_read
 from lexinform.services.senate_history import (
     SenateInspectionCollector,
     SenateInspectionObservation,
@@ -161,11 +164,28 @@ def known_observation(
     loader = TextLoader({"api.sejm.gov.pl": download}, reader, max_bytes=5 * 1024 * 1024)
     file = loader.read(url)
     document = TextDocument(url=url, kind="senate_amendments")
-    source = resolution_source_read(
-        loader, document, sha256=file.sha256, pages=file.pages, text=file.text
+    assert file.sha256 is not None, "the fixture returned a complete Word body"
+    # Historical reader fixtures retain saved graphs independently of prospective URL admission.
+    selection = DocumentSelection(
+        question="senate_resolution_source",
+        policy_version="senate-source-observation-v1",
+        parts=(
+            DocumentPart(
+                url=url,
+                sha256=file.sha256,
+                pages=file.pages,
+                text_sha256=hashlib.sha256(file.text.encode()).hexdigest()
+                if file.text is not None
+                else "",
+            ),
+        ),
     )
-    assert source is not None and file.sha256 is not None, (
-        "The fixture returned a complete Word body"
+    source = DocumentSourceRead(
+        document,
+        DocumentSelectionRecord.from_selection(selection),
+        loader.artifacts_for_selection(selection),
+        reads=loader.reads_for_selection(selection),
+        extractions=loader.extractions_for_selection(selection),
     )
     observation = SourceObservation(
         term=10,
@@ -1093,7 +1113,15 @@ def test_duplicate_selection_preserves_each_actual_extraction_parent(
 
 @pytest.mark.parametrize("omitted", [False, True])
 @pytest.mark.parametrize(
-    "suffix", ["", "?token=SECRET_SENATE_CREDENTIAL", "#SECRET_SENATE_CREDENTIAL", "userinfo"]
+    "suffix",
+    [
+        "",
+        "?token=SECRET_SENATE_CREDENTIAL",
+        "#SECRET_SENATE_CREDENTIAL",
+        "userinfo",
+        "%0A",
+        "%25E2%2580%25AE",
+    ],
 )
 def test_public_capture_never_persists_unsafe_urls_and_keeps_url_free_body_parents(
     tmp_path: Path,

@@ -8,6 +8,7 @@ from threading import Lock
 from typing import Literal
 
 from lexinform.extraction_records import component_code
+from lexinform.metadata_urls import metadata_url_decision
 from lexinform.models import (
     ArtifactIdentity,
     ArtifactReadIdentity,
@@ -63,6 +64,15 @@ class RclLetterHistoryPersistence:
         record_rcl_letter_uses(repo, self.observer.read_rcl_letter_uses(), recorded_at=recorded_at)
 
 
+def captured_rcl_url(value: str) -> RclLetterUrl:
+    decision = metadata_url_decision(value)
+    if decision.reason is None:
+        return RclLetterUrl.of(value)
+    if decision.requested_url_sha256 is None:
+        raise ValueError("an unencodable RCL metadata URL has no exact UTF-8 identity")
+    return RclLetterUrl(value=None, state="omitted_unsafe", sha256=decision.requested_url_sha256)
+
+
 def _window_fact(window: RclConsultation | None) -> RclLetterWindowFact | None:
     if window is None:
         return None
@@ -72,7 +82,7 @@ def _window_fact(window: RclConsultation | None) -> RclLetterWindowFact | None:
     projection = RclLetterWindow.model_validate(
         {
             **values,
-            "letter_url": RclLetterUrl.of(window.letter_url)
+            "letter_url": captured_rcl_url(window.letter_url)
             if window.letter_url is not None
             else None,
         }
@@ -99,7 +109,7 @@ def rcl_letter_observation(
     parser_source: str,
     merge_source: str,
 ) -> RclLetterUseObservation:
-    url = RclLetterUrl.of(letter.url)
+    url = captured_rcl_url(letter.url)
     artifact, read, extraction = origins
     if url.state != "complete":
         read = None

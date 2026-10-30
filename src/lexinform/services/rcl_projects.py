@@ -196,23 +196,37 @@ class RclProjectReader:
                         if loaded is not None
                         else (None, None, None)
                     )
-                    observation = rcl_letter_observation(
-                        project,
-                        stage,
-                        letter,
-                        before=before,
-                        result=result,
-                        after=after,
-                        parser_text=text if parser_called else None,
-                        info=info,
-                        published=published,
-                        published_source=published_source,
-                        origins=origins,
-                        error=error,
-                        parser_source=letter_parser.__file__,
-                        merge_source=__file__,
+                    encodable = True
+                    metadata_urls = (
+                        url,
+                        *(
+                            window.letter_url
+                            for window in (before, result, after)
+                            if window is not None and window.letter_url is not None
+                        ),
                     )
-                    self._observer.observe_rcl_letter_use(observation)
+                    for metadata_url in metadata_urls:
+                        decision = self._loader.observe_metadata_url(metadata_url)
+                        if decision.requested_url_sha256 is None:
+                            encodable = False
+                    if encodable:
+                        observation = rcl_letter_observation(
+                            project,
+                            stage,
+                            letter,
+                            before=before,
+                            result=result,
+                            after=after,
+                            parser_text=text if parser_called else None,
+                            info=info,
+                            published=published,
+                            published_source=published_source,
+                            origins=origins,
+                            error=error,
+                            parser_source=letter_parser.__file__,
+                            merge_source=__file__,
+                        )
+                        self._observer.observe_rcl_letter_use(observation)
                 except BaseException as exc:
                     with suppress(BaseException):
                         log.warning("RCL letter-use capture failed (%s)", type(exc).__name__[:128])

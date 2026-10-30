@@ -30,6 +30,13 @@ from lexinform.adapters.senate_history import (
     validate_senate_inspections,
     verify_senate_inspection,
 )
+from lexinform.adapters.source_omissions import (
+    SOURCE_OMISSION_MIGRATION,
+    SourceOmissionRowError,
+    omission_values,
+    read_source_omission,
+    validate_source_omissions,
+)
 from lexinform.content_versions import content_delivery_mismatch
 from lexinform.direct_delivery import direct_root_plan
 from lexinform.document_editions import candidate_edition
@@ -130,6 +137,7 @@ from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
 from lexinform.models.legacy_results import canonical_legacy_json, legacy_json
 from lexinform.models.physical_inventory import PhysicalCapture, PhysicalMetadata
 from lexinform.models.senate_inspection import SenateInspectionLink, SenateInspectionRecord
+from lexinform.models.source_omissions import SourceMetadataOmission
 from lexinform.saved_records import CONTEXT_RESULT_TABLES
 from lexinform.sitting_delivery import sitting_root_plan
 from lexinform.telegram_text import MESSAGE_LIMIT, split_html, utf16_length
@@ -823,6 +831,7 @@ MIGRATIONS: tuple[str, ...] = (
     );
     """,
     PHYSICAL_INVENTORY_MIGRATION,
+    SOURCE_OMISSION_MIGRATION,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -1208,6 +1217,7 @@ class SqliteBillRepository:
             _validate_rcl_letter_uses(scratch)
             validate_senate_inspections(scratch)
             validate_physical_inventory(scratch)
+            validate_source_omissions(scratch)
         finally:
             scratch.close()
         tables = [
@@ -2208,6 +2218,54 @@ class SqliteBillRepository:
             (root_publication_id,),
         )
         return [self._row_to_publication(row) for row in rows]
+
+    def save_source_metadata_omission(
+        self, omission: SourceMetadataOmission, *, recorded_at: datetime
+    ) -> None:
+        stamp = SourceMetadataOmission.aware_time(recorded_at)
+        with self.atomic():
+            saved = self.get_source_metadata_omission(omission.omission_id)
+            if saved is not None:
+                if saved.model_dump(exclude={"recorded_at"}) != omission.model_dump(
+                    exclude={"recorded_at"}
+                ):
+                    raise ValueError("immutable source omission cannot be replaced")
+                return
+            record = SourceMetadataOmission.model_validate_json(
+                omission.model_copy(update={"recorded_at": stamp}).model_dump_json()
+            )
+            self._conn.execute(
+                "INSERT INTO source_metadata_omissions VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (*omission_values(record), record.model_dump_json()),
+            )
+            for index, parent in enumerate(record.parents):
+                self._conn.execute(
+                    "INSERT INTO source_omission_parents VALUES (?,?,?,?,?,?)",
+                    (
+                        record.omission_id,
+                        index,
+                        parent.artifact_sha256,
+                        parent.artifact_read_id,
+                        parent.extraction_id,
+                        parent.source_observation_id,
+                    ),
+                )
+            if self.get_source_metadata_omission(record.omission_id) != record:
+                raise SourceOmissionRowError("source omission failed exact persistence")
+
+    def get_source_metadata_omission(self, omission_id: str) -> SourceMetadataOmission | None:
+        row = self._conn.execute(
+            "SELECT * FROM source_metadata_omissions WHERE omission_id=?", (omission_id,)
+        ).fetchone()
+        return read_source_omission(self._conn, row) if row is not None else None
+
+    def list_source_metadata_omissions(self) -> list[SourceMetadataOmission]:
+        return [
+            read_source_omission(self._conn, row)
+            for row in self._conn.execute(
+                "SELECT * FROM source_metadata_omissions ORDER BY omission_id"
+            )
+        ]
 
     def save_physical_inventory(
         self,

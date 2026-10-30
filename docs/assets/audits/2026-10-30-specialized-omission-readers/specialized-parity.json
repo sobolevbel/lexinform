@@ -1,0 +1,125 @@
+{
+  "all_business_windows_provider_batch_messages_IO_exact": true,
+  "cases": {
+    "rcl/configured_origin": {
+      "business_exact": true,
+      "fresh_ID_changed": true,
+      "fresh_metadata_changed_fields": [
+        "/components/merge_sha256"
+      ],
+      "source_graph_count_after": 0,
+      "source_graph_count_before": 0
+    },
+    "rcl/encoded_control": {
+      "business_exact": true,
+      "fresh_ID_changed": true,
+      "fresh_metadata_changed_fields": [
+        "/after/projection/letter_url/state",
+        "/after/projection/letter_url/value",
+        "/components/merge_sha256",
+        "/official/letter/url/state",
+        "/official/letter/url/value",
+        "/result/projection/letter_url/state",
+        "/result/projection/letter_url/value"
+      ],
+      "source_graph_count_after": 0,
+      "source_graph_count_before": 0
+    },
+    "rcl/invalid_unicode": {
+      "business_exact": true,
+      "fresh_ID_changed": false,
+      "fresh_metadata_changed_fields": [],
+      "source_graph_count_after": 0,
+      "source_graph_count_before": 0
+    },
+    "rcl/ordinary": {
+      "business_exact": true,
+      "fresh_ID_changed": true,
+      "fresh_metadata_changed_fields": [
+        "/components/merge_sha256"
+      ],
+      "source_graph_count_after": 0,
+      "source_graph_count_before": 0
+    },
+    "rcl/previous_encoded": {
+      "business_exact": true,
+      "fresh_ID_changed": true,
+      "fresh_metadata_changed_fields": [
+        "/after/projection/letter_url/state",
+        "/after/projection/letter_url/value",
+        "/before/projection/letter_url/state",
+        "/before/projection/letter_url/value",
+        "/components/merge_sha256"
+      ],
+      "source_graph_count_after": 0,
+      "source_graph_count_before": 0
+    },
+    "senate/encoded_control/1": {
+      "business_exact": true,
+      "fresh_ID_changed": true,
+      "fresh_metadata_changed_fields": [
+        "/components/resolver_sha256"
+      ],
+      "source_graph_count_after": 1,
+      "source_graph_count_before": 2
+    },
+    "senate/encoded_control/4": {
+      "business_exact": true,
+      "fresh_ID_changed": true,
+      "fresh_metadata_changed_fields": [
+        "/components/resolver_sha256"
+      ],
+      "source_graph_count_after": 1,
+      "source_graph_count_before": 2
+    },
+    "senate/invalid_unicode/1": {
+      "business_exact": true,
+      "fresh_ID_changed": false,
+      "fresh_metadata_changed_fields": [],
+      "source_graph_count_after": 2,
+      "source_graph_count_before": 2
+    },
+    "senate/invalid_unicode/4": {
+      "business_exact": true,
+      "fresh_ID_changed": false,
+      "fresh_metadata_changed_fields": [],
+      "source_graph_count_after": 2,
+      "source_graph_count_before": 2
+    },
+    "senate/ordinary/1": {
+      "business_exact": true,
+      "fresh_ID_changed": true,
+      "fresh_metadata_changed_fields": [
+        "/components/resolver_sha256"
+      ],
+      "source_graph_count_after": 2,
+      "source_graph_count_before": 2
+    },
+    "senate/ordinary/4": {
+      "business_exact": true,
+      "fresh_ID_changed": true,
+      "fresh_metadata_changed_fields": [
+        "/components/resolver_sha256"
+      ],
+      "source_graph_count_after": 2,
+      "source_graph_count_before": 2
+    }
+  },
+  "fresh_code_ID_delta": "Only actual RCL components.merge_sha256 and Senate components.resolver_sha256 change fresh ordinary observation IDs; old records untouched",
+  "fresh_component_SHA_fields_match_actual_source_files": true,
+  "limits": [
+    "Official encoded Senate domain parent recovery separately exercised by actualDOCX unit matrix; fake configured origin public case remains legacy omitted-domain",
+    "InvalidUTF8 cannot fit mandatory domain URL SHA: entire specialized fact omitted, existing invalid_unicode/no SHA diagnostic, body/results retained",
+    "No arbitrary prose/path secret detection, historical scrub or paid URL redaction; no whole-app privacy claim"
+  ],
+  "paired_public_cases": 11,
+  "retained_cohort_summary": {
+    "RCL_available_url_occurrences": 2882,
+    "RCL_records": 874,
+    "Senate_available_url_occurrences": 1713,
+    "Senate_records": 775,
+    "old_payloads_IDs_and_SQL_repeat_exact": true
+  },
+  "source_body_fixture_script_pins_pre_post_exact": true,
+  "workers1_4_business_diagnostics_exact": true
+}

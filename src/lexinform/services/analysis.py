@@ -2059,15 +2059,21 @@ class AnalysisService:
         ):
             try:
                 self.reserve_senate_inspections((owner,))
-                capture = SenateInspectionCapture(
-                    owner,
-                    info,
-                    stage,
-                    titles=titles,
-                    passed_on=passed_on,
-                    resolver_source=resolve_senate_document.__code__.co_filename,
-                    observe=self._senate_inspections.observe,
-                )
+                encodable = True
+                for attachment in info.attachments:
+                    decision = self._loader.observe_metadata_url(attachment.url)
+                    if decision.requested_url_sha256 is None:
+                        encodable = False
+                if encodable:
+                    capture = SenateInspectionCapture(
+                        owner,
+                        info,
+                        stage,
+                        titles=titles,
+                        passed_on=passed_on,
+                        resolver_source=resolve_senate_document.__code__.co_filename,
+                        observe=self._senate_inspections.observe,
+                    )
             except BaseException as exc:
                 with suppress(BaseException):
                     log.warning("Senate inspection capture failed (%s)", type(exc).__name__[:128])

@@ -99,6 +99,7 @@ from lexinform.models import (
     SenateAct,
     SittingNews,
     SourceCheck,
+    SourceMetadataOmission,
     SourceObservation,
     Stage,
     StatusChange,
@@ -711,6 +712,14 @@ class BillRepository(Protocol):
     def save_source_observation(
         self, selection: DocumentSelectionRecord, observation: SourceObservation
     ) -> None: ...
+
+    def save_source_metadata_omission(
+        self, omission: SourceMetadataOmission, *, recorded_at: datetime
+    ) -> None: ...
+
+    def get_source_metadata_omission(self, omission_id: str) -> SourceMetadataOmission | None: ...
+
+    def list_source_metadata_omissions(self) -> list[SourceMetadataOmission]: ...
 
     def get_document_selection(self, selection_id: str) -> DocumentSelectionRecord | None: ...
 
