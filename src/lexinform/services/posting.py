@@ -54,6 +54,7 @@ from lexinform.services.publications import (
     open_card_edit_ids,
     send_publication,
     send_publications,
+    source_context_blocked,
 )
 from lexinform.services.sources import fetch_print
 from lexinform.services.status_change_applications import record_status_change
@@ -205,6 +206,8 @@ class Poster:
 
     def queue_update(self, pub: Publication) -> None:
         assert pub.id is not None and pub.delivery is not None
+        if source_context_blocked(self._repo, pub):
+            return
         if pub.status is PublicationStatus.QUEUED and pub.attempts == 0:
             self._updates[pub.id] = pub
 
@@ -244,6 +247,8 @@ class Poster:
             assert candidate.id is not None
             pub = self._repo.publication_by_id(candidate.id)
             if pub is None or pub.status is not PublicationStatus.QUEUED or pub.delivery is None:
+                continue
+            if source_context_blocked(self._repo, pub):
                 continue
             plan = pub.delivery
             if plan.absorbed_by is not None or pub.id in self._attempted:
@@ -300,6 +305,8 @@ class Poster:
     def _flush_update_batch(
         self, pubs: list[Publication], news: list[UpdateNews], result: TrackingResult, today: date
     ) -> None:
+        if any(source_context_blocked(self._repo, pub) for pub in pubs):
+            return
         if len(pubs) == 1:
             item = news[0]
             result.count_post(self.status_update(item.bill, item.change))
@@ -340,6 +347,8 @@ class Poster:
     def retry_update_group(self, pub: Publication, result: TrackingResult) -> bool:
         """A shared send cannot be decomposed into independently retried member posts."""
         assert pub.delivery is not None and pub.delivery.update_group
+        if source_context_blocked(self._repo, pub):
+            return False
         plan = pub.delivery
         identities = tuple(item.publication_id for item in pub.delivery.update_group)
         if any(identity in self._attempted for identity in identities):
@@ -784,6 +793,8 @@ class Poster:
         assert change.id is not None, "only a change record_change stored reaches the poster"
         existing = self._repo.get_update_publication(change.id, self._channel_id)
         if existing is not None:
+            if source_context_blocked(self._repo, existing):
+                return False
             if existing.delivery is not None and existing.delivery.absorbed_by is not None:
                 return False
             if existing.status is PublicationStatus.SENT:
@@ -828,6 +839,8 @@ class Poster:
         assert change.id is not None, "only a change record_change stored reaches the poster"
         stored = self._repo.get_update_publication(change.id, self._channel_id)
         if stored is not None and stored.delivery is not None:
+            if source_context_blocked(self._repo, stored):
+                return stored.delivery
             if (
                 with_act
                 and self._never_attempted(stored)
@@ -1238,6 +1251,8 @@ class Poster:
         return self.deliver(pub)
 
     def delivery_paused(self, pub: Publication) -> bool:
+        if source_context_blocked(self._repo, pub):
+            return True
         root = (
             self._repo.publication_by_id(pub.delivery.continuation_root)
             if pub.delivery is not None and pub.delivery.continuation_root is not None
@@ -1383,6 +1398,8 @@ class Poster:
 
     def _freeze(self, pub: Publication, *, keep_today: bool = False) -> Publication:
         assert pub.delivery is not None and pub.id is not None
+        if source_context_blocked(self._repo, pub):
+            return pub
         if pub.delivery.rendered_text:
             record_publication_content(self._repo, self._clock, pub)
             return pub
@@ -1463,6 +1480,8 @@ class Poster:
         return plan.model_copy(update={"schedule": schedule})
 
     def ready(self, pub: Publication) -> bool:
+        if source_context_blocked(self._repo, pub):
+            return False
         plan = pub.delivery
         if plan is not None and plan.destination == "digest_only":
             return False
@@ -1547,6 +1566,8 @@ class Poster:
 
     def _send(self, pub_id: int, bill: Bill, *, use_card_parent: bool = False) -> int | None:
         pub = self._repo.publication_by_id(pub_id)
+        if pub is not None and source_context_blocked(self._repo, pub):
+            return None
         if pub is not None:
             validate_reader_contract(pub)
         if (

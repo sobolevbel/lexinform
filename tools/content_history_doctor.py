@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from lexinform.adapters.content_source_refs import verify_content_source
 from lexinform.content_versions import confirmed_content_version, content_delivery_mismatch
 from lexinform.models import (
     ContentSnapshot,
@@ -106,6 +107,10 @@ def _read_history(
                 continue
             versions[version.content_id] = version
     for version in versions.values():
+        try:
+            verify_content_source(db, version)
+        except ValueError:
+            findings.add("content_source_reference_invalid", version.content_id)
         for kind, identity in (
             ("bill", version.bill_snapshot_id),
             ("change", version.change_snapshot_id),

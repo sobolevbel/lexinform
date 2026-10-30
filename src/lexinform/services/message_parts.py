@@ -6,7 +6,7 @@ from functools import partial
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import Bill, DeliveryPlan, Publication, PublicationKind, PublicationStatus
 from lexinform.ports import BillRepository, Clock, Publisher, StateCheckpoint
-from lexinform.services.publications import send_publication
+from lexinform.services.publications import send_publication, source_context_blocked
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +38,8 @@ def freeze_parts(
     persist: Callable[[int, DeliveryPlan], bool] | None = None,
 ) -> Publication:
     assert pub.id is not None and pub.delivery is not None
+    if source_context_blocked(repo, pub):
+        raise ValueError("The frozen source context is invalid")
     if pub.delivery.rendered_text:
         return pub
     texts = publisher.split_message(text)
@@ -85,6 +87,8 @@ def freeze_parts(
 
 def continuation_ready(repo: BillRepository, pub: Publication) -> Publication | None:
     assert pub.id is not None and pub.delivery is not None
+    if source_context_blocked(repo, pub):
+        return None
     parent = repo.publication_by_id(pub.delivery.continuation_parent or 0)
     if parent is None or parent.status is not PublicationStatus.SENT or parent.message_id is None:
         return None
@@ -113,11 +117,15 @@ def send_continuations(
 ) -> ContinuationResult:
     assert root.delivery is not None
     result = ContinuationResult()
+    if source_context_blocked(repo, root):
+        return result
     for identity in root.delivery.continuation_ids:
         if identity in attempted:
             break
         pub = repo.publication_by_id(identity)
         assert pub is not None
+        if source_context_blocked(repo, pub):
+            break
         if pub.status is PublicationStatus.SENT:
             continue
         if pub.status is not PublicationStatus.QUEUED:

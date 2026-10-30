@@ -9320,3 +9320,49 @@ CI/actualrelay verified before push. Staged archive docs gate перед commit.
 [matched delta](../assets/audits/2026-10-30-primary-queue-witness/delta-proof.json),
 [reproduction recipe](../assets/audits/2026-10-30-primary-queue-witness/recipe.json),
 [next writer contract](../assets/audits/2026-10-30-primary-queue-witness/next-writer-contract.md).
+
+
+<a id="j201"></a>
+
+## J201 — scoped editorial source reader and rollback-aware delivery block
+
+Optional ContentVersion/summary source_scope=frozen_primary_context/analysis omitted при None:
+старые JSON/content IDs/public render exact. Scoped metadata допускает максимум1canonicalID.
+Parent save/get/scratch restore/doctor используют один pure frozen-chain policy и shared SQL
+row readers. Stored positive проверяет точный сохранённый observation PK и original queue
+cutoff. Admission остаётся отдельной unique-query policy: последующая observation не делает
+старую корректную ссылку невалидной. Current Bill/operational text/payload не нужны.
+Source scope описывает primary analysis context, не amendment-source coverage.
+
+Compatible reader уже уважает будущий Publication.error=source_context_invalid при writerOFF.
+Одна pure membership closure используется сервисами и Repo. Durable root/group preflight до
+freeze/pending/API/checkpoint/мутаций блокирует stale caller objects и generic clearing;
+ordinary errors/unknown/attempt semantics прежние. SQL upsert/mark/resolve/group/digest paths
+сохраняют reserved block. Это необходимо для rollback: одного parse-only reader недостаточно.
+Marker producer и scope/source-ID writer не включены; новых таблиц нет.
+
+Независимое ревью до freeze нашло actual RED→GREEN: continuation child пропускал root send;
+blocked digest owner мог подтвердить clean members; direct Repo resolve UNKNOWN child мог
+изменить child/resolution под blocked root. У sitting-only computed publication_ids уже
+закрывал обход; explicit sitting_group union — defense mixed/masked fields, не ещё один RED.
+Original findings/corrections сохранены во внешнем review evidence.
+
+199author/199peer focused +3independent public controls green, source15 exact. Synthetic
+365-day cleanup/restore и later-observation control сохраняют scoped positive; это выполненный
+тест, который дополняет прежний lifetime audit с code-inference365 и tests200/181days.
+Fresh isolated replay cached actual8022state: canonical dump/all48tables/schema,487typedBills
+и3readonlydoctors exactfrozenf232baseline;4legacy workwarnings прежние, sourceSQL unchanged.
+Это legacy compatibility, не naturalpositive/sourcewriter/delivery acceptance.
+
+Final gate:7662tests/274.450s/92%,mypy669/Ruff737;754source/config pins exact. J200 exact
+CI/actualrelay verified beforepush. Staged archive docs gate перед commit. DA7.5/DA10.2 partial;
+следующий writer требует отдельной prospective admission/validated recovery qualification и
+actual reader deployment. No backfill/newstorage/backenddecision/paid/prod processing.
+
+[Qualification](../assets/audits/2026-10-31-scoped-content-source-reader/qualification.json),
+[peer](../assets/audits/2026-10-31-scoped-content-source-reader/peer-closure.json),
+[integration](../assets/audits/2026-10-31-scoped-content-source-reader/integration.json),
+[legacy parity](../assets/audits/2026-10-31-scoped-content-source-reader/legacy-parity.json),
+[actual-state proof](../assets/audits/2026-10-31-scoped-content-source-reader/actual-state-proof.json),
+[recipe](../assets/audits/2026-10-31-scoped-content-source-reader/recipe.json),
+[J200 exact CI/relay](../assets/audits/2026-10-30-primary-queue-witness/release.json).

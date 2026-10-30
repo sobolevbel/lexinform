@@ -17,6 +17,11 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
+from lexinform.adapters.content_source_refs import (
+    ContentSourceRows,
+    validate_content_sources,
+    verify_content_source,
+)
 from lexinform.adapters.document_work import (
     read_document_work,
     validate_document_work,
@@ -61,6 +66,7 @@ from lexinform.adapters.source_omissions import (
     read_source_omission,
     validate_source_omissions,
 )
+from lexinform.content_sources import SOURCE_CONTEXT_INVALID, source_context_blocked
 from lexinform.content_versions import content_delivery_mismatch
 from lexinform.direct_delivery import direct_root_plan
 from lexinform.document_editions import candidate_edition
@@ -1271,6 +1277,7 @@ class SqliteBillRepository:
             validate_source_omissions(scratch)
             validate_catalog_attempts(scratch)
             validate_input_snapshots(scratch)
+            validate_content_sources(scratch)
         finally:
             scratch.close()
         tables = [
@@ -1813,10 +1820,7 @@ class SqliteBillRepository:
         )
 
     def get_computation_result(self, result_id: str) -> ComputationResult | None:
-        row = self._conn.execute(
-            "SELECT result_json FROM computation_results WHERE result_id = ?", (result_id,)
-        ).fetchone()
-        return ComputationResult.model_validate_json(row[0]) if row else None
+        return ContentSourceRows(self._conn).get_computation_result(result_id)
 
     def list_computation_results(
         self, term: int, number: str, *, purpose: BatchKind | None = None
@@ -2002,29 +2006,10 @@ class SqliteBillRepository:
         return reference
 
     def get_document_selection(self, selection_id: str) -> DocumentSelectionRecord | None:
-        row = self._conn.execute(
-            "SELECT * FROM document_selections WHERE selection_id=?", (selection_id,)
-        ).fetchone()
-        if row is None:
-            return None
-        record = DocumentSelectionRecord.model_validate_json(row["record_json"])
-        expected = (
-            record.selection_id,
-            record.selection.question,
-            record.selection.policy_version,
-            record.selection.state,
-        )
-        if expected != tuple(
-            row[key] for key in ("selection_id", "question", "policy_version", "state")
-        ):
-            raise ValueError("document selection columns differ from the recorded identity")
-        return record
+        return ContentSourceRows(self._conn).get_document_selection(selection_id)
 
     def get_source_observation(self, observation_id: str) -> SourceObservation | None:
-        row = self._conn.execute(
-            "SELECT * FROM source_observations WHERE observation_id=?", (observation_id,)
-        ).fetchone()
-        return self._source_observation(row) if row else None
+        return ContentSourceRows(self._conn).get_source_observation(observation_id)
 
     def list_source_observations(self, term: int, number: str) -> list[SourceObservation]:
         return [
@@ -2038,15 +2023,9 @@ class SqliteBillRepository:
     def source_observations_for_selection(
         self, term: int, number: str, selection_id: str
     ) -> list[SourceObservation]:
-        return [
-            self._source_observation(row)
-            for row in self._conn.execute(
-                "SELECT * FROM source_observations INDEXED BY ix_source_observations_selection"
-                " WHERE selection_id=? AND term=?"
-                " AND number=? AND purpose='analysis' ORDER BY rowid LIMIT 2",
-                (selection_id, term, number),
-            )
-        ]
+        return ContentSourceRows(self._conn).source_observations_for_selection(
+            term, number, selection_id
+        )
 
     def save_candidate_disposition_trace(
         self, observation_id: str, trace: CandidateDispositionTrace
@@ -2140,18 +2119,11 @@ class SqliteBillRepository:
             raise ValueError("an immutable content snapshot cannot be replaced")
 
     def get_content_snapshot(self, snapshot_id: str) -> ContentSnapshot | None:
-        row = self._conn.execute(
-            "SELECT * FROM content_snapshots WHERE snapshot_id=?", (snapshot_id,)
-        ).fetchone()
-        if row is None:
-            return None
-        snapshot = ContentSnapshot(kind=row["kind"], payload_json=row["payload_json"])
-        if snapshot.snapshot_id != row["snapshot_id"]:
-            raise ValueError("content snapshot columns differ from the recorded identity")
-        return snapshot
+        return ContentSourceRows(self._conn).get_content_snapshot(snapshot_id)
 
     def save_content_version(self, version: ContentVersion) -> None:
         version = ContentVersion.model_validate_json(version.model_dump_json())
+        verify_content_source(self._conn, version)
         for kind, identity in (
             ("bill", version.bill_snapshot_id),
             ("change", version.change_snapshot_id),
@@ -2209,6 +2181,7 @@ class SqliteBillRepository:
         )
         if expected != tuple(row[key] for key in columns):
             raise ValueError("content version columns differ from the recorded identity")
+        verify_content_source(self._conn, version)
         return version
 
     def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]:
@@ -3074,9 +3047,13 @@ class SqliteBillRepository:
             )
 
     def save_update_delivery(self, change_id: int, channel_id: str, delivery: DeliveryPlan) -> None:
+        original = self.get_update_publication(change_id, channel_id)
+        if original is not None and source_context_blocked(self, original):
+            return
         self._conn.execute(
             "UPDATE publications SET delivery_json = ?, attention_json = ?"
             " WHERE status_change_id = ?"
+            " AND error IS NOT 'source_context_invalid'"
             " AND channel_id = ? AND kind = 'status_update' AND delivery_json IS NULL",
             (
                 delivery.model_dump_json(),
@@ -3089,9 +3066,13 @@ class SqliteBillRepository:
     def replace_unsent_update_delivery(
         self, change_id: int, channel_id: str, delivery: DeliveryPlan
     ) -> bool:
+        original = self.get_update_publication(change_id, channel_id)
+        if original is not None and source_context_blocked(self, original):
+            return False
         cur = self._conn.execute(
             "UPDATE publications SET delivery_json = ?, attention_json = ?"
             " WHERE status_change_id = ?"
+            " AND error IS NOT 'source_context_invalid'"
             " AND channel_id = ? AND kind = 'status_update' AND status = 'queued'"
             " AND attempts = 0"
             " AND NOT EXISTS (SELECT 1 FROM digest_event_links"
@@ -3108,6 +3089,8 @@ class SqliteBillRepository:
 
     def replace_unattempted_delivery(self, publication_id: int, delivery: DeliveryPlan) -> bool:
         original = self.publication_by_id(publication_id)
+        if original is not None and source_context_blocked(self, original):
+            return False
         if (
             original is not None
             and original.delivery is not None
@@ -3251,6 +3234,13 @@ class SqliteBillRepository:
         identities = tuple(member.id for member in members)
         if not members or len(members) != len(plans) or len(set(identities)) != len(identities):
             return False
+        if any(
+            stored is not None and source_context_blocked(self, stored)
+            for identity in identities
+            if identity is not None
+            for stored in (self.publication_by_id(identity),)
+        ):
+            return False
         prepared: list[tuple[str, int, str, int, str]] = []
         with self.atomic():
             for member, plan in zip(members, plans, strict=True):
@@ -3387,6 +3377,12 @@ class SqliteBillRepository:
         )
 
     def tag_update_group(self, publication_ids: tuple[int, ...], ref: str) -> None:
+        if any(
+            stored is not None and source_context_blocked(self, stored)
+            for identity in publication_ids
+            for stored in (self.publication_by_id(identity),)
+        ):
+            raise ValueError("source_context_invalid prevents changing its update group")
         self._conn.executemany(
             "UPDATE publications SET ref = ? WHERE id = ? AND kind = 'status_update'",
             [(ref, identity) for identity in publication_ids],
@@ -3723,56 +3719,9 @@ class SqliteBillRepository:
     def get_consumed_primary_input(
         self, provider: BatchProvider, batch_id: str, custom_id: str, generation: int
     ) -> LlmBatchItem | None:
-        row = self._conn.execute(
-            "SELECT i.*, b.provider AS batch_provider, r.result_id AS paid_id,"
-            " r.provider AS paid_provider, r.batch_id AS paid_batch, r.custom_id AS paid_custom,"
-            " r.term AS paid_term, r.number AS paid_number, r.result_json AS paid_json,"
-            " a.application_json AS projection_json"
-            " FROM llm_batch_items i JOIN llm_batches b ON b.batch_id=i.batch_id"
-            " LEFT JOIN computation_results r ON r.provider=? AND r.batch_id=i.batch_id"
-            " AND r.custom_id=i.custom_id LEFT JOIN result_applications a"
-            " ON a.result_id=r.result_id AND a.term=r.term AND a.number=r.number"
-            " AND a.generation=? AND a.phase='projection' WHERE i.batch_id=? AND i.custom_id=?"
-            " AND i.consumed_at IS NOT NULL",
-            (provider, generation, batch_id, custom_id),
-        ).fetchone()
-        if row is None:
-            return None
-        if row["batch_provider"] != provider or row["paid_json"] is None:
-            raise ValueError("consumed item and original provider/computation disagree")
-        result = ComputationResult.model_validate_json(row["paid_json"])
-        if (
-            result.result_id,
-            result.provider,
-            result.batch_id,
-            result.custom_id,
-            result.term,
-            result.number,
-        ) != tuple(
-            row[key]
-            for key in (
-                "paid_id",
-                "paid_provider",
-                "paid_batch",
-                "paid_custom",
-                "paid_term",
-                "paid_number",
-            )
-        ):
-            raise ValueError("retained computation columns disagree with its original identity")
-        if row["projection_json"] is None:
-            return None
-        application = ResultApplication.model_validate_json(row["projection_json"])
-        if (
-            application.result_id,
-            application.term,
-            application.number,
-            application.generation,
-            application.phase,
-            application.target,
-        ) != (result.result_id, result.term, result.number, generation, "projection", None):
-            raise ValueError("frozen primary target differs from its projection receipt")
-        return _row_to_llm_batch_item(row)
+        return ContentSourceRows(self._conn).get_consumed_primary_input(
+            provider, batch_id, custom_id, generation
+        )
 
     def mark_llm_batch_item_consumed(
         self,
@@ -4511,6 +4460,26 @@ class SqliteBillRepository:
         Returns the row id, looked up by the natural key: `lastrowid` is unreliable after an
         upsert that took the UPDATE path.
         """
+        if publication.kind is PublicationKind.STATUS_UPDATE:
+            blocked = self._conn.execute(
+                "SELECT id FROM publications WHERE status_change_id=? AND channel_id=?"
+                " AND kind='status_update'",
+                (publication.status_change_id, publication.channel_id),
+            ).fetchone()
+            previous = self.publication_by_id(int(blocked[0])) if blocked is not None else None
+            if previous is not None and source_context_blocked(self, previous):
+                return int(blocked[0])
+        else:
+            previous = self.get_publication(
+                publication.term,
+                publication.number,
+                publication.kind,
+                publication.channel_id,
+                ref=publication.ref,
+            )
+            if previous is not None and source_context_blocked(self, previous):
+                assert previous.id is not None, "the stored publication has its physical identity"
+                return previous.id
         attention = publication.attention or (
             publication.delivery.attention if publication.delivery else None
         )
@@ -4605,6 +4574,7 @@ class SqliteBillRepository:
             owner = self.publication_by_id(owner_id)
             if (
                 owner is None
+                or source_context_blocked(self, owner)
                 or owner.kind is not PublicationKind.DIGEST
                 or owner.status is not PublicationStatus.QUEUED
                 or owner.delivery is None
@@ -4618,6 +4588,7 @@ class SqliteBillRepository:
                 linked = self.digest_owner(identity)
                 if (
                     source is None
+                    or source_context_blocked(self, source)
                     or source.channel_id != owner.channel_id
                     or source.status is not PublicationStatus.QUEUED
                     or source.attempts
@@ -4776,13 +4747,15 @@ class SqliteBillRepository:
         sources = self.digest_sources(owner_id)
         if (
             owner is None
+            or source_context_blocked(self, owner)
             or owner.delivery is None
             or set(owner.delivery.digest_event_ids) != {source.id for source in sources}
         ):
             raise ValueError("digest membership does not match its saved payload")
         for source in sources:
             if (
-                source.status is not PublicationStatus.QUEUED
+                source_context_blocked(self, source)
+                or source.status is not PublicationStatus.QUEUED
                 or source.attempts
                 or source.delivery is None
             ):
@@ -4824,7 +4797,7 @@ class SqliteBillRepository:
             if self.digest_owner(resolution.publication_id) is not None:
                 return False
             original = self.publication_by_id(resolution.publication_id)
-            if original is None:
+            if original is None or source_context_blocked(self, original):
                 return False
             plan = original.delivery
             identities = (
@@ -4836,6 +4809,8 @@ class SqliteBillRepository:
                 return False
             for identity in identities:
                 member = self.publication_by_id(identity)
+                if member is not None and source_context_blocked(self, member):
+                    return False
                 if (
                     member is None
                     or not (
@@ -4869,7 +4844,8 @@ class SqliteBillRepository:
             ):
                 return False
             if any(
-                member.status is not PublicationStatus.QUEUED
+                source_context_blocked(self, member)
+                or member.status is not PublicationStatus.QUEUED
                 or member.delivery is None
                 or member.attempts
                 for member in digest_members
@@ -5026,6 +5002,17 @@ class SqliteBillRepository:
         sent_at: datetime | None = None,
         count_attempt: bool = True,
     ) -> None:
+        original = self.publication_by_id(publication_id)
+        if original is not None and source_context_blocked(self, original):
+            if (
+                status == original.status
+                and error == SOURCE_CONTEXT_INVALID
+                and message_id is None
+                and document_message_ids is None
+                and sent_at is None
+            ):
+                return
+            raise ValueError("source_context_invalid requires explicit validated repair")
         self._conn.execute(
             """
             UPDATE publications SET status = ?,

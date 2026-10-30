@@ -1,3 +1,4 @@
+from lexinform.content_sources import SOURCE_CONTEXT_INVALID
 from lexinform.models import DeliveryPlan, Publication, PublicationKind, PublicationStatus
 
 DIRECT_NOTICES = frozenset(
@@ -18,6 +19,8 @@ DIRECT_ROOTS = DIRECT_NOTICES | {
 
 
 def validate_reader_contract(publication: Publication) -> None:
+    if publication.error == SOURCE_CONTEXT_INVALID:
+        raise ValueError("The frozen source context is invalid")
     plan = publication.delivery
     if plan is None:
         raise ValueError("The reader delivery lacks its saved payload")

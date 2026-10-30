@@ -2,6 +2,7 @@ import logging
 from collections.abc import Callable, Sequence
 from datetime import datetime
 
+from lexinform.content_sources import source_context_blocked as source_context_blocked
 from lexinform.errors import DeliveryUncertainError, ServiceUnavailableError, StateCheckpointError
 from lexinform.models import Publication, PublicationKind, PublicationStatus, card_edit_owner_id
 from lexinform.ports import BillRepository, Clock, PublishResult, StateCheckpoint
@@ -29,6 +30,12 @@ def send_publications(
     checkpoint: StateCheckpoint | None = None,
 ) -> int | None:
     """The caller persists pending work before sending; only definite failures spend attempts."""
+    if any(
+        publication is not None and source_context_blocked(repo, publication)
+        for pub_id in pub_ids
+        for publication in (repo.publication_by_id(pub_id),)
+    ):
+        return None
     if checkpoint is not None:
         checkpoint()
     try:

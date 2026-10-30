@@ -62,7 +62,7 @@ from lexinform.services.content_inspection import inspect_content
 from lexinform.services.digest import DigestResult, DigestService
 from lexinform.services.joint import primary_of
 from lexinform.services.lookup import BillLookup, BillNotFoundError
-from lexinform.services.publications import complete_delivery
+from lexinform.services.publications import complete_delivery, source_context_blocked
 from lexinform.services.publishing import PublishingService
 from lexinform.services.result_applications import record_secondary_application
 from lexinform.services.text_prefilter import TextPrefilterService
@@ -1104,6 +1104,12 @@ class CommandService:
                 note=f"resolve physical digest part {owner_id}; this row is an included event",
             )
         action = command.delivery_action
+        if action != "show" and source_context_blocked(self._repo, publication):
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR,
+                delivery=publication,
+                note="source context is invalid; delivery remains blocked",
+            )
         if action != "show":
             if not publish:
                 return CommandOutcome(

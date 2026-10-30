@@ -1,0 +1,103 @@
+{
+  "base": "57e22830b500817f4f2c5d7b59eb14c74ec85ed1",
+  "worktree": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform",
+  "frozen_at": "2026-10-30T23:10:47.584394+00:00",
+  "source_pins": {
+    "src/lexinform/adapters/content_source_refs.py": "53c43c12366ff28f9d8dd1f5fef28a6798fdd7ce41a283f35219c8aa9f5557c4",
+    "src/lexinform/adapters/sqlite_repo.py": "c70ef418ff1b1368884b3d8e54510d665f0a28ce47006ebd6a5a17c37b53ceb5",
+    "src/lexinform/adapters/telegram_format.py": "1427469f728758f47dd212a1487e1da2aa16d83f9d6e77dedf6eb0288c37f784",
+    "src/lexinform/content_sources.py": "1fc0e2aa86de50c696901897dda614163621ff993811cd87e5b56df334b86c7b",
+    "src/lexinform/direct_delivery.py": "16506f2ec1c5a984a67490e7923b297de8834d7360e0d544702772663ce2eeb8",
+    "src/lexinform/models/content.py": "deef172048ca3d7ca6e7bb32d1be362fff45d0045130f70359c5dec77cf6c154",
+    "src/lexinform/services/commands.py": "b833266fb1f4701204b4c822e699d74aa332f8756bcd11e415e16ea90121b113",
+    "src/lexinform/services/content_sources.py": "5f35bf3ed56d0f145a260abd1131b237b9fd1fde05121ab60a24c1e82840ee27",
+    "src/lexinform/services/message_parts.py": "8364c60d3e945bae1bf21edf7bd8c70a07e14809002f6bb753f384da4f6e0703",
+    "src/lexinform/services/posting.py": "4b7650d3628ea9c50d63ad7a1a3df0f15fdd53a6da4b8202572d949687fc9367",
+    "src/lexinform/services/publications.py": "1cce7a94da82eea8ce56b054d7fe4b3f852ea8b30227ec467acc4b90143f0f4e",
+    "tests/scenario/test_source_context_delivery.py": "2889c6c8d1355e9c8de51a1dde75a9e6ae54439536c2d71a0db488829d050087",
+    "tests/unit/test_content_source_refs.py": "d637390eddca1211bbc91fadaa665dff35a165411606f1f4bb9da80550e409ec",
+    "tests/unit/test_source_context_repo.py": "065aa2387e3e57563b3ecbebaa3de54ea07670d407907d1c1de45de9bdd6a3e5",
+    "tools/content_history_doctor.py": "4ae588fb1e986fa9850a0bdd017c45fad1c76950ac4a7b6e4791de614ef05023"
+  },
+  "patch": {
+    "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/content-source-scoped-reader/candidate.patch",
+    "sha256": "97ced79fb677f61fc23707cc453da41d422053f6cfabef5bf77b13fe361d5882",
+    "bytes": 84159
+  },
+  "qa": {
+    "focused": 199,
+    "mypy_files": 15,
+    "ruff": "green",
+    "format": "green",
+    "diff_check": "green"
+  },
+  "migration_ast_unchanged": true,
+  "source_writer_off": true,
+  "source_hold": true,
+  "scope": "LOCAL compatible scoped source reader + reserved marker rollback guard; writer off",
+  "proofs": {
+    "focused.xml": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/content-source-scoped-reader/focused.xml",
+      "sha256": "8d8a6f7c20551a8e8040dbdd67728c43a974622deda1852bd77bca7bae637ae2"
+    },
+    "focused.log": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/content-source-scoped-reader/focused.log",
+      "sha256": "3294dde7c5f4a09b685be18d607f31c8884be14c65e7421b949378f31129f09b"
+    },
+    "mypy.log": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/content-source-scoped-reader/mypy.log",
+      "sha256": "fc409d91e6c781eb25a1ec1310b7fcb0086b74ed3aa2c415bcd73f884f23f07a"
+    },
+    "ruff.log": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/content-source-scoped-reader/ruff.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "format.log": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/content-source-scoped-reader/format.log",
+      "sha256": "d41ae50829b47e318b0787bc39d2a2ea2d52b518cfc7900d2efd569e6d26ab88"
+    },
+    "diff-check.log": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/content-source-scoped-reader/diff-check.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "parity-proof.py": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/content-source-scoped-reader/parity-proof.py",
+      "sha256": "459b4eeef2e0a56fcb6466a9e93288120def3d38a335ef46d261102a69d96bfa"
+    },
+    "parity-proof.log": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/content-source-scoped-reader/parity-proof.log",
+      "sha256": "317b8ce49eecb09e2fcbfa8ad8d14547f6b26ceb9c9d3bda82b8940c2d8b60b7"
+    },
+    "legacy-parity.json": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/content-source-scoped-reader/legacy-parity.json",
+      "sha256": "bf1aafe0aeb899e168be5e3d2b8526b588827f680aff2f75a994513e1f949aaa"
+    },
+    "reuse-before.json": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/content-source-scoped-reader/reuse-before.json",
+      "sha256": "88e00fa73bdaca074b8cba582cd54a6268c1486bbff2f3cc221b6d73aa769441"
+    },
+    "reuse.json": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/content-source-scoped-reader/reuse.json",
+      "sha256": "50eb69fb1a7f7551e367b446f0fb26b46cb544fe232647d1f7627b0b87344a3b"
+    },
+    "report.md": {
+      "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/content-source-scoped-reader/report.md",
+      "sha256": "6c0d7231bd239e413a6985bea1130cf2ba03da7f51832f65c0a70ade153fe0d2"
+    }
+  },
+  "guard_author_handoff": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/scoped-source-reader/delivery-guards/fix-2/handoff.json",
+  "independent_review": "Root and URL pending; guard author did not peer own code",
+  "regression_provenance": {
+    "continuation_membership": "Root-send and blocked-root/unmarked-child resolution bypasses confirmed before fixes",
+    "digest_owner": "Direct complete_digest_events could mark clean members sent before fix",
+    "sitting_only": "Already GREEN via computed publication_ids; explicit field union is defensive, not a reproduced second bug",
+    "preserved_directory": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/scoped-source-reader"
+  },
+  "limits": [
+    "Only non-None scoped versions get the new parent policy.",
+    "Legacy None/opaque metadata preserves prior behavior.",
+    "No runtime writes source_scope/source IDs or source_context_invalid marker.",
+    "Positive refs/blocks in controls are synthetic compatibility fixtures.",
+    "Reader deployment still precedes any later writer activation."
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "legacy_version_json_exact": true,
+  "legacy_content_id_exact": true,
+  "legacy_summary_json_exact": true,
+  "legacy_public_delivery_render_exact": true,
+  "render_sha256": "884fcd3da74a0bd4bb37d2619256ded754af679428ad5ec2aae0deb2c112190d",
+  "source_scope_none_omitted": true,
+  "runtime_scope_producer_off": true
+}

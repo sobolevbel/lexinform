@@ -56,6 +56,9 @@ class ContentVersion(BaseModel):
     rendered_text: str | None = Field(default=None, min_length=1)
     formatter_version: str | None = Field(default=None, min_length=1)
     source_observation_ids: tuple[str, ...] = ()
+    source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     computation_ids: tuple[str, ...] = ()
     application_ids: tuple[PositiveInt, ...] = ()
     status_change_id: PositiveInt | None = None
@@ -65,6 +68,14 @@ class ContentVersion(BaseModel):
     def predecessor(self) -> Self:
         if (self.reason == "original") != (self.previous_version_id is None):
             raise ValueError("an original has no predecessor; a revision requires one")
+        if self.source_scope is not None and (
+            len(self.source_observation_ids) > 1
+            or any(
+                re.fullmatch(r"source-observation-v1:[0-9a-f]{64}", value) is None
+                for value in self.source_observation_ids
+            )
+        ):
+            raise ValueError("a scoped primary context has at most one canonical source ID")
         return self
 
     @property
@@ -88,6 +99,9 @@ class ContentVersionSummary(BaseModel):
     plan_snapshot_id: str
     formatter_version: str | None
     source_observation_ids: tuple[str, ...]
+    source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     computation_ids: tuple[str, ...]
     application_ids: tuple[int, ...]
     status_change_id: int | None
@@ -131,6 +145,7 @@ class ContentVersionSummary(BaseModel):
             plan_snapshot_id=version.plan_snapshot_id,
             formatter_version=None if "formatter_version" in unknown else version.formatter_version,
             source_observation_ids=source_ids,
+            source_scope=version.source_scope,
             computation_ids=result_ids,
             application_ids=version.application_ids,
             status_change_id=version.status_change_id,

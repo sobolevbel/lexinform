@@ -2148,7 +2148,11 @@ class MessageFormatter:
             lines.append(f"bill snapshot: {esc(version.bill_snapshot_id)}")
             lines.append(f"event snapshot: {esc(version.change_snapshot_id)}")
             lines.append(
-                "source decisions: "
+                (
+                    "source decisions (primary analysis context; amendment source unavailable): "
+                    if version.source_scope is not None
+                    else "source decisions: "
+                )
                 + (", ".join(map(esc, version.source_observation_ids)) or "unavailable")
             )
             lines.append(

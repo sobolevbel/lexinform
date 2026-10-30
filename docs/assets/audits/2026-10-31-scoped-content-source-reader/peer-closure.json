@@ -1,0 +1,45 @@
+{
+  "author_handoff_sha256": "c4c316534c5d5bc66f5e529a2c572a39cee9d25e617fac5f0febdd23cceba65f",
+  "author_patch_sha256": "97ced79fb677f61fc23707cc453da41d422053f6cfabef5bf77b13fe361d5882",
+  "decision": "independent_combined_reader_review_closed",
+  "findings_closed": [
+    "Blocked physicalchild preventsroot callback/checkpoint/mutation through sharedrelated-ID closure.",
+    "Unmarked UNKNOWN continuation under blockedroot cannotRepo.resolve; noresolution orDBchange.",
+    "Blocked digestowner cannotconfirmcleanmembers; allmembersqueued anddumpexact."
+  ],
+  "focused_cases": 199,
+  "focused_log_sha256": "a63193949d7b94c3fd579051e521f306d3b2fc125f159d46ccc5e47c0594162a",
+  "independent_public_controls": {
+    "blocked_digest_owner_confirmation": "ValueError/allmembersremainqueued/dumpexact",
+    "root_blocked_MESSAGE_PART_send": "None/noAPI/noCheckpoint/noDBchange",
+    "unknown_child_blocked_root_resolve": "False/noDBchange/noresolution"
+  },
+  "operations": "readonlysource, oneboundedexisting199suite +3publicmemorycontrols; no sourceedits/full/raw/network/paid/prod",
+  "pins_before_after_exact": true,
+  "public_controls_sha256": "dead99d031247ed66b4dfdb18d48c27d9f6d49b2a4f462717691fda013fa51bd",
+  "remaining_blockers": [],
+  "scope_review": [
+    "source_scope optionalNone oldJSON/contentID/render exact proven in reviewed authorproof+focusedtests",
+    "knownsource parent verify exactstoredobservationPK; laterobservations do not invalidatepositive",
+    "same chainvalidator save/get/scratchrestore-before-target/doctor; frozenowner/provider/result/item/receipt/selection/time/purpose checks",
+    "ordinaryerror/attempt/unknownlegacy behaviorcovered; no runtimewriter/DDL/admission activated"
+  ],
+  "sitting_note": "Sitting-only alreadyGREEN via computedpublication_ids; explicitunion defensive, not2ndREDclaim.",
+  "source_pins": {
+    "src/lexinform/adapters/content_source_refs.py": "53c43c12366ff28f9d8dd1f5fef28a6798fdd7ce41a283f35219c8aa9f5557c4",
+    "src/lexinform/adapters/sqlite_repo.py": "c70ef418ff1b1368884b3d8e54510d665f0a28ce47006ebd6a5a17c37b53ceb5",
+    "src/lexinform/adapters/telegram_format.py": "1427469f728758f47dd212a1487e1da2aa16d83f9d6e77dedf6eb0288c37f784",
+    "src/lexinform/content_sources.py": "1fc0e2aa86de50c696901897dda614163621ff993811cd87e5b56df334b86c7b",
+    "src/lexinform/direct_delivery.py": "16506f2ec1c5a984a67490e7923b297de8834d7360e0d544702772663ce2eeb8",
+    "src/lexinform/models/content.py": "deef172048ca3d7ca6e7bb32d1be362fff45d0045130f70359c5dec77cf6c154",
+    "src/lexinform/services/commands.py": "b833266fb1f4701204b4c822e699d74aa332f8756bcd11e415e16ea90121b113",
+    "src/lexinform/services/content_sources.py": "5f35bf3ed56d0f145a260abd1131b237b9fd1fde05121ab60a24c1e82840ee27",
+    "src/lexinform/services/message_parts.py": "8364c60d3e945bae1bf21edf7bd8c70a07e14809002f6bb753f384da4f6e0703",
+    "src/lexinform/services/posting.py": "4b7650d3628ea9c50d63ad7a1a3df0f15fdd53a6da4b8202572d949687fc9367",
+    "src/lexinform/services/publications.py": "1cce7a94da82eea8ce56b054d7fe4b3f852ea8b30227ec467acc4b90143f0f4e",
+    "tests/scenario/test_source_context_delivery.py": "2889c6c8d1355e9c8de51a1dde75a9e6ae54439536c2d71a0db488829d050087",
+    "tests/unit/test_content_source_refs.py": "d637390eddca1211bbc91fadaa665dff35a165411606f1f4bb9da80550e409ec",
+    "tests/unit/test_source_context_repo.py": "065aa2387e3e57563b3ecbebaa3de54ea07670d407907d1c1de45de9bdd6a3e5",
+    "tools/content_history_doctor.py": "4ae588fb1e986fa9850a0bdd017c45fad1c76950ac4a7b6e4791de614ef05023"
+  }
+}
