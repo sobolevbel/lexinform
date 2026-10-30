@@ -1,0 +1,53 @@
+{
+  "acceptance": [
+    "Threeactualfake-provider purposes A\u2192B\u2192200daymemo cleanup\u2192restore\u2192exactA reuse withproviderprepareforbidden; currentliveBilltitle intentionallydifferent; repeatedreuse no newpaidresult/intent/application/message/status/generation, originalIDs/request/usage remain.",
+    "Knownhistory stillreuseswhenoldjoblimit reports2submissions; stale declaredSHA withchangedbody andchangedcomparison cannotbypasssubmissionlimit.",
+    "Missing/wrongbinding/input/owner/resultschema/validation/request/recordidentity andchangedcallertext/identity/title/comparison/term declinepurematch.",
+    "Consultation/commission disabledpurpose guards stayWaiting; act_application knownhistoricalreuse preservesexisting memo behavior whilepausedsubmissionlogic untouched.",
+    "Existinglegacy/currentprojection/memo policy andexistingsecondary/rollover/readergates green."
+  ],
+  "base": "27cb71e95edc5f9adf37a09a4d52389c7c1780d7",
+  "checks": {
+    "focused_passed": 206,
+    "git_diff_check": "passed",
+    "new_controls": 30,
+    "ruff_check_and_format": "4ownedPython green",
+    "seconds": 6.56,
+    "strict_mypy_files": 4
+  },
+  "contract": "Same-owner schema3 validated compactReviewResult only; known exact inputbinding +actualrequestSHA/recordIDs +full orderedReviewInputReference equalcallercontext (includingtitle/URLs/IDs/coverage/ELI/dates/comparison) +recomputed rawUTF8textSHA. No normalizedhash recomputation, archive/schema/framework/prompt/default-model/submitter changes. Consumercontext providedbycaller, never reconstructedfromliveBill.",
+  "delta_sha256": "c2e60225dfcf5c2efaa6d8a6fa19e817700655ca6e0d0f491d70c00e788a3b4f",
+  "focused_command": "PYTHONPATH=$PWD/src:$PWD pytest -o addopts='-n 2 -m \"not integration and not local_http\"' -q tests/unit/test_review_computation_reuse.py tests/scenario/test_review_history_reuse.py tests/scenario/test_review_computation_history.py tests/scenario/test_secondary_history_reuse.py tests/scenario/test_document_reviews.py tests/scenario/test_commission_reviews.py tests/scenario/test_rollover_review_history.py tests/unit/test_review_result_reader.py",
+  "integration_hints": [
+    "Apply4ownedpaths only; excludeallmaintenance4 alreadyintegratedbyroot.",
+    "No publicreviewforce added orchanged; force_check keepsits existing source-check semantics, originalprompt_version preserved ratherthancomparedtocurrentdefaults.",
+    "Strictcontextpredicate belongsnewdurablefallback; existingcurrentBill/memo lookup policy deliberatelyunchanged.",
+    "No full/raw/paid/network/production/commit/push; rootindependentreview andcoalescedfullgate next.",
+    "Paidname rollover remainsopenanduntouched."
+  ],
+  "maintenance4_exact_unchanged_excluded": {
+    ".github/workflows/daily.yml": "be9b7783783455ff6e58a06f837e8e823410c860fe8bb279bd327d68d529c2f5",
+    "docs/operations/state-maintenance.md": "51dd1e66722c5755a51c953fdddf8ba54894e1bd232bc5577a05d57b964aac30",
+    "tests/unit/test_state_maintenance.py": "f651fda5df98461c49ddb8caae123133c448ec6762cdbf0b267d272f12383cd9",
+    "tools/state_maintenance.py": "6fe8a50fc0a624526eec53c9bbfc9fd5b422ee240a5d9ccce8840b56214d97e2"
+  },
+  "new_acceptance": [
+    "Public real review_context with valid stored commission sources plus actual current optionalfile rejected byexpected_digest emits literalmissinginputsentinel; twoactualfakepaid reviews A\u2192B\u2192200daymemo cleanup/restore\u2192A reuse withproviderprepare forbidden preservesallunknownfields/IDs/immutablepaidresult.",
+    "ExactRef alone doesnotauthorize forgedsentinel: nonemptytext, missing/partialwronghashes, completeTrue orknownfileSHA decline. Another reviewpurpose cannotborrowcommission missing-input exception.",
+    "All previous exhaustedpositive/changeddeclaredSHA+comparisonnegative anddisabled/legacy/rollover controls staygreen."
+  ],
+  "no_additional_scope": "Only helper+2own tests differfromrev1 (analysisbytes unchanged); maintenance4 heldexact/excluded, no full/raw/paid/network/production/commit/push.",
+  "patch_sha256": "333c49f298344f356ade4b35e1afa0697c7884008de5f990f3f4fb6ed39c49f7",
+  "preimages": "preimages.json: both2sourcepaths byteexact rootac7c5744 beforechanges",
+  "repair": "Actual AnalysisService.review_context commission placeholder is emptytext +both emptyhashes +completeFalse +no fileSHA. Pure helper accepts only that commission sentinel and stillrequires exactordered retainedReference/inputbinding/owner/requestidentity. It doesnotderive emptybodySHA, fill fileSHA or assertinput completeness; returnedcontext preservesunknown fields. Other mismatches/defaultguards unchanged.",
+  "revision1_proof": "../revision1/ (exact original fullpatch/freeze/handoff/source preserved)",
+  "runtime": "Existing enabled/currentBill/memo precedence remains. Strong durablefallback runs beforeproviderpreparation inrequest_document_review and beforeexisting joblimit inreview_exhausted. Newhistoryrecord materializes consumerDocumentReviewRecord, existingremember/_reused handling deposits operationalmemo and zeros reusedusage. PaidComputationResult/usage/IDs/createdtime/prompt stayimmutable. No generic crossowner/term fallback.",
+  "source_freeze_sha256": "d443bfedd82c86490b82c2f93a436934a839306a57285002882ea22744069c8d",
+  "source_paths": {
+    "src/lexinform/services/analysis.py": "f1b7543d897bf3e9915954cbf9ad28d68526cf90b53c57fbb3a3914b647d5907",
+    "src/lexinform/services/computation_reuse.py": "7245b3a8d16ff448e94aad85807695ed72c41d1e797737a171a107742a0dd131",
+    "tests/scenario/test_review_history_reuse.py": "db2daf74f7492ea47025c469cbd03c1ea4235337a35940819fa2d4371cdbc28d",
+    "tests/unit/test_review_computation_reuse.py": "b7f2f7e27725eb336e28ec3270d23c17dc6f6dec7bb768f55dcd9a9d1e41aa74"
+  },
+  "status": "revision2_frozen_pending_independent_sentinel_repair_review"
+}

@@ -8506,3 +8506,32 @@ Full7089/287.845s/92%, mypy620/Ruff688,705inputfreeze unchanged;1914 и3055 не
 [raw summary](../assets/audits/2026-10-30-physical-policy/affected-summary.json),
 [coverage](../assets/audits/2026-10-30-physical-policy/affected-coverage.json),
 [merged native](../assets/audits/2026-10-30-physical-policy/merged-native.json).
+
+
+<a id="j181"></a>
+
+## J181 — durable review reuse after operational memo cleanup
+
+Request review и `review_exhausted` теперь находят уже оплаченный schema3/validated result
+при том же owner/purpose и exact known binding/request/result IDs, ordered input reference
+и фактическом SHA полного caller-provided текста. После A→B и cleanup memo A точный A
+переиспользуется без provider preparation, токенов или нового paid result. Context не
+восстанавливается из live Bill; original IDs, prompt/version, paid usage/time сохраняются,
+consumer получает прежнюю reuse accounting. Disabled/pause/currentBill/memo/force semantics
+не меняются; unknown/wrongowner/input/comparison/version не обходят submission limit.
+
+Root нашёл легитимный край в первом reviewed patch: реальный commission producer создаёт
+для missing optional source пустые text/оба hashes, completeFalse/fileNone. Rev2 допускает
+только этот corroborated sentinel плюс exact retained reference, не выдумывая empty SHA
+или completeness. Подделки/другая purpose отказывают. Исходный rev1 сохранён, scope не расширен.
+206 focused/30 новых, strict4; независимые8 initial и7 repair controls прошли на точных pins.
+
+На fresh412e memory-copy есть3 saved reviews (2consultation/1act_application), все legacy
+unbound; durable candidates0, matches0 до/после cleanup108memos/125deliverypayloads+restore.
+Шесть saved text SHA совпадают; все9 paid rows и source SQL byteexact. Natural positive
+не объявляется; positive3purpose A→B→cleanup→restore→A и exhausted/negative paths проверены
+через public Container/provider fakes без paid/network/Settings. DA6.4 остаётся partial.
+Общий gate с J182:7141tests/256.898s/92%, mypy623/Ruff691,708source/config pins unchanged.
+[Qualification](../assets/audits/2026-10-30-review-history-reuse/qualification.json),
+[saved-context proof](../assets/audits/2026-10-30-review-history-reuse/saved-context-qualification.json),
+[shared gate](../assets/audits/2026-10-30-review-carrier-gate/qualification.json).

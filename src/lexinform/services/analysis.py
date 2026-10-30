@@ -158,7 +158,11 @@ from lexinform.sections import (
 )
 from lexinform.senate_documents import validate_senate_scan
 from lexinform.services.analysis_applications import apply_analysis
-from lexinform.services.computation_reuse import matching_record, retained_secondary
+from lexinform.services.computation_reuse import (
+    matching_record,
+    retained_review,
+    retained_secondary,
+)
 from lexinform.services.cost import CostLedger
 from lexinform.services.document_history import SourceReadCapture, record_source_read
 from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
@@ -1991,6 +1995,8 @@ class AnalysisService:
             }[context.purpose]
             if retained is not None and retained.context.memo_key(term) == key:
                 return False
+        if retained_review(self._repo, term, context) is not None:
+            return False
         job = self._repo.batch_job(self._review_request_key(key))
         return (
             job is not None
@@ -2025,6 +2031,10 @@ class AnalysisService:
             record = DocumentReviewRecord.model_validate_json(cached)
             self._remember_analysis(bill, key, record)
             return _reused(record)
+        historical = retained_review(self._repo, bill.term, context)
+        if historical is not None:
+            self._remember_analysis(bill, key, historical)
+            return _reused(historical)
         model = self._options.batch_models.get(context.purpose, "")
         provider = provider_of(model)
         request_key = self._review_request_key(key)

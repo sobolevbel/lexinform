@@ -1,0 +1,90 @@
+{
+  "actual_durable_computation_rows": 9,
+  "actual_durable_review_candidates": 0,
+  "actual_matches": 0,
+  "actual_saved_reviews": 3,
+  "before_after_match_decisions_exact": true,
+  "cleanup": {
+    "analysis_memos": 108,
+    "batch_payloads": 0,
+    "delivery_payloads": 125
+  },
+  "driver_sha256": "ed2f9ebf253737c820dba958716652f7652688b0a45ef184bcd5feac9c919e9b",
+  "input_bytes": 20886677,
+  "input_sql_sha256": "a39d69e7306d97c7307e7b9a263a71a7f5c646be590815d68860ada2064eaae2",
+  "input_sql_unchanged": true,
+  "input_state": "412e9635b84c196732c9bec2b38a878fee120ee6",
+  "paid_result_raw_rows_immutable_after_cleanup_restore": true,
+  "provider_preparation": "No provider/Container/Settings constructed; pure matcher+public repository only. Socket connect denied for entire qualification.",
+  "records": [
+    {
+      "candidate_exact_input_references": 0,
+      "candidate_known_bindings": 0,
+      "candidate_schema_counts": {},
+      "commission_missing_input_sentinels": 0,
+      "document_actual_sha_matches": 3,
+      "document_count": 3,
+      "match": false,
+      "number": "RCL/12400563",
+      "purpose": "consultation_review",
+      "result_id": null,
+      "same_owner_candidates": 0,
+      "saved_column": "consultation_review_json",
+      "saved_computation_id": null,
+      "saved_request_sha256": null,
+      "term": 10,
+      "unknown_or_decline_reasons": [
+        "saved_projection_has_unknown_computation_ref",
+        "no_same_owner_durable_review_history"
+      ]
+    },
+    {
+      "candidate_exact_input_references": 0,
+      "candidate_known_bindings": 0,
+      "candidate_schema_counts": {},
+      "commission_missing_input_sentinels": 0,
+      "document_actual_sha_matches": 2,
+      "document_count": 2,
+      "match": false,
+      "number": "RCL/12405805",
+      "purpose": "consultation_review",
+      "result_id": null,
+      "same_owner_candidates": 0,
+      "saved_column": "consultation_review_json",
+      "saved_computation_id": null,
+      "saved_request_sha256": null,
+      "term": 10,
+      "unknown_or_decline_reasons": [
+        "saved_projection_has_unknown_computation_ref",
+        "no_same_owner_durable_review_history"
+      ]
+    },
+    {
+      "candidate_exact_input_references": 0,
+      "candidate_known_bindings": 0,
+      "candidate_schema_counts": {},
+      "commission_missing_input_sentinels": 0,
+      "document_actual_sha_matches": 1,
+      "document_count": 1,
+      "match": false,
+      "number": "2667",
+      "purpose": "act_application",
+      "result_id": null,
+      "same_owner_candidates": 0,
+      "saved_column": "act_application_review_json",
+      "saved_computation_id": null,
+      "saved_request_sha256": null,
+      "term": 10,
+      "unknown_or_decline_reasons": [
+        "saved_projection_has_unknown_computation_ref",
+        "no_same_owner_durable_review_history"
+      ]
+    }
+  ],
+  "restored_schema": 65,
+  "saved_current_review_contexts_preserved_after_cleanup_restore": true,
+  "scope": "Actual saved contexts only, no fabricated natural positives, no source refresh/raw extraction/paid/production processing. Historical unknown refs remain unknown.",
+  "source_freeze_sha256": "d443bfedd82c86490b82c2f93a436934a839306a57285002882ea22744069c8d",
+  "source_pins_unchanged": true,
+  "status": "bounded_actual_saved_context_coverage_qualified"
+}

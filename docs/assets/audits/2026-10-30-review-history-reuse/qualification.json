@@ -1,0 +1,10 @@
+{
+  "scope": "Same-owner durable schema3 review reuse after memo cleanup/current-review replacement, and matching review_exhausted guard",
+  "patch_sha256": "333c49f298344f356ade4b35e1afa0697c7884008de5f990f3f4fb6ed39c49f7",
+  "independent_review": "Original4pins+8controls green; Root actualproducer missing-optional commission sentinel finding fixed inrev2, independent7newcontrols and4finalpins green",
+  "focused_cases": 206,
+  "new_controls": 30,
+  "natural_current_state": "Actual412e three saved reviews are legacyunbound,0durablecandidates/0matches. Cleanup108memos/125payloads+restore gives same refusal;9paidrows byteexact; no naturalpositive claim.",
+  "guards": "Knownowner/purpose/schema/validation/request/result/binding/fullorderedReference and actualtextSHA; only actualcommission empty-input sentinel keepsunknownsha fields, never fabricatesbytes/completeness. Existingcurrent/memo/pause/disabled/prompt/forcepolicy unchanged.",
+  "shared_gate": "../2026-10-30-review-carrier-gate/qualification.json"
+}

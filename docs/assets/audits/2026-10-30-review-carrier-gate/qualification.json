@@ -1,0 +1,19 @@
+{
+  "scope": "Coalesced review-reuse4 +Wordcarrier6 candidate before independent owned commits; intermediate review-only commit does not contain later carrier tests",
+  "suites": [
+    {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "7141",
+      "time": "256.898",
+      "timestamp": "2026-10-30T16:21:10.829272+01:00"
+    }
+  ],
+  "coverage_percent": 92,
+  "mypy_files": 623,
+  "ruff_formatted_files": 691,
+  "source_config_freeze_paths": 708,
+  "unchanged": true
+}
