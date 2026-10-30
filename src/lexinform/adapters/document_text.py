@@ -77,6 +77,7 @@ from lexinform.models.word_notes import (
     WordNoteExtraction,
     WordNoteXmlPart,
 )
+from lexinform.models.word_structure import WordStructuredExtraction, WordStructureView
 from lexinform.physical_header_capture import PhysicalHeaderBuilder
 from lexinform.physical_walk_capture import (
     PhysicalWalkCapture,
@@ -95,6 +96,7 @@ from lexinform.sections import (
     reads_through_justification,
 )
 from lexinform.word_projection import legacy_word_text
+from lexinform.word_structure import WordStructureCollector, current_word_structure
 
 log = logging.getLogger(__name__)
 
@@ -215,6 +217,22 @@ class DocxTextExtractor:
     def extract_with_notes(self, data: bytes) -> WordDetailedExtraction:
         notes = _WordNoteOrigins()
         body = self._blocks(data, notes=notes)
+        return self._detailed(body, notes)
+
+    def extract_with_structure(
+        self, data: bytes, *, max_events: int = 4096, max_bytes: int = 524288
+    ) -> WordStructuredExtraction:
+        notes = _WordNoteOrigins()
+        collector = WordStructureCollector(max_events=max_events, max_bytes=max_bytes)
+        with collector.scope():
+            body = self._blocks(data, notes=notes)
+        legacy = self._detailed(body, notes)
+        return WordStructuredExtraction(
+            legacy=legacy, structure=collector.finish(legacy, notes.targets, notes.seen)
+        )
+
+    @staticmethod
+    def _detailed(body: WordTextExtraction, notes: _WordNoteOrigins) -> WordDetailedExtraction:
         return WordDetailedExtraction(
             body=body,
             notes=WordNoteExtraction(
@@ -253,6 +271,7 @@ class DocxTextExtractor:
         projection: list[str] | None = None,
         origins: _WordNoteOrigins | None = None,
     ) -> tuple[str, str, WordBodyState]:
+        structure = current_word_structure()
         with _physical_zip(data) as archive:
             xml = _read_xml(archive, "word/document.xml")
             notes: dict[str, str] = {}
@@ -271,10 +290,25 @@ class DocxTextExtractor:
                 supported = origins.part(path, content, root) if origins is not None else False
                 namespace, _ = _split_tag(root.tag)
                 reader = _WordMl(namespace)
+                if structure is not None:
+                    structure.part = path
+                    structure.support((), root.tag, len(root), "part_root", recognized=supported)
                 for index, note in enumerate(root):
                     identity = note.get(reader.tag("id"))
+                    if structure is not None:
+                        structure.support(
+                            (index,),
+                            note.tag,
+                            len(note),
+                            "note_entry" if identity is not None else "skipped_missing_id",
+                            recognized=supported and note.tag == reader.tag(tag),
+                        )
                     if identity is not None:
-                        text = "\n".join(reader.blocks(note))
+                        text = "\n".join(
+                            reader.blocks(
+                                note, structure_path=(index,) if structure is not None else None
+                            )
+                        )
                         notes[f"{tag}/{identity}"] = text
                         if origins is not None:
                             origins.note(
@@ -295,6 +329,11 @@ class DocxTextExtractor:
             state = "unsupported"
         elif root.find(f"{{{namespace}}}body") is None:
             state = "missing"
+        if structure is not None:
+            structure.part = "word/document.xml"
+            structure.support(
+                (), root.tag, len(root), "part_root", recognized=state != "unsupported"
+            )
         return (
             _wordml_text(root, notes=notes, blocks=blocks, projection=projection, origins=origins),
             hashlib.sha256(xml).hexdigest(),
@@ -414,24 +453,53 @@ class _WordMl:
         self._inline_notes = 0
         self._blocks = blocks
         self._projection = projection
+        self._structure = current_word_structure()
 
     def tag(self, name: str) -> str:
         return f"{self._ns}{name}"
 
     def blocks(
-        self, node: ET.Element, *, path: tuple[int, ...] | None = None, project: bool = False
+        self,
+        node: ET.Element,
+        *,
+        path: tuple[int, ...] | None = None,
+        project: bool = False,
+        structure_path: tuple[int, ...] | None = None,
     ) -> Iterator[str]:
         """Paragraphs and logical table rows in the current legacy Word view."""
+        observed = path if path is not None else structure_path
+        if self._structure is not None and observed is not None and node.tag == self.tag("body"):
+            self._structure.support(observed, node.tag, len(node), "structural")
         for index, child in enumerate(node):
             child_path = (*path, index) if path is not None else None
+            located = (*observed, index) if observed is not None else None
+            recognized = child.tag in (
+                self.tag("p"),
+                self.tag("tbl"),
+                self.tag("sdt"),
+                self.tag("sdtContent"),
+                *_TRANSPARENT,
+            )
+            if self._structure is not None and located is not None:
+                self._structure.support(
+                    located,
+                    child.tag,
+                    len(child),
+                    "structural" if recognized else "skipped_block",
+                    recognized=recognized,
+                )
             if child.tag == self.tag("p"):
-                text = self.paragraph(child, path=child_path)
-                self._record("paragraph", child_path, text, project=project)
+                text = self.paragraph(child, path=child_path, structure_path=located)
+                self._record("paragraph", child_path, text, project=project, structure_path=located)
                 yield text
             elif child.tag == self.tag("tbl"):
-                yield from self._table(child, path=child_path, project=project)
+                yield from self._table(
+                    child, path=child_path, project=project, structure_path=located
+                )
             elif child.tag in (self.tag("sdt"), self.tag("sdtContent"), *_TRANSPARENT):
-                yield from self.blocks(child, path=child_path, project=project)
+                yield from self.blocks(
+                    child, path=child_path, project=project, structure_path=located
+                )
 
     def _record(
         self,
@@ -440,7 +508,10 @@ class _WordMl:
         text: str,
         *,
         project: bool = False,
+        structure_path: tuple[int, ...] | None = None,
     ) -> None:
+        if self._structure is not None and structure_path is not None:
+            self._structure.block(kind, structure_path, text)
         if self._blocks is None or self._projection is None or path is None:
             return
         block = WordTextBlock(kind=kind, path=path, text=text)
@@ -449,31 +520,69 @@ class _WordMl:
             self._projection.append(block.block_id)
 
     def _table(
-        self, table: ET.Element, *, path: tuple[int, ...] | None, project: bool
+        self,
+        table: ET.Element,
+        *,
+        path: tuple[int, ...] | None,
+        project: bool,
+        structure_path: tuple[int, ...] | None = None,
     ) -> Iterator[str]:
-        for row, row_path in self._direct(table, "tr", path):
+        for row, row_path, row_location in self._direct(table, "tr", path, structure_path):
             cells: list[str] = []
-            for cell, cell_path in self._direct(row, "tc", row_path):
-                text = " ".join(self.blocks(cell, path=cell_path))
-                self._record("table_cell", cell_path, text)
+            for cell, cell_path, cell_location in self._direct(row, "tc", row_path, row_location):
+                text = " ".join(self.blocks(cell, path=cell_path, structure_path=cell_location))
+                self._record("table_cell", cell_path, text, structure_path=cell_location)
                 cells.append(text)
             text = "\t".join(cells)
-            self._record("table_row", row_path, text, project=project)
+            self._record("table_row", row_path, text, project=project, structure_path=row_location)
             yield text
 
     def _direct(
-        self, node: ET.Element, name: str, path: tuple[int, ...] | None
-    ) -> Iterator[tuple[ET.Element, tuple[int, ...] | None]]:
+        self,
+        node: ET.Element,
+        name: str,
+        path: tuple[int, ...] | None,
+        structure_path: tuple[int, ...] | None = None,
+    ) -> Iterator[tuple[ET.Element, tuple[int, ...] | None, tuple[int, ...] | None]]:
+        observed = path if path is not None else structure_path
         for index, child in enumerate(node):
             child_path = (*path, index) if path is not None else None
+            located = (*observed, index) if observed is not None else None
+            recognized = child.tag in (
+                self.tag(name),
+                self.tag("sdt"),
+                self.tag("sdtContent"),
+                *_TRANSPARENT,
+            )
+            if self._structure is not None and located is not None:
+                self._structure.support(
+                    located,
+                    child.tag,
+                    len(child),
+                    "structural" if recognized else "skipped_block",
+                    recognized=recognized,
+                )
             if child.tag == self.tag(name):
-                yield child, child_path
+                yield child, child_path, located
             elif child.tag in (self.tag("sdt"), self.tag("sdtContent"), *_TRANSPARENT):
-                yield from self._direct(child, name, child_path)
+                yield from self._direct(child, name, child_path, located)
 
-    def paragraph(self, p: ET.Element, *, path: tuple[int, ...] | None = None) -> str:
+    def paragraph(
+        self,
+        p: ET.Element,
+        *,
+        path: tuple[int, ...] | None = None,
+        structure_path: tuple[int, ...] | None = None,
+    ) -> str:
         parts: list[str] = []
-        self._inline(p, parts, path=path, paragraph=path)
+        self._inline(
+            p,
+            parts,
+            path=path,
+            paragraph=path,
+            structure_path=structure_path,
+            structure_paragraph=structure_path,
+        )
         return "".join(parts)
 
     def _inline(
@@ -483,11 +592,17 @@ class _WordMl:
         *,
         path: tuple[int, ...] | None = None,
         paragraph: tuple[int, ...] | None = None,
+        structure_path: tuple[int, ...] | None = None,
+        structure_paragraph: tuple[int, ...] | None = None,
     ) -> None:
+        observed = path if path is not None else structure_path
         for index, el in enumerate(node):
             child_path = (*path, index) if path is not None else None
+            located = (*observed, index) if observed is not None else None
+            if self._structure is not None and located is not None:
+                self._support_inline(el, located)
             if el.tag == _MC_FALLBACK:
-                continue  # the same text box again, drawn for old Word versions
+                continue
             if el.tag == self.tag("t"):
                 parts.append(el.text or "")
             elif el.tag == self.tag("tab"):
@@ -506,19 +621,66 @@ class _WordMl:
                 if self._origins is not None and child_path is not None and paragraph is not None:
                     self._origins.reference(local, identity, child_path, paragraph, self._notes)
                 note = self._notes.get(f"{local}/{identity}")
+                if (
+                    self._structure is not None
+                    and located is not None
+                    and structure_paragraph is not None
+                ):
+                    self._structure.call(
+                        local, identity, located, structure_paragraph, expanded=bool(note)
+                    )
                 if note:
                     parts.append(f" [przypis {identity}: {note}] ")
                 else:
                     parts.append(f" [nieodczytany przypis {identity}] ")
             elif el.tag in (self.tag("footnote"), self.tag("endnote")):
-                # Word 2003 XML keeps the note itself at its reference, numbered by order alone.
                 self._inline_notes += 1
                 if self._origins is not None:
                     self._origins.losses.append("inline Word notes lack note-part origins")
-                note = "\n".join(self.blocks(el))
+                note = "\n".join(self.blocks(el, structure_path=located))
                 parts.append(f" [przypis {self._inline_notes}: {note}] ")
             else:
-                self._inline(el, parts, path=child_path, paragraph=paragraph)
+                self._inline(
+                    el,
+                    parts,
+                    path=child_path,
+                    paragraph=paragraph,
+                    structure_path=located,
+                    structure_paragraph=structure_paragraph,
+                )
+
+    def _support_inline(self, node: ET.Element, path: tuple[int, ...]) -> None:
+        structure = self._structure
+        if structure is None:
+            return
+        view: WordStructureView
+        if node.tag == _MC_FALLBACK:
+            view = "ignored_fallback"
+        elif node.tag == self.tag("t"):
+            view = "text"
+        elif node.tag == self.tag("tab"):
+            view = "tab"
+        elif node.tag in (self.tag("br"), self.tag("cr"), self.tag("lastRenderedPageBreak")):
+            view = (
+                "page_break"
+                if node.tag == self.tag("lastRenderedPageBreak")
+                or (node.tag == self.tag("br") and node.get(self.tag("type")) == "page")
+                else "line_break"
+            )
+        elif node.tag in (self.tag("footnoteReference"), self.tag("endnoteReference")):
+            view = "note_reference"
+        elif node.tag in (self.tag("footnote"), self.tag("endnote")):
+            view = "inline_note"
+        else:
+            structure.support(
+                path,
+                node.tag,
+                len(node),
+                "recursed" if len(node) else "ignored_leaf",
+                recognized=False,
+            )
+            return
+        structure.support(path, node.tag, len(node), view)
 
 
 @dataclass

@@ -1,0 +1,69 @@
+{
+  "base_head": "6d6905cc5d5134d0edc9db6c605ba52e253f4ea4",
+  "baseline_producer_six_unchanged_excluded": [
+    "src/lexinform/container.py",
+    "src/lexinform/services/documents.py",
+    "src/lexinform/services/source_catalog_attempts.py",
+    "src/lexinform/services/source_omissions.py",
+    "tests/scenario/test_source_catalog_capture.py",
+    "tests/unit/test_source_catalog_capture.py"
+  ],
+  "edge_freeze_sha256": "b5dae7bc4151306b5dd7846accdcab7204d1388a34444aaaa22c1cc8459ff9aa",
+  "freeze_sha256": "b5dae7bc4151306b5dd7846accdcab7204d1388a34444aaaa22c1cc8459ff9aa",
+  "limits": [
+    "Observedlegacyvisitedpackagebody/noteXMLnodes only; notallXML/header/footer/drawing/mergedgeometry/pagination completeness",
+    "2153/3053boundedpartial withunknownfullstreamhash; count/byteboundsandknownobservedtotalsexplicit",
+    "NewWordblocks doNOTbecomecurrentfact/quote/retained/modelspanlocations; DA3.2/DA3.3remainpartial",
+    "ActualchangedDocx/document_text component/recipecodehashes mustbedisclosed, notnormalizedtooldIDs; finalcombinedsourceRootprobe pending",
+    "Rawcohort3055currentindexedDOCX/DOCM includes1morethanold3054historicalpopulation; no historicalpinrelabelling",
+    "Physical part bindings reuse existingunchangedWordPartNoteExtraction input/body/note manifests; newcarrier isnextstage"
+  ],
+  "merge_ownership": [
+    "Adapterdeltaonlyimports+Docx extract_with_notes/_detailed/newoptin/_read +_WordMl methods; noDocumentTextExtractor digestkeyword/_collect/capturetransport orZIPfactory/getinfo/open edits",
+    "RootmainphysicalStageB2lineschange_wholemoduleSHA; these oldpins staynamedbase6d69; Rootwillqualifyboundednative/componentprobe onfinalmergedsource",
+    "models/__init__ only5sidecarreexports/__all__delta, no productionmodel/settings changes"
+  ],
+  "owned_paths": [
+    "src/lexinform/adapters/document_text.py",
+    "src/lexinform/models/__init__.py",
+    "src/lexinform/models/word_structure.py",
+    "src/lexinform/word_structure.py",
+    "tests/unit/test_word_structure.py",
+    "tools/replay_word_blocks.py"
+  ],
+  "patch_sha256": "606c74aa94ad7b608529a0f0bc0d5856e7db560046098825094e2f50561bfdd9",
+  "proofs": [
+    "parity-proof.json",
+    "catalog.json",
+    "nested-inputs.json",
+    "baseline-notes.json",
+    "candidate-notes.json",
+    "baseline-parts.json",
+    "candidate-parts.json",
+    "nested-baseline.json",
+    "nested-candidate.json",
+    "mutations-index.json",
+    "mutations-baseline.json",
+    "mutations-candidate.json",
+    "focused.log",
+    "base/handoff.json"
+  ],
+  "qualification": {
+    "corpus_reruns": "No passed matrix rerun; only outdriver missingkeyword/fieldtypos repaired separately, failedoutputs retained",
+    "focused": 116,
+    "leaf_matrix": {
+      "matching_legacy_manifests_each": 3053,
+      "notes": 3055,
+      "notes_parts": 3055
+    },
+    "mutations": 56,
+    "mypy_files": 6,
+    "nested_roots": 11,
+    "new_unit_cases": 17,
+    "reached_word_leaves": 74,
+    "ruff": "check+formatcheckgreen"
+  },
+  "runtime": "Defaultoptinoff; noContainer/ports/facts/carrier/SQL/schema/backfill/storage activation; existingWordText/NoteJSONIDsunchanged",
+  "same_frozen_source_qualified": true,
+  "status": "frozen/qualified for Rootmerge/nativeprobe/full"
+}

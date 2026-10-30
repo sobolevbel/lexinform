@@ -1,0 +1,464 @@
+{
+  "artificial": true,
+  "records": [
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "339907-control.docx",
+      "kind": "control",
+      "sha256": "b2599b19884ff04a3dcec7a1ca489e8d532c9191c02d132a43d777be843be26c",
+      "source": "documents/files/339907.docx",
+      "source_sha256": "311505c01eaa82b91deefc2968077b5ae27f4115b35580f22cf28e34a3baeb97"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 60 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "339907-deadline.docx",
+      "kind": "deadline",
+      "sha256": "5f061339f3e3b8aa8bbbb6556b27cc0e88f42eb8f0e7d52d768cf5af221fc5eb",
+      "source": "documents/files/339907.docx",
+      "source_sha256": "311505c01eaa82b91deefc2968077b5ae27f4115b35580f22cf28e34a3baeb97"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 700 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "339907-amount.docx",
+      "kind": "amount",
+      "sha256": "bfd506d40bd758fa2f3b21baf83b688e41e5d5730d8d2ff8a94b63a752b30a03",
+      "source": "documents/files/339907.docx",
+      "source_sha256": "311505c01eaa82b91deefc2968077b5ae27f4115b35580f22cf28e34a3baeb97"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "339907-negation.docx",
+      "kind": "negation",
+      "sha256": "c049d55fb877ec240ecc1c44673ca1e5d2d80b2a899a3710c95c68d653bcbd14",
+      "source": "documents/files/339907.docx",
+      "source_sha256": "311505c01eaa82b91deefc2968077b5ae27f4115b35580f22cf28e34a3baeb97"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres ka\u017cda osoba; art. 7; data 2026-10-30.",
+      "file": "339907-scope.docx",
+      "kind": "scope",
+      "sha256": "2e192226bb88e635504cb8e041ac5529f8c226b156b72100f944cf5ce0af1bec",
+      "source": "documents/files/339907.docx",
+      "source_sha256": "311505c01eaa82b91deefc2968077b5ae27f4115b35580f22cf28e34a3baeb97"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 8; data 2026-10-30.",
+      "file": "339907-reference.docx",
+      "kind": "reference",
+      "sha256": "a6b6928ac75ebd282ced5a96a87fafc1f0354f36ead6f960ab0abbcaa0a7544b",
+      "source": "documents/files/339907.docx",
+      "source_sha256": "311505c01eaa82b91deefc2968077b5ae27f4115b35580f22cf28e34a3baeb97"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2027-01-01.",
+      "file": "339907-date.docx",
+      "kind": "date",
+      "sha256": "3ae9b553db65ae7a77468bf0b718b50b25cd4dc8f9752cfdee10408f7e341e03",
+      "source": "documents/files/339907.docx",
+      "source_sha256": "311505c01eaa82b91deefc2968077b5ae27f4115b35580f22cf28e34a3baeb97"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "345749-control.docx",
+      "kind": "control",
+      "sha256": "491243ec9f56a0f964734f3658a534cb96191157f27948bfa89d89d90b908d3d",
+      "source": "documents/files/345749.docx",
+      "source_sha256": "db2a52b55e8906077d5191f20cb6cb8c8c2da567fd3d35b8b37ed556ef1eecf8"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 60 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "345749-deadline.docx",
+      "kind": "deadline",
+      "sha256": "6d91b2add19518ffc2aedb5585a1e0ad5c6e561a648e1635be96fb647bebb709",
+      "source": "documents/files/345749.docx",
+      "source_sha256": "db2a52b55e8906077d5191f20cb6cb8c8c2da567fd3d35b8b37ed556ef1eecf8"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 700 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "345749-amount.docx",
+      "kind": "amount",
+      "sha256": "72895c722bba4464d1b08d91bd16a3696728b50f60207c3f8bc045ded94fb278",
+      "source": "documents/files/345749.docx",
+      "source_sha256": "db2a52b55e8906077d5191f20cb6cb8c8c2da567fd3d35b8b37ed556ef1eecf8"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "345749-negation.docx",
+      "kind": "negation",
+      "sha256": "b06faf4d76b249982961b502dc9e7dedafd8ddf9c49550d092454348c819329e",
+      "source": "documents/files/345749.docx",
+      "source_sha256": "db2a52b55e8906077d5191f20cb6cb8c8c2da567fd3d35b8b37ed556ef1eecf8"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres ka\u017cda osoba; art. 7; data 2026-10-30.",
+      "file": "345749-scope.docx",
+      "kind": "scope",
+      "sha256": "fc7a9ba6a8332289a1cc76ae3e634f507cc59091385fe3bc2e534333af7a67d2",
+      "source": "documents/files/345749.docx",
+      "source_sha256": "db2a52b55e8906077d5191f20cb6cb8c8c2da567fd3d35b8b37ed556ef1eecf8"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 8; data 2026-10-30.",
+      "file": "345749-reference.docx",
+      "kind": "reference",
+      "sha256": "533b99c7c9652bdb173b69ba46c44715e94a76be65cff18a55aba602cb8b58da",
+      "source": "documents/files/345749.docx",
+      "source_sha256": "db2a52b55e8906077d5191f20cb6cb8c8c2da567fd3d35b8b37ed556ef1eecf8"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2027-01-01.",
+      "file": "345749-date.docx",
+      "kind": "date",
+      "sha256": "778c5502800934d5687133cc09cd807293a4afb3f0282409b2d5b7ff9aa9e403",
+      "source": "documents/files/345749.docx",
+      "source_sha256": "db2a52b55e8906077d5191f20cb6cb8c8c2da567fd3d35b8b37ed556ef1eecf8"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "375208-control.docx",
+      "kind": "control",
+      "sha256": "35d35f6860e62afacc42c21c43dc52b7265cde1636a40be41f3f9879c4752a25",
+      "source": "documents/files/375208.docx",
+      "source_sha256": "23c2c274ca1bd6e7ca25c357fe623431b07c7831c605c5f2496f6fa6673c6d6d"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 60 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "375208-deadline.docx",
+      "kind": "deadline",
+      "sha256": "f17d16f5f446e2f879aa8328c9638c09bd7e2c586890b6d787a1be47d2c09eea",
+      "source": "documents/files/375208.docx",
+      "source_sha256": "23c2c274ca1bd6e7ca25c357fe623431b07c7831c605c5f2496f6fa6673c6d6d"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 700 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "375208-amount.docx",
+      "kind": "amount",
+      "sha256": "45f8815ed24ab2a3242dcc11a1f6a7482d76843ae66489b249ec6f39c71401d5",
+      "source": "documents/files/375208.docx",
+      "source_sha256": "23c2c274ca1bd6e7ca25c357fe623431b07c7831c605c5f2496f6fa6673c6d6d"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "375208-negation.docx",
+      "kind": "negation",
+      "sha256": "b825fdaa99de4ec6c5efde844b4708e298e76f541d96094359f32fc14e5a2511",
+      "source": "documents/files/375208.docx",
+      "source_sha256": "23c2c274ca1bd6e7ca25c357fe623431b07c7831c605c5f2496f6fa6673c6d6d"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres ka\u017cda osoba; art. 7; data 2026-10-30.",
+      "file": "375208-scope.docx",
+      "kind": "scope",
+      "sha256": "dd07fb07949b2c0387027be7cc008b11daf4b50aeb0cac31f6e34b390c616b2f",
+      "source": "documents/files/375208.docx",
+      "source_sha256": "23c2c274ca1bd6e7ca25c357fe623431b07c7831c605c5f2496f6fa6673c6d6d"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 8; data 2026-10-30.",
+      "file": "375208-reference.docx",
+      "kind": "reference",
+      "sha256": "c162a9fca658a720b6c3c500be755dbe526e28ab834adf0b090d87b7c1cadc0a",
+      "source": "documents/files/375208.docx",
+      "source_sha256": "23c2c274ca1bd6e7ca25c357fe623431b07c7831c605c5f2496f6fa6673c6d6d"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2027-01-01.",
+      "file": "375208-date.docx",
+      "kind": "date",
+      "sha256": "43c595d89822e8ed9d3be343cf87a5d77cfbca436ac6271df4b1fbf5fdb23475",
+      "source": "documents/files/375208.docx",
+      "source_sha256": "23c2c274ca1bd6e7ca25c357fe623431b07c7831c605c5f2496f6fa6673c6d6d"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "375209-control.docx",
+      "kind": "control",
+      "sha256": "1303763d0a8b0b5fadc8902f2972e0dc1544831450fba54378d3ea83d6c612dd",
+      "source": "documents/files/375209.docx",
+      "source_sha256": "a398594e38efe22655fd905dbc212d66d420317048f24f7acd4c926b6b1b4b88"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 60 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "375209-deadline.docx",
+      "kind": "deadline",
+      "sha256": "84b2935fe63a627fa5a06d4b8332a41f15440d554555da312ad9089db370ba83",
+      "source": "documents/files/375209.docx",
+      "source_sha256": "a398594e38efe22655fd905dbc212d66d420317048f24f7acd4c926b6b1b4b88"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 700 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "375209-amount.docx",
+      "kind": "amount",
+      "sha256": "78db38025e673b19f18bbae8a1bb5f1cb8810c4d9115025333ea933e0e9f27b4",
+      "source": "documents/files/375209.docx",
+      "source_sha256": "a398594e38efe22655fd905dbc212d66d420317048f24f7acd4c926b6b1b4b88"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "375209-negation.docx",
+      "kind": "negation",
+      "sha256": "b6d5cc04e33ea59896013263090fbcdaa0594b0298759769a8dc76e3f41927e1",
+      "source": "documents/files/375209.docx",
+      "source_sha256": "a398594e38efe22655fd905dbc212d66d420317048f24f7acd4c926b6b1b4b88"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres ka\u017cda osoba; art. 7; data 2026-10-30.",
+      "file": "375209-scope.docx",
+      "kind": "scope",
+      "sha256": "3c77060d3f4c48b56cddac9e6dea0e78068d1a2cfd21741045cd74bb1e00aad4",
+      "source": "documents/files/375209.docx",
+      "source_sha256": "a398594e38efe22655fd905dbc212d66d420317048f24f7acd4c926b6b1b4b88"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 8; data 2026-10-30.",
+      "file": "375209-reference.docx",
+      "kind": "reference",
+      "sha256": "33d498179c2373e050d6633f81e828a3bb7998bee8fd62ebb639e4aeddd54ab0",
+      "source": "documents/files/375209.docx",
+      "source_sha256": "a398594e38efe22655fd905dbc212d66d420317048f24f7acd4c926b6b1b4b88"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2027-01-01.",
+      "file": "375209-date.docx",
+      "kind": "date",
+      "sha256": "730c141065b1747333f16233b79fb6f267a25e6a630ea37af0d8af3354631ed2",
+      "source": "documents/files/375209.docx",
+      "source_sha256": "a398594e38efe22655fd905dbc212d66d420317048f24f7acd4c926b6b1b4b88"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "388341-control.docx",
+      "kind": "control",
+      "sha256": "d431d31e30eef36ea49f1225ae927793232695c03becce902c574f7c8f877b2f",
+      "source": "documents/files/388341.docx",
+      "source_sha256": "71f154713aaf2d0c82ece814607d8a7a90596e3b8f5424d3087b9a0ba864d449"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 60 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "388341-deadline.docx",
+      "kind": "deadline",
+      "sha256": "249ef446ff811ad1a8ad1b3091b25c00f514e7bd97d26091de059e99e6a32a24",
+      "source": "documents/files/388341.docx",
+      "source_sha256": "71f154713aaf2d0c82ece814607d8a7a90596e3b8f5424d3087b9a0ba864d449"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 700 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "388341-amount.docx",
+      "kind": "amount",
+      "sha256": "ff076e522b61a9e1dbfd9f1d85712c4ab4ba376251b875a51cb707cc5ddfcf51",
+      "source": "documents/files/388341.docx",
+      "source_sha256": "71f154713aaf2d0c82ece814607d8a7a90596e3b8f5424d3087b9a0ba864d449"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "388341-negation.docx",
+      "kind": "negation",
+      "sha256": "d2dfb5594e112173e3f18913326a710fa690c01d7b6fd5a973fb79286fad2e6f",
+      "source": "documents/files/388341.docx",
+      "source_sha256": "71f154713aaf2d0c82ece814607d8a7a90596e3b8f5424d3087b9a0ba864d449"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres ka\u017cda osoba; art. 7; data 2026-10-30.",
+      "file": "388341-scope.docx",
+      "kind": "scope",
+      "sha256": "16713fe785a9a9f18256b02166b36df6c91245491bd5cb51f875ff30ddce1ec8",
+      "source": "documents/files/388341.docx",
+      "source_sha256": "71f154713aaf2d0c82ece814607d8a7a90596e3b8f5424d3087b9a0ba864d449"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 8; data 2026-10-30.",
+      "file": "388341-reference.docx",
+      "kind": "reference",
+      "sha256": "2f1e41bd4269eef561bad3134a5fd60743e907069e20906ad4f7f8ab1430d6cc",
+      "source": "documents/files/388341.docx",
+      "source_sha256": "71f154713aaf2d0c82ece814607d8a7a90596e3b8f5424d3087b9a0ba864d449"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2027-01-01.",
+      "file": "388341-date.docx",
+      "kind": "date",
+      "sha256": "35be117264ccbfca71db0d90334385e8169af5e760836501305f41fff067f135",
+      "source": "documents/files/388341.docx",
+      "source_sha256": "71f154713aaf2d0c82ece814607d8a7a90596e3b8f5424d3087b9a0ba864d449"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "412632-control.docx",
+      "kind": "control",
+      "sha256": "cfee5b1e4979faac102c16e7340fd5a6fcbf9779e421261ec6c3a1b16b001c08",
+      "source": "documents/files/412632.docx",
+      "source_sha256": "9608e04169ff1e32d4f9ad5a6e74a4f84f0ef0254e0fac9b21a60b4f9dca4751"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 60 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "412632-deadline.docx",
+      "kind": "deadline",
+      "sha256": "9f4c0568f81436d9e3fb3ce0b08a329e94ccb57d6c2c271487aab12c0145b3bb",
+      "source": "documents/files/412632.docx",
+      "source_sha256": "9608e04169ff1e32d4f9ad5a6e74a4f84f0ef0254e0fac9b21a60b4f9dca4751"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 700 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "412632-amount.docx",
+      "kind": "amount",
+      "sha256": "64c0aac8ea0d2027b10eaa80f0d5127366eb5b77a605e9cfa52f53089f09cee8",
+      "source": "documents/files/412632.docx",
+      "source_sha256": "9608e04169ff1e32d4f9ad5a6e74a4f84f0ef0254e0fac9b21a60b4f9dca4751"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "412632-negation.docx",
+      "kind": "negation",
+      "sha256": "e1dee93eafbd62b98b6092d8fe43a7f7dbeed8b4333b847e9e985c7cd60753b8",
+      "source": "documents/files/412632.docx",
+      "source_sha256": "9608e04169ff1e32d4f9ad5a6e74a4f84f0ef0254e0fac9b21a60b4f9dca4751"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres ka\u017cda osoba; art. 7; data 2026-10-30.",
+      "file": "412632-scope.docx",
+      "kind": "scope",
+      "sha256": "44a7527e0bf4bd634dfc0c799b1207855fee7bfd85ba800b0fe925c684c79c29",
+      "source": "documents/files/412632.docx",
+      "source_sha256": "9608e04169ff1e32d4f9ad5a6e74a4f84f0ef0254e0fac9b21a60b4f9dca4751"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 8; data 2026-10-30.",
+      "file": "412632-reference.docx",
+      "kind": "reference",
+      "sha256": "60b81637039f93c0ae6e2824444b595ff382e188da45308cdea73659b12ba8eb",
+      "source": "documents/files/412632.docx",
+      "source_sha256": "9608e04169ff1e32d4f9ad5a6e74a4f84f0ef0254e0fac9b21a60b4f9dca4751"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2027-01-01.",
+      "file": "412632-date.docx",
+      "kind": "date",
+      "sha256": "6b9cf701f6f816e8a99cf1c34212afd1f5cf50189bffd04b305aa847ca2fcfd6",
+      "source": "documents/files/412632.docx",
+      "source_sha256": "9608e04169ff1e32d4f9ad5a6e74a4f84f0ef0254e0fac9b21a60b4f9dca4751"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "415973-control.docx",
+      "kind": "control",
+      "sha256": "e3e6476c1b1bc88d2194a51824db0e32babd7fa55f05c54dcd9ba605ff169434",
+      "source": "documents/files/415973.docx",
+      "source_sha256": "34f2df09589d9d6ba716abd286b99d3951c59235a30852fcc2235d36fdff80a6"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 60 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "415973-deadline.docx",
+      "kind": "deadline",
+      "sha256": "5a6de6136d09b1b42a6f2f2d4ccdc077485e4a063a7b11b54111100ff2b3f13a",
+      "source": "documents/files/415973.docx",
+      "source_sha256": "34f2df09589d9d6ba716abd286b99d3951c59235a30852fcc2235d36fdff80a6"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 700 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "415973-amount.docx",
+      "kind": "amount",
+      "sha256": "043e9b1d2a54b20ba154f55ae0b863872b33a8c5c0dd5602f5ccb2426b30c5cb",
+      "source": "documents/files/415973.docx",
+      "source_sha256": "34f2df09589d9d6ba716abd286b99d3951c59235a30852fcc2235d36fdff80a6"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "415973-negation.docx",
+      "kind": "negation",
+      "sha256": "559e1c44629c933e6c155087f9af338c14d60a0e2cdc0fda0240b4a02e394ab6",
+      "source": "documents/files/415973.docx",
+      "source_sha256": "34f2df09589d9d6ba716abd286b99d3951c59235a30852fcc2235d36fdff80a6"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres ka\u017cda osoba; art. 7; data 2026-10-30.",
+      "file": "415973-scope.docx",
+      "kind": "scope",
+      "sha256": "045d79e45687ccc6211a5dfd8514eccdce4810bde7770262777f032bd421d072",
+      "source": "documents/files/415973.docx",
+      "source_sha256": "34f2df09589d9d6ba716abd286b99d3951c59235a30852fcc2235d36fdff80a6"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 8; data 2026-10-30.",
+      "file": "415973-reference.docx",
+      "kind": "reference",
+      "sha256": "9945ddd54ab2340710ad18eb200ca64a9152e01827f8d1b1fbdb1c51ab61bcaa",
+      "source": "documents/files/415973.docx",
+      "source_sha256": "34f2df09589d9d6ba716abd286b99d3951c59235a30852fcc2235d36fdff80a6"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2027-01-01.",
+      "file": "415973-date.docx",
+      "kind": "date",
+      "sha256": "67f7ec37087bee11957916734d9560b6f6c063ea63ed015288c1a7f1cf9c8a93",
+      "source": "documents/files/415973.docx",
+      "source_sha256": "34f2df09589d9d6ba716abd286b99d3951c59235a30852fcc2235d36fdff80a6"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "415974-control.docx",
+      "kind": "control",
+      "sha256": "2fb9b06dd7119607a6a024a8ee0b895655d8d5ca1554959419ec5f1ab2e294d4",
+      "source": "documents/files/415974.docx",
+      "source_sha256": "3052a2e665f8cd91c24a85b42fdff263343f55d3b5e19ca5e9fcb69f8160f3d7"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 60 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "415974-deadline.docx",
+      "kind": "deadline",
+      "sha256": "c9d6fb50b9277a227ecb36294613d4dfa4a2343eaab4aafb4976155fabe241d0",
+      "source": "documents/files/415974.docx",
+      "source_sha256": "3052a2e665f8cd91c24a85b42fdff263343f55d3b5e19ca5e9fcb69f8160f3d7"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 700 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "415974-amount.docx",
+      "kind": "amount",
+      "sha256": "5276eb50a937484c687182c6f84654a86d7cfc1ec8b5660898bba0fa3daa9275",
+      "source": "documents/files/415974.docx",
+      "source_sha256": "3052a2e665f8cd91c24a85b42fdff263343f55d3b5e19ca5e9fcb69f8160f3d7"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; stosuje; zakres cudzoziemiec; art. 7; data 2026-10-30.",
+      "file": "415974-negation.docx",
+      "kind": "negation",
+      "sha256": "3c80538a9d183680a012d9456b3bc6ab553b255a9384254ba250915d03a77005",
+      "source": "documents/files/415974.docx",
+      "source_sha256": "3052a2e665f8cd91c24a85b42fdff263343f55d3b5e19ca5e9fcb69f8160f3d7"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres ka\u017cda osoba; art. 7; data 2026-10-30.",
+      "file": "415974-scope.docx",
+      "kind": "scope",
+      "sha256": "a0f9aa4066b24d2f79cabb8acc852bfb0dbda1c3f3d88f42b6a556ee56de4942",
+      "source": "documents/files/415974.docx",
+      "source_sha256": "3052a2e665f8cd91c24a85b42fdff263343f55d3b5e19ca5e9fcb69f8160f3d7"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 8; data 2026-10-30.",
+      "file": "415974-reference.docx",
+      "kind": "reference",
+      "sha256": "f4cbfbffd9cda15d9eebba26298689d083537e76a2429e2943492cf2eacde264",
+      "source": "documents/files/415974.docx",
+      "source_sha256": "3052a2e665f8cd91c24a85b42fdff263343f55d3b5e19ca5e9fcb69f8160f3d7"
+    },
+    {
+      "clause": "Cudzoziemiec: termin 30 dni; kwota 500 z\u0142; nie stosuje; zakres cudzoziemiec; art. 7; data 2027-01-01.",
+      "file": "415974-date.docx",
+      "kind": "date",
+      "sha256": "a6975e51d0be087ee1136a2a0ca7c2e1c7b3797323347f6fc5f89a95c88126e4",
+      "source": "documents/files/415974.docx",
+      "source_sha256": "3052a2e665f8cd91c24a85b42fdff263343f55d3b5e19ca5e9fcb69f8160f3d7"
+    }
+  ],
+  "scope": "8raw-derived sourceXML-only packages x7controlled clauses; notactuallegalfacts",
+  "source_pins": {
+    "documents/files/339907.docx": "311505c01eaa82b91deefc2968077b5ae27f4115b35580f22cf28e34a3baeb97",
+    "documents/files/345749.docx": "db2a52b55e8906077d5191f20cb6cb8c8c2da567fd3d35b8b37ed556ef1eecf8",
+    "documents/files/375208.docx": "23c2c274ca1bd6e7ca25c357fe623431b07c7831c605c5f2496f6fa6673c6d6d",
+    "documents/files/375209.docx": "a398594e38efe22655fd905dbc212d66d420317048f24f7acd4c926b6b1b4b88",
+    "documents/files/388341.docx": "71f154713aaf2d0c82ece814607d8a7a90596e3b8f5424d3087b9a0ba864d449",
+    "documents/files/412632.docx": "9608e04169ff1e32d4f9ad5a6e74a4f84f0ef0254e0fac9b21a60b4f9dca4751",
+    "documents/files/415973.docx": "34f2df09589d9d6ba716abd286b99d3951c59235a30852fcc2235d36fdff80a6",
+    "documents/files/415974.docx": "3052a2e665f8cd91c24a85b42fdff263343f55d3b5e19ca5e9fcb69f8160f3d7"
+  }
+}

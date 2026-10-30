@@ -8383,3 +8383,43 @@ Full gate: 7038 tests/247.926s/92%; mypy 616, Ruff/format 683; freeze683 с pypr
 [Qualification](../assets/audits/2026-10-30-physical-callers/qualification.json),
 [final handoff](../assets/audits/2026-10-30-physical-callers/final-handoff.json),
 [populated backdrop](../assets/audits/2026-10-30-physical-callers/populated-handoff.json).
+
+
+J177 commit `ac7c57448bc4113d88ea6fc1c2821cd75b3f0323`: четыре CI jobs и actual relay
+`27cb71e9 → ac7c5744`, health 45s/timer подтверждены
+[release proof](../assets/audits/2026-10-30-physical-callers/release.json).
+
+
+<a id="j178"></a>
+
+## J178 — bounded Word package structure sidecar
+
+`extract_with_structure` возвращает transient companion из того же XML walk: body/note
+paragraph, table row/cell, note call/actual last target, observed support и legacy view.
+Default opt-in выключен; старые WordText/Note JSON, identities и parse path не меняются.
+Новые структуры не объявляются fact/block/span coordinates текущего reader; carrier,
+необойдённые XML parts/объекты и дальнейшая DA3.2/DA3.3 остаются отдельной работой.
+
+Независимый review шести исходных pins/17 controls green; 116 focused и strict mypy/Ruff.
+Один baseline/candidate replay 3055 DOCX/DOCM: текст, old JSON/IDs, trim/digest, physical
+selection и provider-text exact; два исходных ValueError 657792/657796 unchanged.
+11 pinned ZIP дали 74 actual Word leaf bindings, без ошибок; 56 real-source-derived
+мутаций дат/сумм/отрицаний/scope/ссылок сохраняют clauses после trim и меняют fingerprints.
+3053 manifests: 900 complete, 2153 partial с unknown full-stream hash. Лимит 512KiB,
+4096 events; partial сохранили 1171–1206 events, то есть сработал byte/oversized-event
+budget, отдельной классификации этих двух причин в исходном summary нет.
+169404/1991043 blocks, 1388/5320 calls, 2957405/29198143 support retained/observed:
+этот prefix не является полной картой документа.
+
+Root сохранил exact AST Word classes при объединении с J177; component/recipe SHA
+изменились честно. Final combined probe: 9 raw/400412B, 13 captures/74 metadata и
+четыре прежних реальных Word notes/parts — old hashes/independent XML paths exact,
+workers1/4 SQL/order/business, cache+365 zero growth, doctor/restore2 green.
+Ни успешная матрица 3055/11, ни прежние hashes не перезапускались/переименовывались.
+Driver-only repairs (keyword/field/tuple-list comparison) сохранены отдельно, source findings
+не было. Общий gate Word+default-off maintenance: 7077 tests/322.36s/92%, mypy620,
+Ruff688; 705 source/config/YAML/rules pins unchanged.
+[Qualification](../assets/audits/2026-10-30-word-structure/qualification.json),
+[parity](../assets/audits/2026-10-30-word-structure/parity-proof.json),
+[combined native](../assets/audits/2026-10-30-word-structure/combined-native.json),
+[shared gate](../assets/audits/2026-10-30-word-maintenance-gate/qualification.json).

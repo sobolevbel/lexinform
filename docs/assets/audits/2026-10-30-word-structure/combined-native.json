@@ -1,0 +1,33 @@
+{
+  "actual_adapter_sha256": "c3be699a963e9c7209b55ab242a17c66e690e1b241e8ffb8e8497e06f82891bd",
+  "actual_current_recipe_ids": [
+    "927d193063a506fdae5d4f887516f6896da3974eb5abebf5b048bce91d5c0516"
+  ],
+  "business_io_workers_parity": true,
+  "cache_repeat365_zero_sql_growth": true,
+  "captures": 13,
+  "current_freeze_sha256": "a9366accdf90664d83e789a713241431815c4074d76893c0256ff934513b8345",
+  "driver_sha256": {
+    "runtime_profile.py": "a455d41b6dc0ee860c5d4bb17af273d4a1328fe768543b06fc36fbb937e9ae5b",
+    "word_probe.py": "b21ed7002281c91cb69519aca8f328bb58b40bedbfb1c2726731f42f201c54fd"
+  },
+  "incremental_physical_gzip_bytes": 18115,
+  "incremental_physical_sql_bytes": 111075,
+  "independent_word_paths_current_root_module": true,
+  "metadata": 74,
+  "nonphysical_sql_unchanged_except_actual_known_child_artifacts": true,
+  "old_pins_not_relabelled": true,
+  "old_word_legacy_provider_fingerprints_exact": true,
+  "out_driver_repair": "Wordprobe initial rawtuple/listmetadataJSONcomparison normalized only inoutdriver; no sourcefinding; originalfailedlogpreserved",
+  "proof_sha256": {
+    "runtime-profile.json": "f361f788958d25bce34e28ba2fd53a48060dc9c07b9538d6ed53758dd62144a5",
+    "word-proof.json": "2fcebc9883858c56231f9f9102fdb5400eb35072089c081acaae84b316152fa9"
+  },
+  "raw_bytes": 400412,
+  "raw_controls": 9,
+  "restore_twice_doctor_green": true,
+  "root_freeze705_exact_before_after": true,
+  "scope": "Bounded actual current mergedRoot probe only; no3055Word/11archive matrixrerun, no Settings/.env/paid/network, no source edits",
+  "status": "qualified",
+  "word_cases": 4
+}

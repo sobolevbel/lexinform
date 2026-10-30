@@ -1,0 +1,12 @@
+{
+  "actual_source_sha256": {
+    "src/lexinform/adapters/document_text.py": "c3be699a963e9c7209b55ab242a17c66e690e1b241e8ffb8e8497e06f82891bd",
+    "src/lexinform/models/__init__.py": "05760b62a2814358979109885e71a5949fd44e4fe9b636b789e40435ceaf5248",
+    "src/lexinform/models/word_structure.py": "779953846cc9a697e8e90238109de0d745b8b304a3ed09a8d317b60e9fb104aa",
+    "src/lexinform/word_structure.py": "b6f82ed926a5d284eef50340c628ec2ca41bd37226344f7d4487a8366953297b",
+    "tests/unit/test_word_structure.py": "48095aa77850cb6e1ffe98f2bf5e2e69f86447c6b83d80cbb66ff02fad20a2db",
+    "tools/replay_word_blocks.py": "5731493ed9a700b17a6f59e31aa909a8bafa51938e34d70190406d96c10fbfdf"
+  },
+  "protected_word_classes_ast_exact": true,
+  "component_hash_changed_due_to_current_physical_seam": true
+}

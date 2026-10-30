@@ -12,9 +12,98 @@ from xml.etree import ElementTree as ET
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
-from lexinform.models import ExtractedParts, WordDetailedExtraction, WordTextExtraction
+from lexinform.models import (
+    ExtractedParts,
+    WordDetailedExtraction,
+    WordStructureBlock,
+    WordStructureCall,
+    WordStructuredExtraction,
+    WordStructureSupport,
+    WordTextExtraction,
+)
 from tools.corpus_artifacts import digest, observation_changes, read_artifact, write_json
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
+
+
+class StructuredWordReader(DocxTextExtractor):
+    def __init__(self) -> None:
+        self.structures: list[WordStructuredExtraction] = []
+
+    def extract_with_notes(self, data: bytes) -> WordDetailedExtraction:
+        result = self.extract_with_structure(data)
+        self.structures.append(result)
+        return result.legacy
+
+
+def verify_structure(data: bytes, result: WordStructuredExtraction) -> dict[str, Any]:
+    restored = WordStructuredExtraction.model_validate_json(result.model_dump_json())
+    if restored != result:
+        raise ValueError("Word structure changed during its JSON round trip")
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        roots = {}
+        for name in ("word/document.xml", *(part.name for part in result.legacy.notes.parts)):
+            content = archive.read(name)
+            if b"<!DOCTYPE" not in content.upper() and b"<!ENTITY" not in content.upper():
+                roots[name] = ET.fromstring(content)
+    targets: dict[tuple[str, str], int] = {}
+    indices = {
+        (note.xml_part, note.path): index for index, note in enumerate(result.legacy.notes.notes)
+    }
+    for part in result.legacy.notes.parts:
+        if part.state != "read":
+            continue
+        root = roots[part.name]
+        namespace = root.tag.rsplit("}", 1)[0] + "}"
+        kind = "footnote" if part.name == "word/footnotes.xml" else "endnote"
+        for position, node in enumerate(root):
+            identity = node.get(namespace + "id")
+            if identity is not None:
+                if node.tag == namespace + kind:
+                    targets[(kind, identity)] = indices[(part.name, (position,))]
+                else:
+                    targets.pop((kind, identity), None)
+    for record in (*result.structure.blocks, *result.structure.calls, *result.structure.support):
+        node = roots[record.xml_part]
+        for index in record.path:
+            node = node[index]
+        local = node.tag.rsplit("}", 1)[-1]
+        if (
+            isinstance(record, WordStructureBlock)
+            and local != {"paragraph": "p", "table_row": "tr", "table_cell": "tc"}[record.kind]
+        ):
+            raise ValueError("Word structure block path differs from its XML element")
+        if isinstance(record, WordStructureSupport) and (node.tag, len(node)) != (
+            record.tag,
+            record.child_count,
+        ):
+            raise ValueError("Word structure support path differs from its XML node")
+        if isinstance(record, WordStructureCall):
+            namespace = node.tag.rsplit("}", 1)[0] + "}"
+            if (
+                local != record.call.kind + "Reference"
+                or node.get(namespace + "id", "") != record.call.identity
+            ):
+                raise ValueError("Word structure call path differs from its XML reference")
+            if record.call.target != targets.get((record.call.kind, record.call.identity)):
+                raise ValueError("Word structure call differs from the actual last XML target")
+            if record.xml_part != "word/document.xml" and record.legacy_view != "missing_marker":
+                raise ValueError("Note-part calls cannot invent legacy inline expansion")
+    value = result.structure
+    return {
+        "manifest_sha256": value.manifest_sha256,
+        "coverage": value.coverage,
+        "observed_blocks": value.block_count,
+        "observed_calls": value.call_count,
+        "observed_support": value.support_count,
+        "retained_blocks": len(value.blocks),
+        "retained_calls": len(value.calls),
+        "retained_support": len(value.support),
+        "limit_reached": value.limit_reached,
+        "full_observed_hash": value.observed_stream_sha256,
+        "max_events": value.max_events,
+        "max_bytes": value.max_bytes,
+        "independent_xml_paths": True,
+    }
 
 
 def word_envelope(data: bytes, reader: DocxTextExtractor) -> ExtractedParts:
@@ -48,9 +137,14 @@ def physical_notes(data: bytes, reader: DocxTextExtractor) -> WordDetailedExtrac
 
 
 def snapshot(
-    data: bytes, *, adapter: bool, physical_parts: bool = False, with_notes: bool = False
+    data: bytes,
+    *,
+    adapter: bool,
+    physical_parts: bool = False,
+    with_notes: bool = False,
+    with_structure: bool = False,
 ) -> tuple[dict[str, Any], dict[str, Any] | None]:
-    reader = DocxTextExtractor()
+    reader = StructuredWordReader() if with_structure else DocxTextExtractor()
     result = None
     detailed = None
     try:
@@ -165,6 +259,13 @@ def snapshot(
             },
             "losses": notes.losses,
         }
+    if with_structure:
+        if not isinstance(reader, StructuredWordReader) or len(reader.structures) != 1:
+            raise ValueError("Word structure must describe its one actual physical invocation")
+        structured = reader.structures[0]
+        if structured.legacy != detailed:
+            raise ValueError("Word structure differs from its actual physical legacy manifests")
+        physical["structure"] = verify_structure(data, structured)
     return core, physical
 
 
@@ -174,7 +275,9 @@ def run(
     catalog_sha256: str,
     output: Path,
     *,
-    mode: Literal["library", "adapter", "parts", "notes", "notes-parts"],
+    mode: Literal[
+        "library", "adapter", "parts", "notes", "notes-parts", "structure", "structure-parts"
+    ],
     reference: Path | None = None,
     reference_sha256: str | None = None,
 ) -> int:
@@ -215,7 +318,11 @@ def run(
     before = source_fingerprints()
     result: dict[str, Any] = {
         "suite": "word-blocks-v1",
-        "entrypoint": "physical_word_notes"
+        "entrypoint": "word_structure_parts"
+        if mode == "structure-parts"
+        else "word_structure"
+        if mode == "structure"
+        else "physical_word_notes"
         if mode == "notes-parts"
         else "word_notes"
         if mode == "notes"
@@ -247,12 +354,21 @@ def run(
                 data = path.read_bytes()
                 if digest(data) != sha:
                     raise ValueError("Raw input SHA mismatch")
-                core, physical = snapshot(
-                    data,
-                    adapter=mode != "library",
-                    physical_parts=mode in ("parts", "notes-parts"),
-                    with_notes=mode in ("notes", "notes-parts"),
-                )
+                if mode in ("structure", "structure-parts"):
+                    core, physical = snapshot(
+                        data,
+                        adapter=True,
+                        physical_parts=mode == "structure-parts",
+                        with_notes=True,
+                        with_structure=True,
+                    )
+                else:
+                    core, physical = snapshot(
+                        data,
+                        adapter=mode != "library",
+                        physical_parts=mode in ("parts", "notes-parts"),
+                        with_notes=mode in ("notes", "notes-parts"),
+                    )
                 result["observations"][name] = core
                 if physical is not None:
                     result["physical"][name] = physical
@@ -279,7 +395,17 @@ def main() -> None:
     parser.add_argument("--catalog-sha256", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
-        "--mode", choices=("library", "adapter", "parts", "notes", "notes-parts"), required=True
+        "--mode",
+        choices=(
+            "library",
+            "adapter",
+            "parts",
+            "notes",
+            "notes-parts",
+            "structure",
+            "structure-parts",
+        ),
+        required=True,
     )
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--reference-sha256")

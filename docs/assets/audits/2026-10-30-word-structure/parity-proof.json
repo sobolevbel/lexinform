@@ -1,0 +1,99 @@
+{
+  "leaf": {
+    "notes": {
+      "cases": 3055,
+      "complete": 900,
+      "counts": {
+        "observed_blocks": 1991043,
+        "observed_calls": 5320,
+        "observed_support": 29198143,
+        "retained_blocks": 169404,
+        "retained_calls": 1388,
+        "retained_support": 2957405
+      },
+      "event_count_limit_hits": 0,
+      "fullhash_unknown_all_partial": true,
+      "inputs_source_unchanged": true,
+      "legacy_core_json_ids_trim_normalized_physical_selection_providertext_exact": true,
+      "limit_reached": 2153,
+      "limiter_explanation": "All2153partialareexplicitretentionlimits;1171\u20131206events retained below4096event cap, accounted512KiB byte/oversized-event budget; summarydoesnotseparatelyrecordwhichofthese2byte-pathstriggered",
+      "limits": {
+        "accounted_header_reserve": 4096,
+        "max_bytes": 524288,
+        "max_events": 4096,
+        "per_record_reserve": 256
+      },
+      "manifests": 3053,
+      "original_errors": {
+        "documents/files/657792.docx": "ValueError",
+        "documents/files/657796.docx": "ValueError"
+      },
+      "partial": 2153,
+      "partial_retained_event_range": [
+        1171,
+        1206
+      ],
+      "raw_input_pins": 3055
+    },
+    "parts": {
+      "cases": 3055,
+      "complete": 900,
+      "counts": {
+        "observed_blocks": 1991043,
+        "observed_calls": 5320,
+        "observed_support": 29198143,
+        "retained_blocks": 169404,
+        "retained_calls": 1388,
+        "retained_support": 2957405
+      },
+      "event_count_limit_hits": 0,
+      "fullhash_unknown_all_partial": true,
+      "inputs_source_unchanged": true,
+      "legacy_core_json_ids_trim_normalized_physical_selection_providertext_exact": true,
+      "limit_reached": 2153,
+      "limiter_explanation": "All2153partialareexplicitretentionlimits;1171\u20131206events retained below4096event cap, accounted512KiB byte/oversized-event budget; summarydoesnotseparatelyrecordwhichofthese2byte-pathstriggered",
+      "limits": {
+        "accounted_header_reserve": 4096,
+        "max_bytes": 524288,
+        "max_events": 4096,
+        "per_record_reserve": 256
+      },
+      "manifests": 3053,
+      "original_errors": {
+        "documents/files/657792.docx": "ValueError",
+        "documents/files/657796.docx": "ValueError"
+      },
+      "partial": 2153,
+      "partial_retained_event_range": [
+        1171,
+        1206
+      ],
+      "raw_input_pins": 3055
+    }
+  },
+  "mutations": {
+    "all_clauses_retained_in_trim": true,
+    "artificial_derivatives_not_legal_facts": true,
+    "cases": 56,
+    "clause_block_hashes_verified_candidate": true,
+    "dimensions": [
+      "deadline",
+      "amount",
+      "negation",
+      "scope",
+      "reference",
+      "date"
+    ],
+    "distinct7variants_per_source": true,
+    "legacy_json_text_trim_digests_exact": true,
+    "sources": 8
+  },
+  "nested": {
+    "actual_word_bindings": 74,
+    "all_physical_json_selection_digest_trim_bindings_exact": true,
+    "exclusions": "11existingexplicitsentinels only; no scan/claim ofall1803ZIPs; standaloneWordXML/DOC/ODT excludedfromnewsidecar",
+    "independent_xml_paths": true,
+    "raw_input_pins": 11,
+    "roots": 11
+  }
+}

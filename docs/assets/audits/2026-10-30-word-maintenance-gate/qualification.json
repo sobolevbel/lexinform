@@ -1,0 +1,20 @@
+{
+  "scope": "Coalesced working-tree candidate containing Word6 and maintenance4; common full gate before two independent owned commits, not a claim that intermediate Word-only commit contains maintenance tests",
+  "suite": [
+    {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "7077",
+      "time": "321.996",
+      "timestamp": "2026-10-30T15:38:52.196022+01:00"
+    }
+  ],
+  "pytest_reported_seconds": 322.36,
+  "coverage_percent": 92,
+  "mypy_files": 620,
+  "ruff_formatted_files": 688,
+  "source_config_freeze_paths": 705,
+  "source_freeze_unchanged": true
+}

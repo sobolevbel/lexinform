@@ -493,6 +493,11 @@ __all__ = [
     "WordNoteExtraction",
     "WordNoteXmlPart",
     "WordDetailedExtraction",
+    "WordStructuredExtraction",
+    "WordStructureExtraction",
+    "WordStructureBlock",
+    "WordStructureCall",
+    "WordStructureSupport",
     "WordPartExtraction",
     "WordPartNoteExtraction",
     "WordTextBlock",
@@ -807,3 +812,8 @@ from lexinform.models.source_omissions import SourceMetadataOmission as SourceMe
 from lexinform.models.source_omissions import (
     SourceReferenceOmissionOwner as SourceReferenceOmissionOwner,
 )
+from lexinform.models.word_structure import WordStructureBlock as WordStructureBlock
+from lexinform.models.word_structure import WordStructureCall as WordStructureCall
+from lexinform.models.word_structure import WordStructuredExtraction as WordStructuredExtraction
+from lexinform.models.word_structure import WordStructureExtraction as WordStructureExtraction
+from lexinform.models.word_structure import WordStructureSupport as WordStructureSupport

@@ -1,0 +1,19 @@
+{
+  "scope": "Opt-in bounded Word body/note paragraph/row/cell/call/support sidecar in the existing XML walk; no carrier/facts/SQL/archive activation",
+  "independent_review": "Original6sourcepins b5dae7bc independently checked and17controls passed before raw; Root merged actual Word classes AST exactly, five otherfiles SHAexact; current combined module and actual recipe independently qualified",
+  "default_opt_in": false,
+  "frozen_word_patch": "606c74aa94ad7b608529a0f0bc0d5856e7db560046098825094e2f50561bfdd9",
+  "actual_combined_recipe_ids": [
+    "927d193063a506fdae5d4f887516f6896da3974eb5abebf5b048bce91d5c0516"
+  ],
+  "legacy_corpus_cases": 3055,
+  "legacy_successes": 3053,
+  "unchanged_original_errors": 2,
+  "nested_zip_cases": 11,
+  "actual_word_leaf_bindings": 74,
+  "meaningful_mutations": 56,
+  "partial_manifests": 2153,
+  "complete_manifests": 900,
+  "limits": "512KiB/4096event prefix; observed/retained totals separate; every partial full-stream hash unknown; not a full package/headers/fields/drawing/mergedgeometry/fact-coordinate claim",
+  "shared_full_gate": "../2026-10-30-word-maintenance-gate/qualification.json"
+}
