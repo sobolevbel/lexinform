@@ -8423,3 +8423,43 @@ Ruff688; 705 source/config/YAML/rules pins unchanged.
 [parity](../assets/audits/2026-10-30-word-structure/parity-proof.json),
 [combined native](../assets/audits/2026-10-30-word-structure/combined-native.json),
 [shared gate](../assets/audits/2026-10-30-word-maintenance-gate/qualification.json).
+
+
+<a id="j179"></a>
+
+## J179 — exclusive finite state maintenance entrypoint
+
+DA1.8 реализован для поддерживаемых операций. Manual `maintenance_spec` входит в тот же
+`lexinform-daily` job lock до любых normal commands/backfill/index/run. Строгий JSON
+4096B разрешает только existing finite legacy compaction: expected Git state, неизменённый
+tracked SQL, actual DB == scratch restore+migrations, snapshot/entire-plan SHA и фиксированный
+UTC import time. Никакого произвольного SQL, заменяющего dump, второго lease/backend или
+нового submitter. Только successful applied transaction разрешает общий final checkpoint
+SQL+реального polling manifest. Stale/invalid/no-op/dry-run, включая DDL restore delta,
+не пишут canonical state/inbox; unrelated relay acknowledgement подавлен.
+
+Default `LEXINFORM_STATE_MAINTENANCE=off` сохранён. DA6.5 продвинут до manual writer и
+snapshot-specific qualification; actual production import не запускался и не объявляется
+принятым. No automatic maintenance/sends/paid processing при обычном run.
+
+Независимый Root review точных четырёх paths до copied-state; 200 focused/22 новых tests.
+Root fresh fetch подтвердил state412e: original schema63, SQL20886677B/a39d69e…, восстановлен
+в65. Один local-only Git/DB replay: 326 values/420 occurrences/62 stored shared bodies/1marker,
+282 approved projection cells; 44 tables/3194 original rows сохранены с exact hydrated/public
+views. Три doctor before/after exact, включая четыре прежних work warnings; новых errors нет.
+Фактически pending batches/items 0; nonempty manifest проверен отдельным executable fixture,
+не выдаётся за natural case. Shared checkpoint подтвердил local remote commit, restore2 exact,
++365 no-op без authorization/SQL growth. Пять actual-state guards (stale, wrong plan, dry-run,
+postapply rollback, foreign DB) оставили DB/remote без изменений и без authorization.
+
+Baseline current65: SQL20889343/gzip4191374 → SQL21436990/gzip4314030:
++547647 SQL/+122656 gzip (+2.9264%), existing105% budget не ослаблен. Darwin measurements:
+prepare CLI0.812s/585MiB, apply CLI3.655s/949MiB; full apply+parity phase4.775s/991MiB,
+two checkpoints1.482s/479MiB; extra origin restore≈0.22s. Это один20MB snapshot и process
+high-water RSS, не incremental scratch RSS/hosted benchmark/global forecast.
+Общий final gate с J178: 7077 tests/322.36s/92%, mypy620, Ruff688, 705 frozen inputs exact;
+отдельные owned commits используют общий проверенный candidate, не два повторных full run.
+[Qualification](../assets/audits/2026-10-30-locked-maintenance/qualification.json),
+[current-state proof](../assets/audits/2026-10-30-locked-maintenance/current-state-handoff.json),
+[guards](../assets/audits/2026-10-30-locked-maintenance/actual-state-guards.json),
+[shared gate](../assets/audits/2026-10-30-word-maintenance-gate/qualification.json).

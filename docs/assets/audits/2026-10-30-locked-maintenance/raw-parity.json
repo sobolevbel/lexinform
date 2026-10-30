@@ -1,0 +1,11 @@
+{
+  "changed_projection_cells": 282,
+  "legacy_tables": {
+    "legacy_analysis_bodies": 62,
+    "legacy_result_imports": 1,
+    "legacy_result_occurrences": 420,
+    "legacy_result_values": 326
+  },
+  "original_rows": 3194,
+  "tables": 44
+}

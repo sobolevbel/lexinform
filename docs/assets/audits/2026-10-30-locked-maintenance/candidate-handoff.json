@@ -1,0 +1,63 @@
+{
+  "base": "27cb71e95edc5f9adf37a09a4d52389c7c1780d7",
+  "status": "default_off_candidate_pending_independent_review_and_current_copied_state_qualification",
+  "owned_paths": {
+    ".github/workflows/daily.yml": "be9b7783783455ff6e58a06f837e8e823410c860fe8bb279bd327d68d529c2f5",
+    "tools/state_maintenance.py": "6fe8a50fc0a624526eec53c9bbfc9fd5b422ee240a5d9ccce8840b56214d97e2",
+    "tests/unit/test_state_maintenance.py": "f651fda5df98461c49ddb8caae123133c448ec6762cdbf0b267d272f12383cd9",
+    "docs/operations/state-maintenance.md": "51dd1e66722c5755a51c953fdddf8ba54894e1bd232bc5577a05d57b964aac30"
+  },
+  "baseline_dependencies": {
+    "src/lexinform/adapters/sqlite_repo.py": "aee1a23e1aa6f8cd6605ab9e847a5b86b773ea4a9404a85cd4050a708b3f332a",
+    "src/lexinform/legacy_maintenance.py": "8fc27831a542671c5841fc8bb6a1733c5cb6a33d3d05c9d124cc93afc7921e0b",
+    "src/lexinform/adapters/state_checkpoint.py": "649f8e97d04214e5fa67dec68752bcb37cf9148e045c1bc783f9c01343962aa6",
+    "src/lexinform/adapters/state_snapshot.py": "8648f5ab818bc282810f526f9b06d11259e2e5b37fd340ff251dc100b81a21f4",
+    "pyproject.toml": "621e61dd1e87aa07a9d1b2ab37fcb678e36696cc737c0342c52399a5c41cd25b",
+    "uv.lock": "7c705f291b0fdc70cea72f41cc0cf1bd9799ba1abef228c6a89b9218b17afa24",
+    "AGENTS.md": "1f60fd243a8053674626d9f5126899951c0aa98cb381bf5751e9f31ba80044ec",
+    ".claude/rules/operations.md": "b5967919d2ed7ed68c1c01e89720b5854de660b33379f84b40a3c568c315652e",
+    ".claude/rules/database.md": "49e543a93e181f087c48f0a50a59afe267493beaf5a806b4797ce9740469cb04"
+  },
+  "patch_sha256": "6ea3fbf37a4cfe9919f529ef35596e6980a644840a1a7c747ba2fbf3d11ddfde",
+  "source_freeze_sha256": "dbcca991debbbab87ec9e72d3128567024f76e96fd66937d66e0d6680c3e5e6d",
+  "implementation": "One strict4096byte maintenance_spec manual early branch inside existing lexinform-daily job; operation legacy_compact only; expectedstatecommit+unchanged trackedSQL, workingDB equal scratchrestore+migrations, reviewed exactsnapshot+entireplanSHA and fixedUTCimporttime. Existing finite plan/apply, then caller shared GitStateCheckpoint. No new schema/storage/lease/framework/Settings/provider path.",
+  "guards": [
+    "Repository variable LEXINFORM_STATE_MAINTENANCE=on required for actualapply; absent/off remainsdisabled.",
+    "Only actual applied=true transaction emits maintenance_authorized=true; no-op/rejected/dryrun cannotfinalpush, including migrationdelta. Both Actions condition and executable shell guard enforce it.",
+    "No normalbackfill/index/run/commands duringmaintenance; inboxcheckout/commit skipped; unrelated relaylog_message_id suppressed globally.",
+    "Scratchorigin checks and plan recomputation precedemutation; outeratomic rollsback laterfailure. Erroroutput classonly, no input/plan/SQL bodies."
+  ],
+  "checks": {
+    "focused_passed": 200,
+    "new_unit_cases": 22,
+    "seconds": 27.06,
+    "strict_mypy_files": 2,
+    "ruff_owned_python_files": 2,
+    "ruff_format": "2alreadyformatted",
+    "git_diff_check": "passed"
+  },
+  "focused_command": "PYTHONPATH=$PWD/src:$PWD pytest -o addopts='-n 2 -m \"not integration and not local_http\"' -q tests/unit/test_state_maintenance.py tests/unit/test_daily_workflow.py tests/unit/test_command_parsing.py tests/unit/test_state_checkpoint.py tests/unit/test_legacy_maintenance.py tests/unit/test_batch_checkpoint.py tests/scenario/test_backfill_workflow_checkpoint.py",
+  "acceptance_evidence": [
+    "Actual localbareGit+CLI finalcheckpoint publishes finite compaction and nonempty actualopenbatch pollingmanifest together; exactrestore/hydratedBill view survives.",
+    "Stalestate/snapshot/plan +invalidJSON/fields/version/time/oversize/defaultoff/mixed/nonmanual paths leaveDBunchanged andnoauthorization/noeffect/checkpoint.",
+    "Historicalschemafixture restore migratesDB, invalidplanstillcannotpublishthatDDLdelta.",
+    "Arbitrary workingDB mismatch refused; postapplyinjectederror rollback; legitimatecommittedalready-importednoop refusesauthorization.",
+    "Existing CAS foreignremote/race/lostack/manifest andnormalworkflow/dispatch/backfill regressions remain green."
+  ],
+  "integration_hints": [
+    "Apply only4owned paths; no primary or root plan/journal changes.",
+    "Do not set activation variable before independent exactpatch review and actualcurrentcopiedstate qualification.",
+    "Measure extra fullscratchrestore/planJSON hashing RAM/time plus existingapply roundtrip/gzipbudget on currentcopiedstate; no natural/growth performance claim from fixture tests.",
+    "Normalmaintenance_spec empty path unchanged; existing command choice enum/DISPATCHED notextended.",
+    "Hosted Actions queue/permissions/expression execution and actualproductionactivation notrun; fullsource/docs gate belongs root after integration.",
+    "RawSQL/disaster replacement remains unsupported; no restorationofoldexternal-effect history."
+  ],
+  "not_run": [
+    "fullgate",
+    "actualproduction/copiedstatequalification",
+    "network/paid/rawdownloads/sends",
+    "productionworkflowdispatch",
+    "activation",
+    "commit/push"
+  ]
+}

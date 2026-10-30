@@ -1,0 +1,44 @@
+{
+  "baseline_database_sha256": "d34398a8281d2cb9c56a38db3ab1534763603ce6e4c1feab2be5844f1b2aa219",
+  "driver_sha256": "74ad01d8c361636b9c52fa2fb4b9726788fd994844cf06f150d69e25bcb2b1c4",
+  "results": {
+    "dry_run": {
+      "exact_working_dump_preserved": true,
+      "failure_class": null,
+      "no_authorization": true,
+      "remote_commit_unchanged": true,
+      "seconds": 0.955924000008963
+    },
+    "foreign_database": {
+      "exact_working_dump_preserved": true,
+      "failure_class": "SystemExit",
+      "no_authorization": true,
+      "remote_commit_unchanged": true,
+      "seconds": 0.5450942500028759
+    },
+    "post_apply_rollback": {
+      "exact_working_dump_preserved": true,
+      "failure_class": "SystemExit",
+      "no_authorization": true,
+      "remote_commit_unchanged": true,
+      "seconds": 3.8591717910021544
+    },
+    "stale_state": {
+      "exact_working_dump_preserved": true,
+      "failure_class": "SystemExit",
+      "no_authorization": true,
+      "remote_commit_unchanged": true,
+      "seconds": 0.13027191703440621
+    },
+    "wrong_plan": {
+      "exact_working_dump_preserved": true,
+      "failure_class": "SystemExit",
+      "no_authorization": true,
+      "remote_commit_unchanged": true,
+      "seconds": 0.9470099589671008
+    }
+  },
+  "source_pins_unchanged": true,
+  "source_state": "412e9635b84c196732c9bec2b38a878fee120ee6",
+  "status": "qualified"
+}

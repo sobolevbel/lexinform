@@ -1,0 +1,12 @@
+{
+  "scope": "One guarded manual finite maintenance operation under the existing daily job lock and shared final checkpoint; no arbitrary SQL or disaster database replacement",
+  "root_independent_review": "Exact4path tool/YAML/tests static review accepted; strict bound/spec/origin/plan/atomic/output +finalsave/inbox/ack guards checked before actual state qualification",
+  "source_patch_sha256": "6ea3fbf37a4cfe9919f529ef35596e6980a644840a1a7c747ba2fbf3d11ddfde",
+  "focused_cases": 200,
+  "new_unit_cases": 22,
+  "current_state_sha": "412e9635b84c196732c9bec2b38a878fee120ee6",
+  "current_state_copy_qualified": true,
+  "default_apply_activation": "off; no repository variable or production dispatch changed",
+  "legacy_import_activation": "DA6.5 production import remains separate; local copied-state qualification does not claim actual canonical import",
+  "shared_full_gate": "../2026-10-30-word-maintenance-gate/qualification.json"
+}

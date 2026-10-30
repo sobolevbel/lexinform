@@ -1,0 +1,231 @@
+{
+  "exclusions": [
+    "One isolated actual state snapshot, not production dispatch/naturalcycle acceptance.",
+    "Default-off activation variable unchanged.",
+    "Only file-protocol local Git; no paid/network/provider/Telegram."
+  ],
+  "guards": "200 focused/22new frozen controls cover stale/dryrun/invalid/foreignorigin/postapplyrollback/migrationdelta; no repeated fault Cartesian population.",
+  "phases": {
+    "apply": {
+      "actual_cli_calls": [
+        {
+          "command": "apply",
+          "peak_rss_bytes": 994983936,
+          "seconds": 3.6545130829908885
+        }
+      ],
+      "actual_restore_calls": [
+        {
+          "seconds": 0.2221072920365259,
+          "sql_bytes": 20886677
+        },
+        {
+          "seconds": 0.3203427919652313,
+          "sql_bytes": 21436990
+        }
+      ],
+      "peak_rss_bytes": 1038794752,
+      "platform": "darwin",
+      "result": {
+        "all_public_typed_views_exact": true,
+        "doctors_exact": true,
+        "footprint": {
+          "gzip_bytes": 4314030,
+          "sql_bytes": 21436990,
+          "sql_sha256": "2b9a8f96153f887d688fa4887dc1db1c422c9ef82ce58d21892e1aa5fe2b6957"
+        },
+        "raw_parity": {
+          "changed_projection_cells": 282,
+          "legacy_tables": {
+            "legacy_analysis_bodies": 62,
+            "legacy_result_imports": 1,
+            "legacy_result_occurrences": 420,
+            "legacy_result_values": 326
+          },
+          "original_rows": 3194,
+          "tables": 44
+        },
+        "receipt": {
+          "applied": true,
+          "baseline_gzip_bytes": 4191374,
+          "baseline_sql_bytes": 20889343,
+          "compact_gzip_bytes": 4314030,
+          "compact_sql_bytes": 21436990,
+          "dry_run": false,
+          "expected_state_sha": "412e9635b84c196732c9bec2b38a878fee120ee6",
+          "imported_at": "2026-10-30T12:00:00+00:00",
+          "manifest_sha256": "89f533586c2db756806dc38e1c49de316089da4d5b62e98890e2f7821969d203",
+          "operation": "legacy_compact",
+          "plan_sha256": "6c72447756b499b827088b91bd03cdd2605a7450005cb427cf53f78d5cb2c24f",
+          "snapshot_sha256": "ca74597f81677f78c0cbba1e8ff37ad14b6b3ad5bd158d3698b04dc282b015b5",
+          "tool_sha256": "6fe8a50fc0a624526eec53c9bbfc9fd5b422ee240a5d9ccce8840b56214d97e2"
+        }
+      },
+      "seconds": 4.774888292013202,
+      "source_pins": {
+        ".github/workflows/daily.yml": "be9b7783783455ff6e58a06f837e8e823410c860fe8bb279bd327d68d529c2f5",
+        "docs/operations/state-maintenance.md": "51dd1e66722c5755a51c953fdddf8ba54894e1bd232bc5577a05d57b964aac30",
+        "tests/unit/test_state_maintenance.py": "f651fda5df98461c49ddb8caae123133c448ec6762cdbf0b267d272f12383cd9",
+        "tools/state_maintenance.py": "6fe8a50fc0a624526eec53c9bbfc9fd5b422ee240a5d9ccce8840b56214d97e2"
+      }
+    },
+    "baseline": {
+      "actual_cli_calls": [],
+      "actual_restore_calls": [
+        {
+          "seconds": 0.30888208298711106,
+          "sql_bytes": 20886677
+        }
+      ],
+      "peak_rss_bytes": 551944192,
+      "platform": "darwin",
+      "result": {
+        "migrated": {
+          "gzip_bytes": 4191374,
+          "sql_bytes": 20889343,
+          "sql_sha256": "ca74597f81677f78c0cbba1e8ff37ad14b6b3ad5bd158d3698b04dc282b015b5"
+        },
+        "open_batches": 0,
+        "original": {
+          "gzip_bytes": 4191063,
+          "sql_bytes": 20886677,
+          "sql_sha256": "a39d69e7306d97c7307e7b9a263a71a7f5c646be590815d68860ada2064eaae2"
+        },
+        "pending_identity_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "schema": 65
+      },
+      "seconds": 1.872249209030997,
+      "source_pins": {
+        ".github/workflows/daily.yml": "be9b7783783455ff6e58a06f837e8e823410c860fe8bb279bd327d68d529c2f5",
+        "docs/operations/state-maintenance.md": "51dd1e66722c5755a51c953fdddf8ba54894e1bd232bc5577a05d57b964aac30",
+        "tests/unit/test_state_maintenance.py": "f651fda5df98461c49ddb8caae123133c448ec6762cdbf0b267d272f12383cd9",
+        "tools/state_maintenance.py": "6fe8a50fc0a624526eec53c9bbfc9fd5b422ee240a5d9ccce8840b56214d97e2"
+      }
+    },
+    "checkpoint": {
+      "actual_cli_calls": [],
+      "actual_restore_calls": [],
+      "peak_rss_bytes": 502251520,
+      "platform": "darwin",
+      "result": {
+        "actual_pending_batches": 0,
+        "confirmed_commit": "fced9aef74aa2462d3a1f67e87b09323e886d8b0",
+        "manifest_sha256": "071f1fa945df5d10f7d21a9d55518d86265743a3e279e4b7e72b5b30f2c7f6e1",
+        "quiet_checkpoint_same_commit": true
+      },
+      "seconds": 1.4817380419699475,
+      "source_pins": {
+        ".github/workflows/daily.yml": "be9b7783783455ff6e58a06f837e8e823410c860fe8bb279bd327d68d529c2f5",
+        "docs/operations/state-maintenance.md": "51dd1e66722c5755a51c953fdddf8ba54894e1bd232bc5577a05d57b964aac30",
+        "tests/unit/test_state_maintenance.py": "f651fda5df98461c49ddb8caae123133c448ec6762cdbf0b267d272f12383cd9",
+        "tools/state_maintenance.py": "6fe8a50fc0a624526eec53c9bbfc9fd5b422ee240a5d9ccce8840b56214d97e2"
+      }
+    },
+    "prepare": {
+      "actual_cli_calls": [
+        {
+          "command": "prepare",
+          "peak_rss_bytes": 613728256,
+          "seconds": 0.8117987920413725
+        }
+      ],
+      "actual_restore_calls": [
+        {
+          "seconds": 0.2234383329632692,
+          "sql_bytes": 20886677
+        }
+      ],
+      "peak_rss_bytes": 613728256,
+      "platform": "darwin",
+      "result": {
+        "finite_plan": {
+          "occurrences": 420,
+          "replacements": 282,
+          "shared_bodies": 136,
+          "surveyed_columns": 704,
+          "values": 326
+        },
+        "spec": {
+          "expected_state_sha": "412e9635b84c196732c9bec2b38a878fee120ee6",
+          "imported_at": "2026-10-30T12:00:00Z",
+          "operation": "legacy_compact",
+          "plan_sha256": "6c72447756b499b827088b91bd03cdd2605a7450005cb427cf53f78d5cb2c24f",
+          "snapshot_sha256": "ca74597f81677f78c0cbba1e8ff37ad14b6b3ad5bd158d3698b04dc282b015b5",
+          "version": 1
+        }
+      },
+      "seconds": 1.1848112909938209,
+      "source_pins": {
+        ".github/workflows/daily.yml": "be9b7783783455ff6e58a06f837e8e823410c860fe8bb279bd327d68d529c2f5",
+        "docs/operations/state-maintenance.md": "51dd1e66722c5755a51c953fdddf8ba54894e1bd232bc5577a05d57b964aac30",
+        "tests/unit/test_state_maintenance.py": "f651fda5df98461c49ddb8caae123133c448ec6762cdbf0b267d272f12383cd9",
+        "tools/state_maintenance.py": "6fe8a50fc0a624526eec53c9bbfc9fd5b422ee240a5d9ccce8840b56214d97e2"
+      }
+    },
+    "repeat": {
+      "actual_cli_calls": [
+        {
+          "command": "apply",
+          "peak_rss_bytes": 909492224,
+          "seconds": 1.126731208001729
+        }
+      ],
+      "actual_restore_calls": [
+        {
+          "seconds": 0.32242704200325534,
+          "sql_bytes": 21436990
+        },
+        {
+          "seconds": 0.32545395800843835,
+          "sql_bytes": 21436990
+        },
+        {
+          "seconds": 0.3481544999522157,
+          "sql_bytes": 21436990
+        }
+      ],
+      "peak_rss_bytes": 910409728,
+      "platform": "darwin",
+      "result": {
+        "plus365_noop_no_authorization": true,
+        "same_remote_commit": true,
+        "sql_gzip_no_growth": true
+      },
+      "seconds": 2.982092082966119,
+      "source_pins": {
+        ".github/workflows/daily.yml": "be9b7783783455ff6e58a06f837e8e823410c860fe8bb279bd327d68d529c2f5",
+        "docs/operations/state-maintenance.md": "51dd1e66722c5755a51c953fdddf8ba54894e1bd232bc5577a05d57b964aac30",
+        "tests/unit/test_state_maintenance.py": "f651fda5df98461c49ddb8caae123133c448ec6762cdbf0b267d272f12383cd9",
+        "tools/state_maintenance.py": "6fe8a50fc0a624526eec53c9bbfc9fd5b422ee240a5d9ccce8840b56214d97e2"
+      }
+    },
+    "restore": {
+      "actual_cli_calls": [],
+      "actual_restore_calls": [
+        {
+          "seconds": 0.45092662499519065,
+          "sql_bytes": 21436990
+        },
+        {
+          "seconds": 0.3890922089922242,
+          "sql_bytes": 21436990
+        }
+      ],
+      "peak_rss_bytes": 559333376,
+      "platform": "darwin",
+      "result": {
+        "all_public_typed_views_exact": true,
+        "exact_dump_restore_twice": true
+      },
+      "seconds": 1.5380274999770336,
+      "source_pins": {
+        ".github/workflows/daily.yml": "be9b7783783455ff6e58a06f837e8e823410c860fe8bb279bd327d68d529c2f5",
+        "docs/operations/state-maintenance.md": "51dd1e66722c5755a51c953fdddf8ba54894e1bd232bc5577a05d57b964aac30",
+        "tests/unit/test_state_maintenance.py": "f651fda5df98461c49ddb8caae123133c448ec6762cdbf0b267d272f12383cd9",
+        "tools/state_maintenance.py": "6fe8a50fc0a624526eec53c9bbfc9fd5b422ee240a5d9ccce8840b56214d97e2"
+      }
+    }
+  },
+  "source_pins_unchanged": true,
+  "status": "qualified"
+}

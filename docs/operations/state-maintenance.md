@@ -1,6 +1,6 @@
 # Обслуживание canonical state
 
-Статус: поддерживаемый путь и открытые ограничения · проверено 24 октября 2026.
+Статус: поддерживаемый путь и закрытый до квалификации finite maintenance · 30 октября 2026.
 
 Canonical state — SQL и polling manifest ветки `state`. Поддерживаемый writer — job `run`
 из [daily.yml](https://github.com/sobolevbel/lexinform/blob/main/.github/workflows/daily.yml).
@@ -41,12 +41,54 @@ Dry run по-прежнему не сохраняет локальные изм�
 
 ## Исключительное изменение
 
-Операция, которой нет среди поддерживаемых команд, сначала получает проверяемую реализацию
-в том же locked job: fresh checkout/restore → ограниченная mutation → общий checkpoint SQL
-и manifest → подтверждение remote SHA. Не добавляйте параллельный workflow или ручной push
-как обход этого порядка. Миграции остаются append-only; правила rollback — в
-[контракте базы](../reference/database.md).
+Manual dispatch `daily.yml` принимает необязательный `maintenance_spec`. Непустой spec выбирает
+отдельную раннюю ветку внутри того же `lexinform-daily` job lock: fresh checkout/restore →
+проверка exact state/snapshot/plan → finite mutation → общий checkpoint SQL и polling manifest.
+Backfill/index/run/commands не выполняются; inbox не checkout'ится и не изменяется, переданный
+`log_message_id` не подтверждается. Обычные запуски с пустым spec сохраняют прежнее поведение.
 
-Готовой процедуры arbitrary SQL/disaster restore с отдельным захватом exclusive ownership
-пока нет. Она остаётся открытой частью DA1.8; отключение расписания само по себе не доказывает
+Единственная операция — уже реализованный finite legacy import/compaction. Произвольные SQL,
+replacement DB, пути к скриптам или новые storage/lease modes не принимаются. Apply по умолчанию
+закрыт: repository variable `LEXINFORM_STATE_MAINTENANCE` должна быть `on`. Не включайте её до
+независимого review и квалификации exact candidate на актуальной изолированной копии state.
+Проверка dry run не требует включения apply и не изменяет бизнес-строки или canonical state.
+
+### Подготовка reviewed spec на копии
+
+Сначала восстановите SQL из конкретного state commit в отдельную SQLite текущим кодом.
+Сохраните checkout ветки `state`: helper проверяет его HEAD и точные tracked SQL bytes,
+а затем сравнивает SQLite с scratch restore этого SQL, включая миграции.
+Фиксированный UTC `imported_at` входит в план: не заменяйте его текущим временем при apply.
+
+```sh
+uv run python -m tools.state_maintenance prepare \
+  --database /tmp/maintenance.db \
+  --state-file /tmp/state/lexinform.sql \
+  --expected-state-sha <exact-state-commit> \
+  --imported-at 2026-10-30T12:00:00Z > /tmp/maintenance-spec.json
+```
+
+Spec содержит только version/operation, expected state commit, SHA-256 restored dump и полного
+finite plan, фиксированный import time. В нём нет SQL или исходных тел. Проверяйте план и
+совместимость копии отдельно; generation spec сама по себе не разрешает production mutation.
+В manual dispatch передайте JSON в `maintenance_spec`, оставьте command=`run`, остальные
+normal-run flags пустыми/default. `dry_run=true` повторно проверяет exact план без apply.
+
+### Сохранение и отказы
+
+Helper использует прежний transactional plan/apply: known JSON и typed views, FK, exact restore
+и gzip budget проверяет сам repository. Только успешный `applied=true` выставляет step output
+`maintenance_authorized=true`; no-op, stale/invalid spec, disabled apply и dry run этого не делают.
+Final `always()` checkpoint требует этот output и повторяет guard в shell, поэтому даже
+restore/migration delta не публикуется после отказа. Успешная локальная mutation без подтверждённого
+checkpoint не считается изменением canonical state; чужой remote tip останавливает прежний CAS.
+Не rebase'ьте mutation: заново получите свежий state, reviewed plan и новые exact identities.
+
+Сохраните run URL и metadata receipt helper (source/snapshot/plan hashes, import time, applied,
+manifest и SQL/gzip sizes), затем проверьте подтверждённый checkpoint SHA и manifest в том же
+commit. Зелёный job с no-op/validation не означает push. Миграции остаются append-only; правила
+rollback — в [контракте базы](../reference/database.md).
+
+Готовой процедуры arbitrary SQL/disaster restore пока нет. Finite entrypoint не разрешает
+замену state старым dump с потерей delivery receipts или command outcomes. Отключение расписания не доказывает
 отсутствие queued/manual writers. Новое backend-хранилище или lease service этим не выбирается.

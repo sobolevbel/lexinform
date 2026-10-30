@@ -69,6 +69,10 @@ on:
         description: "Before the run, read the RCL listing back to this date (YYYY-MM-DD) and write down which project carries which wykaz number. Listing pages only, no tokens."
         required: false
         default: ""
+      maintenance_spec:
+        description: "Reviewed finite legacy-maintenance JSON; exclusive manual path, no normal run or inbox commands."
+        required: false
+        default: ""
 
 permissions:
   contents: write  # needed to push the state and inbox branches with the automatic GITHUB_TOKEN
@@ -79,7 +83,7 @@ env:
   INBOX_BRANCH: inbox
   LEXINFORM_DB_PATH: ${{ github.workspace }}/lexinform.db
   LEXINFORM_INBOX_DIR: ${{ github.workspace }}/inbox/inbox
-  LEXINFORM_RUN_MESSAGE_ID: ${{ inputs.log_message_id }}
+  LEXINFORM_RUN_MESSAGE_ID: ${{ inputs.maintenance_spec == '' && inputs.log_message_id || '' }}
   LEXINFORM_READER_ATTENTION: ${{ vars.LEXINFORM_READER_ATTENTION || 'shadow' }}
   LEXINFORM_ATTENTION_ROUNDUP: ${{ vars.LEXINFORM_ATTENTION_ROUNDUP || 'run' }}
   LEXINFORM_ATTENTION_DAILY_HOUR: ${{ vars.LEXINFORM_ATTENTION_DAILY_HOUR || '18' }}
@@ -121,6 +125,7 @@ jobs:
       # commands phase, and nothing to commit afterwards.
       - name: Check out inbox branch (if it exists)
         id: inbox
+        if: ${{ inputs.maintenance_spec == '' }}
         run: |
           set -euo pipefail
           if git ls-remote --exit-code --heads origin "$INBOX_BRANCH" >/dev/null; then
@@ -183,6 +188,8 @@ jobs:
           # a human type anything here, and `${{ }}` in a `run:` block is that text becoming code.
           INPUT_COMMAND: ${{ inputs.command }}
           INPUT_OPTIONS: ${{ inputs.options }}
+          INPUT_MAINTENANCE_SPEC: ${{ inputs.maintenance_spec }}
+          STATE_MAINTENANCE_ENABLED: ${{ vars.LEXINFORM_STATE_MAINTENANCE || 'off' }}
           EVENT_NAME: ${{ github.event_name }}
           EVENT_TYPE: ${{ github.event.action }}
           EVENT_SCHEDULE: ${{ github.event.schedule }}
@@ -190,6 +197,26 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$INBOX_PRESENT" != "true" ]; then unset LEXINFORM_INBOX_DIR; fi
+          if [ -n "${INPUT_MAINTENANCE_SPEC:-}" ]; then
+            if [ "$EVENT_NAME" != "workflow_dispatch" ] \
+              || [ "${INPUT_COMMAND:-run}" != "run" ] \
+              || [ -n "${INPUT_OPTIONS:-}${INPUT_SINCE:-}${INPUT_INDEX_RCL_SINCE:-}${LEXINFORM_RUN_MESSAGE_ID:-}" ] \
+              || [ "${INPUT_REPREFILTER_LIMIT:-0}" != "0" ] \
+              || [ "${INPUT_REPREFILTER_TEXT_SKIPPED:-false}" != "false" ]; then
+              echo "maintenance refuses non-manual or mixed normal-run inputs" >&2
+              exit 1
+            fi
+            MAINTENANCE_ARGS=(apply --database "$LEXINFORM_DB_PATH" --state-file "$STATE_FILE"
+              --spec "$INPUT_MAINTENANCE_SPEC" --github-output "$GITHUB_OUTPUT")
+            if [ "${INPUT_DRY_RUN:-false}" = "true" ]; then
+              MAINTENANCE_ARGS+=(--dry-run)
+            elif [ "${STATE_MAINTENANCE_ENABLED:-off}" != "on" ]; then
+              echo "finite state maintenance activation is disabled" >&2
+              exit 1
+            fi
+            uv run --frozen --no-dev python -m tools.state_maintenance "${MAINTENANCE_ARGS[@]}"
+            exit 0
+          fi
           if [ "$EVENT_NAME" = "schedule" ] && [ "$EVENT_SCHEDULE" = "43 * * * *" ]; then
             STATUS=0
             uv run --frozen --no-dev lexinform drain-deliveries || STATUS=$?
@@ -249,15 +276,24 @@ jobs:
       # database and must be saved, otherwise the next run would post it again.
       - name: Dump database and push state branch
         id: dump
-        if: ${{ always() && inputs.dry_run != true && steps.restore.outcome == 'success' && steps.run.outcome != 'skipped' }}
+        if: ${{ always() && inputs.dry_run != true && steps.restore.outcome == 'success' && steps.run.outcome != 'skipped' && (inputs.maintenance_spec == '' || steps.run.outputs.maintenance_authorized == 'true') }}
+        env:
+          INPUT_MAINTENANCE_SPEC: ${{ inputs.maintenance_spec }}
+          MAINTENANCE_AUTHORIZED: ${{ steps.run.outputs.maintenance_authorized }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
         run: |
           set -euo pipefail
+          if [ -n "${INPUT_MAINTENANCE_SPEC:-}" ] \
+            && { [ "${MAINTENANCE_AUTHORIZED:-}" != "true" ] || [ "${INPUT_DRY_RUN:-false}" = "true" ]; }; then
+            echo "maintenance has no successful mutation authorization" >&2
+            exit 1
+          fi
           uv run --frozen --no-dev lexinform db checkpoint "$STATE_FILE" --branch "$STATE_BRANCH"
 
       # The run deleted the command files it answered; commit the deletions. The relay only adds
       # files and the run only removes them, so a rebase onto a moved branch never conflicts.
       - name: Commit handled commands and push inbox branch
-        if: ${{ always() && inputs.dry_run != true && steps.inbox.outputs.present == 'true' && steps.run.outcome != 'skipped' && steps.dump.outcome == 'success' }}
+        if: ${{ always() && inputs.maintenance_spec == '' && inputs.dry_run != true && steps.inbox.outputs.present == 'true' && steps.run.outcome != 'skipped' && steps.dump.outcome == 'success' }}
         run: |
           set -euo pipefail
           git -C inbox config user.name "github-actions[bot]"

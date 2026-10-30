@@ -1,0 +1,143 @@
+{
+  "activation": "No repository variables changed; defaultoff remains. No production dispatch/provider/Telegram/network; only local file-protocol Git fetch/clone/push.",
+  "actual_current_copy_guards": {
+    "dry_run": {
+      "exact_working_dump_preserved": true,
+      "failure_class": null,
+      "no_authorization": true,
+      "remote_commit_unchanged": true,
+      "seconds": 0.955924000008963
+    },
+    "foreign_database": {
+      "exact_working_dump_preserved": true,
+      "failure_class": "SystemExit",
+      "no_authorization": true,
+      "remote_commit_unchanged": true,
+      "seconds": 0.5450942500028759
+    },
+    "post_apply_rollback": {
+      "exact_working_dump_preserved": true,
+      "failure_class": "SystemExit",
+      "no_authorization": true,
+      "remote_commit_unchanged": true,
+      "seconds": 3.8591717910021544
+    },
+    "stale_state": {
+      "exact_working_dump_preserved": true,
+      "failure_class": "SystemExit",
+      "no_authorization": true,
+      "remote_commit_unchanged": true,
+      "seconds": 0.13027191703440621
+    },
+    "wrong_plan": {
+      "exact_working_dump_preserved": true,
+      "failure_class": "SystemExit",
+      "no_authorization": true,
+      "remote_commit_unchanged": true,
+      "seconds": 0.9470099589671008
+    }
+  },
+  "actual_legacy_storage_rows": {
+    "legacy_analysis_bodies": 62,
+    "legacy_result_imports": 1,
+    "legacy_result_occurrences": 420,
+    "legacy_result_values": 326
+  },
+  "actual_pending_batches": 0,
+  "after_footprint": {
+    "gzip_bytes": 4314030,
+    "sql_bytes": 21436990,
+    "sql_sha256": "2b9a8f96153f887d688fa4887dc1db1c422c9ef82ce58d21892e1aa5fe2b6957"
+  },
+  "all_owned_and_baseline_dependency_pins_unchanged": true,
+  "artifacts": {
+    "actual-state-guards.json": "0b57c674262d92b7646ccc387eab052a09ef4211057f72f8e02aac0088081946",
+    "environment.json": "4f5b074319566687fd3a166517d5701ab7b67ac8662f7193176ea72d3c7641d0",
+    "guards.py": "74ad01d8c361636b9c52fa2fb4b9726788fd994844cf06f150d69e25bcb2b1c4",
+    "qualification.json": "976c037f8c3863a0fffffe72d1aa325c59e4484c71c77b64bf6dc87de02389f3",
+    "qualify.py": "29427bf456a3fc12e38d515ea905ae9b18c7daffcb2228119d25621febe42695",
+    "raw-parity.json": "8152b0861e4e328d4330b8404d22e12a18436f671f89c5a51cf8cd8c1a61ac79",
+    "reviewed-spec.json": "d3f39a95cb60cad3aafb4ae484b71c7bfe6f0161a3cf898982bdadc310617d8b"
+  },
+  "before_footprint": {
+    "gzip_bytes": 4191374,
+    "sql_bytes": 20889343,
+    "sql_sha256": "ca74597f81677f78c0cbba1e8ff37ad14b6b3ad5bd158d3698b04dc282b015b5"
+  },
+  "candidate_patch_sha256": "6ea3fbf37a4cfe9919f529ef35596e6980a644840a1a7c747ba2fbf3d11ddfde",
+  "doctors": {
+    "before_after_findings_and_summary_exact": true,
+    "content_errors": 0,
+    "preexisting_work_warnings_unchanged": 4,
+    "source_errors": 0,
+    "work_errors": 0
+  },
+  "exact_public_typed_counts": {
+    "batch_items": 0,
+    "bills": 483,
+    "changes": 192,
+    "memos": 155,
+    "open_batches": 0,
+    "publications": 194
+  },
+  "finite_plan": {
+    "occurrences": 420,
+    "replacements": 282,
+    "shared_bodies": 136,
+    "surveyed_columns": 704,
+    "values": 326
+  },
+  "full_installed_packages_and_uv_lock_unchanged": true,
+  "gzip_delta_bytes": 122656,
+  "gzip_ratio": 1.0292639120250304,
+  "input_sql_bytes": 20886677,
+  "input_sql_sha256": "a39d69e7306d97c7307e7b9a263a71a7f5c646be590815d68860ada2064eaae2",
+  "local_checkpoint": {
+    "actual_pending_batches": 0,
+    "confirmed_commit": "fced9aef74aa2462d3a1f67e87b09323e886d8b0",
+    "manifest_sha256": "071f1fa945df5d10f7d21a9d55518d86265743a3e279e4b7e72b5b30f2c7f6e1",
+    "quiet_checkpoint_same_commit": true
+  },
+  "manifest_note": "Actual state has zero open batches/items; real nonempty pending-manifest fixture is covered by frozen newunit positive case, not claimed natural here.",
+  "measurement_limits": "Darwin ru_maxrss process high-water bytes, not incremental origin scratch RSS or hosted benchmark. Phaseprepare includes a separately declared survey recomputation; CLI timings isolate actual tool entrypoint. Checkpoint phase includes one real push and a quiet second checkpoint. One fixed20MB source, not growth forecast or production/natural acceptance.",
+  "next": "Root may integrate exact4path candidate and run full gate/docs/review operational activation separately. Currentqualified plan identity belongs exact candidate/current restored snapshot/fixedimporttime; regenerate after code/state changes rather than reuse blindly.",
+  "owned_source_pins": {
+    ".github/workflows/daily.yml": "be9b7783783455ff6e58a06f837e8e823410c860fe8bb279bd327d68d529c2f5",
+    "docs/operations/state-maintenance.md": "51dd1e66722c5755a51c953fdddf8ba54894e1bd232bc5577a05d57b964aac30",
+    "tests/unit/test_state_maintenance.py": "f651fda5df98461c49ddb8caae123133c448ec6762cdbf0b267d272f12383cd9",
+    "tools/state_maintenance.py": "6fe8a50fc0a624526eec53c9bbfc9fd5b422ee240a5d9ccce8840b56214d97e2"
+  },
+  "peak_rss_bytes": {
+    "apply_cli": 994983936,
+    "apply_process_including_parity_doctors": 1038794752,
+    "checkpoint_process": 502251520,
+    "prepare_process": 613728256
+  },
+  "plus365_repeat_no_authorization_no_sql_gzip_growth": true,
+  "raw_original_views": {
+    "changed_projection_cells": 282,
+    "legacy_tables": {
+      "legacy_analysis_bodies": 62,
+      "legacy_result_imports": 1,
+      "legacy_result_occurrences": 420,
+      "legacy_result_values": 326
+    },
+    "original_rows": 3194,
+    "tables": 44
+  },
+  "raw_schema_version": 63,
+  "restored_schema_version": 65,
+  "restored_twice": true,
+  "source_freeze_sha256": "dbcca991debbbab87ec9e72d3128567024f76e96fd66937d66e0d6680c3e5e6d",
+  "sql_delta_bytes": 547647,
+  "state_sha": "412e9635b84c196732c9bec2b38a878fee120ee6",
+  "status": "qualified_exact_candidate_on_one_current_state_copy_activation_still_off",
+  "timing_seconds": {
+    "apply_cli": 3.6545130829908885,
+    "apply_origin_scratch_restore": 0.2221072920365259,
+    "checkpoint_including_quiet_second_call": 1.4817380419699475,
+    "prepare_cli": 0.8117987920413725,
+    "prepare_origin_scratch_restore": 0.2234383329632692
+  },
+  "unchanged_existing_105percent_budget_passed": true
+}
