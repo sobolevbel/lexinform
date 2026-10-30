@@ -1,0 +1,16 @@
+{
+  "controlled_fixture_legacy_json_sha256": "88153eb6957a9fb838948833eb7318436703faac3be04f5c0058a6920ed7ae96",
+  "controlled_fixture_legacy_manifest_sha256": "f8c4e393b1a46d626066d2e15f7a42d4209914456173579739bea97814e1366c",
+  "metadata_inert_only": true,
+  "old_models_unchanged": true,
+  "old_runtime_source_pins": {
+    "src/lexinform/adapters/document_text.py": "85056ece94dd4087d5e4b9204120c4e4036cebb3d5048675cc42e249e343ab62",
+    "src/lexinform/extraction_records.py": "b0378402818ed9441d5c39f7fe8fd8f8bf22376034c951dbb986dd77928120ea",
+    "src/lexinform/models/documents.py": "ebd3422121c38683e2e2af1d229e5ffcd809158bbe3fba71f2cca39f9b8b6be4",
+    "src/lexinform/models/extractions.py": "d43464c097a0492fcb3d245403a94cf344aee85cdce86d76da06281ca9788e6f",
+    "src/lexinform/ports.py": "3f663a5467d979b4c7c5fec23844f150bd6e751c358ca2d6da4509dcc0312d59",
+    "src/lexinform/services/documents.py": "eb7128197b671a942c173017b716a52e1436de2dc5b121f2e0ea6f03488d3be4"
+  },
+  "runtime_or_parser_activation": false,
+  "span_scope": "Only explicit producer-append witness and existing block bound validation; model does not prove actual emitted ranges/XML coverage. Real producer/XPath/corpus qualification is future work."
+}

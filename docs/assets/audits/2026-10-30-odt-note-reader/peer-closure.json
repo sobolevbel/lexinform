@@ -1,0 +1,38 @@
+{
+  "status": "approved",
+  "scope": "Independent closure of FINAL3 cross-lane ordering P2; inert ODT note reader only.",
+  "source_pins_before_after": {
+    "src/lexinform/models/odt_notes.py": "57cdf55ef8a68f9facda19abe447793a388c095afb3f413cf00a82ac874bc6db",
+    "tests/unit/test_odt_note_origins.py": "b2c5338d5fb491082f75016ac87237ad3a97e84aeace550bb01d57b1b5ee4749"
+  },
+  "delta": "Only combined order/path monotonicity and same-node entry then embedded-call policy added; author confirmed event policy.",
+  "finding_closed": "Backwards sibling interleaving, reference-as-definition and reversed embedded pair rejected; valid forward reference then entry/embedded interleaving accepted.",
+  "evidence": {
+    "red_log": "qa/peer-regression-before.log",
+    "red_log_sha256": "4862e1ba08790ae373013f01f7b6b74f52f15005600255c7c45af836b1ce2bf5",
+    "independent_final_target": {
+      "passed": 1,
+      "log": "out/corpus/j191-odt-note-reader/qa/independent-peer-final-target.log",
+      "log_sha256": "423b1d0e014eb1eab96f4420f7b344c2615be505dd574b756ac884826ca74f2d",
+      "xml": "out/corpus/j191-odt-note-reader/qa/independent-peer-final-target.xml",
+      "xml_sha256": "85ef2044b49298cc9248332804754ec1c2795abb8f2f01abafa906d954abada8"
+    },
+    "previous_frozen_review": "/Users/sobaleu/.codex/worktrees/locked-state-maintenance/lexinform/out/corpus/odt-note-origins-reader/independent-review/matrix-test-evidence/review.json",
+    "previous_scope": "21 new + 40 existing synthetic ODT unit controls previously passed; only blocker was combined ordering."
+  },
+  "bounds": "New sorting/scanning occurs after existing combined64-event and32KiB preflight; no unbounded metadata allocation added.",
+  "compatibility": "Known/unknown associations, physical binding and old extraction models unchanged by this delta.",
+  "not_claimed": [
+    "full gate result",
+    "natural note-rich producer qualification",
+    "actual XML provenance truth or emitted-range proof",
+    "runtime activation",
+    "raw/corpus/provider/state processing"
+  ],
+  "final2_delta": {
+    "old_source_sha256": "15e3bc1eb268960d11536ec89d4e1d175d29c7523858f3424d852c0a81811693",
+    "new_source_sha256": "57cdf55ef8a68f9facda19abe447793a388c095afb3f413cf00a82ac874bc6db",
+    "change": "Explicit zip strict=False; exact sole delta from independently tested source, same built-in default semantics.",
+    "validation": "Exact reverse substitution restores previous pinned bytes; no broad rerun."
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "association": "Embedded entry/call bind exact XML path even without ID. Separate references require complete actual note inventory and unique nonempty exact observed ID; duplicates ambiguous; absent ID unverified; missing target only with complete inventory. Nearest nested note ancestor explicit.",
+  "base": "c97a70ef5649b584dee8f151a1c7f370eb18180b",
+  "cleanup_evidence": "../odt-note-origins-base/handoff.json",
+  "compatibility_sha256": "c102734de7450833bbbbb3f8be12abb888b8afb2f5119ccf6d4075fbc848a70e",
+  "focused": {
+    "format": "green",
+    "new_units": 21,
+    "passed": 61,
+    "ruff": "green",
+    "strict_files": 3
+  },
+  "limits": [
+    "No parser/_odt_inline, ports, default output, summary, SQL, provider changes; no runtime consumer/producer.",
+    "No raw/corpus replay/full/paid/provider operations. Focused old replay unit module uses synthetic fixtures only.",
+    "No natural note-rich qualification or fact\u2192block/complete XML claim.",
+    "Future producer must collect actual same-pass paths/ranges and prove them independently; no substring inference."
+  ],
+  "patch_sha256": "1d35307c8b3d264de9b3ebe87aed7c13b18284a83847538fb965f4ef3b88ccf3",
+  "paths": [
+    "src/lexinform/models/odt_notes.py",
+    "src/lexinform/models/__init__.py",
+    "tests/unit/test_odt_note_origins.py"
+  ],
+  "physical_binding": "Actual ODT leaf input/XML/body manifest and existing paragraph/heading block; top-level container SHA may differ. Known ranges require explicit observed-legacy-appends evidence and actual block bounds; evidence claim is not independently proved by model.",
+  "profile": "odt-note-origins-v1; legacy-visited-content.xml; completeness not_asserted;64 combined events/32KiB canonical ASCII metadata,64 child-path depth/63-bit counts,256 ASCII-JSON bytes per string including quotes. Counts describe observed walk; interrupted/unavailable/omitted suffix never complete.",
+  "source_freeze_sha256": "a8e35278a9bab4db2579a9eddfb00d4d661207c6f7bc800e91f057208b7a43aa",
+  "source_pins": {
+    "src/lexinform/models/__init__.py": "3c52f49f12ee189d74d17e839ede706ac8452f7a99ca0f83ea0412bac805a31f",
+    "src/lexinform/models/odt_notes.py": "048ef42493271a70c8a6c82cc62fd5fdf74f997dbb6b48ffc6e41af110417313",
+    "tests/unit/test_odt_note_origins.py": "972ed5b43d29be4893bc91322d2cff5ae3868eb6faa662cef49f4993b9359b47"
+  },
+  "status": "frozen-inert-reader-peer-required"
+}

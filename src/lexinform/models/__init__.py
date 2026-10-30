@@ -482,7 +482,13 @@ __all__ = [
     "DocumentWork",
     "ExtractedDocument",
     "ExtractedParts",
+    "OdtEmittedSpan",
     "OdtIgnoredNode",
+    "OdtNoteCall",
+    "OdtNoteEntry",
+    "OdtNoteOrigins",
+    "OdtNotedParts",
+    "OdtPartNoteOrigins",
     "OdtPartExtraction",
     "OdtTextBlock",
     "OdtTextExtraction",
@@ -816,6 +822,24 @@ from lexinform.models.content import ContentHistoryView as ContentHistoryView
 from lexinform.models.content import ContentSnapshot as ContentSnapshot
 from lexinform.models.content import ContentVersion as ContentVersion
 from lexinform.models.content import ContentVersionSummary as ContentVersionSummary
+from lexinform.models.odt_notes import (
+    OdtEmittedSpan as OdtEmittedSpan,
+)
+from lexinform.models.odt_notes import (
+    OdtNoteCall as OdtNoteCall,
+)
+from lexinform.models.odt_notes import (
+    OdtNotedParts as OdtNotedParts,
+)
+from lexinform.models.odt_notes import (
+    OdtNoteEntry as OdtNoteEntry,
+)
+from lexinform.models.odt_notes import (
+    OdtNoteOrigins as OdtNoteOrigins,
+)
+from lexinform.models.odt_notes import (
+    OdtPartNoteOrigins as OdtPartNoteOrigins,
+)
 from lexinform.models.source_catalog_attempts import CatalogDescriptor as CatalogDescriptor
 from lexinform.models.source_catalog_attempts import SourceCatalogAttempt as SourceCatalogAttempt
 from lexinform.models.source_catalog_attempts import SourceCatalogSnapshot as SourceCatalogSnapshot

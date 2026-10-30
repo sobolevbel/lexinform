@@ -8907,3 +8907,36 @@ publication не меняется, но эта boundary пока не реали
 [peer](../assets/audits/2026-10-30-wykaz-name-rehome/independent-closure.json),
 [atomic purpose audit](../assets/audits/2026-10-30-wykaz-name-rehome/atomic-purpose-audit.json),
 [Word release](../assets/audits/2026-10-30-word-default-view/release.json).
+
+
+<a id="j191"></a>
+
+## J191 — inert bounded ODT note-origin reader
+
+Добавлен отдельный odt-note-origins-v1 companion: actual physical part/input/XML/body binding,
+пути note/citation/body/call, nested ancestry и явные missing/ambiguous/unverified associations.
+Separate reference разрешается только по unique actual nonempty ID при полном наблюдаемом
+note inventory; embedded note связывается по своему XML path. Bounds:64combined events,
+32KiB canonical ASCII envelope,64path depth,63-bit indexes и256-byte strings.
+Finished относится к legacy visited walk, а не к полноте XML или юридического документа.
+
+Parser, ports, SQL, прежние OdtTextExtraction/ExtractedParts JSON и body manifests не меняются.
+Новых runtime writers/consumers нет; emitted ranges требуют explicit observed-append witness
+и actual block bounds, но модель сама не доказывает producer emission. Custom extractor
+остаётся unknown. Natural note-rich qualification и producer остаются открыты, DA3.3 не закрыта.
+Повтор corpus extraction не выполняется: extraction/normalization/selection/fingerprint/comparison
+код untouched; controlled old JSON/body-manifest compatibility проверена отдельно.
+
+Независимое review нашло concrete coherence defect: две lanes были упорядочены отдельно,
+а combined invocation sequence могла идти назад по XML paths. Regression на старом candidate
+упал; Root добавил global order и same-node entry→embedded-call constraint. Forward reference
+к последующему definition остаётся допустимым. Прерванный первый full run не считается gate;
+финальная проверка выполняется на исправленном source freeze.
+
+Final gate:7438tests/269.217s/92%,mypy650/Ruff718;735source/config pins exact. Staged archive docs gate перед commit.
+
+[Qualification](../assets/audits/2026-10-30-odt-note-reader/qualification.json),
+[integration](../assets/audits/2026-10-30-odt-note-reader/integration.json),
+[original peer finding](../assets/audits/2026-10-30-odt-note-reader/independent-review.json),
+[peer closure](../assets/audits/2026-10-30-odt-note-reader/peer-closure.json),
+[previous Wykaz exact CI/relay](../assets/audits/2026-10-30-wykaz-name-rehome/release.json).

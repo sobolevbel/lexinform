@@ -1,0 +1,24 @@
+{
+  "stage": "J191",
+  "base": "d50dc69382e55e6be8b47cad14125e9d2a50a77b",
+  "runtime_paths_unchanged_from_current_HEAD": {
+    "src/lexinform/adapters/document_text.py": "1fb603a8253fbde3b4a7ae667cf69dea69f0c3d7e17f5e8a66a9d636b00f25d1",
+    "src/lexinform/models/documents.py": "ebd3422121c38683e2e2af1d229e5ffcd809158bbe3fba71f2cca39f9b8b6be4",
+    "src/lexinform/extraction_records.py": "7a9d6e7b0d4e8fbc429da0dd4a368829928164f18fbe75ff23257be830c4f8a0",
+    "src/lexinform/models/extractions.py": "d43464c097a0492fcb3d245403a94cf344aee85cdce86d76da06281ca9788e6f",
+    "src/lexinform/ports.py": "6544427f9ada35a50b76c707545f03a53690c8c5e47915f5ca2736fef9377706",
+    "src/lexinform/services/documents.py": "eb7128197b671a942c173017b716a52e1436de2dc5b121f2e0ea6f03488d3be4"
+  },
+  "author_source3_exact": false,
+  "changes": "inert companion model/export/unit only",
+  "corpus_replay": "not applicable: extraction/normalization/selection/fingerprint/comparison implementation untouched; no producer or stored format written",
+  "compatibility": "Legacy JSON/body-manifest invariance tested on controlled fixtures; no natural note-rich qualification claimed",
+  "root_delta": "Combined invocation order must follow nondecreasing XML paths; same-node entry precedes embedded call. Regression failed before correction; valid forward reference interleaving retained.",
+  "author_pre_fix_exact": true,
+  "final_source3": {
+    "src/lexinform/models/odt_notes.py": "57cdf55ef8a68f9facda19abe447793a388c095afb3f413cf00a82ac874bc6db",
+    "src/lexinform/models/__init__.py": "3c52f49f12ee189d74d17e839ede706ac8452f7a99ca0f83ea0412bac805a31f",
+    "tests/unit/test_odt_note_origins.py": "b2c5338d5fb491082f75016ac87237ad3a97e84aeace550bb01d57b1b5ee4749"
+  },
+  "gate_iterations": "First pre-fix gate interrupted for peer defect; next full test/type checks passed but B905 required explicit strict=False for adjacent pair zip; final full gate restarted after lint preflight."
+}

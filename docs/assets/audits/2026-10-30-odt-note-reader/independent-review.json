@@ -1,0 +1,56 @@
+{
+  "handoff_sha256": "2142e3979c3bcfc1953bb4510f108303a78e5c988f4917ca35d6472114f4aa61",
+  "source_pins_exact_before_after": {
+    "src/lexinform/models/__init__.py": "3c52f49f12ee189d74d17e839ede706ac8452f7a99ca0f83ea0412bac805a31f",
+    "src/lexinform/models/odt_notes.py": "048ef42493271a70c8a6c82cc62fd5fdf74f997dbb6b48ffc6e41af110417313",
+    "tests/unit/test_odt_note_origins.py": "972ed5b43d29be4893bc91322d2cff5ae3868eb6faa662cef49f4993b9359b47"
+  },
+  "scope": "inert reader FINAL3, no source edits/full/raw corpus/provider/state operations",
+  "focused": {
+    "passed": 61,
+    "new": 21,
+    "xml_sha256": "c15e32f094670d14bbdd88f73c6e8899a40944207f326ed0ad5dc12d11396556",
+    "log_sha256": "1c296f620adc850f9ed88d75c847738d725f60f1de7a89002059c40eff811d9a"
+  },
+  "status": "changes_requested",
+  "findings": [
+    {
+      "priority": "P2",
+      "file": "src/lexinform/models/odt_notes.py",
+      "function": "OdtNoteOrigins.prefix_and_associations",
+      "invariant": "retained original event prefix must follow the actual same-pass child-path walk",
+      "reproducer": {
+        "entries": [
+          {
+            "order": 0,
+            "path": [
+              0,
+              5
+            ]
+          }
+        ],
+        "calls": [
+          {
+            "order": 1,
+            "path": [
+              0,
+              1
+            ],
+            "kind": "reference",
+            "identity": "n1"
+          }
+        ],
+        "accepted_coverage": "complete",
+        "accepted_association": "resolved",
+        "physical_binding": "accepted"
+      },
+      "problem": "Independent per-lane XML ordering permits a later sibling note event before an earlier sibling reference, then claims complete retained walk coverage. This is an internally impossible interleaving for the stated same-pass invocation order.",
+      "minimal_fix": "Validate combined events ordered by their order against XML child-path traversal. Define/allow same-node entry+embedded-call ties explicitly; preserve honest partial prefix support. Add reverse cross-lane sibling negative and valid interleaving control."
+    }
+  ],
+  "non_blockers": [
+    "Actual XML truth/emitted append evidence must be qualified by future producer; current model is explicitly only a bounded claim reader.",
+    "Legacy body output, custom unknown, incomplete inventory, caps and existing ODT blocks/replay unit controls pass.",
+    "No speculative completeness or natural note-rich coverage requirement added."
+  ]
+}
