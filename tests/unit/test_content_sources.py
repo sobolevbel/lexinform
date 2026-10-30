@@ -70,7 +70,7 @@ def snapshots(repo: SqliteBillRepository, bill: Bill, change: StatusChange) -> t
 
 @pytest.fixture
 def case(tmp_path: Path) -> Iterator[Case]:
-    """A future queue witness is synthetic; the current primary producer omits it."""
+    """The synthetic paid-input chain supplies its retained original queue witness."""
     path = tmp_path / "source.db"
     repo = SqliteBillRepository(path)
     repo.migrate()
@@ -213,7 +213,7 @@ def test_input_cleanup_and_public_restore_preserve_the_metadata_chain(case: Case
     assert case.inspect() == original
 
 
-def test_current_primary_producer_omits_queue_witness_and_preserves_frozen_payload(
+def test_existing_unstamped_primary_intent_stays_unknown_and_preserves_frozen_payload(
     case: Case,
 ) -> None:
     source = selection()
@@ -221,14 +221,14 @@ def test_current_primary_producer_omits_queue_witness_and_preserves_frozen_paylo
     before = frozen.model_dump_json()
     receipt = primary_input_receipt(frozen, source, projection=None, known_selection=case.selected)
     receipt_before = receipt.model_dump_json()
-    legacy_meta = meta(receipt).model_copy(update={"generation": 2})
+    legacy_meta = meta(receipt).model_copy(
+        update={"generation": 2, "input_binding": case.paid.input_binding}
+    )
     legacy_json = legacy_meta.model_dump_json()
     assert "queued_at" not in legacy_json
     assert BatchItemMeta.model_validate_json(legacy_json).model_dump_json() == legacy_json
     assert legacy_meta.model_copy(update={"queued_at": None}).model_dump_json() == legacy_json
-    intent = BatchIntent.from_request(
-        request=frozen, meta=legacy_meta, provider="openai", created_at=NOW
-    )
+    intent = BatchIntent(request=frozen, meta=legacy_meta, provider="openai", created_at=NOW)
     assert isinstance(intent.meta, BatchItemMeta), "the primary intent preserves its metadata type"
     assert intent.meta.queued_at is None
     item = LlmBatchItem.from_intent(case.paid.batch_id, intent)
@@ -240,6 +240,20 @@ def test_current_primary_producer_omits_queue_witness_and_preserves_frozen_paylo
     case.execute("UPDATE llm_batch_items SET meta_json=?", (item.meta.model_dump_json(),))
     result = case.inspect()
     assert result.state == "unknown" and result.reason == "queue_time_unknown"
+
+
+def test_supplied_pre_source_queue_time_is_preserved_and_remains_unknown(case: Case) -> None:
+    created = NOW - timedelta(days=1)
+    intent = BatchIntent.from_request(
+        request=request(),
+        meta=case.item.meta.model_copy(update={"input_binding": None, "queued_at": None}),
+        provider="openai",
+        created_at=created,
+    )
+    assert intent.meta.queued_at == intent.created_at == created
+    case.execute("UPDATE llm_batch_items SET meta_json=?", (intent.meta.model_dump_json(),))
+    result = case.inspect()
+    assert result.state == "unknown" and result.reason == "observation_after_queue"
 
 
 @pytest.mark.parametrize("queued", [None, NOW.replace(tzinfo=None).isoformat()])

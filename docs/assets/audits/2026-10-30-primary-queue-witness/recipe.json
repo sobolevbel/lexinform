@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "matched synthetic pending/submitted SQL/gzip copies; no actualstate/provider/raw processing",
+  "candidate_ref": "Commit containing this qualification; verify source4 and source/config pins first",
+  "baseline_ref": "f9b841968ff00598e038c38efabf9da154ece2e9",
+  "baseline_batch_source_sha256": "53d004478ccbbfc6b4182d8144bcab86ee133db6088f8ca061b7fc64c8adc0f4",
+  "external_driver": {
+    "path": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/primary-queue-witness-capture/delta-proof.py",
+    "sha256": "16b35cf1568a8e3d0148f261527af88129fb5c5ced1c429e0db81a9927b14a4f"
+  },
+  "isolated_recipe": [
+    "Use a new disposable Git checkout with HEAD at baseline_ref; keep its HEAD unchanged",
+    "Overlay exactly the seven source paths below from candidate_ref, preserving their pinned bytes; no changes in the real workspace",
+    "Copy the external driver only after its SHA matches; create out/corpus/primary-queue-witness-capture in this fresh checkout",
+    "With PYTHONPATH=$SCRATCH/src:$SCRATCH and the pinned project Python environment, run python out/corpus/primary-queue-witness-capture/delta-proof.py",
+    "Driver git-show HEAD reads the baseline file while imports use overlaid candidate source; it writes only synthetic temporary databases and the fresh output folder",
+    "Check delta-proof.json scope, baseline source hash, SQL+35 and gzip+7/+5; table rows must match after removing only the new future stamp"
+  ],
+  "overlay_source_pins": {
+    "src/lexinform/extraction_records.py": "88eb5941a6ade291bdc57e899ba8cc333b87b5e56434e446089844f45c8efe13",
+    "tests/unit/test_odt_note_prefix_producer.py": "9cb276fc4c35aa7328b73d35bfedc583b5bf16bd6d2ed2e28edf596f7406c0f9",
+    "tests/unit/test_odt_note_status_producer.py": "39da0f109cd55be3a6eb442206ee146aafb396f9a20f72c29ea302828eb38818",
+    "src/lexinform/models/batch.py": "4772ca0e6b81ddb0b50e630b49e50f85d0c9e750b9ccd2b356dda08d64a241a8",
+    "tests/unit/test_batch_intent.py": "d2d71dcf890d24ab7a561b7b4ca2a26823646f4fbf9a109e64c7052a9bbf2526",
+    "tests/unit/test_content_sources.py": "abe650a90ddeaff676e20c74fcfa61f4a69368c36c83760238e38e782e044d8c",
+    "tests/scenario/test_primary_queue_witness.py": "e079481411678d20d5d5cc81b13ec0c6908ae6873c023a13db7c8f728c145237"
+  },
+  "focused_command": [
+    "uv",
+    "run",
+    "--no-sync",
+    "--offline",
+    "--frozen",
+    "pytest",
+    "-q",
+    "tests/scenario/test_batch_payload_restore.py",
+    "tests/scenario/test_primary_input_receipts.py",
+    "tests/scenario/test_primary_queue_witness.py",
+    "tests/scenario/test_request_provenance.py",
+    "tests/unit/test_analysis_batch_lifecycle.py",
+    "tests/unit/test_batch_intent.py",
+    "tests/unit/test_batch_payload_identity.py",
+    "tests/unit/test_content_sources.py",
+    "tests/unit/test_input_receipts.py"
+  ],
+  "limitation": "Requires preserved external driver; missing or mismatched artifact fails closed. Old HEAD is intentional for baseline; do not run original driver at a later HEAD. Recipe is recorded, not an additional replay claim."
+}

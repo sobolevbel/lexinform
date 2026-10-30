@@ -9278,3 +9278,45 @@ Staged archive docs gate перед commit; exact J198 CI/actual relay verified 
 [controlled bytes](../assets/audits/2026-10-30-odt-note-prefix-producer/metadata-delta.json).
 
 [J198 exact CI/relay](../assets/audits/2026-10-30-content-source-resolver/release.json) verified.
+
+[J199 exact CI/relay](../assets/audits/2026-10-30-odt-note-prefix-producer/release.json) verified.
+
+
+<a id="j200"></a>
+
+## J200 — prospective primary queue-witness capture
+
+После actual deploy J198reader только BatchIntent.from_request для новых analysis/reanalysis
+копирует supplied aware created_at в BatchItemMeta.queued_at. Conflicting prestamp rejected;
+одинаковый stamp допустим. Нет now/submission/collection fallback или переноса при load.
+Input binding сохраняется вместе с metadata; request/payload/SHA, receipt/selection IDs,
+memo keys и paid identities прежние. Остальной batch-module AST и from_intent неизменны.
+
+Existing pending/consumed None остаются None; старые JSON bytes exact. Retry/restore берут
+original metadata без prepare. Newly stamped batch_job.since намеренно показывает original
+queue time; legacy operational fallback сохраняется. Actual automatic workers1/4 и /analyze
+controls проверяют source finalization перед queue на caller thread. Если supplied timestamp
+раньше observation, он не исправляется: resolver возвращает unknown.
+
+145author/145peer focused,11new cases, strict4/Ruff/format green. Definite-rejection retry,
+consumed cleanup/restore и immutable paid/receipt проверены. Matched synthetic copies:
+SQL+35B на новую metadata row, gzip+7pending/+5submitted. После удаления только нового stamp
+все table values совпадают; existing paid/legacy rows не меняются. Это не natural delivery,
+fleet growth или source-reference capture claim. Recipe требует isolated baseline checkout,
+seven frozen source overlays и preserved external driver с exact hash; missing input fails closed.
+
+Source4 exact поверх J199; остальные source/config pins прежние. Services/Container/Clock и
+ContentVersion source writer не меняются. DA7.5 partial: следующий writer требует prospective
+admission/scope, durable invalid disposition и sharedparent restore/doctor qualification.
+Existing versions/lazy historical parents не получают backfill; primary-context ID не
+подтверждает amendment-source coverage. Контракт следующего этапа сохранён, код не включён.
+
+Final gate:7636tests/268.995s/92%,mypy664/Ruff732;749source/config pins exact. J199 exact
+CI/actualrelay verified before push. Staged archive docs gate перед commit.
+
+[Qualification](../assets/audits/2026-10-30-primary-queue-witness/qualification.json),
+[peer](../assets/audits/2026-10-30-primary-queue-witness/peer-closure.json),
+[integration](../assets/audits/2026-10-30-primary-queue-witness/integration.json),
+[matched delta](../assets/audits/2026-10-30-primary-queue-witness/delta-proof.json),
+[reproduction recipe](../assets/audits/2026-10-30-primary-queue-witness/recipe.json),
+[next writer contract](../assets/audits/2026-10-30-primary-queue-witness/next-writer-contract.md).

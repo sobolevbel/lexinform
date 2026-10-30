@@ -1,0 +1,26 @@
+{
+  "scope": "synthetic matched public intent/save/submit/restore copies only",
+  "baseline_source_sha256": "53d004478ccbbfc6b4182d8144bcab86ee133db6088f8ca061b7fc64c8adc0f4",
+  "provider_request_exact_bytes_and_sha_equal": true,
+  "memo_and_input_binding_unchanged": true,
+  "only_new_metadata_field": "queued_at",
+  "existing_pending_and_consumed_unstamped": true,
+  "existing_paid_record_unchanged": true,
+  "no_content_version_source_writer": true,
+  "stages": {
+    "pending": {
+      "sql_bytes_delta": 35,
+      "gzip_bytes_delta": 7,
+      "all_table_values_equal_after_removing_only_new_future_stamp": true,
+      "baseline_dump_sha256": "089c458c0ff14f933cafb855e6d5f457177484a5e56bfbfe0c5037b77599b613",
+      "candidate_dump_sha256": "cac92d18b5118587d523348948c617e2e4991777b51e44dae80a437e77d9b538"
+    },
+    "submitted": {
+      "sql_bytes_delta": 35,
+      "gzip_bytes_delta": 5,
+      "all_table_values_equal_after_removing_only_new_future_stamp": true,
+      "baseline_dump_sha256": "eb953fd3a49ef4013eb99c1e90dfd0c0bb21b366dd9ee414f84b5a35a056f220",
+      "candidate_dump_sha256": "84183a452f1cad631c32652ec6665b3bac23dac5c229f5175cc32939b18bc218"
+    }
+  }
+}

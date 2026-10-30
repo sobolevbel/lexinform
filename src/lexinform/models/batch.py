@@ -419,9 +419,18 @@ class BatchIntent(BaseModel):
         if request.number != number:
             raise ValueError("a new request must belong to its question subject")
         binding = ComputationInputBinding(term=request.term, number=number, reuse_key=key)
+        frozen_meta = meta.model_copy(update={"input_binding": binding})
+        if isinstance(meta, BatchItemMeta) and request.call_kind in ("analysis", "reanalysis"):
+            if created_at.utcoffset() is None:
+                raise ValueError("a new primary intent requires an aware queue time")
+            if meta.queued_at is not None and meta.queued_at != created_at:
+                raise ValueError("a primary queue stamp must match its original intent time")
+            frozen_meta = meta.model_copy(
+                update={"input_binding": binding, "queued_at": created_at}
+            )
         return cls(
             request=request,
-            meta=meta.model_copy(update={"input_binding": binding}),
+            meta=frozen_meta,
             provider=provider,
             created_at=created_at,
         )

@@ -1,0 +1,13 @@
+{
+  "stage": "J200",
+  "base": "d95f62821df5c776bca7856018528d6d5889549e",
+  "source4_exact": true,
+  "other748_source_config_unchanged_except_owned": true,
+  "unchanged_production_files": {
+    "src/lexinform/services/analysis.py": "c1a0122467cd6d6b4a41ef3f31c0af43a58fa5653761e713d2dd0b6d00d8b848",
+    "src/lexinform/services/content_sources.py": "468e7d3889df08ab051e302845d10c28ca61e9c8fb1819db708b2d1de4c6c8d7",
+    "src/lexinform/services/content_history.py": "b7b3e66dca8ae07de718295c9aee5485f1a5e8e1a2461c53cc0b52c6052ca056",
+    "src/lexinform/container.py": "ed37d0873eb4c3bb73f85653ac627f8fc3ff6e247b4ed89a19abe5b7b3f7ecc5"
+  },
+  "scope": "Only new primary factory metadata stamp; old pending/consumed load and from_intent unchanged, source ContentVersion writerOFF; earlier supplied cutoff stays early/unknown; original queue Waiting.since is intentional."
+}

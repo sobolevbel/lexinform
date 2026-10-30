@@ -1,0 +1,5 @@
+Capture only prospective, unattempted single-message versions at Posting._freeze → record_publication_content. Save semantic snapshots, resolve their frozen Bill/change IDs, then commit version/binding together. Revisions use AmendmentRevisionApplications.freeze/_snapshots and retained work, never current Bill.
+
+Scope is frozen_primary_context/analysis: same frozen owner, primary analysis/reanalysis only. Known stores one retained observation ID; unknown stores (). Neither claims amendment-source coverage. Invalid rolls back version/binding, blocks delivery with an explicit diagnostic, and preserves committed paid/application work and queued publication; never silently downgrade to unknown. Collection and atomic projection receipts remain unchanged.
+
+Existing versions and lazy historical parents receive no backfill; payload/selection/receipt hashes stay fixed. Before activation qualify prospective admission/scope metadata, durable invalid disposition, shared parent restore/doctor validation and exact queue-capture deployment. Rollback stops capture while retaining compatible readers/references.

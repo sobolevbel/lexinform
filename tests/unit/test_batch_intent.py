@@ -1,9 +1,11 @@
 import datetime as dt
+from typing import Literal
 
 import pytest
 
-from lexinform.models import BatchIntent, DigestItemMeta
+from lexinform.models import BatchIntent, BatchItemMeta, DigestItemMeta, LlmBatchItem
 from tests.unit.test_batch_payload_identity import request_for
+from tests.unit.test_input_receipts import meta, request
 
 NOW = dt.datetime(2026, 10, 27, tzinfo=dt.UTC)
 
@@ -60,3 +62,67 @@ def test_new_input_binding_requires_a_recorded_question_key() -> None:
             provider="openai",
             created_at=NOW,
         )
+
+
+@pytest.mark.parametrize("kind", ["analysis", "reanalysis"])
+def test_new_primary_intent_freezes_the_supplied_queue_time_without_changing_request(
+    kind: Literal["analysis", "reanalysis"],
+) -> None:
+    frozen = request()
+    frozen = frozen.model_copy(
+        update={"question": frozen.question.model_copy(update={"kind": kind})}
+    )
+    source = meta()
+    old_meta = source.model_dump_json()
+    old_request = frozen.model_dump_json()
+    created = NOW + dt.timedelta(hours=7)
+
+    intent = BatchIntent.from_request(
+        request=frozen, meta=source, provider="openai", created_at=created
+    )
+
+    assert isinstance(intent.meta, BatchItemMeta), (
+        "primary intent creation preserves primary metadata"
+    )
+    assert intent.meta.queued_at == intent.created_at == created
+    assert intent.meta.memo_key == source.memo_key and source.model_dump_json() == old_meta
+    assert intent.request.model_dump_json() == frozen.model_dump_json() == old_request
+    assert intent.request.payload_sha256 == frozen.payload_sha256
+    item = LlmBatchItem.from_intent("original-batch", intent)
+    assert item.meta.queued_at == intent.meta.queued_at
+    assert item.meta.model_dump(exclude={"request_sha256"}) == intent.meta.model_dump(
+        exclude={"request_sha256"}
+    )
+    assert item.meta.request_sha256 == frozen.payload_sha256
+    assert BatchIntent.model_validate_json(intent.model_dump_json()) == intent
+
+
+def test_primary_intent_accepts_an_equal_stamp_and_rejects_conflicting_or_naive_time() -> None:
+    equal = meta().model_copy(update={"queued_at": NOW})
+    intent = BatchIntent.from_request(
+        request=request(), meta=equal, provider="openai", created_at=NOW
+    )
+    assert intent.meta.queued_at == NOW
+    with pytest.raises(ValueError, match="original intent time"):
+        BatchIntent.from_request(
+            request=request(),
+            meta=equal,
+            provider="openai",
+            created_at=NOW + dt.timedelta(seconds=1),
+        )
+    with pytest.raises(ValueError, match="aware queue time"):
+        BatchIntent.from_request(
+            request=request(), meta=meta(), provider="openai", created_at=NOW.replace(tzinfo=None)
+        )
+
+
+def test_capture_does_not_stamp_other_primary_question_kinds() -> None:
+    frozen = request()
+    frozen = frozen.model_copy(
+        update={"question": frozen.question.model_copy(update={"kind": "explanation"})}
+    )
+    intent = BatchIntent.from_request(
+        request=frozen, meta=meta(), provider="openai", created_at=NOW
+    )
+    assert intent.meta.queued_at is None
+    assert "queued_at" not in intent.meta.model_dump_json()

@@ -1,0 +1,59 @@
+{
+  "decision": "approved-prospective-primary-queue-writer",
+  "handoff_sha256": "6b6abeac103a26729732a15981b65c9afb0549d5280e4652418c268864205ccf",
+  "patch_sha256": "54bcfef2c7daee3f29d48f04d186484f5c5ee9d7e4ef77a00d505155afbe26dd",
+  "freeze_sha256": "6226f63e1a1d1da29d2de3a4029a91efa6681f4c176dbf38d9ef12456d1334f5",
+  "source_pins_verified_before_after_peer": {
+    "src/lexinform/models/batch.py": "4772ca0e6b81ddb0b50e630b49e50f85d0c9e750b9ccd2b356dda08d64a241a8",
+    "tests/unit/test_batch_intent.py": "d2d71dcf890d24ab7a561b7b4ca2a26823646f4fbf9a109e64c7052a9bbf2526",
+    "tests/unit/test_content_sources.py": "abe650a90ddeaff676e20c74fcfa61f4a69368c36c83760238e38e782e044d8c",
+    "tests/scenario/test_primary_queue_witness.py": "e079481411678d20d5d5cc81b13ec0c6908ae6873c023a13db7c8f728c145237"
+  },
+  "peer_focused_passed": 145,
+  "existing_author_suite_reused": true,
+  "extra_public_probes": 0,
+  "module_ast_unchanged_except": "BatchIntent.from_request body only; from_intent and deserialize unchanged",
+  "review": [
+    "New analysis/reanalysis primary metadata only; supplied aware created_at is authoritative, conflicting prestamp rejects, caller meta/provider request unchanged",
+    "Actual automatic workers1/4 and command World paths prove caller-thread source save completed before original intent created_at/queued_at",
+    "BatchNotSubmittedError retry persists original stamp through dump/restore/submission without new prepare/source writes; legacy unstamped remains None",
+    "Consumed cleanup/restore retains original queue timestamp and prepared receipt, paid/request identity immutable",
+    "Earlier supplied timestamp preserved rather than replaced; resolver classifies later source observation unknown",
+    "Old absent/explicitNone metadata bytes and legacy operational fallback remain compatible; new batch_job.since legitimately uses original queue time"
+  ],
+  "metadata_delta_evidence": {
+    "scope": "synthetic matched public intent/save/submit/restore copies only",
+    "baseline_source_sha256": "53d004478ccbbfc6b4182d8144bcab86ee133db6088f8ca061b7fc64c8adc0f4",
+    "provider_request_exact_bytes_and_sha_equal": true,
+    "memo_and_input_binding_unchanged": true,
+    "only_new_metadata_field": "queued_at",
+    "existing_pending_and_consumed_unstamped": true,
+    "existing_paid_record_unchanged": true,
+    "no_content_version_source_writer": true,
+    "stages": {
+      "pending": {
+        "sql_bytes_delta": 35,
+        "gzip_bytes_delta": 7,
+        "all_table_values_equal_after_removing_only_new_future_stamp": true,
+        "baseline_dump_sha256": "089c458c0ff14f933cafb855e6d5f457177484a5e56bfbfe0c5037b77599b613",
+        "candidate_dump_sha256": "cac92d18b5118587d523348948c617e2e4991777b51e44dae80a437e77d9b538"
+      },
+      "submitted": {
+        "sql_bytes_delta": 35,
+        "gzip_bytes_delta": 5,
+        "all_table_values_equal_after_removing_only_new_future_stamp": true,
+        "baseline_dump_sha256": "eb953fd3a49ef4013eb99c1e90dfd0c0bb21b366dd9ee414f84b5a35a056f220",
+        "candidate_dump_sha256": "84183a452f1cad631c32652ec6665b3bac23dac5c229f5175cc32939b18bc218"
+      }
+    }
+  },
+  "reader_prerequisite": {
+    "sha": "f9b841968ff00598e038c38efabf9da154ece2e9",
+    "parent_verified_proof": "/Users/sobaleu/projects/lexinform/out/corpus/j198-content-source-resolver/release/check-3.json"
+  },
+  "limitations": [
+    "No ContentVersion source writer or historical backfill activated; older unstamped rows remain unknown",
+    "Synthetic local qualification, no natural-delivery/provider execution claim",
+    "Peer performed no source edits/full/raw/network/provider/paid/production runs"
+  ]
+}
