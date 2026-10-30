@@ -1,0 +1,45 @@
+{
+  "base": "6582bc9c70b25fb502905a1a360a73306a5aa8a9",
+  "focused_cases": 115,
+  "freeze_sha256": "5523f2502f9fbbd9c3050a311702f7e56e57cf3880d172e48db757f849f25cb7",
+  "fresh64_baseline_sha256": "d641812848bdded69cd06a32161be4463b0f12206d4dd0431fe8b4bfdfa87ca4",
+  "fresh_input_scope": "fresh412e input read-only, actual baseline6582 restore64; all45tables3194rows exact; controlledtwoattempts/onecatalog only; notruntime demand",
+  "fresh_input_sha256": "a39d69e7306d97c7307e7b9a263a71a7f5c646be590815d68860ada2064eaae2",
+  "inert": true,
+  "limits": [
+    "No caller/Container activation; actualreader65deploy prerequisite for futureproducer",
+    "No newSourceObservationselection or oldJSON/ID/FK changes, no backfill/raw/backend",
+    "Known-available parents only, pre-return selected-source relation explicitlyunknown",
+    "Boundedtypedprefix32descriptors/8KiB andparentprefix32/8KiB; fullhash counts explicit, IDbindsretention",
+    "CurrentmetadataURLpolicy admission retainedsafeURLs; no genericfree-prose/secretsclassifier",
+    "Frozen8paths await independentreview/rootintegration/full; no agentcommit/push/primary/full"
+  ],
+  "migration1_64_literal_exact": true,
+  "new_unit_cases": 26,
+  "original_freeze_preserved": "revision1/",
+  "owned_paths": [
+    "docs/reference/database.md",
+    "src/lexinform/adapters/source_catalog_attempts.py",
+    "src/lexinform/adapters/sqlite_repo.py",
+    "src/lexinform/models/__init__.py",
+    "src/lexinform/models/source_catalog_attempts.py",
+    "src/lexinform/ports.py",
+    "tests/unit/test_source_catalog_attempts.py",
+    "tools/source_history_doctor.py"
+  ],
+  "patch_sha256": "00b51710b4ec2365f6d2dcdb71e8f804f5f9658cba0a5b78720934dd723d2607",
+  "proofs": [
+    "legacy-proof.json",
+    "fresh-proof.json",
+    "focused.log",
+    "base/handoff.json",
+    "base/pre-cleanup.json",
+    "base/migrations1-64.json"
+  ],
+  "repair": "ExplicitactualURLpolicyv1boundincatalogidentity; compatibleversionedreaderbeforefuturepolicychange; fullviewSHAcomputedonce",
+  "revision": 2,
+  "ruff": "check+format-check green",
+  "schema": 65,
+  "status": "frozen for independent review",
+  "strict_mypy_files": 7
+}

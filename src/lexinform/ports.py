@@ -118,6 +118,7 @@ from lexinform.models.batch import BatchJob, BatchKind
 from lexinform.models.physical_inventory import PhysicalCapture, PhysicalMetadata
 from lexinform.models.report import CallKind
 from lexinform.models.senate_inspection import SenateInspectionLink, SenateInspectionRecord
+from lexinform.models.source_catalog_attempts import SourceCatalogAttempt, SourceCatalogSnapshot
 
 
 class Clock(Protocol):
@@ -712,6 +713,20 @@ class BillRepository(Protocol):
     def save_source_observation(
         self, selection: DocumentSelectionRecord, observation: SourceObservation
     ) -> None: ...
+
+    def save_source_catalog_snapshot(
+        self, snapshot: SourceCatalogSnapshot, *, recorded_at: datetime
+    ) -> None: ...
+
+    def get_source_catalog_snapshot(self, catalog_id: str) -> SourceCatalogSnapshot | None: ...
+
+    def save_source_catalog_attempt(
+        self, attempt: SourceCatalogAttempt, *, recorded_at: datetime
+    ) -> None: ...
+
+    def get_source_catalog_attempt(self, attempt_id: str) -> SourceCatalogAttempt | None: ...
+
+    def list_source_catalog_attempts(self) -> list[SourceCatalogAttempt]: ...
 
     def save_source_metadata_omission(
         self, omission: SourceMetadataOmission, *, recorded_at: datetime

@@ -1,0 +1,24 @@
+{
+  "stage": "J171",
+  "base": "399a5defa1adbabc3fae8c7c12fb5e3278bb811e",
+  "full_gate": {
+    "tests": 7001,
+    "seconds": 245.226,
+    "failures": 0,
+    "skipped": 0,
+    "coverage_percent": 92,
+    "mypy_files": 608,
+    "ruff_files": 675,
+    "source_config_pins_exact": 675
+  },
+  "new_units": 26,
+  "new_scenarios": 0,
+  "independent_controls": 13,
+  "reader_schema": 65,
+  "producer_enabled": false,
+  "limits": [
+    "Existing SourceObservation selection FK unchanged",
+    "No caller/backfill/raw/backend/retention activation",
+    "Actual reader deployment required before safe failed-read capture"
+  ]
+}

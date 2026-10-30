@@ -8195,3 +8195,43 @@ J169 final `make check`:6975 passed/241.580s, coverage92%; mypy605,
 Ruff/format672, все672 source/config pins exact.28 новых unit cases, новых scenarios нет.
 Strict docs/link/resource checks прошли; [validation](../assets/audits/2026-10-30-physical-walk-capture/validation.json).
 StageB остаётся отдельной работой; план74 /32done /6N/A /36open.
+
+
+<a id="j171"></a>
+
+### J171. Read safe source catalog attempts without inventing a selection
+
+Для реального DA2.5 gap добавлен inert reader65: SourceCatalogSnapshot хранит admitted safe
+TextDocument descriptor как typed ordered prefix/full-view canonical ASCII SHA; catalog dedup
+не зависит от retry/owner. Identity связывает retention/schema и explicit URL policyv1 с retained
+fields/counts, marker не заменяет future compatible versioned reader. Unsafe/opaque metadata
+не выдаётся за safe positive snapshot. Envelope8KiB с reserve timestamp; тела/exception prose/
+credentials не копируются. Unknown/oversized fields отмечены, не достраиваются.
+
+SourceCatalogAttempt: actual Bill/purpose или source_reference, read_failed/errorclass и явно
+unknown selection. Никакого fake empty selection/SourceObservation или RCL-letter owner.
+Actual known_available parent manifest ограничен32links/8KiB с full count/hash и unknown source
+relations, first time не входит в identity. Три indexed tables связывают snapshot/actualowner/
+actualparents; прежний SourceObservation и mandatory selection FK не меняются.
+
+115 focused/26 новых unit cases, strict7file checks прошли. Independent13 public/policy/parent/
+corruption/deep-prefix controls закрыты на exact8path revision2. Original markerless revision1
+сохранена; marker, unsupported/tampered-policy control и fullview hash once — проверенные repairs.
+Actual schema64 populated predecessor и fresh412e:45 old tables/3194rows/IDs/JSON exact,
+literal migrations1–64 exact. Get/doctor/upgrade/restore twice/quiet+365days проходят;
+empty65DDL+2364SQL/+272gzip B,2 controlled attempts/1 shared catalog+3078SQL/+738gzip B.
+[Evidence](../assets/audits/2026-10-30-source-catalog-reader/handoff.json).
+Reader-only: caller/Container не активированы. Actual reader65 deployment обязателен перед
+следующим producer; DA2.5 остаётся partial. Raw/backend/retention не выбираются.
+
+
+J169 commit `399a5defa1adbabc3fae8c7c12fb5e3278bb811e`: все четыре CI jobs и actual
+relay6582bc9c →399a5def, health45s/timer подтверждены
+[release proof](../assets/audits/2026-10-30-physical-walk-capture/release.json).
+Default capture off; StageB и actual-consumer growth gate по-прежнему открыты.
+
+
+J171 final `make check`:7001 passed/245.226s, coverage92%; mypy608,
+Ruff/format675, все675 source/config pins exact.26 новых unit cases, новых scenarios нет;
+strict docs checks прошли. [Validation](../assets/audits/2026-10-30-source-catalog-reader/validation.json).
+Producer не активирован; план74 /32done /6N/A /36open.

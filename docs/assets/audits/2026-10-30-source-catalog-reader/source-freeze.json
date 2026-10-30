@@ -1,0 +1,10 @@
+{
+  "docs/reference/database.md": "cda3b1e13bc5eba8140afcdae1470e306f1f8259d0a8d564676028ff6a9aa8ff",
+  "src/lexinform/adapters/source_catalog_attempts.py": "0503f86597c8c4dbca3ce954cfed3c00bc600bf63e192b1f3e54ae57e7c51d6b",
+  "src/lexinform/adapters/sqlite_repo.py": "aee1a23e1aa6f8cd6605ab9e847a5b86b773ea4a9404a85cd4050a708b3f332a",
+  "src/lexinform/models/__init__.py": "b0371389364e6a445837c66a1b127620a42bcca4f96b74f5243bf4fabf9fc314",
+  "src/lexinform/models/source_catalog_attempts.py": "75204d5d68ef1211b2577aad701833dccaa38781df314d865c7017699e839b1f",
+  "src/lexinform/ports.py": "cd347c14c390d06a1bfa5b64566179a46cab650633e1fa1caeaa46d3e1d17ae9",
+  "tests/unit/test_source_catalog_attempts.py": "cfca9842049a98661e7c04ab89bb58305aa2e8e17a1f7810bb3f3a5268ac23f3",
+  "tools/source_history_doctor.py": "55bd8bc11337cdcc306c4894b0667499055d660f966a58f4ee15ce632a97763f"
+}

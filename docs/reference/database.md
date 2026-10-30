@@ -1,6 +1,6 @@
 # База данных и миграции
 
-Статус: актуальный справочник · миграции описаны по схеме **v62** включительно.
+Статус: актуальный справочник · миграции описаны по схеме **v65** включительно.
 
 Источник истины — append-only
 [`MIGRATIONS` в sqlite_repo.py](https://github.com/sobolevbel/lexinform/blob/main/src/lexinform/adapters/sqlite_repo.py).
@@ -637,3 +637,30 @@ caller выбирает Bill/Senate FK только при enrollment, инач�
 Private Sejm/RPW/RCL explanation не создаёт Bill. Новые captures ограничены32links/8KiB,
 raw URL/prose не копируются. Metadata setup/update/teardown failures отбрасывают capture,
 сохраняя исходный business outcome. Повтор сохраняет первое время без новых rows.
+
+
+## Safe catalog attempts (v65)
+
+Инертный reader65 добавляет `source_catalog_snapshots`, `source_catalog_attempts` и
+`source_catalog_attempt_parents` для безопасного официального descriptor, чтение которого
+завершилось ошибкой до появления selection. Существующие `SourceObservation`, JSON/ID и
+обязательный selection FK не меняются. Runtime producer пока не подключён.
+
+Catalog хранится отдельно и разделяется повторными попытками: snapshot ID связывает version,
+canonical-ASCII hash полного observed `TextDocument`, явный URL policy version,
+retained typed prefix с адресами и
+complete/partial coverage. Лимит полного envelope с резервом timestamp — 8192 bytes,
+не более 32 descriptors; oversized descriptor остаётся явно omitted. URL должны проходить
+metadata admission; exception prose, тексты документов и credentials сюда не записываются.
+
+Attempt имеет настоящий enrolled Bill с FK или canonical source reference без фиктивного
+зачисления Bill; purpose — prefilter/analysis/review, status — read_failed, selection — unknown,
+ошибка — только bounded class name. Не более 32 known-available parent links с полным
+count/hash и явной partial coverage; ранее существующая source observation не выдаётся
+за selection неудачного чтения. SQL columns и links сверяются с immutable JSON; shared doctor
+и scratch restore проверяют schema/данные до замены target. Повторы сохраняют первое время.
+Это metadata evidence, без обещания сохранённых bytes или возможности повторить extraction.
+
+URL policy snapshot сейчас явно `metadata-url-safety-v1`, соответствующий
+`METADATA_URL_POLICY_VERSION`. Перед будущим изменением policy нужен совместимый versioned reader:
+сохранённые snapshots нельзя переинтерпретировать по новой admission policy.

@@ -30,6 +30,17 @@ from lexinform.adapters.senate_history import (
     validate_senate_inspections,
     verify_senate_inspection,
 )
+from lexinform.adapters.source_catalog_attempts import (
+    ATTEMPT_COLUMNS,
+    CATALOG_COLUMNS,
+    SOURCE_CATALOG_MIGRATION,
+    SourceCatalogRowError,
+    attempt_values,
+    catalog_values,
+    read_attempt,
+    read_catalog,
+    validate_catalog_attempts,
+)
 from lexinform.adapters.source_omissions import (
     SOURCE_OMISSION_MIGRATION,
     SOURCE_REFERENCE_COLUMNS,
@@ -139,6 +150,7 @@ from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
 from lexinform.models.legacy_results import canonical_legacy_json, legacy_json
 from lexinform.models.physical_inventory import PhysicalCapture, PhysicalMetadata
 from lexinform.models.senate_inspection import SenateInspectionLink, SenateInspectionRecord
+from lexinform.models.source_catalog_attempts import SourceCatalogAttempt, SourceCatalogSnapshot
 from lexinform.models.source_omissions import SourceMetadataOmission
 from lexinform.saved_records import CONTEXT_RESULT_TABLES
 from lexinform.sitting_delivery import sitting_root_plan
@@ -835,6 +847,7 @@ MIGRATIONS: tuple[str, ...] = (
     PHYSICAL_INVENTORY_MIGRATION,
     SOURCE_OMISSION_MIGRATION,
     SOURCE_REFERENCE_OMISSION_MIGRATION,
+    SOURCE_CATALOG_MIGRATION,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -1214,6 +1227,7 @@ class SqliteBillRepository:
             # A dump cut at a statement boundary replays cleanly and fails only in the migrations.
             version = _dump_version(script)
             validate_source_omissions(scratch)
+            validate_catalog_attempts(scratch)
             for number, migration in enumerate(MIGRATIONS[version:], start=version + 1):
                 scratch.executescript(f"BEGIN;{migration}PRAGMA user_version = {number};COMMIT;")
             _validate_legacy_projections(scratch)
@@ -1222,6 +1236,7 @@ class SqliteBillRepository:
             validate_senate_inspections(scratch)
             validate_physical_inventory(scratch)
             validate_source_omissions(scratch)
+            validate_catalog_attempts(scratch)
         finally:
             scratch.close()
         tables = [
@@ -2222,6 +2237,85 @@ class SqliteBillRepository:
             (root_publication_id,),
         )
         return [self._row_to_publication(row) for row in rows]
+
+    def save_source_catalog_snapshot(
+        self, snapshot: SourceCatalogSnapshot, *, recorded_at: datetime
+    ) -> None:
+        stamp = SourceCatalogSnapshot.timestamp(recorded_at)
+        with self.atomic():
+            saved = self.get_source_catalog_snapshot(snapshot.catalog_id)
+            if saved is not None:
+                if saved.model_dump(exclude={"recorded_at"}) != snapshot.model_dump(
+                    exclude={"recorded_at"}
+                ):
+                    raise ValueError("immutable catalog snapshot cannot be replaced")
+                return
+            record = SourceCatalogSnapshot.model_validate_json(
+                snapshot.model_copy(update={"recorded_at": stamp}).model_dump_json()
+            )
+            self._conn.execute(
+                "INSERT INTO source_catalog_snapshots ("
+                + ",".join((*CATALOG_COLUMNS, "record_json"))
+                + ") VALUES (?,?,?,?,?,?)",
+                (*catalog_values(record), record.model_dump_json()),
+            )
+            if self.get_source_catalog_snapshot(record.catalog_id) != record:
+                raise SourceCatalogRowError("catalog snapshot failed exact persistence")
+
+    def get_source_catalog_snapshot(self, catalog_id: str) -> SourceCatalogSnapshot | None:
+        row = self._conn.execute(
+            "SELECT * FROM source_catalog_snapshots WHERE catalog_id=?", (catalog_id,)
+        ).fetchone()
+        return read_catalog(row) if row is not None else None
+
+    def save_source_catalog_attempt(
+        self, attempt: SourceCatalogAttempt, *, recorded_at: datetime
+    ) -> None:
+        stamp = SourceCatalogAttempt.timestamp(recorded_at)
+        with self.atomic():
+            saved = self.get_source_catalog_attempt(attempt.attempt_id)
+            if saved is not None:
+                if saved.model_dump(exclude={"recorded_at"}) != attempt.model_dump(
+                    exclude={"recorded_at"}
+                ):
+                    raise ValueError("immutable catalog attempt cannot be replaced")
+                return
+            record = SourceCatalogAttempt.model_validate_json(
+                attempt.model_copy(update={"recorded_at": stamp}).model_dump_json()
+            )
+            self._conn.execute(
+                "INSERT INTO source_catalog_attempts ("
+                + ",".join((*ATTEMPT_COLUMNS, "record_json"))
+                + ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (*attempt_values(record), record.model_dump_json()),
+            )
+            for ordinal, parent in enumerate(record.parents):
+                self._conn.execute(
+                    "INSERT INTO source_catalog_attempt_parents VALUES (?,?,?,?,?)",
+                    (
+                        record.attempt_id,
+                        ordinal,
+                        parent.artifact_sha256,
+                        parent.artifact_read_id,
+                        parent.extraction_id,
+                    ),
+                )
+            if self.get_source_catalog_attempt(record.attempt_id) != record:
+                raise SourceCatalogRowError("catalog attempt failed exact persistence")
+
+    def get_source_catalog_attempt(self, attempt_id: str) -> SourceCatalogAttempt | None:
+        row = self._conn.execute(
+            "SELECT * FROM source_catalog_attempts WHERE attempt_id=?", (attempt_id,)
+        ).fetchone()
+        return read_attempt(self._conn, row) if row is not None else None
+
+    def list_source_catalog_attempts(self) -> list[SourceCatalogAttempt]:
+        return [
+            read_attempt(self._conn, row)
+            for row in self._conn.execute(
+                "SELECT * FROM source_catalog_attempts ORDER BY attempt_id"
+            )
+        ]
 
     def save_source_metadata_omission(
         self, omission: SourceMetadataOmission, *, recorded_at: datetime
