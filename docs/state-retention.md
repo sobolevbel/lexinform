@@ -663,11 +663,16 @@ warm-cache inventory остаётся known inventory, не новой download 
 J162 добавляет только инертный header builder/scope, без extractor hooks. J163 сохраняет validated
 первое время при exact-cap повторе; допустимый32768B старый envelope не получает новый timestamp.
 
-Schema63 добавляет только inert reader owner-bound source omissions: hash-only evidence,
+Schema63 ввела совместимый reader owner-bound source omissions: hash-only evidence,
 known-available physical parent manifest, explicit unknown source relation и immutable first time.
-Нет backfill, producer или новой очистки; это metadata history без обещания raw retention.
+Backfill и новой очистки нет; это metadata history без обещания raw retention.
 Подробный контракт: [Owner-bound omissions](reference/database.md#owner-bound-omissions-v63).
 
 Reader64 сохраняет omission evidence незарегистрированного official source reference без создания
 Bill: separate actual context/key и known-available parents; прежние records/retention неизменны.
-Это совместимый reader без producer: [Official source owners](reference/database.md#official-source-reference-owners-v64).
+После подтверждённого reader64 deploy J168 включает producer через actual invocation scopes:
+ordinary/private explain, RCL letters/windows и Senate inspections. Body origins приходят из
+конкретного вызова, не shared inventory; caller пишет parents/fact atomically с Clock и actual
+input order. Scope failures не заменяют business exceptions и не публикуют неполные captures.
+Available parent set не доказывает полный used-body set. Quiet repeat не увеличивает dump.
+Контракт: [Official source owners](reference/database.md#official-source-reference-owners-v64).

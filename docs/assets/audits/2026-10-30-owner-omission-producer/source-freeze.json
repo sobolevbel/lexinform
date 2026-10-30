@@ -1,0 +1,19 @@
+{
+  "src/lexinform/cli.py": "d8e071780c88c81294725bff6669d4f5d414830a85bb388f23e58cac06b70d20",
+  "src/lexinform/container.py": "acca2fa716f7b33b56553956669ccbe67e7c6bfd096656c0f11e3181a19f7ed2",
+  "src/lexinform/services/analysis.py": "fa5a9a445213958ca602ab2ab041724828e9453ad2e774a0190bceebb8b8aacf",
+  "src/lexinform/services/document_history.py": "add3fdd283762e3bd3a44bbf4fc08ec307dff83ace6ff5051027714416c69f70",
+  "src/lexinform/services/documents.py": "d9763f5062da141372503e272360d93ee4b48204fc8d836606e66cc7a04d7f1f",
+  "src/lexinform/services/rcl_discovery.py": "73f704fc4bb64200aaa32a1c7aa73ba2230094774afec79c44756a944a354f3d",
+  "src/lexinform/services/rcl_projects.py": "f3d8590996eea2c6b856423168dd20e32d80457ac0023a3ba75368df73277194",
+  "src/lexinform/services/senate_documents.py": "b34c494b9209a3a1ad526677af033e0735cf8d2a6dbe025a02cbd77a4f7a4336",
+  "src/lexinform/services/source_omissions.py": "f193c48c4cc761b9dd60dc7f18b04b8822478ff459fec5c8241d603efca9481b",
+  "src/lexinform/services/text_prefilter.py": "67ff9a0dd6dfa1d01ff494ad6a0744c27a66bb56254638e0ec4c8f8158c1219c",
+  "src/lexinform/services/tracking/rcl.py": "b9c6f262a7371429e62565a5813de59e3cb904b3c55ae92b2d1dfe2183173254",
+  "src/lexinform/services/tracking/service.py": "21dc176ea066722a3ba8f714cb27b1b281634129f1dd1089fea871001fcf5821",
+  "src/lexinform/source_graph_admission.py": "e179c99cb83745a26fa440ad7922650aad540a374fb0bf4beb3bf1bd0cd0d4c6",
+  "src/lexinform/source_omission_frames.py": "890a8dbb75b575ba3353a8d2fcaf6c76752f3383651f9056922c318fcb699441",
+  "tests/scenario/test_artifact_read_capture.py": "3bbeefd1f0984b8e9dfcec763cdef987c59e4233bbcaff5cfd88c5517606f9ae",
+  "tests/scenario/test_owner_source_omissions.py": "dda74c2c0950e18920587ba51482622c80be288c98513056d1551476f85f345d",
+  "tests/unit/test_source_omission_capture.py": "f8be3cc61a1ed421da410490f21542a072261fd87fd70ba6436e04345c6cb35b"
+}

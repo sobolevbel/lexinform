@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 from collections.abc import Callable
+from contextlib import closing
 from datetime import UTC, datetime, timedelta
 from html import escape
 from pathlib import Path
@@ -55,6 +56,7 @@ from lexinform.models import (
 )
 from lexinform.models.commands import OBSERVATION_CHOICES
 from lexinform.models.source_checks import observation_label, operator_observation
+from lexinform.models.source_omissions import SourceReferenceOmissionOwner
 from lexinform.pricing import cost_usd, format_tokens, format_usd
 from lexinform.services.analysis import Waiting
 from lexinform.services.lookup import BillNotFoundError
@@ -287,37 +289,54 @@ def reprefilter(
                 return bill, service.load(bill)
 
             passed: list[Bill] = []
-            for outcome in fan_out(skipped, scanned, workers=workers):
-                bill = outcome.item
-                try:
-                    bill, loaded = outcome.result()
-                except ServiceUnavailableError as exc:
-                    report.errors.append(exc.describe())
-                    log.error("aborting the backfill: %s", exc.describe())
-                    break
-                except Exception as exc:
-                    loaded = service.problem(bill, exc)
-                else:
-                    if bill.is_rcl and bill.rcl is not None:
-                        c.repo.save_rcl(bill.term, bill.number, bill.rcl)
-                ok = service.decide(bill, loaded)
-                if ok and bill.is_rcl:
-                    passed.append(bill)
-                fresh = c.repo.get(bill.term, bill.number)
-                hits = tuple(fresh.prefilter_hits) if fresh else ()
-                report.outcomes.append(
-                    BackfillOutcome(
-                        number=bill.number,
-                        title=bill.summary.title,
-                        accepted=ok,
-                        hits=hits,
-                        reason=None if ok else (fresh.last_error if fresh else None),
+            loader = c.text_loader()
+            omission_slots = loader.source_omission_inputs(
+                tuple(
+                    SourceReferenceOmissionOwner(
+                        term=bill.term, number=bill.number, purpose="prefilter"
                     )
+                    for bill in skipped
                 )
-                verdict = "PASS" if ok else "skip"
-                typer.echo(
-                    f"  {verdict}  {bill.number:>14}  [{', '.join(hits)}]  {bill.summary.title}"
+            )
+            inputs = tuple(zip(skipped, omission_slots, strict=True))
+            with closing(
+                fan_out(
+                    inputs,
+                    lambda item: loader.run_source_omission_input(item[1], scanned, item[0]),
+                    workers=workers,
                 )
+            ) as outcomes:
+                for outcome in outcomes:
+                    bill = outcome.item[0]
+                    try:
+                        bill, loaded = outcome.result()
+                    except ServiceUnavailableError as exc:
+                        report.errors.append(exc.describe())
+                        log.error("aborting the backfill: %s", exc.describe())
+                        break
+                    except Exception as exc:
+                        loaded = service.problem(bill, exc)
+                    else:
+                        if bill.is_rcl and bill.rcl is not None:
+                            c.repo.save_rcl(bill.term, bill.number, bill.rcl)
+                    ok = service.decide(bill, loaded)
+                    if ok and bill.is_rcl:
+                        passed.append(bill)
+                    fresh = c.repo.get(bill.term, bill.number)
+                    hits = tuple(fresh.prefilter_hits) if fresh else ()
+                    report.outcomes.append(
+                        BackfillOutcome(
+                            number=bill.number,
+                            title=bill.summary.title,
+                            accepted=ok,
+                            hits=hits,
+                            reason=None if ok else (fresh.last_error if fresh else None),
+                        )
+                    )
+                    verdict = "PASS" if ok else "skip"
+                    typer.echo(
+                        f"  {verdict}  {bill.number:>14}  [{', '.join(hits)}]  {bill.summary.title}"
+                    )
             _complete_rcl_projects(c, passed, workers=workers)
             report.finished_at = c.clock.now()
             _tell_the_log_channel(c, report)
@@ -398,17 +417,36 @@ def _complete_rcl_projects(c: Container, bills: list[Bill], *, workers: int) -> 
     if not bills:
         return
     lookup = c.bill_lookup()
-    for outcome in fan_out(bills, lambda b: lookup.read_rcl_project(b.number), workers=workers):
-        bill = outcome.item
-        try:
-            project = outcome.result()
-        except ServiceUnavailableError as exc:
-            log.error("RCL went down before %s was read whole: %s", bill.number, exc.describe())
-            return
-        except Exception as exc:
-            log.warning("%s was not read whole: %s", bill.number, exc)
-            continue
-        c.repo.save_rcl(bill.term, bill.number, project)
+    loader = c.text_loader()
+    omission_slots = loader.source_omission_inputs(
+        tuple(
+            SourceReferenceOmissionOwner(term=bill.term, number=bill.number, purpose="prefilter")
+            for bill in bills
+        )
+    )
+    inputs = tuple(zip(bills, omission_slots, strict=True))
+
+    def read_project(bill: Bill) -> RclProject:
+        return lookup.read_rcl_project(bill.number)
+
+    with closing(
+        fan_out(
+            inputs,
+            lambda item: loader.run_source_omission_input(item[1], read_project, item[0]),
+            workers=workers,
+        )
+    ) as outcomes:
+        for outcome in outcomes:
+            bill = outcome.item[0]
+            try:
+                project = outcome.result()
+            except ServiceUnavailableError as exc:
+                log.error("RCL went down before %s was read whole: %s", bill.number, exc.describe())
+                return
+            except Exception as exc:
+                log.warning("%s was not read whole: %s", bill.number, exc)
+                continue
+            c.repo.save_rcl(bill.term, bill.number, project)
 
 
 @app.command()

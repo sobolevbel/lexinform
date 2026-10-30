@@ -1,0 +1,7 @@
+{
+  "business_sha256": "0d2a7d7341dcd26fc39fca42331d2c97370bebcde484876892db899393756ae4",
+  "facts": [],
+  "owner_absent": true,
+  "scope": "controlled actual SubmissionTextSource.locate boundary URL mutation; real private command/caller/persistence, no network",
+  "source_graph_absent": true
+}

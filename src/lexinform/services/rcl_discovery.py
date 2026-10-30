@@ -11,6 +11,7 @@ import datetime as dt
 import functools
 import logging
 from collections.abc import Mapping, Sequence
+from contextlib import closing
 from dataclasses import dataclass, field
 
 from lexinform.concurrency import fan_out
@@ -112,16 +113,25 @@ class RclDiscoveryService:
                 result.refreshed += 1
         known = self._repo.prints_by_rcl_num(term)
         read = functools.partial(self._read, term=term, started=started, known=known)
-        for outcome in fan_out(new_rows, read, workers=self._workers):
-            try:
-                project = outcome.result()
-            except ServiceUnavailableError:
-                raise
-            except Exception as exc:
-                result.failed += 1
-                log.warning("RCL project %s not read: %s", outcome.item.id, exc)
-                continue
-            self._ingest(term, project, result, started=started)
+        omission_slots = self._reader.source_omission_inputs(tuple(row.id for row in new_rows))
+        inputs = tuple(zip(new_rows, omission_slots, strict=True))
+        with closing(
+            fan_out(
+                inputs,
+                lambda item: self._reader.run_source_omission_input(item[1], read, item[0]),
+                workers=self._workers,
+            )
+        ) as outcomes:
+            for outcome in outcomes:
+                try:
+                    project = outcome.result()
+                except ServiceUnavailableError:
+                    raise
+                except Exception as exc:
+                    result.failed += 1
+                    log.warning("RCL project %s not read: %s", outcome.item[0].id, exc)
+                    continue
+                self._ingest(term, project, result, started=started)
         for project_id in from_register:
             self._take(term, project_id, result, started=started)
         log.info(

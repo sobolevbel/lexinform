@@ -1,0 +1,49 @@
+{
+  "doctor": {
+    "artifact_reads_available": true,
+    "database_sha256": "cd559f8d41845a0373ddbe888393f1f0d2be569b3350e565886ce8cbe661bd5b",
+    "exclusions": [
+      "Current owner/source contents do not revalidate historical decisions.",
+      "Unreferenced metadata is an inventory observation, not permission to delete it.",
+      "Policy versions remain opaque; no historical policy or paid identity is inferred.",
+      "No raw availability, extraction/legal completeness or provider-input replay verdict.",
+      "RCL letter-use facts describe parsing and in-memory merging, not saved applications.",
+      "Senate inspection facts do not certify admission, paid inputs or saved applications.",
+      "Omitted Senate universe/context metadata cannot be completely revalidated.",
+      "Omitted RCL payloads cannot revalidate their absent full semantic metadata.",
+      "Legacy v1 RCL omissions have unbound refs; v2 binds retained metadata only.",
+      "No source bodies, URLs or evidence quotes in this report; no work is executed."
+    ],
+    "findings": [],
+    "missing_artifact_tables": [],
+    "missing_tables": [],
+    "rcl_letter_uses_available": true,
+    "schema_version": 64,
+    "scope": "Recorded source/artifact identities, SQL columns and outer-part references.",
+    "senate_inspections_available": true,
+    "status": "recorded",
+    "summary": {
+      "artifact_rows": 1,
+      "errors": 0,
+      "physical_captures_rows": 0,
+      "physical_metadata_rows": 0,
+      "senate_inspection_link_rows": 0,
+      "unlinked_artifact_rows": 1,
+      "unreferenced_selection_rows": 0
+    },
+    "version": 1
+  },
+  "facts": 1,
+  "full_dump_sha256": "ff77cd9c46b12eb5b5ffcf71bab148d80ad7c1a48771e8ab89d3e598f015b8a3",
+  "get_exact": true,
+  "gzip_delta": 380,
+  "parents": 1,
+  "profile": "actual caller-owned metadata only, no bodies/rawURLs/prose",
+  "repeat_365_plus_days_exact": true,
+  "restore_exact": true,
+  "sql_delta": 1721,
+  "with_bytes": 51616,
+  "with_gzip": 10685,
+  "without_fact_bytes": 49895,
+  "without_fact_gzip": 10305
+}

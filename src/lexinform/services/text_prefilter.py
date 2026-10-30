@@ -10,6 +10,7 @@ bills, which are the ones whose titles say "o zmianie niektórych ustaw".
 """
 
 import logging
+from contextlib import closing
 from dataclasses import dataclass, field, replace
 
 from lexinform.concurrency import fan_out
@@ -20,6 +21,7 @@ from lexinform.models import (
     Bill,
     BillStatus,
 )
+from lexinform.models.source_omissions import SourceReferenceOmissionOwner
 from lexinform.ports import BillRepository, Clock, TextSource
 from lexinform.services.document_history import SourceReadCapture, record_source_read
 from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
@@ -101,30 +103,46 @@ class TextPrefilterService:
         if limit <= 0:
             return result
         pending = self._repo.list_by_status([BillStatus.TEXT_PREFILTER_PENDING], limit=limit)
-        for outcome in fan_out(pending, self.load, workers=self._workers):
-            bill = outcome.item
-            result.checked += 1
-            try:
-                loaded = outcome.result()
-            except ServiceUnavailableError as exc:
-                result.fatal_error = exc.describe()
-                log.error("aborting text prefilter phase: %s", result.fatal_error)
-                break
-            except Exception as exc:
-                result.failed += 1
-                loaded = self.problem(bill, exc)
-            if loaded.unanswered:
-                result.unanswered += 1
-            elif loaded.is_scan:
-                result.scans += 1
-            elif loaded.text is None:
-                result.unreadable += 1
-                result.unreadable_bills.append(f"{bill.term}/{bill.number}")
-            accepted = self.decide(bill, loaded)
-            if accepted and not loaded.is_scan:
-                result.hits += 1
-            elif not accepted and loaded.text is not None:
-                result.rejected.append(f"{bill.term}/{bill.number}")
+        omission_slots = self._loader.source_omission_inputs(
+            tuple(
+                SourceReferenceOmissionOwner(
+                    term=bill.term, number=bill.number, purpose="prefilter"
+                )
+                for bill in pending
+            )
+        )
+        inputs = tuple(zip(pending, omission_slots, strict=True))
+        with closing(
+            fan_out(
+                inputs,
+                lambda item: self._loader.run_source_omission_input(item[1], self.load, item[0]),
+                workers=self._workers,
+            )
+        ) as outcomes:
+            for outcome in outcomes:
+                bill = outcome.item[0]
+                result.checked += 1
+                try:
+                    loaded = outcome.result()
+                except ServiceUnavailableError as exc:
+                    result.fatal_error = exc.describe()
+                    log.error("aborting text prefilter phase: %s", result.fatal_error)
+                    break
+                except Exception as exc:
+                    result.failed += 1
+                    loaded = self.problem(bill, exc)
+                if loaded.unanswered:
+                    result.unanswered += 1
+                elif loaded.is_scan:
+                    result.scans += 1
+                elif loaded.text is None:
+                    result.unreadable += 1
+                    result.unreadable_bills.append(f"{bill.term}/{bill.number}")
+                accepted = self.decide(bill, loaded)
+                if accepted and not loaded.is_scan:
+                    result.hits += 1
+                elif not accepted and loaded.text is not None:
+                    result.rejected.append(f"{bill.term}/{bill.number}")
         log.info(
             "text prefilter: checked=%d hits=%d scans=%d unreadable=%d unanswered=%d failed=%d",
             result.checked,
@@ -259,13 +277,17 @@ class TextPrefilterService:
                 )
             log.info("%s has no readable text; text prefilter skipped", bill.number)
             return PrefilterLoad(None, "text prefilter: no document to read")
-        resolved, file = self._loader.select_document(located.document)
-        return replace(
-            self._read(file),
-            source_read=self._loader.capture_source_read(
-                located.document, resolved, file, record_requested_document=True
-            ),
+        owner = SourceReferenceOmissionOwner(
+            term=bill.term, number=bill.number, purpose="prefilter"
         )
+        with self._loader.source_omission_scope(owner, located.document):
+            resolved, file = self._loader.select_document(located.document)
+            return replace(
+                self._read(file),
+                source_read=self._loader.capture_source_read(
+                    located.document, resolved, file, record_requested_document=True
+                ),
+            )
 
     def _read(self, file: LoadedFile) -> PrefilterLoad:
         admission = prefilter_admission(

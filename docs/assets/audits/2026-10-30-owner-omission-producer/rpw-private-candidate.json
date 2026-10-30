@@ -1,0 +1,56 @@
+{
+  "business_sha256": "0d2a7d7341dcd26fc39fca42331d2c97370bebcde484876892db899393756ae4",
+  "facts": [
+    {
+      "diagnostics": {
+        "example_scope": "partial",
+        "examples": [
+          {
+            "count": 3,
+            "reason": "unrecognized_query",
+            "requested_url_sha256": "1d21c6298c159e7769f92161ff5a3df30202a88346848e1cc9d24cdf32b9e7e4"
+          }
+        ],
+        "omitted_observations": 0,
+        "policy_version": "metadata-url-safety-v1",
+        "reasons": [
+          {
+            "count": 3,
+            "reason": "unrecognized_query"
+          }
+        ],
+        "schema_version": 1,
+        "total": 3,
+        "unit": "metadata_omission_observation"
+      },
+      "omission_id": "source-omission-v1:b64fd350179d03c0f46e5ec6ee68ad8d47f2959a890773933bf05fb52475fb4b",
+      "owner": {
+        "kind": "source_reference",
+        "number": "RPW/29075/2026",
+        "purpose": "analysis",
+        "term": 10
+      },
+      "parent_count": 1,
+      "parent_coverage": "complete",
+      "parent_scope": "known_available",
+      "parents": [
+        {
+          "artifact_read_id": null,
+          "artifact_sha256": "315d429b7714cedb6ad04ac31240145257692630457f3c88253c5beceac76027",
+          "extraction_id": null,
+          "scope": "known_available",
+          "source_observation_id": null,
+          "source_relation": "unknown"
+        }
+      ],
+      "parents_sha256": "289602294c199bddb6920eab04454d581ddf4785c3d3d2660e1f72fef1a20d47",
+      "recorded_at": "2026-09-07T06:00:00Z",
+      "source_view_encoding": "canonical-json-ascii-v1",
+      "source_view_sha256": "770301a3985a1041a8184be11252e6bdd0c1d5badd39eb459ac383f26caa42f8",
+      "version": 1
+    }
+  ],
+  "owner_absent": true,
+  "scope": "controlled actual SubmissionTextSource.locate boundary URL mutation; real private command/caller/persistence, no network",
+  "source_graph_absent": true
+}

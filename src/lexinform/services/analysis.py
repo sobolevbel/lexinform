@@ -10,9 +10,10 @@ import json
 import logging
 import re
 from collections.abc import Callable
-from contextlib import suppress
+from contextlib import closing, suppress
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
+from itertools import chain
 from typing import Literal
 
 from pydantic import BaseModel
@@ -36,6 +37,7 @@ from lexinform.errors import (
 from lexinform.keywords import KeywordPrefilter
 from lexinform.law_diff import diff_laws
 from lexinform.law_digest import law_digest
+from lexinform.metadata_urls import metadata_url_decision
 from lexinform.models import (
     AMENDMENT_SOURCES,
     FULL_TEXT_SOURCES,
@@ -123,6 +125,7 @@ from lexinform.models.batch import (
     SupplementQuestion,
 )
 from lexinform.models.computations import CollectionReason, ComputationRecord
+from lexinform.models.source_omissions import SenateOmissionOwner, SourceReferenceOmissionOwner
 from lexinform.ports import (
     AnalysisBackend,
     AuthorsResolver,
@@ -168,6 +171,8 @@ from lexinform.services.senate_documents import (
 )
 from lexinform.services.senate_history import SenateInspectionCollector
 from lexinform.services.senate_inspection import SenateInspectionCapture
+from lexinform.services.source_omissions import SourceOmissionInput
+from lexinform.source_graph_admission import source_graph_url_decisions
 from lexinform.text_projection import TextProjection
 
 log = logging.getLogger(__name__)
@@ -689,95 +694,110 @@ class AnalysisService:
                 history=history[(bill.term, bill.number)],
             )
 
-        for outcome in fan_out(candidates, prepare, workers=self._options.workers):
-            bill = outcome.item
-            try:
-                prepared = self._accept_preparation(bill, outcome.result)
-                if prepared.queued:
-                    if not self._enqueue(bill, prepared):
-                        result.stopped = self._ledger.stopped
-                        break
-                    result.batched += 1
-                    if self._ledger.exhausted:
-                        self._ledger.stop("the remaining candidates wait for the next run")
-                        result.stopped = self._ledger.stopped
-                        break
-                    continue
-                record = self._persist(prepared)
-            except ServiceUnavailableError as exc:
-                result.fatal_error = exc.describe()
-                log.error("aborting analysis phase: %s", result.fatal_error)
-                break
-            except DocumentSelectionError as exc:
-                result.unanswered += 1
-                status = (
-                    BillStatus.ANALYSIS_PENDING
-                    if exc.state == "waiting"
-                    else BillStatus.DOCUMENT_AMBIGUOUS
-                    if exc.state == "ambiguous"
-                    else BillStatus.DOCUMENT_UNSUPPORTED
-                )
-                self._repo.set_status(bill.term, bill.number, status, reason=str(exc))
-                continue
-            except OrkaUnreachableError as exc:
-                # The file was not read because the host would not hand it over today, which
-                # says nothing about the bill. Analysing the metadata instead would write down
-                # a verdict nothing ever revisits (RPW/30695/2026, 2026-09-14): the bill waits
-                # for the next run instead, and the attempt is not one of its three.
-                result.unanswered += 1
-                log.warning("analysis of %s waits for the file: %s", bill.number, exc)
-                self._repo.set_status(
-                    bill.term,
-                    bill.number,
-                    BillStatus.ANALYSIS_PENDING,
-                    reason=f"analysis: {type(exc).__name__}: {exc}",
-                )
-                continue
-            except TooExpensiveError as exc:
-                result.skipped_cost += 1
-                log.warning("analysis of %s skipped: %s", bill.number, exc)
-                self._repo.set_status(
-                    bill.term,
-                    bill.number,
-                    BillStatus.SKIPPED_COST,
-                    reason=f"analysis skipped: {exc} (lexinform reset --to analysis_pending)",
-                )
-                continue
-            except Exception as exc:
-                result.failed += 1
-                log.exception("analysis failed for %s: %s", bill.number, exc)
-                self._repo.record_analysis_failure(
-                    bill.term, bill.number, f"{type(exc).__name__}: {exc}"
-                )
-                continue
-            if record.text_source == "excerpts":
-                result.triaged_out += 1
-            else:
-                result.analyzed += 1
-            result.verdicts.append(
-                AnalysisVerdict(
-                    number=bill.number,
-                    title=bill.summary.title,
-                    relevant=record.analysis.relevant,
-                    score=record.analysis.score,
-                    triaged=record.text_source == "excerpts",
-                    term=bill.term,
-                )
+        omission_slots = self._loader.source_omission_inputs(
+            tuple(
+                SourceReferenceOmissionOwner(term=bill.term, number=bill.number, purpose="analysis")
+                for bill in candidates
             )
-            result.input_tokens += record.input_tokens or 0
-            result.output_tokens += record.output_tokens or 0
-            merge_usage(result.usage, usage_of(record))
-            # A rejection's record is the triage call; adding `prepared.triage` too would double it.
-            if prepared.triage is not None and record.text_source != "excerpts":
-                result.input_tokens += prepared.triage.input_tokens or 0
-                result.output_tokens += prepared.triage.output_tokens or 0
-                merge_usage(result.usage, usage_of(prepared.triage))
-            if self._ledger.exhausted:
-                result.stopped = (
-                    f"{self._ledger.over_budget}; the remaining candidates wait for the next run"
+        )
+        inputs = tuple(zip(candidates, omission_slots, strict=True))
+        with closing(
+            fan_out(
+                inputs,
+                lambda item: self._loader.run_source_omission_input(item[1], prepare, item[0]),
+                workers=self._options.workers,
+            )
+        ) as outcomes:
+            for outcome in outcomes:
+                bill = outcome.item[0]
+                try:
+                    prepared = self._accept_preparation(bill, outcome.result)
+                    if prepared.queued:
+                        if not self._enqueue(bill, prepared):
+                            result.stopped = self._ledger.stopped
+                            break
+                        result.batched += 1
+                        if self._ledger.exhausted:
+                            self._ledger.stop("the remaining candidates wait for the next run")
+                            result.stopped = self._ledger.stopped
+                            break
+                        continue
+                    record = self._persist(prepared)
+                except ServiceUnavailableError as exc:
+                    result.fatal_error = exc.describe()
+                    log.error("aborting analysis phase: %s", result.fatal_error)
+                    break
+                except DocumentSelectionError as exc:
+                    result.unanswered += 1
+                    status = (
+                        BillStatus.ANALYSIS_PENDING
+                        if exc.state == "waiting"
+                        else BillStatus.DOCUMENT_AMBIGUOUS
+                        if exc.state == "ambiguous"
+                        else BillStatus.DOCUMENT_UNSUPPORTED
+                    )
+                    self._repo.set_status(bill.term, bill.number, status, reason=str(exc))
+                    continue
+                except OrkaUnreachableError as exc:
+                    # The file was not read because the host would not hand it over today, which
+                    # says nothing about the bill. Analysing the metadata instead would write down
+                    # a verdict nothing ever revisits (RPW/30695/2026, 2026-09-14): the bill waits
+                    # for the next run instead, and the attempt is not one of its three.
+                    result.unanswered += 1
+                    log.warning("analysis of %s waits for the file: %s", bill.number, exc)
+                    self._repo.set_status(
+                        bill.term,
+                        bill.number,
+                        BillStatus.ANALYSIS_PENDING,
+                        reason=f"analysis: {type(exc).__name__}: {exc}",
+                    )
+                    continue
+                except TooExpensiveError as exc:
+                    result.skipped_cost += 1
+                    log.warning("analysis of %s skipped: %s", bill.number, exc)
+                    self._repo.set_status(
+                        bill.term,
+                        bill.number,
+                        BillStatus.SKIPPED_COST,
+                        reason=f"analysis skipped: {exc} (lexinform reset --to analysis_pending)",
+                    )
+                    continue
+                except Exception as exc:
+                    result.failed += 1
+                    log.exception("analysis failed for %s: %s", bill.number, exc)
+                    self._repo.record_analysis_failure(
+                        bill.term, bill.number, f"{type(exc).__name__}: {exc}"
+                    )
+                    continue
+                if record.text_source == "excerpts":
+                    result.triaged_out += 1
+                else:
+                    result.analyzed += 1
+                result.verdicts.append(
+                    AnalysisVerdict(
+                        number=bill.number,
+                        title=bill.summary.title,
+                        relevant=record.analysis.relevant,
+                        score=record.analysis.score,
+                        triaged=record.text_source == "excerpts",
+                        term=bill.term,
+                    )
                 )
-                log.warning("analysis phase stopped: %s", result.stopped)
-                break
+                result.input_tokens += record.input_tokens or 0
+                result.output_tokens += record.output_tokens or 0
+                merge_usage(result.usage, usage_of(record))
+                # A rejected record already accounts for its triage call.
+                if prepared.triage is not None and record.text_source != "excerpts":
+                    result.input_tokens += prepared.triage.input_tokens or 0
+                    result.output_tokens += prepared.triage.output_tokens or 0
+                    merge_usage(result.usage, usage_of(prepared.triage))
+                if self._ledger.exhausted:
+                    result.stopped = (
+                        f"{self._ledger.over_budget}; "
+                        "the remaining candidates wait for the next run"
+                    )
+                    log.warning("analysis phase stopped: %s", result.stopped)
+                    break
         return result
 
     def submit_queued_batches(self) -> None:
@@ -1830,36 +1850,54 @@ class AnalysisService:
         if not self.review_enabled(purpose):
             return None
         sources: list[ReviewDocument] = []
-        for requested, outcome in zip(
-            documents,
-            fan_out(documents, self._read_review_document, workers=self._options.workers),
-            strict=True,
-        ):
-            try:
-                read = outcome.result()
-            except _SourceReadError as failure:
-                self._record_source_read(bill, failure.source, purpose="review")
-                raise failure.cause from failure
-            if read.source_read is not None:
-                self._record_source_read(bill, read.source_read, purpose="review")
-            source = read.document
-            if source is not None:
-                sources.append(source)
-            elif purpose == "commission_review":
-                sources.append(
-                    ReviewDocument(
-                        identity=requested.identity,
-                        url=requested.document.url,
-                        role=requested.role,
-                        text="",
-                        sha256="",
-                        normalized_sha256="",
-                        complete=False,
-                        author=requested.author,
-                        body=requested.body,
-                        forum=requested.forum,
+        omission_owner = SourceReferenceOmissionOwner(
+            term=bill.term, number=bill.number, purpose="review"
+        )
+        omission_slots = self._loader.source_omission_inputs(
+            tuple(omission_owner for _ in documents)
+        )
+        inputs = tuple(zip(documents, omission_slots, strict=True))
+
+        def read_source(source: ReviewSource) -> _ReviewRead:
+            return self._read_review_document(source, owner=omission_owner)
+
+        with closing(
+            fan_out(
+                inputs,
+                lambda item: self._loader.run_source_omission_input(item[1], read_source, item[0]),
+                workers=self._options.workers,
+            )
+        ) as outcomes:
+            for requested, outcome in zip(
+                documents,
+                outcomes,
+                strict=True,
+            ):
+                try:
+                    read = outcome.result()
+                except _SourceReadError as failure:
+                    self._record_source_read(bill, failure.source, purpose="review")
+                    raise failure.cause from failure
+                if read.source_read is not None:
+                    self._record_source_read(bill, read.source_read, purpose="review")
+                source = read.document
+                if source is not None:
+                    sources.append(source)
+                elif purpose == "commission_review":
+                    sources.append(
+                        ReviewDocument(
+                            identity=requested.identity,
+                            url=requested.document.url,
+                            role=requested.role,
+                            text="",
+                            sha256="",
+                            normalized_sha256="",
+                            complete=False,
+                            author=requested.author,
+                            body=requested.body,
+                            forum=requested.forum,
+                        )
                     )
-                )
         if not any(source.text.strip() for source in sources):
             return None
         if purpose == "commission_review" and not any(
@@ -1885,7 +1923,15 @@ class AnalysisService:
             ),
         )
 
-    def _read_review_document(self, source: ReviewSource) -> _ReviewRead:
+    def _read_review_document(
+        self, source: ReviewSource, *, owner: SourceReferenceOmissionOwner | None = None
+    ) -> _ReviewRead:
+        if owner is None or source.snapshot is not None:
+            return self._read_review_document_inner(source)
+        with self._loader.source_omission_scope(owner, source.document):
+            return self._read_review_document_inner(source)
+
+    def _read_review_document_inner(self, source: ReviewSource) -> _ReviewRead:
         if source.snapshot is not None:
             return _ReviewRead(source.snapshot)
         document = source.document
@@ -2038,7 +2084,89 @@ class AnalysisService:
         if self._senate_inspections is not None:
             self._senate_inspections.reserve(tuple((bill.term, bill.number) for bill in bills))
 
+    def source_omission_inputs(
+        self, bills: tuple[Bill, ...]
+    ) -> tuple[SourceOmissionInput | None, ...]:
+        return self._loader.source_omission_inputs(
+            tuple(
+                SourceReferenceOmissionOwner(term=bill.term, number=bill.number, purpose="analysis")
+                for bill in bills
+            )
+        )
+
+    def run_source_omission_input[T, R](
+        self, slot: SourceOmissionInput | None, step: Callable[[T], R], item: T
+    ) -> R:
+        return self._loader.run_source_omission_input(slot, step, item)
+
     def senate_amendments_document(
+        self,
+        info: PrintInfo,
+        stage: Stage,
+        *,
+        titles: tuple[str, ...],
+        passed_on: date | None = None,
+        owner: Bill | None = None,
+    ) -> TextDocument | None:
+        view: dict[str, object] = {}
+        try:
+            bound = (
+                owner is not None
+                and owner.term == info.term
+                and stage.print_number == info.number
+                and stage.stage_type == "SenatePosition"
+            )
+            subject = (
+                SenateOmissionOwner(
+                    term=owner.term,
+                    number=owner.number,
+                    resolution_term=info.term,
+                    resolution_number=info.number,
+                )
+                if bound and owner is not None
+                else SourceReferenceOmissionOwner(
+                    term=info.term, number=info.number, purpose="analysis"
+                )
+            )
+            view = {
+                "print": info.model_dump(mode="json"),
+                "stage": stage.model_dump(mode="json"),
+                "titles": list(titles),
+                "passed_on": passed_on.isoformat() if passed_on else None,
+                "resolved_document": None,
+            }
+            context = self._loader.metadata_omission_scope(
+                subject,
+                role="senate",
+                view=view,
+                urls=tuple(item.url for item in info.attachments),
+            )
+        except BaseException as exc:
+            with suppress(BaseException):
+                log.warning("Senate omission setup unavailable (%s)", type(exc).__name__[:128])
+            context = self._loader.unobserved_source_scope()
+        with context as scope:
+            document = self._senate_amendments_document_inner(
+                info,
+                stage,
+                titles=titles,
+                passed_on=passed_on,
+                owner=owner,
+            )
+            if scope is not None and not scope.failed and document is not None:
+                with scope.capture():
+                    scope.update(
+                        {**view, "resolved_document": document.model_dump(mode="json")},
+                        chain(
+                            (metadata_url_decision(item.url) for item in info.attachments),
+                            source_graph_url_decisions(
+                                document, None, None, opaque_failure_prose=False
+                            ),
+                        ),
+                    )
+            return document
+
+    def _senate_amendments_document_inner(
         self,
         info: PrintInfo,
         stage: Stage,
@@ -2058,7 +2186,7 @@ class AnalysisService:
             )
         ):
             try:
-                self.reserve_senate_inspections((owner,))
+                self._senate_inspections.reserve(((owner.term, owner.number),))
                 encodable = True
                 for attachment in info.attachments:
                     decision = self._loader.observe_metadata_url(attachment.url)
@@ -2107,7 +2235,13 @@ class AnalysisService:
     def _load_secondary_text(self, bill: Bill, document: TextDocument) -> _Loaded:
         """Record a secondary consumer's completed source read before using its input."""
         try:
-            loaded = self._load_source(document, trim=False)
+            loaded = self._load_source(
+                document,
+                trim=False,
+                owner=SourceReferenceOmissionOwner(
+                    term=bill.term, number=bill.number, purpose="analysis"
+                ),
+            )
         except _SourceReadError as failure:
             self._record_source_read(bill, failure.source)
             raise failure.cause from failure
@@ -2116,6 +2250,13 @@ class AnalysisService:
         return loaded
 
     def _load_amendments_text(self, bill: Bill, document: TextDocument) -> _Loaded:
+        if document.kind != "senate_amendments":
+            return self._load_amendments_text_inner(bill, document)
+        owner = SourceReferenceOmissionOwner(term=bill.term, number=bill.number, purpose="analysis")
+        with self._loader.source_omission_scope(owner, document):
+            return self._load_amendments_text_inner(bill, document)
+
+    def _load_amendments_text_inner(self, bill: Bill, document: TextDocument) -> _Loaded:
         if document.kind != "senate_amendments":
             loaded = self._load_secondary_text(bill, document)
             if loaded.truncated:
@@ -2496,7 +2637,12 @@ class AnalysisService:
         """Prepare input; historical reanalysis records rereads on its calling thread."""
         document = located.document
         try:
-            loaded = self._load_source(document)
+            loaded = self._load_source(
+                document,
+                owner=SourceReferenceOmissionOwner(
+                    term=bill.term, number=bill.number, purpose="analysis"
+                ),
+            )
         except _SourceReadError as failure:
             if previous is None or not isinstance(
                 failure.cause, (OrkaUnreachableError, DocumentSelectionError)
@@ -2869,7 +3015,12 @@ class AnalysisService:
         error: Exception | None = None
         wrapper: _SourceReadError | None = None
         try:
-            loaded = self._load_source(document)
+            loaded = self._load_source(
+                document,
+                owner=SourceReferenceOmissionOwner(
+                    term=bill.term, number=bill.number, purpose="analysis"
+                ),
+            )
         except _SourceReadError as failure:
             source, error = failure.source, failure.cause
             wrapper = failure
@@ -3197,7 +3348,19 @@ class AnalysisService:
         except _SourceReadError as failure:
             raise failure.cause from failure
 
-    def _load_source(self, document: TextDocument | None, *, trim: bool = True) -> _Loaded:
+    def _load_source(
+        self,
+        document: TextDocument | None,
+        *,
+        trim: bool = True,
+        owner: SourceReferenceOmissionOwner | None = None,
+    ) -> _Loaded:
+        if owner is None or document is None:
+            return self._load_source_inner(document, trim=trim)
+        with self._loader.source_omission_scope(owner, document):
+            return self._load_source_inner(document, trim=trim)
+
+    def _load_source_inner(self, document: TextDocument | None, *, trim: bool = True) -> _Loaded:
         """Prepare admitted text or pages, propagating failures and blocked selections."""
         if document is None:
             return _Loaded("", False, "metadata_only")

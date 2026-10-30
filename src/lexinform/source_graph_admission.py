@@ -37,8 +37,8 @@ def _document_urls(document: TextDocument) -> Iterator[str]:
 
 def source_graph_url_decisions(
     requested: TextDocument,
-    resolved: TextDocument,
-    selection: DocumentSelection,
+    resolved: TextDocument | None,
+    selection: DocumentSelection | None,
     *,
     opaque_failure_prose: bool,
 ) -> Iterator[MetadataUrlDecision]:
@@ -46,9 +46,13 @@ def source_graph_url_decisions(
         yield MetadataUrlDecision(None, "opaque_failure_prose")
     urls = chain(
         _document_urls(requested),
-        _document_urls(resolved),
-        (part.url for part in chain(selection.parts, selection.observed_parts) if part.url),
-        (fact.source_url for fact in selection.facts if fact.source_url),
+        _document_urls(resolved) if resolved is not None else (),
+        (part.url for part in chain(selection.parts, selection.observed_parts) if part.url)
+        if selection is not None
+        else (),
+        (fact.source_url for fact in selection.facts if fact.source_url)
+        if selection is not None
+        else (),
     )
     for url in urls:
         yield metadata_url_decision(url)

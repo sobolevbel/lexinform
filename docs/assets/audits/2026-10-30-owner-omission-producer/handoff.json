@@ -1,0 +1,59 @@
+{
+  "base_head": "4ec69a8142a6ada818d2ec454784963460ce9b9c",
+  "baseline_excluded_from_patch": [
+    "src/lexinform/models/source_omissions.py",
+    "src/lexinform/adapters/source_omissions.py",
+    "src/lexinform/adapters/sqlite_repo.py",
+    "src/lexinform/models/__init__.py",
+    "tests/unit/test_source_omissions.py",
+    "docs/reference/database.md",
+    "docs/state-retention.md"
+  ],
+  "baseline_reader64_seven_unchanged": true,
+  "freeze_sha256": "887adf3dd5e7806384aad5d9d3f562d29c5efb696d47488ef23bcfdb82977ba3",
+  "freeze_status": "ready for independent review; no further source edits",
+  "notes": [
+    "Reader64 real deployment verified by root before activation",
+    "No source/rawURL/prose stored; canonicalASCII exact observed-view hash only",
+    "Actual input-phase slots, known invocation origins only; caller atomic SQL/Clock; failed metadata hooks discard scope and preserve business/cause",
+    "Full manifest known_available only, <=32 links/8192B; no all-used-body claim",
+    "Fresh RCL/Senate IDs intentionally differ only actual source component hashes; old stored rows/IDs exact",
+    "No producer commit/push/primary/full/network/paid calls performed"
+  ],
+  "owned_files": [
+    "src/lexinform/cli.py",
+    "src/lexinform/container.py",
+    "src/lexinform/services/analysis.py",
+    "src/lexinform/services/document_history.py",
+    "src/lexinform/services/documents.py",
+    "src/lexinform/services/rcl_discovery.py",
+    "src/lexinform/services/rcl_projects.py",
+    "src/lexinform/services/senate_documents.py",
+    "src/lexinform/services/source_omissions.py",
+    "src/lexinform/services/text_prefilter.py",
+    "src/lexinform/services/tracking/rcl.py",
+    "src/lexinform/services/tracking/service.py",
+    "src/lexinform/source_graph_admission.py",
+    "src/lexinform/source_omission_frames.py",
+    "tests/scenario/test_artifact_read_capture.py",
+    "tests/scenario/test_owner_source_omissions.py",
+    "tests/unit/test_source_omission_capture.py"
+  ],
+  "patch_sha256": "80f6e0ee5cd11e4acd5c14b29cafbf931ff47bb745543c3af32b11818734da73",
+  "qualification": {
+    "cached_input_pins": 940,
+    "cached_rows": 986,
+    "focused_cases": 257,
+    "focused_log": "focused-final.log",
+    "new_scenarios": 2,
+    "new_units": 28,
+    "paired_public_cases": 21,
+    "private_rpw": "rpw-private-baseline.json /rpw-private-candidate.json: controlled actual SubmissionTextSource.locate mutation, business/paid/IO/messages exact; one actual unenrolled source_reference fact/parent, no graph",
+    "recovery": "recovery-proof.json actual producer row get/doctor/restore+365quiet; +1721 SQL/+380gzip for1fact1parent",
+    "retained_rcl": 874,
+    "retained_senate": 775,
+    "retained_url_occurrences": 4595,
+    "ruff": "check+format--check passed exact frozen17files",
+    "strict_mypy_changed_files": 17
+  }
+}

@@ -592,8 +592,8 @@ physical attempts относится к сохранённой publication, а �
 
 ## Owner-bound omissions (v63)
 
-Reader-only schema63 добавляет `source_metadata_omissions` и `source_omission_parents` без runtime
-producer или backfill. Closed owner: Bill с purpose, официальный RCL project/stage/letter context
+Schema63 ввела reader `source_metadata_omissions` и `source_omission_parents` перед отдельным runtime
+producer; backfill нет. Closed owner: Bill с purpose, официальный RCL project/stage/letter context
 или actual Bill с Senate resolution print. Bill/Senate owners имеют настоящий FK; неизвестные
 RCL stage/letter IDs остаются NULL. Owner/context, parent count/hash и первое время доступны SQL.
 
@@ -631,5 +631,9 @@ context/purpose и прежнего typed selection/body corroboration, без e
 
 Reader и doctor поддерживают actual63 и64 layouts; scratch restore проверяет сохранённую layout
 до миграции, затем повторно после неё. Новые context fields не добавляются в прежние JSON/IDs.
-Producer выключен: использование source_reference требует развёрнутого reader64 и отдельной
-приёмки actual callsites, включая private explanation без регистрации дела.
+J168 включает producer после actual reader64 deploy и отдельной callsite qualification.
+Invocation-scoped origins и phase/input slots сохраняют реальные available parents и порядок;
+caller выбирает Bill/Senate FK только при enrollment, иначе actual source_reference.
+Private Sejm/RPW/RCL explanation не создаёт Bill. Новые captures ограничены32links/8KiB,
+raw URL/prose не копируются. Metadata setup/update/teardown failures отбрасывают capture,
+сохраняя исходный business outcome. Повтор сохраняет первое время без новых rows.

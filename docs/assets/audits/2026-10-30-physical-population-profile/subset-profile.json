@@ -1,0 +1,36 @@
+{
+  "scope": "Counterfactual saved-M0 physical population for actual current-state matching extraction-body SHAs; not original execution provenance or production forecast",
+  "state_pin": {
+    "state_commit": "412e9635b84c196732c9bec2b38a878fee120ee6",
+    "sql_sha256": "a39d69e7306d97c7307e7b9a263a71a7f5c646be590815d68860ada2064eaae2",
+    "sql_bytes": 20886677,
+    "code_sha": "e63e82b42696733f6146c296cd9887ba21afafa5",
+    "scope": "Read-only snapshot for bounded metadata growth qualification; no production processing/paid/network-file requests"
+  },
+  "saved_typed_db_sha256": "5d90246de9883cc69ccf7bdabf7c9581519046f002991b1115cf5a4b38393dff",
+  "matching_roots": 7,
+  "metadata_records": 115,
+  "known_body_parents": 112,
+  "recipe": "Original saved M0 QA observer; actual runtime recipe still pending",
+  "extraction_association": null,
+  "baseline_sql_bytes": 20886979,
+  "populated_sql_bytes": 21118842,
+  "sql_delta_bytes": 231863,
+  "baseline_gzip9_mtime0_bytes": 4191102,
+  "populated_gzip9_mtime0_bytes": 4231096,
+  "quiet_repeat_zero_growth": true,
+  "restore_twice_exact": true,
+  "new_raw_reads": 0,
+  "gzip_delta_bytes": 39994,
+  "changed_tables_only": [
+    "artifacts",
+    "physical_captures",
+    "physical_metadata"
+  ],
+  "all_other_tables_exact": 42,
+  "preexisting_artifact_rows_exact": 39,
+  "known_parent_sizes": "Existing typed-QA artifact rows corroborated with actual complete helper request sizes; absent catalog sizes filled only from observed complete requests",
+  "covered_extraction_body_sha_count": 7,
+  "actual_current_extraction_rows": 34,
+  "actual_current_unique_extraction_bodies": 34
+}

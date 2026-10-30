@@ -146,6 +146,13 @@ SQLite хранит рабочее состояние, идентичности,
 этим планом пока не назначен. Гарантия жёсткого размера невозможна ценой удаления нужной работы.
 
 <a id="deployable-increments"></a>
+Активация physical runtime writer отдельно проверяет populated SQL/gzip delta на фактически
+использованных roots и повторных чтениях: cap512KiB/root не ограничивает общий рост дампа.
+Whole-corpus counterfactual [J159](2026-10-22-document-architecture-progress.md#j159)
+(95 443 611B SQL/21 578 326B gzip вместе с parents) не является production forecast.
+Нужны pin текущего state, actual consumer coverage, dedup/repeat и явный выбранный metadata profile;
+массовый backfill и расширение raw/backend хранения этим не разрешаются.
+
 ### 1.5. Каждый промежуточный выпуск самодостаточен
 
 Этап DA обозначает направление работ; он не равен одному релизу или одному коммиту.
@@ -239,6 +246,9 @@ worktrees. QA проверяет frozen candidate, пока разработчи
 
 Полный gate запускается один раз на окончательно собранном frozen release candidate; focused
 проверки идут у разработчика, corpus/compatibility и ревью — независимо.
+Перед дорогим raw replay нового observer ревьюер закрывает focused no-throw, lifecycle,
+completion и minimum-prefix controls на frozen code; затем запускается один финальный corpus gate.
+Ранние остановленные попытки сохраняются отдельно и не выдаются за текущую полную проверку.
 Focused selection включает прежние исключения и вызывающие пути затронутого контракта,
 даже если их test files не менялись. Полный прогон использует fail-fast: при отсутствии
 сбоев выполняется весь набор, при первом сбое не расходуется время на оставшийся хвост. При исправлении кода

@@ -20,7 +20,15 @@ from lexinform.models import (
     TextDocument,
 )
 from lexinform.models.artifacts import SelectionPartScope
+from lexinform.models.source_omissions import (
+    BillOmissionOwner,
+    RclOmissionOwner,
+    SenateOmissionOwner,
+    SourceMetadataOmission,
+    SourceReferenceOmissionOwner,
+)
 from lexinform.ports import BillRepository, SourceHistoryPersistence
+from lexinform.source_omission_frames import source_omission_owner
 
 
 def persist_source_history(
@@ -48,6 +56,7 @@ class PhysicalSourceRead:
     artifacts: tuple[ArtifactIdentity, ...]
     reads: tuple[ArtifactReadIdentity, ...] = ()
     extractions: tuple[ExtractionResult, ...] = ()
+    omission: SourceMetadataOmission | None = None
 
 
 type SourceReadCapture = DocumentSourceRead | PhysicalSourceRead
@@ -78,6 +87,14 @@ def record_source_read(
         record_artifact_reads(repo, source.reads, recorded_at=recorded_at)
         for extraction in source.extractions:
             repo.save_extraction_result(extraction, recorded_at=recorded_at)
+        if source.omission is not None:
+            owner = source.omission.owner
+            if not isinstance(owner, (BillOmissionOwner, SourceReferenceOmissionOwner)) or (
+                owner.term,
+                owner.number,
+                owner.purpose,
+            ) != (term, number, purpose):
+                raise ValueError("source omission must match its actual calling owner and purpose")
         return
     observation = SourceObservation(
         term=term,
@@ -96,6 +113,33 @@ def record_source_read(
         extractions=source.extractions,
         candidate_trace=source.candidate_trace,
     )
+
+
+def record_source_omission(
+    repo: BillRepository, record: SourceMetadataOmission, *, recorded_at: dt.datetime
+) -> None:
+    owner = record.owner
+    if not isinstance(owner, RclOmissionOwner):
+        enrolled = repo.bill_exists(owner.term, owner.number)
+        if enrolled and isinstance(owner, SourceReferenceOmissionOwner):
+            record = source_omission_owner(
+                record,
+                BillOmissionOwner(
+                    term=owner.term,
+                    number=owner.number,
+                    purpose=owner.purpose,
+                ),
+            )
+        elif not enrolled and isinstance(owner, (BillOmissionOwner, SenateOmissionOwner)):
+            record = source_omission_owner(
+                record,
+                SourceReferenceOmissionOwner(
+                    term=owner.term,
+                    number=owner.number,
+                    purpose=owner.purpose if isinstance(owner, BillOmissionOwner) else "analysis",
+                ),
+            )
+    repo.save_source_metadata_omission(record, recorded_at=recorded_at)
 
 
 def record_artifacts(

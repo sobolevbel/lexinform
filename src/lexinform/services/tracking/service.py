@@ -64,6 +64,7 @@ from lexinform.services.document_reviews import DocumentReviews
 from lexinform.services.posting import Poster
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.result_applications import record_secondary_application
+from lexinform.services.source_omissions import SourceOmissionInput
 from lexinform.services.sources import SejmTextSource, fetch_print
 from lexinform.services.status_change_applications import apply_status_change_amendments
 from lexinform.services.tracking.acts import ActWatcher
@@ -547,11 +548,24 @@ class StatusTrackingService:
         queued for Telegram, and a metadata-only bill asks the model nothing.
         """
         followed = [bill for bill in tracked if bill.has_process]
-        if self._analysis is not None:
-            self._analysis.reserve_senate_inspections(tuple(followed))
-        with closing(fan_out(followed, self._fetch, workers=self._options.workers)) as outcomes:
+        analysis = self._analysis
+        omission_slots: tuple[SourceOmissionInput | None, ...]
+        if analysis is not None:
+            analysis.reserve_senate_inspections(tuple(followed))
+            omission_slots = analysis.source_omission_inputs(tuple(followed))
+        else:
+            omission_slots = tuple(None for _ in followed)
+        inputs = tuple(zip(followed, omission_slots, strict=True))
+
+        def fetch(item: tuple[Bill, SourceOmissionInput | None]) -> _Found:
+            bill, slot = item
+            if analysis is not None:
+                return analysis.run_source_omission_input(slot, self._fetch, bill)
+            return self._fetch(bill)
+
+        with closing(fan_out(inputs, fetch, workers=self._options.workers)) as outcomes:
             for outcome in outcomes:
-                bill = outcome.item
+                bill = outcome.item[0]
                 if deliver:
                     result.checked += 1
                 else:

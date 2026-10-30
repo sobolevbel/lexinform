@@ -7,16 +7,20 @@ whether a project matters, the catalogs of a candidate, the newest text of a tit
 
 import datetime as dt
 import logging
+from collections.abc import Callable
 from contextlib import suppress
 from typing import Literal
 
 from lexinform import rcl_letters as letter_parser
 from lexinform.errors import ServiceUnavailableError
+from lexinform.metadata_urls import metadata_url_decision
 from lexinform.models import RclConsultation, RclDocument, RclProject, RclStage
+from lexinform.models.source_omissions import RclOmissionOwner
 from lexinform.ports import RclGateway, RclLetterUseObserver
 from lexinform.rcl_letters import LETTER_PARSER, LetterInfo, deadline_of, parse_letter
 from lexinform.services.documents import LoadedFile, TextLoader
 from lexinform.services.rcl_letter_history import rcl_letter_observation
+from lexinform.services.source_omissions import SourceOmissionInput, SourceOmissionScope
 
 log = logging.getLogger(__name__)
 
@@ -32,6 +36,23 @@ class RclProjectReader:
         self._rcl = rcl
         self._loader = loader
         self._observer = observer
+
+    def source_omission_inputs(
+        self, projects: tuple[int, ...]
+    ) -> tuple[SourceOmissionInput | None, ...]:
+        return self._loader.source_omission_inputs(
+            tuple(
+                RclOmissionOwner(
+                    project_id=project_id, stage_id=None, stage_number=None, letter_id=None
+                )
+                for project_id in projects
+            )
+        )
+
+    def run_source_omission_input[T, R](
+        self, slot: SourceOmissionInput | None, step: Callable[[T], R], item: T
+    ) -> R:
+        return self._loader.run_source_omission_input(slot, step, item)
 
     def timeline(self, project_id: int) -> RclProject:
         """The project page alone: metadata and stage states, no folders."""
@@ -141,6 +162,35 @@ class RclProjectReader:
         project: RclProject,
         before: RclConsultation | None,
     ) -> RclConsultation:
+        try:
+            owner = RclOmissionOwner(
+                project_id=project.id,
+                stage_id=stage.id if stage.id > 0 else None,
+                stage_number=stage.number if stage.number >= 0 else None,
+                letter_id=letter.id if letter.id > 0 else None,
+            )
+            context = self._loader.metadata_omission_scope(
+                owner,
+                role="rcl",
+                view=_letter_omission_view(project, stage, letter, before, None, None),
+                urls=_letter_omission_urls(letter, before, None, None),
+            )
+        except BaseException as exc:
+            with suppress(BaseException):
+                log.warning("RCL omission setup unavailable (%s)", type(exc).__name__[:128])
+            context = self._loader.unobserved_source_scope()
+        with context as scope:
+            return self._read_window_inner(letter, stage, project, before, scope=scope)
+
+    def _read_window_inner(
+        self,
+        letter: RclDocument,
+        stage: RclStage,
+        project: RclProject,
+        before: RclConsultation | None,
+        *,
+        scope: SourceOmissionScope | None,
+    ) -> RclConsultation:
         url = letter.url
         loaded: LoadedFile | None = None
         text: str | None = None
@@ -189,6 +239,15 @@ class RclProjectReader:
             error = exc
             raise
         finally:
+            if scope is not None and not scope.failed:
+                with scope.capture():
+                    scope.update(
+                        _letter_omission_view(project, stage, letter, before, result, after),
+                        (
+                            metadata_url_decision(value)
+                            for value in _letter_omission_urls(letter, before, result, after)
+                        ),
+                    )
             if self._observer is not None:
                 try:
                     origins = (
@@ -230,6 +289,40 @@ class RclProjectReader:
                 except BaseException as exc:
                     with suppress(BaseException):
                         log.warning("RCL letter-use capture failed (%s)", type(exc).__name__[:128])
+
+
+def _letter_omission_view(
+    project: RclProject,
+    stage: RclStage,
+    letter: RclDocument,
+    before: RclConsultation | None,
+    result: RclConsultation | None,
+    after: RclConsultation | None,
+) -> dict[str, object]:
+    return {
+        "project": project.model_dump(mode="json", include={"id", "modified"}),
+        "stage": stage.model_dump(mode="json", include={"id", "number", "modified"}),
+        "letter": letter.model_dump(mode="json"),
+        "before": before.model_dump(mode="json") if before is not None else None,
+        "result": result.model_dump(mode="json") if result is not None else None,
+        "after": after.model_dump(mode="json") if after is not None else None,
+    }
+
+
+def _letter_omission_urls(
+    letter: RclDocument,
+    before: RclConsultation | None,
+    result: RclConsultation | None,
+    after: RclConsultation | None,
+) -> tuple[str, ...]:
+    return (
+        letter.url,
+        *(
+            window.letter_url
+            for window in (before, result, after)
+            if window is not None and window.letter_url is not None
+        ),
+    )
 
 
 def _better_window(known: RclConsultation | None, read: RclConsultation) -> RclConsultation:

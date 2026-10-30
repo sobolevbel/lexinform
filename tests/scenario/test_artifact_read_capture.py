@@ -149,3 +149,8 @@ def test_pipeline_finally_keeps_body_and_omission_after_unsafe_url_parser_failur
         "unrecognized_query": 4,
     }
     assert "PRIVATE" not in report.metadata_url_omissions.model_dump_json()
+    (fact,) = world.repo.list_source_metadata_omissions()
+    assert fact.owner.kind == "bill" and fact.owner.number == "4100"
+    assert fact.owner.purpose == "analysis" and fact.parent_count == 1
+    assert fact.parents[0].source_relation == "unknown"
+    assert "PRIVATE" not in fact.model_dump_json()

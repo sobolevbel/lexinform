@@ -1,0 +1,25 @@
+{
+  "stage": "J168",
+  "base": "e63e82b42696733f6146c296cd9887ba21afafa5",
+  "full_gate": {
+    "tests": 6947,
+    "failures": 0,
+    "skipped": 0,
+    "seconds": 272.471,
+    "coverage_percent": 92,
+    "mypy_files": 603,
+    "ruff_files": 670,
+    "source_config_pins_exact": 670
+  },
+  "new_unit_cases": 28,
+  "new_scenarios": 2,
+  "independent_review": "closed exact17path freeze887adf3dd5e7806384aad5d9d3f562d29c5efb696d47488ef23bcfdb82977ba3",
+  "source_reference_deployment_prerequisite": "verified1c145aaf50858de69c0c477068dbcbddc4a45355",
+  "physical_runtime_producer_enabled": false,
+  "schema_change": false,
+  "limits": [
+    "Available invocation origins are not a complete used-body set",
+    "New specialized IDs differ only genuine merge/resolver component hashes",
+    "No raw retention, backfill, backend decision, production processing or paid experiment"
+  ]
+}

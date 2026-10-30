@@ -86,6 +86,7 @@ from lexinform.services.rcl_letter_history import RclLetterHistoryPersistence, R
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.senate_history import SenateInspectionCollector, SenateInspectionPersistence
 from lexinform.services.signatories import SejmAuthorsResolver
+from lexinform.services.source_omissions import SourceOmissionPersistence
 from lexinform.services.sources import (
     RclTextSource,
     SejmTextIdentity,
@@ -260,7 +261,10 @@ class Container:
         return self._once("source_history", self._source_history)
 
     def _source_history(self) -> SourceHistoryPersistence:
-        senate = SenateInspectionPersistence(self.senate_inspections())
+        senate = SourceHistoryPair(
+            SenateInspectionPersistence(self.senate_inspections()),
+            SourceOmissionPersistence(self.text_loader().read_source_omissions),
+        )
         if self.rcl is None:
             return senate
         return SourceHistoryPair(RclLetterHistoryPersistence(self.rcl_letter_uses()), senate)

@@ -1,0 +1,147 @@
+{
+  "generic/parser_failure/1": {
+    "business_exact": true,
+    "changes": [
+      "source_metadata_omissions",
+      "source_omission_parents"
+    ],
+    "new_owner_facts": 1
+  },
+  "generic/parser_failure/4": {
+    "business_exact": true,
+    "changes": [
+      "source_metadata_omissions",
+      "source_omission_parents"
+    ],
+    "new_owner_facts": 1
+  },
+  "generic/prefilter_unsafe/1": {
+    "business_exact": true,
+    "changes": [
+      "source_metadata_omissions",
+      "source_omission_parents"
+    ],
+    "new_owner_facts": 2
+  },
+  "generic/prefilter_unsafe/4": {
+    "business_exact": true,
+    "changes": [
+      "source_metadata_omissions",
+      "source_omission_parents"
+    ],
+    "new_owner_facts": 2
+  },
+  "generic/safe/1": {
+    "business_exact": true,
+    "changes": [],
+    "new_owner_facts": 0
+  },
+  "generic/safe/4": {
+    "business_exact": true,
+    "changes": [],
+    "new_owner_facts": 0
+  },
+  "generic/unsafe/1": {
+    "business_exact": true,
+    "changes": [
+      "source_metadata_omissions",
+      "source_omission_parents"
+    ],
+    "new_owner_facts": 1
+  },
+  "generic/unsafe/4": {
+    "business_exact": true,
+    "changes": [
+      "source_metadata_omissions",
+      "source_omission_parents"
+    ],
+    "new_owner_facts": 1
+  },
+  "generic/unsafe_parser_failure/1": {
+    "business_exact": true,
+    "changes": [
+      "source_metadata_omissions",
+      "source_omission_parents"
+    ],
+    "new_owner_facts": 1
+  },
+  "generic/unsafe_parser_failure/4": {
+    "business_exact": true,
+    "changes": [
+      "source_metadata_omissions",
+      "source_omission_parents"
+    ],
+    "new_owner_facts": 1
+  },
+  "specialized/rcl/configured_origin": {
+    "business_exact": true,
+    "changes": [
+      "/components/merge_sha256"
+    ],
+    "new_owner_facts": 0
+  },
+  "specialized/rcl/encoded_control": {
+    "business_exact": true,
+    "changes": [
+      "/components/merge_sha256"
+    ],
+    "new_owner_facts": 1
+  },
+  "specialized/rcl/invalid_unicode": {
+    "business_exact": true,
+    "changes": [],
+    "new_owner_facts": 1
+  },
+  "specialized/rcl/ordinary": {
+    "business_exact": true,
+    "changes": [
+      "/components/merge_sha256"
+    ],
+    "new_owner_facts": 0
+  },
+  "specialized/rcl/previous_encoded": {
+    "business_exact": true,
+    "changes": [
+      "/components/merge_sha256"
+    ],
+    "new_owner_facts": 1
+  },
+  "specialized/senate/encoded_control/1": {
+    "business_exact": true,
+    "changes": [
+      "/components/resolver_sha256"
+    ],
+    "new_owner_facts": 2
+  },
+  "specialized/senate/encoded_control/4": {
+    "business_exact": true,
+    "changes": [
+      "/components/resolver_sha256"
+    ],
+    "new_owner_facts": 2
+  },
+  "specialized/senate/invalid_unicode/1": {
+    "business_exact": true,
+    "changes": [],
+    "new_owner_facts": 1
+  },
+  "specialized/senate/invalid_unicode/4": {
+    "business_exact": true,
+    "changes": [],
+    "new_owner_facts": 1
+  },
+  "specialized/senate/ordinary/1": {
+    "business_exact": true,
+    "changes": [
+      "/components/resolver_sha256"
+    ],
+    "new_owner_facts": 0
+  },
+  "specialized/senate/ordinary/4": {
+    "business_exact": true,
+    "changes": [
+      "/components/resolver_sha256"
+    ],
+    "new_owner_facts": 0
+  }
+}

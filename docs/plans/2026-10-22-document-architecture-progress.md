@@ -8075,3 +8075,69 @@ J165 final `make check`:6917 passed/252.661s, coverage92%; mypy599, Ruff/format6
 прошли. [Final validation](../assets/audits/2026-10-30-physical-assembler/validation.json).
 Schema/backend/raw retention не меняются; runtime graph producer ещё открыт.
 План74 /32done /6N/A /36open.
+
+
+J165 commit `e63e82b42696733f6146c296cd9887ba21afafa5`: все четыре CI jobs
+и actual relay1c145aaf →e63e82b4, health45s/timer подтверждены
+[release proof](../assets/audits/2026-10-30-physical-assembler/release.json).
+Root assembly/reader repair развёрнуты; runtime walk/caller producer ещё не активирован.
+
+
+<a id="j168"></a>
+
+### J168. Record owner-bound omissions through actual invocation scopes
+
+Reader64 реально развёрнут до нового producer. Generic/prefilter/primary/review, private explain,
+RCL window/descriptor, Senate inspection/J105 используют actual invocation-scoped transient origins.
+Body/read/extraction захватываются до parser failure; shared inventory/URL lookup не выводит
+per-owner association. Actual Bill/Senate FK выбирается только при реальном enrollment, иначе
+actual source_reference; RCL сохраняет official project и nullable actual stage/letter.
+Caller сохраняет actual parents и omission atomically с Clock; workers не пишут SQL.
+
+Exact observed source view получает canonical-json-ascii-v1 SHA, без raw URL/prose/credentials.
+Invalid UTF-8 не получает requested-URL SHA. Stable per-field reason counts не считаются по числу
+download/cache hit. Полный known_available parent manifest hash/count вычисляется один раз;
+retained prefix<=32links/8KiB, source relation остаётся unknown без валидируемого реального ref.
+First time/quiet repeats сохраняются. Это available origins, не утверждение полного used-body set.
+
+Все восемь actual fan_out callers резервируют phase/input slots до dispatch и явно join перед
+finalization; actual child order не заменяется owner/hash sort. Later read первого owner не
+перегруппировывается назад. RCL/Senate workers1/4: actual order[1,1,2,2,3,3,1]. Metadata setup,
+update и teardown защищены; failure discard/mask предотвращает false frame и отравление outer
+context. Original business success/exception object/cause и единственный вызов сохраняются.
+Cross-review закрыл artifact/observation callbacks, provider-first-call, _order/setup, nested mask,
+input-exit и tracking None-slot failures;28 independent unit controls прошли на exact17file freeze.
+
+257 focused, strict17file checks прошли.21 paired public cases сохранили business/IO/paid/messages;
+986 cached rows/940 input pins exact. Retained874RCL+775Senate/4595URL occurrences сохранили
+old payload/IDs/SQL и+365repeat; fresh specialized audit delta только actual merge/resolver hashes.
+Private unsafe Sejm/RCL покрыты двумя новыми scenarios, actual private RPW `/explain` — отдельным
+public out-probe: source_reference без Bill enrollment/source graph, known parent, business hashes exact.
+Actual new fact get/doctor/restore/quiet repeat прошли; isolated one-fact/one-parent delta
++1721SQL/+380gzip B. [Evidence](../assets/audits/2026-10-30-owner-omission-producer/handoff.json).
+Полный root gate и окончательный completion audit DA2.5 фиксируются отдельно.
+
+<a id="j170"></a>
+
+### J170. Bound physical activation with a current-state population measurement
+
+Read-only state `412e9635b84c196732c9bec2b38a878fee120ee6`, SQL SHA
+`a39d69e7306d97c7307e7b9a263a71a7f5c646be590815d68860ada2064eaae2`,
+изолированно восстановлен/migrated64:20 886 979B SQL/4 191 102B gzip9-mtime0.
+39 artifact rows/34 distinct extraction bodies, physical tables пусты.7 actual body SHAs совпали
+с saved M0 roots; это coverage7/34, не доказательство исторического physical execution.
+
+Counterfactual subset:115 metadata records/7captures/112 known body parents, original saved QA
+observer recipe и extraction=None. Недостающие catalog sizes взяты только из actual complete helper
+requests; неизвестные sizes не придуманы. Delta+231 863B SQL/+39 994B gzip; quiet repeat zero,
+get/restore twice exact.42 other tables и39 preexisting artifact rows exact, меняются только
+artifacts/physical_metadata/physical_captures. [Profile](../assets/audits/2026-10-30-physical-population-profile/subset-profile.json).
+Новых raw reads/paid calls/production processing нет. Это не production forecast/activation acceptance:
+actual runtime recipe, остальные27 bodies и будущая частота ещё не измерены.
+Перед StageB активацией нужен final actual-consumer SQL/gzip profile; storage/backend не выбирается.
+
+
+J168 final `make check`:6947 passed/272.471s, coverage92%, mypy603, Ruff/format670;
+все670 source/config pins exact.28 новых unit cases/2 actual caller scenarios; strict docs checks
+прошли. [Final validation](../assets/audits/2026-10-30-owner-omission-producer/validation.json).
+DA2.5 completion audit ещё отдельно; physical runtime writer пока не активирован.

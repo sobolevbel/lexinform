@@ -6,6 +6,7 @@ An RCL outage stops only this part of the tracking phase: the Sejm side of the r
 
 import logging
 from collections.abc import Sequence
+from contextlib import closing
 from zoneinfo import ZoneInfo
 
 from lexinform.concurrency import fan_out
@@ -98,52 +99,67 @@ class RclWatcher:
             if (current := self._repo.get(bill.term, bill.number)) is not None
             and current.status is not BillStatus.LINKED
         ]
-        for outcome in fan_out(followed, self._refresh, workers=self._workers):
-            bill = outcome.item
-            deliver = (bill.term, bill.number) not in silent
-            if deliver:
-                result.checked += 1
-            else:
-                result.observed += 1
-            try:
-                project = outcome.result()
-                results_due = self._results_due(bill, project)
-                change = self._detect(bill, project, result, deliver=deliver)
-            except ServiceUnavailableError as exc:
-                self._checked(bill, ok=False, outage=True)
-                result.partial_errors.append(f"RCL: {exc.describe()}")
-                log.error("RCL tracking stopped: %s", exc.describe())
-                break
-            except Exception as exc:
-                self._checked(bill, ok=False)
-                result.failed += 1
-                log.exception("tracking %s failed: %s", bill.number, exc)
-                continue
-            self._checked(bill, ok=True)
-            if not deliver:
-                if change is not None:
-                    result.changed += 1
-                continue
-            fresh = self._repo.get(bill.term, bill.number) or bill
-            try:
-                if change is not None:
-                    result.changed += 1
-                    self._poster.tell(fresh, change, result, publish=publish)
-                if results_due and self._consultations is not None:
-                    self._consultations.results_published(
-                        fresh.model_copy(update={"rcl": project}), result, publish=publish
-                    )
-                elif (
-                    self._consultations is not None
-                    and project.consultation is not None
-                    and project.consultation.results_published
-                ):
-                    self._consultations.review_documents(
-                        fresh.model_copy(update={"rcl": project}), result
-                    )
-            except ServiceUnavailableError as exc:
-                result.abort(exc, failed=True)
-                return False
+        projects: list[int] = []
+        for bill in followed:
+            assert bill.rcl is not None, "check() reserves only rows carrying actual RCL projects"
+            projects.append(bill.rcl.id)
+        omission_slots = self._reader.source_omission_inputs(tuple(projects))
+        inputs = tuple(zip(followed, omission_slots, strict=True))
+        with closing(
+            fan_out(
+                inputs,
+                lambda item: self._reader.run_source_omission_input(
+                    item[1], self._refresh, item[0]
+                ),
+                workers=self._workers,
+            )
+        ) as outcomes:
+            for outcome in outcomes:
+                bill = outcome.item[0]
+                deliver = (bill.term, bill.number) not in silent
+                if deliver:
+                    result.checked += 1
+                else:
+                    result.observed += 1
+                try:
+                    project = outcome.result()
+                    results_due = self._results_due(bill, project)
+                    change = self._detect(bill, project, result, deliver=deliver)
+                except ServiceUnavailableError as exc:
+                    self._checked(bill, ok=False, outage=True)
+                    result.partial_errors.append(f"RCL: {exc.describe()}")
+                    log.error("RCL tracking stopped: %s", exc.describe())
+                    break
+                except Exception as exc:
+                    self._checked(bill, ok=False)
+                    result.failed += 1
+                    log.exception("tracking %s failed: %s", bill.number, exc)
+                    continue
+                self._checked(bill, ok=True)
+                if not deliver:
+                    if change is not None:
+                        result.changed += 1
+                    continue
+                fresh = self._repo.get(bill.term, bill.number) or bill
+                try:
+                    if change is not None:
+                        result.changed += 1
+                        self._poster.tell(fresh, change, result, publish=publish)
+                    if results_due and self._consultations is not None:
+                        self._consultations.results_published(
+                            fresh.model_copy(update={"rcl": project}), result, publish=publish
+                        )
+                    elif (
+                        self._consultations is not None
+                        and project.consultation is not None
+                        and project.consultation.results_published
+                    ):
+                        self._consultations.review_documents(
+                            fresh.model_copy(update={"rcl": project}), result
+                        )
+                except ServiceUnavailableError as exc:
+                    result.abort(exc, failed=True)
+                    return False
         return True
 
     def _find_prints(self, bills: list[Bill]) -> list[Bill]:

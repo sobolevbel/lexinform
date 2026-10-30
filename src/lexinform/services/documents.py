@@ -13,8 +13,10 @@ import logging
 import threading
 import time
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
+from contextlib import AbstractContextManager, suppress
 from dataclasses import replace
+from typing import Literal
 from urllib.parse import urlparse
 
 from lexinform.document_candidates import (
@@ -59,6 +61,7 @@ from lexinform.models import (
 )
 from lexinform.models.candidate_trace import CandidateTraceReason, CandidateTraceResult
 from lexinform.models.document_reads import LoadedFile as LoadedFile
+from lexinform.models.source_omissions import SourceOmissionOwner
 from lexinform.ports import (
     Downloader,
     ProvenanceTextExtractor,
@@ -70,6 +73,12 @@ from lexinform.services.document_history import (
     DocumentSourceRead,
     PhysicalSourceRead,
     SourceReadCapture,
+)
+from lexinform.services.source_omissions import (
+    SourceOmissionCollector,
+    SourceOmissionInput,
+    SourceOmissionObservation,
+    SourceOmissionScope,
 )
 from lexinform.source_graph_admission import source_graph_admission, source_graph_url_decisions
 
@@ -112,11 +121,92 @@ class TextLoader:
         self._extractions: dict[str, ExtractionResult] = {}
         self._download_diagnostics = DocumentDownloadRecorder()
         self._metadata_url_omissions = MetadataUrlOmissionCollector()
+        self._source_omissions = SourceOmissionCollector()
+
+    def source_omission_scope(
+        self, owner: SourceOmissionOwner, document: TextDocument
+    ) -> AbstractContextManager[SourceOmissionScope | None]:
+        try:
+            view = self._omission_view(document, None, None)
+            decisions = source_graph_url_decisions(document, None, None, opaque_failure_prose=False)
+            return self._source_omissions.scope(
+                owner,
+                role="generic",
+                view=view,
+                decisions=decisions,
+            )
+        except BaseException as exc:
+            with suppress(BaseException):
+                log.warning("source omission view unavailable (%s)", type(exc).__name__[:128])
+            return self._source_omissions.suspended()
+
+    def unobserved_source_scope(self) -> AbstractContextManager[None]:
+        return self._source_omissions.suspended()
+
+    def metadata_omission_scope(
+        self,
+        owner: SourceOmissionOwner,
+        *,
+        role: Literal["rcl", "senate"],
+        view: object,
+        urls: tuple[str, ...],
+    ) -> AbstractContextManager[SourceOmissionScope | None]:
+        try:
+            return self._source_omissions.scope(
+                owner, role=role, view=view, decisions=(metadata_url_decision(url) for url in urls)
+            )
+        except BaseException as exc:
+            with suppress(BaseException):
+                log.warning("source omission scope unavailable (%s)", type(exc).__name__[:128])
+            return self._source_omissions.suspended()
+
+    def source_omission_inputs(
+        self, owners: tuple[SourceOmissionOwner, ...]
+    ) -> tuple[SourceOmissionInput | None, ...]:
+        try:
+            return self._source_omissions.reserve(owners)
+        except BaseException as exc:
+            with suppress(BaseException):
+                log.warning("source omission inputs unavailable (%s)", type(exc).__name__[:128])
+            return tuple(None for _ in owners)
+
+    def run_source_omission_input[T, R](
+        self, slot: SourceOmissionInput | None, step: Callable[[T], R], item: T
+    ) -> R:
+        with self._source_omissions.observed_input(slot):
+            return step(item)
+
+    def read_source_omissions(self) -> tuple[SourceOmissionObservation, ...]:
+        return self._source_omissions.snapshot()
+
+    @staticmethod
+    def _omission_view(
+        requested: TextDocument, resolved: TextDocument | None, file: LoadedFile | None
+    ) -> dict[str, object]:
+        return {
+            "requested": requested.model_dump(mode="json"),
+            "resolved": resolved.model_dump(mode="json") if resolved is not None else None,
+            "selection": file.selection.without_text().model_dump(mode="json") if file else None,
+            "opaque_failure_prose": file.opaque_failure_prose if file else False,
+        }
+
+    def _observe_omission_file(self, url: str, file: LoadedFile) -> None:
+        scope = self._source_omissions.current()
+        if scope is not None:
+            with scope.capture():
+                artifact, read, extraction = self.file_origins(url, file)
+                if artifact is not None:
+                    scope.artifact(artifact)
+                if read is not None:
+                    scope.read(read)
+                if extraction is not None:
+                    scope.extraction(extraction)
 
     def reset_download_diagnostics(self) -> None:
         with self._lock:
             self._download_diagnostics.reset()
             self._metadata_url_omissions.reset()
+            self._source_omissions.reset()
 
     def read_download_diagnostics(self) -> DocumentDownloadDiagnostics | None:
         with self._lock:
@@ -212,6 +302,18 @@ class TextLoader:
         *,
         record_requested_document: bool = False,
     ) -> SourceReadCapture:
+        scope = self._source_omissions.current()
+        if scope is not None and scope.role == "generic":
+            with scope.capture():
+                scope.update(
+                    self._omission_view(requested, resolved, file),
+                    source_graph_url_decisions(
+                        requested,
+                        resolved,
+                        file.selection,
+                        opaque_failure_prose=file.opaque_failure_prose,
+                    ),
+                )
         physical = PhysicalSourceRead(
             self.artifacts_for_selection(file.selection),
             self.reads_for_selection(file.selection),
@@ -240,10 +342,19 @@ class TextLoader:
                 reads.setdefault(read.read_id, read)
             if extraction is not None:
                 extractions.setdefault(extraction.result_id, extraction)
+            observation = None
+            if scope is not None and not scope.failed and scope.role == "generic":
+                with scope.capture():
+                    observation = scope.observation()
+            if observation is not None:
+                artifacts.update((item.sha256, item) for item in observation.artifacts)
+                reads.update((item.read_id, item) for item in observation.reads)
+                extractions.update((item.result_id, item) for item in observation.extractions)
             return PhysicalSourceRead(
                 tuple(artifacts[key] for key in sorted(artifacts)),
                 tuple(reads[key] for key in sorted(reads)),
                 tuple(extractions[key] for key in sorted(extractions)),
+                omission=observation.record if observation is not None else None,
             )
         return DocumentSourceRead(
             requested if record_requested_document else resolved,
@@ -262,6 +373,7 @@ class TextLoader:
             self._seen_bodies.clear()
             self._download_diagnostics.reset()
             self._metadata_url_omissions.reset()
+            self._source_omissions.reset()
 
     def read_metrics(self) -> DocumentReadMetrics:
         with self._lock:
@@ -292,15 +404,19 @@ class TextLoader:
     def read(self, url: str) -> LoadedFile:
         """The same download, with what the file turned out to be."""
         with self._lock:
-            if url in self._cache:
+            cached = self._cache.get(url)
+            if cached is not None:
                 self._read_cache_hits += 1
                 self._download_diagnostics.cache_hit()
-                return self._cache[url]
+        if cached is not None:
+            self._observe_omission_file(url, cached)
+            return cached
         loaded = self._fetch(url)
         with self._lock:
             if len(self._cache) >= self._cache_size:
                 self._cache.pop(next(iter(self._cache)))
             self._cache[url] = loaded
+        self._observe_omission_file(url, loaded)
         return loaded
 
     def read_document(self, document: TextDocument) -> LoadedFile:
@@ -656,6 +772,13 @@ class TextLoader:
             selection = observed.document.selection
             with self._lock:
                 self._extractions[observed.result.artifact_sha256] = observed.result
+            scope = self._source_omissions.current()
+            if (
+                scope is not None
+                and observed.result.artifact_sha256 == hashlib.sha256(data).hexdigest()
+            ):
+                with scope.capture():
+                    scope.extraction(observed.result)
         elif isinstance(self._extractor, StructuredTextExtractor):
             extracted = self._extractor.extract_document(data)
             text = extracted.text
@@ -724,11 +847,18 @@ class TextLoader:
         digest = hashlib.sha256(data).hexdigest()
         with self._lock:
             self._known_bodies.setdefault(digest, len(data))
+        scope = self._source_omissions.current()
+        if scope is not None:
+            with scope.capture():
+                scope.artifact(ArtifactIdentity(sha256=digest, byte_size=len(data)))
         decision = metadata_url_decision(url)
         if decision.reason is None:
             read = ArtifactReadIdentity(sha256=digest, byte_size=len(data), requested_url=url)
             with self._lock:
                 self._known_reads.setdefault(read.read_id, read)
+            if scope is not None and not scope.failed:
+                with scope.capture():
+                    scope.read(read)
         else:
             self._metadata_url_omissions.observe(
                 decision.reason,

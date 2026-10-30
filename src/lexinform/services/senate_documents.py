@@ -20,7 +20,7 @@ from lexinform.senate_documents import (
     senate_subject,
     senate_subject_key,
 )
-from lexinform.services.document_history import DocumentSourceRead
+from lexinform.services.document_history import DocumentSourceRead, SourceReadCapture
 from lexinform.services.documents import LoadedFile, TextLoader
 from lexinform.services.senate_inspection import SenateInspectionCapture
 
@@ -207,7 +207,7 @@ def resolution_source_read(
     sha256: str | None,
     pages: int,
     text: str | None,
-) -> DocumentSourceRead | None:
+) -> SourceReadCapture | None:
     """Physical source metadata does not claim resolution admission or normative coverage."""
     if sha256 is None:
         return None
@@ -226,7 +226,7 @@ def resolution_source_read(
     source = loader.capture_source_read(
         document, document, LoadedFile(text, pages=pages, sha256=sha256, selection=selection)
     )
-    return source if isinstance(source, DocumentSourceRead) else None
+    return source if isinstance(source, DocumentSourceRead) or source.omission is not None else None
 
 
 def verified_senate_text(
