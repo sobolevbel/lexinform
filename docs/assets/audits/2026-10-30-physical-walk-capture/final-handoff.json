@@ -1,0 +1,104 @@
+{
+  "baseline": "e63e82b42696733f6146c296cd9887ba21afafa5",
+  "bridge_patch_sha256": "39057dc735a9f29d21835a4b5b64c838bfb443946dea146deca1298d2f631dc1",
+  "current_source_controls": {
+    "actual_business_ids_and_event_metadata_unchanged": true,
+    "actual_recipe_ids": [
+      "3965af8eb74c01dbbcb8bff1a3975efa1a9d0a1b8ba9da23c088b34837e79e8b"
+    ],
+    "bytes": 400412,
+    "coverage": {
+      ".doc": "documents/files/765000.doc",
+      ".docm": "documents/files/719028.docm",
+      ".docx": "documents/files/539235.docx",
+      ".odt": "sejm/term10/files/1614__1614-uchwa\u0142a.odt",
+      ".pdf": "documents/files/749808.pdf",
+      ".xml": "documents/files/679039.xml",
+      ".zip": "documents/files/668487.zip",
+      "native_deflate64": "documents/files/709230.zip",
+      "native_depth_limit": null,
+      "native_duplicate_names": null,
+      "recursive_contexts": "documents/files/653551.zip"
+    },
+    "path": "final-controls.json",
+    "paths": 9,
+    "source_pins": {
+      "src/lexinform/adapters/document_text.py": "c42d75df6bd7d7e6c24b15cf75292ba323eba0ae7010c8cf303208a1ac864587",
+      "src/lexinform/physical_assembly_inputs.py": "efebc9adcbd1107660cfab06c90b8bb00fd87857c3d978f50f1f1d070865ce3e",
+      "src/lexinform/physical_root_assembly.py": "aab1a7cbe0e2d299634c3f9152c6964ea0233370c754f3c7ada2d995b9fb5b1c",
+      "src/lexinform/physical_walk_capture.py": "2c78d2f7d1eb318e99be3004ff5aaffd3ff43e06c8fe39496aeb5aa64903d97c",
+      "tests/unit/test_physical_walk_capture.py": "22acad27ac7c2c65e18d191d22ececb5aa07fdc41c6601d3fde682e8cba006f9"
+    }
+  },
+  "draft_repair_patch_sha256": "c508229d5b75afc600b28e6ab002fe05058b0ac5a33843dbd69fdbd2c4ad02d3",
+  "final_focused_tests": 163,
+  "growth": {
+    "capture_envelope_bytes_no_time": 2233452,
+    "captures_unique": 4017,
+    "known_artifact_identities": 48413,
+    "metadata_envelope_bytes_no_time": 76129495,
+    "metadata_unique": 54198,
+    "path": "qualified-pre-draft-repair/footprint.json",
+    "scope": "Pre-repair exact dedup/envelope measurement, not SQL/gzip or persisted-repeat proof. Actual populated-state SQL/gzip qualification remains REQUIRED before activation."
+  },
+  "immutable_full_normal_proof": {
+    "actual_recipe_ids": [
+      "19fc35d91a6acd2f96224a2bf87a4b378f38d20c91f64d79b9fffb6ef4375fd0"
+    ],
+    "eligible_unique_roots": 4017,
+    "metadata_occurrences": 63728,
+    "path": "qualified-pre-draft-repair/aggregate.json",
+    "paths": 5365,
+    "runtime_excluded_unique_roots": 4,
+    "seconds": 1544.6761704590172,
+    "source_pins": {
+      "src/lexinform/adapters/document_text.py": "c42d75df6bd7d7e6c24b15cf75292ba323eba0ae7010c8cf303208a1ac864587",
+      "src/lexinform/physical_assembly_encoding.py": "e43ee093c8ffeec375c1f17eda401945d6230abcb9e77959f67f86401514d22c",
+      "src/lexinform/physical_assembly_inputs.py": "efebc9adcbd1107660cfab06c90b8bb00fd87857c3d978f50f1f1d070865ce3e",
+      "src/lexinform/physical_assembly_integrity.py": "60da98a35bffc3a14176b4a65d9a8854906e6a27e3bf3df16ed964d885c97287",
+      "src/lexinform/physical_root_assembly.py": "aab1a7cbe0e2d299634c3f9152c6964ea0233370c754f3c7ada2d995b9fb5b1c",
+      "src/lexinform/physical_walk_capture.py": "1d6e5ec9b09cd8150b264b2deb4015d0b8e200e077f45f631649a77aae2bf081",
+      "tests/unit/test_physical_root_assembly.py": "d322a7f3e4168fb895cf1cdf7ac891289dca9f3d6f55d6b9fefb73e8dba40ffe"
+    },
+    "zero_gaps_business_physical_deltas": true
+  },
+  "independent_review": {
+    "revision4": "Root approved partial-input API; URL reviewer13controls closed adapter/guards/header/ownership",
+    "revision5": "URL reviewer7fault/nested/lifecycle controls closed isolated pending-read draft repair; all5sourcepins exact"
+  },
+  "new_observer_controls": 28,
+  "patch": "out/corpus/physical-runtime-capture/review-source-5-draft-repair/instrumentation.patch",
+  "patch_sha256": "ae2148376bfef1274860cb7e1fa3466b5667195954d41faab33bbd357847553b",
+  "paths": {
+    "src/lexinform/adapters/document_text.py": {
+      "bytes": 58993,
+      "sha256": "c42d75df6bd7d7e6c24b15cf75292ba323eba0ae7010c8cf303208a1ac864587"
+    },
+    "src/lexinform/physical_assembly_inputs.py": {
+      "bytes": 1601,
+      "sha256": "efebc9adcbd1107660cfab06c90b8bb00fd87857c3d978f50f1f1d070865ce3e"
+    },
+    "src/lexinform/physical_root_assembly.py": {
+      "bytes": 27281,
+      "sha256": "aab1a7cbe0e2d299634c3f9152c6964ea0233370c754f3c7ada2d995b9fb5b1c"
+    },
+    "src/lexinform/physical_walk_capture.py": {
+      "bytes": 21764,
+      "sha256": "2c78d2f7d1eb318e99be3004ff5aaffd3ff43e06c8fe39496aeb5aa64903d97c"
+    },
+    "tests/unit/test_physical_walk_capture.py": {
+      "bytes": 29841,
+      "sha256": "22acad27ac7c2c65e18d191d22ececb5aa07fdc41c6601d3fde682e8cba006f9"
+    }
+  },
+  "proof_reuse": "Explicit root authorization: complete normal cohort belongs to PRE fault-only repair collector bytes. Current repair uses existing active_request and only failure/draft branches; adapter bytes and normal text/selection/IO/event/complete-assembler algorithms unchanged. Current source has28focusedobservercontrols, independent faultclosure and9 boundedactualrawcontrols with truthful newrecipe/capturehashes. No full4017 current-code claim; no oldID/recipe pins forged.",
+  "remaining": [
+    "Root integrate reviewed5pathdelta and run combinedfullgate",
+    "StageB explicit loader/cache/worker slots/caller transactional persistence wiring",
+    "Populated state SQL/gzip growth qualification before produceractivation"
+  ],
+  "ruff_format_diff": "green",
+  "scope": "StageA actual sharedwalk instrumentation +bounded purecollector +authorized partial-input bridge. Default captureoff. No services/ports/models/history/Clock/workerSQL/productionactivation/rawretention/backend changes. Primary untouched; no commits/push/fullgate by child.",
+  "status": "READY_FOR_ROOT_INTEGRATION_FULL_GATE_NOT_ACTIVATION",
+  "strict_mypy_files": 5
+}

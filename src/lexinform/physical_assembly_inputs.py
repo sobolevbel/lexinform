@@ -39,3 +39,22 @@ class ObservedPhysicalOrder:
     physical: tuple[PhysicalSlot, ...]
     zip_failures: tuple[tuple[int, str], ...]
     legacy_rejections: tuple[int, str]
+
+
+@dataclass(frozen=True)
+class ObservedPhysicalTotals:
+    """Exact completed invocation counts supplied by actual hooks."""
+
+    contexts: int
+    requests: int
+    opens: int
+    physical: int
+    zip_failures: int
+
+
+@dataclass(frozen=True)
+class ObservedPhysicalPrefix:
+    artifact: ArtifactIdentity
+    header: PhysicalMetadata | None
+    totals: ObservedPhysicalTotals
+    legacy_rejections: tuple[int, str]

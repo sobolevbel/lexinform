@@ -1,0 +1,49 @@
+{
+  "actual_recipe_id": "19fc35d91a6acd2f96224a2bf87a4b378f38d20c91f64d79b9fffb6ef4375fd0",
+  "by_kind_count": {
+    "execution": 4017,
+    "graph": 18536,
+    "headers": 13108,
+    "recipe": 1,
+    "unit": 18536
+  },
+  "by_kind_envelope_bytes_no_time": {
+    "execution": 6593919,
+    "graph": 15812490,
+    "headers": 30505902,
+    "recipe": 2783,
+    "unit": 23214401
+  },
+  "by_kind_reserved_bytes": {
+    "execution": 6714429,
+    "graph": 16368570,
+    "headers": 30899142,
+    "recipe": 2813,
+    "unit": 23770481
+  },
+  "capture_envelope_bytes_no_time": 2233452,
+  "capture_reserved_envelope_bytes": 2353962,
+  "capture_unique_count": 4017,
+  "driver_sha256": "7206f314dbe335b176e80747a595c118ab7c4b15df4d208d35371b7474e62da9",
+  "known_complete_artifact_identities": 48413,
+  "metadata_occurrence_envelope_bytes_no_time": 94574851,
+  "metadata_occurrence_reserved_envelope_bytes": 96486691,
+  "metadata_occurrences": 63728,
+  "metadata_unique_count": 54198,
+  "metadata_unique_envelope_bytes_no_time": 76129495,
+  "metadata_unique_reserved_envelope_bytes": 77755435,
+  "repeat_scope": "ID-set arithmetic only; actual caller persistence/state SQL/gzip growth remains a separate qualification barrier.",
+  "scope": "Qualified unchanged M0 metadata IDs resolve to pinned saved typed payloads; actual current capture refs/extraction IDs come from final raw roots. Recipe payload recovered through one same-code/options in-memory empty-input invocation and cryptographically matched cohort recipe ID. No new corpus reads, extraction of corpus files, retained raw bodies, SQLwrites or clock. Envelopes with recorded_at=None and timestamp-reserved budgets are not SQL/gzip forecasts.",
+  "second_identical_ID_union_new_captures": 0,
+  "second_identical_ID_union_new_metadata": 0,
+  "source_pins": {
+    "src/lexinform/adapters/document_text.py": "c42d75df6bd7d7e6c24b15cf75292ba323eba0ae7010c8cf303208a1ac864587",
+    "src/lexinform/physical_assembly_encoding.py": "e43ee093c8ffeec375c1f17eda401945d6230abcb9e77959f67f86401514d22c",
+    "src/lexinform/physical_assembly_inputs.py": "efebc9adcbd1107660cfab06c90b8bb00fd87857c3d978f50f1f1d070865ce3e",
+    "src/lexinform/physical_assembly_integrity.py": "60da98a35bffc3a14176b4a65d9a8854906e6a27e3bf3df16ed964d885c97287",
+    "src/lexinform/physical_root_assembly.py": "aab1a7cbe0e2d299634c3f9152c6964ea0233370c754f3c7ada2d995b9fb5b1c",
+    "src/lexinform/physical_walk_capture.py": "1d6e5ec9b09cd8150b264b2deb4015d0b8e200e077f45f631649a77aae2bf081",
+    "tests/unit/test_physical_root_assembly.py": "d322a7f3e4168fb895cf1cdf7ac891289dca9f3d6f55d6b9fefb73e8dba40ffe"
+  },
+  "source_profile_sha256": "d3c9b619da000d9ebeb4169cb493d5fe1dd71486dbfb5ccf444d9c16412a2335"
+}

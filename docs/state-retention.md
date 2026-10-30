@@ -676,3 +676,10 @@ ordinary/private explain, RCL letters/windows и Senate inspections. Body origin
 input order. Scope failures не заменяют business exceptions и не публикуют неполные captures.
 Available parent set не доказывает полный used-body set. Quiet repeat не увеличивает dump.
 Контракт: [Official source owners](reference/database.md#official-source-reference-owners-v64).
+
+
+J169 добавляет optional cooperative physical walk capture: actual ZIP/header/read/open/part
+events и bounded partial-input bridge без новой схемы. Scope failures не меняют extraction
+result/exception; pending telemetry не выдаётся за failed read. Default capture off, calling loader/
+cache/SQL wiring отдельно. До активации нужны actual-consumer populated SQL/gzip и repeat gates;
+per-root512KiB cap не ограничивает общий рост дампа. Raw/backend/retention этим не выбираются.

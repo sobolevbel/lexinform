@@ -1,0 +1,58 @@
+{
+  "task": "DA2.5",
+  "verdict": "partial",
+  "scope": "Current metadata-only profile; exact J168 integrated source, not a claim of completed deployment.",
+  "requirement": "Сохранять использованные официальные metadata/catalog snapshots или достаточное адресуемое evidence их связи; не скачивать весь сайт. Не сохранять credentials/cookies/secrets. Писать durable метаданные и архив в согласованном порядке на calling thread.",
+  "invariants": [
+    "Historical snapshots cannot be replaced by current Bill/live URL/global digest (plan1.4).",
+    "Unknown selection, missing bytes and legacy provenance remain unknown; outages are not negative document verdicts.",
+    "Calling-thread input order, Clock timestamps, atomic parents before dependent refs; compact deduplication and explicit bounded coverage."
+  ],
+  "completed": [
+    {
+      "requirement": "Positive source/catalog evidence",
+      "implementation": "Generic prefilter/analysis/review, mutating CLI and historical rereads retain owner/purpose TextDocument plus metadata-only actual selection. Candidate traces retain requested catalog decisions or explicit bounded-overflow evidence linked to the source observation. RCL letter-use retains actual official descriptors/windows; Senate inspection retains ordered actual descriptors/outcomes. These are scoped snapshots/evidence, not merely global digests.",
+      "evidence": "J154 acceptance; J161/J164; services/document_history.py; models/document_history.py; models/candidate_trace.py; models/rcl_letter_use.py; models/senate_inspection.py"
+    },
+    {
+      "requirement": "Privacy refusals remain addressable",
+      "implementation": "J168 retains actual Bill/source-reference/RCL/Senate owner, canonical-ASCII observed-view hash, bounded field-occurrence reasons and known-available parent manifest. Unsafe generic graphs and unencodable specialized whole-capture refusals retain owner evidence without unsafe URLs/prose or invented UTF-8 hashes. Private Sejm/RCL/RPW does not enroll fictitious Bills. Unknown source links stay unknown.",
+      "evidence": "J157-J168; owner-omission-producer/source-freeze.json; public-parity.json; rpw-private-baseline.json; rpw-private-candidate.json"
+    },
+    {
+      "requirement": "Durability, ordering and bounded history",
+      "implementation": "Eight actual fan_out callers reserve input slots and join running workers; caller atomically persists actual parents and facts using Clock. Full known-parent count/hash survives <=32-link/8192-byte prefix truncation. Quiet repeats preserve first time; old rows/IDs are not backfilled. Capture failures discard untrusted evidence and preserve business results/errors.",
+      "evidence": "J168 validation.json:6947 tests/603 mypy files; independent28 controls;21 paired cases;986 cached rows/940pins;874RCL+775Senate retained records; safe specialized source-code ID deltas explicitly qualified."
+    }
+  ],
+  "remaining": [
+    {
+      "id": "safe-source-pre-return-failure",
+      "entrypoints": [
+        "TextPrefilterService.load",
+        "AnalysisService._prepare -> _load_source_inner",
+        "AnalysisService._reread_source -> _load_source_inner",
+        "Private CLI using these analysis paths"
+      ],
+      "trigger": "One admitted safe official document, no alternatives/compare_versions; download outage or propagated parser error before capture_source_read.",
+      "actual_gap": "The attempted official descriptor and actual owner are known, but no immutable owner-bound descriptor/view/error observation is saved. SourceOmissionScope.observation returnsNone with no privacy diagnostics. Only anonymous body/read evidence may survive; no body is available after incomplete IO. A current Bill or global receipt cannot replace the missing historical owner-view relation.",
+      "code": [
+        "services/documents.py:509-522",
+        "services/analysis.py:3363-3382",
+        "services/source_omissions.py:121-123"
+      ],
+      "required_fact": "Positive owner-bound safe source/catalog attempt snapshot: actual descriptor/context/purpose, bounded actual error class, explicit unknown selection, and only observed available body/read/extraction refs.",
+      "model_capability": "SourceObservationIdentity.selection_id is required; source_observations.selection_id is NOT NULL FK. Existing SourceObservation cannot truthfully represent an attempt with no selection. Do not fabricate a selection or label ordinary failure unsafe/opaque. Next slice needs a compatible reader-first representation (nullable actual selection or a separate typed attempt snapshot), then prospective caller wiring.",
+      "basis": "Normal pre-return source failure, not a newly imposed retention guarantee or hypothetical metadata-hook fault."
+    }
+  ],
+  "recommendation": {
+    "checkbox": "Keep DA2.5 unchecked.",
+    "annotation": "J168 completes prospective privacy-refusal owner capture. Safe single-source pre-return failures still need owner-bound official descriptor/attempt evidence with unknown selection."
+  },
+  "separate_open_work": [
+    "Physical walker StageA/caller activation",
+    "Raw retention/backends/S3"
+  ],
+  "limitations": "No new tests, raw/network/paid calls, full gate, historical reconstruction or source edits. Reused independently reviewed proofs; source17 pins verified exact."
+}

@@ -1,0 +1,141 @@
+{
+  "actual_current_recipe_ids": [
+    "3965af8eb74c01dbbcb8bff1a3975efa1a9d0a1b8ba9da23c088b34837e79e8b"
+  ],
+  "actual_recipe_changed_truthfully": true,
+  "business_extraction_ids_unchanged": true,
+  "changed_inputs": [],
+  "controls": [
+    {
+      "actual_current_capture_id": "f1855d8111ed9867f2e6b7261ae390d750dec2fd67c2a828d8d88c5d05a93484",
+      "actual_current_recipe_id": "3965af8eb74c01dbbcb8bff1a3975efa1a9d0a1b8ba9da23c088b34837e79e8b",
+      "actual_extraction_id": "extraction-v1:6c0b1b3977b945e84509994cec7b4b70656a198475ba7ab1ce02655cd5e17853",
+      "business_and_event_metadata_exact_to_frozen_normal_cohort": true,
+      "bytes": 14855,
+      "execution_id": "7cdd74725cfa82e15761b63d3b87327bd9f335f7b771da428cd917568d5b0fb6",
+      "inventory_id": "a596bf9e1ea7c44fd62b2393947baf03c61ee945dd8c6b3a53f831655a3e8b49",
+      "path": "documents/files/749808.pdf",
+      "sha256": "62c5c6d32af114c3d1d4ef578bf95d6dda0f240dac59a5edb1d6d353896ef436"
+    },
+    {
+      "actual_current_capture_id": "5a5b8236f54821ed1b426dba94f1d958fc0b22a89f1b2e936bcf8ccb49715962",
+      "actual_current_recipe_id": "3965af8eb74c01dbbcb8bff1a3975efa1a9d0a1b8ba9da23c088b34837e79e8b",
+      "actual_extraction_id": "extraction-v1:f46066397889c6974613db67ee650cb28c3bdae78d24edbc752d2a52f8204f21",
+      "business_and_event_metadata_exact_to_frozen_normal_cohort": true,
+      "bytes": 21075,
+      "execution_id": "a8c771189b261c714ea0aed9452f02c8bdeae0150f9851c39ec5d63e909789b8",
+      "inventory_id": "6f310802492cac3d0b51b693e63fdb25aca2591ae40542bd9db1e49264e33e55",
+      "path": "documents/files/765000.doc",
+      "sha256": "58fd3d8ebfbda80cf9cd0aa35f64c9c33a3a70e399d281ce2db7a2d2523cd0ff"
+    },
+    {
+      "actual_current_capture_id": "c7f26e368459ff8071bb56d43df93b48d22a0e27eed4b61bc177d9f6d91979d1",
+      "actual_current_recipe_id": "3965af8eb74c01dbbcb8bff1a3975efa1a9d0a1b8ba9da23c088b34837e79e8b",
+      "actual_extraction_id": "extraction-v1:289e3505ac8c6ee00a0dc0ff3d720eaecf8af17f7425c5a1b1b9970f7da4eda1",
+      "business_and_event_metadata_exact_to_frozen_normal_cohort": true,
+      "bytes": 13210,
+      "execution_id": "b52f2caaeb9aabbaefa25eea31007a62c9ca49d94155abcab8ef497d6128a1e9",
+      "inventory_id": "b0b79c72656d8605bcbf18f783b0ee99afa003c6ac2db1d7aa15eaaa26b0d8c0",
+      "path": "documents/files/539235.docx",
+      "sha256": "5cab4189b4883aaabf351a4b807b3ca7b736f75e80177b31dfef199689317384"
+    },
+    {
+      "actual_current_capture_id": "2da1ef494822fc883401368ed0c637af1160bfd2903aefa298ca6934eb5d92c1",
+      "actual_current_recipe_id": "3965af8eb74c01dbbcb8bff1a3975efa1a9d0a1b8ba9da23c088b34837e79e8b",
+      "actual_extraction_id": "extraction-v1:0a2538c4369138eb7600c1fafb9019dc56d3e9496124f190f17c21228ebe973a",
+      "business_and_event_metadata_exact_to_frozen_normal_cohort": true,
+      "bytes": 18324,
+      "execution_id": "55304cdb818a89d12dd6b97e0753ffa276cd17ffcc105bbe1eca9eefa3e1f26e",
+      "inventory_id": "53262b241f97ba6a797cc828a906da92bbe7ce8a035c740e72e9ab49a84a4141",
+      "path": "documents/files/719028.docm",
+      "sha256": "3d2d9acb40d8fdca61cd3f50e1a21f9cb1b8c188f7183ec7954f3cf7a4ed1c4f"
+    },
+    {
+      "actual_current_capture_id": "a599ee7341ff4583f99f9eaf30bd794d6d327773316bd70cf3aa1a0f5960be9b",
+      "actual_current_recipe_id": "3965af8eb74c01dbbcb8bff1a3975efa1a9d0a1b8ba9da23c088b34837e79e8b",
+      "actual_extraction_id": "extraction-v1:21ed70f1a4827de038cc64665534352e8981a164c7bbccd34734513383457075",
+      "business_and_event_metadata_exact_to_frozen_normal_cohort": true,
+      "bytes": 8788,
+      "execution_id": "56fa12bcc31a182a3ec911c75b820fa462cc466d562cf4dd82767e21aebcdd35",
+      "inventory_id": "b695e39540f71629ffe8ee0983b687f61dedf2042c88d214ce26eb3eeb450d44",
+      "path": "sejm/term10/files/1614__1614-uchwa\u0142a.odt",
+      "sha256": "072d8e6cc811fbe7094369ed8ee40e36f05f363bc432318da272f35debf95722"
+    },
+    {
+      "actual_current_capture_id": "e08ce552b475bf58628a3ad39dbf04668b1ce97e9f7afcf64a8694b13244eb76",
+      "actual_current_recipe_id": "3965af8eb74c01dbbcb8bff1a3975efa1a9d0a1b8ba9da23c088b34837e79e8b",
+      "actual_extraction_id": "extraction-v1:01c7b904adb21f895d7b64fa4cbb60463d6e1d4d5bcf6d9aa609123042931391",
+      "business_and_event_metadata_exact_to_frozen_normal_cohort": true,
+      "bytes": 27276,
+      "execution_id": "824c30ba36e3369dd1496de165df3bce6e25e4d11a3e318abbc0336e3653a530",
+      "inventory_id": "77abb0247d9af861e3f2d0808a24e33df9f63179c0ed1529ef4bf6a4a4e3a785",
+      "path": "documents/files/679039.xml",
+      "sha256": "9b952c552a46ee99b11d16ecd12efaf648946eea1c8629cf4a02307a752f4af9"
+    },
+    {
+      "actual_current_capture_id": "d43bc2de69852ead5d7e1f703908fb8c2f629739477cb7e8b6119a0f5bc1d2db",
+      "actual_current_recipe_id": "3965af8eb74c01dbbcb8bff1a3975efa1a9d0a1b8ba9da23c088b34837e79e8b",
+      "actual_extraction_id": "extraction-v1:49a9d80b38111a4b97b072759c070507a041d4aa7573f29a93198d2ef4256dd8",
+      "business_and_event_metadata_exact_to_frozen_normal_cohort": true,
+      "bytes": 19356,
+      "execution_id": "46afb7309aea7c625312ea7ed8d5186137d56fb83d2cf51593bdbb18a916f497",
+      "inventory_id": "bc463f7b82848cad364dcf8e6f614d598e95d6026f02087910daf7d449112b4a",
+      "path": "documents/files/668487.zip",
+      "sha256": "664d11e97ddb90fd73e537bd9d598a443896341be1d899b8bf36e9734b71d0d2"
+    },
+    {
+      "actual_current_capture_id": "c0eadd9ea02de79a5215f3bd8f6663c413709a2d13bd9ba13236a8a2c220b48c",
+      "actual_current_recipe_id": "3965af8eb74c01dbbcb8bff1a3975efa1a9d0a1b8ba9da23c088b34837e79e8b",
+      "actual_extraction_id": "extraction-v1:851ac1ddfbf188532336abd3a26810cf3d4cf13a11ee44e496486144b1e6fdd2",
+      "business_and_event_metadata_exact_to_frozen_normal_cohort": true,
+      "bytes": 67177,
+      "execution_id": "5a1bb578e971b9ecc617c08f833b529d6c0ad4892c0de4f8bb477ac5b042e29e",
+      "inventory_id": "bcdfc10ab82be5e8c28bc6e0f8f2fa154c01869891c8fe15eae315c16d5e99bd",
+      "path": "documents/files/653551.zip",
+      "sha256": "a03fb959194d0769c4f2ef673ca6c970baa523f4d0853c97874aae5a7ae0bb77"
+    },
+    {
+      "actual_current_capture_id": "de47070e530fc7c10c969e2b6861e1a472567c5adbb3c84d0b94022cb23a6e18",
+      "actual_current_recipe_id": "3965af8eb74c01dbbcb8bff1a3975efa1a9d0a1b8ba9da23c088b34837e79e8b",
+      "actual_extraction_id": "extraction-v1:8971b5b4119805c56324587303df451d8c8e55be4576664cfb03364dccc2deeb",
+      "business_and_event_metadata_exact_to_frozen_normal_cohort": true,
+      "bytes": 210351,
+      "execution_id": "875682feeb9fa68f62e4e384f139f65ab99f8afbbcfcd93f1ad66f532ecc6aa4",
+      "inventory_id": "37e1c7202acf2a4fb59d25b7379b1f5ec8e780935c1c332526fa7c849c6b8a43",
+      "path": "documents/files/709230.zip",
+      "sha256": "c1aa5cd0b987c5aebf5ad2b56d83698d6891232b772f5bb9e44905f552e48ce4"
+    }
+  ],
+  "coverage": {
+    ".doc": "documents/files/765000.doc",
+    ".docm": "documents/files/719028.docm",
+    ".docx": "documents/files/539235.docx",
+    ".odt": "sejm/term10/files/1614__1614-uchwa\u0142a.odt",
+    ".pdf": "documents/files/749808.pdf",
+    ".xml": "documents/files/679039.xml",
+    ".zip": "documents/files/668487.zip",
+    "native_deflate64": "documents/files/709230.zip",
+    "native_depth_limit": null,
+    "native_duplicate_names": null,
+    "recursive_contexts": "documents/files/653551.zip"
+  },
+  "driver_sha256": "1087114b42f41264a88cf8760781a9fa2d35b3f14ab4b92ab4d9515c3db051b8",
+  "inventory_and_execution_ids_unchanged": true,
+  "native_deflate64_roots_available": 4,
+  "native_duplicate_name_roots_available": 0,
+  "paths": 9,
+  "prior_normal_cohort_recipe_ids": [
+    "19fc35d91a6acd2f96224a2bf87a4b378f38d20c91f64d79b9fffb6ef4375fd0"
+  ],
+  "scope": "Final source after isolated failure/draft repair; bounded real-file controls, no full current-source cohort claim. Immutable full5365path/4017root normal proof belongs to preceding collector version; adapter bytes and complete normal observer/event algorithms unchanged. Fault-only repair separately covered by public first/later terminal failure controls and independent review. No paid/network/Settings/SQLwrites/retainedraw.",
+  "source_pins": {
+    "src/lexinform/adapters/document_text.py": "c42d75df6bd7d7e6c24b15cf75292ba323eba0ae7010c8cf303208a1ac864587",
+    "src/lexinform/physical_assembly_inputs.py": "efebc9adcbd1107660cfab06c90b8bb00fd87857c3d978f50f1f1d070865ce3e",
+    "src/lexinform/physical_root_assembly.py": "aab1a7cbe0e2d299634c3f9152c6964ea0233370c754f3c7ada2d995b9fb5b1c",
+    "src/lexinform/physical_walk_capture.py": "2c78d2f7d1eb318e99be3004ff5aaffd3ff43e06c8fe39496aeb5aa64903d97c",
+    "tests/unit/test_physical_walk_capture.py": "22acad27ac7c2c65e18d191d22ececb5aa07fdc41c6601d3fde682e8cba006f9"
+  },
+  "source_stable": true,
+  "status": "qualified",
+  "total_raw_control_bytes": 400412
+}

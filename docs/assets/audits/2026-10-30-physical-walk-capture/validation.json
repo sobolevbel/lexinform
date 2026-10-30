@@ -1,0 +1,21 @@
+{
+  "stage": "J169",
+  "base": "6582bc9c70b25fb502905a1a360a73306a5aa8a9",
+  "full_gate": {
+    "tests": 6975,
+    "failures": 0,
+    "skipped": 0,
+    "seconds": 241.58,
+    "coverage_percent": 92,
+    "mypy_files": 605,
+    "ruff_files": 672,
+    "source_config_pins_exact": 672
+  },
+  "new_units": 28,
+  "new_scenarios": 0,
+  "independent_final_fault_controls": 7,
+  "producer_enabled": false,
+  "schema_change": false,
+  "proof_scope": "Revision4 immutable full normal corpus explicitly reused for isolated failure-only collector repair; finalsource9actualrawcontrols and truthfulnewrecipe; no finalsourcefull4017claim",
+  "growth_gate": "Pending actualconsumer populated SQL/gzip andrepeat beforeStageBactivation"
+}

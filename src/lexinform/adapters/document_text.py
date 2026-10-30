@@ -9,6 +9,8 @@ twice, a nested table would be read twice, and in ODT tail text belongs after th
 """
 
 import hashlib
+import importlib.metadata
+import inspect
 import io
 import logging
 import re
@@ -16,16 +18,24 @@ import struct
 import sys
 import zipfile
 import zlib
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
+from contextlib import AbstractContextManager, contextmanager
 from dataclasses import dataclass, field
-from typing import Literal
+from functools import partial
+from typing import IO, Literal
 from xml.etree import ElementTree as ET
 from zipfile import ZipInfo
 
 from inflate64 import Inflater
 
+import lexinform.physical_assembly_encoding as physical_assembly_encoding
+import lexinform.physical_assembly_inputs as physical_assembly_inputs
+import lexinform.physical_assembly_integrity as physical_assembly_integrity
+import lexinform.physical_header_capture as physical_header_capture
+import lexinform.physical_root_assembly as physical_root_assembly
+import lexinform.physical_walk_capture as physical_walk_capture
 from lexinform.document_candidates import select_document_parts
-from lexinform.extraction_records import extraction_component, summarize_extraction
+from lexinform.extraction_records import component_code, extraction_component, summarize_extraction
 from lexinform.models.documents import (
     DocumentPart,
     ExtractedDocument,
@@ -46,6 +56,19 @@ from lexinform.models.documents import (
     WordTextExtraction,
 )
 from lexinform.models.extractions import DocumentExtraction, ExtractionOptions
+from lexinform.models.physical_inventory import (
+    DecodedPath,
+    HeaderRow,
+    PhysicalCaptureOptions,
+    PhysicalCaptureRecipe,
+    PhysicalCodeFile,
+    PhysicalDependency,
+    PhysicalHeaders,
+    PhysicalImplementation,
+    PhysicalMetadata,
+    PhysicalOmission,
+    PhysicalOmittedCount,
+)
 from lexinform.models.rcl import READABLE_EXTENSIONS, text_rank
 from lexinform.models.word_notes import (
     NotePartName,
@@ -53,6 +76,12 @@ from lexinform.models.word_notes import (
     WordNoteCall,
     WordNoteExtraction,
     WordNoteXmlPart,
+)
+from lexinform.physical_header_capture import PhysicalHeaderBuilder
+from lexinform.physical_walk_capture import (
+    PhysicalWalkCapture,
+    current_physical_walk_capture,
+    suspend_physical_walk_capture,
 )
 from lexinform.ports import (
     OdtBlockTextExtractor,
@@ -224,7 +253,7 @@ class DocxTextExtractor:
         projection: list[str] | None = None,
         origins: _WordNoteOrigins | None = None,
     ) -> tuple[str, str, WordBodyState]:
-        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        with _physical_zip(data) as archive:
             xml = _read_xml(archive, "word/document.xml")
             notes: dict[str, str] = {}
             for name, tag in (("footnotes", "footnote"), ("endnotes", "endnote")):
@@ -544,7 +573,7 @@ class OdtTextExtractor:
     def _body(
         data: bytes,
     ) -> tuple[bytes, ET.Element | None, Literal["read", "missing", "unsupported"]]:
-        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        with _physical_zip(data) as archive:
             xml = _read_xml(archive, "content.xml")
         if _declares_entities(xml):
             return xml, None, "unsupported"
@@ -712,7 +741,17 @@ class DocumentTextExtractor:
             unlocated_text=[] if include_unlocated_text else None,
         )
         digest = hashlib.sha256(data).hexdigest()
-        self._collect(data, (), digest, parts, rejected, [0, 0], origins)
+        capture = current_physical_walk_capture()
+        if capture is not None:
+            _physical_event(capture, partial(capture.start, data))
+            _physical_event(capture, lambda: capture.recipe(self._physical_recipe(origins)))
+        walk_complete = False
+        try:
+            self._collect(data, (), digest, parts, rejected, [0, 0], origins)
+            walk_complete = True
+        finally:
+            if capture is not None:
+                _physical_event(capture, lambda: capture.rejected(rejected, complete=walk_complete))
         return ExtractedParts(
             input_sha256=digest,
             parts=tuple(parts),
@@ -757,7 +796,35 @@ class DocumentTextExtractor:
                 xml_bytes=_MAX_XML_BYTES,
             ),
         )
+        capture = current_physical_walk_capture()
+        if capture is not None:
+            _physical_event(capture, lambda: capture.extraction(result))
         return DocumentExtraction(document=selected, result=result)
+
+    def _physical_recipe(self, origins: _PhysicalOrigins) -> PhysicalMetadata:
+        return _physical_recipe(
+            (
+                ("package", self),
+                ("pdf", self._pdf),
+                ("word", self._docx),
+                ("doc", self._doc),
+                ("odt", self._odt),
+            ),
+            PhysicalCaptureOptions(
+                max_root_bytes=None,
+                max_member_bytes=self._max_member_bytes or 32_000_000,
+                max_part_chars=self._max_part_chars,
+                archive_depth=_MAX_ARCHIVE_DEPTH,
+                archive_bytes=_MAX_ARCHIVE_BYTES,
+                archive_members=_MAX_ARCHIVE_MEMBERS,
+                xml_bytes=_MAX_XML_BYTES,
+                include_pdf_pages=origins.pdf_pages is not None,
+                include_word_blocks=origins.word_blocks is not None,
+                include_word_notes=origins.word_notes is not None,
+                include_odt_blocks=origins.odt_blocks is not None,
+                include_unlocated_text=origins.unlocated_text is not None,
+            ),
+        )
 
     def pages(self, data: bytes) -> int:
         """Only a PDF has pages of its own. A Word file paginates when it is rendered, and an
@@ -812,42 +879,71 @@ class DocumentTextExtractor:
         usage: list[int],
         origins: _PhysicalOrigins,
     ) -> None:
+        capture = current_physical_walk_capture()
+        if capture is None:
+            self._collect_content(data, members, container, parts, rejected, usage, origins)
+        else:
+            with _physical_collect(capture, data):
+                self._collect_content(data, members, container, parts, rejected, usage, origins)
+
+    def _collect_content(
+        self,
+        data: bytes,
+        members: tuple[str, ...],
+        container: str,
+        parts: list[DocumentPart],
+        rejected: list[str],
+        usage: list[int],
+        origins: _PhysicalOrigins,
+    ) -> None:
         pdf_result: PdfTextExtraction | None = None
         word_result: WordTextExtraction | None = None
         note_result: WordNoteExtraction | None = None
         odt_result: OdtTextExtraction | None = None
         if data.startswith(_ZIP_MAGIC):
             try:
-                with zipfile.ZipFile(io.BytesIO(data)) as archive:
+                with _physical_zip(data) as archive:
                     names = set(archive.namelist())
                     if "word/document.xml" in names:
+                        capture = current_physical_walk_capture()
+                        if capture is not None and type(self._docx) is not DocxTextExtractor:
+                            _physical_event(capture, capture.opaque_helper)
                         if origins.word_notes is not None and isinstance(
                             self._docx, WordNoteTextExtractor
                         ):
-                            detailed = self._docx.extract_with_notes(data)
+                            detailed = _physical_format(
+                                partial(self._docx.extract_with_notes, data)
+                            )
                             word_result, note_result = detailed.body, detailed.notes
                             text = word_result.legacy_text
                         elif origins.word_blocks is not None and isinstance(
                             self._docx, WordBlockTextExtractor
                         ):
-                            word_result = self._docx.extract_blocks(data)
+                            word_result = _physical_format(partial(self._docx.extract_blocks, data))
                             text = word_result.legacy_text
                         else:
-                            text = self._docx.extract(data)
+                            text = _physical_format(lambda: self._docx.extract(data))
                     elif "content.xml" in names and "mimetype" in names:
+                        capture = current_physical_walk_capture()
+                        if capture is not None and type(self._odt) is not OdtTextExtractor:
+                            _physical_event(capture, capture.opaque_helper)
                         if origins.odt_blocks is not None and isinstance(
                             self._odt, OdtBlockTextExtractor
                         ):
-                            odt_result = self._odt.extract_odt_blocks(data)
+                            odt_result = _physical_format(
+                                partial(self._odt.extract_odt_blocks, data)
+                            )
                             text = odt_result.legacy_text
                         else:
-                            text = self._odt.extract(data)
+                            text = _physical_format(lambda: self._odt.extract(data))
                     else:
                         if len(members) >= _MAX_ARCHIVE_DEPTH:
+                            _physical_depth(archive)
                             rejected.append(f"{members}: archive depth limit")
                             return
                         for info in sorted(archive.infolist(), key=lambda i: i.filename):
                             if not _is_readable(info.filename):
+                                _physical_disposition(archive, info, "readability_rejected")
                                 continue
                             usage[0] += info.file_size
                             usage[1] += 1
@@ -857,6 +953,9 @@ class DocumentTextExtractor:
                                 or usage[0] > _MAX_ARCHIVE_BYTES
                                 or usage[1] > _MAX_ARCHIVE_MEMBERS
                             ):
+                                _physical_disposition(
+                                    archive, info, "unpacking_limit_source_pinned_inference"
+                                )
                                 rejected.append(f"{(*members, info.filename)}: unpacking limit")
                                 continue
                             try:
@@ -876,6 +975,9 @@ class DocumentTextExtractor:
                                 )
                         return
             except (zipfile.BadZipFile, ET.ParseError, ValueError) as exc:
+                capture = current_physical_walk_capture()
+                if capture is not None:
+                    _physical_event(capture, partial(capture.format_failed, exc))
                 rejected.append(f"{members}: {type(exc).__name__}")
                 return
         else:
@@ -907,6 +1009,9 @@ class DocumentTextExtractor:
             )
         )
 
+        capture = current_physical_walk_capture()
+        if capture is not None:
+            _physical_event(capture, lambda: capture.part(len(parts) - 1, parts[-1]))
         if origins.pdf_pages is not None and pdf_result is not None:
             origins.pdf_pages.append(
                 PdfPartExtraction(part_index=len(parts) - 1, extraction=pdf_result)
@@ -959,16 +1064,44 @@ def _is_readable(name: str) -> bool:
 
 
 def _read_xml(archive: zipfile.ZipFile, name: str) -> bytes:
-    if archive.getinfo(name).file_size > _MAX_XML_BYTES:
-        raise ValueError("document XML size limit")
-    with archive.open(name) as stream:
-        content = stream.read(_MAX_XML_BYTES + 1)
-    if len(content) > _MAX_XML_BYTES:
-        raise ValueError("document XML size limit")
-    return content
+    request = _physical_request(archive, "xml", name)
+    content = None
+    error = None
+    declared = None
+    try:
+        info = archive.getinfo(name)
+        declared = info.file_size
+        if isinstance(archive, _PhysicalZip):
+            _physical_event(archive.capture, partial(_physical_lookup, archive, request, info))
+        if declared > _MAX_XML_BYTES:
+            raise ValueError("document XML size limit")
+        with archive.open(name) as stream:
+            content = stream.read(_MAX_XML_BYTES + 1)
+        if len(content) > _MAX_XML_BYTES:
+            raise ValueError("document XML size limit")
+        return content
+    except BaseException as exc:
+        error = exc
+        raise
+    finally:
+        _physical_returned(archive, request, content, declared, error)
 
 
 def _read_member(archive: zipfile.ZipFile, info: ZipInfo, data: bytes, limit: int) -> bytes:
+    request = _physical_request(archive, "member", info)
+    result = None
+    error = None
+    try:
+        result = _read_member_content(archive, info, data, limit)
+        return result
+    except BaseException as exc:
+        error = exc
+        raise
+    finally:
+        _physical_returned(archive, request, result, info.file_size, error)
+
+
+def _read_member_content(archive: zipfile.ZipFile, info: ZipInfo, data: bytes, limit: int) -> bytes:
     if info.compress_type != 9:
         with archive.open(info) as stream:
             result = stream.read(limit + 1)
@@ -991,3 +1124,345 @@ def _read_member(archive: zipfile.ZipFile, info: ZipInfo, data: bytes, limit: in
     if zlib.crc32(result) != info.CRC:
         raise zipfile.BadZipFile("member CRC mismatch")
     return result
+
+
+def _physical_event(capture: PhysicalWalkCapture, action: Callable[[], None]) -> None:
+    try:
+        action()
+    except BaseException as error:
+        capture.unavailable("capture_event_failed", error)
+
+
+@contextmanager
+def _physical_collect(capture: PhysicalWalkCapture, data: bytes) -> Iterator[None]:
+    manager: AbstractContextManager[None] | None = None
+    try:
+        candidate = capture.collect(data, zip_input=data.startswith(_ZIP_MAGIC))
+        candidate.__enter__()
+        manager = candidate
+    except BaseException as error:
+        capture.unavailable("capture_context_entry_failed", error)
+    if manager is None:
+        with suspend_physical_walk_capture():
+            yield
+        return
+    try:
+        yield
+    except BaseException as error:
+        _physical_event(capture, partial(_physical_exit, manager, error))
+        raise
+    else:
+        _physical_event(capture, partial(_physical_exit, manager, None))
+
+
+def _physical_exit(manager: AbstractContextManager[None], error: BaseException | None) -> None:
+    manager.__exit__(
+        type(error) if error is not None else None,
+        error,
+        error.__traceback__ if error is not None else None,
+    )
+
+
+def _physical_format[T](action: Callable[[], T]) -> T:
+    try:
+        return action()
+    except BaseException as error:
+        capture = current_physical_walk_capture()
+        if capture is not None:
+            _physical_event(capture, partial(capture.format_failed, error))
+        raise
+
+
+def _physical_opaque(data: bytes) -> tuple[int, str | None]:
+    return len(data), hashlib.sha256(data).hexdigest() if data else None
+
+
+def _physical_decoded(info: ZipInfo) -> tuple[DecodedPath, ...]:
+    extra = info.extra
+    position = 0
+    evidence: list[DecodedPath] = []
+    original = info.orig_filename.encode("utf-8" if info.flag_bits & 2048 else "cp437")
+    while position + 4 <= len(extra):
+        tag, size = struct.unpack_from("<HH", extra, position)
+        start = position + 4
+        end = start + size
+        if end > len(extra):
+            evidence.append(("malformed_tail", position, tag, size))
+            break
+        if tag == 0x7075:
+            body = extra[start:end]
+            if len(body) < 5:
+                raise ValueError(
+                    "short Unicode extra requires an unavailable header evidence variant"
+                )
+            version = body[0]
+            crc = struct.unpack_from("<I", body, 1)[0]
+            try:
+                text = body[5:].decode("utf-8")
+                valid = True
+                matches = text == info.filename
+            except UnicodeDecodeError:
+                valid = matches = False
+            evidence.append(
+                (
+                    "unicode_path",
+                    position,
+                    version,
+                    crc,
+                    crc == zlib.crc32(original),
+                    valid,
+                    matches,
+                    hashlib.sha256(body[5:]).hexdigest(),
+                )
+            )
+        position = end
+    if position < len(extra) and len(extra) - position < 4:
+        evidence.append(("short_tail", position, len(extra) - position))
+    return tuple(evidence)
+
+
+def _physical_header_row(info: ZipInfo) -> HeaderRow:
+    return (
+        info.orig_filename,
+        info.filename if info.filename != info.orig_filename else None,
+        info.file_size,
+        info.compress_size,
+        info.compress_type,
+        info.flag_bits,
+        info.CRC,
+        info.header_offset,
+        info.external_attr,
+        info.create_system,
+        _physical_opaque(info.extra),
+        _physical_opaque(info.comment),
+        _physical_decoded(info),
+    )
+
+
+class _PhysicalZip(zipfile.ZipFile):
+    def __init__(self, data: bytes, capture: PhysicalWalkCapture) -> None:
+        self.capture = capture
+        self.ordinals: dict[int, int] = {}
+        self.open_lookup: ZipInfo | None = None
+        try:
+            super().__init__(io.BytesIO(data))
+        except BaseException as error:
+            _physical_event(capture, partial(capture.zip_failed, error))
+            raise
+        _physical_event(capture, lambda: self.observe_header(data))
+
+    def observe_header(self, data: bytes) -> None:
+        context = self.capture.context
+        names = self.NameToInfo
+        route: Literal["archive", "word", "odt"] = (
+            "word"
+            if "word/document.xml" in names
+            else "odt"
+            if "content.xml" in names and "mimetype" in names
+            else "archive"
+        )
+        self.capture.parsed(len(self.filelist), route)
+        if context is None or context.body is None:
+            return
+        if self.fp is None:
+            self.capture.unavailable("successful_zip_parser_position_unavailable")
+            return
+        start, end = self.start_dir, self.fp.tell()
+        if not 0 <= start <= end <= len(data):
+            self.capture.unavailable("successful_zip_parser_span_unavailable")
+            return
+        header = PhysicalHeaders(
+            body_sha=context.body.sha256,
+            central_directory_sha256=hashlib.sha256(memoryview(data)[start:end]).hexdigest(),
+            central_directory_span=(start, end),
+            archive_comment=_physical_opaque(self.comment),
+            rows=(),
+        )
+        count = len(self.filelist)
+        minimum = PhysicalMetadata.of(
+            header,
+            omission=PhysicalOmission(
+                reason="missing_metadata",
+                full_metadata_sha256=None,
+                omitted=(PhysicalOmittedCount(field="rows", count=count),),
+                unknown_fields=1,
+            )
+            if count
+            else None,
+        )
+        self.capture.header_prefix(minimum)
+        if not self.capture.reserve((), fixed=count * 32):
+            return
+        builder = PhysicalHeaderBuilder(header)
+        for info in self.filelist:
+            builder.append(_physical_header_row(info))
+        self.capture.header(builder.finish(complete=True), len(self.filelist), route)
+        if self.capture.reserve((), fixed=len(self.filelist) * 48):
+            self.ordinals = {id(info): index for index, info in enumerate(self.filelist)}
+
+    def getinfo(self, name: str) -> ZipInfo:
+        info = super().getinfo(name)
+        self.open_lookup = info
+        return info
+
+    def open(
+        self,
+        name: str | ZipInfo,
+        mode: Literal["r", "w"] = "r",
+        pwd: bytes | None = None,
+        *,
+        force_zip64: bool = False,
+    ) -> IO[bytes]:
+        self.open_lookup = name if isinstance(name, ZipInfo) else None
+        error = None
+        try:
+            return super().open(name, mode, pwd, force_zip64=force_zip64)
+        except BaseException as exc:
+            error = exc
+            raise
+        finally:
+            info = self.open_lookup
+            target = self.ordinals.get(id(name)) if isinstance(name, ZipInfo) else name
+            resolved = self.ordinals.get(id(info)) if info is not None else None
+            if target is not None:
+                _physical_event(self.capture, lambda: self.capture.opened(target, resolved, error))
+            else:
+                self.capture.unavailable("opened_ordinal_unavailable")
+                _physical_event(
+                    self.capture,
+                    partial(
+                        self.capture.opened,
+                        name.filename if isinstance(name, ZipInfo) else name,
+                        resolved,
+                        error,
+                    ),
+                )
+
+
+def _physical_zip(data: bytes) -> zipfile.ZipFile:
+    capture = current_physical_walk_capture()
+    return _PhysicalZip(data, capture) if capture is not None else zipfile.ZipFile(io.BytesIO(data))
+
+
+def _physical_disposition(
+    archive: zipfile.ZipFile,
+    info: ZipInfo,
+    status: Literal["readability_rejected", "unpacking_limit_source_pinned_inference"],
+) -> None:
+    if isinstance(archive, _PhysicalZip):
+        ordinal = archive.ordinals.get(id(info))
+        if ordinal is not None:
+            _physical_event(archive.capture, lambda: archive.capture.disposition(ordinal, status))
+
+
+def _physical_depth(archive: zipfile.ZipFile) -> None:
+    if isinstance(archive, _PhysicalZip):
+        for ordinal in range(len(archive.ordinals)):
+            _physical_event(
+                archive.capture,
+                partial(archive.capture.disposition, ordinal, "not_visited_depth_limit"),
+            )
+
+
+def _physical_request(
+    archive: zipfile.ZipFile,
+    mode: Literal["member", "xml"],
+    target: str | ZipInfo,
+) -> int | None:
+    if not isinstance(archive, _PhysicalZip):
+        return None
+    try:
+        ordinal = archive.ordinals.get(id(target)) if isinstance(target, ZipInfo) else None
+        if isinstance(target, ZipInfo) and ordinal is None:
+            archive.capture.unavailable("requested_ordinal_unavailable")
+            return archive.capture.request(mode, target.filename, None)
+        return archive.capture.request(
+            mode,
+            ordinal
+            if ordinal is not None
+            else target.filename
+            if isinstance(target, ZipInfo)
+            else target,
+            ordinal,
+        )
+    except BaseException as error:
+        archive.capture.unavailable("capture_request_failed", error)
+        return None
+
+
+def _physical_lookup(archive: zipfile.ZipFile, request: int | None, info: ZipInfo) -> None:
+    if isinstance(archive, _PhysicalZip) and request is not None:
+        context = archive.capture.context
+        if context is not None:
+            item = context.requests[request]
+            context.requests[request] = (*item[:3], archive.ordinals.get(id(info)), *item[4:])
+
+
+def _physical_returned(
+    archive: zipfile.ZipFile,
+    request: int | None,
+    content: bytes | None,
+    declared: int | None,
+    error: BaseException | None,
+) -> None:
+    if isinstance(archive, _PhysicalZip):
+        _physical_event(
+            archive.capture, lambda: archive.capture.returned(request, content, declared, error)
+        )
+
+
+def _physical_recipe(
+    components: tuple[tuple[Literal["package", "pdf", "word", "doc", "odt"], object], ...],
+    options: PhysicalCaptureOptions,
+) -> PhysicalMetadata:
+    files: dict[str, PhysicalCodeFile] = {}
+    implementations: list[PhysicalImplementation] = []
+    capture = current_physical_walk_capture()
+    if capture is None:
+        raise ValueError("physical recipe requires its actual invocation capture")
+    objects = (*components, ("capture", capture))
+    for role, implementation in objects:
+        cls = type(implementation)
+        path = cls.__module__.replace(".", "/") + ".py"
+        try:
+            source_sha = component_code(inspect.getfile(cls))
+        except TypeError:
+            source_sha = None
+        files[path] = PhysicalCodeFile(path=path, sha256=source_sha)
+        implementations.append(
+            PhysicalImplementation(
+                role=role, qualified_name=f"{cls.__module__}.{cls.__qualname__}", code_path=path
+            )
+        )
+    for module in (
+        physical_walk_capture,
+        physical_header_capture,
+        physical_root_assembly,
+        physical_assembly_encoding,
+        physical_assembly_integrity,
+        physical_assembly_inputs,
+    ):
+        source = inspect.getfile(module)
+        path = module.__name__.replace(".", "/") + ".py"
+        files[path] = PhysicalCodeFile(path=path, sha256=component_code(source))
+    dependencies: list[PhysicalDependency] = []
+    names: tuple[
+        Literal["python", "pypdf", "olefile", "inflate64", "pydantic", "pydantic_core"], ...
+    ] = ("python", "pypdf", "olefile", "inflate64", "pydantic", "pydantic_core")
+    for name in names:
+        try:
+            version = (
+                sys.version.split()[0] if name == "python" else importlib.metadata.version(name)
+            )
+        except importlib.metadata.PackageNotFoundError:
+            version = None
+        dependencies.append(PhysicalDependency(name=name, version=version))
+    return PhysicalMetadata.of(
+        PhysicalCaptureRecipe(
+            mode="producer",
+            code_files=tuple(files[key] for key in sorted(files)),
+            implementations=tuple(implementations),
+            dependencies=tuple(dependencies),
+            options=options,
+        )
+    )

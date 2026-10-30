@@ -35,6 +35,7 @@ from lexinform.physical_assembly_inputs import (
     ObservedPhysicalContainer as ObservedPhysicalContainer,
 )
 from lexinform.physical_assembly_inputs import ObservedPhysicalOrder as ObservedPhysicalOrder
+from lexinform.physical_assembly_inputs import ObservedPhysicalPrefix, ObservedPhysicalTotals
 from lexinform.physical_assembly_integrity import (
     PhysicalAssemblyIntegrity,
     PhysicalAssemblyProofError,
@@ -437,7 +438,11 @@ class PhysicalRootAssembler:
             or observed.parent_ordinal is not None
         ):
             raise ValueError("the actual root context must own its complete root body")
-        header = observed.header
+        self._root_header = self._validate_root_header(observed.header)
+        self._root_context_complete = observed.complete
+        self._root_seen = True
+
+    def _validate_root_header(self, header: PhysicalMetadata | None) -> PhysicalMetadata | None:
         if header is not None:
             header = validate_physical_record(header)
             if (
@@ -447,9 +452,52 @@ class PhysicalRootAssembler:
                 raise ValueError("root header must identify its actual complete body")
             if header.metadata.central_directory_span[1] > self.artifact.byte_size:
                 raise ValueError("root directory span exceeds its actual complete body")
-        self._root_header = header
-        self._root_context_complete = observed.complete
+        return header
+
+    def finish_prefix(
+        self,
+        recipe: PhysicalMetadata,
+        prefix: ObservedPhysicalPrefix,
+        *,
+        extraction: ExtractionResult | None = None,
+    ) -> PhysicalAssemblyPacket | PhysicalAssemblyGap:
+        """Measured totals cover the completed invocation, including evicted events."""
+        if self._closed or self._seen_contexts or self._root_seen or self._gap is not None:
+            raise ValueError("a measured prefix belongs to a fresh root assembler")
+        self._closed = True
+        if physical_identity(prefix.artifact) != self.artifact:
+            raise ValueError("the observed prefix must own its actual root body")
+        totals = prefix.totals
+        for count in (
+            totals.contexts,
+            totals.requests,
+            totals.opens,
+            totals.physical,
+            totals.zip_failures,
+        ):
+            _position(count)
+        if not totals.contexts or totals.physical > totals.contexts:
+            raise ValueError(
+                "measured totals require their root and at most one physical part per context"
+            )
+        self._root_header = self._validate_root_header(prefix.header)
+        self._root_context_complete = False
         self._root_seen = True
+        order = PhysicalRootOrder(
+            contexts=(),
+            requests=(),
+            opens=(),
+            physical=(),
+            zip_failures=(),
+            legacy_rejections=prefix.legacy_rejections,
+        )
+        return self._minimum_packet(
+            recipe,
+            ObservedPhysicalOrder((), (), (), (), order.legacy_rejections),
+            complete=False,
+            extraction=extraction,
+            totals=totals,
+        )
 
     @staticmethod
     def _omission(
@@ -503,6 +551,7 @@ class PhysicalRootAssembler:
         *,
         complete: bool,
         extraction: ExtractionResult | None,
+        totals: ObservedPhysicalTotals | None = None,
     ) -> PhysicalAssemblyPacket | PhysicalAssemblyGap:
         if not self._root_seen:
             return PhysicalAssemblyGap(
@@ -548,11 +597,11 @@ class PhysicalRootAssembler:
         if any(not 0 <= owner < self._seen_contexts for owner, _ in order.zip_failures):
             raise ValueError("actual ZIP failure order refers to an unobserved context")
         counts = (
-            ("contexts", self._seen_contexts),
-            ("requests", len(order.requests)),
-            ("opens", len(order.opens)),
-            ("physical", len(order.physical)),
-            ("zip_failures", len(order.zip_failures)),
+            ("contexts", totals.contexts if totals else self._seen_contexts),
+            ("requests", totals.requests if totals else len(order.requests)),
+            ("opens", totals.opens if totals else len(order.opens)),
+            ("physical", totals.physical if totals else len(order.physical)),
+            ("zip_failures", totals.zip_failures if totals else len(order.zip_failures)),
         )
         root = PhysicalMetadata.of(
             PhysicalRootOrder(

@@ -8141,3 +8141,57 @@ J168 final `make check`:6947 passed/272.471s, coverage92%, mypy603, Ruff/format6
 все670 source/config pins exact.28 новых unit cases/2 actual caller scenarios; strict docs checks
 прошли. [Final validation](../assets/audits/2026-10-30-owner-omission-producer/validation.json).
 DA2.5 completion audit ещё отдельно; physical runtime writer пока не активирован.
+
+
+J168 commit `6582bc9c70b25fb502905a1a360a73306a5aa8a9`: все четыре CI jobs и actual
+relaye63e82b4 →6582bc9c, health45s/timer подтверждены
+[release proof](../assets/audits/2026-10-30-owner-omission-producer/release.json).
+Независимый [DA2.5 audit](../assets/audits/2026-10-30-owner-omission-producer/completion-audit.json)
+сохраняет partial: safe single-source parser/download failure до actual selection не сохраняет
+owned official descriptor. Это отдельная positive attempt snapshot задача, не unsafe URL cause;
+существующий SourceObservation требует настоящий selection. План74 /32done /6N/A /36open.
+
+
+<a id="j169"></a>
+
+### J169. Observe actual physical walks without changing business extraction
+
+StageA добавляет cooperative scope и bounded pure collector к actual shared walk. Owned ZIP
+factory использует прежний parser один раз; actual parsed directory span/hash/comment и row
+universe фиксируются до row/map budget. Header data не реконструируются из final text; actual
+member/XML/getinfo/open/part append/context events сохраняют duplicate occurrence distinction,
+pre-order context slots и отдельный global event order, child-first graph dependencies.
+Deflate64 не получает fake ZipFile.open; failed constructor/opaque helpers остаются unavailable.
+
+Fixed1MiB logical transient budget не объявляется RSS guarantee. Partial-input bridge принимает
+explicit measured totals только при actual completed walk/counts_complete и capacity-only loss;
+existing typed minimum root/header/recipe/order сохраняет omitted counts с unknown full hashes.
+Complete-input integrity не ослаблена, child null placeholders не создаются. Unknown counts/legacy,
+guard failure и opaque helpers остаются explicit draft/gap. Default capture off; loader/Container/SQL
+producer пока не подключены. Schema/raw retention/backend не меняются.
+
+Review закрыл setup/opaque no-throw, nested failed-entry mask (child не портит parent route),
+actual walk completion независимо от later selection error/outer catch и minimum header preflight.
+Fault-only final repair удаляет pending outcome из actual failed requests: CaptureError placeholder
+не становится фактом; request/open/status/global prefixes обрезаются, unknown counts не выдаются
+за exact.28 новых unit controls,163 focused и strict5file checks прошли; independent final7controls
+закрыты. [Handoff](../assets/audits/2026-10-30-physical-walk-capture/final-handoff.json).
+
+Полный immutable normal cohort относится к revision4-prefix ДО isolated failure/draft repair:
+5365 paths verified/4017 unique eligible roots/4 unique >32MB exclusions;4017 packets,
+0 partial/gaps/business/physical-ID deltas,1544.68s. После repair adapter bytes и normal event
+algorithm не менялись. Current final source отдельно проверен на9 real files/400412B: actual
+business extraction IDs/inventory/execution IDs exact; actual new recipe/capture hashes честно
+отличаются. Это явно reused normal proof + final-source bounded controls, не full4017 на новых
+байтах. [Final controls](../assets/audits/2026-10-30-physical-walk-capture/final-controls.json).
+
+Pre-repair whole-cohort footprint:54198 unique metadata records/76 129 495 envelope B и4017
+captures/2 233 452B, без timestamps;48 413 known complete artifact identities. Это не SQL/gzip
+и не production forecast. Growth gate J170 обязателен перед StageB activation. Все ignored proof
+files/source snapshots сохранены также в primary out/corpus/j169-physical-walk-capture/evidence.
+
+
+J169 final `make check`:6975 passed/241.580s, coverage92%; mypy605,
+Ruff/format672, все672 source/config pins exact.28 новых unit cases, новых scenarios нет.
+Strict docs/link/resource checks прошли; [validation](../assets/audits/2026-10-30-physical-walk-capture/validation.json).
+StageB остаётся отдельной работой; план74 /32done /6N/A /36open.
