@@ -1,0 +1,21 @@
+{
+  "base": "d50dc69382e55e6be8b47cad14125e9d2a50a77b",
+  "production_typed_consumer": "services/tracking/service.py::_retry_documents uses list_document_work; closed decoder validates then returns legacy Senate rows only. No service/dispatcher change; revision rows cannot reach seven-attempt abandonment.",
+  "new_inert_APIs": [
+    "save_revision_application_work",
+    "get_revision_application_work(key)",
+    "list_revision_application_work(due=...) (waiting/due only; blocked remains get/doctor/status-visible)"
+  ],
+  "status_only": "services/commands.py:944 -> count_document_work -> adapters/telegram_format.py:2275; aggregate noncomplete state counts intentionally include both consumers. No body parse or execution.",
+  "doctor": "tools/work_doctor.py WorkAudit.documents uses shared typed/index/ref validation; revision work has separate kind/count/age group and original_context_witness=content_version/delivery/unknown, no frozen context exposure.",
+  "generic_readers": "saved_records.CONTEXT_RESULT_TABLES and sqlite_repo._validate_legacy_projections traverse work_json as evidence; legacy_maintenance never compacts it as a physical target. Existing legacy JSON/default DocumentWork unchanged.",
+  "retention": "Existing prune_history keeps document_work/results/content snapshots; noncomplete work protects same-owner memos. Original delivery protection via legacy change_id remains Senate-specific: new refs do not depend on that accidental protection. No forever original payload pin.",
+  "indexes": "get by document_work.key; due list by ix_document_work_due(state,next_at). Known result/snapshot/original/version lookups use primary keys; publication_content uses publication_id. Completed receipt uses existing ux_result_application_target expression index with generation IS NULL.",
+  "future_activation_traps": [
+    "AmendmentsService._pending ignores consumed items; writer/drain must add pending/blocked application lookup before another source read/prepare/force.",
+    "Current original status/message eligibility is future application admission, not persisted corruption or authority granted by metadata.",
+    "Future collect must normalize source_url before immutable retention; not changed here.",
+    "Separate apply must atomically create publication+receipt+completion after collect/usage/consumed commit, retain refs and preserve existing remote/send checkpoints."
+  ],
+  "rollback_barrier": "No runtime writer/capture/drain is activated. Before first new-format write, deploy/verify this reader. After any new-format row, older DocumentWork/doctor readers may restore SQL but cannot read it; rollback must preserve compatible reader or a prewriter snapshot with later effects reconciled."
+}

@@ -9,7 +9,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from lexinform.models import DocumentWork, ReviewWork
+from lexinform.adapters.document_work import DocumentWorkRowError, read_document_work
+from lexinform.models import AmendmentRevisionApplicationWork, ReviewWork
 from tools.corpus_artifacts import write_json
 from tools.observed_latency import observed_latency
 from tools.sqlite_snapshot import open_snapshot
@@ -29,6 +30,8 @@ def work_ages(
         kind, state = owner["kind"], owner["state"]
         nonterminal = (kind, state) in (
             ("document", "waiting"),
+            ("revision_application", "waiting"),
+            ("revision_application", "blocked"),
             ("review", "context"),
             ("review", "snapshot"),
         )
@@ -38,7 +41,7 @@ def work_ages(
             excluded[f"{kind}/{state}"] += 1
     records: list[dict[str, Any]] = []
     for (kind, state), items in sorted(groups.items()):
-        field_name = "created_at" if kind == "document" else "since"
+        field_name = "since" if kind == "review" else "created_at"
         ages: list[tuple[int, str]] = []
         unknown: Counter[str] = Counter()
         for owner in items:
@@ -99,24 +102,13 @@ class WorkAudit:
             ref = f"document_work/{row['key']}"
             self.counts["document_rows"] += 1
             try:
-                work = DocumentWork.model_validate_json(row["work_json"])
-            except ValueError:
-                self.issue("invalid_document_work", ref)
+                work = read_document_work(connection, row)
+            except DocumentWorkRowError as exc:
+                self.issue(str(exc), ref)
                 continue
-            if (work.key, work.term, work.number, work.state) != (
-                row["key"],
-                row["term"],
-                row["number"],
-                row["state"],
-            ):
-                self.issue("document_owner_mismatch", ref)
-            try:
-                scheduled = datetime.fromisoformat(row["next_at"])
-            except ValueError:
-                self.issue("invalid_document_schedule", ref)
-            else:
-                if scheduled != work.next_at:
-                    self.issue("document_schedule_mismatch", ref)
+            if isinstance(work, AmendmentRevisionApplicationWork):
+                self.revision_application(connection, ref, work)
+                continue
             for name in ("bill_json", "detail_json", "stage_json", "document_json", "context_json"):
                 self.snapshot(getattr(work, name), f"{ref}/{name}")
             self.counts[f"document_{work.state}"] += 1
@@ -161,6 +153,44 @@ class WorkAudit:
                     else 0,
                 }
             )
+
+    def revision_application(
+        self, connection: sqlite3.Connection, ref: str, work: AmendmentRevisionApplicationWork
+    ) -> None:
+        self.counts["revision_application_rows"] += 1
+        self.counts[f"revision_application_{work.state}"] += 1
+        original = connection.execute(
+            "SELECT delivery_json IS NOT NULL AS retained, EXISTS (SELECT 1"
+            " FROM publication_content WHERE publication_id=publications.id) AS bound"
+            " FROM publications WHERE id=?",
+            (work.original_publication_id,),
+        ).fetchone()
+        witness = (
+            "content_version"
+            if original is not None and original["bound"]
+            else "delivery"
+            if original is not None and original["retained"]
+            else "unknown"
+        )
+        self.owners.append(
+            {
+                "ref": ref,
+                "kind": "revision_application",
+                "term": work.term,
+                "number": work.number,
+                "state": work.state,
+                "attempts": work.attempts,
+                "created_at": work.created_at.isoformat(),
+                "next_at": work.next_at.isoformat(),
+                "result_id": work.result_id,
+                "original_publication_id": work.original_publication_id,
+                "revision_publication_id": work.revision_publication_id,
+                "original_context_witness": witness,
+                "protected_memo_rows": self.memos(connection, work.term, work.number)
+                if work.state != "complete"
+                else 0,
+            }
+        )
 
     def reviews(self, connection: sqlite3.Connection) -> None:
         for row in connection.execute(

@@ -1,0 +1,62 @@
+{
+  "status": "compatible",
+  "scope": "Actual retained legacy-state compatibility only; inert reader writes no new-format work and processing/provider paths were not executed.",
+  "source_sql_sha256_before_after": "f6414c27514ab3571b9774b88d18a89946398b073cf0aa65e8ab6666900eecfe",
+  "baseline_restored_dump_sha256": "a97a9bde25624d9edd144f9efcf0bd948b7cde30bef3923501286b8cb2b6d31e",
+  "candidate_restored_dump_sha256": "a97a9bde25624d9edd144f9efcf0bd948b7cde30bef3923501286b8cb2b6d31e",
+  "schema": 65,
+  "counts": {
+    "bills": 483,
+    "publications": 194,
+    "computation_results": 9,
+    "llm_batch_items": 118,
+    "llm_batch_intents": 0,
+    "document_work": 4
+  },
+  "work_doctor": {
+    "status": "recorded",
+    "summary": {
+      "document_rows": 4,
+      "document_waiting": 4,
+      "errors": 0,
+      "review_abandoned": 7,
+      "review_context": 2,
+      "review_owner_rows": 9,
+      "review_purpose_act_application": 2,
+      "review_purpose_consultation_review": 7,
+      "review_rows": 9,
+      "warnings": 4
+    },
+    "finding_count": 4,
+    "copy_sha256_before_after": "a165b87d071477fbb5db4921f7b58bd49d49c29f6b5f4bbbb875fa4af706da2c"
+  },
+  "baseline_doctor_exact": true,
+  "baseline_warnings": {
+    "warning:document_publication_unavailable": 4
+  },
+  "author_proof_sha256": "1b85bb25d51169dc27430950bfe04ad0c5f1f97ed6879a446c5d454558d970d0",
+  "init_merge_only": "AST exact to author after removal of existing ODT companion exports/imports",
+  "source8_pins_before_after": {
+    "docs/state-retention.md": "660c9de0c921dc38f7e413e1fb174068da7bdae8a993617f5269dfc3e31880c4",
+    "src/lexinform/adapters/document_work.py": "4779fc32d4565453d17f08805ab971aca2204e6009b2f8bd7f7f0098f48bd62a",
+    "src/lexinform/adapters/sqlite_repo.py": "3778a3eabc4b7d7afb8b1b06840d61dd048aca6111ebdb8c055931f3cce54053",
+    "src/lexinform/models/__init__.py": "9139c1bfd09c9822d801e452ce1f052edab22fb72e8754274db7ded7f5268ee6",
+    "src/lexinform/models/revision_work.py": "a808efbdfaadc77d09a210096188e68829ab11c919154b3bd7e4bd354388710d",
+    "src/lexinform/ports.py": "b79fff5e2ae367649097688f081f0cb5c5b299664d842234ebfbfda82f57053b",
+    "tests/scenario/test_revision_application_work.py": "5a7225f917c0c5d8b00d1cdefedc4f788a3374266e9603f2dfa38b92b0dedc5f",
+    "tools/work_doctor.py": "c8cb0777d0fb5a2fe4ff1b639e1241cfd6e84731eafe30670a89ca237fd746da"
+  },
+  "handoff_sha256": "af7377aba4e74a5231570ae901f37e79f7c566b8740079f6a176bd52c06536f5",
+  "driver_sha256": "9a0892987893366d4593f52509f4e58311e72b9f4e88b6a49ea3a822ec5fad21",
+  "imports": {
+    "repository": "/Users/sobaleu/projects/lexinform/src/lexinform/adapters/sqlite_repo.py",
+    "work_doctor": "/Users/sobaleu/projects/lexinform/tools/work_doctor.py"
+  },
+  "not_run": [
+    "Settings",
+    "provider/model/batch/run",
+    "network/raw downloads",
+    "full tests",
+    "production state writes"
+  ]
+}

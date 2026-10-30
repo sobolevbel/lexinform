@@ -565,6 +565,17 @@ JSON ограничен 4 KiB. Если полный запрос и решен�
 
 ## Editorial history после J109
 
+Inert revision-application storage accepts a second typed owner in `document_work` without a
+runtime producer, collector handoff or drain. Its metadata is limited to 8192 UTF-8 bytes and
+references an immutable paid amendments result and real bill/change/plan snapshots. Waiting and
+blocked work retain those dependencies; current retention deletes neither these work rows nor
+results/content snapshots. Completed rows keep their frozen identity and actual publication receipt.
+The shared restore/doctor validator checks indexed identities, known parents and frozen owners.
+Retained editorial/inline context corroborates refs; absent original payload remains explicitly
+unknown and is not recreated. Edit eligibility remains a later application check. Senate keeps its JSON
+and dispatcher. The first new-format row requires a compatible reader for rollback: older readers
+may restore its SQL but cannot consume that work. Reader deployment alone creates no such rows.
+
 `content_snapshots`, `content_versions` и `publication_content` не являются operational cache
 и не очищаются вместе с sent delivery JSON через 90 дней или settled memo через 180.
 Совпадающий frozen Bill хранится один раз и переиспользуется revision; change и plan имеют

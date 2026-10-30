@@ -17,6 +17,11 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
+from lexinform.adapters.document_work import (
+    read_document_work,
+    validate_document_work,
+    validate_revision_application_work,
+)
 from lexinform.adapters.input_receipts import validate_input_snapshots
 from lexinform.adapters.physical_history import (
     PHYSICAL_INVENTORY_MIGRATION,
@@ -83,6 +88,7 @@ from lexinform.models import (
     WYKAZ_PREFIX,
     ActInfo,
     AgendaItem,
+    AmendmentRevisionApplicationWork,
     AmendmentsRecord,
     AnalysisRecord,
     ArtifactMetadata,
@@ -1255,6 +1261,7 @@ class SqliteBillRepository:
                 scratch.executescript(f"BEGIN;{migration}PRAGMA user_version = {number};COMMIT;")
             _validate_legacy_projections(scratch)
             validate_primary_projections(scratch)
+            validate_document_work(scratch)
             _validate_candidate_disposition_traces(scratch)
             _validate_rcl_letter_uses(scratch)
             validate_senate_inspections(scratch)
@@ -5184,6 +5191,13 @@ class SqliteBillRepository:
         return [self._row_to_status_change(r) for r in rows]
 
     def save_document_work(self, work: DocumentWork) -> None:
+        existing = self._conn.execute(
+            "SELECT * FROM document_work WHERE key=?", (work.key,)
+        ).fetchone()
+        if existing is not None and not isinstance(
+            read_document_work(self._conn, existing), DocumentWork
+        ):
+            raise ValueError("a Senate continuation cannot replace revision application work")
         self._conn.execute(
             "INSERT INTO document_work(key, term, number, state, next_at, work_json) "
             "VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET "
@@ -5200,11 +5214,58 @@ class SqliteBillRepository:
 
     def list_document_work(self, *, due: datetime) -> list[DocumentWork]:
         rows = self._conn.execute(
-            "SELECT work_json FROM document_work WHERE state='waiting' AND next_at <= ? "
+            "SELECT * FROM document_work WHERE state='waiting' AND next_at <= ? "
             "ORDER BY next_at, key",
             (_utc_iso(due),),
         ).fetchall()
-        return [DocumentWork.model_validate_json(row["work_json"]) for row in rows]
+        work = [read_document_work(self._conn, row) for row in rows]
+        return [item for item in work if isinstance(item, DocumentWork)]
+
+    def save_revision_application_work(self, work: AmendmentRevisionApplicationWork) -> None:
+        work = AmendmentRevisionApplicationWork.model_validate_json(work.model_dump_json())
+        with self.atomic():
+            validate_revision_application_work(self._conn, work)
+            previous = self.get_revision_application_work(work.key)
+            if previous is not None:
+                if previous.frozen_values() != work.frozen_values():
+                    raise ValueError("frozen revision application work cannot be replaced")
+                if previous.state == "complete" and work != previous:
+                    raise ValueError("completed revision application work cannot be reopened")
+                if work.attempts < previous.attempts:
+                    raise ValueError("revision application attempts cannot decrease")
+            self._conn.execute(
+                "INSERT INTO document_work(key, term, number, state, next_at, work_json)"
+                " VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET"
+                " state=excluded.state, next_at=excluded.next_at, work_json=excluded.work_json",
+                (
+                    work.key,
+                    work.term,
+                    work.number,
+                    work.state,
+                    _utc_iso(work.next_at),
+                    work.model_dump_json(),
+                ),
+            )
+
+    def get_revision_application_work(self, key: str) -> AmendmentRevisionApplicationWork | None:
+        row = self._conn.execute("SELECT * FROM document_work WHERE key=?", (key,)).fetchone()
+        if row is None:
+            return None
+        work = read_document_work(self._conn, row)
+        if not isinstance(work, AmendmentRevisionApplicationWork):
+            raise ValueError("the work key belongs to a Senate continuation")
+        return work
+
+    def list_revision_application_work(
+        self, *, due: datetime
+    ) -> list[AmendmentRevisionApplicationWork]:
+        rows = self._conn.execute(
+            "SELECT * FROM document_work WHERE state='waiting' AND next_at <= ?"
+            " ORDER BY next_at, key",
+            (_utc_iso(due),),
+        ).fetchall()
+        work = [read_document_work(self._conn, row) for row in rows]
+        return [item for item in work if isinstance(item, AmendmentRevisionApplicationWork)]
 
     def list_status_changes(self, term: int, number: str) -> list[StatusChange]:
         rows = self._conn.execute(

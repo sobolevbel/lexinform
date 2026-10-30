@@ -480,6 +480,7 @@ __all__ = [
     "PreparedTextPart",
     "PreparedTextSegment",
     "DocumentWork",
+    "AmendmentRevisionApplicationWork",
     "ExtractedDocument",
     "ExtractedParts",
     "OdtEmittedSpan",
@@ -839,6 +840,9 @@ from lexinform.models.odt_notes import (
 )
 from lexinform.models.odt_notes import (
     OdtPartNoteOrigins as OdtPartNoteOrigins,
+)
+from lexinform.models.revision_work import (
+    AmendmentRevisionApplicationWork as AmendmentRevisionApplicationWork,
 )
 from lexinform.models.source_catalog_attempts import CatalogDescriptor as CatalogDescriptor
 from lexinform.models.source_catalog_attempts import SourceCatalogAttempt as SourceCatalogAttempt

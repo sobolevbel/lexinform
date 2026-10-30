@@ -8940,3 +8940,45 @@ Final gate:7438tests/269.217s/92%,mypy650/Ruff718;735source/config pins exact. S
 [original peer finding](../assets/audits/2026-10-30-odt-note-reader/independent-review.json),
 [peer closure](../assets/audits/2026-10-30-odt-note-reader/peer-closure.json),
 [previous Wykaz exact CI/relay](../assets/audits/2026-10-30-wykaz-name-rehome/release.json).
+
+
+<a id="j192"></a>
+
+## J192 — inert recoverable amendment-application work storage
+
+В existing document_work добавлен closed second typed consumer без новых migrations или
+runtime producer/drain. AmendmentRevisionApplicationWork хранит≤8192B metadata и actual
+result/request, original publication/channel/message и bill/change/plan snapshot refs.
+Frozen identity не перезаписывается, attempts не уменьшаются, complete не открывается повторно.
+Senate DocumentWork JSON прежний; отдельный dispatcher не получает revision application rows.
+Unknown explicit work kinds отвергаются. Shared validator проверяет SQL/JSON identity/schedule,
+actual immutable result и snapshot hashes/kinds/owners; restore выполняет проверку на scratch
+до замены target, тот же validator использует work doctor.
+
+Это prerequisite reader, не разделение runtime transactions: DA6.2 остаётся OPEN. Первый
+producer будет требовать совместимого reader при rollback. Current SENT target eligibility,
+_pending до source/prepare/force, recoverable collect→apply и drain без open batch относятся
+к следующему этапу. Никаких фиктивных Senate fields или inferred ContentVersion не добавлено.
+Original retained context corroborates refs; после cleanup отсутствие original operational
+payload явно unknown. Mandatory referenced snapshots/results сохраняются.
+
+Author181focused/22new и peer8 public controls green. Проверены typed refs/index corruption,
+scratch target preservation, immutable identity/lifecycle и exact cancellation propagation.
+Отдельные peer probes: contradictory embedded plan запрещён existing semantic snapshot model,
+включая SQL bypass; completed SENT revision переживает365d cleanup и restore.
+На pinned state0278c2d619d4 public restore/dump byteexact baseline a97a9bde…:
+schema65,483Bills/194publications/9paid/118items/0intents/4legacy document_work.
+Doctor:0errors и4preexisting document_publication_unavailable warnings, baseline/candidate
+коды и summary равны; первая слишком строгая no-findings assertion сохранена как rejected
+proof driver, не выдана за продуктовый дефект. Исходный SQL неизменён, processing/paid IO нет.
+
+Final gate:7460tests/263.145s/92%,mypy653/Ruff721;738source/config pins exact. ODT352c3d37 exact CI/relay verified; staged archive docs gate перед commit.
+
+[Qualification](../assets/audits/2026-10-30-revision-application-work-reader/qualification.json),
+[integration](../assets/audits/2026-10-30-revision-application-work-reader/integration.json),
+[peer](../assets/audits/2026-10-30-revision-application-work-reader/peer-closure.json),
+[actual state](../assets/audits/2026-10-30-revision-application-work-reader/actual-state.json),
+[merged PRIMARY repeat](../assets/audits/2026-10-30-revision-application-work-reader/merged-actual-state.json),
+[consumer inventory](../assets/audits/2026-10-30-revision-application-work-reader/consumer-inventory.json).
+
+[J191 exact CI/relay](../assets/audits/2026-10-30-odt-note-reader/release.json).

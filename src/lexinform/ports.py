@@ -8,6 +8,7 @@ from typing import Protocol, runtime_checkable
 from lexinform.models import (
     ActInfo,
     AgendaItem,
+    AmendmentRevisionApplicationWork,
     AmendmentsContext,
     AmendmentsRecord,
     AnalysisRecord,
@@ -671,6 +672,16 @@ class BillRepository(Protocol):
     def save_document_work(self, work: DocumentWork) -> None: ...
 
     def list_document_work(self, *, due: datetime) -> list[DocumentWork]: ...
+
+    def save_revision_application_work(self, work: AmendmentRevisionApplicationWork) -> None: ...
+
+    def get_revision_application_work(
+        self, key: str
+    ) -> AmendmentRevisionApplicationWork | None: ...
+
+    def list_revision_application_work(
+        self, *, due: datetime
+    ) -> list[AmendmentRevisionApplicationWork]: ...
 
     def migrate(self) -> None: ...
 
