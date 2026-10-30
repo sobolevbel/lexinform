@@ -1,0 +1,25 @@
+{
+  "driver_sha256": "f98a09a748162f0fbc845760d898ff86e26e53d70d2f54dbd62f4b2edc17cc15",
+  "input_manifests": {
+    "baseline-parts.json": "9703d623e6e3c28195fde828cbc61364309b09b48763f86fdabeb55a3adef83b",
+    "candidate-parts.json": "475d40538b5c6863feb3e3effb417674864bf1c985b2bc2508a6a13cd492b01f",
+    "catalog.json": "7bfa79ac7ee2a6981d8106880cad2bde6bc86df0b5da9a966530fcaebbf057f5",
+    "mutations-baseline.json": "c3a0046274f4d2c42c5dee2266203b9be42d91e46d4a0cef59defc9cb8af4c7a",
+    "mutations-index.json": "71ae642791a1c3829b4005ba6a10badfd28827ba65cfa3448258783f8cd38585",
+    "nested-baseline.json": "12b3b1c3eaf476f44993799eefe42d654dea9822518eb2cd320df510843ba3a2",
+    "nested-inputs.json": "1e24346efd3fc0461ae6755579a5bebca78cf043359106aafc1d9209f8effc95"
+  },
+  "original_driver_sha256": "24089768b554121021d8d9c6570b320273434315980be74d5b885424898fc6dc",
+  "scope": "Onecandidatev2onlyWord3055+fixedZIP11/74+ready56; exactoldbusinessfingerprints; source/recipeIDsnotnormalized; explicitPDFmetadataFalse",
+  "source_freeze_sha256": "e2dbfbcb849717e62b57e40aaad2b89bb1f9f787c95c78edddc830a6d2c6789d",
+  "source_pins": {
+    "src/lexinform/adapters/document_text.py": "85056ece94dd4087d5e4b9204120c4e4036cebb3d5048675cc42e249e343ab62",
+    "src/lexinform/models/__init__.py": "0cdb4570279974df42293d97433f597db5f73cb77d1fded9b2b712422484d4e1",
+    "src/lexinform/models/word_structure.py": "fabdcd103ca682c7a4843d456db33f837d887f292fcdc1710170bc8acc838530",
+    "src/lexinform/ports.py": "3f663a5467d979b4c7c5fec23844f150bd6e751c358ca2d6da4509dcc0312d59",
+    "src/lexinform/word_structure.py": "1e957b5378b49a53342f5bb22b0495dd172ca3d177c9bcaee146d22a762848d8",
+    "tests/unit/test_word_semantic_structure.py": "ff034d8b519daabda324a5509b74abc6a0cadb5a240d3079920809938dbc9996",
+    "tools/replay_word_blocks.py": "f9b75bec05365a860485b386ace69da1210edaf01f1aa30940a3e01aa4849c17"
+  },
+  "status": "frozen-before-raw"
+}

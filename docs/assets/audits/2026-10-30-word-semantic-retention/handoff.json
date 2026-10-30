@@ -1,0 +1,79 @@
+{
+  "base": "28cd1acae73596c2f5194285c515057e5c0b1c7f",
+  "exclusions": [
+    "No corpus/raw/full/commit/push/network/paid yet",
+    "No per-file/aggregate corpus coverage gain claimed; must measure after review",
+    "No newfactblock/retainedquote/projection coordinates",
+    "Byte quotas hypothesis can reduce semantic coverage on individual files vs v1; no monotonic promise"
+  ],
+  "freeze_sha256": "e2dbfbcb849717e62b57e40aaad2b89bb1f9f787c95c78edddc830a6d2c6789d",
+  "independent_review": "out/corpus/word-semantic-retention/independent-review/revision3-closure.json",
+  "independent_review_sha256": "d4ab7611ed1600dd694a28e38d752f5615e96394b35a2ee1264100841808ed94",
+  "owned": [
+    "src/lexinform/models/word_structure.py",
+    "src/lexinform/models/__init__.py",
+    "src/lexinform/word_structure.py",
+    "src/lexinform/ports.py",
+    "src/lexinform/adapters/document_text.py",
+    "tools/replay_word_blocks.py",
+    "tests/unit/test_word_semantic_structure.py"
+  ],
+  "patch_sha256": "be785dadbbf259f49ccf6288970d2c1695e45a377a5c812769a5193474e07ee7",
+  "profile": {
+    "SQL_change": false,
+    "byte_ceiling": 524288,
+    "byte_lanes": [
+      360448,
+      114688,
+      32768
+    ],
+    "coverage_scope": "observed blocks/calls only; support aggregated/partial",
+    "default_off": true,
+    "full_stream_hash": null,
+    "header_byte_ceiling": 16384,
+    "independent_event_quota": "support=max(1,N//16),calls=max(1,7N//32),blocks=remaining; N>=3, sumN",
+    "known_buckets": "xmlpart+ordinaryrecognizedview; exceptionalviews explicit",
+    "version": "word-semantic-structure-v2"
+  },
+  "qualification": {
+    "ast_literal_unchanged": {
+      "WordStructureBlock": true,
+      "WordStructureCall": true,
+      "WordStructureExtraction": true,
+      "WordStructureSupport": true,
+      "_WordMl": true
+    },
+    "focused_log": "out/corpus/word-semantic-retention/focused-rev3.log",
+    "focused_tests": 155,
+    "format": "7 files already formatted",
+    "mypy": "Success: no issues found in 9 source files",
+    "new_units": 39,
+    "oldPRIMARY_purefixture_v1_legacy_companion_selection_provider_hashes_exact": {
+      "companion": "61bc27d66bdbf860aa3676270c1aaec19c9077764c3aec121fb9f90a1942f01e",
+      "input": "2ba1ec99882adc41cace92876dced5d8a86554376ca74490c8c6e05d610befec",
+      "legacy": "d53747465aa072dbcd948a55f2343f2a8480391b261ad87348646d2977a8770d",
+      "provider": "8dbf2fe152d6833dd4ad3ed209870501a2b3ff9b5041a8b22b82030d1b68d362",
+      "selection": "a4c44086873a0d3ded7b84d1cc3a77b44c35b03a7e4b7f87ae96a9339271dc96",
+      "v1": "ccd4dcafce312aa9df2fac2d3902a73845fc5b87719a47a8c3a9e6d5c10cc5f7"
+    },
+    "preflight_sentinel_log": "out/corpus/word-semantic-retention/preflight-rev3.log",
+    "ruff": "All checks passed!",
+    "synthetic_fixture_sha256": "2ba1ec99882adc41cace92876dced5d8a86554376ca74490c8c6e05d610befec",
+    "v1_fixture_revalidated": true
+  },
+  "qualification_source7_unchanged": true,
+  "qualification_summary": "out/corpus/word-semantic-retention/qualification-summary.json",
+  "qualification_summary_sha256": "75a971bbf676ffa7b9f3f2e9dae41a49c81689e6ecd0c8f769334124b793ea2a",
+  "revision": 3,
+  "revision_note": "Bound actual variable-size fields before serializer/model allocations; actualcounts/order and isolatedlane exhaustion remain coherent",
+  "source_pins": {
+    "src/lexinform/adapters/document_text.py": "85056ece94dd4087d5e4b9204120c4e4036cebb3d5048675cc42e249e343ab62",
+    "src/lexinform/models/__init__.py": "0cdb4570279974df42293d97433f597db5f73cb77d1fded9b2b712422484d4e1",
+    "src/lexinform/models/word_structure.py": "fabdcd103ca682c7a4843d456db33f837d887f292fcdc1710170bc8acc838530",
+    "src/lexinform/ports.py": "3f663a5467d979b4c7c5fec23844f150bd6e751c358ca2d6da4509dcc0312d59",
+    "src/lexinform/word_structure.py": "1e957b5378b49a53342f5bb22b0495dd172ca3d177c9bcaee146d22a762848d8",
+    "tests/unit/test_word_semantic_structure.py": "ff034d8b519daabda324a5509b74abc6a0cadb5a240d3079920809938dbc9996",
+    "tools/replay_word_blocks.py": "f9b75bec05365a860485b386ace69da1210edaf01f1aa30940a3e01aa4849c17"
+  },
+  "status": "qualified-independently-reviewed-frozen-ready-for-root-integration"
+}

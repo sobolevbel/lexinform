@@ -12,13 +12,23 @@ from typing import Literal
 from lexinform.models.documents import WordDetailedExtraction
 from lexinform.models.word_notes import WordNoteCall
 from lexinform.models.word_structure import (
+    SEMANTIC_BYTE_QUOTAS,
+    WORD_EXCEPTIONAL_VIEWS,
+    WordPrefixLimit,
+    WordRetention,
+    WordSemanticBlock,
+    WordSemanticCall,
+    WordSemanticStructureExtraction,
+    WordSemanticSupport,
     WordStructureBlock,
     WordStructureCall,
     WordStructureExtraction,
     WordStructureSupport,
     WordStructureView,
     WordXmlPart,
+    semantic_event_quotas,
     structure_sha256,
+    word_envelope_bytes,
 )
 
 _CURRENT: ContextVar[WordStructureCollector | None] = ContextVar("word_structure", default=None)
@@ -33,7 +43,13 @@ class _Event:
 
 
 class WordStructureCollector:
-    def __init__(self, *, max_events: int = 4096, max_bytes: int = 524288) -> None:
+    def __init__(
+        self,
+        *,
+        max_events: int = 4096,
+        max_bytes: int = 524288,
+        retention: WordRetention = "event-prefix-v1",
+    ) -> None:
         if (
             type(max_events) is not int
             or not 1 <= max_events <= 65536
@@ -41,6 +57,24 @@ class WordStructureCollector:
             or not 4096 <= max_bytes <= 1048576
         ):
             raise ValueError("Word structure limits are outside their supported bounds")
+        if (
+            retention not in ("event-prefix-v1", "semantic-first-v2")
+            or retention == "semantic-first-v2"
+            and (max_bytes != 524288 or max_events < 3)
+        ):
+            raise ValueError("Semantic Word retention requires its bounded versioned profile")
+        self.retention = retention
+        self._orders: list[int] = []
+        self._semantic_order = 0
+        self._recognized: dict[tuple[WordXmlPart, str], int] = {}
+        self._exceptional = 0
+        self._prefix_counts = {"block": 0, "call": 0, "support": 0}
+        self._prefix_bytes = {"block": 2, "call": 2, "support": 2}
+        self._prefix_limits: dict[str, WordPrefixLimit] = {
+            "block": "none",
+            "call": "none",
+            "support": "none",
+        }
         self.max_events = max_events
         self.max_bytes = max_bytes
         self.part: WordXmlPart = "word/document.xml"
@@ -68,6 +102,9 @@ class WordStructureCollector:
         if self._thread != threading.get_ident():
             return
         self._counts[event.kind] += 1
+        if self.retention == "semantic-first-v2":
+            self._observe_semantic(event)
+            return
         if self._limited:
             return
         if len(self._records) >= self.max_events:
@@ -90,6 +127,106 @@ class WordStructureCollector:
         self._bytes += size
         self._records.append(event)
 
+    @staticmethod
+    def _semantic_variables_fit(event: _Event, allowance: int) -> bool:
+        paths = (
+            (event.path, event.path, event.values["paragraph"])
+            if event.kind == "call"
+            else (event.path,)
+        )
+        width = 0
+        for path in paths:
+            if not isinstance(path, tuple):
+                raise ValueError("Word event paths must be actual immutable child indices")
+            if len(path) > allowance // 2:
+                return False
+            for index in path:
+                if type(index) is not int or not 0 <= index <= 2**63 - 1:
+                    raise ValueError("Word event child indices exceed their supported range")
+                width += len(str(index)) + 1
+                if width > allowance:
+                    return False
+        field = "identity" if event.kind == "call" else "tag" if event.kind == "support" else None
+        if field is None:
+            return True
+        text = event.values[field]
+        if not isinstance(text, str):
+            raise ValueError("Word event identity and tag must retain actual text")
+        if len(text) > allowance or field == "tag" and len(text) > 4096:
+            return False
+        for character in text:
+            number = ord(character)
+            width += (
+                2
+                if character in ('"', "\\", "\b", "\f", "\n", "\r", "\t")
+                else 6
+                if number < 32 or 126 < number <= 65535
+                else 12
+                if number > 65535
+                else 1
+            )
+            if width > allowance:
+                return False
+        return True
+
+    def _observe_semantic(self, event: _Event) -> None:
+        order = self._semantic_order
+        self._semantic_order += 1
+        if event.kind == "support":
+            view = str(event.values["view"])
+            if event.values["support"] == "recognized" and view not in WORD_EXCEPTIONAL_VIEWS:
+                bucket = (event.xml_part, view)
+                self._recognized[bucket] = self._recognized.get(bucket, 0) + 1
+                return
+            self._exceptional += 1
+        kind = event.kind
+        if self._prefix_limits[kind] != "none":
+            return
+        if self._prefix_counts[kind] >= semantic_event_quotas(self.max_events)[kind]:
+            self._prefix_limits[kind] = "events"
+            return
+        if not self._semantic_variables_fit(
+            event, SEMANTIC_BYTE_QUOTAS[kind] - self._prefix_bytes[kind]
+        ):
+            self._prefix_limits[kind] = "bytes"
+            return
+        location: dict[str, object] = {
+            "order": order,
+            "ordinal": self._prefix_counts[kind],
+            "xml_part": event.xml_part,
+            "path": event.path,
+            "note_id": f"word-note:{event.xml_part}:{event.path[0]}"
+            if event.path and event.xml_part != "word/document.xml"
+            else None,
+        }
+        if kind == "call":
+            # Reserve the longest final state and a bounded target before actual note resolution.
+            location.update(
+                call={
+                    "path": event.path,
+                    "paragraph_path": event.values["paragraph"],
+                    "kind": event.values["kind"],
+                    "identity": event.values["identity"],
+                    "state": "unverified",
+                    "target": 2**63 - 1,
+                },
+                legacy_view="expanded" if event.values["expanded"] else "missing_marker",
+            )
+        else:
+            location.update(event.values)
+        size = word_envelope_bytes(location) + int(self._prefix_counts[kind] > 0)
+        if (
+            self._prefix_bytes[kind] + size > SEMANTIC_BYTE_QUOTAS[kind]
+            or kind == "support"
+            and len(str(event.values["tag"])) > 4096
+        ):
+            self._prefix_limits[kind] = "bytes"
+            return
+        self._prefix_bytes[kind] += size
+        self._prefix_counts[kind] += 1
+        self._orders.append(order)
+        self._records.append(event)
+
     def support(
         self,
         path: tuple[int, ...],
@@ -101,7 +238,7 @@ class WordStructureCollector:
     ) -> None:
         if self._thread != threading.get_ident():
             return
-        if len(tag) > 4096:
+        if len(tag) > 4096 and self.retention == "event-prefix-v1":
             self._counts["support"] += 1
             self._limited = True
             return
@@ -153,7 +290,7 @@ class WordStructureCollector:
     ) -> None:
         if self._thread != threading.get_ident():
             return
-        if len(identity) > self.max_bytes:
+        if len(identity) > self.max_bytes and self.retention == "event-prefix-v1":
             self._counts["call"] += 1
             self._limited = True
             return
@@ -168,7 +305,7 @@ class WordStructureCollector:
 
     def finish(
         self, legacy: WordDetailedExtraction, targets: dict[str, int], seen: set[str]
-    ) -> WordStructureExtraction:
+    ) -> WordStructureExtraction | WordSemanticStructureExtraction:
         blocks: list[WordStructureBlock] = []
         calls: list[WordStructureCall] = []
         support: list[WordStructureSupport] = []
@@ -178,7 +315,8 @@ class WordStructureCollector:
             for note in legacy.notes.notes
             if (note.xml_part, note.path[0]) in needed
         }
-        for order, event in enumerate(self._records):
+        for index, event in enumerate(self._records):
+            order = self._orders[index] if self.retention == "semantic-first-v2" else index
             location = {
                 "order": order,
                 "xml_part": event.xml_part,
@@ -186,9 +324,19 @@ class WordStructureCollector:
                 "note_id": note_ids.get((event.xml_part, event.path[0])) if event.path else None,
             }
             if event.kind == "block":
-                blocks.append(WordStructureBlock.model_validate({**location, **event.values}))
+                block_fields = {**location, **event.values}
+                blocks.append(
+                    WordSemanticBlock.model_validate({**block_fields, "ordinal": len(blocks)})
+                    if self.retention == "semantic-first-v2"
+                    else WordStructureBlock.model_validate(block_fields)
+                )
             elif event.kind == "support":
-                support.append(WordStructureSupport.model_validate({**location, **event.values}))
+                support_fields = {**location, **event.values}
+                support.append(
+                    WordSemanticSupport.model_validate({**support_fields, "ordinal": len(support)})
+                    if self.retention == "semantic-first-v2"
+                    else WordStructureSupport.model_validate(support_fields)
+                )
             else:
                 kind, identity = str(event.values["kind"]), str(event.values["identity"])
                 key = f"{kind}/{identity}"
@@ -215,16 +363,15 @@ class WordStructureCollector:
                         "target": target,
                     }
                 )
+                call_fields = {
+                    **location,
+                    "call": call,
+                    "legacy_view": "expanded" if event.values["expanded"] else "missing_marker",
+                }
                 calls.append(
-                    WordStructureCall.model_validate(
-                        {
-                            **location,
-                            "call": call,
-                            "legacy_view": "expanded"
-                            if event.values["expanded"]
-                            else "missing_marker",
-                        }
-                    )
+                    WordSemanticCall.model_validate({**call_fields, "ordinal": len(calls)})
+                    if self.retention == "semantic-first-v2"
+                    else WordStructureCall.model_validate(call_fields)
                 )
         complete = legacy.body.body_state == "read" and all(
             part.state == "read" for part in legacy.notes.parts
@@ -248,6 +395,32 @@ class WordStructureCollector:
             "coverage": "complete" if complete and not self._limited else "partial",
             "observed_stream_sha256": None,
         }
+        if self.retention == "semantic-first-v2":
+            values.update(
+                version="word-semantic-structure-v2",
+                scope="legacy-visited-semantic-prefixes",
+                blocks=tuple(block.model_dump() for block in blocks),
+                calls=tuple(call.model_dump() for call in calls),
+                support=tuple(row.model_dump() for row in support),
+                exceptional_support_count=self._exceptional,
+                recognized_support=tuple(
+                    {"xml_part": part, "view": view, "count": count}
+                    for (part, view), count in sorted(self._recognized.items())
+                ),
+                block_limit=self._prefix_limits["block"],
+                call_limit=self._prefix_limits["call"],
+                support_limit=self._prefix_limits["support"],
+                coverage="semantic_complete"
+                if complete
+                and self._counts["block"] == len(blocks)
+                and self._counts["call"] == len(calls)
+                else "semantic_partial",
+                support_coverage="aggregated"
+                if complete and self._exceptional == len(support)
+                else "partial",
+            )
+            values.pop("limit_reached")
+            return WordSemanticStructureExtraction.model_validate(values)
         if complete and not self._limited:
             records = [
                 {"type": kind, **record.model_dump(mode="json")}

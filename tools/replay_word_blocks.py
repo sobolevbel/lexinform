@@ -15,6 +15,7 @@ from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.models import (
     ExtractedParts,
     WordDetailedExtraction,
+    WordSemanticStructureExtraction,
     WordStructureBlock,
     WordStructureCall,
     WordStructuredExtraction,
@@ -80,6 +81,18 @@ def verify_structure(data: bytes, result: WordStructuredExtraction) -> dict[str,
                 raise ValueError("Note-part calls cannot invent legacy inline expansion")
     value = result.structure
     return {
+        **(
+            {
+                "version": value.version,
+                "scope": value.scope,
+                "recognized_support": [
+                    row.model_dump(mode="json") for row in value.recognized_support
+                ],
+                "support_coverage": value.support_coverage,
+            }
+            if isinstance(value, WordSemanticStructureExtraction)
+            else {}
+        ),
         "manifest_sha256": value.manifest_sha256,
         "coverage": value.coverage,
         "observed_blocks": value.block_count,
@@ -88,7 +101,9 @@ def verify_structure(data: bytes, result: WordStructuredExtraction) -> dict[str,
         "retained_blocks": len(value.blocks),
         "retained_calls": len(value.calls),
         "retained_support": len(value.support),
-        "limit_reached": value.limit_reached,
+        "limit_reached": value.coverage == "semantic_partial" or value.support_coverage == "partial"
+        if isinstance(value, WordSemanticStructureExtraction)
+        else value.limit_reached,
         "full_observed_hash": value.observed_stream_sha256,
         "max_events": value.max_events,
         "max_bytes": value.max_bytes,
@@ -133,6 +148,7 @@ def snapshot(
     physical_parts: bool = False,
     with_notes: bool = False,
     with_structure: bool = False,
+    semantic_structure: bool = False,
 ) -> tuple[dict[str, Any], dict[str, Any] | None]:
     reader = DocxTextExtractor()
     structured: WordStructuredExtraction | None = None
@@ -142,9 +158,18 @@ def snapshot(
         if adapter:
             if with_structure:
                 if physical_parts:
-                    carrier = DocumentTextExtractor(
+                    extractor = DocumentTextExtractor(
                         PypdfTextExtractor(), reader, DocTextExtractor()
-                    ).extract_parts_with_word_structure(data, include_pdf_pages=False)
+                    )
+                    carrier = (
+                        extractor.extract_parts_with_semantic_word_structure(
+                            data, include_pdf_pages=False
+                        )
+                        if semantic_structure
+                        else extractor.extract_parts_with_word_structure(
+                            data, include_pdf_pages=False
+                        )
+                    )
                     legacy = carrier.legacy
                     if (len(legacy.parts), len(carrier.word_structure)) != (
                         1,
@@ -164,7 +189,11 @@ def snapshot(
                         legacy=detailed, structure=linked.extraction
                     )
                 else:
-                    structured = reader.extract_with_structure(data)
+                    structured = (
+                        reader.extract_with_semantic_structure(data)
+                        if semantic_structure
+                        else reader.extract_with_structure(data)
+                    )
                     detailed = structured.legacy
                 result = detailed.body
             elif with_notes:
@@ -293,7 +322,15 @@ def run(
     output: Path,
     *,
     mode: Literal[
-        "library", "adapter", "parts", "notes", "notes-parts", "structure", "structure-parts"
+        "library",
+        "adapter",
+        "parts",
+        "notes",
+        "notes-parts",
+        "structure",
+        "structure-parts",
+        "semantic-structure",
+        "semantic-structure-parts",
     ],
     reference: Path | None = None,
     reference_sha256: str | None = None,
@@ -335,7 +372,11 @@ def run(
     before = source_fingerprints()
     result: dict[str, Any] = {
         "suite": "word-blocks-v1",
-        "entrypoint": "word_structure_parts"
+        "entrypoint": "word_semantic_structure_parts"
+        if mode == "semantic-structure-parts"
+        else "word_semantic_structure"
+        if mode == "semantic-structure"
+        else "word_structure_parts"
         if mode == "structure-parts"
         else "word_structure"
         if mode == "structure"
@@ -361,6 +402,10 @@ def run(
             "Unsupported leaf readers must retain their observed exception; no fabricated blocks.",
         ],
     }
+    if mode in ("semantic-structure", "semantic-structure-parts"):
+        result["retention_profile"] = "semantic-first-v2"
+        result["structure_max_bytes"] = 524288
+        result["structure_max_events"] = 4096
     reads = CorpusReads(root)
     with reads.guard():
         for name, sha in sorted(inputs.items()):
@@ -371,13 +416,23 @@ def run(
                 data = path.read_bytes()
                 if digest(data) != sha:
                     raise ValueError("Raw input SHA mismatch")
-                if mode in ("structure", "structure-parts"):
+                if mode in (
+                    "structure",
+                    "structure-parts",
+                    "semantic-structure",
+                    "semantic-structure-parts",
+                ):
                     core, physical = snapshot(
                         data,
                         adapter=True,
-                        physical_parts=mode == "structure-parts",
+                        physical_parts=mode in ("structure-parts", "semantic-structure-parts"),
                         with_notes=True,
                         with_structure=True,
+                        **(
+                            {"semantic_structure": True}
+                            if mode in ("semantic-structure", "semantic-structure-parts")
+                            else {}
+                        ),
                     )
                 else:
                     core, physical = snapshot(
@@ -421,6 +476,8 @@ def main() -> None:
             "notes-parts",
             "structure",
             "structure-parts",
+            "semantic-structure",
+            "semantic-structure-parts",
         ),
         required=True,
     )

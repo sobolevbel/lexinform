@@ -79,6 +79,7 @@ from lexinform.models.word_notes import (
 )
 from lexinform.models.word_structure import (
     WordPartStructureExtraction,
+    WordSemanticStructureExtraction,
     WordStructuredExtraction,
     WordStructuredParts,
     WordStructureExtraction,
@@ -96,6 +97,7 @@ from lexinform.ports import (
     TextExtractor,
     WordBlockTextExtractor,
     WordNoteTextExtractor,
+    WordSemanticStructureTextExtractor,
     WordStructureTextExtractor,
 )
 from lexinform.sections import PAGE_BREAK
@@ -228,6 +230,18 @@ class DocxTextExtractor:
     ) -> WordStructuredExtraction:
         notes = _WordNoteOrigins()
         collector = WordStructureCollector(max_events=max_events, max_bytes=max_bytes)
+        with collector.scope():
+            body = self._blocks(data, notes=notes)
+        legacy = self._detailed(body, notes)
+        return WordStructuredExtraction(
+            legacy=legacy, structure=collector.finish(legacy, notes.targets, notes.seen)
+        )
+
+    def extract_with_semantic_structure(
+        self, data: bytes, *, max_events: int = 4096
+    ) -> WordStructuredExtraction:
+        notes = _WordNoteOrigins()
+        collector = WordStructureCollector(max_events=max_events, retention="semantic-first-v2")
         with collector.scope():
             body = self._blocks(data, notes=notes)
         legacy = self._detailed(body, notes)
@@ -862,6 +876,7 @@ class _PhysicalOrigins:
     odt_blocks: list[OdtPartExtraction] | None
     unlocated_text: list[UnlocatedPartExtraction] | None
     word_structure: list[WordPartStructureExtraction] | None = None
+    semantic_word_structure: bool = False
 
 
 class DocumentTextExtractor:
@@ -917,6 +932,23 @@ class DocumentTextExtractor:
             odt_blocks=[],
             unlocated_text=[],
             word_structure=[],
+        )
+        legacy = self._extract_parts(data, origins)
+        return WordStructuredParts(
+            legacy=legacy, word_structure=tuple(origins.word_structure or ())
+        )
+
+    def extract_parts_with_semantic_word_structure(
+        self, data: bytes, *, include_pdf_pages: bool = True
+    ) -> WordStructuredParts:
+        origins = _PhysicalOrigins(
+            pdf_pages=[] if include_pdf_pages else None,
+            word_blocks=[],
+            word_notes=[],
+            odt_blocks=[],
+            unlocated_text=[],
+            word_structure=[],
+            semantic_word_structure=True,
         )
         legacy = self._extract_parts(data, origins)
         return WordStructuredParts(
@@ -1085,7 +1117,7 @@ class DocumentTextExtractor:
         pdf_result: PdfTextExtraction | None = None
         word_result: WordTextExtraction | None = None
         note_result: WordNoteExtraction | None = None
-        structure_result: WordStructureExtraction | None = None
+        structure_result: WordStructureExtraction | WordSemanticStructureExtraction | None = None
         odt_result: OdtTextExtraction | None = None
         if data.startswith(_ZIP_MAGIC):
             try:
@@ -1095,8 +1127,22 @@ class DocumentTextExtractor:
                         capture = current_physical_walk_capture()
                         if capture is not None and type(self._docx) is not DocxTextExtractor:
                             _physical_event(capture, capture.opaque_helper)
-                        if origins.word_structure is not None and isinstance(
-                            self._docx, WordStructureTextExtractor
+                        if origins.semantic_word_structure and isinstance(
+                            self._docx, WordSemanticStructureTextExtractor
+                        ):
+                            structured = _physical_format(
+                                partial(self._docx.extract_with_semantic_structure, data)
+                            )
+                            word_result, note_result = (
+                                structured.legacy.body,
+                                structured.legacy.notes,
+                            )
+                            structure_result = structured.structure
+                            text = word_result.legacy_text
+                        elif (
+                            not origins.semantic_word_structure
+                            and origins.word_structure is not None
+                            and isinstance(self._docx, WordStructureTextExtractor)
                         ):
                             structured = _physical_format(
                                 partial(self._docx.extract_with_structure, data)

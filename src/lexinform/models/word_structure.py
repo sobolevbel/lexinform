@@ -157,10 +157,178 @@ class WordStructureExtraction(BaseModel):
         return self
 
 
+WordRetention = Literal["event-prefix-v1", "semantic-first-v2"]
+WordPrefixLimit = Literal["none", "bytes", "events"]
+SEMANTIC_BYTE_QUOTAS = {"block": 352 * 1024, "call": 112 * 1024, "support": 32 * 1024}
+SEMANTIC_HEADER_BYTES = 16 * 1024
+WORD_EXCEPTIONAL_VIEWS = frozenset(
+    {
+        "ignored_leaf",
+        "ignored_fallback",
+        "recursed",
+        "skipped_block",
+        "skipped_missing_id",
+        "inline_note",
+    }
+)
+
+
+def semantic_event_quotas(max_events: int) -> dict[str, int]:
+    support = max(1, max_events // 16)
+    calls = max(1, max_events * 7 // 32)
+    return {"block": max_events - support - calls, "call": calls, "support": support}
+
+
+def word_envelope_bytes(value: object) -> int:
+    return len(
+        json.dumps(value, ensure_ascii=True, separators=(",", ":"), allow_nan=False).encode("ascii")
+    )
+
+
+class WordSemanticBlock(WordStructureBlock):
+    ordinal: Count
+
+
+class WordSemanticCall(WordStructureCall):
+    ordinal: Count
+
+
+class WordSemanticSupport(WordStructureSupport):
+    ordinal: Count
+
+
+class WordRecognizedSupportCount(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    xml_part: WordXmlPart
+    view: WordStructureView
+    count: Annotated[int, Field(strict=True, ge=1, le=2**63 - 1)]
+
+    @model_validator(mode="after")
+    def only_ordinary_recognized_views(self) -> Self:
+        if self.view in WORD_EXCEPTIONAL_VIEWS:
+            raise ValueError("Exceptional Word support requires its own bounded prefix")
+        return self
+
+
+class WordSemanticStructureExtraction(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    version: Literal["word-semantic-structure-v2"] = "word-semantic-structure-v2"
+    scope: Literal["legacy-visited-semantic-prefixes"] = "legacy-visited-semantic-prefixes"
+    input_sha256: Sha256
+    xml_sha256: Sha256
+    body_manifest_sha256: Sha256
+    notes_manifest_sha256: Sha256
+    note_parts: tuple[WordNoteXmlPart, ...]
+    blocks: tuple[WordSemanticBlock, ...]
+    calls: tuple[WordSemanticCall, ...]
+    support: tuple[WordSemanticSupport, ...]
+    recognized_support: tuple[WordRecognizedSupportCount, ...]
+    block_count: Count
+    call_count: Count
+    support_count: Count
+    exceptional_support_count: Count
+    block_limit: WordPrefixLimit
+    call_limit: WordPrefixLimit
+    support_limit: WordPrefixLimit
+    walk_complete: bool = Field(strict=True)
+    max_events: Annotated[int, Field(strict=True, ge=3, le=65536)]
+    max_bytes: Annotated[int, Field(strict=True, ge=524288, le=524288)] = 524288
+    coverage: Literal["semantic_complete", "semantic_partial"]
+    support_coverage: Literal["aggregated", "partial"]
+    observed_stream_sha256: None = None
+
+    @property
+    def limit_reached(self) -> bool:
+        return any(
+            reason != "none" for reason in (self.block_limit, self.call_limit, self.support_limit)
+        )
+
+    @property
+    def manifest_sha256(self) -> str:
+        return structure_sha256(self.model_dump(mode="json"))
+
+    @model_validator(mode="after")
+    def independent_bounded_prefixes(self) -> Self:
+        buckets = [(row.xml_part, row.view) for row in self.recognized_support]
+        if buckets != sorted(set(buckets)):
+            raise ValueError("Recognized Word support buckets require unique canonical order")
+        if (
+            sum(row.count for row in self.recognized_support) + self.exceptional_support_count
+            != self.support_count
+        ):
+            raise ValueError("Word support totals differ from their actual classifications")
+        orders: list[int] = []
+        event_quotas = semantic_event_quotas(self.max_events)
+        for kind, records, count, reason in (
+            ("block", self.blocks, self.block_count, self.block_limit),
+            ("call", self.calls, self.call_count, self.call_limit),
+            ("support", self.support, self.exceptional_support_count, self.support_limit),
+        ):
+            if [row.ordinal for row in records] != list(range(len(records))):
+                raise ValueError("Semantic Word records require their per-kind observed prefix")
+            current = [row.order for row in records]
+            if current != sorted(set(current)) or count < len(records):
+                raise ValueError("Semantic Word original orders or counts are inconsistent")
+            if (reason == "none") != (count == len(records)):
+                raise ValueError("Semantic Word omitted suffix requires its actual limit")
+            if (
+                len(records) > event_quotas[kind]
+                or reason == "events"
+                and len(records) != event_quotas[kind]
+            ):
+                raise ValueError("Semantic Word prefix exceeds its reserved event allowance")
+            if (
+                word_envelope_bytes([row.model_dump(mode="json") for row in records])
+                > SEMANTIC_BYTE_QUOTAS[kind]
+            ):
+                raise ValueError("Semantic Word prefix exceeds its reserved byte allowance")
+            orders.extend(current)
+        if len(orders) != len(set(orders)) or any(
+            order >= self.block_count + self.call_count + self.support_count for order in orders
+        ):
+            raise ValueError(
+                "Semantic Word original event orders overlap or exceed actual observations"
+            )
+        if any(
+            row.support == "recognized" and row.view not in WORD_EXCEPTIONAL_VIEWS
+            for row in self.support
+        ):
+            raise ValueError("Ordinary recognized support belongs in aggregate counters")
+        complete = (
+            self.walk_complete
+            and self.block_count == len(self.blocks)
+            and self.call_count == len(self.calls)
+        )
+        if (self.coverage == "semantic_complete") != complete:
+            raise ValueError(
+                "Semantic coverage describes only the retained observed blocks and calls"
+            )
+        if (self.support_coverage == "aggregated") != (
+            self.walk_complete and self.exceptional_support_count == len(self.support)
+        ):
+            raise ValueError("Support coverage differs from its observed exceptional prefix")
+        payload = self.model_dump(mode="json")
+        header = {
+            key: value
+            for key, value in payload.items()
+            if key not in ("blocks", "calls", "support")
+        }
+        if (
+            word_envelope_bytes(header) > SEMANTIC_HEADER_BYTES
+            or word_envelope_bytes(payload) > self.max_bytes
+        ):
+            raise ValueError("Semantic Word exceeds its complete 512KiB serialized envelope")
+        return self
+
+
 class WordStructuredExtraction(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
     legacy: WordDetailedExtraction
-    structure: WordStructureExtraction
+    structure: Annotated[
+        WordStructureExtraction | WordSemanticStructureExtraction, Field(discriminator="version")
+    ]
 
     @model_validator(mode="after")
     def actual_legacy_bindings(self) -> Self:
@@ -216,7 +384,9 @@ class WordPartStructureExtraction(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
     part_index: Count
-    extraction: WordStructureExtraction
+    extraction: Annotated[
+        WordStructureExtraction | WordSemanticStructureExtraction, Field(discriminator="version")
+    ]
 
 
 class WordStructuredParts(BaseModel):

@@ -1,0 +1,30 @@
+{
+  "actual_adapter_sha256": "85056ece94dd4087d5e4b9204120c4e4036cebb3d5048675cc42e249e343ab62",
+  "actual_current_recipe_ids": [
+    "c348c2896342a65694d7435e85625ff0c4c283162906676e8e6c6da4b74e3338"
+  ],
+  "actual_serialized_ASCII_envelopes_le512KiB": true,
+  "business_IO_workers_cache365_get_doctor_restoretwice_green": true,
+  "driver_sha256": {
+    "runtime_profile.py": "bfaac907f03de24c0c8f53d380e49755eaee03bdc3373a494de63177cd729469",
+    "word_probe.py": "42f36d5018778332ef5943b2399ffe4dbe8a785edf25ddd9494a65a29d705317"
+  },
+  "exact_old_legacy_selection_trim_provider_fingerprints": true,
+  "explicit_include_pdf_pages": false,
+  "independent_XMLpaths": true,
+  "no_fullXMLcoverage_or_normalized_recipe_claim": true,
+  "no_sourceEdits_Settings_env_network_paid_bigmats_full": true,
+  "nonphysical_SQL_unchanged_except_known_artifact_parents": true,
+  "physical_metadata": 74,
+  "proof_sha256": {
+    "runtime-profile.json": "7f0cea64ff27ecc8d56fe967ea9bd5b81d11e48d001dbc2091ca749421405011",
+    "word-proof.json": "597fcb8c6ab4b576563518ffc8a7e852acddaaac5dd327a84220975ee5e43c26"
+  },
+  "raw_bytes": 400412,
+  "raw_controls": 9,
+  "real_Word_semantic_native_cases": 4,
+  "root_freeze_sha256": "0c1c70fb5b73d60d787ff253d581dba41d65e7be99b2bfc130353b83d1be6ba0",
+  "root_sources712_exact_before_after": true,
+  "standard_native_contexts": 13,
+  "status": "qualified"
+}

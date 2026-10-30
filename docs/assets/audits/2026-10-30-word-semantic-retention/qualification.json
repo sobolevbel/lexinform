@@ -1,0 +1,27 @@
+{
+  "scope": "Opt-in word-semantic-structure-v2 on the same native walk, independent block/call/exceptional prefixes plus closed recognized-support counters; V1/default/SQL untouched",
+  "patch_sha256": "be785dadbbf259f49ccf6288970d2c1695e45a377a5c812769a5193474e07ee7",
+  "independent_review": "Root static +URLexactrev3/8bounded controls green. Rev2 onlineallocation issue caught before raw; strings/pathwidths now preflight before serializer, ownlane only; originalrepros pass, rev2evidence preserved.155focused/strict9.",
+  "corpus": "ONEcandidate3055Word/3053valid/2sameerrors +11fixedZIP74bindings+56oldvariants; oldbusiness hashes exact, no baseline lane or ZIPdiscovery replay.",
+  "retention": "169404\u21921347595/1991043blocks,1388\u21925320/5320calls;0decreasedcases,all900v1complete preserved;2788semanticcomplete/265partial,2995supportpartial/58aggregated. No fullXML/fullstreamSHA or futureperfilemonotonic promise.",
+  "envelope_limit_bytes": 524288,
+  "native": "ActualRootstandardrecipe c348c289...,9raw400412B/13contexts74metadata+4semanticWordcases, IO/workers/cache365/get/doctor/restore2 green,712sourcepins exact; no previousIDnormalization.",
+  "full_gate": {
+    "suites": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "7207",
+        "time": "258.370",
+        "timestamp": "2026-10-30T17:08:09.724136+01:00"
+      }
+    ],
+    "coverage_percent": 92,
+    "mypy_files": 627,
+    "ruff_formatted_files": 695,
+    "source_config_freeze_paths": 712,
+    "unchanged": true
+  }
+}

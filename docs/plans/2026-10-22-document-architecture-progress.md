@@ -8608,3 +8608,50 @@ unchanged. Отдельный counterfactual knownname+2absentowners+transfer: w
 Full7168tests/257.380s/92%, mypy626/Ruff694,711frozen source/config inputs unchanged.
 [Qualification](../assets/audits/2026-10-30-selected-name-binding/qualification.json),
 [state proof](../assets/audits/2026-10-30-selected-name-binding/current-state-handoff.json).
+
+
+J183 source `a757c4d5` получил docs CI failure: journal ссылался на release-proof, который
+Root не включил в commit; локальный untracked asset маскировал ошибку. Только этот файл
+добавлен в `4fdf19aeb707a0ea45ae908dfeeed95773c92565`. Проверка документации из staged
+Git archive прошла; Python-код не менялся после7168 gate. Все четыре exact CI jobs и
+actual relay `28cd1aca → 4fdf19ae`, health45s/timer подтверждены
+[release proof](../assets/audits/2026-10-30-selected-name-binding/release.json).
+[Staged snapshot qualification](../assets/audits/2026-10-30-selected-name-binding/staged-docs-repair.json).
+Перед последующими push docs проверяются из staged/committed snapshot, не только working tree.
+
+
+<a id="j184"></a>
+
+## J184 — semantic-first Word retention within the same byte ceiling
+
+Opt-in `word-semantic-structure-v2` использует прежний walk/collector hooks и реальные
+original order/path, independent prefixes blocks/calls/exceptional support, closed ordinary
+support counters. V1 contiguous-prefix JSON/IDs/default APIs и Word text/notes не меняются.
+Semantic completeness означает только все наблюдённые blocks/calls известного walk;
+support aggregated/partial отдельно, full stream SHA отсутствует. SQL/default/facts
+activation нет, custom-v1 capabilities не получают неожиданный keyword.
+
+Общий serialized ASCII envelope<=512KiB: header16KiB, blocks352KiB/calls112KiB/
+exceptional32KiB плюс independent event reservations с суммой общего cap. Oversized closes
+только свой lane, actualcounts/order продолжаются. Независимый review до raw нашёл
+onlineallocation gap: oversized strings/path попадали в JSON serializer до refusal. Rev3
+выполняет width/count preflight раньше serializer; два исходных finite repro и шесть
+остальных bounded controls прошли; rev2evidence сохранено.155focused/strict9green.
+
+Один candidate-only3055Word+11fixedZIP/74bindings+56readyvariants: прежние legacy/physical/
+selection/trim/provider hashes exact, те же2ValueError, все56clauses retained. Каждый
+фактическийv2envelope<=512KiB. Blocks169404→1347595/1991043 (8.5→67.7%),
+calls1388→5320/5320 (26.1→100%);2150/645files improve,0decreased. Все900oldcomplete
+сохранили всеblocks/calls;v2semanticcomplete2788/partial265. Supporttradeoff явный:
+2995partial/58aggregatedcomplete,5909546ordinary counts aggregated,421634/23288597
+exceptional locations retained. Это не полная XML-карта или гарантия роста на иных данных.
+Source/input/baseline pins unchanged, старые lanes/wholeZIPpopulation не повторялись.
+
+Root7pins exact, actualmergedstandardrecipe `c348c289…`;9raw400412B/13nativecontexts/
+74metadata+4Wordv2 cases: independentXMLpaths, oldhashes,IO/workers/cache365/doctor/restore2
+green;712pins unchanged. Full7207tests/258.370s/92%,mypy627/Ruff695. Документация
+проверяется из staged Git archive со всеми новыми assets перед commit.
+[Qualification](../assets/audits/2026-10-30-word-semantic-retention/qualification.json),
+[corpus summary](../assets/audits/2026-10-30-word-semantic-retention/qualification-summary.json),
+[comparison index](../assets/audits/2026-10-30-word-semantic-retention/retention-comparison-index.json),
+[combined native](../assets/audits/2026-10-30-word-semantic-retention/combined-native.json).

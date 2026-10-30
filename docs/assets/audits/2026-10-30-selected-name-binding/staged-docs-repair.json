@@ -1,0 +1,10 @@
+{
+  "failed_main": "a757c4d540428926810660a53835f4534061ae80",
+  "ci_run": 41084187964,
+  "docs_job": 124160880488,
+  "failure": "missing published physical-policy/release.json; local untracked file masked it",
+  "staged_tree": "0e6c191774d1b8894355ab5fa19dde7b663e22ea",
+  "only_changed_path": "docs/assets/audits/2026-10-30-physical-policy/release.json",
+  "staged_archive_docs_check": "passed",
+  "code_unchanged_since_full7168": true
+}

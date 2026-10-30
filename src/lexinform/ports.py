@@ -361,6 +361,18 @@ class WordStructureTextExtractor(Protocol):
 
 
 @runtime_checkable
+class WordSemanticStructureTextExtractor(Protocol):
+    def extract_with_semantic_structure(self, data: bytes) -> WordStructuredExtraction: ...
+
+
+@runtime_checkable
+class WordSemanticStructuredPartsExtractor(Protocol):
+    def extract_parts_with_semantic_word_structure(
+        self, data: bytes, *, include_pdf_pages: bool = True
+    ) -> WordStructuredParts: ...
+
+
+@runtime_checkable
 class WordStructuredPartsExtractor(Protocol):
     def extract_parts_with_word_structure(
         self, data: bytes, *, include_pdf_pages: bool = True

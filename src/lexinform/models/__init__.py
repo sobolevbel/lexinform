@@ -497,6 +497,11 @@ __all__ = [
     "WordStructureExtraction",
     "WordPartStructureExtraction",
     "WordStructuredParts",
+    "WordSemanticStructureExtraction",
+    "WordSemanticBlock",
+    "WordSemanticCall",
+    "WordSemanticSupport",
+    "WordRecognizedSupportCount",
     "WordStructureBlock",
     "WordStructureCall",
     "WordStructureSupport",
@@ -817,6 +822,13 @@ from lexinform.models.source_omissions import (
 from lexinform.models.word_structure import (
     WordPartStructureExtraction as WordPartStructureExtraction,
 )
+from lexinform.models.word_structure import WordRecognizedSupportCount as WordRecognizedSupportCount
+from lexinform.models.word_structure import WordSemanticBlock as WordSemanticBlock
+from lexinform.models.word_structure import WordSemanticCall as WordSemanticCall
+from lexinform.models.word_structure import (
+    WordSemanticStructureExtraction as WordSemanticStructureExtraction,
+)
+from lexinform.models.word_structure import WordSemanticSupport as WordSemanticSupport
 from lexinform.models.word_structure import WordStructureBlock as WordStructureBlock
 from lexinform.models.word_structure import WordStructureCall as WordStructureCall
 from lexinform.models.word_structure import WordStructuredExtraction as WordStructuredExtraction
