@@ -1,0 +1,58 @@
+{
+  "corpus_index_before_after": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "evidence": {
+    "compact.json": {
+      "bytes": 82558,
+      "sha256": "628bc3eaf175444520a968fa5c0db8125f62e26c79cf26c99e5d632ac364c71c"
+    },
+    "inventory.json": {
+      "bytes": 317975,
+      "sha256": "82e02b78af53e47c92b6bda55e973368d1e66cf39710d41ce3da64a7568132bf"
+    },
+    "inventory.py": {
+      "bytes": 11243,
+      "sha256": "bc91fa4304a0244057be5b3e2a2f2989064c0688757efc1ceb2026eed5cc582b"
+    },
+    "reduce.py": {
+      "bytes": 2753,
+      "sha256": "c5da53ef3f5cf3cdaad4d5eacb8b248f6c380b250a21edd01aa272b4aa539d71"
+    },
+    "report.md": {
+      "bytes": 1043,
+      "sha256": "8e71bb1cb95bb3e2d527df11af91b800ffb29b95e147e16e97d76019e3b3c694"
+    },
+    "summary.json": {
+      "bytes": 747,
+      "sha256": "363297168b99af3c9535e3d406a68f0d3366f2f2877cea9b93c02686fe2132bb"
+    }
+  },
+  "notes": "69unique/117paths declarefootnotes (377total unique declarations,max21); zeroendnote declarations. This is not CP-range/CR/CFSpec/link/legal verification.",
+  "prior402_correction": "402 DOC routeprojections correspond402 OLE paths; uniqueSHA246(total)/245(OLE), not402 uniques.",
+  "raw_manifest": {
+    "cases": 417,
+    "doc_paths": 404,
+    "other_xml_paths_excluded": 13,
+    "path": "/Users/sobaleu/projects/lexinform/out/corpus/j121/input-manifest.json",
+    "sha256": "449d893ca8d9b89933a3ac84abd3b757d0f89298d06fc9ae6e5c31ecb38775d5"
+  },
+  "read_boundary": "Existing olefile0.47 reads OLE directory/FAT metadata; out-only FAT prefix reader inspects counted FIB bytes <=1630, never opens full OleStream or decodes text/Tablepayload. Rawfilehash streaming before/after is separate verification, not text reading.",
+  "recommendation": "Effective2007/count183/cswNew5 profile containing97prefix is practical next scopedlink capture; strict-effective97 profile haszero candidates.",
+  "reproduce": "Use author externalUVPython/PYTHONPATH; inventory.py refuses existing inventory.json. One headerpass already complete; reduce.py onlyreads preservedmetadata andassertsexactcompact. No rerun performed.",
+  "scope": "One bounded HEADERONLY pass; no source changes/raw extraction/replay/newdependency/paid/prod/network.",
+  "source_preserved": true,
+  "status": "passed",
+  "summary": {
+    "classification_unique": {
+      "excluded_header_profile": 245,
+      "unavailable": 1
+    },
+    "doc_paths": 404,
+    "effective_version_unique": {
+      "0x0112": 245,
+      "unavailable": 1
+    },
+    "strict97_note_bearing_paths": 0,
+    "strict97_note_bearing_unique": 0,
+    "unique_doc_sha": 246
+  }
+}

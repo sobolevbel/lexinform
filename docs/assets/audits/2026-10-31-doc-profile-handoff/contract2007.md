@@ -1,0 +1,5 @@
+Reader first: bounded input-bound PLCF call→note CP metadata for unencrypted effective2007 (0x0112), cbRgFcLcb=183/cswNew=5, validated counted FIB/signed story counts/reserved zero. Microsoft’s 2007→2003→2002→2000 containment preserves the 97 prefix; resolve declared pairs through counted sections, never guessed offsets.
+
+Then opt-in producer reuses DocTextExtractor’s loaded WordDocument/Table and piece lookup. Validate Ref/Txt cardinality/order, main-story reference CPs, note-relative ranges and terminal CR; associate corresponding records, not numbering flags. Keep legacy text/defaults unchanged. Raw automatic-reference 0x02 can be checked; CFSpec remains unavailable. NonBMP uses source UTF-16 CP units, never Python/emitted/normalized offsets.
+
+Inventory:245 unique supported headers;69 declare footnotes, zero endnotes. Two non-OLE paths excluded; reference-array correctness remains unqualified. Require synthetic malformed/nonBMP/multi-piece controls before one pinned note-bearing qualification; no completeness claim.

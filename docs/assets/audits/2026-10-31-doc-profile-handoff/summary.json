@@ -1,0 +1,28 @@
+{
+  "base_versions": {
+    "0x00c1": 245,
+    "unavailable": 1
+  },
+  "driver_sha256": "bc91fa4304a0244057be5b3e2a2f2989064c0688757efc1ceb2026eed5cc582b",
+  "endnotes_unique": 0,
+  "exclusion_reasons": {
+    "newer_effective_profile": 245
+  },
+  "footnotes_unique": 69,
+  "inventory_sha256": "82e02b78af53e47c92b6bda55e973368d1e66cf39710d41ce3da64a7568132bf",
+  "max_header_bytes": 1630,
+  "notes_paths": 117,
+  "notes_unique": 69,
+  "result_bytes": 317975,
+  "unavailable": [
+    {
+      "paths": [
+        "documents/files/764964.doc",
+        "documents/files/765000.doc"
+      ],
+      "reason": "non_ole",
+      "sha256": "58fd3d8ebfbda80cf9cd0aa35f64c9c33a3a70e399d281ce2db7a2d2523cd0ff"
+    }
+  ],
+  "valid_declared_header_profiles": 245
+}

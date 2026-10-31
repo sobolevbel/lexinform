@@ -1,0 +1,5 @@
+Strict97-only would serve none of this pinned DOC population. Manifest417 cases contains404 .doc paths but246 unique SHA; the earlier402 figure counts readable DOC route observations.245 unique OLE files (402 paths) all report base nFib0x00C1 overridden by effective0x0112, cbRgFcLcb183/cswNew5; all other checked header declarations are coherent. Two paths share one non-OLE input.
+
+69 unique files (117 paths) declare footnotes:377 declarations across unique inputs, maximum21/file. None declares endnotes. These are header candidates, not verified call→note links or natural reference correctness.
+
+Next useful profile should therefore validate the2007 counted FIB containing its97 prefix, rather than effective97-only. Reference CP arrays/ranges, marker/CFSpec and note content remain uninspected. One header pass, no text/stream extraction; INDEX and every404 raw SHA verified before/after. WordDocument inspected bytes max1630; no full OleStream opening. Compact JSON preserves all path→SHA associations and per-SHA declared counts.

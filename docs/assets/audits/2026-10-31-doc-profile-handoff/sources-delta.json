@@ -1,0 +1,40 @@
+{
+  "purpose": "Replace unused strict97 gate with measured effective2007 profile; original14 note/CP sources remain authoritative.",
+  "sources": [
+    {
+      "section": "2.5.1",
+      "title": "Fib",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/9aeaa2e7-4a45-468e-ab13-3f6193eb9394"
+    },
+    {
+      "section": "2.5.5",
+      "title": "FibRgFcLcb",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/175d2fe1-92dd-45d2-b091-1fe8a0c0d40a"
+    },
+    {
+      "section": "2.5.10",
+      "title": "FibRgFcLcb2007",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/f04ad697-5027-46c0-bf4c-52fc7843a2f6"
+    },
+    {
+      "section": "2.5.9",
+      "title": "FibRgFcLcb2003",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/f6b7d624-570c-4057-acfd-cba71d12f1a0"
+    },
+    {
+      "section": "2.5.8",
+      "title": "FibRgFcLcb2002",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/fce09f81-704b-460d-9bca-f7dc121aed66"
+    },
+    {
+      "section": "2.5.7",
+      "title": "FibRgFcLcb2000",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/265bca68-c4ef-4a03-8517-61d7e79850eb"
+    }
+  ],
+  "checked": "2026-10-31 official Microsoft pages only",
+  "inventory": "../doc-note-header-inventory/compact.json",
+  "inventory_sha256": "628bc3eaf175444520a968fa5c0db8125f62e26c79cf26c99e5d632ac364c71c",
+  "original_sources": "../doc-note-spec-next/sources.json",
+  "scope": "Design only, no raw pass/code/tests/full/paid/production."
+}

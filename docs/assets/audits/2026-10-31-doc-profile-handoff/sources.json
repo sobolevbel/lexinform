@@ -1,0 +1,110 @@
+{
+  "actual_code": {
+    "src/lexinform/adapters/doc_text.py": {
+      "paths": [
+        "DocTextExtractor.extract/_extract: one OLE read, WordDocument/Table/Data",
+        "word_text: FIBbasic version/encryption, CLX, PAPX, _spans/_read_pieces/_clean",
+        "_piece_table/_read_pieces: actual CP/FC/encoding access, no CHPX",
+        "_clean/_CONTROL: strips0x02 andfieldcodes; existing output unchanged"
+      ],
+      "sha256": "0216af4fddc5af723554137b27498862c2893dd1dbd7e5eeddd74f29280f7dee"
+    },
+    "tests/unit/test_doc_text.py": {
+      "APIs": [
+        "word_streams: synthetic FIB/CLX+storycounts; no real Ref/Txt PLCFs yet",
+        "with_row_ends: PAPX, not CFSpec/CHPX",
+        "test_the_document_its_footnotes_and_its_endnotes_are_read_and_nothing_else"
+      ],
+      "sha256": "2a0c06c1cf827e5d4089982e196792968468b860cf8d238d88b3843ece6354cd"
+    }
+  },
+  "next_acceptance": [
+    "Build specification-complete counted97 FIB+Ref/Txt fixtures; existing FIB_SIZE512 fixtures are intentionally partial and lack full cbRgFcLcb/cswNew markers.",
+    "Foot/endnotes, splitpieces, custom/automatic flags, malformed cardinality/CP/ranges, ignored sentinels, nonBMP units; keep legacyword_text exact.",
+    "No naturalcall\u2192note correctness claim from J121402 stringprojections; future pinnedreference-rich corpus inspection required.",
+    "Txt CPs need N+2 values, not the older N+1 simplification: validate ending paragraph before penultimate boundary ccpNote\u22121. Existing text-only fixtures are not reference-table conformancefixtures."
+  ],
+  "scope": "Official Microsoft primaryspec only, accessed2026-10-30; no rawcorpus/download/replay/code/full/paid/prod",
+  "sources": [
+    {
+      "section": "2.8.19",
+      "title": "PlcffndRef",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/3ed81d85-ea74-4790-8579-ab7f8eb651f7"
+    },
+    {
+      "section": "2.8.20",
+      "title": "PlcffndTxt",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/b30472e7-569e-4c9c-a8ca-07fd5432f365"
+    },
+    {
+      "section": "2.8.16",
+      "title": "PlcfendRef",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/50371008-8334-4d3f-80c2-9bcd6dbe1c93"
+    },
+    {
+      "section": "2.8.17",
+      "title": "PlcfendTxt",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/49650ca7-1bfc-49e5-93ac-01a86bd2fc3e"
+    },
+    {
+      "section": "2.2.2",
+      "title": "PLC",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/a649fcc5-7868-4245-be12-04eea89d916b"
+    },
+    {
+      "section": "2.3.2",
+      "title": "Footnotes",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/f7e96a05-aad7-4acb-a06d-bfa430ac1fcc"
+    },
+    {
+      "section": "2.3.5",
+      "title": "Endnotes",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/13659f75-6a69-4a5f-8e03-5f9bced90faa"
+    },
+    {
+      "section": "2.5.6",
+      "title": "FibRgFcLcb97",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/0c9df81f-98d0-454e-ad84-b612cd05b1a4"
+    },
+    {
+      "section": "2.5.1",
+      "title": "Fib",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/9aeaa2e7-4a45-468e-ab13-3f6193eb9394"
+    },
+    {
+      "section": "2.5.2",
+      "title": "FibBase",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/26fb6c06-4e5c-4778-ab4e-edbf26a545bb"
+    },
+    {
+      "section": "2.5.11",
+      "title": "FibRgCswNew",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/a4876d81-6ff1-485e-8655-75266ec84c07"
+    },
+    {
+      "section": "2.4.1",
+      "title": "Retrieving Text",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/01d5d8c4-cf9c-4ef9-80fd-439e763cfe01"
+    },
+    {
+      "section": "2.2.1",
+      "title": "Character Position",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/a3d44e16-7d29-46f7-bb7b-d0d8a5734f83"
+    },
+    {
+      "section": "2.5.4",
+      "title": "FibRgLw97",
+      "url": "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/37713d3c-a0c8-40f5-821f-bc9622c7de48"
+    }
+  ],
+  "spec_constraints": {
+    "association_basis": "Ordered reference and text ranges; dataword is numberingflag, never targetID. Positionalpairing is inferred from parallel reference/text structure and must be qualification-checked; reject cardinality mismatch rather than zip-truncate.",
+    "conformance_boundary": "CFSpec character properties absent in currentreader; table-declared links can be exposed with explicit property-validation unavailable, not complete MS-DOC auto-reference validation.",
+    "legacy_profile_gap": "Existing _spans reads six unsigned words and advances through reserved3. Modern97 counts are signed nonnegative andreserved3 MUST0. Strictmetadata validation is separate from historicalstringbehavior; do not silently repairdefaultparser.",
+    "note_text": "No data; textCP count=cb/4; first count\u22122 values startnotes. Penultimate=ccpFtn/Edn\u22121; preceding range endsCR; lastCP undefined. All PLC CPs ascending; no duplicateCPs for these types.",
+    "references": "PLC data2B each; count=(cb\u22124)/6 integral. Usable reference CPs unique, main0<=CP<ccpText; final CP semantically ignored. Data0 meanscustom; nonzeroauto requires raw0x02+CFSpec.",
+    "story_offsets": "Footnotes begin aftermain; endnotes aftercomments. Endnote base=ccpText+ccpFtn+ccpHdd+ccpAtn. reserved3 MUST0 andignored; strictnewcapture gateszero ratherthan changing existing_spans/defaulttext.",
+    "units": "CP selects16-bit Unicode units for uncompressed pieces,8-bit encoded units for compressed pieces. Use pieces and original sourceCP, not Pythonlen or cleaned string offsets.",
+    "version_gate": "Existing parser only nfib>=C1; newcapture must validate counted FIB and effective version including nFibNew. Initial C1/cswNew0 restrictiveprofile avoids unqualified extensions; no guessed offsets."
+  }
+}

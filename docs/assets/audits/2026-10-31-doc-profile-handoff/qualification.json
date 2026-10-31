@@ -1,0 +1,18 @@
+{
+  "stage": "J204",
+  "source_code_unchanged_from": "b8e41f96940063bf27c4b416983433158e76062a",
+  "source_config_count": 757,
+  "source_config_exact": true,
+  "scope": "Documentation-only measured DOCheader corpusprofile and nextimplementation contract; no parser/newraw/store/paid/prod actions",
+  "plan_counts": {
+    "total": 74,
+    "complete": 39,
+    "not_applicable": 6,
+    "applicable_open": 29
+  },
+  "header_inventory_handoff_sha256": "341718e981dadd819bb762de3521a511fd04070f47f25f03c974b3ee2f963433",
+  "compact_report_external": "out/corpus/doc-note-header-inventory/compact.json",
+  "compact_report_sha256": "628bc3eaf175444520a968fa5c0db8125f62e26c79cf26c99e5d632ac364c71c",
+  "known_limits": "FIBheaders only; no PLCFcontent/CP-link/CFSpec/legalvalidation; 0endnote-positive naturalfiles; no fabricatedlabels/provenance",
+  "reader_runtime_release": "J203b8e41f96 exactCI+actualrelay verified check-3.json"
+}

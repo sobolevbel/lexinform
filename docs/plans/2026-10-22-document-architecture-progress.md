@@ -9469,3 +9469,46 @@ DA7.5/other program tasks остаются partial; remaining source families/ki
 [actual-state proof](../assets/audits/2026-10-31-content-source-runtime/actual-state-proof.json),
 [recipe](../assets/audits/2026-10-31-content-source-runtime/recipe.json),
 [J202 exact CI/relay](../assets/audits/2026-10-31-projection-witness-reader/release.json).
+
+
+<a id="j204"></a>
+
+## J204 — corpus DOC profile and reproducible next-step handoff
+
+J203 exact CI/actual relay подтверждён. Native source capture/known-only recovery не заменяет
+natural delivery/legal acceptance и не закрывает остальные purpose/kind profiles.
+
+Сохранены результаты одного bounded DOC FIB-header pass: J121 manifest417cases включает404
+DOC path associations и13XML исключённых здесь. DOC paths имеют246uniqueSHA;245OLE/402paths
+все baseC1/effective0112,count183,cswNew5. Strict effective97-only candidates0: такой первый
+producer был бы мёртвым на этом корпусе.69unique/117paths объявляют377footnotes,max21/file;
+endnote declarations0.2paths разделяют1non-OLE SHA. Старое402 — OLE path observations,
+не unique raw inputs. INDEX и404inputSHA проверены до/после, sourcefiles unchanged.
+
+Header pass ограничен counted FIB<=1630B плюс OLE directory/FAT metadata; текст/Table payload
+не декодировались. Это declarations/profile coverage, не доказательство CP/link/CFSpec/CR
+или юридической применимости. Big metadata reports/driver остаются externalout с hashes;
+versioned compactsummary/handoff/specsources и corrected<=120word contract доступны рядом.
+Microsoft profile chain2007→2003→2002→2000→97prefix подтверждён primary sources.
+
+Следующий DA3.3 срез: compatible reader для bounded PLCF-declared CP links effective2007
+countedFIB97prefix, затем отдельный opt-in same-pass producer с corpus parity. Ref/Txt tables
+и исходные16-bitCP units, numbering flags, N+2Txt layout; CFSpec/CHPX и emitted/Python/OLE
+mapping явно unknown.69footnote-bearing entries позволяют naturalpositive qualification;
+endnote и non-BMP evidence не выдумываются. Default text/selection/fingerprint change требует
+отдельной corpus qualification и не объединяется с provenance transfer.
+
+Новые код/парсер/backend/rawarchive не добавлены. Source/config757pins exact J203; повторный
+full gate для docs-only не нужен, staged archive docs gate перед commit. Из actual plan
+пересчитано74tasks:39complete,6explicitNA,29applicableopen. Цель не выполнена и не сужена.
+Все drafts/out/stashes сохранены. При5%remaining завершить ближайший verifiedstage и поставить
+goal paused по explicit user reserve rule; backenddecision/human labels не запрашиваются вновь.
+
+[Profile summary](../assets/audits/2026-10-31-doc-profile-handoff/summary.json),
+[header handoff](../assets/audits/2026-10-31-doc-profile-handoff/handoff.json),
+[report](../assets/audits/2026-10-31-doc-profile-handoff/report.md),
+[corrected2007 contract](../assets/audits/2026-10-31-doc-profile-handoff/contract2007.md),
+[primary sources](../assets/audits/2026-10-31-doc-profile-handoff/sources.json),
+[2007 source delta](../assets/audits/2026-10-31-doc-profile-handoff/sources-delta.json),
+[qualification](../assets/audits/2026-10-31-doc-profile-handoff/qualification.json),
+[J203 exact CI/relay](../assets/audits/2026-10-31-content-source-runtime/release.json).
