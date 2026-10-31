@@ -634,7 +634,7 @@ RU = Labels(
         " взято в канал — {taken}{cost}."
     ),
     digest_month_cost=", модель обошлась в ≈ {cost}",
-    digest_support="Канал бесплатный и без рекламы. Если он вам полезен — можно поддержать:",
+    digest_support="Если хотите и считаете это важным — можно поддержать канал:",
     digest_and_more="и ещё {} — смотрите в канале",
     digest_support_coffee="Buy me a coffee",
     digest_support_sponsor="GitHub Sponsors",
@@ -1382,7 +1382,7 @@ EN = Labels(
         " taken into the channel — {taken}{cost}."
     ),
     digest_month_cost=", the model cost ≈ {cost}",
-    digest_support="The channel is free and carries no advertising. If it helps you:",
+    digest_support="If you'd like to and think it matters, you can support the channel:",
     digest_and_more="and {} more — see the channel",
     digest_support_coffee="Buy me a coffee",
     digest_support_sponsor="GitHub Sponsors",
