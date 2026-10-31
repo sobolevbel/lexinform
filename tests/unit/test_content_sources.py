@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Never
 
 import pytest
+from tools.computation_doctor import audit
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.input_receipts import primary_input_receipt
@@ -211,6 +212,29 @@ def test_input_cleanup_and_public_restore_preserve_the_metadata_chain(case: Case
     assert original.state == "known"
     case.repo.restore(case.repo.dump())
     assert case.inspect() == original
+
+
+@pytest.mark.parametrize("invalid_usage", [False, True])
+def test_frozen_projection_accepts_only_existing_paid_or_zero_accounting_policy(
+    case: Case, invalid_usage: bool
+) -> None:
+    assert case.bill.analysis is not None, "the frozen fixture has its primary paid record"
+    values = {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0,
+    }
+    if invalid_usage:
+        values["input_tokens"] = 7
+    record = case.bill.analysis.model_copy(update=values)
+    bill_id, change_id = snapshots(
+        case.repo, case.bill.model_copy(update={"analysis": record}), case.change
+    )
+    result = inspect_primary_content_sources(
+        case.repo, bill_snapshot_id=bill_id, change_snapshot_id=change_id
+    )
+    assert result.state == ("invalid" if invalid_usage else "known")
 
 
 def test_existing_unstamped_primary_intent_stays_unknown_and_preserves_frozen_payload(
@@ -532,3 +556,78 @@ def test_storage_and_control_flow_errors_are_not_suppressed(
     with pytest.raises(type(error)) as caught:
         case.inspect()
     assert caught.value is error
+
+
+def projected_receipt(case: Case, *, projected_generation: int = 19) -> ResultApplication:
+    original = case.repo.list_result_applications(10, "3039")[0]
+    return original.model_copy(
+        update={"generation": 3, "projected_generation": projected_generation}
+    )
+
+
+@pytest.mark.parametrize("wrong_target", [False, True])
+def test_explicit_future_projection_witness_matches_only_its_actual_target(
+    case: Case, wrong_target: bool
+) -> None:
+    application = projected_receipt(case, projected_generation=20 if wrong_target else 19)
+    case.repo.save_result_application(application)
+    bill_id, change_id = snapshots(
+        case.repo, case.bill.model_copy(update={"analysis_generation": 19}), case.change
+    )
+    before = case.repo.dump()
+    result = inspect_primary_content_sources(
+        case.repo, bill_snapshot_id=bill_id, change_snapshot_id=change_id
+    )
+    assert result.state == ("unknown" if wrong_target else "known")
+    assert case.repo.dump() == before
+    case.repo.restore(before)
+    assert (
+        inspect_primary_content_sources(
+            case.repo, bill_snapshot_id=bill_id, change_snapshot_id=change_id
+        )
+        == result
+    )
+    assert case.repo.get_computation_result(case.paid.result_id) == case.paid
+
+
+def test_old_application_cannot_be_enriched_with_a_later_projection_witness(case: Case) -> None:
+    old = case.repo.list_result_applications(10, "3039")[0]
+    before = case.repo.dump()
+    with pytest.raises(ValueError, match="immutable"):
+        case.repo.save_result_application(old.model_copy(update={"projected_generation": 19}))
+    assert case.repo.dump() == before
+    assert case.repo.list_result_applications(10, "3039")[0] == old
+
+
+def test_projection_witness_is_rejected_for_a_retained_secondary_result(case: Case) -> None:
+    secondary = retained_result("amendments")
+    case.repo.save_computation_result(secondary)
+    application = projected_receipt(case).model_copy(update={"result_id": secondary.result_id})
+    before = case.repo.dump()
+    with pytest.raises(ValueError, match="validated primary"):
+        case.repo.save_result_application(application)
+    assert case.repo.dump() == before
+
+
+def test_known_projection_witness_corruption_is_shared_by_restore_and_doctor(case: Case) -> None:
+    application = projected_receipt(case)
+    case.repo.save_result_application(application)
+    before = case.repo.dump()
+    case.execute(
+        "UPDATE result_applications SET application_json=json_set(application_json,'$.generation',4) WHERE generation=3"
+    )
+    audit_path = case.path.with_name("projection-doctor.sqlite")
+    with (
+        closing(sqlite3.connect(case.path)) as source,
+        closing(sqlite3.connect(audit_path)) as copy,
+    ):
+        source.backup(copy)
+    report = audit(audit_path)
+    assert any(item["code"] == "application_columns_mismatch" for item in report["findings"])
+    with closing(SqliteBillRepository(":memory:")) as target:
+        target.migrate()
+        target.restore(before)
+        retained = target.dump()
+        with pytest.raises(ValueError, match="immutable identity"):
+            target.restore(case.repo.dump())
+        assert target.dump() == retained

@@ -262,6 +262,9 @@ class ResultApplication(BaseModel):
     term: int
     number: str
     generation: int | None
+    projected_generation: int | None = Field(
+        default=None, strict=True, ge=0, exclude_if=lambda value: value is None
+    )
     target: ResultApplicationTarget | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -274,6 +277,13 @@ class ResultApplication(BaseModel):
 
     @model_validator(mode="after")
     def application_phase(self) -> Self:
+        if self.projected_generation is not None and (
+            self.phase != "projection"
+            or self.generation is None
+            or self.target is not None
+            or self.outcome != "applied"
+        ):
+            raise ValueError("projected generation requires an applied primary projection")
         if self.target is None:
             if self.generation is None:
                 raise ValueError("a primary receipt requires its original generation")

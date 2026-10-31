@@ -9366,3 +9366,49 @@ actual reader deployment. No backfill/newstorage/backenddecision/paid/prod proce
 [actual-state proof](../assets/audits/2026-10-31-scoped-content-source-reader/actual-state-proof.json),
 [recipe](../assets/audits/2026-10-31-scoped-content-source-reader/recipe.json),
 [J200 exact CI/relay](../assets/audits/2026-10-30-primary-queue-witness/release.json).
+
+
+<a id="j202"></a>
+
+## J202 — explicit post-projection witness reader and accounting equivalence
+
+Actual native World выявил два разных смысла generation: immutable paid/item и receipt
+хранят input/pre-apply generation; save_analysis может изменить counter до frozen Bill.
+Арифметика +1 или reinterpretation старых receipts не используются. ResultApplication теперь
+читает optional omitted-None projected_generation (strict integer>=0), только applied primary
+projection без explicit target. Original generation/observed/key/JSON при None прежние.
+Producer нового witness выключен; будущий apply должен сохранить реально прочитанный selected
+после save в той же transaction, не дополняя старые immutable application keys.
+
+Source lookup проверяет exact projected target при наличии witness, иначе старый exact target.
+Column/JSON/retained validated primary checks общие для save/scratch restore/doctor. Original
+item.meta.generation==paid.generation остаётся строгим. Indexed result+owner query ограничен2
+rows, не сканирует owner history. Эквивалентные applied receipts того же immutable result,
+owner и effective target подтверждают одну origin; они не делают storedpositive неоднозначным.
+Public saved+bound/get/restore/doctor RED старого8-кандидата и GREEN9 сохранены. Uniqueness
+SourceObservation admission — отдельная политика, здесь не ослаблена.
+
+Второй фикс: primary_record_matches уже разрешает paid accounting или четыре нуля reuse;
+дополнительная full equality ошибочно возвращала nonfresh_projection. Теперь только четыре
+PRIMARY_USAGE_FIELDS исключены из extra equality; source URL/kind/selection/check time/text/
+law/revision и прочие поля exact. Native original39 RED→GREEN показывает честный переход к
+UNKNOWN consumed_projection_missing; KNOWN без нового post-save witness не заявляется.
+Wrong nonzero usage invalid, changed observation unknown; snapshots/paid не редактировались.
+
+126author/126independent isolatedpeer green, source9 exact. Ошибочный reviewer-env запуск
+с PRIMARY editable imports сохранён как INVALID, не candidate defect; повторный explicit
+candidate-v2 PYTHONPATH/cwd подтверждён. Cachedactual8022 isolated restore/dump/487typedBills/
+3doctors exactf232baseline,4oldworkwarnings прежние. Это legacy compatibility; будущие positive
+witness fixtures synthetic. Runtime WIP сохранён отдельно и не вошёл в этот stage.
+
+Final gate:7684tests/271.537s/92%,mypy671/Ruff739;756source/config pins exact. J201 exact
+CI/actualrelay verified beforepush. Staged archive docs gate перед commit. J203 producer и
+runtime push ждут actual deployment этого reader; noDDL/newstorage/backfill/paid/prod runs.
+
+[Qualification](../assets/audits/2026-10-31-projection-witness-reader/qualification.json),
+[peer](../assets/audits/2026-10-31-projection-witness-reader/peer-closure.json),
+[integration](../assets/audits/2026-10-31-projection-witness-reader/integration.json),
+[query plan](../assets/audits/2026-10-31-projection-witness-reader/query-plan.json),
+[actual-state proof](../assets/audits/2026-10-31-projection-witness-reader/actual-state-proof.json),
+[recipe](../assets/audits/2026-10-31-projection-witness-reader/recipe.json),
+[J201 exact CI/relay](../assets/audits/2026-10-31-scoped-content-source-reader/release.json).

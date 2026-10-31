@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from lexinform.adapters.content_source_refs import validate_projected_application
 from lexinform.adapters.input_receipts import input_snapshot_checks
 from lexinform.adapters.primary_projections import primary_projection_issues
 from lexinform.models import ComputationResult, ResultApplicabilityObservation, ResultApplication
@@ -90,6 +91,7 @@ class ComputationAudit:
             self.counts["application_rows"] += 1
             try:
                 application = ResultApplication.model_validate_json(row["application_json"])
+                validate_projected_application(connection, application)
             except ValueError:
                 self.issue("invalid_result_application", ref)
                 continue

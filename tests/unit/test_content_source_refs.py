@@ -2,6 +2,7 @@ import hashlib
 import json
 import sqlite3
 from contextlib import closing
+from dataclasses import replace
 from datetime import timedelta
 from typing import Any
 
@@ -234,3 +235,25 @@ def test_public_inspection_labels_the_primary_context_scope_explicitly(case: Cas
         .text
     )
     assert "primary analysis context; amendment source unavailable" in result
+
+
+def test_stored_source_survives_equivalent_poststate_projection_receipts(case: Case) -> None:
+    bill = case.bill.model_copy(update={"analysis_generation": 19})
+    frozen_bill = ContentSnapshot(kind="bill", payload_json=bill.model_dump_json())
+    case.repo.save_content_snapshot(frozen_bill)
+    frozen = replace(case, bill=bill, bill_id=frozen_bill.snapshot_id)
+    original = case.repo.list_result_applications(10, "3039")[0]
+    first = original.model_copy(update={"generation": 3, "projected_generation": 19})
+    case.repo.save_result_application(first)
+    version = content(frozen)
+    case.repo.save_content_version(version)
+    case.repo.bind_publication_content(version.root_publication_id, version.content_id)
+    assert case.repo.get_content_version(version.content_id) == version
+    case.repo.save_result_application(first.model_copy(update={"generation": 19}))
+    assert case.repo.get_content_version(version.content_id) == version
+    before = case.repo.dump()
+    case.repo.restore(before)
+    assert case.repo.get_publication_content(version.root_publication_id) == version
+    assert case.repo.dump() == before
+    assert case.repo.get_computation_result(case.paid.result_id) == case.paid
+    assert diagnose(case)["summary"]["errors"] == 0

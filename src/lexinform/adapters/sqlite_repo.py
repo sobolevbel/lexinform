@@ -20,6 +20,8 @@ from pydantic import TypeAdapter
 from lexinform.adapters.content_source_refs import (
     ContentSourceRows,
     validate_content_sources,
+    validate_projected_application,
+    validate_projected_applications,
     verify_content_source,
 )
 from lexinform.adapters.document_work import (
@@ -1277,6 +1279,7 @@ class SqliteBillRepository:
             validate_source_omissions(scratch)
             validate_catalog_attempts(scratch)
             validate_input_snapshots(scratch)
+            validate_projected_applications(scratch)
             validate_content_sources(scratch)
         finally:
             scratch.close()
@@ -2866,6 +2869,7 @@ class SqliteBillRepository:
         ]
 
     def save_result_application(self, application: ResultApplication) -> None:
+        validate_projected_application(self._conn, application)
         identity = (
             application.result_id,
             application.term,

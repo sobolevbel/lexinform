@@ -1,0 +1,8 @@
+{
+  "query": "SELECT * FROM result_applications WHERE result_id=? AND term=? AND number=? AND generation IS NOT NULL AND phase='projection' AND COALESCE(json_extract(application_json,'$.projected_generation'),generation)=? ORDER BY id LIMIT 2",
+  "plan": [
+    "SEARCH result_applications USING INDEX ux_result_application_generation (result_id=? AND term=? AND number=? AND generation>?)",
+    "USE TEMP B-TREE FOR ORDER BY"
+  ],
+  "bound": "known immutable result+owner prefix; up to2 exact equivalent attestations, no global application history scan"
+}

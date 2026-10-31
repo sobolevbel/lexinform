@@ -19,6 +19,7 @@ from lexinform.models import (
     StatusChange,
     amendments_stage,
 )
+from lexinform.models.primary_projections import PRIMARY_USAGE_FIELDS
 from lexinform.primary_projections import primary_record_matches
 
 SOURCE_CONTEXT_INVALID = "source_context_invalid"
@@ -102,7 +103,9 @@ def _inspect(
         return ContentSourceAudit("invalid", "result_kind")
     if not primary_record_matches(record, paid):
         return ContentSourceAudit("invalid", "paid_record_mismatch")
-    if record != paid.record:
+    if record.model_dump(exclude=set(PRIMARY_USAGE_FIELDS)) != paid.record.model_dump(
+        exclude=set(PRIMARY_USAGE_FIELDS)
+    ):
         return ContentSourceAudit("unknown", "nonfresh_projection")
     if paid.input_binding is None or paid.request_sha256 is None:
         return ContentSourceAudit("unknown", "input_binding_missing")

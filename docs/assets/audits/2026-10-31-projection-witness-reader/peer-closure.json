@@ -1,0 +1,33 @@
+{
+  "blockers": [],
+  "decision": "independent_reader9_v2_CLOSED",
+  "focused": 126,
+  "focused_log_sha256": "902d6840ba662e31252d6337f789f7d9fd5ed5643f2322b550c0da21b30b73c5",
+  "handoff_sha256": "27cfb248180e24527548e4d4aea7fe308c9a06ce7cbb0ae0935060a6a9838e07",
+  "imports": "explicit candidate-v2 PYTHONPATH/cwd; no PRIMARY/runtimeWIPimports",
+  "invalid_env_attempt": "Preserved invalid-env-focused.log; reviewerwrapper omittedPYTHONPATH andimportededitablePRIMARY. Notcandidatefinding, notcountedasvalidrun.",
+  "operations": "Readonlysource; onevalidisolated126suite+samepublicRED/GREEN stabilitycontrol, no full/raw/network/paid/prod",
+  "patch_sha256": "9924e08d91642db91442bb5cf5044d727576e5dab33cc8c01ad63287dbd7f417",
+  "pins_before_after_exact": true,
+  "review": [
+    "OldNone JSON/identity andoriginalgeneration/observed fieldsunchanged; presence narrowvalidatedprimaryapplied/noexplicit-target.",
+    "Exactposttarget/newwitness otherwiselegacyexact; equivalent sameimmutablepaidresult+owner+post appliedwitnesses redundantlycorroborateinput, no +1/paidgen/anyreceipt/newestfallback.",
+    "SourceObservation uniqueness separate, originalmeta.generation==paid.generation strict.",
+    "Sharedprimaryparent validation save/scratchrestore/doctor; existingNone neverupgraded.",
+    "PRIMARY_USAGE_FIELDSpolicy stillguardedbyprimary_record_matches paid-or-fourzeros; nonusageobservations exact.",
+    "ProducerOFF/nativeunknown truthful; futurewitnesspositive syntheticonly; J203 requires actualreaderdeploy."
+  ],
+  "source_pins": {
+    "src/lexinform/adapters/content_source_refs.py": "8858d9de2b1801f59313e15784437079c55cf95ec6a35458040413e1548bbe0b",
+    "src/lexinform/adapters/sqlite_repo.py": "56af3eaadf074587a25b581e6b745910dbf17adbc08713271b0bffc132ca84c1",
+    "src/lexinform/content_sources.py": "9c79963d8666413522cb79c3ff5bdc2c30eb3266b2fecb85042e72a2f00ca08e",
+    "src/lexinform/models/computations.py": "325df88924fe8096236f3deff5f11e74cac9fe69d3870f0578bbe468049b0143",
+    "tests/scenario/test_native_content_sources.py": "1395e938f0d29ac3855520e55a47914ddb4f097a71c9a6d442283dc160adeb6c",
+    "tests/unit/test_content_source_refs.py": "d081c954832109a6913fbab9b31567d829a48da3cb1563462de40fda9c6b625a",
+    "tests/unit/test_content_sources.py": "72e83b8a279063c42385cffc3129bcaf5126e4b7e429a3725f6d06e75edf3397",
+    "tests/unit/test_projected_generation_receipt.py": "ce689c56c56610f7c3b61578d4300b1218852678ed6db490e167ad575c31dd12",
+    "tools/computation_doctor.py": "edaa93b03595ec2a22e430bf7ef3fdb5de92b22c2993e1cec75d6847874487bb"
+  },
+  "stability_after": "f1dff592a90bc4772a8eeb77795e2ffd09c5c962f8513d7bf7159e01324ea109",
+  "stability_before": "e64d2fbbaa8316cb780785fd74d702339609fd9ab2e245881e9eeb4bbeafe2c4"
+}

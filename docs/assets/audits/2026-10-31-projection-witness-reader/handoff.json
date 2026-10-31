@@ -1,0 +1,51 @@
+{
+  "base": "39c4ae3e42fdd2adce421ccb0046c4f6de002149",
+  "candidate": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/j202-projection-witness-reader/candidate-v2",
+  "reader_paths": {
+    "src/lexinform/models/computations.py": "325df88924fe8096236f3deff5f11e74cac9fe69d3870f0578bbe468049b0143",
+    "src/lexinform/content_sources.py": "9c79963d8666413522cb79c3ff5bdc2c30eb3266b2fecb85042e72a2f00ca08e",
+    "src/lexinform/adapters/content_source_refs.py": "8858d9de2b1801f59313e15784437079c55cf95ec6a35458040413e1548bbe0b",
+    "src/lexinform/adapters/sqlite_repo.py": "56af3eaadf074587a25b581e6b745910dbf17adbc08713271b0bffc132ca84c1",
+    "tools/computation_doctor.py": "edaa93b03595ec2a22e430bf7ef3fdb5de92b22c2993e1cec75d6847874487bb",
+    "tests/unit/test_content_sources.py": "72e83b8a279063c42385cffc3129bcaf5126e4b7e429a3725f6d06e75edf3397",
+    "tests/unit/test_projected_generation_receipt.py": "ce689c56c56610f7c3b61578d4300b1218852678ed6db490e167ad575c31dd12",
+    "tests/scenario/test_native_content_sources.py": "1395e938f0d29ac3855520e55a47914ddb4f097a71c9a6d442283dc160adeb6c",
+    "tests/unit/test_content_source_refs.py": "d081c954832109a6913fbab9b31567d829a48da3cb1563462de40fda9c6b625a"
+  },
+  "patch": "reader-v2.patch",
+  "patch_sha256": "9924e08d91642db91442bb5cf5044d727576e5dab33cc8c01ad63287dbd7f417",
+  "supersedes": "handoff.json/reader.patch old8 kept immutable with reproduced stabilityRED",
+  "focused": {
+    "passed": 126,
+    "failed": 0,
+    "scope": "isolated archive39+exact9 sourcefiles; all imports insidecandidate-v2"
+  },
+  "strict": "9files GREEN",
+  "ruff": "9files GREEN/check+format",
+  "proofs": {
+    "final-ruff-v2.log": "29f20c3ee57f1f120dc768e38618eb81e56e89f005f4c1237d5b8be6d18d302b",
+    "query-plan-v2.json": "9f643788ac01320fb20e6d790868a00eb4c52828d320fa3eeb8b85cc89e1b918",
+    "stability-green.xml": "ff2b681b83fb1207c10ea8e6db0d730bd797e9b8e68d7ba0730926cd8f2b2b12",
+    "stability-red.log": "34fee1afad8537b829274371b14ff691e7fc94ddd41d4fdbf6f6c6c06ecdfc0f",
+    "final-focused-v2.xml": "69961889db8b5943d50faaacb3e8938dab63c33c8890f7567c869bdb959e49a5",
+    "stability-green.log": "eb27a136c18598aedc0e4f11e6893b614a04335a9faf3ec03433325d777e2663",
+    "final-mypy-v2.log": "46984ca20bf69f7b14ec1fd9bd82101d56a4e109e68f016fd2a04f22481b09b3",
+    "stability-red.xml": "95bc676fcf66d57aaaa0ad299d8c6c4c7075e731eb244642280ba8ee464a6f6b",
+    "final-focused-v2.log": "0860aa696823117a9e1eea6fbe9c18a32cd798589dca38f7e5855c5116dce316"
+  },
+  "semantics": {
+    "producer": "OFF; no projected_generation capture or enrichment",
+    "old_none": "omitted; original key/JSON exact",
+    "new_witness": "only validated retained primary applied receipt; original request/item generation stillstrict",
+    "target": "exact projected_generation IFpresent, otherwise original legacy generation; never +1/newest/arbitraryreceipt",
+    "ambiguity": "SourceObservation uniqueness remains unchanged; equivalent result+owner+exact effective posttarget/applied/noexplicit-target receipts are redundant corroboration, validated for up to2 stable rows. Original paidinput generation remains strict.",
+    "known_fixture": "explicit synthetic futurewitness only; actual native remains UNKNOWN consumed_projection_missing",
+    "usage": "only existing paid-or-fourzero policy; every nonusage observationfield exact",
+    "rollback": "scratch validation before target touch; doctor shares validator",
+    "index": "knownresult+owner existing partialindex prefix, LIMIT2, noDDL",
+    "stored_history": "public saved+bound positive survives later sameTrue equivalent receipt, exact get/restore/doctor; RED old8 preserved then GREEN"
+  },
+  "runtime_wip_preserved": true,
+  "rollback_barrier": "J203 producer/runtime push requires actual deployment of this exact compatible reader",
+  "next_producer": "apply_analysis records actual selected.afterSave generation while keeping before generation/observed generation; immutable olderNone keys mustnever be enriched"
+}

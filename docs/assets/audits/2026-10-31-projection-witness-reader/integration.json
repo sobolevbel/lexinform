@@ -1,0 +1,9 @@
+{
+  "stage": "J202",
+  "base": "39c4ae3e42fdd2adce421ccb0046c4f6de002149",
+  "reader9_exact": true,
+  "other_source_config_exact": true,
+  "scope": "Optional projected_generation primaryprojection witness reader and normalusage equivalence only; no producer/runtime/container/service changes. OldNone originalreceipt identities/generation/observed unchanged. Exacttarget explicitpostwhenpresent/legacyotherwise; equivalentcorrob bounded2 stable rows; no originalinputgen relaxation.",
+  "native_limit": "Existingnative realpaidchain stillUNKNOWN until explicitpost-save witness producer J203; positivewitness fixtures synthetic.",
+  "barrier": "J203 writerpush requires exactactualdeployed J202reader"
+}

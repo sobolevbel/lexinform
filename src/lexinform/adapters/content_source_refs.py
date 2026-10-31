@@ -5,6 +5,7 @@ from datetime import datetime
 
 from lexinform.content_sources import verify_primary_content_source
 from lexinform.models import (
+    AnalysisRecord,
     BatchProvider,
     BatchResult,
     Bill,
@@ -66,15 +67,12 @@ class ContentSourceRows:
         row = self._query(
             "SELECT i.*, b.provider AS batch_provider, r.result_id AS paid_id,"
             " r.provider AS paid_provider, r.batch_id AS paid_batch, r.custom_id AS paid_custom,"
-            " r.term AS paid_term, r.number AS paid_number, r.result_json AS paid_json,"
-            " a.application_json AS projection_json"
+            " r.term AS paid_term, r.number AS paid_number, r.result_json AS paid_json"
             " FROM llm_batch_items i JOIN llm_batches b ON b.batch_id=i.batch_id"
             " LEFT JOIN computation_results r ON r.provider=? AND r.batch_id=i.batch_id"
-            " AND r.custom_id=i.custom_id LEFT JOIN result_applications a"
-            " ON a.result_id=r.result_id AND a.term=r.term AND a.number=r.number"
-            " AND a.generation=? AND a.phase='projection' WHERE i.batch_id=? AND i.custom_id=?"
+            " AND r.custom_id=i.custom_id WHERE i.batch_id=? AND i.custom_id=?"
             " AND i.consumed_at IS NOT NULL",
-            (provider, generation, batch_id, custom_id),
+            (provider, batch_id, custom_id),
         ).fetchone()
         if row is None:
             return None
@@ -100,18 +98,47 @@ class ContentSourceRows:
             )
         ):
             raise ValueError("retained computation columns disagree with its original identity")
-        if row["projection_json"] is None:
+        applications = self._query(
+            "SELECT * FROM result_applications WHERE result_id=? AND term=? AND number=?"
+            " AND generation IS NOT NULL AND phase='projection'"
+            " AND COALESCE(json_extract(application_json,'$.projected_generation'),generation)=?"
+            " ORDER BY id LIMIT 2",
+            (result.result_id, result.term, result.number, generation),
+        ).fetchall()
+        if not applications:
             return None
-        application = ResultApplication.model_validate_json(row["projection_json"])
-        if (
-            application.result_id,
-            application.term,
-            application.number,
-            application.generation,
-            application.phase,
-            application.target,
-        ) != (result.result_id, result.term, result.number, generation, "projection", None):
-            raise ValueError("frozen primary target differs from its projection receipt")
+        # Distinct input generations can corroborate the same frozen post-state.
+        for stored in applications:
+            application = ResultApplication.model_validate_json(stored["application_json"])
+            validate_projected_application(self._connection, application)
+            if (
+                application.result_id,
+                application.term,
+                application.number,
+                application.generation,
+                application.phase,
+            ) != tuple(
+                stored[key] for key in ("result_id", "term", "number", "generation", "phase")
+            ) or (
+                application.result_id,
+                application.term,
+                application.number,
+                application.projected_generation
+                if application.projected_generation is not None
+                else application.generation,
+                application.phase,
+                application.target,
+                application.outcome,
+            ) != (
+                result.result_id,
+                result.term,
+                result.number,
+                generation,
+                "projection",
+                None,
+                "applied",
+            ):
+                raise ValueError("frozen primary target differs from its projection receipt")
         return _row_to_llm_batch_item(row)
 
     def get_document_selection(self, selection_id: str) -> DocumentSelectionRecord | None:
@@ -240,3 +267,55 @@ def validate_content_sources(connection: sqlite3.Connection) -> None:
         if version.content_id != row[0]:
             raise ValueError("scoped content columns differ from its recorded identity")
         verify_content_source(connection, version)
+
+
+def validate_projected_application(
+    connection: sqlite3.Connection, application: ResultApplication
+) -> None:
+    if application.projected_generation is None:
+        return
+    application = ResultApplication.model_validate_json(application.model_dump_json())
+    cursor = connection.cursor()
+    cursor.row_factory = sqlite3.Row
+    row = cursor.execute(
+        "SELECT * FROM computation_results WHERE result_id=?", (application.result_id,)
+    ).fetchone()
+    if row is None:
+        raise ValueError("a projected generation requires its retained primary result")
+    result = ComputationResult.model_validate_json(row["result_json"])
+    if (
+        result.result_id,
+        result.provider,
+        result.batch_id,
+        result.custom_id,
+        result.term,
+        result.number,
+    ) != tuple(
+        row[key] for key in ("result_id", "provider", "batch_id", "custom_id", "term", "number")
+    ):
+        raise ValueError("projected primary result columns disagree with its identity")
+    if (
+        result.purpose not in ("analysis", "reanalysis")
+        or result.validation != "validated"
+        or not isinstance(result.record, AnalysisRecord)
+    ):
+        raise ValueError("only a validated primary projection carries its resulting generation")
+
+
+def validate_projected_applications(connection: sqlite3.Connection) -> None:
+    cursor = connection.cursor()
+    cursor.row_factory = sqlite3.Row
+    for row in cursor.execute(
+        "SELECT * FROM result_applications"
+        " WHERE json_extract(application_json,'$.projected_generation') IS NOT NULL"
+    ):
+        application = ResultApplication.model_validate_json(row["application_json"])
+        if (
+            application.result_id,
+            application.term,
+            application.number,
+            application.generation,
+            application.phase,
+        ) != tuple(row[key] for key in ("result_id", "term", "number", "generation", "phase")):
+            raise ValueError("projected application columns disagree with its immutable identity")
+        validate_projected_application(connection, application)
