@@ -1,5 +1,10 @@
 """Preserve single-message editorial history without using a current Bill as historical context."""
 
+from lexinform.content_sources import (
+    SourceContextInvalidError,
+    inspect_primary_content_sources,
+    supported_source_context,
+)
 from lexinform.models import (
     Bill,
     ContentSnapshot,
@@ -45,6 +50,7 @@ def record_publication_content(
     *,
     formatter_version: str | None = None,
     language: str | None = None,
+    source_origin: Publication | None = None,
 ) -> ContentVersion | None:
     if publication.id is None:
         raise ValueError("Editorial history requires a saved physical publication")
@@ -54,6 +60,53 @@ def record_publication_content(
         if current is not None and current.delivery is not None:
             repo.bind_publication_content(publication.id, existing.content_id)
         return existing
+    prepared = prepare_publication_content(
+        repo, clock, publication, formatter_version=formatter_version, language=language
+    )
+    if prepared is None:
+        return None
+    version, snapshots = prepared
+    with repo.atomic():
+        for snapshot in snapshots:
+            repo.save_content_snapshot(snapshot)
+        if (
+            source_origin is not None
+            and source_origin.id == publication.id
+            and source_origin.status is PublicationStatus.QUEUED
+            and source_origin.attempts == 0
+            and source_origin.delivery is not None
+            and not source_origin.delivery.rendered_text
+            and supported_source_context(source_origin)
+            and supported_source_context(publication)
+        ):
+            audit = inspect_primary_content_sources(
+                repo,
+                bill_snapshot_id=version.bill_snapshot_id,
+                change_snapshot_id=version.change_snapshot_id,
+            )
+            if audit.state == "invalid":
+                raise SourceContextInvalidError("Frozen primary source context is invalid")
+            version = version.model_copy(
+                update={
+                    "source_scope": audit.scope,
+                    "source_observation_ids": audit.source_observation_ids,
+                }
+            )
+        repo.save_content_version(version)
+        repo.bind_publication_content(publication.id, version.content_id)
+    return version
+
+
+def prepare_publication_content(
+    repo: BillRepository,
+    clock: Clock,
+    publication: Publication,
+    *,
+    formatter_version: str | None = None,
+    language: str | None = None,
+) -> tuple[ContentVersion, tuple[ContentSnapshot, ...]] | None:
+    if publication.id is None:
+        raise ValueError("Editorial history requires a saved physical publication")
     plan = publication.delivery
     if (
         publication.kind not in (PublicationKind.STATUS_UPDATE, PublicationKind.AMENDMENTS_REVISION)
@@ -130,9 +183,4 @@ def record_publication_content(
         status_change_id=change.id,
         recorded_at=clock.now(),
     )
-    with repo.atomic():
-        for snapshot in (bill_snapshot, change_snapshot, plan_snapshot):
-            repo.save_content_snapshot(snapshot)
-        repo.save_content_version(version)
-        repo.bind_publication_content(publication.id, version.content_id)
-    return version
+    return version, (bill_snapshot, change_snapshot, plan_snapshot)

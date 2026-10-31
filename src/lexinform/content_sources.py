@@ -241,3 +241,38 @@ def source_context_blocked(repo: SourceContextPublicationReader, publication: Pu
         if current.kind is PublicationKind.DIGEST and current.id is not None:
             pending.extend(repo.digest_sources(current.id))
     return False
+
+
+class SourceContextInvalidError(ValueError):
+    pass
+
+
+def supported_source_context(publication: Publication) -> bool:
+    plan = publication.delivery
+    if (
+        publication.kind not in (PublicationKind.STATUS_UPDATE, PublicationKind.AMENDMENTS_REVISION)
+        or plan is None
+        or plan.destination != "direct"
+        or plan.publication_ids
+        or plan.continuation_ids
+        or plan.continuation_root is not None
+        or plan.continuation_parent is not None
+        or plan.absorbed_by is not None
+        or plan.update_group
+        or plan.sitting_group
+        or plan.digest_parts
+        or plan.digest_event_ids
+    ):
+        return False
+    try:
+        bill = Bill.model_validate_json(plan.bill_json)
+        change = StatusChange.model_validate_json(plan.change_json)
+    except ValueError:
+        return False
+    return (
+        bill.has_process
+        and (bill.term, bill.number)
+        == (publication.term, publication.number)
+        == (change.term, change.number)
+        and amendments_stage(change.new_stages) is not None
+    )

@@ -1,0 +1,12 @@
+{
+  "initial_full": "23failed/7673passed/7696total; preserved first-full.log/xml",
+  "fix_owned_paths": {
+    "tools/computation_doctor.py": "e11c4ae7005ddbe22d26c72e4e7b3d265e953bd2412619ade8ddae060b024fe1",
+    "src/lexinform/adapters/content_source_refs.py": "cbf8f6cf4d86863b7d4845a6396ee77835979dc37f8705bead62abbfc638189e",
+    "tests/unit/test_content_history_doctor.py": "19f7c226c38d9ce8c3c983fc8a9cdcab72d7a499fd6c7afca59dfc15cf8c155d",
+    "tests/scenario/test_application_targets.py": "ed696e9a121c7ff3219e2a4e6dc005d8e4e40f532ba4af73e2505f5aa6852d46",
+    "tests/scenario/test_computation_doctor.py": "1d2583afb6ef61a5fb5bf8e1cd81411bb4db79c31fb27a55c987cdff0026d103"
+  },
+  "other_initial_source_pins_exact": true,
+  "scope": "Explicitsecondary/opaque fixtures omit primary-onlypostwitness; failed-parent graphdiagnostic preserved+newdistinctwitness diagnostic; absentphysicalroot availability warning whileknownwrongowner/kind stillinvalid; frozen sourcechain retained"
+}

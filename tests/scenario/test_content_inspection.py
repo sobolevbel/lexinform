@@ -2,12 +2,14 @@ import datetime as dt
 import sqlite3
 from contextlib import closing
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 from lexinform.adapters.sqlite_repo import SCHEMA_VERSION
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import CommandOutcome, OutcomeStatus, PublicationStatus
+from lexinform.services import content_history
 from tests.scenario.test_amendments_command import published_world
 
 
@@ -105,7 +107,8 @@ def test_legacy_outcome_does_not_grow_an_empty_history_field() -> None:
 def test_corrupt_optional_history_does_not_resolve_an_unknown_delivery(
     tmp_path: Path,
 ) -> None:
-    world, original = published_world()
+    with patch.object(content_history, "supported_source_context", return_value=False):
+        world, original = published_world()
     assert original.id is not None, "the fixture stores the original publication"
     with closing(sqlite3.connect(tmp_path / "damaged.db")) as db:
         db.executescript(world.repo.dump())

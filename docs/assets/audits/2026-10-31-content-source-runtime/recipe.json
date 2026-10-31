@@ -1,0 +1,45 @@
+{
+  "candidate_ref": "Commit containingthisqualification; verify757pins/final17ownedpaths",
+  "baseline_ref": "113b708c528c3523255dae4dfbdcdb38eddfc1d7",
+  "focused_modules": [
+    "tests/scenario/test_amendments_command.py",
+    "tests/scenario/test_content_inspection.py",
+    "tests/scenario/test_content_source_runtime.py",
+    "tests/scenario/test_native_content_sources.py",
+    "tests/scenario/test_result_applications.py",
+    "tests/scenario/test_source_context_delivery.py",
+    "tests/unit/test_content_history.py",
+    "tests/unit/test_content_source_refs.py",
+    "tests/unit/test_content_sources.py"
+  ],
+  "postfix_focused_modules": [
+    "tests/scenario/test_application_targets.py",
+    "tests/scenario/test_computation_doctor.py",
+    "tests/unit/test_content_history_doctor.py",
+    "tests/unit/test_content_source_refs.py"
+  ],
+  "external_delta_driver": {
+    "path": "out/corpus/j203-content-source-runtime/author/driver.py",
+    "sha256": "427afdfd2ad8e5957ee72a7233a560018ab99a7850128440b56339d79fc2e52e"
+  },
+  "external_proof_hashes": {
+    "qa/focused.xml": "b499a8fab49517d79c3b72347fe4d30ad127a5ccd319fd1db8f8349a2875373d",
+    "qa/native-runtime.log": "eb27a136c18598aedc0e4f11e6893b614a04335a9faf3ec03433325d777e2663",
+    "qa/native-runtime.xml": "1e39fce7fd95a23ec8772dd21aa277752cd920ddf59b212c1dc1af574176b39a",
+    "qa/mypy.log": "8b88f6d12bd312c1b024b66d07a7f7619a68482ac4d64e475759b1823199faa5",
+    "qa/ruff.log": "f89b5905d1ee7ee5fa75e6f76b46c3aebd944a531bb138a53c505a8f711e2fcd",
+    "qa/focused.log": "34bedcad274eb2e53aedd768178d377bd5668daad57ba657ebb91b4adec3292d",
+    "delta/report.json": "ae6f6d2a76375684ea004ff995b8f1c2beaa55fd18c72538e3cce3283fbc991d",
+    "delta/candidate.json": "ab5e3c1a56ac2a40f89aad8426f031481b78d5ba045e23f78474878cfd1d681d",
+    "delta/baseline.json": "873d664bfdbddec2ef50df9a8560f161b11935845c1787ca854856986c7e3874",
+    "delta/driver.py": "427afdfd2ad8e5957ee72a7233a560018ab99a7850128440b56339d79fc2e52e"
+  },
+  "source_sql_sha256": "7923ecc082b83ffe79ffa931151b67dac3c88e2acd92cc46ff57fafd9c2e6505",
+  "actual_state_driver": "out/corpus/j194-revision-application-runtime/actual-state/author-driver.py",
+  "actual_state_args": [
+    "$SOURCE_SQL",
+    "$NEW",
+    "2026-10-30T20:11:14.510870+00:00"
+  ],
+  "isolation": "Pinnedarchive113b versus archive113b+owned12 for measuredbaseline; final17controls/wholegate separate. ExplicitPYTHONPATH=$CANDIDATE/src:$CANDIDATE required withsharedUVeditableenvironment. Preserve rawexternaldelta artifacts; missinghashinput failsclosed; do notoverwrite outputs. No additionalrerun claim."
+}

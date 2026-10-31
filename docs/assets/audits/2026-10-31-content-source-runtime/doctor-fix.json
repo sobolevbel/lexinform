@@ -1,0 +1,25 @@
+{
+  "base": "frozenJ203 candidate archive113b+12 runtime files",
+  "path": "tools/computation_doctor.py",
+  "pre_sha256": "edaa93b03595ec2a22e430bf7ef3fdb5de92b22c2993e1cec75d6847874487bb",
+  "sha256": "e11c4ae7005ddbe22d26c72e4e7b3d265e953bd2412619ade8ddae060b024fe1",
+  "patch_sha256": "d0411a91f0db5d865db4c398378cdaa27619f4854c3d1855697c311df80ea478",
+  "cause": "Reference-integrity rejection inside JSON parse block skipped existing specific parent-failure diagnostics and graph counts/refs.",
+  "fix": "Decode shape separately; keep original graph errors; check shared newwitness against available successful retained parent without continue; distinct invalid_primary_projection_witness. Missing/failed parents keep existing specific diagnosis without duplicate witness noise.",
+  "focused": {
+    "passed": 17,
+    "failed": 0,
+    "scope": "original graph_errors parameter cases unchanged, including failed_result_applied"
+  },
+  "strict": "3files GREEN (doctor+sharedadapter+model; import resolution explicit)",
+  "ruff": "doctor check+format GREEN",
+  "tests_owned_by_child": "tests/scenario/test_computation_doctor.py unchanged bythisactor; fixturefixes separate",
+  "proofs": {
+    "focused.xml": "7515a30a265dfbbe63c58e8eb1b06cbe3e5222d95c56ca330c52def782d4c505",
+    "initial-mypy-module-resolution.log": "d5ad2eb0c9a70170c039aff25b84cee85b4ce429a361dd34b58ba82f76f5cd0b",
+    "mypy.log": "8228fcc5ce46d42d01caf3cd941f4e9c5f2bcc372bb5b147a2f0572d2dd675a8",
+    "ruff.log": "ce04ce92b16073000b77c97a42c00b98b96305692d9d5ed4dcfa5a9ca9ea62d6",
+    "focused.log": "f44919a3367dc52929a8af8f8919d5f9536d2eb90b5c6c6d38b1e58904be21bc"
+  },
+  "source_held": true
+}

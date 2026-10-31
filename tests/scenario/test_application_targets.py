@@ -17,7 +17,8 @@ def target(path: Path, kind: str, ref: str, *, term: int = 10) -> None:
     with closing(sqlite3.connect(path)) as database, database:
         database.execute(
             "UPDATE result_applications SET term=?, generation=NULL, application_json="
-            "json_set(application_json, '$.term', ?, '$.generation', NULL, '$.target', json(?)) "
+            "json_set(json_remove(application_json, '$.projected_generation'),"
+            " '$.term', ?, '$.generation', NULL, '$.target', json(?)) "
             "WHERE phase='projection'",
             (term, term, json.dumps({"kind": kind, "ref": ref})),
         )

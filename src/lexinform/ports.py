@@ -773,6 +773,9 @@ class BillRepository(Protocol):
 
     def save_result_application(self, application: ResultApplication) -> None: ...
 
+    def get_primary_projection_application(
+        self, result_id: str, term: int, number: str, generation: int
+    ) -> ResultApplication | None: ...
     def list_result_applications(self, term: int, number: str) -> list[ResultApplication]: ...
 
     def save_applicability_observation(
@@ -1181,6 +1184,15 @@ class BillRepository(Protocol):
     def publication_by_id(self, publication_id: int) -> Publication | None: ...
 
     def resolve_delivery(self, resolution: DeliveryResolution) -> bool: ...
+
+    def recover_source_context_retry(
+        self,
+        resolution: DeliveryResolution,
+        *,
+        delivery: DeliveryPlan,
+        version: ContentVersion,
+        snapshots: tuple[ContentSnapshot, ...],
+    ) -> bool: ...
 
     def delivery_resolutions(self, publication_id: int) -> list[DeliveryResolution]: ...
 

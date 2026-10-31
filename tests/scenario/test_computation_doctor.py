@@ -18,6 +18,7 @@ from lexinform.models import (
     PublicationStatus,
     StatusChange,
 )
+from tests.computations import retained_result
 from tests.fakes import FakeTextExtractor
 from tests.harness import CHANNEL, World
 from tests.scenario.test_request_doctor import snapshot
@@ -224,7 +225,8 @@ def test_opaque_future_application_target_does_not_execute_or_reinterpret_its_re
     with closing(sqlite3.connect(path)) as database, database:
         database.execute(
             "UPDATE result_applications SET generation=NULL, application_json="
-            "json_set(application_json, '$.generation', NULL, '$.target',"
+            "json_set(json_remove(application_json, '$.projected_generation'),"
+            " '$.generation', NULL, '$.target',"
             " json_object('kind', 'future_owner', 'ref', 'opaque')) WHERE phase='projection'"
         )
     before = path.read_bytes()
@@ -234,6 +236,31 @@ def test_opaque_future_application_target_does_not_execute_or_reinterpret_its_re
     assert report["status"] == "recorded" and report["findings"] == []
     assert report["application_targets"] == {"future_owner": 1}
     assert path.read_bytes() == before
+
+
+def test_valid_application_with_nonprimary_projected_witness_keeps_graph_diagnostics(
+    computed_world: World,
+    tmp_path: Path,
+) -> None:
+    secondary = retained_result("amendments")
+    computed_world.repo.save_computation_result(secondary)
+    path = snapshot(computed_world, tmp_path)
+    with closing(sqlite3.connect(path)) as database, database:
+        database.execute(
+            "UPDATE result_applications SET result_id=?, application_json="
+            "json_set(application_json, '$.result_id', ?) WHERE phase='projection'",
+            (secondary.result_id, secondary.result_id),
+        )
+    before = path.read_bytes()
+
+    report = audit(path)
+
+    assert report["status"] == "failed"
+    assert any(item["code"] == "invalid_primary_projection_witness" for item in report["findings"])
+    assert report["summary"]["application_rows"] == 2
+    assert report["summary"]["application_projection"] == 1
+    assert secondary.result_id in report["references"]
+    assert MARKER not in json.dumps(report) and path.read_bytes() == before
 
 
 def test_both_doctors_keep_the_nested_json_depth_guard(

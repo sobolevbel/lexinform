@@ -229,7 +229,7 @@ def verify_content_source(connection: sqlite3.Connection, version: ContentVersio
     root = reader._query(
         "SELECT term,number,kind FROM publications WHERE id=?", (version.root_publication_id,)
     ).fetchone()
-    if root is None or (root["term"], root["number"], root["kind"]) != (
+    if root is not None and (root["term"], root["number"], root["kind"]) != (
         bill.term,
         bill.number,
         "status_update",

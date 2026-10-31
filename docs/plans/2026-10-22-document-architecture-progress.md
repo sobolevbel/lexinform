@@ -9412,3 +9412,60 @@ runtime push ждут actual deployment этого reader; noDDL/newstorage/back
 [actual-state proof](../assets/audits/2026-10-31-projection-witness-reader/actual-state-proof.json),
 [recipe](../assets/audits/2026-10-31-projection-witness-reader/recipe.json),
 [J201 exact CI/relay](../assets/audits/2026-10-31-scoped-content-source-reader/release.json).
+
+
+<a id="j203"></a>
+
+## J203 — prospective frozen-primary sources and audited known-only recovery
+
+После actual deploy J202 apply_analysis сохраняет реально прочитанный selected.afterSave
+projected_generation в projection atomic. Original input/before generation, observed generation
+и immutable key прежние. Exact indexed existing-key lookup сохраняет старый None без enrichment;
+matching witness idempotent, conflicting witness откатывает apply. Другие helpers не получают
+выдуманный post-state. New native World теперь проходит source→queue→paid→post-save witness→
+fresh render как KNOWN без изменения paid/snapshots; J202 UNKNOWN не выдаётся за этот результат.
+
+Capture включён только fresh-render QUEUED/0 supported printed single-message без existing
+version. Atomic freeze_parts+semantic snapshots+audit+scoped version/binding предотвращает
+rendered retry bypass. Known stores1ID, valid in-scope unknown0; rendered/SENT/lazy parents/
+unsupported contexts не backfill. Scope относится к primary context, не amendment input.
+Invalid откатывает frame/version/binding и сохраняет queued source_context_invalid без attempt;
+paid/application work/target receipts остаются. Unexpected SQL/cancellation не маскируются.
+
+Existing /delivery ID retry имеет отдельный known-only recovery: Repo повторно проверяет
+stored owner/plan/frozen chain, фиксирует HTML/snapshots/version/binding/resolution audit и
+снимает marker LAST в той же atomic. Unknown/invalid/unsupported после invalid не очищают
+противоречие. False-after-write исправлен typed rollback внутри outer transaction; rejected/
+SQL-failed recovery сохраняет dump. Generic clearing guard остаётся. Recovery после reset
+current Bill использует original context; поздняя доставка не удваивает version/audit.
+
+Initial12 source:155author/155independent isolatedpeer green. Paired actualfake113b/new12:
+SQL+162B/gzip+82B, body/providerpayload/paid/snapshot IDs/normalizedhistory exact; появился1ID
+и actual post1 вместо None. Это controlled lifecycle, не production/fleet growth measurement.
+Explicit old-producer fixture проверяет omitted witness; historical provenance не создаётся.
+
+Первый Rootfull:23failed/7673passed/7696total. До commit исправлены реальные compatibility gaps:
+secondary/opaque fixture transforms теперь явно удаляют primary-only witness при прежних
+assertions; doctor больше не скрывает failed_result_applied под invalid_application и отдельно
+отмечает invalid_primary_projection_witness. Historical source chain не требует вечного
+physical publication: missing target — прежний warning; known wrong owner/kind всё ещё error.
+Новые tests проверяют get/list и wrong-owner/kind. Изолированный whole-dump restore после
+ручного удаления root всё ещё отказывается из-за отдельного existing revision-work invariant;
+он не ослаблен ради history-doctor теста. Исходный full и три узких fix handoff сохранены.
+
+Postfix86focused green; final full7699tests/270.509s/92%,mypy672/Ruff740;757source/config pins
+exact, final17owned source paths. Postfixactual8022 readonly restore/dump/487typedBills/3doctors
+exactf232baseline,4oldworkwarnings/sourceSQL unchanged. J202 CI/actualrelay verified beforepush;
+staged archive docs gate перед commit. No newmodel/table/backend/raw/paid/prod processing.
+DA7.5/other program tasks остаются partial; remaining source families/kinds не объявлены принятыми.
+
+[Qualification](../assets/audits/2026-10-31-content-source-runtime/qualification.json),
+[initial independent peer](../assets/audits/2026-10-31-content-source-runtime/peer-closure.json),
+[fix integration](../assets/audits/2026-10-31-content-source-runtime/fix-integration.json),
+[doctor fix](../assets/audits/2026-10-31-content-source-runtime/doctor-fix.json),
+[history fix](../assets/audits/2026-10-31-content-source-runtime/history-fix.json),
+[fixture fix](../assets/audits/2026-10-31-content-source-runtime/fixtures-fix.json),
+[delta](../assets/audits/2026-10-31-content-source-runtime/delta-proof.json),
+[actual-state proof](../assets/audits/2026-10-31-content-source-runtime/actual-state-proof.json),
+[recipe](../assets/audits/2026-10-31-content-source-runtime/recipe.json),
+[J202 exact CI/relay](../assets/audits/2026-10-31-projection-witness-reader/release.json).

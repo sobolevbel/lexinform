@@ -1,0 +1,33 @@
+{
+  "decision": "narrow2path_fix_ready_for_independent_review",
+  "baseline": "frozen J203 runtime12 isolated candidate archive113b",
+  "paths": {
+    "src/lexinform/adapters/content_source_refs.py": "cbf8f6cf4d86863b7d4845a6396ee77835979dc37f8705bead62abbfc638189e",
+    "tests/unit/test_content_history_doctor.py": "19f7c226c38d9ce8c3c983fc8a9cdcab72d7a499fd6c7afca59dfc15cf8c155d"
+  },
+  "preimages": {
+    "src/lexinform/adapters/content_source_refs.py": "8858d9de2b1801f59313e15784437079c55cf95ec6a35458040413e1548bbe0b",
+    "tests/unit/test_content_history_doctor.py": "8a2be9afddf9898115d9c5333afddc2a1af704eb7836036b96c28fb7380fad88"
+  },
+  "patch_sha256": "bb9aa2edebbab9f6b63e8e641324a5f470788abbb8f6f7fbb1002757eb1512e0",
+  "changes": [
+    "Existing physical root corroborates owner/kind when present; absent physical availability no longer invalidates immutable snapshot/paid/source chain. Doctor retains missing-target warning/current None.",
+    "Explicit legacy opaque-reference fixture clears source_scope; original opaque-preservation assertions unchanged.",
+    "Deleted original history remains queryable; present wrong owner/kind remains invalid and read-only."
+  ],
+  "checks": {
+    "focused": "40 passed in 12.39s",
+    "mypy": "2 source files green",
+    "ruff": "check + formatcheck two files green"
+  },
+  "limits": [
+    "No full/raw/network/paid/source-primary edits.",
+    "Whole-dump restore of revised fixture after deleting its original additionally rejects existing independent revision_application_original_missing; no document_work policy modified."
+  ],
+  "proofs": {
+    "before.log": "7d316185e65d602e2bf59b5ab4be6d8d0e83cfefe4a7c8425b1e34c05b5914c3",
+    "focused.log": "de5aeacd7855ade92b24af9f850226105c68cd22b6b7adb35eee02bf6fce93df",
+    "mypy.log": "f9b031e5c45aa702cd4fef028d465551cb20a2c4698e0913c7b00766b20ac4d8",
+    "ruff.log": "afa20b27dacc9bf0aba3c1d265964c21e04ab42f6e39e2dd4769718ceded003a"
+  }
+}

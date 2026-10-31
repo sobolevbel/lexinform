@@ -91,7 +91,6 @@ class ComputationAudit:
             self.counts["application_rows"] += 1
             try:
                 application = ResultApplication.model_validate_json(row["application_json"])
-                validate_projected_application(connection, application)
             except ValueError:
                 self.issue("invalid_result_application", ref)
                 continue
@@ -116,6 +115,11 @@ class ComputationAudit:
                 application.outcome == "failed" and result.has_record
             ):
                 self.issue("collection_result_mismatch", ref)
+            if result is not None and result.has_record:
+                try:
+                    validate_projected_application(connection, application)
+                except ValueError:
+                    self.issue("invalid_primary_projection_witness", ref)
             self.refs.setdefault(application.result_id, []).append(ref)
             self.counts[f"application_{application.phase}"] += 1
             self.counts[f"application_outcome_{application.outcome}"] += 1

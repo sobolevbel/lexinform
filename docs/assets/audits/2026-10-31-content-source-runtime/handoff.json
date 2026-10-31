@@ -1,0 +1,110 @@
+{
+  "base": "113b708c528c3523255dae4dfbdcdb38eddfc1d7",
+  "candidate": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/j203-content-source-runtime/candidate",
+  "paths": {
+    "src/lexinform/content_sources.py": "75d1c662742a41bbe4e1b203827b086553cb5d92e4d269ea954909247a1ed743",
+    "src/lexinform/services/content_history.py": "ab39eb97e64380518f23631695a2e71eb97352b79e2a935279b836e10d778aab",
+    "src/lexinform/services/posting.py": "eaf0e5476cf73596911e45385cba533f8a3b09756024c31c508046254974988b",
+    "src/lexinform/services/commands.py": "6c0b8c092d94e7932cd1477d5a49d131efdf76cbbaa08e80c7a1a020203ecfae",
+    "src/lexinform/services/analysis_applications.py": "944eeb78073df5c06b6889369ec00e9e5b4a8a1156bfadf12b97bfab30919648",
+    "src/lexinform/ports.py": "6304c96b88b1b1294cbb7a012466076182462ca843edb08d28484e37d7e0edcb",
+    "src/lexinform/adapters/sqlite_repo.py": "7f181ce8758e95459711ff5113c0e789fe13e8b29df7a43c40aee676dcbc8f56",
+    "src/lexinform/container.py": "01c956ac95d0a2d7531e0132f6da9ef1096efe56f94d93c2a9317be049895773",
+    "tests/scenario/test_content_inspection.py": "88c83668c5e47275b6d7237ff9487845e0f07b135feb09733a04b2f41ed2397d",
+    "tests/scenario/test_content_source_runtime.py": "3e2cca2b45bb74d44b4181711a73d5603c5da5cab408be973851c791d04c2721",
+    "tests/scenario/test_result_applications.py": "317a2982d175a353b83e82bb6d834cf832fa334a37cc22362bd3b3cf764cfeb9",
+    "tests/scenario/test_native_content_sources.py": "80460beeddad2165ca06c416d3e09adf6256df941b5ce2739a0d84be8cdf352f"
+  },
+  "patch_sha256": "fc5504461717df1b6557927aabb8a87268303b970013e0cbe25dffe541cb1091",
+  "reader_floor_pins": {
+    "src/lexinform/models/computations.py": "325df88924fe8096236f3deff5f11e74cac9fe69d3870f0578bbe468049b0143",
+    "src/lexinform/content_sources.py": "9c79963d8666413522cb79c3ff5bdc2c30eb3266b2fecb85042e72a2f00ca08e",
+    "src/lexinform/adapters/content_source_refs.py": "8858d9de2b1801f59313e15784437079c55cf95ec6a35458040413e1548bbe0b",
+    "src/lexinform/adapters/sqlite_repo.py": "56af3eaadf074587a25b581e6b745910dbf17adbc08713271b0bffc132ca84c1",
+    "tools/computation_doctor.py": "edaa93b03595ec2a22e430bf7ef3fdb5de92b22c2993e1cec75d6847874487bb",
+    "tests/unit/test_content_sources.py": "72e83b8a279063c42385cffc3129bcaf5126e4b7e429a3725f6d06e75edf3397",
+    "tests/unit/test_projected_generation_receipt.py": "ce689c56c56610f7c3b61578d4300b1218852678ed6db490e167ad575c31dd12",
+    "tests/scenario/test_native_content_sources.py": "1395e938f0d29ac3855520e55a47914ddb4f097a71c9a6d442283dc160adeb6c",
+    "tests/unit/test_content_source_refs.py": "d081c954832109a6913fbab9b31567d829a48da3cb1563462de40fda9c6b625a"
+  },
+  "nonruntime_reader_files_exact": true,
+  "patch": "runtime.patch",
+  "focused": {
+    "passed": 155,
+    "failed": 0,
+    "modules": [
+      "test_content_source_runtime",
+      "test_native_content_sources",
+      "test_result_applications",
+      "test_content_inspection",
+      "test_amendments_command",
+      "test_source_context_delivery",
+      "test_content_history",
+      "test_content_source_refs",
+      "test_content_sources"
+    ]
+  },
+  "mypy": "12files GREEN",
+  "ruff": "12files GREEN/check+format",
+  "proofs": {
+    "qa/focused.xml": "b499a8fab49517d79c3b72347fe4d30ad127a5ccd319fd1db8f8349a2875373d",
+    "qa/native-runtime.log": "eb27a136c18598aedc0e4f11e6893b614a04335a9faf3ec03433325d777e2663",
+    "qa/native-runtime.xml": "1e39fce7fd95a23ec8772dd21aa277752cd920ddf59b212c1dc1af574176b39a",
+    "qa/mypy.log": "8b88f6d12bd312c1b024b66d07a7f7619a68482ac4d64e475759b1823199faa5",
+    "qa/ruff.log": "f89b5905d1ee7ee5fa75e6f76b46c3aebd944a531bb138a53c505a8f711e2fcd",
+    "qa/focused.log": "34bedcad274eb2e53aedd768178d377bd5668daad57ba657ebb91b4adec3292d",
+    "delta/report.json": "ae6f6d2a76375684ea004ff995b8f1c2beaa55fd18c72538e3cce3283fbc991d",
+    "delta/candidate.json": "ab5e3c1a56ac2a40f89aad8426f031481b78d5ba045e23f78474878cfd1d681d",
+    "delta/baseline.json": "873d664bfdbddec2ef50df9a8560f161b11935845c1787ca854856986c7e3874",
+    "delta/driver.py": "427afdfd2ad8e5957ee72a7233a560018ab99a7850128440b56339d79fc2e52e"
+  },
+  "qualification": {
+    "native_known": "actual source finalization\u2192queue\u2192collect\u2192apply selected.afterSave\u2192fresh render; originalpaid/snapshots untouched",
+    "native_recovery": "actual invalid marker\u2192reset currentBill\u2192validated original frozen context /deliveryretry\u2192oneversion+audit\u2192later delivery",
+    "legacy_unknown": "explicit compatible old-producer omittedwitness during real apply; no backfill or enrichment",
+    "atomic": "invalidfreeze rollsbackframe/version/binding then marker; SQL propagate; rejected and SQL-failed recovery leaves exactdump; later retry exactlyonce",
+    "scope": "fresh QUEUED0 supported printed single message; rendered/SENT/lazyparents/unsupported staylegacyNone",
+    "receipt": "originalbeforegeneration/observed/identity unchanged; exact indexed existing-key None immutable, knownmatching replay idempotent, mismatching throwsinsideprojectionatomic",
+    "retention": "threeexisting content snapshots reused, no repeated largecontext",
+    "delta": {
+      "basis": "actual paired fake lifecycle on isolated archive113b vs archive113b+12ownedruntime files; no paid or snapshots modified; same original provider requests",
+      "source_progress": {
+        "baseline": {
+          "scope": null,
+          "ids": 0,
+          "projected_generations": [
+            null
+          ]
+        },
+        "candidate": {
+          "scope": "frozen_primary_context/analysis",
+          "ids": 1,
+          "projected_generations": [
+            1
+          ]
+        }
+      },
+      "equal": [
+        "paid_sha256",
+        "publication_sha256",
+        "body_sha256",
+        "normalized_version_sha256",
+        "normalized_applications_sha256",
+        "provider_payloads_sha256",
+        "snapshot_ids"
+      ],
+      "sql": {
+        "baseline": 97942,
+        "candidate": 98104,
+        "delta": 162
+      },
+      "gzip": {
+        "baseline": 17969,
+        "candidate": 18051,
+        "delta": 82
+      }
+    }
+  },
+  "barrier": "J202113b actualCI+relay VERIFIED byRoot; no parentcode/production/paid/raw/full/commits performed here",
+  "held": "candidate12 immutable; runtimeSource currentpins same; all previousout/stashes preserved"
+}

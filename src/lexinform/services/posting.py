@@ -16,6 +16,12 @@ from functools import partial
 from zoneinfo import ZoneInfo
 
 from lexinform.attention import assess_attention
+from lexinform.content_sources import (
+    SOURCE_CONTEXT_INVALID,
+    SourceContextInvalidError,
+    inspect_primary_content_sources,
+    supported_source_context,
+)
 from lexinform.delivery_schedule import daily_schedule, sitting_is_close
 from lexinform.direct_delivery import DIRECT_ROOTS, direct_root_plan, validate_reader_contract
 from lexinform.legacy_delivery import legacy_status_reply
@@ -24,6 +30,7 @@ from lexinform.models import (
     Bill,
     BillStatus,
     DeliveryPlan,
+    DeliveryResolution,
     ParticipationSnapshot,
     Phase,
     PrintInfo,
@@ -46,7 +53,11 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway, StateCheckpoint
 from lexinform.services.card_edits import edit_card
-from lexinform.services.content_history import FORMATTER_VERSION, record_publication_content
+from lexinform.services.content_history import (
+    FORMATTER_VERSION,
+    prepare_publication_content,
+    record_publication_content,
+)
 from lexinform.services.direct_delivery import freeze_direct_root
 from lexinform.services.message_parts import continuation_ready, freeze_parts, send_continuations
 from lexinform.services.publications import (
@@ -1398,6 +1409,7 @@ class Poster:
 
     def _freeze(self, pub: Publication, *, keep_today: bool = False) -> Publication:
         assert pub.delivery is not None and pub.id is not None
+        pub_id = pub.id
         if source_context_blocked(self._repo, pub):
             return pub
         if pub.delivery.rendered_text:
@@ -1433,17 +1445,110 @@ class Poster:
                 raise ValueError("The saved hearing reminder lacks its hearing")
         plan = pub.delivery.model_copy(update={"today": today})
         pub = pub.model_copy(update={"delivery": plan})
-        frozen = freeze_parts(
-            self._repo, self._clock, self._publisher, pub, self._publisher.render_delivery(pub)
+        capture = (
+            pub.status is PublicationStatus.QUEUED
+            and pub.attempts == 0
+            and supported_source_context(pub)
+            and self._repo.digest_owner(pub_id) is None
+            and self._repo.get_publication_content(pub_id) is None
         )
-        record_publication_content(
-            self._repo,
-            self._clock,
-            frozen,
-            formatter_version=FORMATTER_VERSION,
-            language=self._language,
-        )
+        try:
+            with self._repo.atomic():
+                frozen = freeze_parts(
+                    self._repo,
+                    self._clock,
+                    self._publisher,
+                    pub,
+                    self._publisher.render_delivery(pub),
+                )
+                record_publication_content(
+                    self._repo,
+                    self._clock,
+                    frozen,
+                    formatter_version=FORMATTER_VERSION,
+                    language=self._language,
+                    source_origin=pub if capture else None,
+                )
+        except SourceContextInvalidError:
+            self._repo.mark_publication(
+                pub_id, PublicationStatus.QUEUED, error=SOURCE_CONTEXT_INVALID, count_attempt=False
+            )
+            blocked = self._repo.publication_by_id(pub_id)
+            assert blocked is not None, "source validation retains its queued publication"
+            return blocked
         return frozen
+
+    def recover_source_context_retry(self, resolution: DeliveryResolution) -> bool:
+        try:
+            with self._repo.atomic():
+                pub = self._repo.publication_by_id(resolution.publication_id)
+                if (
+                    pub is None
+                    or pub.error != SOURCE_CONTEXT_INVALID
+                    or pub.status is not PublicationStatus.QUEUED
+                    or pub.attempts
+                    or not supported_source_context(pub)
+                    or pub.delivery is None
+                    or pub.delivery.rendered_text
+                    or self._repo.get_publication_content(resolution.publication_id) is not None
+                    or self._repo.digest_owner(resolution.publication_id) is not None
+                    or resolution.resolved_at.tzinfo is None
+                    or resolution.resolved_at.utcoffset() is None
+                ):
+                    return False
+                plan = pub.delivery
+                today = (
+                    plan.today
+                    if plan.edit_message_id is not None
+                    else resolution.resolved_at.astimezone(ZoneInfo("Europe/Warsaw")).date()
+                )
+                proposed = pub.model_copy(
+                    update={"error": None, "delivery": plan.model_copy(update={"today": today})}
+                )
+                text = self._publisher.render_delivery(proposed)
+                parts = self._publisher.split_message(text)
+                if len(parts) != 1:
+                    return False
+                frozen = proposed.model_copy(
+                    update={
+                        "delivery": proposed.delivery.model_copy(update={"rendered_text": parts[0]})
+                        if proposed.delivery
+                        else None
+                    }
+                )
+                prepared = prepare_publication_content(
+                    self._repo,
+                    self._clock,
+                    frozen,
+                    formatter_version=FORMATTER_VERSION,
+                    language=self._language,
+                )
+                if prepared is None or frozen.delivery is None:
+                    raise SourceContextInvalidError("Recovery lacks its supported frozen frame")
+                version, snapshots = prepared
+                for snapshot in snapshots:
+                    self._repo.save_content_snapshot(snapshot)
+                audit = inspect_primary_content_sources(
+                    self._repo,
+                    bill_snapshot_id=version.bill_snapshot_id,
+                    change_snapshot_id=version.change_snapshot_id,
+                )
+                if audit.state != "known":
+                    raise SourceContextInvalidError("Recovery requires a known frozen source chain")
+                version = version.model_copy(
+                    update={
+                        "source_scope": audit.scope,
+                        "source_observation_ids": audit.source_observation_ids,
+                    }
+                )
+                recovered = self._repo.recover_source_context_retry(
+                    resolution, delivery=frozen.delivery, version=version, snapshots=snapshots
+                )
+                if not recovered:
+                    raise SourceContextInvalidError("Recovery no longer matches its queued target")
+                return True
+        except SourceContextInvalidError:
+            return False
 
     def _schedule(self, plan: DeliveryPlan, kind: PublicationKind) -> DeliveryPlan:
         bill = Bill.model_validate_json(plan.bill_json)
@@ -1606,6 +1711,8 @@ class Poster:
                 pub = freeze_direct_root(
                     self._repo, self._clock, self._publisher, pub, reply_to=reply_to
                 )
+        if pub is not None and source_context_blocked(self._repo, pub):
+            return None
         if (
             pub is not None
             and pub.delivery is not None
@@ -1624,6 +1731,8 @@ class Poster:
                 text = self._publisher.render_delivery(pub)
                 if utf16_length(text) > MESSAGE_LIMIT:
                     pub = freeze_parts(self._repo, self._clock, self._publisher, pub, text)
+        if pub is not None and source_context_blocked(self._repo, pub):
+            return None
         if pub is None or pub.delivery is None or not pub.delivery.rendered_text.strip():
             raise ValueError("The reader delivery lacks frozen physical HTML")
         record_publication_content(self._repo, self._clock, pub)

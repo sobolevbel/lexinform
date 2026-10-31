@@ -175,6 +175,7 @@ class CommandService:
         status_bills: int = 10,
         language: str = "ru",
         checkpoint: StateCheckpoint | None = None,
+        source_context_retry: Callable[[DeliveryResolution], bool] | None = None,
     ) -> None:
         self._repo = repo
         self._inbox = inbox
@@ -192,6 +193,7 @@ class CommandService:
         self._status_days = status_days
         self._status_bills = status_bills
         self._checkpoint = checkpoint
+        self._source_context_retry = source_context_retry
 
     def handle_pending(
         self,
@@ -1105,6 +1107,32 @@ class CommandService:
             )
         action = command.delivery_action
         if action != "show" and source_context_blocked(self._repo, publication):
+            if action == "retry" and publish and self._source_context_retry is not None:
+                resolution = DeliveryResolution(
+                    publication_id=command.delivery_id,
+                    publication_ids=(command.delivery_id,),
+                    term=publication.term,
+                    number=publication.number,
+                    kind=publication.kind,
+                    channel_id=publication.channel_id,
+                    action="retry",
+                    command=incoming,
+                    resolved_at=self._clock.now(),
+                    reason=command.delivery_reason,
+                )
+                if self._source_context_retry(resolution):
+                    publication = self._repo.publication_by_id(command.delivery_id)
+                    return CommandOutcome(
+                        status=OutcomeStatus.DELIVERY,
+                        delivery=publication,
+                        delivery_history=tuple(
+                            self._repo.delivery_resolutions(command.delivery_id)
+                        ),
+                        content_history=inspect_content(self._repo, publication)
+                        if publication
+                        else None,
+                        note="source context validated; queued for delivery",
+                    )
             return CommandOutcome(
                 status=OutcomeStatus.ERROR,
                 delivery=publication,

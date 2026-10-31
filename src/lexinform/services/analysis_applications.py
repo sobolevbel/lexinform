@@ -29,7 +29,14 @@ def apply_analysis(
             selected = repo.get(term, number)
             if selected is not None:
                 record_selected_name_application(repo, before, selected, now=now)
-            record_analysis_application(repo, before, record, now=now, reason=reason)
+            record_analysis_application(
+                repo,
+                before,
+                record,
+                now=now,
+                reason=reason,
+                projected_generation=selected.analysis_generation if selected is not None else None,
+            )
 
 
 def record_analysis_application(
@@ -39,6 +46,7 @@ def record_analysis_application(
     *,
     now: datetime,
     reason: ProjectionReason | None = None,
+    projected_generation: int | None = None,
 ) -> None:
     """Record known primary provenance inside the caller's projection transaction."""
     if record.computation_id is None:
@@ -51,12 +59,20 @@ def record_analysis_application(
     previous = target.analysis.computation_id if target.analysis is not None else None
     if reason is None and previous == record.computation_id:
         return
+    existing = repo.get_primary_projection_application(
+        record.computation_id, target.term, target.number, target.analysis_generation
+    )
+    if existing is not None and (
+        existing.projected_generation is None or projected_generation is None
+    ):
+        projected_generation = existing.projected_generation
     repo.save_result_application(
         ResultApplication(
             result_id=record.computation_id,
             term=target.term,
             number=target.number,
             generation=target.analysis_generation,
+            projected_generation=projected_generation,
             phase="projection",
             outcome="applied",
             reason=reason or "retained_result",

@@ -1,0 +1,9 @@
+{
+  "stage": "J203",
+  "base": "113b708c528c3523255dae4dfbdcdb38eddfc1d7",
+  "source12_exact": true,
+  "nonruntime_reader_floor_exact": true,
+  "scope": "Actualpostsave primarywitness +prospective freshsinglemessage frozenprimarycontext source refs +knownonly audited recovery; no newmodel/schema/table/currentBill fallback/historybackfill",
+  "actual_reader_barrier": "113b708c528c3523255dae4dfbdcdb38eddfc1d7 verifiedCI+actualrelay check-3 beforeintegration",
+  "native_acceptance": "Realnewfield gives KNOWN and originalcontext recovery withoutpaid/snapshot edits; legacyomittedwitness fixtureexplicitcontrolledoldproducer"
+}

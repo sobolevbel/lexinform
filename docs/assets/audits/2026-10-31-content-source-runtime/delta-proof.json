@@ -1,0 +1,38 @@
+{
+  "basis": "actual paired fake lifecycle on isolated archive113b vs archive113b+12ownedruntime files; no paid or snapshots modified; same original provider requests",
+  "source_progress": {
+    "baseline": {
+      "scope": null,
+      "ids": 0,
+      "projected_generations": [
+        null
+      ]
+    },
+    "candidate": {
+      "scope": "frozen_primary_context/analysis",
+      "ids": 1,
+      "projected_generations": [
+        1
+      ]
+    }
+  },
+  "equal": [
+    "paid_sha256",
+    "publication_sha256",
+    "body_sha256",
+    "normalized_version_sha256",
+    "normalized_applications_sha256",
+    "provider_payloads_sha256",
+    "snapshot_ids"
+  ],
+  "sql": {
+    "baseline": 97942,
+    "candidate": 98104,
+    "delta": 162
+  },
+  "gzip": {
+    "baseline": 17969,
+    "candidate": 18051,
+    "delta": 82
+  }
+}

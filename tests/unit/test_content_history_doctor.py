@@ -134,6 +134,7 @@ def test_unknown_opaque_refs_are_preserved_in_sql_and_omitted_from_the_report(
     assert original is not None, "the fixture records the original editorial version"
     unknown = original.model_copy(
         update={
+            "source_scope": None,
             "source_observation_ids": ("https://source.test/NEVER-EXPORT",),
             "computation_ids": ("OPAQUE-DO-NOT-REWRITE",),
             "formatter_version": "https://source.test/NEVER-EXPORT",
@@ -255,4 +256,25 @@ def test_deleted_original_keeps_history_without_guessing_the_current_message(
     assert result["summary"]["warnings"] == 1
     assert len(result["histories"][0]["versions"]) == 2
     assert result["histories"][0]["current_content_id"] is None
+    assert path.read_bytes() == before
+    repo = SqliteBillRepository(path)
+    versions = repo.list_content_versions(root)
+    assert len(versions) == 2
+    assert all(repo.get_content_version(version.content_id) == version for version in versions)
+    repo.close()
+
+
+@pytest.mark.parametrize("column,value", [("number", "OTHER"), ("kind", "hearing_deadline")])
+def test_known_wrong_physical_owner_still_invalidates_scoped_history(
+    tmp_path: Path, column: str, value: str
+) -> None:
+    path, root, _ = database(tmp_path)
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute(f"UPDATE publications SET {column}=? WHERE id=?", (value, root))
+    before = path.read_bytes()
+
+    result = audit(path)
+
+    assert result["status"] == "failed"
+    assert "content_source_reference_invalid" in {row["code"] for row in result["findings"]}
     assert path.read_bytes() == before

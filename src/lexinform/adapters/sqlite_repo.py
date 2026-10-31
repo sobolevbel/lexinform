@@ -14,6 +14,7 @@ from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from pydantic import TypeAdapter
 
@@ -68,7 +69,13 @@ from lexinform.adapters.source_omissions import (
     read_source_omission,
     validate_source_omissions,
 )
-from lexinform.content_sources import SOURCE_CONTEXT_INVALID, source_context_blocked
+from lexinform.content_sources import (
+    SOURCE_CONTEXT_INVALID,
+    SourceContextInvalidError,
+    inspect_primary_content_sources,
+    source_context_blocked,
+    supported_source_context,
+)
 from lexinform.content_versions import content_delivery_mismatch
 from lexinform.direct_delivery import direct_root_plan
 from lexinform.document_editions import candidate_edition
@@ -169,6 +176,7 @@ from lexinform.models import (
     valid_mnemonic,
 )
 from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
+from lexinform.models.content import editorial_bill_snapshot
 from lexinform.models.legacy_results import canonical_legacy_json, legacy_json
 from lexinform.models.physical_inventory import PhysicalCapture, PhysicalMetadata
 from lexinform.models.senate_inspection import SenateInspectionLink, SenateInspectionRecord
@@ -2912,6 +2920,29 @@ class SqliteBillRepository:
             ),
         )
 
+    def get_primary_projection_application(
+        self, result_id: str, term: int, number: str, generation: int
+    ) -> ResultApplication | None:
+        row = self._conn.execute(
+            "SELECT * FROM result_applications WHERE result_id=? AND term=? AND number=?"
+            " AND generation=? AND phase='projection'",
+            (result_id, term, number, generation),
+        ).fetchone()
+        if row is None:
+            return None
+        application = ResultApplication.model_validate_json(row["application_json"])
+        if (
+            application.result_id,
+            application.term,
+            application.number,
+            application.generation,
+            application.phase,
+            application.target,
+        ) != (result_id, term, number, generation, "projection", None):
+            raise ValueError("the primary projection key differs from its immutable receipt")
+        validate_projected_application(self._conn, application)
+        return application
+
     def list_result_applications(self, term: int, number: str) -> list[ResultApplication]:
         return [
             ResultApplication.model_validate_json(row[0])
@@ -4937,6 +4968,125 @@ class SqliteBillRepository:
                         update={"publication_ids": tuple(affected)}
                     ).model_dump_json(),
                 ),
+            )
+        return True
+
+    def recover_source_context_retry(
+        self,
+        resolution: DeliveryResolution,
+        *,
+        delivery: DeliveryPlan,
+        version: ContentVersion,
+        snapshots: tuple[ContentSnapshot, ...],
+    ) -> bool:
+        with self.atomic():
+            original = self.publication_by_id(resolution.publication_id)
+            if (
+                original is None
+                or original.error != SOURCE_CONTEXT_INVALID
+                or original.status is not PublicationStatus.QUEUED
+                or original.attempts
+                or original.delivery is None
+                or original.delivery.rendered_text
+                or not supported_source_context(original)
+                or resolution.action != "retry"
+                or resolution.publication_ids != (resolution.publication_id,)
+                or (resolution.term, resolution.number, resolution.kind, resolution.channel_id)
+                != (original.term, original.number, original.kind, original.channel_id)
+                or self.digest_owner(resolution.publication_id) is not None
+                or self.get_publication_content(resolution.publication_id) is not None
+                or resolution.resolved_at.tzinfo is None
+                or resolution.resolved_at.utcoffset() is None
+                or self._conn.execute(
+                    "SELECT 1 FROM delivery_resolutions WHERE command_update_id=?",
+                    (resolution.command.update_id,),
+                ).fetchone()
+                is not None
+            ):
+                return False
+            plan = original.delivery
+            today = (
+                plan.today
+                if plan.edit_message_id is not None
+                else resolution.resolved_at.astimezone(ZoneInfo("Europe/Warsaw")).date()
+            )
+            if (
+                plan.model_dump(exclude={"rendered_text", "today"})
+                != delivery.model_dump(exclude={"rendered_text", "today"})
+                or not delivery.rendered_text.strip()
+                or utf16_length(delivery.rendered_text) > MESSAGE_LIMIT
+                or not supported_source_context(original.model_copy(update={"delivery": delivery}))
+                or delivery.today != today
+                or plan.edit_message_id is not None
+                and plan.today is None
+                or version.source_scope != "frozen_primary_context/analysis"
+                or len(version.source_observation_ids) != 1
+                or version.root_publication_id
+                != (
+                    plan.revision_of
+                    if original.kind is PublicationKind.AMENDMENTS_REVISION
+                    else original.id
+                )
+                or version.reason
+                != (
+                    "amendments_revision"
+                    if original.kind is PublicationKind.AMENDMENTS_REVISION
+                    else "original"
+                )
+            ):
+                return False
+            expected = (
+                editorial_bill_snapshot(plan.bill_json),
+                ContentSnapshot(kind="change", payload_json=plan.change_json),
+                ContentSnapshot(
+                    kind="plan",
+                    payload_json=delivery.model_copy(
+                        update={"bill_json": "", "change_json": "", "rendered_text": ""}
+                    ).model_dump_json(),
+                ),
+            )
+            if snapshots != expected or (
+                version.bill_snapshot_id,
+                version.change_snapshot_id,
+                version.plan_snapshot_id,
+            ) != tuple(item.snapshot_id for item in expected):
+                return False
+            if (
+                content_delivery_mismatch(
+                    version, {snapshot.snapshot_id: snapshot for snapshot in snapshots}, delivery
+                )
+                is not None
+            ):
+                return False
+            for snapshot in snapshots:
+                self.save_content_snapshot(snapshot)
+            known = inspect_primary_content_sources(
+                ContentSourceRows(self._conn),
+                bill_snapshot_id=version.bill_snapshot_id,
+                change_snapshot_id=version.change_snapshot_id,
+            )
+            if (
+                known.state != "known"
+                or known.source_observation_ids != version.source_observation_ids
+            ):
+                raise SourceContextInvalidError("Recovery requires the original known source chain")
+            self._conn.execute(
+                "UPDATE publications SET delivery_json=? WHERE id=?",
+                (delivery.model_dump_json(), resolution.publication_id),
+            )
+            self.save_content_version(version)
+            self.bind_publication_content(resolution.publication_id, version.content_id)
+            self._conn.execute(
+                "INSERT INTO delivery_resolutions(publication_id,command_update_id,resolution_json)"
+                " VALUES(?,?,?)",
+                (
+                    resolution.publication_id,
+                    resolution.command.update_id,
+                    resolution.model_dump_json(),
+                ),
+            )
+            self._conn.execute(
+                "UPDATE publications SET error=NULL WHERE id=?", (resolution.publication_id,)
             )
         return True
 

@@ -64,12 +64,13 @@ def test_actual_native_primary_projection_keeps_only_zero_accounting_equivalence
         change_snapshot_id=change_snapshot.snapshot_id,
     )
     if change == "none":
-        assert result.state == "unknown" and result.reason == "consumed_projection_missing"
-        assert not result.source_observation_ids
+        assert result.state == "known" and len(result.source_observation_ids) == 1
         assert original.analysis_generation != paid.generation
         applications = current.repo.list_result_applications(original.term, original.number)
         assert any(
-            item.phase == "projection" and item.generation == paid.generation
+            item.phase == "projection"
+            and item.generation == paid.generation
+            and item.projected_generation == original.analysis_generation
             for item in applications
         )
     elif change == "nonzero_usage":

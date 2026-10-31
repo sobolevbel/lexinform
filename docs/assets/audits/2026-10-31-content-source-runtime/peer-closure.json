@@ -1,0 +1,39 @@
+{
+  "decision": "independent_J203_runtime12_CLOSED",
+  "handoff_sha256": "27f4ad1a701181404e866aea17d087cceffa243b0ed1f09a4988ef7802fe35e0",
+  "patch_sha256": "fc5504461717df1b6557927aabb8a87268303b970013e0cbe25dffe541cb1091",
+  "candidate": "/Users/sobaleu/.codex/worktrees/physical-policy-boundary/lexinform/out/corpus/j203-content-source-runtime/candidate",
+  "source_pins_before_after": {
+    "src/lexinform/content_sources.py": "75d1c662742a41bbe4e1b203827b086553cb5d92e4d269ea954909247a1ed743",
+    "src/lexinform/services/content_history.py": "ab39eb97e64380518f23631695a2e71eb97352b79e2a935279b836e10d778aab",
+    "src/lexinform/services/posting.py": "eaf0e5476cf73596911e45385cba533f8a3b09756024c31c508046254974988b",
+    "src/lexinform/services/commands.py": "6c0b8c092d94e7932cd1477d5a49d131efdf76cbbaa08e80c7a1a020203ecfae",
+    "src/lexinform/services/analysis_applications.py": "944eeb78073df5c06b6889369ec00e9e5b4a8a1156bfadf12b97bfab30919648",
+    "src/lexinform/ports.py": "6304c96b88b1b1294cbb7a012466076182462ca843edb08d28484e37d7e0edcb",
+    "src/lexinform/adapters/sqlite_repo.py": "7f181ce8758e95459711ff5113c0e789fe13e8b29df7a43c40aee676dcbc8f56",
+    "src/lexinform/container.py": "01c956ac95d0a2d7531e0132f6da9ef1096efe56f94d93c2a9317be049895773",
+    "tests/scenario/test_content_inspection.py": "88c83668c5e47275b6d7237ff9487845e0f07b135feb09733a04b2f41ed2397d",
+    "tests/scenario/test_content_source_runtime.py": "3e2cca2b45bb74d44b4181711a73d5603c5da5cab408be973851c791d04c2721",
+    "tests/scenario/test_result_applications.py": "317a2982d175a353b83e82bb6d834cf832fa334a37cc22362bd3b3cf764cfeb9",
+    "tests/scenario/test_native_content_sources.py": "80460beeddad2165ca06c416d3e09adf6256df941b5ce2739a0d84be8cdf352f"
+  },
+  "nonruntime_reader_floor_exact": true,
+  "focused": {
+    "passed": 155,
+    "seconds": 4.77,
+    "explicit_PYTHONPATH": "candidate/src:candidate",
+    "log_sha256": "b06545f83b0e8f1532628e288e01ab6664f4b4a3cb3eec3f25642f9ca3506d27"
+  },
+  "review": {
+    "postsave_witness": "actual selected row after save inside same projection atomic; original before/observed/immutable identity unchanged; exact key lookup; old None never enriched; known conflicting witness rolls back",
+    "capture": "fresh supported QUEUED0/no prior rendered version only; native known proof uses real fake lifecycle without paid/frozen snapshot mutation; valid legacy unknown stays scoped zero refs",
+    "recovery": "exact stored owner and plan, independent repository KNOWN revalidation; snapshots/version/binding/audit before marker-clear-last; prepared None or repository False rejection raised inside outer atomic and caught outside rollback",
+    "errors": "SQL and control-flow failures propagate; invalid capture rolls back frame/history then preserves queued marker and attempts; unsupported recovery cannot clear",
+    "bounds": "no new schema/table/history scan/provider bytes; reader posttarget/meta-paid generation validation unchanged"
+  },
+  "proof_limits": [
+    "paired fake runtime lifecycle, not production/native legal coverage",
+    "author measured finite paired SQL +162 bytes/gzip +82; no new reviewer paid/raw/network/full runs"
+  ],
+  "blockers": []
+}

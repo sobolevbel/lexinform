@@ -642,6 +642,7 @@ class Container:
                 publisher_for=lambda chat: self.preview_publisher(chat, dry_run=dry_run),
                 language=self.settings.output_language,
                 checkpoint=self.state_checkpoint(dry_run=dry_run),
+                source_context_retry=self.poster(dry_run=dry_run).recover_source_context_retry,
             ),
         )
 

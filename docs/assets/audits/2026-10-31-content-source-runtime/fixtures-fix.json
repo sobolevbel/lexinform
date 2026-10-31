@@ -1,0 +1,38 @@
+{
+  "decision": "authored-test-fixture-fix-ready",
+  "source_hold": true,
+  "source_pins": {
+    "tests/scenario/test_application_targets.py": "ed696e9a121c7ff3219e2a4e6dc005d8e4e40f532ba4af73e2505f5aa6852d46",
+    "tests/scenario/test_computation_doctor.py": "1d2583afb6ef61a5fb5bf8e1cd81411bb4db79c31fb27a55c987cdff0026d103"
+  },
+  "patch_sha256": "d10f44b4449422f804e0b83cbe99d78aab8a3795e0a317f2732f6d135c00e469",
+  "freeze_sha256": "98f2d49698aa81ce90e51f7d15298fdaf7b8eb0a01ca4f7dde6028ed438d8942",
+  "preimages_match_primary_failed_J203": true,
+  "qa": {
+    "focused": 49,
+    "mypy_files": 3,
+    "ruff": "green",
+    "format": "green",
+    "diff_check": "green"
+  },
+  "cause": "Primary receipt transformations to explicit-secondary/opaque targets retained new primary-only projected_generation and thus failed schema parsing before intended graph/target audit.",
+  "fix": "Remove projected_generation only in the2 deliberate historical explicit-target fixture constructors; preserve all other fields/targets/owner/current-slot assertions.",
+  "all_original_assert_ast_exact": true,
+  "entire_failed_graph_corruption_function_ast_exact": true,
+  "new_control": "Valid application schema targeting a retained nonprimary result with projected witness reports invalid_primary_projection_witness; refs/counts remain, DB unchanged and private marker absent.",
+  "production_dependency": "ARCH owns computation_doctor.py ordering fix; failed_result_applied original modern witness/assertion not stripped. Malformedschema stillinvalid_result_application; failed/missing parent retains specific graphdiagnosis.",
+  "limits": [
+    "Only assigned2 testfiles edited",
+    "No productionvalidator/doctor changes by this author",
+    "No full/raw/network/provider/paid/commit"
+  ],
+  "proofs": {
+    "preimages.json": "1dccb10e73f4b256ff289ef31bc8e002d2bba9eb847641525a5b86339377dd77",
+    "focused.xml": "feeb2556bf8842a3d5c9ffc967222fe8b3dc1967f9551d706467b803631a141a",
+    "focused.log": "34885ca5b1ff763fc403eb9bf08eedee994f23728fbc41b590539facb3650164",
+    "mypy.log": "8228fcc5ce46d42d01caf3cd941f4e9c5f2bcc372bb5b147a2f0572d2dd675a8",
+    "ruff.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "format.log": "3bc53bf3e981a98a34a852e175bf9b77af841edea74fca595d9aedcbaf9a4938",
+    "diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}
