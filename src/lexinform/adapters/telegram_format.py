@@ -133,6 +133,8 @@ COMMAND_HELP = (
     "• <code>/republish BILL</code> — post the card again\n"
     "• <code>/forget BILL</code> — drop the card the channel remembers, post nothing"
     " (a card deleted by hand)\n"
+    "• <code>/link ENTRY to=DRUK</code> — an RCL project or RPW entry the Sejm printed as DRUK:"
+    " the druk continues its thread (a druk already carded keeps its own card)\n"
     "\n<b>the database</b>, answered here and now:\n"
     "• <code>/find WORDS</code> — bills whose title or number contains the words\n"
     "• <code>/name BILL [NAME | REASON]</code> — inspect or change the stable editorial name\n"
@@ -1962,6 +1964,7 @@ class MessageFormatter:
             OutcomeStatus.OBSERVED: "👀",
             OutcomeStatus.REPUBLISHED: "📣",
             OutcomeStatus.FORGOTTEN: "🗑",
+            OutcomeStatus.LINKED: "🔗",
             OutcomeStatus.PREVIEWED: "👁",
             OutcomeStatus.REFRESHED: "🔄",
             OutcomeStatus.FOUND: "🔍",

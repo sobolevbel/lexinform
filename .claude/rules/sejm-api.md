@@ -86,8 +86,10 @@ paths:
   (`submissionType: BILL_AMENDMENT`, 49 rows, `print` = base druk). Unhandled: discovery rightly skips
   these rows (`not sub.is_bill`), but `find_submission` may pick one instead of the bill.
 - `rclNum`/`rclLink` are detail-only; a government `/bills` entry carries the RM number as
-  `sendersNumber` (all 561 of term 10, unique). Print from RCL id: `find_process_by_rcl_num` narrows
-  by hand-over date and caps lookups. The reverse (`getIdFromLegislacja`) throttles after ~90 calls
+  `sendersNumber` (all 561 of term 10, unique). `rclNum` is empty on 37 of 513 government prints
+  (budgets, ratifications: not on RCL) and on druk 3281; the cover letter names the RM number on
+  486 of 513 (485 equal; 231 misprints it). An entry may be listed days after `dateOfReceipt`.
+  Print from RCL id: `find_process_by_rcl_num` narrows by hand-over date and caps lookups. The reverse (`getIdFromLegislacja`) throttles after ~90 calls
   (403, 292-byte body): sweeps pause 1.5 s and record the status beside `Location` (a 200 means not on
   RCL).
 - `SenatePosition` reports via `position`, not `decision`. `UE` enum: NO|ADAPTATION|ENFORCEMENT.

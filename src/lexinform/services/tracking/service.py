@@ -320,6 +320,7 @@ class StatusTrackingService:
         self._repo = repo
         self._clock = clock
         self._analysis = analysis
+        self._linker = linker
         self._document_reviews = document_reviews
         self._options = options
         self._poster = poster
@@ -474,6 +475,17 @@ class StatusTrackingService:
         self._flush_updates(result, publish=publish)
         if result.fatal_error is None:
             self._cards.refresh(one, result, publish=publish)
+        return self._finish(result)
+
+    def link(self, entry: Bill, print_number: str, *, publish: bool = True) -> TrackingResult:
+        """The operator's `/link`: the entry continues as the druk, as tracking would link them."""
+        result = TrackingResult()
+        self._poster.start_run(keep_attempts=True)
+        try:
+            self._linker.link(entry, print_number, result, publish=publish)
+        except ServiceUnavailableError as exc:
+            result.abort(exc, failed=True)
+        self._flush_updates(result, publish=publish)
         return self._finish(result)
 
     def _finish(self, result: TrackingResult) -> TrackingResult:

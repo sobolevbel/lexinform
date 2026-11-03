@@ -10,8 +10,10 @@ from lexinform.models import (
     BillStatus,
     BillSubmission,
     ChangeReview,
+    OutcomeStatus,
     PublicationKind,
     RclProject,
+    RunMode,
 )
 from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import (
@@ -1236,3 +1238,73 @@ def test_the_druk_of_a_carded_project_read_alike_is_announced_by_its_number_alon
     bill, change, reply_to = w.publisher.updates[-1]
     assert (bill.number, reply_to) == ("3100", w.card_id(RCL))
     assert not change.content_changed
+
+
+def _carded_druk(w: World, title: str, *, card: bool) -> None:
+    """Druk 3100 of the project's bill, which the Sejm printed without naming the project."""
+    druk = summary("3100", f"Rządowy {title[0].lower()}{title[1:]}")
+    w.repo.upsert_summary(druk, now=w.clock.now())
+    analysis = w.bill(RCL).analysis
+    assert analysis is not None, "the project was analysed on the first run"
+    w.repo.save_analysis(TERM, "3100", analysis)
+    w.gateway.processes.append(druk)
+    w.gateway.details["3100"] = detail(druk, START)
+    if card:
+        w.container.publishing_service(dry_run=False).publish_new(min_score=3, limit=10)
+
+
+def _linked_by_hand(w: World) -> tuple[OutcomeStatus, str]:
+    w.command(f"/link {RCL} to=3100")
+    w.run(mode=RunMode.COMMANDS, discover=False, track=False, max_analyze=0, max_publish=0)
+    (_, outcome), *_ = w.replier.replies
+    return outcome.status, outcome.note or ""
+
+
+def test_link_joins_a_project_and_the_druk_carded_beside_it() -> None:
+    w = World()
+    project = _followed_project(
+        w, rcl_project(title="Projekt ustawy o zmianie ustawy o cudzoziemcach")
+    )
+    w.rcl.put(_handed_over(project, rm_number=None))
+    w.run()
+    w.clock.advance(days=1)
+    _carded_druk(w, project.title, card=True)
+    druk_card = w.card_id("3100")
+
+    status, note = _linked_by_hand(w)
+
+    stored = w.bill(RCL)
+    assert status is OutcomeStatus.LINKED and "keeps its own card" in note
+    assert stored.status is BillStatus.LINKED and stored.linked_number == "3100"
+    assert stored.rcl is not None and stored.rcl.print_number == "3100"
+    assert w.card_id("3100") == druk_card != w.card_id(RCL)
+
+
+def test_link_gives_an_uncarded_druk_the_projects_thread() -> None:
+    w = World()
+    project = _followed_project(
+        w, rcl_project(title="Projekt ustawy o zmianie ustawy o cudzoziemcach")
+    )
+    w.rcl.put(_handed_over(project, rm_number=None))
+    w.run()
+    w.clock.advance(days=1)
+    _carded_druk(w, project.title, card=False)
+
+    status, note = _linked_by_hand(w)
+
+    assert status is OutcomeStatus.LINKED and "continues the thread" in note
+    assert w.card_id("3100") == w.card_id(RCL)
+
+
+def test_link_refuses_a_druk_as_the_entry() -> None:
+    w = World()
+    w.add_bill("3039", "Rządowy projekt ustawy o zmianie ustawy o cudzoziemcach")
+    w.run()
+    w.command("/link 3039 to=3100")
+
+    w.run(mode=RunMode.COMMANDS, discover=False, track=False, max_analyze=0, max_publish=0)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.status is OutcomeStatus.ERROR and "RCL project or an RPW entry" in (
+        outcome.note or ""
+    )

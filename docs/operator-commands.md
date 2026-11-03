@@ -58,6 +58,9 @@ analysis of a changed text or a filed document.
                               `auto` to give the choice back to the rule
 /republish 3039               post the card again (after a lost or failed post)
 /forget 3039                  drop the card the channel remembers, post nothing (deleted by hand)
+/link RCL/12398102 to=3281    the RCL project (or RPW entry) became this druk: the druk continues
+                              its thread; a druk already carded keeps its card and the entry's
+                              card is left for a reply by hand
 ```
 
 `/show`, `/refresh` and `/amendments` follow stored `linked` entries to the bill that continues them,

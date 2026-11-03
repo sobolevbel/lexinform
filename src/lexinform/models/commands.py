@@ -276,6 +276,7 @@ class CommandName(StrEnum):
     OBSERVE = "observe"
     REPUBLISH = "republish"
     FORGET = "forget"
+    LINK = "link"
     PREVIEW = "preview"
     REFRESH = "refresh"
     AMENDMENTS = "amendments"
@@ -301,6 +302,7 @@ NEEDS_REFERENCE = frozenset(
         CommandName.OBSERVE,
         CommandName.REPUBLISH,
         CommandName.FORGET,
+        CommandName.LINK,
         CommandName.PREVIEW,
         CommandName.REFRESH,
         CommandName.AMENDMENTS,
@@ -329,8 +331,8 @@ _COMMAND_NAMES: dict[str, CommandName] = {name.value: name for name in CommandNa
 
 
 class OptionKind(StrEnum):
-    """A bare word (`force`), or `key=value` checked as a date, count, chat, status, ISO week or
-    observation mode."""
+    """A bare word (`force`), or `key=value` checked as a date, count, chat, status, ISO week,
+    observation mode or druk number."""
 
     FLAG = "flag"
     DATE = "date"
@@ -339,6 +341,7 @@ class OptionKind(StrEnum):
     STATUS = "status"
     WEEK = "week"
     OBSERVATION = "observation"
+    PRINT = "print"
 
 
 @dataclass(frozen=True)
@@ -412,6 +415,7 @@ OPTIONS: dict[CommandName, dict[str, Option]] = {
     },
     CommandName.RESET: {"to": Option("to", OptionKind.STATUS)},
     CommandName.OBSERVE: {"mode": Option("mode", OptionKind.OBSERVATION)},
+    CommandName.LINK: {"to": Option("to", OptionKind.PRINT)},
     CommandName.RUNS: {"days": _DAYS, "all": Option("all")},
     CommandName.COST: {"days": _DAYS, "top": Option("top", OptionKind.COUNT, high=50)},
     CommandName.DIGEST: {
@@ -424,6 +428,7 @@ OPTIONS: dict[CommandName, dict[str, Option]] = {
 REQUIRED: dict[CommandName, str] = {
     CommandName.INDEX_RCL_NUMBERS: "since",
     CommandName.OBSERVE: "mode",
+    CommandName.LINK: "to",
 }
 
 OBSERVATION_CHOICES = (*(mode.value for mode in ObservationMode), AUTO_OBSERVATION)
@@ -518,6 +523,7 @@ class OutcomeStatus(StrEnum):
     OBSERVED = "observed"
     REPUBLISHED = "republished"
     FORGOTTEN = "forgotten"
+    LINKED = "linked"
     PREVIEWED = "preview"
     REFRESHED = "refreshed"
     FOUND = "found"
@@ -747,6 +753,10 @@ def _checked(name: CommandName, key: str, option: Option, raw: str) -> tuple[str
         except ValueError:
             return None, f"/{name}: {key} takes an ISO week (2026-W38), not {raw!r}"
         return raw.upper(), ""
+    if option.kind is OptionKind.PRINT:
+        if raw.isdigit() and int(raw) > 0:
+            return str(int(raw)), ""
+        return None, f"/{name}: {key} takes a druk number (3281), not {raw!r}"
     if option.kind is OptionKind.OBSERVATION:
         if raw.lower() in OBSERVATION_CHOICES:
             return raw.lower(), ""

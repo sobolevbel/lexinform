@@ -66,6 +66,12 @@ columns, probes): `docs/rcl-scraping.md`.
   number, and to the project past that gate. The linker keeps a druk's own card, analysis and — when
   read on its own text or in a batch (`_read_on_its_own`, B60) — status; a listing row never erases a
   detail's `rcl_num`. The RCL watcher asks the DB (`find_print_by_rcl_num`) before the API (B63).
+  **A druk the Sejm names no project for** (no `rclNum`, entry without `print`; B127): while a
+  carded project awaits a druk, the publishing gate asks `/bills?print=N`, then reads the RM number
+  from the print's cover letter (`CoverLetterSenderNumbers`) and stores it as the print's `rcl_num`;
+  discovery reads `/bills` from `LATE_ENTRY_DAYS` (7) before `since`; the pre-print reconciler
+  stamps a project whose held entry names its print (`list_rcl_entries_awaiting_print`). Lookups go
+  by RM number through the DB, never a walk over details. `/link ENTRY to=DRUK` = `Linker.link`.
 - **On-request lookup links in whichever direction is named; the druk comes back.**
   `BillLookup._fetch`: RCL → `find_process_by_rcl_num` for its `rm_number`; RPW → `print` in its
   `/bills` row; druk → `/bills?print=N` and its own `rclNum` (`discovery.NOT_FOLLOWED`: a skipped or

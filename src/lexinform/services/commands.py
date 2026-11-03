@@ -475,6 +475,8 @@ class CommandService:
             return self._preview(bill, command.options.get("to"))
         if command.name is CommandName.FORGET:
             return self._forget(bill_or_none, min_score=min_score)
+        if command.name is CommandName.LINK:
+            return self._link(bill_or_none, command.options["to"], publish=publish)
         return self._republish(bill_or_none, publish=publish)
 
     def _editorial(self, bill: Bill, command: Command, incoming: IncomingCommand) -> CommandOutcome:
@@ -784,6 +786,56 @@ class CommandService:
         if has_card:
             note += "; the bill has a card, which is followed in full whatever its mode"
         return CommandOutcome(status=OutcomeStatus.OBSERVED, bill=self._reload(bill), note=note)
+
+    def _link(self, entry: Bill, print_number: str, *, publish: bool) -> CommandOutcome:
+        """`/link ENTRY to=DRUK`: for a druk the Sejm printed without naming its RCL project."""
+        if entry.rcl is None and not entry.is_pre_print:
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR,
+                bill=entry,
+                note="/link takes an RCL project or an RPW entry, then the druk it became:"
+                " /link RCL/12398102 to=3281",
+            )
+        if entry.status is BillStatus.LINKED:
+            same = entry.linked_number == print_number
+            return CommandOutcome(
+                status=OutcomeStatus.LINKED if same else OutcomeStatus.ERROR,
+                bill=entry,
+                note=f"already continues as {entry.linked_number}; nothing changed",
+            )
+        if self._tracking is None:
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR, bill=entry, note="tracking is off in this run"
+            )
+        druk_card = self._card(self._repo.get(entry.term, print_number) or entry)
+        own_card = self._card(entry)
+        try:
+            result = self._tracking.link(entry, print_number, publish=publish)
+        except StateCheckpointError:
+            raise
+        except Exception as exc:
+            log.exception("/link %s to=%s failed", entry.number, print_number)
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR, bill=entry, note=f"druk {print_number}: {exc}"
+            )
+        if result.fatal_error is not None:
+            raise _SourceDownError(result.fatal_error)
+        if entry.rcl is not None:
+            self._repo.save_rcl(
+                entry.term,
+                entry.number,
+                entry.rcl.model_copy(update={"print_number": print_number}),
+            )
+        if druk_card is not None and own_card is not None and druk_card != own_card:
+            note = (
+                f"druk {print_number} keeps its own card ({druk_card}); the entry's {own_card} is"
+                " left without a thread: reply under it with a link to the druk's card"
+            )
+        elif own_card is not None:
+            note = f"druk {print_number} continues the thread of {own_card}"
+        else:
+            note = f"druk {print_number} continues {entry.number}; the entry had no card"
+        return CommandOutcome(status=OutcomeStatus.LINKED, bill=self._reload(entry), note=note)
 
     def _revive_rcl(self, bill: Bill, to: BillStatus) -> bool:
         """A skipped RCL row keeps only the project's skeleton: read its documents again before

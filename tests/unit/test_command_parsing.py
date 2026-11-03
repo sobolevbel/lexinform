@@ -361,6 +361,17 @@ def test_reset_takes_any_status_and_refuses_what_is_not_one() -> None:
     assert bad is not None and bad.error is not None and "takes a status" in bad.error
 
 
+def test_link_names_the_entry_and_the_druk_it_became() -> None:
+    good = parse_command("/link RCL/12398102 to=03281")
+    bare = parse_command("/link RCL/12398102")
+    bad = parse_command("/link RCL/12398102 to=druk")
+
+    assert good is not None and good.error is None and good.options == {"to": "3281"}
+    assert good.ref is not None and good.ref.value == "RCL/12398102"
+    assert bare is not None and bare.error is not None and "needs to=" in bare.error
+    assert bad is not None and bad.error is not None and "takes a druk number" in bad.error
+
+
 def test_observe_needs_a_mode_it_knows() -> None:
     good = parse_command("/observe 3150 mode=Metadata")
     bare = parse_command("/observe 3150")
