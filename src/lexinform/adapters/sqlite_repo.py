@@ -4227,6 +4227,15 @@ class SqliteBillRepository:
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
+    def list_rcl_entries_awaiting_print(self) -> list[Bill]:
+        rows = self._conn.execute(
+            "SELECT * FROM bills WHERE number LIKE ? AND status != ?"
+            " AND discontinued_at IS NULL AND submission_json IS NOT NULL"
+            " AND json_extract(rcl_json, '$.print_number') IS NULL ORDER BY change_date",
+            (f"{RCL_PREFIX}%", BillStatus.LINKED.value),
+        ).fetchall()
+        return [self._row_to_bill(r) for r in rows]
+
     def save_rcl(self, term: int, number: str, project: RclProject) -> None:
         self._conn.execute(
             "UPDATE bills SET rcl_json = ? WHERE term = ? AND number = ?",

@@ -513,7 +513,7 @@ class PublishingService:
         rm_number = (
             druk.summary.rcl_num
             or (druk.submission.senders_number if druk.submission is not None else None)
-            or self._letter_number(druk)
+            or self._late_rm_number(druk)
         )
         project = rcl_predecessor(self._repo, None, rm_number)
         if project is None or not self.has_sent_card(project):
@@ -532,13 +532,26 @@ class PublishingService:
         )
         return project
 
-    def _letter_number(self, druk: Bill) -> str | None:
-        """The print's own letter, read only while a carded RCL project awaits its druk."""
+    def _late_rm_number(self, druk: Bill) -> str | None:
+        """Only while a carded RCL project awaits a druk: `/bills?print=N`, then the letter."""
         if (
-            self._sender_numbers is None
-            or druk.summary.applicant_type is not ApplicantType.GOVERNMENT
+            druk.summary.applicant_type is not ApplicantType.GOVERNMENT
             or not self._repo.rcl_thread_awaits_druk()
         ):
+            return None
+        if druk.submission is None:
+            try:
+                entry = self._gateway.find_submission(druk.term, druk.number)
+            except ServiceUnavailableError:
+                raise
+            except Exception as exc:
+                log.warning("submission lookup for druk %s failed: %s", druk.number, exc)
+                entry = None
+            if entry is not None:
+                self._repo.save_submission(druk.term, druk.number, entry)
+                if entry.senders_number:
+                    return entry.senders_number
+        if self._sender_numbers is None:
             return None
         rm_number = self._sender_numbers.sender_number(druk)
         if rm_number is not None:

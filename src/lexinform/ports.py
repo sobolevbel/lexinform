@@ -1305,6 +1305,10 @@ class BillRepository(Protocol):
 
     def list_pre_print(self) -> list[Bill]: ...
 
+    def list_rcl_entries_awaiting_print(self) -> list[Bill]:
+        """Followed RCL rows holding their `/bills` entry and no druk number yet."""
+        ...
+
     def link_bills(
         self,
         term: int,

@@ -673,6 +673,72 @@ def test_the_sejms_entry_of_a_followed_project_is_told_in_its_thread_and_gets_no
     assert f"Сейм получил проект 8 сент 2026: <b>{GOVERNMENT_RPW}</b>" in text
 
 
+def test_an_entry_the_sejm_lists_days_after_its_receipt_still_joins_the_project() -> None:
+    w = World()
+    project = _followed_project(
+        w, rcl_project(title="Projekt ustawy o zmianie ustawy o cudzoziemcach")
+    )
+    w.rcl.put(_handed_over(project))
+    _government_entry(w, project.title)
+    listed_late = dt.datetime.combine(RM_DATE + dt.timedelta(days=3), dt.time(), tzinfo=dt.UTC)
+
+    w.run(since=listed_late)
+
+    stored = w.bill(RCL).submission
+    assert w.repo.get(TERM, GOVERNMENT_RPW) is None
+    assert stored is not None and stored.number == GOVERNMENT_RPW
+
+
+def test_the_projects_entry_naming_its_carded_druk_later_links_the_two() -> None:
+    w = World()
+    project = _followed_project(
+        w, rcl_project(title="Projekt ustawy o zmianie ustawy o cudzoziemcach")
+    )
+    w.rcl.put(_handed_over(project))
+    entry = _government_entry(w, project.title)
+    w.run()
+    w.clock.advance(days=1)
+    druk = summary("3100", f"Rządowy {project.title[0].lower()}{project.title[1:]}")
+    w.repo.upsert_summary(druk, now=w.clock.now())
+    analysis = w.bill(RCL).analysis
+    assert analysis is not None, "the project was analysed on the first run"
+    w.repo.save_analysis(TERM, "3100", analysis)
+    w.gateway.processes.append(druk)
+    w.gateway.details["3100"] = detail(druk, START)
+    carded = w.container.publishing_service(dry_run=False).publish_new(min_score=3, limit=10)
+    w.gateway.submissions[-1] = entry.model_copy(update={"print_number": "3100"})
+
+    report = w.run()
+
+    assert carded.published == 1
+    assert report.linked == 1
+    assert w.bill(RCL).status is BillStatus.LINKED
+    assert w.bill(RCL).linked_number == "3100"
+
+
+def test_a_druk_the_entry_names_after_discovery_gets_no_card_of_its_own() -> None:
+    w = World()
+    project = _followed_project(
+        w, rcl_project(title="Projekt ustawy o zmianie ustawy o cudzoziemcach")
+    )
+    w.rcl.put(_handed_over(project))
+    entry = _government_entry(w, project.title)
+    w.run()
+    w.clock.advance(days=1)
+    druk = summary("3100", f"Rządowy {project.title[0].lower()}{project.title[1:]}")
+    w.repo.upsert_summary(druk, now=w.clock.now())
+    analysis = w.bill(RCL).analysis
+    assert analysis is not None, "the project was analysed on the first run"
+    w.repo.save_analysis(TERM, "3100", analysis)
+    w.gateway.submissions[-1] = entry.model_copy(update={"print_number": "3100"})
+
+    published = w.container.publishing_service(dry_run=False).publish_new(min_score=3, limit=10)
+
+    stamped = w.bill(RCL).rcl
+    assert published.published == 0
+    assert stamped is not None and stamped.print_number == "3100"
+
+
 def test_the_sejms_entry_names_the_project_before_rcl_shows_its_rm_number() -> None:
     w = World()
     project = _followed_project(

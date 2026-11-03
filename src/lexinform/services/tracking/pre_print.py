@@ -66,10 +66,11 @@ class PrePrintReconciler:
             for b in self._repo.list_awaiting_consultation_results(self._channel_id)
             if not b.is_pre_print
         ]
+        projects = self._repo.list_rcl_entries_awaiting_print()
         rows = pending + awaiting
-        if not rows:
+        if not rows and not projects:
             return True
-        listed = self._listing(rows, result)
+        listed = self._listing(rows + projects, result)
         now = self._clock.now()
         for bill in pending:
             key = bill.submission.number if bill.submission else bill.number
@@ -84,7 +85,26 @@ class PrePrintReconciler:
             )
         if listed is None:
             return True
+        for project in projects:
+            self._stamp_print(project, listed)
         return all(self._reconcile_one(bill, listed, result, publish=publish) for bill in rows)
+
+    def _stamp_print(self, project: Bill, listed: dict[tuple[int, str], BillSubmission]) -> None:
+        """The project's entry got its druk: the RCL watcher links the two this run."""
+        assert project.rcl is not None and project.submission is not None, (
+            "list_rcl_entries_awaiting_print selects RCL rows holding an entry"
+        )
+        sub = listed.get((project.term, project.submission.number))
+        if sub is None or sub.print_number is None:
+            return
+        with self._repo.atomic():
+            self._repo.save_submission(project.term, project.number, sub)
+            self._repo.save_rcl(
+                project.term,
+                project.number,
+                project.rcl.model_copy(update={"print_number": sub.print_number}),
+            )
+        log.info("%s: its entry %s is druk %s", project.number, sub.number, sub.print_number)
 
     def _listing(
         self, rows: list[Bill], result: TrackingResult

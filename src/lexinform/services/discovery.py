@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from lexinform.errors import ServiceUnavailableError
@@ -23,6 +23,9 @@ from lexinform.ports import BillRepository, Clock, EliGateway, ProjectResolver, 
 from lexinform.services.predecessors import absorb_submission, rcl_predecessor
 
 log = logging.getLogger(__name__)
+
+LATE_ENTRY_DAYS = 7
+"""`/bills` may list an entry days after its `dateOfReceipt` (3, over a weekend)."""
 
 
 @dataclass
@@ -182,7 +185,8 @@ class BillDiscoveryService:
         taken from here. A known entry is left to tracking, which compares the new `/bills` row
         with the stored one (print number assigned, withdrawn, opinions published).
         """
-        for sub in self._gateway.iter_bills(term, received_from=since.date()):
+        received_from = since.date() - timedelta(days=LATE_ENTRY_DAYS)
+        for sub in self._gateway.iter_bills(term, received_from=received_from):
             if not sub.is_bill or sub.print_number or sub.is_closed:
                 continue
             result.pre_print_seen += 1
