@@ -4318,6 +4318,13 @@ class SqliteBillRepository:
         ).fetchone()
         return self._row_to_bill(row) if row else None
 
+    def save_rcl_num(self, term: int, number: str, rcl_num: str) -> None:
+        self._conn.execute(
+            "UPDATE bills SET summary_json = json_set(summary_json, '$.rcl_num', ?)"
+            " WHERE term = ? AND number = ?",
+            (rcl_num, term, number),
+        )
+
     def prints_by_rcl_num(self, term: int) -> dict[str, str]:
         rows = self._conn.execute(
             "SELECT number, json_extract(summary_json, '$.rcl_num') FROM bills WHERE term = ?"

@@ -335,6 +335,12 @@ class AuthorsResolver(Protocol):
     def resolve(self, bill: Bill, text: str) -> BillAuthors | None: ...
 
 
+class SenderNumbers(Protocol):
+    """The RM number on a government print's own cover letter; None when unreadable."""
+
+    def sender_number(self, bill: Bill) -> str | None: ...
+
+
 @runtime_checkable
 class StructuredTextExtractor(Protocol):
     def extract_document(self, data: bytes) -> ExtractedDocument: ...
@@ -1335,6 +1341,10 @@ class BillRepository(Protocol):
 
     def find_print_by_rcl_num(self, term: int, rm_number: str) -> Bill | None:
         """The druk whose process names this `RM-…` number, spacing and case aside."""
+        ...
+
+    def save_rcl_num(self, term: int, number: str, rcl_num: str) -> None:
+        """The print's RM number from its cover letter, where the process names none."""
         ...
 
     def prints_by_rcl_num(self, term: int) -> dict[str, str]:

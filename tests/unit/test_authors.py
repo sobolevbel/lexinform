@@ -1,4 +1,4 @@
-from lexinform.authors import MpDirectory, parse_cover_letter
+from lexinform.authors import MpDirectory, parse_cover_letter, sender_number
 from lexinform.models import Mp
 
 COMMITTEE_LETTER = """Druk nr 1962
@@ -143,3 +143,19 @@ def test_a_surname_the_extractor_split_still_finds_its_club() -> None:
     authors = MpDirectory.from_mps(MPS).resolve(parse_cover_letter(DEPUTIES_LETTER))
     assert authors.signatories == 5 and authors.unresolved == 0
     assert dict(authors.clubs) == {"KO": 3, "Polska2050": 2}
+
+
+GOVERNMENT_LETTER = (
+    " Druk nr 3281\n Warszawa, 2 listopada 2026 r.\nSEJM\nRZECZYPOSPOLITEJ POLSKIEJ\nX kadencja\n\n"
+    "Prezes Rady Ministrów\nRM‑0610‑180‑26\n\n Pan\n Włodzimierz Czarzasty\n Marszałek Sejmu\n"
+)
+
+
+def test_a_government_letter_names_the_rm_number_with_plain_dashes() -> None:
+    assert sender_number(GOVERNMENT_LETTER) == "RM-0610-180-26"
+
+
+def test_a_number_deep_in_the_bill_is_not_the_letters() -> None:
+    body = "Art. 1. Tekst ustawy. " * 200 + "pismo RM-0610-1-26"
+
+    assert sender_number(body) is None

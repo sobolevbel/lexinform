@@ -35,6 +35,7 @@ from lexinform.ports import (
     Clock,
     Publisher,
     SejmGateway,
+    SenderNumbers,
     StateCheckpoint,
 )
 from lexinform.services.analysis import AnalysisService, Waiting
@@ -124,8 +125,10 @@ class PublishingService:
         attention_assess: bool = True,
         delivery_attempts: set[int] | None = None,
         checkpoint: StateCheckpoint | None = None,
+        sender_numbers: SenderNumbers | None = None,
     ) -> None:
         self._gateway = gateway
+        self._sender_numbers = sender_numbers
         self._repo = repo
         self._publisher = publisher
         self._clock = clock
@@ -192,8 +195,14 @@ class PublishingService:
         today = self._clock.now().date()
         for bill in government_first(candidates[:limit]):
             planned = (bill.term, bill.number) in planned_keys
-            if not planned and self.became_druk(bill) is not None:
-                continue
+            try:
+                if not planned and self.became_druk(bill) is not None:
+                    continue
+            except ServiceUnavailableError as exc:
+                result.failed += 1
+                result.fatal_error = exc.describe()
+                log.error("aborting publishing phase: %s", result.fatal_error)
+                break
             if not planned and is_over(bill, today=today):
                 log.info("%s is over: no card", bill.number)
                 self._record_skipped(bill)
@@ -501,8 +510,10 @@ class PublishingService:
 
     def _threaded_project(self, druk: Bill) -> Bill | None:
         """The carded RCL project this druk continues, stamped so the RCL watcher links it."""
-        rm_number = druk.summary.rcl_num or (
-            druk.submission.senders_number if druk.submission is not None else None
+        rm_number = (
+            druk.summary.rcl_num
+            or (druk.submission.senders_number if druk.submission is not None else None)
+            or self._letter_number(druk)
         )
         project = rcl_predecessor(self._repo, None, rm_number)
         if project is None or not self.has_sent_card(project):
@@ -520,6 +531,20 @@ class PublishingService:
             project.number,
         )
         return project
+
+    def _letter_number(self, druk: Bill) -> str | None:
+        """The print's own letter, read only while a carded RCL project awaits its druk."""
+        if (
+            self._sender_numbers is None
+            or druk.summary.applicant_type is not ApplicantType.GOVERNMENT
+            or not self._repo.rcl_thread_awaits_druk()
+        ):
+            return None
+        rm_number = self._sender_numbers.sender_number(druk)
+        if rm_number is not None:
+            self._repo.save_rcl_num(druk.term, druk.number, rm_number)
+            log.info("druk %s: %s read from its cover letter", druk.number, rm_number)
+        return rm_number
 
     def _inherited_card(self, bill: Bill) -> Publication | None:
         """The sent card of the row this print continues (its RPW entry or its RCL project).

@@ -87,7 +87,7 @@ from lexinform.services.rcl_discovery import RclDiscoveryService
 from lexinform.services.rcl_letter_history import RclLetterHistoryPersistence, RclLetterUseCollector
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.senate_history import SenateInspectionCollector, SenateInspectionPersistence
-from lexinform.services.signatories import SejmAuthorsResolver
+from lexinform.services.signatories import CoverLetterSenderNumbers, SejmAuthorsResolver
 from lexinform.services.source_omissions import SourceOmissionPersistence
 from lexinform.services.sources import (
     RclTextSource,
@@ -696,6 +696,7 @@ class Container:
                 attention_assess=self.settings.reader_attention != "off",
                 delivery_attempts=self._delivery_attempts(dry_run),
                 checkpoint=self.state_checkpoint(dry_run=dry_run),
+                sender_numbers=CoverLetterSenderNumbers(self.gateway, self.text_loader()),
             ),
         )
 

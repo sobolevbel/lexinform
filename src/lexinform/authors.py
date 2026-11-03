@@ -33,6 +33,8 @@ _SIGNATURE_RE = re.compile(
 # the end of a signature: "(-)  Barbara\n\n\fOliwiecka" lost the surname on 17 prints of term 10.
 _WRAPPED_AT_PAGE_END = re.compile(r"\n\s*\n(\s*\f\s*)")
 _END_MARKERS = ("Tłoczono z polecenia", "\nProjekt\n", "\nU S T AWA", "\nUSTAWA")
+_SENDER_NUMBER_RE = re.compile(r"\bRM\s?[-‑–]\s?\d{2,4}\s?[-‑–]\s?\d+\s?[-‑–]\s?\d{2}\b")
+_DASH_RE = re.compile(r"[‑–]")
 
 
 @dataclass(frozen=True)
@@ -58,6 +60,12 @@ def _first_named(names: str) -> str:
         if name := _clean(_HONORIFIC.sub("", part)):
             return name
     return ""
+
+
+def sender_number(text: str) -> str | None:
+    """The `RM-0610-180-26` heading a government print's letter (486 of 513 prints, term 10)."""
+    match = _SENDER_NUMBER_RE.search(text[:3000])
+    return re.sub(r"\s", "", _DASH_RE.sub("-", match.group(0))) if match else None
 
 
 def parse_cover_letter(text: str) -> CoverLetter:

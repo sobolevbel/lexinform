@@ -822,6 +822,63 @@ def test_a_druk_whose_project_holds_the_thread_gets_no_card_and_tracking_links_i
     assert w.card_id("3100") == w.card_id(RCL)
 
 
+LETTERED = b"%PDF-government-letter"
+
+
+def _druk_without_rcl_num(w: World, title: str, letter: str) -> None:
+    """The Sejm names no `rclNum` and no `/bills` entry; only the print's letter carries the RM."""
+    assert isinstance(w.extractor, FakeTextExtractor), "World builds a FakeTextExtractor"
+    druk = summary("3100", f"Rządowy {title[0].lower()}{title[1:]}", change="2026-09-12T09:00:00")
+    w.repo.upsert_summary(druk, now=w.clock.now())
+    analysis = w.bill(RCL).analysis
+    assert analysis is not None, "the project was analysed on the first run"
+    w.repo.save_analysis(TERM, "3100", analysis)
+    w.gateway.processes.append(druk)
+    w.gateway.details["3100"] = detail(druk, START)
+    w.attach_pdf("3100", druk.title)
+    w.gateway.files[print_url("3100")] = LETTERED
+    w.extractor.by_content[LETTERED] = (
+        f"Prezes Rady Ministrów\n{letter}\n\nPan\nMarszałek Sejmu\n" + w.extractor.text
+    )
+
+
+def test_a_druk_whose_process_names_no_rm_number_is_linked_by_its_cover_letter() -> None:
+    w = World()
+    project = _followed_project(
+        w, rcl_project(title="Projekt ustawy o zmianie ustawy o cudzoziemcach")
+    )
+    w.rcl.put(_handed_over(project))
+    w.run()
+    w.clock.advance(days=1)
+    _druk_without_rcl_num(w, project.title, "RM-0610-139-26")
+
+    published = w.container.publishing_service(dry_run=False).publish_new(min_score=3, limit=10)
+    report = w.run()
+
+    assert published.published == 0
+    assert w.bill("3100").summary.rcl_num == "RM-0610-139-26"
+    assert report.linked == 1
+    assert [bill.number for bill, _ in w.publisher.new_bills] == [RCL]
+    assert w.card_id("3100") == w.card_id(RCL)
+
+
+def test_a_cover_letter_naming_another_project_leaves_the_druk_its_own_card() -> None:
+    w = World()
+    project = _followed_project(
+        w, rcl_project(title="Projekt ustawy o zmianie ustawy o cudzoziemcach")
+    )
+    w.rcl.put(_handed_over(project))
+    w.run()
+    w.clock.advance(days=1)
+    _druk_without_rcl_num(w, project.title, "RM-0610-77-26")
+
+    published = w.container.publishing_service(dry_run=False).publish_new(min_score=3, limit=10)
+
+    project_row = w.bill(RCL).rcl
+    assert published.published == 1
+    assert project_row is not None and project_row.print_number is None
+
+
 def test_asking_for_the_sejms_entry_of_a_followed_project_answers_with_the_project() -> None:
     w = World()
     project = _followed_project(
