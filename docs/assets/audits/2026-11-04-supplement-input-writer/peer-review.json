@@ -1,0 +1,13 @@
+{
+  "stage": "J217",
+  "review": "Independent text-only review of frozen B; no blockers",
+  "checks": [
+    "Reader A six files byte exact",
+    "One preparation; ordinary validated intent before optional enrichment",
+    "Ordinary metadata exceptions preserve original intent; cancellation propagates",
+    "Captured actual source selection/artifact/extraction parents only",
+    "Stored 26-case A/B reports independently compared; no core or projection differences"
+  ],
+  "root_followup": "Explicit replay-tool mypy target exposed a reused str/list variable; renamed changed_inputs, reran baseline and candidate with identical corrected script",
+  "new_scenarios": 0
+}

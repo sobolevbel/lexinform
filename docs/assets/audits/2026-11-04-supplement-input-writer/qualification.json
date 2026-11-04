@@ -1,0 +1,68 @@
+{
+  "stage": "J217",
+  "full_tests": 7974,
+  "pytest_xml_seconds": 305.254,
+  "coverage_percent": 92,
+  "source_config_pins": 762,
+  "source_freeze_exact": true,
+  "focused_unit_tests": 101,
+  "new_unit_cases": 23,
+  "new_scenarios": 0,
+  "strict_mypy_files": 693,
+  "mypy_ruff_format": "green",
+  "paired_corpus_cases": 26,
+  "core_projection_mismatches": [],
+  "natural_cases": 16,
+  "natural_documents": 8,
+  "synthetic_controls": 10,
+  "mutation_classes": [
+    "date",
+    "amount",
+    "negation",
+    "scope",
+    "reference"
+  ],
+  "pinned_corpus_inputs": 21,
+  "input_changes": [],
+  "receipts_before": 0,
+  "receipts_after": 26,
+  "receipt_only_fixture_sql_bytes": [
+    1245,
+    1608
+  ],
+  "receipt_only_fixture_gzip_bytes": [
+    207,
+    615
+  ],
+  "reader_release": "a266030dd1a05d0afc75e876fd5f5176ed40d5db, actual verified CI41904051778/relay41905295694",
+  "rollback_minimum": "Reader A or compatible successor",
+  "limits": [
+    "Existing INDEX carries_document set only; scanned/unreadable population excluded",
+    "Controlled prior analysis; no historical paid request is reconstructed",
+    "Only local actual provider preparation; no submit/model/client calls",
+    "Only known-parent single-loose text supplements",
+    "Loader budgets are not provider fitting",
+    "No production growth forecast or all-purpose DA5 acceptance"
+  ],
+  "owned_source_sha256": {
+    "src/lexinform/input_receipts.py": "f40b8af94b2796363a13c0e4fc91eca866f90aedf694f717a522118f72f5db1e",
+    "src/lexinform/services/input_receipts.py": "707008d157fc427db7aff24ff86a837bbeef7ed1dd11aa134643a38b43c897e8",
+    "src/lexinform/services/analysis.py": "6bd93738a505bb572ced8d6c1d9d7dcbe221757b1a4c472d837aa3796818dc0f",
+    "tests/unit/test_supplement_input_capture.py": "786417876d03e0414b1e3b53195f157e0f1c65488eec990e373b5458b89d0ed1",
+    "tools/replay_supplement_inputs.py": "1804cf05e5679311d34650f1de67ea1078b2ebbfc76aeef4e672b6f2728c3fa7",
+    "pyproject.toml": "2b0b38d03461b5cd1296a21dc0502f444b85eeb63a2eddf8a0007a24cdec69b2"
+  },
+  "proof_sha256": {
+    "root-qa/full.xml": "bb964387d9fb5da7916c6a9882a25e6a227e9e4764b4c4e0876153db4a4053ce",
+    "root-qa/full.log": "6cd32cf9283c5a2c8afac3c108ff79f66ff86547789d69a04633491991cf440d",
+    "root-qa/source-freeze.json": "3893cdb45a6b5ccabec40625e0d90670522322f9d2e2c0e72168c9807b39be99",
+    "root-baseline/report.json": "f7839b89d81d4585d75f5ad98732985b48ca3b9bceb87a9ef7f3999f237d1d21",
+    "root-replay/report.json": "d5d48da807a4fd3dd348ebd5b03c168885cb673efa0e68198f68dbb4a15e966d"
+  },
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  }
+}

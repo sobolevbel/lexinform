@@ -9959,3 +9959,36 @@ Plan remains74total/43complete/6explicitNA/25applicableopen.
 [Qualification](../assets/audits/2026-11-04-supplement-receipt-reader/qualification.json),
 [report](../assets/audits/2026-11-04-supplement-receipt-reader/report.md),
 [legacy state](../assets/audits/2026-11-04-supplement-receipt-reader/legacy-state-proof.json).
+
+
+<a id="j217"></a>
+
+## J217 — bounded prospective supplement input capture
+
+4 November2026. After actual J216 reader deployment, single-loose-text supplement requests
+can retain the exact captured source/selection/extraction and emitted-text map. One existing
+prepare is followed by ordinary validated intent, optional enrichment and the original save.
+Unsupported/ambiguous parents, scans/multipart and uncorroborated changed prepared text remain
+unstamped. Metadata failures preserve the request; cancellation and existing preparation errors
+propagate. Common builder retains primary serialization/checks. No extra IO or provider calls.
+
+Independent text review found no runtime blockers. Root added the replay tool to strict mypy;
+its reused str/list variable was renamed and both corpus sides rerun with the exact same script.
+101 focused units;23 new unit cases/no scenarios. Public service/repo APIs cover frozen request,
+known parents, failure/cancellation, submit/collect/cleanup/restore and post-prepare text changes.
+
+Root corpus:26paired cases/zero text,context,actualOpenAIpayload,customID,memo,projection changes;
+receipts0→26.16natural=8eligibleofficialPDF×2loaderbudgets,10synthetic meaningful controls.
+All21corpusinputs stable;3official-title exclusions. Controlled prior analysis, not historical
+paid reconstruction. Scans/all-purpose profiles/provider fitting not accepted by this sample.
+Fixture growth1245–1608SQLbytes/207–615gzipbytes each; not a production growth forecast.
+
+Full gate:7974 tests/305.254s/92%,mypy693/Ruff/format green;762source/configpins exact.
+Strict staged-archive docs gate precedes commit.
+J216 a266030d CI41904051778 and relay41905295694 exact verified,45shealth/timer;
+reader A or compatible successor remains minimum rollback. No raw archive/backend/migration/
+prompt/model-output/reader-payload change. DA5 remains partial;74total/43complete/6NA/25open.
+
+[Qualification](../assets/audits/2026-11-04-supplement-input-writer/qualification.json),
+[report and recheck](../assets/audits/2026-11-04-supplement-input-writer/report.md),
+[independent review](../assets/audits/2026-11-04-supplement-input-writer/peer-review.json).

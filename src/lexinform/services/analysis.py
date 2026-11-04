@@ -165,7 +165,9 @@ from lexinform.services.document_history import SourceReadCapture, record_source
 from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
 from lexinform.services.input_receipts import (
     capture_primary_input_receipt,
+    capture_supplement_input_receipt,
     enrich_primary_input_intent,
+    enrich_supplement_input_intent,
 )
 from lexinform.services.joint import primary_of, revive_prefilter_skips
 from lexinform.services.revision_applications import AmendmentRevisionApplications
@@ -1682,6 +1684,7 @@ class AnalysisService:
         sync_call: Callable[[], Record],
         *,
         may_wait: bool,
+        receipt_source: _Loaded | None = None,
     ) -> Record | Waiting:
         require_batch = self._options.require_batch or (
             isinstance(question.ctx, AmendmentsContext) and question.ctx.scan is not None
@@ -1737,19 +1740,28 @@ class AnalysisService:
                 )
                 if self._ledger.reserve(request.estimated_cost_usd):
                     try:
-                        self._repo.save_batch_intent(
-                            BatchIntent.from_request(
-                                request=request,
-                                meta=meta.model_copy(
-                                    update={
-                                        "prompt_version": request.prompt_version,
-                                        "queued_at": now,
-                                    }
-                                ),
-                                provider=provider,
-                                created_at=now,
-                            )
+                        intent = BatchIntent.from_request(
+                            request=request,
+                            meta=meta.model_copy(
+                                update={"prompt_version": request.prompt_version, "queued_at": now}
+                            ),
+                            provider=provider,
+                            created_at=now,
                         )
+                        if receipt_source is not None:
+                            try:
+                                receipt = capture_supplement_input_receipt(
+                                    request,
+                                    receipt_source.selection,
+                                    receipt_source.projection,
+                                    receipt_source.source_read,
+                                )
+                                if receipt is not None:
+                                    intent = enrich_supplement_input_intent(intent, receipt)
+                            except Exception:
+                                with suppress(Exception):
+                                    log.warning("Supplement input receipt omitted (capture_failed)")
+                        self._repo.save_batch_intent(intent)
                     except Exception:
                         self._ledger.release(request.estimated_cost_usd)
                         raise
@@ -2440,6 +2452,7 @@ class AnalysisService:
             SupplementRecord,
             lambda: self._llm.digest_supplement(ctx),
             may_wait=may_wait,
+            receipt_source=loaded,
         )
         if not isinstance(record, Waiting):
             record.number = number

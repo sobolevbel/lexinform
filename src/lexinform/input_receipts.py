@@ -1,10 +1,11 @@
-"""Corroborate bounded receipt metadata against an already frozen primary request."""
+"""Corroborate bounded text-input metadata against an already frozen request."""
 
 import hashlib
 from collections.abc import Iterator
 
+from lexinform.models.analysis import BillContext, SupplementContext
 from lexinform.models.artifacts import ArtifactIdentity
-from lexinform.models.batch import AnalysisQuestion, BatchRequest
+from lexinform.models.batch import AnalysisQuestion, BatchRequest, SupplementQuestion
 from lexinform.models.document_history import DocumentSelectionRecord
 from lexinform.models.documents import DocumentSelection
 from lexinform.models.extractions import ExtractionResult
@@ -13,10 +14,12 @@ from lexinform.models.input_receipts import (
     MAX_INPUT_RECEIPT_INTEGER,
     MAX_INPUT_RECEIPT_SEGMENTS,
     PrimaryInputReceipt,
+    SupplementInputReceipt,
     input_json_chunks,
     input_map_sha256,
     input_text_sha256,
     primary_context_sha256,
+    supplement_context_sha256,
 )
 from lexinform.models.prepared_input import PreparedTextPart, PreparedTextSegment
 from lexinform.text_projection import TextProjection, TextSegment
@@ -105,7 +108,55 @@ def primary_input_receipt(
         "reanalysis",
     ):
         raise ValueError("The receipt profile requires a primary text request")
-    ctx = request.question.ctx
+    return _text_input_receipt(
+        request,
+        selection,
+        ctx=request.question.ctx,
+        receipt_model=PrimaryInputReceipt,
+        context_sha256=primary_context_sha256(request.question.ctx),
+        projection=projection,
+        known_selection=known_selection,
+        body=body,
+        extraction=extraction,
+    )
+
+
+def supplement_input_receipt(
+    request: BatchRequest,
+    selection: DocumentSelection,
+    *,
+    projection: TextProjection | None,
+    known_selection: DocumentSelectionRecord | None = None,
+    body: ArtifactIdentity | None = None,
+    extraction: ExtractionResult | None = None,
+) -> SupplementInputReceipt:
+    if not isinstance(request.question, SupplementQuestion):
+        raise ValueError("The receipt profile requires a supplement text request")
+    return _text_input_receipt(
+        request,
+        selection,
+        ctx=request.question.ctx,
+        receipt_model=SupplementInputReceipt,
+        context_sha256=supplement_context_sha256(request.question.ctx),
+        projection=projection,
+        known_selection=known_selection,
+        body=body,
+        extraction=extraction,
+    )
+
+
+def _text_input_receipt[Receipt: (PrimaryInputReceipt, SupplementInputReceipt)](
+    request: BatchRequest,
+    selection: DocumentSelection,
+    *,
+    ctx: BillContext | SupplementContext,
+    receipt_model: type[Receipt],
+    context_sha256: str,
+    projection: TextProjection | None,
+    known_selection: DocumentSelectionRecord | None,
+    body: ArtifactIdentity | None,
+    extraction: ExtractionResult | None,
+) -> Receipt:
     if (
         ctx.scan is not None
         or selection.scan_input is not None
@@ -142,7 +193,7 @@ def primary_input_receipt(
     ):
         raise ValueError("Known extraction does not corroborate this whole loose source text")
     data: dict[str, object] = {
-        "context_sha256": primary_context_sha256(ctx),
+        "context_sha256": context_sha256,
         "request_sha256": request.payload_sha256,
         "text_sha256": input_text_sha256(ctx.text),
         "text_chars": len(ctx.text),
@@ -154,7 +205,7 @@ def primary_input_receipt(
         "extraction_id": extraction.result_id if extraction is not None else None,
     }
     if projection is None:
-        return PrimaryInputReceipt.model_validate(
+        return receipt_model.model_validate(
             {**data, "retention": "unknown", "reason": "projection_unavailable"}
         )
     if (
@@ -166,7 +217,7 @@ def primary_input_receipt(
     prefix: list[PreparedTextSegment] = []
     count = 0
     reason: str | None = None
-    envelope = PrimaryInputReceipt.model_validate(
+    envelope = receipt_model.model_validate(
         {**data, "retention": "unknown", "reason": "projection_unavailable"}
     )
     remaining = MAX_INPUT_RECEIPT_BYTES - len(envelope.model_dump_json().encode()) - 256
@@ -189,7 +240,7 @@ def primary_input_receipt(
             yield segment
 
     map_sha = input_map_sha256(observed())
-    return PrimaryInputReceipt.model_validate(
+    return receipt_model.model_validate(
         {
             **data,
             "retention": "complete" if reason is None else "prefix",

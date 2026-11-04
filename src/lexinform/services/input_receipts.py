@@ -1,16 +1,19 @@
-"""Join prospective primary receipts to parents from the actual captured read only."""
+"""Join prospective text receipts to parents from the actual captured read only."""
 
-from lexinform.input_receipts import primary_input_receipt
+from lexinform.input_receipts import primary_input_receipt, supplement_input_receipt
 from lexinform.models import (
     AnalysisQuestion,
     ArtifactIdentity,
     BatchIntent,
     BatchItemMeta,
     BatchRequest,
+    DigestItemMeta,
     DocumentPart,
     DocumentSelection,
     ExtractionResult,
     PrimaryInputReceipt,
+    SupplementInputReceipt,
+    SupplementQuestion,
 )
 from lexinform.services.document_history import DocumentSourceRead, SourceReadCapture
 from lexinform.text_projection import TextProjection
@@ -92,6 +95,12 @@ def capture_primary_input_receipt(
 def enrich_primary_input_intent(original: BatchIntent, receipt: PrimaryInputReceipt) -> BatchIntent:
     if not isinstance(original.meta, BatchItemMeta):
         raise ValueError("Primary receipt enrichment requires primary metadata")
+    return _enrich_input_intent(original, receipt)
+
+
+def _enrich_input_intent(
+    original: BatchIntent, receipt: PrimaryInputReceipt | SupplementInputReceipt
+) -> BatchIntent:
     return BatchIntent.model_validate(
         {
             "request": original.request,
@@ -101,3 +110,43 @@ def enrich_primary_input_intent(original: BatchIntent, receipt: PrimaryInputRece
             "created_at": original.created_at,
         }
     )
+
+
+def capture_supplement_input_receipt(
+    request: BatchRequest,
+    selection: DocumentSelection,
+    projection: TextProjection | None,
+    source: SourceReadCapture | None,
+) -> SupplementInputReceipt | None:
+    if (
+        not isinstance(request.question, SupplementQuestion)
+        or request.question.ctx.scan is not None
+        or selection.scan_input is not None
+        or not isinstance(source, DocumentSourceRead)
+        or projection is None
+        or len(selection.parts) != 1
+        or selection.parts[0].members
+        or any(span.stage == "analysis" for span in selection.coverage)
+    ):
+        return None
+    part = selection.parts[0]
+    body = _body(part, source)
+    extraction = _extraction(part, body, source)
+    if body is None or extraction is None:
+        return None
+    return supplement_input_receipt(
+        request,
+        selection,
+        projection=projection,
+        known_selection=source.selection,
+        body=body,
+        extraction=extraction,
+    )
+
+
+def enrich_supplement_input_intent(
+    original: BatchIntent, receipt: SupplementInputReceipt
+) -> BatchIntent:
+    if not isinstance(original.meta, DigestItemMeta):
+        raise ValueError("Supplement receipt enrichment requires secondary metadata")
+    return _enrich_input_intent(original, receipt)
