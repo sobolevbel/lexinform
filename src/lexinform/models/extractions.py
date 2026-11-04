@@ -6,6 +6,7 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from lexinform.models.doc_notes import MAX_DOC_NOTE_SUMMARY_BYTES, DocNoteSummary
 from lexinform.models.documents import ExtractedDocument
 from lexinform.models.odt_notes import (
     MAX_ODT_NOTE_EVENTS,
@@ -243,8 +244,20 @@ class ExtractedPartSummary(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    doc_notes: DocNoteSummary | None = Field(default=None, exclude_if=lambda value: value is None)
+
     @model_validator(mode="after")
     def status_requires_known_manifest(self) -> Self:
+        if self.doc_notes is not None:
+            if not isinstance(self.doc_notes, DocNoteSummary):
+                raise ValueError("Constructed DOC summary requires its typed note source")
+            notes = DocNoteSummary.model_validate(self.doc_notes)
+            if (self.format, self.coordinates, self.text_view) != (
+                "doc",
+                "unknown",
+                "unlocated",
+            ) or (notes.input_sha256, notes.text_sha256) != (self.sha256, self.text_sha256):
+                raise ValueError("DOC note summary differs from its actual source projection")
         if self.word_view_status is not None:
             if not isinstance(self.word_view_status, WordViewStatus):
                 raise ValueError("Constructed Word summary requires its typed view status")
@@ -375,7 +388,25 @@ class ExtractionResult(BaseModel):
             raise ValueError("extraction summaries exceed their existing part limit")
         _odt_prefix_budget(self.selected_parts)
         for part in self.selected_parts:
-            if part.odt_note_status is not None or part.odt_note_prefix is not None:
+            if part.doc_notes is not None:
+                if not isinstance(part.doc_notes, DocNoteSummary):
+                    raise ValueError("Constructed DOC summary requires its typed note source")
+                ExtractedPartSummary.model_validate(part.model_dump(mode="python"))
+        if (
+            sum(
+                len(part.doc_notes.model_dump_json().encode())
+                for part in self.selected_parts
+                if part.doc_notes is not None
+            )
+            > MAX_DOC_NOTE_SUMMARY_BYTES
+        ):
+            raise ValueError("Stored DOC notes exceed the aggregate 4096-byte cap")
+        for part in self.selected_parts:
+            if (
+                part.odt_note_status is not None
+                or part.odt_note_prefix is not None
+                or part.doc_notes is not None
+            ):
                 ExtractedPartSummary.model_validate(part)
         indices = [part.physical_index for part in self.selected_parts]
         if len(set(indices)) != len(indices) or any(

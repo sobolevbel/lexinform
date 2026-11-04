@@ -2,12 +2,18 @@
 
 import argparse
 import datetime as dt
+import re
 import sqlite3
 from collections import Counter
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from lexinform.adapters.extraction_history import (
+    EXTRACTION_SCHEMA_VERSION,
+    ExtractionResultRowError,
+    read_extraction_result,
+)
 from lexinform.adapters.physical_history import physical_inventory_issues
 from lexinform.adapters.senate_history import SenateInspectionRowError, read_senate_inspection
 from lexinform.adapters.source_catalog_attempts import TABLES as CATALOG_TABLES
@@ -35,6 +41,27 @@ from tools.sqlite_snapshot import open_snapshot
 _TABLES = {"document_selections", "source_observations"}
 _ARTIFACT_TABLES = {"artifacts", "selection_artifacts"}
 _EDITION_TABLES = {"document_editions", "selection_editions"}
+
+
+def _audit_extraction_results(
+    connection: sqlite3.Connection,
+    counts: Counter[str],
+    issue: Callable[[str, str], None],
+) -> None:
+    for row in connection.execute(
+        "SELECT rowid AS audit_id, * FROM extraction_results ORDER BY rowid"
+    ):
+        counts["extraction_rows"] += 1
+        identity = row["extraction_id"]
+        ref = (
+            f"extraction_results/{identity}"
+            if isinstance(identity, str) and re.fullmatch(r"extraction-v1:[0-9a-f]{64}", identity)
+            else f"extraction_results/row-{row['audit_id']}"
+        )
+        try:
+            read_extraction_result(row)
+        except ExtractionResultRowError as exc:
+            issue(exc.code, ref)
 
 
 def _audit_rcl_letters(
@@ -111,6 +138,10 @@ def audit(database: Path) -> dict[str, Any]:
                 issue("artifact_metadata_table_unavailable", name)
         if schema >= 54 and "artifact_reads" not in tables:
             issue("artifact_read_table_unavailable", "artifact_reads")
+        if schema >= EXTRACTION_SCHEMA_VERSION and "extraction_results" not in tables:
+            issue("extraction_result_table_unavailable", "extraction_results")
+        if "extraction_results" in tables:
+            _audit_extraction_results(connection, counts, issue)
         if schema >= 57 or _EDITION_TABLES.intersection(tables):
             for name in sorted(_EDITION_TABLES - tables):
                 issue("edition_metadata_table_unavailable", name)

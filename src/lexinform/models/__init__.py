@@ -152,6 +152,13 @@ from lexinform.models.digest import (
     previous_week,
     week_bounds,
 )
+from lexinform.models.doc_notes import (
+    DocNoteCapture,
+    DocNotedParts,
+    DocNoteSummary,
+    DocPartNoteCapture,
+    DocSourceNoteLink,
+)
 from lexinform.models.document_editions import DocumentEdition as DocumentEdition
 from lexinform.models.document_editions import (
     SelectionEditionReference as SelectionEditionReference,
@@ -469,6 +476,11 @@ from lexinform.models.wykaz import (
 )
 
 __all__ = [
+    "DocNoteCapture",
+    "DocNotedParts",
+    "DocNoteSummary",
+    "DocPartNoteCapture",
+    "DocSourceNoteLink",
     "SenateInspectionRecord",
     "LegacyResultImport",
     "LegacyResultOccurrence",

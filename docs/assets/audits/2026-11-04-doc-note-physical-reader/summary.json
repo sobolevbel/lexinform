@@ -1,0 +1,21 @@
+{
+  "changed_inputs": [],
+  "links_by_kind": {
+    "footnote": 377
+  },
+  "note_bearing_unique": 69,
+  "paths": 404,
+  "status_counts": {
+    "source_characters_checked_cf_spec_unknown": 245,
+    "unavailable": 1
+  },
+  "unique_inputs": 246,
+  "verified_input_paths": 405,
+  "physical_captures": 245,
+  "captured_links": 377,
+  "retained_links": 377,
+  "max_doc_summary_bytes": 3200,
+  "max_total_summary_bytes": 6005,
+  "physical_selection_text_and_prior_fields_changed": 0,
+  "default_note_writer": false
+}

@@ -14,6 +14,10 @@ from pydantic import BaseModel, Field
 
 from lexinform.adapters.doc_notes import read_doc_note_links
 from lexinform.adapters.doc_text import DocTextExtractor, table_stream_name
+from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
+from lexinform.adapters.pdf_text import PypdfTextExtractor
+from lexinform.document_candidates import select_document_parts
+from lexinform.extraction_records import summarize_doc_notes
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 
@@ -35,6 +39,43 @@ class TextReference(BaseModel):
 class DocManifest(BaseModel):
     index_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     cases: tuple[DocInput, ...] = Field(min_length=1)
+
+
+def physical_snapshot(data: bytes) -> dict[str, Any]:
+    reader = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
+    baseline = reader.extract_parts(data)
+    linked = reader.extract_parts_with_doc_notes(data)
+    if linked.legacy != baseline:
+        raise ValueError("DOC sidecars changed the legacy physical extraction")
+    selected = select_document_parts(linked.legacy, max_part_chars=None)
+    if selected != reader.extract_document(data):
+        raise ValueError("DOC sidecars changed package selection")
+    observed = reader.extract_document_with_provenance(data)
+    if observed.document != selected or any(
+        part.doc_notes for part in observed.result.selected_parts
+    ):
+        raise ValueError("Default provenance or selected text changed unexpectedly")
+    enriched = summarize_doc_notes(observed.result, linked)
+    without_notes = enriched.model_dump(mode="json")
+    for part in without_notes["selected_parts"]:
+        part.pop("doc_notes", None)
+    if without_notes != observed.result.model_dump(mode="json"):
+        raise ValueError("DOC summaries changed existing extraction fields")
+    summaries = [part.doc_notes for part in enriched.selected_parts if part.doc_notes is not None]
+    return {
+        "physical_sha256": digest(baseline.model_dump_json().encode()),
+        "selection_sha256": digest(selected.selection.model_dump_json().encode()),
+        "selected_text_sha256": digest(selected.text.encode()),
+        "physical_manifest_sha256": enriched.physical_manifest_sha256,
+        "captured_leaves": len(linked.doc_notes),
+        "checked_leaves": sum(part.extraction.state == "checked" for part in linked.doc_notes),
+        "captured_links": sum(len(part.extraction.links) for part in linked.doc_notes),
+        "retained_links": sum(len(notes.links) for notes in summaries),
+        "retained_note_bytes": sum(len(notes.model_dump_json().encode()) for notes in summaries),
+        "total_summary_bytes": len(enriched.model_dump_json().encode()),
+        "retained_coverage": [notes.coverage for notes in summaries],
+        "default_note_writer": False,
+    }
 
 
 def inspect(data: bytes, *, max_notes: int, source_characters: bool = False) -> dict[str, Any]:
@@ -76,6 +117,7 @@ def run(
     *,
     max_notes: int = 256,
     source_characters: bool = False,
+    physical_binding: bool = False,
     reference: Path | None = None,
     reference_sha256: str | None = None,
 ) -> dict[str, Any]:
@@ -85,6 +127,8 @@ def run(
         raise ValueError("Replay output must be outside the read-only corpus")
     if max_notes < 0 or max_notes > 256:
         raise ValueError("Replay max_notes must be between 0 and 256")
+    if physical_binding and not source_characters:
+        raise ValueError("Physical DOC binding requires source-character qualification")
     prior: TextReference | None = None
     if reference is not None or reference_sha256 is not None:
         if reference is None or reference_sha256 is None or not source_characters:
@@ -113,6 +157,8 @@ def run(
                 results[item.sha256] = inspect(
                     data, max_notes=max_notes, source_characters=source_characters
                 )
+                if physical_binding:
+                    results[item.sha256]["physical_binding"] = physical_snapshot(data)
             paths.append({"path": item.path, "sha256": item.sha256})
     if prior is not None:
         if prior.observations.keys() != results.keys():
@@ -147,6 +193,7 @@ def run(
         "index_sha256": manifest.index_sha256,
         "code_version": code_version(),
         "source_fingerprints": source_fingerprints(),
+        "physical_binding": physical_binding,
         "reference_sha256": reference_sha256,
         "max_notes": max_notes,
         "summary": summary,
@@ -173,6 +220,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--max-notes", type=int, default=256)
     parser.add_argument("--source-characters", action="store_true")
+    parser.add_argument("--physical-binding", action="store_true")
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--reference-sha256")
     args = parser.parse_args()
@@ -184,6 +232,7 @@ def main() -> None:
                 args.output,
                 max_notes=args.max_notes,
                 source_characters=args.source_characters,
+                physical_binding=args.physical_binding,
                 reference=args.reference,
                 reference_sha256=args.reference_sha256,
             )

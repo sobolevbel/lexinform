@@ -1,0 +1,29 @@
+{
+  "owned_source_sha256": {
+    "src/lexinform/adapters/extraction_history.py": "290c2476305e7a7a84522c12b012c20cee292bcc57878e560bac5db803ac5abe",
+    "src/lexinform/adapters/sqlite_repo.py": "8b04dc89e9366472031a11cad05e216e1421d06de5e4904d6b6b963715050f66",
+    "tools/source_history_doctor.py": "a6f5d7743c79e47dd38d0680298cb93d1423271b11a70bf8cd5dae4492646739"
+  },
+  "source_base_sha256": {
+    "src/lexinform/adapters/extraction_history.py": null,
+    "src/lexinform/adapters/sqlite_repo.py": "7a9243ae163411d12859facba9b98c68324bd57184944cc1d2649e7fb22c0d72",
+    "tools/source_history_doctor.py": "55bd8bc11337cdcc306c4894b0667499055d660f966a58f4ee15ce632a97763f"
+  },
+  "qualification": {
+    "focused_tests": 60,
+    "modules": [
+      "tests/unit/test_doc_note_physical_parts.py",
+      "tests/unit/test_extraction_results.py",
+      "tests/unit/test_source_history_doctor.py"
+    ],
+    "mypy_source_files": 3,
+    "ruff": "green",
+    "full_corpus_commit": "not run by child"
+  },
+  "contracts": [
+    "read_extraction_result(sqlite3.Row) validates the complete ExtractionResult JSON and exact immutable extraction_id/artifact_sha256 columns; sanitizes malformed JSON errors; no new artifact-parent requirement",
+    "validate_extraction_results(Connection) scans every extraction row with a local cursor Row factory, after scratch migrations and before target mutation; schema56+ missing table is refused",
+    "Repository get and RCL letter-parent validation share the same row reader; RCL message retained",
+    "Source doctor continues after each bad row, reports stable invalid_extraction_result with a validated extraction identity or sanitized rowid fallback; never reports raw JSON or exception payload"
+  ]
+}

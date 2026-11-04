@@ -34,8 +34,16 @@ import lexinform.physical_assembly_integrity as physical_assembly_integrity
 import lexinform.physical_header_capture as physical_header_capture
 import lexinform.physical_root_assembly as physical_root_assembly
 import lexinform.physical_walk_capture as physical_walk_capture
+from lexinform.adapters.doc_notes import DocNoteExtraction
+from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.document_candidates import select_document_parts
 from lexinform.extraction_records import component_code, extraction_component, summarize_extraction
+from lexinform.models.doc_notes import (
+    MAX_DOC_NOTE_PARTS,
+    DocNoteCapture,
+    DocNotedParts,
+    DocPartNoteCapture,
+)
 from lexinform.models.documents import (
     DocumentPart,
     ExtractedDocument,
@@ -1107,6 +1115,7 @@ class _PhysicalOrigins:
     semantic_word_structure: bool = False
     word_view_status: list[WordPartViewStatus] | None = None
     odt_notes: list[OdtPartNoteOrigins] | None = None
+    doc_notes: list[DocPartNoteCapture] | None = None
 
 
 class DocumentTextExtractor:
@@ -1175,6 +1184,27 @@ class DocumentTextExtractor:
             return OdtNotedParts(legacy=legacy, odt_notes=tuple(origins.odt_notes or ()))
         except Exception:
             return empty
+
+    def extract_parts_with_doc_notes(
+        self, data: bytes, *, include_pdf_pages: bool = True
+    ) -> DocNotedParts:
+        if (
+            type(self) is not DocumentTextExtractor
+            or getattr(self.extract_parts, "__func__", None) is not _NATIVE_PHYSICAL_PARTS
+        ):
+            return DocNotedParts(
+                legacy=self.extract_parts(data, include_pdf_pages=include_pdf_pages), doc_notes=()
+            )
+        origins = _PhysicalOrigins(
+            pdf_pages=[] if include_pdf_pages else None,
+            word_blocks=[],
+            word_notes=[],
+            odt_blocks=[],
+            unlocated_text=[],
+            doc_notes=[],
+        )
+        legacy = self._extract_parts(data, origins)
+        return DocNotedParts(legacy=legacy, doc_notes=tuple(origins.doc_notes or ()))
 
     def extract_parts_with_word_structure(
         self, data: bytes, *, include_pdf_pages: bool = True
@@ -1394,6 +1424,7 @@ class DocumentTextExtractor:
         view_result: WordViewExtraction | None = None
         odt_result: OdtTextExtraction | None = None
         odt_notes: OdtNoteOrigins | None = None
+        doc_notes: DocNoteExtraction | None = None
         if data.startswith(_ZIP_MAGIC):
             try:
                 with _physical_zip(data) as archive:
@@ -1533,6 +1564,15 @@ class DocumentTextExtractor:
                     _physical_event(capture, partial(capture.format_failed, exc))
                 rejected.append(f"{members}: {type(exc).__name__}")
                 return
+        elif (
+            data.startswith(_OLE_MAGIC)
+            and origins.doc_notes is not None
+            and len(origins.doc_notes) < MAX_DOC_NOTE_PARTS
+            and _native_doc_notes(self._doc)
+            and isinstance(self._doc, DocTextExtractor)
+        ):
+            doc_notes = _physical_format(partial(self._doc.extract_with_notes, data))
+            text = doc_notes.result.legacy_text
         else:
             text, pdf_result = self._extract(
                 data, depth=len(members), include_pdf_pages=origins.pdf_pages is not None
@@ -1604,6 +1644,12 @@ class DocumentTextExtractor:
                 origins.odt_notes.append(
                     OdtPartNoteOrigins(part_index=len(parts) - 1, extraction=odt_notes)
                 )
+        if origins.doc_notes is not None and doc_notes is not None:
+            origins.doc_notes.append(
+                DocPartNoteCapture(
+                    part_index=len(parts) - 1, extraction=_doc_note_capture(doc_notes)
+                )
+            )
         if origins.unlocated_text is not None:
             head = data[:1024]
             route: Literal["doc", "word_xml"] | None = (
@@ -2045,3 +2091,62 @@ def _physical_recipe(
 
 
 _NATIVE_PHYSICAL_PARTS = DocumentTextExtractor.extract_parts
+
+
+_NATIVE_DOC_EXTRACT = DocTextExtractor.extract
+_NATIVE_DOC_NOTE_EXTRACT = DocTextExtractor.extract_with_notes
+
+
+def _native_doc_notes(value: object) -> bool:
+    return type(value) is DocTextExtractor and all(
+        getattr(getattr(value, name, None), "__func__", None) is implementation
+        for name, implementation in (
+            ("extract", _NATIVE_DOC_EXTRACT),
+            ("extract_with_notes", _NATIVE_DOC_NOTE_EXTRACT),
+        )
+    )
+
+
+def _doc_note_capture(value: DocNoteExtraction) -> DocNoteCapture:
+    source = value.result
+    fields: dict[str, object] = {
+        "input_sha256": value.input_sha256,
+        "text_sha256": hashlib.sha256(source.legacy_text.encode()).hexdigest(),
+        "state": "unavailable",
+        "table_name": None,
+        "main_characters": None,
+        "footnote_characters": None,
+        "endnote_characters": None,
+        "validation": None,
+        "unavailable_reason": "legacy_unavailable"
+        if source.unavailable_reason == "legacy_extraction_unavailable"
+        else "unsupported_or_invalid",
+        "links": (),
+    }
+    unknown = DocNoteCapture.model_validate(fields)
+    if source.links is None or source.validation != "source_characters_checked_cf_spec_unknown":
+        return unknown
+    fields.update(
+        state="checked",
+        table_name=source.links.table_name,
+        main_characters=source.links.main_characters,
+        footnote_characters=source.links.footnote_characters,
+        endnote_characters=source.links.endnote_characters,
+        validation=source.validation,
+        unavailable_reason=None,
+        links=tuple(
+            {
+                "kind": link.kind,
+                "reference_cp": link.reference_cp,
+                "note_start_cp": link.note_start_cp,
+                "note_end_cp": link.note_end_cp,
+                "story_start_cp": link.story_start_cp,
+                "numbering_flag": link.numbering_flag,
+            }
+            for link in source.links.links
+        ),
+    )
+    try:
+        return DocNoteCapture.model_validate(fields)
+    except ValueError:
+        return unknown

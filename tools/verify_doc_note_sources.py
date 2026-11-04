@@ -5,6 +5,7 @@ import io
 import json
 import struct
 import types
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +15,7 @@ from lexinform.adapters import doc_notes, doc_text
 from lexinform.adapters.doc_text import DocTextExtractor
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.corpus_runtime import CorpusReads
+from tools.replay_doc_notes import physical_snapshot
 
 BASELINE_SHA = "0216af4fddc5af723554137b27498862c2893dd1dbd7e5eeddd74f29280f7dee"
 MUTATIONS = (
@@ -66,7 +68,22 @@ def raw_links(word: bytes, table: bytes) -> list[tuple[str, int, int, int, int, 
     return result
 
 
-def qualify(corpus: Path, manifest_path: Path, baseline_path: Path, output: Path) -> dict[str, Any]:
+def packed_members(members: dict[str, bytes]) -> bytes:
+    stream = io.BytesIO()
+    with zipfile.ZipFile(stream, "w") as target:
+        for name, data in members.items():
+            target.writestr(zipfile.ZipInfo(name), data)
+    return stream.getvalue()
+
+
+def qualify(
+    corpus: Path,
+    manifest_path: Path,
+    baseline_path: Path,
+    output: Path,
+    *,
+    physical_binding: bool = False,
+) -> dict[str, Any]:
     source = read_artifact(baseline_path)
     if digest(source) != BASELINE_SHA:
         raise ValueError("Wrong baseline source")
@@ -83,6 +100,7 @@ def qualify(corpus: Path, manifest_path: Path, baseline_path: Path, output: Path
     observed = {}
     derived: list[dict[str, str]] = []
     verified = 0
+    packages: list[dict[str, Any]] = []
     with reads.guard():
         if digest((corpus / "INDEX.json").read_bytes()) != manifest["index_sha256"]:
             raise ValueError("INDEX changed")
@@ -108,6 +126,19 @@ def qualify(corpus: Path, manifest_path: Path, baseline_path: Path, output: Path
             with olefile.OleFileIO(io.BytesIO(data)) as ole:
                 word = ole.openstream("WordDocument").read()
                 table = ole.openstream(links.table_name).read()
+            if physical_binding and not packages:
+                packed = packed_members(
+                    {
+                        "first.doc": data,
+                        "nested.zip": packed_members({"second.doc": data}),
+                    }
+                )
+                snapshot = physical_snapshot(packed)
+                if snapshot["captured_leaves"] != 2:
+                    raise ValueError("Duplicate natural DOC leaves lost their physical bindings")
+                packages.append(
+                    {"source_sha256": identity, "package_sha256": digest(packed), **snapshot}
+                )
             expected = raw_links(word, table)
             actual = [
                 (
@@ -171,6 +202,7 @@ def qualify(corpus: Path, manifest_path: Path, baseline_path: Path, output: Path
         "changed_inputs": [],
         "baseline_texts": observed,
         "meaningful_derivatives": derived,
+        "physical_packages": packages,
     }
     write_json(output, report)
     return {
@@ -186,8 +218,19 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--baseline", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--physical-binding", action="store_true")
     args = parser.parse_args()
-    print(json.dumps(qualify(args.corpus, args.manifest, args.baseline, args.output)))
+    print(
+        json.dumps(
+            qualify(
+                args.corpus,
+                args.manifest,
+                args.baseline,
+                args.output,
+                physical_binding=args.physical_binding,
+            )
+        )
+    )
 
 
 if __name__ == "__main__":

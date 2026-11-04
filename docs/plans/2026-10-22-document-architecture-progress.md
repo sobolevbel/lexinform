@@ -9586,3 +9586,49 @@ J206 is independently compatible with default note storage still disabled; subse
 verification must name the actual latest pushed SHA.
 [Pending release](../assets/audits/2026-11-04-doc-note-reader/release-pending.json),
 [observed steps](../assets/audits/2026-11-04-doc-note-reader/observed-job-steps.json).
+
+
+<a id="j207"></a>
+
+## J207 — DOC physical binding, bounded reader and safe extraction restore
+
+4 November 2026. Baseline `9533c551`; DA3.3 remains partial. Pure models/public exports,
+opt-in physical wrapper and summary helper bind native DOC captures to exact leaf SHA,
+text SHA and index; custom extractors keep their behavior. Legacy body/emitted coordinates
+stay unlocated; CFSpec unknown. Optional None is omitted; old physical manifest unchanged.
+Bounds:64 transient sidecars,32 retained links/leaf,4096 aggregate bytes within16384 whole
+metadata. Full/prefix hashes differ for a proper prefix; deterministic trimming preserves
+all old selected summaries/omission counts. Default note writer remains OFF.
+
+404paths/246SHA replay:245 native captures,69 note-bearing files,377 captured/retainedlinks,
+max3200 DOC bytes/6005 whole metadata; physical/selection/text/prior fields exact. All405
+source/INDEX paths stable. Independent raw checks confirm377links and5meaningful mutations;
+a nested package with duplicate real DOC leaves preserves actual bindings. No natural
+endnotes or human legal labels claimed; no raw derivatives/note contents retained.
+
+Future-row SQL tests found scratch restore omitted unreferenced ExtractionResult validation.
+Shared row reader now validates JSON/ID/artifact columns in lookup, RCL parents, scratch
+restore after migrations, and source doctor. Two known/unavailable cases roundtrip old+new
+rows; corrupted hash rejects before target mutation, and doctor reports the bad unlinked
+row while counting the valid row. No migration, rewriting or new parent policy.
+Cached8022 snapshot: canonical SQL/487typedBills/40legacyextractionrows/three olddoctors
+exact; expanded source doctor0errors. This proves old compatibility, not production capture.
+
+Final7809 tests/284.44s/92%,mypy680/Ruff749;749 source/config pins unchanged. Initial green
+pre-export gate preserved; final gate includes public model exports. Focused model/SQL/doctor/
+replay checks and independent peer review pass. Staged-archive docs precede commit.
+Plan remains74/39complete/6explicitNA/29applicableopen. Next default activation is prepared
+separately and waits for actual deployed reader; no paid/production processing submitted.
+
+J206 `9533c551` actual CI+relay is now proven: transition901f8ca1→9533c551,45shealth,timer.
+Two workflow_run deployments shared the default-branch headSHA: the earlier run actually
+referred to fa0/skip and predates exactCI. A frozen independently tested verifier candidate
+excludes only such chronologically impossible runs before ambiguity; all relay/main guards
+remain. Committed CLI fix plus three regressions are prepared for the next stage.
+
+[Qualification](../assets/audits/2026-11-04-doc-note-physical-reader/qualification.json),
+[report/reproduction](../assets/audits/2026-11-04-doc-note-physical-reader/report.md),
+[cached state](../assets/audits/2026-11-04-doc-note-physical-reader/cached-state-proof.json),
+[J206 release](../assets/audits/2026-11-04-doc-note-source-checks/release.json),
+[release selection qualification](../assets/audits/2026-11-04-doc-note-source-checks/release-qualification.json),
+[actual deployment metadata](../assets/audits/2026-11-04-doc-note-source-checks/release-selection-evidence.json).

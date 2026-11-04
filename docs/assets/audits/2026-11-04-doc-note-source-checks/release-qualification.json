@@ -1,0 +1,12 @@
+{
+  "status": "verified",
+  "target": "9533c55154e0fba2c1842227e1bf276437adeece",
+  "verifier_used": "Independent frozen candidate; committed CLI still has ambiguity bug until next stage",
+  "verifier_sha256": "7b4b3642521126401cdd4e6593b286da07dde6fd050f73bdc9eb142e3181b86a",
+  "patch_sha256": "a5dd0763588ef30c1159d01fa0249f1aa99415c19d45252d3e14c14c94a19614",
+  "focused_tests": 42,
+  "selection_change": "Only exclude deployment runs that predate exact successful CI, an existing mandatory chronology check; multiple eligible runs still ambiguous",
+  "all_other_guards": "Exact target CI, real relay transition/45s/timer logs, final main identity unchanged",
+  "excluded_deploy": 41865474208,
+  "eligible_deploy": 41867883892
+}

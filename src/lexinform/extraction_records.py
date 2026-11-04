@@ -9,7 +9,15 @@ from importlib import metadata
 from pathlib import Path
 from typing import Literal
 
+from pydantic import ValidationError
+
 from lexinform.document_candidates import select_document_parts
+from lexinform.models.doc_notes import (
+    MAX_DOC_NOTE_SUMMARY_BYTES,
+    MAX_DOC_RETAINED_LINKS,
+    DocNotedParts,
+    DocNoteSummary,
+)
 from lexinform.models.documents import ExtractedDocument, ExtractedParts, WordDetailedExtraction
 from lexinform.models.extractions import (
     MAX_EXTRACTION_METADATA_BYTES,
@@ -202,7 +210,8 @@ def summarize_extraction(
         identities.append(
             extraction_metadata_sha256(
                 summary.model_dump(
-                    mode="json", exclude={"word_view_status", "odt_note_status", "odt_note_prefix"}
+                    mode="json",
+                    exclude={"word_view_status", "odt_note_status", "odt_note_prefix", "doc_notes"},
                 )
             )
         )
@@ -374,3 +383,60 @@ def _with_odt_note_prefix(baseline: ExtractionResult, linked: OdtNotedParts) -> 
             used += width
             break
     return result
+
+
+def summarize_doc_notes(baseline: ExtractionResult, linked: DocNotedParts) -> ExtractionResult:
+    """Retain a bounded source-CP prefix without changing existing selected summaries."""
+    linked = DocNotedParts.model_validate(linked)
+    if (baseline.artifact_sha256, baseline.physical_part_count) != (
+        linked.legacy.input_sha256,
+        len(linked.legacy.parts),
+    ):
+        raise ValueError("DOC note summaries require their actual physical extraction")
+    captures = {item.part_index: item.extraction for item in linked.doc_notes}
+    retained = list(baseline.selected_parts)
+    current = baseline
+    for slot, summary in sorted(enumerate(retained), key=lambda item: item[1].physical_index):
+        source = captures.get(summary.physical_index)
+        if source is None:
+            continue
+        part = linked.legacy.parts[summary.physical_index]
+        if (summary.sha256, summary.text_sha256, summary.member_path_sha256) != (
+            part.sha256,
+            part.text_sha256,
+            extraction_metadata_sha256(part.members),
+        ):
+            raise ValueError("DOC note summary differs from its selected physical leaf")
+        if (summary.format, summary.coordinates, summary.text_view) != (
+            "doc",
+            "unknown",
+            "unlocated",
+        ):
+            raise ValueError("DOC note summaries require their actual unlocated DOC projection")
+        for count in range(min(len(source.links), MAX_DOC_RETAINED_LINKS), -1, -1):
+            try:
+                notes = DocNoteSummary.from_capture(source, retained_links=count)
+                enriched = ExtractedPartSummary.model_validate(
+                    summary.model_copy(update={"doc_notes": notes})
+                )
+                offered = list(retained)
+                offered[slot] = enriched
+                size = sum(
+                    len(item.doc_notes.model_dump_json().encode())
+                    for item in offered
+                    if item.doc_notes is not None
+                )
+                candidate = current.model_copy(update={"selected_parts": tuple(offered)})
+                if (
+                    size > MAX_DOC_NOTE_SUMMARY_BYTES
+                    or len(candidate.model_dump_json().encode()) > MAX_EXTRACTION_METADATA_BYTES
+                ):
+                    continue
+                current = ExtractionResult.model_validate(candidate)
+            except ValidationError:
+                continue
+            retained = offered
+            break
+        else:
+            break
+    return current

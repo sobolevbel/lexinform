@@ -30,6 +30,11 @@ from lexinform.adapters.document_work import (
     validate_document_work,
     validate_revision_application_work,
 )
+from lexinform.adapters.extraction_history import (
+    ExtractionResultRowError,
+    read_extraction_result,
+    validate_extraction_results,
+)
 from lexinform.adapters.input_receipts import validate_input_snapshots
 from lexinform.adapters.physical_history import (
     PHYSICAL_INVENTORY_MIGRATION,
@@ -1094,12 +1099,10 @@ def verify_rcl_letter_use_parents(connection: sqlite3.Connection, use: RclLetter
             "SELECT * FROM extraction_results WHERE extraction_id=?", (physical.extraction_id,)
         ).fetchone()
         if row is not None:
-            extraction = ExtractionResult.model_validate_json(row["result_json"])
-            if (extraction.result_id, extraction.artifact_sha256) != (
-                row["extraction_id"],
-                row["artifact_sha256"],
-            ):
-                raise ValueError("letter extraction parent identity mismatch")
+            try:
+                extraction = read_extraction_result(row)
+            except ExtractionResultRowError as exc:
+                raise ValueError("letter extraction parent identity mismatch") from exc
     use.verify_parents(artifact, read, extraction)
 
 
@@ -1277,6 +1280,7 @@ class SqliteBillRepository:
             validate_catalog_attempts(scratch)
             for number, migration in enumerate(MIGRATIONS[version:], start=version + 1):
                 scratch.executescript(f"BEGIN;{migration}PRAGMA user_version = {number};COMMIT;")
+            validate_extraction_results(scratch)
             _validate_legacy_projections(scratch)
             validate_primary_projections(scratch)
             validate_document_work(scratch)
@@ -2691,13 +2695,7 @@ class SqliteBillRepository:
         ).fetchone()
         if row is None:
             return None
-        result = ExtractionResult.model_validate_json(row["result_json"])
-        if (
-            result.result_id != row["extraction_id"]
-            or result.artifact_sha256 != row["artifact_sha256"]
-        ):
-            raise ValueError("extraction columns differ from its immutable result")
-        return result
+        return read_extraction_result(row)
 
     def save_selection_extraction(self, reference: SelectionExtractionReference) -> None:
         reference = SelectionExtractionReference.model_validate_json(reference.model_dump_json())

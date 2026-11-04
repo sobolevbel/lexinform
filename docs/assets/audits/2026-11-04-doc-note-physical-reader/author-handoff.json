@@ -1,0 +1,63 @@
+{
+  "stage": "J207 draft reader and opt-in physical integration; default OFF",
+  "scope": "Four source files plus focused test; no watched files edited, no commit/push/full/corpus/SQL",
+  "base_head": "9533c55154e0fba2c1842227e1bf276437adeece",
+  "base_source_sha256": {
+    "src/lexinform/models/doc_notes.py": null,
+    "src/lexinform/models/extractions.py": "a1c0c67d1bf352ebdab07c590d4621d567b608c725096fe46a02b9bc9ce51192",
+    "src/lexinform/adapters/document_text.py": "2b909e7072dd4a75b0234365b60366ce76837153de7721ae9841404ecfb0ff80",
+    "src/lexinform/extraction_records.py": "88eb5941a6ade291bdc57e899ba8cc333b87b5e56434e446089844f45c8efe13",
+    "tests/unit/test_doc_note_physical_parts.py": null
+  },
+  "j206_context_sha256": {
+    "src/lexinform/adapters/doc_notes.py": "ad5a1ea051a7f0cbe7cbac20ab12bf58683fa56636059fabb85569c3532ef728",
+    "src/lexinform/adapters/doc_text.py": "4d9f1b3b43c4eea92ea43928956a79cd66a5a14f5c808429089a2c1793a478a7"
+  },
+  "candidate_sha256": {
+    "src/lexinform/models/doc_notes.py": "204c45336628b315354b0043130b29f07d4e060a34551b6be9c6bbbb456d8cd2",
+    "src/lexinform/models/extractions.py": "baef5456f5d58e474a1db9efdc5955d58445fed62bb09cf97818f2b942ddf7af",
+    "src/lexinform/adapters/document_text.py": "fdf66a7a4878582319b73b583ed18f4153ff277ec521b6e8c9e0cd4840c9d6c1",
+    "src/lexinform/extraction_records.py": "75dddf3b889af3d43e940dfc7d46f30f2566fa759e63661687857adff24ebead",
+    "tests/unit/test_doc_note_physical_parts.py": "a1b9db18c0f81f459790e8fa3b4abb5a825107f9dd03ce268411ae8aea80d17c"
+  },
+  "patch_sha256": "f87aa9cf042ff0a4e13d29afa4fc435c957204318cd2224df9b6495270418afc",
+  "qualification": {
+    "focused_tests": 21,
+    "mypy_files": 5,
+    "ruff": "green",
+    "isolated_imports": "explicit PYTHONPATH=isolated/src:isolated; root .venv interpreter",
+    "logs": [
+      "prefix-red.log",
+      "focused-v2.log",
+      "mypy-v2.log",
+      "ruff-v2.log"
+    ]
+  },
+  "limits": {
+    "source_links_per_doc": 256,
+    "transient_physical_parts": 64,
+    "stored_links_per_leaf": 32,
+    "aggregate_doc_summary_bytes": 4096,
+    "whole_extraction_bytes": 16384
+  },
+  "open_acceptance": [
+    "Independent peer review",
+    "root integration and focused/full gate",
+    "actual future-row SQL restore/doctors",
+    "pinned corpus physical/selection/paid-input replay and dump/gzip growth before default activation"
+  ],
+  "notes": [
+    "Adapter dataclasses converted at physical leaf; pure models import no adapters",
+    "Default extract_parts/provenance writer unchanged",
+    "Old optional None omitted; exclude new field from physical manifest hash",
+    "Two hashes distinguish captured full link inventory and retained prefix",
+    "Metadata-only scope: source CPs, CFSpec unknown, no body/emitted/complete legal extraction claim",
+    "Typed/constructed bypass controls included",
+    "candidate/*.py final, build_candidate.py initial recipe is superseded; do not regenerate"
+  ],
+  "revision": "v2: proper prefix must have distinct captured/retained hashes; constructed-copy and JSON regressions were RED on v1 and GREEN on v2; no other semantic changes",
+  "preserved_v1": {
+    "handoff": "handoff-v1.json",
+    "patch": "candidate-v1.patch"
+  }
+}

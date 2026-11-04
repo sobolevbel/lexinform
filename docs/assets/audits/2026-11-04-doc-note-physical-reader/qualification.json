@@ -1,0 +1,64 @@
+{
+  "stage": "J207",
+  "baseline_commit": "9533c55154e0fba2c1842227e1bf276437adeece",
+  "default_note_writer": false,
+  "full_tests": 7809,
+  "pytest_seconds": 284.44,
+  "coverage_percent": 92,
+  "mypy_files": 680,
+  "ruff_files": 749,
+  "source_config_pins": 749,
+  "frozen_sources_unchanged": true,
+  "owned_source_sha256": {
+    "src/lexinform/models/__init__.py": "6f3a401bad22d02b93e02976def9c34cb73f16ede3e0f4fac1b25060505a9a75",
+    "src/lexinform/models/doc_notes.py": "204c45336628b315354b0043130b29f07d4e060a34551b6be9c6bbbb456d8cd2",
+    "src/lexinform/models/extractions.py": "baef5456f5d58e474a1db9efdc5955d58445fed62bb09cf97818f2b942ddf7af",
+    "src/lexinform/adapters/document_text.py": "fdf66a7a4878582319b73b583ed18f4153ff277ec521b6e8c9e0cd4840c9d6c1",
+    "src/lexinform/extraction_records.py": "75dddf3b889af3d43e940dfc7d46f30f2566fa759e63661687857adff24ebead",
+    "src/lexinform/adapters/extraction_history.py": "290c2476305e7a7a84522c12b012c20cee292bcc57878e560bac5db803ac5abe",
+    "src/lexinform/adapters/sqlite_repo.py": "8b04dc89e9366472031a11cad05e216e1421d06de5e4904d6b6b963715050f66",
+    "tools/source_history_doctor.py": "a6f5d7743c79e47dd38d0680298cb93d1423271b11a70bf8cd5dae4492646739",
+    "tools/replay_doc_notes.py": "35643cebea139178c17d69d32523112db96a3c410c3e6a7c5e99c3ad6d4dcd1e",
+    "tools/verify_doc_note_sources.py": "8fbfcc9588de818a011edeeac9f00855b92f268d0eefc307d8b42da6c0701f88",
+    "tests/unit/test_doc_note_physical_parts.py": "860b56e9273a94b4d9784da3b74d45ff85b4f313984d487dc10535d45cf93616"
+  },
+  "proof_sha256": {
+    "qa/full.xml": "875fcd14c7c2a244ffad9d589489a524e082f7318fbaede4f000db0a275fb900",
+    "qa/source-freeze.json": "d4f42f9e399df90de1cd7b75656fc68791ad54ec426151dc41ec021bdc4e876b",
+    "replay-frozen/report.json": "31b27ac5353c28f2410aace025f08ce8408ce262a804c80ab0605f37f9a1e0d0",
+    "actual-state/current/proof.json": "68d9498a5ef7bd2a6ae7ccd0972c84bb587f8d3f2e307a58aff43fc6ef2e33f5"
+  },
+  "new_test_module_cases": 23,
+  "author_focused": 21,
+  "root_extra_tests": "Two future SQL known/unavailable roundtrip, atomic invalid restore, valid+invalid unreferenced doctor rows",
+  "review": "Physical v2 prefix-hash controls and shared row-reader/restore/doctor independently reviewed; no remaining blockers",
+  "corpus": {
+    "changed_inputs": [],
+    "links_by_kind": {
+      "footnote": 377
+    },
+    "note_bearing_unique": 69,
+    "paths": 404,
+    "status_counts": {
+      "source_characters_checked_cf_spec_unknown": 245,
+      "unavailable": 1
+    },
+    "unique_inputs": 246,
+    "verified_input_paths": 405,
+    "physical_captures": 245,
+    "captured_links": 377,
+    "retained_links": 377,
+    "max_doc_summary_bytes": 3200,
+    "max_total_summary_bytes": 6005,
+    "physical_selection_text_and_prior_fields_changed": 0,
+    "default_note_writer": false
+  },
+  "cached_state": "Pinned8022 SQL/487typedBills/40legacyExtractionResult rows and three prior doctors exact; new source doctor0errors; no new feature adoption inferred",
+  "release_dependency": "Default activation waits for actual J207 CI+relay; J206 actual953 transition independently verified with qualified chronology selection",
+  "limitations": [
+    "CFSpec/body/emitted mapping remain unknown",
+    "No natural endnotes",
+    "No raw/blob storage, new SQL tables or legacy backfill",
+    "Endnote base is captured, not reconstructed from absent header/comment counts"
+  ]
+}
