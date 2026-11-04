@@ -9861,3 +9861,33 @@ J212 db2e55c0 exact CI41892331310 and relay41893129276 verified, transition62f�
 [corpus summary](../assets/audits/2026-11-04-primary-claim-evidence/corpus-summary.json),
 [report/reproduction](../assets/audits/2026-11-04-primary-claim-evidence/report.md),
 [actual J212 release](../assets/audits/2026-11-04-revision-retention-cleanup/release.json).
+
+
+<a id="j214"></a>
+
+## J214 — actionable stop conditions and audited recovery ordering
+
+4 November 2026. DA10.8 now has a canonical operations runbook for all seven conditions:
+missing required input; wrong edition/date/decision; orphan pending; inconsistent refs/tip;
+checkpoint bypass; duplicate delivery; duplicate accounting. Each maps consumer/actual stop,
+evidence, targeted replay and restart criterion. Purpose flags only where already supported;
+otherwise quiesce the common writer, including queued jobs. Preserve in-flight pending/
+unknown/submitting identities; cancellation does not prove no external effect or checkpoint.
+
+Root review corrected recovery-before-enable ambiguity: prepare decisions while stopped,
+qualify safe runnable work/inbox first, then enable the supported writer and audit recovery.
+No fictional recovery-only mode, unknown auto-retry or old-dump rollback. If no scoped pause
+or qualified guard isolates the consumer, remain stopped. Independent procedural review passes.
+
+45 existing targeted composition/CAS/accounting/restore regressions pass. No new tests.
+Same759source/config pins as J213; reuse its7925test/mypy690/Ruff759/92% gate for this doc-only
+change. Strict staged docs gate and browser nav/overview/ToC verification precede commit.
+No production workflow/flag/state/provider/Telegram action or incident drill performed.
+J213 9fca1780 exact CI41895728623 and actual relay41896460287 verified,
+transitiondb2→9fc/45shealth/timer.
+
+DA10.8 completion is its specified procedural contract, not universal legal-error detection
+or actual production incident acceptance. Plan74total/42complete/6explicitNA/26applicableopen.
+
+[Runbook](../operations/architecture-incidents.md),
+[requirement evidence](../assets/audits/2026-11-04-architecture-stop-contract/acceptance.json).

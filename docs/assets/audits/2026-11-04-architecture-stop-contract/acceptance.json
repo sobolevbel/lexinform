@@ -1,0 +1,51 @@
+{
+  "stage": "J214",
+  "requirement": "DA10.8 procedural stop/preserve/fix/targeted replay contract",
+  "conditions": [
+    "missing_required_part",
+    "wrong_edition_date_or_decision",
+    "orphaned_pending_work",
+    "inconsistent_refs_or_remote_tip",
+    "checkpoint_bypass",
+    "duplicate_delivery",
+    "double_usage_accounting"
+  ],
+  "consumer_stop": "Existing purpose pause only where implemented; otherwise Daily run disable + quiesce running/queued jobs, keep uncertain identities",
+  "source_verified": [
+    "daily.yml name/concurrency/flags/always checkpoint",
+    "AnalysisService.review_enabled",
+    "PostingService.delivery_paused",
+    "canonical operator recovery contracts"
+  ],
+  "sequence": "stop,preserve,reproduce/fix/replay,prepare decisions,qualify safe runnable/inbox path,enable supported writer,audited recovery and first-run verification",
+  "focused_existing_tests": 45,
+  "new_tests": 0,
+  "independent_review": "No procedural blockers after root found/fixed recovery-before-enable ambiguity",
+  "browser": "Local hidden IAB verified nav entry, overviewlink, ToC recovery anchor and all five headings; server stopped afterward",
+  "source_gate": "Reuse exact J213 source/config freeze759:7925tests/mypy690/Ruff759/92%; documentation-only stage adds no code",
+  "no_production_actions": true,
+  "limitations": [
+    "No production incident drill",
+    "No universal automatic legal-error detector",
+    "No new recovery-only workflow mode or consumer pause flag",
+    "No source-family or semantic acceptance implied"
+  ],
+  "plan_counts": {
+    "total": 74,
+    "complete": 42,
+    "not_applicable": 6,
+    "applicable_open": 26
+  },
+  "runbook_sha256": "3df9b24b8ea293502fde026b9de856ce3ee860e6f40e4bc4f85cf73823b531d4",
+  "focused_log_sha256": "0a22aa849acbe454c05e57eca87aaa70b86d3cb93b0651a80a9e2ae3ba6e62c3",
+  "evidence": {
+    "missing_required": "src/lexinform/document_composition.py:43; tests/unit/test_document_composition.py",
+    "refs_checkpoint": "src/lexinform/adapters/state_checkpoint.py:85; tests/unit/test_state_checkpoint.py",
+    "checkpoint_effects": "tests/scenario/test_checkpoint_failures.py",
+    "duplicate_delivery": "tests/scenario/test_delivery_recovery.py",
+    "retained_context": "tests/scenario/test_delivery_checkpoints.py",
+    "work_dependencies": "tests/scenario/test_work_doctor.py",
+    "accounting_restore": "tests/scenario/test_batch_review_candidates.py::test_collected_cost_survives_restore_before_the_report_is_saved",
+    "repeat_collection_reuse": "tests/scenario/test_secondary_computation_history.py::test_secondary_answer_survives_collect_restore_reuse_and_operational_cleanup"
+  }
+}

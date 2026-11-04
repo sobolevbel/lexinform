@@ -852,7 +852,7 @@ compatibility reader. «Выключить флаг» недостаточно �
   наблюдение → сохранение по выбранному профилю → analysis batch → применение → физическая
   доставка/recovery. Приёмка не обещает восстановление raw, если профиль его не сохраняет.
   Не возникшие в периоде случаи остаются «не наблюдались», а не засчитываются как успех.
-- [ ] DA10.8. Stop conditions: потеря обязательной части, неверная редакция/дата/решение,
+- [x] DA10.8. **[J214](2026-10-22-document-architecture-progress.md#j214): [операционная инструкция](../operations/architecture-incidents.md) связывает все семь условий с actual stop mechanism, сохранением evidence и targeted replay/restart gate; source-verified pauses/global writer, неопределённые effects и recovery ordering проверены. Это процедурный контракт, не универсальное обнаружение legal errors и не production drill.** Stop conditions: потеря обязательной части, неверная редакция/дата/решение,
   orphaned pending work, несогласованные refs/remote tip, обход checkpoint, повтор доставки
   или двойное usage accounting. Сначала остановить затронутый consumer, сохранить доказательства,
   затем исправление и повтор затронутого replay.
