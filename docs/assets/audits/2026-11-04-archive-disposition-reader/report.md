@@ -42,3 +42,5 @@ also preserve losing outer archives and avoid routine-singleton suppression.
 
 [Qualification](qualification.json), [legacy proof](legacy-state-proof.json),
 [independent review](peer-review.json). DA4.1/DA4.4 remain partial.
+
+[Actual reader CI and relay release](release.json).

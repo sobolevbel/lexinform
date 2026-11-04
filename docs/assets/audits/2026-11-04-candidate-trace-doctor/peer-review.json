@@ -1,0 +1,12 @@
+{
+  "stage": "J221",
+  "verdict": "No blockers; final root nested-A unit reviewed",
+  "method": "Independent read-only text/hash review; no tests/edits/network",
+  "checked": [
+    "Three runtime files match frozen candidate hashes",
+    "Get/list/restore share model and SQL identity guards; restore FK check preserved",
+    "Sanitized errors expose no stored JSON",
+    "Opt-in row/link counts, unavailable schema, corrupt parents; default output unchanged",
+    "Nested archive count tamper rejected by get/list/restore and detected by doctor; atomic restore and unchanged input DB"
+  ]
+}

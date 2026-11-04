@@ -1,0 +1,41 @@
+{
+  "stage": "J221",
+  "full_tests": 8100,
+  "pytest_xml_seconds": 299.549,
+  "coverage_percent": 92,
+  "source_config_pins": 768,
+  "source_freeze_exact": true,
+  "focused_unit_tests": 125,
+  "new_unit_cases": 17,
+  "new_scenarios": 0,
+  "strict_mypy_files": 699,
+  "mypy_ruff_format": "green",
+  "shared_reader": "Public read_candidate_disposition_trace for get/list/restore; FK guard retained",
+  "nested_A_control": "SQL observed_rows tamper rejected by get/list/restore, atomic rollback, doctor invalid_candidate_trace, bounded refs/no payload",
+  "pinned_state": "105de577:8traces8links validate,0findings;default and42-observation selection coverage exact;DBunchanged;real doublecanonical restore/publicget exact",
+  "corpus_scope": "No extraction/selection/normalization behavior changes; metadata/SQLite units and fixed real-state qualification",
+  "owned_source_sha256": {
+    "src/lexinform/adapters/candidate_trace_history.py": "ebc2e50c78e3a4acfa8b33c62565047fa7e81e74a333edaca17b2bbd92ab0d81",
+    "src/lexinform/adapters/sqlite_repo.py": "b4a73c2093fdb67999ba6ca81f5dbfb29c0134a437d88270b4870e5c2de24215",
+    "tools/source_history_doctor.py": "792862a0bc907a3cff6e3e8b541061ef8f5478e06faa8eab9bc579990f288d8c",
+    "tests/unit/test_candidate_trace_doctor.py": "185a5dec926c2389d62e66ca05c79067d3ea21d2dc4e45396e26dfb6b49e72c5"
+  },
+  "proof_sha256": {
+    "root-qa/full.xml": "de4ddf7be3fe4122418889be4d070fbd37caac1d131c479a13d2c4dc8ebb2f74",
+    "root-qa/full.log": "463df3d914dc7d36ce323a7409c6f0154f49dfe25ac905f49c7fa5cb2828a54c",
+    "root-qa/source-freeze.json": "3e1506eef6da97ea9ed08d0e8e0e59e12182dfc8b7ba2e0c50ac89a774101bcb",
+    "root-qa/pinned-state-proof.json": "aaff62ac5d06986b2890a0758b742db85aaf9012a36384e5a7d3b5d6d4c25ef0"
+  },
+  "previous_release": {
+    "target_sha": "02b9b098bc57a6abbdc74d3c001994c1c35e475d",
+    "ci": 41916342426,
+    "deploy": 41917088658,
+    "proof_complete": true
+  },
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  }
+}

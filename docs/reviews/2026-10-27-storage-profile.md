@@ -171,6 +171,13 @@ source observations по состояниям выбора. Единица и о
 полнота извлечения или классификация причин; несохранённые события неизвестны.
 [Контракт и проверка](../assets/audits/2026-11-04-selection-state-coverage/report.md).
 
+Флаг `--candidate-traces` отдельно проверяет сохранённые candidate traces и их связи;
+get/list/restore используют тот же decoder. Trace rows и observation links считаются раздельно,
+недоступная схема не подменяется пустым набором. Проверка не устанавливает current owner,
+юридическую роль, paid input или доступность raw bytes.
+[Контракт и проверка](../assets/audits/2026-11-04-candidate-trace-doctor/report.md).
+
+
 
 
 ## Естественное восстановление schema 55 · 28 октября

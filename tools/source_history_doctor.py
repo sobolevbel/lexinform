@@ -9,6 +9,11 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, get_args
 
+from lexinform.adapters.candidate_trace_history import (
+    CANDIDATE_TRACE_SCHEMA_VERSION,
+    CandidateTraceRowError,
+    read_candidate_disposition_trace,
+)
 from lexinform.adapters.content_source_refs import ContentSourceRows
 from lexinform.adapters.extraction_history import (
     EXTRACTION_SCHEMA_VERSION,
@@ -231,7 +236,116 @@ def selection_state_coverage(connection: sqlite3.Connection) -> dict[str, Any]:
     return report
 
 
-def audit(database: Path, *, include_selection_coverage: bool = False) -> dict[str, Any]:
+_CANDIDATE_COLUMNS = {
+    "candidate_disposition_traces": {"trace_id", "coverage", "candidate_count", "trace_json"},
+    "source_candidate_traces": {"observation_id", "trace_id"},
+    "source_observations": {
+        "observation_id",
+        "term",
+        "number",
+        "purpose",
+        "selection_id",
+        "source_url",
+        "source_kind",
+        "observation_json",
+    },
+}
+
+
+def candidate_trace_inventory(connection: sqlite3.Connection) -> dict[str, Any]:
+    """Validate saved trace rows and link parents without reconstructing policy or ownership."""
+    unavailable = sorted(
+        table
+        for table, required in _CANDIDATE_COLUMNS.items()
+        if not required <= {row[1] for row in connection.execute(f"PRAGMA table_info({table})")}
+    )
+    findings: list[dict[str, str]] = []
+    report: dict[str, Any] = {
+        "status": "unavailable"
+        if len(unavailable) == len(_CANDIDATE_COLUMNS)
+        else "partial"
+        if unavailable
+        else "available",
+        "unavailable_schema": unavailable,
+        "trace_rows": None,
+        "valid_trace_rows": None,
+        "link_rows": None,
+        "checked_links": None,
+        "unknown_links": None,
+        "findings": findings,
+        "scope": (
+            "Saved trace identity and referential presence; "
+            "no current owner, legal or raw-input verdict."
+        ),
+    }
+
+    def issue(code: str, ref: str) -> None:
+        findings.append({"code": code, "ref": ref, "level": "error"})
+
+    tables = {
+        row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    }
+    schema = connection.execute("PRAGMA user_version").fetchone()[0]
+    for table in unavailable:
+        if table in tables or schema >= CANDIDATE_TRACE_SCHEMA_VERSION:
+            issue("candidate_trace_schema_unavailable", table)
+    cursor = connection.cursor()
+    cursor.row_factory = sqlite3.Row
+    traces: dict[str, bool] = {}
+    try:
+        if "candidate_disposition_traces" not in unavailable:
+            report["trace_rows"] = report["valid_trace_rows"] = 0
+            for row in cursor.execute(
+                "SELECT rowid AS audit_id, * FROM candidate_disposition_traces ORDER BY rowid"
+            ):
+                report["trace_rows"] += 1
+                try:
+                    read_candidate_disposition_trace(row)
+                except CandidateTraceRowError as exc:
+                    traces[row["trace_id"]] = False
+                    issue(exc.code, f"candidate_disposition_traces/row-{row['audit_id']}")
+                else:
+                    traces[row["trace_id"]] = True
+                    report["valid_trace_rows"] += 1
+        if "source_candidate_traces" not in unavailable:
+            report["link_rows"] = report["checked_links"] = report["unknown_links"] = 0
+            reader = ContentSourceRows(connection)
+            for row in cursor.execute(
+                "SELECT rowid AS audit_id, * FROM source_candidate_traces ORDER BY rowid"
+            ):
+                report["link_rows"] += 1
+                ref = f"source_candidate_traces/row-{row['audit_id']}"
+                if {"candidate_disposition_traces", "source_observations"}.intersection(
+                    unavailable
+                ):
+                    report["unknown_links"] += 1
+                    continue
+                if row["trace_id"] not in traces:
+                    issue("candidate_trace_parent_missing", ref)
+                    continue
+                if not traces[row["trace_id"]]:
+                    issue("candidate_trace_parent_invalid", ref)
+                    continue
+                try:
+                    source = reader.get_source_observation(row["observation_id"])
+                except ValueError, TypeError:
+                    issue("candidate_trace_source_invalid", ref)
+                    continue
+                if source is None:
+                    issue("candidate_trace_source_missing", ref)
+                    continue
+                report["checked_links"] += 1
+    finally:
+        cursor.close()
+    return report
+
+
+def audit(
+    database: Path,
+    *,
+    include_selection_coverage: bool = False,
+    include_candidate_traces: bool = False,
+) -> dict[str, Any]:
     counts: Counter[str] = Counter()
     findings: list[dict[str, str]] = []
     selections: dict[str, DocumentSelectionRecord] = {}
@@ -239,6 +353,7 @@ def audit(database: Path, *, include_selection_coverage: bool = False) -> dict[s
     artifacts: dict[str, ArtifactMetadata] = {}
     linked_artifacts: set[str] = set()
     coverage_report: dict[str, Any] | None = None
+    candidate_report: dict[str, Any] | None = None
 
     def issue(code: str, ref: str) -> None:
         findings.append({"code": code, "ref": ref, "level": "error"})
@@ -252,7 +367,7 @@ def audit(database: Path, *, include_selection_coverage: bool = False) -> dict[s
         }
         coverage_unavailable = (
             set(_selection_coverage_unavailable(connection))
-            if include_selection_coverage
+            if include_selection_coverage or include_candidate_traces
             else set()
         )
         for name in sorted(coverage_unavailable & tables):
@@ -472,6 +587,9 @@ def audit(database: Path, *, include_selection_coverage: bool = False) -> dict[s
                     issue("edition_membership_mismatch", ref)
         if include_selection_coverage:
             coverage_report = selection_state_coverage(connection)
+        if include_candidate_traces:
+            candidate_report = candidate_trace_inventory(connection)
+            findings.extend(candidate_report["findings"])
         if not snapshot.unchanged():
             issue("database_changed_during_audit", "database")
     counts["unreferenced_selection_rows"] = len(set(selections) - referenced)
@@ -528,13 +646,25 @@ def audit(database: Path, *, include_selection_coverage: bool = False) -> dict[s
 
     if include_selection_coverage:
         report["selection_state_coverage"] = coverage_report
+    if include_candidate_traces:
+        report["candidate_traces"] = candidate_report
     return report
 
 
-def run(database: Path, output: Path, *, include_selection_coverage: bool = False) -> int:
+def run(
+    database: Path,
+    output: Path,
+    *,
+    include_selection_coverage: bool = False,
+    include_candidate_traces: bool = False,
+) -> int:
     if output.resolve() == database.resolve():
         raise ValueError("Report must be separate from the input database")
-    report = audit(database, include_selection_coverage=include_selection_coverage)
+    report = audit(
+        database,
+        include_selection_coverage=include_selection_coverage,
+        include_candidate_traces=include_candidate_traces,
+    )
     output.parent.mkdir(parents=True, exist_ok=True)
     write_json(output, report)
     return 1 if report["status"] == "failed" else 2 if report["status"] == "not_run" else 0
@@ -545,9 +675,15 @@ def main() -> None:
     parser.add_argument("--database", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--selection-coverage", action="store_true")
+    parser.add_argument("--candidate-traces", action="store_true")
     args = parser.parse_args()
     try:
-        code = run(args.database, args.output, include_selection_coverage=args.selection_coverage)
+        code = run(
+            args.database,
+            args.output,
+            include_selection_coverage=args.selection_coverage,
+            include_candidate_traces=args.candidate_traces,
+        )
     except (OSError, sqlite3.Error, ValueError) as exc:
         parser.error(str(exc))
     raise SystemExit(code)

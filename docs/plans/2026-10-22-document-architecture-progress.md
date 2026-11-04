@@ -10098,3 +10098,35 @@ Plan74total/43complete/6explicitNA/25applicableopen.
 [Qualification](../assets/audits/2026-11-04-archive-disposition-reader/qualification.json),
 [report/limits](../assets/audits/2026-11-04-archive-disposition-reader/report.md),
 [legacy proof](../assets/audits/2026-11-04-archive-disposition-reader/legacy-state-proof.json).
+
+
+<a id="j221"></a>
+
+## J221 — shared candidate-trace row decoding and optional doctor
+
+4 November2026. One public SQLite row decoder validates candidate model/JSON and traceID/
+coverage/count columns for get/list/scratchrestore. Existing restore FK check remains.
+Bounded errors hide stored payload. No new table, identity, policy, writer or migration.
+
+Opt-in source-history doctor --candidate-traces distinguishes trace rows and observation
+links, unavailable schema from empty, unknown parent checks from corrupt known parents.
+Source observations use existing shared SQL/JSON guards; refs are bounded row IDs only.
+No currentowner, requested-URL equality, legalrole, paidinput or rawbody claims. Default
+output stays exact; malformed source-history loops are skipped only when opt-in, other
+audits retained. Existing selection coverage remains independent and unchanged.
+
+17newunits/no scenarios;125focused include prior archive/source/candidate/selection checks.
+Root added one reviewed nested-A control: SQL observedrowcount tamper→get/list/restore reject,
+restoreatomic,doctor invalid_candidate_trace, noURLs/body,DBunchanged. Frozen runtime hashes
+and root unit independently reviewed clear. Root fixedstate105:8traces/8links valid0findings;
+ordinarydoctor exact0errors and42-observationselectionview exact;DBhash unchanged.
+
+Fullgate:8100tests/299.549s/92%,mypy699/Ruff/formatgreen;768source/configpins exact.
+Strict staged-archive docs gate precedes commit.
+J22002b9b098 exactCI41916342426/relay41917088658 verified,45shealth/timer.
+DA10.2 remains partial; saved identity/referentialpresence is not full provenance acceptance.
+Plan74total/43complete/6explicitNA/25applicableopen.
+
+[Contract/recheck](../assets/audits/2026-11-04-candidate-trace-doctor/report.md),
+[qualification](../assets/audits/2026-11-04-candidate-trace-doctor/qualification.json),
+[pinned proof](../assets/audits/2026-11-04-candidate-trace-doctor/pinned-state-proof.json).

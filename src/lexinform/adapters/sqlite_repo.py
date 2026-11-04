@@ -18,6 +18,10 @@ from zoneinfo import ZoneInfo
 
 from pydantic import TypeAdapter
 
+from lexinform.adapters.candidate_trace_history import (
+    read_candidate_disposition_trace,
+    validate_candidate_disposition_traces,
+)
 from lexinform.adapters.content_source_refs import (
     ContentSourceRows,
     validate_content_sources,
@@ -1042,24 +1046,6 @@ def _validate_legacy_projections(connection: sqlite3.Connection) -> None:
                 read_legacy_json(raw, read)
 
 
-def _validate_candidate_disposition_traces(connection: sqlite3.Connection) -> None:
-    for trace_id, coverage, candidate_count, raw in connection.execute(
-        "SELECT trace_id, coverage, candidate_count, trace_json FROM candidate_disposition_traces"
-    ):
-        trace = CandidateDispositionTrace.model_validate_json(raw)
-        if (trace.trace_id, trace.coverage, trace.candidate_count) != (
-            trace_id,
-            coverage,
-            candidate_count,
-        ):
-            raise ValueError("candidate trace columns differ from the recorded identity")
-    if (
-        connection.execute("PRAGMA foreign_key_check(source_candidate_traces)").fetchone()
-        is not None
-    ):
-        raise ValueError("candidate trace link has a broken reference")
-
-
 class RclLetterUseRowError(ValueError):
     def __init__(self, code: str) -> None:
         self.code = code
@@ -1284,7 +1270,7 @@ class SqliteBillRepository:
             _validate_legacy_projections(scratch)
             validate_primary_projections(scratch)
             validate_document_work(scratch)
-            _validate_candidate_disposition_traces(scratch)
+            validate_candidate_disposition_traces(scratch)
             _validate_rcl_letter_uses(scratch)
             validate_senate_inspections(scratch)
             validate_physical_inventory(scratch)
@@ -2074,22 +2060,13 @@ class SqliteBillRepository:
         row = self._conn.execute(
             "SELECT * FROM candidate_disposition_traces WHERE trace_id=?", (trace_id,)
         ).fetchone()
-        return self._candidate_disposition_trace(row) if row else None
-
-    @staticmethod
-    def _candidate_disposition_trace(row: sqlite3.Row) -> CandidateDispositionTrace:
-        trace = CandidateDispositionTrace.model_validate_json(row["trace_json"])
-        if (trace.trace_id, trace.coverage, trace.candidate_count) != tuple(
-            row[key] for key in ("trace_id", "coverage", "candidate_count")
-        ):
-            raise ValueError("candidate trace columns differ from the recorded identity")
-        return trace
+        return read_candidate_disposition_trace(row) if row else None
 
     def list_candidate_disposition_traces(
         self, observation_id: str
     ) -> list[CandidateDispositionTrace]:
         return [
-            self._candidate_disposition_trace(row)
+            read_candidate_disposition_trace(row)
             for row in self._conn.execute(
                 "SELECT t.* FROM source_candidate_traces AS link"
                 " JOIN candidate_disposition_traces AS t ON t.trace_id=link.trace_id"
