@@ -1,0 +1,40 @@
+{
+  "version": 2,
+  "database": "/Users/sobaleu/.codex/worktrees/doc-note-links/lexinform/out/corpus/j208-doc-note-default/fresh-state/restored.db",
+  "schema_version": 65,
+  "before_sha256": "7a5d80a5d269111188b2d41465d06eaadff47605c04d134019a1a536fa28fcb3",
+  "after_sha256": "7a5d80a5d269111188b2d41465d06eaadff47605c04d134019a1a536fa28fcb3",
+  "unchanged": true,
+  "existing_report_identical": true,
+  "observed_at": "2026-11-04T18:21:14.933484+00:00",
+  "tables": {
+    "llm_batches": 57,
+    "llm_batch_items": 122,
+    "llm_batch_intents": 0
+  },
+  "intent_ownership_shape": "No actual intent rows; typed BatchRequest serialization and legacy validation covered in fixtures.",
+  "existing_summary": {
+    "document_rows": 4,
+    "document_waiting": 4,
+    "errors": 0,
+    "review_abandoned": 7,
+    "review_context": 2,
+    "review_owner_rows": 9,
+    "review_purpose_act_application": 2,
+    "review_purpose_consultation_review": 7,
+    "review_rows": 9,
+    "warnings": 4
+  },
+  "llm_work_ages": {
+    "observed_at": "2026-11-04T18:21:14.933484+00:00",
+    "coverage": "recorded",
+    "groups": [],
+    "excluded_terminal_owners": {},
+    "scope": "Intent age is since saved creation; item age is total age since saved submission. Provider finish and local-consumption phase start are unknown; polling is not completion. Items count by batch_id/custom_id, including distinct retry submissions.",
+    "nonterminal_work_items": 0,
+    "missing_schema": [],
+    "unknown_provider_items": [],
+    "suppressed_submitted_intents": 0,
+    "conflicting_or_unknown_intent_owners": []
+  }
+}

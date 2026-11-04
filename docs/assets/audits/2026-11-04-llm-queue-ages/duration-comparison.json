@@ -1,0 +1,42 @@
+{
+  "scope": "Existing JUnit reports only; shared test duration comparison, no rerun or causality claim",
+  "shared_tests": 7834,
+  "median_ratio_for_previous_over_0_1s": 1.85,
+  "largest_deltas": [
+    {
+      "seconds_added": 14.38,
+      "previous_seconds": 3.64,
+      "current_seconds": 18.024,
+      "module": "tests.scenario.test_backfill_workflow_checkpoint",
+      "test": "test_final_workflow_checkpoint_restores_partial_backfill_after_the_run_step_fails[124]"
+    },
+    {
+      "seconds_added": 12.12,
+      "previous_seconds": 3.982,
+      "current_seconds": 16.105,
+      "module": "tests.scenario.test_backfill_workflow_checkpoint",
+      "test": "test_final_workflow_checkpoint_restores_partial_backfill_after_the_run_step_fails[75]"
+    },
+    {
+      "seconds_added": 9.5,
+      "previous_seconds": 3.832,
+      "current_seconds": 13.334,
+      "module": "tests.unit.test_corpus_pilot",
+      "test": "test_pilot_reserves_combined_body_storage_and_stops_before_next_request"
+    },
+    {
+      "seconds_added": 9.43,
+      "previous_seconds": 4.098,
+      "current_seconds": 13.53,
+      "module": "tests.scenario.test_backfill_workflow_checkpoint",
+      "test": "test_final_workflow_checkpoint_restores_partial_backfill_after_the_run_step_fails[1]"
+    },
+    {
+      "seconds_added": 8.75,
+      "previous_seconds": 3.279,
+      "current_seconds": 12.033,
+      "module": "tests.unit.test_corpus_release",
+      "test": "test_release_rejects_corrupt_or_incomplete_reference_before_new_children[child]"
+    }
+  ]
+}

@@ -14,7 +14,7 @@ from lexinform.adapters.document_work import (
     read_document_work,
     revision_handoff_checks,
 )
-from lexinform.models import AmendmentRevisionApplicationWork, ReviewWork
+from lexinform.models import AmendmentRevisionApplicationWork, BatchRequest, ReviewWork
 from tools.corpus_artifacts import write_json
 from tools.observed_latency import observed_latency
 from tools.sqlite_snapshot import open_snapshot
@@ -32,7 +32,7 @@ def work_ages(
     excluded: Counter[str] = Counter()
     for owner in owners:
         kind, state = owner["kind"], owner["state"]
-        nonterminal = (kind, state) in (
+        nonterminal = kind in ("llm_intent", "llm_item") or (kind, state) in (
             ("document", "waiting"),
             ("revision_application", "waiting"),
             ("revision_application", "blocked"),
@@ -45,7 +45,9 @@ def work_ages(
             excluded[f"{kind}/{state}"] += 1
     records: list[dict[str, Any]] = []
     for (kind, state), items in sorted(groups.items()):
-        field_name = "since" if kind == "review" else "created_at"
+        field_name = (
+            "since" if kind == "review" else "submitted_at" if kind == "llm_item" else "created_at"
+        )
         ages: list[tuple[int, str]] = []
         unknown: Counter[str] = Counter()
         for owner in items:
@@ -90,6 +92,103 @@ def work_ages(
             "and source/delivery latency are not evaluated."
         ),
     }
+
+
+_LLM_COLUMNS = {
+    "llm_batch_intents": {"custom_id", "provider", "request_json", "state", "created_at"},
+    "llm_batch_items": {"batch_id", "custom_id", "call_kind", "term", "number", "consumed_at"},
+    "llm_batches": {"batch_id", "provider", "status", "submitted_at"},
+}
+
+
+def llm_work_ages(connection: sqlite3.Connection, observed_at: datetime) -> dict[str, Any]:
+    """Count saved submission intents and physical unconsumed provider items once each."""
+    missing: list[str] = []
+    for table, required in _LLM_COLUMNS.items():
+        present = {row["name"] for row in connection.execute(f"PRAGMA table_info({table})")}
+        missing.extend(f"{table}.{name}" for name in sorted(required - present))
+    owners: list[dict[str, Any]] = []
+    submitted: dict[str, list[sqlite3.Row]] = {}
+    conflicts: list[str] = []
+    unknown_items: list[str] = []
+    suppressed = 0
+    item_schema = not any(name.startswith(("llm_batch_items.", "llm_batches.")) for name in missing)
+    if item_schema:
+        for row in connection.execute(
+            "SELECT i.*, b.provider, b.status, b.submitted_at FROM llm_batch_items i "
+            "LEFT JOIN llm_batches b ON b.batch_id=i.batch_id "
+            "WHERE i.consumed_at IS NULL ORDER BY i.batch_id, i.custom_id"
+        ):
+            submitted.setdefault(row["custom_id"], []).append(row)
+            if row["status"] not in ("submitted", "ended", "failed"):
+                unknown_items.append(f"llm_batch_items/{row['batch_id']}/{row['custom_id']}")
+            owners.append(
+                {
+                    "kind": "llm_item",
+                    "state": row["status"] or "unknown",
+                    "ref": f"llm_batch_items/{row['batch_id']}/{row['custom_id']}",
+                    "submitted_at": row["submitted_at"],
+                }
+            )
+    if not any(name.startswith("llm_batch_intents.") for name in missing):
+        for row in connection.execute(
+            "SELECT * FROM llm_batch_intents WHERE state IN ('queued', 'submitting') "
+            "ORDER BY custom_id"
+        ):
+            ref = f"llm_batch_intents/{row['custom_id']}"
+            try:
+                request = BatchRequest.model_validate_json(row["request_json"])
+            except ValueError, TypeError, KeyError:
+                request = None
+            candidates = submitted.get(row["custom_id"], [])
+            exact = (
+                bool(candidates)
+                and request is not None
+                and all(
+                    (request.term, request.number, request.call_kind)
+                    == (item["term"], item["number"], item["call_kind"])
+                    and request.custom_id == row["custom_id"]
+                    and row["provider"] == item["provider"]
+                    for item in candidates
+                )
+            )
+            if exact:
+                suppressed += 1
+                continue
+            if candidates:
+                conflicts.append(ref)
+            owners.append(
+                {
+                    "kind": "llm_intent",
+                    "state": row["state"],
+                    "ref": ref,
+                    "created_at": row["created_at"],
+                }
+            )
+    report = work_ages(
+        owners, observed_at, complete=not missing and not conflicts and not unknown_items
+    )
+    report["nonterminal_work_items"] = report.pop("nonterminal_owners")
+    report["missing_schema"] = missing
+    report["unknown_provider_items"] = unknown_items
+    report["suppressed_submitted_intents"] = suppressed
+    report["conflicting_or_unknown_intent_owners"] = conflicts
+    for group in report["groups"]:
+        group["phase"] = (
+            "waiting_submission"
+            if group["kind"] == "llm_intent"
+            else "waiting_provider"
+            if group["state"] == "submitted"
+            else "waiting_local_consumption"
+            if group["state"] in ("ended", "failed")
+            else "unknown"
+        )
+    report["scope"] = (
+        "Intent age is since saved creation; item age is total age since saved submission. "
+        "Provider finish and local-consumption phase start are unknown; polling is not completion. "
+        "Items count by batch_id/custom_id, including distinct retry submissions."
+    )
+    return report
 
 
 @dataclass
@@ -296,6 +395,7 @@ def audit(database: Path, *, observed_at: datetime | None = None) -> dict[str, A
             result.documents(connection)
             result.reviews(connection)
         latencies = observed_latency(connection, observed_at) if observed_at is not None else None
+        llm_ages = llm_work_ages(connection, observed_at) if observed_at is not None else None
         if not snapshot.unchanged():
             result.issue("database_changed_during_audit", "database")
     result.findings.sort(key=lambda item: (item["level"], item["code"], item["ref"]))
@@ -332,6 +432,7 @@ def audit(database: Path, *, observed_at: datetime | None = None) -> dict[str, A
         )
         assert latencies is not None, "The explicit observation clock enables latency inspection"
         report["latencies"] = latencies.model_dump(mode="json")
+        report["llm_work_ages"] = llm_ages
     return report
 
 

@@ -1,0 +1,7 @@
+{
+  "reviewer": "queue_age_review",
+  "result": "no blockers after v2",
+  "initial_blocker": "Actual BatchRequest serialization uses question.kind, not legacy top-level call_kind",
+  "resolution": "Typed model current/legacy parsing, exact customID ownership, actual serialized regressions; SQLite test fixture closes connections",
+  "tests_repeated": false
+}

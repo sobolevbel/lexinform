@@ -134,9 +134,15 @@ def test_work_ages_are_opt_in_and_preserve_the_existing_audit(
     legacy = audit(path)
     report = audit(path, observed_at=observed)
     ages = report.pop("work_ages")
+    llm_ages = report.pop("llm_work_ages")
     latencies = ObservedLatencyReport.model_validate(report.pop("latencies"))
 
     assert report == legacy and "work_ages" not in legacy and "latencies" not in legacy
+    assert "llm_work_ages" not in legacy
+    assert llm_ages["observed_at"] == observed.isoformat()
+    assert llm_ages["coverage"] == "recorded" and llm_ages["nonterminal_work_items"] == 0
+    assert "total age since saved submission" in llm_ages["scope"]
+    assert MARKER not in json.dumps(llm_ages)
     assert latencies.observed_at == observed and latencies.coverage == "partial"
     assert ages["nonterminal_owners"] == 3 and ages["coverage"] == "recorded"
     assert all(group["oldest_seconds"] == 172800 for group in ages["groups"])

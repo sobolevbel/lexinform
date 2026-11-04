@@ -9720,3 +9720,41 @@ Plan:74total/40complete/6explicitNA/28applicableopen.
 [report/reproduction](../assets/audits/2026-11-04-odt-context-acceptance/report.md),
 [current release gate](../assets/audits/2026-11-04-odt-context-acceptance/current-release-acceptance.json),
 [actual writer release](../assets/audits/2026-11-04-doc-note-default/release.json).
+
+
+<a id="j210"></a>
+
+## J210 — saved LLM queue ages in the existing doctor
+
+4 November 2026. The explicit-clock read-only work doctor adds `llm_work_ages` without
+changing existing owner groups or the no-clock report. Queued/submitting intents use
+creation time; physical unconsumed items use submission time. Exact saved ownership
+suppresses overlapping intents; distinct retry batches remain separate physical items.
+Schema gaps, orphan providers, unknown statuses and conflicting ownership stay visible.
+Missing/naive/future clocks remain unknown. Ended/failed groups report total submitted
+age, not time since provider completion or local-phase start. No new writer or scheduler.
+
+Independent review caught a legacy-only request-shape assumption before publication.
+Typed BatchRequest decoding now supports current question.kind and legacy call_kind/ctx,
+including the exact request customID. Real current/legacy serialization and conflict controls
+pass. Initial local full gate was interrupted for this fix; the log is preserved.
+The next full gate exposed one additional existing opt-in shape assertion in observed-latency
+tests; it now permits the new explicit-clock sibling while retaining default-report and
+DB-byte equality. The failed7843pass/1assertion report is preserved before the final gate.
+
+Pinned restored schema65:57batches/122consumeditems/0intents; no active natural phase.
+Existing audit equality and unchanged DB SHA prove compatibility/read-only behavior,
+while active phase claims rest on fixtures. 53 focused checks and independent review.
+No extraction/selection/comparison change, corpus text replay inapplicable.
+
+Final7844 tests/300.34s/92%, strict mypy/Ruff/format pass;
+753 source/config pins unchanged. No new scenario; existing doctor assertion extended.
+Staged-archive docs gate precedes commit.
+
+J209 f6d64720 actual CI41884765323 and relay41885949974 verified: transition1d7→f6d,
+45shealth/timer. Plan remains74/40complete/6explicitNA/28applicableopen; DA10.3 partial.
+
+[Qualification](../assets/audits/2026-11-04-llm-queue-ages/qualification.json),
+[report/reproduction](../assets/audits/2026-11-04-llm-queue-ages/report.md),
+[isolated state](../assets/audits/2026-11-04-llm-queue-ages/fresh-state-proof.json),
+[actual J209 release](../assets/audits/2026-11-04-odt-context-acceptance/release.json).

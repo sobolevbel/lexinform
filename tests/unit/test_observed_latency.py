@@ -515,10 +515,13 @@ def test_opt_in_public_audit_keeps_default_output_and_database_bytes(
     before = hashlib.sha256(path.read_bytes()).hexdigest()
     ordinary = audit(path)
     measured = audit(path, observed_at=OBSERVED)
-    assert "latencies" not in ordinary and "work_ages" not in ordinary
+    assert not {"latencies", "work_ages", "llm_work_ages"}.intersection(ordinary)
     assert {
-        key: value for key, value in measured.items() if key not in {"latencies", "work_ages"}
+        key: value
+        for key, value in measured.items()
+        if key not in {"latencies", "work_ages", "llm_work_ages"}
     } == ordinary
+    assert measured["llm_work_ages"]["observed_at"] == OBSERVED.isoformat()
     assert ObservedLatencyReport.model_validate(measured["latencies"]).version == 1
     assert hashlib.sha256(path.read_bytes()).hexdigest() == before
     assert json.dumps(ordinary) == json.dumps(audit(path))

@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "base": "f6d64720",
+  "candidate": "/private/tmp/lexinform-j211-queue-ages",
+  "files": {
+    "tools/work_doctor.py": "f5d7798ec5ecb7ace46f0e66455fbcfdd7faa4790de52ecae75df325fd13f9b7",
+    "tests/unit/test_work_ages.py": "edfa2eb0294e94f502909134f7aaaa8ea7372ea5a802e75934c2dd4f10ee9975",
+    "tests/scenario/test_work_doctor.py": "8ab3a3d244fdceaace27bff46453b5ce3e7b5279669719559d484ab9483d3c7a"
+  },
+  "patch_sha256": "20fe58774a19791dc2d97294d4c3c4898cfad696b0faacfdb7db2dfa9ac34510",
+  "focused_tests": "53 passed: tests/unit/test_work_ages.py tests/scenario/test_work_doctor.py",
+  "ruff": "3 owned files check and format check passed",
+  "mypy": "3 owned files passed (MYPYPATH=src, --follow-imports=silent; strict project settings)",
+  "fresh_db_proof": "fresh-state-proof-v2.json",
+  "fixes": [
+    "Typed BatchRequest JSON reader covers actual question.kind wire format plus legacy model validator.",
+    "Exact ownership includes custom_id/provider/term/number/call_kind.",
+    "Malformed and conflicting requests remain explicit; sqlite fixture closes via yield/finally."
+  ],
+  "limits": [
+    "No natural active LLM phases in restored schema65 DB (0 intents, all 122 items consumed).",
+    "No full gate, paid calls, network, production writes, schema changes or commits.",
+    "Existing root .venv binaries used; initial uv offline install failed on uncached execnet."
+  ]
+}

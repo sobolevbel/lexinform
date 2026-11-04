@@ -1,0 +1,39 @@
+{
+  "stage": "J210",
+  "tests": 7844,
+  "pytest_xml_seconds": 300.344,
+  "coverage_percent": 92,
+  "source_config_pins": 753,
+  "source_freeze_exact": true,
+  "author_focused": 53,
+  "root_focused": 49,
+  "mypy_ruff_format": "green",
+  "peer_review": "v2 actual BatchRequest current/legacy, customID ownership and fixture closure; no remaining blockers",
+  "owned_source_sha256": {
+    "tools/work_doctor.py": "f5d7798ec5ecb7ace46f0e66455fbcfdd7faa4790de52ecae75df325fd13f9b7",
+    "tests/unit/test_work_ages.py": "edfa2eb0294e94f502909134f7aaaa8ea7372ea5a802e75934c2dd4f10ee9975",
+    "tests/scenario/test_work_doctor.py": "8ab3a3d244fdceaace27bff46453b5ce3e7b5279669719559d484ab9483d3c7a",
+    "tests/unit/test_observed_latency.py": "f61c823011e5f87f96e8ae6bcb0784ce362827e045fb75341780fa60e2763df5"
+  },
+  "actual_cli_matches_author_at_same_pinned_clock": true,
+  "corpus_replay": "Not applicable: no extraction/selection/normalization/comparison changes",
+  "snapshot_scope": "schema65/57batches/122consumeditems/0intents, unchanged DB; no natural active LLM phases",
+  "plan_counts": {
+    "total": 74,
+    "complete": 40,
+    "not_applicable": 6,
+    "applicable_open": 28
+  },
+  "proof_sha256": {
+    "qa/full.xml": "c8203feb609cb3dd8951e8c747943313c7a4b23d7937a93b3affe0c54c5d74cd",
+    "qa/source-freeze.json": "ccdb6ddb5f2c703579d6fbc6feeea4238dffb518689fef1a48e0fd892835a1a1",
+    "root-work-report-v2.json": "0889b5cc74dea068af86ce3cd4f7a02b513a164f198a01c26b2907e0c1c9ed8b",
+    "qa/pre-opt-in-test-fix.xml": "6c0edaa6d1d2b1a28f291cdbdd2d0ef2bcc62591851fa84ae6b3119edb02f03d"
+  },
+  "prior_gate": "7843pass/1existing opt-in whitelist assertion; default/DB equality preserved after test fix",
+  "limitations": [
+    "Provider finish/local-consumption phase start unknown; submitted age only",
+    "No paid/production processing or new writer",
+    "DA10.3 remains partial"
+  ]
+}
