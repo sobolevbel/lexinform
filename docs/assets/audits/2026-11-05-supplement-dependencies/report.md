@@ -38,3 +38,5 @@ The first full gate exposed four existing modern-reference fixture cases using n
 result IDs. The fixture now retains real typed secondary computations with original foreign
 paid ownership before exercising inline writes. Original parity assertions stay intact; no
 production check was relaxed. The final unchanged-source full gate supersedes that run.
+
+Actual release: [exact CI and relay verification](release.json), commitd94038f8.

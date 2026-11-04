@@ -3,9 +3,12 @@
 import sqlite3
 from collections.abc import Iterable, Iterator
 
+from lexinform.adapters.secondary_dependencies import (
+    SecondaryDependencyError,
+    validate_secondary_dependency,
+)
 from lexinform.json_storage import read_json
 from lexinform.models.analysis import SupplementRecord
-from lexinform.models.computations import ComputationResult
 
 
 class SupplementDependencyError(ValueError):
@@ -18,47 +21,15 @@ def validate_supplement_dependencies(
     connection: sqlite3.Connection, records: Iterable[SupplementRecord]
 ) -> None:
     for record in records:
-        if record.computation_id is None:
-            continue
         try:
-            projected = SupplementRecord.model_validate_json(record.model_dump_json())
-        except ValueError, TypeError:
-            raise SupplementDependencyError("invalid_supplement_projection") from None
-        cursor = connection.cursor()
-        cursor.row_factory = sqlite3.Row
-        try:
-            row = cursor.execute(
-                "SELECT * FROM computation_results WHERE result_id=?", (projected.computation_id,)
-            ).fetchone()
-        finally:
-            cursor.close()
-        if row is None:
-            raise SupplementDependencyError("supplement_result_unavailable")
-        try:
-            result = ComputationResult.model_validate(read_json(row["result_json"]))
-        except ValueError, TypeError:
-            raise SupplementDependencyError("supplement_result_invalid") from None
-        if (
-            result.result_id,
-            result.provider,
-            result.batch_id,
-            result.custom_id,
-            result.term,
-            result.number,
-        ) != tuple(
-            row[key] for key in ("result_id", "provider", "batch_id", "custom_id", "term", "number")
-        ) or result.result_id != projected.computation_id:
-            raise SupplementDependencyError("supplement_result_columns_mismatch")
-        if result.validation != "validated":
-            raise SupplementDependencyError("supplement_result_failed")
-        if result.purpose != "supplement" or not isinstance(result.record, SupplementRecord):
-            raise SupplementDependencyError("supplement_result_purpose_mismatch")
-        if (
-            projected.request_sha256 is not None
-            and result.request_sha256 is not None
-            and projected.request_sha256 != result.request_sha256
-        ):
-            raise SupplementDependencyError("supplement_request_mismatch")
+            validate_secondary_dependency(connection, record, "supplement")
+        except SecondaryDependencyError as error:
+            code = (
+                "invalid_supplement_projection"
+                if error.code == "invalid_projection"
+                else "supplement_" + error.code
+            )
+            raise SupplementDependencyError(code) from None
 
 
 def supplement_dependency_issues(connection: sqlite3.Connection) -> Iterator[tuple[str, str]]:

@@ -12,6 +12,7 @@ from typing import Any
 from lexinform.adapters.content_source_refs import validate_projected_application
 from lexinform.adapters.input_receipts import input_snapshot_checks
 from lexinform.adapters.primary_projections import primary_projection_issues
+from lexinform.adapters.secondary_dependencies import secondary_dependency_issues
 from lexinform.adapters.supplement_dependencies import supplement_dependency_issues
 from lexinform.models import ComputationResult, ResultApplicabilityObservation, ResultApplication
 from tools.application_targets import application_target
@@ -248,6 +249,8 @@ def audit(database: Path) -> dict[str, Any]:
             for code, ref in primary_projection_issues(connection):
                 result.issue(code, ref)
             for code, ref in supplement_dependency_issues(connection):
+                result.issue(code, ref)
+            for code, ref in secondary_dependency_issues(connection):
                 result.issue(code, ref)
         if not snapshot.unchanged():
             result.issue("database_changed_during_audit", "database")

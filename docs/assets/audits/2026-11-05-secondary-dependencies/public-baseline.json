@@ -1,0 +1,9 @@
+{
+  "state_commit": "7b2084b1c66421061c9031f28a4edabbe2cc0245",
+  "database_sha256": "3ca8e3c7f1b9d94aaceb6c775168fccf6f56711a3076f93b7554ce0720b815a9",
+  "database_unchanged": true,
+  "public_bills": 508,
+  "public_bills_sha256": "e55d19ada631c7572bad136fae8d97eaae89ec1abba98a0eabacb22a84a29d1b",
+  "public_status_changes": 201,
+  "public_status_changes_sha256": "fcc4f53fcabf42b00405f0f415442c0c0da1d5e4104d4d3df62055f83db8c901"
+}

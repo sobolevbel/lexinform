@@ -51,6 +51,10 @@ from lexinform.adapters.primary_projections import (
     validate_primary_cost_projections,
     validate_primary_projections,
 )
+from lexinform.adapters.secondary_dependencies import (
+    validate_secondary_dependencies,
+    validate_secondary_dependency,
+)
 from lexinform.adapters.senate_history import (
     SenateInspectionRowError,
     read_senate_inspection,
@@ -1274,6 +1278,7 @@ class SqliteBillRepository:
             _validate_legacy_projections(scratch)
             validate_primary_projections(scratch)
             validate_status_supplement_dependencies(scratch)
+            validate_secondary_dependencies(scratch)
             validate_document_work(scratch)
             validate_candidate_disposition_traces(scratch)
             _validate_rcl_letter_uses(scratch)
@@ -2960,6 +2965,7 @@ class SqliteBillRepository:
         )
 
     def save_document_review(self, term: int, number: str, review: DocumentReviewRecord) -> None:
+        validate_secondary_dependency(self._conn, review, review.review.purpose)
         column = {
             "consultation_review": "consultation_review_json",
             "commission_review": "commission_review_json",
@@ -4284,6 +4290,7 @@ class SqliteBillRepository:
         )
 
     def save_joint_comparison(self, term: int, number: str, record: JointRecord) -> None:
+        validate_secondary_dependency(self._conn, record, "joint")
         self._conn.execute(
             "UPDATE bills SET joint_json = ? WHERE term = ? AND number = ?",
             (
@@ -5331,6 +5338,8 @@ class SqliteBillRepository:
 
     def add_status_change(self, change: StatusChange) -> int | None:
         validate_supplement_dependencies(self._conn, change.supplements)
+        if change.amendments is not None:
+            validate_secondary_dependency(self._conn, change.amendments, "amendments")
         try:
             cur = self._conn.execute(
                 """
@@ -5370,6 +5379,7 @@ class SqliteBillRepository:
         return int(cur.lastrowid or 0)
 
     def save_status_change_amendments(self, change_id: int, record: AmendmentsRecord) -> None:
+        validate_secondary_dependency(self._conn, record, "amendments")
         self._conn.execute(
             "UPDATE status_changes SET amendments_json = ? WHERE id = ?",
             (
@@ -5830,8 +5840,7 @@ class SqliteBillRepository:
             (at.isoformat(), reply, update_id),
         )
 
-    @staticmethod
-    def _row_to_bill(row: sqlite3.Row) -> Bill:
+    def _row_to_bill(self, row: sqlite3.Row) -> Bill:
         columns = row.keys()
         stages = tuple(Stage.model_validate(s) for s in json.loads(row["stages_json"] or "[]"))
         analysis = (
@@ -5839,7 +5848,7 @@ class SqliteBillRepository:
             if row["analysis_json"]
             else None
         )
-        return Bill(
+        bill = Bill(
             summary=ProcessSummary.model_validate_json(row["summary_json"]),
             status=BillStatus(row["status"]),
             prefilter_hits=json.loads(row["prefilter_hits"] or "[]"),
@@ -5936,6 +5945,19 @@ class SqliteBillRepository:
             first_seen_at=datetime.fromisoformat(row["first_seen_at"]),
             last_checked_at=datetime.fromisoformat(row["last_checked_at"]),
         )
+        if bill.joint is not None:
+            validate_secondary_dependency(self._conn, bill.joint, "joint")
+        if bill.consultation_review is not None:
+            validate_secondary_dependency(
+                self._conn, bill.consultation_review, "consultation_review"
+            )
+        if bill.commission_review is not None:
+            validate_secondary_dependency(self._conn, bill.commission_review, "commission_review")
+        if bill.act_application_review is not None:
+            validate_secondary_dependency(
+                self._conn, bill.act_application_review, "act_application"
+            )
+        return bill
 
     def _row_to_status_change(self, row: sqlite3.Row) -> StatusChange:
         supplements = [
@@ -5943,7 +5965,7 @@ class SqliteBillRepository:
             for value in json.loads(row["supplements_json"] or "[]")
         ]
         validate_supplement_dependencies(self._conn, supplements)
-        return StatusChange(
+        change = StatusChange(
             id=int(row["id"]),
             term=int(row["term"]),
             consultation_opened=bool(row["consultation_opened"]),
@@ -5965,6 +5987,9 @@ class SqliteBillRepository:
             supplements=supplements,
             detected_at=datetime.fromisoformat(row["detected_at"]),
         )
+        if change.amendments is not None:
+            validate_secondary_dependency(self._conn, change.amendments, "amendments")
+        return change
 
     @staticmethod
     def _row_to_publication(row: sqlite3.Row) -> Publication:

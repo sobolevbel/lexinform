@@ -1,0 +1,58 @@
+{
+  "stage": "J226 shared typed secondary dependencies",
+  "full_tests": 8239,
+  "pytest_xml": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "8239",
+    "time": "276.769",
+    "timestamp": "2026-11-05T00:34:00.930705+01:00",
+    "hostname": "Yauhenis-MacBook-Pro.local"
+  },
+  "new_unit_cases": 54,
+  "new_scenarios": 0,
+  "coverage_percent": 92,
+  "source_config_pins": 785,
+  "source_freeze_exact": true,
+  "strict_mypy_files": 716,
+  "mypy_ruff_format": "green",
+  "root_focused_units": 140,
+  "finite_scope": [
+    "supplement",
+    "amendments",
+    "joint",
+    "consultation_review",
+    "commission_review",
+    "act_application"
+  ],
+  "scope_excludes": [
+    "global computation decoder migration",
+    "names",
+    "memo",
+    "publication snapshots",
+    "currentowner/answer/context equality",
+    "schema or stored payload changes"
+  ],
+  "state_proof": "state-proofs.json",
+  "proof_sha256": {
+    "full.xml": "60e114a30c3f55b85409b8d94fbc337f04c870284e15aa2c8124ca7805fecb6d",
+    "full.log": "b1f7f66910ae036c9479a52a0c29febaa6368fbab86317a906ad1d0d2625e706",
+    "source-freeze.json": "4d08c687460975144e8b96c2bc58d1a2a741b53edf1f78e99302ef86d7c63f11",
+    "state-proofs.json": "96fbf0a7855ec26817eea3aa887a2e4eb3346ae578e08825db953a9918428410",
+    "public-baseline.json": "4c7410704f4f69d27925370db044089d39e594e2ccf69daa3e10efa7c3eb0059"
+  },
+  "previous_release": {
+    "target": "d94038f8d76dcb45b4ac6d431633909402d86ae9",
+    "ci": 41934398481,
+    "deploy": 41935143190,
+    "complete": true
+  },
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  }
+}

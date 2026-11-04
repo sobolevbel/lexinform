@@ -10263,3 +10263,32 @@ DA10.2/DA10.7 partial;74total/43complete/6explicitNA/25applicableopen.
 [Report](../assets/audits/2026-11-05-supplement-dependencies/report.md),
 [qualification](../assets/audits/2026-11-05-supplement-dependencies/qualification.json),
 [state proofs](../assets/audits/2026-11-05-supplement-dependencies/state-proofs.json).
+
+<a id="j226"></a>
+
+## J226 — shared typed secondary result dependencies
+
+5 November 2026. Common strict computation-row decoder plus finite secondary validator replaces
+supplement's duplicated implementation and protects five more typed carriers: status-change
+amendments, Bill joint, consultation/commission/act-application reviews. J225 supplement API/
+codes remain. This is not a global computation-reader migration or arbitrary JSON traversal.
+
+Known modern refs require exact retained SQL/JSON identity, validated purpose/type and compatible
+known SHA. Review column/review/context purposes agree; schema2 and compact schema3 both work.
+Missing IDs return before new checks; legacy, foreign original paid owner, missing hashes,
+zero-accounting reuse and display/context differences remain valid. No name/memo/snapshot,
+current-owner or answer-equality inference. Public saves precede writes/preservation; rowmapper,
+scratchrestore and doctor share checks. No schema/payload/selection/extraction/provider change.
+
+54newunit cases/no newscenarios;140root focused,mypy716/Ruff/formatgreen. Root added deepJSON
+corruption to strict duplicate-key check: bounded invalid-result finding, no doctor crash.
+Independent frozen6file review and root2file delta review clear. Historical105/fresh7b208
+ENTIREdoctor outputs and double canonical restore exact, DB hashes unchanged. Fresh ALL508Bills/
+201StatusChanges public serialization hashes exact. Natural modern amendments1; joint/reviews
+legacy, not claimed observed modern production cycles. Fullgate8239tests/276.769s/92%,mypy716/Ruff/formatgreen;785source/config pins exact. Strict staged docs gate precedes commit.
+J225d94038f8 exactCI41934398481/relay41935143190 verified;45shealth/timer.
+DA10.2/DA10.7 remain partial;74total/43complete/6explicitNA/25applicableopen.
+
+[Report](../assets/audits/2026-11-05-secondary-dependencies/report.md),
+[qualification](../assets/audits/2026-11-05-secondary-dependencies/qualification.json),
+[state proofs](../assets/audits/2026-11-05-secondary-dependencies/state-proofs.json).
