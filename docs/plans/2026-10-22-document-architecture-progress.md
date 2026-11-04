@@ -10166,3 +10166,33 @@ DA4.1/DA4.4 remainpartial;plan74total/43complete/6explicitNA/25applicableopen.
 [Qualification](../assets/audits/2026-11-04-archive-replay-baseline/qualification.json),
 [report/recheck](../assets/audits/2026-11-04-archive-replay-baseline/report.md),
 [versioned cohort](../assets/audits/2026-11-04-archive-replay-baseline/cohort.json).
+
+
+<a id="j223"></a>
+
+## J223 — compatible no-main-candidate reason reader
+
+4 November2026. Writer branch review found a precise vocabulary gap: annexes excluded on
+actual if-not-candidates cannot be labelled family_exclusion when no family was chosen.
+Reader adds only no_bill_candidate policy reason, before any producer can emit it.
+No writeractivation, selection/trim/policy behavior, schema/default/identity change.
+
+One new public-model section/trace roundtrip unit/no scenarios;62focused pass including
+old literal JSON/ID/factory tests. Independent two-file review clear. Root fixedstate105:
+8legacyrows JSON/IDs/columns exact,ordinarydoctor exact,candidate doctor8valid0findings,
+DBunchanged. This is reader compatibility, not actual runtime branch acceptance.
+
+Before source change root cachedRCLreference fixed4276stagecases/7599readinputs and1383
+missinginputs;complete_population=false. Independentworker matched results/counts/inputs/
+missing/exclusions. It supports future writer parity, not raw archive/gold coverage.
+No extra download/provider/production/rawstore/backend operation.
+
+Fullgate:8107tests/288.615s/92%,mypy701/Ruff/formatgreen;770source/configpins exact.
+Strict staged-archive docs gate precedes commit.
+J222167945a2 exactCI41920639871/relay41921777283 verified,45shealth/timer.
+ReaderA2 actualdeploy gates newliteral publication; runtimeB1 remains separately qualified.
+DA4.1/DA4.4 partial;plan74total/43complete/6explicitNA/25applicableopen.
+
+[Qualification](../assets/audits/2026-11-04-no-bill-candidate-reader/qualification.json),
+[report/limits](../assets/audits/2026-11-04-no-bill-candidate-reader/report.md),
+[legacy proof](../assets/audits/2026-11-04-no-bill-candidate-reader/legacy-proof.json).

@@ -1,0 +1,55 @@
+{
+  "stage": "J223 compatible A2 reason reader",
+  "full_tests": 8107,
+  "pytest_xml_seconds": 288.615,
+  "coverage_percent": 92,
+  "source_config_pins": 770,
+  "source_freeze_exact": true,
+  "focused_unit_tests": 62,
+  "new_unit_cases": 1,
+  "new_scenarios": 0,
+  "strict_mypy_files": 701,
+  "mypy_ruff_format": "green",
+  "producer_active": false,
+  "scope": "One allowed policy-excluded reason no_bill_candidate and one reader roundtrip unit; no defaults/identity/policy/schema behavior change",
+  "legacy_state": "105de577:8JSON/ID/column rows exact; ordinary doctor exact,candidate doctor8valid0findings,DBunchanged",
+  "cached_OFF_reference": {
+    "cases": 4276,
+    "read_inputs": 7599,
+    "missing_inputs": 1383,
+    "complete_population": false,
+    "counts": {
+      "ambiguous": 123,
+      "no_candidate": 205,
+      "selected": 2273,
+      "unsupported": 669,
+      "unverified": 925,
+      "waiting": 81
+    },
+    "sha256": "1a0fd4978e185d0a29ce9beac6d8ced754467e7765007f10af536444ea3cfc3c",
+    "source": "Frozen before model edit; independent worker matched counts/results/inputs/missing/exclusions",
+    "scope": "Future writer reference, not new raw/cached coverage acceptance"
+  },
+  "owned_source_sha256": {
+    "src/lexinform/models/candidate_trace.py": "9d69b949d7a750f80e9daadb6cc48e10f29dfb6a1ca7d3990904b3e6e8ce981d",
+    "tests/unit/test_archive_member_dispositions.py": "c14a61015b3c2eb5b1f56568b66f96d37419f18dc9f528ec7b86b61ecd0d8530"
+  },
+  "proof_sha256": {
+    "root-qa/full.xml": "bfe1f334f9f6e5d9e6ef204c7e5dce4718d650cdea513532b3b434035b8e829a",
+    "root-qa/full.log": "ef2c130629aef7104ec118a20748895258992497a09c42f2497018b8d4a8aef9",
+    "root-qa/source-freeze.json": "a5dd626b3fcbed30438ca66c2f7cadc353d6effe7b1a5a44d2e583b7491fb950",
+    "root-qa/legacy-proof.json": "69cda054ce444e57f8e52f74d4d68c31462f5a1f1b6d600e7d296862da1fcf10"
+  },
+  "previous_release": {
+    "target_sha": "167945a22eef50ae502dcbe445b010458e0b3d88",
+    "ci": 41920639871,
+    "deploy": 41921777283,
+    "complete": true
+  },
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  }
+}

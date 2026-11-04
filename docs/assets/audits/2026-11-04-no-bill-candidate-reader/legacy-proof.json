@@ -1,0 +1,11 @@
+{
+  "candidate_doctor_findings": 0,
+  "candidate_doctor_valid": 8,
+  "database_sha256": "43965abda162272a982b15d4a2b9e0efea59d625cc7dbf58185dda6c910f8514",
+  "database_unchanged": true,
+  "legacy_json_id_columns_exact": true,
+  "legacy_rows": 8,
+  "new_archive_sections": 0,
+  "ordinary_doctor_exact": true,
+  "state_commit": "105de577d682b1f7057e0593aab5c7a408aed740"
+}

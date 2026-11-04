@@ -52,3 +52,5 @@ size caps and cancellation still need writer units. Bare singleton failures, aux
 roots and missing sidecars/association tails remain B1 exclusions/unknown. This does not
 complete DA4.1/4.4 or prove legal roles. [Qualification](qualification.json),
 [baseline](baseline.json.gz), [root replay](root-replay.json.gz), [review](peer-review.json).
+
+[Actual baseline CI and relay release](release.json).

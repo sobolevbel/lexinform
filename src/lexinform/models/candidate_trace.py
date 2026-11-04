@@ -74,6 +74,7 @@ ArchiveMemberPolicyReason = Literal[
     "version_preference",
     "version_conflict",
     "family_exclusion",
+    "no_bill_candidate",
     "non_bill_body",
     "unknown_role",
     "regulation_support",

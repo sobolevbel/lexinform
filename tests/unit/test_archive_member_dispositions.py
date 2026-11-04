@@ -467,3 +467,19 @@ def test_outer_candidates_without_an_actual_attempt_cannot_claim_archive_rows(
         enriched(original, section((row(stage="walk"),)))
     with pytest.raises(ValidationError):
         CandidateDisposition.model_validate({**disposition.model_dump(), "observed_sha256": ROOT})
+
+
+def test_no_bill_candidate_exclusion_round_trips_without_claiming_a_normative_family() -> None:
+    excluded = ArchiveMemberDisposition.model_validate(
+        {**row().model_dump(), "outcome": "policy_excluded", "reason": "no_bill_candidate"}
+    )
+    trace = enriched(members=section((excluded,)))
+    restored = CandidateDispositionTrace.model_validate_json(
+        trace.model_dump_json(exclude_defaults=True)
+    )
+    assert restored == trace
+    members = restored.archive_members
+    assert members is not None, "the supplied archive section survives reader round-trip"
+    assert members.rows == (excluded,)
+    assert members.rows[0].outcome == "policy_excluded"
+    assert members.rows[0].reason == "no_bill_candidate"
