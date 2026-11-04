@@ -226,3 +226,14 @@ def test_both_note_kinds_share_one_total_capacity() -> None:
     assert [link.story_start_cp for link in result.links] == [20, 20, 38, 38]
     with pytest.raises(DocNoteFormatError):
         read_doc_note_links(bytes(copied), combined, max_notes=3)
+
+
+def test_absent_reference_plc_can_accompany_an_empty_nonzero_note_story() -> None:
+    word, table = note_streams(refs=(), starts=(12,), flags=(), endnotes=True)
+    word = replace_word(word, FIB_PAIRS + 46 * 8, "<I", 0xFFFFFFFF)
+    word = replace_word(word, FIB_PAIRS + 46 * 8 + 4, "<I", 0)
+
+    result = read_doc_note_links(word, table)
+
+    assert result.endnote_characters == 13
+    assert result.links == ()

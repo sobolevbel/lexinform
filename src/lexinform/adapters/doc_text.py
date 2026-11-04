@@ -10,13 +10,21 @@ Anything the parser does not understand yields an empty string with a warning, s
 analysed from its metadata.
 """
 
+import hashlib
 import io
 import logging
 import struct
+from bisect import bisect_right
 from collections.abc import Iterator
 
 import olefile
 
+from lexinform.adapters.doc_notes import (
+    DocNoteExtraction,
+    DocNoteFormatError,
+    DocNoteText,
+    read_doc_note_links,
+)
 from lexinform.sections import PAGE_BREAK
 
 log = logging.getLogger(__name__)
@@ -83,9 +91,26 @@ class DocTextExtractor:
             log.warning(".doc not read (%s: %s); no text", type(exc).__name__, exc)
             return ""
 
+    def extract_with_notes(self, data: bytes) -> DocNoteExtraction:
+        """Capture optional source-CP note links while preserving the legacy extracted text."""
+        try:
+            word, table, extra = _streams(data)
+            legacy, pieces, clx = _word_text(word, table, extra)
+        except (DocFormatError, OSError, struct.error, ValueError, IndexError) as exc:
+            log.warning(".doc not read (%s: %s); no text", type(exc).__name__, exc)
+            result = DocNoteText("", None, "legacy_extraction_unavailable", None)
+        else:
+            result = _capture_notes(word, table, legacy, pieces, clx)
+        return DocNoteExtraction(hashlib.sha256(data).hexdigest(), result)
+
 
 def _extract(data: bytes) -> str:
-    if not olefile.isOleFile(data):
+    word, table, extra = _streams(data)
+    return word_text(word, table, extra)
+
+
+def _streams(data: bytes) -> tuple[bytes, bytes, bytes]:
+    if not olefile.isOleFile(io.BytesIO(data)):
         raise DocFormatError("not an OLE container")
     with olefile.OleFileIO(io.BytesIO(data)) as ole:
         if not ole.exists("WordDocument"):
@@ -96,7 +121,7 @@ def _extract(data: bytes) -> str:
             raise DocFormatError(f"no {table_name} stream")
         table = ole.openstream(table_name).read()
         extra = ole.openstream("Data").read() if ole.exists("Data") else b""
-    return word_text(word, table, extra)
+    return word, table, extra
 
 
 def table_stream_name(word_document: bytes) -> str:
@@ -111,7 +136,12 @@ def word_text(word_document: bytes, table: bytes, data: bytes = b"") -> str:
     """The text of a Word 97-2003 file from its streams: the document, its footnotes and its
     endnotes, in reading order, cleaned of field codes and Word's control characters. Raises
     `DocFormatError` for what the parser cannot read (older versions, encryption, damage)."""
-    word = word_document
+    return _word_text(word_document, table, data)[0]
+
+
+def _word_text(
+    word: bytes, table: bytes, data: bytes
+) -> tuple[str, list[tuple[int, int, int, bool]], bytes]:
     if len(word) < _FIB_FC_CLX + 8:
         raise DocFormatError("WordDocument stream too short for a FIB")
     if struct.unpack_from("<H", word, 0)[0] != 0xA5EC:
@@ -125,9 +155,11 @@ def word_text(word_document: bytes, table: bytes, data: bytes = b"") -> str:
     fc_clx, lcb_clx = struct.unpack_from("<II", word, _FIB_FC_CLX)
     if lcb_clx == 0 or fc_clx + lcb_clx > len(table):
         raise DocFormatError("piece table out of range")
-    pieces = _piece_table(table[fc_clx : fc_clx + lcb_clx])
+    clx = table[fc_clx : fc_clx + lcb_clx]
+    pieces = _piece_table(clx)
     rows = _row_end_marks(word, table, data)
-    return _clean(_read_pieces(word, pieces, spans=_spans(word), row_ends=rows))
+    legacy = _clean(_read_pieces(word, pieces, spans=_spans(word), row_ends=rows))
+    return legacy, pieces, clx
 
 
 def _spans(word: bytes) -> list[tuple[int, int]]:
@@ -317,3 +349,81 @@ def _clean(raw: str) -> str:
     return (
         text.replace(f"\n{PAGE_BREAK}", PAGE_BREAK).replace(f"{PAGE_BREAK}\n", PAGE_BREAK).strip()
     )
+
+
+def word_text_with_notes(word: bytes, table: bytes, data: bytes = b"") -> DocNoteText:
+    """Qualify source characters without claiming CFSpec properties or cleaned-text offsets."""
+    legacy, pieces, clx = _word_text(word, table, data)
+    return _capture_notes(word, table, legacy, pieces, clx)
+
+
+def _capture_notes(
+    word: bytes, table: bytes, legacy: str, pieces: list[tuple[int, int, int, bool]], clx: bytes
+) -> DocNoteText:
+    try:
+        links = read_doc_note_links(word, table)
+        _validate_note_pieces(word, clx, pieces)
+        starts = [piece[0] for piece in pieces]
+        for link in links.links:
+            reference = _source_unit(word, pieces, starts, link.reference_cp)
+            if link.numbering_flag and reference != 0x02:
+                raise DocNoteFormatError("automatic note reference is not 0x02")
+            first = link.story_start_cp + link.note_start_cp
+            last = link.story_start_cp + link.note_end_cp - 1
+            _source_unit(word, pieces, starts, first)
+            if _source_unit(word, pieces, starts, last) != 0x0D:
+                raise DocNoteFormatError("note text does not end in a paragraph mark")
+    except (DocNoteFormatError, struct.error) as exc:
+        return DocNoteText(legacy, None, str(exc), None)
+    return DocNoteText(legacy, links, None, "source_characters_checked_cf_spec_unknown")
+
+
+def _validate_note_pieces(
+    word: bytes, clx: bytes, pieces: list[tuple[int, int, int, bool]]
+) -> None:
+    cb_mac = struct.unpack_from("<I", word, 0x40)[0]
+    if not 1630 <= cb_mac <= len(word):
+        raise DocNoteFormatError("invalid meaningful WordDocument length")
+    position = 0
+    while position < len(clx) and clx[position] == 0x01:
+        if position + 3 > len(clx):
+            raise DocNoteFormatError("truncated CLX property modifier")
+        size = struct.unpack_from("<h", clx, position + 1)[0]
+        if size < 0 or size > len(clx) - position - 3:
+            raise DocNoteFormatError("invalid CLX property modifier length")
+        position += 3 + size
+    if position + 5 > len(clx) or clx[position] != 0x02:
+        raise DocNoteFormatError("missing CLX piece table")
+    size = struct.unpack_from("<I", clx, position + 1)[0]
+    if size < 16 or (size - 4) % 12 or position + 5 + size != len(clx):
+        raise DocNoteFormatError("invalid CLX piece table size")
+    count = (size - 4) // 12
+    if count != len(pieces):
+        raise DocNoteFormatError("inconsistent parsed piece count")
+    previous = 0
+    for index, (start, end, offset, compressed) in enumerate(pieces):
+        raw_at = position + 5 + 4 * (count + 1) + index * 8 + 2
+        raw = struct.unpack_from("<I", clx, raw_at)[0]
+        if raw & 0x80000000 or (compressed and raw & 1):
+            raise DocNoteFormatError("unsupported piece file-position flags")
+        if start != previous or end <= start or end >= 0x7FFFFFFF:
+            raise DocNoteFormatError("invalid contiguous piece CP coverage")
+        width = 1 if compressed else 2
+        if offset < 1630 or offset + width * (end - start) > cb_mac:
+            raise DocNoteFormatError("piece points outside meaningful WordDocument bytes")
+        previous = end
+
+
+def _source_unit(
+    word: bytes,
+    pieces: list[tuple[int, int, int, bool]],
+    starts: list[int],
+    cp: int,
+) -> int:
+    index = bisect_right(starts, cp) - 1
+    if index < 0 or cp >= pieces[index][1]:
+        raise DocNoteFormatError("note CP is not covered by a piece")
+    first, _, offset, compressed = pieces[index]
+    width = 1 if compressed else 2
+    at = offset + width * (cp - first)
+    return word[at] if compressed else struct.unpack_from("<H", word, at)[0]

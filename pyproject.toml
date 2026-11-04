@@ -100,6 +100,7 @@ files = [
   "tools/replay_odt_blocks.py",
   "tools/replay_pdf_pages.py",
   "tools/replay_word_blocks.py",
+  "tools/verify_doc_note_sources.py",
 ]
 plugins = ["pydantic.mypy"]
 warn_unreachable = true

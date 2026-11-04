@@ -153,3 +153,17 @@ def _check_table_range(table: bytes, offset: int, size: int) -> None:
 
 def _ascending(cps: tuple[int, ...]) -> bool:
     return all(first < last for first, last in zip(cps, cps[1:], strict=False))
+
+
+@dataclass(frozen=True)
+class DocNoteText:
+    legacy_text: str
+    links: DocNoteLinks | None
+    unavailable_reason: str | None
+    validation: Literal["source_characters_checked_cf_spec_unknown"] | None
+
+
+@dataclass(frozen=True)
+class DocNoteExtraction:
+    input_sha256: str
+    result: DocNoteText

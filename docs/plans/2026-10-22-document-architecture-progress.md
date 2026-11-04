@@ -9543,3 +9543,46 @@ qualification through existing parsed pieces, no new text decode/OLE read, CFSpe
 [Qualification](../assets/audits/2026-11-04-doc-note-reader/qualification.json),
 [report and reproduction](../assets/audits/2026-11-04-doc-note-reader/report.md),
 [controlled clock proof](../assets/audits/2026-11-04-doc-note-reader/fixture-clock-proof.json).
+
+
+<a id="j206"></a>
+
+## J206 — opt-in DOC source-character qualification
+
+4 November 2026. Baseline `fa0fb7a7`; DA3.3 remains partial. Actual OLE SHA binds an
+immutable result; the streams-only API invents no file identity. One OLE read/one legacy
+render reuses CLX/pieces for bounded note checks. Validates raw automatic0x02, terminalCR,
+UTF16CP coverage, CLX shape and cbMac; physical FC reuse is allowed. Malformed optional
+metadata preserves text; unexpected errors/cancellation propagate. CFSpec remains unknown.
+
+404paths/246SHA:245 OLE qualified,69note-bearing/377footnote links,one non-OLE SHA/two
+paths unavailable. All405 raw/INDEX paths unchanged. Pinned old/default/opt-in text identical;
+independent raw PLC/code-unit checks confirm377links. Five in-memory natural-note derivatives
+change date/amount/negation/scope/reference and all survive unchanged through old/new decoding.
+Natural endnotes absent; synthetic endnotes/nonBMP/mixed pieces/custom refs covered.
+No note bodies/raw derivatives are retained; no default note writer/new SQL fields/tables.
+Existing code fingerprints change normally, historical evidence is not rewritten.
+
+Peer found a replay manifest path bypass into allowed project files; requirecorpus membership
+beforeIO plus absolute/relative RED controls fixes it. Unit tests also caught olefile treating
+short bytes as filenames: the replay signature check now uses BytesIO. Final92 focused
+tests pass;7786 full tests/371.26s/92%,mypy677/Ruff746. Frozen source/config746 pins
+unchanged; independent audit driver is versioned under tools and included in the default strict gate.
+Two RED/green controls also fix the old production byte-signature boundary: short document
+bytes no longer probe a local filename; valid corpus text remains identical. Staged-archive
+docs gate precedes commit; exact pushed CI/relay is checked separately afterward.
+Plan remains74/39 complete/6 explicitNA/29 applicable open. Next: physical-leaf integration
+and bounded retained diagnostics, with reader deployed before any default writer.
+
+[Qualification](../assets/audits/2026-11-04-doc-note-source-checks/qualification.json),
+[report and reproduction](../assets/audits/2026-11-04-doc-note-source-checks/report.md),
+[independent proof](../assets/audits/2026-11-04-doc-note-source-checks/independent-source-proof.json).
+
+
+J205 release snapshot while preparing J206: `fa0fb7a7` was pushed; every recorded job step
+is successful, but GitHub still reports the job/run in progress and no deploy event.
+This is not a verified relay release; no rerun or forced deployment was requested.
+J206 is independently compatible with default note storage still disabled; subsequent
+verification must name the actual latest pushed SHA.
+[Pending release](../assets/audits/2026-11-04-doc-note-reader/release-pending.json),
+[observed steps](../assets/audits/2026-11-04-doc-note-reader/observed-job-steps.json).

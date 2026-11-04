@@ -1,0 +1,53 @@
+{
+  "stage": "J206",
+  "baseline_commit": "fa0fb7a7cf9f3a62d6379166130b9459b083fe45",
+  "full_tests": 7786,
+  "pytest_seconds": 371.26,
+  "coverage_percent": 92,
+  "mypy_files": 677,
+  "ruff_files": 746,
+  "focused_tests": 92,
+  "source_pins": 746,
+  "frozen_sources_unchanged": true,
+  "producer_sources": {
+    "src/lexinform/adapters/doc_notes.py": "ad5a1ea051a7f0cbe7cbac20ab12bf58683fa56636059fabb85569c3532ef728",
+    "src/lexinform/adapters/doc_text.py": "4d9f1b3b43c4eea92ea43928956a79cd66a5a14f5c808429089a2c1793a478a7"
+  },
+  "proof_sha256": {
+    "qa/full.xml": "7b742c4854a269e740c3fc70545ed11e389d09a12b6e09417c562dcfdb7d9f2e",
+    "qa/source-freeze.json": "6714b43967b273722b868d82f818669e69b66f1955851a75c104ef7adfaae030",
+    "replay-signature/report.json": "5fa072916e7d0dfbb3493bb59ffe977fbc0607c929c0c6b205416a58dbc03e30",
+    "qa/signature-red.log": "ad80ec15d1e10f8795bf6151b63a385a1dbc70bc4b339aad55929e3ac35f860e"
+  },
+  "corpus": {
+    "paths": 404,
+    "unique_sha": 246,
+    "qualified_ole": 245,
+    "note_bearing": 69,
+    "verified_raw_links": 377,
+    "meaningful_derivatives": 5,
+    "input_paths_verified": 405,
+    "changed_inputs": []
+  },
+  "review": "Independent read-only source/tests/tool review; manifest input bypass found and fixed with two RED controls; closure has no blockers",
+  "limitations": [
+    "CFSpec/CHPX unknown",
+    "No natural endnotes",
+    "No emitted-offset/physical-package integration",
+    "No default note capture/storage",
+    "No human legal labels"
+  ],
+  "audit_driver_gate": "Included in default strict mypy and Ruff gates under tools; no docs source exception",
+  "deployment": "Exact pushed SHA CI/relay proof recorded separately after push",
+  "signature_fix": "Both public byte-input APIs now use BytesIO for OLE signature probe; two deterministic RED/green no-filesystem controls; corpus unchanged",
+  "prior_green_gates": [
+    {
+      "tests": 7784,
+      "reason": "Before audit driver move into tools"
+    },
+    {
+      "tests": 7784,
+      "reason": "Before final byte-signature IO fix"
+    }
+  ]
+}
