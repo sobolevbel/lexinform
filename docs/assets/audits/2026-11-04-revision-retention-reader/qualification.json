@@ -1,0 +1,32 @@
+{
+  "stage": "J211 reader only",
+  "full_tests": 7844,
+  "pytest_xml_seconds": 291.092,
+  "coverage_percent": 92,
+  "focused_tests": 23,
+  "mypy_ruff_format": "green",
+  "source_config_pins": 753,
+  "source_freeze_exact": true,
+  "new_scenarios": 0,
+  "cleanup_revision_payloads": "still excluded; writer must wait for actual deployed reader",
+  "independent_review": "A/B runtime no blockers; Bv2 only test organization changes after user unit preference",
+  "corpus_replay": "inapplicable: no extraction/selection/comparison changes",
+  "fresh_state": "2roots/3legacyrevisions listing IDs/order exact; canonical dump unchanged",
+  "owned_sha256": {
+    "AGENTS.md": "0a01f08e7f1ec3ac9ad5ea4df154a07b8e53250f2800b76ab28b42403c7d5a18",
+    "src/lexinform/adapters/sqlite_repo.py": "ef3ee843165c8c5846f6653a21aaf85ec6af778088fc6b2f6a9f4e2476cead51",
+    "tests/scenario/test_revision_application_runtime.py": "e7d1f933cdb517e3d822c8e96586f61ed88953bd1b060d4aa2a8383caacd8d74"
+  },
+  "proof_sha256": {
+    "qa/full.xml": "c0e159761d9c28758704449eb9de72b99b6115e0c934a84e7f7d53dc9b5f3f5d",
+    "qa/source-freeze.json": "24a885df02216913ca637f84925100e219949c0c6815ec13aacfa1c056e95a11",
+    "fresh-state-proof.json": "4f8ca5fc62618523efcfb9937db41bb2e715e63d6ea2db09ba7b2aa758d84505"
+  },
+  "reader_patch_sha256": "3b8297781dcbac377294e09b1b4e6b9b459452621c61256a32528ff591509d9d",
+  "plan_counts": {
+    "total": 74,
+    "complete": 40,
+    "not_applicable": 6,
+    "applicable_open": 28
+  }
+}

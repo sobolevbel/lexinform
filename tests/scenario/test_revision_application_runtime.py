@@ -440,6 +440,9 @@ def test_completed_work_uses_exact_editorial_history_after_operational_payload_c
     world.repo.restore(raw)
     world.repo.restore(world.repo.dump())
     assert world.repo.get_revision_application_work(work.key) == completed
+    assert world.repo.list_amendment_revisions(work.original_publication_id) == [
+        revision.model_copy(update={"delivery": None})
+    ]
     assert world.repo.get_computation_result(work.result_id) == paid
     assert audit(path)["summary"]["errors"] == 0
     retained = world.repo.dump()

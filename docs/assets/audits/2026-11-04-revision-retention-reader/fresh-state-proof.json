@@ -1,0 +1,11 @@
+{
+  "scope": "Pinned state105de577 restored in memory; no processing/provider calls",
+  "state_sql_sha256": "29dfe8566f02ceb810a1a43e8ea9a7b0fd0d9f6fc54ffa7212c4dda23945cd6d",
+  "canonical_dump_sha256": "021b0a00cfae94b541f1b609f6de76b96c5c2dceb0c338ebeae81e5ae7b6fc04",
+  "roots": 2,
+  "legacy_revisions": 3,
+  "listing_ids_order_exact": true,
+  "dump_unchanged": true,
+  "cleanup_still_pinned": true,
+  "natural_pruned_revisions_observed": 0
+}

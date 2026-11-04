@@ -2210,7 +2210,9 @@ class SqliteBillRepository:
             versions.append(version)
         return versions
 
-    def bind_publication_content(self, publication_id: int, content_id: str) -> None:
+    def _validate_publication_content_binding(
+        self, publication_id: int, content_id: str
+    ) -> ContentVersion:
         version = self.get_content_version(content_id)
         publication = self.publication_by_id(publication_id)
         root = self.publication_by_id(version.root_publication_id) if version else None
@@ -2253,6 +2255,12 @@ class SqliteBillRepository:
         if mismatch is not None:
             label = "semantic snapshot" if mismatch in ("body", "snapshot") else "delivery context"
             raise ValueError(f"content must match the frozen {label}")
+        return version
+
+    def bind_publication_content(self, publication_id: int, content_id: str) -> None:
+        version = self._validate_publication_content_binding(publication_id, content_id)
+        publication = self.publication_by_id(publication_id)
+        assert publication is not None, "binding validation requires its physical publication"
         self._conn.execute(
             "INSERT INTO publication_content (publication_id, content_id) VALUES (?, ?)"
             " ON CONFLICT DO NOTHING",
@@ -3355,10 +3363,31 @@ class SqliteBillRepository:
     def list_amendment_revisions(self, publication_id: int) -> list[Publication]:
         rows = self._conn.execute(
             "SELECT * FROM publications WHERE kind = 'amendments_revision'"
-            " AND json_extract(delivery_json, '$.revision_of') = ? ORDER BY id DESC",
-            (publication_id,),
+            " AND (json_extract(delivery_json, '$.revision_of') = ?"
+            " OR delivery_json IS NULL AND EXISTS (SELECT 1 FROM publication_content binding"
+            " JOIN content_versions version ON version.content_id=binding.content_id"
+            " WHERE binding.publication_id=publications.id AND (version.root_publication_id=?"
+            " OR json_extract(version.version_json, '$.root_publication_id')=?)))"
+            " ORDER BY id DESC",
+            (publication_id, publication_id, publication_id),
         ).fetchall()
-        return [self._row_to_publication(row) for row in rows]
+        revisions = [self._row_to_publication(row) for row in rows]
+        for revision in revisions:
+            if revision.delivery is not None:
+                continue
+            assert revision.id is not None, "the repository reads saved revision rows"
+            version = self.get_publication_content(revision.id)
+            original = self.publication_by_id(publication_id)
+            if (
+                version is None
+                or version.reason != "amendments_revision"
+                or version.root_publication_id != publication_id
+                or original is None
+                or (revision.term, revision.number, revision.channel_id)
+                != (original.term, original.number, original.channel_id)
+            ):
+                raise ValueError("retained revision binding must identify its original owner")
+        return revisions
 
     def list_deferred_updates(self, channel_id: str) -> list[Publication]:
         """Only never-attempted, unowned individual updates can be absorbed by analysis."""

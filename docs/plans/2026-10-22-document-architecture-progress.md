@@ -9758,3 +9758,30 @@ J209 f6d64720 actual CI41884765323 and relay41885949974 verified: transition1d7â
 [report/reproduction](../assets/audits/2026-11-04-llm-queue-ages/report.md),
 [isolated state](../assets/audits/2026-11-04-llm-queue-ages/fresh-state-proof.json),
 [actual J209 release](../assets/audits/2026-11-04-odt-context-acceptance/release.json).
+
+
+<a id="j211"></a>
+
+## J211 â€” compatible retained revision listing before cleanup
+
+4 November 2026. `list_amendment_revisions` can read operationally pruned publications
+through their immutable content binding. Version identity/reason/root and physical owner
+are checked; indexed/JSON root disagreement cannot silently redirect the listing. Inline
+legacy behavior and descending order remain. Binding admission shares its validation helper.
+
+Cleanup stays OFF: the blanket amendments_revision retention exclusion remains byte-for-byte
+in effect. Its later writer must wait for this reader's actual CI and relay release.
+Existing completed-work lifecycle test now asserts revision-list identity after manual
+payload removal and restore, with existing invalid-binding controls. No new scenario.
+User preference for unit tests and necessary-only scenarios is recorded in AGENTS.md.
+
+Pinned schema65 state105de577 restored in memory:2originalroots/3legacyrevisions exact
+SQL-derived IDs/order; canonical dump021b0a00 unchanged. No natural pruned revision claimed.
+No extraction/selection/comparison change; text corpus replay inapplicable.
+Final7844 tests/291.09s/92%, strict mypy/Ruff/format pass;
+753 source/config pins exact. Staged-archive docs gate precedes commit.
+Plan remains74/40complete/6explicitNA/28applicableopen.
+
+[Qualification](../assets/audits/2026-11-04-revision-retention-reader/qualification.json),
+[report](../assets/audits/2026-11-04-revision-retention-reader/report.md),
+[isolated state](../assets/audits/2026-11-04-revision-retention-reader/fresh-state-proof.json).

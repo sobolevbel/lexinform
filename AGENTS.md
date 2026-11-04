@@ -100,6 +100,8 @@ service built once) → `cli.py` (typer).
 - Network work runs in parallel only through `concurrency.fan_out`; outcomes are consumed and every
   repository write happens on the calling thread in input order. `workers=4` must equal `workers=1`.
 - Services take time from the `Clock`, never `datetime.now()`.
+- Prefer unit tests; add scenarios only for behavior that requires multiple services or durable
+  lifecycle boundaries.
 - Tests: `tests/unit/` one module; `tests/scenario/` the pipeline over fakes (anything calling
   `World()`); `tests/integration/` live systems. Fakes are in `tests/fakes.py`; `tests/harness.py::World` builds the real
   `Container` from `Settings` naming fake hosts (injection points `llm`, `extractor`,
