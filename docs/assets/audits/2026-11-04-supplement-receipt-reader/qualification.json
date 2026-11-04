@@ -1,0 +1,36 @@
+{
+  "stage": "J216 reader only",
+  "full_tests": 7951,
+  "pytest_xml_seconds": 425.403,
+  "coverage_percent": 92,
+  "source_config_pins": 760,
+  "source_freeze_exact": true,
+  "focused_unit_tests": 78,
+  "mypy_ruff_format": "green",
+  "new_scenarios": 0,
+  "writer_active": false,
+  "primary_legacy_serialization": "Fixed prior primary JSON digest and literal old Digest metadata exact",
+  "legacy_state": "Double restore exact,122metadata,1primaryreceipt,4doctors0errors/4samewarnings; no supplementreceipts",
+  "future_controls": "Mapped/unknown,prefix/caps,context/map/parent tamper,wrongpurpose/scan,submittedmissingSHA,cleanup/restore/doctors",
+  "rollout": "Actual compatible reader release required before new writer publication",
+  "corpus_replay": "Not applicable to inactive reader: no extraction/selection/transform algorithm changes; writer corpus gate mandatory",
+  "owned_source_sha256": {
+    "src/lexinform/adapters/input_receipts.py": "6cf2a6f6281f6097767a5c69535006838780e7e03da424a0165b2aa94a7fa522",
+    "src/lexinform/adapters/sqlite_repo.py": "5e2aaa594298e6cbe5dd267d59d621330062551c08b83d871018425eb3dcd0a5",
+    "src/lexinform/models/__init__.py": "33d5360c8b1685afd530d2cb1a3047973388fcaf96dbd7183dad598be13cfb44",
+    "src/lexinform/models/batch.py": "285c1f1b47f38854b18ff4bab348c48c41a227ef8a94dec296d7fd8657fa75dd",
+    "src/lexinform/models/input_receipts.py": "82f5a46c25c2a1ab137bdfd7d6a7531da8576ddf63609363609ec4d8813fdde3",
+    "tests/unit/test_supplement_input_receipts.py": "95718e2de89c1f87f28756ee73b4098a61b5c65bcb7ee70826915cd7600caad6"
+  },
+  "proof_sha256": {
+    "root-qa/full.xml": "2a1c5b2765c19a0da85ccefbc93a5c1887c4fef5920ed0aae1223031682a703e",
+    "root-qa/source-freeze.json": "590cf0fdfc8fc3c1b027b9bc2004c74dcba4610762816b3b5521745673c1dcc8",
+    "actual-state/proof.json": "f3398390c2eab5dca4d5efaae9a80b1ed466bc9d57ca6dcb95a532dae817294f"
+  },
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  }
+}

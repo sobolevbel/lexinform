@@ -7,7 +7,7 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from lexinform.models.analysis import BillContext
+from lexinform.models.analysis import BillContext, SupplementContext
 from lexinform.models.prepared_input import PreparedTextPart, PreparedTextSegment
 
 MAX_INPUT_RECEIPT_BYTES = 8192
@@ -69,7 +69,7 @@ def input_json_chunks(value: object, *, ensure_ascii: bool = True) -> Iterator[s
         raise ValueError("Unsupported frozen context JSON value")
 
 
-def primary_context_sha256(ctx: BillContext) -> str:
+def _text_context_sha256(ctx: BillContext | SupplementContext) -> str:
     if ctx.scan is not None:
         raise ValueError("Text receipts cannot describe scan contexts")
     context = ctx.model_dump(mode="json", exclude={"text", "previous_key_changes"})
@@ -78,6 +78,14 @@ def primary_context_sha256(ctx: BillContext) -> str:
     for chunk in input_json_chunks(context):
         digest.update(chunk.encode("ascii"))
     return digest.hexdigest()
+
+
+def primary_context_sha256(ctx: BillContext) -> str:
+    return _text_context_sha256(ctx)
+
+
+def supplement_context_sha256(ctx: SupplementContext) -> str:
+    return _text_context_sha256(ctx)
 
 
 def input_map_sha256(segments: Iterable[PreparedTextSegment]) -> str:
@@ -95,13 +103,17 @@ def input_map_sha256(segments: Iterable[PreparedTextSegment]) -> str:
     return digest.hexdigest()
 
 
-class PrimaryInputReceipt(BaseModel):
+class _TextInputReceipt(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
     schema_version: Literal[1] = 1
-    profile: Literal["primary-single-part-text-v1"] = "primary-single-part-text-v1"
+    profile: Literal["primary-single-part-text-v1", "supplement-single-part-text-v1"] = (
+        "primary-single-part-text-v1"
+    )
     coordinates: Literal["legacy_part_text_v1"] = "legacy_part_text_v1"
-    context_encoding: Literal["bill-context-json-v1"] = "bill-context-json-v1"
+    context_encoding: Literal["bill-context-json-v1", "supplement-context-json-v1"] = (
+        "bill-context-json-v1"
+    )
     map_encoding: Literal["prepared-text-segments-json-v1"] = "prepared-text-segments-json-v1"
     physical_origins: Literal["unmapped"] = "unmapped"
     block_origins: Literal["unmapped"] = "unmapped"
@@ -207,3 +219,13 @@ class PrimaryInputReceipt(BaseModel):
         if len(self.model_dump_json().encode()) > MAX_INPUT_RECEIPT_BYTES:
             raise ValueError("Input receipt exceeds its serialized byte limit")
         return self
+
+
+class PrimaryInputReceipt(_TextInputReceipt):
+    profile: Literal["primary-single-part-text-v1"] = "primary-single-part-text-v1"
+    context_encoding: Literal["bill-context-json-v1"] = "bill-context-json-v1"
+
+
+class SupplementInputReceipt(_TextInputReceipt):
+    profile: Literal["supplement-single-part-text-v1"] = "supplement-single-part-text-v1"
+    context_encoding: Literal["supplement-context-json-v1"] = "supplement-context-json-v1"

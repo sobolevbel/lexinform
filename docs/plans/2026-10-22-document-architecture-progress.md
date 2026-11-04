@@ -9924,3 +9924,38 @@ transition9fc→5a0/45shealth/timer.
 [Acceptance](../assets/audits/2026-11-04-primary-writer-rollout/acceptance.json),
 [report/limits/recheck](../assets/audits/2026-11-04-primary-writer-rollout/report.md),
 [exhaustive natural matrix](../assets/audits/2026-11-04-primary-writer-rollout/natural-cohort.json).
+
+
+<a id="j216"></a>
+
+## J216 — compatible supplement text input receipt reader
+
+4 November2026. A private common model owns unchanged primary fields/maps/8KiB/32segment
+limits. Supplement adds explicit profile/context encoding; Digest metadata optional field
+omits None. No writer, pure builder, analysis producer, prompt/output schema or migration
+changes. Block/physical origins unmapped; unknown/prefix support unchanged.
+
+Actual queued supplement question/frozen payload/context/text are checked without union
+fallback. Submitted items require the independently saved request SHA; the sole queued/
+submitting reader explicitly retains its actual-frozen-request validation instead. Normal
+SQL readers, restore and doctor share guards. Existing primary checksum policy unchanged.
+Peer review checked all callsites after root-requested submitted checksum hardening.
+
+78 focused units, fixed old primary JSON hash and literal legacy metadata bytes pass.
+Future mapped/unknown receipts, tamper/wrong purpose/scan rejection, prefix bounds and
+consumed cleanup/dump/restore covered through public repo APIs; no new scenario.
+Pinned state105de577:double restore/canonical dump exact,122typedbatchmetadata/1oldprimary
+receipt,4doctors0errors/same4warnings; no new supplement receipts, DB unchanged byreads.
+
+No extraction/selection/normalization algorithm changes; reader-only corpus scope is not
+producer acceptance. Writer B must qualify exact source/context/payload/projection on
+corpus and wait for actual deployed reader before publication.
+Final7951 tests/425.40s/92%, strict mypy/Ruff/format pass;
+760 source/config pins exact. Staged-archive docs gate precedes commit.
+J215 bb1f3bfa exact CI41900688672 and relay41901855613 verified,
+transition5a0→bb1/45shealth/timer.
+Plan remains74total/43complete/6explicitNA/25applicableopen.
+
+[Qualification](../assets/audits/2026-11-04-supplement-receipt-reader/qualification.json),
+[report](../assets/audits/2026-11-04-supplement-receipt-reader/report.md),
+[legacy state](../assets/audits/2026-11-04-supplement-receipt-reader/legacy-state-proof.json).

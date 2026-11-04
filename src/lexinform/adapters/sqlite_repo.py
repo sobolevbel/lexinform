@@ -3665,7 +3665,7 @@ class SqliteBillRepository:
         return [
             BatchIntent(
                 request=(request := BatchRequest.model_validate_json(row["request_json"])),
-                meta=batch_item_meta(request.call_kind, row["meta_json"]),
+                meta=batch_item_meta(request.call_kind, row["meta_json"], submitted=False),
                 provider=row["provider"],
                 state=row["state"],
                 created_at=datetime.fromisoformat(row["created_at"]),

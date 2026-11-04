@@ -24,8 +24,10 @@ from lexinform.models.documents import DocumentSelection
 from lexinform.models.enums import SourceKind, TextSource
 from lexinform.models.input_receipts import (
     PrimaryInputReceipt,
+    SupplementInputReceipt,
     input_text_sha256,
     primary_context_sha256,
+    supplement_context_sha256,
 )
 from lexinform.models.observations import DeliveryPlan
 from lexinform.models.report import CallKind
@@ -316,16 +318,34 @@ class DigestItemMeta(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    prepared_input_receipt: SupplementInputReceipt | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     @model_validator(mode="after")
     def frozen_binding(self) -> Self:
         if self.input_binding is not None and self.input_binding.reuse_key != self.memo_key:
             raise ValueError("input binding must keep its frozen memo key")
+        receipt = self.prepared_input_receipt
+        if receipt is not None:
+            if self.scan_input is not None:
+                raise ValueError("Supplement text receipts cannot describe scan inputs")
+            if self.request_sha256 is not None and receipt.request_sha256 != self.request_sha256:
+                raise ValueError("Input receipt must identify the frozen batch request")
         return self
 
 
-def batch_item_meta(kind: str, raw: str) -> BatchItemMeta | DigestItemMeta:
+def batch_item_meta(
+    kind: str, raw: str, *, submitted: bool = True
+) -> BatchItemMeta | DigestItemMeta:
     model = BatchItemMeta if kind in ("analysis", "reanalysis") else DigestItemMeta
-    return model.model_validate_json(raw)
+    parsed = model.model_validate_json(raw)
+    if isinstance(parsed, DigestItemMeta) and parsed.prepared_input_receipt is not None:
+        if kind != "supplement":
+            raise ValueError("Supplement receipts require their actual supplement purpose")
+        if submitted and parsed.request_sha256 is None:
+            raise ValueError("Submitted supplement receipts require their frozen request checksum")
+    return parsed
 
 
 class LlmBatchItem(BaseModel):
@@ -364,32 +384,53 @@ class BatchIntent(BaseModel):
     def receipt_meta_cannot_fall_back(cls, value: object) -> object:
         if isinstance(value, dict):
             meta = value.get("meta")
-            if (
-                isinstance(meta, dict)
-                and meta.get("prepared_input_receipt") is not None
-                or isinstance(meta, BatchItemMeta)
-                and meta.prepared_input_receipt is not None
-            ):
-                BatchItemMeta.model_validate(meta)
+            receipt = (
+                meta.get("prepared_input_receipt")
+                if isinstance(meta, dict)
+                else (
+                    meta.prepared_input_receipt
+                    if isinstance(meta, (BatchItemMeta, DigestItemMeta))
+                    else None
+                )
+            )
+            if receipt is not None:
+                if (
+                    isinstance(meta, DigestItemMeta)
+                    or isinstance(receipt, SupplementInputReceipt)
+                    or (
+                        isinstance(receipt, dict)
+                        and receipt.get("profile") == "supplement-single-part-text-v1"
+                    )
+                ):
+                    DigestItemMeta.model_validate(meta)
+                else:
+                    BatchItemMeta.model_validate(meta)
         return value
 
     @model_validator(mode="after")
     def actual_input_receipt(self) -> Self:
-        if not isinstance(self.meta, BatchItemMeta) or self.meta.prepared_input_receipt is None:
-            return self
         receipt = self.meta.prepared_input_receipt
+        if receipt is None:
+            return self
         request = self.request
-        if not isinstance(request.question, AnalysisQuestion) or request.call_kind not in (
-            "analysis",
-            "reanalysis",
-        ):
-            raise ValueError("Primary receipts require their actual primary question")
-        ctx = request.question.ctx
+        if isinstance(self.meta, BatchItemMeta):
+            if not isinstance(request.question, AnalysisQuestion) or request.call_kind not in (
+                "analysis",
+                "reanalysis",
+            ):
+                raise ValueError("Primary receipts require their actual primary question")
+            ctx: BillContext | SupplementContext = request.question.ctx
+            context_sha256 = primary_context_sha256(request.question.ctx)
+        else:
+            if not isinstance(request.question, SupplementQuestion):
+                raise ValueError("Supplement receipts require their actual supplement question")
+            ctx = request.question.ctx
+            context_sha256 = supplement_context_sha256(ctx)
         if (
             request.payload_json is None
             or receipt.request_sha256 != request.payload_sha256
             or input_text_sha256(request.payload_json) != receipt.request_sha256
-            or receipt.context_sha256 != primary_context_sha256(ctx)
+            or receipt.context_sha256 != context_sha256
             or receipt.text_sha256 != input_text_sha256(ctx.text)
             or receipt.text_chars != len(ctx.text)
         ):

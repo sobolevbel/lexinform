@@ -9,12 +9,13 @@ from dataclasses import dataclass
 from lexinform.models import (
     ArtifactMetadata,
     BatchIntent,
-    BatchItemMeta,
     BatchRequest,
     DocumentSelectionRecord,
     ExtractionResult,
     PrimaryInputReceipt,
+    SupplementInputReceipt,
 )
+from lexinform.models.batch import batch_item_meta
 
 
 @dataclass(frozen=True)
@@ -61,7 +62,9 @@ def _reference(table: str, key: object) -> str:
     return table + "/" + hashlib.sha256(encoded).hexdigest()
 
 
-def _parents(connection: sqlite3.Connection, receipt: PrimaryInputReceipt) -> None:
+def _parents(
+    connection: sqlite3.Connection, receipt: PrimaryInputReceipt | SupplementInputReceipt
+) -> None:
     selection = None
     if receipt.source_selection_id is not None:
         row = _one(
@@ -169,11 +172,8 @@ def _input_snapshot_checks(connection: sqlite3.Connection) -> Iterator[InputSnap
                             "created_at": row["created_at"],
                         }
                     )
-                    if (
-                        not isinstance(intent.meta, BatchItemMeta)
-                        or intent.meta.prepared_input_receipt is None
-                    ):
-                        raise ValueError("input_snapshot_primary_metadata")
+                    if intent.meta.prepared_input_receipt is None:
+                        raise ValueError("input_snapshot_receipt_metadata")
                     _parents(connection, intent.meta.prepared_input_receipt)
             except ValueError, TypeError, sqlite3.Error:
                 yield InputSnapshotCheck(ref, has_receipt, frozen, "invalid_input_intent_snapshot")
@@ -186,11 +186,9 @@ def _input_snapshot_checks(connection: sqlite3.Connection) -> Iterator[InputSnap
                 continue
             ref = _reference("llm_batch_items", (row["batch_id"], row["custom_id"]))
             try:
-                if row["call_kind"] not in ("analysis", "reanalysis"):
-                    raise ValueError("input_snapshot_primary_metadata")
-                item_meta = BatchItemMeta.model_validate(raw)
+                item_meta = batch_item_meta(row["call_kind"], row["meta_json"])
                 if item_meta.prepared_input_receipt is None:
-                    raise ValueError("input_snapshot_primary_metadata")
+                    raise ValueError("input_snapshot_receipt_metadata")
                 parent = _one(
                     connection,
                     "SELECT provider FROM llm_batches WHERE batch_id=?",

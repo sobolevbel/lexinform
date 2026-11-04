@@ -1,0 +1,8 @@
+{
+  "reviewer": "supplement_receipt_review",
+  "result": "No blockers after V2",
+  "scope": "Exact primary/legacy compatibility; new supplementpurpose/profile/context/text/frozenrequest/parent/map guards; actualSQL item/intent/restore/doctor callsites",
+  "V2": "Submitted supplement metadata requires independently saved request checksum; sole queued/submitting reader uses submitted=False then validates actual frozen request",
+  "tests_repeated": false,
+  "network_or_edits": false
+}

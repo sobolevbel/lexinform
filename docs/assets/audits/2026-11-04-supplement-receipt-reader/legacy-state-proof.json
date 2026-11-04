@@ -1,0 +1,31 @@
+{
+  "state_commit": "105de577d682b1f7057e0593aab5c7a408aed740",
+  "scope": "Isolated pinned legacy restore/readers; no processing/provider calls",
+  "source_sql_sha256": "29dfe8566f02ceb810a1a43e8ea9a7b0fd0d9f6fc54ffa7212c4dda23945cd6d",
+  "canonical_dump_sha256": "021b0a00cfae94b541f1b609f6de76b96c5c2dceb0c338ebeae81e5ae7b6fc04",
+  "double_restore_exact": true,
+  "typed_batch_metadata_rows": 122,
+  "legacy_primary_receipts": 1,
+  "queued_submitting_intents": 0,
+  "new_supplement_receipts": 0,
+  "doctors": {
+    "computation": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "content": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "source": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "work": {
+      "errors": 0,
+      "warnings": 4
+    }
+  },
+  "work_summary_exact": true,
+  "database_unchanged_by_reads": true
+}

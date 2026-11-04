@@ -1,0 +1,83 @@
+{
+  "base_commit": "5a06b96b323d4a0a2b5b1901fa142524b1f4d3e9",
+  "candidate_worktree": "/private/tmp/lexinform-j216-supplement-receipt",
+  "changed_files": [
+    {
+      "base_sha256": "c86fc71685009fc0985ebb482a9e1d57e119017aff18a575cf9ff3080cc8c92c",
+      "candidate_sha256": "6cf2a6f6281f6097767a5c69535006838780e7e03da424a0165b2aa94a7fa522",
+      "path": "src/lexinform/adapters/input_receipts.py"
+    },
+    {
+      "base_sha256": "d443ff38602dcef835ac6cf3a55acb58890d751bcb45faf101406faebc2d13ec",
+      "candidate_sha256": "5e2aaa594298e6cbe5dd267d59d621330062551c08b83d871018425eb3dcd0a5",
+      "path": "src/lexinform/adapters/sqlite_repo.py"
+    },
+    {
+      "base_sha256": "6f3a401bad22d02b93e02976def9c34cb73f16ede3e0f4fac1b25060505a9a75",
+      "candidate_sha256": "33d5360c8b1685afd530d2cb1a3047973388fcaf96dbd7183dad598be13cfb44",
+      "path": "src/lexinform/models/__init__.py"
+    },
+    {
+      "base_sha256": "4772ca0e6b81ddb0b50e630b49e50f85d0c9e750b9ccd2b356dda08d64a241a8",
+      "candidate_sha256": "285c1f1b47f38854b18ff4bab348c48c41a227ef8a94dec296d7fd8657fa75dd",
+      "path": "src/lexinform/models/batch.py"
+    },
+    {
+      "base_sha256": "8444dc745ee41380d3284e9b2d6a4965a67e087934d17d86c9d6204a04663a7b",
+      "candidate_sha256": "82f5a46c25c2a1ab137bdfd7d6a7531da8576ddf63609363609ec4d8813fdde3",
+      "path": "src/lexinform/models/input_receipts.py"
+    },
+    {
+      "base_sha256": null,
+      "candidate_sha256": "95718e2de89c1f87f28756ee73b4098a61b5c65bcb7ee70826915cd7600caad6",
+      "path": "tests/unit/test_supplement_input_receipts.py"
+    }
+  ],
+  "checks": {
+    "focused_units": {
+      "count": 78,
+      "exit_code": 0,
+      "log": "focused-tests-v2.log"
+    },
+    "git_diff_check": {
+      "exit_code": 0
+    },
+    "ruff_src_tests_tools": {
+      "exit_code": 0,
+      "log": "ruff-v2.log"
+    },
+    "strict_mypy": {
+      "exit_code": 0,
+      "log": "mypy-v2.log",
+      "source_files": 691
+    }
+  },
+  "no_migration": true,
+  "no_root_source_edits": true,
+  "no_writer_activation": true,
+  "not_run": [
+    "full pytest gate",
+    "corpus replay",
+    "network",
+    "paid/model calls",
+    "production"
+  ],
+  "patch_file": "reader-a-v2.patch",
+  "patch_sha256": "f6c6dfb51d6a7091a4fd8f81d42113132de312f314ca38d6b692a027252f4d94",
+  "preserved_v1_files": [
+    "reader-a.patch",
+    "handoff.json",
+    "source-pins.json",
+    "DESIGN.md",
+    "focused-tests.log",
+    "mypy.log",
+    "ruff.log"
+  ],
+  "scope": "Reader A only; no producer or pure-builder activation",
+  "source_pin_count": 842,
+  "source_pin_scope": "all tracked src/tests/tools files plus pyproject.toml and uv.lock, and the new unit module",
+  "source_pins_file": "source-pins-v2.json",
+  "source_pins_sha256": "9c0e348286d8d499b3bb6dd3dc10a3dcf51ce0f2d9e5f400c0bb292a2e4e38ae",
+  "v2_delta": "Require known request checksum for supplement receipt-bearing submitted items only; _batch_intents explicitly opts out because its actual request remains retained. Existing primary/legacy guards unchanged.",
+  "version": 2
+}

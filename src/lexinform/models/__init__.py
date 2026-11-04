@@ -283,6 +283,7 @@ from lexinform.models.extractions import (
 )
 from lexinform.models.extractions import WordViewStatus as WordViewStatus
 from lexinform.models.input_receipts import PrimaryInputReceipt as PrimaryInputReceipt
+from lexinform.models.input_receipts import SupplementInputReceipt as SupplementInputReceipt
 from lexinform.models.legacy_results import LegacyResultImport as LegacyResultImport
 from lexinform.models.legacy_results import LegacyResultOccurrence as LegacyResultOccurrence
 from lexinform.models.legacy_results import LegacyResultValue as LegacyResultValue
