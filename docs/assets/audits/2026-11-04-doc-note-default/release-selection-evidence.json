@@ -1,0 +1,61 @@
+{
+  "target": "9533c55154e0fba2c1842227e1bf276437adeece",
+  "ci_id": 41865342954,
+  "ci_updated_at": "2026-11-04T16:30:19Z",
+  "runs": [
+    {
+      "id": 41867883892,
+      "head_sha": "9533c55154e0fba2c1842227e1bf276437adeece",
+      "event": "workflow_run",
+      "created_at": "2026-11-04T16:30:23Z",
+      "updated_at": "2026-11-04T16:32:46Z",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 126706764931,
+          "name": "deploy",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "proof": {
+        "commit_sha": "9533c55154e0fba2c1842227e1bf276437adeece",
+        "transition_from": "901f8ca1ee15",
+        "transition_to": "9533c55154e0",
+        "restart45": true,
+        "timer_enabled": true,
+        "skip_observed": false,
+        "complete": true
+      }
+    },
+    {
+      "id": 41865474208,
+      "head_sha": "9533c55154e0fba2c1842227e1bf276437adeece",
+      "event": "workflow_run",
+      "created_at": "2026-11-04T16:15:54Z",
+      "updated_at": "2026-11-04T16:26:16Z",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 126698460990,
+          "name": "deploy",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "proof": {
+        "commit_sha": "fa0fb7a7cf9f3a62d6379166130b9459b083fe45",
+        "transition_from": null,
+        "transition_to": null,
+        "restart45": false,
+        "timer_enabled": false,
+        "skip_observed": true,
+        "complete": false
+      }
+    }
+  ],
+  "candidate_patch_sha256": "a5dd0763588ef30c1159d01fa0249f1aa99415c19d45252d3e14c14c94a19614",
+  "scope": "Read-only GitHub evidence; candidate outside watched source, unexecuted tests; no workflow mutations."
+}

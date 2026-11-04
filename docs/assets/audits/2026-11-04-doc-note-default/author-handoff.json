@@ -1,0 +1,88 @@
+{
+  "stage": "J208 out-only default DOC note provenance activation draft",
+  "requires_before_integration": "Actual J207 reader commit CI and relay proof; not authorized to default-activate before that proof",
+  "base_head": "9533c55154e0fba2c1842227e1bf276437adeece",
+  "reader_source_context_sha256": {
+    "src/lexinform/adapters/doc_notes.py": "ad5a1ea051a7f0cbe7cbac20ab12bf58683fa56636059fabb85569c3532ef728",
+    "src/lexinform/adapters/doc_text.py": "4d9f1b3b43c4eea92ea43928956a79cd66a5a14f5c808429089a2c1793a478a7",
+    "src/lexinform/adapters/document_text.py": "fdf66a7a4878582319b73b583ed18f4153ff277ec521b6e8c9e0cd4840c9d6c1",
+    "src/lexinform/extraction_records.py": "75dddf3b889af3d43e940dfc7d46f30f2566fa759e63661687857adff24ebead",
+    "src/lexinform/models/doc_notes.py": "204c45336628b315354b0043130b29f07d4e060a34551b6be9c6bbbb456d8cd2",
+    "src/lexinform/models/extractions.py": "baef5456f5d58e474a1db9efdc5955d58445fed62bb09cf97818f2b942ddf7af",
+    "src/lexinform/adapters/extraction_history.py": "290c2476305e7a7a84522c12b012c20cee292bcc57878e560bac5db803ac5abe",
+    "src/lexinform/adapters/sqlite_repo.py": "8b04dc89e9366472031a11cad05e216e1421d06de5e4904d6b6b963715050f66",
+    "tools/source_history_doctor.py": "a6f5d7743c79e47dd38d0680298cb93d1423271b11a70bf8cd5dae4492646739"
+  },
+  "base_source_sha256": {
+    "src/lexinform/adapters/document_text.py": "fdf66a7a4878582319b73b583ed18f4153ff277ec521b6e8c9e0cd4840c9d6c1",
+    "tests/unit/test_doc_note_physical_parts.py": "860b56e9273a94b4d9784da3b74d45ff85b4f313984d487dc10535d45cf93616",
+    "tests/unit/test_doc_note_default.py": null
+  },
+  "candidate_sha256": {
+    "src/lexinform/adapters/document_text.py": "8d94fc0058624fb87285f4a399b15051031821f5f93af64e245c75c7c37ae5ea",
+    "tests/unit/test_doc_note_physical_parts.py": "b8ab4a14a21af5b9dca6b49f14ae678aa559350ad1c1b2bf5de7078a5b33de5c",
+    "tests/unit/test_doc_note_default.py": "ba55d4146e521916854fae481ae4d9d3af9d1606ae59a6646cc872d602345e05"
+  },
+  "patch_sha256": "ebffdd49bd8d0057ef446d46f5b413c87577e73caf064abf6e8e843f3c5468fb",
+  "qualification": {
+    "focused_tests": 30,
+    "new_tests": 7,
+    "updated_reader_test": "Default OFF assertion becomes native ON source-checked assertion; remaining 22 reader tests unchanged",
+    "mypy_files": 3,
+    "ruff": "green",
+    "imports": "explicit isolated-default/src:isolated-default, root .venv interpreter",
+    "logs": [
+      "focused.log",
+      "mypy.log",
+      "ruff.log"
+    ],
+    "first_attempt": "Two newly authored fixtures incorrectly expected duplicate selected files; fixed fixtures, no implementation change; focused-first.log preserved"
+  },
+  "paired_growth": {
+    "scope": "one synthetic OLE DOC with one actual source-checked footnote; no production or paid calls",
+    "equal_semantic_fields": {
+      "input_sha256": true,
+      "input_bytes": true,
+      "selection_id": true,
+      "selected_text_sha256": true,
+      "physical_manifest_sha256": true,
+      "output_text_sha256": true,
+      "physical_part_count": true,
+      "selected_part_count": true,
+      "omitted_selected_parts": true
+    },
+    "before": {
+      "extraction_json_bytes": 2784,
+      "sql_bytes": 34019,
+      "gzip_bytes": 6548,
+      "note_summary_parts": 0,
+      "retained_note_links": 0
+    },
+    "after": {
+      "extraction_json_bytes": 3541,
+      "sql_bytes": 34776,
+      "gzip_bytes": 6793,
+      "note_summary_parts": 1,
+      "retained_note_links": 1
+    },
+    "delta": {
+      "extraction_json_bytes": 757,
+      "sql_bytes": 757,
+      "gzip_bytes": 245
+    },
+    "limitations": [
+      "One synthetic record only; not natural corpus or fleet growth",
+      "No paid/provider requests were constructed or submitted"
+    ]
+  },
+  "growth_recipe": "growth_driver.py run in isolated-reader and isolated-default with explicit PYTHONPATH, fixed 2026-11-04 UTC recording time; only new temporary in-memory dev repositories, no production or paid calls",
+  "limits": "Inherited J207 caps:256source links/DOC;64physicalcaptures;32retainedlinks/leaf;4096aggregateDOCbytes;16384wholebytes; new diagnostics omitted before old selected rows",
+  "open_acceptance": [
+    "Actual J207 reader CI+relay proof",
+    "Peer review default activation",
+    "Pinned natural DOC/archive corpus replay and independent source-check reuse with selected/paid-input parity",
+    "Full gate and release verification after integration",
+    "Natural/state growth observations not implied by one controlled synthetic record"
+  ],
+  "scope": "One runtime source file plus one updated and one new focused test module; no watched edits, no SQL tables, no backfill, no old paid mutations, no full/corpus/commit/push by child"
+}

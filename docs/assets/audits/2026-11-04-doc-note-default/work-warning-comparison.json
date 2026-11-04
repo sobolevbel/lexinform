@@ -1,0 +1,47 @@
+{
+  "cached_warning_codes_and_refs": [
+    [
+      "document_publication_unavailable",
+      "document_work/amendments/133",
+      "warning"
+    ],
+    [
+      "document_publication_unavailable",
+      "document_work/amendments/139",
+      "warning"
+    ],
+    [
+      "document_publication_unavailable",
+      "document_work/amendments/140",
+      "warning"
+    ],
+    [
+      "document_publication_unavailable",
+      "document_work/amendments/188",
+      "warning"
+    ]
+  ],
+  "fresh_warning_codes_and_refs": [
+    [
+      "document_publication_unavailable",
+      "document_work/amendments/133",
+      "warning"
+    ],
+    [
+      "document_publication_unavailable",
+      "document_work/amendments/139",
+      "warning"
+    ],
+    [
+      "document_publication_unavailable",
+      "document_work/amendments/140",
+      "warning"
+    ],
+    [
+      "document_publication_unavailable",
+      "document_work/amendments/188",
+      "warning"
+    ]
+  ],
+  "warnings_exact": true
+}

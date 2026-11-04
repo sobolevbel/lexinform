@@ -1,0 +1,20 @@
+{
+  "scope": "Native CFB actual pipeline over World fakes; no real provider submission",
+  "input_sha256": "f10ada2c1250a0f4319e2dd6bdd64cd1f5e9ff5049b1b40c45e7269c94a1c09f",
+  "batch_requests_equal": true,
+  "fake_payload_sha256": "47663b617dc37fdedbb5d0feddaf799ebadb8aeffaf7f0670da901e93c264849",
+  "real_user_prompt_sha256": "97dfb6bee9bbc7cf5a640eb09c2280cb236c48c6fecc836e446a5a64cae512a7",
+  "all_batch_metadata_except_prepared_receipt_equal": true,
+  "memo_key_equal": true,
+  "custom_id_equal": true,
+  "receipt_extraction_ids_differ": true,
+  "note_summary_counts": [
+    0,
+    1
+  ],
+  "same_byte_alias_added_requests": 0,
+  "limitations": [
+    "Fake batch backend; real user prompt constructed locally",
+    "No paid API calls or production processing"
+  ]
+}

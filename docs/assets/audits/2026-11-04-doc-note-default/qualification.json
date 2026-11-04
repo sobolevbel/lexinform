@@ -1,0 +1,52 @@
+{
+  "stage": "J208",
+  "baseline_reader_commit": "d1277f57e604e10259d3da419cdbc03546632558",
+  "reader_actual_CI_relay_verified_before_integration": true,
+  "reader_proof_sha256": "4833fdd986aa9bf3daa73aea1e2506b3b26fd7894955c301dad2474d2dee7baa",
+  "default_note_writer": true,
+  "full_tests": 7827,
+  "pytest_seconds": 313.75,
+  "coverage_percent": 92,
+  "mypy_files": 682,
+  "ruff_files": 751,
+  "source_config_pins": 751,
+  "source_freeze_exact": true,
+  "owned_sha256": {
+    "pyproject.toml": "d1481adbfbcb12d068d189f0d61e66d477d68b5a67048280ed3a875af619281f",
+    "src/lexinform/adapters/document_text.py": "8d94fc0058624fb87285f4a399b15051031821f5f93af64e245c75c7c37ae5ea",
+    "tests/unit/test_doc_note_default.py": "ba55d4146e521916854fae481ae4d9d3af9d1606ae59a6646cc872d602345e05",
+    "tests/unit/test_doc_note_physical_parts.py": "b8ab4a14a21af5b9dca6b49f14ae678aa559350ad1c1b2bf5de7078a5b33de5c",
+    "tests/scenario/test_primary_input_receipts.py": "79ecfb65134032efbde691fb1f499cfcf25c0aa64fe39dc27d2e88a9b6e0e50a",
+    "tests/unit/test_replay_doc_notes.py": "00202864632895646aa9b87c3aabbd1b9266c24da9263b8d1a615da56d246043",
+    "tests/unit/test_verify_release.py": "cc3a5b3d1c867156df60c7a0dda1466dad4d9c12333524a560d71b0b2dc7b980",
+    "tools/replay_doc_notes.py": "211093fcdee97112b326561971f01b04301411e4e5c51545c9a307fb5455b352",
+    "tools/verify_doc_note_sources.py": "b80b8e65377ec7d299853de823d7f03d2cfa35828f51201a5b56aef0dbfea304",
+    "tools/verify_release.py": "7b4b3642521126401cdd4e6593b286da07dde6fd050f73bdc9eb142e3181b86a",
+    "tools/measure_doc_note_growth.py": "84446aa750c9b81098a226ff192401dea143805d714b93362ea8c2e4571d1024"
+  },
+  "corpus_runtime_and_replay_sources_exact": true,
+  "only_post_corpus_change": "tests/scenario/test_primary_input_receipts.py adds native provider-boundary regression; no production/replay source changed",
+  "corpus": "404paths246SHA,245nativecaptures/377capturedretainedlinks;4historicalsemantic digests equal J207;405source/INDEXpaths unchanged",
+  "native_pipeline": "One actual World/Container CFB pair with fake backend: full submitted requests/user prompt/memo/customID/all ordinary batch metadata equal; prepared input receipt extraction ref differs; byte-alias adds no queue",
+  "growth": {
+    "extraction_json_bytes": 757,
+    "sql_bytes": 757,
+    "gzip_bytes": 245
+  },
+  "fresh_state_commit": "105de577d682b1f7057e0593aab5c7a408aed740",
+  "fresh_state": "schema65/496typedBills/65extractions/224publications/122batchitems; directSQL canonical exact;4doctors0errors;4warnings codes/refs exactcachedbaseline",
+  "flags": "Read-only allowlist; commission/consultation reviewsfalse,maintenanceoff,attentionon/daily; workflow/variablesunchanged; no new env flags/backend/paid feature",
+  "proof_sha256": {
+    "qa/full.xml": "956df235e1d6d4ef10fd97411bd5a47b7ac2c4b7f134ec6012361dac6f945155",
+    "qa/source-freeze.json": "d50e5527ad7607fa17f8c72100a13f0c97d81db054bdab6dfcced0ba0f2e034c",
+    "replay-on/report.json": "09733f2e88cab582b3b8dbc07aebf61c50d230891cc88e24b895dc052d44a3e8",
+    "native-pipeline-proof-v2.json": "867139831fd38fd6c439e320556be45636e01194d87a2289f227f7718182a788",
+    "fresh-state/proof.json": "7373877afb317c70287702228385cf721c867975e5f94568192592cd0dd0a5d9"
+  },
+  "limitations": [
+    "No natural endnotes/CFSpec/emitted-body map or human legal labels",
+    "Growth is one synthetic new record, not natural/fleet estimate",
+    "Fake provider payload plus locally rendered real user prompt, no real API submission",
+    "Source receipt/provenance IDs intentionally may change; whole historical code-version JSON identity not claimed"
+  ]
+}

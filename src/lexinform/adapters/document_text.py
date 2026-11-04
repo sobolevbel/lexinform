@@ -37,7 +37,12 @@ import lexinform.physical_walk_capture as physical_walk_capture
 from lexinform.adapters.doc_notes import DocNoteExtraction
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.document_candidates import select_document_parts
-from lexinform.extraction_records import component_code, extraction_component, summarize_extraction
+from lexinform.extraction_records import (
+    component_code,
+    extraction_component,
+    summarize_doc_notes,
+    summarize_extraction,
+)
 from lexinform.models.doc_notes import (
     MAX_DOC_NOTE_PARTS,
     DocNoteCapture,
@@ -1279,6 +1284,7 @@ class DocumentTextExtractor:
     def extract_document_with_provenance(self, data: bytes) -> DocumentExtraction:
         views: list[WordPartViewStatus] = []
         odt_notes: list[OdtPartNoteOrigins] = []
+        doc_notes: list[DocPartNoteCapture] = []
         if (
             type(self) is DocumentTextExtractor
             and getattr(self.extract_parts, "__func__", None) is _NATIVE_PHYSICAL_PARTS
@@ -1291,6 +1297,7 @@ class DocumentTextExtractor:
                 unlocated_text=[],
                 word_view_status=views,
                 odt_notes=odt_notes,
+                doc_notes=doc_notes,
             )
             physical = self._extract_parts(data, origins)
         else:
@@ -1317,6 +1324,10 @@ class DocumentTextExtractor:
                 xml_bytes=_MAX_XML_BYTES,
             ),
         )
+        if doc_notes:
+            result = summarize_doc_notes(
+                result, DocNotedParts(legacy=physical, doc_notes=tuple(doc_notes))
+            )
         capture = current_physical_walk_capture()
         if capture is not None:
             _physical_event(capture, lambda: capture.extraction(result))

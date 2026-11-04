@@ -9632,3 +9632,53 @@ remain. Committed CLI fix plus three regressions are prepared for the next stage
 [J206 release](../assets/audits/2026-11-04-doc-note-source-checks/release.json),
 [release selection qualification](../assets/audits/2026-11-04-doc-note-source-checks/release-qualification.json),
 [actual deployment metadata](../assets/audits/2026-11-04-doc-note-source-checks/release-selection-evidence.json).
+
+
+<a id="j208"></a>
+
+## J208 — default bounded DOC metadata and exact release selection
+
+4 November 2026. Actual reader `d1277f57` CI+relay verified before integration. Default
+provenance captures native DOC notes in its existing walk and adds the qualified summary
+after selection/prior diagnostics. One OLE read; custom/invalid input contracts unchanged.
+New notes yield to old summaries within4KiBaggregate/16KiBwhole; no raw/note text store,
+new tables, flags, backfill or paid purpose. DA3.3 remains partial for other declared gaps.
+
+Pinned J207 gzip/reference manifest/path+SHA/population checks pass:404paths/246SHA,245native
+captures/69note-bearing/377links allretained,3200maxDOC/6005whole bytes;405source/INDEXpaths
+unchanged. Four historical semantic digests exact; current default equals bounded opt-in.
+Independent377rawlinks/5meaningfulmutations/same natural nested package pass. Full old
+component/version JSON equality is not claimed. CFSpec/body/emitted maps/endnotes unknown.
+
+A new single native CFB scenario crosses actual World/Container with fake backend: queued
+requests, real local user prompt, memo/customID match; a same-byte alias adds no queue.
+Independent control also matches all batch metadata except prepared receipt; its extraction
+ref changes intentionally. No real provider call. Versioned growth tool reproduces one
+controlled new record:JSON/SQL+757B,gzip+245B,9semanticfields exact; not a fleet estimate.
+
+Fresh origin/state105de577 (4Nov11:33UTC) restored schema65:496typedBills/65extractions/
+224publications/122batchitems. DirectSQL vsrepo canonical data/schema exact;4doctors0errors,
+4workwarnings codes/refs exactcachedbaseline. Source andDB unchanged afterreads. Allowlisted
+flags checked without secrets/changes:paid reviewsfalse,maintenanceoff,attentionon/daily;
+dailyworkflow unchanged. This extends DA10.5 current release evidence; future/source-family
+acceptance remains separate. No production processing or paid experiment was run.
+
+Release verifier now excludes chronologically impossible deployment runs before ambiguity:
+workflow_run headSHA may name defaultbranch instead of upstream CI. Three regressions cover
+stale+eligible/inclusivecutoff,2eligible stillambiguous,malformeddatefailclosed. Actual
+transition/45shealth/timer/exactCI/finalmain guards remain. No workflow reruns/forced deploy.
+
+Final7827 tests/313.75s/92%,mypy682/Ruff751;751source/config pins exact. Prior7826green preserved
+before adding the meaningful native scenario; corpusproduction/replay pins unchanged, only
+the extra test changed. Focused checks/peer review and staged-archive docs pass beforecommit.
+Plan remains74total/39complete/6explicitNA/29applicableopen. Next: exact writer release proof
+and bounded ODT acceptance/current release-gate completion audit; no new reader cycle without
+observed material.
+
+[Qualification](../assets/audits/2026-11-04-doc-note-default/qualification.json),
+[report and commands](../assets/audits/2026-11-04-doc-note-default/report.md),
+[native pipeline](../assets/audits/2026-11-04-doc-note-default/native-pipeline-proof.json),
+[growth](../assets/audits/2026-11-04-doc-note-default/growth.json),
+[fresh state](../assets/audits/2026-11-04-doc-note-default/fresh-state.json),
+[allowlisted flags](../assets/audits/2026-11-04-doc-note-default/allowlisted-flags.json),
+[actual reader release](../assets/audits/2026-11-04-doc-note-physical-reader/release.json).

@@ -1,12 +1,13 @@
 """Replay pinned DOC note declarations offline without changing text or retaining source bodies."""
 
 import argparse
+import gzip
 import io
 import json
 from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from unittest.mock import patch
 
 import olefile
@@ -18,6 +19,8 @@ from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtr
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.document_candidates import select_document_parts
 from lexinform.extraction_records import summarize_doc_notes
+from lexinform.models.doc_notes import MAX_DOC_NOTE_SUMMARY_BYTES
+from lexinform.models.extractions import MAX_EXTRACTION_METADATA_BYTES, ExtractionResult
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 
@@ -41,7 +44,51 @@ class DocManifest(BaseModel):
     cases: tuple[DocInput, ...] = Field(min_length=1)
 
 
-def physical_snapshot(data: bytes) -> dict[str, Any]:
+PHYSICAL_SEMANTIC_FIELDS = (
+    "physical_sha256",
+    "selection_sha256",
+    "selected_text_sha256",
+    "physical_manifest_sha256",
+)
+
+
+class PhysicalSemantics(BaseModel):
+    physical_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    selection_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    selected_text_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    physical_manifest_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    default_note_writer: Literal[False]
+
+
+class PhysicalObservation(BaseModel):
+    physical_binding: PhysicalSemantics
+
+
+class PhysicalPath(BaseModel):
+    path: str
+    sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
+class PhysicalReference(BaseModel):
+    manifest_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    index_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    physical_binding: Literal[True]
+    paths: tuple[PhysicalPath, ...]
+    observations: dict[str, PhysicalObservation]
+
+
+def _physical_reference(path: Path, sha256: str) -> PhysicalReference:
+    compressed = read_artifact(path)
+    if digest(compressed) != sha256:
+        raise ValueError("Physical reference compressed SHA differs")
+    try:
+        source = gzip.decompress(compressed)
+    except OSError, EOFError:
+        raise ValueError("Physical reference is not a valid gzip artifact") from None
+    return PhysicalReference.model_validate_json(source)
+
+
+def physical_snapshot(data: bytes, *, default_note_writer: bool = False) -> dict[str, Any]:
     reader = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
     baseline = reader.extract_parts(data)
     linked = reader.extract_parts_with_doc_notes(data)
@@ -51,17 +98,31 @@ def physical_snapshot(data: bytes) -> dict[str, Any]:
     if selected != reader.extract_document(data):
         raise ValueError("DOC sidecars changed package selection")
     observed = reader.extract_document_with_provenance(data)
-    if observed.document != selected or any(
-        part.doc_notes for part in observed.result.selected_parts
-    ):
-        raise ValueError("Default provenance or selected text changed unexpectedly")
-    enriched = summarize_doc_notes(observed.result, linked)
-    without_notes = enriched.model_dump(mode="json")
+    if observed.document != selected:
+        raise ValueError("Default provenance changed selected text")
+    without_notes = observed.result.model_dump(mode="json")
     for part in without_notes["selected_parts"]:
         part.pop("doc_notes", None)
-    if without_notes != observed.result.model_dump(mode="json"):
-        raise ValueError("DOC summaries changed existing extraction fields")
+    baseline_result = ExtractionResult.model_validate(without_notes)
+    enriched = summarize_doc_notes(baseline_result, linked)
+    if default_note_writer:
+        if observed.result != enriched:
+            raise ValueError("Default DOC metadata differs from bounded opt-in capture")
+    elif observed.result != baseline_result:
+        raise ValueError("Default DOC note writer is enabled; expected writer-OFF mode")
+    without_enrichment = enriched.model_dump(mode="json")
+    for part in without_enrichment["selected_parts"]:
+        part.pop("doc_notes", None)
+    if without_enrichment != without_notes:
+        raise ValueError("DOC summaries changed existing extraction fields or omissions")
     summaries = [part.doc_notes for part in enriched.selected_parts if part.doc_notes is not None]
+    if (
+        sum(len(notes.model_dump_json().encode()) for notes in summaries)
+        > MAX_DOC_NOTE_SUMMARY_BYTES
+    ):
+        raise ValueError("Default DOC summaries exceed the aggregate byte profile")
+    if len(enriched.model_dump_json().encode()) > MAX_EXTRACTION_METADATA_BYTES:
+        raise ValueError("Default extraction exceeds the whole metadata byte profile")
     return {
         "physical_sha256": digest(baseline.model_dump_json().encode()),
         "selection_sha256": digest(selected.selection.model_dump_json().encode()),
@@ -74,7 +135,8 @@ def physical_snapshot(data: bytes) -> dict[str, Any]:
         "retained_note_bytes": sum(len(notes.model_dump_json().encode()) for notes in summaries),
         "total_summary_bytes": len(enriched.model_dump_json().encode()),
         "retained_coverage": [notes.coverage for notes in summaries],
-        "default_note_writer": False,
+        "omitted_selected_parts": enriched.omitted_selected_parts,
+        "default_note_writer": default_note_writer,
     }
 
 
@@ -120,6 +182,9 @@ def run(
     physical_binding: bool = False,
     reference: Path | None = None,
     reference_sha256: str | None = None,
+    default_note_writer: bool = False,
+    physical_reference: Path | None = None,
+    physical_reference_sha256: str | None = None,
 ) -> dict[str, Any]:
     corpus = corpus.resolve()
     output = output.resolve()
@@ -129,6 +194,13 @@ def run(
         raise ValueError("Replay max_notes must be between 0 and 256")
     if physical_binding and not source_characters:
         raise ValueError("Physical DOC binding requires source-character qualification")
+    if default_note_writer and (not physical_binding or physical_reference is None):
+        raise ValueError("Default DOC writer qualification requires a pinned physical reference")
+    physical_prior: PhysicalReference | None = None
+    if physical_reference is not None or physical_reference_sha256 is not None:
+        if physical_reference is None or physical_reference_sha256 is None or not physical_binding:
+            raise ValueError("A pinned physical reference requires physical-binding qualification")
+        physical_prior = _physical_reference(physical_reference, physical_reference_sha256)
     prior: TextReference | None = None
     if reference is not None or reference_sha256 is not None:
         if reference is None or reference_sha256 is None or not source_characters:
@@ -139,6 +211,16 @@ def run(
         prior = TextReference.model_validate_json(reference_bytes)
     manifest_bytes = read_artifact(manifest_path)
     manifest = DocManifest.model_validate_json(manifest_bytes)
+    if physical_prior is not None:
+        population = tuple(
+            (item.path, item.sha256) for item in manifest.cases if item.extension == ".doc"
+        )
+        if (
+            physical_prior.manifest_sha256 != digest(manifest_bytes)
+            or physical_prior.index_sha256 != manifest.index_sha256
+            or tuple((item.path, item.sha256) for item in physical_prior.paths) != population
+        ):
+            raise ValueError("Physical reference and manifest populations differ")
     reads = CorpusReads(corpus)
     results: dict[str, dict[str, Any]] = {}
     paths: list[dict[str, str]] = []
@@ -158,7 +240,9 @@ def run(
                     data, max_notes=max_notes, source_characters=source_characters
                 )
                 if physical_binding:
-                    results[item.sha256]["physical_binding"] = physical_snapshot(data)
+                    results[item.sha256]["physical_binding"] = physical_snapshot(
+                        data, default_note_writer=default_note_writer
+                    )
             paths.append({"path": item.path, "sha256": item.sha256})
     if prior is not None:
         if prior.observations.keys() != results.keys():
@@ -168,6 +252,16 @@ def run(
             for sha, record in results.items()
         ):
             raise ValueError("Legacy text differs from the pinned reference")
+    if physical_prior is not None:
+        if physical_prior.observations.keys() != results.keys():
+            raise ValueError("Physical reference and replay populations differ")
+        for sha, record in results.items():
+            previous = physical_prior.observations[sha].physical_binding.model_dump()
+            if any(
+                record["physical_binding"][name] != previous[name]
+                for name in PHYSICAL_SEMANTIC_FIELDS
+            ):
+                raise ValueError("Physical semantic hashes differ from the pinned reader baseline")
     changed = reads.changed_inputs()
     if changed:
         raise ValueError(f"Corpus inputs changed during replay: {len(changed)}")
@@ -195,6 +289,11 @@ def run(
         "source_fingerprints": source_fingerprints(),
         "physical_binding": physical_binding,
         "reference_sha256": reference_sha256,
+        "physical_reference_sha256": physical_reference_sha256,
+        "default_note_writer": default_note_writer,
+        "physical_reference_scope": (
+            "four semantic hashes only; old component/version JSON identity unavailable"
+        ),
         "max_notes": max_notes,
         "summary": summary,
         "paths": paths,
@@ -204,7 +303,8 @@ def run(
             "Nested archive leaves absent from the manifest",
             "CFSpec/emitted offset checks" if source_characters else "Character/CFSpec checks",
             "Independent legal labels",
-            "Default runtime capture",
+            *([] if default_note_writer else ["Default runtime capture"]),
+            "Full old component/version/extraction JSON identity",
         ],
     }
     output.mkdir(parents=True, exist_ok=False)
@@ -223,6 +323,9 @@ def main() -> None:
     parser.add_argument("--physical-binding", action="store_true")
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--reference-sha256")
+    parser.add_argument("--default-note-writer", action="store_true")
+    parser.add_argument("--physical-reference", type=Path)
+    parser.add_argument("--physical-reference-sha256")
     args = parser.parse_args()
     print(
         json.dumps(
@@ -235,6 +338,9 @@ def main() -> None:
                 physical_binding=args.physical_binding,
                 reference=args.reference,
                 reference_sha256=args.reference_sha256,
+                default_note_writer=args.default_note_writer,
+                physical_reference=args.physical_reference,
+                physical_reference_sha256=args.physical_reference_sha256,
             )
         )
     )

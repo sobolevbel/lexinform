@@ -83,7 +83,10 @@ def qualify(
     output: Path,
     *,
     physical_binding: bool = False,
+    default_note_writer: bool = False,
 ) -> dict[str, Any]:
+    if default_note_writer and not physical_binding:
+        raise ValueError("Default DOC writer checks require physical binding")
     source = read_artifact(baseline_path)
     if digest(source) != BASELINE_SHA:
         raise ValueError("Wrong baseline source")
@@ -133,7 +136,7 @@ def qualify(
                         "nested.zip": packed_members({"second.doc": data}),
                     }
                 )
-                snapshot = physical_snapshot(packed)
+                snapshot = physical_snapshot(packed, default_note_writer=default_note_writer)
                 if snapshot["captured_leaves"] != 2:
                     raise ValueError("Duplicate natural DOC leaves lost their physical bindings")
                 packages.append(
@@ -203,6 +206,7 @@ def qualify(
         "baseline_texts": observed,
         "meaningful_derivatives": derived,
         "physical_packages": packages,
+        "default_note_writer": default_note_writer,
     }
     write_json(output, report)
     return {
@@ -219,6 +223,7 @@ def main() -> None:
     parser.add_argument("--baseline", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--physical-binding", action="store_true")
+    parser.add_argument("--default-note-writer", action="store_true")
     args = parser.parse_args()
     print(
         json.dumps(
@@ -228,6 +233,7 @@ def main() -> None:
                 args.baseline,
                 args.output,
                 physical_binding=args.physical_binding,
+                default_note_writer=args.default_note_writer,
             )
         )
     )

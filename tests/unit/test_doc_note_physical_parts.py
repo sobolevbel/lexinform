@@ -254,13 +254,15 @@ def test_invalid_retained_summary_is_refused(field: str) -> None:
         DocNoteSummary.model_validate(payload)
 
 
-def test_optional_summary_does_not_appear_in_the_default_provenance_path() -> None:
+def test_optional_doc_summary_is_retained_by_the_native_provenance_path() -> None:
     data = ole_document(*source_notes())
 
     result = extractor().extract_document_with_provenance(data)
 
-    assert all(part.doc_notes is None for part in result.result.selected_parts)
-    assert "doc_notes" not in result.result.model_dump_json()
+    notes = result.result.selected_parts[0].doc_notes
+    assert notes is not None, "The native DOC leaf yields source-checked metadata"
+    assert notes.state == "checked" and notes.observed_links == 1
+    assert notes.validation == "source_characters_checked_cf_spec_unknown"
 
 
 def test_aggregate_budget_preserves_existing_selected_rows() -> None:

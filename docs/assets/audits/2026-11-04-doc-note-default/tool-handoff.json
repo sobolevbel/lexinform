@@ -1,0 +1,102 @@
+{
+  "stage": "J208 default writer corpus validation mode",
+  "owned_source_sha256": {
+    "tools/replay_doc_notes.py": "211093fcdee97112b326561971f01b04301411e4e5c51545c9a307fb5455b352",
+    "tools/verify_doc_note_sources.py": "b80b8e65377ec7d299853de823d7f03d2cfa35828f51201a5b56aef0dbfea304",
+    "tests/unit/test_replay_doc_notes.py": "00202864632895646aa9b87c3aabbd1b9266c24da9263b8d1a615da56d246043"
+  },
+  "source_base_sha256": {
+    "tools/replay_doc_notes.py": "35643cebea139178c17d69d32523112db96a3c410c3e6a7c5e99c3ad6d4dcd1e",
+    "tools/verify_doc_note_sources.py": "8fbfcc9588de818a011edeeac9f00855b92f268d0eefc307d8b42da6c0701f88",
+    "tests/unit/test_replay_doc_notes.py": "b19d1b3a59ba1c50bc08e458651e767f0f41c40d0fede57503beb57b4d373879"
+  },
+  "focused_tests": 13,
+  "strict_mypy_files": 3,
+  "mypy_environment": "MYPYPATH=src:.:typings and PYTHONPATH=src:.; first missing-MYPYPATH attempt preserved as invalid environment output",
+  "ruff": "green",
+  "semantics": {
+    "scope": "Exact J207 input population and four semantic physical hashes; full old component/version JSON identity unavailable",
+    "baseline_reader_commit": "d1277f57e604e10259d3da419cdbc03546632558",
+    "baseline_report_compressed_sha256": "f35b3cc5de2ae890e6871693e9b426281ce451eb3d2b73db97b14b53bdc7a31a",
+    "baseline_report_matches_git_object": true,
+    "baseline_report_uncompressed_sha256": "31b27ac5353c28f2410aace025f08ce8408ce262a804c80ab0605f37f9a1e0d0",
+    "baseline_independent_proof_sha256": "e5e228cd283ebfbabb31e313f2138a5f495cf6309c6268d1046d528a318b42cc",
+    "baseline_independent_proof_matches_git_object": true,
+    "four_hash_differences": [],
+    "archive_same_input_and_four_hashes": {
+      "source_sha256": true,
+      "package_sha256": true,
+      "physical_sha256": true,
+      "selection_sha256": true,
+      "selected_text_sha256": true,
+      "physical_manifest_sha256": true
+    },
+    "summary": {
+      "changed_inputs": [],
+      "links_by_kind": {
+        "footnote": 377
+      },
+      "note_bearing_unique": 69,
+      "paths": 404,
+      "status_counts": {
+        "source_characters_checked_cf_spec_unknown": 245,
+        "unavailable": 1
+      },
+      "unique_inputs": 246,
+      "verified_input_paths": 405
+    },
+    "physical_captures": 245,
+    "captured_links": 377,
+    "retained_links": 377,
+    "max_doc_summary_bytes": 3200,
+    "max_total_summary_bytes": 6005,
+    "writer_modes": [
+      true
+    ],
+    "independent_raw_links": 377,
+    "meaningful_derivatives": 5,
+    "natural_archive": {
+      "captured_leaves": 2,
+      "captured_links": 4,
+      "checked_leaves": 2,
+      "default_note_writer": true,
+      "omitted_selected_parts": 0,
+      "package_sha256": "5dc16bc6e71c6dc8f45d4ee124a9077a5c8eab299975952ac96041a40e9241df",
+      "physical_manifest_sha256": "cd609e042aa359cf72e08cfce6f7fd043141a7bd4b3b4667ecce1e70844d4ef8",
+      "physical_sha256": "d3108f5fa0f32801d37b952b25d507a091c6e417c2b726138969b07eb17a7dcc",
+      "retained_coverage": [
+        "complete_declared_links"
+      ],
+      "retained_links": 2,
+      "retained_note_bytes": 878,
+      "selected_text_sha256": "2f5d874c6105776891af58485c14b06517a9f0cb96e890a89782cfab9693042f",
+      "selection_sha256": "13548c06572538c934ed1d4f90accde821d0d0bd5a3e7a05b082cdc8708b76b7",
+      "source_sha256": "4cb3144a8e3c47d3e2a4e527d724ffec7646a754e84e1f231eb6530f1fd5133e",
+      "total_summary_bytes": 3683
+    },
+    "limitations": [
+      "No natural endnotes",
+      "CFSpec and emitted/body coordinates unknown",
+      "No production adoption or fleet-growth inference",
+      "Controlled paired growth and pipeline evidence remain separate"
+    ]
+  },
+  "artifacts": [
+    "replay-on/report.json",
+    "replay-on/summary.json",
+    "independent-on.json",
+    "tool-qualification/semantic-proof.json"
+  ],
+  "new_flags": [
+    "replay: --default-note-writer --physical-reference PATH.json.gz --physical-reference-sha256 COMPRESSED_SHA",
+    "independent: --physical-binding --default-note-writer"
+  ],
+  "contracts": [
+    "Compressed SHA verified before gzip decompression; pinned baseline bytes match exact released reader Git objects",
+    "Manifest/index/path+SHA order and unique observation population exact",
+    "Default actual metadata equals independently recomputed bounded opt-in summary; unexpected metadata/flag/semantic/pin/population mismatch refuses output",
+    "Old writer-OFF physical expectation retained; old source/stream reference arguments unchanged",
+    "All prior extraction fields and omission counts checked locally; only four semantic hashes compared against historical report, not complete prior components/versions"
+  ],
+  "no_full_commit_push": true
+}

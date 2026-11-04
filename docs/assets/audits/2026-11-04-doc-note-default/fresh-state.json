@@ -1,0 +1,117 @@
+{
+  "canonical_dump_sha256": "021b0a00cfae94b541f1b609f6de76b96c5c2dceb0c338ebeae81e5ae7b6fc04",
+  "counts": {
+    "bills": 496,
+    "document_work": 4,
+    "extraction_results": 65,
+    "llm_batch_items": 122,
+    "publications": 224
+  },
+  "database_unchanged_after_doctors": true,
+  "doctors": {
+    "computation": {
+      "errors": 0,
+      "status": "recorded",
+      "summary": {
+        "applicability_rows": 9,
+        "application_collection": 11,
+        "application_outcome_applied": 15,
+        "application_outcome_ready": 11,
+        "application_projection": 15,
+        "application_rows": 26,
+        "errors": 0,
+        "frozen_requests": 0,
+        "input_binding_known": 13,
+        "input_receipts": 1,
+        "input_snapshot_rows": 1,
+        "modern_primary_projection_refs": 10,
+        "projection_refs_known": 45,
+        "projection_refs_unknown": 432,
+        "purpose_amendments": 1,
+        "purpose_analysis": 7,
+        "purpose_reanalysis": 4,
+        "purpose_supplement": 1,
+        "request_sha_known": 13,
+        "result_rows": 13,
+        "result_validated": 13,
+        "saved_columns": 754,
+        "target_owner_present": 2,
+        "target_present": 2,
+        "warnings": 0
+      },
+      "warnings": 0
+    },
+    "content": {
+      "errors": 0,
+      "status": "recorded",
+      "summary": {
+        "binding_rows": 1,
+        "errors": 0,
+        "snapshot_rows": 3,
+        "version_rows": 1,
+        "warnings": 0
+      },
+      "warnings": 0
+    },
+    "source": {
+      "errors": 0,
+      "status": "recorded",
+      "summary": {
+        "artifact_link_rows": 271,
+        "artifact_read_rows": 71,
+        "artifact_rows": 378,
+        "edition_link_rows": 29,
+        "edition_rows": 29,
+        "errors": 0,
+        "extraction_rows": 65,
+        "observation_rows": 42,
+        "physical_captures_rows": 31,
+        "physical_metadata_rows": 425,
+        "policy_recorded": 36,
+        "purpose/analysis": 16,
+        "purpose/prefilter": 26,
+        "rcl_letter_use_complete": 2,
+        "rcl_letter_use_rows": 2,
+        "rcl_letter_use_unknown_origin": 0,
+        "rcl_letter_use_unknown_stage_id": 0,
+        "selection_rows": 36,
+        "senate_inspection_link_rows": 0,
+        "source_catalog_attempt_parents_rows": 0,
+        "source_catalog_attempts_rows": 0,
+        "source_catalog_snapshots_rows": 0,
+        "state/selected": 11,
+        "state/unverified": 24,
+        "state/waiting": 1,
+        "unlinked_artifact_rows": 318,
+        "unreferenced_selection_rows": 0
+      },
+      "warnings": 0
+    },
+    "work": {
+      "errors": 0,
+      "status": "recorded",
+      "summary": {
+        "document_rows": 4,
+        "document_waiting": 4,
+        "errors": 0,
+        "review_abandoned": 7,
+        "review_context": 2,
+        "review_owner_rows": 9,
+        "review_purpose_act_application": 2,
+        "review_purpose_consultation_review": 7,
+        "review_rows": 9,
+        "warnings": 4
+      },
+      "warnings": 4
+    }
+  },
+  "no_production_processing_or_paid_calls": true,
+  "qualified_at": "2026-11-04T17:25:31.621876+00:00",
+  "source_sql_bytes": 25787092,
+  "source_sql_sha256": "29dfe8566f02ceb810a1a43e8ea9a7b0fd0d9f6fc54ffa7212c4dda23945cd6d",
+  "source_unchanged": true,
+  "state_commit": "105de577d682b1f7057e0593aab5c7a408aed740",
+  "state_committed_at": "2026-11-04T11:33:29Z",
+  "typed_bill_count": 496,
+  "typed_bill_digest": "ab0890152c30d0ff497c9a50b60402203a7ab1c4d4dd78e857828b9532fad56e"
+}

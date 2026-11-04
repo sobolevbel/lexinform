@@ -94,7 +94,9 @@ def items_at(read: Read, endpoint: str, key: str) -> list[dict[str, Any]]:
     return items
 
 
-def one_run(read: Read, workflow: str, event: str, target: str) -> dict[str, Any] | None:
+def one_run(
+    read: Read, workflow: str, event: str, target: str, *, not_before: str | None = None
+) -> dict[str, Any] | None:
     runs = items_at(
         read,
         f"actions/workflows/{workflow}/runs?branch=main&event={event}&head_sha={target}&per_page=100",
@@ -108,6 +110,15 @@ def one_run(read: Read, workflow: str, event: str, target: str) -> dict[str, Any
         and run.get("event") == event
         and run.get("path") == f".github/workflows/{workflow}"
     ]
+    if not_before is not None:
+        for run in matches:
+            created = run.get("created_at")
+            if not isinstance(created, str) or API_DATE.fullmatch(created) is None:
+                raise EvidenceError("invalid_workflow_timestamp")
+        eligible = [run for run in matches if run["created_at"] >= not_before]
+        if matches and not eligible:
+            raise EvidenceError("deploy_predates_ci_completion")
+        matches = eligible
     if len(matches) > 1:
         raise EvidenceError("ambiguous_workflow_runs")
     return matches[0] if matches else None
@@ -250,7 +261,9 @@ def verify(target: str, *, previous: str | None = None, read: Read = gh_read) ->
             ("ci", "ci.yml", "push"),
             ("deploy", "deploy-relay.yml", "workflow_run"),
         ):
-            run = one_run(read, workflow, event, target)
+            ci = report["ci"]
+            boundary = ci["updated_at"] if key == "deploy" and ci is not None else None
+            run = one_run(read, workflow, event, target, not_before=boundary)
             if run is None:
                 report.update({"status": "pending", "reason": f"no_exact_{key}_run"})
                 return report

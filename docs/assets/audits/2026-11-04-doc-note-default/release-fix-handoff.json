@@ -1,0 +1,21 @@
+{
+  "scope": "OUT-only candidate, no tracked edits/full/tests/corpus/workflow mutations",
+  "base_source_sha256": {
+    "tools/verify_release.py": "8f885367dc7bea8d9fcfee25a7c60b3568e72afc344449a46a8056708a13f1f6",
+    "tests/unit/test_verify_release.py": "9c2ddc7cb0eedb1387e4b270754270bfedb72f82c846b7830759ccdb13a702c0"
+  },
+  "candidate_source_sha256": {
+    "tools/verify_release.py": "7b4b3642521126401cdd4e6593b286da07dde6fd050f73bdc9eb142e3181b86a",
+    "tests/unit/test_verify_release.py": "169a79ef707c769957b691628887337b54515ffad902484316dd2bfd0e40438e"
+  },
+  "patch_sha256": "a5dd0763588ef30c1159d01fa0249f1aa99415c19d45252d3e14c14c94a19614",
+  "test_additions": 3,
+  "test_cases": [
+    "Exclude older matching-head deployment before ambiguity; eligible at exact CI completion inclusive",
+    "Multiple eligible deployments remain ambiguous, logs unread",
+    "Malformed deployment date cannot be silently excluded"
+  ],
+  "existing_guards": "Stale-only deploy remains unproven; exact relay COMMIT/transition/45s/timer logs remain required; final chronology and main-ref guards unchanged",
+  "evidence": "evidence.json; raw run metadata and sanitized relay proof only, no job logs retained",
+  "qualification": "Prepared only; root to run focused gate after integrating at unfrozen boundary"
+}

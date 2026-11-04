@@ -1,0 +1,58 @@
+{
+  "baseline": "isolated pinned J207 reader; actual context hashes verified before integration",
+  "current": "root activated current source",
+  "preserved": [
+    "input_sha256",
+    "input_bytes",
+    "selection_id",
+    "selected_text_sha256",
+    "physical_manifest_sha256",
+    "output_text_sha256",
+    "physical_part_count",
+    "selected_part_count",
+    "omitted_selected_parts"
+  ],
+  "delta": {
+    "extraction_json_bytes": 757,
+    "sql_bytes": 757,
+    "gzip_bytes": 245
+  },
+  "before": {
+    "scope": "one synthetic OLE DOC with one actual source-checked footnote; no production or paid calls",
+    "input_sha256": "6036f70babe8bace7f4aaaf3f1156128f02d3e252b36292ff1a5063c56d1939b",
+    "input_bytes": 9728,
+    "selection_id": "selection-v1:09f1ee9db7c301e725464a53431140175f49120215e242543b06d7153a478cac",
+    "selected_text_sha256": "707456350764908206f28d6f3565a040e4c11061b8779b4615b8dd3898535ad3",
+    "physical_manifest_sha256": "951a3aa331b916b95a7c504a407e5d36e4dd84e9155599a1cf9d3a4447da868f",
+    "output_text_sha256": "707456350764908206f28d6f3565a040e4c11061b8779b4615b8dd3898535ad3",
+    "physical_part_count": 1,
+    "selected_part_count": 1,
+    "omitted_selected_parts": 0,
+    "extraction_json_bytes": 2784,
+    "sql_bytes": 34019,
+    "gzip_bytes": 6548,
+    "note_summary_parts": 0,
+    "retained_note_links": 0
+  },
+  "after": {
+    "scope": "one synthetic OLE DOC with one actual source-checked footnote; no production or paid calls",
+    "input_sha256": "6036f70babe8bace7f4aaaf3f1156128f02d3e252b36292ff1a5063c56d1939b",
+    "input_bytes": 9728,
+    "selection_id": "selection-v1:09f1ee9db7c301e725464a53431140175f49120215e242543b06d7153a478cac",
+    "selected_text_sha256": "707456350764908206f28d6f3565a040e4c11061b8779b4615b8dd3898535ad3",
+    "physical_manifest_sha256": "951a3aa331b916b95a7c504a407e5d36e4dd84e9155599a1cf9d3a4447da868f",
+    "output_text_sha256": "707456350764908206f28d6f3565a040e4c11061b8779b4615b8dd3898535ad3",
+    "physical_part_count": 1,
+    "selected_part_count": 1,
+    "omitted_selected_parts": 0,
+    "extraction_json_bytes": 3541,
+    "sql_bytes": 34776,
+    "gzip_bytes": 6793,
+    "note_summary_parts": 1,
+    "retained_note_links": 1
+  },
+  "limitations": [
+    "One synthetic one-note new record; not fleet or natural growth",
+    "No provider inputs constructed/submitted; no production processing"
+  ]
+}

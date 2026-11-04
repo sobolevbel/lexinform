@@ -4,18 +4,24 @@ from unittest.mock import patch
 
 import pytest
 
+from lexinform.adapters import document_text as document_module
+from lexinform.adapters.llm_prompts import build_user_prompt
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     BatchIntent,
     BatchItemMeta,
     BatchRequest,
+    BillContext,
     BillStatus,
     DocumentSelectionRecord,
     SourceObservation,
+    TextDocument,
 )
 from lexinform.services import analysis as module
 from tests.harness import World, print_url
 from tests.scenario.test_extraction_source_history import reader
+from tests.unit.test_doc_note_extraction import source_notes
+from tests.unit.test_doc_note_physical_parts import ole_document
 from tests.unit.test_physical_extraction import archive, docx
 
 TEXT = "USTAWA\nArt. 1. Cudzoziemiec składa wniosek osobiście i otrzymuje 300 zł.\n" * 50
@@ -231,3 +237,49 @@ def test_new_metadata_cancellation_propagates_and_never_queues_or_submits(stage:
     assert caught.value is failure and caught.value.__cause__ is cause
     assert not current.repo.list_queued_batch_intents() and not current.batch.submitted
     assert current.bill("4100").status is BillStatus.ANALYSIS_PENDING
+
+
+def test_native_doc_note_metadata_preserves_paid_request_memo_and_same_byte_alias() -> None:
+    prefix = "USTAWA\r" + "Art. 1. Cudzoziemiec otrzymuje zezwolenie i sklada wniosek.\r" * 8
+    data = ole_document(
+        *source_notes(main=prefix + "\x02\r", reference_cp=len(prefix.encode("utf-16-le")) // 2)
+    )
+    baseline, candidate = world(data), world(data)
+    with patch.object(
+        document_module, "summarize_doc_notes", side_effect=lambda result, linked: result
+    ):
+        baseline.run(track=False)
+    candidate.run(track=False)
+
+    assert len(baseline.batch.submitted) == len(candidate.batch.submitted) == 1
+    assert candidate.batch.submitted == baseline.batch.submitted
+    old_context, new_context = baseline.batch.submitted[0].ctx, candidate.batch.submitted[0].ctx
+    assert isinstance(old_context, BillContext) and isinstance(new_context, BillContext), (
+        "The initial primary analysis prepares the bill context, not a secondary purpose"
+    )
+    assert build_user_prompt(new_context) == build_user_prompt(old_context)
+    items = [
+        current.repo.list_llm_batch_items(current.repo.list_open_llm_batches()[0].batch_id)[0]
+        for current in (baseline, candidate)
+    ]
+    old_meta, new_meta = items[0].meta, items[1].meta
+    assert isinstance(old_meta, BatchItemMeta) and isinstance(new_meta, BatchItemMeta), (
+        "The native primary source queues the standard primary batch metadata"
+    )
+    assert old_meta.memo_key == new_meta.memo_key
+    old_receipt, new_receipt = old_meta.prepared_input_receipt, new_meta.prepared_input_receipt
+    assert old_receipt is not None and new_receipt is not None, (
+        "The complete native leaf records independently persisted physical input receipts"
+    )
+    assert old_receipt.extraction_id != new_receipt.extraction_id
+    for current, receipt, expected in ((baseline, old_receipt, 0), (candidate, new_receipt, 1)):
+        assert receipt.extraction_id is not None, "The native source receipt records its extraction"
+        result = current.repo.get_extraction_result(receipt.extraction_id)
+        assert result is not None, "The caller commits the extraction before its input receipt"
+        assert sum(part.doc_notes is not None for part in result.selected_parts) == expected
+        current.batch.resolve()
+        current.run(track=False)
+        alias = TextDocument(url="https://api.test/alias.pdf", kind="print")
+        current.gateway.files[alias.url] = data
+        assert current.analysis.reanalyze_bill(current.bill("4100"), alias) is None
+        assert len(current.batch.submitted) == 1

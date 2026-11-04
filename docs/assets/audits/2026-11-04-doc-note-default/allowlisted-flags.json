@@ -1,0 +1,41 @@
+{
+  "all_recognized": true,
+  "batch_enabled_in_workflow": true,
+  "doc_note_writer": {
+    "qualified_J208_candidate": "on through same native provenance walk",
+    "scope": "Metadata only; no new paid feature or storage backend enabled",
+    "verified_parent_d127": "off"
+  },
+  "flags": {
+    "LEXINFORM_ATTENTION_ROUNDUP": {
+      "configured": true,
+      "configured_value_sha256": "6f31304cdfd0a3a6362bffbc6dc4f33ecb20221b84f79cf0137b7dc0f5d3a616",
+      "effective_from_workflow": "daily",
+      "recognized": true
+    },
+    "LEXINFORM_COMMISSION_REVIEWS_ENABLED": {
+      "configured": false,
+      "effective_from_workflow": "false"
+    },
+    "LEXINFORM_CONSULTATION_REVIEWS_ENABLED": {
+      "configured": false,
+      "effective_from_workflow": "false"
+    },
+    "LEXINFORM_READER_ATTENTION": {
+      "configured": true,
+      "configured_value_sha256": "b8d31e852725afb1e26d53bab6095b2bff1749c9275be13ed1c05a56ed31ec09",
+      "effective_from_workflow": "on",
+      "recognized": true
+    },
+    "LEXINFORM_STATE_MAINTENANCE": {
+      "configured": false,
+      "effective_from_workflow": "off"
+    }
+  },
+  "new_doc_note_environment_flags": [],
+  "repository": "sobolevbel/lexinform",
+  "secrets_read": false,
+  "unchanged_workflow": "J208 does not edit daily.yml or repository variables",
+  "variables_changed": false,
+  "workflow_sha256": "be9b7783783455ff6e58a06f837e8e823410c860fe8bb279bd327d68d529c2f5"
+}

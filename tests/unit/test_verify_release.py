@@ -328,3 +328,43 @@ def test_malformed_github_identity_is_unproven_without_raw_response(body: str) -
     report = verify(TARGET, read=lambda endpoint: body)
     assert report["status"] == "unproven"
     assert report["observed_main_sha"] is None
+
+
+def test_deploy_from_older_ci_is_excluded_before_ambiguity_selection() -> None:
+    github = GitHub()
+    github.deploy[0]["created_at"] = github.ci[0]["updated_at"]
+    stale = run(99, "deploy-relay.yml", "workflow_run")
+    stale["created_at"] = "2026-10-28T11:00:00Z"
+    github.deploy.append(stale)
+
+    report = verify(TARGET, previous=PREVIOUS, read=github.read)
+
+    assert report["status"] == "verified"
+    assert report["deploy"] is not None, "The eligible deployment is selected"
+    assert report["deploy"]["id"] == DEPLOY
+    assert not any("actions/runs/99/" in call for call in github.calls)
+
+
+def test_multiple_deploys_after_exact_ci_remain_ambiguous() -> None:
+    github = GitHub()
+    stale = run(98, "deploy-relay.yml", "workflow_run")
+    stale["created_at"] = "2026-10-28T11:00:00Z"
+    github.deploy.extend([stale, run(99, "deploy-relay.yml", "workflow_run")])
+
+    report = verify(TARGET, read=github.read)
+
+    assert report["status"] == "unproven"
+    assert report["reason"] == "ambiguous_workflow_runs"
+    assert not any(call.endswith("/logs") for call in github.calls)
+
+
+def test_malformed_deploy_date_is_not_silently_excluded() -> None:
+    github = GitHub()
+    stale = run(99, "deploy-relay.yml", "workflow_run")
+    stale["created_at"] = "invalid"
+    github.deploy.append(stale)
+
+    report = verify(TARGET, read=github.read)
+
+    assert report["status"] == "unproven"
+    assert report["reason"] == "invalid_workflow_timestamp"
