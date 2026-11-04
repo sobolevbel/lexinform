@@ -1,11 +1,13 @@
 """Select the existing legal package from physical parts without file or network I/O."""
 
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Self
 
+from lexinform.archive_policy_capture import ArchivePolicyDecision, PolicyOutcome
 from lexinform.document_versions import comparable_versions, normative_annex_key, regulation_support
+from lexinform.models.candidate_trace import ArchiveMemberPolicyReason
 from lexinform.models.documents import (
     DocumentPart,
     DocumentSelection,
@@ -98,7 +100,10 @@ def select_candidate_versions(
 
 
 def select_document_parts(
-    extracted: ExtractedParts, *, max_part_chars: int | None
+    extracted: ExtractedParts,
+    *,
+    max_part_chars: int | None,
+    decision_sink: Callable[[ArchivePolicyDecision], None] | None = None,
 ) -> ExtractedDocument:
     parts: list[DocumentPart] = []
     for part in extracted.parts:
@@ -115,7 +120,9 @@ def select_document_parts(
             text=part.text,
             selection=DocumentSelection(parts=(part,), rejected=tuple(rejected)),
         )
-    return _select_parts(parts, rejected, max_part_chars=max_part_chars)
+    return _select_parts(
+        parts, rejected, max_part_chars=max_part_chars, decision_sink=decision_sink
+    )
 
 
 def _legacy_losses(part: DocumentPart) -> tuple[str, ...]:
@@ -130,98 +137,152 @@ def _legacy_losses(part: DocumentPart) -> tuple[str, ...]:
 
 
 def _select_parts(
-    parts: list[DocumentPart], rejected: list[str], *, max_part_chars: int | None
+    parts: list[DocumentPart],
+    rejected: list[str],
+    *,
+    max_part_chars: int | None,
+    decision_sink: Callable[[ArchivePolicyDecision], None] | None = None,
 ) -> ExtractedDocument:
-    candidates: list[tuple[tuple[int, int, int, int], DocumentPart]] = []
-    supporting: list[DocumentPart] = []
-    annexes: list[DocumentPart] = []
-    for part in parts:
+    candidates: list[tuple[tuple[int, int, int, int], int, DocumentPart]] = []
+    supporting: list[tuple[int, DocumentPart]] = []
+    annexes: list[tuple[int, DocumentPart]] = []
+    decisions: dict[int, tuple[PolicyOutcome, ArchiveMemberPolicyReason]] = {}
+
+    def note(index: int, outcome: PolicyOutcome, reason: ArchiveMemberPolicyReason) -> None:
+        if decision_sink is not None:
+            decisions[index] = (outcome, reason)
+
+    def finish(result: ExtractedDocument) -> ExtractedDocument:
+        if decision_sink is not None and len(decisions) == len(parts):
+            try:
+                for index, part in enumerate(parts):
+                    outcome, reason = decisions[index]
+                    decision_sink(
+                        ArchivePolicyDecision(index, outcome, reason, part.sha256, part.text_sha256)
+                    )
+            except Exception:
+                pass
+        return result
+
+    for index, part in enumerate(parts):
         name = part.members[-1]
         base = name.rsplit("/", 1)[-1]
         kind = document_kind(part.text) if part.text.strip() else "unknown"
         if kind != "bill" and _normative_annex(base, part.text):
-            annexes.append(part.model_copy(update={"role": "normative_annex"}))
+            annexes.append((index, part.model_copy(update={"role": "normative_annex"})))
             continue
         if kind in _NOT_THE_BILL or not part.text.strip():
             rejected.append(f"{part.members}: {kind}")
+            if part.text.strip():
+                note(index, "non_bill", "non_bill_body")
+            else:
+                note(index, "unclassified", "empty_text")
             continue
         role = _ROLE_OF_KIND.get(kind) or (_member_role(base) if kind == "unknown" else None)
         if role in ("justification", "osr"):
             if regulation_support(part.text, name=base):
                 rejected.append(f"{part.members}: supporting draft regulation")
+                note(index, "policy_excluded", "regulation_support")
                 continue
-            supporting.append(part.model_copy(update={"role": role}))
+            supporting.append((index, part.model_copy(update={"role": role})))
             continue
         if role != "bill":
+            note(index, "unclassified", "unknown_role")
             continue
         if kind == "unknown" and max_part_chars and len(part.text) > max_part_chars:
             rejected.append(f"{part.members}: unrecognised long document")
+            note(index, "policy_excluded", "long_unknown_text")
             continue
         rank = (
             0 if kind == "bill" else 1,
             len(part.members),
             *text_rank(base, base.rsplit(".", 1)[-1].lower()),
         )
-        candidates.append((rank, part.model_copy(update={"role": "bill"})))
+        candidates.append((rank, index, part.model_copy(update={"role": "bill"})))
+        note(index, "policy_excluded", "rank_preference")
     if not candidates:
-        return ExtractedDocument(
-            text=PAGE_BREAK.join(p.text for p in supporting),
-            selection=DocumentSelection(
-                observed_parts=tuple(parts),
-                state="unsupported",
-                parts=tuple(supporting),
-                rejected=tuple(rejected),
-            ),
-        )
-    candidates.sort(key=lambda item: (item[0], item[1].members))
-    rank, main = candidates[0]
-    peers = [p for r, p in candidates if r[0] == rank[0]]
-    peer_set = CandidateSet.from_parts(peers)
-    confirmed = [peers[index] for index in peer_set.bill_indices()]
-    if len(confirmed) > 1:
-        indices = comparable_versions([p.text for p in confirmed])
-        if not indices:
-            return ExtractedDocument(
+        for index, _ in annexes:
+            note(index, "policy_excluded", "no_bill_candidate")
+        for index, _ in supporting:
+            note(index, "selected", "selected_support")
+        return finish(
+            ExtractedDocument(
+                text=PAGE_BREAK.join(p.text for _, p in supporting),
                 selection=DocumentSelection(
                     observed_parts=tuple(parts),
-                    state="ambiguous",
-                    parts=tuple(confirmed),
+                    state="unsupported",
+                    parts=tuple(p for _, p in supporting),
                     rejected=tuple(rejected),
-                )
+                ),
             )
-        main = confirmed[indices[0]]
-    family = main.members[:-1]
-    kept = [main]
-    kept.extend(
-        sorted(
-            (p for p in annexes if p.members[:-1] == family),
-            key=lambda p: normative_annex_key(p.text),
         )
-    )
-    for role in ("justification", "osr"):
-        matches = [p for p in supporting if p.role == role and p.members[:-1] == family]
-        if matches:
-            kept.append(
-                min(
-                    matches,
-                    key=lambda p: (
-                        text_rank(p.members[-1], p.members[-1].rsplit(".", 1)[-1].lower()),
-                        p.members,
-                    ),
+    candidates.sort(key=lambda item: (item[0], item[2].members))
+    rank, main_index, main = candidates[0]
+    peers = [(index, p) for r, index, p in candidates if r[0] == rank[0]]
+    peer_set = CandidateSet.from_parts([p for _, p in peers])
+    confirmed = [peers[index] for index in peer_set.bill_indices()]
+    if len(confirmed) > 1:
+        indices = comparable_versions([p.text for _, p in confirmed])
+        if not indices:
+            for index, _ in (*annexes, *supporting):
+                note(index, "policy_excluded", "version_conflict")
+            for index, _ in confirmed:
+                note(index, "policy_excluded", "version_conflict")
+            return finish(
+                ExtractedDocument(
+                    selection=DocumentSelection(
+                        observed_parts=tuple(parts),
+                        state="ambiguous",
+                        parts=tuple(p for _, p in confirmed),
+                        rejected=tuple(rejected),
+                    )
                 )
             )
+        for index, _ in confirmed:
+            note(index, "policy_excluded", "version_preference")
+        main_index, main = confirmed[indices[0]]
+    family = main.members[:-1]
+    for index, _ in (*annexes, *supporting):
+        note(index, "policy_excluded", "family_exclusion")
+    kept = [main]
+    note(main_index, "selected", "selected_main")
+    kept_annexes = sorted(
+        ((index, p) for index, p in annexes if p.members[:-1] == family),
+        key=lambda item: normative_annex_key(item[1].text),
+    )
+    for index, p in kept_annexes:
+        kept.append(p)
+        note(index, "selected", "selected_annex")
+    for role in ("justification", "osr"):
+        matches = [
+            (index, p) for index, p in supporting if p.role == role and p.members[:-1] == family
+        ]
+        for index, _ in matches:
+            note(index, "policy_excluded", "rank_preference")
+        if matches:
+            index, p = min(
+                matches,
+                key=lambda item: (
+                    text_rank(item[1].members[-1], item[1].members[-1].rsplit(".", 1)[-1].lower()),
+                    item[1].members,
+                ),
+            )
+            kept.append(p)
+            note(index, "selected", "selected_support")
     losses = tuple(rejected)
-    return ExtractedDocument(
-        text=PAGE_BREAK.join(p.text for p in kept),
-        selection=DocumentSelection(
-            observed_parts=tuple(parts),
-            parts=tuple(kept),
-            rejected=losses,
-            role=("bill heading",) if document_kind(main.text) == "bill" else (),
-            completeness=()
-            if losses or any(p.losses for p in kept)
-            else ("all selected members extracted",),
-        ),
+    return finish(
+        ExtractedDocument(
+            text=PAGE_BREAK.join(p.text for p in kept),
+            selection=DocumentSelection(
+                observed_parts=tuple(parts),
+                parts=tuple(kept),
+                rejected=losses,
+                role=("bill heading",) if document_kind(main.text) == "bill" else (),
+                completeness=()
+                if losses or any(p.losses for p in kept)
+                else ("all selected members extracted",),
+            ),
+        )
     )
 
 

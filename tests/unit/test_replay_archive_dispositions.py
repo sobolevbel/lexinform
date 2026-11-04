@@ -50,7 +50,13 @@ def test_public_native_path_records_source_capture_and_ordered_cache_reuse_witho
     assert core["io_events"][0]["event"] == "download"
     assert any(row["event"] == "cache" for row in core["io_events"])
     assert core["outcomes"]["controlled/0"]["source_capture"]["kind"] == "DocumentSourceRead"
-    assert all(row["status"] == "absent" for row in report["archive_members"].values())
+    assert all(row["status"] == "recorded" for row in report["archive_members"].values())
+    assert all(row["checked"] > 0 for row in report["archive_members"].values())
+    assert any(
+        row["stage"] == "policy"
+        for item in report["archive_members"].values()
+        for row in item["section"]["rows"]
+    )
     assert "Cudzoziemiec" not in json.dumps(report) and url not in json.dumps(report)
 
 

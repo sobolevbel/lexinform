@@ -1,0 +1,58 @@
+{
+  "scope": "Synthetic metadata mechanisms; input models allocated before tracing; heap is not canonical-byte budget.",
+  "builder": [
+    {
+      "input_rows": 64,
+      "retention": "prefix",
+      "cpu_seconds": 0.005014999999999992,
+      "peak_python_bytes": 48794
+    },
+    {
+      "input_rows": 1000,
+      "retention": "unknown",
+      "cpu_seconds": 0.04866999999999999,
+      "peak_python_bytes": 260792
+    }
+  ],
+  "policy": [
+    {
+      "physical_parts": 512,
+      "capture_enabled": false,
+      "captured_decisions": null,
+      "selection_state": "unsupported",
+      "cpu_seconds": 0.008407999999999971,
+      "peak_python_bytes": 538363
+    },
+    {
+      "physical_parts": 512,
+      "capture_enabled": true,
+      "captured_decisions": 512,
+      "selection_state": "unsupported",
+      "cpu_seconds": 0.01500199999999996,
+      "peak_python_bytes": 529782
+    },
+    {
+      "physical_parts": 513,
+      "capture_enabled": false,
+      "captured_decisions": null,
+      "selection_state": "unsupported",
+      "cpu_seconds": 0.007628999999999997,
+      "peak_python_bytes": 409036
+    },
+    {
+      "physical_parts": 513,
+      "capture_enabled": true,
+      "captured_decisions": null,
+      "selection_state": "unsupported",
+      "cpu_seconds": 0.007461000000000051,
+      "peak_python_bytes": 409084
+    }
+  ],
+  "retention_probe": {
+    "attempts": 150,
+    "max_live_packets_after_callback_and_release": 0,
+    "final_retention": "unknown",
+    "cpu_seconds": 15.698693,
+    "peak_python_bytes": 1696228
+  }
+}

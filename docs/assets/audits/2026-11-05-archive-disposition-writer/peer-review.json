@@ -1,0 +1,18 @@
+{
+  "reviewer": "supplement_writer_review",
+  "status": "clear",
+  "source_pins": {
+    "observations": "4aac03b20d11414a920b93322529e63b8b8effecddcd7de8b82cd48ad2f9a6f2",
+    "independent_decoder": "cc8c81b786a80c34c9e0d72047de4f2e7dc361eab088e1dd50d19a72c5b8ba78",
+    "decoder_tests": "74838d8ac664f9028ae8ad98d0c2a0198848446150e7dfb7491b710305dd0615"
+  },
+  "scope": [
+    "exact-owner/url/thread public read dispatch",
+    "ordinary metadata faults versus cancellation",
+    "bounded primitive-only accumulator",
+    "full policy universe validation before policy emission",
+    "policy-first retention and full-stream hash",
+    "independent bounded Deflate64 ordinal verification preserving frozen driver"
+  ],
+  "limitations": "Text-only independent review; root executes qualification and full gate."
+}

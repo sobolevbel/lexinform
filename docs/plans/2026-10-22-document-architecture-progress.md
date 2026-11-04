@@ -10196,3 +10196,43 @@ DA4.1/DA4.4 partial;plan74total/43complete/6explicitNA/25applicableopen.
 [Qualification](../assets/audits/2026-11-04-no-bill-candidate-reader/qualification.json),
 [report/limits](../assets/audits/2026-11-04-no-bill-candidate-reader/report.md),
 [legacy proof](../assets/audits/2026-11-04-no-bill-candidate-reader/legacy-proof.json).
+
+<a id="j224"></a>
+
+## J224 — bounded native archive member decision writer
+
+5 November 2026. Default native loader records actual policy and walk reasons against exact
+invocation-owned artifact/ordinal/physical-slot facts. Private cache sidecar preserves identity
+across cache hits and intervening reads. Public read overrides remain effective. Optional
+metadata failures preserve ordinary traces; source errors and cancellation keep their contracts.
+No extraction-cache payload/recipe option, selection heuristic or source text change.
+
+Canonical choice-first priority v1 retains main/annex/support, other policy, then walk in
+original slot/ordinal order. This fixes an initial rejected qualification whose entire prefix
+was walk-only. Full count/hash validates omitted tail; failed roots stay walk-only. Section
+1KiB/eight rows/path depth four and whole trace4KiB remain;128KiB canonical bookkeeping budgets
+are not heap ceilings. Accumulator releases losing root packets instead of retaining them.
+
+Frozen J222 driver4eea/baselineeefa stay exact. Separate pinned independent Deflate64 ordinal
+decoder checks16method9 decode events; no production selection helpers or skipped checks.
+Final raw cores natural/synthetic exact:16ZIP/14,377,628bytes,17natural requests twice,
+four synthetic roots twice. All78retained rows checked,66policy; natural58policy/10walk,
+synthetic8policy/2walk. Unknown/depth and missing-tail coverage remain explicit.
+
+Cached4276stage decisions/counts/7599readinputs/1383missing/exclusions match OFF reference;
+complete_population=false. All existing source pins match final freeze; afterward only
+qualification decoder/units/mypy target added. No claim of ZIP census or independent legal gold.
+Public source-capture storage fixture21traces deduplicates/restores/doctor-validates both modes:
+section-only +30,511SQL/+6,142gzip bytes, not production growth forecast. Fixedstate105 legacy
+8JSON/IDs remain exact, double restore/default+candidate doctor pass, inputDB unchanged.
+
+Unit-first: guard failures, public-read compatibility, original late ordinal main/excluded
+prefix, full canonical priority/hash and independent decoder corruption/cancellation tests.
+69newunit cases/no new scenarios. Full gate8176tests/281.12s/92%,mypy711/Ruff/formatgreen;780source/config pins unchanged. Initial gate with one obsolete producer-OFF assertion is superseded.
+Independent root/service/priority/decoder review clear. Strict staged-archive docs gate required.
+ReaderA2eb5 exactCI41923516152/relay41924265518 verified,45shealth/timer before writer release.
+DA4.1/DA4.4 remain partial;74total/43complete/6explicitNA/25applicableopen.
+
+[Report and boundaries](../assets/audits/2026-11-05-archive-disposition-writer/report.md),
+[qualification](../assets/audits/2026-11-05-archive-disposition-writer/qualification.json),
+[corpus proof](../assets/audits/2026-11-05-archive-disposition-writer/corpus-proof.json).

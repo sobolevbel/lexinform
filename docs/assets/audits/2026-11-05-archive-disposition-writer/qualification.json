@@ -1,0 +1,47 @@
+{
+  "stage": "J224 bounded native archive disposition writer",
+  "full_tests": 8176,
+  "new_unit_cases": 69,
+  "new_scenarios": 0,
+  "coverage_percent": 92,
+  "pytest_xml": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "8176",
+    "time": "281.026",
+    "timestamp": "2026-11-05T00:07:34.669373+01:00",
+    "hostname": "Yauhenis-MacBook-Pro.local"
+  },
+  "mypy_files": 711,
+  "mypy_ruff_format": "green",
+  "source_config_pins": 780,
+  "source_freeze_exact": true,
+  "root_focused_units_before_qualification_extension": 193,
+  "additional_decoder_units": 11,
+  "producer_active": "default native prospective paths only",
+  "corpus_proof": "corpus-proof.json",
+  "storage_delta": {
+    "sql_bytes": 30511,
+    "gzip_bytes": 6142
+  },
+  "legacy": "fixed105:8exactJSON/IDs,double_restore/default+candidate_doctor,DBunchanged",
+  "proof_sha256": {
+    "full-v2.xml": "7434cff41575ed0c38aca0c56f44e1ad451ee570407e7e688ec4327dc243907a",
+    "full-v2.log": "145c601d204733587bdef3f5af3c18290f6bdfd84166a20267bdb050cc772ab3",
+    "source-freeze-v2.json": "a894ccfa6d2311cc0ca5940aecf0ef7ee0f962e9892aa45e36117472d9d0d242",
+    "raw-replay-v2.json": "5a451f35259d904922d26be6c46dd16e0da5f7fcb6522624ea8870e59434b9e9",
+    "cached-v2.json": "1fb8c90687fadd7d6bdae3ab41336a5e8166c6b9df415f25b1a444968a4d0cc5",
+    "storage-v2.json": "0c0666f16bd0b79300aaa0b5804ca9433080c477ac157e7627938c1cecb753fd",
+    "legacy-proof.json": "1afde8332642ccb2192bada508dec9a94d5933ccf55111cb1f501c5825785b09"
+  },
+  "superseded_gate": "full.log/xml: old producer-OFF assertion failed,8162passed; corrected before final unchanged-source full-v2",
+  "previous_release": "eb5a5cd27334de74c6c7e6ca882d65852d88306b exactCI/relay verified",
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  }
+}

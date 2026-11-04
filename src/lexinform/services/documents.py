@@ -15,10 +15,17 @@ import time
 from collections import Counter
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import AbstractContextManager, contextmanager, suppress
+from contextvars import ContextVar
 from dataclasses import dataclass, replace
 from typing import Literal
 from urllib.parse import urlparse
 
+from lexinform.archive_disposition_observations import (
+    ArchiveDispositionAccumulator,
+    ArchiveRootObservation,
+    Phase,
+)
+from lexinform.archive_policy_capture import optional_archive_policy_capture
 from lexinform.document_candidates import (
     AmbiguousCandidates,
     CandidateSet,
@@ -110,6 +117,12 @@ class _DownloadedDocument:
 class _CachedDocument:
     file: LoadedFile
     observation: PhysicalWalkObservation | None = None
+    archive: ArchiveRootObservation | None = None
+
+
+_ARCHIVE_READ_SINK: ContextVar[
+    tuple[object, str, int, Callable[[ArchiveRootObservation], None]] | None
+] = ContextVar("archive_read_sink", default=None)
 
 
 class TextLoader:
@@ -553,6 +566,21 @@ class TextLoader:
 
     def read(self, url: str) -> LoadedFile:
         """The same download, with what the file turned out to be."""
+        sink: Callable[[ArchiveRootObservation], None] | None = None
+        with suppress(Exception):
+            scope = _ARCHIVE_READ_SINK.get()
+            if (
+                scope is not None
+                and scope[0] is self
+                and scope[1] == url
+                and scope[2] == threading.get_ident()
+            ):
+                sink = scope[3]
+        return self._read_entry(url, sink).file
+
+    def _read_entry(
+        self, url: str, archive_sink: Callable[[ArchiveRootObservation], None] | None = None
+    ) -> _CachedDocument:
         with self._lock:
             cached = self._cache.get(url)
             if cached is not None:
@@ -569,9 +597,12 @@ class TextLoader:
                 except BaseException:
                     self._physical_note_failure("cache_callback_unavailable")
             self._observe_omission_file(url, cached.file)
-            return cached.file
+            if archive_sink is not None and cached.archive is not None:
+                with suppress(Exception):
+                    archive_sink(cached.archive)
+            return cached
         try:
-            fetched = self._fetch(url)
+            fetched = self._fetch(url, archive_sink)
         except BaseException as error:
             self._observe_source_failure(error)
             raise
@@ -581,7 +612,33 @@ class TextLoader:
                 self._cache.pop(next(iter(self._cache)))
             self._cache[url] = fetched
         self._observe_omission_file(url, loaded)
-        return loaded
+        return fetched
+
+    def _read_candidate(
+        self,
+        url: str,
+        phase: Phase,
+        index: int,
+        attempts: ArchiveDispositionAccumulator | None,
+    ) -> LoadedFile:
+        if attempts is None:
+            return self.read(url)
+        try:
+            token = _ARCHIVE_READ_SINK.set(
+                (
+                    self,
+                    url,
+                    threading.get_ident(),
+                    lambda root: attempts.observe(phase, index, root),
+                )
+            )
+        except Exception:
+            return self.read(url)
+        try:
+            return self.read(url)
+        finally:
+            with suppress(Exception):
+                _ARCHIVE_READ_SINK.reset(token)
 
     def read_document(self, document: TextDocument) -> LoadedFile:
         """Read loose-file snapshots in the existing IO order."""
@@ -621,7 +678,10 @@ class TextLoader:
 
     def select_document(self, document: TextDocument) -> tuple[TextDocument, LoadedFile]:
         dispositions: list[CandidateDisposition] = []
-        selected, loaded, result, reason = self._select_document(document, dispositions)
+        attempts: ArchiveDispositionAccumulator | None = None
+        with suppress(Exception):
+            attempts = ArchiveDispositionAccumulator()
+        selected, loaded, result, reason = self._select_document(document, dispositions, attempts)
         try:
             trace = (
                 CandidateDispositionTrace.from_decisions(
@@ -642,7 +702,10 @@ class TextLoader:
         except Exception:
             log.warning("candidate disposition trace omitted after metadata failure")
             trace = None
-        if trace is not None and trace.is_routine_singleton:
+        if trace is not None and attempts is not None:
+            with suppress(Exception):
+                trace = attempts.enrich(trace)
+        if trace is not None and trace.is_routine_singleton and trace.archive_members is None:
             trace = None
         return selected, replace(
             loaded,
@@ -653,10 +716,13 @@ class TextLoader:
         )
 
     def _select_document(
-        self, document: TextDocument, dispositions: list[CandidateDisposition]
+        self,
+        document: TextDocument,
+        dispositions: list[CandidateDisposition],
+        attempts: ArchiveDispositionAccumulator | None,
     ) -> tuple[TextDocument, LoadedFile, CandidateTraceResult, CandidateTraceReason]:
         if document.compare_versions:
-            resolved = self._compare_versions(document, dispositions)
+            resolved = self._compare_versions(document, dispositions, attempts)
             if resolved is not None:
                 return resolved
         fallback = CandidateFallback()
@@ -674,7 +740,7 @@ class TextLoader:
                 )
                 continue
             try:
-                main = self.read(candidate.url)
+                main = self._read_candidate(candidate.url, "fallback", index, attempts)
             except ServiceUnavailableError:
                 raise
             except Exception as exc:
@@ -742,7 +808,10 @@ class TextLoader:
         return document, fallback.result(), "fallback", "all_rejected"
 
     def _compare_versions(
-        self, document: TextDocument, dispositions: list[CandidateDisposition]
+        self,
+        document: TextDocument,
+        dispositions: list[CandidateDisposition],
+        attempts: ArchiveDispositionAccumulator | None,
     ) -> tuple[TextDocument, LoadedFile, CandidateTraceResult, CandidateTraceReason] | None:
         candidates: list[tuple[TextDocument, LoadedFile]] = []
         prepared: list[DocumentCandidate] = []
@@ -760,7 +829,7 @@ class TextLoader:
                 )
                 continue
             try:
-                file = self.read(candidate.url)
+                file = self._read_candidate(candidate.url, "version_comparison", index, attempts)
             except ServiceUnavailableError:
                 raise
             except Exception as exc:
@@ -926,67 +995,94 @@ class TextLoader:
             }
         )
 
-    def _fetch(self, url: str) -> _CachedDocument:
+    def _fetch(
+        self, url: str, archive_sink: Callable[[ArchiveRootObservation], None] | None = None
+    ) -> _CachedDocument:
         downloaded = self._download(url)
         if downloaded is None:
             return _CachedDocument(LoadedFile(None, oversize=True))
         data, artifact = downloaded.data, downloaded.artifact
         started = time.perf_counter()
-        with self._physical_invocation(artifact) as invocation:
-            if isinstance(self._extractor, ProvenanceTextExtractor):
-                observed = self._extractor.extract_document_with_provenance(data)
-                text = observed.document.text
-                selection = observed.document.selection
-                with self._lock:
-                    self._extractions[observed.result.artifact_sha256] = observed.result
-                if invocation is not None:
-                    try:
-                        invocation.bind_extraction(observed.result)
-                    except BaseException:
-                        if self._physical is not None:
-                            self._physical_note_failure("extraction_callback_unavailable")
-                scope = self._source_omissions.current()
-                if scope is not None and observed.result.artifact_sha256 == artifact.sha256:
-                    with scope.capture():
-                        scope.extraction(observed.result)
-            elif isinstance(self._extractor, StructuredTextExtractor):
-                extracted = self._extractor.extract_document(data)
-                text = extracted.text
-                selection = extracted.selection
-            else:
-                text = self._extractor.extract(data)
-                selection = DocumentSelection(
-                    parts=(
-                        DocumentPart(
-                            sha256=artifact.sha256,
-                            text=text,
-                            text_end=len(text),
-                            text_sha256=hashlib.sha256(text.encode()).hexdigest(),
-                        ),
+        capture = None
+        invocation: PhysicalInvocation | None = None
+        archive: ArchiveRootObservation | None = None
+        completed = False
+        try:
+            with (
+                optional_archive_policy_capture() as capture,
+                self._physical_invocation(artifact) as invocation,
+            ):
+                if isinstance(self._extractor, ProvenanceTextExtractor):
+                    observed = self._extractor.extract_document_with_provenance(data)
+                    text = observed.document.text
+                    selection = observed.document.selection
+                    with self._lock:
+                        self._extractions[observed.result.artifact_sha256] = observed.result
+                    if invocation is not None:
+                        try:
+                            invocation.bind_extraction(observed.result)
+                        except BaseException:
+                            if self._physical is not None:
+                                self._physical_note_failure("extraction_callback_unavailable")
+                    scope = self._source_omissions.current()
+                    if scope is not None and observed.result.artifact_sha256 == artifact.sha256:
+                        with scope.capture():
+                            scope.extraction(observed.result)
+                elif isinstance(self._extractor, StructuredTextExtractor):
+                    extracted = self._extractor.extract_document(data)
+                    text = extracted.text
+                    selection = extracted.selection
+                else:
+                    text = self._extractor.extract(data)
+                    selection = DocumentSelection(
+                        parts=(
+                            DocumentPart(
+                                sha256=artifact.sha256,
+                                text=text,
+                                text_end=len(text),
+                                text_sha256=hashlib.sha256(text.encode()).hexdigest(),
+                            ),
+                        )
                     )
+                selection = selection.model_copy(
+                    update={
+                        "parts": tuple(
+                            part.model_copy(update={"url": url}) for part in selection.parts
+                        ),
+                        "observed_parts": tuple(
+                            part.model_copy(update={"url": url})
+                            for part in selection.observed_parts
+                        ),
+                    }
                 )
-            selection = selection.model_copy(
-                update={
-                    "parts": tuple(
-                        part.model_copy(update={"url": url}) for part in selection.parts
-                    ),
-                    "observed_parts": tuple(
-                        part.model_copy(update={"url": url}) for part in selection.observed_parts
-                    ),
-                }
-            )
-            digest = artifact.sha256
-            pages = self._extractor.pages(data)
-            log.info(
-                "%s: %d chars extracted in %.1fs", url, len(text), time.perf_counter() - started
-            )
-            if len(text.strip()) < MIN_TEXT_CHARS:
-                log.warning("%s yielded almost no text (%d chars, %d pages)", url, len(text), pages)
-                loaded = LoadedFile(None, pages=pages, sha256=digest, selection=selection)
-            else:
-                loaded = LoadedFile(text, pages=pages, sha256=digest, selection=selection)
-
-        return _CachedDocument(loaded, invocation.observation if invocation is not None else None)
+                digest = artifact.sha256
+                pages = self._extractor.pages(data)
+                log.info(
+                    "%s: %d chars extracted in %.1fs", url, len(text), time.perf_counter() - started
+                )
+                if len(text.strip()) < MIN_TEXT_CHARS:
+                    log.warning(
+                        "%s yielded almost no text (%d chars, %d pages)", url, len(text), pages
+                    )
+                    loaded = LoadedFile(None, pages=pages, sha256=digest, selection=selection)
+                else:
+                    loaded = LoadedFile(text, pages=pages, sha256=digest, selection=selection)
+                completed = True
+        finally:
+            try:
+                archive = ArchiveRootObservation(
+                    artifact,
+                    invocation.observation if invocation is not None else None,
+                    capture.decisions if capture is not None and completed else None,
+                    completed,
+                )
+                if archive_sink is not None:
+                    archive_sink(archive)
+            except Exception:
+                archive = None
+        return _CachedDocument(
+            loaded, invocation.observation if invocation is not None else None, archive
+        )
 
     def _download(self, url: str) -> _DownloadedDocument | None:
         with self._lock:

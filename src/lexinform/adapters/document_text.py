@@ -36,6 +36,7 @@ import lexinform.physical_root_assembly as physical_root_assembly
 import lexinform.physical_walk_capture as physical_walk_capture
 from lexinform.adapters.doc_notes import DocNoteExtraction
 from lexinform.adapters.doc_text import DocTextExtractor
+from lexinform.archive_policy_capture import native_archive_policy_sink
 from lexinform.document_candidates import select_document_parts
 from lexinform.extraction_records import (
     component_code,
@@ -1302,7 +1303,17 @@ class DocumentTextExtractor:
             physical = self._extract_parts(data, origins)
         else:
             physical = self.extract_parts(data)
-        selected = select_document_parts(physical, max_part_chars=self._max_part_chars)
+        native_policy = (
+            type(self) is DocumentTextExtractor
+            and getattr(self.extract_parts, "__func__", None) is _NATIVE_PHYSICAL_PARTS
+        )
+        selected = select_document_parts(
+            physical,
+            max_part_chars=self._max_part_chars,
+            decision_sink=native_archive_policy_sink(len(physical.parts))
+            if native_policy
+            else None,
+        )
         result = summarize_extraction(
             physical,
             selected,

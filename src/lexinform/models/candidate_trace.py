@@ -141,6 +141,68 @@ def archive_member_rows_sha256(rows: Iterable[ArchiveMemberDisposition]) -> str:
     return digest.hexdigest()
 
 
+class ArchiveMemberRowChecker:
+    """Check known row relations without changing or enriching supplied facts."""
+
+    def __init__(self) -> None:
+        self._rows: list[ArchiveMemberDisposition] = []
+        self._paths: set[tuple[str, str, int, str, tuple[int, ...]]] = set()
+        self._slots: set[tuple[str, str, int, int]] = set()
+
+    def add(self, row: ArchiveMemberDisposition) -> ArchiveMemberDisposition:
+        row = ArchiveMemberDisposition.model_validate(row)
+        if row.ordinals is not None and row.root_sha256 is not None:
+            key = (row.stage, row.phase, row.index, row.root_sha256, row.ordinals)
+            if key in self._paths:
+                raise ValueError("duplicate archive occurrence decision within one stage")
+            self._paths.add(key)
+        if row.physical_part_index is not None:
+            slot = (row.stage, row.phase, row.index, row.physical_part_index)
+            if slot in self._slots:
+                raise ValueError("duplicate physical slot decision within one archive stage")
+            self._slots.add(slot)
+        for previous in self._rows:
+            if (row.phase, row.index) != (previous.phase, previous.index):
+                continue
+            if (
+                row.root_sha256 is not None
+                and previous.root_sha256 is not None
+                and row.root_sha256 != previous.root_sha256
+            ):
+                raise ValueError("one outer attempt cannot claim conflicting known archive roots")
+            same_slot = (
+                row.physical_part_index is not None
+                and row.physical_part_index == previous.physical_part_index
+            )
+            same_path = (
+                row.root_sha256 is not None
+                and row.ordinals is not None
+                and (row.root_sha256, row.ordinals) == (previous.root_sha256, previous.ordinals)
+            )
+            if same_slot or same_path:
+                for left, right in zip(
+                    (
+                        row.root_sha256,
+                        row.ordinals,
+                        row.physical_part_index,
+                        row.leaf_sha256,
+                        row.text_sha256,
+                    ),
+                    (
+                        previous.root_sha256,
+                        previous.ordinals,
+                        previous.physical_part_index,
+                        previous.leaf_sha256,
+                        previous.text_sha256,
+                    ),
+                    strict=True,
+                ):
+                    if left is not None and right is not None and left != right:
+                        raise ValueError("known archive occurrence facts disagree across stages")
+        self._rows.append(row)
+        return row
+
+
 class ArchiveMemberDispositions(BaseModel):
     """Retention covers observed rows only, independently of walk and descendant completeness."""
 
@@ -187,62 +249,9 @@ class ArchiveMemberDispositions(BaseModel):
                     )
             elif self.rows or not omitted:
                 raise ValueError("omitted archive rows require a nonempty bounded summary only")
-        paths: set[tuple[str, str, int, str, tuple[int, ...]]] = set()
-        slots: set[tuple[str, str, int, int]] = set()
+        checker = ArchiveMemberRowChecker()
         for row in self.rows:
-            if row.ordinals is not None and row.root_sha256 is not None:
-                key = (row.stage, row.phase, row.index, row.root_sha256, row.ordinals)
-                if key in paths:
-                    raise ValueError("duplicate archive occurrence decision within one stage")
-                paths.add(key)
-            if row.physical_part_index is not None:
-                slot = (row.stage, row.phase, row.index, row.physical_part_index)
-                if slot in slots:
-                    raise ValueError("duplicate physical slot decision within one archive stage")
-                slots.add(slot)
-        for index, row in enumerate(self.rows):
-            for previous in self.rows[:index]:
-                if (row.phase, row.index) != (previous.phase, previous.index):
-                    continue
-                if (
-                    row.root_sha256 is not None
-                    and previous.root_sha256 is not None
-                    and row.root_sha256 != previous.root_sha256
-                ):
-                    raise ValueError(
-                        "one outer attempt cannot claim conflicting known archive roots"
-                    )
-                same_slot = (
-                    row.physical_part_index is not None
-                    and row.physical_part_index == previous.physical_part_index
-                )
-                same_path = (
-                    row.root_sha256 is not None
-                    and row.ordinals is not None
-                    and (row.root_sha256, row.ordinals) == (previous.root_sha256, previous.ordinals)
-                )
-                if same_slot or same_path:
-                    for left, right in zip(
-                        (
-                            row.root_sha256,
-                            row.ordinals,
-                            row.physical_part_index,
-                            row.leaf_sha256,
-                            row.text_sha256,
-                        ),
-                        (
-                            previous.root_sha256,
-                            previous.ordinals,
-                            previous.physical_part_index,
-                            previous.leaf_sha256,
-                            previous.text_sha256,
-                        ),
-                        strict=True,
-                    ):
-                        if left is not None and right is not None and left != right:
-                            raise ValueError(
-                                "known archive occurrence facts disagree across stages"
-                            )
+            checker.add(row)
         if len(self.model_dump_json().encode()) > MAX_ARCHIVE_MEMBER_BYTES:
             raise ValueError("archive member section exceeds its metadata limit")
         return self
@@ -373,26 +382,8 @@ class CandidateDispositionTrace(BaseModel):
         if members is not None:
             if self.coverage != "complete" and members.rows:
                 raise ValueError("an omitted outer request retains only an archive summary")
-            parents = {(item.phase, item.index): item for item in self.dispositions}
             for member in members.rows:
-                if member.index >= self.candidate_count:
-                    raise ValueError("archive member outer index exceeds the known candidate count")
-                if self.coverage == "complete":
-                    parent = parents.get((member.phase, member.index))
-                    if parent is None or parent.outcome in ("official_conflict", "unattempted"):
-                        raise ValueError(
-                            "archive member must reference an actually attempted outer phase"
-                        )
-                    if parent.outcome == "read_failure" and member.stage != "walk":
-                        raise ValueError(
-                            "a failed outer read cannot certify a completed member policy"
-                        )
-                    if (
-                        parent.observed_sha256 is not None
-                        and member.root_sha256 is not None
-                        and parent.observed_sha256 != member.root_sha256
-                    ):
-                        raise ValueError("archive root differs from its known outer complete body")
+                validate_archive_member_parent(self, member)
         if len(self.model_dump_json(exclude_defaults=True).encode()) > MAX_CANDIDATE_TRACE_BYTES:
             raise ValueError("candidate trace exceeds its metadata limit")
         return self
@@ -416,3 +407,30 @@ class CandidateDispositionTrace(BaseModel):
             and self.selection_state in ("selected", "unverified")
             and all(item.outcome == "selected" for item in self.dispositions)
         )
+
+
+def validate_archive_member_parent(
+    trace: CandidateDispositionTrace, member: ArchiveMemberDisposition
+) -> None:
+    """Check one row against retained outer facts without inventing omitted parents."""
+    if member.index >= trace.candidate_count:
+        raise ValueError("archive member outer index exceeds the known candidate count")
+    if trace.coverage == "complete":
+        parent = next(
+            (
+                item
+                for item in trace.dispositions
+                if (item.phase, item.index) == (member.phase, member.index)
+            ),
+            None,
+        )
+        if parent is None or parent.outcome in ("official_conflict", "unattempted"):
+            raise ValueError("archive member must reference an actually attempted outer phase")
+        if parent.outcome == "read_failure" and member.stage != "walk":
+            raise ValueError("a failed outer read cannot certify a completed member policy")
+        if (
+            parent.observed_sha256 is not None
+            and member.root_sha256 is not None
+            and parent.observed_sha256 != member.root_sha256
+        ):
+            raise ValueError("archive root differs from its known outer complete body")

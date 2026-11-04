@@ -1,0 +1,92 @@
+{
+  "additive_after_cached_replay": [
+    "tools/replay_archive_priority.py",
+    "tests/unit/test_replay_archive_priority.py",
+    "pyproject.toml mypy target"
+  ],
+  "baseline_sha256": "eefa8dca1e713e2a05ffa5ed287539d358f33523407bf6483c8f9a4ea11f9b88",
+  "cached_cases": 4276,
+  "cached_complete_population": false,
+  "cached_counts": {
+    "ambiguous": 123,
+    "no_candidate": 205,
+    "selected": 2273,
+    "unsupported": 669,
+    "unverified": 925,
+    "waiting": 81
+  },
+  "cached_decisions_input_missing_exclusions_exact": true,
+  "cached_existing_source_pins_all_exact": true,
+  "cached_missing": 1383,
+  "cached_read_inputs": 7599,
+  "raw_driver_sha256": "4eea367f98858d8add00a1ea043f5eed4707b0ed83c42b5f02ae9f4f64dc6319",
+  "raw_input_changes": [],
+  "raw_paired_core_exact": {
+    "natural": true,
+    "synthetic": true
+  },
+  "raw_scope": {
+    "natural_bytes": 14377628,
+    "natural_requests": 17,
+    "natural_roots": 16,
+    "not_zip_census": true
+  },
+  "raw_summary": {
+    "natural": {
+      "association_unknown": 0,
+      "checked": 68,
+      "outcomes": 34,
+      "retained_reason": {
+        "member_complete": 10,
+        "non_bill_body": 4,
+        "selected_annex": 10,
+        "selected_main": 24,
+        "selected_support": 18,
+        "unknown_role": 2
+      },
+      "retained_stage": {
+        "policy": 58,
+        "walk": 10
+      },
+      "retention": {
+        "prefix": 34
+      }
+    },
+    "synthetic": {
+      "association_unknown": 0,
+      "checked": 10,
+      "outcomes": 8,
+      "retained_reason": {
+        "member_failed": 2,
+        "rank_preference": 4,
+        "selected_main": 4
+      },
+      "retained_stage": {
+        "policy": 8,
+        "walk": 2
+      },
+      "retention": {
+        "complete": 2,
+        "prefix": 4,
+        "unknown": 2
+      }
+    }
+  },
+  "storage_delta": {
+    "gzip_bytes": 6142,
+    "sql_bytes": 30511
+  },
+  "verification_extension": {
+    "extension_source_sha256": "cc8c81b786a80c34c9e0d72047de4f2e7dc361eab088e1dd50d19a72c5b8ba78",
+    "frozen_driver_sha256": "4eea367f98858d8add00a1ea043f5eed4707b0ed83c42b5f02ae9f4f64dc6319",
+    "inflate64_version": "1.0.4",
+    "original_archive_leaf_sha256": "461dd233a8037b335cb3d1c1f8730d1e9669fcf53cec6332c3547e1b287b1875",
+    "scope": "Independent raw ordinal payload checks only; no production selection helpers.",
+    "successful_member_decodes_by_method": {
+      "0": 16,
+      "8": 116,
+      "9": 16
+    },
+    "version": "archive-ordinal-deflate64-v1"
+  }
+}

@@ -21,3 +21,5 @@ writer parity, not raw archive coverage or a claim that missing views are irrele
 No extraction corpus acceptance is inferred from this reader-only enum addition.
 
 [Qualification](qualification.json), [legacy proof](legacy-proof.json), [review](peer-review.json).
+
+Actual reader release: [exact CI and relay verification](release.json), commit eb5a5cd2.

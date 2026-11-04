@@ -106,6 +106,8 @@ files = [
   "tools/replay_primary_claims.py",
   "tools/replay_supplement_inputs.py",
   "tools/replay_archive_dispositions.py",
+  "tools/qualify_archive_storage.py",
+  "tools/replay_archive_priority.py",
 ]
 plugins = ["pydantic.mypy"]
 warn_unreachable = true
