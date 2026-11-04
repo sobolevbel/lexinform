@@ -1,0 +1,11 @@
+{
+  "review": "Independent read-only specification/source/tests/replay review",
+  "blocking_findings": [],
+  "limits": [
+    "No full/corpus rerun by reviewer",
+    "First boundary zero for nonempty note lists is an additional supported-profile constraint, not an explicit spec requirement",
+    "CR/raw0x02/CFSpec/piece/cbMac checks excluded from declared_cp_only"
+  ],
+  "next_control": "Absent Ref lcb0 with nonzero note story; current Ref4 zero-record case green",
+  "sources": "../2026-10-31-doc-profile-handoff/sources.json"
+}

@@ -15,7 +15,7 @@ def archive(members: dict[str, bytes]) -> bytes:
     stream = io.BytesIO()
     with zipfile.ZipFile(stream, "w") as output:
         for name, data in members.items():
-            output.writestr(name, data)
+            output.writestr(zipfile.ZipInfo(name), data)
     return stream.getvalue()
 
 
@@ -135,3 +135,12 @@ def test_a_corrupt_archive_has_no_invented_members_or_legal_verdict() -> None:
     assert result.input_sha256 == hashlib.sha256(data).hexdigest()
     assert not result.parts
     assert result.rejected == ("(): BadZipFile",)
+
+
+def test_archive_fixture_has_fixed_member_metadata_and_repeatable_bytes() -> None:
+    first = docx("USTAWA")
+    second = docx("USTAWA")
+
+    assert first == second
+    with zipfile.ZipFile(io.BytesIO(first)) as source:
+        assert all(member.date_time == (1980, 1, 1, 0, 0, 0) for member in source.infolist())

@@ -9512,3 +9512,34 @@ goal paused по explicit user reserve rule; backenddecision/human labels не �
 [2007 source delta](../assets/audits/2026-10-31-doc-profile-handoff/sources-delta.json),
 [qualification](../assets/audits/2026-10-31-doc-profile-handoff/qualification.json),
 [J203 exact CI/relay](../assets/audits/2026-10-31-content-source-runtime/release.json).
+
+
+<a id="j205"></a>
+
+## J205 — bounded declared DOC note CP reader
+
+4 November 2026. Baseline `901f8ca1`; DA3.3 remains partial. New inert reader validates
+the measured effective2007 counted FIB and inherited Ref/Txt PLCFs, retains source CPs
+and numbering flags, rejects malformed/over-limit declarations, and marks results
+`declared_cp_only`. Default extraction, selection, model inputs and SQL writers stay unchanged.
+
+Offline replay:404 paths/246 unique SHA,245 OLE accepted,one non-OLE SHA/two paths excluded;
+69 note-bearing inputs/377 declared footnote links,zero endnotes. All405 raw/INDEX paths
+stable. This does not prove raw markers/terminalCR/CFSpec or emitted offsets. The first
+note boundary zero is an explicit supported-profile restriction. The replay CLI reuses
+shared corpus read/network/write guards and hash/artifact helpers. No data download or dump growth.
+
+Independent review found no blocker. First full gate exposed one unstable RCL identity
+test: shared DOCX/ZIP fixtures used wall-clock member times. Fixed only the fixture to
+use fixed ZipInfo metadata; original identity assertions retained. A deterministic RED
+and controlled clocks two seconds apart demonstrate old differing SHA/new identical SHA.
+Final gate:7761 tests/287.98s/92%,mypy674,Ruff743;742 source fingerprints unchanged during
+the final gate. Explicit strict mypy also includes the new replay tool. Staged-archive
+docs gate precedes commit; exact pushed CI/relay proof is recorded separately afterward.
+
+Plan remains74 total/39 complete/6 explicitNA/29 applicable open. Next: opt-in source-character
+qualification through existing parsed pieces, no new text decode/OLE read, CFSpec still unknown.
+
+[Qualification](../assets/audits/2026-11-04-doc-note-reader/qualification.json),
+[report and reproduction](../assets/audits/2026-11-04-doc-note-reader/report.md),
+[controlled clock proof](../assets/audits/2026-11-04-doc-note-reader/fixture-clock-proof.json).

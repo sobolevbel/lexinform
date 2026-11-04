@@ -1,0 +1,16 @@
+{
+  "clock_seconds": [
+    0,
+    2
+  ],
+  "old_sha256": [
+    "9d2a76833277ae58701ee595ff40bcbd38dc4934e870b99b71083711db14075e",
+    "eb080fb461eabe42179304f1b139f3fdbf2634e633799c0e3ffea233212fe320"
+  ],
+  "fixed_sha256": [
+    "9f8bed7ffeb028090c15726562bfccbb160b46b68978c744f85aa14bf66bfd3e",
+    "9f8bed7ffeb028090c15726562bfccbb160b46b68978c744f85aa14bf66bfd3e"
+  ],
+  "old_changes": true,
+  "fixed_changes": false
+}

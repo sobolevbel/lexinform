@@ -1,0 +1,34 @@
+{
+  "stage": "J205",
+  "baseline": "901f8ca1ee15e8c335276e335a681b5611e7f587",
+  "full_tests": 7761,
+  "pytest_seconds": 287.98,
+  "coverage_percent": 92,
+  "mypy_files": 674,
+  "ruff_formatted_files": 743,
+  "source_fingerprints": 742,
+  "unchanged_frozen_sources": true,
+  "source_sha256": {
+    "src/lexinform/adapters/doc_notes.py": "e49e490979263e640d810f9d21f7fdb0ee210cb9c6d5adffcd7235c18b0cc236",
+    "src/lexinform/adapters/doc_text.py": "0216af4fddc5af723554137b27498862c2893dd1dbd7e5eeddd74f29280f7dee",
+    "tests/unit/test_doc_notes.py": "773ac28fc1db0acba66823241ccb907d240edcbf5bbcb5ea11a213d386d45adc",
+    "tests/unit/test_physical_extraction.py": "4f6464673df2d414bb5e8b9e07a1de362c1228713178fbfb74518b8f8e27df53",
+    "tools/replay_doc_notes.py": "31696d08ca6cf68dabafb2c82aa6ab9db744bcece54b976515a86f9b9544a37d"
+  },
+  "proof_sha256": {
+    "qa/full.xml": "6b7dcd98e0fc0302210423e347fc556653e4239f3877ef0ae5edddb741a625e5",
+    "qa/first-full.xml": "172e5f4afcd06b218ac8ec84473098a93425309ec9ff22883c3d79a06799db7b",
+    "qa/source-freeze.json": "c10075190936a83575379c0870ebba08e28096219279c86bdb84cb5c6f9769bb",
+    "replay-final/report.json": "b568e0bc121bc0443bc36f2f0f00811a5c1360f5d027c7191706ce805a3213de"
+  },
+  "first_gate": {
+    "passed": 7759,
+    "failed": 1,
+    "reason": "Wall-clock timestamp in shared ZIP fixture; deterministic metadata regression and controlled two-clock proof added; production code unchanged"
+  },
+  "focused_gate": "DOC reader/legacy, physical extraction, RCL identity/history green; explicit strict mypy over four owned Python files green",
+  "default_extractor_source_unchanged": true,
+  "input_paths_verified": 405,
+  "corpus_changed_inputs": [],
+  "deployment": "Verify exact pushed commit separately; proof will be recorded in the next stage"
+}

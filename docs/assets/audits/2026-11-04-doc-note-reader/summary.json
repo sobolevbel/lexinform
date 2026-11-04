@@ -1,0 +1,14 @@
+{
+  "changed_inputs": [],
+  "links_by_kind": {
+    "footnote": 377
+  },
+  "note_bearing_unique": 69,
+  "paths": 404,
+  "status_counts": {
+    "declared_cp_only": 245,
+    "unavailable": 1
+  },
+  "unique_inputs": 246,
+  "verified_input_paths": 405
+}

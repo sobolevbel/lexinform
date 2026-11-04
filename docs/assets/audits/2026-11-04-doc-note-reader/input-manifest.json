@@ -1,0 +1,2930 @@
+{
+  "cases": [
+    {
+      "bytes": 345600,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/396900.doc",
+      "sha256": "572aee2f00b2e284b2687d16620acab5334c2a36b8b96eb8ad3245825f43572d"
+    },
+    {
+      "bytes": 280576,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/412125.doc",
+      "sha256": "36593bc3dde5a4f6366dbbd610f0fb953c35fc032b415a04136e137e2f3c4960"
+    },
+    {
+      "bytes": 280576,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/412126.doc",
+      "sha256": "36593bc3dde5a4f6366dbbd610f0fb953c35fc032b415a04136e137e2f3c4960"
+    },
+    {
+      "bytes": 280576,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/412127.doc",
+      "sha256": "36593bc3dde5a4f6366dbbd610f0fb953c35fc032b415a04136e137e2f3c4960"
+    },
+    {
+      "bytes": 280576,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/412128.doc",
+      "sha256": "36593bc3dde5a4f6366dbbd610f0fb953c35fc032b415a04136e137e2f3c4960"
+    },
+    {
+      "bytes": 280576,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/412129.doc",
+      "sha256": "36593bc3dde5a4f6366dbbd610f0fb953c35fc032b415a04136e137e2f3c4960"
+    },
+    {
+      "bytes": 280576,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/412130.doc",
+      "sha256": "36593bc3dde5a4f6366dbbd610f0fb953c35fc032b415a04136e137e2f3c4960"
+    },
+    {
+      "bytes": 280576,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/412131.doc",
+      "sha256": "36593bc3dde5a4f6366dbbd610f0fb953c35fc032b415a04136e137e2f3c4960"
+    },
+    {
+      "bytes": 280576,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/412132.doc",
+      "sha256": "36593bc3dde5a4f6366dbbd610f0fb953c35fc032b415a04136e137e2f3c4960"
+    },
+    {
+      "bytes": 280576,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/412133.doc",
+      "sha256": "36593bc3dde5a4f6366dbbd610f0fb953c35fc032b415a04136e137e2f3c4960"
+    },
+    {
+      "bytes": 280576,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/412134.doc",
+      "sha256": "36593bc3dde5a4f6366dbbd610f0fb953c35fc032b415a04136e137e2f3c4960"
+    },
+    {
+      "bytes": 198656,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/412135.doc",
+      "sha256": "0a25283e9950bdd0c673f9c587dc82abd3d03d161e3628ab3b2b66d05844b441"
+    },
+    {
+      "bytes": 45568,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/419774.doc",
+      "sha256": "230fa7e809634a9696eff255084c1dd05702264381b459924d01477151bba359"
+    },
+    {
+      "bytes": 166912,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/447874.doc",
+      "sha256": "4cb3144a8e3c47d3e2a4e527d724ffec7646a754e84e1f231eb6530f1fd5133e"
+    },
+    {
+      "bytes": 174080,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/447877.doc",
+      "sha256": "2aa3c23ac67e282a80bcac09bfbe7c9ba36e6557a5963ad8b5f831a37aeba8b5"
+    },
+    {
+      "bytes": 167424,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/448019.doc",
+      "sha256": "1d527a4c7f75aea895e3b6e917a462dfdd2672b3729f313eac6ded7d357d705d"
+    },
+    {
+      "bytes": 174080,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/448021.doc",
+      "sha256": "a32c7df94abe78c40c50227c2e9290a30a32bdf7b4d25797a4a11433d87222e4"
+    },
+    {
+      "bytes": 38912,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/448023.doc",
+      "sha256": "7365d0d5cb3a776ed063f8f187eca85005ae2b4ab9046e4054a1f59b13a07405"
+    },
+    {
+      "bytes": 172032,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/472286.doc",
+      "sha256": "fb372a7e8123967e5deb27894071f4514e991f17b13e15a8089c67af65b122d9"
+    },
+    {
+      "bytes": 93184,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/486492.doc",
+      "sha256": "b7c35a681f2adf221564a1754a77beae97238518012e24adb84c9d840b47eb0c"
+    },
+    {
+      "bytes": 93184,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/486499.doc",
+      "sha256": "b7c35a681f2adf221564a1754a77beae97238518012e24adb84c9d840b47eb0c"
+    },
+    {
+      "bytes": 40960,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/513285.doc",
+      "sha256": "0991cf8af1e7a22276422a855562d0d464b56722c39cf69a7f062dbec97c531c"
+    },
+    {
+      "bytes": 281600,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/536069.doc",
+      "sha256": "cf004e4e337193acae831248f6a1d2ad77bade7daf7bf48021184db60c989bae"
+    },
+    {
+      "bytes": 221696,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/563923.doc",
+      "sha256": "b1c7faaae0e12f17a27ec0f53c8cd80c157a1ab89891d7bdf6ca84381b310a4e"
+    },
+    {
+      "bytes": 303104,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/571068.doc",
+      "sha256": "7bab097079d597931cae79cfc01c037486231efe2cffd2e169821dfeed2ac9c9"
+    },
+    {
+      "bytes": 303104,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/571073.doc",
+      "sha256": "7bab097079d597931cae79cfc01c037486231efe2cffd2e169821dfeed2ac9c9"
+    },
+    {
+      "bytes": 201216,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/581713.doc",
+      "sha256": "1d160b1edde04d0ab30333020bed89096821678061c56dfcb60615e2d45cc47a"
+    },
+    {
+      "bytes": 201216,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/581726.doc",
+      "sha256": "1d160b1edde04d0ab30333020bed89096821678061c56dfcb60615e2d45cc47a"
+    },
+    {
+      "bytes": 201216,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/581732.doc",
+      "sha256": "1d160b1edde04d0ab30333020bed89096821678061c56dfcb60615e2d45cc47a"
+    },
+    {
+      "bytes": 185344,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/590912.doc",
+      "sha256": "c8a21d7428ec4bb5a8f6f341bb5a3f59ede5c6fafd0a394cc7d5d9ca7571c8f7"
+    },
+    {
+      "bytes": 944640,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/628139.doc",
+      "sha256": "953276c45000c43f5641b26dbd711eeb96c585112c98b0a2b8b0a09ef9f1aa8f"
+    },
+    {
+      "bytes": 944640,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/628144.doc",
+      "sha256": "953276c45000c43f5641b26dbd711eeb96c585112c98b0a2b8b0a09ef9f1aa8f"
+    },
+    {
+      "bytes": 234496,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/659963.doc",
+      "sha256": "523442e6912b1ba95172074e28e19335b6cd4f06b63348c9b9036e9dcaabda7a"
+    },
+    {
+      "bytes": 70656,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/659965.doc",
+      "sha256": "61e642c36428307e848568b2eb151a5ef3a64fd7d5d83b8aa667f5fc0b2de3a4"
+    },
+    {
+      "bytes": 208384,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/660443.doc",
+      "sha256": "9b08b89a5d605b36352cf803d8b952927201efe862d2e8c67c340fc22e2c01de"
+    },
+    {
+      "bytes": 168448,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/660690.doc",
+      "sha256": "e7d77eecfa5b8f2b0783fd7f7a7db2096d2409bbb01deb80eb66373e2246845a"
+    },
+    {
+      "bytes": 227840,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/663980.doc",
+      "sha256": "78295ce8f06bddba463674f67f7bff6d781fbfcabef038d09edb5382828fc916"
+    },
+    {
+      "bytes": 227840,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/663989.doc",
+      "sha256": "78295ce8f06bddba463674f67f7bff6d781fbfcabef038d09edb5382828fc916"
+    },
+    {
+      "bytes": 210432,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/665965.doc",
+      "sha256": "898bd1a1c30e220f2a47e6ecba1988cfc257593296c4fcf78fe2f414b17faf59"
+    },
+    {
+      "bytes": 275968,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/666325.doc",
+      "sha256": "b32989b053077b07431b083255cc8b84e6baaa814fa0d54d9c65db7095aff102"
+    },
+    {
+      "bytes": 179200,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/667424.doc",
+      "sha256": "740067a010b343db667ad6c73f565826901b730c373968b0e470f26febbace13"
+    },
+    {
+      "bytes": 181760,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/668597.doc",
+      "sha256": "12a6366d399cdb8b64428f9dd655e45eb79841af826696ac5b6fa5b536619828"
+    },
+    {
+      "bytes": 181760,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/668601.doc",
+      "sha256": "12a6366d399cdb8b64428f9dd655e45eb79841af826696ac5b6fa5b536619828"
+    },
+    {
+      "bytes": 181760,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/668605.doc",
+      "sha256": "12a6366d399cdb8b64428f9dd655e45eb79841af826696ac5b6fa5b536619828"
+    },
+    {
+      "bytes": 198144,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/670939.doc",
+      "sha256": "a5bbd74ce57ee5a5c52fa2fb44568134fe6f35a95bc248ecdea12fe60b89914c"
+    },
+    {
+      "bytes": 320000,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/671505.doc",
+      "sha256": "ad4eedb16d08737122f603b338ff50bc2e7907fef46ef2838b5753918a0e286b"
+    },
+    {
+      "bytes": 286208,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/672439.doc",
+      "sha256": "6ccf52cee37c1ea1ab1d997d16e5a1406808a664802b715441f1336256295d54"
+    },
+    {
+      "bytes": 238592,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/673253.doc",
+      "sha256": "8039d886dc2fd9d4960ac5f60ae3b9182965d46fa51e1be9588f50fd04aebb51"
+    },
+    {
+      "bytes": 238592,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/673256.doc",
+      "sha256": "8039d886dc2fd9d4960ac5f60ae3b9182965d46fa51e1be9588f50fd04aebb51"
+    },
+    {
+      "bytes": 286208,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/674047.doc",
+      "sha256": "76a6222c997b499eb46efeb8989d74c29c75131bb91659228211ba37f9a055bc"
+    },
+    {
+      "bytes": 286208,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/674054.doc",
+      "sha256": "76a6222c997b499eb46efeb8989d74c29c75131bb91659228211ba37f9a055bc"
+    },
+    {
+      "bytes": 191488,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/674681.doc",
+      "sha256": "ee659e496b3e603e2363f48fad8aa95a672c7cf8233aeae0777db0af98768798"
+    },
+    {
+      "bytes": 191488,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/674684.doc",
+      "sha256": "ee659e496b3e603e2363f48fad8aa95a672c7cf8233aeae0777db0af98768798"
+    },
+    {
+      "bytes": 180224,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/674886.doc",
+      "sha256": "12c421b3234cd14e380e968b449bebfc4e0fd59856d526f9db99aea05c774925"
+    },
+    {
+      "bytes": 446976,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/676872.doc",
+      "sha256": "328a16f1943cda9f9a2dbcf582b3380fb549d4a920c67f0184e215267052f7cc"
+    },
+    {
+      "bytes": 446976,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/676877.doc",
+      "sha256": "328a16f1943cda9f9a2dbcf582b3380fb549d4a920c67f0184e215267052f7cc"
+    },
+    {
+      "bytes": 824260,
+      "extension": ".xml",
+      "family": "rcl",
+      "path": "documents/files/677202.xml",
+      "sha256": "22feb479048d1d74a071aaff3b2751869740875cd6b392bb68e1a9d6154674a0"
+    },
+    {
+      "bytes": 876162,
+      "extension": ".xml",
+      "family": "rcl",
+      "path": "documents/files/677204.xml",
+      "sha256": "5bb962512501bf0816e3f80aa3022fd2256c05284d76a171cc8851887ec2ab7b"
+    },
+    {
+      "bytes": 302080,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/679023.doc",
+      "sha256": "9316790897686bbaa74afb07f7a760b02f9640cfdecebc719d4192d84af22f12"
+    },
+    {
+      "bytes": 302080,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/679036.doc",
+      "sha256": "9316790897686bbaa74afb07f7a760b02f9640cfdecebc719d4192d84af22f12"
+    },
+    {
+      "bytes": 27276,
+      "extension": ".xml",
+      "family": "rcl",
+      "path": "documents/files/679039.xml",
+      "sha256": "9b952c552a46ee99b11d16ecd12efaf648946eea1c8629cf4a02307a752f4af9"
+    },
+    {
+      "bytes": 238592,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/679932.doc",
+      "sha256": "04e5652c1d452b7a04879fa03533c0caf5d6b3b05c8e6f3529002ca25cb382f0"
+    },
+    {
+      "bytes": 425472,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/682103.doc",
+      "sha256": "45ba467ed9dde1287d1d3587b40cc4262cbff7c8884b0184b28fe376c11da231"
+    },
+    {
+      "bytes": 425472,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/682107.doc",
+      "sha256": "45ba467ed9dde1287d1d3587b40cc4262cbff7c8884b0184b28fe376c11da231"
+    },
+    {
+      "bytes": 425472,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/682111.doc",
+      "sha256": "45ba467ed9dde1287d1d3587b40cc4262cbff7c8884b0184b28fe376c11da231"
+    },
+    {
+      "bytes": 320000,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/682403.doc",
+      "sha256": "ad4eedb16d08737122f603b338ff50bc2e7907fef46ef2838b5753918a0e286b"
+    },
+    {
+      "bytes": 320000,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/682424.doc",
+      "sha256": "ad4eedb16d08737122f603b338ff50bc2e7907fef46ef2838b5753918a0e286b"
+    },
+    {
+      "bytes": 156160,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/682517.doc",
+      "sha256": "1857f231eaa437b8998e7044b2dddd0b09389297d1726a5a9e4913aef5d37f09"
+    },
+    {
+      "bytes": 1897472,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/682520.doc",
+      "sha256": "7905767c400a996a9ba634ed9e4b791bfb87d0909f7d0ffa69504e7ea849ba51"
+    },
+    {
+      "bytes": 182784,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/683444.doc",
+      "sha256": "22e7765eedcb396f13576e4400a742bdc56f2f06c57e630b4bd77673be1e7080"
+    },
+    {
+      "bytes": 184320,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/684516.doc",
+      "sha256": "2e8ba99c11f4a6b413187ff39810f6ab82355d42490c2b86174d337d3c132159"
+    },
+    {
+      "bytes": 184320,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/684519.doc",
+      "sha256": "2e8ba99c11f4a6b413187ff39810f6ab82355d42490c2b86174d337d3c132159"
+    },
+    {
+      "bytes": 268288,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/685082.doc",
+      "sha256": "5c13a672ef156d7a4ca74c704412feec5b1a438446c9853ac9e887ffe61bdcbd"
+    },
+    {
+      "bytes": 268288,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/685084.doc",
+      "sha256": "5c13a672ef156d7a4ca74c704412feec5b1a438446c9853ac9e887ffe61bdcbd"
+    },
+    {
+      "bytes": 306176,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/685223.doc",
+      "sha256": "8f303e23d5fac62e3c0e7a87ee8bfe551ee224b80bd0ced8489d4a2e939e9d21"
+    },
+    {
+      "bytes": 306176,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/685231.doc",
+      "sha256": "8f303e23d5fac62e3c0e7a87ee8bfe551ee224b80bd0ced8489d4a2e939e9d21"
+    },
+    {
+      "bytes": 190976,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/685376.doc",
+      "sha256": "9f99fce0502b9fd539a274d6c472a051965094a19363c2baeace5bbb62293542"
+    },
+    {
+      "bytes": 190976,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/685380.doc",
+      "sha256": "9f99fce0502b9fd539a274d6c472a051965094a19363c2baeace5bbb62293542"
+    },
+    {
+      "bytes": 239616,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/686202.doc",
+      "sha256": "826176a22ab03f3010738b7ae4e8f43506a5ed3338dcae279f7e39d967f54e47"
+    },
+    {
+      "bytes": 239616,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/686205.doc",
+      "sha256": "826176a22ab03f3010738b7ae4e8f43506a5ed3338dcae279f7e39d967f54e47"
+    },
+    {
+      "bytes": 239616,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/686209.doc",
+      "sha256": "826176a22ab03f3010738b7ae4e8f43506a5ed3338dcae279f7e39d967f54e47"
+    },
+    {
+      "bytes": 335872,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/687052.doc",
+      "sha256": "4b9eaa0daee4f11e22619ed048183bc7c918e76b9e7e6df39811c6573e215ee8"
+    },
+    {
+      "bytes": 184320,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/687438.doc",
+      "sha256": "b974e1312572656075ecca42f12b2911bba7a7aaf97f5f26ab84e61cdf3a5080"
+    },
+    {
+      "bytes": 296960,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/688103.doc",
+      "sha256": "69c28705d6b48bbb222c3af01d0e0cf9e5b8daff03229e387de840ab61661ab2"
+    },
+    {
+      "bytes": 443904,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/689674.doc",
+      "sha256": "a471dce627eaa1b5028036d6144479b367b26108a07533ceb2478ebcd167f805"
+    },
+    {
+      "bytes": 298496,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/689710.doc",
+      "sha256": "3ba14b6e19569e8ebff63a3caff0c653fe99f77cbc257689109ba536fac4fcf6"
+    },
+    {
+      "bytes": 298496,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/689714.doc",
+      "sha256": "3ba14b6e19569e8ebff63a3caff0c653fe99f77cbc257689109ba536fac4fcf6"
+    },
+    {
+      "bytes": 219648,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/691107.doc",
+      "sha256": "c3b307bc2564b7daf0d3aa9a70903eff4b54437115e0558fdc8e6e1bc0a48bdc"
+    },
+    {
+      "bytes": 187392,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/691181.doc",
+      "sha256": "38bb48a8811f1f6bb4f2e01fd3b5f1c455d6aa54263cd9f7d7efbad0f58736d0"
+    },
+    {
+      "bytes": 187392,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/691184.doc",
+      "sha256": "38bb48a8811f1f6bb4f2e01fd3b5f1c455d6aa54263cd9f7d7efbad0f58736d0"
+    },
+    {
+      "bytes": 184320,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/693457.doc",
+      "sha256": "49ff230b837f581cd95f25355071837a936d47d31e91beb32efffe03693e332b"
+    },
+    {
+      "bytes": 202240,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/695298.doc",
+      "sha256": "21c81167decd6038cf71d4877c551c81a8237215cda6f67ade7508f4757faf4f"
+    },
+    {
+      "bytes": 202240,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/695301.doc",
+      "sha256": "21c81167decd6038cf71d4877c551c81a8237215cda6f67ade7508f4757faf4f"
+    },
+    {
+      "bytes": 202240,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/695304.doc",
+      "sha256": "21c81167decd6038cf71d4877c551c81a8237215cda6f67ade7508f4757faf4f"
+    },
+    {
+      "bytes": 241664,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/696266.doc",
+      "sha256": "1f736953f74b80cdab663974aab5aeea1fcba2cff4e851798b1659e37b406967"
+    },
+    {
+      "bytes": 194560,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/698936.doc",
+      "sha256": "b5fa8dab6f8e224f7ed379a36ff8156d863112e350dfbd0c74c144711a263d58"
+    },
+    {
+      "bytes": 250880,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/702011.doc",
+      "sha256": "089dd84f30bcd468f1dbd37035cae6db7dbf15c91f51fb49f37116f6d844e818"
+    },
+    {
+      "bytes": 190976,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/702979.doc",
+      "sha256": "5d7dd350ce19e9880627250651153ceb60733072d8eb4c87dcf7f70484699595"
+    },
+    {
+      "bytes": 41472,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/703852.doc",
+      "sha256": "a2662151e509c2fad67ec5de884cb5596141f5cf71ffed17c0252fc30d78450e"
+    },
+    {
+      "bytes": 1800192,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/703887.doc",
+      "sha256": "0f7fb6e879f1bf9f9633e1538a1199b781ac0e6cc9d5594f9b03a687e55a83f9"
+    },
+    {
+      "bytes": 1800192,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/703896.doc",
+      "sha256": "0f7fb6e879f1bf9f9633e1538a1199b781ac0e6cc9d5594f9b03a687e55a83f9"
+    },
+    {
+      "bytes": 318464,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/705155.doc",
+      "sha256": "aa31477b5e33897bb34425629967ed350e5609e70119ea1b07142c73df9670c7"
+    },
+    {
+      "bytes": 244736,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/705342.doc",
+      "sha256": "7f8cc29b6a1ed4627a05e8d089633ed053730f6c72045d16ce7f498964b3ed35"
+    },
+    {
+      "bytes": 324096,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/705959.doc",
+      "sha256": "4c6857b5d2b93232d5674f2ad9112a0692178ad9eb3e67c33b491056ef8dcf61"
+    },
+    {
+      "bytes": 201728,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/706195.doc",
+      "sha256": "5a140a8f4693c75e3e702fb4f94ac8753ff71a2cd5ae364fbb84eab640b6bd49"
+    },
+    {
+      "bytes": 166912,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/707856.doc",
+      "sha256": "1373a28cd498e30fd9c42044fc83be2a109160bb721f5d329fce1ed93c3b0a0f"
+    },
+    {
+      "bytes": 325632,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/708033.doc",
+      "sha256": "4bc87f3f1dac6984d25c99fa6a22cc09450c3cfbd40e5391568dda6cc7fcd2c4"
+    },
+    {
+      "bytes": 325632,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/708036.doc",
+      "sha256": "4bc87f3f1dac6984d25c99fa6a22cc09450c3cfbd40e5391568dda6cc7fcd2c4"
+    },
+    {
+      "bytes": 249344,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/709294.doc",
+      "sha256": "fcc016d62a933c34301c8244ff8c5dc0ca8bf06152e3f0358207fc98c8ec6067"
+    },
+    {
+      "bytes": 318976,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/709355.doc",
+      "sha256": "17dd7b24028359ce2dcd92ef50e12b912f3b7775e24b95eca6ca19b179ade16d"
+    },
+    {
+      "bytes": 403968,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/709356.doc",
+      "sha256": "87621236aeeea1f8d33e39e722e3f5e917115c6ba7cff385545b3fa1dcd3fb72"
+    },
+    {
+      "bytes": 318976,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/709359.doc",
+      "sha256": "17dd7b24028359ce2dcd92ef50e12b912f3b7775e24b95eca6ca19b179ade16d"
+    },
+    {
+      "bytes": 403968,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/709360.doc",
+      "sha256": "87621236aeeea1f8d33e39e722e3f5e917115c6ba7cff385545b3fa1dcd3fb72"
+    },
+    {
+      "bytes": 366080,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/709781.doc",
+      "sha256": "2504124b259729f371ede91530b52ae432310099a5295c688460e1313e571385"
+    },
+    {
+      "bytes": 44544,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/709782.doc",
+      "sha256": "769df135b997d3816a692da7de05275fdecf147d1f8c17b2a37827131acf2dc9"
+    },
+    {
+      "bytes": 366080,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/709786.doc",
+      "sha256": "2504124b259729f371ede91530b52ae432310099a5295c688460e1313e571385"
+    },
+    {
+      "bytes": 44544,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/709787.doc",
+      "sha256": "769df135b997d3816a692da7de05275fdecf147d1f8c17b2a37827131acf2dc9"
+    },
+    {
+      "bytes": 251392,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/710601.doc",
+      "sha256": "d981bc17e68598ba843c13cbd87b422c4e9f0c3f8c3defb2a674857416a8efdc"
+    },
+    {
+      "bytes": 843776,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/710667.doc",
+      "sha256": "a06d2364c0cbfe15e819a1d622d96c07b43dddabe22d23a7190a2835f75a1a91"
+    },
+    {
+      "bytes": 161280,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/711425.doc",
+      "sha256": "b154113d1fd92efb549345cc3a2fc7463e848ec050bbb021d15f8175148e7f48"
+    },
+    {
+      "bytes": 258048,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/712868.doc",
+      "sha256": "853b8e647413b55062c7559805f1712c8b881a9521b59820f3b3808d21bbfdae"
+    },
+    {
+      "bytes": 169472,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/713111.doc",
+      "sha256": "0b7b91e419f8bae701233955a57f9a1ccca476f73236f340a0c4775b9c513a84"
+    },
+    {
+      "bytes": 169472,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/713115.doc",
+      "sha256": "0b7b91e419f8bae701233955a57f9a1ccca476f73236f340a0c4775b9c513a84"
+    },
+    {
+      "bytes": 182784,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/713349.doc",
+      "sha256": "9c4511cc859331fb10e821b3df1452806a338b59b8e3f30c834d80e102a52070"
+    },
+    {
+      "bytes": 182784,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/713355.doc",
+      "sha256": "9c4511cc859331fb10e821b3df1452806a338b59b8e3f30c834d80e102a52070"
+    },
+    {
+      "bytes": 184832,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/713802.doc",
+      "sha256": "b20cc25e27bcb18ef0ec464da2eeeb8f8e037b0e7cac688ac8557ff506d75ce1"
+    },
+    {
+      "bytes": 256000,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/714034.doc",
+      "sha256": "bddd113bbefadc943ed2a12b39bfd259111505c00c46c942a279365c0bdb4e7c"
+    },
+    {
+      "bytes": 256000,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/714038.doc",
+      "sha256": "bddd113bbefadc943ed2a12b39bfd259111505c00c46c942a279365c0bdb4e7c"
+    },
+    {
+      "bytes": 256000,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/714042.doc",
+      "sha256": "bddd113bbefadc943ed2a12b39bfd259111505c00c46c942a279365c0bdb4e7c"
+    },
+    {
+      "bytes": 175616,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/715091.doc",
+      "sha256": "20fece34a32114ae0e85d1699121c4c2ac64163ccf07f879b72a46c43596c87f"
+    },
+    {
+      "bytes": 175616,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/715095.doc",
+      "sha256": "20fece34a32114ae0e85d1699121c4c2ac64163ccf07f879b72a46c43596c87f"
+    },
+    {
+      "bytes": 196096,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/715448.doc",
+      "sha256": "c36caf7f2589fbfeb0762019ff49002e3a0c4361e2855b4631831aa1c3817ce9"
+    },
+    {
+      "bytes": 196096,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/715453.doc",
+      "sha256": "c36caf7f2589fbfeb0762019ff49002e3a0c4361e2855b4631831aa1c3817ce9"
+    },
+    {
+      "bytes": 171008,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/715789.doc",
+      "sha256": "cf2795ba789a3a759f9cf4bb400e95e60daeea2b94a6cbc7142f9196117ed3bd"
+    },
+    {
+      "bytes": 171008,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/715793.doc",
+      "sha256": "cf2795ba789a3a759f9cf4bb400e95e60daeea2b94a6cbc7142f9196117ed3bd"
+    },
+    {
+      "bytes": 171008,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/715797.doc",
+      "sha256": "cf2795ba789a3a759f9cf4bb400e95e60daeea2b94a6cbc7142f9196117ed3bd"
+    },
+    {
+      "bytes": 178176,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/716065.doc",
+      "sha256": "4ac28b3f436e05ba26edbf5f890559d495f38d1e6647d938033d180e1087e40e"
+    },
+    {
+      "bytes": 239616,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/716164.doc",
+      "sha256": "dc97bf67f4b44b70acab9ec234dcd13d8caf8fe096a2163483219b5e58f1d109"
+    },
+    {
+      "bytes": 239616,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/716168.doc",
+      "sha256": "dc97bf67f4b44b70acab9ec234dcd13d8caf8fe096a2163483219b5e58f1d109"
+    },
+    {
+      "bytes": 239616,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/716172.doc",
+      "sha256": "dc97bf67f4b44b70acab9ec234dcd13d8caf8fe096a2163483219b5e58f1d109"
+    },
+    {
+      "bytes": 169472,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/716204.doc",
+      "sha256": "74c618d53a1d3bec8c9278d8c13d282bfbf6d5e27260e8e68738569d0c333ea5"
+    },
+    {
+      "bytes": 189440,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/716500.doc",
+      "sha256": "28d5b8ceb1fad20ae4e73bd1ff9cede5ce40f40bed6bfab8f4217c142f267309"
+    },
+    {
+      "bytes": 189440,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/716504.doc",
+      "sha256": "28d5b8ceb1fad20ae4e73bd1ff9cede5ce40f40bed6bfab8f4217c142f267309"
+    },
+    {
+      "bytes": 188928,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/717683.doc",
+      "sha256": "6bec35660aa94be717a6a3e75959218b395e9df3e6d0949bbbd1c5354266992b"
+    },
+    {
+      "bytes": 188928,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/717690.doc",
+      "sha256": "6bec35660aa94be717a6a3e75959218b395e9df3e6d0949bbbd1c5354266992b"
+    },
+    {
+      "bytes": 173568,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/717705.doc",
+      "sha256": "c4363951fa55247a0511353b8d69290ee524a843f72b0ccc20c739d35925f744"
+    },
+    {
+      "bytes": 271872,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/717985.doc",
+      "sha256": "620edc8f0fb45d1ca57e1a8eab3d56f1f769b502ffad5ef5060ad9ae6609af64"
+    },
+    {
+      "bytes": 169472,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/718951.doc",
+      "sha256": "aa20771cafba2af299ae384c22f7f4ea0bab99fb619460316b12a2b5a5729993"
+    },
+    {
+      "bytes": 245760,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/719116.doc",
+      "sha256": "b3594ce2b15f28ad0a98b137965c37b5d408e3bf012e8e446415ee419cb5d2a5"
+    },
+    {
+      "bytes": 245760,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/719119.doc",
+      "sha256": "b3594ce2b15f28ad0a98b137965c37b5d408e3bf012e8e446415ee419cb5d2a5"
+    },
+    {
+      "bytes": 304128,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/719483.doc",
+      "sha256": "b00e149d3712265e52a61b42b76f7c34eaca5d53b86f6e2355d937e5d134d0e1"
+    },
+    {
+      "bytes": 193024,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/720353.doc",
+      "sha256": "c3e7aaf5197df8fceb4753713b3a15816fc775b1fa604cbe63a1ee9e55d9ec02"
+    },
+    {
+      "bytes": 193024,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/720358.doc",
+      "sha256": "c3e7aaf5197df8fceb4753713b3a15816fc775b1fa604cbe63a1ee9e55d9ec02"
+    },
+    {
+      "bytes": 384512,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/720763.doc",
+      "sha256": "61b1aee98f85dd9271408f6f2322be384ee323a2c2410f03366fba131a9323fb"
+    },
+    {
+      "bytes": 271872,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/721013.doc",
+      "sha256": "6e153bfb69bbb1d7fc525d9d42d49264c244da1597adefd1ec0ab86f47eb8c15"
+    },
+    {
+      "bytes": 331158,
+      "extension": ".xml",
+      "family": "rcl",
+      "path": "documents/files/721047.xml",
+      "sha256": "a89711d639a0081efc06925f320f06ac153845ffb9d13f657f40af45ef096a06"
+    },
+    {
+      "bytes": 620113,
+      "extension": ".xml",
+      "family": "rcl",
+      "path": "documents/files/721049.xml",
+      "sha256": "f7dc5ada164a76cfa4539071049733a51e11ca6edf33390690ff3b5d401e9b84"
+    },
+    {
+      "bytes": 172032,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/721442.doc",
+      "sha256": "2971a2f45048e21cadf7c1296a8a9320c67724067ee223b21c7bfb04c14e2121"
+    },
+    {
+      "bytes": 85504,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/721665.doc",
+      "sha256": "0dedab0ae25a94ac7705b045208d2e79b70f53e2b5bf90e8f4de95cd317eca86"
+    },
+    {
+      "bytes": 426496,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/721666.doc",
+      "sha256": "99be228c1a1f5e515073718b3ffbc9a8ec8f000687d0e0ed4eba41ff8be561eb"
+    },
+    {
+      "bytes": 85504,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/721672.doc",
+      "sha256": "0dedab0ae25a94ac7705b045208d2e79b70f53e2b5bf90e8f4de95cd317eca86"
+    },
+    {
+      "bytes": 426496,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/721673.doc",
+      "sha256": "99be228c1a1f5e515073718b3ffbc9a8ec8f000687d0e0ed4eba41ff8be561eb"
+    },
+    {
+      "bytes": 1562112,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/721816.doc",
+      "sha256": "2764101fc3b2f6d066c5b67ff520e64898940fc364601c1eae8f6ab460c89b9a"
+    },
+    {
+      "bytes": 196096,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/722015.doc",
+      "sha256": "dd13362fa93c2868b88dcee28fa4b60d83cbf948b2071e4e76d46aac225f81b2"
+    },
+    {
+      "bytes": 196096,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/722020.doc",
+      "sha256": "dd13362fa93c2868b88dcee28fa4b60d83cbf948b2071e4e76d46aac225f81b2"
+    },
+    {
+      "bytes": 196096,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/722025.doc",
+      "sha256": "dd13362fa93c2868b88dcee28fa4b60d83cbf948b2071e4e76d46aac225f81b2"
+    },
+    {
+      "bytes": 55808,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/722212.doc",
+      "sha256": "87a7eb40ff81f44a827465b9118832a66e2d09e290f8690dbb328526771c937b"
+    },
+    {
+      "bytes": 227840,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/722213.doc",
+      "sha256": "ed19d043acee68b46cf98e40d2455f22cf157b6e45d8c81ded4603a9693fba6b"
+    },
+    {
+      "bytes": 266240,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/722369.doc",
+      "sha256": "3142fcf5b495b761959fb4fcfef77b2d43576e5ee7d8defec927ef99cffd47b3"
+    },
+    {
+      "bytes": 266240,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/722372.doc",
+      "sha256": "3142fcf5b495b761959fb4fcfef77b2d43576e5ee7d8defec927ef99cffd47b3"
+    },
+    {
+      "bytes": 209920,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/722457.doc",
+      "sha256": "5c4842acbd4d336435b6251ee62f71e968ef90794282c401b38430b696c02db2"
+    },
+    {
+      "bytes": 209920,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/722460.doc",
+      "sha256": "5c4842acbd4d336435b6251ee62f71e968ef90794282c401b38430b696c02db2"
+    },
+    {
+      "bytes": 5631488,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/722815.doc",
+      "sha256": "a1412b38313de3841aa03a4468d74529b197f9ce1bf5d4de077746dada44fc11"
+    },
+    {
+      "bytes": 5631488,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/722820.doc",
+      "sha256": "a1412b38313de3841aa03a4468d74529b197f9ce1bf5d4de077746dada44fc11"
+    },
+    {
+      "bytes": 38400,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/723374.doc",
+      "sha256": "68e16c1f4c640283ace4232db5a54d6cdc34d76414f51d333b4e336e04829b30"
+    },
+    {
+      "bytes": 164864,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/723375.doc",
+      "sha256": "b9b307914c8bc47bcf57b4b8f976542e8f711bf3fa0aec0569174671217497fb"
+    },
+    {
+      "bytes": 38400,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/723378.doc",
+      "sha256": "68e16c1f4c640283ace4232db5a54d6cdc34d76414f51d333b4e336e04829b30"
+    },
+    {
+      "bytes": 164864,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/723379.doc",
+      "sha256": "b9b307914c8bc47bcf57b4b8f976542e8f711bf3fa0aec0569174671217497fb"
+    },
+    {
+      "bytes": 163317,
+      "extension": ".xml",
+      "family": "rcl",
+      "path": "documents/files/723473.xml",
+      "sha256": "001cf3981b8637c53ae1172430a893823d3b6fb93a89cac118959fdb213635c6"
+    },
+    {
+      "bytes": 463411,
+      "extension": ".xml",
+      "family": "rcl",
+      "path": "documents/files/723474.xml",
+      "sha256": "897dae7f79c2998334f650d49715c5a33697ef2f9e9c5f7debc1b4f2bba516a8"
+    },
+    {
+      "bytes": 432640,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/724594.doc",
+      "sha256": "445aa71a7ebc4142da939f8b5d88ca2a7cf98506b04c99a3f4133657f53f0403"
+    },
+    {
+      "bytes": 2199552,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/725561.doc",
+      "sha256": "da69e08b2e7b3ae453c41c2a9e73962d1ce6697cf158f42ef41393ae7ba7a4c9"
+    },
+    {
+      "bytes": 412672,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/726588.doc",
+      "sha256": "d60a4fbd1a0d90e1a52941f7d74c1e9a37dfe8a301cbeb6f9191c4f9a64ef920"
+    },
+    {
+      "bytes": 431616,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/727872.doc",
+      "sha256": "3b796e0846a5dea73b685325b296a77198b86343961898c7979a88db3124b387"
+    },
+    {
+      "bytes": 81408,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/727873.doc",
+      "sha256": "de004da6249e44a215d29644adf099c54712a82b9422163aa19dd4c213aeea6b"
+    },
+    {
+      "bytes": 431616,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/727877.doc",
+      "sha256": "3b796e0846a5dea73b685325b296a77198b86343961898c7979a88db3124b387"
+    },
+    {
+      "bytes": 81408,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/727878.doc",
+      "sha256": "de004da6249e44a215d29644adf099c54712a82b9422163aa19dd4c213aeea6b"
+    },
+    {
+      "bytes": 246272,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/728189.doc",
+      "sha256": "31564aa192239967e220fc0306f913f4a6d9d2a0564896b8fc6e714c4b04c893"
+    },
+    {
+      "bytes": 239616,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/728592.doc",
+      "sha256": "52cb289268d3afaa021de9bab5ac564e3dd254063bfadc7c130819db9ec50078"
+    },
+    {
+      "bytes": 239616,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/728596.doc",
+      "sha256": "52cb289268d3afaa021de9bab5ac564e3dd254063bfadc7c130819db9ec50078"
+    },
+    {
+      "bytes": 239616,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/728600.doc",
+      "sha256": "52cb289268d3afaa021de9bab5ac564e3dd254063bfadc7c130819db9ec50078"
+    },
+    {
+      "bytes": 185856,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/728822.doc",
+      "sha256": "44afe2ec732575da01e37ef9d1294a8b4d553cf3a162a7274e09dea2ac496b4d"
+    },
+    {
+      "bytes": 185856,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/728825.doc",
+      "sha256": "44afe2ec732575da01e37ef9d1294a8b4d553cf3a162a7274e09dea2ac496b4d"
+    },
+    {
+      "bytes": 219136,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/729495.doc",
+      "sha256": "8938f943a052b45bf03d5e5c2c04b66b1487ccf5dcfc1e435cdfa675f44b46fe"
+    },
+    {
+      "bytes": 219136,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/729499.doc",
+      "sha256": "8938f943a052b45bf03d5e5c2c04b66b1487ccf5dcfc1e435cdfa675f44b46fe"
+    },
+    {
+      "bytes": 169472,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/730140.doc",
+      "sha256": "aa20771cafba2af299ae384c22f7f4ea0bab99fb619460316b12a2b5a5729993"
+    },
+    {
+      "bytes": 253265,
+      "extension": ".xml",
+      "family": "rcl",
+      "path": "documents/files/730362.xml",
+      "sha256": "4ee8cdfc12a0ce822f5e8510a5a25dc06b2563b364c37a850bc305abb0a997d0"
+    },
+    {
+      "bytes": 253265,
+      "extension": ".xml",
+      "family": "rcl",
+      "path": "documents/files/730366.xml",
+      "sha256": "4ee8cdfc12a0ce822f5e8510a5a25dc06b2563b364c37a850bc305abb0a997d0"
+    },
+    {
+      "bytes": 991232,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/730692.doc",
+      "sha256": "6816a418fbf09281b437e64964f8e319e8a428d1b39a3cb08d79445189f331ee"
+    },
+    {
+      "bytes": 254976,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/732458.doc",
+      "sha256": "860bffbfbfc0c00f379a7c966c99ec8467e66df64b6119a0852ba37c3d5affaa"
+    },
+    {
+      "bytes": 254976,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/732459.doc",
+      "sha256": "860bffbfbfc0c00f379a7c966c99ec8467e66df64b6119a0852ba37c3d5affaa"
+    },
+    {
+      "bytes": 313856,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/733684.doc",
+      "sha256": "6b478d31525a0fc80ceac89daf398819f1c9be737df6a9e9c0ffd467483803bd"
+    },
+    {
+      "bytes": 316928,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/733705.doc",
+      "sha256": "32c0b75fc7c7b67ef00decc532a218027b34643a1eddf662f51121e1e0762cc6"
+    },
+    {
+      "bytes": 316928,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/733708.doc",
+      "sha256": "32c0b75fc7c7b67ef00decc532a218027b34643a1eddf662f51121e1e0762cc6"
+    },
+    {
+      "bytes": 300544,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/734350.doc",
+      "sha256": "f414831c59065b49ba7f51f3d753fd0ba3438a4e290e5a1c4d33ca7c83f4391f"
+    },
+    {
+      "bytes": 300544,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/734355.doc",
+      "sha256": "f414831c59065b49ba7f51f3d753fd0ba3438a4e290e5a1c4d33ca7c83f4391f"
+    },
+    {
+      "bytes": 177664,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/734688.doc",
+      "sha256": "12a60b4ee530959dd0fa45c80ac6869128a13ef0b4ce216e5ceb891760ba6dbb"
+    },
+    {
+      "bytes": 177664,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/734693.doc",
+      "sha256": "12a60b4ee530959dd0fa45c80ac6869128a13ef0b4ce216e5ceb891760ba6dbb"
+    },
+    {
+      "bytes": 187904,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/734829.doc",
+      "sha256": "1c81e799490b49a17b10e81d36f10264f6e728986434d0d17a4c13875783aa41"
+    },
+    {
+      "bytes": 187904,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/734833.doc",
+      "sha256": "1c81e799490b49a17b10e81d36f10264f6e728986434d0d17a4c13875783aa41"
+    },
+    {
+      "bytes": 187904,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/734839.doc",
+      "sha256": "1c81e799490b49a17b10e81d36f10264f6e728986434d0d17a4c13875783aa41"
+    },
+    {
+      "bytes": 310784,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/734878.doc",
+      "sha256": "13b9e0940055d51863337547921355d6e344cec06320dcb4550f90ac43aefa86"
+    },
+    {
+      "bytes": 310784,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/734882.doc",
+      "sha256": "13b9e0940055d51863337547921355d6e344cec06320dcb4550f90ac43aefa86"
+    },
+    {
+      "bytes": 201216,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/735179.doc",
+      "sha256": "3bc4c73d1df6942e0caf68ae2926bf786e9d54258fadcf3e3dba17c857e905cb"
+    },
+    {
+      "bytes": 201216,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/735182.doc",
+      "sha256": "3bc4c73d1df6942e0caf68ae2926bf786e9d54258fadcf3e3dba17c857e905cb"
+    },
+    {
+      "bytes": 242176,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/736133.doc",
+      "sha256": "7cea623fb3b144403f755fd2492a2316c70286b26ef2515eabffde7101a689c8"
+    },
+    {
+      "bytes": 242176,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/736148.doc",
+      "sha256": "7cea623fb3b144403f755fd2492a2316c70286b26ef2515eabffde7101a689c8"
+    },
+    {
+      "bytes": 242176,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/736152.doc",
+      "sha256": "7cea623fb3b144403f755fd2492a2316c70286b26ef2515eabffde7101a689c8"
+    },
+    {
+      "bytes": 214016,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/736747.doc",
+      "sha256": "899f3b964a72c61aecf46ba4e887a949ab6e20a80055209ed330d59a1770c9a1"
+    },
+    {
+      "bytes": 189952,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/737327.doc",
+      "sha256": "00770ee1680f2973bab94abc4e34ff04df763ff4dcae945cddff881857e05ea0"
+    },
+    {
+      "bytes": 189952,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/737330.doc",
+      "sha256": "00770ee1680f2973bab94abc4e34ff04df763ff4dcae945cddff881857e05ea0"
+    },
+    {
+      "bytes": 278528,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/737583.doc",
+      "sha256": "d91f5d6fbbe2d7630b652816513df36569a31840c6decb1747ca883f6e73af76"
+    },
+    {
+      "bytes": 278528,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/737585.doc",
+      "sha256": "d91f5d6fbbe2d7630b652816513df36569a31840c6decb1747ca883f6e73af76"
+    },
+    {
+      "bytes": 278528,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/737589.doc",
+      "sha256": "d91f5d6fbbe2d7630b652816513df36569a31840c6decb1747ca883f6e73af76"
+    },
+    {
+      "bytes": 174080,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/737661.doc",
+      "sha256": "11782bb35fe04a88357120e216516414c9099c89d937aa6330ba413d09cd90de"
+    },
+    {
+      "bytes": 306688,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/737779.doc",
+      "sha256": "24d2c0dc767cf6656343cb91bc5e30483225cd16e33501268e243a7a072c9a43"
+    },
+    {
+      "bytes": 173568,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/738195.doc",
+      "sha256": "c217fb606fbcd91de5038206f5be2c9e9468328e0a73feeb22a1006a9b4b1cf6"
+    },
+    {
+      "bytes": 173568,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/738199.doc",
+      "sha256": "c217fb606fbcd91de5038206f5be2c9e9468328e0a73feeb22a1006a9b4b1cf6"
+    },
+    {
+      "bytes": 173568,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/738203.doc",
+      "sha256": "c217fb606fbcd91de5038206f5be2c9e9468328e0a73feeb22a1006a9b4b1cf6"
+    },
+    {
+      "bytes": 188928,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/739384.doc",
+      "sha256": "78827c0cb373d9976d49a390991066b3094546cb971253c4a8f506c2df05c1bb"
+    },
+    {
+      "bytes": 188928,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/739389.doc",
+      "sha256": "78827c0cb373d9976d49a390991066b3094546cb971253c4a8f506c2df05c1bb"
+    },
+    {
+      "bytes": 508928,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/739895.doc",
+      "sha256": "40bbeda69592323402aab6f5febd2caa84f29de778494bb24f3cd8935f6e1687"
+    },
+    {
+      "bytes": 734720,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/739896.doc",
+      "sha256": "54fcbaae614140720d8da5ecdf4bfb8a0ce20fb898a86fd1246e06734ce9bc55"
+    },
+    {
+      "bytes": 508928,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/739905.doc",
+      "sha256": "40bbeda69592323402aab6f5febd2caa84f29de778494bb24f3cd8935f6e1687"
+    },
+    {
+      "bytes": 734720,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/739906.doc",
+      "sha256": "54fcbaae614140720d8da5ecdf4bfb8a0ce20fb898a86fd1246e06734ce9bc55"
+    },
+    {
+      "bytes": 227328,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/740936.doc",
+      "sha256": "1abe6ee94a433439e586945ef614c5e1c6f9cc49b10005eb036a85234f70a226"
+    },
+    {
+      "bytes": 291840,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/741422.doc",
+      "sha256": "d1f0b0c634e50fa93cb71da77ef823f5397d3d8882f9000877504e478ef65f58"
+    },
+    {
+      "bytes": 291840,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/741426.doc",
+      "sha256": "d1f0b0c634e50fa93cb71da77ef823f5397d3d8882f9000877504e478ef65f58"
+    },
+    {
+      "bytes": 365056,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/741957.doc",
+      "sha256": "53d482486b352744b8f3e3581a9b8e7786c4fb23a0a1e0f9c3e7d73938acde47"
+    },
+    {
+      "bytes": 365056,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/741961.doc",
+      "sha256": "53d482486b352744b8f3e3581a9b8e7786c4fb23a0a1e0f9c3e7d73938acde47"
+    },
+    {
+      "bytes": 360960,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/742052.doc",
+      "sha256": "946a50aaab54109d97eb1c05bd58299aafac4041868ce544b9aca2b712be28e7"
+    },
+    {
+      "bytes": 360960,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/742056.doc",
+      "sha256": "946a50aaab54109d97eb1c05bd58299aafac4041868ce544b9aca2b712be28e7"
+    },
+    {
+      "bytes": 432640,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/743330.doc",
+      "sha256": "006d5f09a49eab3f07becb77d27ad75738a6ef936c3ed662343ea99543a11029"
+    },
+    {
+      "bytes": 740674,
+      "extension": ".xml",
+      "family": "rcl",
+      "path": "documents/files/743395.xml",
+      "sha256": "72404e91da23bff6db210d5bed0836c1df73983d1d4dd86dfad56d1265d1f821"
+    },
+    {
+      "bytes": 391168,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/743396.doc",
+      "sha256": "50418e9e809696e504777bd2b47f4940941b3797205adc7a2ff4c3c4ee66f09e"
+    },
+    {
+      "bytes": 953732,
+      "extension": ".xml",
+      "family": "rcl",
+      "path": "documents/files/743397.xml",
+      "sha256": "06e00fbf1d84f1740cb8e04cc0abaaf6345dc7e7f858bb8e6fe425ebc4db9e08"
+    },
+    {
+      "bytes": 247808,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/743496.doc",
+      "sha256": "7c87ee3fc8065eb1ce41f8b90ee90f35743b65e8b58249b9a2ea22c671f9e06b"
+    },
+    {
+      "bytes": 181760,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/745687.doc",
+      "sha256": "b61e56a6f08250961f10417efdfe515dc8b4b1ceafa49c11182b8c0b36eade95"
+    },
+    {
+      "bytes": 181760,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/745691.doc",
+      "sha256": "b61e56a6f08250961f10417efdfe515dc8b4b1ceafa49c11182b8c0b36eade95"
+    },
+    {
+      "bytes": 181760,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/745695.doc",
+      "sha256": "b61e56a6f08250961f10417efdfe515dc8b4b1ceafa49c11182b8c0b36eade95"
+    },
+    {
+      "bytes": 293376,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/745947.doc",
+      "sha256": "a2c8e501c3b317b1abb10d6cb80071bf09a5d5cbc0647876e6fbbf35621c288c"
+    },
+    {
+      "bytes": 50176,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/746203.doc",
+      "sha256": "a18481fa450e0273cd15d6d6712e41c614536e01728d8732e9b72ce4b1e1a305"
+    },
+    {
+      "bytes": 364544,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/749698.doc",
+      "sha256": "ed703b01d09100b04c6675996d7c86a476ed60944263f014ed20e28cc4deff1a"
+    },
+    {
+      "bytes": 291840,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/749782.doc",
+      "sha256": "fc575c34124fbb9bb290f1a2b35072d5c61052dc3ccc8a876e65388ca76c7460"
+    },
+    {
+      "bytes": 203264,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/750493.doc",
+      "sha256": "7acf0f6ab221018b572c7898d354f6cc7d5caa25a2bf2ea685ac3b6a885e9707"
+    },
+    {
+      "bytes": 300032,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/750767.doc",
+      "sha256": "d6ad3acbe358454e818d16af62c80cbdb32f1bfd55ee07d297e9f926f84ef8b9"
+    },
+    {
+      "bytes": 193024,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/751085.doc",
+      "sha256": "ce5af24e92d116aa9a2407f899765d29172eac1e9c86835ec090ce114f02e21b"
+    },
+    {
+      "bytes": 241152,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/751865.doc",
+      "sha256": "13259d1e63816df08cf1d4408603487a7c4eeb7c3feb01ae94ebb4c41ca27731"
+    },
+    {
+      "bytes": 241152,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/751869.doc",
+      "sha256": "13259d1e63816df08cf1d4408603487a7c4eeb7c3feb01ae94ebb4c41ca27731"
+    },
+    {
+      "bytes": 241152,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/751873.doc",
+      "sha256": "13259d1e63816df08cf1d4408603487a7c4eeb7c3feb01ae94ebb4c41ca27731"
+    },
+    {
+      "bytes": 645632,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/752574.doc",
+      "sha256": "3a3eef2a34c83ab54d62c22fbbe7be15396558d95268ecf8431437e010721b9c"
+    },
+    {
+      "bytes": 422400,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/754141.doc",
+      "sha256": "55be7efdf55c3ce2fb6237e0546451d9d8cdc507338c912eb887d464eb44cd03"
+    },
+    {
+      "bytes": 280064,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/754560.doc",
+      "sha256": "41bc9fb5d20325b702b57a918a0f3311012a702341f9f88dee8ee78e6aafa06e"
+    },
+    {
+      "bytes": 280064,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/754564.doc",
+      "sha256": "41bc9fb5d20325b702b57a918a0f3311012a702341f9f88dee8ee78e6aafa06e"
+    },
+    {
+      "bytes": 280064,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/754568.doc",
+      "sha256": "41bc9fb5d20325b702b57a918a0f3311012a702341f9f88dee8ee78e6aafa06e"
+    },
+    {
+      "bytes": 180736,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/754578.doc",
+      "sha256": "c75fc84c3bd8b4c41c2864a905ed050501ef56e73fe26b78a64c95863e65a35a"
+    },
+    {
+      "bytes": 180736,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/754582.doc",
+      "sha256": "c75fc84c3bd8b4c41c2864a905ed050501ef56e73fe26b78a64c95863e65a35a"
+    },
+    {
+      "bytes": 194560,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/754742.doc",
+      "sha256": "0d95afae54c648382d0bfb787d66c309eb948e04d2aecedf32cb7e9f39a96221"
+    },
+    {
+      "bytes": 194560,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/754750.doc",
+      "sha256": "0d95afae54c648382d0bfb787d66c309eb948e04d2aecedf32cb7e9f39a96221"
+    },
+    {
+      "bytes": 243712,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/755416.doc",
+      "sha256": "41e990987c1dfe0d61a1ddc24345cda085643fcca2727c5a73b29595cfc4fdef"
+    },
+    {
+      "bytes": 221696,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/755519.doc",
+      "sha256": "f7a917a81f4895663614fdd808564e7432b2cd8a6a6b09b56cf818ee9982ee76"
+    },
+    {
+      "bytes": 228352,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/755634.doc",
+      "sha256": "64c952b7b4826e43a4faa3ccb7514c23796fbeff3c579662b85a96d2e462fb9d"
+    },
+    {
+      "bytes": 228352,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/755637.doc",
+      "sha256": "64c952b7b4826e43a4faa3ccb7514c23796fbeff3c579662b85a96d2e462fb9d"
+    },
+    {
+      "bytes": 228352,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/755640.doc",
+      "sha256": "64c952b7b4826e43a4faa3ccb7514c23796fbeff3c579662b85a96d2e462fb9d"
+    },
+    {
+      "bytes": 207872,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/755734.doc",
+      "sha256": "433a0dea045f20e6597786703c3efacfd2d3b4176726b385688cb7112142fc03"
+    },
+    {
+      "bytes": 207872,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/755738.doc",
+      "sha256": "433a0dea045f20e6597786703c3efacfd2d3b4176726b385688cb7112142fc03"
+    },
+    {
+      "bytes": 220672,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/757212.doc",
+      "sha256": "7ead63d8b73bec732ffe6ca3b9020311638c5700bec81c70e85793b412f0a6c2"
+    },
+    {
+      "bytes": 220672,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/757216.doc",
+      "sha256": "7ead63d8b73bec732ffe6ca3b9020311638c5700bec81c70e85793b412f0a6c2"
+    },
+    {
+      "bytes": 220672,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/757220.doc",
+      "sha256": "7ead63d8b73bec732ffe6ca3b9020311638c5700bec81c70e85793b412f0a6c2"
+    },
+    {
+      "bytes": 236544,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/760602.doc",
+      "sha256": "751ee3e3b551b9ac407e6c98893d8aaf0be003e30a65e82c5795b0b78009f8d6"
+    },
+    {
+      "bytes": 236544,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/760606.doc",
+      "sha256": "751ee3e3b551b9ac407e6c98893d8aaf0be003e30a65e82c5795b0b78009f8d6"
+    },
+    {
+      "bytes": 236544,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/760610.doc",
+      "sha256": "751ee3e3b551b9ac407e6c98893d8aaf0be003e30a65e82c5795b0b78009f8d6"
+    },
+    {
+      "bytes": 266240,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/761739.doc",
+      "sha256": "de122ad96aaa02c19d9719dd611c29d7cd7fea3702e378a93acc0fae15cfbe83"
+    },
+    {
+      "bytes": 266240,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/761744.doc",
+      "sha256": "de122ad96aaa02c19d9719dd611c29d7cd7fea3702e378a93acc0fae15cfbe83"
+    },
+    {
+      "bytes": 192512,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/762837.doc",
+      "sha256": "706b0d7895a7fe4e27ef99e84cf7a61b923180bc3e54dfa676dc7f314cbae6b5"
+    },
+    {
+      "bytes": 192512,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/762844.doc",
+      "sha256": "706b0d7895a7fe4e27ef99e84cf7a61b923180bc3e54dfa676dc7f314cbae6b5"
+    },
+    {
+      "bytes": 192512,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/762848.doc",
+      "sha256": "706b0d7895a7fe4e27ef99e84cf7a61b923180bc3e54dfa676dc7f314cbae6b5"
+    },
+    {
+      "bytes": 257536,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/763432.doc",
+      "sha256": "afe8b0ca0c0b9a0d07e4e313686a49a49751d0d68e69f2c30d896acc04e0738d"
+    },
+    {
+      "bytes": 257536,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/763436.doc",
+      "sha256": "afe8b0ca0c0b9a0d07e4e313686a49a49751d0d68e69f2c30d896acc04e0738d"
+    },
+    {
+      "bytes": 290304,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/764168.doc",
+      "sha256": "2ba1e5fa1a3bf36a142b1b32de7e5c284d88f1e794cf48cf958127f9819b3072"
+    },
+    {
+      "bytes": 21075,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/764964.doc",
+      "sha256": "58fd3d8ebfbda80cf9cd0aa35f64c9c33a3a70e399d281ce2db7a2d2523cd0ff"
+    },
+    {
+      "bytes": 21075,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/765000.doc",
+      "sha256": "58fd3d8ebfbda80cf9cd0aa35f64c9c33a3a70e399d281ce2db7a2d2523cd0ff"
+    },
+    {
+      "bytes": 221184,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/768027.doc",
+      "sha256": "2d1d4f18c7dd8b2aac6cce0b42675e1a4f303b65e3b422e853e2603f2ee01051"
+    },
+    {
+      "bytes": 221184,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/768031.doc",
+      "sha256": "2d1d4f18c7dd8b2aac6cce0b42675e1a4f303b65e3b422e853e2603f2ee01051"
+    },
+    {
+      "bytes": 235008,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/768790.doc",
+      "sha256": "792a388295db49babb66cbfdd6a39893f46bcef4a4b5ebe23bc4cbfa81778928"
+    },
+    {
+      "bytes": 235008,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/768799.doc",
+      "sha256": "792a388295db49babb66cbfdd6a39893f46bcef4a4b5ebe23bc4cbfa81778928"
+    },
+    {
+      "bytes": 211968,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/769679.doc",
+      "sha256": "00c447a70b6f530df994a54bacfe4276b6d790564798ab5ff370a1c0b8380eac"
+    },
+    {
+      "bytes": 211968,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/769684.doc",
+      "sha256": "00c447a70b6f530df994a54bacfe4276b6d790564798ab5ff370a1c0b8380eac"
+    },
+    {
+      "bytes": 211968,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/769690.doc",
+      "sha256": "00c447a70b6f530df994a54bacfe4276b6d790564798ab5ff370a1c0b8380eac"
+    },
+    {
+      "bytes": 483840,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/770316.doc",
+      "sha256": "95ccde48d155b9ccb4fab7b911ece3e3ce723f9e91951f626dee83e597ca963f"
+    },
+    {
+      "bytes": 369545,
+      "extension": ".xml",
+      "family": "rcl",
+      "path": "documents/files/771044.xml",
+      "sha256": "8a390d06877097563dadd70eb55a867a43ff37c29257ad71fae6938ac6a80fc5"
+    },
+    {
+      "bytes": 340992,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/771236.doc",
+      "sha256": "f699456c5d1484eb45ade82d7dfd8a211165d144b1d4be67e25c0932fcc5e04e"
+    },
+    {
+      "bytes": 340992,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/771253.doc",
+      "sha256": "f699456c5d1484eb45ade82d7dfd8a211165d144b1d4be67e25c0932fcc5e04e"
+    },
+    {
+      "bytes": 705024,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/772008.doc",
+      "sha256": "f0aa2283f2aa4fe997ba101adf1be3a933242069583736a25169d8cf54d8e1fe"
+    },
+    {
+      "bytes": 705024,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/772015.doc",
+      "sha256": "f0aa2283f2aa4fe997ba101adf1be3a933242069583736a25169d8cf54d8e1fe"
+    },
+    {
+      "bytes": 553984,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/772116.doc",
+      "sha256": "9b2d2103d89e67f6217766dc5bd10f4444a37b70febed1fb4c50a8db000fe550"
+    },
+    {
+      "bytes": 553984,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/772127.doc",
+      "sha256": "9b2d2103d89e67f6217766dc5bd10f4444a37b70febed1fb4c50a8db000fe550"
+    },
+    {
+      "bytes": 553984,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/772168.doc",
+      "sha256": "9b2d2103d89e67f6217766dc5bd10f4444a37b70febed1fb4c50a8db000fe550"
+    },
+    {
+      "bytes": 128512,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/772513.doc",
+      "sha256": "3e9f0243b3c3288ec0e3119dd85a377f1bb3fbe0ba5211323b7443bba4fb9ab5"
+    },
+    {
+      "bytes": 65024,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/772514.doc",
+      "sha256": "0016036fda4762e8e52eac494765f9d8fa2750a61483325faad10400cb7d87de"
+    },
+    {
+      "bytes": 164352,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/772515.doc",
+      "sha256": "ff8870f1ec5d74cec9001da3cf407875515e09cc2a39d4ace80cd1b32a0feab5"
+    },
+    {
+      "bytes": 128512,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/772517.doc",
+      "sha256": "3e9f0243b3c3288ec0e3119dd85a377f1bb3fbe0ba5211323b7443bba4fb9ab5"
+    },
+    {
+      "bytes": 65024,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/772518.doc",
+      "sha256": "0016036fda4762e8e52eac494765f9d8fa2750a61483325faad10400cb7d87de"
+    },
+    {
+      "bytes": 164352,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/772519.doc",
+      "sha256": "ff8870f1ec5d74cec9001da3cf407875515e09cc2a39d4ace80cd1b32a0feab5"
+    },
+    {
+      "bytes": 128512,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/772521.doc",
+      "sha256": "3e9f0243b3c3288ec0e3119dd85a377f1bb3fbe0ba5211323b7443bba4fb9ab5"
+    },
+    {
+      "bytes": 65024,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/772522.doc",
+      "sha256": "0016036fda4762e8e52eac494765f9d8fa2750a61483325faad10400cb7d87de"
+    },
+    {
+      "bytes": 164352,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/772523.doc",
+      "sha256": "ff8870f1ec5d74cec9001da3cf407875515e09cc2a39d4ace80cd1b32a0feab5"
+    },
+    {
+      "bytes": 328192,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/772872.doc",
+      "sha256": "be2c0a609470376e0a9b7a7f4cbaadbb83d5499f44e8bd3d05a88e8d3bfe2c78"
+    },
+    {
+      "bytes": 381952,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/772888.doc",
+      "sha256": "2b47ea8db0b20c9c7371fc4bc713459b439ac5962f06a5d947a7d04d1b79898a"
+    },
+    {
+      "bytes": 335872,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/773012.doc",
+      "sha256": "1023bb9a47a9e36c514fbdbfe9b52bda31e7da155e63a6d0fbf8383c2c488218"
+    },
+    {
+      "bytes": 487424,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/774585.doc",
+      "sha256": "23ae1a2112358ccec745b3923f8de745cf3431b845934acfd180a555b4e91933"
+    },
+    {
+      "bytes": 206848,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/774589.doc",
+      "sha256": "51bcc84e9aa5f00146e9a8d11fc2647455e177d2bdc38c4321f757a04f7b2f60"
+    },
+    {
+      "bytes": 355328,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/775166.doc",
+      "sha256": "8b9022c6eae134340f513d9bf3e9290862170c7104b7e9db6e0765d726054cae"
+    },
+    {
+      "bytes": 242176,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/775225.doc",
+      "sha256": "7ff72a7f4dc2e911f5bd4a5aba461f6ac19a59ba87902c65198fb16449d6313e"
+    },
+    {
+      "bytes": 233984,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/776057.doc",
+      "sha256": "4c8088ef8ccee09a2926c7f021f3ecf6ff902316e95965ed6588e39e63d59c40"
+    },
+    {
+      "bytes": 288256,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/776377.doc",
+      "sha256": "bba77ff3d4ba5bbc2e229d3bf4ee19b0ccac036caee368d2dbe7bd3beb5d2f5c"
+    },
+    {
+      "bytes": 326144,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/776511.doc",
+      "sha256": "c335d8cca11154f1a0773c876fb294ced5274d0ee9d8562d45ed1c872d4d1a4a"
+    },
+    {
+      "bytes": 326144,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/776518.doc",
+      "sha256": "c335d8cca11154f1a0773c876fb294ced5274d0ee9d8562d45ed1c872d4d1a4a"
+    },
+    {
+      "bytes": 194048,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/777024.doc",
+      "sha256": "89cbff84d77f203512a1ec27308cc4ea5fccbdb4cb1fb9e2e94929b8c09a7869"
+    },
+    {
+      "bytes": 194048,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/777032.doc",
+      "sha256": "89cbff84d77f203512a1ec27308cc4ea5fccbdb4cb1fb9e2e94929b8c09a7869"
+    },
+    {
+      "bytes": 222720,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/777862.doc",
+      "sha256": "3f0b7220f7c2a8c1f2c7d8547bb46c47ea2169f72723da2e026eefa1ac13e97b"
+    },
+    {
+      "bytes": 222720,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/777866.doc",
+      "sha256": "3f0b7220f7c2a8c1f2c7d8547bb46c47ea2169f72723da2e026eefa1ac13e97b"
+    },
+    {
+      "bytes": 222720,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/777870.doc",
+      "sha256": "3f0b7220f7c2a8c1f2c7d8547bb46c47ea2169f72723da2e026eefa1ac13e97b"
+    },
+    {
+      "bytes": 331776,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/779241.doc",
+      "sha256": "fea15d8e3bd49bf1ba622f11605371cf402d8b8dd908f4d3bb8b45f813d76e2c"
+    },
+    {
+      "bytes": 331776,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/779245.doc",
+      "sha256": "fea15d8e3bd49bf1ba622f11605371cf402d8b8dd908f4d3bb8b45f813d76e2c"
+    },
+    {
+      "bytes": 649539,
+      "extension": ".xml",
+      "family": "rcl",
+      "path": "documents/files/779452.xml",
+      "sha256": "04f334ffde9ed4ddb291328b05757888c78047ff099dafdeda36e406f673557e"
+    },
+    {
+      "bytes": 713216,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/779504.doc",
+      "sha256": "722047823aea2adbc3b0e6bfc708e8177dbb102b66fdbb18ac8c3f7733ed15e1"
+    },
+    {
+      "bytes": 250880,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/779811.doc",
+      "sha256": "b82bdf6ccda0457c7b5d0b88dcf10ac1a3f80ce09684a33791fcbd75fb716260"
+    },
+    {
+      "bytes": 250880,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/779820.doc",
+      "sha256": "b82bdf6ccda0457c7b5d0b88dcf10ac1a3f80ce09684a33791fcbd75fb716260"
+    },
+    {
+      "bytes": 277504,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/779990.doc",
+      "sha256": "a122c0bd3caa959dbed22afbfc1a6f6042b9f363206fb44166d8a1cf02e24c63"
+    },
+    {
+      "bytes": 276992,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/783393.doc",
+      "sha256": "28d4b4ca303e2af96b8142c39dcab8027b7409cf4b48b9d03564462b3b93bbcf"
+    },
+    {
+      "bytes": 276992,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/783397.doc",
+      "sha256": "28d4b4ca303e2af96b8142c39dcab8027b7409cf4b48b9d03564462b3b93bbcf"
+    },
+    {
+      "bytes": 276992,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/783402.doc",
+      "sha256": "28d4b4ca303e2af96b8142c39dcab8027b7409cf4b48b9d03564462b3b93bbcf"
+    },
+    {
+      "bytes": 222208,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/783413.doc",
+      "sha256": "981fa625586dfb72f8d266a55086db897f8d6701a85fd22ccf3d075e480c153c"
+    },
+    {
+      "bytes": 283136,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/783586.doc",
+      "sha256": "7f29eb3110866bd1a54bab24cada9b5ab695dd9221c3f034adf4f4ede0e9c921"
+    },
+    {
+      "bytes": 236032,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/784279.doc",
+      "sha256": "ab78df636687d91e242f1df3547e067a1118dd13d46a4f3e85e84714c72ca49f"
+    },
+    {
+      "bytes": 536576,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/784833.doc",
+      "sha256": "1c2b6b36e8d195fdfc46b82d27e817da61a9c1ea61e2e974f0511d5392664d8d"
+    },
+    {
+      "bytes": 536576,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/784840.doc",
+      "sha256": "1c2b6b36e8d195fdfc46b82d27e817da61a9c1ea61e2e974f0511d5392664d8d"
+    },
+    {
+      "bytes": 111616,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/785033.doc",
+      "sha256": "fc9aebfc787c3dd907843a7120b46d7a503470f7a2f0ade0ba7e34d3f08ab4f4"
+    },
+    {
+      "bytes": 310784,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/786404.doc",
+      "sha256": "5b6984b61911bc9d5602276e8588fe401c578055c19b8630260c5b727c5e62ae"
+    },
+    {
+      "bytes": 310784,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/786405.doc",
+      "sha256": "5b6984b61911bc9d5602276e8588fe401c578055c19b8630260c5b727c5e62ae"
+    },
+    {
+      "bytes": 310784,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/786406.doc",
+      "sha256": "5b6984b61911bc9d5602276e8588fe401c578055c19b8630260c5b727c5e62ae"
+    },
+    {
+      "bytes": 264192,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/787451.doc",
+      "sha256": "67c248a2c37645eec1e7abeede64d08585136c0ea7f430c6688226518904aa5d"
+    },
+    {
+      "bytes": 264192,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/787458.doc",
+      "sha256": "67c248a2c37645eec1e7abeede64d08585136c0ea7f430c6688226518904aa5d"
+    },
+    {
+      "bytes": 532992,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/787680.doc",
+      "sha256": "5d2cc96932bcd3d684fd0e9a1a543e3892fa1ec05eba1c19d7d5d65aa14ad8e1"
+    },
+    {
+      "bytes": 205312,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/788735.doc",
+      "sha256": "34d87b20dda69736fde8b30fcf2248c1ce584af810925913eea4c93229e4b3fc"
+    },
+    {
+      "bytes": 205312,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/788739.doc",
+      "sha256": "34d87b20dda69736fde8b30fcf2248c1ce584af810925913eea4c93229e4b3fc"
+    },
+    {
+      "bytes": 281088,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/788882.doc",
+      "sha256": "50b9db22aa4d27ac36fc46cc15a99c0014180f6d7173f464cecdfe86c70ba5f2"
+    },
+    {
+      "bytes": 281088,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/788885.doc",
+      "sha256": "50b9db22aa4d27ac36fc46cc15a99c0014180f6d7173f464cecdfe86c70ba5f2"
+    },
+    {
+      "bytes": 374272,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/791533.doc",
+      "sha256": "b5fdbc01ca88318deb9735cc1942d0a2d6c00e50706e93a36ceff71e2b4bd421"
+    },
+    {
+      "bytes": 374272,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/791544.doc",
+      "sha256": "b5fdbc01ca88318deb9735cc1942d0a2d6c00e50706e93a36ceff71e2b4bd421"
+    },
+    {
+      "bytes": 325120,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/791759.doc",
+      "sha256": "a3d3195810800c1f53aa200dba3cd72fa860ca3c9e2f43b8e8338ad258b63044"
+    },
+    {
+      "bytes": 55296,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/792584.doc",
+      "sha256": "37bff49922e31f98e5bfd88c940eb0f2d892ba944402a2278c6d8659209c6400"
+    },
+    {
+      "bytes": 55296,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/792588.doc",
+      "sha256": "37bff49922e31f98e5bfd88c940eb0f2d892ba944402a2278c6d8659209c6400"
+    },
+    {
+      "bytes": 140288,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/792589.doc",
+      "sha256": "92263f36376de565624453715a63f1d09c8b634265cb6ba7d07eb7eef8e72d8e"
+    },
+    {
+      "bytes": 55296,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/792592.doc",
+      "sha256": "37bff49922e31f98e5bfd88c940eb0f2d892ba944402a2278c6d8659209c6400"
+    },
+    {
+      "bytes": 140288,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/792593.doc",
+      "sha256": "92263f36376de565624453715a63f1d09c8b634265cb6ba7d07eb7eef8e72d8e"
+    },
+    {
+      "bytes": 82944,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/792929.doc",
+      "sha256": "7cd632febde3856730dc6f4a2d48b731a28b3f59a368e609e47b1ac44043ee24"
+    },
+    {
+      "bytes": 285696,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/793895.doc",
+      "sha256": "56cb693cdafb02a2615a4a4274251e9b4af588b4efa0717d8a2798233cfa5f51"
+    },
+    {
+      "bytes": 285696,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/793904.doc",
+      "sha256": "56cb693cdafb02a2615a4a4274251e9b4af588b4efa0717d8a2798233cfa5f51"
+    },
+    {
+      "bytes": 116736,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/794873.doc",
+      "sha256": "72056df2aa48c68c745a110e6577498a5b76199ebda1a0e0eb0071b611d95844"
+    },
+    {
+      "bytes": 116736,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/794880.doc",
+      "sha256": "72056df2aa48c68c745a110e6577498a5b76199ebda1a0e0eb0071b611d95844"
+    },
+    {
+      "bytes": 116736,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/794886.doc",
+      "sha256": "72056df2aa48c68c745a110e6577498a5b76199ebda1a0e0eb0071b611d95844"
+    },
+    {
+      "bytes": 184832,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/794972.doc",
+      "sha256": "ea0d49c5fabcab5a24d967b207ca309e4b841d1bc95ac0d562243a1443a92346"
+    },
+    {
+      "bytes": 184832,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/794979.doc",
+      "sha256": "ea0d49c5fabcab5a24d967b207ca309e4b841d1bc95ac0d562243a1443a92346"
+    },
+    {
+      "bytes": 184832,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/794984.doc",
+      "sha256": "ea0d49c5fabcab5a24d967b207ca309e4b841d1bc95ac0d562243a1443a92346"
+    },
+    {
+      "bytes": 228352,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/795293.doc",
+      "sha256": "e3f1ed5233f0a2d387483aa1990c55393ebab219afe9e48390a68a081fd3dfa6"
+    },
+    {
+      "bytes": 52224,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/795294.doc",
+      "sha256": "6214ed3c887e1a8d56866f57873d226e726220c82317bf8aac911a9ea5f4915e"
+    },
+    {
+      "bytes": 228352,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/795297.doc",
+      "sha256": "e3f1ed5233f0a2d387483aa1990c55393ebab219afe9e48390a68a081fd3dfa6"
+    },
+    {
+      "bytes": 52224,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/795298.doc",
+      "sha256": "6214ed3c887e1a8d56866f57873d226e726220c82317bf8aac911a9ea5f4915e"
+    },
+    {
+      "bytes": 305152,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/795376.doc",
+      "sha256": "ccb60957b4d8a898a7b5e891e8c0d9136510573103876666330c751fb9d45dfc"
+    },
+    {
+      "bytes": 305152,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/795380.doc",
+      "sha256": "ccb60957b4d8a898a7b5e891e8c0d9136510573103876666330c751fb9d45dfc"
+    },
+    {
+      "bytes": 251392,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/795743.doc",
+      "sha256": "91359130bd35711a3d24cd61162c4f1255be4d73ab0627d553db196f6bb8c789"
+    },
+    {
+      "bytes": 251392,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/795747.doc",
+      "sha256": "91359130bd35711a3d24cd61162c4f1255be4d73ab0627d553db196f6bb8c789"
+    },
+    {
+      "bytes": 251392,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/795755.doc",
+      "sha256": "91359130bd35711a3d24cd61162c4f1255be4d73ab0627d553db196f6bb8c789"
+    },
+    {
+      "bytes": 2513920,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/795855.doc",
+      "sha256": "0be72d0d1a70b21adbab3075ca42c3f3710f03042b741abbcd6eb7dcdb7a1477"
+    },
+    {
+      "bytes": 329216,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/796367.doc",
+      "sha256": "196e62abe1d4df10a7a14a16d206503d8de5de881e8fa00acfd59a4893d30cee"
+    },
+    {
+      "bytes": 329216,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/796370.doc",
+      "sha256": "196e62abe1d4df10a7a14a16d206503d8de5de881e8fa00acfd59a4893d30cee"
+    },
+    {
+      "bytes": 83968,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/796470.doc",
+      "sha256": "a1a30d7fef447f074c8265d9d8396f2db50c4aa5cae9bfc18cdf40c087d923e5"
+    },
+    {
+      "bytes": 84992,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/796471.doc",
+      "sha256": "bbf29cca2c889da7eaff425ff5127e41a7ac9fd85ef871266d84227360da498c"
+    },
+    {
+      "bytes": 83968,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/796476.doc",
+      "sha256": "a1a30d7fef447f074c8265d9d8396f2db50c4aa5cae9bfc18cdf40c087d923e5"
+    },
+    {
+      "bytes": 84992,
+      "extension": ".doc",
+      "family": "rcl",
+      "path": "documents/files/796477.doc",
+      "sha256": "bbf29cca2c889da7eaff425ff5127e41a7ac9fd85ef871266d84227360da498c"
+    },
+    {
+      "bytes": 48128,
+      "extension": ".doc",
+      "family": "sejm_print",
+      "path": "sejm/term10/files/1040__1040-ustawa i uzasadnienie.doc",
+      "sha256": "e3fe93bad77d0ee60b5f9123aea950ea462fe985228d82ecb46c8b3bcb9c415c"
+    },
+    {
+      "bytes": 127488,
+      "extension": ".doc",
+      "family": "sejm_print",
+      "path": "sejm/term10/files/1311__1311-ustawa.doc",
+      "sha256": "23cb0ce352123a3a18820b1dc9a6a41ec47ac3d6e6a9d95d0ff52e571e738173"
+    },
+    {
+      "bytes": 8730624,
+      "extension": ".doc",
+      "family": "sejm_print",
+      "path": "sejm/term10/files/1311__1311-uzasadnienie.doc",
+      "sha256": "e3d12f544ce05638cd38adcf9377761d8db15b08ff39867b617bd32f31dde3b5"
+    },
+    {
+      "bytes": 50688,
+      "extension": ".doc",
+      "family": "sejm_print",
+      "path": "sejm/term10/files/205__205-ustawa.doc",
+      "sha256": "72f1050ea0883e872311233196ff68e921791852667c59c99b842c289a6a626d"
+    },
+    {
+      "bytes": 56320,
+      "extension": ".doc",
+      "family": "sejm_print",
+      "path": "sejm/term10/files/205__205-uzasadnienie.doc",
+      "sha256": "78f6f364407f0b3eea89d57c4a62a8543a4a7d988d75ded26940eeb6117a6d37"
+    },
+    {
+      "bytes": 32768,
+      "extension": ".doc",
+      "family": "sejm_print",
+      "path": "sejm/term10/files/211__211-uzasadnienie.doc",
+      "sha256": "14b82f248b3408e9b882c190c9dc268094ab0c9988782fcadb53e62d6d8ecd83"
+    },
+    {
+      "bytes": 62976,
+      "extension": ".doc",
+      "family": "sejm_print",
+      "path": "sejm/term10/files/440__440-ustawa i uzasadnienie.doc",
+      "sha256": "893768ba6e17bba43be43e75e32e0079ff568ed54bb47913714fa90c2c54d66b"
+    },
+    {
+      "bytes": 133632,
+      "extension": ".doc",
+      "family": "sejm_print",
+      "path": "sejm/term10/files/600__600-ustawa.doc",
+      "sha256": "6887f0a0907466ef863ce8a110f0fdbe84684b1acf21434043a281cdfca56817"
+    },
+    {
+      "bytes": 124928,
+      "extension": ".doc",
+      "family": "sejm_print",
+      "path": "sejm/term10/files/601__601-ustawa.doc",
+      "sha256": "71c139e7130eef57e4a4e83da5fd55834edf32fc312eae2940894cff46e0ed08"
+    },
+    {
+      "bytes": 82944,
+      "extension": ".doc",
+      "family": "sejm_print",
+      "path": "sejm/term10/files/603__603-ustawa i uzas.doc",
+      "sha256": "0e70ea8c014eda42d7448feabb77cc67ef55529f6f702d8b15250efefaa464fe"
+    },
+    {
+      "bytes": 96256,
+      "extension": ".doc",
+      "family": "sejm_print",
+      "path": "sejm/term10/files/772__772-ustawa i uzasadnienie.doc",
+      "sha256": "665bab8d1a05dcab885881cf19e003b9daf2fdb496642886a393e8b514fcea2c"
+    },
+    {
+      "bytes": 90112,
+      "extension": ".doc",
+      "family": "sejm_print",
+      "path": "sejm/term10/files/800__800-ustawa.doc",
+      "sha256": "1ef079db5ff39b0de61376f708175e11215a7717c7e4bd2a627cc68ff2511b05"
+    },
+    {
+      "bytes": 45568,
+      "extension": ".doc",
+      "family": "sejm_print",
+      "path": "sejm/term10/files/800__800-uzasadnienie.doc",
+      "sha256": "34b3d18394b1b3c55046953895c153f467461024d19defbe8f9f5cc76218071d"
+    },
+    {
+      "bytes": 136192,
+      "extension": ".doc",
+      "family": "sejm_self_amendment",
+      "path": "sejm/term10/autopoprawki/files/672-A__672-A- autopoprawka.doc",
+      "sha256": "34db1f2c7fb53ff7e5d7f81668ba06e701b16ad40b93c5e9545a83dfae8ed589"
+    },
+    {
+      "bytes": 51200,
+      "extension": ".doc",
+      "family": "senate_resolution",
+      "path": "sejm/supplements/2026-10-16-senate-resolutions/files/0a0666be2c05771f7e4440e925101ce8057ae54249bb31626d62e308a00ef80d.doc",
+      "sha256": "9a978d34ec4813395923606e5366ee11d62be5850f6ee1fc83e7e9acc6cd8245"
+    },
+    {
+      "bytes": 49152,
+      "extension": ".doc",
+      "family": "senate_resolution",
+      "path": "sejm/supplements/2026-10-16-senate-resolutions/files/111d661ebebdb9d543986fe268669febb5d602b5ed16abb7c40540fecc60e017.doc",
+      "sha256": "4046faacba0e2acba73e95ddbb76da864a1baa6ad17e7d0e8a5dc73c9c6716cf"
+    },
+    {
+      "bytes": 52224,
+      "extension": ".doc",
+      "family": "senate_resolution",
+      "path": "sejm/supplements/2026-10-16-senate-resolutions/files/4c58797987a8941334d085df4b77ff535db83c6dbb921fa7c43d967c9df3a495.doc",
+      "sha256": "5676fe74cdaeba89286ee723e77c6869dbfee510dd80aa898e8ccd4dbb7b9e10"
+    },
+    {
+      "bytes": 74752,
+      "extension": ".doc",
+      "family": "senate_resolution",
+      "path": "sejm/supplements/2026-10-16-senate-resolutions/files/66d0bee4d08f4ff35307b2d2a4cb75c4ae78620635d31833a5038488bb713990.doc",
+      "sha256": "eba7e2d2ecb81faec3730e719d04b788b0b3e25dae598a7872737ad0c75ab3d9"
+    },
+    {
+      "bytes": 91648,
+      "extension": ".doc",
+      "family": "senate_resolution",
+      "path": "sejm/supplements/2026-10-16-senate-resolutions/files/7e8f2924d38060bbfc250a2f408a116f23f8a6237e6f06fa416b17a607a9f1c6.doc",
+      "sha256": "53d1614f3957325ba65d1009b72e129decbfee480af7643b5e193fea387dbb8b"
+    },
+    {
+      "bytes": 47616,
+      "extension": ".doc",
+      "family": "senate_resolution",
+      "path": "sejm/supplements/2026-10-16-senate-resolutions/files/921e182f57a8f591c14a11ee5cb166eee28e778256442f6ef493cd1276117ba3.doc",
+      "sha256": "1785323cdd8d0d8f643d49d96b4803720065f4d9ec7eced1c602db0ab3a09e7b"
+    },
+    {
+      "bytes": 121856,
+      "extension": ".doc",
+      "family": "senate_resolution",
+      "path": "sejm/supplements/2026-10-16-senate-resolutions/files/9924a23703bd6f378c3e4e459b78a921e3134e665782f7c83d834f16a847f136.doc",
+      "sha256": "4c453fc16f8bf332646501d44684f116ecbbc9c03046cb63d68b4d5da8871792"
+    },
+    {
+      "bytes": 52224,
+      "extension": ".doc",
+      "family": "senate_resolution",
+      "path": "sejm/supplements/2026-10-16-senate-resolutions/files/b44ab260bdf69661bffe24d72f140168aab8f32a899d30f7f556a674d3891b91.doc",
+      "sha256": "59b62b0dc3a98f816b1f2a49f53d67d8dbe8460e779f1343d3c24854b6c97d8a"
+    },
+    {
+      "bytes": 74752,
+      "extension": ".doc",
+      "family": "senate_resolution",
+      "path": "sejm/supplements/2026-10-16-senate-resolutions/files/cb4a9de84e0db0b62e0d05ad0ebe8df14939f908bf9f8030f40f3d66984a54c1.doc",
+      "sha256": "e6145676ab415eb07fcaf12425a7df7d996cfcb73e6898cbe796099e44e2556e"
+    },
+    {
+      "bytes": 51200,
+      "extension": ".doc",
+      "family": "senate_resolution",
+      "path": "sejm/supplements/2026-10-16-senate-resolutions/files/e8a2d6edc5350c249f64904bc034d2b2950497a24d29520a3f7c87314da49a36.doc",
+      "sha256": "4d579f0dfdd45c700bbb06d13c5b1fe7dbf9ed11c014bb1bf73481045a2ab197"
+    },
+    {
+      "bytes": 43520,
+      "extension": ".doc",
+      "family": "senate_resolution",
+      "path": "sejm/supplements/2026-10-16-senate-resolutions/files/fa9ff03ae06b31c8d4b5b78a2dd0a3f504f0165f851b321fce2073fbbe4281ba.doc",
+      "sha256": "1aaae0cb6e09fb5fbd6ce143e73704ff579d464f45d8c1919a041c997b41987e"
+    }
+  ],
+  "exclusions": [
+    "Embedded DOC/XML leaves outside these roots are not counted as complete archive coverage.",
+    "No independent legal oracle; text/selection must match the prior code."
+  ],
+  "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "inventory_sha256": "14e0f2284114a03189636d4ec3c20d1f9a9a39932cedbd3ec80b2af67adb293e",
+  "scope": "All 404 .doc and 13 .xml raw paths in the J094 six-family inventory; physical routes determined by bytes, not suffix."
+}
