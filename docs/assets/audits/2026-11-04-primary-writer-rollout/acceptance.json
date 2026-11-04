@@ -1,0 +1,33 @@
+{
+  "stage": "J215",
+  "requirement": "DA10.6 bounded observed writer rollout",
+  "accepted_scope": "J187 guarded corroborated same-paid-owner CURRENT/root-primary-memo projection compaction only",
+  "actual_writer_release": "26e8d01f9ef93b761392518c4738f95af5a5ab40",
+  "state_pin": "105de577d682b1f7057e0593aab5c7a408aed740",
+  "offline_comparison": "14 saved PUBLIC old/candidate saves:7CURRENT+7memo; actual original outcomes/DB/SQL/driver artifacts located and verified",
+  "natural_observation": "Exhaustive4boundprimary computations after actualdeployment;1analysis+3reanalysis;3RCL+1print;8modern refs",
+  "selection_rule": "Deployment time+purpose+knownbinding only, no score/publication/compaction success filter",
+  "actual_queues": "122batchitems/0unconsumed,4documentwaiting;0doctorerrors/4preservedwarnings",
+  "lineage": "Four writer/reader/save definitions AST exact since actualwriterrelease; both projection modules exact qualified file pins",
+  "original_public_outcome_sha256": "088f6028054050c55379ab02b88313bb1d3d75efe154f07362c0798c8719f54d",
+  "independent_review": "writer_rollout_review: all explicit bounded DA10.6 requirements supported; original artifacts independently located and checked",
+  "root_review": "Asset hashes, original public outcome equality, driver pins, four AST definitions and exhaustive SQL count independently verified",
+  "no_production_or_paid_actions": true,
+  "source_gate": "Exact unchanged J213 code/source freeze759;7925tests,mypy690,Ruff759; docs gate separately",
+  "limitations": [
+    "Four natural results have no per-item productioncounterfactual pair;14older-state pairedsaves are separate comparativequalification",
+    "Three natural results lack explicit prepared-input source-selection binding",
+    "READY/foreign/frozen and below-minscore natural cases not accepted",
+    "No broadsource-family,physicaldelivery,semanticQA or DA10.7acceptance"
+  ],
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  },
+  "evidence_sha256": {
+    "natural-cohort.json": "4f39caefd545da3f55906c8229e75501d51ea1f7153439a73a4be71449339580",
+    "root-verification.json": "63b76829812d82a50005178915e083e0c7fe96f81d739964891fcb4dd8715085"
+  }
+}

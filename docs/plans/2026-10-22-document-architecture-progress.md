@@ -9891,3 +9891,36 @@ or actual production incident acceptance. Plan74total/42complete/6explicitNA/26a
 
 [Runbook](../operations/architecture-incidents.md),
 [requirement evidence](../assets/audits/2026-11-04-architecture-stop-contract/acceptance.json).
+
+
+<a id="j215"></a>
+
+## J215 — bounded natural primary writer acceptance
+
+4 November 2026. DA10.6 accepts the actual guarded J187 CURRENT/root-primary-memo writer,
+not J094measurement or J106reader. Verified release 26e8d01f plus eight saved modern refs
+from four natural post-release bound results prove activation. Cohort selection is a
+complete census by deployment time/purpose/binding through pin 105de577, with no score,
+publication or compaction-success filter:one analysis/three reanalyses, three RCL/one print.
+
+The original fourteen paired PUBLIC saves on older state412e are actually preserved:
+baseline/candidate DB,SQL,public/physical/slot outcomes and exact driver pins were found.
+Independent reviewer and root verified qualification hash, public equality/digest and
+writer lineage:four AST definitions exact since deployment, both projection modules
+match qualification pins. This is separate same-writer comparative evidence; no natural
+per-item production counterfactual is invented or paid shadow run performed.
+
+Actual queues:122 items/0 unconsumed, 4 document waiting, 0 doctor errors/4 unchanged warnings;
+read-only DB unchanged. One explicit prepared-input receipt, three missing source-selection
+bindings; six frozen publications have result refs without independent delivery proof.
+READY/foreign/frozen/below-minscore natural cases unobserved/excluded, not accepted.
+DA10.7/provenance/semantic gates remain separate. No production or provider action.
+
+Doc-only evidence stage uses unchanged J213 759 source/config gate:7925 tests/mypy690/Ruff759;
+strict staged docs gate precedes commit. Plan:74 total/43 complete/6 explicit NA/25 applicable open.
+J214 5a06b96b exact CI41898429488 and relay41899542963 verified,
+transition9fc→5a0/45shealth/timer.
+
+[Acceptance](../assets/audits/2026-11-04-primary-writer-rollout/acceptance.json),
+[report/limits/recheck](../assets/audits/2026-11-04-primary-writer-rollout/report.md),
+[exhaustive natural matrix](../assets/audits/2026-11-04-primary-writer-rollout/natural-cohort.json).

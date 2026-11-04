@@ -1,0 +1,506 @@
+{
+  "version": 1,
+  "scope": "Read-only metadata matrix; no execution, replay, model, network, production mutation, or physical delivery/legal acceptance.",
+  "state_commit": "105de577d682b1f7057e0593aab5c7a408aed740",
+  "database_sha256": "7a5d80a5d269111188b2d41465d06eaadff47605c04d134019a1a536fa28fcb3",
+  "writer": {
+    "stage": "J187",
+    "release_sha": "26e8d01f9ef93b761392518c4738f95af5a5ab40",
+    "verified_deployment_completed_at": "2026-10-30T18:18:34Z",
+    "mechanism": "Unconditional prospective public save compaction for corroborated same-paid-owner CURRENT/root primary memo; READY, foreign and frozen remain inline; no feature flag stated in writer contract.",
+    "code_paths": [
+      "src/lexinform/adapters/primary_projections.py::PrimaryProjectionReader.compact",
+      "src/lexinform/primary_projections.py::compact_primary_projection"
+    ],
+    "J094_J106_not_writer_activation": true,
+    "lineage_checks": {
+      "src/lexinform/primary_projections.py::compact_primary_projection": {
+        "ast_exact_since_writer_release": true,
+        "current_file_sha256": "d9aae68605e199c8820f40fa3579b88693b58544bd97feb9a2a59d502fd5bf58"
+      },
+      "src/lexinform/adapters/primary_projections.py::PrimaryProjectionReader": {
+        "ast_exact_since_writer_release": true,
+        "current_file_sha256": "f1a99add39c1cf7c96415a69d51c549d6f05ccc0aa2bee1cc10eab742cf63f79"
+      },
+      "src/lexinform/adapters/sqlite_repo.py::save_analysis": {
+        "ast_exact_since_writer_release": true
+      },
+      "src/lexinform/adapters/sqlite_repo.py::save_analysis_memo": {
+        "ast_exact_since_writer_release": true
+      }
+    }
+  },
+  "criterion": "Exhaustive computation_results where purpose in analysis/reanalysis, input_binding non-null, collected_at >= verified J187 deployment completion, through fixed state pin. No relevance, score, delivery, source family or compaction outcome filter.",
+  "representativeness": "Census of all available newly collected bound primary results after writer release in fixed snapshot. Represents this bounded paid-primary writer segment only; excludes prefilter rejects/waiting without a retained computation by criterion, and does not claim their success.",
+  "counts": {
+    "cohort": 4,
+    "purposes": {
+      "reanalysis": 3,
+      "analysis": 1
+    },
+    "source_kinds": {
+      "rcl": 3,
+      "print": 1
+    },
+    "validation": {
+      "validated": 4
+    },
+    "selection_states": {
+      "unverified": 3,
+      "selected": 1
+    },
+    "explicit_old_candidate_pairs": 0,
+    "prepared_input_receipts": 1,
+    "cohort_document_waiting": 0,
+    "below_min_score3": 0,
+    "projection_formats": {
+      "modern_primary_ref": 8
+    },
+    "frozen_publications_with_explicit_result_ref": 6
+  },
+  "cohort": [
+    {
+      "result_id": "result-v1:4aaeb04af4d0fae10d65a963eb776bad410855db84de5459a225b4bcda823a6f",
+      "record_ref": "result-v1:4aaeb04af4d0fae10d65a963eb776bad410855db84de5459a225b4bcda823a6f/record",
+      "record_sha256": "22f95a5436dea6d80001843ceeaf7ab8e88330882d46f41d1d7b32988e49de5e",
+      "owner": [
+        10,
+        "RCL/12400563"
+      ],
+      "purpose": "reanalysis",
+      "source_kind": "rcl",
+      "collected_at": "2026-11-02T22:54:10Z",
+      "validation": "validated",
+      "selection_state": "unverified",
+      "selection_parts": 3,
+      "selection_rejected_parts": 14,
+      "below_min_score3": false,
+      "input_binding": {
+        "term": 10,
+        "number": "RCL/12400563",
+        "reuse_key": "a14389b2edd43345edfe00f4f8da469ff1de5301c18e2501a376e05545b59e81"
+      },
+      "request_sha256": "0c85b87138d626cd4011925137047f4a9da6735b854e3b97bf676b0d16e61181",
+      "batch_item": {
+        "batch_id": "batch_6ae910a9104c819082f32118c1b028cb",
+        "custom_id": "6ced96fbee259150a83885a74e62ceba32107be5757fa7e9fee2938f0f7b06e6",
+        "count": 1,
+        "consumed": true,
+        "accounted": true,
+        "result_present": true
+      },
+      "prepared_input_receipt": {},
+      "source_observations": [],
+      "selection_ids": [],
+      "selection_link_basis": "exact selection JSON equality only; not asserted as original frozen input receipt",
+      "applications": [
+        {
+          "id": 20,
+          "phase": "collection",
+          "outcome": "ready",
+          "reason": "current_generation",
+          "target": null
+        },
+        {
+          "id": 22,
+          "phase": "projection",
+          "outcome": "applied",
+          "reason": "retained_result",
+          "target": null
+        }
+      ],
+      "projections": [
+        {
+          "table": "bills",
+          "owner": [
+            10,
+            "RCL/12400563"
+          ],
+          "column": "analysis_json",
+          "key": null,
+          "format": "modern_primary_ref",
+          "stored_sha256": "8490b47aba1f7fe72a2def3bfc55266595bcb025a1378e3a3e07275df01d7dd1"
+        },
+        {
+          "table": "analysis_memo",
+          "owner": [
+            10,
+            "RCL/12400563"
+          ],
+          "column": "record_json",
+          "key": "a14389b2edd43345edfe00f4f8da469ff1de5301c18e2501a376e05545b59e81",
+          "format": "modern_primary_ref",
+          "stored_sha256": "6c68b1413e7861fbdb7fc47586fc1b09facfe907e8c04073ed33640ef03e9d91"
+        }
+      ],
+      "publications": [],
+      "document_work_refs": [],
+      "old_candidate_outcome_pair": null,
+      "unresolved": [
+        "No explicit prepared-input source-selection binding found in matched batch metadata."
+      ],
+      "old_candidate_pair_note": "No per-item production counterfactual established; not an explicit requirement of DA10.6. Same-writer offline paired qualification is tracked separately."
+    },
+    {
+      "result_id": "result-v1:a9049cf312bc1c654aa03e9114fe98db7a82da64d5d752c1f48c44cae232a4cb",
+      "record_ref": "result-v1:a9049cf312bc1c654aa03e9114fe98db7a82da64d5d752c1f48c44cae232a4cb/record",
+      "record_sha256": "b4cc3fe1deaca85027a87aba2de2fbfe52bbb48cc1fed33b891353b9f8458a81",
+      "owner": [
+        10,
+        "3281"
+      ],
+      "purpose": "analysis",
+      "source_kind": "print",
+      "collected_at": "2026-11-02T22:32:54Z",
+      "validation": "validated",
+      "selection_state": "unverified",
+      "selection_parts": 1,
+      "selection_rejected_parts": 0,
+      "below_min_score3": false,
+      "input_binding": {
+        "term": 10,
+        "number": "3281",
+        "reuse_key": "73740c86c1a59de7e168ced5c68bc0167a26e84cd0524bb671068273e2c6bc15"
+      },
+      "request_sha256": "01ef94189741fdc6ccf764411e5948f33beb890fce313ba109661ea0611d6fb4",
+      "batch_item": {
+        "batch_id": "batch_6ae90e0e97808190805f3734c3e885f1",
+        "custom_id": "a68e831998f32fe644333607e0b9445bd11a3b67887f5175e26fc9f87f575b40",
+        "count": 1,
+        "consumed": true,
+        "accounted": true,
+        "result_present": true
+      },
+      "prepared_input_receipt": {
+        "schema_version": 1,
+        "profile": "primary-single-part-text-v1",
+        "context_sha256": "5aa38da8ae9d532c76859be1bc9ded9ba7a075af166a1e2eeae99e941af06ebc",
+        "request_sha256": "01ef94189741fdc6ccf764411e5948f33beb890fce313ba109661ea0611d6fb4",
+        "text_sha256": "cc4172086103785acbfdd444bed2ccf4eb0a31144f5cff9850b357b0aa0576a8",
+        "source_selection_id": "selection-v1:58156349dd665b89d8bca6cbd65d713b4632ae1292188190a391afe3e0dc999d",
+        "artifact_sha256": "0dca4ba3e9408cfaec7c4d94e347ec2f90544fa202737bd4a68284718958be7c",
+        "extraction_id": "extraction-v1:5fa22a2c272b31d2bd5ad3fd7d3cf2529c773b06f80539b60851a29738035867",
+        "retention": "complete",
+        "segment_count": 2,
+        "full_map_sha256": "b9bab30a454a0414ca96762f882f319aa266c8632489252c7d1137296eba8338"
+      },
+      "source_observations": [
+        {
+          "observation_id": "source-observation-v1:e3ccb19a18d637e34c9838cf901b4a725708b5cca4e55ac84ae955dfdec0dc59",
+          "selection_id": "selection-v1:58156349dd665b89d8bca6cbd65d713b4632ae1292188190a391afe3e0dc999d",
+          "term": 10,
+          "number": "3281",
+          "purpose": "prefilter",
+          "source_kind": "print"
+        },
+        {
+          "observation_id": "source-observation-v1:05cb66bed72975b7ced46a6da62fb3251a4b156082ff3627f1e5078a8d780e04",
+          "selection_id": "selection-v1:58156349dd665b89d8bca6cbd65d713b4632ae1292188190a391afe3e0dc999d",
+          "term": 10,
+          "number": "3281",
+          "purpose": "analysis",
+          "source_kind": "print"
+        }
+      ],
+      "selection_ids": [
+        "selection-v1:58156349dd665b89d8bca6cbd65d713b4632ae1292188190a391afe3e0dc999d"
+      ],
+      "selection_link_basis": "explicit prepared_input_receipt source_selection_id",
+      "applications": [
+        {
+          "id": 17,
+          "phase": "collection",
+          "outcome": "ready",
+          "reason": "current_generation",
+          "target": null
+        },
+        {
+          "id": 18,
+          "phase": "projection",
+          "outcome": "applied",
+          "reason": "retained_result",
+          "target": {
+            "kind": "editorial",
+            "ref": "mnemonic"
+          }
+        },
+        {
+          "id": 19,
+          "phase": "projection",
+          "outcome": "applied",
+          "reason": "batch_result",
+          "target": null
+        }
+      ],
+      "projections": [
+        {
+          "table": "bills",
+          "owner": [
+            10,
+            "3281"
+          ],
+          "column": "analysis_json",
+          "key": null,
+          "format": "modern_primary_ref",
+          "stored_sha256": "a78e9f1e224e8c38dc9cd14972b846f17f04288c624771a6b95eac3f955efe0d"
+        },
+        {
+          "table": "analysis_memo",
+          "owner": [
+            10,
+            "3281"
+          ],
+          "column": "record_json",
+          "key": "73740c86c1a59de7e168ced5c68bc0167a26e84cd0524bb671068273e2c6bc15",
+          "format": "modern_primary_ref",
+          "stored_sha256": "a52c5a7e058ba7dca41c22de7b7bb1fde4016b852466baa925144614f158d462"
+        }
+      ],
+      "publications": [
+        {
+          "id": 258,
+          "kind": "new_bill",
+          "status": "sent",
+          "link_basis": "explicit result ref in frozen delivery snapshot; decoded known bill_json/change_json fields"
+        },
+        {
+          "id": 259,
+          "kind": "agenda",
+          "status": "sent",
+          "link_basis": "explicit result ref in frozen delivery snapshot; decoded known bill_json/change_json fields"
+        },
+        {
+          "id": 261,
+          "kind": "message_part",
+          "status": "sent",
+          "link_basis": "explicit result ref in frozen delivery snapshot; decoded known bill_json/change_json fields"
+        },
+        {
+          "id": 268,
+          "kind": "message_part",
+          "status": "sent",
+          "link_basis": "explicit result ref in frozen delivery snapshot; decoded known bill_json/change_json fields"
+        }
+      ],
+      "document_work_refs": [],
+      "old_candidate_outcome_pair": null,
+      "unresolved": [],
+      "old_candidate_pair_note": "No per-item production counterfactual established; not an explicit requirement of DA10.6. Same-writer offline paired qualification is tracked separately."
+    },
+    {
+      "result_id": "result-v1:ab5f898b57bb42e3e638c43c6d5d2db2cad47f4707167f40cdc7f8e7cab555b1",
+      "record_ref": "result-v1:ab5f898b57bb42e3e638c43c6d5d2db2cad47f4707167f40cdc7f8e7cab555b1/record",
+      "record_sha256": "3ee72cad1a64f7f81f9983e83b486ab6ea890c5853bf8b5b6002bb0a36a55d4a",
+      "owner": [
+        10,
+        "RCL/12409801"
+      ],
+      "purpose": "reanalysis",
+      "source_kind": "rcl",
+      "collected_at": "2026-11-04T08:02:17Z",
+      "validation": "validated",
+      "selection_state": "selected",
+      "selection_parts": 1,
+      "selection_rejected_parts": 6,
+      "below_min_score3": false,
+      "input_binding": {
+        "term": 10,
+        "number": "RCL/12409801",
+        "reuse_key": "c2421478cd9e9be2c424e11953d85008feb75c75b0df377fc82df0278f2f4524"
+      },
+      "request_sha256": "da219a26d72c0b03ca58520023baef5031a814625bc56288133827456147d3a8",
+      "batch_item": {
+        "batch_id": "batch_6aeae11874748190b61229cb9ad3d540",
+        "custom_id": "9db290f59fa65632b9dc4f98377418c335b928b34765c08a89d3b55069966493",
+        "count": 1,
+        "consumed": true,
+        "accounted": true,
+        "result_present": true
+      },
+      "prepared_input_receipt": {},
+      "source_observations": [],
+      "selection_ids": [],
+      "selection_link_basis": "exact selection JSON equality only; not asserted as original frozen input receipt",
+      "applications": [
+        {
+          "id": 25,
+          "phase": "collection",
+          "outcome": "ready",
+          "reason": "current_generation",
+          "target": null
+        },
+        {
+          "id": 26,
+          "phase": "projection",
+          "outcome": "applied",
+          "reason": "retained_result",
+          "target": null
+        }
+      ],
+      "projections": [
+        {
+          "table": "bills",
+          "owner": [
+            10,
+            "RCL/12409801"
+          ],
+          "column": "analysis_json",
+          "key": null,
+          "format": "modern_primary_ref",
+          "stored_sha256": "7d68b3904aa3c6291fee19b97f72f46f81108a822f9db7b328ac914a3f472539"
+        },
+        {
+          "table": "analysis_memo",
+          "owner": [
+            10,
+            "RCL/12409801"
+          ],
+          "column": "record_json",
+          "key": "c2421478cd9e9be2c424e11953d85008feb75c75b0df377fc82df0278f2f4524",
+          "format": "modern_primary_ref",
+          "stored_sha256": "44eeca84618d9af5baaa9099b09c7351ce009625613cf4992eabdc140f549279"
+        }
+      ],
+      "publications": [
+        {
+          "id": 272,
+          "kind": "status_update",
+          "status": "sent",
+          "link_basis": "explicit result ref in frozen delivery snapshot; decoded known bill_json/change_json fields"
+        }
+      ],
+      "document_work_refs": [],
+      "old_candidate_outcome_pair": null,
+      "unresolved": [
+        "No explicit prepared-input source-selection binding found in matched batch metadata."
+      ],
+      "old_candidate_pair_note": "No per-item production counterfactual established; not an explicit requirement of DA10.6. Same-writer offline paired qualification is tracked separately."
+    },
+    {
+      "result_id": "result-v1:f0ed8c1c99f5a7df7c7d33c9f228da785d88b9b607c5778d19659a714c0cced4",
+      "record_ref": "result-v1:f0ed8c1c99f5a7df7c7d33c9f228da785d88b9b607c5778d19659a714c0cced4/record",
+      "record_sha256": "19b289b45751842a9bd2ee0957c7a37f20b761247dc0b2dad298bda6746641c5",
+      "owner": [
+        10,
+        "RCL/12407350"
+      ],
+      "purpose": "reanalysis",
+      "source_kind": "rcl",
+      "collected_at": "2026-11-02T22:54:10Z",
+      "validation": "validated",
+      "selection_state": "unverified",
+      "selection_parts": 3,
+      "selection_rejected_parts": 10,
+      "below_min_score3": false,
+      "input_binding": {
+        "term": 10,
+        "number": "RCL/12407350",
+        "reuse_key": "273a61509195583b675cee5e0a2f305e0d5a49058801b7d06ac57c2a8cd45495"
+      },
+      "request_sha256": "af917502a0a470aa1cb1e1167143699fa96dc6abf732097e1ecd20bff39d8dcd",
+      "batch_item": {
+        "batch_id": "batch_6ae910a9104c819082f32118c1b028cb",
+        "custom_id": "5f805fd4f298356f87ed73eb5fba6df13f3d63e4d6125f1f34d7d0833193e6c8",
+        "count": 1,
+        "consumed": true,
+        "accounted": true,
+        "result_present": true
+      },
+      "prepared_input_receipt": {},
+      "source_observations": [],
+      "selection_ids": [],
+      "selection_link_basis": "exact selection JSON equality only; not asserted as original frozen input receipt",
+      "applications": [
+        {
+          "id": 21,
+          "phase": "collection",
+          "outcome": "ready",
+          "reason": "current_generation",
+          "target": null
+        },
+        {
+          "id": 23,
+          "phase": "projection",
+          "outcome": "applied",
+          "reason": "retained_result",
+          "target": {
+            "kind": "editorial",
+            "ref": "mnemonic"
+          }
+        },
+        {
+          "id": 24,
+          "phase": "projection",
+          "outcome": "applied",
+          "reason": "retained_result",
+          "target": null
+        }
+      ],
+      "projections": [
+        {
+          "table": "bills",
+          "owner": [
+            10,
+            "RCL/12407350"
+          ],
+          "column": "analysis_json",
+          "key": null,
+          "format": "modern_primary_ref",
+          "stored_sha256": "558c911f1d7d7fa82546acbc3a5f289ee4f06a09970ea1fc51b81e450509ed7c"
+        },
+        {
+          "table": "analysis_memo",
+          "owner": [
+            10,
+            "RCL/12407350"
+          ],
+          "column": "record_json",
+          "key": "273a61509195583b675cee5e0a2f305e0d5a49058801b7d06ac57c2a8cd45495",
+          "format": "modern_primary_ref",
+          "stored_sha256": "ea888bd59cc5cef414d1da84e1d27c63cea6fd504ae5065ea459da53a3729cba"
+        }
+      ],
+      "publications": [
+        {
+          "id": 264,
+          "kind": "new_bill",
+          "status": "sent",
+          "link_basis": "explicit result ref in frozen delivery snapshot; decoded known bill_json/change_json fields"
+        }
+      ],
+      "document_work_refs": [],
+      "old_candidate_outcome_pair": null,
+      "unresolved": [
+        "No explicit prepared-input source-selection binding found in matched batch metadata."
+      ],
+      "old_candidate_pair_note": "No per-item production counterfactual established; not an explicit requirement of DA10.6. Same-writer offline paired qualification is tracked separately."
+    }
+  ],
+  "actual_saved_queues": {
+    "batch_items": 122,
+    "unconsumed_batch_items": 0,
+    "document_work_states": {
+      "waiting": 4
+    },
+    "work_doctor_errors": 0,
+    "work_doctor_warnings": 4,
+    "warnings_exact_against_cached": true
+  },
+  "existing_comparative_evidence": {
+    "asset": "docs/assets/audits/2026-10-30-primary-projection-writer/actual-state-qualification.json",
+    "scope": "Paired olda400/candidate PUBLIC7current+7memo saves over older state412e;14 natural eligible slots and all other tables/public outcomes exact. Prospective-copy qualification, not recorded natural old/candidate outcomes of this four-result cohort.",
+    "links_to_cohort_results": "none established",
+    "requirement_interpretation": "DA10.6 does not explicitly require per-item production counterfactual pairs; existing offline old/candidate qualification can support the same writer segment if lineage is established."
+  },
+  "asset_sha256": {
+    "docs/assets/audits/2026-10-30-primary-projection-writer/release.json": "9e4283da6eb656950552dee67617ef34b141f0bbfa04ed28eef93bd4e2fa5fbf",
+    "docs/assets/audits/2026-10-30-primary-projection-writer/actual-state-qualification.json": "a8bd5527eadbdb657a17c5e70036665c8bea0623ee7157ed9d9c582007366686",
+    "docs/assets/audits/2026-10-30-primary-projection-writer/qualification.json": "842b4b6588e20d879755d6ba3949c3e981454b6f2f2b05faa8413bec252a27ee",
+    "out/corpus/j208-doc-note-default/fresh-state/proof.json": "7373877afb317c70287702228385cf721c867975e5f94568192592cd0dd0a5d9",
+    "out/corpus/j208-doc-note-default/fresh-state/direct-sql-equivalence.json": "ccdf719c4d39cd80d77377475392e45a298d5da754e0465075f2e6c76d324a4e",
+    "out/corpus/j208-doc-note-default/fresh-state/work-warning-comparison.json": "8d7c73ff89c299642dbd03bd1cb5be45c790d2d59ca4ddd505aeaca3b9055b55"
+  },
+  "next_safe_action": "Review matrix together with preserved J187 paired14 qualification as evidence for the same bounded writer; assess DA10.6 independently of DA10.7. No extra paired paid/shadow experiment is justified by absent per-item natural counterfactuals.",
+  "database_unchanged": true,
+  "assessment": "Evidence links actual activated writer, preserved same-writer old/candidate qualification, an exhaustive bounded natural cohort, and actual saved queues. No explicit DA10.6 requirement is shown missing solely because natural per-item counterfactual pairs are absent. Typical-material rationale is bounded to census of observed paid-primary writer traffic; rejected-before-paid and READY fallback cases are excluded/unobserved, not successful."
+}
