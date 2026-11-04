@@ -1,0 +1,36 @@
+{
+  "reviewer": "supplement_writer_review",
+  "status": "clear",
+  "owned_source_pins": {
+    "src/lexinform/adapters/supplement_dependencies.py": {
+      "base_sha256": null,
+      "candidate_sha256": "882716e48b8211b6ac84bcdb28e07f32fb6e80485dc345579190a8a42027c0a3"
+    },
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "base_sha256": "b4a73c2093fdb67999ba6ca81f5dbfb29c0134a437d88270b4870e5c2de24215",
+      "candidate_sha256": "7bc3265982f215197113f4df7e5c67224d7fdb11775e52ef4a179cee8c608a88"
+    },
+    "tools/computation_doctor.py": {
+      "base_sha256": "e11c4ae7005ddbe22d26c72e4e7b3d265e953bd2412619ade8ddae060b024fe1",
+      "candidate_sha256": "5744dccdbea25221029b689c1b67694c0250eb523798471afaace68d91ae3b2f"
+    },
+    "tests/unit/test_supplement_dependencies.py": {
+      "base_sha256": null,
+      "candidate_sha256": "3ed3880c544284ccc0f98ce3f2a111b206a06645712c23356c40f3083b7038dc"
+    }
+  },
+  "scope": [
+    "typed status-change supplement carrier only",
+    "retained SQL/JSON ID and purpose/type checks",
+    "unknown legacy/request and foreign owner preserved",
+    "validation before writes and legacy preservation",
+    "shared public reads and scratch restore",
+    "doctor exact indexed issue refs"
+  ],
+  "review_execution": "Text-only; no tests or edits. Root qualification is independent.",
+  "root_fixture_delta": {
+    "path": "tests/unit/test_legacy_projection_writes.py",
+    "sha256": "dc663eb6fa8c5d2f7858970975cf87813d96ef4693786f7dc48e0b14e7f61675",
+    "review": "clear: real retained secondary results on both copies, foreign original owner, original parity assertions unchanged; no weakened production guard"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "stage": "J225 typed supplement result dependencies",
+  "full_tests": 8185,
+  "pytest_xml": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "8185",
+    "time": "278.705",
+    "timestamp": "2026-11-05T00:26:05.444691+01:00",
+    "hostname": "Yauhenis-MacBook-Pro.local"
+  },
+  "new_unit_cases": 9,
+  "new_scenarios": 0,
+  "coverage_percent": 92,
+  "source_config_pins": 782,
+  "source_freeze_exact": true,
+  "mypy_files": 713,
+  "mypy_ruff_format": "green",
+  "focused_root_units": 128,
+  "corrected_legacy_and_supplement_units": 86,
+  "schema_or_serialized_payload_change": false,
+  "state_proof": "state-proofs.json",
+  "superseded_gate": "full.xml/log:4fake-unretained-ID fixture failures,8181passed; fixture now retains real paid secondary results, original parity assertions preserved",
+  "proof_sha256": {
+    "full-v2.xml": "acc8f2f2bb90bbd175b66dfc023865a6a7c6c436aa9fd62c99848d32e1ee2f4c",
+    "full-v2.log": "3cb54fba9e8d116185e72e0194c918ffc7fa8ce3e9d71a625ce92dab683e15df",
+    "source-freeze-v2.json": "1353778d99f1f480db5982bbe27e9ff5384beadc2a69e53469034323c3fac003",
+    "state-proofs.json": "ffaf88dcd7707862a68e8363b3db141439d6222edc7cd416fbfc5e8310adb2b3"
+  },
+  "previous_release": "3a7d066775295acf15ae9e30a1c45fd6a3b00994 exactCI41931909058/relay41932899218 verified",
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  }
+}

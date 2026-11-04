@@ -67,3 +67,5 @@ uv run --frozen python -m tools.qualify_archive_storage \
 [legacy proof](legacy-proof.json), [source pins](source-pins.json),
 [bounded mechanism measurements](bounds.json), [independent review](peer-review.json),
 [previous reader release](previous-release.json).
+
+Actual writer release: [exact CI and relay verification](release.json), commit3a7d0667.

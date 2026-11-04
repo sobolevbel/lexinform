@@ -31,8 +31,10 @@ from lexinform.models import (
     StatusChange,
     SupplementRecord,
 )
+from lexinform.models.batch import BatchKind
 from lexinform.models.legacy_results import canonical_legacy_json, legacy_json
 from lexinform.models.reviews import ReviewPurpose
+from tests.computations import retained_result
 from tests.fakes import make_amendments, make_analysis, make_comparison, make_digest
 
 NOW = datetime(2026, 10, 28, 10, tzinfo=UTC)
@@ -454,6 +456,37 @@ def test_secondary_writers_preserve_all_existing_answer_refs(copies: Copies) -> 
         }
 
 
+def retain_modern_projection(
+    copies: Copies, location: Location, record: dict[str, JsonValue]
+) -> None:
+    purposes: dict[str, BatchKind] = {
+        "supplements_json": "supplement",
+        "amendments_json": "amendments",
+        "joint_json": "joint",
+        "consultation_review_json": "consultation_review",
+        "commission_review_json": "commission_review",
+        "act_application_review_json": "act_application",
+    }
+    purpose = purposes.get(location.column)
+    if purpose is None:
+        record["computation_id"] = "result-v1:" + "a" * 64
+        record["request_sha256"] = "b" * 64
+        return
+    result = retained_result(purpose)
+    assert result.record is not None, "the shared fixture retains a validated typed answer"
+    record["computation_id"] = result.result_id
+    record["request_sha256"] = result.request_sha256
+    result = result.model_copy(
+        update={
+            "term": 9,
+            "number": "original-paid-owner",
+            "record": type(result.record).model_validate(record),
+        }
+    )
+    for repo in copies.repositories:
+        repo.save_computation_result(result)
+
+
 @pytest.mark.parametrize("location", LOCATIONS, ids=lambda location: str(location))
 @pytest.mark.parametrize("replacement", ["answer", "modern"])
 def test_changed_answers_and_modern_refs_take_inline_writer_path(
@@ -463,8 +496,7 @@ def test_changed_answers_and_modern_refs_take_inline_writer_path(
     assert raw is not None, "the fixture seeds every result location"
     record = record_at(legacy_json(raw), location)
     if replacement == "modern":
-        record["computation_id"] = "result-v1:" + "a" * 64
-        record["request_sha256"] = "b" * 64
+        retain_modern_projection(copies, location, record)
     else:
         answer_field = next(
             field

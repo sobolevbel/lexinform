@@ -1,0 +1,24 @@
+{
+  "old105": {
+    "database_sha256": "43965abda162272a982b15d4a2b9e0efea59d625cc7dbf58185dda6c910f8514",
+    "database_unchanged": true,
+    "doctor_entire_report_exact": true,
+    "public_records_exact": 12,
+    "modern_refs": 1,
+    "double_restore_exact": true,
+    "canonical_dump_sha256": "021b0a00cfae94b541f1b609f6de76b96c5c2dceb0c338ebeae81e5ae7b6fc04",
+    "errors": 0,
+    "warnings": 0
+  },
+  "fresh7b208": {
+    "database_sha256": "3ca8e3c7f1b9d94aaceb6c775168fccf6f56711a3076f93b7554ce0720b815a9",
+    "database_unchanged": true,
+    "doctor_entire_report_exact": true,
+    "public_records_exact": 12,
+    "modern_refs": 1,
+    "double_restore_exact": true,
+    "canonical_dump_sha256": "a77d9bdb976afe4df72199ac46346a6b8421289b5a29b7f2cfb9febc85c058fd",
+    "errors": 0,
+    "warnings": 0
+  }
+}

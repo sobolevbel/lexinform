@@ -78,6 +78,10 @@ from lexinform.adapters.source_omissions import (
     read_source_omission,
     validate_source_omissions,
 )
+from lexinform.adapters.supplement_dependencies import (
+    validate_status_supplement_dependencies,
+    validate_supplement_dependencies,
+)
 from lexinform.content_sources import (
     SOURCE_CONTEXT_INVALID,
     SourceContextInvalidError,
@@ -1269,6 +1273,7 @@ class SqliteBillRepository:
             validate_extraction_results(scratch)
             _validate_legacy_projections(scratch)
             validate_primary_projections(scratch)
+            validate_status_supplement_dependencies(scratch)
             validate_document_work(scratch)
             validate_candidate_disposition_traces(scratch)
             _validate_rcl_letter_uses(scratch)
@@ -5325,6 +5330,7 @@ class SqliteBillRepository:
         return [f"{r['number']} {r['kind']}" for r in rows]
 
     def add_status_change(self, change: StatusChange) -> int | None:
+        validate_supplement_dependencies(self._conn, change.supplements)
         try:
             cur = self._conn.execute(
                 """
@@ -5379,6 +5385,7 @@ class SqliteBillRepository:
     def save_status_change_supplements(
         self, change_id: int, records: list[SupplementRecord]
     ) -> None:
+        validate_supplement_dependencies(self._conn, records)
         encoded = _supplements_json(records)
         preserved = self._preserve_legacy_json(
             encoded if encoded is not None else "[]",
@@ -5930,8 +5937,12 @@ class SqliteBillRepository:
             last_checked_at=datetime.fromisoformat(row["last_checked_at"]),
         )
 
-    @staticmethod
-    def _row_to_status_change(row: sqlite3.Row) -> StatusChange:
+    def _row_to_status_change(self, row: sqlite3.Row) -> StatusChange:
+        supplements = [
+            SupplementRecord.model_validate(value)
+            for value in json.loads(row["supplements_json"] or "[]")
+        ]
+        validate_supplement_dependencies(self._conn, supplements)
         return StatusChange(
             id=int(row["id"]),
             term=int(row["term"]),
@@ -5951,10 +5962,7 @@ class SqliteBillRepository:
                 if row["amendments_json"]
                 else None
             ),
-            supplements=[
-                SupplementRecord.model_validate(r)
-                for r in json.loads(row["supplements_json"] or "[]")
-            ],
+            supplements=supplements,
             detected_at=datetime.fromisoformat(row["detected_at"]),
         )
 

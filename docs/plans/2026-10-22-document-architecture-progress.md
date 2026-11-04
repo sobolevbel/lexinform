@@ -10236,3 +10236,30 @@ DA4.1/DA4.4 remain partial;74total/43complete/6explicitNA/25applicableopen.
 [Report and boundaries](../assets/audits/2026-11-05-archive-disposition-writer/report.md),
 [qualification](../assets/audits/2026-11-05-archive-disposition-writer/qualification.json),
 [corpus proof](../assets/audits/2026-11-05-archive-disposition-writer/corpus-proof.json).
+
+<a id="j225"></a>
+
+## J225 — typed supplement retained-result dependencies
+
+5 November 2026. Actual gap: generic doctor follows result IDs and request hashes but cannot
+prove a typed supplement points at a supplement result. One shared adapter guard now serves
+public add/save/get/list, scratch restore and doctor for status_changes.supplements_json.
+Known IDs require exact retained SQL/JSON identity, validated supplement purpose/record and
+compatible known request SHA. Invalid references fail before state replacement or legacy
+preservation writes. bills.supplements_json is a seen-number ledger and stays untouched.
+
+Unknown legacy IDs/checksums, original paid owner and changed delivery/display fields remain
+valid. No inferred owner/answer equality, new schema/fields, payload size, selection/extraction,
+provider or delivery behavior. Other secondary carriers remain outside this bounded contract.
+
+Nine new unit cases/no new scenarios;128root focused units,mypy713/Ruff/formatgreen.
+Independent four-file review clear. Root historical105 and freshly fetched7b208 state each
+have12typed records/1modern reference: public values and ENTIREdoctor reports exact,0errors/
+0warnings,double canonical dump/restore exact,source DB hashes unchanged. No production
+processing, paid calls or writes to state/corpus. Full gate8185tests/278.705s/92%,mypy713/Ruff/formatgreen;782source/config pins exact. First fullgate4fake-IDfixture failures superseded by realretainedresult fixture and finalv2;86legacy/supplement units green. Strict staged docs gate precedes commit.
+J2243a7d0667 exactCI41931909058/relay41932899218 verified;45shealth/timer proof linked with writer report.
+DA10.2/DA10.7 partial;74total/43complete/6explicitNA/25applicableopen.
+
+[Report](../assets/audits/2026-11-05-supplement-dependencies/report.md),
+[qualification](../assets/audits/2026-11-05-supplement-dependencies/qualification.json),
+[state proofs](../assets/audits/2026-11-05-supplement-dependencies/state-proofs.json).
