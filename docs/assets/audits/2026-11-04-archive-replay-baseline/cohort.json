@@ -1,0 +1,1879 @@
+{
+  "version": 1,
+  "status": "proposal_only",
+  "created_at": "2026-11-04T21:09:14.733108+00:00",
+  "corpus_root": "/Users/sobaleu/projects/lexinform-corpus",
+  "index_sha256_before": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "index_sha256_after": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "corpus_metadata_pins": {
+    "INDEX.json": {
+      "sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+      "bytes": 2027122
+    },
+    "documents/index.json": {
+      "sha256": "2909d71cab80b549771d5f1eaa51bf0b9c8c01e3088392264fee9424f590df2a",
+      "bytes": 13970753
+    },
+    "corpus/12365005.json": {
+      "sha256": "1881c48174337cee030abfc22276f46e423f50f3b39c998778e80ebe08376e88",
+      "bytes": 34438
+    },
+    "corpus/12385551.json": {
+      "sha256": "b363d4845f242c19e4b2c1896d57719aa5a51ad0983505cf4339c16dcd3f39dd",
+      "bytes": 38192
+    },
+    "corpus/12392802.json": {
+      "sha256": "2b5ce8f8122065a593c0596cadd295eccd60e79246e242dd3baf2f7a90cfa29a",
+      "bytes": 18583
+    },
+    "corpus/12395102.json": {
+      "sha256": "60102a5085585fb52db4d59187c9da760f90d2ac8d304cdf75b69cb0b61c7d85",
+      "bytes": 9971
+    },
+    "corpus/12389503.json": {
+      "sha256": "926b3d3832a420ef26988934eb66381938ae51afd4673d5255d6078556696294",
+      "bytes": 44325
+    },
+    "corpus/12383852.json": {
+      "sha256": "170cb9dccdedd3bc1707b02b23f67f6835d08ebda224b3b7a011b37027c74fb6",
+      "bytes": 42545
+    },
+    "corpus/12390254.json": {
+      "sha256": "f2b3014a6b8dd26db435bda7d4955ba12a55249f144905a650cb48ff60581869",
+      "bytes": 21944
+    },
+    "corpus/12397401.json": {
+      "sha256": "f0ac956f5754af7aefa3f137218ab5f79776bc267ded91f4fe71d77c35596e24",
+      "bytes": 19648
+    },
+    "corpus/12386961.json": {
+      "sha256": "0451cc828ec50a19d1e753d4bc588a076f76cbec6a43e9dd31ddbd485c791359",
+      "bytes": 75612
+    },
+    "corpus/12405004.json": {
+      "sha256": "51e19ff88e4891ae8f941d7c3b79b9cbec828444849f17a41f8569036adbc07c",
+      "bytes": 28544
+    },
+    "corpus/12403752.json": {
+      "sha256": "9609160a0e0c0555a66e5427ec2668f2ba73708d46682e230052bc0fb715513e",
+      "bytes": 22881
+    },
+    "corpus/12403302.json": {
+      "sha256": "5bcaecc716474d208d764771e6bd8f7def6162ef32972e9415579ae4a893135c",
+      "bytes": 24372
+    },
+    "corpus/12409050.json": {
+      "sha256": "616d849a6de742d3f7c224a7bccb98dd3fab08d6514fc1bce95893e27a7c4eba",
+      "bytes": 35106
+    }
+  },
+  "repo_entrypoint_and_evidence_pins": {
+    "tools/replay_document_candidates.py": {
+      "sha256": "092871d75514d3792d7fb2f827744a7f9e5b6816ecc71933da2c138b3b4bf710",
+      "bytes": 4309
+    },
+    "tools/replay_document_selection.py": {
+      "sha256": "41ffc014c9b1904c0fd834d22c0e1afa5f540d97ce76a5e7c3b7d239ee582539",
+      "bytes": 5100
+    },
+    "tools/corpus_rcl.py": {
+      "sha256": "144c59885936478463c80cee3bce40a489f7c40084ff7dbdeb4cb3c240a5752e",
+      "bytes": 4995
+    },
+    "tools/corpus_physical.py": {
+      "sha256": "ac76510715ed52be7448a817eb9e5575e66aa3aa587b719a2b98dbed5ca3e45c",
+      "bytes": 15160
+    },
+    "tools/replay_doc_notes.py": {
+      "sha256": "211093fcdee97112b326561971f01b04301411e4e5c51545c9a307fb5455b352",
+      "bytes": 15891
+    },
+    "docs/assets/audits/2026-10-17-document-selection-implementation/package-acceptance.json.gz": {
+      "sha256": "b71eb404ec36c809eeb09391b9f2cd926089c3fe8566510da0baab0720deba29",
+      "bytes": 180973
+    },
+    "docs/assets/audits/2026-10-17-document-bundle/packages.json.gz": {
+      "sha256": "b71eb404ec36c809eeb09391b9f2cd926089c3fe8566510da0baab0720deba29",
+      "bytes": 180973
+    },
+    "docs/assets/audits/2026-10-30-physical-policy/affected-manifest.json": {
+      "sha256": "786c661800f8ba30d4263753c80d1cbcd5c0f924f4b2a9b85e14f300fbae1100",
+      "bytes": 410020
+    },
+    "docs/assets/audits/2026-10-30-physical-policy/affected-summary.json": {
+      "sha256": "81add89fde0d1b9c1497e74c8164193475506c88d113035b07380e31228a688e",
+      "bytes": 197443
+    }
+  },
+  "selection_recipe": {
+    "population": "documents/index.json rows with extension.lower()==zip",
+    "seed": "11 explicit IDs in tools/replay_document_selection.py",
+    "strata": "add min (metadata bytes or 0, numeric id) existing raw file for each folder and text_role; add minimum document.cached_empty ZIP",
+    "notes": "No raw ZIP corpus scan; only selected top-level central-directory headers and selected file hashes read."
+  },
+  "summary": {
+    "indexed_zip_count": 1803,
+    "indexed_zip_metadata_bytes": 2893623292,
+    "selected_zip_count": 16,
+    "selected_raw_bytes": 14377628,
+    "excluded_indexed_zip_count": 1787,
+    "selected_with_nested_zip_headers": 7,
+    "selected_nested_zip_headers": 12,
+    "selected_top_level_members": 80,
+    "selected_duplicate_name_excess": 0,
+    "prior_legacy_replay_packages": 69,
+    "prior_legacy_replay_metadata_bytes": 421732063
+  },
+  "cases": [
+    {
+      "id": 618466,
+      "selection_reasons": [
+        "legacy_replay_explicit_id"
+      ],
+      "raw": {
+        "path": "documents/files/618466.zip",
+        "sha256": "c895aac5acdf06e9ddaacc2958b6b968189190afc0e162c9cded7cd63e79904d",
+        "bytes": 3220145,
+        "metadata_bytes": 3220145
+      },
+      "official_metadata": {
+        "project": 12365005,
+        "folder": "project",
+        "name": "Projekt ustawy o zmianie ustawy o przygotowaniu i realizacji strategicznych inwestycji w zakresie sieci przesyłowych oraz niektórych innych ustaw (UD437), KRM-0610-13-23.zip",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12365005/12918258/12918260/dokument618466.zip",
+        "created": "2023-04-25",
+        "extension": "zip",
+        "chars": 62291,
+        "text_role": "bill",
+        "document_kind": "bill",
+        "extract_error": null
+      },
+      "project_record": "corpus/12365005.json",
+      "index_case_membership": [
+        "document.bill"
+      ],
+      "cache": {
+        "path": "documents/text/618466.txt.gz",
+        "exists": true,
+        "bytes": 17518,
+        "sha256": "4ed0a6b2da3db42bc2ec2a38ddcf923c4b1cfa6d600807620e686d69671cace3"
+      },
+      "prior_package_replay": {
+        "path": "docs/assets/audits/2026-10-17-document-selection-implementation/package-acceptance.json.gz",
+        "present": true,
+        "raw_sha256": "c895aac5acdf06e9ddaacc2958b6b968189190afc0e162c9cded7cd63e79904d",
+        "matches_current": true
+      },
+      "top_level_headers": [
+        {
+          "ordinal": 0,
+          "name": "opinia MUE (2563127).pdf",
+          "directory": false,
+          "compressed_bytes": 126419,
+          "expanded_bytes": 147340,
+          "crc32": 1435306013,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 0
+        },
+        {
+          "ordinal": 1,
+          "name": "OSR Specustawa (2563125).docx",
+          "directory": false,
+          "compressed_bytes": 38107,
+          "expanded_bytes": 41177,
+          "crc32": 3713154541,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 126473
+        },
+        {
+          "ordinal": 2,
+          "name": "pismo MKiS na SKRM (2563130).docx",
+          "directory": false,
+          "compressed_bytes": 2824966,
+          "expanded_bytes": 2979462,
+          "crc32": 3069892111,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 164639
+        },
+        {
+          "ordinal": 3,
+          "name": "Projekt ustawy (2563136).docx",
+          "directory": false,
+          "compressed_bytes": 46485,
+          "expanded_bytes": 51015,
+          "crc32": 1923081202,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 2989668
+        },
+        {
+          "ordinal": 4,
+          "name": "RAPORT Z KONSULTACJI I OPINIOWANIA SPECUSTAWA (2563132).docx",
+          "directory": false,
+          "compressed_bytes": 14401,
+          "expanded_bytes": 17127,
+          "crc32": 177725768,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 3036212
+        },
+        {
+          "ordinal": 5,
+          "name": "tabela - konsultacje publiczne (2563134).docx",
+          "directory": false,
+          "compressed_bytes": 109568,
+          "expanded_bytes": 112341,
+          "crc32": 981700373,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 3050703
+        },
+        {
+          "ordinal": 6,
+          "name": "tabela - opiniowanie specustawa (2563128).docx",
+          "directory": false,
+          "compressed_bytes": 14171,
+          "expanded_bytes": 16908,
+          "crc32": 2403182330,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 3160346
+        },
+        {
+          "ordinal": 7,
+          "name": "Uzasadnienie do projektu (2563138).docx",
+          "directory": false,
+          "compressed_bytes": 24624,
+          "expanded_bytes": 27574,
+          "crc32": 2471267266,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 3174593
+        },
+        {
+          "ordinal": 8,
+          "name": "Zalacznik do ustawy_lista inwestycji (2563140).docx",
+          "directory": false,
+          "compressed_bytes": 19662,
+          "expanded_bytes": 22334,
+          "crc32": 1257771470,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 3199286
+        }
+      ],
+      "header_summary": {
+        "header_error": null,
+        "member_count": 9,
+        "nested_zip_ordinals": [],
+        "duplicate_name_excess": 0,
+        "expanded_bytes_declared": 3415278,
+        "members_declared_over_32MB": 0,
+        "encrypted_headers": 0
+      }
+    },
+    {
+      "id": 668487,
+      "selection_reasons": [
+        "min_metadata_bytes_then_id:folder=letters",
+        "min_metadata_bytes_then_id:text_role=None",
+        "min_metadata_bytes_then_id:document.cached_empty"
+      ],
+      "raw": {
+        "path": "documents/files/668487.zip",
+        "sha256": "664d11e97ddb90fd73e537bd9d598a443896341be1d899b8bf36e9734b71d0d2",
+        "bytes": 19356,
+        "metadata_bytes": 19356
+      },
+      "official_metadata": {
+        "project": 12385551,
+        "folder": "letters",
+        "name": "Tabela uwag.zip",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12385551/13060522/13060524/dokument668487.zip",
+        "created": "2024-05-27",
+        "extension": "zip",
+        "chars": 0,
+        "text_role": null,
+        "document_kind": null,
+        "extract_error": null
+      },
+      "project_record": "corpus/12385551.json",
+      "index_case_membership": [
+        "document.None",
+        "document.cached_empty",
+        "rcl.letters"
+      ],
+      "cache": {
+        "path": "documents/text/668487.txt.gz",
+        "exists": true,
+        "bytes": 20,
+        "sha256": "4646e6e54482463f2de8de9c00cf26807d0483245054d60da247f8c92094c335"
+      },
+      "prior_package_replay": {
+        "path": "docs/assets/audits/2026-10-17-document-selection-implementation/package-acceptance.json.gz",
+        "present": false,
+        "raw_sha256": null,
+        "matches_current": null
+      },
+      "top_level_headers": [
+        {
+          "ordinal": 0,
+          "name": "Tabela uwag.docx",
+          "directory": false,
+          "compressed_bytes": 14866,
+          "expanded_bytes": 18339,
+          "crc32": 2792360278,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 0
+        },
+        {
+          "ordinal": 1,
+          "name": "Tabela uwag.docx.xades",
+          "directory": false,
+          "compressed_bytes": 4240,
+          "expanded_bytes": 7609,
+          "crc32": 2133913797,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 14912
+        }
+      ],
+      "header_summary": {
+        "header_error": null,
+        "member_count": 2,
+        "nested_zip_ordinals": [],
+        "duplicate_name_excess": 0,
+        "expanded_bytes_declared": 25948,
+        "members_declared_over_32MB": 0,
+        "encrypted_headers": 0
+      }
+    },
+    {
+      "id": 698086,
+      "selection_reasons": [
+        "min_metadata_bytes_then_id:text_role=osr"
+      ],
+      "raw": {
+        "path": "documents/files/698086.zip",
+        "sha256": "1d8e7011a4e1c0820769a5b548ecf6ab6460c262d41da82f487def4de412d619",
+        "bytes": 64800,
+        "metadata_bytes": 64800
+      },
+      "official_metadata": {
+        "project": 12392802,
+        "folder": "project",
+        "name": "OSR ust_o_uchyleniu_CIE.zip",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12392802/13102688/13102689/dokument698086.zip",
+        "created": "2024-12-20",
+        "extension": "zip",
+        "chars": 13188,
+        "text_role": "osr",
+        "document_kind": "osr",
+        "extract_error": null
+      },
+      "project_record": "corpus/12392802.json",
+      "index_case_membership": [
+        "document.osr"
+      ],
+      "cache": {
+        "path": "documents/text/698086.txt.gz",
+        "exists": true,
+        "bytes": 5269,
+        "sha256": "d5c85c7a93821d3aa431463d3716da0ed31ad2ab35e81281104a76a8add5d925"
+      },
+      "prior_package_replay": {
+        "path": "docs/assets/audits/2026-10-17-document-selection-implementation/package-acceptance.json.gz",
+        "present": false,
+        "raw_sha256": null,
+        "matches_current": null
+      },
+      "top_level_headers": [
+        {
+          "ordinal": 0,
+          "name": "OSR ust_o_uchyleniu_CIE.docx",
+          "directory": false,
+          "compressed_bytes": 57826,
+          "expanded_bytes": 60830,
+          "crc32": 1173615459,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 0
+        },
+        {
+          "ordinal": 1,
+          "name": "OSR ust_o_uchyleniu_CIE.docx.xades",
+          "directory": false,
+          "compressed_bytes": 6676,
+          "expanded_bytes": 11643,
+          "crc32": 1224214590,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 57884
+        }
+      ],
+      "header_summary": {
+        "header_error": null,
+        "member_count": 2,
+        "nested_zip_ordinals": [],
+        "duplicate_name_excess": 0,
+        "expanded_bytes_declared": 72473,
+        "members_declared_over_32MB": 0,
+        "encrypted_headers": 0
+      }
+    },
+    {
+      "id": 709230,
+      "selection_reasons": [
+        "legacy_replay_explicit_id"
+      ],
+      "raw": {
+        "path": "documents/files/709230.zip",
+        "sha256": "c1aa5cd0b987c5aebf5ad2b56d83698d6891232b772f5bb9e44905f552e48ce4",
+        "bytes": 210351,
+        "metadata_bytes": 210351
+      },
+      "official_metadata": {
+        "project": 12395102,
+        "folder": "project",
+        "name": "Projekt ustawy o zmianie ustawy o planowaniu i zagospodarowaniu przestrzennym oraz niektórych innych ustaw (UD198), RM-0610-23-25.zip",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12395102/13113851/13113852/dokument709230.zip",
+        "created": "2025-03-20",
+        "extension": "zip",
+        "chars": 0,
+        "text_role": "bill",
+        "document_kind": null,
+        "extract_error": null
+      },
+      "project_record": "corpus/12395102.json",
+      "index_case_membership": [
+        "document.None",
+        "document.cached_empty"
+      ],
+      "cache": {
+        "path": "documents/text/709230.txt.gz",
+        "exists": true,
+        "bytes": 20,
+        "sha256": "5856d4164e145661539dd359e55090fb70ce112196402fc9712d9a24eee83f34"
+      },
+      "prior_package_replay": {
+        "path": "docs/assets/audits/2026-10-17-document-selection-implementation/package-acceptance.json.gz",
+        "present": true,
+        "raw_sha256": "c1aa5cd0b987c5aebf5ad2b56d83698d6891232b772f5bb9e44905f552e48ce4",
+        "matches_current": true
+      },
+      "top_level_headers": [
+        {
+          "ordinal": 0,
+          "name": "Pismo MRiT na RM.pdf",
+          "directory": false,
+          "compressed_bytes": 78489,
+          "expanded_bytes": 88456,
+          "crc32": 684249144,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 0
+        },
+        {
+          "ordinal": 1,
+          "name": "projekt ustawy, uzasadnienie, OSR.zip",
+          "directory": false,
+          "compressed_bytes": 131502,
+          "expanded_bytes": 131554,
+          "crc32": 4199115632,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 78539
+        }
+      ],
+      "header_summary": {
+        "header_error": null,
+        "member_count": 2,
+        "nested_zip_ordinals": [
+          1
+        ],
+        "duplicate_name_excess": 0,
+        "expanded_bytes_declared": 220010,
+        "members_declared_over_32MB": 0,
+        "encrypted_headers": 0
+      }
+    },
+    {
+      "id": 711435,
+      "selection_reasons": [
+        "legacy_replay_explicit_id"
+      ],
+      "raw": {
+        "path": "documents/files/711435.zip",
+        "sha256": "819b2d2700db7a4789d387b6a7433897b7edff6b34d44cd84b2b4dff94cae94a",
+        "bytes": 657119,
+        "metadata_bytes": 657119
+      },
+      "official_metadata": {
+        "project": 12389503,
+        "folder": "project",
+        "name": "Projekt ustawy",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12389503/13080864/13080865/dokument711435.zip",
+        "created": "2025-04-02",
+        "extension": "zip",
+        "chars": 0,
+        "text_role": "bill",
+        "document_kind": null,
+        "extract_error": null
+      },
+      "project_record": "corpus/12389503.json",
+      "index_case_membership": [
+        "document.None",
+        "document.cached_empty"
+      ],
+      "cache": {
+        "path": "documents/text/711435.txt.gz",
+        "exists": true,
+        "bytes": 20,
+        "sha256": "1f513b25b7c74ed98ea8096224cd98a5657694d100696a343c8aaed54cdab47b"
+      },
+      "prior_package_replay": {
+        "path": "docs/assets/audits/2026-10-17-document-selection-implementation/package-acceptance.json.gz",
+        "present": true,
+        "raw_sha256": "819b2d2700db7a4789d387b6a7433897b7edff6b34d44cd84b2b4dff94cae94a",
+        "matches_current": true
+      },
+      "top_level_headers": [
+        {
+          "ordinal": 0,
+          "name": "MRiT_KRMC_pismo_przewodnie_UD110_20250321 (Załącznik - RPW_19147_2025).pdf",
+          "directory": false,
+          "compressed_bytes": 129856,
+          "expanded_bytes": 143580,
+          "crc32": 1242901757,
+          "compression": 8,
+          "flag_bits": 2056,
+          "header_offset": 0
+        },
+        {
+          "ordinal": 1,
+          "name": "1__Projekt_ustawy (Załącznik - RPW_19147_2025).zip",
+          "directory": false,
+          "compressed_bytes": 197437,
+          "expanded_bytes": 197413,
+          "crc32": 195870520,
+          "compression": 8,
+          "flag_bits": 2056,
+          "header_offset": 130010
+        },
+        {
+          "ordinal": 2,
+          "name": "2__Pozostałe_załączniki_do_wniosku (Załącznik - RPW_19147_2025).zip",
+          "directory": false,
+          "compressed_bytes": 328960,
+          "expanded_bytes": 328848,
+          "crc32": 669944223,
+          "compression": 8,
+          "flag_bits": 2056,
+          "header_offset": 327577
+        }
+      ],
+      "header_summary": {
+        "header_error": null,
+        "member_count": 3,
+        "nested_zip_ordinals": [
+          1,
+          2
+        ],
+        "duplicate_name_excess": 0,
+        "expanded_bytes_declared": 669841,
+        "members_declared_over_32MB": 0,
+        "encrypted_headers": 0
+      }
+    },
+    {
+      "id": 711610,
+      "selection_reasons": [
+        "legacy_replay_explicit_id"
+      ],
+      "raw": {
+        "path": "documents/files/711610.zip",
+        "sha256": "1c43e9cc66d6d8d189e867d54d17ee8c643d8e3232749d91e163d17662b5538c",
+        "bytes": 4510434,
+        "metadata_bytes": 4510434
+      },
+      "official_metadata": {
+        "project": 12383852,
+        "folder": "project",
+        "name": "tekst ostateczny projektu ustawy o zmianie ustawy o społecznych formach rozwoju mieszkalnictwa oraz niektórych innych ustaw (UA7), RM-0610-19-25.zip",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12383852/13050751/13050752/dokument711610.zip",
+        "created": "2025-04-04",
+        "extension": "zip",
+        "chars": 321361,
+        "text_role": "bill",
+        "document_kind": "bill",
+        "extract_error": null
+      },
+      "project_record": "corpus/12383852.json",
+      "index_case_membership": [
+        "document.bill"
+      ],
+      "cache": {
+        "path": "documents/text/711610.txt.gz",
+        "exists": true,
+        "bytes": 90597,
+        "sha256": "793e9958e266cc638e299173e0370fa677c2ab021cb4c1b7380f983e93ae056d"
+      },
+      "prior_package_replay": {
+        "path": "docs/assets/audits/2026-10-17-document-selection-implementation/package-acceptance.json.gz",
+        "present": true,
+        "raw_sha256": "1c43e9cc66d6d8d189e867d54d17ee8c643d8e3232749d91e163d17662b5538c",
+        "matches_current": true
+      },
+      "top_level_headers": [
+        {
+          "ordinal": 0,
+          "name": "Pismo przekaz.pdf",
+          "directory": false,
+          "compressed_bytes": 107990,
+          "expanded_bytes": 120386,
+          "crc32": 1481711640,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 0
+        },
+        {
+          "ordinal": 1,
+          "name": "Zal. 2-9 do proj. ustawy UA7 (19.03.25) (7453684).zip",
+          "directory": false,
+          "compressed_bytes": 4086096,
+          "expanded_bytes": 4086096,
+          "crc32": 1230616337,
+          "compression": 0,
+          "flag_bits": 0,
+          "header_offset": 108037
+        },
+        {
+          "ordinal": 2,
+          "name": "Zal.zip",
+          "directory": false,
+          "compressed_bytes": 315836,
+          "expanded_bytes": 318266,
+          "crc32": 760951517,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 4194216
+        }
+      ],
+      "header_summary": {
+        "header_error": null,
+        "member_count": 3,
+        "nested_zip_ordinals": [
+          1,
+          2
+        ],
+        "duplicate_name_excess": 0,
+        "expanded_bytes_declared": 4524748,
+        "members_declared_over_32MB": 0,
+        "encrypted_headers": 0
+      }
+    },
+    {
+      "id": 712314,
+      "selection_reasons": [
+        "legacy_replay_explicit_id"
+      ],
+      "raw": {
+        "path": "documents/files/712314.zip",
+        "sha256": "3fa07de3dcc71492f729fc953b1b2eff00a8796691f7bea18a8f9b643f44dd68",
+        "bytes": 576111,
+        "metadata_bytes": 576111
+      },
+      "official_metadata": {
+        "project": 12390254,
+        "folder": "project",
+        "name": "Projekt ustawy o zmianie ustawy o nieodpłatnej pomocy prawnej, nieodpłatnym poradnictwie obywatelskim oraz edukacji prawnej (UD69), RM-0610-31-25.zip",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12390254/13086437/13086438/dokument712314.zip",
+        "created": "2025-04-09",
+        "extension": "zip",
+        "chars": 8528,
+        "text_role": "bill",
+        "document_kind": "justification",
+        "extract_error": null
+      },
+      "project_record": "corpus/12390254.json",
+      "index_case_membership": [
+        "document.justification"
+      ],
+      "cache": {
+        "path": "documents/text/712314.txt.gz",
+        "exists": true,
+        "bytes": 3117,
+        "sha256": "4863b8df2ac2c7c133fcd091c57761143cd09bc6c4cc86ddfe3f4ad75c716978"
+      },
+      "prior_package_replay": {
+        "path": "docs/assets/audits/2026-10-17-document-selection-implementation/package-acceptance.json.gz",
+        "present": true,
+        "raw_sha256": "3fa07de3dcc71492f729fc953b1b2eff00a8796691f7bea18a8f9b643f44dd68",
+        "matches_current": true
+      },
+      "top_level_headers": [
+        {
+          "ordinal": 0,
+          "name": "Pismo MS do Sekretarza RM_skierowanie projektu na RM (2).pdf",
+          "directory": false,
+          "compressed_bytes": 126316,
+          "expanded_bytes": 138171,
+          "crc32": 2157499197,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 0
+        },
+        {
+          "ordinal": 1,
+          "name": "PROJ.zip",
+          "directory": false,
+          "compressed_bytes": 192299,
+          "expanded_bytes": 192785,
+          "crc32": 3917241779,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 126406
+        },
+        {
+          "ordinal": 2,
+          "name": "PROJ_UST_zm.zip",
+          "directory": false,
+          "compressed_bytes": 103629,
+          "expanded_bytes": 104020,
+          "crc32": 3211964105,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 318743
+        },
+        {
+          "ordinal": 3,
+          "name": "Raport z konsultacji_zm.zip",
+          "directory": false,
+          "compressed_bytes": 97059,
+          "expanded_bytes": 97788,
+          "crc32": 1788597290,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 422417
+        },
+        {
+          "ordinal": 4,
+          "name": "Zestawienie nieuwzględnionych uwag  zgłoszonych w ramach opiniowania_UD69.docx",
+          "directory": false,
+          "compressed_bytes": 55672,
+          "expanded_bytes": 59106,
+          "crc32": 3927308766,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 519533
+        }
+      ],
+      "header_summary": {
+        "header_error": null,
+        "member_count": 5,
+        "nested_zip_ordinals": [
+          1,
+          2,
+          3
+        ],
+        "duplicate_name_excess": 0,
+        "expanded_bytes_declared": 591870,
+        "members_declared_over_32MB": 0,
+        "encrypted_headers": 0
+      }
+    },
+    {
+      "id": 718474,
+      "selection_reasons": [
+        "legacy_replay_explicit_id"
+      ],
+      "raw": {
+        "path": "documents/files/718474.zip",
+        "sha256": "0f48616f8de6a152c46f239af1bdbd062cc97c56bd3f830be071a870370070c3",
+        "bytes": 228103,
+        "metadata_bytes": 228103
+      },
+      "official_metadata": {
+        "project": 12397401,
+        "folder": "project",
+        "name": "Projekt ustawy zmieniającej ustawę o zmianie ustawy o planowaniu i zagospodarowaniu przestrzennym oraz niektórych innych ustaw (UDER13), KRM-0610-82-25.zip",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12397401/13125847/13125848/dokument718474.zip",
+        "created": "2025-05-21",
+        "extension": "zip",
+        "chars": 0,
+        "text_role": "bill",
+        "document_kind": null,
+        "extract_error": null
+      },
+      "project_record": "corpus/12397401.json",
+      "index_case_membership": [
+        "document.None",
+        "document.cached_empty"
+      ],
+      "cache": {
+        "path": "documents/text/718474.txt.gz",
+        "exists": true,
+        "bytes": 20,
+        "sha256": "691cd8e5dcaaee024e988add6d9ba85c419623ba25916642cb0aa1e30f52a314"
+      },
+      "prior_package_replay": {
+        "path": "docs/assets/audits/2026-10-17-document-selection-implementation/package-acceptance.json.gz",
+        "present": true,
+        "raw_sha256": "0f48616f8de6a152c46f239af1bdbd062cc97c56bd3f830be071a870370070c3",
+        "matches_current": true
+      },
+      "top_level_headers": [
+        {
+          "ordinal": 0,
+          "name": "DO PODPISU_pismo w sprawie rozpatrzenia przez SKRM (2).pdf",
+          "directory": false,
+          "compressed_bytes": 85102,
+          "expanded_bytes": 96034,
+          "crc32": 4037292684,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 0
+        },
+        {
+          "ordinal": 1,
+          "name": "projekt, uzasadnienie, OSR na SKRM (2).zip",
+          "directory": false,
+          "compressed_bytes": 75751,
+          "expanded_bytes": 76081,
+          "crc32": 2326200820,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 85190
+        },
+        {
+          "ordinal": 2,
+          "name": "Raport z konsultacji i opiniowania_nowelizacja upzp_UDER13.docx",
+          "directory": false,
+          "compressed_bytes": 23078,
+          "expanded_bytes": 26186,
+          "crc32": 3770729458,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 161013
+        },
+        {
+          "ordinal": 3,
+          "name": "Tabela protokół rozbieżności_nowelizacja upzp_UDER13.docx",
+          "directory": false,
+          "compressed_bytes": 43122,
+          "expanded_bytes": 47071,
+          "crc32": 80370956,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 184184
+        }
+      ],
+      "header_summary": {
+        "header_error": null,
+        "member_count": 4,
+        "nested_zip_ordinals": [
+          1
+        ],
+        "duplicate_name_excess": 0,
+        "expanded_bytes_declared": 245372,
+        "members_declared_over_32MB": 0,
+        "encrypted_headers": 0
+      }
+    },
+    {
+      "id": 719233,
+      "selection_reasons": [
+        "legacy_replay_explicit_id"
+      ],
+      "raw": {
+        "path": "documents/files/719233.zip",
+        "sha256": "ce529160ba474446bb04c608bdc49fcc6e9525601c33b1bd06bbc4041a286998",
+        "bytes": 649958,
+        "metadata_bytes": 649958
+      },
+      "official_metadata": {
+        "project": 12397401,
+        "folder": "project",
+        "name": "Projekt ustawy zmieniającej ustawę o zmianie ustawy o planowaniu i zagospodarowaniu przestrzennym oraz niektórych innych ustaw (UDER13), RM-0610-75-25.zip",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12397401/13125858/13125859/dokument719233.zip",
+        "created": "2025-05-26",
+        "extension": "zip",
+        "chars": 0,
+        "text_role": "bill",
+        "document_kind": null,
+        "extract_error": null
+      },
+      "project_record": "corpus/12397401.json",
+      "index_case_membership": [
+        "document.None",
+        "document.cached_empty"
+      ],
+      "cache": {
+        "path": "documents/text/719233.txt.gz",
+        "exists": true,
+        "bytes": 20,
+        "sha256": "691cd8e5dcaaee024e988add6d9ba85c419623ba25916642cb0aa1e30f52a314"
+      },
+      "prior_package_replay": {
+        "path": "docs/assets/audits/2026-10-17-document-selection-implementation/package-acceptance.json.gz",
+        "present": true,
+        "raw_sha256": "ce529160ba474446bb04c608bdc49fcc6e9525601c33b1bd06bbc4041a286998",
+        "matches_current": true
+      },
+      "top_level_headers": [
+        {
+          "ordinal": 0,
+          "name": "opinia RL o projekcie nowelizacji ustawy o planowaniu przestrzennym.pdf",
+          "directory": false,
+          "compressed_bytes": 356626,
+          "expanded_bytes": 419748,
+          "crc32": 3813766387,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 0
+        },
+        {
+          "ordinal": 1,
+          "name": "pismo do Przewodniczącego Rady Legislacyjnej.pdf",
+          "directory": false,
+          "compressed_bytes": 88604,
+          "expanded_bytes": 107155,
+          "crc32": 1993607272,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 356727
+        },
+        {
+          "ordinal": 2,
+          "name": "projekt, OSR, uzasadnienie na RM.zip",
+          "directory": false,
+          "compressed_bytes": 98388,
+          "expanded_bytes": 98546,
+          "crc32": 3890292159,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 445467
+        },
+        {
+          "ordinal": 3,
+          "name": "Raport z konsultacji i opiniowania_nowelizacja upzp_UDER13.docx",
+          "directory": false,
+          "compressed_bytes": 23078,
+          "expanded_bytes": 26186,
+          "crc32": 3770729458,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 543921
+        },
+        {
+          "ordinal": 4,
+          "name": "UDER13_pismo MRiT na RM.pdf",
+          "directory": false,
+          "compressed_bytes": 82074,
+          "expanded_bytes": 92338,
+          "crc32": 3523387974,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 567092
+        }
+      ],
+      "header_summary": {
+        "header_error": null,
+        "member_count": 5,
+        "nested_zip_ordinals": [
+          2
+        ],
+        "duplicate_name_excess": 0,
+        "expanded_bytes_declared": 743973,
+        "members_declared_over_32MB": 0,
+        "encrypted_headers": 0
+      }
+    },
+    {
+      "id": 736714,
+      "selection_reasons": [
+        "legacy_replay_explicit_id"
+      ],
+      "raw": {
+        "path": "documents/files/736714.zip",
+        "sha256": "2c4c236a0f1dc0367d7aef2130757e17e4b4e39cfb3a12a523795be209fbad06",
+        "bytes": 740341,
+        "metadata_bytes": 740341
+      },
+      "official_metadata": {
+        "project": 12386961,
+        "folder": "project",
+        "name": "nowy tekst projektu ustawy o zmianie ustawy o zarządzaniu kryzysowym oraz niektórych innych ustaw (UC47), KRM-0610-66-25.zip",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument736714.zip",
+        "created": "2025-09-12",
+        "extension": "zip",
+        "chars": 520867,
+        "text_role": "bill",
+        "document_kind": "bill",
+        "extract_error": null
+      },
+      "project_record": "corpus/12386961.json",
+      "index_case_membership": [
+        "document.bill"
+      ],
+      "cache": {
+        "path": "documents/text/736714.txt.gz",
+        "exists": true,
+        "bytes": 128877,
+        "sha256": "026a7e3b104e4c935ecf2670a681dc89fd173dd8f42747c3e80c85034c3018c1"
+      },
+      "prior_package_replay": {
+        "path": "docs/assets/audits/2026-10-17-document-selection-implementation/package-acceptance.json.gz",
+        "present": true,
+        "raw_sha256": "2c4c236a0f1dc0367d7aef2130757e17e4b4e39cfb3a12a523795be209fbad06",
+        "matches_current": true
+      },
+      "top_level_headers": [
+        {
+          "ordinal": 0,
+          "name": "Ustawa z.k. 28.08.2025 NT pismo przewodnie etap SKRM.docx",
+          "directory": false,
+          "compressed_bytes": 70252,
+          "expanded_bytes": 85201,
+          "crc32": 3844549089,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 0
+        },
+        {
+          "ordinal": 1,
+          "name": "Ustawa z.k. odwrócona tabela zgodności 28.08.2025 NT etap SKRM.docx",
+          "directory": false,
+          "compressed_bytes": 106719,
+          "expanded_bytes": 109454,
+          "crc32": 2739063202,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 70339
+        },
+        {
+          "ordinal": 2,
+          "name": "Ustawa z.k. OSR. 28.08.2025 NT etap SKRM_.doc",
+          "directory": false,
+          "compressed_bytes": 68534,
+          "expanded_bytes": 393216,
+          "crc32": 2889391299,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 177233
+        },
+        {
+          "ordinal": 3,
+          "name": "Ustawa z.k. projekt 28.08.2025 NT etap SKRM.docx",
+          "directory": false,
+          "compressed_bytes": 167350,
+          "expanded_bytes": 171749,
+          "crc32": 2929297533,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 245842
+        },
+        {
+          "ordinal": 4,
+          "name": "Ustawa z.k. tabela uwag wymagająca rozstrzygnięcia przez SKRM 28.08.2025.docx",
+          "directory": false,
+          "compressed_bytes": 18800,
+          "expanded_bytes": 22231,
+          "crc32": 3379679188,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 413270
+        },
+        {
+          "ordinal": 5,
+          "name": "Ustawa z.k. tabela zgodności 28.08.2025 NT etap SKRM.docx",
+          "directory": false,
+          "compressed_bytes": 151208,
+          "expanded_bytes": 154631,
+          "crc32": 2463342662,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 432265
+        },
+        {
+          "ordinal": 6,
+          "name": "Ustawa z.k. uzasadnienie 28.08.2025 NT etap SKRM.docx",
+          "directory": false,
+          "compressed_bytes": 125210,
+          "expanded_bytes": 129228,
+          "crc32": 2672509011,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 583627
+        },
+        {
+          "ordinal": 7,
+          "name": "Ustawa z.k. załącznik do ustawy 28.08.2025 NT etap SKRM.docx",
+          "directory": false,
+          "compressed_bytes": 29814,
+          "expanded_bytes": 33229,
+          "crc32": 742381763,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 708920
+        }
+      ],
+      "header_summary": {
+        "header_error": null,
+        "member_count": 8,
+        "nested_zip_ordinals": [],
+        "duplicate_name_excess": 0,
+        "expanded_bytes_declared": 1098939,
+        "members_declared_over_32MB": 0,
+        "encrypted_headers": 0
+      }
+    },
+    {
+      "id": 752451,
+      "selection_reasons": [
+        "min_metadata_bytes_then_id:folder=project",
+        "min_metadata_bytes_then_id:text_role=justification"
+      ],
+      "raw": {
+        "path": "documents/files/752451.zip",
+        "sha256": "e125e5f2070b62c69ed7c51e16f60be302ea779a34ee39673b74dc8637ca76b5",
+        "bytes": 31945,
+        "metadata_bytes": 31945
+      },
+      "official_metadata": {
+        "project": 12405004,
+        "folder": "project",
+        "name": "Uzasadnienie projektu ustawy UC97.zip",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12405004/13174513/13174514/dokument752451.zip",
+        "created": "2025-12-08",
+        "extension": "zip",
+        "chars": 14636,
+        "text_role": "justification",
+        "document_kind": "justification",
+        "extract_error": null
+      },
+      "project_record": "corpus/12405004.json",
+      "index_case_membership": [
+        "document.justification"
+      ],
+      "cache": {
+        "path": "documents/text/752451.txt.gz",
+        "exists": true,
+        "bytes": 4815,
+        "sha256": "197331fc1c111c9f71fc75b2a84e8bdc63c7de45b42aa0bc090b4f9c190f670d"
+      },
+      "prior_package_replay": {
+        "path": "docs/assets/audits/2026-10-17-document-selection-implementation/package-acceptance.json.gz",
+        "present": false,
+        "raw_sha256": null,
+        "matches_current": null
+      },
+      "top_level_headers": [
+        {
+          "ordinal": 0,
+          "name": "Uzasadnienie projektu ustawy UC97.docx",
+          "directory": false,
+          "compressed_bytes": 27399,
+          "expanded_bytes": 30923,
+          "crc32": 3037229507,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 0
+        },
+        {
+          "ordinal": 1,
+          "name": "Uzasadnienie projektu ustawy UC97.docx.xades",
+          "directory": false,
+          "compressed_bytes": 4208,
+          "expanded_bytes": 7586,
+          "crc32": 2362872007,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 27467
+        }
+      ],
+      "header_summary": {
+        "header_error": null,
+        "member_count": 2,
+        "nested_zip_ordinals": [],
+        "duplicate_name_excess": 0,
+        "expanded_bytes_declared": 38509,
+        "members_declared_over_32MB": 0,
+        "encrypted_headers": 0
+      }
+    },
+    {
+      "id": 768375,
+      "selection_reasons": [
+        "min_metadata_bytes_then_id:folder=response"
+      ],
+      "raw": {
+        "path": "documents/files/768375.zip",
+        "sha256": "55fb7ae4fefb89a7db3509251e07f60159e6383d0a2bbc550f289a6223a968dc",
+        "bytes": 30585,
+        "metadata_bytes": 30585
+      },
+      "official_metadata": {
+        "project": 12405004,
+        "folder": "response",
+        "name": "Raport z konsultacji i opiniowania UC97 18_03_2026.zip - odniesienie do uwag",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12405004/13174513/13174515/dokument768375.zip",
+        "created": "2026-03-20",
+        "extension": "zip",
+        "chars": 0,
+        "text_role": null,
+        "document_kind": null,
+        "extract_error": null
+      },
+      "project_record": "corpus/12405004.json",
+      "index_case_membership": [
+        "document.None",
+        "document.cached_empty"
+      ],
+      "cache": {
+        "path": "documents/text/768375.txt.gz",
+        "exists": true,
+        "bytes": 20,
+        "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+      },
+      "prior_package_replay": {
+        "path": "docs/assets/audits/2026-10-17-document-selection-implementation/package-acceptance.json.gz",
+        "present": false,
+        "raw_sha256": null,
+        "matches_current": null
+      },
+      "top_level_headers": [
+        {
+          "ordinal": 0,
+          "name": "Raport z konsultacji i opiniowania UC97 18.03.2026.docx",
+          "directory": false,
+          "compressed_bytes": 25960,
+          "expanded_bytes": 29095,
+          "crc32": 290950450,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 0
+        },
+        {
+          "ordinal": 1,
+          "name": "Raport z konsultacji i opiniowania UC97 18.03.2026.docx.xades",
+          "directory": false,
+          "compressed_bytes": 4219,
+          "expanded_bytes": 7597,
+          "crc32": 4109035779,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 26045
+        }
+      ],
+      "header_summary": {
+        "header_error": null,
+        "member_count": 2,
+        "nested_zip_ordinals": [],
+        "duplicate_name_excess": 0,
+        "expanded_bytes_declared": 36692,
+        "members_declared_over_32MB": 0,
+        "encrypted_headers": 0
+      }
+    },
+    {
+      "id": 771111,
+      "selection_reasons": [
+        "legacy_replay_explicit_id"
+      ],
+      "raw": {
+        "path": "documents/files/771111.zip",
+        "sha256": "8e18311642d03980c54f57cdd85fe3598526affc8b13b033b466ec9c7b8c4c78",
+        "bytes": 612108,
+        "metadata_bytes": 612108
+      },
+      "official_metadata": {
+        "project": 12403752,
+        "folder": "project",
+        "name": "Projekt ustawy o zmianie ustawy o planowaniu i zagospodarowaniu przestrzennym oraz niektórych innych ustaw (UD316), RM-0610-54-26.zip",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12403752/13166863/13166864/dokument771111.zip",
+        "created": "2026-04-13",
+        "extension": "zip",
+        "chars": 0,
+        "text_role": "bill",
+        "document_kind": null,
+        "extract_error": null
+      },
+      "project_record": "corpus/12403752.json",
+      "index_case_membership": [
+        "document.None",
+        "document.cached_empty"
+      ],
+      "cache": {
+        "path": "documents/text/771111.txt.gz",
+        "exists": true,
+        "bytes": 20,
+        "sha256": "a6e3ef36f6f3f82e42ddd1ab68441d279f222ac4a48198a43099374643c8dea2"
+      },
+      "prior_package_replay": {
+        "path": "docs/assets/audits/2026-10-17-document-selection-implementation/package-acceptance.json.gz",
+        "present": true,
+        "raw_sha256": "8e18311642d03980c54f57cdd85fe3598526affc8b13b033b466ec9c7b8c4c78",
+        "matches_current": true
+      },
+      "top_level_headers": [
+        {
+          "ordinal": 0,
+          "name": "pismo MFiG na RM.pdf",
+          "directory": false,
+          "compressed_bytes": 102489,
+          "expanded_bytes": 113880,
+          "crc32": 2703236408,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 0
+        },
+        {
+          "ordinal": 1,
+          "name": "pozostałe dokumenty UD316 RM.zip",
+          "directory": false,
+          "compressed_bytes": 332793,
+          "expanded_bytes": 333720,
+          "crc32": 566990139,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 102539
+        },
+        {
+          "ordinal": 2,
+          "name": "projekt UD316 RM.zip",
+          "directory": false,
+          "compressed_bytes": 176240,
+          "expanded_bytes": 176289,
+          "crc32": 2659474264,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 435436
+        }
+      ],
+      "header_summary": {
+        "header_error": null,
+        "member_count": 3,
+        "nested_zip_ordinals": [
+          1,
+          2
+        ],
+        "duplicate_name_excess": 0,
+        "expanded_bytes_declared": 623889,
+        "members_declared_over_32MB": 0,
+        "encrypted_headers": 0
+      }
+    },
+    {
+      "id": 778150,
+      "selection_reasons": [
+        "legacy_replay_explicit_id"
+      ],
+      "raw": {
+        "path": "documents/files/778150.zip",
+        "sha256": "659ac5e0b08f211d09ba3d6fc9054c972299f9450a2b1ec55db4ca91fce44a03",
+        "bytes": 1185012,
+        "metadata_bytes": 1185012
+      },
+      "official_metadata": {
+        "project": 12403302,
+        "folder": "project",
+        "name": "Projekt ustawy o zmianie ustawy o podatku od towarów i usług oraz ustawy o zasadach ewidencji i identyfikacji podatników i płatników (UD314), RM-0610-78-26.zip",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12403302/13164586/13164587/dokument778150.zip",
+        "created": "2026-05-26",
+        "extension": "zip",
+        "chars": 56796,
+        "text_role": "bill",
+        "document_kind": "bill",
+        "extract_error": null
+      },
+      "project_record": "corpus/12403302.json",
+      "index_case_membership": [
+        "document.bill"
+      ],
+      "cache": {
+        "path": "documents/text/778150.txt.gz",
+        "exists": true,
+        "bytes": 15341,
+        "sha256": "7c3a463049d2bde1cdf3fc657f216e6e621ba733e3bb55236ac33522b19253cc"
+      },
+      "prior_package_replay": {
+        "path": "docs/assets/audits/2026-10-17-document-selection-implementation/package-acceptance.json.gz",
+        "present": true,
+        "raw_sha256": "659ac5e0b08f211d09ba3d6fc9054c972299f9450a2b1ec55db4ca91fce44a03",
+        "matches_current": true
+      },
+      "top_level_headers": [
+        {
+          "ordinal": 0,
+          "name": "2026-05-20  TAX FREE OSR do projektu rozporzadzenia.docx",
+          "directory": false,
+          "compressed_bytes": 38642,
+          "expanded_bytes": 42449,
+          "crc32": 2453265621,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 0
+        },
+        {
+          "ordinal": 1,
+          "name": "2026-05-20 OSR.doc",
+          "directory": false,
+          "compressed_bytes": 101375,
+          "expanded_bytes": 436736,
+          "crc32": 83155301,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 38728
+        },
+        {
+          "ordinal": 2,
+          "name": "2026-05-20 projekt ustawy UD314.docm",
+          "directory": false,
+          "compressed_bytes": 82454,
+          "expanded_bytes": 86903,
+          "crc32": 3243450699,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 140151
+        },
+        {
+          "ordinal": 3,
+          "name": "2026-05-20 Sklady VAT OSR do projektu rozporzadzenia.docx",
+          "directory": false,
+          "compressed_bytes": 40784,
+          "expanded_bytes": 44536,
+          "crc32": 413593287,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 222671
+        },
+        {
+          "ordinal": 4,
+          "name": "2026-05-20 Sklady VAT projekt rozporzadzenia.docm",
+          "directory": false,
+          "compressed_bytes": 35928,
+          "expanded_bytes": 40473,
+          "crc32": 568979659,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 263542
+        },
+        {
+          "ordinal": 5,
+          "name": "2026-05-20 Sklady VAT Uzasadnienie do projektu rozporzadzenia.doc",
+          "directory": false,
+          "compressed_bytes": 15939,
+          "expanded_bytes": 49664,
+          "crc32": 1667381139,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 299549
+        },
+        {
+          "ordinal": 6,
+          "name": "2026-05-20 TAX FREE projekt rozporzadzenia na RM.docx",
+          "directory": false,
+          "compressed_bytes": 38941,
+          "expanded_bytes": 43644,
+          "crc32": 1034069979,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 315583
+        },
+        {
+          "ordinal": 7,
+          "name": "2026-05-20 TAX FREE uzasadnienie do projektu rozporzadzenia.docx",
+          "directory": false,
+          "compressed_bytes": 19256,
+          "expanded_bytes": 23089,
+          "crc32": 446879937,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 354607
+        },
+        {
+          "ordinal": 8,
+          "name": "2026-05-20 uzasadnienie na RM.docm",
+          "directory": false,
+          "compressed_bytes": 138271,
+          "expanded_bytes": 145919,
+          "crc32": 2055200261,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 373957
+        },
+        {
+          "ordinal": 9,
+          "name": "2026-05-20 zalacznik nr 1 do ustawy na RM.docx",
+          "directory": false,
+          "compressed_bytes": 33194,
+          "expanded_bytes": 36951,
+          "crc32": 1255271911,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 512292
+        },
+        {
+          "ordinal": 10,
+          "name": "2026-05-20 zalacznik nr 2 do ustawy na RM.docx",
+          "directory": false,
+          "compressed_bytes": 17821,
+          "expanded_bytes": 21685,
+          "crc32": 1503607780,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 545562
+        },
+        {
+          "ordinal": 11,
+          "name": "2026-05-20 zalacznik nr 3 do ustawy na RM.docx",
+          "directory": false,
+          "compressed_bytes": 18985,
+          "expanded_bytes": 22821,
+          "crc32": 4196807920,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 563459
+        },
+        {
+          "ordinal": 12,
+          "name": "pismo do PR.pdf",
+          "directory": false,
+          "compressed_bytes": 57448,
+          "expanded_bytes": 66742,
+          "crc32": 2622955381,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 582520
+        },
+        {
+          "ordinal": 13,
+          "name": "pismo na RM.pdf",
+          "directory": false,
+          "compressed_bytes": 108470,
+          "expanded_bytes": 128622,
+          "crc32": 922154547,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 640013
+        },
+        {
+          "ordinal": 14,
+          "name": "Raport z konsultacji.docx",
+          "directory": false,
+          "compressed_bytes": 157483,
+          "expanded_bytes": 161316,
+          "crc32": 1036401023,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 748528
+        },
+        {
+          "ordinal": 15,
+          "name": "Tabela nieuwzglednionych uwag - opiniowanie.doc",
+          "directory": false,
+          "compressed_bytes": 28547,
+          "expanded_bytes": 114176,
+          "crc32": 1497193416,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 906066
+        },
+        {
+          "ordinal": 16,
+          "name": "XBS PRO-LOG S.A. zgloszenie lobbingowe.pdf",
+          "directory": false,
+          "compressed_bytes": 248120,
+          "expanded_bytes": 306556,
+          "crc32": 3837354117,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 934690
+        }
+      ],
+      "header_summary": {
+        "header_error": null,
+        "member_count": 17,
+        "nested_zip_ordinals": [],
+        "duplicate_name_excess": 0,
+        "expanded_bytes_declared": 1772282,
+        "members_declared_over_32MB": 0,
+        "encrypted_headers": 0
+      }
+    },
+    {
+      "id": 785848,
+      "selection_reasons": [
+        "legacy_replay_explicit_id"
+      ],
+      "raw": {
+        "path": "documents/files/785848.zip",
+        "sha256": "8cf0d27204698815494901291edd868d5cb13a78375543f22233390e53cc1e4d",
+        "bytes": 1601510,
+        "metadata_bytes": 1601510
+      },
+      "official_metadata": {
+        "project": 12405004,
+        "folder": "project",
+        "name": "Projekt ustawy o zmianie ustawy o zużytym sprzęcie elektrycznym i elektronicznym oraz niektórych innych ustaw (UC97), KRM-0610-94-26.zip",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12405004/13174537/13174541/dokument785848.zip",
+        "created": "2026-07-06",
+        "extension": "zip",
+        "chars": 88517,
+        "text_role": "bill",
+        "document_kind": "bill",
+        "extract_error": null
+      },
+      "project_record": "corpus/12405004.json",
+      "index_case_membership": [
+        "document.bill"
+      ],
+      "cache": {
+        "path": "documents/text/785848.txt.gz",
+        "exists": true,
+        "bytes": 19247,
+        "sha256": "c9d6cbd520689e9cb1cfdc314f2ef81cd714a71a14aac71d3d893415cde868d4"
+      },
+      "prior_package_replay": {
+        "path": "docs/assets/audits/2026-10-17-document-selection-implementation/package-acceptance.json.gz",
+        "present": true,
+        "raw_sha256": "8cf0d27204698815494901291edd868d5cb13a78375543f22233390e53cc1e4d",
+        "matches_current": true
+      },
+      "top_level_headers": [
+        {
+          "ordinal": 0,
+          "name": "MKiS do SKRM skierowanie projektu ustawy UC97.docx",
+          "directory": false,
+          "compressed_bytes": 1070135,
+          "expanded_bytes": 1117783,
+          "crc32": 1266351149,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 0
+        },
+        {
+          "ordinal": 1,
+          "name": "Odwrócona tabela zgodnosci po KSE.docx",
+          "directory": false,
+          "compressed_bytes": 31774,
+          "expanded_bytes": 35301,
+          "crc32": 4229191405,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 1070215
+        },
+        {
+          "ordinal": 2,
+          "name": "OSR (UC97) - SKRM.docx",
+          "directory": false,
+          "compressed_bytes": 65063,
+          "expanded_bytes": 68672,
+          "crc32": 1051458321,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 1102105
+        },
+        {
+          "ordinal": 3,
+          "name": "Projekt ustawy (UC97) - SKRM.docx",
+          "directory": false,
+          "compressed_bytes": 59248,
+          "expanded_bytes": 63693,
+          "crc32": 2022436975,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 1167220
+        },
+        {
+          "ordinal": 4,
+          "name": "Raport z konsultacji i opiniowania UC97.docx",
+          "directory": false,
+          "compressed_bytes": 26430,
+          "expanded_bytes": 29482,
+          "crc32": 2495614332,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 1226531
+        },
+        {
+          "ordinal": 5,
+          "name": "Tabela zgodnosci - po KSE.docx",
+          "directory": false,
+          "compressed_bytes": 55802,
+          "expanded_bytes": 59260,
+          "crc32": 1581184062,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 1253035
+        },
+        {
+          "ordinal": 6,
+          "name": "UC97 protokól rozbieznosci po KSE.docx",
+          "directory": false,
+          "compressed_bytes": 24691,
+          "expanded_bytes": 28267,
+          "crc32": 1538531849,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 1308897
+        },
+        {
+          "ordinal": 7,
+          "name": "Uwagi_KSE_UC_97.docx",
+          "directory": false,
+          "compressed_bytes": 85921,
+          "expanded_bytes": 90994,
+          "crc32": 1640751680,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 1333704
+        },
+        {
+          "ordinal": 8,
+          "name": "Uzasadnienie (UC97) - SKRM.pdf",
+          "directory": false,
+          "compressed_bytes": 118888,
+          "expanded_bytes": 131006,
+          "crc32": 2283930774,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 1419675
+        },
+        {
+          "ordinal": 9,
+          "name": "Zalacznik do raportu z konsultacji i opiniowania.xlsx",
+          "directory": false,
+          "compressed_bytes": 39112,
+          "expanded_bytes": 77533,
+          "crc32": 3208845306,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 1538623
+        },
+        {
+          "ordinal": 10,
+          "name": "Zalacznik do ustawy UC97 - wzór karty ewidencji - SKRM.docx",
+          "directory": false,
+          "compressed_bytes": 22028,
+          "expanded_bytes": 24805,
+          "crc32": 4077489474,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 1577818
+        }
+      ],
+      "header_summary": {
+        "header_error": null,
+        "member_count": 11,
+        "nested_zip_ordinals": [],
+        "duplicate_name_excess": 0,
+        "expanded_bytes_declared": 1726796,
+        "members_declared_over_32MB": 0,
+        "encrypted_headers": 0
+      }
+    },
+    {
+      "id": 795272,
+      "selection_reasons": [
+        "min_metadata_bytes_then_id:text_role=bill"
+      ],
+      "raw": {
+        "path": "documents/files/795272.zip",
+        "sha256": "d046043c41f35003ecc9213abcc3d0b05a479863e35a8a46117335f66402697a",
+        "bytes": 39750,
+        "metadata_bytes": 39750
+      },
+      "official_metadata": {
+        "project": 12409050,
+        "folder": "response",
+        "name": "UC101 - stanowiska zgłoszone w ramach konsultacji publicznych.pdf - odniesienie do uwag",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12409050/13196808/13196812/dokument795272.zip",
+        "created": "2026-09-02",
+        "extension": "zip",
+        "chars": 0,
+        "text_role": "bill",
+        "document_kind": null,
+        "extract_error": null
+      },
+      "project_record": "corpus/12409050.json",
+      "index_case_membership": [
+        "document.None",
+        "document.cached_empty"
+      ],
+      "cache": {
+        "path": "documents/text/795272.txt.gz",
+        "exists": true,
+        "bytes": 20,
+        "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+      },
+      "prior_package_replay": {
+        "path": "docs/assets/audits/2026-10-17-document-selection-implementation/package-acceptance.json.gz",
+        "present": false,
+        "raw_sha256": null,
+        "matches_current": null
+      },
+      "top_level_headers": [
+        {
+          "ordinal": 0,
+          "name": "Raport z konsultacji UC101.docx",
+          "directory": false,
+          "compressed_bytes": 35101,
+          "expanded_bytes": 38882,
+          "crc32": 3708757901,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 0
+        },
+        {
+          "ordinal": 1,
+          "name": "Raport z konsultacji UC101.docx.xades",
+          "directory": false,
+          "compressed_bytes": 4339,
+          "expanded_bytes": 7763,
+          "crc32": 3749010898,
+          "compression": 8,
+          "flag_bits": 0,
+          "header_offset": 35162
+        }
+      ],
+      "header_summary": {
+        "header_error": null,
+        "member_count": 2,
+        "nested_zip_ordinals": [],
+        "duplicate_name_excess": 0,
+        "expanded_bytes_declared": 46645,
+        "members_declared_over_32MB": 0,
+        "encrypted_headers": 0
+      }
+    }
+  ],
+  "natural_observations": {
+    "nested_zip": "7 roots / 12 top-level ZIP-named members; contents/depth not read",
+    "support_nonbill": "metadata strata include osr/justification/letters/response and unknown cached kinds; names/labels are not semantic gold",
+    "unsupported_header_suffixes": ".xades/.xlsx present; no extraction/format rejection asserted",
+    "parse_errors": "none in selected ZIP central-directory reads; cached-empty does not prove parse failure"
+  },
+  "synthetic_controls_needed": [
+    "duplicate member names and duplicate bytes with distinct occurrence chains",
+    "malformed or unreadable nested/member payload, CRC/read failure",
+    "depth/member/size/expanded-byte caps",
+    "complete/prefix/unknown sidecar overflow and interrupted walk",
+    "selected/support/nonbill/version/rank/family exclusions with explicit constructed expectations",
+    "cached-sidecar identity reuse, losing outer archive and missing native capture"
+  ],
+  "limits": [
+    "No extraction, member payload reads, CRC validation, text-cache decompression, tests or model calls performed.",
+    "Nested ZIP-named headers establish candidate nested entries only, not valid readable ZIP payloads.",
+    "Only top-level headers inspected; nested duplicate names/depth/size/parse errors remain unknown.",
+    "Machine labels and prior replay outcomes are provenance, not independent legal gold.",
+    "No corpus write; artifacts written only under ignored repo out/.",
+    "B1 exceptions/unsafe URL metadata/absent native sidecars remain excluded per DESIGN.md."
+  ],
+  "replay_scope_note": "Existing cached CLI traverses all frozen RCL stage cases, not a guaranteed census of all 1803 indexed ZIP files. Cached flattened text cannot establish inner member dispositions or physical chains."
+}

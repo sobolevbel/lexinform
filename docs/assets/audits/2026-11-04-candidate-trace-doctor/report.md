@@ -39,3 +39,5 @@ PYTHONPATH=src:. python tools/source_history_doctor.py \
 Combine with `--selection-coverage` when needed; omit both flags for the existing output.
 [Qualification](qualification.json), [pinned proof](pinned-state-proof.json),
 [review](peer-review.json). This bounded check does not complete all DA10.2 provenance.
+
+[Actual CI and relay release](release.json).

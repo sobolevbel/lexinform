@@ -1,0 +1,20 @@
+{
+  "stage": "J222 v2",
+  "verdict": "Clear after targeted future-row verifier hardening",
+  "method": "Independent read-only hash/code review; no tests/edits/network",
+  "fixed": [
+    "Walk supplied physical slot must corroborate actual extracted leaf",
+    "Policy ordinal-only association cannot be treated as proved by a nonleaf archive context"
+  ],
+  "controls": [
+    "Native positive leaf",
+    "Bogus walk slot rejection",
+    "Nonleaf policy rejection"
+  ],
+  "unchanged": [
+    "Core comparison",
+    "Ordered IO",
+    "Output/corpus guards"
+  ],
+  "scope": "Producer-OFF baseline is qualified; B acceptance still requires real candidate replay"
+}

@@ -10130,3 +10130,39 @@ Plan74total/43complete/6explicitNA/25applicableopen.
 [Contract/recheck](../assets/audits/2026-11-04-candidate-trace-doctor/report.md),
 [qualification](../assets/audits/2026-11-04-candidate-trace-doctor/qualification.json),
 [pinned proof](../assets/audits/2026-11-04-candidate-trace-doctor/pinned-state-proof.json).
+
+
+<a id="j222"></a>
+
+## J222 — frozen public-path producer-OFF archive baseline
+
+4 November2026. Versioned native TextLoader/source/physical replay fixes driver/cohort/
+INDEX/options/raw/source pins before writer instrumentation.16ZIP14,377,628bytes/17natural
+requests,34returnedoutcomes;4deterministicsynthetic roots/8outcomes (duplicate names,nested/
+unknown,sixwrappers,CRC). All42archive sectionsabsent confirmsproducerOFF. Natural16downloads/
+54cachehits,synthetic4/12;SAMEloader cachedA afterinterveningB exercised by artifact events.
+
+Core retains selectedtext/document/file/parts/state/rejected,source capture,IO/cacheorder,
+nonrecipephysical/extraction metadata and options. Only explicit code-origin IDs/hash fields
+are separate; genuine recipes are not called identical. Singleton normalization explicitly
+reapplies old suppression; future extra persisted traces are not hidden as unchangedcounts.
+
+Independentreview foundfuture-row verifier gap in v1. Correctedv2 requires actualphysicalleaf
+for suppliedwalkslot and policyassociations; positiveleaf/forgedslot/nonleaf units added.
+Sixnewunits/no scenarios;reviewclear. Root uses SAMEfinaldriver4eea367f/baselineeefa8dca;
+natural/synthetic cores exact,all17corpusinputs stable. v1 superseded, notqualification.
+
+No futureproducer evidence exists in baseline; retainedassociation branches need actualB
+qualification.16boundedZIPs exclude1787others;cachedRCLreplay is separate,notaZIPcensus.
+No legalgold,paid/provider/network/production/corpuswrites/rawstore/backend change. Member/
+expanded/size/cancellation controls and SQLgrowth/dedup remain B requirements; B1exclusions
+and unknown origins explicit. Driver adds no runtime instrumentation.
+
+Fullgate:8106tests/286.614s/92%,mypy701/Ruff/formatgreen;770source/configpins exact.
+Strict staged-archive docs gate precedes commit.
+J221243c9427 exactCI41917902539/relay41918816406 verified,45shealth/timer.
+DA4.1/DA4.4 remainpartial;plan74total/43complete/6explicitNA/25applicableopen.
+
+[Qualification](../assets/audits/2026-11-04-archive-replay-baseline/qualification.json),
+[report/recheck](../assets/audits/2026-11-04-archive-replay-baseline/report.md),
+[versioned cohort](../assets/audits/2026-11-04-archive-replay-baseline/cohort.json).

@@ -1,0 +1,59 @@
+{
+  "stage": "J222 v2 baseline",
+  "full_tests": 8106,
+  "pytest_xml_seconds": 286.614,
+  "coverage_percent": 92,
+  "source_config_pins": 770,
+  "source_freeze_exact": true,
+  "focused_unit_tests": 6,
+  "new_unit_cases": 6,
+  "new_scenarios": 0,
+  "strict_mypy_files": 701,
+  "mypy_ruff_format": "green",
+  "producer_active": false,
+  "driver_sha256": "4eea367f98858d8add00a1ea043f5eed4707b0ed83c42b5f02ae9f4f64dc6319",
+  "baseline_sha256": "eefa8dca1e713e2a05ffa5ed287539d358f33523407bf6483c8f9a4ea11f9b88",
+  "cohort_sha256": "f788bb15d668827d5fc6130df92084fca3099da90ef093bb98cd5a2b360d4859",
+  "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "scope": {
+    "natural_bytes": 14377628,
+    "natural_requests": 17,
+    "natural_roots": 16,
+    "not_zip_census": true
+  },
+  "paired_core_comparison": {
+    "natural": true,
+    "synthetic": true
+  },
+  "pinned_corpus_inputs": 17,
+  "changed_inputs": [],
+  "returned_natural_outcomes": 34,
+  "returned_synthetic_outcomes": 8,
+  "archive_sections": "Absent in all42outcomes, not candidate acceptance",
+  "known_scope_limits": [
+    "Bare singleton failures have no source trace; error classes remain core observations.",
+    "Public source capture runs; no SQL persistence or paid/provider/Telegram behavior.",
+    "No semantic gold; archive checks are mechanical, not policy approval.",
+    "No independent full canonical-row hash proof for omitted archive row tails."
+  ],
+  "review": "v2 walk-slot and policy-leaf proof guards hardened with positive/negative units; v1 superseded",
+  "owned_source_sha256": {
+    "tools/replay_archive_dispositions.py": "4eea367f98858d8add00a1ea043f5eed4707b0ed83c42b5f02ae9f4f64dc6319",
+    "tests/unit/test_replay_archive_dispositions.py": "d3e7547f63db66a6a5d7931c3455ecfd85a02327b93b264d8958c71abd1c21f5",
+    "pyproject.toml": "f6466054ef9d637265e3512064493dc1e4936b007e7b50f874788d333b60fa04"
+  },
+  "proof_sha256": {
+    "root-qa/full.xml": "1a855064fb19803beac198359cbf05e901a1dafcec88158418d11cd5c88f7140",
+    "root-qa/full.log": "cc7aafb002a22221b32633eef3d4de841bef1503fbb4e23ba88827a80441ee3d",
+    "root-qa/source-freeze.json": "e63d5e6cf6ebebe711dffe36b66d609f8a6bb09e5bd3e0c0b5e5e72919147f23",
+    "root-qa/replay.json": "b8d7c2028d61a28e3b83a14c52cad43b4ed850dc42ed3c539afb0132044ded5e",
+    "baseline-v2.json": "eefa8dca1e713e2a05ffa5ed287539d358f33523407bf6483c8f9a4ea11f9b88"
+  },
+  "previous_release": "243c9427717148fa0633a43da92f556a3b15d534 exactCI41917902539/relay41918816406 verified",
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  }
+}
