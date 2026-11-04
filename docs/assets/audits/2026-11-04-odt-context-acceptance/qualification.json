@@ -1,0 +1,52 @@
+{
+  "stage": "J209",
+  "scope": "Bounded ODT context audit; current release gate accepted, DA3.3 and natural production cycles remain partial",
+  "source_config_pins": 753,
+  "source_freeze_exact": true,
+  "tests": 7834,
+  "pytest_seconds": 289.092,
+  "focused_tests": 7,
+  "mypy_ruff_format": "green",
+  "peer_review": "v2 coverage guards and DA10.5 receipt: no blockers",
+  "corpus": {
+    "changed_inputs": [],
+    "original_download_roots": 6,
+    "original_independent_plain_spans": 0,
+    "original_odt_leaf_occurrences": 8,
+    "original_raw_xml_notes": 4,
+    "original_raw_xml_separate_refs": 0,
+    "original_selected_note_positive": 0,
+    "original_selected_odt_leaves": 1,
+    "original_verified_xml_call_paths": 4,
+    "original_verified_xml_note_paths": 4,
+    "source_fingerprints_unchanged": true,
+    "standalone_retained_note_positive": 4,
+    "standalone_selected_note_positive": 4,
+    "unique_standalone_leaf_runs": 8,
+    "verified_input_paths": 7
+  },
+  "owned_source_sha256": {
+    "tools/audit_odt_context.py": "292ed653f1a5019991ecc47c81bea488e69e147040076254189795d6d72b3cff",
+    "tests/unit/test_odt_context_audit.py": "b1c796487204b346cc01889ddf4129fec14635d2e023441195c3cf14e5dc2db8"
+  },
+  "plan_counts": {
+    "total": 74,
+    "complete": 40,
+    "not_applicable": 6,
+    "applicable_open": 28
+  },
+  "proof_sha256": {
+    "qa/full.xml": "de6776811e81637ea14834a73f5c317e35d7e047a2db517c1de7502b18f1a92b",
+    "qa/source-freeze.json": "6353a2d413624bace68ae59a0cfeffbcbfbf025079155c917eee9434f2d31ad9",
+    "root-typed-cli-v2/report.json": "045dee2912cdac69e883e7dcada4ce4b5574dbb1603c3cdcade435ec3f97d26a",
+    "typed-handoff-v2.json": "cf22fa1876f50198de93ddd12e6bd6ce688b67ffe21ce9696a6c9b765aec4374",
+    "current-release-acceptance.json": "35a92f384979d7cf7a1504ad332ff02932c2df0cbd3d6d376822b159929172e4"
+  },
+  "prior_gate": "Interrupted before applying independent review fix; no failing tests claimed from interrupted run",
+  "limitations": [
+    "Standalone selection is not original download-root selection",
+    "Independent plaintext spans counted only where the existing oracle supports them",
+    "Separate references absent remain unobserved, not accepted",
+    "No raw/source body retained in this report; no download or provider call"
+  ]
+}

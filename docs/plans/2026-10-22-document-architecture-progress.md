@@ -9682,3 +9682,41 @@ observed material.
 [fresh state](../assets/audits/2026-11-04-doc-note-default/fresh-state.json),
 [allowlisted flags](../assets/audits/2026-11-04-doc-note-default/allowlisted-flags.json),
 [actual reader release](../assets/audits/2026-11-04-doc-note-physical-reader/release.json).
+
+
+<a id="j209"></a>
+
+## J209 — reproducible ODT context acceptance and current release gate
+
+4 November 2026. Typed `tools.audit_odt_context` reuses the corpus manifest, read-only
+guard and existing independent XML/path checks. Original download-root selection and
+standalone qualification use the same native format adapters and exact observed bytes.
+No download, provider call, body retention, new reader/writer or storage decision.
+
+Pinned six original roots contain eight ODT leaves. Only one ODT leaf is selected in its
+original context; zero selected originals contain notes. Four standalone leaves contain
+and retain four notes/four embedded calls. Independent XML paths/targets/block bounds
+pass; separate references and independent plaintext emitted spans remain unobserved.
+Standalone positives therefore do not close DA3.3. Seven corpus/INDEX inputs unchanged.
+
+Independent review found that missing sidecars could silently reduce the checked cohort.
+The audit now requires exact physical/sidecar index coverage and a nonempty ODT cohort;
+negative controls reject missing companions and empty populations before publishing.
+The initial full gate was deliberately interrupted for this review fix; its log remains.
+
+DA10.5 closes for the current release profile: writer1d7e44a5 passed exact CI41880229720
+and actual relay41881921373, transitiond127→1d7/45shealth/timer. Post-release state tip
+105de577, allowlisted flags and daily workflow remain identical to the fresh isolated
+restore qualification. No new production feature or paid processing was enabled.
+DA10.6/10.7 remain separate natural-cycle acceptance requirements.
+
+Final7834 tests/289.09s; strict mypy/Ruff/format pass.
+753 source/config pins exact; root CLI reproduces the frozen corpus outcome.
+Staged-archive docs gate precedes commit.
+
+Plan:74total/40complete/6explicitNA/28applicableopen.
+
+[ODT qualification](../assets/audits/2026-11-04-odt-context-acceptance/qualification.json),
+[report/reproduction](../assets/audits/2026-11-04-odt-context-acceptance/report.md),
+[current release gate](../assets/audits/2026-11-04-odt-context-acceptance/current-release-acceptance.json),
+[actual writer release](../assets/audits/2026-11-04-doc-note-default/release.json).

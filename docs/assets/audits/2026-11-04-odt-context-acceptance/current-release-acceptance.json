@@ -1,0 +1,44 @@
+{
+  "observed_at": "2026-11-04T18:03:17.146417+00:00",
+  "state_commit": "105de577d682b1f7057e0593aab5c7a408aed740",
+  "state_tip_unchanged_since_restore": true,
+  "flags": {
+    "LEXINFORM_ATTENTION_ROUNDUP": {
+      "configured": true,
+      "configured_value_sha256": "6f31304cdfd0a3a6362bffbc6dc4f33ecb20221b84f79cf0137b7dc0f5d3a616",
+      "effective_from_workflow": "daily",
+      "recognized": true
+    },
+    "LEXINFORM_COMMISSION_REVIEWS_ENABLED": {
+      "configured": false,
+      "effective_from_workflow": "false"
+    },
+    "LEXINFORM_CONSULTATION_REVIEWS_ENABLED": {
+      "configured": false,
+      "effective_from_workflow": "false"
+    },
+    "LEXINFORM_READER_ATTENTION": {
+      "configured": true,
+      "configured_value_sha256": "b8d31e852725afb1e26d53bab6095b2bff1749c9275be13ed1c05a56ed31ec09",
+      "effective_from_workflow": "on",
+      "recognized": true
+    },
+    "LEXINFORM_STATE_MAINTENANCE": {
+      "configured": false,
+      "effective_from_workflow": "off"
+    }
+  },
+  "flags_unchanged": true,
+  "workflow_sha256": "be9b7783783455ff6e58a06f837e8e823410c860fe8bb279bd327d68d529c2f5",
+  "workflow_unchanged": true,
+  "writer_commit": "1d7e44a5d088da4dcd0a82fd179c9812fe20644c",
+  "writer_ci": 41880229720,
+  "writer_deploy": 41881921373,
+  "exact_writer_release_verified": true,
+  "no_configuration_changes_or_paid_production_processing": true,
+  "scope": "Current release gate; no natural-cycle adoption or future-feature activation permission",
+  "proof_sha256": {
+    "fresh_state": "7373877afb317c70287702228385cf721c867975e5f94568192592cd0dd0a5d9",
+    "release": "385f866b85896aa07faf2504eb8bf146efa89ceaea01b81eb5fb500bb4999534"
+  }
+}

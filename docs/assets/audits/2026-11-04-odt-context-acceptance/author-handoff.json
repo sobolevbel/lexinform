@@ -1,0 +1,52 @@
+{
+  "stage": "J209 v2 fail-closed physical companion completeness",
+  "owned_source_sha256": {
+    "tools/audit_odt_context.py": "292ed653f1a5019991ecc47c81bea488e69e147040076254189795d6d72b3cff",
+    "tests/unit/test_odt_context_audit.py": "b1c796487204b346cc01889ddf4129fec14635d2e023441195c3cf14e5dc2db8"
+  },
+  "source_base_sha256": {
+    "tools/audit_odt_context.py": "08a64db28e152653817e7a450b40c481ac0d900f5acd1b86648475694adfb738",
+    "tests/unit/test_odt_context_audit.py": "901eeeb928342ed4ba3948769897845d07874e10c887df4aac9edb4afb44ab32"
+  },
+  "fix": "Require one-to-one equal physical ODT and note-companion index sets including duplicate refusal; require at least one physical ODT in cohort before output",
+  "qualification": {
+    "focused_tests": 7,
+    "mypy_files": 2,
+    "ruff": "green",
+    "new_controls": [
+      "Dropped sidecar is refused with no output",
+      "Duplicate sidecar is refused with no output",
+      "No-ODT cohort is refused with no output"
+    ],
+    "natural_replay": "v2/replay/report.json",
+    "old_natural_observations_exact": {
+      "summary": true,
+      "original_roots": true,
+      "standalone_leaf_contexts": true
+    },
+    "summary": {
+      "changed_inputs": [],
+      "original_download_roots": 6,
+      "original_independent_plain_spans": 0,
+      "original_odt_leaf_occurrences": 8,
+      "original_raw_xml_notes": 4,
+      "original_raw_xml_separate_refs": 0,
+      "original_selected_note_positive": 0,
+      "original_selected_odt_leaves": 1,
+      "original_verified_xml_call_paths": 4,
+      "original_verified_xml_note_paths": 4,
+      "source_fingerprints_unchanged": true,
+      "standalone_retained_note_positive": 4,
+      "standalone_selected_note_positive": 4,
+      "unique_standalone_leaf_runs": 8,
+      "verified_input_paths": 7
+    }
+  },
+  "preserved": [
+    "typed-cli/",
+    "typed-handoff.json",
+    "audit.py",
+    "native-report.json"
+  ],
+  "no_full_paid_download_production_commit": true
+}

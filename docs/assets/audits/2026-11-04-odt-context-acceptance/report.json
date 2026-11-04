@@ -1,0 +1,702 @@
+{
+  "code_version": "1d7e44a5d088da4dcd0a82fd179c9812fe20644c",
+  "driver_sha256": "292ed653f1a5019991ecc47c81bea488e69e147040076254189795d6d72b3cff",
+  "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "input_sha256_before": {
+    "INDEX.json": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "documents/files/584479.zip": "1ba1b05f40686650520c6b8f36fb02ff383e04ea4015f827c8757b8f89e8e72c",
+    "documents/files/700362.zip": "9fd51f4645cc96c69dcd85e08badabc0bc69e90355de4ec7e146dca26957ca96",
+    "documents/files/738682.zip": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef",
+    "documents/files/744252.zip": "ee2670aa2e0aacc42c346fc05dfd66dd8de245dbecd2d0fc3d29dfe6772463c4",
+    "documents/files/763369.zip": "125c7670f637d5a0e3fc8acde9ecfab77977b81ab5c9d57fb1585266ae39a18b",
+    "sejm/term10/files/1614__1614-uchwała.odt": "072d8e6cc811fbe7094369ed8ee40e36f05f363bc432318da272f35debf95722"
+  },
+  "limitations": [
+    "Standalone selection is not original download-root selection",
+    "Independent plaintext spans counted only where the existing oracle supports them",
+    "Separate references absent remain unobserved, not accepted",
+    "No raw/source body retained in this report; no download or provider call"
+  ],
+  "manifest_sha256": "2ce1ac6cb30dff66526502ab8bf213a70a90c4504a23220c8a649e2c4d21fd5b",
+  "original_roots": [
+    {
+      "context": "documents/files/584479.zip",
+      "input_sha256": "1ba1b05f40686650520c6b8f36fb02ff383e04ea4015f827c8757b8f89e8e72c",
+      "odt_leaves": [],
+      "odt_prefix_bytes": 0,
+      "physical_manifest_sha256": "f2d7cfef0766bc8e740e4f5b1a2eb3e241144b3aa628947e13bbcdda00e6e714",
+      "physical_parts": 26,
+      "selected_parts": 3,
+      "selected_summary_omissions": 0,
+      "selected_text_sha256": "42b52b55b4e48249a13b96592987adcd34a5847b0144ab283771bf8db5d24119",
+      "selection_sha256": "e1fb700bf78b077515e05c86a708d8b22f4015e2e7efdbb5a079f37d03b38f4a",
+      "whole_summary_bytes": 5468
+    },
+    {
+      "context": "documents/files/700362.zip",
+      "input_sha256": "9fd51f4645cc96c69dcd85e08badabc0bc69e90355de4ec7e146dca26957ca96",
+      "odt_leaves": [],
+      "odt_prefix_bytes": 0,
+      "physical_manifest_sha256": "0850b4c55e89297ea1606be1c671922b5cb7ecf0d80b9db55fe23f47efe781d5",
+      "physical_parts": 5,
+      "selected_parts": 3,
+      "selected_summary_omissions": 0,
+      "selected_text_sha256": "f910e47f1d5fdbcc656882a2b16eb793bb7aeeea3f9561357d34217c9f59f9f9",
+      "selection_sha256": "4f3a1013e2f94d91a8c3a04a8cd4892520c3a550d85905d6456932371ca6d774",
+      "whole_summary_bytes": 5350
+    },
+    {
+      "context": "documents/files/738682.zip",
+      "input_sha256": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef",
+      "odt_leaves": [
+        {
+          "associations": {
+            "embedded/embedded": 1
+          },
+          "body_manifest_sha256": "559c88edf6e25969c5c0f0ce649d6418034b5cf5e28c9f37c689a7c3f4348916",
+          "call_count": 1,
+          "captured_events": 2,
+          "captured_separate_refs": 0,
+          "input_sha256": "68b7570bf2478bdb6a785ad56d99756cce52c2b8cc733453e0fc624ab38fe0a0",
+          "member_chain_sha256": "377271c38688a577ae8388a8603180f7ec45e23c64f5b786537a3f6b8ed7f6e2",
+          "note_count": 1,
+          "observed_emitted_spans": 2,
+          "part_index": 15,
+          "raw_note_classes": {
+            "footnote": 1
+          },
+          "raw_xml_notes": 1,
+          "raw_xml_separate_refs": 0,
+          "retained_prefix": false,
+          "selected": false,
+          "status_contents": null,
+          "stored_events": 0,
+          "table_repetitions": "legacy-unexpanded",
+          "text_view": "legacy-odt-body-v1",
+          "tracked_changes": "legacy-inline-unresolved",
+          "verified_xml": {
+            "verified_call_paths": 1,
+            "verified_note_paths": 1,
+            "verified_plain_spans": 0
+          }
+        },
+        {
+          "associations": {
+            "embedded/embedded": 1
+          },
+          "body_manifest_sha256": "2f2943a30ebf3490885d41a26adfef4501f38ddda30397d9a725283152f338a8",
+          "call_count": 1,
+          "captured_events": 2,
+          "captured_separate_refs": 0,
+          "input_sha256": "feaa21827b8d98ad4116282e40f8fdd6577000c8a64a515f2f860a5ced41db44",
+          "member_chain_sha256": "0872f6c4e1278da9282377acac93698fdb16fa072fb275bcec18b7688ffb178d",
+          "note_count": 1,
+          "observed_emitted_spans": 2,
+          "part_index": 18,
+          "raw_note_classes": {
+            "footnote": 1
+          },
+          "raw_xml_notes": 1,
+          "raw_xml_separate_refs": 0,
+          "retained_prefix": false,
+          "selected": false,
+          "status_contents": null,
+          "stored_events": 0,
+          "table_repetitions": "legacy-unexpanded",
+          "text_view": "legacy-odt-body-v1",
+          "tracked_changes": "legacy-inline-unresolved",
+          "verified_xml": {
+            "verified_call_paths": 1,
+            "verified_note_paths": 1,
+            "verified_plain_spans": 0
+          }
+        }
+      ],
+      "odt_prefix_bytes": 0,
+      "physical_manifest_sha256": "d85f457f1a71d629d422a3b53d07cd28a7f27a008dd122782666e16407df738f",
+      "physical_parts": 24,
+      "selected_parts": 1,
+      "selected_summary_omissions": 0,
+      "selected_text_sha256": "ae9e54a61735683c55989d496f8e876db68e7cdaab6077c5f590291089548236",
+      "selection_sha256": "3dec71bf3ba933ff4f8676ef0a99bc605e34637df456589d7c81b1af1a472a0c",
+      "whole_summary_bytes": 2740
+    },
+    {
+      "context": "documents/files/744252.zip",
+      "input_sha256": "ee2670aa2e0aacc42c346fc05dfd66dd8de245dbecd2d0fc3d29dfe6772463c4",
+      "odt_leaves": [
+        {
+          "associations": {
+            "embedded/embedded": 1
+          },
+          "body_manifest_sha256": "31a6bb61c91a8dcffec318af53c2eb928735f1e2ee391a7bd359aa9b84c060a9",
+          "call_count": 1,
+          "captured_events": 2,
+          "captured_separate_refs": 0,
+          "input_sha256": "6e5deaf254817350d3e65d01acbb58e782ab4424efa7debccf74742e7306de39",
+          "member_chain_sha256": "918049947232a67ae22ff6d28dc04832deb844e599256678961ded36bc71b62d",
+          "note_count": 1,
+          "observed_emitted_spans": 2,
+          "part_index": 20,
+          "raw_note_classes": {
+            "footnote": 1
+          },
+          "raw_xml_notes": 1,
+          "raw_xml_separate_refs": 0,
+          "retained_prefix": false,
+          "selected": false,
+          "status_contents": null,
+          "stored_events": 0,
+          "table_repetitions": "legacy-unexpanded",
+          "text_view": "legacy-odt-body-v1",
+          "tracked_changes": "legacy-inline-unresolved",
+          "verified_xml": {
+            "verified_call_paths": 1,
+            "verified_note_paths": 1,
+            "verified_plain_spans": 0
+          }
+        },
+        {
+          "associations": {
+            "embedded/embedded": 1
+          },
+          "body_manifest_sha256": "e4506fe488b5e4bc335d920537b2b5e5b3e1cbfdbf056ca41cb69adfd465aa3e",
+          "call_count": 1,
+          "captured_events": 2,
+          "captured_separate_refs": 0,
+          "input_sha256": "287f85a695eb9d8a4652af853b0807824a744b37e914a9844efb67dba8474d2d",
+          "member_chain_sha256": "8854cd4fd6fac393fa51abfadc24edaf23b843540e6d43f666f972e5a02b4cf7",
+          "note_count": 1,
+          "observed_emitted_spans": 2,
+          "part_index": 23,
+          "raw_note_classes": {
+            "footnote": 1
+          },
+          "raw_xml_notes": 1,
+          "raw_xml_separate_refs": 0,
+          "retained_prefix": false,
+          "selected": false,
+          "status_contents": null,
+          "stored_events": 0,
+          "table_repetitions": "legacy-unexpanded",
+          "text_view": "legacy-odt-body-v1",
+          "tracked_changes": "legacy-inline-unresolved",
+          "verified_xml": {
+            "verified_call_paths": 1,
+            "verified_note_paths": 1,
+            "verified_plain_spans": 0
+          }
+        }
+      ],
+      "odt_prefix_bytes": 0,
+      "physical_manifest_sha256": "49fd3bb36b07580853816bd40a75f5828536e2961be8fafd0624664c6b9ca67c",
+      "physical_parts": 32,
+      "selected_parts": 3,
+      "selected_summary_omissions": 0,
+      "selected_text_sha256": "cfcffc7010274465bdbebf4557b9401945eb0142868f65a6db78cd3fd23f1e1f",
+      "selection_sha256": "95cab74bb45d309106d537ff61176436e261bed5499e6368373912927e58b11d",
+      "whole_summary_bytes": 4988
+    },
+    {
+      "context": "documents/files/763369.zip",
+      "input_sha256": "125c7670f637d5a0e3fc8acde9ecfab77977b81ab5c9d57fb1585266ae39a18b",
+      "odt_leaves": [
+        {
+          "associations": {},
+          "body_manifest_sha256": "4636b069a51a83ae34cf9533dbc24f7a3cb99f2990a9149206bebf378e7ef98c",
+          "call_count": 0,
+          "captured_events": 0,
+          "captured_separate_refs": 0,
+          "input_sha256": "381db301d13bbe8f3abaeaef65804b6cb6732fa91a79d912c4b2af52ea616ca0",
+          "member_chain_sha256": "25bdb6df4580b7f12394bb1b4b10eabd2aa62d00add967ad445dbf781e6e089c",
+          "note_count": 0,
+          "observed_emitted_spans": 0,
+          "part_index": 28,
+          "raw_note_classes": {},
+          "raw_xml_notes": 0,
+          "raw_xml_separate_refs": 0,
+          "retained_prefix": false,
+          "selected": false,
+          "status_contents": null,
+          "stored_events": 0,
+          "table_repetitions": "legacy-unexpanded",
+          "text_view": "legacy-odt-body-v1",
+          "tracked_changes": "legacy-inline-unresolved",
+          "verified_xml": {
+            "verified_call_paths": 0,
+            "verified_note_paths": 0,
+            "verified_plain_spans": 0
+          }
+        },
+        {
+          "associations": {},
+          "body_manifest_sha256": "7b7e1d099090fc3cb78494828c81d279c4e212ce95f666e94a3cf8df4ffc1bd3",
+          "call_count": 0,
+          "captured_events": 0,
+          "captured_separate_refs": 0,
+          "input_sha256": "5ec123f657087818761d77d3e16e47bed1ca94e6bd5d60fda2ac38d860a901e6",
+          "member_chain_sha256": "3bb770a5c5fd9a3d21d7dbc3d2b8652e37e44ed7643597ee34393c3ee7f1a4b0",
+          "note_count": 0,
+          "observed_emitted_spans": 0,
+          "part_index": 35,
+          "raw_note_classes": {},
+          "raw_xml_notes": 0,
+          "raw_xml_separate_refs": 0,
+          "retained_prefix": false,
+          "selected": false,
+          "status_contents": null,
+          "stored_events": 0,
+          "table_repetitions": "legacy-unexpanded",
+          "text_view": "legacy-odt-body-v1",
+          "tracked_changes": "legacy-inline-unresolved",
+          "verified_xml": {
+            "verified_call_paths": 0,
+            "verified_note_paths": 0,
+            "verified_plain_spans": 0
+          }
+        },
+        {
+          "associations": {},
+          "body_manifest_sha256": "119f6f0a62a53a6f5fc1b168fddeacc217d5baaa2f72bb3593d0cc2b9d67624f",
+          "call_count": 0,
+          "captured_events": 0,
+          "captured_separate_refs": 0,
+          "input_sha256": "82e86c9777611b844eebfe244c32e15e5be7bccb2c528447a0708659b090cbe2",
+          "member_chain_sha256": "95b04522f8ba35e42cb5c780a88a6bf2654c238f6a907fca7d3301c189811000",
+          "note_count": 0,
+          "observed_emitted_spans": 0,
+          "part_index": 37,
+          "raw_note_classes": {},
+          "raw_xml_notes": 0,
+          "raw_xml_separate_refs": 0,
+          "retained_prefix": false,
+          "selected": false,
+          "status_contents": null,
+          "stored_events": 0,
+          "table_repetitions": "legacy-unexpanded",
+          "text_view": "legacy-odt-body-v1",
+          "tracked_changes": "legacy-inline-unresolved",
+          "verified_xml": {
+            "verified_call_paths": 0,
+            "verified_note_paths": 0,
+            "verified_plain_spans": 0
+          }
+        }
+      ],
+      "odt_prefix_bytes": 0,
+      "physical_manifest_sha256": "e785387cda00feef361ae5c875c78574aa6616ab608462d0a51ca995dbb37046",
+      "physical_parts": 38,
+      "selected_parts": 4,
+      "selected_summary_omissions": 0,
+      "selected_text_sha256": "b29f82a8506e66b8446aa00531d73f7f5d6d2952d5efb761ee308ff7ef45491f",
+      "selection_sha256": "1d1bfba1d4e4e9ff4e4c63ea2c35a09e2f132c707c06d80a4846ec31fd549df4",
+      "whole_summary_bytes": 5939
+    },
+    {
+      "context": "sejm/term10/files/1614__1614-uchwała.odt",
+      "input_sha256": "072d8e6cc811fbe7094369ed8ee40e36f05f363bc432318da272f35debf95722",
+      "odt_leaves": [
+        {
+          "associations": {},
+          "body_manifest_sha256": "037814736dd2086897c1b3e7806dee07fb884427af2d8c5b34053e9c7becabc5",
+          "call_count": 0,
+          "captured_events": 0,
+          "captured_separate_refs": 0,
+          "input_sha256": "072d8e6cc811fbe7094369ed8ee40e36f05f363bc432318da272f35debf95722",
+          "member_chain_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "note_count": 0,
+          "observed_emitted_spans": 0,
+          "part_index": 0,
+          "raw_note_classes": {},
+          "raw_xml_notes": 0,
+          "raw_xml_separate_refs": 0,
+          "retained_prefix": false,
+          "selected": true,
+          "status_contents": "not_retained",
+          "stored_events": 0,
+          "table_repetitions": "legacy-unexpanded",
+          "text_view": "legacy-odt-body-v1",
+          "tracked_changes": "legacy-inline-unresolved",
+          "verified_xml": {
+            "verified_call_paths": 0,
+            "verified_note_paths": 0,
+            "verified_plain_spans": 0
+          }
+        }
+      ],
+      "odt_prefix_bytes": 0,
+      "physical_manifest_sha256": "f8daa6f418e9d6255bf3ae4c61c79f6fd3d2452261a2bd77819b7f1fbb076a2a",
+      "physical_parts": 1,
+      "selected_parts": 1,
+      "selected_summary_omissions": 0,
+      "selected_text_sha256": "ba785cd646ef7be569a3aab411b6be8c4412239a1bec30c64b463629db7521e2",
+      "selection_sha256": "2a137062f1fdcb911e36cd38432d1ffcf03addffa0c57caae15b4fac98789d25",
+      "whole_summary_bytes": 3375
+    }
+  ],
+  "scope": "Explicit original download roots and their observed standalone ODT bytes; no discovery or legal labels",
+  "source_fingerprints_sha256": "3ad52dae4bce966330e363f30921ad6ae538f57c6700fbe569efb0d2695738ab",
+  "standalone_leaf_contexts": [
+    {
+      "context": "standalone-observed-leaf",
+      "input_sha256": "072d8e6cc811fbe7094369ed8ee40e36f05f363bc432318da272f35debf95722",
+      "odt_leaves": [
+        {
+          "associations": {},
+          "body_manifest_sha256": "037814736dd2086897c1b3e7806dee07fb884427af2d8c5b34053e9c7becabc5",
+          "call_count": 0,
+          "captured_events": 0,
+          "captured_separate_refs": 0,
+          "input_sha256": "072d8e6cc811fbe7094369ed8ee40e36f05f363bc432318da272f35debf95722",
+          "member_chain_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "note_count": 0,
+          "observed_emitted_spans": 0,
+          "part_index": 0,
+          "raw_note_classes": {},
+          "raw_xml_notes": 0,
+          "raw_xml_separate_refs": 0,
+          "retained_prefix": false,
+          "selected": true,
+          "status_contents": "not_retained",
+          "stored_events": 0,
+          "table_repetitions": "legacy-unexpanded",
+          "text_view": "legacy-odt-body-v1",
+          "tracked_changes": "legacy-inline-unresolved",
+          "verified_xml": {
+            "verified_call_paths": 0,
+            "verified_note_paths": 0,
+            "verified_plain_spans": 0
+          }
+        }
+      ],
+      "odt_prefix_bytes": 0,
+      "physical_manifest_sha256": "f8daa6f418e9d6255bf3ae4c61c79f6fd3d2452261a2bd77819b7f1fbb076a2a",
+      "physical_parts": 1,
+      "selected_parts": 1,
+      "selected_summary_omissions": 0,
+      "selected_text_sha256": "ba785cd646ef7be569a3aab411b6be8c4412239a1bec30c64b463629db7521e2",
+      "selection_sha256": "2a137062f1fdcb911e36cd38432d1ffcf03addffa0c57caae15b4fac98789d25",
+      "whole_summary_bytes": 3375
+    },
+    {
+      "context": "standalone-observed-leaf",
+      "input_sha256": "287f85a695eb9d8a4652af853b0807824a744b37e914a9844efb67dba8474d2d",
+      "odt_leaves": [
+        {
+          "associations": {
+            "embedded/embedded": 1
+          },
+          "body_manifest_sha256": "e4506fe488b5e4bc335d920537b2b5e5b3e1cbfdbf056ca41cb69adfd465aa3e",
+          "call_count": 1,
+          "captured_events": 2,
+          "captured_separate_refs": 0,
+          "input_sha256": "287f85a695eb9d8a4652af853b0807824a744b37e914a9844efb67dba8474d2d",
+          "member_chain_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "note_count": 1,
+          "observed_emitted_spans": 2,
+          "part_index": 0,
+          "raw_note_classes": {
+            "footnote": 1
+          },
+          "raw_xml_notes": 1,
+          "raw_xml_separate_refs": 0,
+          "retained_prefix": true,
+          "selected": true,
+          "status_contents": "prefix_retained",
+          "stored_events": 2,
+          "table_repetitions": "legacy-unexpanded",
+          "text_view": "legacy-odt-body-v1",
+          "tracked_changes": "legacy-inline-unresolved",
+          "verified_xml": {
+            "verified_call_paths": 1,
+            "verified_note_paths": 1,
+            "verified_plain_spans": 0
+          }
+        }
+      ],
+      "odt_prefix_bytes": 1061,
+      "physical_manifest_sha256": "877b72203803ea295e83a16b827b7d68f13eaee51a097eb5774289898eb56a72",
+      "physical_parts": 1,
+      "selected_parts": 1,
+      "selected_summary_omissions": 0,
+      "selected_text_sha256": "7df1b70396c3b10bafda1005eba02671fdf4caef8b0a8fc5027a60a062c5c17e",
+      "selection_sha256": "e4b3134b9987a96518282d749cc74a2399bdd5cf3d1827d3268ad14893aae9af",
+      "whole_summary_bytes": 4458
+    },
+    {
+      "context": "standalone-observed-leaf",
+      "input_sha256": "381db301d13bbe8f3abaeaef65804b6cb6732fa91a79d912c4b2af52ea616ca0",
+      "odt_leaves": [
+        {
+          "associations": {},
+          "body_manifest_sha256": "4636b069a51a83ae34cf9533dbc24f7a3cb99f2990a9149206bebf378e7ef98c",
+          "call_count": 0,
+          "captured_events": 0,
+          "captured_separate_refs": 0,
+          "input_sha256": "381db301d13bbe8f3abaeaef65804b6cb6732fa91a79d912c4b2af52ea616ca0",
+          "member_chain_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "note_count": 0,
+          "observed_emitted_spans": 0,
+          "part_index": 0,
+          "raw_note_classes": {},
+          "raw_xml_notes": 0,
+          "raw_xml_separate_refs": 0,
+          "retained_prefix": false,
+          "selected": true,
+          "status_contents": "not_retained",
+          "stored_events": 0,
+          "table_repetitions": "legacy-unexpanded",
+          "text_view": "legacy-odt-body-v1",
+          "tracked_changes": "legacy-inline-unresolved",
+          "verified_xml": {
+            "verified_call_paths": 0,
+            "verified_note_paths": 0,
+            "verified_plain_spans": 0
+          }
+        }
+      ],
+      "odt_prefix_bytes": 0,
+      "physical_manifest_sha256": "12b1378489ed4dbc40d4f0a72117998fcf2ead5a37282d2f5104257770fda891",
+      "physical_parts": 1,
+      "selected_parts": 1,
+      "selected_summary_omissions": 0,
+      "selected_text_sha256": "5f13537e53195da3a96b3e84a5a7a5b6dee433451b83db98799aa29a7b0c6e0b",
+      "selection_sha256": "0ec47635be4e3596ccdcdef70d72dc7c67137b5691abe0cddd9d8ad7acfd83f0",
+      "whole_summary_bytes": 3378
+    },
+    {
+      "context": "standalone-observed-leaf",
+      "input_sha256": "5ec123f657087818761d77d3e16e47bed1ca94e6bd5d60fda2ac38d860a901e6",
+      "odt_leaves": [
+        {
+          "associations": {},
+          "body_manifest_sha256": "7b7e1d099090fc3cb78494828c81d279c4e212ce95f666e94a3cf8df4ffc1bd3",
+          "call_count": 0,
+          "captured_events": 0,
+          "captured_separate_refs": 0,
+          "input_sha256": "5ec123f657087818761d77d3e16e47bed1ca94e6bd5d60fda2ac38d860a901e6",
+          "member_chain_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "note_count": 0,
+          "observed_emitted_spans": 0,
+          "part_index": 0,
+          "raw_note_classes": {},
+          "raw_xml_notes": 0,
+          "raw_xml_separate_refs": 0,
+          "retained_prefix": false,
+          "selected": true,
+          "status_contents": "not_retained",
+          "stored_events": 0,
+          "table_repetitions": "legacy-unexpanded",
+          "text_view": "legacy-odt-body-v1",
+          "tracked_changes": "legacy-inline-unresolved",
+          "verified_xml": {
+            "verified_call_paths": 0,
+            "verified_note_paths": 0,
+            "verified_plain_spans": 0
+          }
+        }
+      ],
+      "odt_prefix_bytes": 0,
+      "physical_manifest_sha256": "008a002a50c0d19db99685a2b309d383aadba8ec565274e84975b2ce7a7bd899",
+      "physical_parts": 1,
+      "selected_parts": 1,
+      "selected_summary_omissions": 0,
+      "selected_text_sha256": "a2409659d30682b8a86ff1b9edcf27b33b297a3c99c637a1b05de24065bf5aab",
+      "selection_sha256": "5de790857c9b872600200641da90e6ac485cd5064e027d9372d99a1f04e236a8",
+      "whole_summary_bytes": 3377
+    },
+    {
+      "context": "standalone-observed-leaf",
+      "input_sha256": "68b7570bf2478bdb6a785ad56d99756cce52c2b8cc733453e0fc624ab38fe0a0",
+      "odt_leaves": [
+        {
+          "associations": {
+            "embedded/embedded": 1
+          },
+          "body_manifest_sha256": "559c88edf6e25969c5c0f0ce649d6418034b5cf5e28c9f37c689a7c3f4348916",
+          "call_count": 1,
+          "captured_events": 2,
+          "captured_separate_refs": 0,
+          "input_sha256": "68b7570bf2478bdb6a785ad56d99756cce52c2b8cc733453e0fc624ab38fe0a0",
+          "member_chain_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "note_count": 1,
+          "observed_emitted_spans": 2,
+          "part_index": 0,
+          "raw_note_classes": {
+            "footnote": 1
+          },
+          "raw_xml_notes": 1,
+          "raw_xml_separate_refs": 0,
+          "retained_prefix": true,
+          "selected": true,
+          "status_contents": "prefix_retained",
+          "stored_events": 2,
+          "table_repetitions": "legacy-unexpanded",
+          "text_view": "legacy-odt-body-v1",
+          "tracked_changes": "legacy-inline-unresolved",
+          "verified_xml": {
+            "verified_call_paths": 1,
+            "verified_note_paths": 1,
+            "verified_plain_spans": 0
+          }
+        }
+      ],
+      "odt_prefix_bytes": 1061,
+      "physical_manifest_sha256": "bb698692dba0bcdf229f87c3e318757b5bef0dba10c7fbef0511888bf11333ee",
+      "physical_parts": 1,
+      "selected_parts": 1,
+      "selected_summary_omissions": 0,
+      "selected_text_sha256": "0ff580b2d0a428bf567b736ae38be278aa537b89abae3a58951dc546ec36ee3c",
+      "selection_sha256": "7ae38da94e11559d963d14b8c4ac4efc5afd5b17ce1c398274a605f786b11341",
+      "whole_summary_bytes": 4461
+    },
+    {
+      "context": "standalone-observed-leaf",
+      "input_sha256": "6e5deaf254817350d3e65d01acbb58e782ab4424efa7debccf74742e7306de39",
+      "odt_leaves": [
+        {
+          "associations": {
+            "embedded/embedded": 1
+          },
+          "body_manifest_sha256": "31a6bb61c91a8dcffec318af53c2eb928735f1e2ee391a7bd359aa9b84c060a9",
+          "call_count": 1,
+          "captured_events": 2,
+          "captured_separate_refs": 0,
+          "input_sha256": "6e5deaf254817350d3e65d01acbb58e782ab4424efa7debccf74742e7306de39",
+          "member_chain_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "note_count": 1,
+          "observed_emitted_spans": 2,
+          "part_index": 0,
+          "raw_note_classes": {
+            "footnote": 1
+          },
+          "raw_xml_notes": 1,
+          "raw_xml_separate_refs": 0,
+          "retained_prefix": true,
+          "selected": true,
+          "status_contents": "prefix_retained",
+          "stored_events": 2,
+          "table_repetitions": "legacy-unexpanded",
+          "text_view": "legacy-odt-body-v1",
+          "tracked_changes": "legacy-inline-unresolved",
+          "verified_xml": {
+            "verified_call_paths": 1,
+            "verified_note_paths": 1,
+            "verified_plain_spans": 0
+          }
+        }
+      ],
+      "odt_prefix_bytes": 1061,
+      "physical_manifest_sha256": "862cccbc623fc81a42d6cf07d19cd774179f3028ce4d888ed6f149cea4a83c38",
+      "physical_parts": 1,
+      "selected_parts": 1,
+      "selected_summary_omissions": 0,
+      "selected_text_sha256": "c8dc210399afe64053273c7009df6bbddeff7d6c995187649dca17f62a4150e5",
+      "selection_sha256": "6406ce3fb5a83fea6ce9821bacb9c73ef00326b0cd54edc684a37e170545dfdd",
+      "whole_summary_bytes": 4461
+    },
+    {
+      "context": "standalone-observed-leaf",
+      "input_sha256": "82e86c9777611b844eebfe244c32e15e5be7bccb2c528447a0708659b090cbe2",
+      "odt_leaves": [
+        {
+          "associations": {},
+          "body_manifest_sha256": "119f6f0a62a53a6f5fc1b168fddeacc217d5baaa2f72bb3593d0cc2b9d67624f",
+          "call_count": 0,
+          "captured_events": 0,
+          "captured_separate_refs": 0,
+          "input_sha256": "82e86c9777611b844eebfe244c32e15e5be7bccb2c528447a0708659b090cbe2",
+          "member_chain_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "note_count": 0,
+          "observed_emitted_spans": 0,
+          "part_index": 0,
+          "raw_note_classes": {},
+          "raw_xml_notes": 0,
+          "raw_xml_separate_refs": 0,
+          "retained_prefix": false,
+          "selected": true,
+          "status_contents": "not_retained",
+          "stored_events": 0,
+          "table_repetitions": "legacy-unexpanded",
+          "text_view": "legacy-odt-body-v1",
+          "tracked_changes": "legacy-inline-unresolved",
+          "verified_xml": {
+            "verified_call_paths": 0,
+            "verified_note_paths": 0,
+            "verified_plain_spans": 0
+          }
+        }
+      ],
+      "odt_prefix_bytes": 0,
+      "physical_manifest_sha256": "fac57602e63f72b1be326855290783fd624c5144c28af038e08dcedc1d5f00b7",
+      "physical_parts": 1,
+      "selected_parts": 1,
+      "selected_summary_omissions": 0,
+      "selected_text_sha256": "906328f395a72070aa362b44da47ac302a1d3fffc9877525ef3a98fcc57836cd",
+      "selection_sha256": "cff59d83d0cf625539c190e495f5f6f8950da2828319fa829f5454ad6e718b5b",
+      "whole_summary_bytes": 3375
+    },
+    {
+      "context": "standalone-observed-leaf",
+      "input_sha256": "feaa21827b8d98ad4116282e40f8fdd6577000c8a64a515f2f860a5ced41db44",
+      "odt_leaves": [
+        {
+          "associations": {
+            "embedded/embedded": 1
+          },
+          "body_manifest_sha256": "2f2943a30ebf3490885d41a26adfef4501f38ddda30397d9a725283152f338a8",
+          "call_count": 1,
+          "captured_events": 2,
+          "captured_separate_refs": 0,
+          "input_sha256": "feaa21827b8d98ad4116282e40f8fdd6577000c8a64a515f2f860a5ced41db44",
+          "member_chain_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "note_count": 1,
+          "observed_emitted_spans": 2,
+          "part_index": 0,
+          "raw_note_classes": {
+            "footnote": 1
+          },
+          "raw_xml_notes": 1,
+          "raw_xml_separate_refs": 0,
+          "retained_prefix": true,
+          "selected": true,
+          "status_contents": "prefix_retained",
+          "stored_events": 2,
+          "table_repetitions": "legacy-unexpanded",
+          "text_view": "legacy-odt-body-v1",
+          "tracked_changes": "legacy-inline-unresolved",
+          "verified_xml": {
+            "verified_call_paths": 1,
+            "verified_note_paths": 1,
+            "verified_plain_spans": 0
+          }
+        }
+      ],
+      "odt_prefix_bytes": 1061,
+      "physical_manifest_sha256": "cdce453e31843ad7b85143c93f4e70f43c41a7174b60ab351ae6d0795cc4c2c3",
+      "physical_parts": 1,
+      "selected_parts": 1,
+      "selected_summary_omissions": 0,
+      "selected_text_sha256": "6647448f3c58abc0b1d6d65442dcc052792338a1ec9851496622cb3ea5fb0ee0",
+      "selection_sha256": "d03240050a0adad1c3efbc650dc373b249517a4ae86f8338bb0f9cfebf544da3",
+      "whole_summary_bytes": 4458
+    }
+  ],
+  "summary": {
+    "changed_inputs": [],
+    "original_download_roots": 6,
+    "original_independent_plain_spans": 0,
+    "original_odt_leaf_occurrences": 8,
+    "original_raw_xml_notes": 4,
+    "original_raw_xml_separate_refs": 0,
+    "original_selected_note_positive": 0,
+    "original_selected_odt_leaves": 1,
+    "original_verified_xml_call_paths": 4,
+    "original_verified_xml_note_paths": 4,
+    "source_fingerprints_unchanged": true,
+    "standalone_retained_note_positive": 4,
+    "standalone_selected_note_positive": 4,
+    "unique_standalone_leaf_runs": 8,
+    "verified_input_paths": 7
+  }
+}
