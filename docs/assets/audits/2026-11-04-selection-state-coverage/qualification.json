@@ -1,0 +1,56 @@
+{
+  "stage": "J219",
+  "full_tests": 8036,
+  "pytest_xml_seconds": 303.187,
+  "coverage_percent": 92,
+  "source_config_pins": 765,
+  "source_freeze_exact": true,
+  "focused_unit_tests": 47,
+  "new_unit_cases": 21,
+  "new_scenarios": 0,
+  "strict_mypy_files": 696,
+  "mypy_ruff_format": "green",
+  "pinned_state": {
+    "state_branch_commit": "105de577d682b1f7057e0593aab5c7a408aed740",
+    "database_sha256": "43965abda162272a982b15d4a2b9e0efea59d625cc7dbf58185dda6c910f8514",
+    "default_doctor_exact": true,
+    "doctor_errors": 0,
+    "database_unchanged": true,
+    "observations": 42,
+    "unique_selections": 36,
+    "counts": {
+      "ambiguous": 0,
+      "selected": 12,
+      "unknown_identity_mismatch": 0,
+      "unknown_invalid_observation": 0,
+      "unknown_invalid_selection": 0,
+      "unknown_missing_selection": 0,
+      "unsupported": 0,
+      "unverified": 29,
+      "waiting": 1
+    },
+    "groups": 8,
+    "unattributed": 0
+  },
+  "scope": "Recorded source-observation rows, never current Bill blockers or attempt history",
+  "default_report_normalized_sha256": "3a2b5ea524ac08c948f3fd5c89803ebb74e596d094a60186bff40fe9e3504f70",
+  "owned_source_sha256": {
+    "tests/unit/test_selection_state_coverage.py": "06899a26ad7f1b78145c3afbe6e9d6c8dab820162e3972f5f4629142e6fc8974",
+    "tools/source_history_doctor.py": "530ab710adf22d20e14d082e794146aa5e4d7cc9ade4e8887d07d9d8810d5569"
+  },
+  "proof_sha256": {
+    "root-qa/full.xml": "9f9af23e14e8d03d6d7e048dee2a5610ac9cc5b875a34ac34b33405bd20e0ce4",
+    "root-qa/full.log": "62f46b57854ef20359ace3aec9a7df04cbdba58f139ceb468c1ae3f5052237b4",
+    "root-qa/source-freeze.json": "c8889540ac2176afa4abfe5142b904ceb3e6072f0918ac083f1a27b3f93af9b8",
+    "root-state/baseline-doctor.json": "fc7977c9d484b19d86f618f12e7307ad3bcfd243fb943081b48ea438314d2fe2",
+    "root-state/proof.json": "6d9bb33bbb8110cb1cc8bd54f6c1bc1691451ea9287c4a7d49f96dfb0922e221"
+  },
+  "corpus_replay": "Not applicable: no extraction/selection/text/map behavior change; focused units and read-only fixed-state qualification",
+  "previous_release": "45ba83147718745821eff9551933714af0609559 exact CI41909679495/relay41910813576 verified",
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  }
+}

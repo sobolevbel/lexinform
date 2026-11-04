@@ -163,6 +163,15 @@ unique requested URLs, unique bodies/bytes и UTC день первой запи
 source URLs/body не выводятся; обе команды только читают input snapshot. Исторический поток
 скачиваний из receipt inventory не реконструируется.
 
+`tools/source_history_doctor.py --selection-coverage` добавляет read-only срез сохранённых
+source observations по состояниям выбора. Единица и общий знаменатель — observation rows,
+а не уникальные selections, bills, downloads или попытки. `unverified` — отдельное записанное
+состояние; corruption/missing parents дают unattributed unknown, отсутствующая схема — unavailable.
+Пустая доступная таблица имеет total=0 и неизвестные доли. Это не текущая блокировка Bill,
+полнота извлечения или классификация причин; несохранённые события неизвестны.
+[Контракт и проверка](../assets/audits/2026-11-04-selection-state-coverage/report.md).
+
+
 
 ## Естественное восстановление schema 55 · 28 октября
 

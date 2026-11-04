@@ -7,8 +7,9 @@ import sqlite3
 from collections import Counter
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, get_args
 
+from lexinform.adapters.content_source_refs import ContentSourceRows
 from lexinform.adapters.extraction_history import (
     EXTRACTION_SCHEMA_VERSION,
     ExtractionResultRowError,
@@ -29,6 +30,7 @@ from lexinform.models import (
     SelectionEditionReference,
     SourceObservation,
 )
+from lexinform.models.documents import SelectionState
 from tools.artifact_metadata import (
     ArtifactMetadataIssue,
     ArtifactReadIssue,
@@ -110,13 +112,133 @@ def _audit_senate_inspections(
         issue("senate_inspection_orphan_link", f"senate_inspection_sources/{row['audit_id']}")
 
 
-def audit(database: Path) -> dict[str, Any]:
+_COVERAGE_UNKNOWN = (
+    "unknown_invalid_observation",
+    "unknown_missing_selection",
+    "unknown_invalid_selection",
+    "unknown_identity_mismatch",
+)
+
+
+def _selection_coverage_state(
+    connection: sqlite3.Connection, reader: ContentSourceRows, selection_id: str
+) -> str:
+    row = connection.execute(
+        "SELECT record_json FROM document_selections WHERE selection_id=?", (selection_id,)
+    ).fetchone()
+    if row is None:
+        return "unknown_missing_selection"
+    try:
+        DocumentSelectionRecord.model_validate_json(row[0])
+    except ValueError, TypeError:
+        return "unknown_invalid_selection"
+    try:
+        selection = reader.get_document_selection(selection_id)
+    except ValueError, TypeError:
+        return "unknown_identity_mismatch"
+    return selection.selection.state if selection is not None else "unknown_missing_selection"
+
+
+def _selection_coverage_unavailable(connection: sqlite3.Connection) -> list[str]:
+    columns = {
+        "source_observations": {
+            "observation_id",
+            "term",
+            "number",
+            "purpose",
+            "selection_id",
+            "source_url",
+            "source_kind",
+            "observation_json",
+        },
+        "document_selections": {
+            "selection_id",
+            "question",
+            "policy_version",
+            "state",
+            "record_json",
+        },
+    }
+    return sorted(
+        name
+        for name, required in columns.items()
+        if not required <= {row[1] for row in connection.execute(f"PRAGMA table_info({name})")}
+    )
+
+
+def selection_state_coverage(connection: sqlite3.Connection) -> dict[str, Any]:
+    """Each persisted observation is one unit, including rows whose state cannot be verified."""
+    unavailable = _selection_coverage_unavailable(connection)
+
+    report: dict[str, Any] = {
+        "status": "unavailable" if unavailable else "available",
+        "unit": "persisted_source_observation_row",
+        "denominator": "all_source_observation_rows",
+        "total": None,
+        "counts": None,
+        "fractions": None,
+        "groups": None,
+        "unattributed": None,
+        "unavailable_schema": sorted(unavailable),
+    }
+    if unavailable:
+        return report
+    counts = dict.fromkeys((*get_args(SelectionState), *_COVERAGE_UNKNOWN), 0)
+    groups: dict[tuple[str, str], Counter[str]] = {}
+    reader = ContentSourceRows(connection)
+    cached: dict[str, str] = {}
+    cursor = connection.cursor()
+    cursor.row_factory = sqlite3.Row
+    for row in cursor.execute("SELECT observation_id, observation_json FROM source_observations"):
+        try:
+            SourceObservation.model_validate_json(row["observation_json"])
+        except ValueError, TypeError:
+            counts["unknown_invalid_observation"] += 1
+            continue
+        try:
+            observation = reader.get_source_observation(row["observation_id"])
+        except ValueError, TypeError:
+            observation = None
+        if observation is None:
+            counts["unknown_identity_mismatch"] += 1
+            continue
+        selection_id = observation.selection_id
+        if selection_id not in cached:
+            cached[selection_id] = _selection_coverage_state(connection, reader, selection_id)
+        state = cached[selection_id]
+        counts[state] += 1
+        if state not in _COVERAGE_UNKNOWN:
+            key = (observation.purpose, observation.document.kind)
+            groups.setdefault(key, Counter())[state] += 1
+    total = sum(counts.values())
+    report.update(
+        total=total,
+        counts=counts,
+        fractions={state: count / total if total else None for state, count in counts.items()},
+        unattributed=sum(counts[state] for state in _COVERAGE_UNKNOWN),
+        groups=[
+            {
+                "purpose": purpose,
+                "document_kind": kind,
+                "total": sum(group.values()),
+                "fraction_denominator": total,
+                "counts": {state: group[state] for state in counts},
+                "fractions": {state: group[state] / total if total else None for state in counts},
+            }
+            for (purpose, kind), group in sorted(groups.items())
+        ],
+    )
+    return report
+
+
+def audit(database: Path, *, include_selection_coverage: bool = False) -> dict[str, Any]:
     counts: Counter[str] = Counter()
     findings: list[dict[str, str]] = []
     selections: dict[str, DocumentSelectionRecord] = {}
     referenced: set[str] = set()
     artifacts: dict[str, ArtifactMetadata] = {}
     linked_artifacts: set[str] = set()
+    coverage_report: dict[str, Any] | None = None
 
     def issue(code: str, ref: str) -> None:
         findings.append({"code": code, "ref": ref, "level": "error"})
@@ -128,6 +250,13 @@ def audit(database: Path) -> dict[str, Any]:
             row["name"]
             for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
+        coverage_unavailable = (
+            set(_selection_coverage_unavailable(connection))
+            if include_selection_coverage
+            else set()
+        )
+        for name in sorted(coverage_unavailable & tables):
+            issue("source_history_columns_unavailable", name)
         missing = sorted(_TABLES - tables)
         if schema >= 52 or _TABLES.intersection(tables):
             for name in missing:
@@ -183,7 +312,7 @@ def audit(database: Path) -> dict[str, Any]:
         if omission_tables <= tables:
             for code, ref in source_omission_issues(connection):
                 issue(code, ref)
-        if "document_selections" in tables:
+        if "document_selections" in tables and "document_selections" not in coverage_unavailable:
             for row in connection.execute(
                 "SELECT rowid AS audit_id, * FROM document_selections ORDER BY rowid"
             ):
@@ -211,7 +340,7 @@ def audit(database: Path) -> dict[str, Any]:
                     else "policy_recorded"
                 ] += 1
                 counts["state/" + record.selection.state] += 1
-        if "source_observations" in tables:
+        if "source_observations" in tables and "source_observations" not in coverage_unavailable:
             for row in connection.execute(
                 "SELECT rowid AS audit_id, * FROM source_observations ORDER BY rowid"
             ):
@@ -341,6 +470,8 @@ def audit(database: Path) -> dict[str, Any]:
                     != linked_edition
                 ):
                     issue("edition_membership_mismatch", ref)
+        if include_selection_coverage:
+            coverage_report = selection_state_coverage(connection)
         if not snapshot.unchanged():
             issue("database_changed_during_audit", "database")
     counts["unreferenced_selection_rows"] = len(set(selections) - referenced)
@@ -367,7 +498,7 @@ def audit(database: Path) -> dict[str, Any]:
         + counts.get("source_catalog_snapshots_rows", 0)
         + counts.get("source_catalog_attempts_rows", 0)
     )
-    return {
+    report = {
         "version": 1,
         "status": "failed" if findings else "recorded" if observed else "not_run",
         "database_sha256": snapshot.sha256,
@@ -395,11 +526,15 @@ def audit(database: Path) -> dict[str, Any]:
         ],
     }
 
+    if include_selection_coverage:
+        report["selection_state_coverage"] = coverage_report
+    return report
 
-def run(database: Path, output: Path) -> int:
+
+def run(database: Path, output: Path, *, include_selection_coverage: bool = False) -> int:
     if output.resolve() == database.resolve():
         raise ValueError("Report must be separate from the input database")
-    report = audit(database)
+    report = audit(database, include_selection_coverage=include_selection_coverage)
     output.parent.mkdir(parents=True, exist_ok=True)
     write_json(output, report)
     return 1 if report["status"] == "failed" else 2 if report["status"] == "not_run" else 0
@@ -409,9 +544,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--database", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--selection-coverage", action="store_true")
     args = parser.parse_args()
     try:
-        code = run(args.database, args.output)
+        code = run(args.database, args.output, include_selection_coverage=args.selection_coverage)
     except (OSError, sqlite3.Error, ValueError) as exc:
         parser.error(str(exc))
     raise SystemExit(code)

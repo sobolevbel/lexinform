@@ -10025,3 +10025,38 @@ DA5.4/DA9.3 remainpartial;74total/43complete/6explicitNA/25applicableopen.
 [Contract](../reviews/2026-11-04-primary-analysis-evidence.md#frozen-context-retention),
 [qualification](../assets/audits/2026-11-04-primary-claim-input/qualification.json),
 [report and recheck](../assets/audits/2026-11-04-primary-claim-input/report.md).
+
+
+<a id="j219"></a>
+
+## J219 — opt-in recorded selection-state coverage
+
+4 November2026. Source-history doctor can report states for every persisted observation
+row, not bills/attempts/runs/latest selections. Shared immutable selections count per link.
+All rows remain in the denominator; attribution requires shared-reader JSON/SQL identities.
+Unverified stays distinct from unknown; corrupt/missing parents remain unattributed.
+Group fractions explicitly use the global denominator. Empty available tables have zero
+counts/undefined fractions; unavailable tables/columns have unknown totals and fractions.
+
+Only the opt-in path skips a malformed source-history loop with a bounded finding; other
+audits and default bytes are preserved. Required-column preflight has one owner. No reasons
+are inferred from prose, no unsaved attempt history/clocks or current blockers are invented.
+No writer, migration, runtime, raw archive/backend change. Valid legacy decoder behavior
+is preserved; historical mismatched identities remain unknown.
+
+21newunits/no scenarios;47focused pass including fixed prior default-output SHA, allstates,
+shared selections, missing/corrupt/SQL-mismatched parents, malformed populated schema,
+empty/unavailable, direct connection configuration, tool CLI flag and unchanged DB.
+Independent frozen-source review found no blockers. Root state105de577:42observations/
+36selections;weighted12selected/29unverified/1waiting,0unknown,8groups. Default doctor exact,
+0errors;DB unchanged. This fixed historical pin is not today's production-tip claim.
+
+Fullgate:8036tests/303.187s/92%,mypy696/Ruff/formatgreen;765source/configpins exact.
+Strict staged-archive docs gate precedes commit.
+J218 45ba8314 exact CI41909679495/relay41910813576 verified;45shealth/timer.
+DA10.3 remainspartial: reasonclassification/fullcoverage,hostedlatency/naturalgrowth stillopen.
+Plan74total/43complete/6explicitNA/25applicableopen.
+
+[Contract/recheck](../assets/audits/2026-11-04-selection-state-coverage/report.md),
+[qualification](../assets/audits/2026-11-04-selection-state-coverage/qualification.json),
+[pinned proof](../assets/audits/2026-11-04-selection-state-coverage/pinned-state-proof.json).

@@ -1,0 +1,17 @@
+{
+  "stage": "J219",
+  "verdict": "No blockers",
+  "method": "Independent read-only review; frozen hashes verified; no tests/edits/network",
+  "owned_source_sha256": {
+    "tools/source_history_doctor.py": "530ab710adf22d20e14d082e794146aa5e4d7cc9ade4e8887d07d9d8810d5569",
+    "tests/unit/test_selection_state_coverage.py": "06899a26ad7f1b78145c3afbe6e9d6c8dab820162e3972f5f4629142e6fc8974"
+  },
+  "checked": [
+    "All observation rows denominator; checked SQL/JSON identities before attribution",
+    "Distinct legacy unverified and corruption unknown",
+    "Global group fraction denominator explicit",
+    "Unavailable schema distinct from zero population",
+    "Opt-in malformed-column guards preserve unaffected audit/default output",
+    "No database writes, bodies or URLs added"
+  ]
+}

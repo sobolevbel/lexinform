@@ -38,3 +38,5 @@ containing the pinned git history, or provide its `GIT_DIR` when using an isolat
 
 [Qualification](qualification.json), [corpus report](corpus-report.json.gz),
 [independent review](peer-review.json).
+
+[Actual CI and relay release](release.json).
