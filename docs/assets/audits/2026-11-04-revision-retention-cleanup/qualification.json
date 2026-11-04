@@ -1,0 +1,38 @@
+{
+  "stage": "J212 qualified writer after actual reader release",
+  "reader_commit": "62f028fa11acce3aa2654b794428d74a9ca08bb7",
+  "reader_actual_release_verified_before_publication": true,
+  "full_tests": 7863,
+  "pytest_xml_seconds": 272.086,
+  "coverage_percent": 92,
+  "source_config_pins": 755,
+  "source_freeze_exact": true,
+  "mypy_ruff_format": "green",
+  "focused_tests": 65,
+  "new_unit_cases": 18,
+  "new_scenarios": 1,
+  "unit_fixture": "Only typed models/public repository; no World/harness/scenario/service callgraph",
+  "runtime_independent_review": "A/B no blockers; Bv2 test split leaves runtime byte-identical",
+  "corpus_replay": "Not applicable: no extraction/selection/comparison changes",
+  "legacy_control": "Pinned schema65 in-memory future cutoff;3legacy revisions exact; ordinary cleanup not attributed to new revision policy",
+  "owned_source_sha256": {
+    "src/lexinform/adapters/sqlite_repo.py": "d443ff38602dcef835ac6cf3a55acb58890d751bcb45faf101406faebc2d13ec",
+    "tests/scenario/test_amendments_command.py": "6c16df9ad7b8c61652ee6ae8e4b62afd56f932b6175c550adab07229553f6576",
+    "tests/scenario/test_revision_retention.py": "d1e0ce51181520e73689e9ec4083c32ebaa091dd78c097b041b01f9b0e3928e5",
+    "tests/unit/test_revision_retention.py": "c83bfb2daa8b3d962a527504dde25b26bfa47a3334b30999739ba5ed11b8e64e"
+  },
+  "proof_sha256": {
+    "qa/full.xml": "014f109839f290a3184cc5c5c59051bd2a39e23d1db14ed6a296d4f535327c2f",
+    "qa/source-freeze.json": "5353207fe40d73711e54f1ed84e8c2119892f8d559984f9d3bec6d576dc85ee4",
+    "fresh-legacy-protection.json": "2adce97a300eb96c3d735a44bff42d2009449df06bbf101d039175039312d7c5"
+  },
+  "plan_counts": {
+    "total": 74,
+    "complete": 40,
+    "not_applicable": 6,
+    "applicable_open": 28
+  },
+  "reader_release_proof_sha256": "9971f166c5c39f0a90d7b1f3bb4aeecc27a4a0c9fead8b77b789288884516cc1",
+  "reader_ci": 41890685475,
+  "reader_deploy": 41891779419
+}

@@ -337,7 +337,9 @@ def test_revision_audit_survives_retention_and_model_collection_is_idempotent() 
     w.repo.prune_history(before=future, memo_before=future)
     w.analysis.collect_batches()
 
-    assert w.repo.list_amendment_revisions(original.id) == before
+    assert w.repo.list_amendment_revisions(original.id) == [
+        revision.model_copy(update={"delivery": None}) for revision in before
+    ]
     assert before[0].delivery is not None
 
 

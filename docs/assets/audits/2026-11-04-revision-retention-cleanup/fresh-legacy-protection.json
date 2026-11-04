@@ -1,0 +1,16 @@
+{
+  "scope": "Pinned state105de577 in memory only; deliberately future cutoff exercises legacy protection, no production changes",
+  "state_sql_sha256": "29dfe8566f02ceb810a1a43e8ea9a7b0fd0d9f6fc54ffa7212c4dda23945cd6d",
+  "legacy_revisions": 3,
+  "legacy_rows_payloads_listing_exact": true,
+  "retention_counts": {
+    "delivery_payloads": 157,
+    "analysis_memos": 126,
+    "batch_payloads": 1
+  },
+  "canonical_before_sha256": "021b0a00cfae94b541f1b609f6de76b96c5c2dceb0c338ebeae81e5ae7b6fc04",
+  "canonical_after_sha256": "c97018207d3da02227ce98ae6bf723629ac2806f2cecb2fb53029e08bb60774b",
+  "before_sql_bytes": 25787073,
+  "after_sql_bytes": 13490612,
+  "natural_modern_revision_cleanup_observed": 0
+}

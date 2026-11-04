@@ -5626,11 +5626,49 @@ class SqliteBillRepository:
         )
         return int(cur.rowcount or 0)
 
+    def _retained_revision_work(
+        self, publication_id: int
+    ) -> AmendmentRevisionApplicationWork | None:
+        version = self.get_publication_content(publication_id)
+        if version is None:
+            return None
+        self._validate_publication_content_binding(publication_id, version.content_id)
+        rows = self._conn.execute(
+            "SELECT * FROM document_work WHERE"
+            " json_extract(work_json, '$.revision_publication_id')=?",
+            (publication_id,),
+        ).fetchall()
+        if not rows:
+            return None
+        if len(rows) != 1:
+            raise ValueError("a revision requires one completed application work item")
+        work = read_document_work(self._conn, rows[0])
+        if not isinstance(work, AmendmentRevisionApplicationWork) or work.state != "complete":
+            return None
+        if (
+            version.reason != "amendments_revision"
+            or version.root_publication_id != work.original_publication_id
+        ):
+            raise ValueError("retained revision content must identify its completed application")
+        if (
+            version.rendered_text is None
+            or version.formatter_version is None
+            or version.language is None
+        ):
+            return None
+        publication = self.publication_by_id(publication_id)
+        if publication is None or publication.message_id != work.message_id:
+            raise ValueError("retained revision must confirm its original physical target")
+        assert version.previous_version_id is not None, "a validated revision names its predecessor"
+        previous = self.get_content_version(version.previous_version_id)
+        if previous is None or previous.root_publication_id != version.root_publication_id:
+            raise ValueError("retained revision content requires its predecessor")
+        return work
+
     def prune_history(self, *, before: datetime, memo_before: datetime) -> dict[str, int]:
         with self.atomic():
-            publications = self._conn.execute(
-                "UPDATE publications SET delivery_json = NULL WHERE status = 'sent'"
-                " AND kind != 'amendments_revision'"
+            candidates = self._conn.execute(
+                "SELECT * FROM publications WHERE status = 'sent'"
                 " AND sent_at < ? AND delivery_json IS NOT NULL"
                 " AND NOT EXISTS (SELECT 1 FROM document_work w"
                 " WHERE json_extract(w.work_json, '$.change_id') = publications.status_change_id"
@@ -5645,7 +5683,19 @@ class SqliteBillRepository:
                 " COALESCE(json_extract(publications.delivery_json, '$.continuation_root'),"
                 " publications.id))",
                 (_iso(before),),
-            ).rowcount
+            ).fetchall()
+            publications = 0
+            for row in candidates:
+                work = None
+                if row["kind"] == "amendments_revision":
+                    work = self._retained_revision_work(row["id"])
+                    if work is None:
+                        continue
+                publications += self._conn.execute(
+                    "UPDATE publications SET delivery_json=NULL WHERE id=?", (row["id"],)
+                ).rowcount
+                if work is not None:
+                    validate_revision_application_work(self._conn, work)
             memos = self._conn.execute(
                 """
                 DELETE FROM analysis_memo AS m WHERE last_used_at < ?

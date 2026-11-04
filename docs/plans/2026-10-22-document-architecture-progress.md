@@ -9785,3 +9785,38 @@ Plan remains74/40complete/6explicitNA/28applicableopen.
 [Qualification](../assets/audits/2026-11-04-revision-retention-reader/qualification.json),
 [report](../assets/audits/2026-11-04-revision-retention-reader/report.md),
 [isolated state](../assets/audits/2026-11-04-revision-retention-reader/fresh-state-proof.json).
+
+
+<a id="j212"></a>
+
+## J212 — expire duplicate operational payloads of proven completed revisions
+
+4 November 2026. Expired SENT amendment revisions require validated rendered immutable
+content/snapshots, one completed application work and its paid result/projection receipt.
+After clearing delivery_json, shared work validation checks retained history in the same
+transaction. Known corruption aborts all cleanup; missing modern proof stays protected.
+Existing uncertainty, recency, work, digest and continuation guards remain. IDs, content,
+physical attempts, accounting, work and receipts are retained. No new store or migration.
+
+User unit-first requirement:18unit cases use only typed models/public repo APIs, without
+World/service/scenario imports. One cross-service lifecycle scenario checks the actual
+fake batch/application/send, prune, history, restore/doctors and next correction. 65focused
+checks; runtime and compatible reader patches unchanged during the test reorganization.
+
+Pinned state105de577 restored in memory with a deliberately future cutoff:all3legacy
+revisions retain exact rows/payload/listing. Existing ordinary cleanup changes157payloads/
+126memos/1batchpayload; mixed SQL25,787,073→13,490,612B is not attributed to the new policy
+or claimed as production savings. No natural modern revision cleanup observed. No paid
+call, production processing or state maintenance performed.
+
+Final7863 tests/272.09s/92%, strict mypy/Ruff/format pass;
+755 source/config pins unchanged. Staged-archive docs gate precedes commit.
+
+Reader62f028fa exact CI41890685475 and actual relay41891779419 verified
+before writer publication:transition110→62f/45shealth/timer. Local fake/copy qualification
+ran during that CI; no writer publication occurred before the reader proof. DA6.6 and plan counts remain partial/unchanged:
+74total/40complete/6explicitNA/28applicableopen.
+
+[Qualification](../assets/audits/2026-11-04-revision-retention-cleanup/qualification.json),
+[report](../assets/audits/2026-11-04-revision-retention-cleanup/report.md),
+[legacy protection](../assets/audits/2026-11-04-revision-retention-cleanup/fresh-legacy-protection.json).

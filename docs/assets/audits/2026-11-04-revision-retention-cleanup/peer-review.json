@@ -1,0 +1,7 @@
+{
+  "scope": "A reader then B writer after actual release",
+  "result": "no blockers",
+  "reviewer": "queue_age_review",
+  "controls": "Known modern binding/work/receipt validation; legacy pinned; atomic revalidation after NULL; next-command lifecycle",
+  "tests_repeated": false
+}

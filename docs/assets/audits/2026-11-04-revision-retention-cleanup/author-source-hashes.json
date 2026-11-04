@@ -1,0 +1,13 @@
+{
+  "reader_tree": "72cd0abf6675052f9accad9a130164ba88902621",
+  "complete_tree": "0eca3deb6e278f0560c9cdbfc78c12f5a0119e36",
+  "A_patch_sha256": "3b8297781dcbac377294e09b1b4e6b9b459452621c61256a32528ff591509d9d",
+  "B_v2_patch_sha256": "791b3099b92b92672394e48f4ffd0f495ab8fc793c8fc5c9e6a046d925e63431",
+  "runtime_unchanged_from_B_v1": true,
+  "sha256": {
+    "src/lexinform/adapters/sqlite_repo.py": "d443ff38602dcef835ac6cf3a55acb58890d751bcb45faf101406faebc2d13ec",
+    "tests/scenario/test_amendments_command.py": "6c16df9ad7b8c61652ee6ae8e4b62afd56f932b6175c550adab07229553f6576",
+    "tests/scenario/test_revision_retention.py": "d1e0ce51181520e73689e9ec4083c32ebaa091dd78c097b041b01f9b0e3928e5",
+    "tests/unit/test_revision_retention.py": "c83bfb2daa8b3d962a527504dde25b26bfa47a3334b30999739ba5ed11b8e64e"
+  }
+}
