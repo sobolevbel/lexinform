@@ -9,6 +9,11 @@ from lexinform.models import (
     PublicationKind,
     PublicationStatus,
 )
+from lexinform.models.content import (
+    ContentDecisionSummary,
+    ContentDeliverySummary,
+    ContentHistoryPage,
+)
 from lexinform.ports import BillRepository
 
 
@@ -104,3 +109,63 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
             "integrity": "unavailable" if confirmation.ambiguous else "valid",
         }
     )
+
+
+def inspect_content_page(
+    repo: BillRepository, publication: Publication, *, page: int
+) -> ContentHistoryPage:
+    """Page immutable editorial references under the existing confirmation and integrity policy."""
+    history = inspect_content(repo, publication)
+    unavailable = ContentHistoryPage(status="unavailable", page=page, history=history)
+    if history is None or history.integrity != "valid" or history.root_publication_id is None:
+        return unavailable
+    try:
+        versions = repo.list_content_versions(history.root_publication_id)
+        if not 1 <= page <= len(versions):
+            return ContentHistoryPage(
+                status="out_of_range",
+                page=page,
+                pages=len(versions),
+                history=history,
+            )
+        version = versions[page - 1]
+        physical = []
+        for item in repo.list_content_publications(history.root_publication_id):
+            if item.id is None:
+                continue
+            bound = repo.get_publication_content(item.id)
+            if bound is not None and bound.content_id == version.content_id:
+                physical.append(item)
+        physical.sort(key=lambda item: item.id or 0)
+        deliveries: list[ContentDeliverySummary] = []
+        for item in physical[:3]:
+            assert item.id is not None, "the bound publication inventory supplies persisted IDs"
+            decisions = repo.delivery_resolutions(item.id)
+            deliveries.append(
+                ContentDeliverySummary(
+                    publication_id=item.id,
+                    status=item.status,
+                    message_id=item.message_id,
+                    attempts=item.attempts,
+                    decisions=tuple(
+                        ContentDecisionSummary(
+                            action=decision.action,
+                            resolved_at=decision.resolved_at,
+                            command_update_id=decision.command.update_id,
+                        )
+                        for decision in decisions[-3:]
+                    ),
+                    omitted_decisions=max(0, len(decisions) - 3),
+                )
+            )
+        return ContentHistoryPage(
+            status="available",
+            page=page,
+            pages=len(versions),
+            history=history,
+            version=ContentVersionSummary.from_version(version),
+            deliveries=tuple(deliveries),
+            omitted_deliveries=max(0, len(physical) - 3),
+        )
+    except ValueError:
+        return unavailable

@@ -98,6 +98,7 @@ from lexinform.models import (
     veto_stood,
     wykaz_entry_number,
 )
+from lexinform.models.content import ContentHistoryPage
 from lexinform.pricing import cost_usd, format_tokens, format_usd
 from lexinform.publication_titles import publication_title
 from lexinform.telegram_text import split_html
@@ -141,7 +142,8 @@ COMMAND_HELP = (
     "• <code>/attention BILL [important|urgent until=DATE | REASON]</code> — inspect or raise"
     " event priority with an expiry date\n"
     "• <code>/status</code> — the queues, what is stuck, what the last runs cost\n"
-    "• <code>/delivery ID [confirm MESSAGE_ID | retry | dismiss REASON]</code> — inspect or"
+    "• <code>/delivery ID [history [PAGE] | confirm MESSAGE_ID | retry | dismiss REASON]</code>"
+    " — inspect or"
     " resolve an unknown delivery after checking the channel\n"
     "• <code>/runs [days=N] [all]</code> — non-empty runs; all includes empty runs\n"
     "• <code>/cost [days=N] [top=N]</code> — the model spend, per model, run and bill\n"
@@ -2011,6 +2013,8 @@ class MessageFormatter:
         bill = outcome.bill
         if outcome.explanation is not None and bill is not None:
             return [self.explanation(bill, outcome.explanation).text]
+        if outcome.content_history_page is not None:
+            return [self._content_history_page(outcome.content_history_page)]
         if outcome.delivery is not None:
             pub = outcome.delivery
             plan = pub.delivery
@@ -2165,6 +2169,73 @@ class MessageFormatter:
         if history.ambiguous:
             lines.append("confirmation chain branches; current content is unavailable")
         return lines
+
+    @staticmethod
+    def _content_history_page(page: ContentHistoryPage) -> str:
+        history, version = page.history, page.version
+        lines = [f"Editorial history · page {page.page}/{page.pages}"]
+        if history is not None:
+            lines.extend(
+                [
+                    f"root: {history.root_publication_id} · integrity: {history.integrity}",
+                    f"original: {esc(history.original_id or 'unavailable')}",
+                    f"confirmed current: {esc(history.current_id or 'unavailable')}",
+                ]
+            )
+        if page.status != "available" or version is None:
+            lines.append(
+                "Page out of range." if page.status == "out_of_range" else "History unavailable."
+            )
+            return "\n".join(lines)
+        lines.extend(
+            [
+                f"content: {esc(version.content_id)} · {version.reason}",
+                f"recorded: {version.recorded_at.isoformat()}",
+                f"previous: {esc(version.previous_version_id or 'none')}",
+                f"bill snapshot: {esc(version.bill_snapshot_id)}",
+                f"event snapshot: {esc(version.change_snapshot_id)}",
+                f"plan snapshot: {esc(version.plan_snapshot_id)}",
+                f"rendered checksum: {version.rendered_sha256 or 'unavailable'}",
+            ]
+        )
+        for label, refs, opaque in (
+            (
+                "source decisions",
+                version.source_observation_ids,
+                version.source_observation_ids_opaque_count,
+            ),
+            ("results", version.computation_ids, version.computation_ids_opaque_count),
+        ):
+            lines.append(label + ": " + (", ".join(map(esc, refs[:2])) or "unavailable"))
+            if len(refs) > 2 or opaque:
+                lines.append(f"{label} additional/opaque refs: {max(0, len(refs) - 2) + opaque}")
+        if version.source_scope is not None:
+            lines.append("Source scope: primary analysis context; amendment source unavailable.")
+        if not page.deliveries:
+            lines.append("Physical delivery: unavailable; content alone does not confirm delivery.")
+        for delivery in page.deliveries:
+            lines.append(
+                f"/delivery {delivery.publication_id} · {esc(delivery.status)}"
+                f" · message {delivery.message_id} · attempts {delivery.attempts}"
+            )
+            for decision in delivery.decisions:
+                lines.append(
+                    f"{decision.resolved_at.isoformat()} · {decision.action}"
+                    f" · command update {decision.command_update_id}"
+                )
+            if delivery.omitted_decisions:
+                lines.append(
+                    f"Earlier operator decisions: {delivery.omitted_decisions}"
+                    f"; inspect /delivery {delivery.publication_id}"
+                )
+        if page.omitted_deliveries:
+            lines.append(f"Additional physical publications: {page.omitted_deliveries}")
+        root = history.root_publication_id if history is not None else None
+        if page.page > 1:
+            lines.append(f"Previous: /delivery {root} history {page.page - 1}")
+        if page.page < page.pages:
+            lines.append(f"Next: /delivery {root} history {page.page + 1}")
+        return "\n".join(lines)
 
     def delivery_preview(self, pub: Publication) -> str:
         plan = pub.delivery

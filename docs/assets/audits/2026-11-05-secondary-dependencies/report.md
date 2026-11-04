@@ -43,3 +43,5 @@ DA10.2 and DA10.7 remain partial. No provider calls, production processing or ex
 [independent review](peer-review.json).
 
 Previous supplement release: [exact CI and relay verification](previous-release.json).
+
+Actual release: [exact CI and relay verification](release.json), commit06499ec2.

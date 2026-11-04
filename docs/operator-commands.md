@@ -79,6 +79,7 @@ the original row remains linked. Commands that change an explicitly named record
 /find cudzoziemc              bills whose title or number carries the words
 /status                       the queues, what is stuck, what the last 7 days of runs cost
 /delivery 123                 inspect a publication's saved snapshot and recovery history
+/delivery 123 history [PAGE]  inspect each retained editorial version and its physical outcomes
 /delivery 123 confirm 456     confirm that message 456 in the reader channel is this delivery
 /delivery 123 retry           after checking absence in Telegram, queue the saved delivery
 /delivery 123 dismiss expired close without sending, with a required reason
@@ -90,6 +91,21 @@ the original row remains linked. Commands that change an explicitly named record
 /digest publish ref=2026-W38    send it to the readers' channel — what the button does
 /help                         this list
 ```
+
+### Browsing retained editorial versions
+
+`/delivery ID history [PAGE]` reads one retained version per page, in its stored history order.
+The response names the original and confirmed current version, predecessor, frozen snapshot
+references, rendered checksum and known source/result references. Physical publication IDs,
+statuses, message IDs, attempt counters and recent operator decisions remain separate from
+editorial versions: an uncertain revision does not become confirmed through inspection.
+
+History survives operational payload cleanup and never loads the current Bill, rerenders a
+past answer, queues a retry or calls a model. Missing or ambiguous history is reported as
+unavailable. This covers the existing single-message amendments history; other content kinds
+are not reconstructed. Pages show up to three bound physical publications and the latest
+three decisions per publication; omitted counts and `/delivery ID` links are explicit.
+Source/result reference lists show two canonical IDs each, with additional/opaque counts.
 
 ### Recovering an uncertain delivery
 

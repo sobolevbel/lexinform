@@ -1,0 +1,43 @@
+{
+  "stage": "J227 read-only paginated delivery content history",
+  "full_tests": 8254,
+  "pytest_xml": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "8254",
+    "time": "281.670",
+    "timestamp": "2026-11-05T00:43:32.705987+01:00",
+    "hostname": "Yauhenis-MacBook-Pro.local"
+  },
+  "new_unit_cases": 14,
+  "new_scenario_cases": 1,
+  "scenario_reason": "Unique public command/container routing after cleanup with unknown revision and publish=False; unit-first parser/service/formatter coverage precedes it.",
+  "focused_root_cases": 155,
+  "strict_mypy_files": 718,
+  "coverage_percent": 92,
+  "mypy_ruff_format": "green",
+  "source_config_pins": 787,
+  "source_freeze_exact": true,
+  "state_proof": "state-proof.json",
+  "proof_sha256": {
+    "full.xml": "2d0a4f9263f83c01150e365624d58ddd08f2c979ccc08a5a3a288e4f99e61edf",
+    "full.log": "23d4f8b36d736facc2348baff482dc37fb433e2bd4e5a48a06c726f07305a130",
+    "source-freeze.json": "2d545092df112c81223a7fa77f28e31ed39ebc6a490a3057852f2a433c380f06",
+    "state-proof.json": "dbe0cb5466540407cf8e0ef397c5c244bfcf200d2bcde9052b24841befd68acc"
+  },
+  "previous_release": {
+    "target": "06499ec2e7bdb283096cf4e32d49d4ee95ef897f",
+    "ci": 41935643004,
+    "deploy": 41936270553,
+    "complete": true
+  },
+  "scope": "Existing single-message amendments history; no writes/paid calls/newstorage; natural1root1version, no naturalrevisioncycle claim",
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  }
+}

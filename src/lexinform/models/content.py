@@ -7,6 +7,8 @@ from typing import Literal, Self
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, PositiveInt, model_validator
 
+from lexinform.models.enums import PublicationStatus
+
 
 class ContentSnapshot(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -186,3 +188,34 @@ class ContentHistoryView(BaseModel):
     @property
     def current(self) -> ContentVersionSummary | None:
         return self._summary(self.current_id)
+
+
+class ContentDecisionSummary(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    action: Literal["confirm", "retry", "dismiss"]
+    resolved_at: AwareDatetime
+    command_update_id: int
+
+
+class ContentDeliverySummary(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    publication_id: int
+    status: PublicationStatus
+    message_id: int | None
+    attempts: int
+    decisions: tuple[ContentDecisionSummary, ...] = Field(default=(), max_length=3)
+    omitted_decisions: int = 0
+
+
+class ContentHistoryPage(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    status: Literal["available", "unavailable", "out_of_range"]
+    page: int
+    pages: int = 0
+    history: ContentHistoryView | None = None
+    version: ContentVersionSummary | None = None
+    deliveries: tuple[ContentDeliverySummary, ...] = Field(default=(), max_length=3)
+    omitted_deliveries: int = 0

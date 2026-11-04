@@ -58,7 +58,7 @@ from lexinform.ports import (
 from lexinform.pricing import cost_usd
 from lexinform.services.amendments import AmendmentsService
 from lexinform.services.analysis import AnalysisService, TooExpensiveError, Waiting
-from lexinform.services.content_inspection import inspect_content
+from lexinform.services.content_inspection import inspect_content, inspect_content_page
 from lexinform.services.digest import DigestResult, DigestService
 from lexinform.services.joint import primary_of
 from lexinform.services.lookup import BillLookup, BillNotFoundError
@@ -1149,6 +1149,15 @@ class CommandService:
         ):
             return CommandOutcome(
                 status=OutcomeStatus.NOT_FOUND, note="publication not found in this channel"
+            )
+        if command.delivery_action == "history":
+            return CommandOutcome(
+                status=OutcomeStatus.DELIVERY,
+                content_history_page=inspect_content_page(
+                    self._repo,
+                    publication,
+                    page=command.delivery_history_page,
+                ),
             )
         owner_id = self._repo.digest_owner(command.delivery_id)
         if owner_id is not None and command.delivery_action != "show":

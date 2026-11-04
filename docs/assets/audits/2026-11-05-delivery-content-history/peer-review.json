@@ -1,0 +1,52 @@
+{
+  "reviewer": "secondary_dependency_review",
+  "status": "clear",
+  "candidate_patch_sha256": "d8143e031e4ae6361c57ef8fa937ac6b710aed59c4058961a37d59a5ee5ca7a4",
+  "owned_source_pins": {
+    "src/lexinform/models/content.py": {
+      "base_sha256": "deef172048ca3d7ca6e7bb32d1be362fff45d0045130f70359c5dec77cf6c154",
+      "candidate_sha256": "7f810f71912cc02e820cd80627172b535101cf0482f386cd948862ebda535802"
+    },
+    "src/lexinform/models/commands.py": {
+      "base_sha256": "bf4a310c87260c708e2c11af7f3a280d97b8e91e9b9363f390dcdc1b391f1005",
+      "candidate_sha256": "01038bc636dc79daf1810e7897236f74d2aae966a1fce7184df3d14d12b95ec4"
+    },
+    "src/lexinform/models/__init__.py": {
+      "base_sha256": "d6fa14c00d21fa0aae500407243321cf6289043b72170c91aef91432a6d0298e",
+      "candidate_sha256": "557b9b149e21f86e63c9d943a3e8d547f669b0e6502df876d564dd34549674a9"
+    },
+    "src/lexinform/services/content_inspection.py": {
+      "base_sha256": "4a0f6916964b41926308d68d6ab3fd1c0997b82ef673fe5c28e308df9308bdbb",
+      "candidate_sha256": "fa707e4aa5b851ca1783d21bcc6ffda2139bdc3204e825f3cf9bf32e2928d5ca"
+    },
+    "src/lexinform/services/commands.py": {
+      "base_sha256": "cabefac600febc8a79f69fdd4a2f9ef192a8c7b402825f11c4fd87a90c98c1b5",
+      "candidate_sha256": "eaa34c5708851d8c683f4a73cead5150b5383e4070facbf7354739d67f99b768"
+    },
+    "src/lexinform/adapters/telegram_format.py": {
+      "base_sha256": "a0afa0d2c8dd516b8e71f81ef184dcff3cc92888f92584abda0fb5d5123fdca8",
+      "candidate_sha256": "b833dadd0ecd99c4c1f37861723312bd9104908c9ee4bb0548c85e414182b2e5"
+    },
+    "tests/unit/test_delivery_content_history.py": {
+      "base_sha256": null,
+      "candidate_sha256": "720fd03ac74d6c38c717c6dd7587aa53eaef6a2fc90c17965b72882461097585"
+    },
+    "tests/scenario/test_delivery_content_history.py": {
+      "base_sha256": null,
+      "candidate_sha256": "67907639ced0daaf064d036a8511e0f7adb1d3d60965a1b1a951bf42dd1290f9"
+    },
+    "docs/operator-commands.md": {
+      "base_sha256": "0208c881c01255e69c63e7873fd8e74e0c1397d3b52f6463e363e4b3ca6902db",
+      "candidate_sha256": "27ead25e5f92e66a3bddc38c8a0e14e4ac1e80ec0b6e26c1941a113e4670b135"
+    }
+  },
+  "checks": [
+    "nine exact frozen source hashes",
+    "existing channel boundary before history dispatch",
+    "original confirmation/integrity policy unchanged",
+    "unknown physical outcome distinct from confirmed content",
+    "bounded refs and operator decisions",
+    "parser plus public cleanup lifecycle scope"
+  ],
+  "execution": "Read-only review; no tests/edits/network. Root executes independent QA."
+}

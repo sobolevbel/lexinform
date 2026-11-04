@@ -10292,3 +10292,30 @@ DA10.2/DA10.7 remain partial;74total/43complete/6explicitNA/25applicableopen.
 [Report](../assets/audits/2026-11-05-secondary-dependencies/report.md),
 [qualification](../assets/audits/2026-11-05-secondary-dependencies/qualification.json),
 [state proofs](../assets/audits/2026-11-05-secondary-dependencies/state-proofs.json).
+
+<a id="j227"></a>
+
+## J227 — read-only paginated delivery content history
+
+5 November 2026. /delivery ID history [PAGE] exposes intermediate immutable editorial versions
+in the existing single-message amendments scope. One version/page with predecessor,date,frozen
+snapshot/source/result refs, rendered SHA and physical publication/operator-decision metadata.
+Caps3physical rows/latest3decisions each,2rendered canonical refs perkind; omissions explicit.
+No body/URL/operator free-text/currentBill/provider/publisher or new stored payload/schema.
+
+Original inspector functions remain AST exact; existing confirmation/integrity policy governs
+availability/current content. Unknown physical outcome does not confirm editorial current.
+Command branches after target-channel check and works with publish=False; ordinary /delivery
+output unchanged. Read-only content inspection retains normal command bookkeeping/reply.
+
+14newunit cases plus ONEpublic-command cleanup/unknown/publishFalse lifecycle: actualwiring
+and no content/publication/resolution/batch/send/edit changes beyond units. Root155focused,
+mypy718/Ruff/formatgreen. Independent9file review clear. Fresh7b208 copied-state proof1natural
+root/version: page1available/page2outofrange,defaultinspection/canonicaldump/DBhash unchanged.
+No natural revision-cycle claim; fixture lifecycle evidence distinct. Fullgate8254tests/281.670s/92%,mypy718/Ruff/formatgreen;787source/config pins exact. Strict staged docs precede commit.
+J22606499ec2 exactCI41935643004/relay41936270553 verified;45shealth/timer.
+DA7.5 partial;74total/43complete/6explicitNA/25applicableopen.
+
+[Report](../assets/audits/2026-11-05-delivery-content-history/report.md),
+[qualification](../assets/audits/2026-11-05-delivery-content-history/qualification.json),
+[state proof](../assets/audits/2026-11-05-delivery-content-history/state-proof.json).

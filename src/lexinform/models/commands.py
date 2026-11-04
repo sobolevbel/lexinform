@@ -18,7 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from lexinform.models.analysis import AnalysisRecord, TokenUsage
 from lexinform.models.batch import LlmBatch
 from lexinform.models.bill import Bill, Publication
-from lexinform.models.content import ContentHistoryView
+from lexinform.models.content import ContentHistoryPage, ContentHistoryView
 from lexinform.models.digest import week_bounds
 from lexinform.models.enums import (
     PRE_PRINT_PREFIX,
@@ -450,7 +450,8 @@ class Command(BaseModel):
     options: dict[str, str] = Field(default_factory=dict)
     error: str | None = None
     delivery_id: int | None = None
-    delivery_action: Literal["show", "confirm", "retry", "dismiss"] = "show"
+    delivery_action: Literal["show", "history", "confirm", "retry", "dismiss"] = "show"
+    delivery_history_page: int = Field(default=1, exclude_if=lambda value: value == 1)
     delivery_message_id: int | None = None
     delivery_reason: str = ""
     editorial_name: str = ""
@@ -613,6 +614,9 @@ class CommandOutcome(BaseModel):
     digest_members: tuple[int, ...] = ()
     delivery_history: tuple[DeliveryResolution, ...] = ()
     content_history: ContentHistoryView | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    content_history_page: ContentHistoryPage | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     as_json: bool = False
@@ -873,7 +877,7 @@ def _parse_editorial(name: CommandName, words: list[str]) -> Command:
 def _parse_delivery(words: list[str]) -> Command:
     error = Command(
         name=CommandName.DELIVERY,
-        error="use /delivery ID [confirm MESSAGE_ID | retry | dismiss REASON]",
+        error="use /delivery ID [history [PAGE] | confirm MESSAGE_ID | retry | dismiss REASON]",
     )
     if (
         not words
@@ -887,6 +891,16 @@ def _parse_delivery(words: list[str]) -> Command:
     if len(words) == 1:
         return Command(name=CommandName.DELIVERY, delivery_id=publication_id)
     action = words[1].lower()
+    if action == "history" and len(words) in (2, 3):
+        page = words[2] if len(words) == 3 else "1"
+        if page.isascii() and page.isdigit() and len(page) <= 10 and 0 < int(page) <= 2_147_483_647:
+            return Command(
+                name=CommandName.DELIVERY,
+                delivery_id=publication_id,
+                delivery_action="history",
+                delivery_history_page=int(page),
+            )
+        return error
     if action == "retry" and len(words) == 2:
         return Command(
             name=CommandName.DELIVERY, delivery_id=publication_id, delivery_action="retry"
