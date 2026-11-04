@@ -10060,3 +10060,41 @@ Plan74total/43complete/6explicitNA/25applicableopen.
 [Contract/recheck](../assets/audits/2026-11-04-selection-state-coverage/report.md),
 [qualification](../assets/audits/2026-11-04-selection-state-coverage/qualification.json),
 [pinned proof](../assets/audits/2026-11-04-selection-state-coverage/pinned-state-proof.json).
+
+
+<a id="j220"></a>
+
+## J220 — compatible archive-member disposition reader
+
+4 November2026. Inactive optional section extends existing bounded candidate traces.
+Physical walk observations and policy decisions are distinct stages. Known ordinal paths
+require actual root hash; a transient physical slot alone leaves association unknown.
+No filenames-as-identity, new capture ID/FK or inferred source/admission relation.
+Known root/occurrence/leaf/text facts cannot contradict across stages of one outer attempt.
+
+Complete retention checks canonical whole-row hash; prefix/omitted summaries retain honest
+counts/hash, unknown claims neither. Walk completion and unvisited descendants stay separate.
+8rows/depth4/1KiBsection/4KiBwholetrace. Complete outer checks attempted phase/index and known
+root agreement; omitted outer retains summary only. Legacy None normal/compact JSON, IDs,
+factory and singleton remain exact. No extractor/selection/producer/migration changes.
+
+47newunits/no scenarios;61focused pass. Frozen-source independent review clear after knownroot/
+crossstage consistency and failed-outer guards. Root fixedstate105:8legacytraces/8links exact
+JSON/IDs/columns and publicget/list;2restores preserve canonical021b0a00. Ordinarydoctor exact
+0errors;DBunchanged. Doctor parity is not candidate-corruption coverage; shared row reader/
+opt-in doctor follows before B. No extraction corpus acceptance claimed for inactive reader.
+
+B1 excludes bare singleton before sourceobs and unaddressed rootpreheader failure; bodyfacts
+stay existingphysicalhistory. Unknown bytes do not proveunsupported format. Outerread_failure
+admits onlywalk metadata, without claimingpolicyneverran before later summarizerfailure.
+Losingouter archives and singleton suppression remain producerqualification requirements.
+
+Fullgate:8083tests/295.360s/92%,mypy697/Ruff/formatgreen;766source/configpins exact.
+Strict staged-archive docs gate precedes commit.
+J219268a9111 exactCI41912327357/relay41913125377 verified,45shealth/timer.
+ReaderAactualdeploy required beforeproducerB; boundedarchivecontract doesnotcompleteDA4.1/4.4.
+Plan74total/43complete/6explicitNA/25applicableopen.
+
+[Qualification](../assets/audits/2026-11-04-archive-disposition-reader/qualification.json),
+[report/limits](../assets/audits/2026-11-04-archive-disposition-reader/report.md),
+[legacy proof](../assets/audits/2026-11-04-archive-disposition-reader/legacy-state-proof.json).

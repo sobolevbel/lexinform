@@ -2,11 +2,13 @@
 
 import hashlib
 import json
-from typing import Literal, Self
+from collections.abc import Iterable
+from typing import Literal, Self, get_args
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from lexinform.models.documents import SelectionState
+from lexinform.models.physical_inventory import HeaderDisposition, Position, Sha256
 from lexinform.models.sejm import TextDocument
 
 MAX_CANDIDATE_TRACE_BYTES = 4_096
@@ -62,6 +64,189 @@ class CandidateDisposition(BaseModel):
         return self
 
 
+MAX_ARCHIVE_MEMBER_BYTES = 1024
+MAX_ARCHIVE_MEMBER_ROWS = 8
+ArchiveMemberPolicyReason = Literal[
+    "selected_main",
+    "selected_annex",
+    "selected_support",
+    "rank_preference",
+    "version_preference",
+    "version_conflict",
+    "family_exclusion",
+    "non_bill_body",
+    "unknown_role",
+    "regulation_support",
+    "empty_text",
+    "long_unknown_text",
+]
+
+
+class ArchiveMemberDisposition(BaseModel):
+    """A physical slot alone never establishes its root ordinal occurrence association."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    stage: Literal["walk", "policy"]
+    phase: Literal["version_comparison", "fallback"]
+    index: Position
+    root_sha256: Sha256 | None = Field(default=None, exclude_if=lambda value: value is None)
+    ordinals: tuple[Position, ...] | None = Field(
+        default=None, min_length=1, max_length=4, exclude_if=lambda value: value is None
+    )
+    physical_part_index: Position | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    outcome: Literal["observed", "selected", "policy_excluded", "non_bill", "unclassified"]
+    reason: ArchiveMemberPolicyReason | HeaderDisposition
+    leaf_sha256: Sha256 | None = Field(default=None, exclude_if=lambda value: value is None)
+    text_sha256: Sha256 | None = Field(default=None, exclude_if=lambda value: value is None)
+
+    @property
+    def association(self) -> Literal["known", "unknown"]:
+        return "known" if self.root_sha256 is not None and self.ordinals is not None else "unknown"
+
+    @model_validator(mode="after")
+    def local_facts(self) -> Self:
+        if self.ordinals is None and self.physical_part_index is None:
+            raise ValueError("an archive row requires an actual ordinal path or physical slot")
+        if self.ordinals is not None and self.root_sha256 is None:
+            raise ValueError("a known ordinal path requires its actual root hash")
+        if self.stage == "walk":
+            if self.outcome != "observed" or self.reason not in get_args(HeaderDisposition):
+                raise ValueError("walk rows describe physical statuses, never policy selections")
+        elif self.outcome == "observed" or self.reason not in get_args(ArchiveMemberPolicyReason):
+            raise ValueError("policy rows require a policy outcome and branch reason")
+        elif (self.outcome == "selected") != self.reason.startswith("selected_"):
+            raise ValueError("selected policy outcomes require their actual selection role")
+        return self
+
+
+def archive_member_rows_sha256(rows: Iterable[ArchiveMemberDisposition]) -> str:
+    digest = hashlib.sha256(b"[")
+    separator = b""
+    for row in rows:
+        digest.update(separator)
+        digest.update(
+            json.dumps(
+                row.model_dump(mode="json", exclude_defaults=True),
+                sort_keys=True,
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ).encode()
+        )
+        separator = b","
+    digest.update(b"]")
+    return digest.hexdigest()
+
+
+class ArchiveMemberDispositions(BaseModel):
+    """Retention covers observed rows only, independently of walk and descendant completeness."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    schema_version: Literal[1] = 1
+    walk: Literal["finished", "interrupted", "unknown"]
+    retention: Literal["complete", "prefix", "omitted", "unknown"]
+    observed_rows: Position | None
+    rows_sha256: Sha256 | None
+    omitted_rows: Position | None
+    unvisited: Literal["none_known", "known", "unknown"]
+    rows: tuple[ArchiveMemberDisposition, ...] = Field(
+        default=(), max_length=MAX_ARCHIVE_MEMBER_ROWS
+    )
+
+    @model_validator(mode="after")
+    def bounded_observations(self) -> Self:
+        observed, omitted, digest = self.observed_rows, self.omitted_rows, self.rows_sha256
+        if self.retention == "unknown":
+            if (
+                observed is not None
+                or omitted is not None
+                or digest is not None
+                or self.rows
+                or self.walk != "unknown"
+                or self.unvisited != "unknown"
+            ):
+                raise ValueError("unknown archive coverage cannot claim observed counts or rows")
+        else:
+            if observed is None or omitted is None or digest is None:
+                raise ValueError("observed archive rows require their actual counts and full hash")
+            if observed != len(self.rows) + omitted:
+                raise ValueError("archive retained and omitted counts differ from observed rows")
+            if self.retention == "complete":
+                if omitted or digest != archive_member_rows_sha256(self.rows):
+                    raise ValueError(
+                        "complete archive retention requires the canonical whole row hash"
+                    )
+            elif self.retention == "prefix":
+                if not self.rows or not omitted:
+                    raise ValueError(
+                        "an archive prefix requires retained and omitted observed rows"
+                    )
+            elif self.rows or not omitted:
+                raise ValueError("omitted archive rows require a nonempty bounded summary only")
+        paths: set[tuple[str, str, int, str, tuple[int, ...]]] = set()
+        slots: set[tuple[str, str, int, int]] = set()
+        for row in self.rows:
+            if row.ordinals is not None and row.root_sha256 is not None:
+                key = (row.stage, row.phase, row.index, row.root_sha256, row.ordinals)
+                if key in paths:
+                    raise ValueError("duplicate archive occurrence decision within one stage")
+                paths.add(key)
+            if row.physical_part_index is not None:
+                slot = (row.stage, row.phase, row.index, row.physical_part_index)
+                if slot in slots:
+                    raise ValueError("duplicate physical slot decision within one archive stage")
+                slots.add(slot)
+        for index, row in enumerate(self.rows):
+            for previous in self.rows[:index]:
+                if (row.phase, row.index) != (previous.phase, previous.index):
+                    continue
+                if (
+                    row.root_sha256 is not None
+                    and previous.root_sha256 is not None
+                    and row.root_sha256 != previous.root_sha256
+                ):
+                    raise ValueError(
+                        "one outer attempt cannot claim conflicting known archive roots"
+                    )
+                same_slot = (
+                    row.physical_part_index is not None
+                    and row.physical_part_index == previous.physical_part_index
+                )
+                same_path = (
+                    row.root_sha256 is not None
+                    and row.ordinals is not None
+                    and (row.root_sha256, row.ordinals) == (previous.root_sha256, previous.ordinals)
+                )
+                if same_slot or same_path:
+                    for left, right in zip(
+                        (
+                            row.root_sha256,
+                            row.ordinals,
+                            row.physical_part_index,
+                            row.leaf_sha256,
+                            row.text_sha256,
+                        ),
+                        (
+                            previous.root_sha256,
+                            previous.ordinals,
+                            previous.physical_part_index,
+                            previous.leaf_sha256,
+                            previous.text_sha256,
+                        ),
+                        strict=True,
+                    ):
+                        if left is not None and right is not None and left != right:
+                            raise ValueError(
+                                "known archive occurrence facts disagree across stages"
+                            )
+        if len(self.model_dump_json().encode()) > MAX_ARCHIVE_MEMBER_BYTES:
+            raise ValueError("archive member section exceeds its metadata limit")
+        return self
+
+
 class CandidateDispositionTrace(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -75,6 +260,9 @@ class CandidateDispositionTrace(BaseModel):
     result: CandidateTraceResult
     reason: CandidateTraceReason
     selection_state: SelectionState
+    archive_members: ArchiveMemberDispositions | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @classmethod
     def from_decisions(
@@ -180,6 +368,30 @@ class CandidateDispositionTrace(BaseModel):
             or not self.omitted_dispositions
         ):
             raise ValueError("an omitted trace cannot claim partial candidate dispositions")
+        members = self.archive_members
+        if members is not None:
+            if self.coverage != "complete" and members.rows:
+                raise ValueError("an omitted outer request retains only an archive summary")
+            parents = {(item.phase, item.index): item for item in self.dispositions}
+            for member in members.rows:
+                if member.index >= self.candidate_count:
+                    raise ValueError("archive member outer index exceeds the known candidate count")
+                if self.coverage == "complete":
+                    parent = parents.get((member.phase, member.index))
+                    if parent is None or parent.outcome in ("official_conflict", "unattempted"):
+                        raise ValueError(
+                            "archive member must reference an actually attempted outer phase"
+                        )
+                    if parent.outcome == "read_failure" and member.stage != "walk":
+                        raise ValueError(
+                            "a failed outer read cannot certify a completed member policy"
+                        )
+                    if (
+                        parent.observed_sha256 is not None
+                        and member.root_sha256 is not None
+                        and parent.observed_sha256 != member.root_sha256
+                    ):
+                        raise ValueError("archive root differs from its known outer complete body")
         if len(self.model_dump_json(exclude_defaults=True).encode()) > MAX_CANDIDATE_TRACE_BYTES:
             raise ValueError("candidate trace exceeds its metadata limit")
         return self

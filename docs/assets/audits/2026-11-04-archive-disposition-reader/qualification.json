@@ -1,0 +1,49 @@
+{
+  "stage": "J220 reader A",
+  "full_tests": 8083,
+  "pytest_xml_seconds": 295.36,
+  "coverage_percent": 92,
+  "source_config_pins": 766,
+  "source_freeze_exact": true,
+  "focused_unit_tests": 61,
+  "new_unit_cases": 47,
+  "new_scenarios": 0,
+  "strict_mypy_files": 697,
+  "mypy_ruff_format": "green",
+  "writer_active": false,
+  "limits": {
+    "archive_bytes": 1024,
+    "trace_bytes": 4096,
+    "retained_rows": 8,
+    "ordinal_depth": 4
+  },
+  "legacy_state": "Pin105de577;8traces8links,JSON/IDs/columns/publicget-list exact,doublecanonicalrestore exact,defaultdoctor0errors/exact,DBunchanged",
+  "doctor_scope": "Valid parity only; candidate corruption validation is separate planned opt-in/sharedreader stage before B",
+  "corpus_scope": "No producer/extraction/selection changes; inactive reader is not corpus acceptance of runtime member dispositions",
+  "producer_exclusions": [
+    "Bare singleton before source observation",
+    "Unaddressed preheader root failure; known body stays existing physical history",
+    "Missing ordinal contexts leave association unknown",
+    "Unknown bytes do not prove unsupported format",
+    "Failed outer admits walk only; policy may have run before later summarizer failure"
+  ],
+  "owned_source_sha256": {
+    "src/lexinform/models/candidate_trace.py": "0e5423a7fab5f0b06267adb4fa7b03c08948a2ffe9d501c397fdc54a6bb19cfc",
+    "src/lexinform/models/__init__.py": "d6fa14c00d21fa0aae500407243321cf6289043b72170c91aef91432a6d0298e",
+    "tests/unit/test_archive_member_dispositions.py": "4faac3cc00deed02e2bdb42f7dc4cfdc7afee9f5900a6ca04fa920bd68d0ba3c"
+  },
+  "proof_sha256": {
+    "root-qa/full.xml": "165c3ab7bd1fee451254d57a33ecc81b0178378cc6342a581c4ff1fa823e5a5e",
+    "root-qa/full.log": "ea861b34de6ecb256c4e7407bdc0a3a48f3c1499c3fd28e683cffe60819431b0",
+    "root-qa/source-freeze.json": "36e6d090f7d1bcac9ae4c61785702f324acc9002ea2066ff66e9f576a03cb508",
+    "root-state/baseline.json": "27094e7ae801d59b2543a7bf74bec01b8b83429762661f9655516403f79e8325",
+    "root-state/proof.json": "d339702bd94dd4c5f3ee5cdffad922fc193c0b856e91d76bc9748629001e46bd"
+  },
+  "previous_release": "268a9111510c8d2017a99699321616c46d067225 exactCI41912327357/relay41913125377 verified",
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  }
+}

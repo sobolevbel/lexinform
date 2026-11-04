@@ -1,0 +1,15 @@
+{
+  "stage": "J220 reader A",
+  "verdict": "No blockers in final frozen source",
+  "method": "Independent read-only review; hashes checked, no tests/edits/network",
+  "checks": [
+    "Known root and cross-stage occurrence consistency",
+    "Stage-specific walk versus policy facts",
+    "Complete/prefix/omitted/unknown counts and hashes",
+    "1KiB section and4KiB overall bounds",
+    "Complete outer correlation versus summary-only omitted outer",
+    "Legacy None JSON/ID/factory/singleton unchanged",
+    "Existing observed_sha256 guards retained",
+    "B1 exclusions and missing corruption-doctor coverage explicit"
+  ]
+}

@@ -39,3 +39,5 @@ PYTHONPATH=src:. python tools/source_history_doctor.py \
 Omit the flag for the existing report. The tool reads a snapshot and reports no source
 bodies or URLs in the new view. [Qualification](qualification.json),
 [pinned proof](pinned-state-proof.json), [review](peer-review.json).
+
+[Actual CI and relay release](release.json).

@@ -1,0 +1,16 @@
+{
+  "canonical_dump_sha256": "021b0a00cfae94b541f1b609f6de76b96c5c2dceb0c338ebeae81e5ae7b6fc04",
+  "database_sha256": "43965abda162272a982b15d4a2b9e0efea59d625cc7dbf58185dda6c910f8514",
+  "database_unchanged": true,
+  "default_doctor_exact": true,
+  "doctor_errors": 0,
+  "doctor_scope": "Valid parity only; existing doctor does not validate candidate corruption",
+  "double_restore_exact": true,
+  "legacy_links": 8,
+  "legacy_serialized_id_columns_exact": true,
+  "legacy_trace_rows": 8,
+  "new_archive_sections": 0,
+  "public_get_list_exact": true,
+  "source_sql_sha256": "29dfe8566f02ceb810a1a43e8ea9a7b0fd0d9f6fc54ffa7212c4dda23945cd6d",
+  "state_commit": "105de577d682b1f7057e0593aab5c7a408aed740"
+}

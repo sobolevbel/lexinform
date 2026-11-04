@@ -90,6 +90,8 @@ from lexinform.models.bill import (
     veto_outcome,
     veto_stood,
 )
+from lexinform.models.candidate_trace import ArchiveMemberDisposition as ArchiveMemberDisposition
+from lexinform.models.candidate_trace import ArchiveMemberDispositions as ArchiveMemberDispositions
 from lexinform.models.candidate_trace import CandidateDisposition as CandidateDisposition
 from lexinform.models.candidate_trace import CandidateDispositionTrace as CandidateDispositionTrace
 from lexinform.models.commands import (
