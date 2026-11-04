@@ -238,6 +238,12 @@ Layout:
   checkpoint dumps for assertions without building another pipeline, and closes the connection.
 - `tests/fixtures/sejm/`: recorded API responses. Refresh with `curl` when the API changes
   (commands below) and keep them small.
+- Checkpoint contract matrices use independent SQL/manifest snapshots alongside real Git anchors.
+  Every selected function keeps a Git case; crash, unknown-outcome and lost-runner matrices keep
+  all Git variants. Adapter, CLI and ownership-race tests always use real Git. Run
+  `make test ARGS="--checkpoint-transport=git"` to replay every original case through Git.
+  The explicit module allowlist lives in `tests/checkpoint_backends.py`; unsupported snapshot
+  operations fail rather than silently falling back to another transport.
 - Adapter tests use `httpx2.MockTransport` (`test_sejm_api`, `test_telegram_client`) or a stub
   client (`test_llm_anthropic`); no network in the unit suite.
 

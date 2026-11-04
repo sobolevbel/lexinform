@@ -13,6 +13,8 @@ from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.sejm_api import parse_print, parse_process_detail, parse_process_summary
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import PrintInfo, ProcessDetail, ProcessSummary
+from tests.checkpoint_backends import add_option, generate_backends, select_git_anchors
+from tests.checkpoint_backends import checkpoint_backend as checkpoint_backend
 from tests.database import close_test_repositories, close_test_template, empty_repository
 
 FIXTURES = Path(__file__).parent / "fixtures" / "sejm"
@@ -98,3 +100,15 @@ def now() -> datetime:
 @pytest.fixture(scope="session")
 def print_3039_pdf_text() -> str:
     return PypdfTextExtractor().extract((FIXTURES / "print_3039.pdf").read_bytes())
+
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    add_option(parser)
+
+
+def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
+    generate_backends(metafunc)
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item], config: pytest.Config) -> None:
+    select_git_anchors(items, config)
