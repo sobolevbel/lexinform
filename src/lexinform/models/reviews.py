@@ -213,6 +213,14 @@ def _response_rows(text: str) -> tuple[str, ...]:
 def citation_document(
     citation: EvidenceCitation | None, context: ReviewContext, roles: set[DocumentRole]
 ) -> ReviewDocument | None:
+    return citation_document_in(citation, context.documents, roles)
+
+
+def citation_document_in(
+    citation: EvidenceCitation | None,
+    documents: tuple[ReviewDocument, ...],
+    roles: set[DocumentRole],
+) -> ReviewDocument | None:
     if citation is None or not citation.quote.strip() or not citation.locator.strip():
         return None
     if not re.match(
@@ -224,7 +232,7 @@ def citation_document(
     return next(
         (
             document
-            for document in context.documents
+            for document in documents
             if document.identity == citation.document_id
             and document.role in roles
             and " ".join(citation.quote.split()) in " ".join(document.text.split())

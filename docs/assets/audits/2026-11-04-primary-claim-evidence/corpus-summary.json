@@ -1,0 +1,37 @@
+{
+  "baseline_ref": "62f028fa11acce3aa2654b794428d74a9ca08bb7",
+  "baseline_source_sha256": "c9c02f306e12c8146280fbfce51c063ad498ef70958516af33e442df68dcbc2c",
+  "manifest_sha256": "449d893ca8d9b89933a3ac84abd3b757d0f89298d06fc9ae6e5c31ecb38775d5",
+  "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "counts": {
+    "amount_ineligible": 232,
+    "amount_negative_controls": 1,
+    "citation_mismatch": 325,
+    "date_ineligible": 86,
+    "date_negative_controls": 147,
+    "eligible_sources": 233,
+    "excluded_no_art_locator": 12,
+    "excluded_unreadable": 1,
+    "negation_ineligible": 156,
+    "negation_negative_controls": 77,
+    "parity_checks": 558,
+    "paths": 404,
+    "quote_ambiguous": 1,
+    "quote_present": 232,
+    "reference_ineligible": 146,
+    "reference_negative_controls": 87,
+    "scope_ineligible": 220,
+    "scope_negative_controls": 13
+  },
+  "limitations": [
+    "Synthetic project_text role/context/claim test technical parity only.",
+    "No legal classification, primary citations, human labels or semantic assessment.",
+    "No excerpts or raw bodies retained; only pinned 404 DOC paths/246 SHAs covered.",
+    "Unreadable/no-Art sources and ineligible mutation classes are excluded explicitly.",
+    "Synthetic coverage stays partial; paid and block origins remain unmapped."
+  ],
+  "verified_input_paths": 405,
+  "unique_source_sha_count": 246,
+  "source_pins": 758,
+  "report_sha256": "610e909fee19e9f16e4a715c5b65cd5e825cddae2460234f9daa70a1297756ec"
+}

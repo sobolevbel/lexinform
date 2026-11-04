@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "status": "verified",
+  "reason": "exact_release_confirmed",
+  "target_sha": "db2e55c080f93356b1d8a19756f1b3c18f8c1355",
+  "observed_main_sha": "db2e55c080f93356b1d8a19756f1b3c18f8c1355",
+  "ci": {
+    "id": 41892331310,
+    "head_sha": "db2e55c080f93356b1d8a19756f1b3c18f8c1355",
+    "event": "push",
+    "status": "completed",
+    "conclusion": "success",
+    "run_attempt": 1,
+    "created_at": "2026-11-04T18:58:12Z",
+    "updated_at": "2026-11-04T19:02:58Z",
+    "jobs": [
+      {
+        "id": 126792709973,
+        "name": "web",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 126792710312,
+        "name": "docs",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 126792710456,
+        "name": "lint",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 126792801353,
+        "name": "test (3.14)",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "deploy": {
+    "id": 41893129276,
+    "head_sha": "db2e55c080f93356b1d8a19756f1b3c18f8c1355",
+    "event": "workflow_run",
+    "status": "completed",
+    "conclusion": "success",
+    "run_attempt": 1,
+    "created_at": "2026-11-04T19:03:02Z",
+    "updated_at": "2026-11-04T19:03:57Z",
+    "jobs": [
+      {
+        "id": 126795481618,
+        "name": "deploy",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "proof": {
+    "commit_sha": "db2e55c080f93356b1d8a19756f1b3c18f8c1355",
+    "transition_from": "62f028fa11ac",
+    "transition_to": "db2e55c080f9",
+    "restart45": true,
+    "timer_enabled": true,
+    "skip_observed": false,
+    "complete": true
+  }
+}

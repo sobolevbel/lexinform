@@ -1,0 +1,68 @@
+{
+  "stage": "J213",
+  "full_tests": 7925,
+  "pytest_xml_seconds": 275.311,
+  "coverage_percent": 92,
+  "source_config_pins": 759,
+  "source_freeze_exact": true,
+  "focused_unit_tests": 68,
+  "new_scenarios": 0,
+  "mypy_ruff_format": "green",
+  "independent_review": "Core and replay trust/AST/input/output/scope: no blockers; root fullSHA+symlink guard reviewed beforegate",
+  "scope": "Offline key_changes mechanics only; no schema/prompt/AnalysisRecord/render/DB mutation or paid processing",
+  "plan_counts": {
+    "total": 74,
+    "complete": 41,
+    "not_applicable": 6,
+    "applicable_open": 27
+  },
+  "root_integration_changes": "Full baseline SHA, reject output symlink, corresponding unit, explicit tool mypy target",
+  "corpus": {
+    "baseline_ref": "62f028fa11acce3aa2654b794428d74a9ca08bb7",
+    "baseline_source_sha256": "c9c02f306e12c8146280fbfce51c063ad498ef70958516af33e442df68dcbc2c",
+    "manifest_sha256": "449d893ca8d9b89933a3ac84abd3b757d0f89298d06fc9ae6e5c31ecb38775d5",
+    "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "counts": {
+      "amount_ineligible": 232,
+      "amount_negative_controls": 1,
+      "citation_mismatch": 325,
+      "date_ineligible": 86,
+      "date_negative_controls": 147,
+      "eligible_sources": 233,
+      "excluded_no_art_locator": 12,
+      "excluded_unreadable": 1,
+      "negation_ineligible": 156,
+      "negation_negative_controls": 77,
+      "parity_checks": 558,
+      "paths": 404,
+      "quote_ambiguous": 1,
+      "quote_present": 232,
+      "reference_ineligible": 146,
+      "reference_negative_controls": 87,
+      "scope_ineligible": 220,
+      "scope_negative_controls": 13
+    },
+    "limitations": [
+      "Synthetic project_text role/context/claim test technical parity only.",
+      "No legal classification, primary citations, human labels or semantic assessment.",
+      "No excerpts or raw bodies retained; only pinned 404 DOC paths/246 SHAs covered.",
+      "Unreadable/no-Art sources and ineligible mutation classes are excluded explicitly.",
+      "Synthetic coverage stays partial; paid and block origins remain unmapped."
+    ],
+    "verified_input_paths": 405,
+    "unique_source_sha_count": 246,
+    "source_pins": 758,
+    "report_sha256": "610e909fee19e9f16e4a715c5b65cd5e825cddae2460234f9daa70a1297756ec"
+  },
+  "proof_sha256": {
+    "root-qa/full.xml": "958998743877a706ba393ee8a79dbadb657520c1e24d374dfee388f5531a7445",
+    "root-qa/source-freeze.json": "cf453e86cec407219aa4205b2eb5d303b50a9482bed57173d2760fe3cf1e7267",
+    "root-corpus-parity.json": "610e909fee19e9f16e4a715c5b65cd5e825cddae2460234f9daa70a1297756ec"
+  },
+  "limitations": [
+    "semantic_not_assessed always",
+    "paid/block origins unmapped; observed Python text spans only",
+    "Synthetic role/context/claim around natural texts; no human gold or natural primarycitation acceptance",
+    "DA9.2/9.3 partial, DA9.4/9.5 open"
+  ]
+}

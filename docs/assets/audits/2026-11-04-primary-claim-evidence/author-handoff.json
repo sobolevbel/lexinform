@@ -1,0 +1,107 @@
+{
+  "base_commit": "62f028fa11acce3aa2654b794428d74a9ca08bb7",
+  "isolated_worktree": "/private/tmp/lexinform-j213-primary-claims",
+  "patch": "j213-primary-claims-v3.patch",
+  "patch_sha256": "a9dddb93b6fe707628f2a3c97ac25922a4ce23cf53c523f22392997fda6188fe",
+  "files": {
+    "src/lexinform/primary_claims.py": {
+      "base_sha256": null,
+      "patch_sha256": "bea3fccd656bb041cbf0c65e33a9bffa3dded107d003b8f982fedf04185b5a6a"
+    },
+    "src/lexinform/models/reviews.py": {
+      "base_sha256": "c9c02f306e12c8146280fbfce51c063ad498ef70958516af33e442df68dcbc2c",
+      "patch_sha256": "4c8702b6782e2cb3e1cad791b251b2f9010382e18362345d77cebe0561d9fe86"
+    },
+    "tests/unit/test_primary_claims.py": {
+      "base_sha256": null,
+      "patch_sha256": "31746025f226a7f89077c86adccbd05a388a42d6750bff2292f1b6b2df6aa507"
+    },
+    "tools/replay_primary_claims.py": {
+      "base_sha256": null,
+      "patch_sha256": "3c69acca7dc562e7d3faf543cf7ce00f70a4555fdc5ffcc9739583bbd2686c83"
+    },
+    "tests/unit/test_primary_claim_replay.py": {
+      "base_sha256": null,
+      "patch_sha256": "98b0a9ab0b3d419d75ea784441b75436d182b301e32f35034570e6db8893e5f2"
+    },
+    "uv.lock": {
+      "base_sha256": "7c705f291b0fdc70cea72f41cc0cf1bd9799ba1abef228c6a89b9218b17afa24",
+      "patch_sha256": "7c705f291b0fdc70cea72f41cc0cf1bd9799ba1abef228c6a89b9218b17afa24"
+    },
+    "pyproject.toml": {
+      "base_sha256": "33c5be54db5d27dc257384c7d8fd824bd31def52ce1d6efa1fe63bc05c4a3e61",
+      "patch_sha256": "33c5be54db5d27dc257384c7d8fd824bd31def52ce1d6efa1fe63bc05c4a3e61"
+    }
+  },
+  "checks": {
+    "unit-tests": {
+      "exit_code": 0,
+      "log": "v3-unit-tests.log"
+    },
+    "mypy": {
+      "exit_code": 0,
+      "log": "v3-mypy.log"
+    },
+    "ruff": {
+      "exit_code": 0,
+      "log": "v3-ruff.log"
+    },
+    "format": {
+      "exit_code": 0,
+      "log": "v3-format.log"
+    },
+    "diff-check": {
+      "exit_code": 0,
+      "log": "v3-diff-check.log"
+    },
+    "dependency-inputs-unchanged": {
+      "exit_code": 0,
+      "log": "v3-dependency-inputs-unchanged.log"
+    },
+    "corpus-replay": {
+      "exit_code": 0,
+      "log": "v3-corpus-replay.log"
+    }
+  },
+  "scope": "Offline key_changes[index] quote validation with exact claim/source raw-text SHA-256 bindings and existing EvidenceCitation.",
+  "limitations": [
+    "semantic_not_assessed always",
+    "block and paid origins unmapped",
+    "observed spans use Python string offsets only",
+    "bounded technical DOC corpus parity only; no human labels or semantic correctness claimed",
+    "no full gate, paid calls, production changes, schema/prompt/render/storage changes"
+  ],
+  "v2_refinement": "Streaming normalized overlapping quote count retains at most one span; zero matches return citation_mismatch.",
+  "corpus_replay": {
+    "report": "corpus-parity-final-v3.json",
+    "sha256": "f1540667de5ce6d29efaefa2fca0d6698fbb803de50191bf4c4641e0bac2f24b",
+    "counts": {
+      "amount_ineligible": 232,
+      "amount_negative_controls": 1,
+      "citation_mismatch": 325,
+      "date_ineligible": 86,
+      "date_negative_controls": 147,
+      "eligible_sources": 233,
+      "excluded_no_art_locator": 12,
+      "excluded_unreadable": 1,
+      "negation_ineligible": 156,
+      "negation_negative_controls": 77,
+      "parity_checks": 558,
+      "paths": 404,
+      "quote_ambiguous": 1,
+      "quote_present": 232,
+      "reference_ineligible": 146,
+      "reference_negative_controls": 87,
+      "scope_ineligible": 220,
+      "scope_negative_controls": 13
+    },
+    "limitations": [
+      "Synthetic project_text role/context/claim test technical parity only.",
+      "No legal classification, primary citations, human labels or semantic assessment.",
+      "No excerpts or raw bodies retained; only pinned 404 DOC paths/246 SHAs covered.",
+      "Unreadable/no-Art sources and ineligible mutation classes are excluded explicitly.",
+      "Synthetic coverage stays partial; paid and block origins remain unmapped."
+    ]
+  },
+  "v3_refinement": "One bounded repeatable corpus CLI with fixed-hash trusted old function and AST-equal review globals; no retained quotes/bodies."
+}

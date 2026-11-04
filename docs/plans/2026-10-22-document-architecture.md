@@ -766,13 +766,13 @@ flags ради различающихся контрактов. Отказ от 
 Этот этап может менять модельный контракт и качество текста, поэтому выделен после
 воспроизводимого входа. Он не разблокирует paused purposes и не требует массовой переоценки.
 
-- [ ] DA9.1. Выбрать ограниченные классы проверяемых утверждений: ключевые изменения,
+- [x] DA9.1. **[J213](2026-10-22-document-architecture-progress.md#j213): [выбранные классы и границы](../reviews/2026-11-04-primary-analysis-evidence.md), отдельно proposal, scope/conditions, commencement, before/after и authoritative decision. Первый validator проверяет только механическую связь key_changes; остальные DA9 gates не объявлены выполненными.** Выбрать ограниченные классы проверяемых утверждений: ключевые изменения,
   круг лиц/условия, значимые даты и `changes_since_previous`. Для изменения нужны before/after
   refs; для утверждения о принятии — источник решения, а не только предложение.
-- [ ] DA9.2. Добавить совместимые optional evidence fields либо отдельные cited claims,
+- [ ] DA9.2. **Частично: [J213](2026-10-22-document-architecture-progress.md#j213), отдельный offline key_changes envelope повторно использует EvidenceCitation; Analysis/AnalysisRecord и live output schema не меняются. Персистентность и остальные claim classes остаются.** Добавить совместимые optional evidence fields либо отдельные cited claims,
   сохранив существующие русские rendering-поля и schema defaults для старых результатов.
   Сравнить с уже работающими `EvidenceCitation`/review validators, не создавать ещё один формат цитаты.
-- [ ] DA9.3. Проверять document/block/hash/span и дословность. Отдельно оценивать, действительно
+- [ ] DA9.3. **Частично: [J213](2026-10-22-document-architecture-progress.md#j213), claim/source raw-text hashes, identity/role/quote/locator и неоднозначность; literal Python offsets только в supplied text. Block/paid origins явно unmapped, смысл всегда semantic_not_assessed; независимые карты и смысловая приёмка остаются.** Проверять document/block/hash/span и дословность. Отдельно оценивать, действительно
   ли цитата обосновывает вывод, его сферу и дату. Наличие настоящей, но не относящейся к вопросу
   цитаты не считается успехом; confidence модели не заменяет эту проверку.
 - [ ] DA9.4. Сначала offline validators на сохранённых ответах и независимая разметка.

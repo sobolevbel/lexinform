@@ -103,6 +103,7 @@ files = [
   "tools/verify_doc_note_sources.py",
   "tools/measure_doc_note_growth.py",
   "tools/audit_odt_context.py",
+  "tools/replay_primary_claims.py",
 ]
 plugins = ["pydantic.mypy"]
 warn_unreachable = true

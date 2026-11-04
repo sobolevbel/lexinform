@@ -9820,3 +9820,44 @@ ran during that CI; no writer publication occurred before the reader proof. DA6.
 [Qualification](../assets/audits/2026-11-04-revision-retention-cleanup/qualification.json),
 [report](../assets/audits/2026-11-04-revision-retention-cleanup/report.md),
 [legacy protection](../assets/audits/2026-11-04-revision-retention-cleanup/fresh-legacy-protection.json).
+
+
+<a id="j213"></a>
+
+## J213 — bounded offline primary-claim evidence and chosen claim classes
+
+4 November 2026. DA9.1 chooses proposal/scope/commencement/before-after/decision classes
+with distinct source requirements. First pure offline validator addresses key_changes[index]
+and binds exact claim/source text SHA, document identity/project_text role and existing
+EvidenceCitation. Common matcher is extracted once; review wrapper behavior is unchanged.
+Analysis/AnalysisRecord, prompts, live provider schemas, reader payload and DB remain unchanged.
+
+Missing legacy/source, changed hash/index/role, duplicate identity and quote ambiguity are
+explicit. All normalized overlapping matches counted in constant extra memory; literal
+Python offsets only when unique. Partial sources remain partial. Semantic support always
+unassessed, block/paid origins unmapped; irrelevant true quote does not prove the claim.
+No human labels, paid experiment, source archive or automatic re-analysis.
+
+Bounded versioned corpus CLI pins manifest/old review SHA, checks other review globals by
+AST before compiling only the trusted old function, and uses read-only CorpusReads guards.
+Root replay:404paths/246SHA,233eligible (232unique/1ambiguous),12noArt/1unreadable;558exact
+old/wrapper/helper comparisons.325absent derivatives:date147/amount1/negation77/scope13/
+reference87; ineligible cases explicit. Synthetic role/context/claim around natural text
+is technical coverage only; no natural primary-citation or legal classification claim.
+All405raw/INDEX inputs and source pins unchanged. No bodies/quotes retained in reports.
+
+Root adds full baseline commit identity and output-symlink refusal before IO;68focused
+unit tests/strict5filemypy/Ruff pass. Independent core/tool review has no blockers.
+No new scenario. DA9.2/9.3 remain partial; DA9.4/9.5 remain open.
+Final7925 tests/275.31s/92%, strict mypy/Ruff/format pass;
+759 source/config pins exact. Staged-archive docs gate precedes commit.
+Plan:74total/41complete/6explicitNA/27applicableopen.
+
+J212 db2e55c0 exact CI41892331310 and relay41893129276 verified, transition62f→db2/
+45shealth/timer; no production cleanup or natural savings claimed.
+
+[Scope](../reviews/2026-11-04-primary-analysis-evidence.md),
+[qualification](../assets/audits/2026-11-04-primary-claim-evidence/qualification.json),
+[corpus summary](../assets/audits/2026-11-04-primary-claim-evidence/corpus-summary.json),
+[report/reproduction](../assets/audits/2026-11-04-primary-claim-evidence/report.md),
+[actual J212 release](../assets/audits/2026-11-04-revision-retention-cleanup/release.json).
