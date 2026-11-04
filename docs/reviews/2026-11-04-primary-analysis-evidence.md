@@ -43,4 +43,26 @@ citations are not independent labels, and synthetic controls are not human gold 
 DA9.1 selects the claim classes. DA9.2–9.5 retain their separate implementation and semantic
 acceptance gates; the first mechanical validator does not complete them.
 
+## Frozen context retention
+
+The optional offline `validate_key_change_input` bridge reruns the source-evidence check
+and revalidates a supplied primary `BatchIntent`. A result needs the exact record/request
+hash, emitted context, sole selected bill part, raw file/text identities and selected text
+length. A review document labelled `project_text` cannot override a selected justification
+or OSR role. Whole extracted text cannot stand in for a selected fragment.
+
+Every source segment is checked against both supplied selected text and frozen context.
+Only a unique continuous source-backed span is `retained`. With a complete map, absence
+of that continuous span is `omitted`; this does not mean every character is absent. A
+generated copy or generated gap supplies no source continuity. Prefix maps, missing
+bindings, nonliteral normalized matches and ambiguous positions remain `unknown`.
+
+These coordinates describe the supplied frozen `BillContext.text`. They do not establish
+provider submission, payment, computation ownership, legal role acceptance or semantic
+support. Existing quote coverage stays separate. No live consumer, schema, persistence,
+prompt or reader payload changes; semantic/block/physical boundaries remain explicit.
+
+[Qualification and corpus limits](../assets/audits/2026-11-04-primary-claim-input/qualification.json),
+[technical replay](../assets/audits/2026-11-04-primary-claim-input/report.md).
+
 [Implementation plan](../plans/2026-10-22-document-architecture.md#da9).

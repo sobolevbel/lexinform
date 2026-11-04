@@ -46,3 +46,5 @@ python tools/replay_supplement_inputs.py \
 Outputs must be new and outside the corpus. The guard blocks network and corpus writes.
 [Qualification](qualification.json), [peer review](peer-review.json),
 [reader baseline](root-baseline.json.gz), [candidate replay](root-replay.json.gz).
+
+[Actual writer CI and relay release](release.json).

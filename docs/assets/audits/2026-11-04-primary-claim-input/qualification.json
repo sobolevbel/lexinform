@@ -1,0 +1,57 @@
+{
+  "stage": "J218",
+  "full_tests": 8015,
+  "pytest_xml_seconds": 294.139,
+  "coverage_percent": 92,
+  "source_config_pins": 764,
+  "source_freeze_exact": true,
+  "focused_unit_tests": 103,
+  "new_unit_cases": 41,
+  "new_scenarios": 0,
+  "strict_mypy_files": 695,
+  "mypy_ruff_format": "green",
+  "corpus": {
+    "paths": 404,
+    "raw_shas": 246,
+    "input_pins": 405,
+    "prior_observations_counts_inputs_exact": true,
+    "parity_checks": 558,
+    "meaningful_negative_controls": 325,
+    "input_map_sample": "documents/files/396900.doc",
+    "input_map_cases": 11,
+    "input_map_statuses": {
+      "omitted": 4,
+      "retained": 2,
+      "unknown": 5
+    },
+    "unreadable": 1,
+    "no_art_locator": 12
+  },
+  "limits": [
+    "Synthetic project_text role/context/claim test technical parity only.",
+    "No legal classification, primary citations, human labels or semantic assessment.",
+    "No excerpts or raw bodies retained; only pinned 404 DOC paths/246 SHAs covered.",
+    "Unreadable/no-Art sources and ineligible mutation classes are excluded explicitly.",
+    "Synthetic coverage stays partial; paid and block origins remain unmapped.",
+    "Input-map controls use one eligible DOC; roles and frozen requests are synthetic.",
+    "No provider preparation/submission or historical paid-input reconstruction occurs."
+  ],
+  "owned_source_sha256": {
+    "src/lexinform/primary_claim_input.py": "04e71f0af3aa765be2ddfebb1be79b75336643cfaeb488f1eabdd0b6bb514e83",
+    "tests/unit/test_primary_claim_input.py": "5531a0ef8354f5f1efe4fce1a362fbbd558e61eb59def39296a8c20827263163",
+    "tools/replay_primary_claims.py": "204983bb7acc421cddc59e07022100412ab71553b6692772781472a97ba2869f"
+  },
+  "proof_sha256": {
+    "full.xml": "35934f8c13a605cd1131bd0c5b703d90ea303626fc1ff072cf866a0156ef5cad",
+    "full.log": "4d42a3022aacc5892c32a9d3a08335a6d7d23763caa589cb368aebfab131f3c5",
+    "source-freeze.json": "fe58a98c94e41fd743b1c3b92376f7e2a7f860cc354f15aa7abfac76cf15a60c",
+    "corpus-report.json": "142410ba9d459a7ee095ce19da9828ca1d1a27c68b960c4a7b184a07c0f32ee5"
+  },
+  "previous_release": "1c3468e42ddb52ecff2ced75e78ce14ceaf9ca17 actual CI41907475432/relay41908646627 verified",
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  }
+}

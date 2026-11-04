@@ -635,7 +635,7 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
 - [x] DA5.3. [J045](2026-10-22-document-architecture-progress.md#j045). Исправить регрессию DA0.4: bill retained range не включает удалённый consultation
   appendix. Проверить повторяющийся фрагмент, склейку, footnotes, tables и несколько excerpts;
   одинаковый текст в другом месте не подтверждает чтение нужной нормативной части.
-- [ ] DA5.4. **Частично: [J124](2026-10-22-document-architecture-progress.md#j124), known input map проверяет required ranges собственного part, duplicate support text не доказывает чтение пропущенного bill. Три независимых coverage views и остальные paths открыты.** Разделить extraction coverage, selection completeness и actual input coverage.
+- [ ] DA5.4. **Частично: [J124](2026-10-22-document-architecture-progress.md#j124), known input map проверяет required ranges собственного part, duplicate support text не доказывает чтение пропущенного bill. [J218](2026-10-22-document-architecture-progress.md#j218) отдельно проверяет literal quote retention в supplied frozen primary context; source coverage, complete input map и смысл не смешиваются. Три независимых coverage views и остальные paths открыты.** Разделить extraction coverage, selection completeness и actual input coverage.
   Потерянное обязательное приложение снимает доказанную полноту после всех сокращений.
   Текст OSR/обоснования не становится нормативным baseline; предупреждение о неизвестной
   применимости поддержки доходит в prompt.
@@ -772,7 +772,7 @@ flags ради различающихся контрактов. Отказ от 
 - [ ] DA9.2. **Частично: [J213](2026-10-22-document-architecture-progress.md#j213), отдельный offline key_changes envelope повторно использует EvidenceCitation; Analysis/AnalysisRecord и live output schema не меняются. Персистентность и остальные claim classes остаются.** Добавить совместимые optional evidence fields либо отдельные cited claims,
   сохранив существующие русские rendering-поля и schema defaults для старых результатов.
   Сравнить с уже работающими `EvidenceCitation`/review validators, не создавать ещё один формат цитаты.
-- [ ] DA9.3. **Частично: [J213](2026-10-22-document-architecture-progress.md#j213), claim/source raw-text hashes, identity/role/quote/locator и неоднозначность; literal Python offsets только в supplied text. Block/paid origins явно unmapped, смысл всегда semantic_not_assessed; независимые карты и смысловая приёмка остаются.** Проверять document/block/hash/span и дословность. Отдельно оценивать, действительно
+- [ ] DA9.3. **Частично: [J213](2026-10-22-document-architecture-progress.md#j213), claim/source raw-text hashes, identity/role/quote/locator и неоднозначность; literal Python offsets только в supplied text. Block/paid origins явно unmapped, смысл всегда semantic_not_assessed; [J218](2026-10-22-document-architecture-progress.md#j218) добавляет bounded offline bridge к actual supplied primary receipt/context с source/file/selected-role binding и conservative retained/omitted/unknown. Независимые block/physical maps и смысловая приёмка остаются.** Проверять document/block/hash/span и дословность. Отдельно оценивать, действительно
   ли цитата обосновывает вывод, его сферу и дату. Наличие настоящей, но не относящейся к вопросу
   цитаты не считается успехом; confidence модели не заменяет эту проверку.
 - [ ] DA9.4. Сначала offline validators на сохранённых ответах и независимая разметка.

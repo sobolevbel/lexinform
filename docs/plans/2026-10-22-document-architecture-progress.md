@@ -9992,3 +9992,36 @@ prompt/model-output/reader-payload change. DA5 remains partial;74total/43complet
 [Qualification](../assets/audits/2026-11-04-supplement-input-writer/qualification.json),
 [report and recheck](../assets/audits/2026-11-04-supplement-input-writer/report.md),
 [independent review](../assets/audits/2026-11-04-supplement-input-writer/peer-review.json).
+
+
+<a id="j218"></a>
+
+## J218 — literal claim retention in supplied frozen primary context
+
+4 November2026. A pure offline bridge reruns existing key_changes evidence checks, then
+revalidates the supplied primary intent, record/request/context and selected bill part.
+Raw file/text/URL/length and actual selected role must agree; a relabelled justification
+cannot become normative source evidence. Missing selected fragments are never replaced
+by a matching substring in the full extraction. Existing primary_claims output is unchanged.
+
+All source segments round-trip against both supplied selected text and frozen context.
+Unique continuous source-backed quote→retained; complete map without that span→omitted
+(not all characters absent); prefix, missing bindings, normalized nonliteral spans and
+ambiguous positions→unknown. Generated copies/gaps prove no source continuity. Nothing
+claims semantic support, submission/payment, result ownership, blocks or physical origins.
+
+41new units/no scenarios;103focused pass. Independent frozen-source review checked role/
+owner/request/source-slice guards. Root corpus preserves exact404DOCpaths/246SHAs,405pins,
+all old observations/counts,558paritychecks and325meaningful five-class negatives.
+Separate11synthetic input controls over one deterministic realDOC:2retained/4omitted/5unknown,
+independent slices; no corpus-wide map, legal-role or historical paid-input acceptance.
+
+Full gate:8015tests/294.139s/92%,mypy695/Ruff/formatgreen;764source/configpins exact.
+Strict staged-archive docs gate precedes commit.
+J217 1c3468e4 CI41907475432/relay41908646627 exact verified,transitiona266→1c34/45shealth/timer.
+No runtime consumer/schema/persistence/prompt/reader-payload or backend change.
+DA5.4/DA9.3 remainpartial;74total/43complete/6explicitNA/25applicableopen.
+
+[Contract](../reviews/2026-11-04-primary-analysis-evidence.md#frozen-context-retention),
+[qualification](../assets/audits/2026-11-04-primary-claim-input/qualification.json),
+[report and recheck](../assets/audits/2026-11-04-primary-claim-input/report.md).
