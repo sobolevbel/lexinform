@@ -13,7 +13,7 @@ from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.sejm_api import parse_print, parse_process_detail, parse_process_summary
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import PrintInfo, ProcessDetail, ProcessSummary
-from tests.database import close_test_repositories, empty_repository
+from tests.database import close_test_repositories, close_test_template, empty_repository
 
 FIXTURES = Path(__file__).parent / "fixtures" / "sejm"
 RCL_FIXTURES = Path(__file__).parent / "fixtures" / "rcl"
@@ -53,6 +53,13 @@ def repo() -> Iterator[SqliteBillRepository]:
 def close_scenario_databases() -> Iterator[None]:
     yield
     close_test_repositories()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def close_database_template() -> Iterator[None]:
+    yield
+    close_test_repositories()
+    close_test_template()
 
 
 @pytest.fixture

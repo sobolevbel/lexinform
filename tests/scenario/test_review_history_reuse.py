@@ -14,9 +14,10 @@ from lexinform.models import (
 )
 from lexinform.models.reviews import ReviewPurpose
 from lexinform.services.analysis import Waiting
+from tests.commission_cases import context as commission_context
+from tests.computations import REVIEW_PURPOSES as PURPOSES
 from tests.harness import World
-from tests.scenario.test_commission_reviews import context as commission_context
-from tests.scenario.test_review_computation_history import PURPOSES, queued_review, submit_review
+from tests.scenario.test_review_computation_history import queued_review, submit_review
 
 
 def replaced_review(

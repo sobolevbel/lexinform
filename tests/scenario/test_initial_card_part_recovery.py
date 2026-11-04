@@ -8,7 +8,6 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
-    failed_card_part_resolution_allowed,
 )
 from lexinform.ports import PublishResult
 from tests.checkpoint_state import StoredState, saved_state
@@ -122,68 +121,3 @@ def test_initial_card_retry_saves_its_audit_before_replaying_exact_parts_after_f
     assert all(row(fresh, identity).status is PublicationStatus.SENT for identity in seen)
     assert row(fresh, root.id or 0) == root
     assert len(fresh.repo.delivery_resolutions(child.id or 0)) == 1
-
-
-@pytest.mark.parametrize(
-    "invalid",
-    [
-        "kind",
-        "status",
-        "channel",
-        "term",
-        "number",
-        "no_html",
-        "edit_target",
-        "root",
-        "parent",
-        "index",
-        "membership",
-        "root_status",
-        "root_html",
-        "root_edit",
-        "root_parent",
-        "root_revision",
-        "confirm",
-    ],
-)
-def test_unqualified_failed_initial_card_parts_cannot_be_recovered(invalid: str) -> None:
-    _, root, child = failed_card(PublicationKind.NEW_BILL, "on", 3)
-    root_plan, child_plan = root.delivery, child.delivery
-    assert root_plan is not None and child_plan is not None, (
-        "the fixture retains exact physical plans"
-    )
-    action = "retry"
-    if invalid == "kind":
-        child = child.model_copy(update={"kind": PublicationKind.STATUS_UPDATE})
-    elif invalid == "status":
-        child = child.model_copy(update={"status": PublicationStatus.SENT})
-    elif invalid in ("channel", "number"):
-        child = child.model_copy(
-            update={"channel_id" if invalid == "channel" else "number": "unrelated"}
-        )
-    elif invalid == "term":
-        child = child.model_copy(update={"term": child.term + 1})
-    elif invalid in ("no_html", "edit_target", "root", "parent", "index"):
-        key, value = {
-            "no_html": ("rendered_text", ""),
-            "edit_target": ("edit_message_id", 900000),
-            "root": ("continuation_root", 900000),
-            "parent": ("continuation_parent", 900000),
-            "index": ("continuation_index", 900000),
-        }[invalid]
-        child = child.model_copy(update={"delivery": child_plan.model_copy(update={key: value})})
-    elif invalid == "root_status":
-        root = root.model_copy(update={"status": PublicationStatus.UNKNOWN})
-    elif invalid == "confirm":
-        action = "confirm"
-    else:
-        key, value = {
-            "membership": ("continuation_ids", (900000,)),
-            "root_html": ("rendered_text", ""),
-            "root_edit": ("edit_message_id", 900000),
-            "root_parent": ("continuation_root", 900000),
-            "root_revision": ("revision_of", 900000),
-        }[invalid]
-        root = root.model_copy(update={"delivery": root_plan.model_copy(update={key: value})})
-
-    assert not failed_card_part_resolution_allowed(child, root, None, action)

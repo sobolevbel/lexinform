@@ -67,8 +67,10 @@ def refresh(world: World) -> None:
     world.container.tracking_service(dry_run=False).check_bill(world.bill("3039"))
 
 
-@pytest.mark.parametrize("mode", ["off", "shadow", "on"])
-@pytest.mark.parametrize("shape", ["single_many", "many_same", "many_grow", "many_shrink"])
+@pytest.mark.parametrize(
+    ("mode", "shape"),
+    [("off", "single_many"), ("shadow", "many_same"), ("on", "many_grow"), ("on", "many_shrink")],
+)
 def test_every_multipart_edit_part_is_remote_before_api_and_final_receipt_alone_advances_card(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: Mode, shape: Shape
 ) -> None:
@@ -345,17 +347,15 @@ def test_new_multipart_revision_preserves_completed_legacy_rows_and_projection()
     assert card(world).rendered_sha256 == current[0].rendered_sha256
 
 
-@pytest.mark.parametrize("shape", ["single_many", "many_shrink"])
 @pytest.mark.parametrize("position", ["root", "final"])
 @pytest.mark.parametrize("outcome", ["definite", "outage", "uncertain"])
 def test_multipart_transport_outcomes_preserve_attempts_projection_and_confirmed_message_counts(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    shape: Shape,
     position: str,
     outcome: str,
 ) -> None:
-    case = prepare(shape=shape)
+    case = prepare(shape="single_many")
     world = case.world
     remote = connect(world, tmp_path)
     original = world.publisher.publish_prepared

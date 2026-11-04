@@ -1,0 +1,678 @@
+{
+  "date": "2026-11-04",
+  "baseline_commit": "901f8ca1ee15e8c335276e335a681b5611e7f587",
+  "branch": "codex/test-performance-20261104",
+  "full_suite_before": {
+    "cases": 7711,
+    "errors": 0,
+    "failures": 0,
+    "junit_seconds": 280.523,
+    "pytest_reported_wall_seconds": 280.63,
+    "groups": {
+      "scenario": {
+        "cases": 3238,
+        "summed_case_seconds": 848.858000000001
+      },
+      "unit": {
+        "cases": 4473,
+        "summed_case_seconds": 206.7160000000019
+      }
+    },
+    "modules": {
+      "tests.unit.test_corpus_pilot": {
+        "cases": 63,
+        "summed_case_seconds": 43.955000000000005
+      },
+      "tests.scenario.test_review_remote_checkpoints": {
+        "cases": 60,
+        "summed_case_seconds": 51.08699999999999
+      },
+      "tests.unit.test_scenario_support": {
+        "cases": 2,
+        "summed_case_seconds": 0.037000000000000005
+      },
+      "tests.scenario.test_card_edit_multipart": {
+        "cases": 47,
+        "summed_case_seconds": 82.229
+      },
+      "tests.scenario.test_legacy_notice_freeze": {
+        "cases": 50,
+        "summed_case_seconds": 43.76499999999999
+      },
+      "tests.scenario.test_update_remote_checkpoints": {
+        "cases": 50,
+        "summed_case_seconds": 52.70700000000003
+      }
+    }
+  },
+  "full_suite_after_first": {
+    "cases": 7733,
+    "errors": 0,
+    "failures": 0,
+    "junit_seconds": 257.279,
+    "pytest_reported_wall_seconds": 266.68,
+    "groups": {
+      "scenario": {
+        "cases": 3114,
+        "summed_case_seconds": 817.0209999999988
+      },
+      "unit": {
+        "cases": 4619,
+        "summed_case_seconds": 155.94800000000387
+      }
+    },
+    "modules": {
+      "tests.unit.test_corpus_pilot": {
+        "cases": 65,
+        "summed_case_seconds": 4.032999999999995
+      },
+      "tests.scenario.test_review_remote_checkpoints": {
+        "cases": 60,
+        "summed_case_seconds": 47.77799999999998
+      },
+      "tests.unit.test_scenario_support": {
+        "cases": 4,
+        "summed_case_seconds": 0.036000000000000004
+      },
+      "tests.scenario.test_card_edit_multipart": {
+        "cases": 33,
+        "summed_case_seconds": 57.982000000000006
+      },
+      "tests.unit.test_card_edit_contracts": {
+        "cases": 32,
+        "summed_case_seconds": 2.558
+      },
+      "tests.scenario.test_legacy_notice_freeze": {
+        "cases": 50,
+        "summed_case_seconds": 40.36899999999999
+      },
+      "tests.scenario.test_update_remote_checkpoints": {
+        "cases": 50,
+        "summed_case_seconds": 52.330999999999996
+      }
+    }
+  },
+  "changes": {
+    "direct_cases_moved_to_unit": 93,
+    "predicate_cases_rebuilt_without_pipeline": 17,
+    "card_edit_contract_cases": 32,
+    "retained_card_edit_git_cases": 33,
+    "prior_card_edit_git_cases": 47,
+    "pilot_cases": 65,
+    "new_database_copy_guards": 2
+  },
+  "preserved_builder_functions": [
+    {
+      "from": "tests/scenario/test_document_reviews.py::context",
+      "to": "tests/document_review_cases.py::context"
+    },
+    {
+      "from": "tests/scenario/test_document_reviews.py::finding",
+      "to": "tests/document_review_cases.py::finding"
+    },
+    {
+      "from": "tests/scenario/test_document_reviews.py::review",
+      "to": "tests/document_review_cases.py::review"
+    },
+    {
+      "from": "tests/scenario/test_document_reviews.py::rule",
+      "to": "tests/document_review_cases.py::rule"
+    },
+    {
+      "from": "tests/scenario/test_commission_reviews.py::document",
+      "to": "tests/commission_cases.py::document"
+    },
+    {
+      "from": "tests/scenario/test_commission_reviews.py::citation",
+      "to": "tests/commission_cases.py::citation"
+    },
+    {
+      "from": "tests/scenario/test_commission_reviews.py::context",
+      "to": "tests/commission_cases.py::context"
+    },
+    {
+      "from": "tests/scenario/test_commission_reviews.py::finding",
+      "to": "tests/commission_cases.py::finding"
+    },
+    {
+      "from": "tests/scenario/test_commission_reviews.py::review",
+      "to": "tests/commission_cases.py::review"
+    },
+    {
+      "from": "tests/scenario/test_source_context_delivery.py::queued",
+      "to": "tests/source_context_cases.py::queued"
+    }
+  ],
+  "preserved_test_functions": [
+    {
+      "from": "tests/scenario/test_document_reviews.py::test_review_requires_matching_response_outcome",
+      "to": "tests/unit/test_document_review_evidence.py::test_review_requires_matching_response_outcome",
+      "body_sha256": "e89dbd4d06bfcfae62549dc322966a22f9a2ad55877aaf867b0dc7ae47947d25",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_document_reviews.py::test_participant_position_never_proves_acceptance",
+      "to": "tests/unit/test_document_review_evidence.py::test_participant_position_never_proves_acceptance",
+      "body_sha256": "2a32c1d65c9c09f8abf74a98fc408e5b8cdbc63673b7477f184e10eba8fc9b32",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_document_reviews.py::test_changed_quote_cannot_match_the_previous_version",
+      "to": "tests/unit/test_document_review_evidence.py::test_changed_quote_cannot_match_the_previous_version",
+      "body_sha256": "58f1767d8b928274e129c141c20ad98424ce421816a6f6e93642b6130f908689",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_document_reviews.py::test_relative_day_is_computed_only_from_confirmed_final_act_and_origin",
+      "to": "tests/unit/test_document_review_evidence.py::test_relative_day_is_computed_only_from_confirmed_final_act_and_origin",
+      "body_sha256": "1f09e2fc265fb57dc89da0b5c2b234da39e3de50f87104402c075d70bab25a11",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_document_reviews.py::test_manually_labelled_real_rcl_response_rows_and_mutations",
+      "to": "tests/unit/test_document_review_evidence.py::test_manually_labelled_real_rcl_response_rows_and_mutations",
+      "body_sha256": "8f1bf312252a8a070ba85769703095693e18a334495c3ab8249d5b6a172d002f",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_document_reviews.py::test_relative_dates_use_calendar_rules_and_never_guess_a_conditional_trigger",
+      "to": "tests/unit/test_document_review_evidence.py::test_relative_dates_use_calendar_rules_and_never_guess_a_conditional_trigger",
+      "body_sha256": "eca5d0caaa1230ed38d6a6c0ff938160e65613fbccfc2d7742afcfe8ad96de34",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_document_reviews.py::test_a_quote_cannot_hide_exceptions_after_the_general_effective_clause",
+      "to": "tests/unit/test_document_review_evidence.py::test_a_quote_cannot_hide_exceptions_after_the_general_effective_clause",
+      "body_sha256": "8cb339fe5872acecc365c2c05829086195bb49a4ed552e184e51aba2e0e870e0",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_document_reviews.py::test_manually_labelled_final_act_special_dates_and_material_quote_mutations",
+      "to": "tests/unit/test_document_review_evidence.py::test_manually_labelled_final_act_special_dates_and_material_quote_mutations",
+      "body_sha256": "efd299faac25f29ba6fe04364ebf423dea636333fdf6fbc37d8cb885194090c1",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_document_reviews.py::test_receipt_or_a_proposal_is_not_a_confirmed_acceptance",
+      "to": "tests/unit/test_document_review_evidence.py::test_receipt_or_a_proposal_is_not_a_confirmed_acceptance",
+      "body_sha256": "75a7430c6909003ae213f6a4880bde47a517dcd0d23dbe68c84d4907d5f31fba",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_document_reviews.py::test_government_review_identity_survives_term_rollover_without_crossing_print_terms",
+      "to": "tests/unit/test_document_review_evidence.py::test_government_review_identity_survives_term_rollover_without_crossing_print_terms",
+      "body_sha256": "0d45b12c7b5626e9e109ba01bcd17638367d724553b4dd0a78e94a63f344df65",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_document_reviews.py::test_citation_cannot_strip_a_negation_or_quote_only_a_proposal_column",
+      "to": "tests/unit/test_document_review_evidence.py::test_citation_cannot_strip_a_negation_or_quote_only_a_proposal_column",
+      "body_sha256": "d32591c1d854f696642bafe1185f5a7556f5a25bb325578a3cfca2b5a17eff0b",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_document_reviews.py::test_multiline_table_proposal_cannot_stand_in_for_the_response",
+      "to": "tests/unit/test_document_review_evidence.py::test_multiline_table_proposal_cannot_stand_in_for_the_response",
+      "body_sha256": "e9fe08993906bc40520e6d6b4f6919ba49f2796ebc2713259519fb6f7badbc94",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_document_reviews.py::test_real_final_act_transition_keeps_both_old_proceeding_conditions",
+      "to": "tests/unit/test_document_review_evidence.py::test_real_final_act_transition_keeps_both_old_proceeding_conditions",
+      "body_sha256": "6d8022b805e650145925894a4ab5076f368689af113229e248a8043e0a6ef886",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_document_reviews.py::test_conflicting_general_date_is_not_a_confirmed_special_date",
+      "to": "tests/unit/test_document_review_evidence.py::test_conflicting_general_date_is_not_a_confirmed_special_date",
+      "body_sha256": "a2527104dc27d92b8992baab39d31cd3e7063edfd2965dcc34400a9a29cb1b8e",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_commission_reviews.py::test_acceptance_and_incorporation_require_three_separate_sources",
+      "to": "tests/unit/test_commission_review_evidence.py::test_acceptance_and_incorporation_require_three_separate_sources",
+      "body_sha256": "3c78f3f46d8b0bb7ef4766853fc619170469146ad70583fc3727be197a7796fd",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_commission_reviews.py::test_position_and_changed_text_never_prove_acceptance",
+      "to": "tests/unit/test_commission_review_evidence.py::test_position_and_changed_text_never_prove_acceptance",
+      "body_sha256": "fea9aa58ef2fc449120f741c0e453e2e954d9b88532105e10fad0766ff922a0f",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_commission_reviews.py::test_negative_partial_proposed_or_other_provision_is_not_acceptance",
+      "to": "tests/unit/test_commission_review_evidence.py::test_negative_partial_proposed_or_other_provision_is_not_acceptance",
+      "body_sha256": "da7b4ea5931bbd881fa35e21f4bc200f7e2f406e5b5fb4b54b04007222d10787",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_commission_reviews.py::test_changed_amount_negation_reference_or_scope_breaks_exact_evidence",
+      "to": "tests/unit/test_commission_review_evidence.py::test_changed_amount_negation_reference_or_scope_breaks_exact_evidence",
+      "body_sha256": "3d6124335771f08df9d1055d70ee4a2d7d6257a24a55a192687f1ba724d385eb",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_commission_reviews.py::test_incorporation_is_unconfirmed_without_valid_dated_comparison",
+      "to": "tests/unit/test_commission_review_evidence.py::test_incorporation_is_unconfirmed_without_valid_dated_comparison",
+      "body_sha256": "b8e67dfe3599351f183d24b7cc6868ade392837ad5bc4044b1dc760be3ea14a9",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_commission_reviews.py::test_real_table_requires_whole_row_and_does_not_prove_incorporation",
+      "to": "tests/unit/test_commission_review_evidence.py::test_real_table_requires_whole_row_and_does_not_prove_incorporation",
+      "body_sha256": "5fb7d2fc6e347942cc058de8bd7cc6369d67559c08fd07baedd715577ffab3b1",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_commission_reviews.py::test_real_minutes_report_proposal_without_inventing_a_ministry_decision",
+      "to": "tests/unit/test_commission_review_evidence.py::test_real_minutes_report_proposal_without_inventing_a_ministry_decision",
+      "body_sha256": "0b8d7a7963c0fb9c5b7b029cf530d230144ae747b527121fca00cb1ed6804f18",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_commission_reviews.py::test_source_content_confirms_its_role",
+      "to": "tests/unit/test_commission_review_evidence.py::test_source_content_confirms_its_role",
+      "body_sha256": "d548d084ad3a5eafddf3494598b08a88a26a318097919afdcdea48ebfb6f89fe",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_commission_reviews.py::test_truncated_paragraph_cannot_hide_qualification_in_next_sentence",
+      "to": "tests/unit/test_commission_review_evidence.py::test_truncated_paragraph_cannot_hide_qualification_in_next_sentence",
+      "body_sha256": "7adaf745c893c4e5ede4b6dac913fc0a868db069da72574ac7b4e429d446b22b",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_commission_reviews.py::test_other_review_purposes_cannot_smuggle_commission_findings",
+      "to": "tests/unit/test_commission_review_evidence.py::test_other_review_purposes_cannot_smuggle_commission_findings",
+      "body_sha256": "12acbaf838fa98fcee53114f473a1436e5e38b6ebadfe2ce1ed1936400d5f074",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_all_commission_reviews.py::test_joint_senate_reports_and_legal_opinions_are_bound_to_their_own_act",
+      "to": "tests/unit/test_commission_review_sources.py::test_joint_senate_reports_and_legal_opinions_are_bound_to_their_own_act",
+      "body_sha256": "0bfa2bf0184a1e878f371ae7d764d2ade748093b70d43f083c2ea9f094b1e0bc",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_all_commission_reviews.py::test_other_body_cannot_supply_an_answer_or_recommendation_to_this_proposal",
+      "to": "tests/unit/test_commission_review_sources.py::test_other_body_cannot_supply_an_answer_or_recommendation_to_this_proposal",
+      "body_sha256": "72b2fbdbcf529ce1755419143a5670240a96069dc268dcd1b6e0bda4a460f710",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_all_commission_reviews.py::test_recommendation_never_becomes_a_chamber_decision_even_if_report_says_accepted",
+      "to": "tests/unit/test_commission_review_sources.py::test_recommendation_never_becomes_a_chamber_decision_even_if_report_says_accepted",
+      "body_sha256": "827c4d05361e217350ab7ec18caf03bb4b2c6c2c14626b887d6c0a410365d3db",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_all_commission_reviews.py::test_minority_and_participant_proposals_are_not_committee_recommendations",
+      "to": "tests/unit/test_commission_review_sources.py::test_minority_and_participant_proposals_are_not_committee_recommendations",
+      "body_sha256": "6f089511929f56d353f3071531397d52982fbfa5eead575b18d155ef2cd46523",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_all_commission_reviews.py::test_consultation_attachments_cannot_be_renamed_into_official_senate_opinions",
+      "to": "tests/unit/test_commission_review_sources.py::test_consultation_attachments_cannot_be_renamed_into_official_senate_opinions",
+      "body_sha256": "71c0f6e7e41110eb0603785afc77a89431459824f1758b5b64401149cbc8d200",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_all_commission_reviews.py::test_same_file_at_another_url_keeps_the_review_memo_key",
+      "to": "tests/unit/test_commission_review_sources.py::test_same_file_at_another_url_keeps_the_review_memo_key",
+      "body_sha256": "48cd19e03dba3b6d4ed9f5c23134ec275a79afa3c4449ff2270a72fbf84e5db6",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_all_commission_reviews.py::test_real_reports_remain_readable_including_letter_spaced_sejm_heading",
+      "to": "tests/unit/test_commission_review_sources.py::test_real_reports_remain_readable_including_letter_spaced_sejm_heading",
+      "body_sha256": "2571fbe1f2c0233845a79b33a60074078fdf556c849fa4b41af70c89281db64e",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_all_commission_reviews.py::test_filed_opinion_for_another_parent_is_not_selected",
+      "to": "tests/unit/test_commission_review_sources.py::test_filed_opinion_for_another_parent_is_not_selected",
+      "body_sha256": "13445db0a769562809f708f13773fca507a692cc313e1a266c7663b700c44a73",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_computation_binding_reader.py::test_reader_keeps_known_input_binding_separate_from_collection_coordinates",
+      "to": "tests/unit/test_computation_input_binding.py::test_reader_keeps_known_input_binding_separate_from_collection_coordinates",
+      "body_sha256": "d0439dbfb20121e80593e898615bc482dc7d13818d70ffb5959ab2b7de21ec32",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_computation_binding_reader.py::test_full_review_binding_keeps_its_recorded_key_without_recomputing_policy",
+      "to": "tests/unit/test_computation_input_binding.py::test_full_review_binding_keeps_its_recorded_key_without_recomputing_policy",
+      "body_sha256": "466bb8a19198112ea9ec48c0d409a5a8408d4d7dccb7ce8d420459c8ef2dcb4c",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_computation_binding_reader.py::test_metadata_rejects_a_binding_with_a_different_frozen_question_key",
+      "to": "tests/unit/test_computation_input_binding.py::test_metadata_rejects_a_binding_with_a_different_frozen_question_key",
+      "body_sha256": "c5b64480f24966336092d5ec4d0e1fb508b6811bec955269239220fb1f953c9a",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_source_context_delivery.py::test_poster_checks_persisted_block_before_freeze_or_attempt",
+      "to": "tests/unit/test_source_context_delivery.py::test_poster_checks_persisted_block_before_freeze_or_attempt",
+      "body_sha256": "7f39fecefe6426f5446fc56773b0ea25fa3a7d876553138bed8bc3fd9bda8f29",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_source_context_delivery.py::test_common_group_send_checks_members_before_checkpoint_and_callback",
+      "to": "tests/unit/test_source_context_delivery.py::test_common_group_send_checks_members_before_checkpoint_and_callback",
+      "body_sha256": "4ff8351a82bec8873571a0dba0feaa6b706d130a5189121edc5ff7a5b86f0c83",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_source_context_delivery.py::test_direct_publisher_and_freeze_reject_reserved_block_without_io_or_writes",
+      "to": "tests/unit/test_source_context_delivery.py::test_direct_publisher_and_freeze_reject_reserved_block_without_io_or_writes",
+      "body_sha256": "2ebc28111ec7992f2265e861c1c19a88dfa81a167b91f2cfd66a3ff57f2e83cf",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_source_context_delivery.py::test_public_group_retry_checks_a_newly_blocked_persisted_member",
+      "to": "tests/unit/test_source_context_delivery.py::test_public_group_retry_checks_a_newly_blocked_persisted_member",
+      "body_sha256": "fdf8014d98f4037fea35bcb22f49ddf4d215f44742078d3689aad4987fcb3ca0",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_source_context_delivery.py::test_common_send_follows_a_continuation_to_its_blocked_root",
+      "to": "tests/unit/test_source_context_delivery.py::test_common_send_follows_a_continuation_to_its_blocked_root",
+      "body_sha256": "617db8e6d5fbb72ecd385074673dcad6af76fa45caf2e8a580ac434d14627e43",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_source_context_delivery.py::test_public_root_send_checks_blocked_retained_children_before_any_effect",
+      "to": "tests/unit/test_source_context_delivery.py::test_public_root_send_checks_blocked_retained_children_before_any_effect",
+      "body_sha256": "e53d01ffd453a10e798ed8f7019952f151872ee90a9213e082647301c0cdc53b",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_source_context_delivery.py::test_other_errors_keep_the_existing_send_behavior",
+      "to": "tests/unit/test_source_context_delivery.py::test_other_errors_keep_the_existing_send_behavior",
+      "body_sha256": "1688a389433c3d08810b985eeeeab0f9a92f22fd2e7b1c59ce58bec5045c3938",
+      "decorators_preserved": true
+    },
+    {
+      "from": "tests/scenario/test_source_context_delivery.py::test_repository_resolution_cannot_retry_unknown_child_under_a_blocked_root",
+      "to": "tests/unit/test_source_context_delivery.py::test_repository_resolution_cannot_retry_unknown_child_under_a_blocked_root",
+      "body_sha256": "10c60742d3d9d003a4069eaa604f068baee71f9ed6ef2b96eaf3af3eb0fcaadc",
+      "decorators_preserved": true
+    }
+  ],
+  "card_edit_coverage": {
+    "before": {
+      "covered_lines": 103,
+      "num_statements": 135,
+      "percent_covered": 70.14925373134328,
+      "percent_covered_display": "70",
+      "missing_lines": 32,
+      "excluded_lines": 0,
+      "percent_statements_covered": 76.29629629629629,
+      "percent_statements_covered_display": "76",
+      "num_branches": 66,
+      "num_partial_branches": 18,
+      "covered_branches": 38,
+      "missing_branches": 28,
+      "percent_branches_covered": 57.57575757575758,
+      "percent_branches_covered_display": "58"
+    },
+    "after": {
+      "covered_lines": 104,
+      "num_statements": 135,
+      "percent_covered": 71.14427860696517,
+      "percent_covered_display": "71",
+      "missing_lines": 31,
+      "excluded_lines": 0,
+      "percent_statements_covered": 77.03703703703704,
+      "percent_statements_covered_display": "77",
+      "num_branches": 66,
+      "num_partial_branches": 17,
+      "covered_branches": 39,
+      "missing_branches": 27,
+      "percent_branches_covered": 59.09090909090909,
+      "percent_branches_covered_display": "59"
+    },
+    "lost_executed_lines": [],
+    "lost_executed_branches": [],
+    "commands": [
+      "uv run pytest tests/scenario/test_card_edit_multipart.py --cov=lexinform.services.card_edits --cov-branch --cov-report=json:/tmp/card-before.json",
+      "uv run pytest tests/scenario/test_card_edit_multipart.py tests/unit/test_card_edit_contracts.py --cov=lexinform.services.card_edits --cov-branch --cov-report=json:/tmp/card-after.json"
+    ]
+  },
+  "boundary_faults": [
+    {
+      "phase": "before",
+      "fault": "card_projection_before_send",
+      "nodeid": "tests/scenario/test_card_edit_multipart.py::test_every_multipart_edit_part_is_remote_before_api_and_final_receipt_alone_advances_card[many_grow-on]",
+      "exit_code": 1,
+      "detected": true,
+      "log": "/private/tmp/lexinform-fault-before-card_projection_before_send.log"
+    },
+    {
+      "phase": "after",
+      "fault": "card_projection_before_send",
+      "nodeid": "tests/unit/test_card_edit_contracts.py::test_every_multipart_edit_part_is_checkpointed_before_api_and_final_receipt_alone_advances_card[many_grow-on]",
+      "exit_code": 1,
+      "detected": true,
+      "log": "/private/tmp/lexinform-fault-after-card_projection_before_send.log"
+    },
+    {
+      "phase": "before",
+      "fault": "card_duplicate_edit_target",
+      "nodeid": "tests/scenario/test_card_edit_multipart.py::test_every_multipart_edit_part_is_remote_before_api_and_final_receipt_alone_advances_card[many_grow-on]",
+      "exit_code": 1,
+      "detected": true,
+      "log": "/private/tmp/lexinform-fault-before-card_duplicate_edit_target.log"
+    },
+    {
+      "phase": "after",
+      "fault": "card_duplicate_edit_target",
+      "nodeid": "tests/unit/test_card_edit_contracts.py::test_every_multipart_edit_part_is_checkpointed_before_api_and_final_receipt_alone_advances_card[many_grow-on]",
+      "exit_code": 1,
+      "detected": true,
+      "log": "/private/tmp/lexinform-fault-after-card_duplicate_edit_target.log"
+    },
+    {
+      "phase": "before",
+      "fault": "delivery_uncertain_as_failed",
+      "nodeid": "tests/scenario/test_card_edit_multipart.py::test_multipart_transport_outcomes_preserve_attempts_projection_and_confirmed_message_counts[uncertain-final-many_shrink]",
+      "exit_code": 1,
+      "detected": true,
+      "log": "/private/tmp/lexinform-fault-before-delivery_uncertain_as_failed.log"
+    },
+    {
+      "phase": "after",
+      "fault": "delivery_uncertain_as_failed",
+      "nodeid": "tests/unit/test_card_edit_contracts.py::test_multipart_transport_outcomes_preserve_attempts_projection_and_confirmed_message_counts[uncertain-final-many_shrink]",
+      "exit_code": 1,
+      "detected": true,
+      "log": "/private/tmp/lexinform-fault-after-delivery_uncertain_as_failed.log"
+    },
+    {
+      "phase": "before",
+      "fault": "delivery_pending_checkpoint_after_send",
+      "nodeid": "tests/scenario/test_card_edit_multipart.py::test_every_multipart_edit_part_is_remote_before_api_and_final_receipt_alone_advances_card[single_many-on]",
+      "exit_code": 1,
+      "detected": true,
+      "log": "/private/tmp/lexinform-fault-before-delivery_pending_checkpoint_after_send.log"
+    },
+    {
+      "phase": "after",
+      "fault": "delivery_pending_checkpoint_after_send",
+      "nodeid": "tests/unit/test_card_edit_contracts.py::test_every_multipart_edit_part_is_checkpointed_before_api_and_final_receipt_alone_advances_card[single_many-on]",
+      "exit_code": 1,
+      "detected": true,
+      "log": "/private/tmp/lexinform-fault-after-delivery_pending_checkpoint_after_send.log"
+    },
+    {
+      "phase": "before",
+      "fault": "delivery_receipt_checkpoint_removed",
+      "nodeid": "tests/scenario/test_card_edit_multipart.py::test_every_multipart_edit_part_is_remote_before_api_and_final_receipt_alone_advances_card[single_many-on]",
+      "exit_code": 1,
+      "detected": true,
+      "log": "/private/tmp/lexinform-fault-before-delivery_receipt_checkpoint_removed.log"
+    },
+    {
+      "phase": "after",
+      "fault": "delivery_receipt_checkpoint_removed",
+      "nodeid": "tests/unit/test_card_edit_contracts.py::test_every_multipart_edit_part_is_checkpointed_before_api_and_final_receipt_alone_advances_card[single_many-on]",
+      "exit_code": 1,
+      "detected": true,
+      "log": "/private/tmp/lexinform-fault-after-delivery_receipt_checkpoint_removed.log"
+    }
+  ],
+  "fault_plugin_source": "import ast\nimport inspect\nimport os\nimport textwrap\nimport lexinform.services.card_edits as edits\nimport lexinform.services.publications as publications\n\n\ndef pytest_sessionstart(session):\n    fault = os.environ.get('CARD_TEST_FAULT')\n    if not fault:\n        return\n    module = edits if fault.startswith('card_') else publications\n    name = 'edit_card' if module is edits else 'send_publications'\n    original = getattr(module, name)\n    tree = ast.parse(textwrap.dedent(inspect.getsource(original)))\n    function = tree.body[0]\n    if fault == 'card_projection_before_send':\n        index = next(i for i,n in enumerate(function.body) if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='sent' for t in n.targets))\n        function.body[index:index] = ast.parse('repo.set_card_digest(owner.id, desired)').body\n    elif fault == 'card_duplicate_edit_target':\n        nodes = [n for n in ast.walk(function) if isinstance(n,ast.keyword) and n.arg=='edit_message_id']\n        assert len(nodes)==1\n        target = next(n for n in ast.walk(nodes[0]) if isinstance(n,ast.Subscript) and isinstance(n.value,ast.Name) and n.value.id=='targets')\n        target.slice=ast.Constant(value=0)\n    elif fault == 'delivery_uncertain_as_failed':\n        count=0\n        for n in ast.walk(function):\n            if isinstance(n,ast.Attribute) and isinstance(n.value,ast.Name) and n.value.id=='PublicationStatus' and n.attr=='UNKNOWN':\n                n.attr='FAILED';count+=1\n        assert count==1\n    elif fault == 'delivery_pending_checkpoint_after_send':\n        before=next(n for n in function.body if isinstance(n,ast.If) and ast.unparse(n.test)=='checkpoint is not None')\n        function.body.remove(before)\n        attempt=next(n for n in function.body if isinstance(n,ast.Try))\n        attempt.body.insert(1,before)\n    elif fault == 'delivery_receipt_checkpoint_removed':\n        after=function.body[-2]\n        assert isinstance(after,ast.If) and ast.unparse(after.test)=='checkpoint is not None'\n        function.body.remove(after)\n    else:\n        raise ValueError(fault)\n    namespace=dict(vars(module))\n    exec(compile(ast.fix_missing_locations(tree),'<fault:'+fault+'>','exec'),namespace)\n    setattr(module,name,namespace[name])\n",
+  "fault_runner_source": "import json\nimport os\nimport subprocess\nfrom pathlib import Path\n\nroots={'before':Path('/private/tmp/lexinform-perf-baseline-20261104'),'after':Path('/Users/sobaleu/.codex/worktrees/test-performance-20261104/lexinform')}\nold='tests/scenario/test_card_edit_multipart.py::test_every_multipart_edit_part_is_remote_before_api_and_final_receipt_alone_advances_card'\nnew='tests/unit/test_card_edit_contracts.py::test_every_multipart_edit_part_is_checkpointed_before_api_and_final_receipt_alone_advances_card'\ntransport='test_multipart_transport_outcomes_preserve_attempts_projection_and_confirmed_message_counts[uncertain-final-many_shrink]'\nfaults={\n 'card_projection_before_send':(old+'[many_grow-on]',new+'[many_grow-on]'),\n 'card_duplicate_edit_target':(old+'[many_grow-on]',new+'[many_grow-on]'),\n 'delivery_uncertain_as_failed':('tests/scenario/test_card_edit_multipart.py::'+transport,'tests/unit/test_card_edit_contracts.py::'+transport),\n 'delivery_pending_checkpoint_after_send':(old+'[single_many-on]',new+'[single_many-on]'),\n 'delivery_receipt_checkpoint_removed':(old+'[single_many-on]',new+'[single_many-on]'),\n}\nrows=[]\nfor fault,tests in faults.items():\n for phase,root in roots.items():\n  node=tests[0 if phase=='before' else 1]\n  env=os.environ.copy();env.update(CARD_TEST_FAULT=fault,PYTHONPATH=os.pathsep.join(['/private/tmp',str(root/'src'),str(root)]))\n  command=[str(root/'.venv/bin/python'),'-m','pytest','-n','0','-p','lexinform_card_faults',node,'--maxfail=1']\n  result=subprocess.run(command,cwd=root,env=env,text=True,capture_output=True)\n  output=result.stdout+result.stderr\n  path=Path('/private/tmp')/f'lexinform-fault-{phase}-{fault}.log';path.write_text(output)\n  row={'phase':phase,'fault':fault,'nodeid':node,'exit_code':result.returncode,'detected':result.returncode==1 and 'AssertionError' in output,'log':str(path)}\n  rows.append(row);print(json.dumps(row),flush=True)\nPath('/private/tmp/lexinform-fault-results.json').write_text(json.dumps(rows,indent=2)+'\\n')\nassert all(r['detected'] for r in rows), 'every fault must fail an assertion, not an import or collection error'\n",
+  "assertion_audit_source": "import ast\nimport hashlib\nimport json\nimport subprocess\nfrom pathlib import Path\n\npairs=[('test_document_reviews','test_document_review_evidence'),('test_commission_reviews','test_commission_review_evidence'),('test_all_commission_reviews','test_commission_review_sources'),('test_computation_binding_reader','test_computation_input_binding'),('test_source_context_delivery','test_source_context_delivery')]\nrows=[]\nfor old,new in pairs:\n source=subprocess.check_output(['git','show',f'901f8ca1:tests/scenario/{old}.py'],text=True)\n original={n.name:n for n in ast.parse(source).body if isinstance(n,ast.FunctionDef)}\n updated=ast.parse((Path('tests/unit')/(new+'.py')).read_text())\n for node in updated.body:\n  if not isinstance(node,ast.FunctionDef) or not node.name.startswith('test_'):continue\n  before=original[node.name]\n  before_body=ast.dump(ast.Module(body=before.body,type_ignores=[]),include_attributes=False)\n  after_body=ast.dump(ast.Module(body=node.body,type_ignores=[]),include_attributes=False)\n  assert before_body==after_body,(old,node.name,'body changed')\n  before_decorators=[ast.dump(n,include_attributes=False) for n in before.decorator_list]\n  after_decorators=[ast.dump(n,include_attributes=False) for n in node.decorator_list]\n  if before_decorators!=after_decorators:\n   assert old=='test_computation_binding_reader'\n   assert repr(before_decorators).replace(\"id='PURPOSES'\",\"id='REVIEW_PURPOSES'\")==repr(after_decorators)\n  rows.append({'from':f'tests/scenario/{old}.py::{node.name}','to':f'tests/unit/{new}.py::{node.name}','body_sha256':hashlib.sha256(before_body.encode()).hexdigest(),'decorators_preserved':True})\nPath('/private/tmp/lexinform-moved-cases.json').write_text(json.dumps(rows,indent=2)+'\\n')\nprint('Preserved function bodies and parametrizations:',len(rows))\n",
+  "database_microbenchmark": {
+    "before": {
+      "migrate": {
+        "median_ms": 6.741812499240041,
+        "batches_ms": [
+          6.769855839665979,
+          6.741812499240041,
+          6.729464998934418
+        ]
+      },
+      "cached_factory": {
+        "median_ms": 6.465035839937627,
+        "batches_ms": [
+          6.462295840028673,
+          6.465035839937627,
+          6.485034159850329
+        ]
+      },
+      "world_init": {
+        "median_ms": 7.050763319712132,
+        "batches_ms": [
+          7.059294159989804,
+          7.050763319712132,
+          7.044795821420848
+        ]
+      },
+      "one_bill_run": {
+        "median_ms": 17.01465414953418,
+        "batches_ms": [
+          17.102572903968394,
+          16.95304164895788,
+          17.01465414953418
+        ]
+      }
+    },
+    "after": {
+      "migrate": {
+        "median_ms": 7.221814999356866,
+        "batches_ms": [
+          7.30536499992013,
+          6.995913339778781,
+          7.221814999356866
+        ]
+      },
+      "cached_factory": {
+        "median_ms": 0.06402334198355675,
+        "batches_ms": [
+          0.06474332185462117,
+          0.06402334198355675,
+          0.06294084014371037
+        ]
+      },
+      "world_init": {
+        "median_ms": 1.266872501000762,
+        "batches_ms": [
+          1.266872501000762,
+          1.2397308414801955,
+          1.309636679943651
+        ]
+      },
+      "one_bill_run": {
+        "median_ms": 15.732760401442647,
+        "batches_ms": [
+          15.732760401442647,
+          16.025629150681198,
+          15.152043750276789
+        ]
+      }
+    },
+    "driver_source": "import cProfile\nimport json\nimport statistics\nfrom contextlib import closing\nfrom time import perf_counter\nfrom lexinform.adapters.sqlite_repo import SqliteBillRepository\nfrom tests.database import empty_repository, close_test_repositories\nfrom tests.harness import World\n\n\ndef migrate():\n    with closing(SqliteBillRepository(':memory:')) as repository:\n        repository.migrate()\n\n\ndef cached():\n    with closing(empty_repository()):\n        pass\n\n\ndef world():\n    World()\n    close_test_repositories()\n\n\ndef pipeline():\n    w = World()\n    w.add_bill('3039', 'Projekt ustawy o cudzoziemcach')\n    w.run()\n    close_test_repositories()\n\n\nresult = {}\nfor label, function, n in [('migrate', migrate, 50), ('cached_factory', cached, 50), ('world_init', world, 50), ('one_bill_run', pipeline, 20)]:\n    function()\n    batches = []\n    for _ in range(3):\n        started = perf_counter()\n        for _ in range(n):\n            function()\n        batches.append(1000 * (perf_counter() - started) / n)\n        close_test_repositories()\n    result[label] = {'median_ms': statistics.median(batches), 'batches_ms': batches}\nprofiler = cProfile.Profile()\nprofiler.runcall(pipeline)\nprofiler.dump_stats('/private/tmp/lexinform-probe-' + __import__('os').environ['PERF_LABEL'] + '.pstats')\nprint(json.dumps(result, indent=2))\n"
+  },
+  "quality_gate": "passed: make format and make check (pytest, mypy, Ruff, format check)",
+  "limits": [
+    "Full-suite timings are sequential local observations on a shared macOS host with four workers; no universal speedup is claimed.",
+    "The first after run reports 266.68 seconds including pytest overhead; its JUnit suite time is 257.279 seconds.",
+    "Summed case durations are not wall time.",
+    "Branch comparison covers card_edits through the named tests, not total repository coverage.",
+    "Fault checks cover five explicit boundary mutations, not a complete mutation campaign.",
+    "Database microbenchmarks ran at different times; the optimized sample partly overlapped a coverage run.",
+    "The real-project pilot smoke and all Git pre/post crash, fresh-clone, unknown audit and retention boundaries remain.",
+    "No extraction, normalization, production configuration, schema migration or external-service behavior was changed."
+  ],
+  "reproduction_commands": [
+    "uv sync --frozen",
+    "make format",
+    "make check ARGS=\"--durations=40 --junitxml=/tmp/performance.xml\"",
+    "uv run pytest -n 0 tests/unit/test_corpus_pilot.py",
+    "uv run pytest -n 0 tests/unit/test_scenario_support.py tests/unit/test_card_edit_contracts.py"
+  ],
+  "full_suite_after_final_gate": {
+    "cases": 7733,
+    "errors": 0,
+    "failures": 0,
+    "junit_seconds": 261.852,
+    "pytest_reported_wall_seconds": 262.03,
+    "groups": {
+      "scenario": {
+        "cases": 3114,
+        "summed_case_seconds": 844.3849999999992
+      },
+      "unit": {
+        "cases": 4619,
+        "summed_case_seconds": 175.95000000000294
+      }
+    },
+    "modules": {
+      "tests.unit.test_corpus_pilot": {
+        "cases": 65,
+        "summed_case_seconds": 4.722999999999995
+      },
+      "tests.scenario.test_review_remote_checkpoints": {
+        "cases": 60,
+        "summed_case_seconds": 50.86899999999998
+      },
+      "tests.unit.test_scenario_support": {
+        "cases": 4,
+        "summed_case_seconds": 0.04
+      },
+      "tests.scenario.test_card_edit_multipart": {
+        "cases": 33,
+        "summed_case_seconds": 64.826
+      },
+      "tests.unit.test_card_edit_contracts": {
+        "cases": 32,
+        "summed_case_seconds": 3.0900000000000003
+      },
+      "tests.scenario.test_legacy_notice_freeze": {
+        "cases": 50,
+        "summed_case_seconds": 41.15799999999996
+      },
+      "tests.scenario.test_update_remote_checkpoints": {
+        "cases": 50,
+        "summed_case_seconds": 47.42
+      }
+    }
+  },
+  "source_sha256": {
+    "src/lexinform/adapters/sqlite_repo.py": "03d6dc9404a064946ac36839124a7ced7885b805e22238bd4c5a2bfc77f82831",
+    "tests/database.py": "1cbcddb88ff4fe67be8d71f56423d5d3e327898c772568558fa60cfe660d10c4",
+    "tests/conftest.py": "ee61f99ae8962d9a95a5a325b1f5457e67313ddc33ebd20d7eb76dad3ff47746",
+    "tests/unit/test_corpus_pilot.py": "49f88919d724de5bca7ce5c0f9e276f708debebadc6a8187b38589fb3e955e0c",
+    "tests/unit/test_card_edit_contracts.py": "0684e0e303dbb6d09d35f91fbbb039cb5f7db173489b19068ac068dbe1f13bfb"
+  },
+  "baseline_preparation_commands": [
+    "git worktree add --detach /private/tmp/lexinform-perf-baseline-20261104 901f8ca1",
+    "cd /private/tmp/lexinform-perf-baseline-20261104 && uv sync --frozen"
+  ]
+}
