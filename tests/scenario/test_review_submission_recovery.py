@@ -13,9 +13,9 @@ from lexinform.models import (
     validate_review,
 )
 from lexinform.services.tracking_result import TrackingResult
+from tests.document_review_cases import context, finding, review
 from tests.fakes import FakeBatchBackend
 from tests.harness import TERM, World
-from tests.scenario.test_document_reviews import context, finding, review
 
 
 def ready(*, overflow: FakeBatchBackend | None = None) -> tuple[World, ReviewContext]:

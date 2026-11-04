@@ -10,9 +10,10 @@ from lexinform.models.batch import batch_item_meta
 from lexinform.models.reviews import ReviewPurpose
 from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisService, Waiting
+from tests.computations import REVIEW_PURPOSES as PURPOSES
 from tests.fakes import FakeTextExtractor
 from tests.harness import World
-from tests.scenario.test_review_computation_history import PURPOSES, queued_review, submit_review
+from tests.scenario.test_review_computation_history import queued_review, submit_review
 from tests.scenario.test_secondary_computation_history import KINDS, Kind, ask, prepared_world
 
 

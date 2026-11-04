@@ -4,9 +4,9 @@ from lexinform.models import DocumentReviewRecord, ResultApplication, ResultAppl
 from lexinform.models.reviews import ReviewPurpose
 from lexinform.services.analysis import Waiting
 from lexinform.services.result_applications import record_secondary_application
+from tests.commission_cases import context as commission_context
+from tests.document_review_cases import FINAL, context
 from tests.harness import RCL, WYKAZ, World
-from tests.scenario.test_commission_reviews import context as commission_context
-from tests.scenario.test_document_reviews import FINAL, context
 from tests.scenario.test_review_computation_history import submit_review
 from tests.scenario.test_rollover_computation_history import Source, rollover
 

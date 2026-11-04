@@ -23,8 +23,8 @@ from lexinform.models import (
     Stage,
     StatusChange,
 )
+from tests.document_review_cases import context
 from tests.harness import CHANNEL, World
-from tests.scenario.test_document_reviews import context
 from tests.scenario.test_request_doctor import snapshot
 
 MARKER = "NEVER-EMIT-THE-FROZEN-WORK-CONTEXT"
