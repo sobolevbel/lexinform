@@ -210,12 +210,16 @@ def _publications(
     row: sqlite3.Row,
     counts: Counter[str],
     parents: Counter[str],
+    children: Counter[str],
+    publication_ids: set[int],
     findings: list[dict[str, str]],
 ) -> None:
     ref = f"publications/row-{row['audit_id']}"
     parents["publication_rows"] += 1
+    children["publication_rows"] += 1
     if row["delivery_json"] is None:
         parents["unavailable_rows"] += 1
+        children["unavailable_rows"] += 1
         counts["slots"] += 1
         counts["absent_rows"] += 1
         return
@@ -226,6 +230,7 @@ def _publications(
         counts["invalid_rows"] += 1
         _issue(findings, "invalid_retained_body", ref)
         parents["unavailable_rows"] += 1
+        children["unavailable_rows"] += 1
         return
     native = isinstance(raw, dict) and raw.get("policy_version") == "attention-v1"
     try:
@@ -241,6 +246,7 @@ def _publications(
             warning=not native,
         )
         parents["unavailable_rows"] += 1
+        children["unavailable_rows"] += 1
         return
     for field, model in _DELIVERY_BODIES.items():
         _body(
@@ -269,32 +275,42 @@ def _publications(
         parents["no_parent_rows"] += 1
     if plan.continuation_parent is not None:
         parents["rows"] += 1
-        present = (
-            db.execute(
-                "SELECT 1 FROM publications WHERE id=?", (plan.continuation_parent,)
-            ).fetchone()
-            is not None
-        )
+        present = plan.continuation_parent in publication_ids
         parents["present_rows" if present else "missing_rows"] += 1
         if not present:
             _issue(findings, "continuation_parent_unavailable", ref, warning=True)
+    if not plan.continuation_ids:
+        children["no_children_rows"] += 1
+    for index, identity in enumerate(plan.continuation_ids):
+        children["rows"] += 1
+        present = identity in publication_ids
+        children["present_rows" if present else "missing_rows"] += 1
+        if not present:
+            _issue(
+                findings,
+                "continuation_child_unavailable",
+                f"{ref}/continuation_ids/{index}",
+                warning=True,
+            )
 
 
 def _bodies(
     db: sqlite3.Connection, findings: list[dict[str, str]]
-) -> tuple[dict[str, Any], dict[str, Any]]:
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     counts: Counter[str] = Counter()
     parents: Counter[str] = Counter()
+    children: Counter[str] = Counter()
     missing = {}
     for table, required in _BODY.items():
         rows, columns = _inventory(db, table, required)
         if columns:
             missing[table] = columns
+        publication_ids = {row["id"] for row in rows or []} if table == "publications" else set()
         for row in rows or []:
             ref = f"{table}/row-{row['audit_id']}"
             try:
                 if table == "publications":
-                    _publications(db, row, counts, parents, findings)
+                    _publications(db, row, counts, parents, children, publication_ids, findings)
                 elif table == "document_work":
                     work = decode_document_work(_hydrated(db, row["work_json"]))
                     if isinstance(work, DocumentWork):
@@ -342,6 +358,18 @@ def _bodies(
                 "present_rows",
                 "missing_rows",
                 "no_parent_rows",
+                "unavailable_rows",
+            ),
+            {"publications": missing["publications"]} if "publications" in missing else {},
+        ),
+        _section(
+            children,
+            (
+                "publication_rows",
+                "rows",
+                "present_rows",
+                "missing_rows",
+                "no_children_rows",
                 "unavailable_rows",
             ),
             {"publications": missing["publications"]} if "publications" in missing else {},
@@ -438,13 +466,14 @@ def audit(database: Path) -> dict[str, Any]:
     with open_snapshot(database) as snapshot:
         db = snapshot.connection
         legacy = _legacy(db, findings)
-        bodies, parents = _bodies(db, findings)
+        bodies, parents, children = _bodies(db, findings)
         editorial = _editorial(db, findings)
         sections = {
             "legacy_archive": legacy,
             "saved_bodies": bodies,
             "editorial_refs": editorial,
             "continuation_parents": parents,
+            "continuation_children": children,
         }
         schema = db.execute("PRAGMA user_version").fetchone()[0]
         if not snapshot.unchanged():
@@ -470,6 +499,7 @@ def audit(database: Path) -> dict[str, Any]:
             "Raw originals are outside retained application-body integrity.",
             "Legacy/cleaned bodies stay unavailable; validity does not prove original context.",
             "Parents use local Publication IDs; absence never proves send eligibility.",
+            "Listed child edges use local Publication IDs; cleaned plans leave membership unknown.",
         ],
     }
 

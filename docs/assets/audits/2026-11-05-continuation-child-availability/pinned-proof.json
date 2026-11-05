@@ -1,0 +1,38 @@
+{
+  "states": {
+    "b9": {
+      "database_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+      "seven_prior_reports_exact": true,
+      "prior_retained_report_fields_exact": true,
+      "continuation_children": {
+        "status": "available",
+        "missing_columns": {},
+        "publication_rows": 224,
+        "rows": 2,
+        "present_rows": 2,
+        "missing_rows": 0,
+        "no_children_rows": 163,
+        "unavailable_rows": 59
+      },
+      "source_unchanged": true
+    },
+    "fresh": {
+      "database_sha256": "b08843e5a6b3c51aba83852509ffbaa915c2b859945bc44204f1b214a38077c6",
+      "seven_prior_reports_exact": true,
+      "prior_retained_report_fields_exact": true,
+      "continuation_children": {
+        "status": "available",
+        "missing_columns": {},
+        "publication_rows": 226,
+        "rows": 2,
+        "present_rows": 2,
+        "missing_rows": 0,
+        "no_children_rows": 165,
+        "unavailable_rows": 59
+      },
+      "source_unchanged": true
+    }
+  },
+  "read_only": true,
+  "no_network": true
+}

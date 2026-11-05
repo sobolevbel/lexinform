@@ -1,0 +1,315 @@
+{
+  "schema_version": 2,
+  "item": "DA10.2",
+  "literal": "Добавить read-only doctor для missing/corrupt blobs, dangling refs/work, duplicate application, stale generation, orphaned batch, missing receipt и archive coverage. Ремонт и повтор отправки не выполняются doctor автоматически.",
+  "decision": "OPEN: one demonstrated inverse continuation-child availability residual; no checkbox edits",
+  "composed_source_commit": "971aba3e415425ee0487840e5621c909a9036e73",
+  "source_freeze": {
+    "path": "out/corpus/j252-retained-integrity/root-qa/source-pins-v3.json",
+    "sha256": "2a6a98ed255c034b1cec483d2a38edb1c4e839b2d415a5f07e93c1effaafadd1",
+    "files": 838
+  },
+  "gate": {
+    "root_full": {
+      "tests": 8922,
+      "failures": 0,
+      "seconds": 307.25,
+      "mypy_files": 769,
+      "ruff_format_files": 838,
+      "coverage_percent": 92,
+      "provenance": "parent final verified message; rootfull-v3 artifacts"
+    },
+    "root_focused_new_module": 38,
+    "author_focused": 215,
+    "new_unit_cases": 38,
+    "new_scenarios": 0,
+    "release": "J25249709 pending atmatrixfreeze; J251actualCI42008952868/deploy42010102446 verified"
+  },
+  "current_state": {
+    "schema": 67,
+    "database_sha256": "118f84ec0862f247d3a05db9be3b5432ebeb8b995fbe70cc9210080a7b2f2a70",
+    "new_profile_summary": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "seven_prior_report_objects": "root independently replayed byte-exact",
+    "source_changed": false
+  },
+  "commands": {
+    "request": "uv run --offline --frozen python -m tools.request_doctor --database COPY.db --output out/request.json",
+    "work": "uv run --offline --frozen python -m tools.work_doctor --database COPY.db --output out/work.json",
+    "computation": "uv run --offline --frozen python -m tools.computation_doctor --database COPY.db --output out/computation.json --supplement-deliveries",
+    "source": "uv run --offline --frozen python -m tools.source_history_doctor --database COPY.db --output out/source.json --candidate-traces --selection-coverage",
+    "content": "uv run --offline --frozen python -m tools.content_history_doctor --database COPY.db --output out/content.json",
+    "batch": "uv run --offline --frozen python -m tools.batch_integrity_doctor --database COPY.db --output out/batch.json --batch-receipts",
+    "retained": "uv run --offline --frozen python -m tools.retained_integrity_doctor --database COPY.db --output out/retained.json"
+  },
+  "requirements": {
+    "retained_bodies": {
+      "status": "covered_current_profile",
+      "commands": [
+        "request",
+        "computation",
+        "retained",
+        "content"
+      ],
+      "source": [
+        "adapters/input_receipts.py::input_snapshot_checks",
+        "adapters/legacy_history.py::validate_legacy_projections",
+        "tools/retained_integrity_doctor.py::_body/_publications/_bodies",
+        "tools/content_history_doctor.py::_read_history"
+      ],
+      "tests": [
+        "tests/unit/test_retained_integrity_doctor.py::test_known_imported_body_integrity_is_censused",
+        "tests/unit/test_retained_integrity_doctor.py::test_native_retained_body_corruption_cannot_hide_in_valid_json",
+        "tests/unit/test_retained_integrity_doctor.py::test_outer_model_failure_requires_explicit_native_profile",
+        "tests/unit/test_retained_integrity_doctor.py::test_legacy_body_storage_or_recognized_parent_failure_is_not_advisory"
+      ],
+      "boundary": "Strict serialization/recognized legacy refs ERROR. Explicit attention-v1 model failures ERROR. Successfully decoded legacy/unknown model layouts unavailable/advisory. NULL/legitimately cleaned data unknown; no raw-original retention claim."
+    },
+    "dangling_refs_work": {
+      "status": "partial_proven_inverse_child_residual",
+      "commands": [
+        "work",
+        "computation",
+        "source",
+        "content",
+        "retained"
+      ],
+      "source": [
+        "adapters/document_work.py::read_document_work/revision_handoff_checks",
+        "adapters/secondary_dependencies.py::secondary_dependency_issues",
+        "adapters/amendment_inputs.py::amendment_input_issues",
+        "tools/retained_integrity_doctor.py::_editorial/_publications"
+      ],
+      "tests": [
+        "tests/scenario/test_work_doctor.py::test_broken_work_dependencies_are_reported_without_repair",
+        "tests/scenario/test_revision_application_work.py::test_shared_doctor_restore_rejects_corruption_without_touching_target",
+        "tests/unit/test_secondary_dependencies.py::test_known_bad_edges_reject_reads_and_restore_atomically",
+        "tests/unit/test_retained_integrity_doctor.py::test_public_rename_preserves_known_previous_name_dependency",
+        "tests/unit/test_amendment_input_history.py::test_broken_known_inputs_fail_public_reads_doctor_and_atomic_restore"
+      ],
+      "boundary": "Exact typed/source/profile edges below, no current-owner equality or arbitrary JSON reachability. Continuation parent availability is covered, inverse root.continuation_ids availability is not: RESIDUAL-1."
+    },
+    "duplicate_application": {
+      "status": "covered",
+      "commands": [
+        "batch"
+      ],
+      "source": [
+        "tools/batch_integrity_doctor.py::_applications",
+        "adapters/computation_history.py::read_result_application"
+      ],
+      "tests": [
+        "tests/unit/test_batch_integrity_doctor.py::test_duplicate_application_identity_is_reported",
+        "tests/unit/test_batch_integrity_doctor.py::test_distinct_phase_generation_and_opaque_targets_are_not_duplicates",
+        "tests/unit/test_batch_integrity_doctor.py::test_damaged_null_generation_null_target_rows_are_invalid_not_duplicates"
+      ],
+      "boundary": "Actual result/owner/generation/phase or generationless explicit target namespace/ref key. Nullable generation+target invalid under model/migration50; distinct targets/phases/generations valid. Not duplicate billing inference."
+    },
+    "stale_generation": {
+      "status": "covered_defined_active_primary_scope",
+      "commands": [
+        "batch"
+      ],
+      "source": [
+        "tools/batch_integrity_doctor.py::_active"
+      ],
+      "tests": [
+        "tests/unit/test_batch_integrity_doctor.py::test_public_reset_stale_queued_generation_is_an_advisory",
+        "tests/unit/test_batch_integrity_doctor.py::test_consumed_items_and_historical_applications_are_not_current_generation_checks",
+        "tests/unit/test_batch_integrity_doctor.py::test_missing_saved_generation_does_not_infer_model_default_zero"
+      ],
+      "boundary": "Only explicit primary generation on queued/submitting intents/unconsumed items vs exact current owner. Advisory; unknown generation/owner explicit. Other8purposes and generationless document/review/revision work are not assigned invented generations."
+    },
+    "orphaned_batch": {
+      "status": "covered_saved_parent_and_population_contracts",
+      "commands": [
+        "request",
+        "batch"
+      ],
+      "source": [
+        "tools/request_doctor.py::_rows",
+        "tools/batch_receipts.py::audit_receipts"
+      ],
+      "tests": [
+        "tests/scenario/test_request_doctor.py::test_malformed_or_orphaned_items_are_reported",
+        "tests/unit/test_batch_receipts.py::test_proven_receipt_gaps_are_reported",
+        "tests/unit/test_batch_receipts.py::test_known_corruption_is_bounded"
+      ],
+      "boundary": "Item-without-batch ERROR. Saved batch request_count vs all retained items inclconsumed/forgotten; deficit advisory, excess/invalid count ERROR. Missing schema/count evidence unknown/null, no provider-output/current-owner inference."
+    },
+    "missing_receipt": {
+      "status": "covered_exact_original_paid_key",
+      "commands": [
+        "batch"
+      ],
+      "source": [
+        "tools/batch_receipts.py::audit_receipts"
+      ],
+      "tests": [
+        "tests/unit/test_batch_receipts.py::test_proven_receipt_gaps_are_reported",
+        "tests/unit/test_batch_receipts.py::test_exact_all_purposes_survive_consumption_forgetting_and_foreign_owner",
+        "tests/unit/test_batch_receipts.py::test_known_item_purpose_conflict_is_not_a_paid_receipt",
+        "tests/unit/test_batch_receipts.py::test_mixed_batch_header_does_not_override_actual_item_purpose"
+      ],
+      "boundary": "All10retained purposes, exact(provider,batch,custom), both-known SHA and actual typed item purpose. Missing receipt advisory; known conflicts ERROR. SameSHA elsewhere/currentconsumer never substitute. Batch header may be mixed."
+    },
+    "archive_coverage": {
+      "status": "covered_bounded_metadata_profile",
+      "commands": [
+        "source"
+      ],
+      "source": [
+        "tools/source_history_doctor.py::_audit_extraction_results/candidate_trace_inventory",
+        "adapters/extraction_history.py::read_extraction_result",
+        "adapters/candidate_trace_history.py::read_candidate_disposition_trace"
+      ],
+      "tests": [
+        "tests/unit/test_candidate_trace_doctor.py::test_nested_archive_corruption_uses_shared_reads_restore_and_doctor",
+        "tests/unit/test_candidate_trace_doctor.py::test_dangling_or_invalid_source_links_are_not_validated",
+        "tests/unit/test_candidate_trace_doctor.py::test_unavailable_schema_never_looks_like_an_empty_population"
+      ],
+      "boundary": "Known metadata IDs/parents, coverage/count/ordinal/bounds/selected physical rows. Omitted/truncated/unknown prefixes explicit. No full raw traversal, future omitted-member legality or raw-object existence claim."
+    },
+    "read_only_no_auto_action": {
+      "status": "covered",
+      "commands": [
+        "all"
+      ],
+      "source": [
+        "tools/sqlite_snapshot.py::open_snapshot/SqliteSnapshot.unchanged",
+        "tools/corpus_artifacts.py::write_json"
+      ],
+      "tests": [
+        "tests/scenario/test_request_doctor.py::test_live_wal_is_rejected_without_ignoring_its_changes",
+        "tests/scenario/test_request_doctor.py::test_writer_starting_after_preflight_invalidates_the_audit",
+        "tests/unit/test_retained_integrity_doctor.py::test_report_is_bounded_separate_and_source_is_unchanged"
+      ],
+      "boundary": "mode=ro&immutable, reject livejournal/WAL, hash before/after, separate create-only outputs. No provider, model, repair, retry, migration or send action."
+    }
+  },
+  "persisted_classes": [
+    {
+      "class": "BatchIntent",
+      "carrier": "llm_batch_intents",
+      "coverage": "Frozen request SHA/key/provider, prepared/timing/input parents; active explicit primary generation; no reconstruction of erased inputs."
+    },
+    {
+      "class": "LlmBatch/LlmBatchItem",
+      "carrier": "llm_batches/items",
+      "coverage": "Original receipt/purpose/knownSHA/population; typed retained accounting payload; consumed/forgotten rows retained."
+    },
+    {
+      "class": "ComputationResult",
+      "carrier": "computation_results",
+      "coverage": "SQL/JSON immutable identity and typed validated/error record; original paid scope independent of mutable consumer."
+    },
+    {
+      "class": "ResultApplication/ApplicabilityObservation",
+      "carrier": "result_applications/result_applicability",
+      "coverage": "Typed indexed identity, known result and explicit target presence; opaque future namespaces/historical absent owners not reinterpreted."
+    },
+    {
+      "class": "Primary compact projections",
+      "carrier": "bills analysis/ready; memo admittedpositions",
+      "coverage": "Exact retained body/receipt/explicit alias rules via primary_projection_issues; no borrowed ownership."
+    },
+    {
+      "class": "Secondary projected refs",
+      "carrier": "status amendments; bills joint/reviews; bills/status supplements",
+      "coverage": "Nonnull modernIDs validated result/purpose/both-knownSHA; review2representations; legacyNone unknown, no answer/display/currentowner equality."
+    },
+    {
+      "class": "Modern review memo",
+      "carrier": "analysis_memo modern_review_ref",
+      "coverage": "Typed original input/result/memo owner guards; no caller context reconstruction."
+    },
+    {
+      "class": "Current/previous Mnemonic",
+      "carrier": "bills.editorial_json",
+      "coverage": "Same exact paid validator for current+previous, analysis/reanalysis/name/foreign admitted; manualNone/unknownSHA preserved. Current producers bind only selected current candidates; proposals unbound."
+    },
+    {
+      "class": "DocumentWork",
+      "carrier": "document_work ordinary",
+      "coverage": "Indexed key/owner/state/schedule, Bill/change and changeowner, publication availability; declared Bill/detail/stage/document/context bodies typed."
+    },
+    {
+      "class": "AmendmentRevisionApplicationWork/handoff",
+      "carrier": "document_work; consumed item meta workkey",
+      "coverage": "Result/request/original pub/channel and content snapshots; queued target/receipt; retained cleaned context admitted. Explicit frozen owner contract, not currentBill equality."
+    },
+    {
+      "class": "ReviewWork",
+      "carrier": "bills.review_work_json",
+      "coverage": "Typed work/context/duplicateowner, contextnumber/purpose, frozen inputBill; empty legacy/abandoned context stays unavailable."
+    },
+    {
+      "class": "ContentSnapshot/Version/Binding",
+      "carrier": "content_snapshots/versions/publication_content",
+      "coverage": "Snapshot identity/type/parents/predecessor/root/binding, profiled paid/source refs, physical confirmation. Compactcard fullcontext intentionally unavailable, not corruption."
+    },
+    {
+      "class": "Source/artifact/extraction/candidate/edition/letter/Senate classes",
+      "carrier": "source-history tables",
+      "coverage": "Shared typed metadata identities/links/counts; no current source fetching/owner revalidation; bounded prefixes remain explicit."
+    },
+    {
+      "class": "Legacy import/value/body/occurrence",
+      "carrier": "legacy_* tables and admitted projection columns",
+      "coverage": "Existing exact original-body/value/manifest/FK/reference guards, no historical paidcalls/default upcast."
+    },
+    {
+      "class": "DeliveryPlan/BatchResult operational bodies",
+      "carrier": "publication delivery; item result_json",
+      "coverage": "Native declared model fields +legacy hydration; cleaned/unknown profiles explicit. Local continuation_parent presence covered. Inverse continuation_ids still unassessed (RESIDUAL-1)."
+    },
+    {
+      "class": "AmendmentInputSnapshot/AmendmentInputRef (J251)",
+      "carrier": "amendment_input_snapshots; intent/item meta and computation result ref",
+      "coverage": "Default computation_doctor amendment_input_issues validates canonical full question/snapshot IDs, actual carrier purpose/requestSHA/inputbinding, known receipt and original lineage result/source parents. None refs/older schema unknown; missing required v67 table/broken known refs boundederrors. ReaderA writerOFF; no natural rows fabricated."
+    }
+  ],
+  "j251_added_class_tests": [
+    "tests/unit/test_amendment_input_history.py::test_snapshot_is_typed_canonical_deduplicated_and_survives_restore",
+    "tests/unit/test_amendment_input_history.py::test_derived_input_cannot_hide_a_broken_original_lineage_parent",
+    "tests/unit/test_amendment_input_history.py::test_old_schema_without_table_reports_only_known_input_refs"
+  ],
+  "boundaries": {
+    "deferred_na": "Raw original legislative/archive bytes, filesystem/object store and complete raw traversal; separate approved DA2 deferral. Retained application bodies remain applicable and checked.",
+    "legacy": "Allowed absence/cleaned/unprofiled data stays unavailable; no historical refs, clocks, semantic labels or currentowner equality invented.",
+    "finite_claim": "No universal arbitrary JSON/wholeDB semantic validation claim. Counts name stored row/field/edge observations, not unique bills/paidcalls or complete past events."
+  },
+  "resolved_original_findings": [
+    "Imported shared body/value/manifest known corruption and parents diagnosed via shared runtime guards",
+    "Known native protected bodies diagnosed; legacy current-model incompatibility explicitly advisory after strict storage/ref parsing",
+    "Current and actual public rename previous paid name refs diagnosed with one finite validator",
+    "Known continuation_parent localPublication availability diagnosed advisory"
+  ],
+  "remaining": [
+    {
+      "id": "RESIDUAL-1",
+      "requirement": "dangling refs/work",
+      "carrier": "publications.delivery_json.continuation_ids",
+      "producer": "services/message_parts.py::freeze_parts stores actual repo-created child PublicationIDs; send_continuations iterates and asserts child row exists",
+      "demonstration": "Real public freeze_parts/FakePublisher splittingonly creates >1children. Delete LAST child so all surviving continuation_parent edges remain valid. Root still holds explicit missing childID. All8diagnostics add zero findings.",
+      "classification": "Missing historical child should be availability/advisory, never corruption/send/retry inference; no new namespace or provider link needed.",
+      "proof_sha256": "c3773339a4b6fb94d2a3425afb92a9925f409b6ccc68c2d7b759f5a76b76a72b",
+      "proof_private_path": "/private/tmp/lexinform-da10-2-composed-audit/continuation-child-proof.json",
+      "reproducer_private_path": "/private/tmp/lexinform-da10-2-composed-audit/continuation-child-proof.py",
+      "reproducer_sha256": "dddeeae2f031ed75737785e8414d2b98dc6844f94b9453183027f181e82db6b3",
+      "status": "parent assigned isolated J254; not implemented/accepted in J252"
+    }
+  ],
+  "artifact_pins": {
+    "composition-proof.json": "dcdfc0d334bed2766c2b20d8cda4ff39a9539a7e755cfd1e75553abdf9012769",
+    "focused-v3.xml": "c2444d3fb8d7571a7ea6d4bb8ffeeb8564fa7dc88e478336ccf1b7e27eb0a981",
+    "observed-v3.json": "381eef97eee43ecffde31ed1c97a2892afaab648ae336c0321277c10a3660b68",
+    "source-pins-v3.json": "2a6a98ed255c034b1cec483d2a38edb1c4e839b2d415a5f07e93c1effaafadd1"
+  },
+  "checkbox_edits": false,
+  "source_edits": false,
+  "provider_network_calls": 0,
+  "unrequested_features": false
+}

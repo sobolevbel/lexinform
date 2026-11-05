@@ -1,0 +1,184 @@
+{
+  "fixture": "Real public freeze_parts with FakePublisher splitting only; zero API sends. Remove final child only, root still retains explicit local continuation_ids.",
+  "schema": 67,
+  "baseline": {
+    "request": {
+      "summary": {
+        "errors": 0,
+        "fingerprints_without_retained_payload": 0,
+        "inputs_with_retained_payload": 0,
+        "intents": 0,
+        "intents_known": 0,
+        "intents_unknown": 0,
+        "items": 0,
+        "items_known": 0,
+        "items_unknown": 0,
+        "legacy_retained_payloads": 0,
+        "repeated_inputs": 0,
+        "results": 0,
+        "results_known": 0,
+        "results_unknown": 0,
+        "verified_intent_payloads": 0,
+        "warnings": 0
+      },
+      "findings": []
+    },
+    "work": {
+      "summary": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": []
+    },
+    "computation": {
+      "summary": {
+        "applicability_rows": 0,
+        "errors": 0,
+        "saved_columns": 4,
+        "warnings": 0
+      },
+      "findings": []
+    },
+    "source": {
+      "summary": {
+        "errors": 0,
+        "physical_captures_rows": 0,
+        "physical_metadata_rows": 0,
+        "senate_inspection_link_rows": 0,
+        "source_catalog_attempt_parents_rows": 0,
+        "source_catalog_attempts_rows": 0,
+        "source_catalog_snapshots_rows": 0,
+        "unlinked_artifact_rows": 0,
+        "unreferenced_selection_rows": 0
+      },
+      "findings": []
+    },
+    "content": {
+      "summary": {
+        "binding_rows": 0,
+        "errors": 0,
+        "snapshot_rows": 0,
+        "version_rows": 0,
+        "warnings": 0
+      },
+      "findings": []
+    },
+    "retained": {
+      "summary": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": []
+    },
+    "batch_v1": {
+      "summary": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": []
+    },
+    "batch_receipts": {
+      "summary": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": []
+    }
+  },
+  "damaged": {
+    "request": {
+      "summary": {
+        "errors": 0,
+        "fingerprints_without_retained_payload": 0,
+        "inputs_with_retained_payload": 0,
+        "intents": 0,
+        "intents_known": 0,
+        "intents_unknown": 0,
+        "items": 0,
+        "items_known": 0,
+        "items_unknown": 0,
+        "legacy_retained_payloads": 0,
+        "repeated_inputs": 0,
+        "results": 0,
+        "results_known": 0,
+        "results_unknown": 0,
+        "verified_intent_payloads": 0,
+        "warnings": 0
+      },
+      "findings": []
+    },
+    "work": {
+      "summary": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": []
+    },
+    "computation": {
+      "summary": {
+        "applicability_rows": 0,
+        "errors": 0,
+        "saved_columns": 3,
+        "warnings": 0
+      },
+      "findings": []
+    },
+    "source": {
+      "summary": {
+        "errors": 0,
+        "physical_captures_rows": 0,
+        "physical_metadata_rows": 0,
+        "senate_inspection_link_rows": 0,
+        "source_catalog_attempt_parents_rows": 0,
+        "source_catalog_attempts_rows": 0,
+        "source_catalog_snapshots_rows": 0,
+        "unlinked_artifact_rows": 0,
+        "unreferenced_selection_rows": 0
+      },
+      "findings": []
+    },
+    "content": {
+      "summary": {
+        "binding_rows": 0,
+        "errors": 0,
+        "snapshot_rows": 0,
+        "version_rows": 0,
+        "warnings": 0
+      },
+      "findings": []
+    },
+    "retained": {
+      "summary": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": []
+    },
+    "batch_v1": {
+      "summary": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": []
+    },
+    "batch_receipts": {
+      "summary": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": []
+    }
+  },
+  "new_findings": {
+    "request": [],
+    "work": [],
+    "computation": [],
+    "source": [],
+    "content": [],
+    "retained": [],
+    "batch_v1": [],
+    "batch_receipts": []
+  },
+  "diagnostics_read_only": true,
+  "source_contract": "services/message_parts.py::freeze_parts saves child IDs; send_continuations iterates those IDs and asserts publication_by_id is nonnull; current parent inventory checks only continuation_parent"
+}

@@ -1,0 +1,13 @@
+{
+  "workspace": "/private/tmp/lexinform-j254-continuation-children",
+  "base_commit": "dc7d2f27e854a9b00a682a776c731619beb555a8",
+  "base_profile": "root-composed J252 V3 over deployed J251; base-pins.json binds six composed files",
+  "j252_v3_patch_sha256": "a7d09c16dccd36c9079f210cce0fb0700f591ab2c8175c0ea013bc15d00333cb",
+  "patch_sha256": "1c802a075f83b6fcba95c073cbf13af5ab2d5b42069f3ea78b7ffae8dcd1149a",
+  "files": {
+    "tools/retained_integrity_doctor.py": "8051a2d9b54d73ae770c513885503b6ab36c8164cbf60c6738cb9a7305f1c88a",
+    "tests/unit/test_retained_integrity_doctor.py": "36f85cabfdd5867cbae3d948b0c0fe571e2a72f3470d96f08c60a58fc1960b02",
+    "tools/README.md": "c4711f5e1d2387806c0e7d49fb1ad0a47ff318732086a92719697480bf8aeaa1"
+  },
+  "supersedes_patch_sha256": "12b36665f7f7034239567f3f6310346b28678dd0ffa11e13e55bc8a7b1908cdd"
+}

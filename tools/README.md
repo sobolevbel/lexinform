@@ -141,6 +141,11 @@ and obligated paid/archive parent failures are errors. Known continuation parent
 against local publication IDs; historical absence is advisory and never authorizes a send.
 Existing doctor reports remain unchanged. Raw legislative originals are outside this profile.
 
+The separate `continuation_children` census checks only the local publication IDs explicitly
+listed in retained `continuation_ids`. Each listed slot is an edge; missing children are advisory.
+Cleaned/unreadable plans leave membership unavailable, and absent publication schema yields null
+counts. Presence does not validate ownership, Telegram IDs or send eligibility; no action follows.
+
 ## Unfinished-work doctor
 
 ```bash

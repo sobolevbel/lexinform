@@ -1,0 +1,29 @@
+{
+  "status": "frozen",
+  "focused_passed": 63,
+  "new_units": 5,
+  "extended_existing_units": 1,
+  "new_scenarios": 0,
+  "unit_first": "unit-first-missing.log: missing-last advisory absent; oversized-unit-first.log: both oversized child and parent OverflowError before observed-ID membership fix",
+  "mypy": "Success: no issues found in 3 source files; message_parts anchors isolated src imports",
+  "ruff": "2 owned Python files green",
+  "format": "2 owned Python files unchanged",
+  "seven_default_report_objects": "both b9 and fresh actual objects equal committed frozen J252 baseline packets",
+  "prior_retained_report": "all prior fields/findings identical on both states after removing only new child section and limitation",
+  "original_gap": "existing native freeze_parts reproducer0errors/0warnings before ->0errors/1warning after; all surviving parent refs valid",
+  "runtime_schema_sql_changes": false,
+  "network_provider_sends": false,
+  "source_databases_unchanged": true,
+  "commit_or_push": false,
+  "full_gate": "passed",
+  "lookup_boundary": "parent and child compare recorded integer to observed local publication-ID set; no SQL binding or echo of unconstrained identifiers",
+  "root_full_gate": {
+    "tests": 8927,
+    "seconds": 300.87,
+    "mypy": 769,
+    "ruff_format": 838,
+    "source_pins_exact": 838
+  },
+  "root_focus": 43,
+  "release": "pending publication"
+}

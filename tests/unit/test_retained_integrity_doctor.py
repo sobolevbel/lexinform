@@ -25,7 +25,9 @@ from lexinform.models import (
 )
 from lexinform.models.legacy_results import canonical_legacy_json
 from lexinform.name_binding import bind_mnemonic
+from lexinform.services.message_parts import freeze_parts
 from tests.computations import NOW, retained_result
+from tests.fakes import FakePublisher, FixedClock
 from tests.harness import summary
 from tests.unit.test_legacy_results import decoded, imported, saved_value
 
@@ -384,6 +386,14 @@ def test_missing_schema_never_claims_empty_coverage(path: Path, table: str) -> N
     report = audit(path)
     assert report["status"] == "partial"
     assert any(section["status"] == "unavailable" for section in report["sections"].values())
+    if table == "publications":
+        children = report["sections"]["continuation_children"]
+        assert children["status"] == "unavailable"
+        assert all(
+            value is None
+            for key, value in children.items()
+            if key not in ("status", "missing_columns")
+        )
 
 
 def test_report_is_bounded_separate_and_source_is_unchanged(path: Path, tmp_path: Path) -> None:
@@ -526,3 +536,69 @@ def test_public_rename_preserves_known_previous_name_dependency(path: Path, case
     else:
         assert references["previous_valid_rows"] == 1
         assert report["summary"]["errors"] == 0
+
+
+@pytest.mark.parametrize(
+    "case", ["complete", "missing_last", "cleaned", "oversized_child", "oversized_parent"]
+)
+def test_frozen_continuation_child_availability_is_advisory(path: Path, case: str) -> None:
+    publisher = FakePublisher()
+    with closing(repository(path)) as repo:
+        bill = repo.get(10, "3039")
+        assert bill is not None, "the public fixture saves the frozen multipart owner"
+        root = Publication(
+            term=10,
+            number="3039",
+            kind=PublicationKind.NEW_BILL,
+            status=PublicationStatus.QUEUED,
+            channel_id="channel",
+            created_at=NOW,
+            delivery=DeliveryPlan(bill_json=bill.model_dump_json(), policy_version="attention-v1"),
+        )
+        root = root.model_copy(update={"id": repo.create_publication(root)})
+        root = freeze_parts(
+            repo, FixedClock(NOW), publisher, root, "Technical frozen sentence. " * 500
+        )
+        assert root.delivery is not None and len(root.delivery.continuation_ids) > 1, (
+            "the real splitter freezes multiple physical children before any API call"
+        )
+        ids = root.delivery.continuation_ids
+        root_id = root.id
+    if case == "missing_last":
+        sql(path, "DELETE FROM publications WHERE id=?", (ids[-1],))
+    elif case == "cleaned":
+        sql(path, "UPDATE publications SET delivery_json=NULL WHERE id=?", (root_id,))
+    elif case in ("oversized_child", "oversized_parent"):
+        field = "continuation_ids" if case == "oversized_child" else "continuation_parent"
+        value: int | list[int] = [*ids[:-1], 2**80] if case == "oversized_child" else 2**80
+        sql(
+            path,
+            "UPDATE publications SET delivery_json=json_set(delivery_json,?,json(?)) WHERE id=?",
+            ("$." + field, json.dumps(value), root_id if case == "oversized_child" else ids[-1]),
+        )
+    before = path.read_bytes()
+    report = audit(path)
+    missing_child = case in ("missing_last", "oversized_child")
+    assert (
+        any(
+            row["code"] == "continuation_child_unavailable" and row["level"] == "warning"
+            for row in report["findings"]
+        )
+        == missing_child
+    )
+    children = report["sections"]["continuation_children"]
+    assert children["publication_rows"] == 1 + len(ids) - int(case == "missing_last")
+    assert children["rows"] == (0 if case == "cleaned" else len(ids))
+    assert children["missing_rows"] == int(missing_child)
+    assert children["present_rows"] == (0 if case == "cleaned" else len(ids) - int(missing_child))
+    assert children["unavailable_rows"] == int(case == "cleaned")
+    assert report["sections"]["continuation_parents"]["missing_rows"] == int(
+        case == "oversized_parent"
+    )
+    assert report["summary"] == {
+        "errors": 0,
+        "warnings": int(missing_child or case == "oversized_parent"),
+    }
+    assert str(2**80) not in json.dumps(report)
+    assert path.read_bytes() == before
+    assert not publisher.sent and not publisher.edited

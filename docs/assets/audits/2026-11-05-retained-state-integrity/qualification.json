@@ -20,7 +20,11 @@
   "refinement_red_controls": "native outer already errors; legacy/future/missing-stamp outer controls red; nested invalid JSON red; nested recognized-ref V1CLI warning\u2192V2ERROR pinned separately; missing-native-slot counter red",
   "v1_preserved": "qualification/frozen-source contains all six exact original physical files",
   "root_focus": 38,
-  "release": "pending publication",
+  "release": {
+    "status": "verified",
+    "target_sha": "971aba3e415425ee0487840e5621c909a9036e73",
+    "receipt": "release.json"
+  },
   "root_integration": "integration-proof.json",
   "historical_name_controls": 3,
   "root_final_gate": "V3 passed"

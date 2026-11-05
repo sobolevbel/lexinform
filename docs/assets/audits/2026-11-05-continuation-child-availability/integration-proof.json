@@ -1,0 +1,26 @@
+{
+  "seven_prior_reports_byte_exact": true,
+  "prior_retained_fields_exact": true,
+  "new_child_section": {
+    "status": "available",
+    "missing_columns": {},
+    "publication_rows": 226,
+    "rows": 2,
+    "present_rows": 2,
+    "missing_rows": 0,
+    "no_children_rows": 165,
+    "unavailable_rows": 59
+  },
+  "source_sha256": "118f84ec0862f247d3a05db9be3b5432ebeb8b995fbe70cc9210080a7b2f2a70",
+  "source_unchanged": true,
+  "full_tests": 8927,
+  "seconds": 300.87,
+  "mypy": 769,
+  "ruff_format": 838,
+  "source_pins_exact": 838,
+  "root_focused": 43,
+  "new_units": 5,
+  "new_scenarios": 0,
+  "full_log_sha256": "746e19c8f1124c9a36e28f9391553ac375f946f5c9fe61462345b0b6c497c8af",
+  "full_xml_sha256": "d2a1c736c454fe29c0212d1b4e9d8e40dcf1380400c7d308dc9653d461bdf034"
+}

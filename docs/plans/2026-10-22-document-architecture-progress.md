@@ -11148,3 +11148,26 @@ Actual release and complete DA10.2 named-requirement acceptance follow; plan47/6
 [review](../assets/audits/2026-11-05-retained-state-integrity/peer-review.json).
 
 J252 final V3: current and previous selected names share validation; actual public rename damaged-parent control now reports the bounded previous/0 reference. Author215focused/38newunits/0scenarios, exact-pin independent review CLEAR. Root38dedicated units/8922full/307.25s/mypy769/Ruff838 and all838source/config pins pass; seven prior report profiles exact, immutable source unchanged. DA10.2 remains open: an independently reproduced missing inverse continuation child needs an advisory availability finding. No auto repair or resend.
+
+<a id="j254"></a>
+
+## J254 — inverse continuation-child availability
+
+A retained multipart root explicitly lists local publication child IDs. Deleting only its final
+child was a demonstrated availability false negative even when all surviving parent edges existed.
+The doctor now records a separate child-edge census and bounded advisory finding per missing slot.
+Cleaned/unreadable plans remain unavailable; absent schema produces null counts. Membership checks
+also handle oversized parent/child IDs without SQLite binding overflow or raw-ID disclosure.
+
+Five new unit cases, one extended schema test and no new scenarios; author63focused and exact-pin
+independent review CLEAR. Root43focused/8927full/300.87s/mypy769/Ruff838 and all838source/config
+pins pass. Seven prior reports and every prior retained-state field match; immutable source unchanged.
+Fresh state226publications contains2listed child edges, bothpresent;59plans are unavailable.
+No runtime delivery, repository schema, auto repair or resend behavior changes.
+
+J252 actual971aba3e CI42016266907/deploy42017158295 verified, including transition/restart45/timer.
+Complete finite DA10.2 acceptance and J254 actual release remain separately recorded.
+
+[Report](../assets/audits/2026-11-05-continuation-child-availability/REPORT.md),
+[integration](../assets/audits/2026-11-05-continuation-child-availability/integration-proof.json),
+[review](../assets/audits/2026-11-05-continuation-child-availability/peer-review.json).

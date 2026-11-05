@@ -1,0 +1,40 @@
+{
+  "source_database_sha256": "1e95f1b76435a19c6c168f515a345d7171fdcfad7b2db8132b6fe058b385d870",
+  "source_unchanged": true,
+  "baseline_summary": {
+    "errors": 0,
+    "warnings": 0
+  },
+  "candidate_summary": {
+    "errors": 0,
+    "warnings": 1
+  },
+  "continuation_parents": {
+    "status": "available",
+    "missing_columns": {},
+    "publication_rows": 3,
+    "rows": 2,
+    "present_rows": 2,
+    "missing_rows": 0,
+    "no_parent_rows": 1,
+    "unavailable_rows": 0
+  },
+  "continuation_children": {
+    "status": "available",
+    "missing_columns": {},
+    "publication_rows": 3,
+    "rows": 3,
+    "present_rows": 2,
+    "missing_rows": 1,
+    "no_children_rows": 2,
+    "unavailable_rows": 0
+  },
+  "findings": [
+    {
+      "code": "continuation_child_unavailable",
+      "ref": "publications/row-1/continuation_ids/2",
+      "level": "warning"
+    }
+  ],
+  "no_sends_or_network": true
+}
