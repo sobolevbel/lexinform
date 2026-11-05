@@ -32,3 +32,5 @@ future writer work; they are not acceptance of an active producer here. DA5 rema
 [source pins](source-pins.json), [independent review](peer-review.json).
 
 Previous release: [exact CI and relay verification](previous-release.json).
+
+Actual reader release: [exact CI and relay verification](release.json), commitccb27d43.

@@ -335,6 +335,8 @@ def install(corpus: Path, source_run: Path, root: Path, identity: str) -> dict[s
     if manifest["suite"] != "sejm-sources" or manifest["status"] != "recorded":
         raise ValueError("Installation needs a completed Sejm source collection")
     report = json.loads(read_artifact(source_run / "result.json"))
+    if report.get("kind") == "committee-report-collection":
+        raise ValueError("Committee-report generations do not use the filing installer")
     wanted = {
         key: row
         for key, row in report["observations"].items()

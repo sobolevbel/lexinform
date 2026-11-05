@@ -1,0 +1,370 @@
+{
+  "eligible_unique_urls": 417,
+  "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "kind": "committee-report-cohort",
+  "limits": {
+    "automatic_retries": 0,
+    "chunk_bytes": 8192,
+    "complete_body_bytes": 8388608,
+    "observed_total_body_bytes": 67108864,
+    "per_fetch_seconds": 60,
+    "socket_timeout_seconds": 10,
+    "start_sources_within_seconds": 180
+  },
+  "read_inputs": {
+    "INDEX.json": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+  },
+  "reports": [
+    {
+      "id": "004660aeb84e5e4d4fa61b97ff2b87fcc195682d1b61c73966eea641a66d24b1",
+      "stage_observations": [
+        {
+          "flattened_stage_ordinal": 12,
+          "owner_print": "2449",
+          "stage": {
+            "children": [],
+            "committee_code": null,
+            "committee_name": null,
+            "date": "2026-05-28",
+            "decision": null,
+            "minority_motions": 0,
+            "position": null,
+            "print_number": "2561-A",
+            "proposal": "odrzucić wniosek i przyjąć poprawki",
+            "report_file": "https://api.sejm.gov.pl/sejm/term10/prints/2561-A/2561-A.pdf",
+            "sitting_num": null,
+            "stage_name": "Sprawozdanie komisji",
+            "stage_type": "CommitteeReport",
+            "sub_committee": false,
+            "text_after3": null,
+            "voting": null
+          },
+          "term": 10
+        }
+      ],
+      "url": "https://api.sejm.gov.pl/sejm/term10/prints/2561-A/2561-A.pdf"
+    },
+    {
+      "id": "00933273835d8e0fdce324df91b53e369ba8fc045e9cf62cd42928b7eb421f50",
+      "stage_observations": [
+        {
+          "flattened_stage_ordinal": 11,
+          "owner_print": "1749",
+          "stage": {
+            "children": [],
+            "committee_code": null,
+            "committee_name": null,
+            "date": "2025-12-04",
+            "decision": null,
+            "minority_motions": 0,
+            "position": null,
+            "print_number": "1999-A",
+            "proposal": "przyjąć część poprawek",
+            "report_file": "https://api.sejm.gov.pl/sejm/term10/prints/1999-A/1999-A.pdf",
+            "sitting_num": null,
+            "stage_name": "Sprawozdanie komisji",
+            "stage_type": "CommitteeReport",
+            "sub_committee": false,
+            "text_after3": null,
+            "voting": null
+          },
+          "term": 10
+        }
+      ],
+      "url": "https://api.sejm.gov.pl/sejm/term10/prints/1999-A/1999-A.pdf"
+    },
+    {
+      "id": "017d21ff3029c7a71cfd406c8996327fa08ef98ddb5500bcdf4a5f49c6b9f186",
+      "stage_observations": [
+        {
+          "flattened_stage_ordinal": 9,
+          "owner_print": "553",
+          "stage": {
+            "children": [],
+            "committee_code": null,
+            "committee_name": null,
+            "date": "2024-09-12",
+            "decision": null,
+            "minority_motions": 0,
+            "position": null,
+            "print_number": "639-A",
+            "proposal": "odrzucić poprawkę",
+            "report_file": "https://api.sejm.gov.pl/sejm/term10/prints/639-A/639-A.pdf",
+            "sitting_num": null,
+            "stage_name": "Sprawozdanie komisji",
+            "stage_type": "CommitteeReport",
+            "sub_committee": false,
+            "text_after3": null,
+            "voting": null
+          },
+          "term": 10
+        }
+      ],
+      "url": "https://api.sejm.gov.pl/sejm/term10/prints/639-A/639-A.pdf"
+    },
+    {
+      "id": "0186b95c00c20540975ee84d6ffcf000afde4489d32783e901a0752d8f472bc3",
+      "stage_observations": [
+        {
+          "flattened_stage_ordinal": 14,
+          "owner_print": "2317",
+          "stage": {
+            "children": [],
+            "committee_code": null,
+            "committee_name": null,
+            "date": "2026-05-15",
+            "decision": null,
+            "minority_motions": 0,
+            "position": null,
+            "print_number": "2467-A",
+            "proposal": "przyjąć poprawki",
+            "report_file": "https://api.sejm.gov.pl/sejm/term10/prints/2467-A/2467-A.pdf",
+            "sitting_num": null,
+            "stage_name": "Sprawozdanie komisji",
+            "stage_type": "CommitteeReport",
+            "sub_committee": false,
+            "text_after3": null,
+            "voting": null
+          },
+          "term": 10
+        }
+      ],
+      "url": "https://api.sejm.gov.pl/sejm/term10/prints/2467-A/2467-A.pdf"
+    },
+    {
+      "id": "01e0391e7e295c90d4aebd9ec49c74e5815b21e512240f873c086b7b113bddf8",
+      "stage_observations": [
+        {
+          "flattened_stage_ordinal": 9,
+          "owner_print": "1312",
+          "stage": {
+            "children": [],
+            "committee_code": null,
+            "committee_name": null,
+            "date": "2025-09-25",
+            "decision": null,
+            "minority_motions": 0,
+            "position": null,
+            "print_number": "1361-A",
+            "proposal": "odrzucić poprawki",
+            "report_file": "https://api.sejm.gov.pl/sejm/term10/prints/1361-A/1361-A.pdf",
+            "sitting_num": null,
+            "stage_name": "Sprawozdanie komisji",
+            "stage_type": "CommitteeReport",
+            "sub_committee": false,
+            "text_after3": null,
+            "voting": null
+          },
+          "term": 10
+        }
+      ],
+      "url": "https://api.sejm.gov.pl/sejm/term10/prints/1361-A/1361-A.pdf"
+    },
+    {
+      "id": "01e80f542e4660fbaab4416683679547b6a7654faece8b89f960302cd20b1381",
+      "stage_observations": [
+        {
+          "flattened_stage_ordinal": 9,
+          "owner_print": "1433",
+          "stage": {
+            "children": [],
+            "committee_code": null,
+            "committee_name": null,
+            "date": "2025-07-24",
+            "decision": null,
+            "minority_motions": 0,
+            "position": null,
+            "print_number": "1518-A",
+            "proposal": "odrzucić poprawkę",
+            "report_file": "https://api.sejm.gov.pl/sejm/term10/prints/1518-A/1518-A.pdf",
+            "sitting_num": null,
+            "stage_name": "Sprawozdanie komisji",
+            "stage_type": "CommitteeReport",
+            "sub_committee": false,
+            "text_after3": null,
+            "voting": null
+          },
+          "term": 10
+        }
+      ],
+      "url": "https://api.sejm.gov.pl/sejm/term10/prints/1518-A/1518-A.pdf"
+    },
+    {
+      "id": "0257b3b2b4ff205f5672886ecc63978e20615e74f60e8d7e08564185def8a736",
+      "stage_observations": [
+        {
+          "flattened_stage_ordinal": 12,
+          "owner_print": "744",
+          "stage": {
+            "children": [],
+            "committee_code": null,
+            "committee_name": null,
+            "date": "2024-11-21",
+            "decision": null,
+            "minority_motions": 0,
+            "position": null,
+            "print_number": "849",
+            "proposal": "przyjąć część poprawek",
+            "report_file": "https://api.sejm.gov.pl/sejm/term10/prints/849/849.pdf",
+            "sitting_num": null,
+            "stage_name": "Sprawozdanie komisji",
+            "stage_type": "CommitteeReport",
+            "sub_committee": false,
+            "text_after3": null,
+            "voting": null
+          },
+          "term": 10
+        }
+      ],
+      "url": "https://api.sejm.gov.pl/sejm/term10/prints/849/849.pdf"
+    },
+    {
+      "id": "0334fc5f905f2792d237c5c74a619d1a7e89e8cf407be5206841378cf3a9598a",
+      "stage_observations": [
+        {
+          "flattened_stage_ordinal": 9,
+          "owner_print": "1009",
+          "stage": {
+            "children": [],
+            "committee_code": null,
+            "committee_name": null,
+            "date": "2025-02-21",
+            "decision": null,
+            "minority_motions": 0,
+            "position": null,
+            "print_number": "1028-A",
+            "proposal": "odrzucić poprawkę",
+            "report_file": "https://api.sejm.gov.pl/sejm/term10/prints/1028-A/1028-A.pdf",
+            "sitting_num": null,
+            "stage_name": "Sprawozdanie komisji",
+            "stage_type": "CommitteeReport",
+            "sub_committee": false,
+            "text_after3": null,
+            "voting": null
+          },
+          "term": 10
+        }
+      ],
+      "url": "https://api.sejm.gov.pl/sejm/term10/prints/1028-A/1028-A.pdf"
+    },
+    {
+      "id": "0365154e09710557bbaf2fc7d31288a3da6c6c5518adabe92ab9a63a6ef97c5b",
+      "stage_observations": [
+        {
+          "flattened_stage_ordinal": 17,
+          "owner_print": "664",
+          "stage": {
+            "children": [],
+            "committee_code": null,
+            "committee_name": null,
+            "date": "2024-11-27",
+            "decision": null,
+            "minority_motions": 0,
+            "position": null,
+            "print_number": "869",
+            "proposal": "przyjąć poprawki",
+            "report_file": "https://api.sejm.gov.pl/sejm/term10/prints/869/869.pdf",
+            "sitting_num": null,
+            "stage_name": "Sprawozdanie komisji",
+            "stage_type": "CommitteeReport",
+            "sub_committee": false,
+            "text_after3": null,
+            "voting": null
+          },
+          "term": 10
+        }
+      ],
+      "url": "https://api.sejm.gov.pl/sejm/term10/prints/869/869.pdf"
+    },
+    {
+      "id": "040450ab97a3bc9e280a14755de1a7cb74e4d67b805fefa4bce32e93c0d5a0a4",
+      "stage_observations": [
+        {
+          "flattened_stage_ordinal": 17,
+          "owner_print": "1451",
+          "stage": {
+            "children": [],
+            "committee_code": null,
+            "committee_name": null,
+            "date": "2025-12-04",
+            "decision": null,
+            "minority_motions": 0,
+            "position": null,
+            "print_number": "2043",
+            "proposal": "przyjąć poprawki",
+            "report_file": "https://api.sejm.gov.pl/sejm/term10/prints/2043/2043.pdf",
+            "sitting_num": null,
+            "stage_name": "Sprawozdanie komisji",
+            "stage_type": "CommitteeReport",
+            "sub_committee": false,
+            "text_after3": null,
+            "voting": null
+          },
+          "term": 10
+        }
+      ],
+      "url": "https://api.sejm.gov.pl/sejm/term10/prints/2043/2043.pdf"
+    },
+    {
+      "id": "0546cb0a533bac10b11a5053373b065288aa9245190e8e009426b2eadeefa964",
+      "stage_observations": [
+        {
+          "flattened_stage_ordinal": 19,
+          "owner_print": "471",
+          "stage": {
+            "children": [],
+            "committee_code": null,
+            "committee_name": null,
+            "date": "2024-07-26",
+            "decision": null,
+            "minority_motions": 0,
+            "position": null,
+            "print_number": "587",
+            "proposal": "przyjąć część poprawek",
+            "report_file": "https://api.sejm.gov.pl/sejm/term10/prints/587/587.pdf",
+            "sitting_num": null,
+            "stage_name": "Sprawozdanie komisji",
+            "stage_type": "CommitteeReport",
+            "sub_committee": false,
+            "text_after3": null,
+            "voting": null
+          },
+          "term": 10
+        }
+      ],
+      "url": "https://api.sejm.gov.pl/sejm/term10/prints/587/587.pdf"
+    },
+    {
+      "id": "05e068bf8f56faf34b95132031e924dc447ccccd4fbe47108a9b66e66dccffba",
+      "stage_observations": [
+        {
+          "flattened_stage_ordinal": 12,
+          "owner_print": "471",
+          "stage": {
+            "children": [],
+            "committee_code": null,
+            "committee_name": null,
+            "date": "2024-07-12",
+            "decision": null,
+            "minority_motions": 0,
+            "position": null,
+            "print_number": "505-A",
+            "proposal": "przyjąć część poprawek",
+            "report_file": "https://api.sejm.gov.pl/sejm/term10/prints/505-A/505-A.pdf",
+            "sitting_num": null,
+            "stage_name": "Sprawozdanie komisji",
+            "stage_type": "CommitteeReport",
+            "sub_committee": false,
+            "text_after3": null,
+            "voting": null
+          },
+          "term": 10
+        }
+      ],
+      "url": "https://api.sejm.gov.pl/sejm/term10/prints/505-A/505-A.pdf"
+    }
+  ],
+  "selection": "first12_unique_URL_SHA256_ascending",
+  "version": 1
+}

@@ -1,0 +1,16 @@
+{
+  "index_sha256_before": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "index_sha256_after": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "frozen_plan_sha256": "e8b77b5cd0ec32043e13fb0b1503b264ed443b1e89849e917c98370b887bf5db",
+  "manifest_sha256": "bc94e5d85183747af057b76aea34c32800b22f572d2e6ee92a77e68975fb480e",
+  "manifest_verified": true,
+  "plan_reproduces_exactly": true,
+  "planned": 12,
+  "downloaded": 11,
+  "failures": 1,
+  "retained_bytes": 2619560,
+  "read_inputs_unchanged": true,
+  "collection_code_unchanged_during_run": true,
+  "network_rerun_for_root_qa": false,
+  "limits": "Fresh bytes only, no old historical-byte/gold claim; no install/INDEX writes/failed-case substitution."
+}

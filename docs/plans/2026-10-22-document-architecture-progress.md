@@ -10398,3 +10398,29 @@ DA5 partial;74total/43complete/6explicitNA/25applicableopen.
 [Report](../assets/audits/2026-11-05-amendment-input-reader/report.md),
 [qualification](../assets/audits/2026-11-05-amendment-input-reader/qualification.json),
 [state proof](../assets/audits/2026-11-05-amendment-input-reader/state-proof.json).
+
+<a id="j231"></a>
+
+## J231 — bounded append-only committee-report cohort collection
+
+5 November 2026. Existing term10 metadata417unique report URLs had no originals at checked exact
+print/supplement paths (not global byte census). Collector freezes12URL-SHA-sorted sources with
+all official owner/stage observations BEFORE GET, shares strictfetch/run/artifact helpers.
+8MiB complete-file/64MiB observed-body budgets withchunkreserve,180s source-start/60s fetch/10s
+socket limits, sequential0retry/0substitution. Output is new external generation; corpus/INDEX
+unchanged. Fresh bytes only, no old historical-byte/legalgold claim or production rawbackend.
+
+Actual11/12PDF2,619,560bytes;1028-A transportfailure preserved. PlanSHAe8b77b5c, manifestbc94e5d8
+verified by root, metadata plan reproduces exactly, INDEX2030 unchanged; rootdoesnotrepeatGETs.
+6newunit cases/0newscenarios;10focused,mypy726/Ruff/formatgreen. Root compatibilityguard rejects
+committee profile in oldfiling installer before rowdecode/newrun/writes. Independent2file+
+rootguard/unit review clear; collector included in defaultmypy. No installation/source mutation.
+
+A separate OFFpreparation baseline forfuturewriter covers22paths(14text/8scan); not accepted
+as an active producer here. Fullgate8334tests/284.121s/92%,mypy726/Ruff/formatgreen;795source/config pins exact. Strict staged docs precede commit.
+J230ccb27d43 exactCI41942728330/relay41943488954 verified;45shealth/timer. DA0.6/DA5partial; plan74total/
+43complete/6explicitNA/25applicableopen.
+
+[Report and replay](../assets/audits/2026-11-05-committee-report-cohort/report.md),
+[qualification](../assets/audits/2026-11-05-committee-report-cohort/qualification.json),
+[collection proof](../assets/audits/2026-11-05-committee-report-cohort/collection-proof.json).

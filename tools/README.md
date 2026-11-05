@@ -505,3 +505,12 @@ is chosen. See [J098](../docs/plans/2026-10-22-document-architecture-progress.md
 Typed diagnostic modules are explicit targets in `pyproject.toml` alongside `src` and `tests`.
 When adding one, include its file in that list so `uv run mypy` checks the tool body directly;
 importing a tool from a typed test is not a substitute for checking its own implementation.
+
+### Committee-report raw cohort
+
+`python -m tools.collect_committee_reports --corpus CORPUS plan --index-sha256 SHA --output PLAN`
+freezes12 official report URLs before collection. Then `--corpus CORPUS collect --plan PLAN
+--plan-sha256 SHA --output RUN_ROOT --id UNIQUE` performs bounded sequential public GETs into
+a new external generation. It preserves failures, originals and INDEX; it does not use the
+RPW/supplement installer or assign legal labels. See the
+[pinned acquisition report](../docs/assets/audits/2026-11-05-committee-report-cohort/report.md).

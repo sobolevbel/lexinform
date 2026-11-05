@@ -1,0 +1,26 @@
+{
+  "reviewer": "secondary_dependency_review",
+  "status": "clear",
+  "frozen_patch_sha256": "b1e18e4dfdfeab4b455596bbf82e42706a0cd6d1841a67499aff2411b5661b87",
+  "owned_source_pins": {
+    "tools/collect_committee_reports.py": {
+      "base_sha256": null,
+      "candidate_sha256": "7f26a52ce029f783c749180b8f29bc15bdc62517a5767fcc6f046d210610c333"
+    },
+    "tests/unit/test_collect_committee_reports.py": {
+      "base_sha256": null,
+      "candidate_sha256": "dcd4c3bc986cfeeb51249966100db9fc2c0761109b97fa8665614b63feec3ee7"
+    }
+  },
+  "manifest_sha256": "bc94e5d85183747af057b76aea34c32800b22f572d2e6ee92a77e68975fb480e",
+  "root_delta": {
+    "status": "clear",
+    "scope": "Existing filing installer rejects committee profile before decoding/install writes; public fixture verifies corpus unchanged and no new install directory",
+    "source_sha256": {
+      "tools/corpus_sejm_sources.py": "807d107fc10cadbc385054460ec97b4b6661148a726236288c1fba2d41fe374b",
+      "tests/unit/test_collect_committee_reports.py": "7f115ed8ed9d64d6b96056fc6ffe617f0f2e00a1f42d6eeba9c49434e25181cd"
+    },
+    "quality_gate": "Collector added to default mypy targets"
+  },
+  "execution": "Read-only review; no edits/network/tests/fullgate. Root independently checks plan/manifest/focused/full gates."
+}

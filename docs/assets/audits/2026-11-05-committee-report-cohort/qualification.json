@@ -1,0 +1,46 @@
+{
+  "stage": "J231 bounded committee-report collection",
+  "full_tests": 8334,
+  "pytest_xml": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "8334",
+    "time": "284.121",
+    "timestamp": "2026-11-05T01:46:01.980754+01:00",
+    "hostname": "Yauhenis-MacBook-Pro.local"
+  },
+  "new_unit_cases": 6,
+  "new_scenario_cases": 0,
+  "focused_root_cases": 10,
+  "strict_mypy_files": 726,
+  "coverage_percent": 92,
+  "mypy_ruff_format": "green",
+  "source_config_pins": 795,
+  "source_freeze_exact": true,
+  "collection_proof": "collection-proof.json",
+  "fixed_planned_urls": 12,
+  "downloaded_originals": 11,
+  "downloaded_bytes": 2619560,
+  "planned_transport_errors": 1,
+  "root_qa_repeats_network": false,
+  "proof_sha256": {
+    "full.xml": "a1de780561325e60f1590b461ec438fcaa553d860a9ebf01dfffa831152df40a",
+    "full.log": "c889a6c81253c8435a7f36062fe835aa0e0dfdaf7759e2d4bb65d03ed6658b85",
+    "source-freeze.json": "36694958d539ab6cf18d951e213e61afc69e9c75780e70109f09465aa4a6d4ae",
+    "collection-proof.json": "5576a627bd60eebb7c8a4fc585c4ee14983d37f02f71aa5173e90cd3bea9eb1e"
+  },
+  "previous_release": {
+    "target": "ccb27d43d8124e6d57a900f57446ab32d6ae4716",
+    "ci": 41942728330,
+    "deploy": 41943488954,
+    "complete": true
+  },
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  }
+}
