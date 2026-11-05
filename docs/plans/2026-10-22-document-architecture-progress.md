@@ -11295,3 +11295,16 @@ compressed size and timing measurements.
 
 DA9.4 and DA10.3 remain open for independent adjudication and hosted measurements.
 [Commands, scope and checkpoint results](../assets/audits/2026-11-05-saved-computation-censuses/report.md).
+
+<a id="j264"></a>
+
+## J264 — prepared input ranges for loose RCL annexes
+
+Compose exact main and annex origins through the existing splice, trim and budget fitting.
+A matching loose assembly gets per-part ranges. Generated separators have no origin.
+Omission and selection decisions keep their existing policy.
+
+The frozen cached/raw cohort preserved all 36 native requests and 12 no-request outcomes.
+Thirty saved selections changed only in analysis coverage. Four units and the full local
+gate passed. DA5.2 and DA5.4 remain open for other assembly shapes.
+[Corpus cohort and parity](../assets/audits/2026-11-05-loose-rcl-annex-projection/report.md).

@@ -24,3 +24,5 @@ amendment stage. Five had no root content history and one had a legacy result wi
 question reference. Twelve status updates lacked a frozen change and were outside this check.
 The restored dump stayed byte-identical during the census. Positive reuse was exercised
 in the offline paired controls. [Checkpoint census](state-census.json).
+
+[Exact CI and relay verification](release.json).

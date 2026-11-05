@@ -133,9 +133,13 @@ def normative_name(name: str) -> bool:
 def join_normative_parts(text: str, parts: list[str]) -> str:
     if not parts:
         return text
-    tail = re.search(r"(?im)^\s*(?:UZASADNIENIE|Nazwa projektu|OCENA SKUTKÓW REGULACJI)\s*$", text)
-    position = tail.start() if tail is not None else len(text)
+    position = normative_insertion_offset(text)
     return text[:position] + "\f" + "\f".join(parts) + "\f" + text[position:]
+
+
+def normative_insertion_offset(text: str) -> int:
+    tail = re.search(r"(?im)^\s*(?:UZASADNIENIE|Nazwa projektu|OCENA SKUTKÓW REGULACJI)\s*$", text)
+    return tail.start() if tail is not None else len(text)
 
 
 def regulation_support(text: str, *, name: str = "") -> bool:

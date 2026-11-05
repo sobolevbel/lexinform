@@ -23,7 +23,11 @@ from lexinform.commission_reviews import COMMISSION_ROLES
 from lexinform.concurrency import fan_out
 from lexinform.document_admissibility import analysis_admission, review_admission
 from lexinform.document_fingerprints import text_digest as text_digest
-from lexinform.document_input import amended_input_projection, append_self_amendments
+from lexinform.document_input import (
+    amended_input_projection,
+    append_self_amendments,
+    loose_normative_input_projection,
+)
 from lexinform.document_selection import paid_input_selection, selection_for_input
 from lexinform.document_versions import draft_version
 from lexinform.errors import (
@@ -3737,13 +3741,13 @@ class AnalysisService:
             amended = amended_input_projection(file.selection, trimmed.projection, combined)
             if amended is not None:
                 projection = budgeted.projection.compose(amended)
-        if (
-            not amendments
-            and trimmed.projection is not None
-            and budgeted.projection is not None
-            and text == PAGE_BREAK.join(part.text for part in file.selection.parts)
-        ):
-            projection = budgeted.projection.compose(trimmed.projection)
+        if not amendments and trimmed.projection is not None and budgeted.projection is not None:
+            if text == PAGE_BREAK.join(part.text for part in file.selection.parts):
+                projection = budgeted.projection.compose(trimmed.projection)
+            else:
+                assembly = loose_normative_input_projection(document, file.selection, text)
+                if assembly is not None:
+                    projection = budgeted.projection.compose(trimmed.projection.compose(assembly))
         source: TextSource = "documents" if document.kind == "rcl" else "pdf"
         return _Loaded(
             budgeted.text,

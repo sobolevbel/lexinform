@@ -2,7 +2,9 @@
 
 import hashlib
 
+from lexinform.document_versions import normative_annex_key, normative_insertion_offset
 from lexinform.models.documents import DocumentPart, DocumentSelection
+from lexinform.models.sejm import TextDocument
 from lexinform.sections import PAGE_BREAK
 from lexinform.text_projection import SourcePiece, TextProjection, project_pieces
 
@@ -47,6 +49,51 @@ def amended_input_projection(
     ]
     result = project_pieces(source, (*pieces, SourcePiece(_AMENDMENTS), *amendments))
     return result if result.text == prepared else None
+
+
+def loose_normative_input_projection(
+    document: TextDocument, selection: DocumentSelection, text: str
+) -> TextProjection | None:
+    parts = selection.parts
+    annex_count = len(document.normative_urls)
+    if (
+        document.kind != "rcl"
+        or not annex_count
+        or document.required_urls
+        or document.amendment_urls
+        or len(parts) <= annex_count
+        or any(part.members or not part.text for part in parts)
+        or len({part.url for part in parts}) != len(parts)
+    ):
+        return None
+    main = parts[0]
+    annexes = parts[1 : 1 + annex_count]
+    supporting = parts[1 + annex_count :]
+    supporting_urls = {part.url for part in supporting}
+    if (
+        main.url != document.url
+        or main.role not in ("bill", "unknown")
+        or any(part.role != "normative_annex" for part in annexes)
+        or annexes != tuple(sorted(annexes, key=lambda part: normative_annex_key(part.text)))
+        or {part.url for part in annexes} != set(document.normative_urls)
+        or tuple(part.url for part in supporting)
+        != tuple(url for url in document.extra_urls if url in supporting_urls)
+    ):
+        return None
+
+    position = normative_insertion_offset(main.text)
+    pieces = [SourcePiece(main.text[:position], 0)]
+    offset = len(main.text) + len(PAGE_BREAK)
+    for part in annexes:
+        pieces.extend((SourcePiece(PAGE_BREAK), SourcePiece(part.text, offset)))
+        offset += len(part.text) + len(PAGE_BREAK)
+    pieces.extend((SourcePiece(PAGE_BREAK), SourcePiece(main.text[position:], position)))
+    for part in supporting:
+        pieces.extend((SourcePiece(PAGE_BREAK), SourcePiece(part.text, offset)))
+        offset += len(part.text) + len(PAGE_BREAK)
+    source = PAGE_BREAK.join(part.text for part in parts)
+    projection = project_pieces(source, pieces)
+    return projection if projection.text == text else None
 
 
 def _label(part: DocumentPart) -> str:
