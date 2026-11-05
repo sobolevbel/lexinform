@@ -1,0 +1,47 @@
+{
+  "workspace": "/private/tmp/lexinform-j240-timing-writer",
+  "base_workspace": "/private/tmp/lexinform-j240-fixture-fix-base",
+  "patch_sha256": "c8cac52a3c8d83c57d3c4a2ecc7084e04e97946753de2687dd8bbb4e262ccdca",
+  "test_files": {
+    "tests/scenario/test_batch_payload_restore.py": {
+      "before_sha256": "db596ed23909fd46a9dff4479e5131e506381cd4262dbf4b858ed28693ae4c08",
+      "after_sha256": "fe66d81aef52416c5d332bc8a79403c9c4650361e7dae496ad137d12b63538d0"
+    },
+    "tests/scenario/test_law_comparison_safety.py": {
+      "before_sha256": "330a0a5284e7d0b40b7b511c205856129bc5a479517faaede55b89d3ea197e1b",
+      "after_sha256": "48f9a75a2555dea4a8c6ab74014cb044ef8e88a57e723380a2c7575ea98f1f78"
+    },
+    "tests/scenario/test_explanation_history_reuse.py": {
+      "before_sha256": "f3fb1572ca121841efe9d0daee136c6a354bbd58e594bb06e1b829239036d72c",
+      "after_sha256": "e7ba5b384648d2749269e7d22afb8e218c77a848cc4299617db5d1c2623438d3"
+    },
+    "tests/scenario/test_primary_history_reuse.py": {
+      "before_sha256": "380af0f646a680136b27411fbff62cb74391e717d9f625b4f4f577c0c0494e74",
+      "after_sha256": "5b6d30adfba90b7b6c9d1da035f50ee26459333ee09571bbcb4022fba656766c"
+    },
+    "tests/scenario/test_computation_binding_reader.py": {
+      "before_sha256": "f03ceef9e3b625e14f89b394f3bd8dbe1507b4c276c4ac8b6558377de47027a0",
+      "after_sha256": "5de3a5041282fecdffb74f2561b615ee1410165e3ba6f12e45a0d3f569d28f1e"
+    },
+    "tests/scenario/test_computation_binding_writer.py": {
+      "before_sha256": "6b86e679eeaafd8ab697546aaa295af2cd5916ffc4d8b6a34375183cf123ac4d",
+      "after_sha256": "27c8223e26ccbd6b2be57060d3c3ce4c1810f36a029073bb4225c05a5096b22f"
+    },
+    "tests/scenario/test_computation_doctor.py": {
+      "before_sha256": "1d2583afb6ef61a5fb5bf8e1cd81411bb4db79c31fb27a55c987cdff0026d103",
+      "after_sha256": "eec2a4b4d01c787dc80bd35fc69038f1607cedfee096247026f04899f0b93b03"
+    },
+    "tests/scenario/test_consultation_review_baseline.py": {
+      "before_sha256": "3bfd7b1cdf1b4e44915e8293a0bcd2bee0aeb9d8816d330eb60ab2e59dd13c96",
+      "after_sha256": "d19500ccceb0314d13acfb5c15f5a6d206ed6414d19364ab2f615c602d1d65c0"
+    }
+  },
+  "five_original_pins_unchanged": {
+    "src/lexinform/local_timing.py": "503759c3f6fd9aaae90416f6448c12da305b1d542640d85efa243a60a71cb5fc",
+    "src/lexinform/services/analysis.py": "df1a70045a004df3d950a879d1042a2b550a3f23a49be3a896bc8e1ccb6fe35b",
+    "src/lexinform/services/document_reviews.py": "d0b2928a2d60e92a05def071670f117f787c273a8666b30b80090fbeb7c50155",
+    "src/lexinform/services/documents.py": "2bc1022c0062287f2517f8ad3083c06e327dfaeda61d8605300171f52f3a4cd9",
+    "tests/unit/test_local_timing_writer.py": "3d4d5552a4ca392c9f77fbaf192dfea89672964975e83bfd307df684e72e1ccd"
+  },
+  "test_only": true
+}

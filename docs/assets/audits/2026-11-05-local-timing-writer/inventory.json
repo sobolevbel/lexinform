@@ -1,0 +1,53 @@
+{
+  "owned": {
+    "src/lexinform/local_timing.py": "503759c3f6fd9aaae90416f6448c12da305b1d542640d85efa243a60a71cb5fc",
+    "src/lexinform/services/analysis.py": "df1a70045a004df3d950a879d1042a2b550a3f23a49be3a896bc8e1ccb6fe35b",
+    "src/lexinform/services/document_reviews.py": "d0b2928a2d60e92a05def071670f117f787c273a8666b30b80090fbeb7c50155",
+    "src/lexinform/services/documents.py": "2bc1022c0062287f2517f8ad3083c06e327dfaeda61d8605300171f52f3a4cd9",
+    "tests/unit/test_local_timing_writer.py": "3d4d5552a4ca392c9f77fbaf192dfea89672964975e83bfd307df684e72e1ccd"
+  },
+  "exact_files_outside_owned": true,
+  "adapter_SQL_models_ports_container_clock_and_existing_reports_exact": true,
+  "driver_sha256": "1fc3205c2a55eced262377c394aa7a32c281032aca36fe098bbe44c67fa56383",
+  "call_asts": {
+    "src/lexinform/services/analysis.py/direct_queue_clock_calls": {
+      "exact": true,
+      "count": 32
+    },
+    "src/lexinform/services/analysis.py/actual_prepare_calls": {
+      "exact": true,
+      "count": 5
+    },
+    "src/lexinform/services/analysis.py/loader_method_calls": {
+      "exact": true,
+      "count": 20
+    },
+    "src/lexinform/services/document_reviews.py/direct_queue_clock_calls": {
+      "exact": true,
+      "count": 8
+    },
+    "src/lexinform/services/document_reviews.py/actual_prepare_calls": {
+      "exact": true,
+      "count": 0
+    },
+    "src/lexinform/services/document_reviews.py/loader_method_calls": {
+      "exact": true,
+      "count": 0
+    },
+    "src/lexinform/services/documents.py/direct_queue_clock_calls": {
+      "exact": true,
+      "count": 0
+    },
+    "src/lexinform/services/documents.py/actual_prepare_calls": {
+      "exact": true,
+      "count": 0
+    },
+    "src/lexinform/services/documents.py/loader_method_calls": {
+      "exact": true,
+      "count": 0
+    }
+  },
+  "metadata_delta": "Only new witness plus approved fresh meta.request_sha256 None to actual frozen hash; full original legacy/timed packets retain bytes on reuse.",
+  "native_completion_scope": "Actual local native fresh/cache return, including scan download/preparation; no source date/fullcoverage assertion.",
+  "purpose_scope": "All10 admitted batch kinds; production act_application remains disabled, typed path qualified technically."
+}

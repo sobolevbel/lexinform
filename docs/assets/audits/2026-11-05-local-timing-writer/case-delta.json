@@ -1,0 +1,29 @@
+{
+  "new_unit_cases": 20,
+  "new_scenario_cases": 0,
+  "removed_cases": 0,
+  "all_first_and_final_full_case_ids_exact": true,
+  "new": [
+    "tests.unit.test_local_timing_writer::test_actual_supplement_preparation_attaches_local_read_witness",
+    "tests.unit.test_local_timing_writer::test_amendment_read_clock_includes_the_recommendation_loaded_last",
+    "tests.unit.test_local_timing_writer::test_optional_timing_failure_keeps_ordinary_preparation_or_propagates_cancellation[False-clock]",
+    "tests.unit.test_local_timing_writer::test_optional_timing_failure_keeps_ordinary_preparation_or_propagates_cancellation[False-enrich]",
+    "tests.unit.test_local_timing_writer::test_optional_timing_failure_keeps_ordinary_preparation_or_propagates_cancellation[False-setup]",
+    "tests.unit.test_local_timing_writer::test_optional_timing_failure_keeps_ordinary_preparation_or_propagates_cancellation[True-clock]",
+    "tests.unit.test_local_timing_writer::test_optional_timing_failure_keeps_ordinary_preparation_or_propagates_cancellation[True-enrich]",
+    "tests.unit.test_local_timing_writer::test_optional_timing_failure_keeps_ordinary_preparation_or_propagates_cancellation[True-setup]",
+    "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[act_application]",
+    "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[amendments]",
+    "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[analysis]",
+    "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[commission_review]",
+    "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[consultation_review]",
+    "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[explanation]",
+    "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[joint]",
+    "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[name]",
+    "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[reanalysis]",
+    "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[supplement]",
+    "tests.unit.test_local_timing_writer::test_public_name_omits_optional_witness_for_unsupported_endpoint_clock",
+    "tests.unit.test_local_timing_writer::test_review_workers_aggregate_actual_native_read_evidence_identically"
+  ],
+  "removed": []
+}

@@ -207,7 +207,7 @@ def test_input_scope_can_differ_from_the_collection_owner(
     with closing(sqlite3.connect(path)) as database, database:
         database.execute(
             "UPDATE computation_results SET result_json="
-            "json_set(result_json, '$.input_binding.term', 9)"
+            "json_set(json_remove(result_json, '$.local_timing_witness'), '$.input_binding.term', 9)"
         )
     before = path.read_bytes()
 

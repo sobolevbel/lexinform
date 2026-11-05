@@ -1,0 +1,19 @@
+{
+  "source_database_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+  "source_and_copy_unchanged": true,
+  "canonical_dump_sha256": "b5f318428ccf9cc1b59ae7b3d835d8eda1af559dcb1ac1b4bfc0fb3606c61346",
+  "constructor_start_run_dry_and_real_no_enrichment": true,
+  "double_restore_exact": true,
+  "provider_calls": 0,
+  "doctors": {
+    "computation_doctor": {
+      "bytes_exact": true,
+      "sha256": "3e201e970f6428cb143e66749cdbbd7badfaf70b61e51980408481906ac9ea55"
+    },
+    "content_history_doctor": {
+      "bytes_exact": true,
+      "sha256": "3c70ec6b7c6b4b02c558af8bbbaa9fb5877df68ec9adce1e7d0c8c929a2d625d"
+    }
+  },
+  "scope": "Initialization, accounting reads and retention only; no pipeline execution or reconstruction of legacy timestamps."
+}

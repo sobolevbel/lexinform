@@ -143,7 +143,12 @@ def test_legacy_secondary_work_is_not_resubmitted_under_a_new_hash(
             update={
                 "request": intent.request.model_copy(update={"custom_id": legacy_key}),
                 "meta": intent.meta.model_copy(
-                    update={"memo_key": legacy_key, "input_binding": None}
+                    update={
+                        "memo_key": legacy_key,
+                        "input_binding": None,
+                        "local_timing_witness": None,
+                        "request_sha256": None,
+                    }
                 ),
             }
         )

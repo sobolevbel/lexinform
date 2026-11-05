@@ -1,0 +1,72 @@
+{
+  "stage": "J240 local timing runtime writer",
+  "source_patch_sha256": "42b297da59b4b6e74f037451e43c3d9ed57248e1ceefc02b9d0eb12f1a94b6e3",
+  "owned_five_files_exact": true,
+  "source_config_pins": 814,
+  "source_pins_exact": true,
+  "paired_public_cases": 18,
+  "all_ten_purposes": true,
+  "paired_core_exact": true,
+  "timing_required": true,
+  "root_focused_cases": 308,
+  "peer_findings": [],
+  "root_review_findings": [],
+  "root_review_boundaries": [
+    "invocation owner/thread scopes and ordered worker sidecars",
+    "fresh/cache/mixed read clocks and unsupported optional witness omission",
+    "unchanged queue clock/loader/prepare calls",
+    "immutable original None/witness retention across ten purposes"
+  ],
+  "root_storage_totals": {
+    "witness_delta": {
+      "sql_bytes": 6753,
+      "gzip_bytes": 1100
+    },
+    "derived_sha_delta": {
+      "sql_bytes": 1428,
+      "gzip_bytes": 55
+    },
+    "total_delta": {
+      "sql_bytes": 8181,
+      "gzip_bytes": 1155
+    }
+  },
+  "root_fresh": {
+    "source_database_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+    "source_and_copy_unchanged": true,
+    "canonical_dump_sha256": "b5f318428ccf9cc1b59ae7b3d835d8eda1af559dcb1ac1b4bfc0fb3606c61346",
+    "constructor_start_run_dry_and_real_no_enrichment": true,
+    "double_restore_exact": true,
+    "provider_calls": 0,
+    "doctors": {
+      "computation_doctor": {
+        "bytes_exact": true,
+        "sha256": "3e201e970f6428cb143e66749cdbbd7badfaf70b61e51980408481906ac9ea55"
+      },
+      "content_history_doctor": {
+        "bytes_exact": true,
+        "sha256": "3c70ec6b7c6b4b02c558af8bbbaa9fb5877df68ec9adce1e7d0c8c929a2d625d"
+      }
+    },
+    "scope": "Initialization, accounting reads and retention only; no pipeline execution or reconstruction of legacy timestamps."
+  },
+  "proof_sha256": {
+    "paired-final.json": "de218d0d57a4bfdd7fa5d394d7912e5084c7470bac10a2d046c3726733e70e26",
+    "final/storage.json": "644590e866e116a2c9e49b43b727e07253c290b47d8a3f81f8acc55e57204fd3",
+    "final/fresh.json": "f34b9efed3696817bbc7a28aef8610283d6ca247c52a866153c69344e83c92e7",
+    "source-freeze-final.json": "7f4bc1956dd62918b0e0396e84e537b7e98d09b4df8d2d4b7550ab27eed0eb9c",
+    "full-final.xml": "3eda3b581cd076fce022e30cc73f01fad890b25e4314d68d52fef113596e95d4",
+    "full-final.log": "21a9a9bf574b4058efd7cefab088c6680f2f48f4d2caec587a3a850f8e461f04",
+    "focused-final.xml": "adcaa1ef8959d955cea53772794acdab013d31e1a83fc9f6775fb0a46322fea8",
+    "new-cases.json": "c503b3508d5457002c4b30e5de18ac6e29d84913c21217a1518758b728abf607"
+  },
+  "fixture_patch_sha256": "c8cac52a3c8d83c57d3c4a2ecc7084e04e97946753de2687dd8bbb4e262ccdca",
+  "full_gate": {
+    "tests": 8604,
+    "seconds": 298.627,
+    "mypy": 745,
+    "ruff_format_files": 814,
+    "coverage_percent": 92,
+    "source_config_pins": 814
+  }
+}

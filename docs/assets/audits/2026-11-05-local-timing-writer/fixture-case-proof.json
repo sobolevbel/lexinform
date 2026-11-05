@@ -1,0 +1,34 @@
+{
+  "tests_before": 308,
+  "tests_after": 308,
+  "all_nodeids_ordered_exact": true,
+  "added": [],
+  "removed": [],
+  "renamed": [],
+  "before_after_nodeids_sha256": "ed585fc104ba9ebee89330c959f528ff98f2edb4be1b2defe263a635e5c56887",
+  "original_failure_count": 62,
+  "all_original_failures_in_focused_ids": true,
+  "original_failure_taxonomy": {
+    "tests.scenario.test_batch_payload_restore": 1,
+    "tests.scenario.test_law_comparison_safety": 9,
+    "tests.scenario.test_explanation_history_reuse": 2,
+    "tests.scenario.test_primary_history_reuse": 2,
+    "tests.scenario.test_computation_binding_reader": 24,
+    "tests.scenario.test_computation_binding_writer": 22,
+    "tests.scenario.test_computation_doctor": 1,
+    "tests.scenario.test_consultation_review_baseline": 1
+  },
+  "original_full_xml_sha256": "f18e21867ff46d47957d3eb1d320ec12b609ff4d2dc8bda02c18e4bc699e2c10",
+  "five_original_runtime_and_writer_unit_pins_exact": {
+    "src/lexinform/local_timing.py": "503759c3f6fd9aaae90416f6448c12da305b1d542640d85efa243a60a71cb5fc",
+    "src/lexinform/services/analysis.py": "df1a70045a004df3d950a879d1042a2b550a3f23a49be3a896bc8e1ccb6fe35b",
+    "src/lexinform/services/document_reviews.py": "d0b2928a2d60e92a05def071670f117f787c273a8666b30b80090fbeb7c50155",
+    "src/lexinform/services/documents.py": "2bc1022c0062287f2517f8ad3083c06e327dfaeda61d8605300171f52f3a4cd9",
+    "tests/unit/test_local_timing_writer.py": "3d4d5552a4ca392c9f77fbaf192dfea89672964975e83bfd307df684e72e1ccd"
+  },
+  "runtime_reader_parser_error_contract_changes": false,
+  "new_scenarios": 0,
+  "changes": "True legacy fixture fields omitted; modern strict timing negative plus original binding negative retained; foreign-scope positive without unsupported witness; typed optional review callback accepted without fake capture.",
+  "full_case_proof_sha256": "c31417159585a37ec57d8b43376247a255c98443c035543c38636a618f4ade5f",
+  "root_focused_xml_sha256": "adcaa1ef8959d955cea53772794acdab013d31e1a83fc9f6775fb0a46322fea8"
+}

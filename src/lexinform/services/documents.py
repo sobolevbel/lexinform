@@ -47,6 +47,7 @@ from lexinform.document_composition import (
 from lexinform.document_downloads import DocumentDownloadRecorder, download_failure
 from lexinform.document_selection import DOCUMENT_SELECTION_POLICY_VERSION
 from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
+from lexinform.local_timing import observe_read_timing
 from lexinform.metadata_omissions import MetadataUrlOmissionCollector
 from lexinform.metadata_urls import MetadataUrlDecision, metadata_url_decision
 from lexinform.models import (
@@ -600,6 +601,7 @@ class TextLoader:
             if archive_sink is not None and cached.archive is not None:
                 with suppress(Exception):
                     archive_sink(cached.archive)
+            observe_read_timing(self, "cache_reuse")
             return cached
         try:
             fetched = self._fetch(url, archive_sink)
@@ -612,6 +614,7 @@ class TextLoader:
                 self._cache.pop(next(iter(self._cache)))
             self._cache[url] = fetched
         self._observe_omission_file(url, loaded)
+        observe_read_timing(self, "fresh")
         return fetched
 
     def _read_candidate(
@@ -955,7 +958,7 @@ class TextLoader:
             )
             return None
         source_sha = downloaded.artifact.sha256
-        return ScannedDocument(
+        scan = ScannedDocument(
             data=base64.standard_b64encode(selected).decode("ascii"),
             pages=window.count,
             of_pages=pages,
@@ -972,6 +975,8 @@ class TextLoader:
                 transformations=("cover_letter",) if window.first else (),
             ),
         )
+        observe_read_timing(self, "fresh")
+        return scan
 
     def first_pages(self, scan: ScannedDocument, count: int) -> ScannedDocument | None:
         """The opening pages of a scan already loaded, for the cheap pass to read.
@@ -1150,4 +1155,5 @@ class TextLoader:
             len(data) // 1024,
             time.perf_counter() - started,
         )
+        observe_read_timing(self, "fresh")
         return _DownloadedDocument(data, artifact)

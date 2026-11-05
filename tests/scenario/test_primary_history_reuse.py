@@ -16,7 +16,15 @@ def primary_world(
     def old_intent(intent: BatchIntent) -> None:
         save(
             intent.model_copy(
-                update={"meta": intent.meta.model_copy(update={"input_binding": None})}
+                update={
+                    "meta": intent.meta.model_copy(
+                        update={
+                            "input_binding": None,
+                            "local_timing_witness": None,
+                            "request_sha256": None,
+                        }
+                    )
+                }
             )
         )
 

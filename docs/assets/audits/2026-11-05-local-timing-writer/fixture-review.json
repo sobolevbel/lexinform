@@ -1,0 +1,11 @@
+{
+  "reviewer": "root",
+  "fixture_patch_sha256": "c8cac52a3c8d83c57d3c4a2ecc7084e04e97946753de2687dd8bbb4e262ccdca",
+  "findings": [],
+  "test_only": true,
+  "original_runtime_and_writer_unit_pins_exact": true,
+  "root_focused_cases": 308,
+  "all_previous_62_failures_included": true,
+  "modern_scope_guard_and_old_binding_guard_both_asserted": true,
+  "reader_validation_unchanged": true
+}

@@ -1,0 +1,10 @@
+{
+  "paired.json.gz": {
+    "compressed_bytes": 46903,
+    "compressed_sha256": "3f9bff106db4a428fa0974992d6627e0df3d23e387985be604b63587b12f0c59",
+    "expanded_bytes": 250634,
+    "expanded_sha256": "de218d0d57a4bfdd7fa5d394d7912e5084c7470bac10a2d046c3726733e70e26",
+    "origin": "out/corpus/j240-timing-writer/root-qa/paired-final.json"
+  },
+  "baseline": "../2026-11-05-local-timing-off-baseline/artifacts.json"
+}

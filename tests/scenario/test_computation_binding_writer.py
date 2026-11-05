@@ -75,7 +75,15 @@ def test_secondary_writer_and_cleanup_preserve_known_or_unknown_original_binding
         assert intent.meta.input_binding is not None, "new secondary work uses the bound factory"
         if legacy:
             intent = intent.model_copy(
-                update={"meta": intent.meta.model_copy(update={"input_binding": None})}
+                update={
+                    "meta": intent.meta.model_copy(
+                        update={
+                            "input_binding": None,
+                            "local_timing_witness": None,
+                            "request_sha256": None,
+                        }
+                    )
+                }
             )
         captured.append(intent)
         save(intent)
@@ -133,7 +141,15 @@ def test_review_writer_collects_old_unbound_and_new_bound_work(
     )
     if legacy:
         intent = intent.model_copy(
-            update={"meta": intent.meta.model_copy(update={"input_binding": None})}
+            update={
+                "meta": intent.meta.model_copy(
+                    update={
+                        "input_binding": None,
+                        "local_timing_witness": None,
+                        "request_sha256": None,
+                    }
+                )
+            }
         )
         world.repo.delete_batch_intents([intent.request.custom_id])
         world.repo.save_batch_intent(intent)

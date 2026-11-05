@@ -1,0 +1,485 @@
+{
+  "case_count": 18,
+  "actual_first_queued_snapshots": 17,
+  "first_save_only": true,
+  "scope": "Actual public newly-queued fixture snapshots; cumulative states are not summed as a production forecast. Each comparison changes only witness and approved fresh nullable hash sibling.",
+  "rows": [
+    {
+      "case": "analysis",
+      "ordinary": {
+        "sql_bytes": 123439,
+        "gzip_bytes": 24421
+      },
+      "request_hash_bound": {
+        "sql_bytes": 123523,
+        "gzip_bytes": 24423
+      },
+      "timed": {
+        "sql_bytes": 123937,
+        "gzip_bytes": 24482
+      },
+      "witness_delta": {
+        "sql_bytes": 414,
+        "gzip_bytes": 59
+      },
+      "derived_sha_delta": {
+        "sql_bytes": 84,
+        "gzip_bytes": 2
+      },
+      "total_delta": {
+        "sql_bytes": 498,
+        "gzip_bytes": 61
+      }
+    },
+    {
+      "case": "reanalysis",
+      "ordinary": {
+        "sql_bytes": 124993,
+        "gzip_bytes": 24572
+      },
+      "request_hash_bound": {
+        "sql_bytes": 125077,
+        "gzip_bytes": 24574
+      },
+      "timed": {
+        "sql_bytes": 125492,
+        "gzip_bytes": 24640
+      },
+      "witness_delta": {
+        "sql_bytes": 415,
+        "gzip_bytes": 66
+      },
+      "derived_sha_delta": {
+        "sql_bytes": 84,
+        "gzip_bytes": 2
+      },
+      "total_delta": {
+        "sql_bytes": 499,
+        "gzip_bytes": 68
+      }
+    },
+    {
+      "case": "explanation",
+      "ordinary": {
+        "sql_bytes": 93867,
+        "gzip_bytes": 19520
+      },
+      "request_hash_bound": {
+        "sql_bytes": 93951,
+        "gzip_bytes": 19526
+      },
+      "timed": {
+        "sql_bytes": 94367,
+        "gzip_bytes": 19594
+      },
+      "witness_delta": {
+        "sql_bytes": 416,
+        "gzip_bytes": 68
+      },
+      "derived_sha_delta": {
+        "sql_bytes": 84,
+        "gzip_bytes": 6
+      },
+      "total_delta": {
+        "sql_bytes": 500,
+        "gzip_bytes": 74
+      }
+    },
+    {
+      "case": "amendments",
+      "ordinary": {
+        "sql_bytes": 84523,
+        "gzip_bytes": 17358
+      },
+      "request_hash_bound": {
+        "sql_bytes": 84607,
+        "gzip_bytes": 17359
+      },
+      "timed": {
+        "sql_bytes": 85022,
+        "gzip_bytes": 17425
+      },
+      "witness_delta": {
+        "sql_bytes": 415,
+        "gzip_bytes": 66
+      },
+      "derived_sha_delta": {
+        "sql_bytes": 84,
+        "gzip_bytes": 1
+      },
+      "total_delta": {
+        "sql_bytes": 499,
+        "gzip_bytes": 67
+      }
+    },
+    {
+      "case": "supplement",
+      "ordinary": {
+        "sql_bytes": 218353,
+        "gzip_bytes": 77170
+      },
+      "request_hash_bound": {
+        "sql_bytes": 218437,
+        "gzip_bytes": 77170
+      },
+      "timed": {
+        "sql_bytes": 218852,
+        "gzip_bytes": 77238
+      },
+      "witness_delta": {
+        "sql_bytes": 415,
+        "gzip_bytes": 68
+      },
+      "derived_sha_delta": {
+        "sql_bytes": 84,
+        "gzip_bytes": 0
+      },
+      "total_delta": {
+        "sql_bytes": 499,
+        "gzip_bytes": 68
+      }
+    },
+    {
+      "case": "joint",
+      "ordinary": {
+        "sql_bytes": 41674,
+        "gzip_bytes": 8607
+      },
+      "request_hash_bound": {
+        "sql_bytes": 41758,
+        "gzip_bytes": 8612
+      },
+      "timed": {
+        "sql_bytes": 42100,
+        "gzip_bytes": 8675
+      },
+      "witness_delta": {
+        "sql_bytes": 342,
+        "gzip_bytes": 63
+      },
+      "derived_sha_delta": {
+        "sql_bytes": 84,
+        "gzip_bytes": 5
+      },
+      "total_delta": {
+        "sql_bytes": 426,
+        "gzip_bytes": 68
+      }
+    },
+    {
+      "case": "name",
+      "ordinary": {
+        "sql_bytes": 38405,
+        "gzip_bytes": 7609
+      },
+      "request_hash_bound": {
+        "sql_bytes": 38489,
+        "gzip_bytes": 7615
+      },
+      "timed": {
+        "sql_bytes": 38830,
+        "gzip_bytes": 7680
+      },
+      "witness_delta": {
+        "sql_bytes": 341,
+        "gzip_bytes": 65
+      },
+      "derived_sha_delta": {
+        "sql_bytes": 84,
+        "gzip_bytes": 6
+      },
+      "total_delta": {
+        "sql_bytes": 425,
+        "gzip_bytes": 71
+      }
+    },
+    {
+      "case": "consultation_review",
+      "ordinary": {
+        "sql_bytes": 142573,
+        "gzip_bytes": 27109
+      },
+      "request_hash_bound": {
+        "sql_bytes": 142657,
+        "gzip_bytes": 27110
+      },
+      "timed": {
+        "sql_bytes": 143097,
+        "gzip_bytes": 27159
+      },
+      "witness_delta": {
+        "sql_bytes": 440,
+        "gzip_bytes": 49
+      },
+      "derived_sha_delta": {
+        "sql_bytes": 84,
+        "gzip_bytes": 1
+      },
+      "total_delta": {
+        "sql_bytes": 524,
+        "gzip_bytes": 50
+      }
+    },
+    {
+      "case": "commission_review",
+      "ordinary": {
+        "sql_bytes": 128898,
+        "gzip_bytes": 21771
+      },
+      "request_hash_bound": {
+        "sql_bytes": 128982,
+        "gzip_bytes": 21774
+      },
+      "timed": {
+        "sql_bytes": 129420,
+        "gzip_bytes": 21834
+      },
+      "witness_delta": {
+        "sql_bytes": 438,
+        "gzip_bytes": 60
+      },
+      "derived_sha_delta": {
+        "sql_bytes": 84,
+        "gzip_bytes": 3
+      },
+      "total_delta": {
+        "sql_bytes": 522,
+        "gzip_bytes": 63
+      }
+    },
+    {
+      "case": "act_application",
+      "ordinary": {
+        "sql_bytes": 45579,
+        "gzip_bytes": 8443
+      },
+      "request_hash_bound": {
+        "sql_bytes": 45663,
+        "gzip_bytes": 8447
+      },
+      "timed": {
+        "sql_bytes": 46031,
+        "gzip_bytes": 8511
+      },
+      "witness_delta": {
+        "sql_bytes": 368,
+        "gzip_bytes": 64
+      },
+      "derived_sha_delta": {
+        "sql_bytes": 84,
+        "gzip_bytes": 4
+      },
+      "total_delta": {
+        "sql_bytes": 452,
+        "gzip_bytes": 68
+      }
+    },
+    {
+      "case": "analysis_cache",
+      "ordinary": {
+        "sql_bytes": 123439,
+        "gzip_bytes": 24432
+      },
+      "request_hash_bound": {
+        "sql_bytes": 123523,
+        "gzip_bytes": 24434
+      },
+      "timed": {
+        "sql_bytes": 123943,
+        "gzip_bytes": 24497
+      },
+      "witness_delta": {
+        "sql_bytes": 420,
+        "gzip_bytes": 63
+      },
+      "derived_sha_delta": {
+        "sql_bytes": 84,
+        "gzip_bytes": 2
+      },
+      "total_delta": {
+        "sql_bytes": 504,
+        "gzip_bytes": 65
+      }
+    },
+    {
+      "case": "explanation_scan",
+      "ordinary": {
+        "sql_bytes": 47945,
+        "gzip_bytes": 10482
+      },
+      "request_hash_bound": {
+        "sql_bytes": 48029,
+        "gzip_bytes": 10487
+      },
+      "timed": {
+        "sql_bytes": 48445,
+        "gzip_bytes": 10561
+      },
+      "witness_delta": {
+        "sql_bytes": 416,
+        "gzip_bytes": 74
+      },
+      "derived_sha_delta": {
+        "sql_bytes": 84,
+        "gzip_bytes": 5
+      },
+      "total_delta": {
+        "sql_bytes": 500,
+        "gzip_bytes": 79
+      }
+    },
+    {
+      "case": "amendment_correction",
+      "ordinary": {
+        "sql_bytes": 99236,
+        "gzip_bytes": 20172
+      },
+      "request_hash_bound": {
+        "sql_bytes": 99320,
+        "gzip_bytes": 20173
+      },
+      "timed": {
+        "sql_bytes": 99735,
+        "gzip_bytes": 20236
+      },
+      "witness_delta": {
+        "sql_bytes": 415,
+        "gzip_bytes": 63
+      },
+      "derived_sha_delta": {
+        "sql_bytes": 84,
+        "gzip_bytes": 1
+      },
+      "total_delta": {
+        "sql_bytes": 499,
+        "gzip_bytes": 64
+      }
+    },
+    {
+      "case": "amendments_context",
+      "ordinary": {
+        "sql_bytes": 83275,
+        "gzip_bytes": 16940
+      },
+      "request_hash_bound": {
+        "sql_bytes": 83359,
+        "gzip_bytes": 16943
+      },
+      "timed": {
+        "sql_bytes": 83706,
+        "gzip_bytes": 16998
+      },
+      "witness_delta": {
+        "sql_bytes": 347,
+        "gzip_bytes": 55
+      },
+      "derived_sha_delta": {
+        "sql_bytes": 84,
+        "gzip_bytes": 3
+      },
+      "total_delta": {
+        "sql_bytes": 431,
+        "gzip_bytes": 58
+      }
+    },
+    {
+      "case": "consultation_resume",
+      "ordinary": {
+        "sql_bytes": 142573,
+        "gzip_bytes": 27109
+      },
+      "request_hash_bound": {
+        "sql_bytes": 142657,
+        "gzip_bytes": 27110
+      },
+      "timed": {
+        "sql_bytes": 143029,
+        "gzip_bytes": 27144
+      },
+      "witness_delta": {
+        "sql_bytes": 372,
+        "gzip_bytes": 34
+      },
+      "derived_sha_delta": {
+        "sql_bytes": 84,
+        "gzip_bytes": 1
+      },
+      "total_delta": {
+        "sql_bytes": 456,
+        "gzip_bytes": 35
+      }
+    },
+    {
+      "case": "commission_multipart",
+      "ordinary": {
+        "sql_bytes": 206693,
+        "gzip_bytes": 24239
+      },
+      "request_hash_bound": {
+        "sql_bytes": 206777,
+        "gzip_bytes": 24246
+      },
+      "timed": {
+        "sql_bytes": 207215,
+        "gzip_bytes": 24364
+      },
+      "witness_delta": {
+        "sql_bytes": 438,
+        "gzip_bytes": 118
+      },
+      "derived_sha_delta": {
+        "sql_bytes": 84,
+        "gzip_bytes": 7
+      },
+      "total_delta": {
+        "sql_bytes": 522,
+        "gzip_bytes": 125
+      }
+    },
+    {
+      "case": "name_existing_witness",
+      "ordinary": {
+        "sql_bytes": 38405,
+        "gzip_bytes": 7609
+      },
+      "request_hash_bound": {
+        "sql_bytes": 38489,
+        "gzip_bytes": 7615
+      },
+      "timed": {
+        "sql_bytes": 38830,
+        "gzip_bytes": 7680
+      },
+      "witness_delta": {
+        "sql_bytes": 341,
+        "gzip_bytes": 65
+      },
+      "derived_sha_delta": {
+        "sql_bytes": 84,
+        "gzip_bytes": 6
+      },
+      "total_delta": {
+        "sql_bytes": 425,
+        "gzip_bytes": 71
+      }
+    }
+  ],
+  "totals_of_independent_deltas": {
+    "witness_delta": {
+      "sql_bytes": 6753,
+      "gzip_bytes": 1100
+    },
+    "derived_sha_delta": {
+      "sql_bytes": 1428,
+      "gzip_bytes": 55
+    },
+    "total_delta": {
+      "sql_bytes": 8181,
+      "gzip_bytes": 1155
+    }
+  },
+  "all_cores_exact": true,
+  "changed_inputs": [],
+  "source_report_sha256": "644590e866e116a2c9e49b43b727e07253c290b47d8a3f81f8acc55e57204fd3",
+  "source_manifest": "paired.json.gz::sources; exact equality checked before omitting duplicate source map"
+}

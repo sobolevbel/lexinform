@@ -199,5 +199,11 @@ def test_collector_bridge_keeps_future_review_binding_for_answers_and_failures(
     assert paid.request_sha256 == intent.request.payload_sha256
     raw = paid.model_dump()
     raw["input_binding"] = binding.model_copy(update={"number": "3040"}).model_dump()
+    assert paid.local_timing_witness is not None, (
+        "the modern collector retained its original witness"
+    )
+    with pytest.raises(ValidationError, match="original input scope"):
+        ComputationResult.model_validate(raw)
+    raw.pop("local_timing_witness")
     with pytest.raises(ValidationError, match="frozen input binding"):
         ComputationResult.model_validate(raw)

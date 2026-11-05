@@ -31,3 +31,5 @@ confirms f7ee12c0 CI41970157905 and relay41970627223.
 
 [Qualification](qualification.json), [pins](source-pins.json), [AST proof](ast-proof.json),
 [reader evidence](evidence.json), [integration status](integration-proof.json).
+
+Actual4cb430d2 release: [CI and relay verification](../2026-11-05-local-timing-writer/previous-release.json).

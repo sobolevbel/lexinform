@@ -1,0 +1,153 @@
+{
+  "owned": {
+    "src/lexinform/local_timing.py": "503759c3f6fd9aaae90416f6448c12da305b1d542640d85efa243a60a71cb5fc",
+    "src/lexinform/services/analysis.py": "df1a70045a004df3d950a879d1042a2b550a3f23a49be3a896bc8e1ccb6fe35b",
+    "src/lexinform/services/document_reviews.py": "d0b2928a2d60e92a05def071670f117f787c273a8666b30b80090fbeb7c50155",
+    "src/lexinform/services/documents.py": "2bc1022c0062287f2517f8ad3083c06e327dfaeda61d8605300171f52f3a4cd9",
+    "tests/unit/test_local_timing_writer.py": "3d4d5552a4ca392c9f77fbaf192dfea89672964975e83bfd307df684e72e1ccd"
+  },
+  "focused_tests": 291,
+  "additional_lifecycle_tests": 53,
+  "new_writer_cases": 20,
+  "mypy_checked_files": 719,
+  "paired_status": "passed",
+  "paired_core_exact": true,
+  "planned_cases": 18,
+  "initial_queued_packets": 17,
+  "prepared_purposes": [
+    "act_application",
+    "amendments",
+    "analysis",
+    "commission_review",
+    "consultation_review",
+    "explanation",
+    "joint",
+    "name",
+    "reanalysis",
+    "supplement"
+  ],
+  "initial_read_known_cases": {
+    "amendment_correction": "mixed",
+    "amendments": "mixed",
+    "analysis": "mixed",
+    "analysis_cache": "cache_reuse",
+    "commission_multipart": "mixed",
+    "commission_review": "fresh",
+    "consultation_review": "fresh",
+    "explanation": "mixed",
+    "explanation_scan": "mixed",
+    "reanalysis": "mixed",
+    "supplement": "mixed"
+  },
+  "initial_read_unknown_cases": [
+    "act_application",
+    "amendments_context",
+    "consultation_resume",
+    "joint",
+    "name",
+    "name_existing_witness"
+  ],
+  "planned_no_preparation": [
+    "analysis_failed_read"
+  ],
+  "natural_raw_assets": 3,
+  "natural_raw_bytes": 3826880,
+  "limits": [
+    "Technical act_application context; production remains disabled.",
+    "Fixed controls/technical prior descriptions are not human legal labels.",
+    "Local load completion does not assert source availability or full document coverage.",
+    "J241 report integration remains separate; DA10.4 not yet closed."
+  ],
+  "storage": {
+    "witness_delta": {
+      "sql_bytes": 6753,
+      "gzip_bytes": 1100
+    },
+    "derived_sha_delta": {
+      "sql_bytes": 1428,
+      "gzip_bytes": 55
+    },
+    "total_delta": {
+      "sql_bytes": 8181,
+      "gzip_bytes": 1155
+    }
+  },
+  "fresh": {
+    "source_database_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+    "source_and_copy_unchanged": true,
+    "canonical_dump_sha256": "b5f318428ccf9cc1b59ae7b3d835d8eda1af559dcb1ac1b4bfc0fb3606c61346",
+    "constructor_start_run_dry_and_real_no_enrichment": true,
+    "double_restore_exact": true,
+    "provider_calls": 0,
+    "doctors": {
+      "computation_doctor": {
+        "bytes_exact": true,
+        "sha256": "3e201e970f6428cb143e66749cdbbd7badfaf70b61e51980408481906ac9ea55"
+      },
+      "content_history_doctor": {
+        "bytes_exact": true,
+        "sha256": "3c70ec6b7c6b4b02c558af8bbbaa9fb5877df68ec9adce1e7d0c8c929a2d625d"
+      }
+    },
+    "scope": "Initialization, accounting reads and retention only; no pipeline execution or reconstruction of legacy timestamps."
+  },
+  "paired_zero_provider_client_submit_sync_calls": true,
+  "root_full_gate": {
+    "tests": 8604,
+    "seconds": 298.627,
+    "mypy": 745,
+    "ruff_format_files": 814,
+    "coverage_percent": 92,
+    "source_config_pins": 814
+  },
+  "root_focused_cases": 308,
+  "root_pair_status": "passed;18cases/all10/coreexact/timingrequired",
+  "root_final_proof": "integration-proof.json",
+  "first_full_gate": {
+    "failed": 62,
+    "passed": 8542,
+    "cause": "Legacy fixture mutations retained new timing witness after changing its required parents; callback stub omitted new optional keyword. Test-only correction; strict modern and legacy guard assertions retained."
+  },
+  "test_only_fixture_correction": {
+    "files": 8,
+    "before_after_308_case_ids_exact": true,
+    "all_62_failures_covered": true,
+    "runtime_five_pins_exact": true,
+    "reader_parser_guards_unchanged": true
+  },
+  "new_cases": {
+    "new_unit_cases": 20,
+    "new_scenario_cases": 0,
+    "removed_cases": 0,
+    "all_first_and_final_full_case_ids_exact": true,
+    "new": [
+      "tests.unit.test_local_timing_writer::test_actual_supplement_preparation_attaches_local_read_witness",
+      "tests.unit.test_local_timing_writer::test_amendment_read_clock_includes_the_recommendation_loaded_last",
+      "tests.unit.test_local_timing_writer::test_optional_timing_failure_keeps_ordinary_preparation_or_propagates_cancellation[False-clock]",
+      "tests.unit.test_local_timing_writer::test_optional_timing_failure_keeps_ordinary_preparation_or_propagates_cancellation[False-enrich]",
+      "tests.unit.test_local_timing_writer::test_optional_timing_failure_keeps_ordinary_preparation_or_propagates_cancellation[False-setup]",
+      "tests.unit.test_local_timing_writer::test_optional_timing_failure_keeps_ordinary_preparation_or_propagates_cancellation[True-clock]",
+      "tests.unit.test_local_timing_writer::test_optional_timing_failure_keeps_ordinary_preparation_or_propagates_cancellation[True-enrich]",
+      "tests.unit.test_local_timing_writer::test_optional_timing_failure_keeps_ordinary_preparation_or_propagates_cancellation[True-setup]",
+      "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[act_application]",
+      "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[amendments]",
+      "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[analysis]",
+      "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[commission_review]",
+      "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[consultation_review]",
+      "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[explanation]",
+      "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[joint]",
+      "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[name]",
+      "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[reanalysis]",
+      "tests.unit.test_local_timing_writer::test_public_collection_copies_only_original_item_witness[supplement]",
+      "tests.unit.test_local_timing_writer::test_public_name_omits_optional_witness_for_unsupported_endpoint_clock",
+      "tests.unit.test_local_timing_writer::test_review_workers_aggregate_actual_native_read_evidence_identically"
+    ],
+    "removed": []
+  },
+  "previous_release": {
+    "sha": "4cb430d2e5b9136455d47fafe22596cbe5658235",
+    "ci": 41970912310,
+    "deploy": 41971451869,
+    "verified": true
+  }
+}

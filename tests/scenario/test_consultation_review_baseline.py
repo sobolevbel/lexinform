@@ -1,5 +1,8 @@
+from collections.abc import Callable
+
 import pytest
 
+from lexinform.local_timing import LocalReadTiming
 from lexinform.models import Bill, DocumentReviewRecord, ReviewContext, ReviewPurpose, ReviewSource
 from lexinform.services.tracking_result import TrackingResult
 from tests.harness import TERM, World
@@ -45,7 +48,11 @@ def test_consultation_work_retains_comparison_across_restore_and_later_review(
     seen: list[tuple[ReviewSource, ...]] = []
 
     def capture(
-        bill: Bill, purpose: ReviewPurpose, sources: tuple[ReviewSource, ...]
+        bill: Bill,
+        purpose: ReviewPurpose,
+        sources: tuple[ReviewSource, ...],
+        *,
+        on_read: Callable[[LocalReadTiming | None], None] | None = None,
     ) -> ReviewContext | None:
         assert bill.consultation_review is None and purpose == "consultation_review"
         seen.append(sources)

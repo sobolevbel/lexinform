@@ -10695,3 +10695,50 @@ CI41970157905/relay41970627223 actually verified. This reader release verificati
 [qualification](../assets/audits/2026-11-05-application-reference-reader/qualification.json),
 [source pins](../assets/audits/2026-11-05-application-reference-reader/source-pins.json),
 [compatibility evidence](../assets/audits/2026-11-05-application-reference-reader/evidence.json).
+
+
+<a id="j240"></a>
+
+## J240 — prospective local loading and work timing capture
+
+5 November 2026. All ten existing batch purposes receive optional timing only on newly frozen
+intents; original discovery/work-request clocks and actual invocation-local fresh/cache/mixed
+completion bind the frozen request and original input scope. Worker sidecars aggregate in input
+order, without global latest-read lookup, extra reads or packet retention. Source availability,
+publication time and complete input/source coverage are not inferred. Saved/passed contexts and
+retained descriptions keep read clocks unknown; act_application production remains disabled.
+
+Exact frozen J238 driver/recipe/OFF passes18 cases, all10 purposes and unchanged core:17 initial
+packets,23 actual prepare calls,11 known-read cases (8mixed/2fresh/1cache_reuse),6 unknown-read
+controls and one explicit read failure with0requests. Client/submit/synchronous-model/delivery
+calls remain0. Natural evidence is three raw source files3,826,880bytes; priors/targets/descriptions,
+blank scan and typed disabled-act context are technical, not natural legal labels or gold.
+
+Fresh metadata adds only the witness and separately approved nullable request-SHA corroboration.
+Legacy queued BOTH-None packets and known-witness packets remain byte-exact on reuse. ALL10
+public collection units transfer the original witness on first retention, preserve stored None or
+a different original witness on recollection and still reject changed paid results. Fault/cancel,
+unsupported clocks, recommendation-last and workers1/4 controls pass. Original queue Clock-call,
+loader-call and actual prepare_request AST lists are exact; SQL/models/ports/Container unchanged.
+
+Author344 focused tests (291+53),20 new unit cases, strict mypy719/Ruff/format pass. Independent
+exact-five-pin review is CLEAR/findings[]; reviewer did not rerun tests. Actual first-queued
+snapshots17 add6,753SQL/1,100gzip witness bytes plus1,428/55 derived-SHA bytes:8,181/1,155 total
+independent fixture deltas, not a production growth forecast. Existing fresh-b source/copy,
+complete default doctor reports and double restore stay exact; constructor/start_run in both
+modes adds0enrichment and makes0provider calls.
+
+First root gate found62 invalid legacy/changed-binding fixture constructions and one optional
+callback-stub mismatch. The approved eight-file test-only correction preserves all308 focused
+and8604 full case IDs, asserts strict modern scope and prior binding guards separately, and
+leaves fake loading unknown. Runtime five pins and reader/parser guards remain unchanged.
+Root308 focused and8604 full tests/298.627s/92%coverage pass; mypy745/Ruff/format814green,
+all814 source/config pins exact. Final18case pair, actual storage/fresh-state proofs pass again.
+Twenty new units/0newscenarios/0removed. Previous4cb430d2 CI41970912310/relay41971451869 actually
+verified; this release verification follows publication. J241 operator report integration remains
+separate; DA10.4 stays OPEN and no task checkbox closes.
+
+[Report](../assets/audits/2026-11-05-local-timing-writer/report.md),
+[qualification](../assets/audits/2026-11-05-local-timing-writer/qualification.json),
+[peer review](../assets/audits/2026-11-05-local-timing-writer/peer-review.json),
+[compressed paired evidence](../assets/audits/2026-11-05-local-timing-writer/artifacts.json).

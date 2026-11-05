@@ -45,7 +45,19 @@ def test_legacy_queued_payload_is_submitted_unchanged_after_restore(
 
     def legacy_intent(intent: BatchIntent) -> None:
         old = BatchRequest.model_validate(intent.request.model_dump(exclude={"payload_sha256"}))
-        save(intent.model_copy(update={"request": old}))
+        save(
+            intent.model_copy(
+                update={
+                    "request": old,
+                    "meta": intent.meta.model_copy(
+                        update={
+                            "local_timing_witness": None,
+                            "request_sha256": None,
+                        }
+                    ),
+                }
+            )
+        )
 
     monkeypatch.setattr(world.repo, "save_batch_intent", legacy_intent)
     assert isinstance(ask(world, "supplement"), Waiting)

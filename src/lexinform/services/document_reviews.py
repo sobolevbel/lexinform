@@ -9,6 +9,7 @@ from lexinform.commission_reviews import (
     legacy_filed_commission_baseline,
 )
 from lexinform.errors import ServiceUnavailableError, StateCheckpointError
+from lexinform.local_timing import LocalReadTiming
 from lexinform.models import (
     Bill,
     DocumentReviewRecord,
@@ -196,6 +197,7 @@ class DocumentReviews:
                     ):
                         continue
                     context = work.context
+                    local_reads: list[LocalReadTiming | None] = []
                     if context is None:
                         snapshot = Bill.model_validate_json(work.input_bill_json)
                         sources = self._texts.supporting_documents(snapshot, work.purpose)
@@ -211,7 +213,9 @@ class DocumentReviews:
                                     snapshot=comparison,
                                 ),
                             )
-                        context = self._analysis.review_context(snapshot, work.purpose, sources)
+                        context = self._analysis.review_context(
+                            snapshot, work.purpose, sources, on_read=local_reads.append
+                        )
                         if context is None:
                             self._replace_work(
                                 bill,
@@ -244,7 +248,12 @@ class DocumentReviews:
                                 for item in fresh.review_work
                             ),
                         )
-                    record = self._analysis.request_document_review(bill, context)
+                    record = self._analysis.request_document_review(
+                        bill,
+                        context,
+                        local_read=local_reads[-1] if local_reads else None,
+                        requested_at=work.since,
+                    )
                     if isinstance(record, Waiting):
                         result.waiting += 1
                         continue

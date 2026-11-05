@@ -1,0 +1,27 @@
+{
+  "status": "clear",
+  "patch_sha256": "42b297da59b4b6e74f037451e43c3d9ed57248e1ceefc02b9d0eb12f1a94b6e3",
+  "source_pins": {
+    "src/lexinform/local_timing.py": "503759c3f6fd9aaae90416f6448c12da305b1d542640d85efa243a60a71cb5fc",
+    "src/lexinform/services/analysis.py": "df1a70045a004df3d950a879d1042a2b550a3f23a49be3a896bc8e1ccb6fe35b",
+    "src/lexinform/services/document_reviews.py": "d0b2928a2d60e92a05def071670f117f787c273a8666b30b80090fbeb7c50155",
+    "src/lexinform/services/documents.py": "2bc1022c0062287f2517f8ad3083c06e327dfaeda61d8605300171f52f3a4cd9",
+    "tests/unit/test_local_timing_writer.py": "3d4d5552a4ca392c9f77fbaf192dfea89672964975e83bfd307df684e72e1ccd"
+  },
+  "findings": [],
+  "independent_tests": false,
+  "source_edits": false,
+  "scope": [
+    "Invocation-local owner/thread capture and ordered review worker sidecars.",
+    "Optional setup/clock/enrichment failures and BaseException cancellation propagation.",
+    "Native cache/fresh/mixed completion and unchanged original queue/prepare/loader call sites.",
+    "All ten public result-transfer cases, immutable original None/different known witness and changed-paid-result rejection.",
+    "Final exact-driver paired18/core/inputs, storage and fresh retention proof artifacts."
+  ],
+  "limitations": [
+    "Review is source/artifact inspection; author tests were not independently rerun.",
+    "Local completion is not upstream availability or full document coverage.",
+    "Technical controls and disabled act_application are not natural legal gold acceptance.",
+    "J241 reporting and complete DA10.4 acceptance remain separate; root owns full gate and actual deployment."
+  ]
+}

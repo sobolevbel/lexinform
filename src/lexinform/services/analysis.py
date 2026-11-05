@@ -37,6 +37,13 @@ from lexinform.errors import (
 from lexinform.keywords import KeywordPrefilter
 from lexinform.law_diff import diff_laws
 from lexinform.law_digest import law_digest
+from lexinform.local_timing import (
+    LocalReadTiming,
+    combine_read_timings,
+    enrich_local_timing_intent,
+    optional_read_timing,
+    read_timing,
+)
 from lexinform.metadata_urls import metadata_url_decision
 from lexinform.models import (
     AMENDMENT_SOURCES,
@@ -343,6 +350,7 @@ class _SourceReadError(Exception):
 class _ReviewRead:
     document: ReviewDocument | None
     source_read: SourceReadCapture | None = None
+    local_read: LocalReadTiming | None = None
 
 
 @dataclass(frozen=True)
@@ -440,6 +448,7 @@ class _Prepared:
     from_batch: bool = False
     source_read: SourceReadCapture | None = None
     input_receipt: PrimaryInputReceipt | None = None
+    local_read: LocalReadTiming | None = None
 
 
 _WHITESPACE = re.compile(r"\s+")
@@ -1091,6 +1100,19 @@ class AnalysisService:
         )
         primary = isinstance(item.meta, BatchItemMeta)
         review = item.call_kind in ("consultation_review", "commission_review", "act_application")
+        existing = self._repo.get_computation_result(
+            computation_id(provider, item.batch_id, item.custom_id)
+        )
+        timing = (
+            existing.local_timing_witness
+            if existing is not None
+            else item.meta.local_timing_witness
+        )
+        if existing is None and timing is not None:
+            try:
+                timing.require_not_after(now, json_endpoint=True)
+            except Exception:
+                timing = None
         result = ComputationResult(
             schema_version=1 if primary else 3 if review else 2,
             provider=provider,
@@ -1104,6 +1126,7 @@ class AnalysisService:
             input_binding=item.meta.input_binding,
             review_input=review_input,
             request_sha256=item.meta.request_sha256,
+            local_timing_witness=timing,
             validation="validated" if record is not None else "error",
             record=record,
             model=response.model,
@@ -1275,12 +1298,14 @@ class AnalysisService:
         if pending is not None:
             return Waiting(pending)
         assert bill.analysis is not None
-        loaded = self._load_amendments_text(bill, document)
-        if not loaded.text.strip() and loaded.scan is None:
-            raise ValueError("Полный текст поправок не извлечён; исправление не запущено")
-        if self._too_expensive_to_digest(loaded):
-            raise ValueError("Разбор поправок превышает лимит стоимости документа")
-        context = self._amendments_context_of(bill, document, loaded, proposal, recommendation)
+        with optional_read_timing(self._loader, self._clock.now) as capture:
+            loaded = self._load_amendments_text(bill, document)
+            if not loaded.text.strip() and loaded.scan is None:
+                raise ValueError("Полный текст поправок не извлечён; исправление не запущено")
+            if self._too_expensive_to_digest(loaded):
+                raise ValueError("Разбор поправок превышает лимит стоимости документа")
+            context = self._amendments_context_of(bill, document, loaded, proposal, recommendation)
+        local_read = read_timing(capture)
         content_key = _memo_key(bill, "amendments", context)
         revisions = self._repo.list_amendment_revisions(target.publication_id)
         latest = revisions[0] if revisions else None
@@ -1332,23 +1357,26 @@ class AnalysisService:
                 for snapshot in snapshots:
                     self._repo.save_content_snapshot(snapshot)
                 self._repo.save_batch_intent(
-                    self._secondary_input_intent(
-                        BatchIntent.from_request(
-                            request=request,
-                            provider=provider,
-                            created_at=now,
-                            meta=DigestItemMeta(
-                                memo_key=key,
-                                queued_at=now,
-                                prompt_version=request.prompt_version,
-                                source_kind=document.kind,
-                                source_url=document.url,
-                                amendment_source=context.source_check,
-                                scan_input=context.scan.scan_input if context.scan else None,
-                                amendment_revision=frozen,
+                    self._timed_intent(
+                        self._secondary_input_intent(
+                            BatchIntent.from_request(
+                                request=request,
+                                provider=provider,
+                                created_at=now,
+                                meta=DigestItemMeta(
+                                    memo_key=key,
+                                    queued_at=now,
+                                    prompt_version=request.prompt_version,
+                                    source_kind=document.kind,
+                                    source_url=document.url,
+                                    amendment_source=context.source_check,
+                                    scan_input=context.scan.scan_input if context.scan else None,
+                                    amendment_revision=frozen,
+                                ),
                             ),
+                            loaded,
                         ),
-                        loaded,
+                        local_read,
                     )
                 )
         except Exception:
@@ -1472,16 +1500,19 @@ class AnalysisService:
         now = self._clock.now()
         try:
             self._repo.save_batch_intent(
-                BatchIntent.from_request(
-                    request=request,
-                    meta=DigestItemMeta(
-                        memo_key=prepared.memo_key,
-                        queued_at=now,
-                        prompt_version=request.prompt_version,
-                        explanation=source.model_copy(update={"located": None, "text": ""}),
+                self._timed_intent(
+                    BatchIntent.from_request(
+                        request=request,
+                        meta=DigestItemMeta(
+                            memo_key=prepared.memo_key,
+                            queued_at=now,
+                            prompt_version=request.prompt_version,
+                            explanation=source.model_copy(update={"located": None, "text": ""}),
+                        ),
+                        provider=provider,
+                        created_at=now,
                     ),
-                    provider=provider,
-                    created_at=now,
+                    prepared.local_read,
                 )
             )
         except Exception:
@@ -1683,6 +1714,23 @@ class AnalysisService:
         )
 
     @staticmethod
+    def _timed_intent(
+        intent: BatchIntent,
+        read: LocalReadTiming | None,
+        *,
+        discovery_at: datetime | None = None,
+        requested_at: datetime | None = None,
+    ) -> BatchIntent:
+        try:
+            return enrich_local_timing_intent(
+                intent, read, discovery_at=discovery_at, requested_at=requested_at
+            )
+        except Exception:
+            with suppress(Exception):
+                log.warning("Local timing witness omitted (enrichment_failed)")
+            return intent
+
+    @staticmethod
     def _secondary_input_intent(intent: BatchIntent, source: _Loaded | None) -> BatchIntent:
         if source is None:
             return intent
@@ -1708,6 +1756,7 @@ class AnalysisService:
         *,
         may_wait: bool,
         receipt_source: _Loaded | None = None,
+        local_read: LocalReadTiming | None = None,
     ) -> Record | Waiting:
         require_batch = self._options.require_batch or (
             isinstance(question.ctx, AmendmentsContext) and question.ctx.scan is not None
@@ -1772,6 +1821,7 @@ class AnalysisService:
                             created_at=now,
                         )
                         intent = self._secondary_input_intent(intent, receipt_source)
+                        intent = self._timed_intent(intent, local_read)
                         self._repo.save_batch_intent(intent)
                     except Exception:
                         self._ledger.release(request.estimated_cost_usd)
@@ -1844,10 +1894,13 @@ class AnalysisService:
         bill: Bill,
         purpose: ReviewPurpose,
         documents: tuple[ReviewSource, ...],
+        *,
+        on_read: Callable[[LocalReadTiming | None], None] | None = None,
     ) -> ReviewContext | None:
         if not self.review_enabled(purpose):
             return None
         sources: list[ReviewDocument] = []
+        reads: list[LocalReadTiming | None] = []
         omission_owner = SourceReferenceOmissionOwner(
             term=bill.term, number=bill.number, purpose="review"
         )
@@ -1879,6 +1932,7 @@ class AnalysisService:
                 if read.source_read is not None:
                     self._record_source_read(bill, read.source_read, purpose="review")
                 source = read.document
+                reads.append(read.local_read)
                 if source is not None:
                     sources.append(source)
                 elif purpose == "commission_review":
@@ -1903,7 +1957,7 @@ class AnalysisService:
         ):
             return None
         act = bill.act
-        return ReviewContext(
+        context = ReviewContext(
             number=bill.number,
             title=bill.summary.title,
             purpose=purpose,
@@ -1920,6 +1974,9 @@ class AnalysisService:
                 None,
             ),
         )
+        if on_read is not None:
+            on_read(combine_read_timings(reads))
+        return context
 
     def _read_review_document(
         self, source: ReviewSource, *, owner: SourceReferenceOmissionOwner | None = None
@@ -1932,6 +1989,11 @@ class AnalysisService:
     def _read_review_document_inner(self, source: ReviewSource) -> _ReviewRead:
         if source.snapshot is not None:
             return _ReviewRead(source.snapshot)
+        with optional_read_timing(self._loader, self._clock.now) as capture:
+            read = self._read_review_document_native(source)
+        return replace(read, local_read=read_timing(capture))
+
+    def _read_review_document_native(self, source: ReviewSource) -> _ReviewRead:
         document = source.document
         requested = document
         if document.compare_versions:
@@ -2002,7 +2064,12 @@ class AnalysisService:
         return "overflow:" + key if key in self._context_rejections else key
 
     def request_document_review(
-        self, bill: Bill, context: ReviewContext
+        self,
+        bill: Bill,
+        context: ReviewContext,
+        *,
+        local_read: LocalReadTiming | None = None,
+        requested_at: datetime | None = None,
     ) -> DocumentReviewRecord | Waiting:
         if context.number != bill.number:
             raise ValueError("document review context belongs to a different bill")
@@ -2067,16 +2134,20 @@ class AnalysisService:
             return Waiting(self._clock.now())
         try:
             self._repo.save_batch_intent(
-                BatchIntent.from_request(
-                    request=request,
-                    meta=DigestItemMeta(
-                        memo_key=key,
-                        review_context=context,
-                        queued_at=self._clock.now(),
-                        prompt_version=request.prompt_version,
+                self._timed_intent(
+                    BatchIntent.from_request(
+                        request=request,
+                        meta=DigestItemMeta(
+                            memo_key=key,
+                            review_context=context,
+                            queued_at=self._clock.now(),
+                            prompt_version=request.prompt_version,
+                        ),
+                        provider=provider,
+                        created_at=self._clock.now(),
                     ),
-                    provider=provider,
-                    created_at=self._clock.now(),
+                    local_read,
+                    requested_at=requested_at,
                 )
             )
         except Exception:
@@ -2406,11 +2477,13 @@ class AnalysisService:
         assert document.kind in AMENDMENT_SOURCES, f"not an amendments document: {document.kind}"
         loaded = None
         ctx = context
-        if ctx is None:
-            prepared = self._prepare_amendments(bill, document, proposal, recommendation)
-            if prepared is None:
-                return None
-            ctx, loaded = prepared
+        with optional_read_timing(self._loader, self._clock.now) as capture:
+            if ctx is None:
+                prepared = self._prepare_amendments(bill, document, proposal, recommendation)
+                if prepared is None:
+                    return None
+                ctx, loaded = prepared
+        local_read = read_timing(capture) if context is None else None
         key = _memo_key(bill, "amendments", ctx)
         record = self._ask_or_wait(
             bill,
@@ -2427,6 +2500,7 @@ class AnalysisService:
             lambda: self._llm.summarize_amendments(ctx),
             may_wait=may_wait,
             receipt_source=loaded,
+            local_read=local_read,
         )
         if not isinstance(record, Waiting):
             if ctx.source_check is not None:
@@ -2470,7 +2544,9 @@ class AnalysisService:
             delivered.source_url = document.url
             self._remember_analysis(bill, delivery_key, delivered)
             return delivered
-        loaded = self._load_secondary_text(bill, document)
+        with optional_read_timing(self._loader, self._clock.now) as capture:
+            loaded = self._load_secondary_text(bill, document)
+        local_read = read_timing(capture)
         if loaded.scan is None and (loaded.source == "metadata_only" or not loaded.text.strip()):
             return self.bare_supplement(document, number=number, title=title)
         if self._too_expensive_to_digest(loaded):
@@ -2509,6 +2585,7 @@ class AnalysisService:
             lambda: self._llm.digest_supplement(ctx),
             may_wait=may_wait,
             receipt_source=loaded,
+            local_read=local_read,
         )
         if not isinstance(record, Waiting):
             record.number = number
@@ -2672,6 +2749,33 @@ class AnalysisService:
             )
 
     def _prepare(
+        self,
+        bill: Bill,
+        located: LocatedText,
+        *,
+        previous: AnalysisRecord | None,
+        previous_document: TextDocument | None = None,
+        cost_guard: bool = True,
+        triage: bool = True,
+        submit_batch: bool = False,
+        purpose: Literal["analysis", "reanalysis", "explanation"] | None = None,
+        history: tuple[ComputationResult, ...] = (),
+    ) -> _Prepared:
+        with optional_read_timing(self._loader, self._clock.now) as capture:
+            prepared = self._prepare_inner(
+                bill,
+                located,
+                previous=previous,
+                previous_document=previous_document,
+                cost_guard=cost_guard,
+                triage=triage,
+                submit_batch=submit_batch,
+                purpose=purpose,
+                history=history,
+            )
+        return replace(prepared, local_read=read_timing(capture))
+
+    def _prepare_inner(
         self,
         bill: Bill,
         located: LocatedText,
@@ -3337,6 +3441,11 @@ class AnalysisService:
                 except Exception:
                     with suppress(Exception):
                         log.warning("Prepared input receipt omitted (enrichment_failed)")
+            intent = self._timed_intent(
+                intent,
+                prepared.local_read,
+                discovery_at=bill.first_seen_at if intent.request.call_kind == "analysis" else None,
+            )
             self._repo.save_batch_intent(intent)
             self._repo.set_status(bill.term, bill.number, BillStatus.BATCH_PENDING)
         return True
