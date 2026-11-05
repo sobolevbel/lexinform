@@ -23,6 +23,8 @@ from lexinform.models import (
     TextDocument,
 )
 from lexinform.models.candidate_trace import archive_member_rows_sha256
+from tests.unit.test_normative_annex_gap_reader import legacy_trace, with_gap
+from tests.unit.test_required_part_gap_reader import bind
 from tests.unit.test_source_history_doctor import MARKER, database
 
 
@@ -302,3 +304,64 @@ def test_nested_archive_corruption_uses_shared_reads_restore_and_doctor(tmp_path
     assert "invalid_candidate_trace" in {row["code"] for row in report["findings"]}
     assert MARKER not in json.dumps(report) and "https://" not in json.dumps(report)
     assert path.read_bytes() == before
+
+
+def test_gap_census_counts_distinct_valid_traces_and_preserves_unknown(tmp_path: Path) -> None:
+    path, legacy, source = traced_database(tmp_path)
+    with closing(SqliteBillRepository(path)) as repo:
+        for trace in (with_gap(legacy_trace()), bind(legacy_trace()), legacy_trace(compare=True)):
+            repo.save_candidate_disposition_trace(source.observation_id, trace)
+        repo.save_candidate_disposition_trace(
+            source.model_copy(update={"number": "second"}).observation_id,
+            with_gap(legacy_trace()),
+        )
+    with closing(sqlite3.connect(path)) as connection, connection:
+        connection.execute(
+            "UPDATE candidate_disposition_traces SET trace_json='bad' WHERE trace_id=?",
+            (legacy_trace(compare=True).trace_id,),
+        )
+    before = path.read_bytes()
+    legacy_report = audit(path, include_candidate_traces=True)
+
+    report = audit(path, include_candidate_traces=True, include_candidate_gaps=True)
+
+    census = report.pop("candidate_gap_coverage")
+    assert report == legacy_report
+    assert census["status"] == "available"
+    assert census["denominator"] == "retained_candidate_trace_rows"
+    assert census["denominator_rows"] == 4
+    assert census["valid_trace_rows"] == 3
+    assert census["invalid_trace_rows"] == 1
+    assert census["normative_annex"] == {
+        "recorded_rows": 1,
+        "unknown_valid_rows": 2,
+        "reasons": {"no_returned_file": 1},
+    }
+    assert census["required_part"] == {
+        "recorded_rows": 1,
+        "unknown_valid_rows": 2,
+        "reasons": {"returned_no_text": 1},
+    }
+    assert "https://" not in json.dumps(census)
+    assert legacy.trace_id not in json.dumps(census)
+    assert path.read_bytes() == before
+
+
+def test_gap_census_preserves_legacy_schema_unavailability(tmp_path: Path) -> None:
+    path = database(tmp_path)
+    with closing(sqlite3.connect(path)) as connection, connection:
+        connection.execute("DROP TABLE candidate_disposition_traces")
+
+    report = audit(path, include_candidate_gaps=True)
+
+    census = report["candidate_gap_coverage"]
+    assert census["status"] == "unavailable"
+    for field in (
+        "denominator_rows",
+        "valid_trace_rows",
+        "invalid_trace_rows",
+        "normative_annex",
+        "required_part",
+    ):
+        assert census[field] is None
+    assert "candidate_traces" not in report

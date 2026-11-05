@@ -307,7 +307,9 @@ _CANDIDATE_COLUMNS = {
 }
 
 
-def candidate_trace_inventory(connection: sqlite3.Connection) -> dict[str, Any]:
+def candidate_trace_inventory(
+    connection: sqlite3.Connection, *, include_gaps: bool = False
+) -> dict[str, Any]:
     """Validate saved trace rows and link parents without reconstructing policy or ownership."""
     unavailable = sorted(
         table
@@ -347,6 +349,8 @@ def candidate_trace_inventory(connection: sqlite3.Connection) -> dict[str, Any]:
     cursor = connection.cursor()
     cursor.row_factory = sqlite3.Row
     traces: dict[str, bool] = {}
+    annex_reasons: Counter[str] = Counter()
+    required_reasons: Counter[str] = Counter()
     try:
         if "candidate_disposition_traces" not in unavailable:
             report["trace_rows"] = report["valid_trace_rows"] = 0
@@ -363,6 +367,11 @@ def candidate_trace_inventory(connection: sqlite3.Connection) -> dict[str, Any]:
                 else:
                     traces[row["trace_id"]] = True
                     report["valid_trace_rows"] += 1
+                    if include_gaps:
+                        if trace.normative_annex_gap is not None:
+                            annex_reasons[trace.normative_annex_gap.reason] += 1
+                        if trace.required_part_gap is not None:
+                            required_reasons[trace.required_part_gap.reason] += 1
         if "source_candidate_traces" not in unavailable:
             report["link_rows"] = report["checked_links"] = report["unknown_links"] = 0
             reader = ContentSourceRows(connection)
@@ -393,7 +402,34 @@ def candidate_trace_inventory(connection: sqlite3.Connection) -> dict[str, Any]:
                 report["checked_links"] += 1
     finally:
         cursor.close()
+    if include_gaps:
+        total = report["trace_rows"]
+        valid = report["valid_trace_rows"]
+        report["gap_coverage"] = {
+            "status": "unavailable" if total is None else "available",
+            "denominator": "retained_candidate_trace_rows",
+            "denominator_rows": total,
+            "valid_trace_rows": valid,
+            "invalid_trace_rows": total - valid if total is not None else None,
+            "normative_annex": _gap_counts(valid, annex_reasons),
+            "required_part": _gap_counts(valid, required_reasons),
+            "scope": (
+                "Typed fields on validated saved traces; shared traces count once. "
+                "Unrecorded reasons remain unknown. No raw or current blocker inference."
+            ),
+        }
     return report
+
+
+def _gap_counts(valid: int | None, reasons: Counter[str]) -> dict[str, Any] | None:
+    if valid is None:
+        return None
+    observed = sum(reasons.values())
+    return {
+        "recorded_rows": observed,
+        "unknown_valid_rows": valid - observed,
+        "reasons": dict(sorted(reasons.items())),
+    }
 
 
 def audit(
@@ -401,6 +437,7 @@ def audit(
     *,
     include_selection_coverage: bool = False,
     include_candidate_traces: bool = False,
+    include_candidate_gaps: bool = False,
     include_selection_limitations: bool = False,
 ) -> dict[str, Any]:
     counts: Counter[str] = Counter()
@@ -648,8 +685,10 @@ def audit(
             coverage_report = selection_state_coverage(
                 connection, include_limitations=include_selection_limitations
             )
-        if include_candidate_traces:
-            candidate_report = candidate_trace_inventory(connection)
+        if include_candidate_traces or include_candidate_gaps:
+            candidate_report = candidate_trace_inventory(
+                connection, include_gaps=include_candidate_gaps
+            )
             findings.extend(candidate_report["findings"])
         if not snapshot.unchanged():
             issue("database_changed_during_audit", "database")
@@ -709,6 +748,8 @@ def audit(
         report["selection_limitation_coverage"] = coverage_report.pop("limitation_coverage")
     if include_selection_coverage:
         report["selection_state_coverage"] = coverage_report
+    if include_candidate_gaps and candidate_report is not None:
+        report["candidate_gap_coverage"] = candidate_report.pop("gap_coverage")
     if include_candidate_traces:
         report["candidate_traces"] = candidate_report
     return report
@@ -720,6 +761,7 @@ def run(
     *,
     include_selection_coverage: bool = False,
     include_candidate_traces: bool = False,
+    include_candidate_gaps: bool = False,
     include_selection_limitations: bool = False,
 ) -> int:
     if output.resolve() == database.resolve():
@@ -728,6 +770,7 @@ def run(
         database,
         include_selection_coverage=include_selection_coverage,
         include_candidate_traces=include_candidate_traces,
+        include_candidate_gaps=include_candidate_gaps,
         include_selection_limitations=include_selection_limitations,
     )
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -741,6 +784,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--selection-coverage", action="store_true")
     parser.add_argument("--candidate-traces", action="store_true")
+    parser.add_argument("--candidate-gaps", action="store_true")
     parser.add_argument("--selection-limitations", action="store_true")
     args = parser.parse_args()
     try:
@@ -749,6 +793,7 @@ def main() -> None:
             args.output,
             include_selection_coverage=args.selection_coverage,
             include_candidate_traces=args.candidate_traces,
+            include_candidate_gaps=args.candidate_gaps,
             include_selection_limitations=args.selection_limitations,
         )
     except (OSError, sqlite3.Error, ValueError) as exc:

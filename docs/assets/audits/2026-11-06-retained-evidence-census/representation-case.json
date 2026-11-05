@@ -1,0 +1,18 @@
+{
+  "docx": {
+    "path": "sejm/term10/files/1608__1608-ustawa.docx",
+    "sha256": "f1068afbcfe0a60f8d297d69e57d452448a883875dacb3369f9e754c193433f6"
+  },
+  "docx_text_sha256": "6597b86b4dd20b0b528b7cd3f3fb072b5f6ace2004d1afca9f8d23edb85bbfe8",
+  "number": "1608",
+  "official_prints": {
+    "path": "sejm/snapshots/2026-10-03/term10/prints.json",
+    "sha256": "05e7b4a7105e9a6d8aff1c87293749c5c77c6bfefc6882491c8d2701b39b8938"
+  },
+  "pdf": {
+    "path": "sejm/term10/files/1608__1608.pdf",
+    "sha256": "9c2fa70809387001922d85647b25eaf45a81809e6d1237cda4c4f61a05c737e8"
+  },
+  "pdf_text_sha256": "de78d9119380f7111db9da4115cae010a4174c1c2c9a54e5de7333efdac87ab7",
+  "term": 10
+}

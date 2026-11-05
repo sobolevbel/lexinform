@@ -1,0 +1,20 @@
+{
+  "denominator": "retained_candidate_trace_rows",
+  "denominator_rows": 1,
+  "invalid_trace_rows": 0,
+  "normative_annex": {
+    "reasons": {
+      "returned_no_text": 1
+    },
+    "recorded_rows": 1,
+    "unknown_valid_rows": 0
+  },
+  "required_part": {
+    "reasons": {},
+    "recorded_rows": 0,
+    "unknown_valid_rows": 1
+  },
+  "scope": "Typed fields on validated saved traces; shared traces count once. Unrecorded reasons remain unknown. No raw or current blocker inference.",
+  "status": "available",
+  "valid_trace_rows": 1
+}

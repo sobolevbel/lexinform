@@ -11510,3 +11510,16 @@ The explicit history page shows the presence of retained primary lineage on a
 confirmed original card. It exposes a status only. The native publication test
 checks its absence before send and presence after normal expiry and restore.
 [Operator scope and parity](../assets/audits/2026-11-06-operator-card-lineage/report.md).
+
+<a id="j283"></a>
+
+## J283 — retained gap census, offline card references and print representation proof
+
+The source doctor can count saved gap reasons over distinct validated trace rows.
+The content doctor exposes exact references for validated compact original lineage.
+Both preserve their previous legacy output.
+
+A separate pinned replay confirms the same literal normative core in the PDF and DOCX
+of print 1608. The strict control stays unknown. The plan accepts DA5.4, DA7.5 and DA10.3
+in their tested profiles, with unavailable evidence and additional source families
+listed separately. [Evidence and accepted scope](../assets/audits/2026-11-06-retained-evidence-census/report.md).

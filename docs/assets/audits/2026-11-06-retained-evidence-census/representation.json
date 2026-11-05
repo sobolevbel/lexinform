@@ -1,0 +1,30 @@
+{
+  "case_sha256": "021fc16d9bad0704aa4b264219b7457fe0ad8a59ec609528659737141c96c71e",
+  "code_version": "d8494ebd40b6848dc8cc9bb265023ce8d3cbfb99",
+  "proof": {
+    "adoption_outcome": "not_asserted",
+    "core_chars": 957,
+    "core_sha256": "5594429d4e7fcf6c047cbfdf7e4e17c3b0acf08608f247a400341c47c3954af4",
+    "docx_sha256": "f1068afbcfe0a60f8d297d69e57d452448a883875dacb3369f9e754c193433f6",
+    "docx_text_sha256": "6597b86b4dd20b0b528b7cd3f3fb072b5f6ace2004d1afca9f8d23edb85bbfe8",
+    "docx_url": "https://api.sejm.gov.pl/sejm/term10/prints/1608/1608-ustawa.docx",
+    "edition_id": "edition-v1:d0676460176b22207475de7a1d89a237ec79611af03891e39d497a4dfc9b1ffb",
+    "number": "1608",
+    "pdf_sha256": "9c2fa70809387001922d85647b25eaf45a81809e6d1237cda4c4f61a05c737e8",
+    "pdf_text_sha256": "de78d9119380f7111db9da4115cae010a4174c1c2c9a54e5de7333efdac87ab7",
+    "pdf_url": "https://api.sejm.gov.pl/sejm/term10/prints/1608/1608.pdf",
+    "relation": "representation_of",
+    "scope": "native_normative_core_only",
+    "selection_id": "selection-v1:a58e1b1fe41bbd6948c36c2086faa95e9ea0806daf2ce76e78b7ea63e1d57644",
+    "selection_state": "unverified",
+    "term": 10
+  },
+  "read_inputs": {
+    "sejm/snapshots/2026-10-03/term10/prints.json": "05e7b4a7105e9a6d8aff1c87293749c5c77c6bfefc6882491c8d2701b39b8938",
+    "sejm/term10/files/1608__1608-ustawa.docx": "f1068afbcfe0a60f8d297d69e57d452448a883875dacb3369f9e754c193433f6",
+    "sejm/term10/files/1608__1608.pdf": "9c2fa70809387001922d85647b25eaf45a81809e6d1237cda4c4f61a05c737e8"
+  },
+  "source_pins_sha256": "8d4f4f000843edfe0ed3b469e58fa8a44ea6eb9c69a85f44c3c1b693d857ef81",
+  "status": "recorded",
+  "version": "sejm-print-core-representation-v1"
+}

@@ -16,6 +16,7 @@ from lexinform.models import (
     ComputationInputBinding,
     ComputationResult,
     ContentVersion,
+    ContentVersionSummary,
     DeliveryPlan,
     DocumentSelectionRecord,
     LlmBatch,
@@ -237,6 +238,14 @@ def test_card_primary_evidence_survives_retention_but_never_confirms_an_unsent_c
     report = audit(target, publication_id=pub.id)
     assert report["status"] == "recorded" and not report["findings"]
     assert report["histories"][0]["current_content_id"] == value.content_id
+    reference = value.card_primary_evidence
+    assert reference is not None, "the fixture stores the exact validated references"
+    assert report["histories"][0]["versions"][0]["card_primary_evidence"] == {
+        "profile": "card-primary-evidence-v1",
+        "source_observation_id": reference.source_observation_id,
+        "projection_application_id": reference.projection_application_id,
+    }
+    assert "card_primary_evidence" not in ContentVersionSummary.from_version(value).model_dump()
 
 
 @pytest.mark.parametrize(
@@ -289,3 +298,32 @@ def test_frozen_card_requires_exact_paid_record_before_payload_expires(case: Cas
         case.repo.restore(before + "\n" + mutation)
 
     assert case.repo.dump() == before
+
+
+@pytest.mark.parametrize("fault", ["source", "binding"])
+def test_doctor_omits_compact_primary_refs_when_evidence_is_invalid_or_unbound(
+    case: Case, tmp_path: Path, fault: str
+) -> None:
+    pub, version = store_marked_card(case)
+    reference = version.card_primary_evidence
+    assert pub.id is not None and reference is not None, (
+        "the fixture supplies its exact original card evidence"
+    )
+    target = tmp_path / "checkpoint.db"
+    with closing(sqlite3.connect(case.path)) as source, closing(sqlite3.connect(target)) as copy:
+        source.backup(copy)
+        if fault == "source":
+            copy.execute(
+                "DELETE FROM source_observations WHERE observation_id=?",
+                (reference.source_observation_id,),
+            )
+        else:
+            copy.execute("DELETE FROM publication_content WHERE publication_id=?", (pub.id,))
+        copy.commit()
+    before = target.read_bytes()
+
+    report = audit(target, publication_id=pub.id)
+
+    assert report["status"] == ("failed" if fault == "source" else "recorded")
+    assert "card_primary_evidence" not in report["histories"][0]["versions"][0]
+    assert target.read_bytes() == before

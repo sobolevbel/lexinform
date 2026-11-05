@@ -23,3 +23,6 @@ Three immutable snapshots with 4, 4 and 6 waiting rows respectively produced ide
 default, age and timing reports before and after the change. A lifecycle test covers a
 missing source, later batch preparation and completion.
 [Legacy report parity](legacy-age-parity.json).
+
+The exact stage passed hosted CI and the relay transition, restart and timer checks.
+[Release receipt](release.json).

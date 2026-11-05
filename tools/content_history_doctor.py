@@ -52,7 +52,9 @@ class _Findings:
         self.rows.append({"code": code, "ref": ref, "level": "warning" if warning else "error"})
 
 
-def _version_metadata(version: ContentVersion, findings: _Findings) -> dict[str, Any]:
+def _version_metadata(
+    version: ContentVersion, findings: _Findings, *, validated_primary_refs: bool
+) -> dict[str, Any]:
     summary = ContentVersionSummary.from_version(version)
     for count in (
         summary.source_observation_ids_opaque_count,
@@ -62,7 +64,10 @@ def _version_metadata(version: ContentVersion, findings: _Findings) -> dict[str,
             findings.add("content_reference_format_unknown", version.content_id, warning=True)
     for _ in summary.unrecognized_labels:
         findings.add("content_label_format_unknown", version.content_id, warning=True)
-    return summary.model_dump(mode="json")
+    metadata = summary.model_dump(mode="json")
+    if validated_primary_refs and version.card_primary_evidence is not None:
+        metadata["card_primary_evidence"] = version.card_primary_evidence.model_dump(mode="json")
+    return metadata
 
 
 def _read_history(
@@ -70,9 +75,10 @@ def _read_history(
     tables: set[str],
     counts: Counter[str],
     findings: _Findings,
-) -> tuple[dict[str, ContentSnapshot], dict[str, ContentVersion]]:
+) -> tuple[dict[str, ContentSnapshot], dict[str, ContentVersion], set[str]]:
     snapshots: dict[str, ContentSnapshot] = {}
     versions: dict[str, ContentVersion] = {}
+    validated_primary_refs: set[str] = set()
     if "content_snapshots" in tables:
         counts["snapshot_rows"] = 0
         for row in db.execute("SELECT rowid AS audit_id, * FROM content_snapshots ORDER BY rowid"):
@@ -111,6 +117,11 @@ def _read_history(
             physical_id = verify_card_content(db, version, retained=True)
             if version.change_snapshot_id is None and physical_id is None:
                 findings.add("card_content_physical_unavailable", version.content_id, warning=True)
+            if (
+                version.card_primary_evidence is not None
+                and physical_id == version.root_publication_id
+            ):
+                validated_primary_refs.add(version.content_id)
         except ValueError, TypeError, RecursionError, sqlite3.Error, IndexError, KeyError:
             findings.add("invalid_card_content_history", version.content_id)
         for kind, identity in content_snapshot_refs(version):
@@ -121,7 +132,7 @@ def _read_history(
             previous = versions.get(version.previous_version_id)
             if previous is None or previous.root_publication_id != version.root_publication_id:
                 findings.add("content_predecessor_unavailable", version.content_id)
-    return snapshots, versions
+    return snapshots, versions, validated_primary_refs
 
 
 def _publication_bindings(
@@ -232,6 +243,7 @@ def _history_rows(
     findings: _Findings,
     publication_id: int | None,
     cards: dict[int, str | None],
+    validated_primary_refs: set[str],
 ) -> list[dict[str, Any]]:
     roots = sorted({value.root_publication_id for value in versions.values()})
     if publication_id is not None:
@@ -272,7 +284,11 @@ def _history_rows(
                 "confirmation_scope": "DB sent/message-ID evidence; no independent Telegram read.",
                 "versions": [
                     {
-                        **_version_metadata(version, findings),
+                        **_version_metadata(
+                            version,
+                            findings,
+                            validated_primary_refs=version.content_id in validated_primary_refs,
+                        ),
                         "content_id": version.content_id,
                         "publications": bindings.get(version.content_id, []),
                     }
@@ -298,7 +314,7 @@ def audit(database: Path, *, publication_id: int | None = None) -> dict[str, Any
         if schema >= 55 or _TABLES.intersection(tables):
             for name in missing:
                 findings.add("content_history_table_unavailable", name)
-        snapshots, versions = _read_history(db, tables, counts, findings)
+        snapshots, versions, validated_primary_refs = _read_history(db, tables, counts, findings)
         try:
             bindings = _publication_bindings(db, tables, counts, findings, snapshots, versions)
         except sqlite3.Error, IndexError, KeyError:
@@ -313,9 +329,17 @@ def audit(database: Path, *, publication_id: int | None = None) -> dict[str, Any
                     )
                 except ValueError, TypeError, RecursionError, sqlite3.Error, IndexError, KeyError:
                     cards[value.root_publication_id] = None
+        validated_primary_refs = {
+            identity
+            for identity in validated_primary_refs
+            if any(physical["available"] for physical in bindings.get(identity, ()))
+        }
         if not snapshot.unchanged():
             findings.add("database_changed_during_audit", "database")
-    histories = _history_rows(versions, bindings, findings, publication_id, cards)
+            validated_primary_refs.clear()
+    histories = _history_rows(
+        versions, bindings, findings, publication_id, cards, validated_primary_refs
+    )
     counts["errors"] = sum(row["level"] == "error" for row in findings.rows)
     counts["warnings"] = sum(row["level"] == "warning" for row in findings.rows)
     if counts["errors"]:

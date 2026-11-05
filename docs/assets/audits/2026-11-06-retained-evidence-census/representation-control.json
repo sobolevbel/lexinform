@@ -1,0 +1,18 @@
+{
+  "docx": {
+    "path": "sejm/term10/files/1759__1759-ustawa.docx",
+    "sha256": "fe27ba959d71bb3a276d4d7ff4c17c995bb3ed287c9128b6ecd55394f22192a8"
+  },
+  "docx_text_sha256": "37ea898cdb27bd7bfe68800ca6dc75fd1074cf7949397c7e5770a5a04bb55e7e",
+  "number": "1759",
+  "official_prints": {
+    "path": "sejm/snapshots/2026-10-03/term10/prints.json",
+    "sha256": "05e7b4a7105e9a6d8aff1c87293749c5c77c6bfefc6882491c8d2701b39b8938"
+  },
+  "pdf": {
+    "path": "sejm/term10/files/1759__1759.pdf",
+    "sha256": "1368d3543a416e10e82f6fee7e56ddd11dbee5a82bb85ebd5e43647ae1ddad57"
+  },
+  "pdf_text_sha256": "bcbcf0362e4b2061f40beb5bdd0b229b241a34455c5b0d4697bc5936d54cfee5",
+  "term": 10
+}
