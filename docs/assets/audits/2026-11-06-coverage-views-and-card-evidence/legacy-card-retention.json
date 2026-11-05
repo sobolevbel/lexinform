@@ -1,0 +1,17 @@
+{
+  "after_standard_retention": "not_observed",
+  "after_standard_retention_reason": "frozen_plan_unavailable",
+  "database_sha256": "93fd8769679b86b4a95f830ac48fe5330a13afe212ea6ecae6ac94ad82498f91",
+  "disposable_prune_counts": {
+    "analysis_memos": 126,
+    "batch_payloads": 1,
+    "delivery_payloads": 164
+  },
+  "double_restore_exact": true,
+  "existing_compact_binding": false,
+  "original_cycle": "recorded",
+  "physical_state_and_identity_unchanged": true,
+  "pinned_database_unchanged": true,
+  "publication_id": 258,
+  "state_sha": "13440124b6f38f1124beb9b99f35a7c8a227c08b"
+}

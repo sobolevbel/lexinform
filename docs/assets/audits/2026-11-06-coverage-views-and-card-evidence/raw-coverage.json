@@ -1,0 +1,28 @@
+{
+  "source_rows_exact": true,
+  "pins": {
+    "documents/files/300513.pdf": "3a3aba7b2ae342e7fd858c1555f635bb47f1e36646a73492660399a3a87b4998",
+    "documents/files/618466.zip": "c895aac5acdf06e9ddaacc2958b6b968189190afc0e162c9cded7cd63e79904d",
+    "documents/files/618479.docx": "5c7d60a612dd183abd4a8ab99f03f696f6e150104ee4f350454447db62ed1a77"
+  },
+  "rows": {
+    "documents/files/300513.pdf": {
+      "selection_state": "unverified",
+      "extraction_evidence": "observed_artifacts",
+      "extraction_artifact_count": 1,
+      "emitted_status": "prepared"
+    },
+    "documents/files/618466.zip": {
+      "selection_state": "unverified",
+      "extraction_evidence": "observed_artifacts",
+      "extraction_artifact_count": 1,
+      "emitted_status": "prepared"
+    },
+    "documents/files/618479.docx": {
+      "selection_state": "unverified",
+      "extraction_evidence": "observed_artifacts",
+      "extraction_artifact_count": 1,
+      "emitted_status": "prepared"
+    }
+  }
+}

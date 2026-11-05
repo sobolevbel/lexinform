@@ -11450,3 +11450,16 @@ validating the observed PDFs and saved source parents. A separate writer records
 mixed RCL receipts for the previously qualified profile. Both use the pre-existing
 selection and preparation decisions, with bounded storage and an unchanged fallback when
 evidence is unavailable. [Native replays and size checks](../assets/audits/2026-11-05-native-proposal-and-mixed-writers/report.md).
+
+<a id="j278"></a>
+
+## J278 — independent coverage views and compatible compact card evidence
+
+An opt-in replay report distinguishes physical extraction from the source-selection
+decision and actual prepared ranges. It preserves the old output on the tested profiles.
+
+A new compact-card reader verifies optional references to existing source and applied
+result evidence. The synthetic example survives the ordinary cleanup paths. The existing
+writer and legacy cards are unchanged. The two-snapshot cycle inventory retains the one
+proved 3281 cycle and records missing links for the next candidates.
+[Coverage and retention qualification](../assets/audits/2026-11-06-coverage-views-and-card-evidence/report.md).

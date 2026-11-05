@@ -236,6 +236,12 @@ def _parents(
             )
 
 
+def validate_primary_receipt_parents(
+    connection: sqlite3.Connection, receipt: PrimaryInputReceipt
+) -> None:
+    _parents(connection, receipt)
+
+
 def validate_loose_rcl_intent(connection: sqlite3.Connection, intent: BatchIntent) -> None:
     if not isinstance(intent.meta.prepared_input_receipt, LooseRclInputReceipt):
         return

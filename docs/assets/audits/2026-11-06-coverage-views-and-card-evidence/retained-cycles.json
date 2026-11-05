@@ -1,0 +1,702 @@
+{
+  "13440124b6f38f1124beb9b99f35a7c8a227c08b": {
+    "alternate_evidence": [
+      {
+        "analysis_selection_links": [],
+        "applications": [
+          {
+            "generation": 0,
+            "id": 7,
+            "phase": "collection",
+            "projected_generation": null,
+            "reason": "current_generation"
+          },
+          {
+            "generation": 0,
+            "id": 10,
+            "phase": "projection",
+            "projected_generation": null,
+            "reason": "batch_result"
+          }
+        ],
+        "item_consumed": true,
+        "matching_source_observations": [
+          [
+            "prefilter",
+            1
+          ]
+        ],
+        "number": "RCL/12416153",
+        "paid_result_id": "result-v1:1cc652dfa4d7e78687b70c378641ff4c03ef5a092324c0adb67bd38f6e454600",
+        "publications": [
+          {
+            "continuation_ids": [],
+            "continuation_parent": null,
+            "exact_frozen_paid_record": true,
+            "frozen_change_ref": false,
+            "frozen_generation": 1,
+            "id": 225,
+            "kind": "new_bill",
+            "message_id_known": true,
+            "status": "sent"
+          }
+        ],
+        "purpose": "analysis",
+        "queued_at_known": false,
+        "receipt_profile": null,
+        "request_hash_matches": true
+      },
+      {
+        "analysis_selection_links": [
+          {
+            "artifact_refs": 4,
+            "extraction_refs": 3,
+            "observation_id": "source-observation-v1:017503b84cee36b6cc993b9ec3f92aa79a5352784af261aab89a7a2bf33e4d95",
+            "same_fitted_parts": true,
+            "selection_id": "selection-v1:238b126a4ee6e7ac2a79617623bd586415913145d2d0b80580c798e86ed06209"
+          }
+        ],
+        "applications": [
+          {
+            "generation": 0,
+            "id": 12,
+            "phase": "collection",
+            "projected_generation": null,
+            "reason": "current_generation"
+          },
+          {
+            "generation": 0,
+            "id": 14,
+            "phase": "projection",
+            "projected_generation": null,
+            "reason": "batch_result"
+          }
+        ],
+        "item_consumed": true,
+        "matching_source_observations": [
+          [
+            "analysis",
+            1
+          ],
+          [
+            "prefilter",
+            1
+          ]
+        ],
+        "number": "RCL/12408601",
+        "paid_result_id": "result-v1:7abf53b9cf9baa9408a529918c05ad0692155a5eed622d8b4820582346da4f4d",
+        "publications": [
+          {
+            "continuation_ids": [
+              238
+            ],
+            "continuation_parent": null,
+            "exact_frozen_paid_record": true,
+            "frozen_change_ref": false,
+            "frozen_generation": 1,
+            "id": 237,
+            "kind": "new_bill",
+            "message_id_known": true,
+            "status": "sent"
+          }
+        ],
+        "purpose": "analysis",
+        "queued_at_known": false,
+        "receipt_profile": null,
+        "request_hash_matches": true
+      },
+      {
+        "analysis_selection_links": [
+          {
+            "artifact_refs": 38,
+            "extraction_refs": 2,
+            "observation_id": "source-observation-v1:b4b395443d19cbbc396e01c8b157fa59feb4cac7fdd49900d44ed1b4b5abea2c",
+            "same_fitted_parts": true,
+            "selection_id": "selection-v1:3f551e0a3d440cbb5c9005a195d4c2df28ad395435f760bc453a7c35613eb8fb"
+          }
+        ],
+        "applications": [
+          {
+            "generation": 0,
+            "id": 21,
+            "phase": "collection",
+            "projected_generation": null,
+            "reason": "current_generation"
+          },
+          {
+            "generation": null,
+            "id": 23,
+            "phase": "projection",
+            "projected_generation": null,
+            "reason": "retained_result"
+          },
+          {
+            "generation": 0,
+            "id": 24,
+            "phase": "projection",
+            "projected_generation": 1,
+            "reason": "retained_result"
+          }
+        ],
+        "item_consumed": true,
+        "matching_source_observations": [
+          [
+            "analysis",
+            1
+          ]
+        ],
+        "number": "RCL/12407350",
+        "paid_result_id": "result-v1:f0ed8c1c99f5a7df7c7d33c9f228da785d88b9b607c5778d19659a714c0cced4",
+        "publications": [
+          {
+            "continuation_ids": [],
+            "continuation_parent": null,
+            "exact_frozen_paid_record": true,
+            "frozen_change_ref": false,
+            "frozen_generation": 1,
+            "id": 264,
+            "kind": "new_bill",
+            "message_id_known": true,
+            "status": "sent"
+          }
+        ],
+        "purpose": "reanalysis",
+        "queued_at_known": true,
+        "receipt_profile": null,
+        "request_hash_matches": true
+      },
+      {
+        "analysis_selection_links": [
+          {
+            "artifact_refs": 1,
+            "extraction_refs": 1,
+            "observation_id": "source-observation-v1:803558eddabc231b20a7806879da2634a5f7f3d455584b591cb57d8cef8ca9ad",
+            "same_fitted_parts": true,
+            "selection_id": "selection-v1:4f530e9074b07b6391a10c20ee80657b0fe4f229c35f383c4e36eec132de58a3"
+          }
+        ],
+        "applications": [
+          {
+            "generation": 2,
+            "id": 27,
+            "phase": "collection",
+            "projected_generation": null,
+            "reason": "current_generation"
+          },
+          {
+            "generation": 2,
+            "id": 28,
+            "phase": "projection",
+            "projected_generation": 3,
+            "reason": "batch_result"
+          }
+        ],
+        "item_consumed": true,
+        "matching_source_observations": [
+          [
+            "analysis",
+            1
+          ]
+        ],
+        "number": "3231",
+        "paid_result_id": "result-v1:c70ea61d48af19826e0a9909ef21fb44b5dc0ac082e9386348a75c730870200f",
+        "publications": [
+          {
+            "continuation_ids": [],
+            "continuation_parent": null,
+            "exact_frozen_paid_record": false,
+            "frozen_change_ref": false,
+            "frozen_generation": 2,
+            "id": 277,
+            "kind": "status_update",
+            "message_id_known": false,
+            "status": "queued"
+          },
+          {
+            "continuation_ids": [],
+            "continuation_parent": 156,
+            "exact_frozen_paid_record": false,
+            "frozen_change_ref": false,
+            "frozen_generation": 3,
+            "id": 280,
+            "kind": "message_part",
+            "message_id_known": true,
+            "status": "sent"
+          }
+        ],
+        "purpose": "reanalysis",
+        "queued_at_known": true,
+        "receipt_profile": "primary-single-part-text-v1",
+        "request_hash_matches": true
+      },
+      {
+        "analysis_selection_links": [
+          {
+            "artifact_refs": 1,
+            "extraction_refs": 1,
+            "observation_id": "source-observation-v1:0192d67603f879952b684f0f7a6712bd7b00f8507960db031633df324d1e6442",
+            "same_fitted_parts": false,
+            "selection_id": "selection-v1:f140a546569f4f561678e69cd77562269f155d0056a123706eedde505261cad6"
+          }
+        ],
+        "applications": [
+          {
+            "generation": null,
+            "id": 11,
+            "phase": "projection",
+            "projected_generation": null,
+            "reason": "retained_result"
+          }
+        ],
+        "item_consumed": true,
+        "matching_source_observations": [
+          [
+            "analysis",
+            1
+          ]
+        ],
+        "number": "3146",
+        "paid_result_id": "result-v1:ac61beabf382607e4fb057cd3b70531f02a44fc1083a25df16b114834ab6c2b8",
+        "publications": [
+          {
+            "continuation_ids": [],
+            "continuation_parent": null,
+            "exact_frozen_paid_record": false,
+            "frozen_change_ref": true,
+            "frozen_generation": 9,
+            "id": 231,
+            "kind": "status_update",
+            "message_id_known": true,
+            "status": "sent"
+          }
+        ],
+        "purpose": "amendments",
+        "queued_at_known": true,
+        "receipt_profile": null,
+        "request_hash_matches": true
+      },
+      {
+        "analysis_selection_links": [
+          {
+            "artifact_refs": 1,
+            "extraction_refs": 1,
+            "observation_id": "source-observation-v1:73a2e1ab3cd27c48080c6de312180ad325c68e2f4439b95d5d6cc4827f6c0ff6",
+            "same_fitted_parts": false,
+            "selection_id": "selection-v1:c1c041571510368e5b17efddcf7ac59061638ea36ddd0c077fff379ece2fba0c"
+          }
+        ],
+        "applications": [
+          {
+            "generation": null,
+            "id": 16,
+            "phase": "projection",
+            "projected_generation": null,
+            "reason": "retained_result"
+          }
+        ],
+        "item_consumed": true,
+        "matching_source_observations": [
+          [
+            "analysis",
+            1
+          ]
+        ],
+        "number": "3205",
+        "paid_result_id": "result-v1:b04bcddd31fe7e80800a409a160bc8b2ec34b06ab0e68157a2b7bbe925d7c79e",
+        "publications": [
+          {
+            "continuation_ids": [],
+            "continuation_parent": null,
+            "exact_frozen_paid_record": false,
+            "frozen_change_ref": true,
+            "frozen_generation": 3,
+            "id": 240,
+            "kind": "status_update",
+            "message_id_known": true,
+            "status": "sent"
+          }
+        ],
+        "purpose": "supplement",
+        "queued_at_known": true,
+        "receipt_profile": null,
+        "request_hash_matches": true
+      }
+    ],
+    "card_audit": [
+      {
+        "number": "WPL/UD491",
+        "publication_id": 217,
+        "reason": "consumed_projection_unavailable",
+        "status": "not_observed",
+        "term": 10
+      },
+      {
+        "number": "RCL/12416153",
+        "publication_id": 225,
+        "reason": "consumed_projection_unavailable",
+        "status": "not_observed",
+        "term": 10
+      },
+      {
+        "number": "WPL/UD492",
+        "publication_id": 226,
+        "reason": "consumed_projection_unavailable",
+        "status": "not_observed",
+        "term": 10
+      },
+      {
+        "number": "RCL/12408601",
+        "publication_id": 237,
+        "reason": "publication_outside_direct_original_scope",
+        "status": "not_observed",
+        "term": 10
+      },
+      {
+        "number": "RPW/36403/2026",
+        "publication_id": 239,
+        "reason": "consumed_projection_unavailable",
+        "status": "not_observed",
+        "term": 10
+      },
+      {
+        "number": "3281",
+        "publication_id": 258,
+        "reason": "exact_retained_cycle",
+        "status": "recorded",
+        "term": 10
+      },
+      {
+        "number": "RCL/12407350",
+        "publication_id": 264,
+        "reason": "prepared_receipt_unavailable",
+        "status": "not_observed",
+        "term": 10
+      }
+    ],
+    "database_sha256": "93fd8769679b86b4a95f830ac48fe5330a13afe212ea6ecae6ac94ad82498f91",
+    "population": {
+      "frozen_computation_refs": 7,
+      "frozen_plans": 23,
+      "sent_cards": 50
+    },
+    "unchanged": true
+  },
+  "6937d727a64f5369ab8f5a51ff9dcdab9d58fd28": {
+    "alternate_evidence": [
+      {
+        "analysis_selection_links": [],
+        "applications": [
+          {
+            "generation": 0,
+            "id": 7,
+            "phase": "collection",
+            "projected_generation": null,
+            "reason": "current_generation"
+          },
+          {
+            "generation": 0,
+            "id": 10,
+            "phase": "projection",
+            "projected_generation": null,
+            "reason": "batch_result"
+          }
+        ],
+        "item_consumed": true,
+        "matching_source_observations": [
+          [
+            "prefilter",
+            1
+          ]
+        ],
+        "number": "RCL/12416153",
+        "paid_result_id": "result-v1:1cc652dfa4d7e78687b70c378641ff4c03ef5a092324c0adb67bd38f6e454600",
+        "publications": [
+          {
+            "continuation_ids": [],
+            "continuation_parent": null,
+            "exact_frozen_paid_record": true,
+            "frozen_change_ref": false,
+            "frozen_generation": 1,
+            "id": 225,
+            "kind": "new_bill",
+            "message_id_known": true,
+            "status": "sent"
+          }
+        ],
+        "purpose": "analysis",
+        "queued_at_known": false,
+        "receipt_profile": null,
+        "request_hash_matches": true
+      },
+      {
+        "analysis_selection_links": [
+          {
+            "artifact_refs": 4,
+            "extraction_refs": 3,
+            "observation_id": "source-observation-v1:017503b84cee36b6cc993b9ec3f92aa79a5352784af261aab89a7a2bf33e4d95",
+            "same_fitted_parts": true,
+            "selection_id": "selection-v1:238b126a4ee6e7ac2a79617623bd586415913145d2d0b80580c798e86ed06209"
+          }
+        ],
+        "applications": [
+          {
+            "generation": 0,
+            "id": 12,
+            "phase": "collection",
+            "projected_generation": null,
+            "reason": "current_generation"
+          },
+          {
+            "generation": 0,
+            "id": 14,
+            "phase": "projection",
+            "projected_generation": null,
+            "reason": "batch_result"
+          }
+        ],
+        "item_consumed": true,
+        "matching_source_observations": [
+          [
+            "analysis",
+            1
+          ],
+          [
+            "prefilter",
+            1
+          ]
+        ],
+        "number": "RCL/12408601",
+        "paid_result_id": "result-v1:7abf53b9cf9baa9408a529918c05ad0692155a5eed622d8b4820582346da4f4d",
+        "publications": [
+          {
+            "continuation_ids": [
+              238
+            ],
+            "continuation_parent": null,
+            "exact_frozen_paid_record": true,
+            "frozen_change_ref": false,
+            "frozen_generation": 1,
+            "id": 237,
+            "kind": "new_bill",
+            "message_id_known": true,
+            "status": "sent"
+          }
+        ],
+        "purpose": "analysis",
+        "queued_at_known": false,
+        "receipt_profile": null,
+        "request_hash_matches": true
+      },
+      {
+        "analysis_selection_links": [
+          {
+            "artifact_refs": 38,
+            "extraction_refs": 2,
+            "observation_id": "source-observation-v1:b4b395443d19cbbc396e01c8b157fa59feb4cac7fdd49900d44ed1b4b5abea2c",
+            "same_fitted_parts": true,
+            "selection_id": "selection-v1:3f551e0a3d440cbb5c9005a195d4c2df28ad395435f760bc453a7c35613eb8fb"
+          }
+        ],
+        "applications": [
+          {
+            "generation": 0,
+            "id": 21,
+            "phase": "collection",
+            "projected_generation": null,
+            "reason": "current_generation"
+          },
+          {
+            "generation": null,
+            "id": 23,
+            "phase": "projection",
+            "projected_generation": null,
+            "reason": "retained_result"
+          },
+          {
+            "generation": 0,
+            "id": 24,
+            "phase": "projection",
+            "projected_generation": 1,
+            "reason": "retained_result"
+          }
+        ],
+        "item_consumed": true,
+        "matching_source_observations": [
+          [
+            "analysis",
+            1
+          ]
+        ],
+        "number": "RCL/12407350",
+        "paid_result_id": "result-v1:f0ed8c1c99f5a7df7c7d33c9f228da785d88b9b607c5778d19659a714c0cced4",
+        "publications": [
+          {
+            "continuation_ids": [],
+            "continuation_parent": null,
+            "exact_frozen_paid_record": true,
+            "frozen_change_ref": false,
+            "frozen_generation": 1,
+            "id": 264,
+            "kind": "new_bill",
+            "message_id_known": true,
+            "status": "sent"
+          }
+        ],
+        "purpose": "reanalysis",
+        "queued_at_known": true,
+        "receipt_profile": null,
+        "request_hash_matches": true
+      },
+      {
+        "analysis_selection_links": [
+          {
+            "artifact_refs": 1,
+            "extraction_refs": 1,
+            "observation_id": "source-observation-v1:0192d67603f879952b684f0f7a6712bd7b00f8507960db031633df324d1e6442",
+            "same_fitted_parts": false,
+            "selection_id": "selection-v1:f140a546569f4f561678e69cd77562269f155d0056a123706eedde505261cad6"
+          }
+        ],
+        "applications": [
+          {
+            "generation": null,
+            "id": 11,
+            "phase": "projection",
+            "projected_generation": null,
+            "reason": "retained_result"
+          }
+        ],
+        "item_consumed": true,
+        "matching_source_observations": [
+          [
+            "analysis",
+            1
+          ]
+        ],
+        "number": "3146",
+        "paid_result_id": "result-v1:ac61beabf382607e4fb057cd3b70531f02a44fc1083a25df16b114834ab6c2b8",
+        "publications": [
+          {
+            "continuation_ids": [],
+            "continuation_parent": null,
+            "exact_frozen_paid_record": false,
+            "frozen_change_ref": true,
+            "frozen_generation": 9,
+            "id": 231,
+            "kind": "status_update",
+            "message_id_known": true,
+            "status": "sent"
+          }
+        ],
+        "purpose": "amendments",
+        "queued_at_known": true,
+        "receipt_profile": null,
+        "request_hash_matches": true
+      },
+      {
+        "analysis_selection_links": [
+          {
+            "artifact_refs": 1,
+            "extraction_refs": 1,
+            "observation_id": "source-observation-v1:73a2e1ab3cd27c48080c6de312180ad325c68e2f4439b95d5d6cc4827f6c0ff6",
+            "same_fitted_parts": false,
+            "selection_id": "selection-v1:c1c041571510368e5b17efddcf7ac59061638ea36ddd0c077fff379ece2fba0c"
+          }
+        ],
+        "applications": [
+          {
+            "generation": null,
+            "id": 16,
+            "phase": "projection",
+            "projected_generation": null,
+            "reason": "retained_result"
+          }
+        ],
+        "item_consumed": true,
+        "matching_source_observations": [
+          [
+            "analysis",
+            1
+          ]
+        ],
+        "number": "3205",
+        "paid_result_id": "result-v1:b04bcddd31fe7e80800a409a160bc8b2ec34b06ab0e68157a2b7bbe925d7c79e",
+        "publications": [
+          {
+            "continuation_ids": [],
+            "continuation_parent": null,
+            "exact_frozen_paid_record": false,
+            "frozen_change_ref": true,
+            "frozen_generation": 3,
+            "id": 240,
+            "kind": "status_update",
+            "message_id_known": true,
+            "status": "sent"
+          }
+        ],
+        "purpose": "supplement",
+        "queued_at_known": true,
+        "receipt_profile": null,
+        "request_hash_matches": true
+      }
+    ],
+    "card_audit": [
+      {
+        "number": "WPL/UD491",
+        "publication_id": 217,
+        "reason": "consumed_projection_unavailable",
+        "status": "not_observed",
+        "term": 10
+      },
+      {
+        "number": "RCL/12416153",
+        "publication_id": 225,
+        "reason": "consumed_projection_unavailable",
+        "status": "not_observed",
+        "term": 10
+      },
+      {
+        "number": "WPL/UD492",
+        "publication_id": 226,
+        "reason": "consumed_projection_unavailable",
+        "status": "not_observed",
+        "term": 10
+      },
+      {
+        "number": "RCL/12408601",
+        "publication_id": 237,
+        "reason": "publication_outside_direct_original_scope",
+        "status": "not_observed",
+        "term": 10
+      },
+      {
+        "number": "RPW/36403/2026",
+        "publication_id": 239,
+        "reason": "consumed_projection_unavailable",
+        "status": "not_observed",
+        "term": 10
+      },
+      {
+        "number": "3281",
+        "publication_id": 258,
+        "reason": "exact_retained_cycle",
+        "status": "recorded",
+        "term": 10
+      },
+      {
+        "number": "RCL/12407350",
+        "publication_id": 264,
+        "reason": "prepared_receipt_unavailable",
+        "status": "not_observed",
+        "term": 10
+      }
+    ],
+    "database_sha256": "898a830c574eb23c1ff40b26b151823b2548ea7a303d71e8011b794da65dcba9",
+    "population": {
+      "frozen_computation_refs": 7,
+      "frozen_plans": 23,
+      "sent_cards": 50
+    },
+    "unchanged": true
+  }
+}

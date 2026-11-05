@@ -1,10 +1,13 @@
 """Read known card-history rows without turning missing physical evidence into confirmation."""
 
 import sqlite3
+from datetime import datetime
 from typing import Literal
 
+from lexinform.adapters.computation_history import read_result_application
 from lexinform.adapters.content_applications import verify_content_applications
 from lexinform.adapters.content_source_refs import ContentSourceRows
+from lexinform.adapters.input_receipts import validate_primary_receipt_parents
 from lexinform.content_versions import (
     card_confirmation_matches,
     card_physical_matches,
@@ -15,15 +18,20 @@ from lexinform.content_versions import (
 )
 from lexinform.json_storage import read_json
 from lexinform.models import (
+    AnalysisRecord,
+    BatchItemMeta,
     Bill,
     ContentSnapshot,
     ContentVersion,
     DeliveryPlan,
+    PrimaryInputReceipt,
     Publication,
     PublicationKind,
     PublicationStatus,
 )
-from lexinform.models.content import card_bill_snapshot
+from lexinform.models.content import CardPrimaryEvidence, card_bill_snapshot
+from lexinform.models.primary_projections import PRIMARY_USAGE_FIELDS
+from lexinform.primary_projections import primary_record_matches
 
 
 def _query(
@@ -79,6 +87,132 @@ def read_content_publication(row: sqlite3.Row) -> Publication:
     )
 
 
+def _verify_card_primary_evidence(
+    connection: sqlite3.Connection,
+    reference: CardPrimaryEvidence,
+    version: ContentVersion,
+    bill: Bill,
+    root: Publication | None,
+) -> None:
+    projection_row = _query(
+        connection,
+        "SELECT * FROM result_applications WHERE id=?",
+        (reference.projection_application_id,),
+    ).fetchone()
+    if projection_row is None:
+        raise ValueError("card_primary_projection_missing")
+    projection = read_result_application(projection_row)
+    if (
+        (projection.term, projection.number) != (bill.term, bill.number)
+        or projection.phase != "projection"
+        or projection.target is not None
+        or projection.reason != "batch_result"
+        or projection.projected_generation != bill.analysis_generation
+        or root is not None
+        and (root.term, root.number) != (bill.term, bill.number)
+    ):
+        raise ValueError("card_primary_projection_scope")
+    reader = ContentSourceRows(connection)
+    paid = reader.get_computation_result(projection.result_id)
+    if (
+        paid is None
+        or not isinstance(paid.record, AnalysisRecord)
+        or paid.validation != "validated"
+        or paid.purpose not in ("analysis", "reanalysis")
+        or (paid.term, paid.number, paid.generation)
+        != (projection.term, projection.number, projection.generation)
+        or paid.request_sha256 is None
+        or paid.input_binding is None
+        or (paid.input_binding.term, paid.input_binding.number) != (paid.term, paid.number)
+    ):
+        raise ValueError("card_primary_paid_scope")
+    if root is not None and root.delivery is not None:
+        rendered_bill = Bill.model_validate(read_json(root.delivery.bill_json))
+        record = rendered_bill.analysis
+        if (
+            record is None
+            or not primary_record_matches(record, paid)
+            or record.model_dump(exclude=set(PRIMARY_USAGE_FIELDS))
+            != paid.record.model_dump(exclude=set(PRIMARY_USAGE_FIELDS))
+        ):
+            raise ValueError("card_primary_render_result_mismatch")
+    item = reader.get_consumed_primary_input(
+        paid.provider, paid.batch_id, paid.custom_id, bill.analysis_generation
+    )
+    if item is None or item.consumed_at is None or not isinstance(item.meta, BatchItemMeta):
+        raise ValueError("card_primary_item_missing")
+    meta = item.meta
+    receipt = meta.prepared_input_receipt
+    if (
+        (item.term, item.number, item.call_kind) != (paid.term, paid.number, paid.purpose)
+        or meta.input_binding != paid.input_binding
+        or meta.generation != paid.generation
+        or meta.queued_at is None
+        or not isinstance(receipt, PrimaryInputReceipt)
+        or receipt.source_selection_id is None
+        or receipt.artifact_sha256 is None
+        or receipt.extraction_id is None
+        or not meta.source_url
+        or receipt.request_sha256 != paid.request_sha256
+        or meta.request_sha256 != paid.request_sha256
+        or meta.input_chars != receipt.text_chars
+        or paid.record.input_chars != receipt.text_chars
+    ):
+        raise ValueError("card_primary_item_scope")
+    source = reader.get_source_observation(reference.source_observation_id)
+    selection = reader.get_document_selection(receipt.source_selection_id)
+    if (
+        source is None
+        or (source.term, source.number, source.purpose) != (paid.term, paid.number, "analysis")
+        or source.selection_id != receipt.source_selection_id
+        or (source.document.kind, source.document.url) != (meta.source_kind, meta.source_url)
+        or selection is None
+        or len(selection.selection.parts) != 1
+        or selection.selection.parts[0].url != meta.source_url
+        or selection.selection.parts != meta.selection.without_text().parts
+    ):
+        raise ValueError("card_primary_source_scope")
+    validate_primary_receipt_parents(connection, receipt)
+    collections = _query(
+        connection,
+        "SELECT * FROM result_applications WHERE result_id=? AND term=? AND number=?"
+        " AND generation=? AND phase='collection' LIMIT 2",
+        (paid.result_id, paid.term, paid.number, paid.generation),
+    ).fetchall()
+    if len(collections) != 1:
+        raise ValueError("card_primary_collection_missing")
+    collection = read_result_application(collections[0])
+    if collection.target is not None or (collection.outcome, collection.reason) != (
+        "ready",
+        "current_generation",
+    ):
+        raise ValueError("card_primary_collection_scope")
+    batch = _query(
+        connection,
+        "SELECT submitted_at FROM llm_batches WHERE batch_id=? AND provider=?",
+        (paid.batch_id, paid.provider),
+    ).fetchone()
+    if batch is None or not batch["submitted_at"]:
+        raise ValueError("card_primary_batch_missing")
+    chronology = (
+        source.recorded_at,
+        meta.queued_at,
+        datetime.fromisoformat(batch["submitted_at"]),
+        paid.collected_at,
+        collection.created_at,
+        projection.created_at,
+        *((root.created_at,) if root is not None else ()),
+        version.recorded_at,
+        *((root.sent_at,) if root is not None and root.sent_at is not None else ()),
+    )
+    if (
+        any(value.utcoffset() is None for value in (*chronology, item.consumed_at))
+        or chronology != tuple(sorted(chronology))
+        or not paid.collected_at <= item.consumed_at <= projection.created_at
+    ):
+        raise ValueError("card_primary_chronology")
+
+
 def _verify_card_content(
     connection: sqlite3.Connection, value: ContentVersion, *, retained: bool
 ) -> int | None:
@@ -96,7 +230,7 @@ def _verify_card_content(
             raise ValueError("card_content_snapshot_missing")
         snapshots[identity] = snapshot
     context = snapshots[value.bill_snapshot_id]
-    Bill.model_validate(read_json(context.payload_json))
+    bill = Bill.model_validate(read_json(context.payload_json))
     if card_bill_snapshot(context.payload_json) != context:
         raise ValueError("card_content_context_profile")
     semantic = DeliveryPlan.model_validate(
@@ -111,6 +245,10 @@ def _verify_card_content(
         and semantic.edit_message_id != root.message_id
     ):
         raise ValueError("card_content_root_scope")
+    if value.card_primary_evidence is not None:
+        if semantic.reply_to is not None or semantic.update_group or semantic.sitting_group:
+            raise ValueError("card_primary_plan_scope")
+        _verify_card_primary_evidence(connection, value.card_primary_evidence, value, bill, root)
     previous_ids: set[int] = set()
     if value.previous_version_id is not None:
         row = _query(

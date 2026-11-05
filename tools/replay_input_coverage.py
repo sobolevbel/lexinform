@@ -3,6 +3,7 @@
 import argparse
 import json
 import logging
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Literal
 
@@ -13,7 +14,12 @@ from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.document_selection import bill_selection, selection_for_input
 from lexinform.keywords import KeywordPrefilter
 from lexinform.law_digest import law_digest
-from lexinform.models import DocumentSelection, ExtractionResult, PreparedTextInput
+from lexinform.models import (
+    DocumentSelection,
+    DocumentSelectionRecord,
+    ExtractionResult,
+    PreparedTextInput,
+)
 from lexinform.prepared_input import prepared_text_input
 from lexinform.sections import PAGE_BREAK, TextBudget, trim_print
 from lexinform.text_projection import TextProjection
@@ -23,15 +29,81 @@ from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 from tools.replay_pdf_pages import PdfReplayManifest
 
 
+def coverage_views(
+    selected: DocumentSelection,
+    *,
+    extractions: tuple[ExtractionResult, ...] = (),
+    inputs: Mapping[str, PreparedTextInput] | None = None,
+) -> dict[str, Any]:
+    """Report independent physical, selection and emitted-text evidence for one replay."""
+    if any(span.stage == "analysis" for span in selected.coverage):
+        raise ValueError("Coverage views require the selection before input fitting")
+    selection_id = DocumentSelectionRecord.from_selection(selected).selection_id
+    emitted: dict[str, Any] = {}
+    for name, manifest in (inputs or {}).items():
+        if manifest.source_selection_id != selection_id:
+            raise ValueError("Prepared coverage differs from its source selection")
+        chars = {"source": 0, "generated": 0, "unknown": 0}
+        copied_chars: dict[int, int] = {}
+        for segment in manifest.segments:
+            size = segment.end - segment.start
+            chars[segment.origin] += size
+            if segment.part_index is not None:
+                index = segment.part_index
+                copied_chars[index] = copied_chars.get(index, 0) + size
+        emitted[name] = {
+            "input_id": manifest.input_id,
+            "mapping": manifest.mapping,
+            "coordinates": manifest.coordinates,
+            "text_chars": manifest.text_chars,
+            "chars_by_origin": chars,
+            "copied_chars_by_part": [
+                {
+                    "part_index": index,
+                    "role": manifest.parts[index].role,
+                    "chars": copied_chars[index],
+                }
+                for index in sorted(copied_chars)
+            ],
+        }
+    status = "unknown" if inputs is None else "prepared" if emitted else "not_prepared"
+    return {
+        "extraction": {
+            "evidence": "observed_artifacts" if extractions else "unknown",
+            "artifacts": [
+                {
+                    "result_id": item.result_id,
+                    "artifact_sha256": item.artifact_sha256,
+                    "physical_part_count": item.physical_part_count,
+                    "selected_part_count": item.selected_part_count,
+                    "omitted_selected_parts": item.omitted_selected_parts,
+                    "completeness": item.completeness,
+                }
+                for item in extractions
+            ],
+        },
+        "selection": {
+            "selection_id": selection_id,
+            "state": selected.state,
+            "completeness": list(selected.completeness),
+            "limitations": list(selected.limitations),
+        },
+        "emitted": {"status": status, "variants": emitted},
+    }
+
+
 def snapshot(
     data: bytes,
     *,
     mapped: bool,
     prepared_manifest: bool = False,
     extraction_manifest: bool = False,
+    include_coverage_views: bool = False,
 ) -> dict[str, Any]:
     if prepared_manifest and not mapped:
         raise ValueError("Prepared manifests require mapped replay")
+    if include_coverage_views and not mapped:
+        raise ValueError("Coverage views require mapped replay")
     reader = DocumentTextExtractor(
         PypdfTextExtractor(),
         DocxTextExtractor(),
@@ -39,7 +111,11 @@ def snapshot(
         max_member_bytes=32_000_000,
         max_part_chars=400_000,
     )
-    provenance = reader.extract_document_with_provenance(data) if extraction_manifest else None
+    provenance = (
+        reader.extract_document_with_provenance(data)
+        if extraction_manifest or include_coverage_views
+        else None
+    )
     extracted = provenance.document if provenance is not None else reader.extract_document(data)
     selected = bill_selection(extracted.selection, source_basis=())
     prepared = trim_print(extracted.text)
@@ -120,18 +196,26 @@ def snapshot(
         },
         "mapping": mapping,
     }
-    if prepared_manifest:
-        result["prepared_inputs"] = {
-            name: check_prepared_input(
-                prepared_text_input(
-                    selected, text, projection=projections.get(name) if assembly_matches else None
-                ),
-                selected,
-                text,
+    if prepared_manifest or include_coverage_views:
+        manifests = {
+            name: prepared_text_input(
+                selected, text, projection=projections.get(name) if assembly_matches else None
             )
             for name, text in variants.items()
         }
-    if provenance is not None:
+        checked = {
+            name: check_prepared_input(manifest, selected, variants[name])
+            for name, manifest in manifests.items()
+        }
+        if prepared_manifest:
+            result["prepared_inputs"] = checked
+        if include_coverage_views:
+            result["coverage_views"] = coverage_views(
+                selected,
+                extractions=(provenance.result,) if provenance is not None else (),
+                inputs=manifests,
+            )
+    if provenance is not None and extraction_manifest:
         encoded = provenance.result.model_dump_json()
         restored = ExtractionResult.model_validate_json(encoded)
         if restored != provenance.result or restored.result_id != provenance.result.result_id:
@@ -204,9 +288,12 @@ def run(
     reference_sha256: str | None = None,
     prepared_manifest: bool = False,
     extraction_manifest: bool = False,
+    include_coverage_views: bool = False,
 ) -> int:
     if prepared_manifest and mode != "compare":
         raise ValueError("Prepared manifests require mapped compare mode")
+    if include_coverage_views and mode != "compare":
+        raise ValueError("Coverage views require mapped compare mode")
     if extraction_manifest and mode != "compare":
         raise ValueError("Extraction manifests require pinned compare mode")
     root, target = corpus.resolve(strict=True), output.resolve()
@@ -285,6 +372,7 @@ def run(
                     mapped=mode == "compare",
                     prepared_manifest=prepared_manifest,
                     extraction_manifest=extraction_manifest,
+                    include_coverage_views=include_coverage_views,
                 )
             except Exception as exc:
                 result["errors"][name] = f"{type(exc).__name__}: {exc}"
@@ -327,6 +415,7 @@ def main() -> None:
     parser.add_argument("--reference-sha256")
     parser.add_argument("--prepared-manifest", action="store_true")
     parser.add_argument("--extraction-manifest", action="store_true")
+    parser.add_argument("--coverage-views", action="store_true")
     args = parser.parse_args()
     logging.basicConfig(level=logging.ERROR)
     raise SystemExit(
@@ -341,6 +430,7 @@ def main() -> None:
             reference_sha256=args.reference_sha256,
             prepared_manifest=args.prepared_manifest,
             extraction_manifest=args.extraction_manifest,
+            include_coverage_views=args.coverage_views,
         )
     )
 

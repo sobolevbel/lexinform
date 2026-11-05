@@ -51,6 +51,14 @@ def card_bill_snapshot(raw: str) -> ContentSnapshot:
     return editorial_bill_snapshot(continuation_snapshot(Bill.model_validate(read_json(raw))))
 
 
+class CardPrimaryEvidence(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    profile: Literal["card-primary-evidence-v1"] = "card-primary-evidence-v1"
+    projection_application_id: int = Field(gt=0, lt=2**63, strict=True)
+    source_observation_id: str = Field(pattern=r"^source-observation-v1:[0-9a-f]{64}$")
+
+
 class ContentVersion(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -70,6 +78,9 @@ class ContentVersion(BaseModel):
     formatter_version: str | None = Field(default=None, min_length=1)
     source_observation_ids: tuple[str, ...] = ()
     card_context_profile: Literal["continuation-v1"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    card_primary_evidence: CardPrimaryEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
@@ -106,6 +117,12 @@ class ContentVersion(BaseModel):
             or self.formatter_version is None
         ):
             raise ValueError("Card content requires a frozen render without a change event")
+        if self.card_primary_evidence is not None and (
+            self.card_context_profile != "continuation-v1"
+            or self.change_snapshot_id is not None
+            or self.reason != "original"
+        ):
+            raise ValueError("Primary card evidence requires an original compact card")
         if self.card_context_profile is not None and self.change_snapshot_id is not None:
             raise ValueError("Compact card context cannot describe an amendment")
         if self.reason == "card_revision" and self.change_snapshot_id is not None:

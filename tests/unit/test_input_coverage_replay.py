@@ -7,8 +7,9 @@ import pytest
 from tools import replay_input_coverage
 from tools.replay_pdf_pages import PdfReplayInput, PdfReplayManifest
 
-from lexinform.models import PreparedTextInput
-from lexinform.sections import BudgetedText, TextBudget
+from lexinform.models import DocumentPart, DocumentSelection, PreparedTextInput
+from lexinform.prepared_input import prepared_text_input
+from lexinform.sections import PAGE_BREAK, BudgetedText, TextBudget
 from lexinform.text_projection import SourcePiece, project_pieces
 from tests.conftest import FIXTURES
 from tests.unit.test_physical_extraction import archive, docx
@@ -141,6 +142,7 @@ def test_optional_prepared_manifests_keep_every_existing_replay_field(tmp_path: 
             reference=before,
             reference_sha256=hashlib.sha256(before.read_bytes()).hexdigest(),
             prepared_manifest=True,
+            include_coverage_views=True,
         )
         == 0
     )
@@ -148,6 +150,10 @@ def test_optional_prepared_manifests_keep_every_existing_replay_field(tmp_path: 
     result = json.loads(after.read_bytes())
     assert result["status"] == "passed" and not result["errors"]
     assert all(len(row["prepared_inputs"]) == 8 for row in result["observations"].values())
+    assert all(
+        row["coverage_views"]["emitted"]["status"] == "prepared"
+        for row in result["observations"].values()
+    )
 
 
 def test_prepared_manifests_require_explicit_mapping(tmp_path: Path) -> None:
@@ -277,3 +283,62 @@ def test_runtime_extraction_replay_requires_a_pinned_compatibility_reference(
             extraction_manifest=True,
         )
     assert not (tmp_path / "output.json").exists()
+
+
+def test_optional_coverage_views_keep_existing_fields_and_extraction_scope() -> None:
+    data = docx("USTAWA Art. 1. Przepis. Ustawa wchodzi w życie.")
+    plain = replay_input_coverage.snapshot(data, mapped=True)
+    detailed = replay_input_coverage.snapshot(data, mapped=True, include_coverage_views=True)
+    report = detailed.pop("coverage_views")
+
+    assert detailed == plain
+    assert report["extraction"]["evidence"] == "observed_artifacts"
+    assert report["extraction"]["artifacts"][0]["completeness"] == "not_asserted"
+    assert report["selection"]["state"] == "unverified"
+    assert len(report["emitted"]["variants"]) == 8
+
+
+def test_emitted_unknown_mapping_keeps_source_selection_and_extraction_separate() -> None:
+    selection = DocumentSelection(parts=(DocumentPart(role="bill", text="project"),))
+    manifest = prepared_text_input(selection, "project", projection=None)
+    report = replay_input_coverage.coverage_views(selection, inputs={"input": manifest})
+
+    assert report["extraction"] == {"evidence": "unknown", "artifacts": []}
+    assert report["selection"]["state"] == "unverified"
+    assert report["emitted"]["status"] == "prepared"
+    assert report["emitted"]["variants"]["input"]["chars_by_origin"] == {
+        "source": 0,
+        "generated": 0,
+        "unknown": 7,
+    }
+    assert replay_input_coverage.coverage_views(selection)["emitted"]["status"] == "unknown"
+    assert (
+        replay_input_coverage.coverage_views(selection, inputs={})["emitted"]["status"]
+        == "not_prepared"
+    )
+    with pytest.raises(ValueError, match="differs from its source selection"):
+        replay_input_coverage.coverage_views(
+            selection.model_copy(update={"question": "other"}), inputs={"input": manifest}
+        )
+
+
+def test_exact_emission_counts_only_the_part_that_was_copied() -> None:
+    selection = DocumentSelection(
+        parts=(
+            DocumentPart(role="bill", text="repeated"),
+            DocumentPart(role="justification", text="repeated"),
+        ),
+        completeness=("recorded source evidence",),
+    )
+    source = PAGE_BREAK.join(part.text for part in selection.parts)
+    projection = project_pieces(source, (SourcePiece("repeated", len("repeated" + PAGE_BREAK)),))
+    manifest = prepared_text_input(selection, projection.text, projection=projection)
+
+    report = replay_input_coverage.coverage_views(selection, inputs={"input": manifest})
+
+    assert report["selection"]["completeness"] == ["recorded source evidence"]
+    emitted = report["emitted"]["variants"]["input"]
+    assert emitted["mapping"] == "exact"
+    assert emitted["copied_chars_by_part"] == [
+        {"part_index": 1, "role": "justification", "chars": 8}
+    ]

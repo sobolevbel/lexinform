@@ -1,0 +1,9 @@
+{
+  "content_id_serialized_sha256": {
+    "content-v1:fe5a2b3074b4f63c69fbb033f64042f9bf623b2e8c5c4f67227249716c062eb0": "9cedfa53c87bd136de7408e1e60822e477f1da08b8ea185842a7efa2c92b4c10"
+  },
+  "content_versions": 1,
+  "database_sha256": "93fd8769679b86b4a95f830ac48fe5330a13afe212ea6ecae6ac94ad82498f91",
+  "doctor_sha256": "c1069dcd1c25c9fc0efba049cb7b67e8cd832757e2a29258b22ffc3ac9090bf8",
+  "unchanged": true
+}
