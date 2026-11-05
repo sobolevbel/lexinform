@@ -367,6 +367,42 @@ class NormativeAnnexGap(BaseModel):
         return self
 
 
+class SejmOriginalProposal(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    profile: Literal["sejm-original-proposal-v1"] = "sejm-original-proposal-v1"
+    relation: Literal["proposes_change_to"] = "proposes_change_to"
+    term: int = Field(gt=0, le=99, strict=True)
+    parent_print: str = Field(pattern=r"^[1-9][0-9]{0,8}$")
+    proposal_print: str = Field(pattern=r"^[1-9][0-9]{0,8}-A$")
+    official_process_prints: tuple[str]
+    base_sha256: Sha256
+    proposal_sha256: Sha256
+    selection_id: str = Field(pattern=r"^selection-v1:[0-9a-f]{64}$")
+    edition_id: str = Field(pattern=r"^edition-v1:[0-9a-f]{64}$")
+
+    @property
+    def base_url(self) -> str:
+        return self._print_url(self.parent_print)
+
+    @property
+    def proposal_url(self) -> str:
+        return self._print_url(self.proposal_print)
+
+    def _print_url(self, number: str) -> str:
+        return f"https://api.sejm.gov.pl/sejm/term{self.term}/prints/{number}/{number}.pdf"
+
+    @model_validator(mode="after")
+    def known_pair(self) -> Self:
+        if (
+            self.proposal_print != f"{self.parent_print}-A"
+            or self.official_process_prints != (self.parent_print,)
+            or self.base_sha256 == self.proposal_sha256
+        ):
+            raise ValueError("Sejm proposal requires its one same-term parent and distinct bodies")
+        return self
+
+
 class CandidateDispositionTrace(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -387,6 +423,9 @@ class CandidateDispositionTrace(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     normative_annex_gap: NormativeAnnexGap | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    sejm_original_proposal: SejmOriginalProposal | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
 
@@ -507,6 +546,8 @@ class CandidateDispositionTrace(BaseModel):
                 validate_required_part_parent(self, row)
         if self.normative_annex_gap is not None:
             validate_normative_annex_parent(self, self.normative_annex_gap)
+        if self.sejm_original_proposal is not None:
+            validate_sejm_original_proposal(self, self.sejm_original_proposal)
         if len(self.model_dump_json(exclude_defaults=True).encode()) > MAX_CANDIDATE_TRACE_BYTES:
             raise ValueError("candidate trace exceeds its metadata limit")
         return self
@@ -530,6 +571,7 @@ class CandidateDispositionTrace(BaseModel):
             and self.selection_state in ("selected", "unverified")
             and all(item.outcome == "selected" for item in self.dispositions)
             and self.required_exclusions is None
+            and self.sejm_original_proposal is None
         )
 
 
@@ -540,6 +582,42 @@ def _parent_disposition(
         (item for item in trace.dispositions if (item.phase, item.index) == (phase, index)),
         None,
     )
+
+
+def validate_sejm_original_proposal(
+    trace: CandidateDispositionTrace, proposal: SejmOriginalProposal
+) -> None:
+    request = trace.requested_document
+    if (
+        request is None
+        or request.kind != "print"
+        or request.url != proposal.base_url
+        or request.version_basis != (f"sejm/{proposal.term}/print/{proposal.parent_print}",)
+        or request.amendment_urls != (proposal.proposal_url,)
+        or request.alternatives
+        or request.extra_urls
+        or request.required_urls
+        or request.normative_urls
+        or request.official_link_conflict
+        or not request.compare_versions
+        or request.senate is not None
+        or trace.candidate_count != 1
+        or trace.result != "selected"
+        or trace.reason != "version_choice"
+        or trace.selection_state not in ("selected", "unverified")
+        or trace.archive_members is not None
+        or trace.required_exclusions is not None
+        or trace.normative_annex_gap is not None
+    ):
+        raise ValueError("Sejm proposal requires the selected original singleton print")
+    disposition = _parent_disposition(trace, "version_comparison", 0)
+    if (
+        disposition is None
+        or disposition.outcome != "selected"
+        or disposition.reason != "version_choice"
+        or disposition.observed_sha256 != proposal.base_sha256
+    ):
+        raise ValueError("Sejm proposal requires the observed original PDF identity")
 
 
 def validate_normative_annex_parent(

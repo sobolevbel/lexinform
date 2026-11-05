@@ -11415,3 +11415,15 @@ by 109,168 bytes.
 The work doctor can group the age of waiting document work by its last coded deferral
 reason. Backoff and completion behavior are unchanged, with report parity across
 three retained snapshots. [Replay and compatibility](../assets/audits/2026-11-05-purpose-freeze-and-deferral-ages/report.md).
+
+<a id="j275"></a>
+
+## J275 — compatible proposal relation reader and two-edition citation checks
+
+The reader accepts an optional confirmed original Sejm proposal relation with exact
+existing selection, edition and artifact parents. The pinned native 2320-A path and
+two restores verified the reader. The normal writer remains unchanged.
+
+A separate offline check binds one saved change to literal quotes from two distinct
+proposal editions. On the pinned UD325 pair, a duration mutation invalidated only
+the edited side. [Qualified scopes](../assets/audits/2026-11-05-proposal-relations-and-citations/report.md).

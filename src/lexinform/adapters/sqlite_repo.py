@@ -31,6 +31,8 @@ from lexinform.adapters.amendment_inputs import (
 from lexinform.adapters.candidate_trace_history import (
     read_candidate_disposition_trace,
     validate_candidate_disposition_traces,
+    validate_sejm_proposal_link,
+    validate_sejm_proposal_links,
 )
 from lexinform.adapters.computation_history import read_result_application
 from lexinform.adapters.content_applications import (
@@ -2071,6 +2073,7 @@ class SqliteBillRepository:
         with self.atomic():
             if self.get_source_observation(observation_id) is None:
                 raise ValueError("a candidate trace requires a recorded source observation")
+            validate_sejm_proposal_link(self._conn, trace, observation_id)
             self._conn.execute(
                 "INSERT INTO candidate_disposition_traces"
                 " (trace_id, coverage, candidate_count, trace_json) VALUES (?, ?, ?, ?)"
@@ -2082,24 +2085,28 @@ class SqliteBillRepository:
                     trace.model_dump_json(exclude_defaults=True),
                 ),
             )
-            if self.get_candidate_disposition_trace(trace.trace_id) != trace:
-                raise ValueError("an immutable candidate trace cannot be replaced")
             self._conn.execute(
                 "INSERT INTO source_candidate_traces (observation_id, trace_id) VALUES (?, ?)"
                 " ON CONFLICT DO NOTHING",
                 (observation_id, trace.trace_id),
             )
+            if self.get_candidate_disposition_trace(trace.trace_id) != trace:
+                raise ValueError("an immutable candidate trace cannot be replaced")
 
     def get_candidate_disposition_trace(self, trace_id: str) -> CandidateDispositionTrace | None:
         row = self._conn.execute(
             "SELECT * FROM candidate_disposition_traces WHERE trace_id=?", (trace_id,)
         ).fetchone()
-        return read_candidate_disposition_trace(row) if row else None
+        if row is None:
+            return None
+        trace = read_candidate_disposition_trace(row)
+        validate_sejm_proposal_links(self._conn, trace)
+        return trace
 
     def list_candidate_disposition_traces(
         self, observation_id: str
     ) -> list[CandidateDispositionTrace]:
-        return [
+        traces = [
             read_candidate_disposition_trace(row)
             for row in self._conn.execute(
                 "SELECT t.* FROM source_candidate_traces AS link"
@@ -2108,6 +2115,9 @@ class SqliteBillRepository:
                 (observation_id,),
             )
         ]
+        for trace in traces:
+            validate_sejm_proposal_link(self._conn, trace, observation_id)
+        return traces
 
     @staticmethod
     def _source_observation(row: sqlite3.Row) -> SourceObservation:

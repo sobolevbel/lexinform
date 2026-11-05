@@ -1,0 +1,95 @@
+{
+  "editions": [
+    {
+      "document_id": 746675,
+      "draft_date": "2025-11-06",
+      "filed_date": "2025-11-06",
+      "law_sha256": "law-v2:503fd19c735a3b46fbec5c5c3cec21175385a0838c2bc0eadda0873574c06031",
+      "quote_sha256": "173ea3dca3059a6478c7592a540bfa0cf7432835a61532596169d470679ecb1c",
+      "raw_bytes": 45911,
+      "raw_sha256": "01bbb593c74d4df10d7dceb6373de4500e7d769fd5bf29d619fbd097d1a9fd05",
+      "source": "documents/files/746675.docx",
+      "source_span": [
+        1758,
+        2287
+      ],
+      "stage": 3,
+      "stage_name": "Konsultacje publiczne",
+      "text_chars": 10235,
+      "text_sha256": "cbf8adf67de31b398f074e10a57d1c2f1f2a6fb54151f13dcf36e0c3bfb035c2"
+    },
+    {
+      "document_id": 753284,
+      "draft_date": "2025-12-09",
+      "filed_date": "2025-12-10",
+      "law_sha256": "law-v2:81931c30eec42acec74ea299ff76a648a795a9a65ca90ddf3325134e1b12b4af",
+      "quote_sha256": "134f753bfe73854c5ff83d7904053d41e8f2a7964c82c4b491409395b8d1d4a2",
+      "raw_bytes": 47538,
+      "raw_sha256": "44798aaf4e946134dcd04b73ffe7bee6685f03f5cfe346ca8821f18d7c99c754",
+      "source": "documents/files/753284.docx",
+      "source_span": [
+        1832,
+        2108
+      ],
+      "stage": 4,
+      "stage_name": "Opiniowanie",
+      "text_chars": 13956,
+      "text_sha256": "88e51a263f58e45c063fc781a301267ea5e2dc2acd6fa3021f6e4240bc2b5244"
+    }
+  ],
+  "later_quote_mutation": {
+    "after": {
+      "block_origins": "unmapped",
+      "observed_text_span": null,
+      "paid_origins": "unmapped",
+      "quote_occurrences": 0,
+      "semantic": "semantic_not_assessed",
+      "source_complete": false,
+      "status": "citation_mismatch"
+    },
+    "before": {
+      "block_origins": "unmapped",
+      "observed_text_span": [
+        1758,
+        2287
+      ],
+      "paid_origins": "unmapped",
+      "quote_occurrences": 1,
+      "semantic": "semantic_not_assessed",
+      "source_complete": false,
+      "status": "quote_present"
+    }
+  },
+  "later_quote_mutation_sha256": "e0e0a2e08550d035bafc691dbf12f4a6c75a86e2c0c87a9ca130b2a92248474d",
+  "literal_pair": {
+    "after": {
+      "block_origins": "unmapped",
+      "observed_text_span": [
+        1832,
+        2108
+      ],
+      "paid_origins": "unmapped",
+      "quote_occurrences": 1,
+      "semantic": "semantic_not_assessed",
+      "source_complete": false,
+      "status": "quote_present"
+    },
+    "before": {
+      "block_origins": "unmapped",
+      "observed_text_span": [
+        1758,
+        2287
+      ],
+      "paid_origins": "unmapped",
+      "quote_occurrences": 1,
+      "semantic": "semantic_not_assessed",
+      "source_complete": false,
+      "status": "quote_present"
+    }
+  },
+  "project_id": 12404000,
+  "project_metadata_sha256": "fae471b39083e7591be5e85f963f6abcce6841a22a39387dc62d771a204ac4e6",
+  "scope": "Pinned proposals from the same RCL project, technical claim and quote checks only.",
+  "unchanged": true,
+  "wykaz_number": "UD325"
+}

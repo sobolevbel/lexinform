@@ -20,9 +20,12 @@ from lexinform.primary_claims import (
     AffectedGroupEvidence,
     ClaimEvidenceCheck,
     KeyChangeEvidence,
+    ProposalEditionEvidence,
+    ProposedChangeEvidence,
     ProposedCommencementEvidence,
     validate_affected_group_evidence,
     validate_key_change_evidence,
+    validate_proposed_change_evidence,
     validate_proposed_commencement_evidence,
 )
 
@@ -537,3 +540,136 @@ def test_proposed_commencement_does_not_accept_an_indexed_claim_envelope() -> No
         validate_proposed_commencement_evidence(
             answer, cast(ProposedCommencementEvidence, evidence(document)), (document,)
         )
+
+
+PAIR_CLAIM = "В новом проекте предложен более длинный срок для студентов."
+LATER_QUOTE = QUOTE.replace("30", "60")
+
+
+def proposed_change() -> tuple[
+    AnalysisRecord, ProposedChangeEvidence, tuple[ReviewDocument, ReviewDocument]
+]:
+    answer = record()
+    answer.analysis.changes_since_previous = ["Другой пункт", PAIR_CLAIM]
+    before = source(QUOTE, role="comparison_text").model_copy(update={"complete": False})
+    after = source(LATER_QUOTE).model_copy(
+        update={"identity": "project/two", "file_sha256": "a" * 64}
+    )
+    pair = ProposedChangeEvidence(
+        index=1,
+        claim_text_sha256=digest(PAIR_CLAIM),
+        before=ProposalEditionEvidence(
+            source_text_sha256=before.sha256,
+            artifact_sha256=before.file_sha256 or "",
+            citation=EvidenceCitation(document_id=before.identity, locator="Art. 3", quote=QUOTE),
+        ),
+        after=ProposalEditionEvidence(
+            source_text_sha256=after.sha256,
+            artifact_sha256=after.file_sha256 or "",
+            citation=EvidenceCitation(
+                document_id=after.identity, locator="Art. 3", quote=LATER_QUOTE
+            ),
+        ),
+    )
+    return answer, pair, (before, after)
+
+
+def test_proposed_change_observes_both_literal_quotes_without_assessing_change() -> None:
+    answer, pair, documents = proposed_change()
+    before = answer.model_dump_json()
+
+    checked = validate_proposed_change_evidence(answer, pair, documents)
+
+    assert checked.both_literal_quotes_observed
+    assert checked.before.observed_text_span == (0, len(QUOTE))
+    assert checked.after.observed_text_span == (0, len(LATER_QUOTE))
+    assert checked.before.coverage == "partial" and checked.after.coverage == "complete"
+    assert checked.before.semantic == checked.after.semantic == "semantic_not_assessed"
+    assert checked.before.paid_origins == checked.after.paid_origins == "unmapped"
+    assert answer.model_dump_json() == before
+
+
+@pytest.mark.parametrize(
+    ("fault", "status"),
+    [
+        ("no_envelope", "legacy_missing"),
+        ("wrong_index", "claim_index_invalid"),
+        ("empty", "claim_unavailable"),
+        ("wrong_claim", "claim_hash_mismatch"),
+    ],
+)
+def test_proposed_change_binds_one_saved_claim_for_both_sources(fault: str, status: str) -> None:
+    answer, pair, documents = proposed_change()
+    if fault == "wrong_index":
+        pair = replace(pair, index=2)
+    elif fault == "empty":
+        answer.analysis.changes_since_previous[1] = " "
+    elif fault == "wrong_claim":
+        answer.analysis.changes_since_previous[1] += " "
+
+    checked = validate_proposed_change_evidence(
+        answer, None if fault == "no_envelope" else pair, documents
+    )
+
+    assert not checked.both_literal_quotes_observed
+    assert checked.before.status == checked.after.status == status
+
+
+@pytest.mark.parametrize("field", ["document_id", "artifact_sha256", "source_text_sha256"])
+def test_proposed_change_rejects_relabeled_same_edition(field: str) -> None:
+    _, pair, _ = proposed_change()
+    after = pair.after
+    if field == "document_id":
+        after = replace(
+            after,
+            citation=after.citation.model_copy(
+                update={"document_id": pair.before.citation.document_id}
+            ),
+        )
+    elif field == "artifact_sha256":
+        after = replace(after, artifact_sha256=pair.before.artifact_sha256)
+    else:
+        after = replace(after, source_text_sha256=pair.before.source_text_sha256)
+
+    with pytest.raises(ValueError, match="distinct source editions"):
+        replace(pair, after=after)
+
+
+@pytest.mark.parametrize(
+    ("fault", "status"),
+    [
+        ("final_act", "source_role_mismatch"),
+        ("wrong_artifact", "source_hash_mismatch"),
+        ("missing_artifact", "source_unavailable"),
+        ("mutated_quote", "citation_mismatch"),
+        ("normalized_only", "citation_mismatch"),
+    ],
+)
+def test_proposed_change_preserves_failed_side_without_borrowing_other_quote(
+    fault: str, status: str
+) -> None:
+    answer, pair, (before, after) = proposed_change()
+    if fault == "final_act":
+        after = after.model_copy(update={"role": "final_act"})
+    elif fault in ("wrong_artifact", "missing_artifact"):
+        after = after.model_copy(
+            update={"file_sha256": "0" * 64 if fault == "wrong_artifact" else None}
+        )
+    else:
+        changed = (
+            LATER_QUOTE.replace("60", "90")
+            if fault == "mutated_quote"
+            else LATER_QUOTE.replace(" termin", "  termin")
+        )
+        pair = replace(
+            pair,
+            after=replace(
+                pair.after, citation=pair.after.citation.model_copy(update={"quote": changed})
+            ),
+        )
+
+    checked = validate_proposed_change_evidence(answer, pair, (before, after))
+
+    assert not checked.both_literal_quotes_observed
+    assert checked.before.status == "quote_present" and checked.after.status == status
+    assert checked.after.semantic == "semantic_not_assessed"
