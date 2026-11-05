@@ -1,0 +1,53 @@
+{
+  "measured": {
+    "coarse_collision_controls": {
+      "URL_only": {
+        "exact_input_reference_equal": false,
+        "original_context_reconstructed_exactly": true,
+        "original_texts_recovered_by_raw_SHA": 4,
+        "same_memo_key": true
+      },
+      "document_order": {
+        "exact_input_reference_equal": false,
+        "original_context_reconstructed_exactly": true,
+        "original_texts_recovered_by_raw_SHA": 4,
+        "same_memo_key": true
+      },
+      "kind": "existing typed four-document commission context; technical controls, not legal gold",
+      "trailing_whitespace": {
+        "exact_input_reference_equal": false,
+        "missing_original_texts": 1,
+        "original_context_reconstructed_exactly": false,
+        "original_texts_recovered_by_raw_SHA": 3,
+        "same_memo_key": true
+      }
+    },
+    "model_inventory": {
+      "ReviewDocument_fields": 12,
+      "ReviewSourceReference_fields": 11,
+      "missing_ReviewContext_fields": [],
+      "missing_document_fields": [
+        "text"
+      ]
+    },
+    "pinned_legacy_review_population": {
+      "all_originals_canonical_contexts": 0,
+      "already_canonical_original_documents": 0,
+      "canonical_text_utf8_bytes": 458900,
+      "contexts": 3,
+      "decorated_numeric_line_utf8_bytes": 21,
+      "decorated_numeric_lines": 3,
+      "known_text_v2_documents": 6,
+      "natural_eligible_compaction": 0,
+      "noncanonical_whitespace_runs": 8034,
+      "normalization_net_bytes_lost": 6575,
+      "ordered_documents": 6,
+      "retained_computation_parents": 0,
+      "text_characters": 440881,
+      "text_utf8_bytes": 465475
+    },
+    "source_DB_unchanged": true,
+    "source_db_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485"
+  },
+  "relevant_evidence_leaves_exact": true
+}

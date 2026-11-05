@@ -22,7 +22,7 @@ from lexinform.adapters.candidate_trace_history import (
     read_candidate_disposition_trace,
     validate_candidate_disposition_traces,
 )
-from lexinform.adapters.computation_history import parse_computation_result, read_result_application
+from lexinform.adapters.computation_history import read_computation_result, read_result_application
 from lexinform.adapters.content_applications import (
     find_projection_application_ids,
     verify_content_applications,
@@ -1906,13 +1906,13 @@ class SqliteBillRepository:
     def list_computation_results(
         self, term: int, number: str, *, purpose: BatchKind | None = None
     ) -> list[ComputationResult]:
-        query = "SELECT result_json FROM computation_results WHERE term = ? AND number = ?"
+        query = "SELECT * FROM computation_results WHERE term = ? AND number = ?"
         parameters: tuple[int | str, ...] = (term, number)
         if purpose is not None:
             query += " AND json_extract(result_json, '$.purpose') = ?"
             parameters += (purpose,)
         return [
-            parse_computation_result(row[0])
+            read_computation_result(row)
             for row in self._conn.execute(query + " ORDER BY rowid", parameters)
         ]
 

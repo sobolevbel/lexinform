@@ -33,7 +33,11 @@
   "supersedes_patch_sha256": "8c625a92d02fbf06e28b092de3126df0220f68bcac0ab1cadd3e093c3c465f88",
   "scanner_unit_first": "6 failed/2 passed/36 deselected",
   "scanner_scope": "top-level actual reserved key only; BLOB known marker bounded; old nonmarker error ownership exact",
-  "publication": "pending after commit and push",
+  "publication": {
+    "status": "verified",
+    "target_sha": "7a3a21ee67b0919d8034721c864cd47ea14f91e2",
+    "receipt": "release.json"
+  },
   "reader_only": true,
   "writer_emission": false,
   "source_db_unchanged": true,

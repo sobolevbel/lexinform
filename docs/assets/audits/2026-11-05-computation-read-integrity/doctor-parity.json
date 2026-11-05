@@ -1,0 +1,42 @@
+{
+  "damaged_indexed_column_reports": [
+    {
+      "column": "result_id",
+      "database_unchanged": true,
+      "doctor_bytes_exact": true,
+      "report_sha256": "21b01e659fb8483366de24671ce860d7c22ebe0d7d8503723000682f1e0736f9"
+    },
+    {
+      "column": "provider",
+      "database_unchanged": true,
+      "doctor_bytes_exact": true,
+      "report_sha256": "7b8d5652d694b835737ac8013a808ee1e8b1be944dba84e082a28a29de358dad"
+    },
+    {
+      "column": "batch_id",
+      "database_unchanged": true,
+      "doctor_bytes_exact": true,
+      "report_sha256": "5551acbc1be2b3a3326bf82102add9eac8de17ac919bb6717e3e5d3cbdc6aeb3"
+    },
+    {
+      "column": "custom_id",
+      "database_unchanged": true,
+      "doctor_bytes_exact": true,
+      "report_sha256": "3eebbc885358af61a506842a89824b887135f75103a749726c01b44d7d7c50d1"
+    },
+    {
+      "column": "term",
+      "database_unchanged": true,
+      "doctor_bytes_exact": true,
+      "report_sha256": "db25b7d2a425ca274e84e6ab517f1e3206fbed95347e8a5d08f0fb969b5d23ad"
+    },
+    {
+      "column": "number",
+      "database_unchanged": true,
+      "doctor_bytes_exact": true,
+      "report_sha256": "f38ce0e8eefedabe71b5e140898a2d1660a63266adf17c5c907ae62e9484f974"
+    }
+  ],
+  "network_calls": 0,
+  "scope": "Technical single-result fixtures; no production source database."
+}

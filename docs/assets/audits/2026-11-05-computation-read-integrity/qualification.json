@@ -1,0 +1,32 @@
+{
+  "focused": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 171
+  },
+  "format": "3 files already formatted",
+  "independent_review": {
+    "findings": [],
+    "independent_tests": false,
+    "status": "clear"
+  },
+  "mypy": "Success: no issues found in 3 source files",
+  "network_calls": 0,
+  "new_scenarios": 0,
+  "new_unit_cases": 20,
+  "release": "pending",
+  "root_full_gate": {
+    "status": "passed",
+    "tests": 8796,
+    "xml_suite_seconds": 297.325,
+    "mypy_files": 757,
+    "ruff_format_files": 826,
+    "source_config_pins_exact": 826
+  },
+  "root_writes": false,
+  "ruff": "All checks passed!",
+  "unit_first_failures": 12,
+  "root_focused": 82,
+  "root_state": "root-state-proof.json"
+}

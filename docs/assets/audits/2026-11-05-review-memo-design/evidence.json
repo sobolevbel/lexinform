@@ -1,0 +1,73 @@
+{
+  "scope": "J246 design qualification only; no runtime changes",
+  "source_db_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+  "source_DB_unchanged": true,
+  "model_inventory": {
+    "ReviewDocument_fields": 12,
+    "ReviewSourceReference_fields": 11,
+    "missing_document_fields": [
+      "text"
+    ],
+    "missing_ReviewContext_fields": []
+  },
+  "coarse_collision_controls": {
+    "kind": "existing typed four-document commission context; technical controls, not legal gold",
+    "URL_only": {
+      "same_memo_key": true,
+      "exact_input_reference_equal": false,
+      "original_texts_recovered_by_raw_SHA": 4,
+      "original_context_reconstructed_exactly": true
+    },
+    "document_order": {
+      "same_memo_key": true,
+      "exact_input_reference_equal": false,
+      "original_texts_recovered_by_raw_SHA": 4,
+      "original_context_reconstructed_exactly": true
+    },
+    "trailing_whitespace": {
+      "same_memo_key": true,
+      "exact_input_reference_equal": false,
+      "original_texts_recovered_by_raw_SHA": 3,
+      "missing_original_texts": 1,
+      "original_context_reconstructed_exactly": false
+    }
+  },
+  "normalization": {
+    "profile": "text-v2",
+    "steps": [
+      "remove DECORATED_PAGE numeric/dash lines",
+      "collapse all Unicode whitespace runs to one ASCII space",
+      "strip edge whitespace"
+    ],
+    "injective": false,
+    "fixed_bound_reversible_delta_guarantee": false,
+    "duplicate_handling": "memo key sorts a set of role+normalized SHA; original descriptor sequence preserves multiplicity/order, but missing raw variants cannot be recovered from a single canonical-equivalent caller"
+  },
+  "pinned_legacy_review_population": {
+    "contexts": 3,
+    "ordered_documents": 6,
+    "known_text_v2_documents": 6,
+    "text_utf8_bytes": 465475,
+    "text_characters": 440881,
+    "canonical_text_utf8_bytes": 458900,
+    "normalization_net_bytes_lost": 6575,
+    "noncanonical_whitespace_runs": 8034,
+    "decorated_numeric_lines": 3,
+    "decorated_numeric_line_utf8_bytes": 21,
+    "already_canonical_original_documents": 0,
+    "all_originals_canonical_contexts": 0,
+    "retained_computation_parents": 0,
+    "natural_eligible_compaction": 0
+  },
+  "decision": {
+    "writer": "OFF",
+    "generic_writer": "blocked by original-context/reuse equivalence",
+    "future_optional_subset": "all original texts exactly canonical known text-v2; actual caller canonical bodies must match original raw SHA; original metadata/order restored and rechecked",
+    "normalization_only_fallback": "inline at original save; never known-pointer\u2192paid cache miss",
+    "reader_profile": "future explicit rehydration profile/version preferred; current version1 actual-caller exact semantics unchanged",
+    "additional_integrity": "pin canonical original ReviewInputReference hash before metadata rehydration",
+    "plan_closure": false,
+    "retention_or_body_backend_changes": false,
+    "network_or_provider_calls": 0
+  }
+}

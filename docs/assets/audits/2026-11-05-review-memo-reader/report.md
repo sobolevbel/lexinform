@@ -19,3 +19,5 @@ Root [state comparison](root-state-comparison.json) confirms exact semantic repo
 Writer qualification must cover memo-key collisions: URL changes, document order and raw whitespace can preserve the existing memo key while changing exact retained input. Strict reference resolution alone cannot reproduce the older stored context; automatic writer remains OFF pending a compatible design.
 
 Root92focused and8776full tests/300.66s/92%coverage pass; mypy756/Ruff/format825green, all825 source/config pins exact.44newunits/0newscenarios/0removed. [Integration proof](integration-proof.json).
+
+Actual7a3a21ee [CI and relay release](release.json) verified after publication; no workflow rerun.

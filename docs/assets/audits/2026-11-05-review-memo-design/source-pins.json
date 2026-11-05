@@ -1,0 +1,10 @@
+{
+  "src/lexinform/models/reviews.py": "4c8702b6782e2cb3e1cad791b251b2f9010382e18362345d77cebe0561d9fe86",
+  "src/lexinform/models/computations.py": "2d5c4c8537e4a251809fe18b91d335e2212b6b4a019a638c342153913a5c70cf",
+  "src/lexinform/document_fingerprints.py": "dc8d4ae050aed2c61e7b0b4c1570eab92509ef0031a8a2238da34137d971f8c2",
+  "src/lexinform/law_technical.py": "55d10570957944fc0de711573b9bd8c82fa4999386cc5713ec05ec13bdc4a3c6",
+  "src/lexinform/review_memos.py": "289d34eee7eca10be5aa91d7a44b9c9cb185b899ab76d5ec17adf088f3686ac8",
+  "src/lexinform/services/computation_reuse.py": "6ca8a2851fe1914558306b0a48e989876dda264cdf06fb7b931af7c5302ef861",
+  "tests/scenario/test_commission_reviews.py": "7a70613c4b50b2742acc208499e7c532eafe68e5f1d0a9658741a1efbfe1b111",
+  "recipe.py": "115fd00fe8666a97707beaf14edaa30e565d793e72b443131c39a7055518d6bf"
+}

@@ -1,0 +1,10 @@
+{
+  "base_commit": "7a3a21ee67b0919d8034721c864cd47ea14f91e2",
+  "files": {
+    "src/lexinform/adapters/content_source_refs.py": "2f17996baeb1128143d28b5cfdf7a9715e013824dfb6ebfeaf89120505a35d14",
+    "src/lexinform/adapters/sqlite_repo.py": "244152d56c17ab0690f3d75cec4a68dd8e6f53267075d242186838930800dd4a",
+    "tests/unit/test_computation_row_integrity.py": "02c03ae6ed461c0110a65af4b38f20ee7a128418161b200666720a0301ac9d7f"
+  },
+  "patch_sha256": "6e8e8f6ff65de0f0b45222fdc70b9b9f7c1862c0e19cad45348448b435c46064",
+  "workspace": "/private/tmp/lexinform-j247-computation-row-integrity"
+}

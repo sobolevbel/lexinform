@@ -10950,3 +10950,48 @@ all825source/config pins exact. Root92focused pass; release follows publication.
 Root OFF/ON repeats preserve exact dump/memo hashes and semantic doctor fields. Physical SQLite
 file SHA differs also between two identical OFF runs after double restore; only that physical
 hash is excluded from cross-run equality. Original source SHA stays unchanged.
+
+<a id="j246"></a>
+
+## J246 — qualify review memo compaction before enabling a writer
+
+5 November 2026. Three technical controls preserve the old coarse memo key while changing
+exact input: URL, document order and trailing whitespace. Original descriptors plus caller raw
+text recover URL/order contexts; one whitespace variant loses an original body. Native text-v2
+normalization is non-injective, including removed numeric lines, so fixed bounded reversible
+metadata cannot recover arbitrary original contexts.
+
+The pinned legacy sample has six texts/465475UTF8 bytes, zero already canonical originals and
+zero retained computation parents. No natural compaction is claimed. A prospective canonical-only
+profile would need explicit versioned rehydration and an original input-reference hash; it is
+unimplemented and has no positive natural case here. Writer stays OFF, existing inline reuse and
+retention remain unchanged, DA6.3 stays OPEN; plan46/6/22 unchanged.
+
+[Report](../assets/audits/2026-11-05-review-memo-design/report.md),
+[evidence](../assets/audits/2026-11-05-review-memo-design/evidence.json).
+
+
+<a id="j247"></a>
+
+## J247 — strict indexed identities on public computation reads
+
+5 November 2026. Public get/list now use the existing strict computation-row decoder instead of
+returning JSON without its indexed result/provider/batch/custom/owner identity. No new policy,
+schema or owner inference; legacy/foreign/compact records remain valid. Owner predicate, rowid
+order and purpose-filter SQL, including malformed json_extract behavior, stay unchanged. Doctor
+and shared decoder source bytes are exact; its mismatching-row inventory behavior is preserved.
+
+Twelve unit-first column/API controls fail before correction;171 focused tests pass,20newunits
+and0scenarios, strict mypy3/Ruff/format3green. Six damaged-column doctor reports remain byte-exact
+and fixture reads do not change DB bytes. Independent exact-three-pin review CLEAR/findings[],
+no independent tests/network/edits. Root82focused/8796full tests, mypy757/Ruff/format826 and all826source/config pins pass.
+Pinned13-get/13-owner-list/dump/entire-default-doctor including physical DB SHA are exact on
+fresh copies. Actual release follows publication. No pipeline/provider/corpus/storage-policy change;
+DA10.2 remains partial and plan46/6/22 unchanged.
+
+[Report](../assets/audits/2026-11-05-computation-read-integrity/report.md),
+[qualification](../assets/audits/2026-11-05-computation-read-integrity/qualification.json),
+[peer review](../assets/audits/2026-11-05-computation-read-integrity/peer-review.json),
+[source pins](../assets/audits/2026-11-05-computation-read-integrity/source-pins.json),
+[change proof](../assets/audits/2026-11-05-computation-read-integrity/change-proof.json),
+[doctor parity](../assets/audits/2026-11-05-computation-read-integrity/doctor-parity.json).

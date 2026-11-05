@@ -3,7 +3,7 @@
 import sqlite3
 from datetime import datetime
 
-from lexinform.adapters.computation_history import parse_computation_result
+from lexinform.adapters.computation_history import parse_computation_result, read_computation_result
 from lexinform.content_sources import verify_primary_content_source
 from lexinform.models import (
     AnalysisRecord,
@@ -58,9 +58,9 @@ class ContentSourceRows:
 
     def get_computation_result(self, result_id: str) -> ComputationResult | None:
         row = self._query(
-            "SELECT result_json FROM computation_results WHERE result_id = ?", (result_id,)
+            "SELECT * FROM computation_results WHERE result_id = ?", (result_id,)
         ).fetchone()
-        return parse_computation_result(row[0]) if row else None
+        return read_computation_result(row) if row else None
 
     def get_consumed_primary_input(
         self, provider: BatchProvider, batch_id: str, custom_id: str, generation: int
