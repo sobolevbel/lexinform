@@ -2225,6 +2225,8 @@ class MessageFormatter:
                 lines.append(f"applications additional/opaque refs: {omitted}")
         if version.source_scope is not None:
             lines.append("Source scope: primary analysis context; amendment source unavailable.")
+        if page.original_primary_lineage:
+            lines.append("Original card primary lineage was retained.")
         if page.original_amendment_input is not None:
             lines.append(
                 {

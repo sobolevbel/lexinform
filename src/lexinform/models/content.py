@@ -310,3 +310,6 @@ class ContentHistoryPage(BaseModel):
     original_amendment_input: OriginalAmendmentInputStatus | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    original_primary_lineage: Literal[True] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )

@@ -26,3 +26,6 @@ The prepared-map requirement is accepted for the proven direct, ordinary archive
 self-amendment and loose RCL routes. Existing trim, excerpt and cost-fit maps compose
 through these routes. Unverified regrouping during deduplication and hybrid archive
 splices remain outside the accepted exact-origin scope.
+
+The exact stage passed hosted CI and the relay transition, restart and timer checks.
+[Release receipt](release.json).

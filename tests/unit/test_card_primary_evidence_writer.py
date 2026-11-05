@@ -2,8 +2,18 @@ from datetime import timedelta
 
 import pytest
 
-from lexinform.models import Bill, Publication, PublicationKind, PublicationStatus
+from lexinform.adapters.telegram_format import MessageFormatter
+from lexinform.models import (
+    Bill,
+    CommandOutcome,
+    IncomingCommand,
+    OutcomeStatus,
+    Publication,
+    PublicationKind,
+    PublicationStatus,
+)
 from lexinform.ports import PublishResult
+from lexinform.services.content_inspection import inspect_content_page
 from lexinform.services.publishing import PublishingService
 from tests.fakes import FakePublisher, FakeSejmGateway, FixedClock
 from tests.unit.test_card_primary_evidence_reader import card_parents
@@ -41,6 +51,8 @@ def test_original_publication_captures_exact_evidence_before_first_send(
         physical = case.repo.publication_by_id(publication.id)
         assert physical is not None and physical.status is PublicationStatus.PENDING
         assert version.card_primary_evidence == (None if missing_collection else reference)
+        pending_page = inspect_content_page(case.repo, physical, page=1)
+        assert "original_primary_lineage" not in pending_page.model_dump_json()
         return send(publication)
 
     monkeypatch.setattr(publisher, "publish_prepared", observe_send)
@@ -73,3 +85,25 @@ def test_original_publication_captures_exact_evidence_before_first_send(
     case.repo.restore(sql)
     assert case.repo.dump() == sql
     assert case.repo.get_publication_content(original.id) == recorded
+    retained = case.repo.publication_by_id(original.id)
+    assert retained is not None and retained.delivery is None, (
+        "the original binding survives ordinary payload retention"
+    )
+    page = inspect_content_page(case.repo, retained, page=1)
+    assert page.history is not None and page.history.current_id == recorded.content_id
+    assert page.original_primary_lineage is (None if missing_collection else True)
+    outcome = CommandOutcome(status=OutcomeStatus.DELIVERY, content_history_page=page)
+    serialized = outcome.model_dump_json()
+    assert ("original_primary_lineage" in serialized) is not missing_collection
+    command = IncomingCommand(
+        update_id=1,
+        chat_id="technical",
+        message_id=1,
+        text=f"/delivery {original.id} history",
+        received_at=NOW,
+    )
+    rendered = MessageFormatter("en").command_reply(command, outcome).text
+    assert ("Original card primary lineage was retained." in rendered) is not missing_collection
+    for private_value in (reference.source_observation_id, "projection_application_id"):
+        assert private_value not in serialized and private_value not in rendered
+    assert case.repo.dump() == sql

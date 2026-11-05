@@ -205,10 +205,19 @@ def inspect_content_page(
                     omitted_decisions=max(0, len(decisions) - 3),
                 )
             )
-        root = next((item for item in physical if item.id == history.root_publication_id), None)
-        original_input = (
-            _original_input_status(repo, root)
-            if root is not None and version.content_id == history.original_id
+        original = (
+            next((item for item in physical if item.id == history.root_publication_id), None)
+            if version.content_id == history.original_id
+            else None
+        )
+        original_input = _original_input_status(repo, original) if original is not None else None
+        original_primary = (
+            True
+            if original is not None
+            and version.card_primary_evidence is not None
+            and original.status is PublicationStatus.SENT
+            and original.message_id is not None
+            and original.message_id > 0
             else None
         )
         return ContentHistoryPage(
@@ -220,6 +229,7 @@ def inspect_content_page(
             deliveries=tuple(deliveries),
             omitted_deliveries=max(0, len(physical) - 3),
             original_amendment_input=original_input,
+            original_primary_lineage=original_primary,
         )
     except ValueError:
         return unavailable

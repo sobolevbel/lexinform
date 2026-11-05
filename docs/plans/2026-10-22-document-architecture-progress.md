@@ -11501,3 +11501,12 @@ derivative verified the writer and restore boundary.
 An offline audit separately proves the typed historical third-reading decision and
 official same-owner locator for print 2111. Proposal and later proceedings cannot
 satisfy this profile. [Qualified scopes](../assets/audits/2026-11-06-required-part-and-sejm-decision/report.md).
+
+<a id="j282"></a>
+
+## J282 — show verified compact primary lineage on original-card history
+
+The explicit history page shows the presence of retained primary lineage on a
+confirmed original card. It exposes a status only. The native publication test
+checks its absence before send and presence after normal expiry and restore.
+[Operator scope and parity](../assets/audits/2026-11-06-operator-card-lineage/report.md).
