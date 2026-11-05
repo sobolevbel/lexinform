@@ -1,0 +1,22 @@
+{
+  "database_sha256": "93fd8769679b86b4a95f830ac48fe5330a13afe212ea6ecae6ac94ad82498f91",
+  "reports": {
+    "stored_finished_report": 442,
+    "document_reads_present": 27,
+    "download_diagnostics_present": 13
+  },
+  "document_reads": {
+    "cache_hits": 87,
+    "host_attempts": 97,
+    "completed": 97,
+    "body_bytes": 145873942,
+    "duplicate_body_bytes": 4441925
+  },
+  "download_diagnostics": {
+    "cache_hits": 87,
+    "invocations": 97,
+    "completed": 97,
+    "missing": 0
+  },
+  "scope": "Finished runs with persisted typed counters; missing reports and fields excluded."
+}

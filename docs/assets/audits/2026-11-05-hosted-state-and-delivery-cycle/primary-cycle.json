@@ -1,0 +1,27 @@
+{
+  "cycle": {
+    "artifact_sha256": "0dca4ba3e9408cfaec7c4d94e347ec2f90544fa202737bd4a68284718958be7c",
+    "collection_application_id": 17,
+    "extraction_id": "extraction-v1:5fa22a2c272b31d2bd5ad3fd7d3cf2529c773b06f80539b60851a29738035867",
+    "frozen_render_sha256": "19acf01de06fd0a0aa925a964701e1ca5e50eea14c0b6b05934a7a8991724cea",
+    "projection_application_id": 19,
+    "purpose": "analysis",
+    "recorded_sent_at": "2026-11-02T22:33:10+00:00",
+    "request_sha256": "01ef94189741fdc6ccf764411e5948f33beb890fce313ba109661ea0611d6fb4",
+    "result_id": "result-v1:a9049cf312bc1c654aa03e9114fe98db7a82da64d5d752c1f48c44cae232a4cb",
+    "source_kind": "print",
+    "source_observation_id": "source-observation-v1:05cb66bed72975b7ced46a6da62fb3251a4b156082ff3627f1e5078a8d780e04",
+    "source_selection_id": "selection-v1:58156349dd665b89d8bca6cbd65d713b4632ae1292188190a391afe3e0dc999d"
+  },
+  "database_sha256": "93fd8769679b86b4a95f830ac48fe5330a13afe212ea6ecae6ac94ad82498f91",
+  "exclusions": [
+    "Current Telegram content",
+    "live verification",
+    "source-family acceptance"
+  ],
+  "publication_id": 258,
+  "reason": "exact_retained_cycle",
+  "scope": "One historical database-recorded direct card send.",
+  "status": "recorded",
+  "version": 1
+}

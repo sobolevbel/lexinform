@@ -19,3 +19,5 @@ Six pinned results were saved on separate copies of the same checkpoint. The wri
 variant added 162 SQL bytes and 77 gzip bytes relative to the reader-only variant.
 The SQLite allocation was identical. Both copies passed double dump/restore, integrity
 and foreign-key checks. [Checkpoint comparison](storage.json).
+
+[Exact CI and relay verification](release.json).

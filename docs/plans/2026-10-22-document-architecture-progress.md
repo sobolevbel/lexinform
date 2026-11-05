@@ -11359,3 +11359,13 @@ for a bounded loose multipart RCL receipt. The runtime writer remains a separate
 The offline claim checker binds a proposed commencement to an exact project-text quote.
 The frozen cohort, old receipt formats and the full local gate passed.
 [Reader and mechanical checks](../assets/audits/2026-11-05-multipart-rcl-receipt-reader/report.md).
+
+<a id="j270"></a>
+
+## J270 — observed checkpoint costs and an original primary card cycle
+
+Twelve scheduled jobs provide hosted restore and final checkpoint durations. Eight
+daily state boundaries provide actual SQL and compressed net growth. Saved read reports
+provide cache-reuse counts for their recorded population. The direct-card auditor found
+one exact original Sejm analysis-to-SENT chain and four explicit negative controls.
+[Scope, pins and commands](../assets/audits/2026-11-05-hosted-state-and-delivery-cycle/report.md).

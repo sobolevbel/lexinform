@@ -1,0 +1,372 @@
+{
+  "scope": "Existing hosted scheduled runs, aggregate step duration and actual checkpoint bytes.",
+  "workflow": ".github/workflows/daily.yml",
+  "selected_runs": 12,
+  "not_completed": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "conclusion": "success",
+      "databaseId": 42105815156,
+      "event": "schedule",
+      "headSha": "5de1bc6094947c33191a7f6d2feb4e59538abad7",
+      "startedAt": "2026-11-05T20:42:08Z",
+      "status": "completed",
+      "steps": {
+        "Restore database from state branch": {
+          "status": "success",
+          "seconds": 5,
+          "started_at": "2026-11-05T20:42:53Z",
+          "completed_at": "2026-11-05T20:42:58Z"
+        },
+        "Dump database and push state branch": {
+          "status": "success",
+          "seconds": 8,
+          "started_at": "2026-11-05T20:47:19Z",
+          "completed_at": "2026-11-05T20:47:27Z"
+        }
+      }
+    },
+    {
+      "attempt": 1,
+      "conclusion": "success",
+      "databaseId": 42058534514,
+      "event": "schedule",
+      "headSha": "dac5c747012c0c3a03ba84008080999cd6fa8b45",
+      "startedAt": "2026-11-05T15:47:25Z",
+      "status": "completed",
+      "steps": {
+        "Restore database from state branch": {
+          "status": "success",
+          "seconds": 6,
+          "started_at": "2026-11-05T15:48:04Z",
+          "completed_at": "2026-11-05T15:48:10Z"
+        },
+        "Dump database and push state branch": {
+          "status": "success",
+          "seconds": 10,
+          "started_at": "2026-11-05T15:48:12Z",
+          "completed_at": "2026-11-05T15:48:22Z"
+        }
+      }
+    },
+    {
+      "attempt": 1,
+      "conclusion": "success",
+      "databaseId": 41990870268,
+      "event": "schedule",
+      "headSha": "b5a9d27a8413de514c038d92bc9db4e54a735682",
+      "startedAt": "2026-11-05T07:57:31Z",
+      "status": "completed",
+      "steps": {
+        "Restore database from state branch": {
+          "status": "success",
+          "seconds": 6,
+          "started_at": "2026-11-05T07:58:24Z",
+          "completed_at": "2026-11-05T07:58:30Z"
+        },
+        "Dump database and push state branch": {
+          "status": "success",
+          "seconds": 8,
+          "started_at": "2026-11-05T08:02:28Z",
+          "completed_at": "2026-11-05T08:02:36Z"
+        }
+      }
+    },
+    {
+      "attempt": 1,
+      "conclusion": "success",
+      "databaseId": 41986754326,
+      "event": "schedule",
+      "headSha": "15670786bc33d7511dc1b91d7ac9b88877647a2b",
+      "startedAt": "2026-11-05T07:22:18Z",
+      "status": "completed",
+      "steps": {
+        "Restore database from state branch": {
+          "status": "success",
+          "seconds": 6,
+          "started_at": "2026-11-05T07:23:11Z",
+          "completed_at": "2026-11-05T07:23:17Z"
+        },
+        "Dump database and push state branch": {
+          "status": "success",
+          "seconds": 9,
+          "started_at": "2026-11-05T07:23:19Z",
+          "completed_at": "2026-11-05T07:23:28Z"
+        }
+      }
+    },
+    {
+      "attempt": 1,
+      "conclusion": "success",
+      "databaseId": 41941892123,
+      "event": "schedule",
+      "headSha": "7797085152b6734905b82e23207aa89e5a2c3059",
+      "startedAt": "2026-11-05T00:30:57Z",
+      "status": "completed",
+      "steps": {
+        "Restore database from state branch": {
+          "status": "success",
+          "seconds": 6,
+          "started_at": "2026-11-05T00:31:49Z",
+          "completed_at": "2026-11-05T00:31:55Z"
+        },
+        "Dump database and push state branch": {
+          "status": "success",
+          "seconds": 7,
+          "started_at": "2026-11-05T00:31:57Z",
+          "completed_at": "2026-11-05T00:32:04Z"
+        }
+      }
+    },
+    {
+      "attempt": 1,
+      "conclusion": "success",
+      "databaseId": 41906698393,
+      "event": "schedule",
+      "headSha": "a266030dd1a05d0afc75e876fd5f5176ed40d5db",
+      "startedAt": "2026-11-04T20:26:57Z",
+      "status": "completed",
+      "steps": {
+        "Restore database from state branch": {
+          "status": "success",
+          "seconds": 5,
+          "started_at": "2026-11-04T20:27:49Z",
+          "completed_at": "2026-11-04T20:27:54Z"
+        },
+        "Dump database and push state branch": {
+          "status": "success",
+          "seconds": 8,
+          "started_at": "2026-11-04T20:29:32Z",
+          "completed_at": "2026-11-04T20:29:40Z"
+        }
+      }
+    },
+    {
+      "attempt": 1,
+      "conclusion": "success",
+      "databaseId": 41891254558,
+      "event": "schedule",
+      "headSha": "62f028fa11acce3aa2654b794428d74a9ca08bb7",
+      "startedAt": "2026-11-04T18:51:34Z",
+      "status": "completed",
+      "steps": {
+        "Restore database from state branch": {
+          "status": "success",
+          "seconds": 6,
+          "started_at": "2026-11-04T18:52:30Z",
+          "completed_at": "2026-11-04T18:52:36Z"
+        },
+        "Dump database and push state branch": {
+          "status": "success",
+          "seconds": 8,
+          "started_at": "2026-11-04T18:52:38Z",
+          "completed_at": "2026-11-04T18:52:46Z"
+        }
+      }
+    },
+    {
+      "attempt": 1,
+      "conclusion": "success",
+      "databaseId": 41821700342,
+      "event": "schedule",
+      "headSha": "901f8ca1ee15e8c335276e335a681b5611e7f587",
+      "startedAt": "2026-11-04T11:32:21Z",
+      "status": "completed",
+      "steps": {
+        "Restore database from state branch": {
+          "status": "success",
+          "seconds": 6,
+          "started_at": "2026-11-04T11:33:17Z",
+          "completed_at": "2026-11-04T11:33:23Z"
+        },
+        "Dump database and push state branch": {
+          "status": "success",
+          "seconds": 9,
+          "started_at": "2026-11-04T11:33:26Z",
+          "completed_at": "2026-11-04T11:33:35Z"
+        }
+      }
+    },
+    {
+      "attempt": 1,
+      "conclusion": "success",
+      "databaseId": 41793133739,
+      "event": "schedule",
+      "headSha": "901f8ca1ee15e8c335276e335a681b5611e7f587",
+      "startedAt": "2026-11-04T07:33:49Z",
+      "status": "completed",
+      "steps": {
+        "Restore database from state branch": {
+          "status": "success",
+          "seconds": 7,
+          "started_at": "2026-11-04T07:34:36Z",
+          "completed_at": "2026-11-04T07:34:43Z"
+        },
+        "Dump database and push state branch": {
+          "status": "success",
+          "seconds": 8,
+          "started_at": "2026-11-04T07:39:11Z",
+          "completed_at": "2026-11-04T07:39:19Z"
+        }
+      }
+    },
+    {
+      "attempt": 1,
+      "conclusion": "success",
+      "databaseId": 41765871941,
+      "event": "schedule",
+      "headSha": "901f8ca1ee15e8c335276e335a681b5611e7f587",
+      "startedAt": "2026-11-04T03:14:28Z",
+      "status": "completed",
+      "steps": {
+        "Restore database from state branch": {
+          "status": "success",
+          "seconds": 5,
+          "started_at": "2026-11-04T03:15:10Z",
+          "completed_at": "2026-11-04T03:15:15Z"
+        },
+        "Dump database and push state branch": {
+          "status": "success",
+          "seconds": 8,
+          "started_at": "2026-11-04T03:15:16Z",
+          "completed_at": "2026-11-04T03:15:24Z"
+        }
+      }
+    },
+    {
+      "attempt": 1,
+      "conclusion": "success",
+      "databaseId": 41740832579,
+      "event": "schedule",
+      "headSha": "901f8ca1ee15e8c335276e335a681b5611e7f587",
+      "startedAt": "2026-11-03T23:39:06Z",
+      "status": "completed",
+      "steps": {
+        "Restore database from state branch": {
+          "status": "success",
+          "seconds": 4,
+          "started_at": "2026-11-03T23:39:46Z",
+          "completed_at": "2026-11-03T23:39:50Z"
+        },
+        "Dump database and push state branch": {
+          "status": "success",
+          "seconds": 6,
+          "started_at": "2026-11-03T23:39:52Z",
+          "completed_at": "2026-11-03T23:39:58Z"
+        }
+      }
+    },
+    {
+      "attempt": 1,
+      "conclusion": "failure",
+      "databaseId": 41709843542,
+      "event": "schedule",
+      "headSha": "901f8ca1ee15e8c335276e335a681b5611e7f587",
+      "startedAt": "2026-11-03T20:08:49Z",
+      "status": "completed",
+      "steps": {
+        "Restore database from state branch": {
+          "status": "success",
+          "seconds": 5,
+          "started_at": "2026-11-03T20:11:01Z",
+          "completed_at": "2026-11-03T20:11:06Z"
+        },
+        "Dump database and push state branch": {
+          "status": "success",
+          "seconds": 31,
+          "started_at": "2026-11-03T20:14:05Z",
+          "completed_at": "2026-11-03T20:14:36Z"
+        }
+      }
+    }
+  ],
+  "step_seconds": {
+    "Restore database from state branch": {
+      "observed_success": 12,
+      "unobserved_or_unsuccessful": 0,
+      "min": 4,
+      "median": 6.0,
+      "max": 7
+    },
+    "Dump database and push state branch": {
+      "observed_success": 12,
+      "unobserved_or_unsuccessful": 0,
+      "min": 6,
+      "median": 8.0,
+      "max": 31
+    }
+  },
+  "state_tip": "13440124b6f38f1124beb9b99f35a7c8a227c08b",
+  "natural_net_growth": [
+    {
+      "boundary_utc": "2026-10-29T00:00:00Z",
+      "state_sha": "e15b53d07ac1d20fccce9d5d931d3c89d880e4ca",
+      "sql_bytes": 20378124,
+      "gzip_bytes": 4112280,
+      "sql_delta": null,
+      "gzip_delta": null
+    },
+    {
+      "boundary_utc": "2026-10-30T00:00:00Z",
+      "state_sha": "33610c8dc6bb30bcc6b43673fc01531048803f32",
+      "sql_bytes": 20865223,
+      "gzip_bytes": 4187761,
+      "sql_delta": 487099,
+      "gzip_delta": 75481
+    },
+    {
+      "boundary_utc": "2026-10-31T00:00:00Z",
+      "state_sha": "fcec2ff439564b2ad56d8e3cffa6d99ff3cf6c57",
+      "sql_bytes": 23369558,
+      "gzip_bytes": 4775120,
+      "sql_delta": 2504335,
+      "gzip_delta": 587359
+    },
+    {
+      "boundary_utc": "2026-11-01T00:00:00Z",
+      "state_sha": "b460a4fc3f074dbaca6b8a96a55b96b20b87901f",
+      "sql_bytes": 23413663,
+      "gzip_bytes": 4780665,
+      "sql_delta": 44105,
+      "gzip_delta": 5545
+    },
+    {
+      "boundary_utc": "2026-11-02T00:00:00Z",
+      "state_sha": "2be2ceacde9dad6a85a36b487c79603363f85146",
+      "sql_bytes": 23461626,
+      "gzip_bytes": 4786755,
+      "sql_delta": 47963,
+      "gzip_delta": 6090
+    },
+    {
+      "boundary_utc": "2026-11-03T00:00:00Z",
+      "state_sha": "c81de7f099ec5537ccf9543cc472443ad8d2b83a",
+      "sql_bytes": 25431142,
+      "gzip_bytes": 5185996,
+      "sql_delta": 1969516,
+      "gzip_delta": 399241
+    },
+    {
+      "boundary_utc": "2026-11-04T00:00:00Z",
+      "state_sha": "d98b60d6caf76038f1c2e1c5a86a1fdc2a0d3dd1",
+      "sql_bytes": 25129144,
+      "gzip_bytes": 5100109,
+      "sql_delta": -301998,
+      "gzip_delta": -85887
+    },
+    {
+      "boundary_utc": "2026-11-05T00:00:00Z",
+      "state_sha": "7b2084b1c66421061c9031f28a4edabbe2cc0245",
+      "sql_bytes": 25815220,
+      "gzip_bytes": 5208734,
+      "sql_delta": 686076,
+      "gzip_delta": 108625
+    }
+  ],
+  "limits": [
+    "Step durations include the command, local work and the remote push together where applicable.",
+    "Git checkpoint growth is net of additions, compaction and maintenance; it is not storage billed by GitHub.",
+    "Sample excludes in-run phase checkpoints from hosted step duration."
+  ]
+}

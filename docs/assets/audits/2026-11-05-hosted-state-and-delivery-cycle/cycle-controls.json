@@ -1,0 +1,58 @@
+[
+  {
+    "cycle": null,
+    "database_sha256": "93fd8769679b86b4a95f830ac48fe5330a13afe212ea6ecae6ac94ad82498f91",
+    "exclusions": [
+      "Current Telegram content",
+      "live verification",
+      "source-family acceptance"
+    ],
+    "publication_id": 225,
+    "reason": "consumed_projection_unavailable",
+    "scope": "One historical database-recorded direct card send.",
+    "status": "not_observed",
+    "version": 1
+  },
+  {
+    "cycle": null,
+    "database_sha256": "93fd8769679b86b4a95f830ac48fe5330a13afe212ea6ecae6ac94ad82498f91",
+    "exclusions": [
+      "Current Telegram content",
+      "live verification",
+      "source-family acceptance"
+    ],
+    "publication_id": 259,
+    "reason": "publication_outside_primary_card_scope",
+    "scope": "One historical database-recorded direct card send.",
+    "status": "not_observed",
+    "version": 1
+  },
+  {
+    "cycle": null,
+    "database_sha256": "93fd8769679b86b4a95f830ac48fe5330a13afe212ea6ecae6ac94ad82498f91",
+    "exclusions": [
+      "Current Telegram content",
+      "live verification",
+      "source-family acceptance"
+    ],
+    "publication_id": 264,
+    "reason": "prepared_receipt_unavailable",
+    "scope": "One historical database-recorded direct card send.",
+    "status": "not_observed",
+    "version": 1
+  },
+  {
+    "cycle": null,
+    "database_sha256": "93fd8769679b86b4a95f830ac48fe5330a13afe212ea6ecae6ac94ad82498f91",
+    "exclusions": [
+      "Current Telegram content",
+      "live verification",
+      "source-family acceptance"
+    ],
+    "publication_id": 999999,
+    "reason": "publication_unavailable",
+    "scope": "One historical database-recorded direct card send.",
+    "status": "not_observed",
+    "version": 1
+  }
+]
