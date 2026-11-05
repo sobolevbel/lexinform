@@ -1,0 +1,30 @@
+{
+  "testsuite": "J248 full8802",
+  "named_tests_all_executed_and_passed": true,
+  "matched_cases": 86,
+  "test_symbol_case_counts": {
+    "tests/scenario/test_computation_binding_writer.py::test_secondary_writer_and_cleanup_preserve_known_or_unknown_original_binding": 20,
+    "tests/scenario/test_computation_history.py::test_paid_primary_answer_survives_supersession_and_operational_cleanup": 2,
+    "tests/scenario/test_review_computation_history.py::test_review_history_retains_paid_output_and_compact_input_across_reuse_and_cleanup": 12,
+    "tests/scenario/test_rollover_computation_history.py::test_government_rollover_records_the_retained_analysis_without_rekeying_paid_work": 8,
+    "tests/scenario/test_rollover_review_history.py::test_current_review_receipt_moves_without_rekeying_the_original_paid_result": 12,
+    "tests/scenario/test_secondary_computation_history.py::test_secondary_answer_survives_collect_restore_reuse_and_operational_cleanup": 10,
+    "tests/scenario/test_secondary_projection_applications.py::test_explanation_applications_name_commands_without_changing_the_bill": 2,
+    "tests/scenario/test_secondary_projection_applications.py::test_joint_application_records_the_saved_bill_projection": 2,
+    "tests/scenario/test_secondary_projection_applications.py::test_one_paid_review_applies_to_two_source_scopes": 4,
+    "tests/scenario/test_secondary_projection_applications.py::test_paid_name_application_records_editorial_selection": 2,
+    "tests/scenario/test_selected_name_binding.py::test_selected_paid_name_survives_repeated_rollover_restore_and_quiet_repeat": 1,
+    "tests/scenario/test_status_change_applications.py::test_paid_result_can_apply_to_two_events_without_another_paid_computation": 4,
+    "tests/scenario/test_tracking_result_applications.py::test_linked_print_reuses_the_original_result_with_its_own_application": 2,
+    "tests/unit/test_secondary_dependencies.py::test_unbound_legacy_and_foreign_paid_owner_zero_reuse_remain_valid": 5
+  },
+  "metadata_recipe": {
+    "source_pins_exact": true,
+    "historical_range_extraction_exact": true,
+    "purpose_count": 10,
+    "named_existing_test_symbols": 14,
+    "tests_executed": false,
+    "semantic_conclusion": "manual source/test audit pending root acceptance review",
+    "checkbox_changed": false
+  }
+}

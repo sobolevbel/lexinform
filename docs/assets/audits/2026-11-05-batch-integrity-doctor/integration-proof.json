@@ -1,0 +1,64 @@
+{
+  "full_tests": 8825,
+  "mypy": 760,
+  "ruff_format": 829,
+  "source_config_pins_exact": 829,
+  "root_focused": 55,
+  "new_unit_cases": 23,
+  "new_scenario_cases": 0,
+  "source_unchanged": true,
+  "source_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+  "five_default_doctor_reports_byte_exact": true,
+  "default_reports_sha256": "5016fb049d711435e947d89bf9cc8ed39ca99542e496bd67868090730d2c21a1",
+  "observed_profile": {
+    "version": 1,
+    "profile": "saved-batch-application-integrity-v1",
+    "status": "recorded",
+    "schema_version": 66,
+    "summary": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "sections": {
+      "applications": {
+        "duplicate_groups": 0,
+        "duplicate_rows": 0,
+        "invalid_rows": 0,
+        "missing_columns": [],
+        "rows": 26,
+        "status": "available",
+        "valid_rows": 26
+      },
+      "llm_batch_intents": {
+        "assessed_rows": 0,
+        "generation_unknown_rows": 0,
+        "invalid_rows": 0,
+        "missing_columns": [],
+        "not_applicable_rows": 0,
+        "owner_missing_columns": [],
+        "owner_unknown_rows": 0,
+        "primary_rows": 0,
+        "rows": 0,
+        "same_generation_rows": 0,
+        "stale_generation_rows": 0,
+        "status": "available"
+      },
+      "llm_batch_items": {
+        "assessed_rows": 0,
+        "generation_unknown_rows": 0,
+        "invalid_rows": 0,
+        "missing_columns": [],
+        "not_applicable_rows": 0,
+        "owner_missing_columns": [],
+        "owner_unknown_rows": 0,
+        "primary_rows": 0,
+        "rows": 0,
+        "same_generation_rows": 0,
+        "stale_generation_rows": 0,
+        "status": "available"
+      }
+    }
+  },
+  "full_log_sha256": "2f72a5b9d88bd439245bf5749dd0a6be12622056d92d0635064b8beb8322e50f",
+  "full_xml_sha256": "a697b09ce60e3de1756ddf20f7ba830ffcdd14f23a4bb5827b295759833a1987"
+}

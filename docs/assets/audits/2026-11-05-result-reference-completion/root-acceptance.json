@@ -1,0 +1,21 @@
+{
+  "item": "DA6.3",
+  "status": "accepted",
+  "qualified_commit": "b5a9d27a8413de514c038d92bc9db4e54a735682",
+  "qualified_gate": {
+    "tests": 8802,
+    "mypy": 758,
+    "ruff": 827
+  },
+  "named_passing_test_cases": 86,
+  "purpose_count": 10,
+  "source_pins": 40,
+  "peer_review": "CLEAR",
+  "literal_requirements_and_section_1_4": "all explicitly reviewed; frozen audit.json preserves the candidate assessment",
+  "release": "qualified-release.json",
+  "metadata_recipe_source_snapshot": "b5a9d27a8413de514c038d92bc9db4e54a735682",
+  "additional_compaction_not_claimed": true,
+  "legacy_orphan_import_and_natural_coverage": "separate DA6.5/DA6.6/DA10.7 requirements",
+  "frozen_candidate_report": "report.md; candidate review status is superseded only by this separate root acceptance record",
+  "recipe": "recipe.md; run against exact b5a9d27a source snapshot because plan/journal status later changes"
+}

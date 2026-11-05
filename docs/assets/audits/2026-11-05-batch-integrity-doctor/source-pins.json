@@ -1,0 +1,13 @@
+{
+  "base_commit": "b5a9d27a8413de514c038d92bc9db4e54a735682",
+  "files": {
+    "pyproject.toml": "2991ec315981f1876f07c12c6d987092d556a9b62dc21adfd3d97fa482425627",
+    "tests/unit/test_batch_integrity_doctor.py": "91441aacb1cc1935c2687d5ee93c456bf059f5bfecf51c0f92c9a99d4f6a2b78",
+    "tools/README.md": "223af5ede6106dfab0c90524694e33d53bcba3d87790c11e9fe075fceddd12e1",
+    "tools/batch_integrity_doctor.py": "84c3bb08552779b8d5395f5ec90b4772118938d9b31c0587473c10d79c4f997f"
+  },
+  "patch_sha256": "e13fbc72431aaa2d5f5b1d4fcb2f5786c07961064ffc346c758813de548dfb64",
+  "previous_patch_sha256": "258b37687a8914c6dad98c47fcfba994c9e1931d4260cbd74f7b682360e45556",
+  "test_increment_sha256": "8926639920ae93a569c1745b2d80ec07b0580be3c3116d194a895959c512fdbd",
+  "workspace": "/private/tmp/lexinform-j249-batch-integrity"
+}

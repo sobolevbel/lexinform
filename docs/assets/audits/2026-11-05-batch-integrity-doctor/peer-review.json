@@ -1,0 +1,19 @@
+{
+  "stage": "J249",
+  "independent_tests": false,
+  "source_edits": false,
+  "network": false,
+  "v1": {
+    "verdict": "clear_then_question_reopened",
+    "patch_sha256": "258b37687a8914c6dad98c47fcfba994c9e1931d4260cbd74f7b682360e45556"
+  },
+  "v2": {
+    "verdict": "CLEAR",
+    "reviewer": "/root/secondary_dependency_review",
+    "full_patch_sha256": "e13fbc72431aaa2d5f5b1d4fcb2f5786c07961064ffc346c758813de548dfb64",
+    "increment_sha256": "8926639920ae93a569c1745b2d80ec07b0580be3c3116d194a895959c512fdbd",
+    "source_pins_verified": 4,
+    "findings": []
+  },
+  "provenance": "Direct reviewer messages to author and root; no claim of independent test execution."
+}

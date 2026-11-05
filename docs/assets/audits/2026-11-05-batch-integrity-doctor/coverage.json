@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "item": "DA10.2",
+  "literal": "Добавить read-only doctor для missing/corrupt blobs, dangling refs/work, duplicate application, stale generation, orphaned batch, missing receipt и archive coverage. Ремонт и повтор отправки не выполняются doctor автоматически.",
+  "acceptance": "Root decision pending; this maps concrete current scopes and exclusions, not universal completion.",
+  "commands": {
+    "request": "uv run --offline --frozen python -m tools.request_doctor --database COPY.db --output out/request.json",
+    "work": "uv run --offline --frozen python -m tools.work_doctor --database COPY.db --output out/work.json",
+    "computation": "uv run --offline --frozen python -m tools.computation_doctor --database COPY.db --output out/computation.json",
+    "source_archive": "uv run --offline --frozen python -m tools.source_history_doctor --database COPY.db --output out/source.json --candidate-traces",
+    "content": "uv run --offline --frozen python -m tools.content_history_doctor --database COPY.db --output out/content.json",
+    "new_batch_integrity": "uv run --offline --frozen python -m tools.batch_integrity_doctor --database COPY.db --output out/batch-integrity.json"
+  },
+  "requirements": {
+    "missing_corrupt_blobs": {
+      "status": "Current metadata parents/checksums covered; actual raw blob bytes deferred/not assessed.",
+      "sources": ["tools/source_history_doctor.py::audit", "lexinform.adapters.extraction_history::read_extraction_result", "lexinform.adapters.input_receipts::input_snapshot_checks"],
+      "tests": ["tests/unit/test_source_history_doctor.py::test_known_artifact_graph_is_read_only_and_does_not_claim_body_retention", "tests/unit/test_source_history_doctor.py::test_artifact_damage_is_reported_without_a_source_fetch", "tests/unit/test_source_history_doctor.py::test_invalid_receipts_and_missing_parents_are_explicit_errors"],
+      "boundary": "Artifacts/complete-response receipts retain identities/size/status and known graph refs. Current profile does not promise durable raw body retention. No filesystem/object backend, missing-object scan or fetch is invented; deferred DA2 storage work is separate."
+    },
+    "dangling_refs_work": {
+      "status": "Covered for the explicitly typed stored graph/work edges below; not arbitrary JSON reachability.",
+      "sources": ["tools/computation_doctor.py::ComputationAudit.applications", "tools/computation_doctor.py::ComputationAudit.reference", "tools/work_doctor.py::WorkAudit.documents", "tools/work_doctor.py::WorkAudit.reviews", "lexinform.adapters.document_work::read_document_work", "tools/content_history_doctor.py::_read_history", "tools/source_history_doctor.py::candidate_trace_inventory"],
+      "tests": ["tests/scenario/test_work_doctor.py::test_broken_work_dependencies_are_reported_without_repair", "tests/scenario/test_work_doctor.py::test_absent_historical_dependencies_are_warnings_and_are_not_rebuilt", "tests/scenario/test_computation_doctor.py::test_graph_errors_are_reported_without_repair", "tests/unit/test_candidate_trace_doctor.py::test_dangling_or_invalid_source_links_are_not_validated", "tests/unit/test_content_history_doctor.py::test_damaged_history_is_reported_without_a_guessed_current_version"],
+      "boundary": "Document owner/change and known publication links, revision-work snapshots/results/handoffs, review owner/context, known result/application/target/source/content parents are checked. Opaque targets and absent legacy context remain unknown; no universal inverse Bill-to-queue ownership assertion or reconstruction from current Bill/URL."
+    },
+    "duplicate_application": {
+      "status": "J249 adds missing explicit duplicate census.",
+      "sources": ["tools/batch_integrity_doctor.py::_applications", "lexinform.adapters.computation_history::read_result_application"],
+      "tests": ["tests/unit/test_batch_integrity_doctor.py::test_duplicate_application_identity_is_reported", "tests/unit/test_batch_integrity_doctor.py::test_nullable_target_duplicate_uses_actual_sql_target_key", "tests/unit/test_batch_integrity_doctor.py::test_distinct_phase_generation_and_opaque_targets_are_not_duplicates", "tests/unit/test_batch_integrity_doctor.py::test_damaged_null_generation_null_target_rows_are_invalid_not_duplicates"],
+      "boundary": "Matches actual generation-key or complete target-key SQL identity, never answer/body similarity or duplicate billing. Existing model/current CHECK reject NULL-generation plus NULL-target; pre-v50 generation is NOT NULL. Damaged rows count invalid, not duplicates; no valid legacy target is invented."
+    },
+    "stale_generation": {
+      "status": "J249 adds missing active primary generation advisory.",
+      "sources": ["tools/batch_integrity_doctor.py::_active", "tools/batch_integrity_doctor.py::_intent", "tools/batch_integrity_doctor.py::_item"],
+      "tests": ["tests/unit/test_batch_integrity_doctor.py::test_public_reset_stale_queued_generation_is_an_advisory", "tests/unit/test_batch_integrity_doctor.py::test_consumed_items_and_historical_applications_are_not_current_generation_checks", "tests/unit/test_batch_integrity_doctor.py::test_missing_saved_generation_does_not_infer_model_default_zero", "tests/unit/test_batch_integrity_doctor.py::test_same_generation_legacy_request_envelope_remains_a_known_positive", "tests/unit/test_batch_integrity_doctor.py::test_all_nonprimary_purposes_are_explicitly_not_applicable"],
+      "boundary": "Only queued/submitting intents and unconsumed items for analysis/reanalysis with explicit saved integer generation and exact SQL owner are compared. Mismatch is warning: reset/late response can legitimately leave old work. No historical paid/application generation comparison. DocumentWork and AmendmentRevisionApplicationWork define no generation; their dependency checks stay with work_doctor."
+    },
+    "orphaned_batch": {
+      "status": "Existing exact child-item-without-parent-batch check; not a standalone whole-batch cardinality census.",
+      "sources": ["tools/request_doctor.py::_rows"],
+      "tests": ["tests/scenario/test_request_doctor.py::test_malformed_or_orphaned_items_are_reported"],
+      "finding": "missing_batch error for an llm_batch_items row whose LEFT JOIN llm_batches has no parent provider.",
+      "boundary": "This is distinct from document/review orphan work. Existing commands do not inspect every batch row for absent/partial item sets versus request_count. No current/forgotten/historical batch cardinality rule is asserted without a qualified producer/retention contract."
+    },
+    "missing_receipt": {
+      "status": "Known frozen request/input-parent checks plus request-SHA-group missing-item warning; not universal exact paid-receipt matching.",
+      "sources": ["tools/request_doctor.py::RequestAudit.finish", "tools/request_doctor.py::RequestAudit.intent", "lexinform.adapters.input_receipts::input_snapshot_checks"],
+      "tests": ["tests/scenario/test_request_doctor.py::test_unmatched_result_is_a_warning_and_never_repaired", "tests/scenario/test_request_doctor.py::test_corruption_is_reported_without_hiding_the_next_valid_intent", "tests/unit/test_input_receipt_validation.py::test_known_missing_parent_reference_is_refused_by_restore_and_doctor", "tests/unit/test_input_receipt_validation.py::test_known_frozen_request_is_checked_without_receipt_and_legacy_unknown_hash_stays_unknown"],
+      "finding": "result_without_batch_receipt warning means known request SHA appears in saved result refs but no stored item in that same SHA group.",
+      "boundary": "Grouping is by SHA, not exact provider/batch_id/custom_id. Another same-SHA item is not proof of the original paid receipt. Legacy absent hashes/erased input remain unknown; historical missing receipts are not automatically corrupt or rebuilt. Exact paid-receipt lineage after retention is not claimed by this warning."
+    },
+    "archive_coverage": {
+      "status": "Saved native metadata/coverage bounds and graph presence checked; complete raw archive traversal/body retention not claimed.",
+      "sources": ["tools/source_history_doctor.py::_audit_extraction_results", "tools/source_history_doctor.py::candidate_trace_inventory", "lexinform.adapters.candidate_trace_history::read_candidate_disposition_trace"],
+      "tests": ["tests/unit/test_candidate_trace_doctor.py::test_nested_archive_corruption_uses_shared_reads_restore_and_doctor", "tests/unit/test_candidate_trace_doctor.py::test_unavailable_schema_never_looks_like_an_empty_population", "tests/unit/test_candidate_trace_doctor.py::test_legacy_unavailable_inventory_does_not_invent_corruption", "tests/unit/test_source_history_doctor.py::test_complete_body_receipts_are_checked_without_disclosing_urls"],
+      "boundary": "Opt-in candidate-traces validates model/SQL counts, coverage bounds and known parents. Prefix/omitted or unsupported metadata cannot certify omitted raw tails, source completeness, legal selection or full archive traversal; no backend/raw source fetch is attempted."
+    }
+  },
+  "crosscutting_tests": ["tests/unit/test_batch_integrity_doctor.py::test_missing_schema_is_not_a_known_empty_population", "tests/unit/test_batch_integrity_doctor.py::test_bad_json_is_bounded_and_does_not_drop_row_denominator", "tests/unit/test_batch_integrity_doctor.py::test_empty_available_schema_and_cli_are_read_only"],
+  "remaining_unassessed_capabilities": [
+    "Standalone batch-row versus expected item-cardinality/receipt completeness, with separately qualified active/forgotten/historical semantics.",
+    "Exact original paid provider/batch_id/custom_id receipt lineage when a same-SHA different item exists; SHA grouping alone does not prove it.",
+    "Actual durable raw blob existence/hash and full raw archive traversal outside the deferred metadata-only retention profile."
+  ],
+  "no_automatic_actions": true,
+  "checkbox_changed": false,
+  "production_implementation_scope_frozen": "J249 V2; this acceptance map does not expand it."
+}

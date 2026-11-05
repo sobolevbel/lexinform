@@ -1,0 +1,27 @@
+{
+  "focused": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 55
+  },
+  "format": "2 files already formatted",
+  "mypy": "Success: no issues found in 2 source files",
+  "network_calls": 0,
+  "new_scenarios": 0,
+  "new_units": 23,
+  "production_sources_unchanged_from_first_freeze": true,
+  "root_full_gate": {
+    "status": "passed",
+    "tests": 8825,
+    "seconds": 295.12,
+    "coverage_percent": 92,
+    "mypy_files": 760,
+    "ruff_format_files": 829,
+    "source_config_pins_exact": 829
+  },
+  "ruff": "All checks passed!",
+  "unit_first_failures": 2,
+  "root_state": "integration-proof.json",
+  "release": "pending publication"
+}

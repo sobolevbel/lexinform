@@ -1,0 +1,9 @@
+{
+  "source_pins_exact": true,
+  "historical_range_extraction_exact": true,
+  "purpose_count": 10,
+  "named_existing_test_symbols": 14,
+  "tests_executed": false,
+  "semantic_conclusion": "manual source/test audit pending root acceptance review",
+  "checkbox_changed": false
+}

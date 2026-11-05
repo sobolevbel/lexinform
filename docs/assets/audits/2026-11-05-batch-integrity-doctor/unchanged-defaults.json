@@ -1,0 +1,9 @@
+{
+  "src/lexinform/adapters/computation_history.py": "3885767e8a0d2d943341ac9f46d1b4d52ec3dec0161bb0eded209101275e01fb",
+  "src/lexinform/models/batch.py": "25dab2527da52f327c68d431301c571ec1de74c6511a3ee4a9cafd39d5bc70db",
+  "tools/computation_doctor.py": "9d953920b6e62e4213dfa4d2c2ce5fd6ffbe93efdb2aa1e8bc3ae3ad3dbd3517",
+  "tools/content_history_doctor.py": "6066a601b4f427da6f5c53c3f2981cd3c6259e1841fbf8601f9dadd3db73a0d6",
+  "tools/request_doctor.py": "3e9a135afd75e12b767962b9a87465e130ea6b26dea328c5183ac9ff9154cac0",
+  "tools/source_history_doctor.py": "792862a0bc907a3cff6e3e8b541061ef8f5478e06faa8eab9bc579990f288d8c",
+  "tools/work_doctor.py": "0b98615beeb97d7dd32ab9e562fefcc4c12b3a5595f0b15716bd777638938d42"
+}

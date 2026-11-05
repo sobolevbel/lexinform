@@ -100,6 +100,28 @@ arguments/input. `recorded` is not a full-state health verdict. Blob coverage, s
 generation ownership and immutable result/application history remain outside this first doctor.
 Payload and legal text are not copied into the report.
 
+## Batch/application integrity doctor
+
+```bash
+uv run --offline --frozen python -m tools.batch_integrity_doctor \
+  --database /path/to/checkpointed-copy.db --output "$PWD/out/doctor/batch-integrity.json"
+```
+
+This separate opt-in profile preserves all existing doctor output. It checks duplicate application
+identities using the actual primary-generation or secondary-target SQL unique key. Distinct phases,
+generations and opaque targets remain distinct; duplicate identity does not prove duplicate billing.
+Only queued/submitting intents and unconsumed items with analysis/reanalysis and an explicit saved
+integer generation are compared with their exact current SQL owner. A mismatch is advisory, never
+a reason to repair, cancel or retry. Consumed/history rows are excluded; legacy missing generation
+stays unknown, other purposes are not applicable. Document/revision work has no generation field
+and remains under work_doctor dependency checks.
+
+Each section counts its own rows, including invalid metadata. Missing schema is unavailable/null;
+known empty is zero. Missing owner/generation is explicit and never guessed through aliases.
+The read-only snapshot report contains bounded row refs, no source/prose/payload bodies. Exit0 means
+a complete recorded census (warnings allowed),1 errors,2 unavailable/partial schema. Raw blob checks
+remain outside the current metadata-only archive profile. No provider/network call or action occurs.
+
 ## Unfinished-work doctor
 
 ```bash

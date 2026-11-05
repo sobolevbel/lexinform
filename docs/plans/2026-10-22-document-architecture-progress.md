@@ -11025,3 +11025,46 @@ bounded DA10.2 change closes no task; plan46/6/22 unchanged.
 [ID contract](../assets/audits/2026-11-05-application-read-integrity/id-contract.json),
 [state parity](../assets/audits/2026-11-05-application-read-integrity/state-parity.json),
 [source pins](../assets/audits/2026-11-05-application-read-integrity/source-pins.json).
+
+<a id="j249"></a>
+
+## J249 — result-reference acceptance and read-only diagnostics
+
+DA6.3 acceptance reviewed against its full literal requirements and section1.4, not only its
+title. All ten supported purposes have compatible refs, collect/consumer checkpoints and
+original-owner boundaries; permanent application history stores refs/outcomes without another
+full context per reuse. Committed J066/J068 peak/cleaned SQL/gzip/SQLite measurements and actual
+retention exit/protection conditions are pinned. Hot/pending/orphan exceptions are explicit.
+
+The metadata recipe validates40source/test/proof pins. All14named tests executed as86passing
+cases in the merged8802-test gate; independent requirement review is CLEAR. Actual b5a9d27a
+CI41990416151/relay41991034474 verified. Root accepts DA6.3; plan47complete/6N/A/21open. Generic
+review memo body compaction stays OFF and is not substituted for this reference-ledger contract.
+Legacy import, orphan retention and natural/legal acceptance remain separate items.
+
+[Acceptance](../assets/audits/2026-11-05-result-reference-completion/root-acceptance.json),
+[audit](../assets/audits/2026-11-05-result-reference-completion/report.md),
+[execution proof](../assets/audits/2026-11-05-result-reference-completion/root-execution-proof.json),
+[independent review](../assets/audits/2026-11-05-result-reference-completion/peer-review.json).
+
+The standalone opt-in batch integrity doctor reuses typed row/request models and a checkpointed
+read-only snapshot. It checks both actual application key families and explicit-generation
+queued/submitting/unconsumed primary work. Known staleness is advisory; consumed/history and
+nonprimary scopes are not compared with current Bill generation. Missing schema yields unknown
+counts. Deep/invalid payload findings contain bounded refs, never request bodies. No repair,
+retry, cancellation, provider call or delivery occurs.
+
+Two unit-first failures close; final55focused/23newunits/0newscenarios and independent V2 review
+pass. A root nullable-key question was resolved by existing model/SQL/pre-v50 invariants; one
+extra corrupt-layout test locks invalid2/duplicate0, without production-policy change. Existing
+five doctor implementations stay byte-exact, and their full default reports compare byte-exact
+on pinned b9. The new CLI observes26valid applications/0duplicates and known-empty active queues;
+no natural stale/duplicate cohort is claimed. Source DB unchanged.
+
+Root8825full tests/295.12s/92%coverage, mypy760/Ruff/format829 and all829source/config pins pass.
+The exact receipt-identity and batch-cardinality coverage gaps remain explicit; DA10.2 stays
+partial. Actual J249 release follows publication.
+
+[Diagnostic report](../assets/audits/2026-11-05-batch-integrity-doctor/REPORT.md),
+[coverage](../assets/audits/2026-11-05-batch-integrity-doctor/coverage.json),
+[integration proof](../assets/audits/2026-11-05-batch-integrity-doctor/integration-proof.json).

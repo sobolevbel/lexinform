@@ -1,0 +1,315 @@
+{
+  "item": "DA6.3",
+  "status": "acceptance_supported_pending_root_review; no checkbox edit",
+  "audited_root_HEAD": "fd34b019153ad32da86b167991299fa9bc99a7aa",
+  "audited_worktree_pins_authoritative": true,
+  "implementation_gap_found": false,
+  "requirements": [
+    {
+      "literal": "compatible result refs to current Bill analysis/reviews",
+      "evidence": [
+        "models/analysis.py::AnalysisRecord",
+        "models/reviews.py::DocumentReviewRecord",
+        "models/bill.py current primary/three review fields",
+        "models/editorial.py::Mnemonic",
+        "adapters/secondary_dependencies.py shared save/read/restore/doctor validation"
+      ],
+      "gap": null
+    },
+    {
+      "literal": "dual write primary then amendments/supplement/joint/reviews/explanation; secondary status unchanged",
+      "evidence": "all10purpose_rows; known paid refs survive collect/reuse/cleanup/restore; legacy None remains unknown",
+      "gap": null
+    },
+    {
+      "literal": "measure temporary projections/memo/results redundancy under section1.4",
+      "evidence": "historical_storage_measurements + explicit operational exit contract; current full baseline contexts intentionally retained",
+      "gap": null
+    },
+    {
+      "literal": "permanent application history contains refs+outcome rather than full context/paid answer per reuse",
+      "evidence": "models/computations.py::ResultApplication and services/result_applications.py; event/review/joint/name/revision/command target checkpoints; no body/context field in this ledger",
+      "gap": null
+    }
+  ],
+  "all10purpose_rows": [
+    {
+      "purpose": "analysis",
+      "result_ref": "computation_id + known request_sha256; legacy nullable/unknown preserved",
+      "carrier": "AnalysisRecord",
+      "collector": "src/lexinform/services/analysis.py::_record_collection/_retain_computation",
+      "consumer": "services/analysis_applications.py current/ready primary generation + tracking/linking receipts",
+      "collection_test": "tests/scenario/test_computation_history.py::test_paid_primary_answer_survives_supersession_and_operational_cleanup",
+      "projection_test": "tests/scenario/test_rollover_computation_history.py::test_government_rollover_records_the_retained_analysis_without_rekeying_paid_work",
+      "original_owner": "immutable paid result/input binding stays original; application consumer owner/target is separate; no rekey/rewrite",
+      "status_policy": "primary generation policy applies",
+      "production_caveat": null,
+      "ownership_tests": [
+        "tests/scenario/test_rollover_computation_history.py::test_government_rollover_records_the_retained_analysis_without_rekeying_paid_work",
+        "tests/scenario/test_tracking_result_applications.py::test_linked_print_reuses_the_original_result_with_its_own_application"
+      ]
+    },
+    {
+      "purpose": "reanalysis",
+      "result_ref": "computation_id + known request_sha256; legacy nullable/unknown preserved",
+      "carrier": "AnalysisRecord",
+      "collector": "src/lexinform/services/analysis.py::_record_collection/_retain_computation",
+      "consumer": "services/analysis_applications.py current primary generation + tracking receipts",
+      "collection_test": "tests/scenario/test_computation_history.py::test_paid_primary_answer_survives_supersession_and_operational_cleanup",
+      "projection_test": "tests/scenario/test_rollover_computation_history.py::test_government_rollover_records_the_retained_analysis_without_rekeying_paid_work",
+      "original_owner": "immutable paid result/input binding stays original; application consumer owner/target is separate; no rekey/rewrite",
+      "status_policy": "primary generation policy applies",
+      "production_caveat": null,
+      "ownership_tests": [
+        "tests/scenario/test_rollover_computation_history.py::test_government_rollover_records_the_retained_analysis_without_rekeying_paid_work",
+        "tests/scenario/test_tracking_result_applications.py::test_linked_print_reuses_the_original_result_with_its_own_application"
+      ]
+    },
+    {
+      "purpose": "amendments",
+      "result_ref": "computation_id + known request_sha256; legacy nullable/unknown preserved",
+      "carrier": "AmendmentsRecord",
+      "collector": "src/lexinform/services/analysis.py::_consume_digest/_retain_computation",
+      "consumer": "services/status_change_applications.py status_change ID; services/revision_applications.py publication ID",
+      "collection_test": "tests/scenario/test_secondary_computation_history.py::test_secondary_answer_survives_collect_restore_reuse_and_operational_cleanup",
+      "projection_test": "tests/scenario/test_status_change_applications.py::test_paid_result_can_apply_to_two_events_without_another_paid_computation",
+      "original_owner": "immutable paid result/input binding stays original; application consumer owner/target is separate; no rekey/rewrite",
+      "status_policy": "secondary collect/apply does not overwrite primary status/generation",
+      "production_caveat": null,
+      "ownership_tests": [
+        "tests/scenario/test_computation_binding_writer.py::test_secondary_writer_and_cleanup_preserve_known_or_unknown_original_binding",
+        "tests/unit/test_secondary_dependencies.py::test_unbound_legacy_and_foreign_paid_owner_zero_reuse_remain_valid"
+      ]
+    },
+    {
+      "purpose": "supplement",
+      "result_ref": "computation_id + known request_sha256; legacy nullable/unknown preserved",
+      "carrier": "SupplementRecord",
+      "collector": "src/lexinform/services/analysis.py::_consume_digest/_retain_computation",
+      "consumer": "services/status_change_applications.py status_change ID",
+      "collection_test": "tests/scenario/test_secondary_computation_history.py::test_secondary_answer_survives_collect_restore_reuse_and_operational_cleanup",
+      "projection_test": "tests/scenario/test_status_change_applications.py::test_paid_result_can_apply_to_two_events_without_another_paid_computation",
+      "original_owner": "immutable paid result/input binding stays original; application consumer owner/target is separate; no rekey/rewrite",
+      "status_policy": "secondary collect/apply does not overwrite primary status/generation",
+      "production_caveat": null,
+      "ownership_tests": [
+        "tests/scenario/test_computation_binding_writer.py::test_secondary_writer_and_cleanup_preserve_known_or_unknown_original_binding",
+        "tests/unit/test_secondary_dependencies.py::test_unbound_legacy_and_foreign_paid_owner_zero_reuse_remain_valid"
+      ]
+    },
+    {
+      "purpose": "joint",
+      "result_ref": "computation_id + known request_sha256; legacy nullable/unknown preserved",
+      "carrier": "JointRecord",
+      "collector": "src/lexinform/services/analysis.py::_consume_digest/_retain_computation",
+      "consumer": "services/publishing.py bill/joint",
+      "collection_test": "tests/scenario/test_secondary_computation_history.py::test_secondary_answer_survives_collect_restore_reuse_and_operational_cleanup",
+      "projection_test": "tests/scenario/test_secondary_projection_applications.py::test_joint_application_records_the_saved_bill_projection",
+      "original_owner": "immutable paid result/input binding stays original; application consumer owner/target is separate; no rekey/rewrite",
+      "status_policy": "secondary collect/apply does not overwrite primary status/generation",
+      "production_caveat": null,
+      "ownership_tests": [
+        "tests/scenario/test_computation_binding_writer.py::test_secondary_writer_and_cleanup_preserve_known_or_unknown_original_binding",
+        "tests/unit/test_secondary_dependencies.py::test_unbound_legacy_and_foreign_paid_owner_zero_reuse_remain_valid"
+      ]
+    },
+    {
+      "purpose": "name",
+      "result_ref": "computation_id + known request_sha256; legacy nullable/unknown preserved",
+      "carrier": "NameRecord \u2192 selected Editorial.Mnemonic",
+      "collector": "src/lexinform/services/analysis.py::_consume_digest/_retain_computation",
+      "consumer": "services/result_applications.py editorial/mnemonic after actual selection",
+      "collection_test": "tests/scenario/test_secondary_computation_history.py::test_secondary_answer_survives_collect_restore_reuse_and_operational_cleanup",
+      "projection_test": "tests/scenario/test_secondary_projection_applications.py::test_paid_name_application_records_editorial_selection",
+      "original_owner": "immutable paid result/input binding stays original; application consumer owner/target is separate; no rekey/rewrite",
+      "status_policy": "secondary collect/apply does not overwrite primary status/generation",
+      "production_caveat": null,
+      "ownership_tests": [
+        "tests/scenario/test_selected_name_binding.py::test_selected_paid_name_survives_repeated_rollover_restore_and_quiet_repeat",
+        "tests/scenario/test_computation_binding_writer.py::test_secondary_writer_and_cleanup_preserve_known_or_unknown_original_binding"
+      ]
+    },
+    {
+      "purpose": "explanation",
+      "result_ref": "computation_id + known request_sha256; legacy nullable/unknown preserved",
+      "carrier": "AnalysisRecord",
+      "collector": "src/lexinform/services/analysis.py::_consume_digest/_retain_computation",
+      "consumer": "services/commands.py command/incoming update ID",
+      "collection_test": "tests/scenario/test_secondary_computation_history.py::test_secondary_answer_survives_collect_restore_reuse_and_operational_cleanup",
+      "projection_test": "tests/scenario/test_secondary_projection_applications.py::test_explanation_applications_name_commands_without_changing_the_bill",
+      "original_owner": "immutable paid result/input binding stays original; application consumer owner/target is separate; no rekey/rewrite",
+      "status_policy": "secondary collect/apply does not overwrite primary status/generation",
+      "production_caveat": null,
+      "ownership_tests": [
+        "tests/scenario/test_computation_binding_writer.py::test_secondary_writer_and_cleanup_preserve_known_or_unknown_original_binding",
+        "tests/unit/test_secondary_dependencies.py::test_unbound_legacy_and_foreign_paid_owner_zero_reuse_remain_valid"
+      ]
+    },
+    {
+      "purpose": "consultation_review",
+      "result_ref": "computation_id + known request_sha256; legacy nullable/unknown preserved",
+      "carrier": "DocumentReviewRecord + compact ReviewResultRecord/ReviewInputReference",
+      "collector": "src/lexinform/services/analysis.py::_consume_digest/_retain_computation",
+      "consumer": "services/document_reviews.py document_review/purpose+source_key",
+      "collection_test": "tests/scenario/test_review_computation_history.py::test_review_history_retains_paid_output_and_compact_input_across_reuse_and_cleanup",
+      "projection_test": "tests/scenario/test_secondary_projection_applications.py::test_one_paid_review_applies_to_two_source_scopes",
+      "original_owner": "immutable paid result/input binding stays original; application consumer owner/target is separate; no rekey/rewrite",
+      "status_policy": "secondary collect/apply does not overwrite primary status/generation",
+      "production_caveat": null,
+      "ownership_tests": [
+        "tests/scenario/test_rollover_review_history.py::test_current_review_receipt_moves_without_rekeying_the_original_paid_result",
+        "tests/unit/test_secondary_dependencies.py::test_unbound_legacy_and_foreign_paid_owner_zero_reuse_remain_valid"
+      ]
+    },
+    {
+      "purpose": "commission_review",
+      "result_ref": "computation_id + known request_sha256; legacy nullable/unknown preserved",
+      "carrier": "DocumentReviewRecord + compact ReviewResultRecord/ReviewInputReference",
+      "collector": "src/lexinform/services/analysis.py::_consume_digest/_retain_computation",
+      "consumer": "services/document_reviews.py document_review/purpose+source_key",
+      "collection_test": "tests/scenario/test_review_computation_history.py::test_review_history_retains_paid_output_and_compact_input_across_reuse_and_cleanup",
+      "projection_test": "tests/scenario/test_secondary_projection_applications.py::test_one_paid_review_applies_to_two_source_scopes",
+      "original_owner": "immutable paid result/input binding stays original; application consumer owner/target is separate; no rekey/rewrite",
+      "status_policy": "secondary collect/apply does not overwrite primary status/generation",
+      "production_caveat": null,
+      "ownership_tests": [
+        "tests/scenario/test_rollover_review_history.py::test_current_review_receipt_moves_without_rekeying_the_original_paid_result",
+        "tests/unit/test_secondary_dependencies.py::test_unbound_legacy_and_foreign_paid_owner_zero_reuse_remain_valid"
+      ]
+    },
+    {
+      "purpose": "act_application",
+      "result_ref": "computation_id + known request_sha256; legacy nullable/unknown preserved",
+      "carrier": "DocumentReviewRecord + compact ReviewResultRecord/ReviewInputReference",
+      "collector": "src/lexinform/services/analysis.py::_consume_digest/_retain_computation",
+      "consumer": "same typed review contract; production submission remains paused",
+      "collection_test": "tests/scenario/test_review_computation_history.py::test_review_history_retains_paid_output_and_compact_input_across_reuse_and_cleanup",
+      "projection_test": "tests/scenario/test_review_computation_history.py::test_review_history_retains_paid_output_and_compact_input_across_reuse_and_cleanup",
+      "original_owner": "immutable paid result/input binding stays original; application consumer owner/target is separate; no rekey/rewrite",
+      "status_policy": "secondary collect/apply does not overwrite primary status/generation",
+      "production_caveat": "paused; typed/already-submitted technical carrier qualification only",
+      "ownership_tests": [
+        "tests/scenario/test_rollover_review_history.py::test_current_review_receipt_moves_without_rekeying_the_original_paid_result",
+        "tests/unit/test_secondary_dependencies.py::test_unbound_legacy_and_foreign_paid_owner_zero_reuse_remain_valid"
+      ]
+    }
+  ],
+  "historical_storage_measurements": [
+    {
+      "stage": "J066",
+      "source": "docs/assets/audits/2026-10-27-secondary-computation-history/validation.json",
+      "source_sha256": "f1ed6e18a2e1c97388d28b322f349e5ca4cafa7e402890cfad90ebc6ac4369e3",
+      "case_count": 5,
+      "purposes": [
+        "amendments",
+        "explanation",
+        "joint",
+        "name",
+        "supplement"
+      ],
+      "historical_fixture_delta_ranges": {
+        "collected": {
+          "SQL_delta_bytes": [
+            1451,
+            3053
+          ],
+          "gzip_delta_bytes": [
+            133,
+            140
+          ],
+          "SQLite_delta_bytes": [
+            4096,
+            8192
+          ]
+        },
+        "cleaned": {
+          "SQL_delta_bytes": [
+            1357,
+            2959
+          ],
+          "gzip_delta_bytes": [
+            117,
+            287
+          ],
+          "SQLite_delta_bytes": [
+            4096,
+            4096
+          ]
+        }
+      },
+      "interpretation": "same-load before/after controlled fixtures; collected is peak dual-write, cleaned is after operational/memo cleanup; ranges not additive or a universal production forecast",
+      "reproduction_location": "docs/assets/audits/2026-10-27-secondary-computation-history/validation.json#/reproduction",
+      "observer_location": "docs/assets/audits/2026-10-27-secondary-computation-history/validation.json#/observers"
+    },
+    {
+      "stage": "J068",
+      "source": "docs/assets/audits/2026-10-27-review-computation-history/validation.json",
+      "source_sha256": "48689db9f0a43060e14ec4a8b832c78ded24ca5bb3bed23566907b1e7a9160f2",
+      "case_count": 6,
+      "purposes": [
+        "act_application",
+        "commission_review",
+        "consultation_review"
+      ],
+      "historical_fixture_delta_ranges": {
+        "collected": {
+          "SQL_delta_bytes": [
+            2410,
+            4323
+          ],
+          "gzip_delta_bytes": [
+            227,
+            273
+          ],
+          "SQLite_delta_bytes": [
+            0,
+            4096
+          ]
+        },
+        "cleaned": {
+          "SQL_delta_bytes": [
+            2316,
+            4229
+          ],
+          "gzip_delta_bytes": [
+            571,
+            1116
+          ],
+          "SQLite_delta_bytes": [
+            0,
+            4096
+          ]
+        }
+      },
+      "interpretation": "same-load before/after controlled fixtures; collected is peak dual-write, cleaned is after operational/memo cleanup; ranges not additive or a universal production forecast",
+      "reproduction_location": "docs/assets/audits/2026-10-27-review-computation-history/validation.json#/reproduction",
+      "observer_location": "docs/assets/audits/2026-10-27-review-computation-history/validation.json#/observers"
+    }
+  ],
+  "temporary_duplication_exit_contract": {
+    "memo": "180-day last_used_at operational cache cutoff; one first-preserved row/key, repeat reuse updates metadata rather than appending full records",
+    "memo_guards": "known owner must exist/settle; no pending document/review work, awaiting/ready analysis, unsent/uncertain publication, queued/submitting intent, unconsumed/unaccounted item",
+    "hot_cache": "reuse refreshes last_used_at; 180 days is idle expiry, not a hard wall-clock or global byte cap",
+    "protected_and_orphan_cache": "pending/unknown/dependent and orphan-owner rows may outlive cutoff; no claim all historic rows are deleted. Broader orphan retention remains DA6.6",
+    "batch_body_exit": "first eligible prune after consumed+accounted+provider forgotten, settled owner/no ready/deferred work; removes text/located/review_context/answer, retains IDs/accounting",
+    "consumer_stage": "all10 current carriers preserve result refs; durable paid ledger and compact review input independent of batch bodies/memo; current full projection remains for existing consumer/baseline behavior",
+    "current_projection": "one active Bill analysis/review baseline is working state, not a new permanent application-history body on each reuse",
+    "permanent_history": "one immutable paid result per actual provider item; each application row is short IDs/target/outcome; no paid result rekey on ownership transfer",
+    "body_compaction": "primary READY/foreign inline and review-memo writer OFF do not automatically fail this compatible dual-write/operational-lifetime contract; generic compaction is optional representation work",
+    "safety": "no guaranteed hard global dump cap; required frozen/pending dependencies cannot be cut to meet size"
+  },
+  "scope_boundaries": [
+    "No claim every inline event/frozen delivery body is removed; they preserve target/recovery semantics and remain under their dependency/legacy/content contracts.",
+    "No new raw/backend/import/retention decisions.",
+    "Natural/legal lifecycle completeness and unknown population forecasts remain DA10.7, not invented requirements of this finite compatible-ref item.",
+    "Act application production remains paused; technical carrier qualification is not activation.",
+    "J246 noninjective normalization blocks optional generic review memo compaction, not the proven reference/application ledger contract."
+  ],
+  "audit_limitations": [
+    "Read-only current source/test review plus extraction of committed historical measurement metadata; no tests, provider, production or network run now.",
+    "Historical fixture ranges are not asserted to be fresh current-root sizes or a linear production forecast.",
+    "Root must review section1.4 operational exceptions and final merged gate/release evidence before accepting status."
+  ],
+  "checkbox_changed": false,
+  "prior_literal_reuse_audit": "docs/assets/audits/2026-11-05-release-metadata-consistency/paid-history-completion-audit.json"
+}
