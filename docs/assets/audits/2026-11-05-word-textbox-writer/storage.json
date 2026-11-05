@@ -1,0 +1,26 @@
+{
+  "reader": {
+    "source_sha256": "baee693eefec358f018cf8265096d9d5acca1eaba2d5f9bfa4afd363166c4bec",
+    "before_sql": 26281478,
+    "after_sql": 26302047,
+    "before_gzip": 5276152,
+    "after_gzip": 5277632,
+    "sqlite_allocated": 28577792,
+    "added_extractions": 6,
+    "new_artifact_rows": 6,
+    "other_row_delta_sha256": "32ad73c05cfb3d4c7a3929a6e93f216ce5c8670916d991de6d1869a1c6236960",
+    "double_restore_exact": true
+  },
+  "writer": {
+    "source_sha256": "baee693eefec358f018cf8265096d9d5acca1eaba2d5f9bfa4afd363166c4bec",
+    "before_sql": 26281478,
+    "after_sql": 26302209,
+    "before_gzip": 5276152,
+    "after_gzip": 5277709,
+    "sqlite_allocated": 28577792,
+    "added_extractions": 6,
+    "new_artifact_rows": 6,
+    "other_row_delta_sha256": "32ad73c05cfb3d4c7a3929a6e93f216ce5c8670916d991de6d1869a1c6236960",
+    "double_restore_exact": true
+  }
+}

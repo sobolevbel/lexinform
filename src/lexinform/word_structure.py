@@ -32,6 +32,13 @@ from lexinform.models.word_structure import (
     word_envelope_bytes,
 )
 
+WORDML_NAMESPACES = (
+    "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+    "http://purl.oclc.org/ooxml/wordprocessingml/main",
+    "http://schemas.microsoft.com/office/word/2003/wordml",
+)
+_TEXTBOX_TAGS = frozenset(f"{{{namespace}}}txbxContent" for namespace in WORDML_NAMESPACES)
+
 _CURRENT: ContextVar[WordStructureCollector | None] = ContextVar("word_structure", default=None)
 
 
@@ -72,6 +79,7 @@ class WordStructureCollector:
             "unclassified_nodes": 0,
             "legacy_recursion": 0,
             "ignored_fallbacks": 0,
+            "textbox_nodes": 0,
         }
         self.retention = retention
         self._orders: list[int] = []
@@ -117,6 +125,7 @@ class WordStructureCollector:
             observed_unclassified_nodes=self._view_counts["unclassified_nodes"],
             observed_legacy_recursion=self._view_counts["legacy_recursion"],
             observed_ignored_fallbacks=self._view_counts["ignored_fallbacks"],
+            observed_textbox_nodes=self._view_counts["textbox_nodes"],
         )
 
     @contextmanager
@@ -323,6 +332,8 @@ class WordStructureCollector:
         if self._thread != threading.get_ident():
             return
         if self._view_status_only:
+            if tag in _TEXTBOX_TAGS:
+                self._view_counts["textbox_nodes"] += 1
             if view == "skipped_block":
                 self._view_counts["skipped_blocks"] += 1
             if view == "ignored_fallback":

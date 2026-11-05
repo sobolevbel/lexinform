@@ -14,6 +14,7 @@ from lexinform.models.extractions import (
     ExtractionResult,
 )
 from tests.unit.test_physical_extraction import docx, extractor
+from tests.unit.test_word_blocks import paragraph, word
 
 
 def status(known_walk: str = "finished") -> WordViewStatus:
@@ -216,3 +217,45 @@ def test_constructed_summary_cannot_retain_an_untyped_status_dictionary() -> Non
     payload["selected_parts"] = (summary,)
     with pytest.raises(ValidationError, match="typed view status"):
         ExtractionResult.model_validate(payload)
+
+
+def test_native_textbox_count_tracks_visited_nodes_without_expanding_fallback() -> None:
+    choice = "<w:txbxContent>" + paragraph("Choice") + "</w:txbxContent>"
+    fallback = "<w:txbxContent>" + paragraph("Fallback") + "</w:txbxContent>"
+    data = word(
+        "<w:p><w:r><mc:AlternateContent>"
+        "<mc:Choice>" + choice + "</mc:Choice><mc:Fallback>" + fallback + "</mc:Fallback>"
+        "</mc:AlternateContent></w:r></w:p>"
+    )
+    reader = extractor()
+
+    actual = reader.extract_document_with_provenance(data)
+
+    assert actual.document == reader.extract_document(data)
+    assert "Fallback" not in actual.document.text
+    view = actual.result.selected_parts[0].word_view_status
+    assert view is not None, "native Word extraction binds its visited walk to the selected part"
+    assert view.observed_textbox_nodes == 1
+
+
+def test_textbox_count_yields_to_the_legacy_status_at_the_byte_cap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reader = extractor()
+    data = docx("USTAWA Art. 1. Cudzoziemiec.")
+    actual = reader.extract_document_with_provenance(data).result
+    (part,) = actual.selected_parts
+    view = part.word_view_status
+    assert view is not None, "native Word extraction records its visited walk"
+    assert view.observed_textbox_nodes == 0
+    legacy_part = part.model_copy(
+        update={"word_view_status": view.model_copy(update={"observed_textbox_nodes": None})}
+    )
+    legacy = actual.model_copy(update={"selected_parts": (legacy_part,)})
+    monkeypatch.setattr(
+        extraction_records, "MAX_EXTRACTION_METADATA_BYTES", len(legacy.model_dump_json().encode())
+    )
+
+    capped = reader.extract_document_with_provenance(data).result
+
+    assert capped == legacy

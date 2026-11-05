@@ -1,0 +1,15 @@
+{
+  "files": 3055,
+  "equal_error_cases": [],
+  "retained_word_statuses": 3053,
+  "observed_counts": 3053,
+  "positive_counts": 26,
+  "visited_textbox_nodes": 36,
+  "total_extraction_json_growth_bytes": 82431,
+  "max_row_growth_bytes": 27,
+  "text_selection_old_metadata_equal": true,
+  "declared_component_code_sha256": [
+    "bd958d8ff764c14ca59a6a3c155397d76027b210070043f14a3cb5633fa5a01f",
+    "3b271ae33d4df6ad654199fef9245419f4cdf37e57acf3314101b021425ab37d"
+  ]
+}

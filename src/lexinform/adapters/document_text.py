@@ -43,6 +43,7 @@ from lexinform.extraction_records import (
     extraction_component,
     summarize_doc_notes,
     summarize_extraction,
+    summarize_word_textboxes,
 )
 from lexinform.models.doc_notes import (
     MAX_DOC_NOTE_PARTS,
@@ -121,6 +122,7 @@ from lexinform.ports import (
 from lexinform.sections import PAGE_BREAK
 from lexinform.word_projection import legacy_word_text
 from lexinform.word_structure import (
+    WORDML_NAMESPACES,
     WordStructureCollector,
     current_word_structure,
     suspend_word_structure,
@@ -128,14 +130,6 @@ from lexinform.word_structure import (
 
 log = logging.getLogger(__name__)
 
-_WORDML_NAMESPACES = (
-    "http://schemas.openxmlformats.org/wordprocessingml/2006/main",  # transitional: Word's default
-    "http://purl.oclc.org/ooxml/wordprocessingml/main",  # "Strict Open XML Document"
-    # Word 2003's single-file XML, still what some ministries save a draft as. Its element names
-    # are the ones above — `w:body`, `w:p`, `w:r`, `w:t`, `w:tbl` — so the same walk reads it;
-    # only the namespace and the root's name differ.
-    "http://schemas.microsoft.com/office/word/2003/wordml",
-)
 _WORDML_ROOTS = ("document", "wordDocument")
 _MC_FALLBACK = "{http://schemas.openxmlformats.org/markup-compatibility/2006}Fallback"
 # Word 2003 XML wraps the paragraphs of the body in its own layout hints — one `wx:sect` holding
@@ -169,7 +163,7 @@ class _WordNoteOrigins:
 
     def part(self, name: NotePartName, content: bytes, root: ET.Element | None) -> bool:
         namespace, local = _split_tag(root.tag) if root is not None else ("", "")
-        supported = namespace in _WORDML_NAMESPACES and local == name[5:-4]
+        supported = namespace in WORDML_NAMESPACES and local == name[5:-4]
         self.parts.append(
             WordNoteXmlPart(
                 name=name,
@@ -387,7 +381,7 @@ class DocxTextExtractor:
         root = ET.fromstring(xml)
         namespace, local = _split_tag(root.tag)
         state: WordBodyState = "read"
-        if local not in _WORDML_ROOTS or namespace not in _WORDML_NAMESPACES:
+        if local not in _WORDML_ROOTS or namespace not in WORDML_NAMESPACES:
             state = "unsupported"
         elif root.find(f"{{{namespace}}}body") is None:
             state = "missing"
@@ -413,7 +407,7 @@ def _wordml_text(
 ) -> str:
     """The legacy body view of a supported WordprocessingML document element."""
     namespace, local = _split_tag(root.tag)
-    if local not in _WORDML_ROOTS or namespace not in _WORDML_NAMESPACES:
+    if local not in _WORDML_ROOTS or namespace not in WORDML_NAMESPACES:
         log.warning("not a WordprocessingML document (root %s); no text", root.tag)
         return ""
     reader = _WordMl(namespace, notes=notes, blocks=blocks, projection=projection, origins=origins)
@@ -461,7 +455,7 @@ class WordXmlTextExtractor:
             log.warning("Word XML file not parsed (%s); no text", exc)
             return ""
         namespace, local = _split_tag(root.tag)
-        if local in _WORDML_ROOTS and namespace in _WORDML_NAMESPACES:
+        if local in _WORDML_ROOTS and namespace in WORDML_NAMESPACES:
             return _wordml_text(root)  # Word 2003 XML: the root is the document
         notes: dict[str, str] = {}
         for part in root.iter(f"{_PKG}part"):
@@ -533,7 +527,7 @@ class _WordMl:
             )
             if self._structure is not None
             and not self._structure.collects_coordinates
-            and namespace in _WORDML_NAMESPACES
+            and namespace in WORDML_NAMESPACES
             else None
         )
         wrappers = (
@@ -1339,6 +1333,7 @@ class DocumentTextExtractor:
             result = summarize_doc_notes(
                 result, DocNotedParts(legacy=physical, doc_notes=tuple(doc_notes))
             )
+        result = summarize_word_textboxes(result, tuple(views))
         capture = current_physical_walk_capture()
         if capture is not None:
             _physical_event(capture, lambda: capture.extraction(result))

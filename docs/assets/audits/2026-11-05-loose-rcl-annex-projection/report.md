@@ -22,3 +22,5 @@ The local replay uses pinned corpus files, the cached tokenizer and a refusing s
 seam. Raw and cached populations have separately recorded missing inputs. The cohort
 measures stage rows and includes repeated document bodies.
 [Cases, hashes and qualification](qualification.json).
+
+[Exact CI and relay verification](release.json).

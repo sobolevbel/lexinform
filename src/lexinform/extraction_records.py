@@ -128,7 +128,7 @@ def summarize_extraction(
         WordViewExtraction(
             legacy=WordDetailedExtraction(body=body, notes=note), status=linked.status
         )
-        views[index] = linked.status
+        views[index] = linked.status.model_copy(update={"observed_textbox_nodes": None})
     identities: list[str] = []
     selected_summaries: list[ExtractedPartSummary] = []
     selected_keys = Counter((part.sha256, part.members) for part in selected.selection.parts)
@@ -266,6 +266,34 @@ def summarize_extraction(
         return _with_odt_note_prefix(status_result, captured_parts)
     except Exception:
         return status_result
+
+
+def summarize_word_textboxes(
+    baseline: ExtractionResult, linked: tuple[WordPartViewStatus, ...]
+) -> ExtractionResult:
+    counts = {
+        item.part_index: item.status.observed_textbox_nodes
+        for item in linked
+        if item.status.observed_textbox_nodes is not None
+    }
+    if not counts:
+        return baseline
+    parts = tuple(
+        part.model_copy(
+            update={
+                "word_view_status": part.word_view_status.model_copy(
+                    update={"observed_textbox_nodes": counts[part.physical_index]}
+                )
+            }
+        )
+        if part.word_view_status is not None and part.physical_index in counts
+        else part
+        for part in baseline.selected_parts
+    )
+    candidate = baseline.model_copy(update={"selected_parts": parts}).model_dump_json()
+    if len(candidate.encode()) > MAX_EXTRACTION_METADATA_BYTES:
+        return baseline
+    return ExtractionResult.model_validate_json(candidate)
 
 
 def _with_odt_note_status(

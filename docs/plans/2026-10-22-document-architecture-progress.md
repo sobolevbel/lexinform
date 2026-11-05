@@ -11321,3 +11321,12 @@ The Sejm replay proves a narrowly scoped official proposal relation to a selecte
 edition. The affected-group checker extends literal citation validation while preserving
 existing key-change checks. The evidence covers scope and literal bindings.
 [Replays and qualification](../assets/audits/2026-11-05-offline-provenance-evidence/report.md).
+
+<a id="j266"></a>
+
+## J266 — count Word textboxes in the native legacy walk
+
+The native collector records a bounded count without expanding another XML branch or
+changing the selected text. Existing extraction metadata gets priority at the byte cap.
+The 3,055-file corpus comparison and six-result checkpoint round trip passed.
+[Parity and storage measurements](../assets/audits/2026-11-05-word-textbox-writer/report.md).
