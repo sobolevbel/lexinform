@@ -11259,3 +11259,16 @@ identity. A known shared body is digest checked before reconstruction. The curre
 uses inline encoding. Pipeline capture remains a separate stage.
 
 [Qualification and replay recipes](../assets/audits/2026-11-05-amendment-shared-text-reader/report.md).
+
+<a id="j261"></a>
+
+## J261 — capture of exact prepared amendment text
+
+The two amendment preparation paths save the returned text-only question and intent in one
+transaction. First validated collection retains the reference. Pruning respects live queue,
+accounting, delivery and paid-result ownership. Repeated collection and legacy absence are
+preserved. Correction source reuse remains a separate step.
+
+The deployed v68 reader preceded capture. Pinned offline replay and 19 controls passed.
+Whole-dump size and row parity were checked at 31 points across the collect and cleanup
+lifecycle. [Scope, storage measurements and evidence](../assets/audits/2026-11-05-amendment-input-capture/report.md).

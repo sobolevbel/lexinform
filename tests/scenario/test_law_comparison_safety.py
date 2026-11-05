@@ -148,6 +148,7 @@ def test_legacy_secondary_work_is_not_resubmitted_under_a_new_hash(
                         "input_binding": None,
                         "local_timing_witness": None,
                         "request_sha256": None,
+                        "amendment_input_ref": None,
                     }
                 ),
             }

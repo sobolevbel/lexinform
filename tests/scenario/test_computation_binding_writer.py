@@ -81,6 +81,7 @@ def test_secondary_writer_and_cleanup_preserve_known_or_unknown_original_binding
                             "input_binding": None,
                             "local_timing_witness": None,
                             "request_sha256": None,
+                            "amendment_input_ref": None,
                         }
                     )
                 }

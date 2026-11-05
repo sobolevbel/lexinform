@@ -248,6 +248,119 @@ def validate_amendment_inputs(connection: sqlite3.Connection) -> None:
         raise AmendmentInputError()
 
 
+def write_shared_amendment_input(
+    connection: sqlite3.Connection, snapshot: AmendmentInputSnapshot
+) -> None:
+    snapshot = AmendmentInputSnapshot.model_validate(snapshot.model_dump())
+    previous = read_amendment_input(connection, snapshot.snapshot_id)
+    if previous is not None:
+        if previous != snapshot:
+            raise AmendmentInputError()
+        return
+    question = read_json(snapshot.question_json)
+    assert isinstance(question, dict), "the snapshot validator requires a question object"
+    context = question["ctx"]
+    assert isinstance(context, dict), "the snapshot validator requires a context object"
+    text = context.pop("text")
+    assert isinstance(text, str), "the snapshot validator requires exact amendment text"
+    digest = hashlib.sha256(text.encode()).hexdigest()
+    connection.execute(
+        "INSERT INTO amendment_input_texts VALUES (?,?) ON CONFLICT DO NOTHING", (digest, text)
+    )
+    connection.execute(
+        "INSERT INTO amendment_input_snapshots"
+        " (snapshot_id,profile,question_sha256,question_json,text_sha256) VALUES (?,?,?,?,?)",
+        (
+            snapshot.snapshot_id,
+            snapshot.profile,
+            snapshot.question_sha256,
+            canonical_json(question),
+            digest,
+        ),
+    )
+    if read_amendment_input(connection, snapshot.snapshot_id) != snapshot:
+        raise AmendmentInputError()
+
+
+def prune_amendment_inputs(connection: sqlite3.Connection) -> dict[str, int]:
+    if (
+        connection.execute(
+            "SELECT 1 FROM amendment_input_snapshots"
+            " UNION ALL SELECT 1 FROM amendment_input_texts LIMIT 1"
+        ).fetchone()
+        is None
+    ):
+        return {}
+    validate_amendment_inputs(connection)
+    failures = connection.execute(
+        """
+        SELECT r.*, i.meta_json FROM llm_batch_items i
+        JOIN llm_batches batch USING (batch_id)
+        JOIN computation_results r ON r.provider=batch.provider
+          AND r.batch_id=i.batch_id AND r.custom_id=i.custom_id
+          AND r.term=i.term AND r.number=i.number
+        JOIN bills b ON b.term=i.term AND b.number=i.number
+        WHERE i.call_kind='amendments' AND i.consumed_at IS NOT NULL
+          AND i.accounted_at IS NOT NULL AND batch.forgotten_at IS NOT NULL
+          AND json_type(i.meta_json, '$.amendment_input_ref')='object'
+          AND json_extract(r.result_json, '$.validation')='error'
+          AND b.status IN ('analyzed', 'linked', 'skipped_prefilter',
+                           'skipped_text_prefilter', 'skipped_closed')
+          AND b.awaiting_batch_since IS NULL AND b.ready_analysis_json IS NULL
+          AND b.review_work_json IS NULL
+          AND NOT EXISTS (SELECT 1 FROM document_work w
+            WHERE w.term=i.term AND w.number=i.number AND w.state != 'complete')
+          AND NOT EXISTS (SELECT 1 FROM publications p
+            WHERE p.term=i.term AND p.number=i.number AND p.status NOT IN ('sent', 'skipped'))
+        """
+    ).fetchall()
+    retired = 0
+    for row in failures:
+        result = read_computation_result(row)
+        meta = batch_item_meta("amendments", row["meta_json"], submitted=True)
+        if (
+            result.purpose != "amendments"
+            or result.validation != "error"
+            or result.amendment_input_ref is not None
+            or not isinstance(meta, DigestItemMeta)
+            or result.input_binding != meta.input_binding
+            or result.request_sha256 != meta.request_sha256
+        ):
+            continue
+        retired += connection.execute(
+            "UPDATE llm_batch_items SET meta_json=json_remove(meta_json,'$.amendment_input_ref')"
+            " WHERE batch_id=? AND custom_id=?",
+            (result.batch_id, result.custom_id),
+        ).rowcount
+    snapshots = connection.execute(
+        """
+        DELETE FROM amendment_input_snapshots
+        WHERE snapshot_id NOT IN (
+          WITH refs(snapshot_id) AS (
+            SELECT json_extract(meta_json,'$.amendment_input_ref.snapshot_id')
+            FROM llm_batch_intents
+            UNION ALL
+            SELECT json_extract(meta_json,'$.amendment_input_ref.snapshot_id')
+            FROM llm_batch_items
+            UNION ALL
+            SELECT json_extract(result_json,'$.amendment_input_ref.snapshot_id')
+            FROM computation_results
+          )
+          SELECT snapshot_id FROM refs WHERE snapshot_id IS NOT NULL
+        )
+        """
+    ).rowcount
+    texts = connection.execute(
+        "DELETE FROM amendment_input_texts WHERE text_sha256 NOT IN"
+        " (SELECT text_sha256 FROM amendment_input_snapshots WHERE text_sha256 IS NOT NULL)"
+    ).rowcount
+    return {
+        "amendment_item_refs": retired,
+        "amendment_input_snapshots": snapshots,
+        "amendment_input_texts": texts,
+    }
+
+
 def validate_intent_input(connection: sqlite3.Connection, intent: BatchIntent) -> None:
     if not isinstance(intent.meta, DigestItemMeta) or intent.meta.amendment_input_ref is None:
         return

@@ -66,6 +66,7 @@ def test_secondary_scan_manifest_survives_frozen_batch_restore_and_collect(
     expected = world.container.text_loader().load_scan(URL, cover_letter=False)
     assert expected is not None and expected.scan_input is not None, "the new scan is traced"
     assert intent.meta.scan_input == expected.scan_input
+    assert intent.meta.amendment_input_ref is None
     world.repo.restore(world.repo.dump())
     world.analysis.start_run()
     world.analysis.submit_queued_batches()
@@ -85,6 +86,10 @@ def test_secondary_scan_manifest_survives_frozen_batch_restore_and_collect(
         else SupplementRecord.model_validate_json(raw)
     )
     assert record.scan_input == expected.scan_input
+    (paid,) = world.repo.list_computation_results(
+        intent.request.term, intent.request.number, purpose=kind
+    )
+    assert paid.amendment_input_ref is None
     assert record.input_tokens is not None and record.input_tokens > 0, (
         "the collected fake provider result retains its original paid usage"
     )

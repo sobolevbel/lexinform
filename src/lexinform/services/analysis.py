@@ -34,6 +34,7 @@ from lexinform.errors import (
     OrkaUnreachableError,
     ServiceUnavailableError,
 )
+from lexinform.json_storage import canonical_json
 from lexinform.keywords import KeywordPrefilter
 from lexinform.law_diff import diff_laws
 from lexinform.law_digest import law_digest
@@ -49,6 +50,9 @@ from lexinform.models import (
     AMENDMENT_SOURCES,
     FULL_TEXT_SOURCES,
     SUPPLEMENT_SOURCES,
+    AmendmentInputReceipt,
+    AmendmentInputRef,
+    AmendmentInputSnapshot,
     AmendmentRevisionTarget,
     Amendments,
     AmendmentsContext,
@@ -1115,6 +1119,13 @@ class AnalysisService:
                 timing.require_not_after(now, json_endpoint=True)
             except Exception:
                 timing = None
+        amendment_input_ref = existing.amendment_input_ref if existing is not None else None
+        if (
+            existing is None
+            and isinstance(record, AmendmentsRecord)
+            and isinstance(item.meta, DigestItemMeta)
+        ):
+            amendment_input_ref = item.meta.amendment_input_ref
         result = ComputationResult(
             schema_version=1 if primary else 3 if review else 2,
             provider=provider,
@@ -1129,6 +1140,7 @@ class AnalysisService:
             review_input=review_input,
             request_sha256=item.meta.request_sha256,
             local_timing_witness=timing,
+            amendment_input_ref=amendment_input_ref,
             validation="validated" if record is not None else "error",
             record=record,
             model=response.model,
@@ -1358,7 +1370,7 @@ class AnalysisService:
             with self._repo.atomic():
                 for snapshot in snapshots:
                     self._repo.save_content_snapshot(snapshot)
-                self._repo.save_batch_intent(
+                self._save_secondary_intent(
                     self._timed_intent(
                         self._secondary_input_intent(
                             BatchIntent.from_request(
@@ -1747,6 +1759,32 @@ class AnalysisService:
                 log.warning("Secondary input receipt omitted (capture_failed)")
         return intent
 
+    def _save_secondary_intent(self, intent: BatchIntent) -> None:
+        question = intent.request.question
+        request_sha256 = intent.request.payload_sha256
+        if (
+            not isinstance(question, AmendmentsQuestion)
+            or question.ctx.scan is not None
+            or request_sha256 is None
+        ):
+            self._repo.save_batch_intent(intent)
+            return
+        assert isinstance(intent.meta, DigestItemMeta), "amendment intents carry digest metadata"
+        snapshot = AmendmentInputSnapshot(
+            question_json=canonical_json(question.model_dump(mode="json"))
+        )
+        receipt = intent.meta.prepared_input_receipt
+        reference = AmendmentInputRef(
+            snapshot_id=snapshot.snapshot_id,
+            question_sha256=snapshot.question_sha256,
+            request_sha256=request_sha256,
+            lineage_receipt=receipt if isinstance(receipt, AmendmentInputReceipt) else None,
+        )
+        bound = intent.model_copy(
+            update={"meta": intent.meta.model_copy(update={"amendment_input_ref": reference})}
+        )
+        self._repo.save_amendment_intent(bound, snapshot)
+
     def _ask_or_wait[Record: (AmendmentsRecord, SupplementRecord, JointRecord, NameRecord)](
         self,
         bill: Bill,
@@ -1824,7 +1862,7 @@ class AnalysisService:
                         )
                         intent = self._secondary_input_intent(intent, receipt_source)
                         intent = self._timed_intent(intent, local_read)
-                        self._repo.save_batch_intent(intent)
+                        self._save_secondary_intent(intent)
                     except Exception:
                         self._ledger.release(request.estimated_cost_usd)
                         raise

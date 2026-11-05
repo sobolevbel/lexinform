@@ -20,11 +20,13 @@ from pydantic import TypeAdapter
 
 from lexinform.adapters.amendment_inputs import (
     checked_computation_result,
+    prune_amendment_inputs,
     read_amendment_input,
     validate_amendment_inputs,
     validate_intent_input,
     validate_item_input,
     validate_result_input,
+    write_shared_amendment_input,
 )
 from lexinform.adapters.candidate_trace_history import (
     read_candidate_disposition_trace,
@@ -3564,6 +3566,22 @@ class SqliteBillRepository:
         with self.atomic():
             self._save_llm_batch_rows(batch, items)
 
+    def save_amendment_intent(self, intent: BatchIntent, snapshot: AmendmentInputSnapshot) -> None:
+        with self.atomic():
+            existing = self._conn.execute(
+                "SELECT 1 FROM llm_batch_intents WHERE custom_id=?", (intent.request.custom_id,)
+            ).fetchone()
+            if existing is not None:
+                return
+            if (
+                not isinstance(intent.meta, DigestItemMeta)
+                or intent.meta.amendment_input_ref is None
+                or intent.meta.amendment_input_ref.snapshot_id != snapshot.snapshot_id
+            ):
+                raise ValueError("invalid_amendment_input")
+            write_shared_amendment_input(self._conn, snapshot)
+            self.save_batch_intent(intent)
+
     def save_batch_intent(self, intent: BatchIntent) -> None:
         validate_intent_input(self._conn, intent)
         inserted = self._conn.execute(
@@ -5849,7 +5867,13 @@ class SqliteBillRepository:
                     OR json_type(result_json, '$.analysis') = 'object')
                 """
             ).rowcount
-        return {"delivery_payloads": publications, "analysis_memos": memos, "batch_payloads": items}
+            inputs = prune_amendment_inputs(self._conn)
+        return {
+            "delivery_payloads": publications,
+            "analysis_memos": memos,
+            "batch_payloads": items,
+            **{key: count for key, count in inputs.items() if count},
+        }
 
     def start_run(self, report: RunReport) -> int:
         cur = self._conn.execute(

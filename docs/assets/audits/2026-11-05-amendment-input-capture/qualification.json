@@ -1,0 +1,659 @@
+{
+  "baseline_sha": "5de1bc6094947c33191a7f6d2feb4e59538abad7",
+  "frozen_driver_sha256": {
+    "controls.py": "aaac82409ce720b5be9cea2cb3330d49e43fe85da3dce72a9876d265cb6c593c",
+    "control_fixtures.py": "786af2d803c6b5b23655093032c8f346bf498beaf373c0cf40ff8a074c98a901",
+    "replay_paired.py": "c5b8e560608cdab083a38af4eed697f4940f4f1ff9a1ccbd3500ecb08965fc70"
+  },
+  "native": {
+    "actual_returned_prepares": 3,
+    "baseline_core_equal": true,
+    "network_calls": 0,
+    "provider_calls": 0,
+    "source_unchanged": true,
+    "raw_pins": {
+      "files/8b6ac745e45cb061bb3ee0528d78880711166fbd83388d0548073af32c906352.pdf": {
+        "sha256": "60616640944bb40ab091c1963e75e6db97da26b7d9b8715b029cb448122ed81a",
+        "bytes": 1259217
+      },
+      "files/a32e476af90d9970a8487e0cbc1f5baea224443cdec183295948efd798dbd34d.docx": {
+        "sha256": "3fb01ff9790b8b4e5c494644ed8ca6fb9855767ed3302434a4d630fd7caa2a87",
+        "bytes": 59451
+      }
+    }
+  },
+  "paired_controls": {
+    "returned": 3,
+    "atomic": 4,
+    "dedup": 1,
+    "pins": 3,
+    "collect": 5,
+    "roots": 3
+  },
+  "lifecycle": {
+    "matched_observations": 31,
+    "rows_match_excluding_body_tables_and_ref": true,
+    "sizes_bytes": {
+      "collect-failed-pending/collect-1": {
+        "off": {
+          "sql": 48050,
+          "gzip": 11081,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 91485,
+          "gzip": 23451,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-failed-pending/collect-2": {
+        "off": {
+          "sql": 48050,
+          "gzip": 11081,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 91485,
+          "gzip": 23451,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-failed-pending/collect-3": {
+        "off": {
+          "sql": 48096,
+          "gzip": 11083,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 91531,
+          "gzip": 23452,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-failed-pending/prune": {
+        "off": {
+          "sql": 72631,
+          "gzip": 15614,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 116066,
+          "gzip": 27988,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-failed-pending/queue": {
+        "off": {
+          "sql": 135029,
+          "gzip": 35483,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 178464,
+          "gzip": 47443,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-failed-unknown/collect-1": {
+        "off": {
+          "sql": 48050,
+          "gzip": 11080,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 91485,
+          "gzip": 23449,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-failed-unknown/collect-2": {
+        "off": {
+          "sql": 48050,
+          "gzip": 11080,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 91485,
+          "gzip": 23449,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-failed-unknown/collect-3": {
+        "off": {
+          "sql": 48096,
+          "gzip": 11082,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 91531,
+          "gzip": 23450,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-failed-unknown/prune": {
+        "off": {
+          "sql": 72631,
+          "gzip": 15612,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 116066,
+          "gzip": 27984,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-failed-unknown/queue": {
+        "off": {
+          "sql": 135029,
+          "gzip": 35483,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 178464,
+          "gzip": 47443,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-failed/collect-1": {
+        "off": {
+          "sql": 48018,
+          "gzip": 11076,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 91453,
+          "gzip": 23442,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-failed/collect-2": {
+        "off": {
+          "sql": 48018,
+          "gzip": 11076,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 91453,
+          "gzip": 23442,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-failed/collect-3": {
+        "off": {
+          "sql": 48064,
+          "gzip": 11078,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 91499,
+          "gzip": 23443,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-failed/prune": {
+        "off": {
+          "sql": 48064,
+          "gzip": 11078,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 48064,
+          "gzip": 11078,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        }
+      },
+      "collect-failed/queue": {
+        "off": {
+          "sql": 135029,
+          "gzip": 35483,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 178464,
+          "gzip": 47443,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-fresh/collect-1": {
+        "off": {
+          "sql": 50102,
+          "gzip": 11269,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 95071,
+          "gzip": 23689,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-fresh/collect-2": {
+        "off": {
+          "sql": 50102,
+          "gzip": 11269,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 95071,
+          "gzip": 23689,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-fresh/collect-3": {
+        "off": {
+          "sql": 50148,
+          "gzip": 11270,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 95117,
+          "gzip": 23689,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-fresh/prune": {
+        "off": {
+          "sql": 48838,
+          "gzip": 11202,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 93807,
+          "gzip": 23632,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-fresh/queue": {
+        "off": {
+          "sql": 135029,
+          "gzip": 35483,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 178464,
+          "gzip": 47443,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-legacy/collect-1": {
+        "off": {
+          "sql": 50106,
+          "gzip": 11268,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 92007,
+          "gzip": 23447,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-legacy/collect-2": {
+        "off": {
+          "sql": 50106,
+          "gzip": 11268,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 92007,
+          "gzip": 23447,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-legacy/collect-3": {
+        "off": {
+          "sql": 50152,
+          "gzip": 11269,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 92053,
+          "gzip": 23448,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "collect-legacy/prune": {
+        "off": {
+          "sql": 48842,
+          "gzip": 11203,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 48842,
+          "gzip": 11203,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        }
+      },
+      "collect-legacy/queue": {
+        "off": {
+          "sql": 135029,
+          "gzip": 35483,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 178464,
+          "gzip": 47443,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "pin-cancelled/prune": {
+        "off": {
+          "sql": 43731,
+          "gzip": 10138,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 43731,
+          "gzip": 10138,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        }
+      },
+      "pin-cancelled/queue": {
+        "off": {
+          "sql": 135029,
+          "gzip": 35483,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 178464,
+          "gzip": 47443,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "pin-open/prune": {
+        "off": {
+          "sql": 46303,
+          "gzip": 10782,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 89738,
+          "gzip": 23144,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "pin-open/queue": {
+        "off": {
+          "sql": 135029,
+          "gzip": 35483,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 178464,
+          "gzip": 47443,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "pin-unaccounted/prune": {
+        "off": {
+          "sql": 47604,
+          "gzip": 11073,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 91039,
+          "gzip": 23417,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      },
+      "pin-unaccounted/queue": {
+        "off": {
+          "sql": 135029,
+          "gzip": 35483,
+          "sqlite": 827392,
+          "bodies": {
+            "amendment_input_snapshots": 0,
+            "amendment_input_texts": 0
+          }
+        },
+        "on": {
+          "sql": 178464,
+          "gzip": 47443,
+          "sqlite": 864256,
+          "bodies": {
+            "amendment_input_snapshots": 1,
+            "amendment_input_texts": 1
+          }
+        }
+      }
+    }
+  }
+}

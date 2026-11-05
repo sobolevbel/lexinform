@@ -7,3 +7,5 @@ Two pinned prepared questions share the same `ctx.text`. The isolated table meas
 A fresh pinned copy of the `state` branch migrated from v67 to v68. The repository read druk 2699 from the restored copy. Every existing table preserved its original row values, and a second dump and restore reproduced the same dump. [State qualification](state-proof.json).
 
 [Focused and full checks](qualification.json). [Reproduction recipes](reproduce.md).
+
+[Exact CI and relay verification](release.json).
