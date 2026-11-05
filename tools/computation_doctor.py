@@ -13,6 +13,7 @@ from lexinform.adapters.content_source_refs import validate_projected_applicatio
 from lexinform.adapters.input_receipts import input_snapshot_checks
 from lexinform.adapters.primary_projections import primary_projection_issues
 from lexinform.adapters.secondary_dependencies import secondary_dependency_issues
+from lexinform.adapters.supplement_deliveries import supplement_delivery_links
 from lexinform.adapters.supplement_dependencies import supplement_dependency_issues
 from lexinform.models import ComputationResult, ResultApplicabilityObservation, ResultApplication
 from tools.application_targets import application_target
@@ -222,8 +223,9 @@ class ComputationAudit:
                 self.issue("projection_request_mismatch", ref)
 
 
-def audit(database: Path) -> dict[str, Any]:
+def audit(database: Path, *, include_supplement_deliveries: bool = False) -> dict[str, Any]:
     result = ComputationAudit()
+    deliveries: dict[str, Any] | None = None
     with open_snapshot(database) as snapshot:
         connection = snapshot.connection
         schema = connection.execute("PRAGMA user_version").fetchone()[0]
@@ -252,6 +254,8 @@ def audit(database: Path) -> dict[str, Any]:
                 result.issue(code, ref)
             for code, ref in secondary_dependency_issues(connection):
                 result.issue(code, ref)
+        if include_supplement_deliveries:
+            deliveries = supplement_delivery_links(connection)
         if not snapshot.unchanged():
             result.issue("database_changed_during_audit", "database")
     result.findings.sort(key=lambda item: (item["code"], item["ref"]))
@@ -275,7 +279,7 @@ def audit(database: Path) -> dict[str, Any]:
         if missing or not observed
         else "recorded"
     )
-    return {
+    report = {
         "version": 1,
         "status": status,
         "database_sha256": snapshot.sha256,
@@ -298,11 +302,19 @@ def audit(database: Path) -> dict[str, Any]:
         ],
     }
 
+    if include_supplement_deliveries:
+        report["supplement_deliveries"] = deliveries
+    return report
 
-def run(database: Path, output: Path) -> int:
+
+def run(database: Path, output: Path, *, include_supplement_deliveries: bool = False) -> int:
     if output.resolve() == database.resolve():
         raise ValueError("Report must be separate from the input database")
-    report = audit(database)
+    report = (
+        audit(database, include_supplement_deliveries=True)
+        if include_supplement_deliveries
+        else audit(database)
+    )
     output.parent.mkdir(parents=True, exist_ok=True)
     write_json(output, report)
     return 1 if report["status"] == "failed" else 2 if report["status"] == "not_run" else 0
@@ -312,9 +324,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--database", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--supplement-deliveries", action="store_true")
     args = parser.parse_args()
     try:
-        code = run(args.database, args.output)
+        code = run(
+            args.database, args.output, include_supplement_deliveries=args.supplement_deliveries
+        )
     except (OSError, sqlite3.Error, ValueError) as exc:
         parser.error(str(exc))
     raise SystemExit(code)

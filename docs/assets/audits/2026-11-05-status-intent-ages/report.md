@@ -32,3 +32,5 @@ view, not new natural lifecycle or hosted-latency evidence. DA10.3 remains parti
 [source pins](source-pins.json), [independent review](peer-review.json).
 
 Previous release: [exact CI and relay verification](previous-release.json).
+
+Actual release: [exact CI and relay verification](release.json), commit95f98f32.

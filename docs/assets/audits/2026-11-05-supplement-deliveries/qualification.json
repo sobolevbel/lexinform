@@ -1,0 +1,42 @@
+{
+  "stage": "J229 opt-in supplement frozen delivery diagnostic",
+  "full_tests": 8304,
+  "pytest_xml": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "8304",
+    "time": "282.877",
+    "timestamp": "2026-11-05T01:15:07.018365+01:00",
+    "hostname": "Yauhenis-MacBook-Pro.local"
+  },
+  "new_unit_cases": 35,
+  "new_scenario_cases": 0,
+  "focused_root_cases": 98,
+  "strict_mypy_files": 723,
+  "coverage_percent": 92,
+  "mypy_ruff_format": "green",
+  "source_config_pins": 792,
+  "source_freeze_exact": true,
+  "state_proof": "state-proof.json",
+  "proof_sha256": {
+    "full.xml": "e11502971582a5526c874cb85df379d8dccab7a14bd45b170e34536abc03dbb4",
+    "full.log": "e904f6778ffafba02e8fc568e2afa0ebd473b329cb7a99d3a0ce98d18ce3684e",
+    "source-freeze.json": "ea8a23f0b6628a8e7a099a700e4a99335a2c9286ffd2482dae39d8e822bcf8c2",
+    "state-proof.json": "e7df3c4c29eaf1bbcf6724bd47378712066b6ce2013d02287313975ad951a51e"
+  },
+  "previous_release": {
+    "target": "95f98f32bcc70b08b0bd004460ffb04262abb690",
+    "ci": 41938849306,
+    "deploy": 41939728819,
+    "complete": true
+  },
+  "scope": "Direct recorded physical metadata only; sourceedge not_assessed; nonSENT not_confirmed, no remote/fullcycle acceptance",
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  }
+}

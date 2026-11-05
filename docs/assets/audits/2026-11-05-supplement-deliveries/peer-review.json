@@ -1,0 +1,36 @@
+{
+  "reviewer": "secondary_dependency_review",
+  "status": "clear",
+  "frozen_patch_sha256": "ec54e02a02c6533c5c436bbe6e6a0ed000eaada33427f8532f0fff2e858d854a",
+  "owned_source_pins": {
+    "src/lexinform/adapters/supplement_deliveries.py": {
+      "base_sha256": null,
+      "sha256": "22a8303d3fffdacee1bcecad8d01bfa3f891292958cc219f3a15ffbc430a35db"
+    },
+    "tools/computation_doctor.py": {
+      "base_sha256": "20c42de612b294776dce775ba0f927dc2d7a7dfa1bee74b6854a8bc6ca8dbb83",
+      "sha256": "6c2910bfa54885b30f4689981702860ab54a96994c2630a53508c6e4b84d2e99"
+    },
+    "tests/unit/test_supplement_deliveries.py": {
+      "base_sha256": null,
+      "sha256": "a40759fffc80288be1b29fcf53267ac5f0bc004c5d771c0ec5a5ff40c0b78dbe"
+    },
+    "tools/README.md": {
+      "base_sha256": "0482428eb95b59594d2d221e937ee6481743bb7db5649dcba4138e3c9f8079d0",
+      "sha256": "8413d1e72cc895ece9439c955edc1520644cb654a4c4eb4390fde8251c0e1cf2"
+    }
+  },
+  "resolved_before_freeze": [
+    "Digest-owned/SENT source is not a standalone physical delivery; real digest completion control",
+    "Strict duplicate-key boundaries for application/plan/frozenchange/batch metadata"
+  ],
+  "root_delta": {
+    "status": "clear",
+    "scope": "not_confirmed for every valid-bound non-SENT state, preserving uncertainty/physical_status",
+    "source_sha256": {
+      "src/lexinform/adapters/supplement_deliveries.py": "b98239beddd3e3152f06889e20d50b669930f03018f03063ef2be5cb0ed80f88",
+      "tests/unit/test_supplement_deliveries.py": "bed0b23e5040ec74d05b5283cfc975d4a4b44baff6068d92df182af71b6e22cc"
+    }
+  },
+  "execution": "Read-only review; no tests/edits/network. Root executes independent qualification."
+}

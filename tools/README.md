@@ -141,6 +141,16 @@ document work and batch metadata. Missing results, inconsistent recorded request
 a failed result are errors. It preserves the distinction between original input, collection owner
 and application target, including term/generation changes and free reuse.
 
+Add `--supplement-deliveries` for an optional read-only link inventory: applied supplement
+receipts, exact status-change target IDs, matching references in saved single-message
+`DeliveryPlan.change_json`, and recorded publication status/message IDs. `recorded_sent`
+means the database records a send; it does not verify Telegram remotely or compare answers.
+The current Bill and later status-change contents never replace the frozen payload. Compound,
+digest-owned/absorbed event rows and cleaned/missing payloads remain unknown. Batch consumption/checksum evidence,
+input-receipt availability and the unassessed source-observation edge are reported separately;
+this does not establish a complete source-family/purpose lifecycle. Default reports and exit
+status remain unchanged; the opt-in section adds no send, retry, repair or paid call.
+
 Schema-51 source associations are validated against SQL identity and their retained result. A
 missing/failed result, invalid observation or damaged table is an error. Schema 50 may omit the
 new table. Historical source associations do not require a current owner and do not certify

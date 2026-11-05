@@ -10343,3 +10343,31 @@ DA10.3 partial;74total/43complete/6explicitNA/25applicableopen.
 [Report](../assets/audits/2026-11-05-status-intent-ages/report.md),
 [qualification](../assets/audits/2026-11-05-status-intent-ages/qualification.json),
 [state proof](../assets/audits/2026-11-05-status-intent-ages/state-proof.json).
+
+<a id="j229"></a>
+
+## J229 — opt-in supplement frozen delivery diagnostic
+
+5 November 2026. computation_doctor --supplement-deliveries links applied typed supplement→
+status-change target→exact frozen change/computation refs→recorded physical state. Shared
+strict result/dependency guards and known request hashes, no currentBill/currentstatus contents,
+answer equality or timestamp joins. Ordinary report/defaultCLI/exit behavior unchanged.
+
+Direct single-message only. Reviewer caught digest completion's SENT source rows; destination,
+digest ownership/parts, absorbed and compound flags now remain unknown/unassessed. StrictJSON
+rejects duplicate identities at application/plan/change/batch edges. Root corrected non-SENT
+verdict to not_confirmed (UNKNOWN is never no-delivery); exact physicalstatus preserved.
+recorded_sent is local DB+messageID evidence, never remote Telegram verification. Consumed
+provideritem/inputreceipt are separate; sourceedge not_assessed, no full lifecycle acceptance.
+
+35newunit cases/no newscenarios;98root focused,mypy723/Ruff/formatgreen. Independent4file and
+root2file semantic review clear. Fresh7b208 copy proof app16/change192/pub240/message152,
+consumed/requestmatched, sourcekindimpact_assessment, inputreceiptunknown. ENTIREdefaultreport/
+serializedbytes exact, source/copyDBunchanged. No bodies/URLs/paid/provider/send/storage writes.
+Fullgate8304tests/282.877s/92%,mypy723/Ruff/formatgreen;792source/config pins exact. Strict staged docs precede commit.
+J22895f98f32 exactCI41938849306/relay41939728819 verified;45shealth/timer.
+DA10.2/DA10.7 partial;74total/43complete/6explicitNA/25open.
+
+[Report](../assets/audits/2026-11-05-supplement-deliveries/report.md),
+[qualification](../assets/audits/2026-11-05-supplement-deliveries/qualification.json),
+[state proof](../assets/audits/2026-11-05-supplement-deliveries/state-proof.json).

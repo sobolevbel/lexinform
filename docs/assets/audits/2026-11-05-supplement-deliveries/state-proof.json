@@ -1,0 +1,45 @@
+{
+  "database_sha256": "3ca8e3c7f1b9d94aaceb6c775168fccf6f56711a3076f93b7554ce0720b815a9",
+  "default_report_exact": true,
+  "default_serialized_bytes_exact": true,
+  "limits": "Physical DB record only; no remote Telegram/source-edge/full lifecycle acceptance.",
+  "section": {
+    "counts": {
+      "recorded_sent": 1
+    },
+    "exclusions": [
+      "recorded_sent is database evidence, not remote Telegram verification.",
+      "Source linkage is not assessed; input-receipt availability is separate.",
+      "No current Bill/status-change contents, answer equality or timestamp joins.",
+      "Compound, absorbed or missing payloads stay unknown; no full DA10.7 claim."
+    ],
+    "links": [
+      {
+        "application_id": 16,
+        "batch": {
+          "request": "matched",
+          "status": "consumed"
+        },
+        "change_id": 192,
+        "computation_id": "result-v1:b04bcddd31fe7e80800a409a160bc8b2ec34b06ab0e68157a2b7bbe925d7c79e",
+        "delivery": "recorded_sent",
+        "input_receipt": "unknown",
+        "message_id": 152,
+        "physical_status": "sent",
+        "publication_id": 240,
+        "reason": "exact_frozen_reference",
+        "rendered_payload": "known",
+        "request": "matched",
+        "source_edge": "not_assessed",
+        "source_kind": "impact_assessment"
+      }
+    ],
+    "scope": "Applied supplement -> frozen semantic payload -> recorded physical status.",
+    "status": "available",
+    "unavailable_schema": [],
+    "unclassified_applications": 0,
+    "version": 1
+  },
+  "source_and_copy_database_unchanged": true,
+  "state_commit": "7b2084b1c66421061c9031f28a4edabbe2cc0245"
+}
