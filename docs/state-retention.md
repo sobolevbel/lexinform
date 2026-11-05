@@ -717,3 +717,13 @@ parents. Caller atomically объединяет positive/privacy facts в input 
 ASCII view SHA/count/policy и честный сериализуемый prefix, вплоть до zero descriptors; новая
 retention identity/partial coverage не выдаёт это за unsafe URL. Snapshot/attempt roundtrip
 проверяется до публикации. Старый mandatory selection FK, raw/backend и retention неизменны.
+
+
+## Amendment input reader (v67)
+
+Dedicated `amendment_input_snapshots` понимает immutable actual text question; это reader-only
+stage без producer, backfill или новой cleanup policy. Пустая новая таблица после миграции
+не добавляет production bodies. Она не заменяет content snapshots и не превращает source lineage
+в новое request-bound чтение. Root-original result без ref остаётся unavailable, даже если
+поздняя revision сохранила собственный ref. Writer activation/storage budget квалифицируются отдельно;
+глобальная body-граница по измеренному subset не заявляется.

@@ -1,0 +1,36 @@
+{
+  "base": "889e3a9b541d1fdd7f777fa6764bd58719ecba13",
+  "driver": "tools/replay_amendment_inputs.py::snapshot ordinary+correction",
+  "driver_options": "native bytes; controlled prior; TextBudget120000; refused client/submission; socket connect forbidden",
+  "counts": {
+    "downloaded": 11,
+    "collection_excluded": 1,
+    "prepared_text": 14,
+    "prepared_scan": 8
+  },
+  "question_utf8_bytes_range": [
+    1457,
+    67444
+  ],
+  "provider_payload_utf8_bytes_range": [
+    6209,
+    72196
+  ],
+  "field_max_utf8_bytes": {
+    "number": 4,
+    "title": 28,
+    "source_kind": 20,
+    "text": 65606,
+    "truncated": 0,
+    "previous_summary": 85,
+    "previous_key_changes": 40,
+    "proposal": 38,
+    "recommendation": 0,
+    "scan": 0,
+    "source_check": 0
+  },
+  "provider_calls": 0,
+  "network_calls": 0,
+  "scope": "measured native bytes + controlled prior, not an all-production maximum",
+  "boundary": "Native raw bytes with controlled comparison fields; not complete production contexts or a universal maximum"
+}

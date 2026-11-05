@@ -1,0 +1,8 @@
+{
+  "source_unchanged": true,
+  "plain_SQL_delta_bytes": 246,
+  "gzip_mtime0_delta_bytes": 91,
+  "post_double_restore_SQLite_file_delta_bytes": 8192,
+  "body_rows_added": 0,
+  "scope": "same fresh source, only schema66\u219267; not a populated production-body forecast"
+}

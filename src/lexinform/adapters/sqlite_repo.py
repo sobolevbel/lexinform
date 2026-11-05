@@ -18,11 +18,19 @@ from zoneinfo import ZoneInfo
 
 from pydantic import TypeAdapter
 
+from lexinform.adapters.amendment_inputs import (
+    checked_computation_result,
+    read_amendment_input,
+    validate_amendment_inputs,
+    validate_intent_input,
+    validate_item_input,
+    validate_result_input,
+)
 from lexinform.adapters.candidate_trace_history import (
     read_candidate_disposition_trace,
     validate_candidate_disposition_traces,
 )
-from lexinform.adapters.computation_history import read_computation_result, read_result_application
+from lexinform.adapters.computation_history import read_result_application
 from lexinform.adapters.content_applications import (
     find_projection_application_ids,
     verify_content_applications,
@@ -208,6 +216,7 @@ from lexinform.models import (
     rcl_num_key,
     valid_mnemonic,
 )
+from lexinform.models.amendment_inputs import AmendmentInputSnapshot
 from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
 from lexinform.models.content import editorial_bill_snapshot
 from lexinform.models.legacy_results import canonical_legacy_json, legacy_json
@@ -939,6 +948,14 @@ MIGRATIONS: tuple[str, ...] = (
     DROP TABLE saved_content_bindings;
     CREATE INDEX ix_publication_content_version ON publication_content(content_id);
     """,
+    """
+    CREATE TABLE amendment_input_snapshots (
+        snapshot_id TEXT PRIMARY KEY NOT NULL,
+        profile TEXT NOT NULL CHECK(profile='amendments-text-question-v1'),
+        question_sha256 TEXT NOT NULL,
+        question_json TEXT NOT NULL
+    );
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -995,8 +1012,8 @@ def _row_to_llm_batch(row: sqlite3.Row) -> LlmBatch:
     )
 
 
-def _row_to_llm_batch_item(row: sqlite3.Row) -> LlmBatchItem:
-    return LlmBatchItem(
+def _row_to_llm_batch_item(row: sqlite3.Row, connection: sqlite3.Connection) -> LlmBatchItem:
+    item = LlmBatchItem(
         batch_id=row["batch_id"],
         custom_id=row["custom_id"],
         call_kind=row["call_kind"],
@@ -1006,6 +1023,9 @@ def _row_to_llm_batch_item(row: sqlite3.Row) -> LlmBatchItem:
         consumed_at=_parse_dt(row["consumed_at"]),
         result=BatchResult.model_validate_json(row["result_json"]) if row["result_json"] else None,
     )
+
+    validate_item_input(connection, item)
+    return item
 
 
 def _utc_iso(value: datetime) -> str:
@@ -1360,6 +1380,7 @@ class SqliteBillRepository:
             validate_projected_applications(scratch)
             validate_content_sources(scratch)
             validate_content_history(scratch)
+            validate_amendment_inputs(scratch)
         finally:
             scratch.close()
         tables = [
@@ -1872,6 +1893,7 @@ class SqliteBillRepository:
         return [LegacyResultOccurrence.model_validate(dict(row)) for row in rows]
 
     def save_computation_result(self, result: ComputationResult) -> None:
+        validate_result_input(self._conn, result)
         self._conn.execute(
             "INSERT INTO computation_results"
             " (result_id, provider, batch_id, custom_id, term, number, result_json)"
@@ -1912,7 +1934,7 @@ class SqliteBillRepository:
             query += " AND json_extract(result_json, '$.purpose') = ?"
             parameters += (purpose,)
         return [
-            read_computation_result(row)
+            checked_computation_result(self._conn, row)
             for row in self._conn.execute(query + " ORDER BY rowid", parameters)
         ]
 
@@ -2188,6 +2210,29 @@ class SqliteBillRepository:
         if expected != tuple(row[key] for key in columns):
             raise ValueError("source observation columns differ from the recorded identity")
         return observation
+
+    def save_amendment_input(self, snapshot: AmendmentInputSnapshot) -> None:
+        try:
+            snapshot = AmendmentInputSnapshot.model_validate_json(snapshot.model_dump_json())
+        except ValueError, TypeError, RecursionError:
+            raise ValueError("invalid_amendment_input") from None
+        with self.atomic():
+            self._conn.execute(
+                "INSERT INTO amendment_input_snapshots"
+                "(snapshot_id,profile,question_sha256,question_json)"
+                " VALUES (?,?,?,?) ON CONFLICT DO NOTHING",
+                (
+                    snapshot.snapshot_id,
+                    snapshot.profile,
+                    snapshot.question_sha256,
+                    snapshot.question_json,
+                ),
+            )
+            if self.get_amendment_input(snapshot.snapshot_id) != snapshot:
+                raise ValueError("invalid_amendment_input")
+
+    def get_amendment_input(self, snapshot_id: str) -> AmendmentInputSnapshot | None:
+        return read_amendment_input(self._conn, snapshot_id)
 
     def save_content_snapshot(self, snapshot: ContentSnapshot) -> None:
         snapshot = ContentSnapshot.model_validate_json(snapshot.model_dump_json())
@@ -3604,6 +3649,7 @@ class SqliteBillRepository:
             self._save_llm_batch_rows(batch, items)
 
     def save_batch_intent(self, intent: BatchIntent) -> None:
+        validate_intent_input(self._conn, intent)
         inserted = self._conn.execute(
             "INSERT OR IGNORE INTO llm_batch_intents"
             " (custom_id, provider, request_json, meta_json, state, created_at)"
@@ -3784,7 +3830,7 @@ class SqliteBillRepository:
             "SELECT * FROM llm_batch_intents WHERE state = ? ORDER BY created_at, custom_id",
             (state,),
         ).fetchall()
-        return [
+        intents = [
             BatchIntent(
                 request=(request := parse_batch_request(row["request_json"])),
                 meta=batch_item_meta(request.call_kind, row["meta_json"], submitted=False),
@@ -3794,6 +3840,10 @@ class SqliteBillRepository:
             )
             for row in rows
         ]
+
+        for intent in intents:
+            validate_intent_input(self._conn, intent)
+        return intents
 
     def mark_batch_intents_submitting(self, custom_ids: Sequence[str]) -> None:
         self._conn.executemany(
@@ -3816,6 +3866,8 @@ class SqliteBillRepository:
         )
 
     def _save_llm_batch_rows(self, batch: LlmBatch, items: Sequence[LlmBatchItem]) -> None:
+        for item in items:
+            validate_item_input(self._conn, item)
         self._conn.execute(
             """
             INSERT INTO llm_batches
@@ -3896,7 +3948,7 @@ class SqliteBillRepository:
             " ORDER BY custom_id",
             (batch_id,),
         ).fetchall()
-        return [_row_to_llm_batch_item(r) for r in rows]
+        return [_row_to_llm_batch_item(r, self._conn) for r in rows]
 
     def get_consumed_primary_input(
         self, provider: BatchProvider, batch_id: str, custom_id: str, generation: int
@@ -3921,7 +3973,7 @@ class SqliteBillRepository:
 
     def list_unaccounted_batch_items(self) -> list[LlmBatchItem]:
         return [
-            _row_to_llm_batch_item(row)
+            _row_to_llm_batch_item(row, self._conn)
             for row in self._conn.execute(
                 "SELECT * FROM llm_batch_items WHERE result_json IS NOT NULL"
                 " AND accounted_at IS NULL ORDER BY consumed_at, batch_id, custom_id"
@@ -5681,7 +5733,7 @@ class SqliteBillRepository:
         ).fetchone()
         if row is None or row["call_kind"] != "amendments":
             raise ValueError("a revision handoff requires its retained amendments item")
-        item = _row_to_llm_batch_item(row)
+        item = _row_to_llm_batch_item(row, self._conn)
         if not isinstance(item.meta, DigestItemMeta) or item.meta.amendment_revision is None:
             raise ValueError("a revision handoff requires its captured target")
         if work_key is not None:

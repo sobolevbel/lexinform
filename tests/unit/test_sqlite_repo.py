@@ -953,8 +953,13 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         digest_links = {r[1] for r in conn.execute("PRAGMA table_info(digest_event_links)")}
         rcl_uses = {r[1] for r in conn.execute("PRAGMA table_info(rcl_letter_uses)")}
         senate = {r[1] for r in conn.execute("PRAGMA table_info(senate_inspections)")}
+        amendment_inputs = {
+            r[1] for r in conn.execute("PRAGMA table_info(amendment_input_snapshots)")
+        }
+        assert conn.execute("SELECT count(*) FROM amendment_input_snapshots").fetchone() == (0,)
         indexes = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='index'")}
     assert digest_links == {"source_publication_id", "owner_publication_id"}
+    assert amendment_inputs == {"snapshot_id", "profile", "question_sha256", "question_json"}
     assert {"use_id", "project_id", "stage_id", "letter_id", "record_json"} <= rcl_uses
     assert "ix_rcl_letter_uses_owner" in indexes
     assert {"inspection_id", "owner_term", "owner_number", "record_json"} <= senate

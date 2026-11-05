@@ -1,0 +1,11 @@
+{
+  "reason": "SQLite connection context manager commits/rolls back but does not close; close the new migration-test connection explicitly",
+  "runtime_candidate_pins_exact": 11,
+  "test_source_delta": {
+    "tests/unit/test_amendment_input_history.py": {
+      "candidate": "ae31ca441dce6da126338dd972718855846e477a032cf6b8dd67a6a94128dd22",
+      "root": "ea028c66a96c41b096728c2f49a9d92c6e0397e263b7a2448196500018bc5a79"
+    }
+  },
+  "test_cases_added_or_removed": 0
+}

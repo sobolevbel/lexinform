@@ -1,0 +1,23 @@
+{
+  "semantic_reports_exact": true,
+  "report_profiles": 7,
+  "expected_migration_only_deltas": [
+    "reports/computation/database_sha256",
+    "reports/computation/schema_version",
+    "reports/content/database_sha256",
+    "reports/content/schema_version",
+    "reports/request/database_sha256",
+    "reports/request/schema_version",
+    "reports/source/database_sha256",
+    "reports/source/schema_version",
+    "reports/work/database_sha256",
+    "reports/work/schema_version",
+    "batch-v1/database_sha256",
+    "batch-v1/schema_version",
+    "batch-v2/database_sha256",
+    "batch-v2/schema_version"
+  ],
+  "old_sha256": "b08843e5a6b3c51aba83852509ffbaa915c2b859945bc44204f1b214a38077c6",
+  "new_sha256": "118f84ec0862f247d3a05db9be3b5432ebeb8b995fbe70cc9210080a7b2f2a70",
+  "source_unchanged": true
+}

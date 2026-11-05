@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from lexinform.adapters.amendment_inputs import amendment_input_issues
 from lexinform.adapters.computation_history import parse_computation_result
 from lexinform.adapters.content_source_refs import validate_projected_application
 from lexinform.adapters.input_receipts import input_snapshot_checks
@@ -259,6 +260,8 @@ def audit(database: Path, *, include_supplement_deliveries: bool = False) -> dic
                 result.issue("applicability_table_unavailable", "result_applicability")
             result.projections(connection, tables)
             for code, ref in review_memo_issues(connection):
+                result.issue(code, ref)
+            for code, ref in amendment_input_issues(connection):
                 result.issue(code, ref)
             for code, ref in primary_projection_issues(connection):
                 result.issue(code, ref)

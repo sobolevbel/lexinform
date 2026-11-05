@@ -1,0 +1,11 @@
+{
+  "source_db_sha256": "b08843e5a6b3c51aba83852509ffbaa915c2b859945bc44204f1b214a38077c6",
+  "source_unchanged": true,
+  "old_schema": 66,
+  "new_schema": 67,
+  "existing_tables_exact": 48,
+  "bill_json_exact": 509,
+  "new_table_empty": true,
+  "double_restore_exact": true,
+  "old_probe_root": "/private/tmp/lexinform-j251-baseline.ch11bpw6"
+}

@@ -11093,3 +11093,28 @@ is still pending; plan47complete/6N/A/21open unchanged.
 [Report](../assets/audits/2026-11-05-batch-receipt-integrity/REPORT.md),
 [integration proof](../assets/audits/2026-11-05-batch-receipt-integrity/integration-proof.json),
 [peer review](../assets/audits/2026-11-05-batch-receipt-integrity/peer-review.json).
+
+
+<a id="j251"></a>
+
+## J251 — immutable amendment input Reader A
+
+Dedicated migration67 adds a canonical typed text-question table and optional request-bound refs.
+Shared save/get/restore/doctor checks exact identities/known parents. Availability resolves only
+the root-original frozen result; later legacy-refetch revisions cannot backfill it. Original
+source receipts remain lineage. Capture, correction consumer and all prior None carriers stay
+unchanged; no arbitrary body cap or storage activation is introduced.
+
+Unit-first reproduction and276focused/30newunits/0scenarios, strict mypy11/Ruff/format pass.
+Final independent V2 exact-pin review is CLEAR. A fresh schema66 copy preserves all48existing tables and509public Bill reads, adds zero body rows,
+and survives exact double restore. Doctor semantics differ only by schema/file SHA; schema-only
++246SQL/+91gzip bytes. Immutable source checksum stays b08843e5…77c6. These are reader proofs,
+not a production storage forecast: native question subsets with controlled prior fields establish
+no universal body bound. Root8884full tests/314.48s, mypy766/Ruff/format835 and all835source/config pins pass.
+Independent root migration preserves48tables/509Bill JSON and exact double restore; seven doctor
+profiles differ only by schema/file SHA. New migration-test connection closes explicitly; no
+runtime or test-ID delta. Actual release follows publication. DA7 tasks stay open.
+
+[Root report](../assets/audits/2026-11-05-j251-amendment-question-reader/report.md),
+[integration](../assets/audits/2026-11-05-j251-amendment-question-reader/integration-proof.json),
+[review](../assets/audits/2026-11-05-j251-amendment-question-reader/peer-review.json).

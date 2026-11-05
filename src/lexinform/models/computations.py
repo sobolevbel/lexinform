@@ -7,6 +7,7 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from lexinform.models.amendment_inputs import AmendmentInputRef
 from lexinform.models.analysis import (
     AmendmentsRecord,
     AnalysisRecord,
@@ -179,6 +180,9 @@ class ComputationResult(BaseModel):
     local_timing_witness: LocalTimingWitness | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    amendment_input_ref: AmendmentInputRef | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     validation: Literal["validated", "error"]
     record: ComputationRecord | None
     model: str | None
@@ -192,6 +196,10 @@ class ComputationResult(BaseModel):
 
     @model_validator(mode="after")
     def validated_record(self) -> Self:
+        if self.amendment_input_ref is not None:
+            self.amendment_input_ref.require_carrier(
+                self.purpose, self.request_sha256, self.input_binding
+            )
         timing = self.local_timing_witness
         if timing is not None:
             timing.require_scope(self.input_binding)

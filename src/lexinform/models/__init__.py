@@ -6,6 +6,11 @@ the two bookkeeping rows; `phases` is the road it is on — what comes next, and
 does.
 """
 
+from lexinform.models.amendment_inputs import (
+    AmendmentInputAvailability as AmendmentInputAvailability,
+)
+from lexinform.models.amendment_inputs import AmendmentInputRef as AmendmentInputRef
+from lexinform.models.amendment_inputs import AmendmentInputSnapshot as AmendmentInputSnapshot
 from lexinform.models.analysis import (
     LONG_CONTEXT,
     LONG_CONTEXT_SUFFIX,

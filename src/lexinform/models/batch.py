@@ -17,6 +17,7 @@ from pydantic import (
 )
 
 from lexinform.json_storage import read_json
+from lexinform.models.amendment_inputs import AmendmentInputRef
 from lexinform.models.analysis import (
     Amendments,
     AmendmentsContext,
@@ -444,6 +445,10 @@ class DigestItemMeta(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    amendment_input_ref: AmendmentInputRef | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     @model_validator(mode="after")
     def frozen_binding(self) -> Self:
         _timing_meta(
@@ -455,6 +460,10 @@ class DigestItemMeta(BaseModel):
         )
         if self.input_binding is not None and self.input_binding.reuse_key != self.memo_key:
             raise ValueError("input binding must keep its frozen memo key")
+        if self.amendment_input_ref is not None:
+            self.amendment_input_ref.require_carrier(
+                "amendments", self.request_sha256, self.input_binding
+            )
         receipt = self.prepared_input_receipt
         if receipt is not None:
             if self.scan_input is not None:
@@ -473,6 +482,10 @@ def batch_item_meta(
     except ValueError, TypeError, RecursionError:
         raise ValueError("invalid_batch_metadata_json") from None
     parsed = model.model_validate(decoded)
+    if isinstance(parsed, DigestItemMeta) and parsed.amendment_input_ref is not None:
+        parsed.amendment_input_ref.require_carrier(
+            kind, parsed.request_sha256, parsed.input_binding
+        )
     if isinstance(parsed, DigestItemMeta) and parsed.prepared_input_receipt is not None:
         expected = (
             "amendments"
@@ -492,6 +505,14 @@ def batch_item_meta(
     return parsed
 
 
+def _amendment_input_metadata(value: object) -> object:
+    if isinstance(value, dict) and isinstance(value.get("meta"), dict):
+        meta = value["meta"]
+        if meta.get("amendment_input_ref") is not None:
+            return {**value, "meta": DigestItemMeta.model_validate(meta)}
+    return value
+
+
 class LlmBatchItem(BaseModel):
     """Which bill one `custom_id` of a batch answers for, and whether it has been written back."""
 
@@ -504,8 +525,17 @@ class LlmBatchItem(BaseModel):
     consumed_at: dt.datetime | None = None
     result: BatchResult | None = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def typed_amendment_metadata(cls, value: object) -> object:
+        return _amendment_input_metadata(value)
+
     @model_validator(mode="after")
     def actual_local_timing(self) -> Self:
+        if isinstance(self.meta, DigestItemMeta) and self.meta.amendment_input_ref is not None:
+            self.meta.amendment_input_ref.require_carrier(
+                self.call_kind, self.meta.request_sha256, self.meta.input_binding
+            )
         timing = self.meta.local_timing_witness
         if timing is not None:
             timing.require_scope(self.meta.input_binding)
@@ -534,6 +564,7 @@ class BatchIntent(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def receipt_meta_cannot_fall_back(cls, value: object) -> object:
+        value = _amendment_input_metadata(value)
         if isinstance(value, dict):
             meta = value.get("meta")
             timing = (
@@ -581,6 +612,10 @@ class BatchIntent(BaseModel):
 
     @model_validator(mode="after")
     def actual_input_receipt(self) -> Self:
+        if isinstance(self.meta, DigestItemMeta) and self.meta.amendment_input_ref is not None:
+            self.meta.amendment_input_ref.require_carrier(
+                self.request.call_kind, self.request.payload_sha256, self.meta.input_binding
+            )
         receipt = self.meta.prepared_input_receipt
         if receipt is None:
             return self

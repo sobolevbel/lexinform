@@ -3,7 +3,8 @@
 import sqlite3
 from datetime import datetime
 
-from lexinform.adapters.computation_history import parse_computation_result, read_computation_result
+from lexinform.adapters.amendment_inputs import checked_computation_result, validate_item_input
+from lexinform.adapters.computation_history import parse_computation_result
 from lexinform.content_sources import verify_primary_content_source
 from lexinform.models import (
     AnalysisRecord,
@@ -23,8 +24,8 @@ from lexinform.models import (
 from lexinform.models.batch import batch_item_meta
 
 
-def _row_to_llm_batch_item(row: sqlite3.Row) -> LlmBatchItem:
-    return LlmBatchItem(
+def _row_to_llm_batch_item(row: sqlite3.Row, connection: sqlite3.Connection) -> LlmBatchItem:
+    item = LlmBatchItem(
         batch_id=row["batch_id"],
         custom_id=row["custom_id"],
         call_kind=row["call_kind"],
@@ -34,6 +35,9 @@ def _row_to_llm_batch_item(row: sqlite3.Row) -> LlmBatchItem:
         consumed_at=datetime.fromisoformat(row["consumed_at"]) if row["consumed_at"] else None,
         result=BatchResult.model_validate_json(row["result_json"]) if row["result_json"] else None,
     )
+
+    validate_item_input(connection, item)
+    return item
 
 
 class ContentSourceRows:
@@ -60,7 +64,7 @@ class ContentSourceRows:
         row = self._query(
             "SELECT * FROM computation_results WHERE result_id = ?", (result_id,)
         ).fetchone()
-        return read_computation_result(row) if row else None
+        return checked_computation_result(self._connection, row) if row else None
 
     def get_consumed_primary_input(
         self, provider: BatchProvider, batch_id: str, custom_id: str, generation: int
@@ -140,7 +144,7 @@ class ContentSourceRows:
                 "applied",
             ):
                 raise ValueError("frozen primary target differs from its projection receipt")
-        return _row_to_llm_batch_item(row)
+        return _row_to_llm_batch_item(row, self._connection)
 
     def get_document_selection(self, selection_id: str) -> DocumentSelectionRecord | None:
         row = self._query(

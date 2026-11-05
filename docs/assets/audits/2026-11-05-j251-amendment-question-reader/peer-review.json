@@ -1,0 +1,40 @@
+{
+  "status": "clear",
+  "patch_sha256": "959201b88c8b5ac143ee00d4be9bb70433d4ce87d730e6b0594b70cbadab2b4b",
+  "increment_sha256": "a81cc2871157e60dda3874afb3084539a74fbc0e8df35a37b788f7a392818384",
+  "source_pins": {
+    "src/lexinform/adapters/amendment_inputs.py": "376ad6c66c670b2a6a951f9016ade6b4cdacc9aa210cb0711078f3a1f41403bd",
+    "src/lexinform/adapters/content_source_refs.py": "28d8a5baaf8d5566d6c7df7b9ec8ccf11a687afaeeccfb7a3756f3d11b0c941c",
+    "src/lexinform/adapters/sqlite_repo.py": "a1708053289b31cf4cc0bff025635fa22fdec936ca3bd32d41982a15acf5d422",
+    "src/lexinform/models/__init__.py": "eaf480a4270b4b30fd51c938deb36fbfb450984c568a8ab9adb6a0dcb8179a1d",
+    "src/lexinform/models/amendment_inputs.py": "e89e2fb45c78125aaf266bdc0cd61cde4ad9dd4e137505199e17ecc88edcacc5",
+    "src/lexinform/models/batch.py": "1754807955abbb36030edd400e7c505001d66cbaa163580c30cd5416ae5d0a8a",
+    "src/lexinform/models/computations.py": "0247a944e84e9fe5238c6212276eeb7c5876ab3d96ba0bd497626d830b415118",
+    "src/lexinform/ports.py": "4f8c49e35e4da3699556a73061950b6d9dae8e7d9cfa4cf74a00c8f7b6b6d850",
+    "src/lexinform/services/amendment_input_history.py": "9e5cb9175f000b346af0459272029441e9f0ff787ab29b73818c31b115e95f69",
+    "tests/unit/test_amendment_input_history.py": "ae31ca441dce6da126338dd972718855846e477a032cf6b8dd67a6a94128dd22",
+    "tests/unit/test_sqlite_repo.py": "6eff90b4610d8122a4ced18bfb1fe8ec855d64707cfff333c3b80bb10fd1b062",
+    "tools/computation_doctor.py": "e4c9d0b1ecc1803ab7dff1c80209076795ff37dfb16b61f9cd658937039970d7"
+  },
+  "findings": [],
+  "closed_findings": [
+    "Derived lineage validates its original parent once, after proving the parent has no further lineage.",
+    "Both-known direct source receipts must equal prepared metadata receipts; derived historical evidence remains distinct.",
+    "New diagnostic refs hash arbitrary damaged keys, including BLOB values.",
+    "Recognized refs in pre67 layouts receive missing-parent diagnostics; reference-free legacy and ancient layouts stay compatible."
+  ],
+  "scope": [
+    "Dedicated additive immutable question table; canonical typed text profile, request/hash/original-binding/source-parent checks.",
+    "Shared save/get/list/intent/item/restore/doctor validation; scratch checks precede live restore replacement.",
+    "Root-original frozen amendment result alone resolves input; later refetched revision cannot enrich an unavailable original.",
+    "Omitted-None transport fields preserve legacy JSON; existing preparation/capture/correction paths remain OFF/unchanged."
+  ],
+  "limits": [
+    "No independent tests, provider/network, migration execution or full gate performed.",
+    "Author reports276focused/30newunits plus strict11static checks and fresh48oldtables/509Bill/double-restore compatibility; reviewed as qualification evidence.",
+    "No production body cap/admission/budget or new runtime writer is accepted here; writer qualification and actual reader deployment remain root-owned."
+  ],
+  "independent_tests": false,
+  "source_edits": false,
+  "network_calls": 0
+}

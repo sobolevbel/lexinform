@@ -121,6 +121,7 @@ from lexinform.models import (
     WordTextExtraction,
     WykazEntry,
 )
+from lexinform.models.amendment_inputs import AmendmentInputSnapshot
 from lexinform.models.batch import BatchJob, BatchKind
 from lexinform.models.document_reads import DocumentPhysicalDiagnostics
 from lexinform.models.physical_inventory import PhysicalCapture, PhysicalMetadata
@@ -863,6 +864,10 @@ class BillRepository(Protocol):
     def list_candidate_disposition_traces(
         self, observation_id: str
     ) -> list[CandidateDispositionTrace]: ...
+
+    def save_amendment_input(self, snapshot: AmendmentInputSnapshot) -> None: ...
+
+    def get_amendment_input(self, snapshot_id: str) -> AmendmentInputSnapshot | None: ...
 
     def save_content_snapshot(self, snapshot: ContentSnapshot) -> None: ...
 

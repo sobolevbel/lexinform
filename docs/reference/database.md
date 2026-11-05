@@ -1,6 +1,6 @@
 # База данных и миграции
 
-Статус: актуальный справочник · миграции описаны по схеме **v66** включительно.
+Статус: актуальный справочник · миграции описаны по схеме **v67** включительно.
 
 Источник истины — append-only
 [`MIGRATIONS` в sqlite_repo.py](https://github.com/sobolevbel/lexinform/blob/main/src/lexinform/adapters/sqlite_repo.py).
@@ -37,6 +37,7 @@ HTML содержит снимок v34, включая SQL ограничени�
 | `physical_metadata` (v62) | `metadata_id`; kind/body index; nullable header FK; JSON ≤ 32 KiB | Инертный reader закрытых header/graph/container execution/root order/recipe записей. SQL views раскрывают все сохранённые ссылки и ordinal; code/options/versions не копируются в каждый capture. |
 | `physical_captures` (v62) | `capture_id`; mandatory artifact/recipe/inventory/execution FK; nullable actual extraction FK; partial unique indexes | Наблюдение принадлежит известному полному artifact root даже без результата извлечения. Envelope ≤ 1 KiB; distinct transitive union вместе с recipe ≤ 512 KiB. Producer не подключён. |
 | `content_snapshots` (v55) | `snapshot_id`; kind + exact JSON | Общие immutable editorial Bill/change/metadata-plan snapshots; plan не копирует отдельные bodies. |
+| `amendment_input_snapshots` (v67) | `snapshot_id`; profile + exact canonical question JSON/hash | Immutable text amendment questions; reader only, producer OFF. |
 | `content_versions` (v55) | `content_id`; root publication index; предыдущая версия | Editorial edition: semantic snapshot refs, known paid/event refs, exact rendered text либо явный unknown legacy, язык/formatter version при известности. |
 | `publication_content` (v55) | `publication_id` → `content_id` | Immutable связь физической publication с edition; не является receipt отправки. |
 | `document_work` | `key` | Поздний документ: исходное событие, исторический baseline, контекст batch, backoff и состояние. |
@@ -688,3 +689,18 @@ Prospective writer сохраняет compact snapshot/version/binding атом�
 свежая одиночная NEW_BILL либо одиночная card edition с известным подтверждённым parent.
 Legacy unbound, неизвестный язык formatter, multipart и inherited aliases не backfill-ятся;
 повторный poll/retry переиспользует прежние refs без роста metadata.
+
+
+### v67: immutable amendment input reader
+
+`amendment_input_snapshots` сохраняет canonical typed text question profile
+`amendments-text-question-v1` отдельно от editorial snapshots. Snapshot identity включает profile
+и полный question JSON; optional request-bound refs требуют exact request SHA и original input
+binding. Shared save/get/restore/doctor проверяют SQL/JSON identity и известные parent links.
+Scan/image bytes не входят в profile; старые None не сериализуются и IDs не меняются.
+
+Reader разрешает availability только через exact result корневой original amendment edition:
+поздний legacy-refetch revision не заполняет отсутствующий original input. Прежний source receipt
+остаётся lineage с его исходным request SHA. Capture и correction consumer пока выключены.
+Новый произвольный byte cap не вводится; универсальная граница body не установлена. Включение
+writer требует отдельного operational storage budget и public OFF/ON qualification.

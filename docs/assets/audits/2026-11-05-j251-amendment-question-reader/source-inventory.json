@@ -1,0 +1,18 @@
+{
+  "base": "889e3a9b541d1fdd7f777fa6764bd58719ecba13",
+  "migration_prefix66_exact": true,
+  "appended_migrations": 1,
+  "new_table_only": "amendment_input_snapshots",
+  "writerOFF_unchanged_files": {
+    "src/lexinform/services/analysis.py": "91f93400d4f07dfc4f063d589b320c842f25d384b077c11325f217c8b8b888fc",
+    "src/lexinform/services/amendments.py": "3efd780b9a3d7c1015f72baa9e61cd8ba135cc9ed4d8e9b552d1cd8b02550a7e",
+    "src/lexinform/services/posting.py": "b434b2739a4741c76fef0c4c9fa1615704b1826b65f976d4850933f9686d963f",
+    "src/lexinform/services/content_history.py": "5e455aee143c02aa6f74a14b6019eb0219e8dd2f4b6d449168513babead5a4ec",
+    "src/lexinform/services/documents.py": "2bc1022c0062287f2517f8ad3083c06e327dfaeda61d8605300171f52f3a4cd9",
+    "src/lexinform/adapters/input_receipts.py": "22f2e423cbb47929b5bd27cbe3d6bcf232be19d7f5d985a71543f47f3d0dc223",
+    "src/lexinform/adapters/computation_history.py": "3885767e8a0d2d943341ac9f46d1b4d52ec3dec0161bb0eded209101275e01fb"
+  },
+  "no_new_body_admission_cap": true,
+  "unsupported_question_profile": "scan/image; existing prepared source receipt retained as lineage only",
+  "capture_budget_decision": "future writer precondition; no universal body bound established"
+}

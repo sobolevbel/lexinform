@@ -20,5 +20,9 @@
   "mixed_header_positive": true,
   "root_focus": 72,
   "root_proof": "integration-proof.json",
-  "release": "pending publication"
+  "release": {
+    "status": "verified",
+    "target_sha": "11557f163a2bdb38ba9416c78296078888629dd8",
+    "receipt": "release.json"
+  }
 }

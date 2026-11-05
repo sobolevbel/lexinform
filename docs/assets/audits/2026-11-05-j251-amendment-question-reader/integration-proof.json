@@ -1,0 +1,18 @@
+{
+  "full_tests": 8884,
+  "seconds": 314.48,
+  "mypy_files": 766,
+  "ruff_format_files": 835,
+  "source_config_pins_exact": 835,
+  "root_focused": 83,
+  "runtime_candidate_pins_exact": 11,
+  "test_resource_closing_delta": "resource-closing-delta.json",
+  "new_units": 30,
+  "new_scenarios": 0,
+  "full_log_sha256": "091bb1a15accdb7b5f121c8a68a491558a0794f6dc9d4b6b0fe7610353736169",
+  "full_xml_sha256": "eb46b338b241fbe61f0e7518dc943f3353b8571271e85a3cc8741dce89e6eeba",
+  "migration": "migration-proof.json",
+  "doctor_semantics": "doctor-comparison.json",
+  "schema_storage": "storage-proof.json",
+  "writer_capture": "OFF"
+}

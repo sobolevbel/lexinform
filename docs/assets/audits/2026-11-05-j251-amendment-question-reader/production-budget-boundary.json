@@ -1,0 +1,13 @@
+{
+  "text_budget_chars": 1500000,
+  "candidate_selected_senate_rows": 701,
+  "selected_largest_extracted_chars_cases": 3,
+  "real_pinned_prior_owner_matches": 0,
+  "provider_calls": 0,
+  "network_calls": 0,
+  "prior": "controlled fixture; no exact selected Senate owner has retained analysis in fresh state",
+  "proposal_recommendation": "not supplied; these are Senate-resolution native questions, not production-field coverage",
+  "universal_body_bound_established": false,
+  "capture_enabled": false,
+  "boundary": "Labelled subset/technical preparation only; no production-field coverage or writer-budget decision"
+}
