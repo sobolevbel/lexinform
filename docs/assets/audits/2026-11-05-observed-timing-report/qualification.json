@@ -1,0 +1,68 @@
+{
+  "database_unchanged": true,
+  "database_writes": 0,
+  "default_exact": true,
+  "focused": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 168
+  },
+  "format": "6 files already formatted",
+  "full_observed_default_exact": true,
+  "independent_review": {
+    "findings": [],
+    "independent_tests": false,
+    "peer_review_sha256": "8b265d3abbfdbb5fe188d14276ef2acb3f105eadbe3b447d9dc547defc6283b5",
+    "status": "clear"
+  },
+  "mypy": "Success: no issues found in 6 source files",
+  "network": false,
+  "new_scenarios": 0,
+  "new_unit_cases": 57,
+  "provider_calls": 0,
+  "root_full_gate": {
+    "stage": "J241 opt-in observed timing report",
+    "source_patch_sha256": "0b528305194fcfc2b573f81d7626f5b61d58a9e83ec0155d1a4ab39508d1f0d0",
+    "root_focused": 154,
+    "full_tests": 8683,
+    "xml_seconds": 298.118,
+    "strict_mypy_files": 751,
+    "ruff_format_files": 820,
+    "coverage_percent": 92,
+    "source_config_pins": 820,
+    "source_freeze_exact": true,
+    "new_units": 57,
+    "new_scenarios": 0,
+    "removed_cases": 0,
+    "source_DB_unchanged": true,
+    "default_full_observed_V1_bytes_exact_to_archived_db73": true,
+    "intentional_pinned_delta_only_factual_explanation_policy": true,
+    "joined_native_to_recorded_delivery_proof": "joined-proof.json",
+    "technical_joined_chain_not_natural_legal_acceptance": true,
+    "root_final_review": "root-v5-review.json",
+    "proof_sha256": {
+      "full-final.xml": "d1b95b3375ac8b6d7808fbd846b5bbec6767aeb6aa05ad7b0d80cffea60225a1",
+      "full-final.log": "32c49532c166321dba556ce93b6e01e5a665b08c10d37dfab95c8c78b9741291",
+      "source-freeze-final.json": "daaca7ed53cbd1146baf3a4d6d4b7c97b169b48c7deac66944bd89569da4ab69",
+      "focused-v5.xml": "63433074c9dd50dedab684c83d88035f15796c5c8333ca76f3bea444f8b361af",
+      "case-delta.json": "7cdae1d2624204a90b1d0c09b68c518e3bde3d111abb0739c99929a022b3973a",
+      "pinned-proof-final.json": "a6f65fcd13489c706ee487d5d4b5f2ad007532242ab59aca8d4d760196dfcbfd"
+    }
+  },
+  "ruff": "All checks passed!",
+  "runtime_writer_changes": false,
+  "schema_regressions": {
+    "after_failures": 0,
+    "before_failures": 2,
+    "cases": 3,
+    "full_population_dicts_asserted": true
+  },
+  "scope": "Opt-in saved-clock report v2; local functional acceptance passed; actual release pending root DA10.4 decision",
+  "v1_exact": true,
+  "root_focused": 154,
+  "final_V5_review": "root-v5-review.json",
+  "joined_functional_proof": "joined-proof.json",
+  "joined_V1_trusted_Wykaz_source_clock": "joined-v1-wykaz.json",
+  "prior_v2_populated_comparison": "Only the incorrect explanation policy label changes; all counts/clocks/rows/IDs exact"
+}

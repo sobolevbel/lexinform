@@ -1,0 +1,8 @@
+{
+  "reviewer": "root",
+  "findings": [],
+  "increment_sha256": "4dfecabe5b0e1862304d8c0696cd8d99d9fcf42c327a032f41361eba2d528fa0",
+  "source_policy_checked_against": "services/commands.py actual command application and void physical reply port",
+  "scope": "Known command application remains counted; only physical operator reply unknown, no new outbox or physical inference",
+  "same_unit_cases_strengthened": true
+}

@@ -1,0 +1,37 @@
+{
+  "baseline_commit": "db73fee3f950bbe025ac6bbbd1db686d3ec15646",
+  "independent_committed_source_archive": true,
+  "database_sha256": "74633d215bb7ca04c5b0d3d996841306e01a801977082edb8aeae768fee2aba9",
+  "database_unchanged": true,
+  "default_fullobserved_V1_bytes_exact": true,
+  "default_comparison_sha256": "a6ff94bc745436037cd8a3775ce90929ca7950ef885417d75285bd3916ed9e3c",
+  "V2_exact_to_reviewed_frozen_packet": true,
+  "populations": {
+    "applications": {
+      "attributed": 26,
+      "rows": 26,
+      "unattributed": 0
+    },
+    "physical_edges": {
+      "rows": 5
+    },
+    "results": {
+      "attributed": 13,
+      "rows": 13,
+      "unattributed": 0
+    }
+  },
+  "V5_default_fullobserved_V1_bytes_exact": true,
+  "all_other_counts_clocks_rows_ids_exact": true,
+  "intentional_V4_to_V5_leaf_changes": [
+    {
+      "path": [
+        "purposes",
+        2,
+        "physical_evidence"
+      ],
+      "before": "no_durable_projection_or_publication_receipt",
+      "after": "no_durable_operator_reply_receipt"
+    }
+  ]
+}

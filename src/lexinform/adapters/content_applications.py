@@ -2,7 +2,7 @@
 
 import sqlite3
 
-from lexinform.adapters.computation_history import read_computation_result
+from lexinform.adapters.computation_history import read_computation_result, read_result_application
 from lexinform.adapters.content_source_refs import ContentSourceRows
 from lexinform.adapters.secondary_dependencies import (
     SecondaryPurpose,
@@ -37,15 +37,9 @@ def _rows(
 
 
 def _application(row: sqlite3.Row) -> ResultApplication:
-    application = ResultApplication.model_validate(read_json(row["application_json"]))
+    application = read_result_application(row)
     if (
-        type(row["id"]) is not int
-        or row["id"] <= 0
-        or any(
-            row[field] != getattr(application, field)
-            for field in ("result_id", "term", "number", "generation", "phase")
-        )
-        or application.phase != "projection"
+        application.phase != "projection"
         or application.generation is not None
         or application.target is None
         or application.target.kind not in ("status_change", "publication")

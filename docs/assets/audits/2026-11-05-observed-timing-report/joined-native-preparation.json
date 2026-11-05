@@ -1,0 +1,238 @@
+{
+  "core": {
+    "stages": [
+      {
+        "phase": "initial",
+        "result_type": "AnalysisResult",
+        "exception_type": null,
+        "prepare_calls": 1,
+        "packets": [
+          {
+            "custom_id": "11436b98a90ddb14afac80cb660e5df50451a76e45271a226c63a49d5eff4666",
+            "purpose": "analysis",
+            "request_sha256": "6f578483da830e6e76ee4d3590bce0905d4ce1ee041710e1ea501856e77964fa",
+            "payload_sha256": "2669cf179b081bbbfd74e6c0406bbd54bcbe461243f4c925315aaa8990c7bad4",
+            "context_sha256": "ff6fc0b8c4392f57633fabb735f42e82878b3d6cd786723731ebd4904079a4fd",
+            "meta_sha256": "3dc925f96ed267c79e60a8f31d8fd4ec425bed008f2ca6c9fc3979f8d5461d2a",
+            "memo_key": "f4b8ac186e7c594217c4384e3e127749dbd085788390693b6f1f44d424523650",
+            "input_scope": {
+              "term": 10,
+              "number": "3039",
+              "reuse_key": "f4b8ac186e7c594217c4384e3e127749dbd085788390693b6f1f44d424523650"
+            },
+            "state": "queued",
+            "created_at": "2026-11-05T12:00:00+00:00",
+            "estimated_cost_usd": 0.071565
+          }
+        ],
+        "status": "batch_pending",
+        "analysis_attempts": 0,
+        "spent_usd": 0.0,
+        "calls": [],
+        "read_metrics": {
+          "schema_version": 1,
+          "cache_hits": 1,
+          "distinct_bodies": 1,
+          "distinct_body_bytes": 1100981,
+          "hosts": {
+            "api.sejm.gov.pl": {
+              "attempts": 1,
+              "completed": 1,
+              "body_bytes": 1100981,
+              "over_limit": 0,
+              "failed": 0
+            }
+          }
+        }
+      },
+      {
+        "phase": "repeat",
+        "result_type": "AnalysisResult",
+        "exception_type": null,
+        "prepare_calls": 0,
+        "packets": [
+          {
+            "custom_id": "11436b98a90ddb14afac80cb660e5df50451a76e45271a226c63a49d5eff4666",
+            "purpose": "analysis",
+            "request_sha256": "6f578483da830e6e76ee4d3590bce0905d4ce1ee041710e1ea501856e77964fa",
+            "payload_sha256": "2669cf179b081bbbfd74e6c0406bbd54bcbe461243f4c925315aaa8990c7bad4",
+            "context_sha256": "ff6fc0b8c4392f57633fabb735f42e82878b3d6cd786723731ebd4904079a4fd",
+            "meta_sha256": "3dc925f96ed267c79e60a8f31d8fd4ec425bed008f2ca6c9fc3979f8d5461d2a",
+            "memo_key": "f4b8ac186e7c594217c4384e3e127749dbd085788390693b6f1f44d424523650",
+            "input_scope": {
+              "term": 10,
+              "number": "3039",
+              "reuse_key": "f4b8ac186e7c594217c4384e3e127749dbd085788390693b6f1f44d424523650"
+            },
+            "state": "queued",
+            "created_at": "2026-11-05T12:00:00+00:00",
+            "estimated_cost_usd": 0.071565
+          }
+        ],
+        "status": "batch_pending",
+        "analysis_attempts": 0,
+        "spent_usd": 0.0,
+        "calls": [],
+        "read_metrics": {
+          "schema_version": 1,
+          "cache_hits": 1,
+          "distinct_bodies": 1,
+          "distinct_body_bytes": 1100981,
+          "hosts": {
+            "api.sejm.gov.pl": {
+              "attempts": 1,
+              "completed": 1,
+              "body_bytes": 1100981,
+              "over_limit": 0,
+              "failed": 0
+            }
+          }
+        }
+      },
+      {
+        "phase": "reconstructed_service",
+        "result_type": "AnalysisResult",
+        "exception_type": null,
+        "prepare_calls": 0,
+        "packets": [
+          {
+            "custom_id": "11436b98a90ddb14afac80cb660e5df50451a76e45271a226c63a49d5eff4666",
+            "purpose": "analysis",
+            "request_sha256": "6f578483da830e6e76ee4d3590bce0905d4ce1ee041710e1ea501856e77964fa",
+            "payload_sha256": "2669cf179b081bbbfd74e6c0406bbd54bcbe461243f4c925315aaa8990c7bad4",
+            "context_sha256": "ff6fc0b8c4392f57633fabb735f42e82878b3d6cd786723731ebd4904079a4fd",
+            "meta_sha256": "3dc925f96ed267c79e60a8f31d8fd4ec425bed008f2ca6c9fc3979f8d5461d2a",
+            "memo_key": "f4b8ac186e7c594217c4384e3e127749dbd085788390693b6f1f44d424523650",
+            "input_scope": {
+              "term": 10,
+              "number": "3039",
+              "reuse_key": "f4b8ac186e7c594217c4384e3e127749dbd085788390693b6f1f44d424523650"
+            },
+            "state": "queued",
+            "created_at": "2026-11-05T12:00:00+00:00",
+            "estimated_cost_usd": 0.071565
+          }
+        ],
+        "status": "batch_pending",
+        "analysis_attempts": 0,
+        "spent_usd": 0.0,
+        "calls": [],
+        "read_metrics": {
+          "schema_version": 1,
+          "cache_hits": 1,
+          "distinct_bodies": 1,
+          "distinct_body_bytes": 1100981,
+          "hosts": {
+            "api.sejm.gov.pl": {
+              "attempts": 1,
+              "completed": 1,
+              "body_bytes": 1100981,
+              "over_limit": 0,
+              "failed": 0
+            }
+          }
+        }
+      }
+    ],
+    "downloads": [
+      {
+        "url_sha256": "67cf4863663ca3d618ec4a2c7281f346bcebf52b143e714b1dee1744eaff9436",
+        "bound": 8388608,
+        "sha256": "d9600e2c8a0d84376be10b9122a357138467c6e42722ba90e6114ada8e71693a",
+        "bytes": 1100981
+      }
+    ],
+    "initial_downloads": 0,
+    "prepared": [
+      "6f578483da830e6e76ee4d3590bce0905d4ce1ee041710e1ea501856e77964fa"
+    ],
+    "client_attempts": 0,
+    "synchronous_attempts": 0,
+    "submit_attempts": 0,
+    "packet_immutability": true,
+    "restore_exact": true,
+    "clock_events": [
+      {
+        "event": "download_complete",
+        "at": "2026-11-05T12:00:00+00:00"
+      }
+    ]
+  },
+  "timing": [
+    {
+      "phase": "initial",
+      "witnesses": [
+        {
+          "schema_version": 1,
+          "purpose": "analysis",
+          "request_sha256": "2669cf179b081bbbfd74e6c0406bbd54bcbe461243f4c925315aaa8990c7bad4",
+          "input_scope": {
+            "term": 10,
+            "number": "3039",
+            "reuse_key": "f4b8ac186e7c594217c4384e3e127749dbd085788390693b6f1f44d424523650"
+          },
+          "trigger_kind": "bill_discovered",
+          "triggered_at": "2026-11-05T12:00:00+00:00",
+          "read_kind": "mixed",
+          "read_completed_at": "2026-11-05T12:00:00+00:00"
+        }
+      ],
+      "initial_expected_read_class": "mixed",
+      "stored_request_sha256": [
+        "2669cf179b081bbbfd74e6c0406bbd54bcbe461243f4c925315aaa8990c7bad4"
+      ]
+    },
+    {
+      "phase": "repeat",
+      "witnesses": [
+        {
+          "schema_version": 1,
+          "purpose": "analysis",
+          "request_sha256": "2669cf179b081bbbfd74e6c0406bbd54bcbe461243f4c925315aaa8990c7bad4",
+          "input_scope": {
+            "term": 10,
+            "number": "3039",
+            "reuse_key": "f4b8ac186e7c594217c4384e3e127749dbd085788390693b6f1f44d424523650"
+          },
+          "trigger_kind": "bill_discovered",
+          "triggered_at": "2026-11-05T12:00:00+00:00",
+          "read_kind": "mixed",
+          "read_completed_at": "2026-11-05T12:00:00+00:00"
+        }
+      ],
+      "initial_expected_read_class": null,
+      "stored_request_sha256": [
+        "2669cf179b081bbbfd74e6c0406bbd54bcbe461243f4c925315aaa8990c7bad4"
+      ]
+    },
+    {
+      "phase": "reconstructed_service",
+      "witnesses": [
+        {
+          "schema_version": 1,
+          "purpose": "analysis",
+          "request_sha256": "2669cf179b081bbbfd74e6c0406bbd54bcbe461243f4c925315aaa8990c7bad4",
+          "input_scope": {
+            "term": 10,
+            "number": "3039",
+            "reuse_key": "f4b8ac186e7c594217c4384e3e127749dbd085788390693b6f1f44d424523650"
+          },
+          "trigger_kind": "bill_discovered",
+          "triggered_at": "2026-11-05T12:00:00+00:00",
+          "read_kind": "mixed",
+          "read_completed_at": "2026-11-05T12:00:00+00:00"
+        }
+      ],
+      "initial_expected_read_class": null,
+      "stored_request_sha256": [
+        "2669cf179b081bbbfd74e6c0406bbd54bcbe461243f4c925315aaa8990c7bad4"
+      ]
+    }
+  ],
+  "case": {
+    "id": "analysis",
+    "purpose": "analysis",
+    "mode": "fresh",
+    "clock": "fixed"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "existing_unit": "tests/unit/test_observed_latency.py::test_only_exact_wykaz_announcement_has_official_availability",
+  "source_sha256": "f61c823011e5f87f96e8ae6bcb0784ce362827e045fb75341780fa60e2763df5",
+  "tests": 1,
+  "new_tests": 0,
+  "evidence_scope": "V1 exact Wykaz announcement source-discovery interval3600seconds,minute precision,Europe/Warsaw; changed non-Wykaz owner remains official_availability_unknown. This is separate from joined local input-witness proof.",
+  "network_provider_calls": 0
+}

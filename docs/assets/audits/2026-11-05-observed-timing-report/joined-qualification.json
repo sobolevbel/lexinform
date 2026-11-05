@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "final_V5_root_source_repeat_exact": true,
+  "proof_sha256": "f3fc16125e2ad209eee2b38233313049858f44eaf5989b1f83fcd48913147f39",
+  "native_sha256": "ddc3199aceb6ceee545cd341ec468b9b77f1cb18565656037815308bb29331fb",
+  "recipe_sha256": "d25787bf2ff685a6b370dd38462438de3ba84389c70b9e14f18b40fd6dafbe4d",
+  "raw_SQL_only_in_ignored_private_subdirectory": true,
+  "new_tests": 0,
+  "new_scenarios": 0,
+  "fullgate": false
+}

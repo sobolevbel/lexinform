@@ -48,3 +48,5 @@ pins exact. Twenty-two new units (21writer/baseline plus1strict corruption case)
 [fixture proof](fixture-case-proof.json), [fixture review](fixture-review.json),
 [fixture pins](fixture-source-pins.json), [root state proof](root-state-proof.json).
 Previousa703da5f [CI and relay](previous-release.json) actually verified.
+
+Actualdb73fee3 release: [CI and relay verification](../2026-11-05-observed-timing-report/previous-release.json).

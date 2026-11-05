@@ -1,0 +1,45 @@
+{
+  "status": "clear",
+  "patch_sha256": "4ed4e796748c05ef10c2779335825a81f3300d307d0519ab82b3d876f97561e8",
+  "increment_sha256": "3c967380ba1898a6c2615eaa6dbf353431f16812ddd6cce5d260a48c38143809",
+  "supersedes_patch_sha256": "b82ca0b2aaa5d5db84ea9d77d21b6e03d4cd48de8de3382002948dc4f66a91cc",
+  "source_pins": {
+    "src/lexinform/adapters/computation_history.py": "3885767e8a0d2d943341ac9f46d1b4d52ec3dec0161bb0eded209101275e01fb",
+    "src/lexinform/adapters/content_applications.py": "a73bde29eba90da8e700c74c8a321732d8ae1917192f11fb27cd0dd6dea6392a",
+    "tests/unit/test_observed_timing.py": "3ec67948243c141949a98cc648321893fe7851104847136b5b507835fb1ba3d6",
+    "tools/observed_timing.py": "2b48fee166043a9ce471ab793c16cf107f14f565551be86c032a518a82e18d3c",
+    "tools/timing_delivery_links.py": "b6101c5a6f715c51318ea87c9daefbb2234763a6f70f6108df70ac159828e099",
+    "tools/work_doctor.py": "0b98615beeb97d7dd32ab9e562fefcc4c12b3a5595f0b15716bd777638938d42"
+  },
+  "findings": [],
+  "independent_tests": false,
+  "source_edits": false,
+  "review_scope": [
+    "Final V3-to-V4 own-table population null correction plus retained V3 dependent-null logic.",
+    "When own result/application schema is unavailable, rows/attributed/unattributed are all None. Available empty own-table populations are exactly zero across all three fields.",
+    "Either missing upstream schema nulls dependent per-purpose application/phase/link/operation counts and physical population/clock coverage; all-present empty remains zero.",
+    "Full result/application population dictionaries are asserted in the same three schema tests, with no added cases.",
+    "All six physical hashes and full/increment patch SHA verified; V2 physical joins/shared J239 decoder files remain exact."
+  ],
+  "closed_findings": [
+    "Digest membership uses source-publication IDs and distinct namespace controls.",
+    "Actual revision SQL change reference may be None; exact publication target/frozen-scope controls apply.",
+    "Upstream missing schemas no longer create dependent false zero counts.",
+    "Own missing schema no longer reports attributed/unattributed false zeros."
+  ],
+  "author_evidence": {
+    "focused_tests": 168,
+    "new_units": 57,
+    "new_scenarios": 0,
+    "schema_controls": 3,
+    "full_population_dicts_asserted": true,
+    "populated_V2_report_exact": true,
+    "default_fullobserveddefault_V1_DB_exact": true
+  },
+  "limitations": [
+    "Read-only source/test/artifact inspection; no independent tests or full gate.",
+    "This is the final V4 review. V3 limited clear was revoked and must not authorize integration.",
+    "Natural missing witnesses, explanation durable-edge and broader DA10.4 coverage gaps remain explicit.",
+    "Root owns merged-source gate, CI and deployment."
+  ]
+}

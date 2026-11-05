@@ -10744,6 +10744,53 @@ separate; DA10.4 stays OPEN and no task checkbox closes.
 [compressed paired evidence](../assets/audits/2026-11-05-local-timing-writer/artifacts.json).
 
 
+<a id="j241"></a>
+
+## J241 — opt-in saved timing and physical-reference report v2
+
+5 November 2026. Explicit work_doctor timing-witness mode adds a version2 latency section;
+default, full observed-default and v1 outputs remain exact. Every retained-result and application
+SQL row remains in its own denominator, including collection receipts and unattributed malformed
+rows; physical edges have a separate application/publication denominator and known-clock counts.
+Original input/paid/application owners remain distinct; current Bill/generation, titles, answer
+content and timestamp proximity never manufacture a join. The shared strict application-row
+decoder preserves existing J239 finite-profile wrapper behavior. No runtime writer changes occur.
+
+All ten purposes are inventoried: nine have supported exact frozen-slot/retained-reference proof;
+explanation has a durable command application but no retained physical operator-reply receipt. Group members, bidirectional digest/held
+membership, full multipart chains, known-language selected names and profiled cleaned history
+reuse existing proof helpers. Recorded operation is local evidence; manual confirmation does not
+supply an API-send clock. Read-before-work_requested, DST folds/extremes and explicit unknown
+clock/schema/physical states are preserved. Source availability remains unknown. Digest membership
+uses source-publication IDs; held changes use event IDs. Revisions bind exact publication targets
+with truthful absent SQL status_change_id. Eight focused peer controls reproduce three pre-fix
+failures and pass after correction; J239 unknown-SHA compatibility is unchanged. Three additional
+upstream-schema controls assert complete own-population and dependent null counts rather than
+zero, preserving populated v2 bytes.
+
+168 focused tests pass,57 new units/0new scenarios, strict mypy6/Ruff/format6 green. Pinned620f0923
+DB74633d21 remains exact:13 retained rows across four purposes,26 applications, five exact frozen
+operation-reference edges and0timing witnesses. Ten-purpose clock/nine-slot positives are typed
+technical controls; no historical timing or natural legal labels are invented. Exact final independent correction review is CLEAR/findings[] without a test rerun;
+Root154focused and8683full tests/298.118s/92%coverage pass, mypy751/Ruff/format820green, all820
+source/config pins exact;57newunits/0newscenarios/0removed and all full case IDs retained.
+FinalV5 factual review confirms existing command APPLICATION; only physical operator reply is
+unrecorded. Archiveddb73 default/fullobserved/V1 bytes are exact; pinnedV2 changes only this
+factual policy label, with all counts/clocks/rows/IDs unchanged. Joined native→publicofflinebatch
+retention→actual primary projection→publicFakePublisher recorded NEW_BILL proves known
+1200/1500/1800s trigger/read intervals and300s phase intervals. All eight source-parent tables,
+original witness/paid request and full closed-copy doctor objects survive double restore.
+Separate existing V1 trusted Wykaz source-clock control passes. This is technical capability,
+not natural production/legal acceptance; DA10.4 remains for root decision after actual release.
+Historical/source-clock unknowns do not alone block this item; DA10.7 cycles remain separate.
+
+[Report](../assets/audits/2026-11-05-observed-timing-report/report.md),
+[qualification](../assets/audits/2026-11-05-observed-timing-report/qualification.json),
+[source pins](../assets/audits/2026-11-05-observed-timing-report/source-pins.json),
+[pinned proof](../assets/audits/2026-11-05-observed-timing-report/pinned-proof.json),
+[metadata artifacts](../assets/audits/2026-11-05-observed-timing-report/artifacts.json).
+
+
 <a id="j242"></a>
 
 ## J242 — prospective amendment application-reference writer B

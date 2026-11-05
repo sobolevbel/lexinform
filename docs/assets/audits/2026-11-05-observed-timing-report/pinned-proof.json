@@ -1,0 +1,162 @@
+{
+  "counts_clocks_rows_ids_exact": true,
+  "database_sha256": "74633d215bb7ca04c5b0d3d996841306e01a801977082edb8aeae768fee2aba9",
+  "database_unchanged": true,
+  "default_exact": true,
+  "default_sha256": "238399a5f05e8ae336727282bad6ae9bc068df92affb4081824d4f70963c364e",
+  "full_observed_default_exact": true,
+  "populations": {
+    "applications": {
+      "attributed": 26,
+      "rows": 26,
+      "unattributed": 0
+    },
+    "physical_edges": {
+      "rows": 5
+    },
+    "results": {
+      "attributed": 13,
+      "rows": 13,
+      "unattributed": 0
+    }
+  },
+  "prior_v4_only_explanation_metadata_changed": true,
+  "prior_v4_report_sha256": "b8ea5e307618f7e41626ed9f363e7648e5b3283b18395feaa3c00ac282e960d6",
+  "purpose_inventory": [
+    {
+      "applications": 15,
+      "collection_receipts": 7,
+      "physical_edges": 1,
+      "physical_evidence": "frozen_analysis_and_projected_generation",
+      "projection_receipts": 8,
+      "projection_rows_with_input_reference": 1,
+      "purpose": "analysis",
+      "recorded_operation_edges": 1,
+      "results": 7,
+      "witnesses": 0
+    },
+    {
+      "applications": 9,
+      "collection_receipts": 4,
+      "physical_edges": 2,
+      "physical_evidence": "frozen_changed_analysis_and_projected_generation",
+      "projection_receipts": 5,
+      "projection_rows_with_input_reference": 2,
+      "purpose": "reanalysis",
+      "recorded_operation_edges": 2,
+      "results": 4,
+      "witnesses": 0
+    },
+    {
+      "applications": 0,
+      "collection_receipts": 0,
+      "physical_edges": 0,
+      "physical_evidence": "no_durable_operator_reply_receipt",
+      "projection_receipts": 0,
+      "projection_rows_with_input_reference": 0,
+      "purpose": "explanation",
+      "recorded_operation_edges": 0,
+      "results": 0,
+      "witnesses": 0
+    },
+    {
+      "applications": 1,
+      "collection_receipts": 0,
+      "physical_edges": 1,
+      "physical_evidence": "exact_frozen_change_or_profiled_revision_reference",
+      "projection_receipts": 1,
+      "projection_rows_with_input_reference": 1,
+      "purpose": "amendments",
+      "recorded_operation_edges": 1,
+      "results": 1,
+      "witnesses": 0
+    },
+    {
+      "applications": 1,
+      "collection_receipts": 0,
+      "physical_edges": 1,
+      "physical_evidence": "exact_frozen_change_or_profiled_reference",
+      "projection_receipts": 1,
+      "projection_rows_with_input_reference": 1,
+      "purpose": "supplement",
+      "recorded_operation_edges": 1,
+      "results": 1,
+      "witnesses": 0
+    },
+    {
+      "applications": 0,
+      "collection_receipts": 0,
+      "physical_edges": 0,
+      "physical_evidence": "joint_bill_frozen_record",
+      "projection_receipts": 0,
+      "projection_rows_with_input_reference": 0,
+      "purpose": "joint",
+      "recorded_operation_edges": 0,
+      "results": 0,
+      "witnesses": 0
+    },
+    {
+      "applications": 0,
+      "collection_receipts": 0,
+      "physical_edges": 0,
+      "physical_evidence": "selected_bound_mnemonic_in_card_operation",
+      "projection_receipts": 0,
+      "projection_rows_with_input_reference": 0,
+      "purpose": "name",
+      "recorded_operation_edges": 0,
+      "results": 0,
+      "witnesses": 0
+    },
+    {
+      "applications": 0,
+      "collection_receipts": 0,
+      "physical_edges": 0,
+      "physical_evidence": "own_review_kind_and_frozen_source_key",
+      "projection_receipts": 0,
+      "projection_rows_with_input_reference": 0,
+      "purpose": "consultation_review",
+      "recorded_operation_edges": 0,
+      "results": 0,
+      "witnesses": 0
+    },
+    {
+      "applications": 0,
+      "collection_receipts": 0,
+      "physical_edges": 0,
+      "physical_evidence": "own_review_kind_and_frozen_source_key",
+      "projection_receipts": 0,
+      "projection_rows_with_input_reference": 0,
+      "purpose": "commission_review",
+      "recorded_operation_edges": 0,
+      "results": 0,
+      "witnesses": 0
+    },
+    {
+      "applications": 0,
+      "collection_receipts": 0,
+      "physical_edges": 0,
+      "physical_evidence": "own_review_kind_and_frozen_source_key",
+      "projection_receipts": 0,
+      "projection_rows_with_input_reference": 0,
+      "purpose": "act_application",
+      "recorded_operation_edges": 0,
+      "results": 0,
+      "witnesses": 0
+    }
+  ],
+  "report_changes": [
+    {
+      "after": "no_durable_operator_reply_receipt",
+      "before": "no_durable_projection_or_publication_receipt",
+      "path": [
+        "purposes",
+        2,
+        "physical_evidence"
+      ]
+    }
+  ],
+  "root_head": "db73fee3f950bbe025ac6bbbd1db686d3ec15646",
+  "state_ref": "620f09234a4959278811885b3e757593ae260bdd",
+  "v1_exact": true,
+  "v1_sha256": "1385590fb29c3dfbbdd1b9325a46b990d53ba85f3d8f4c92d0bfd7befdc31410"
+}

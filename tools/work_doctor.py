@@ -18,6 +18,7 @@ from lexinform.models import AmendmentRevisionApplicationWork, BatchRequest, Rev
 from lexinform.saved_clock import saved_clock_age
 from tools.corpus_artifacts import write_json
 from tools.observed_latency import observed_latency
+from tools.observed_timing import observed_timing
 from tools.sqlite_snapshot import open_snapshot
 
 _REQUIRED = {"bills", "document_work", "status_changes", "publications", "analysis_memo"}
@@ -29,6 +30,10 @@ def work_ages(
     """Age saved nonterminal owners from their recorded work timestamp, never a source date."""
     if observed_at.utcoffset() is None:
         raise ValueError("Observed time must include a timezone")
+    try:
+        observed_iso = observed_at.astimezone(UTC).isoformat()
+    except OverflowError:
+        observed_iso = observed_at.isoformat()
     groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
     excluded: Counter[str] = Counter()
     for owner in owners:
@@ -72,7 +77,7 @@ def work_ages(
             }
         )
     return {
-        "observed_at": observed_at.astimezone(UTC).isoformat(),
+        "observed_at": observed_iso,
         "coverage": "recorded" if complete else "partial",
         "nonterminal_owners": sum(row["count"] for row in records),
         "groups": records,
@@ -369,7 +374,11 @@ class WorkAudit:
         )
 
 
-def audit(database: Path, *, observed_at: datetime | None = None) -> dict[str, Any]:
+def audit(
+    database: Path, *, observed_at: datetime | None = None, include_timing_witnesses: bool = False
+) -> dict[str, Any]:
+    if include_timing_witnesses and observed_at is None:
+        raise ValueError("Timing witnesses require an explicit observed time")
     if observed_at is not None and observed_at.utcoffset() is None:
         raise ValueError("Observed time must include a timezone")
     result = WorkAudit()
@@ -384,7 +393,15 @@ def audit(database: Path, *, observed_at: datetime | None = None) -> dict[str, A
         if not missing:
             result.documents(connection)
             result.reviews(connection)
-        latencies = observed_latency(connection, observed_at) if observed_at is not None else None
+        latencies = (
+            (
+                observed_timing(connection, observed_at)
+                if include_timing_witnesses
+                else observed_latency(connection, observed_at)
+            )
+            if observed_at is not None
+            else None
+        )
         llm_ages = llm_work_ages(connection, observed_at) if observed_at is not None else None
         if not snapshot.unchanged():
             result.issue("database_changed_during_audit", "database")
@@ -426,10 +443,18 @@ def audit(database: Path, *, observed_at: datetime | None = None) -> dict[str, A
     return report
 
 
-def run(database: Path, output: Path, *, observed_at: datetime | None = None) -> int:
+def run(
+    database: Path,
+    output: Path,
+    *,
+    observed_at: datetime | None = None,
+    include_timing_witnesses: bool = False,
+) -> int:
     if output.resolve() == database.resolve():
         raise ValueError("Report must be separate from the input database")
-    report = audit(database, observed_at=observed_at)
+    report = audit(
+        database, observed_at=observed_at, include_timing_witnesses=include_timing_witnesses
+    )
     output.parent.mkdir(parents=True, exist_ok=True)
     write_json(output, report)
     return 1 if report["status"] == "failed" else 2 if report["status"] == "not_run" else 0
@@ -440,9 +465,15 @@ def main() -> None:
     parser.add_argument("--database", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--observed-at", type=datetime.fromisoformat)
+    parser.add_argument("--timing-witnesses", action="store_true")
     args = parser.parse_args()
     try:
-        code = run(args.database, args.output, observed_at=args.observed_at)
+        code = run(
+            args.database,
+            args.output,
+            observed_at=args.observed_at,
+            include_timing_witnesses=args.timing_witnesses,
+        )
     except (OSError, sqlite3.Error, ValueError) as exc:
         parser.error(str(exc))
     raise SystemExit(code)

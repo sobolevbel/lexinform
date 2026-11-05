@@ -1,0 +1,225 @@
+{
+  "status": "passed",
+  "native_preparation_metadata_sha256": "ddc3199aceb6ceee545cd341ec468b9b77f1cb18565656037815308bb29331fb",
+  "source_parent_rows": {
+    "artifact_reads": {
+      "rows": 1,
+      "rowids_and_values_sha256": "3d32b2aaa5ff70a4752f6455f875fdbdb075e30c1b0efd410e33d36ed017d243"
+    },
+    "artifacts": {
+      "rows": 1,
+      "rowids_and_values_sha256": "3c42a82efada3f6b61ad7ffea9fb5c6b4b7c5461ada004dca02b2c5e0ae22de0"
+    },
+    "document_selections": {
+      "rows": 1,
+      "rowids_and_values_sha256": "157b99a63da593a1a8b0be3edacc71faeca745d1c9f1aa515e87b56dea598f65"
+    },
+    "extraction_results": {
+      "rows": 1,
+      "rowids_and_values_sha256": "1aecc97660cea131fe701aa2a3627b65b74c548aeb002b9a2898961d66367c01"
+    },
+    "selection_artifacts": {
+      "rows": 1,
+      "rowids_and_values_sha256": "8f05cfdf0e3a724a0a72833d735125e4b789b5f570b3debc7f3d44c2ece81921"
+    },
+    "selection_editions": {
+      "rows": 1,
+      "rowids_and_values_sha256": "95320411bd4de12d31e1f1277ff060039bbb69477ecff675e4e974227e90c850"
+    },
+    "selection_extractions": {
+      "rows": 1,
+      "rowids_and_values_sha256": "4afb71739654896a21e30457e52d990c9b7be9f5a074c0a8e13a657ed4d12c2a"
+    },
+    "source_observations": {
+      "rows": 1,
+      "rowids_and_values_sha256": "b9cfb7446bbd99d1d43f98fc32a0d06bb16923c0917f602f1a913d545e08e9fd"
+    }
+  },
+  "source_parent_rowids_and_values_preserved": true,
+  "scope": "Natural pinned native preparation, controlled offline paid-answer/batch and fake Telegram operation; no legal gold or natural production-cycle claim.",
+  "plan_sha256": "590535b333fcbd0fce839259c6de344271c44092c21d0aed634756b0c965c17d",
+  "driver_sha256": "1fc3205c2a55eced262377c394aa7a32c281032aca36fe098bbe44c67fa56383",
+  "case": {
+    "id": "analysis",
+    "purpose": "analysis",
+    "mode": "fresh",
+    "clock": "fixed"
+  },
+  "source_pins": {
+    "src/lexinform/local_timing.py": "503759c3f6fd9aaae90416f6448c12da305b1d542640d85efa243a60a71cb5fc",
+    "src/lexinform/services/analysis.py": "df1a70045a004df3d950a879d1042a2b550a3f23a49be3a896bc8e1ccb6fe35b",
+    "src/lexinform/services/documents.py": "2bc1022c0062287f2517f8ad3083c06e327dfaeda61d8605300171f52f3a4cd9",
+    "src/lexinform/services/analysis_applications.py": "944eeb78073df5c06b6889369ec00e9e5b4a8a1156bfadf12b97bfab30919648",
+    "src/lexinform/adapters/computation_history.py": "3885767e8a0d2d943341ac9f46d1b4d52ec3dec0161bb0eded209101275e01fb",
+    "tools/observed_timing.py": "938f8a262409dcdbc7f5ce0b450ff6703a7729e841d8e8113168b2953c923871",
+    "tools/timing_delivery_links.py": "73e4ad2989d53195f25f39fd979a183644e203b79280b683ff0f98a80e053c5d",
+    "tools/work_doctor.py": "0b98615beeb97d7dd32ab9e562fefcc4c12b3a5595f0b15716bd777638938d42"
+  },
+  "J241_V5_source_pins": {
+    "src/lexinform/adapters/computation_history.py": "3885767e8a0d2d943341ac9f46d1b4d52ec3dec0161bb0eded209101275e01fb",
+    "src/lexinform/adapters/content_applications.py": "a73bde29eba90da8e700c74c8a321732d8ae1917192f11fb27cd0dd6dea6392a",
+    "tests/unit/test_observed_timing.py": "82585f715918c7764f4425b47200554db6cab797256aa0c878696010e22595df",
+    "tools/observed_timing.py": "938f8a262409dcdbc7f5ce0b450ff6703a7729e841d8e8113168b2953c923871",
+    "tools/timing_delivery_links.py": "73e4ad2989d53195f25f39fd979a183644e203b79280b683ff0f98a80e053c5d",
+    "tools/work_doctor.py": "0b98615beeb97d7dd32ab9e562fefcc4c12b3a5595f0b15716bd777638938d42"
+  },
+  "J241_V5_patch_sha256": "0b528305194fcfc2b573f81d7626f5b61d58a9e83ec0155d1a4ab39508d1f0d0",
+  "report_populations": {
+    "results": {
+      "rows": 1,
+      "attributed": 1,
+      "unattributed": 0
+    },
+    "applications": {
+      "rows": 2,
+      "attributed": 2,
+      "unattributed": 0
+    },
+    "physical_edges": {
+      "rows": 1
+    }
+  },
+  "original_input_scope": {
+    "term": 10,
+    "number_sha256": "508d030c81626ebe8bd8961bd75059dbe7c22ed798825c27885ec524ea0bb45a",
+    "reuse_key_sha256": "0907920caa727d05e8385c0ececbc893af775fecb08f0f03e5e0fbfccb65612f"
+  },
+  "retained_owner": {
+    "term": 10,
+    "number_sha256": "508d030c81626ebe8bd8961bd75059dbe7c22ed798825c27885ec524ea0bb45a"
+  },
+  "source_availability": "unknown",
+  "application_owner": {
+    "term": 10,
+    "number_sha256": "508d030c81626ebe8bd8961bd75059dbe7c22ed798825c27885ec524ea0bb45a"
+  },
+  "inputs": {
+    "primary": {
+      "sha256": "d9600e2c8a0d84376be10b9122a357138467c6e42722ba90e6114ada8e71693a",
+      "bytes": 1100981
+    },
+    "supplement": {
+      "sha256": "37be6751fd52f1bd5317c6a1de0961f0d7d40dbad7e9c7b563012026fb29a82e",
+      "bytes": 2453973
+    },
+    "amendments": {
+      "sha256": "7de3c88bb96c31b7ad92f6f87d4425c6813c91ffe58962ac0c4fd15c713779a6",
+      "bytes": 271926
+    }
+  },
+  "preparation_refusals": {
+    "client_calls": 0,
+    "submit_calls": 0,
+    "synchronous_calls": 0
+  },
+  "native_read_kind": "mixed",
+  "witness_sha256": "1afa8f53f92e577d27bc32f54f82ee947740c61564ed704283839fdb42e8c2a3",
+  "queued_request_sha256": "6f578483da830e6e76ee4d3590bce0905d4ce1ee041710e1ea501856e77964fa",
+  "meta_sha256": "334c80f20f94ce1eee8bcbf658d14f73adfbc2cb6b1682eff9936e01309a98e5",
+  "result_id": "result-v1:deac941516d6b8ea8a79e84c01b3c90a6f297cacf2f6437268ca784bb1120cdc",
+  "retained_input_binding_exact": true,
+  "retained_original_witness_exact": true,
+  "retained_paid_bytes_sha256": "416fb1d03130ed736d28b3aa813eb25ea7261ee9942774ff1daaebdbfe72f56e",
+  "paid_generation": 0,
+  "actual_projected_generation": 1,
+  "actual_application_count": 1,
+  "publication_id": 1,
+  "recorded_message_id": 101,
+  "submitted_at": "2026-11-05T12:10:00+00:00",
+  "collected_at": "2026-11-05T12:20:00+00:00",
+  "projected_at": "2026-11-05T12:25:00+00:00",
+  "sent_at": "2026-11-05T12:30:00+00:00",
+  "intervals": {
+    "trigger_to_collection": {
+      "seconds": 1200,
+      "reason": null
+    },
+    "read_to_collection": {
+      "seconds": 1200,
+      "reason": null
+    },
+    "collection_to_application": {
+      "seconds": 300,
+      "reason": null
+    },
+    "trigger_to_application": {
+      "seconds": 1500,
+      "reason": null
+    },
+    "read_to_application": {
+      "seconds": 1500,
+      "reason": null
+    },
+    "application_to_operation": {
+      "seconds": 300,
+      "reason": null
+    },
+    "trigger_to_operation": {
+      "seconds": 1800,
+      "reason": null
+    },
+    "read_to_operation": {
+      "seconds": 1800,
+      "reason": null
+    }
+  },
+  "physical_edge": {
+    "publication_id": 1,
+    "physical_publication_id": 1,
+    "topology": "direct",
+    "status": "recorded_operation",
+    "reason": "exact_frozen_reference",
+    "operation": "send",
+    "parts": 1,
+    "evidence_scope": "frozen_input_reference_and_recorded_operation",
+    "association": "known_request_frozen_slot",
+    "application_id": 2,
+    "purpose": "analysis",
+    "operation_at": "2026-11-05T12:30:00+00:00",
+    "application_to_operation": {
+      "seconds": 300,
+      "reason": null
+    },
+    "trigger_to_endpoint": {
+      "seconds": 1800,
+      "reason": null
+    },
+    "read_to_endpoint": {
+      "seconds": 1800,
+      "reason": null
+    }
+  },
+  "SQL_dump_sha256": "0fb23e69e3ec312edc927a0494de5e781041c5ff660da05942586ba3488a057f",
+  "double_restore_exact": true,
+  "doctor_full_objects_exact_after_restore": true,
+  "doctor_status": {
+    "computation": "recorded",
+    "content": "not_run",
+    "work": "not_run",
+    "work_v1": "not_run"
+  },
+  "doctor_counts": {
+    "computation": null,
+    "content": null,
+    "work": null,
+    "work_v1": null
+  },
+  "doctor_sha256": {
+    "computation": "042557c7914bfe8110ada19dc5e39fc2a2e8df4986433bddf7fb1ef3a0ff4a0a",
+    "content": "50b7c94bbdd8844c5e2edd60236c6e1022bd3b711cf98839b70a81e79918182b",
+    "work": "e2c3eb7446cfe1bfdaea1f7a18425b8563615370dbcef27bf4ed9573abea1546",
+    "work_v1": "48b8076f6e32e0be5f3dca522feadc4e359ad2de6b82d1834a5cea444c495900"
+  },
+  "bodies_SQL_source_copies_tracked": false,
+  "external_network_calls": 0,
+  "technical_batch_submissions": 1,
+  "fake_telegram_sends": 1,
+  "read_inputs_changed": [],
+  "limitations": [
+    "Technical offline batch answer and recorded fake Telegram receipt are not real provider/Telegram observations.",
+    "Local clocks do not infer source availability or legal correctness.",
+    "V1 exact Wykaz source clock remains separate existing unit evidence.",
+    "Root decides DA10.4 acceptance after final report source pins/release; DA10.7 natural acceptance remains separate."
+  ],
+  "pinned_plan_assets_resources_and_driver_unchanged": true
+}

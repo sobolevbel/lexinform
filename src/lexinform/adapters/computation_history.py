@@ -3,7 +3,7 @@
 import sqlite3
 
 from lexinform.json_storage import read_json
-from lexinform.models.computations import ComputationResult
+from lexinform.models.computations import ComputationResult, ResultApplication
 
 
 class ComputationRowError(ValueError):
@@ -33,3 +33,20 @@ def read_computation_result(row: sqlite3.Row) -> ComputationResult:
     ):
         raise ComputationRowError("computation_columns_mismatch")
     return result
+
+
+def read_result_application(row: sqlite3.Row) -> ResultApplication:
+    try:
+        application = ResultApplication.model_validate(read_json(row["application_json"]))
+    except ValueError, TypeError, RecursionError:
+        raise ComputationRowError("invalid_result_application") from None
+    if (
+        type(row["id"]) is not int
+        or row["id"] <= 0
+        or any(
+            row[field] != getattr(application, field)
+            for field in ("result_id", "term", "number", "generation", "phase")
+        )
+    ):
+        raise ComputationRowError("application_columns_mismatch")
+    return application
