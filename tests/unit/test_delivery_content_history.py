@@ -123,6 +123,7 @@ def test_missing_history_remains_unavailable(history_repo: SqliteBillRepository)
     assert selected is not None, "the fixture creates a physical publication"
     page = inspect_content_page(history_repo, selected, page=1)
     assert page.status == "unavailable" and page.version is None
+    assert "original_amendment_input" not in page.model_dump_json()
 
 
 def test_legacy_outcomes_do_not_gain_an_empty_history_page() -> None:

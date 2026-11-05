@@ -106,6 +106,8 @@ unavailable. This covers the existing single-message amendments history; other c
 are not reconstructed. Pages show up to three bound physical publications and the latest
 three decisions per publication; omitted counts and `/delivery ID` links are explicit.
 Source/result reference lists show two canonical IDs each, with additional/opaque counts.
+On a confirmed original amendment page, the input status distinguishes retained input,
+legacy absence and an invalid reference when that evidence is available.
 
 ### Recovering an uncertain delivery
 

@@ -13,3 +13,5 @@ field when the existing trace has no retained parent or spare capacity.
 Two restored checkpoints preserved all 18 stored legacy traces and their links, including
 an archive section. The old serialized trace JSON, normalized SQL and doctor outputs
 matched, and each copy passed a double restore. [Checkpoint parity](legacy-parity.json).
+
+[Exact CI and relay verification](release.json).

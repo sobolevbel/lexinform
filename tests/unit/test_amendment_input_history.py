@@ -11,6 +11,7 @@ from tools.replay_content_applications import poster, queued, revision
 
 from lexinform.adapters.amendment_inputs import amendment_input_issues
 from lexinform.adapters.sqlite_repo import MIGRATIONS, SqliteBillRepository
+from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.json_storage import canonical_json
 from lexinform.models import (
     AmendmentInputRef,
@@ -20,15 +21,20 @@ from lexinform.models import (
     AmendmentsRecord,
     BatchIntent,
     BatchRequest,
+    CommandOutcome,
     ComputationInputBinding,
     ComputationResult,
     DigestItemMeta,
+    IncomingCommand,
     LlmBatch,
     LlmBatchItem,
+    OutcomeStatus,
+    PublicationStatus,
 )
 from lexinform.models.input_receipts import AmendmentInputReceipt, amendment_context_sha256
 from lexinform.models.prepared_input import PreparedTextPart
 from lexinform.services.amendment_input_history import original_amendment_input
+from lexinform.services.content_inspection import inspect_content_page
 from tests.computations import NOW, retained_result
 from tests.fakes import FakePublisher
 from tests.unit.test_content_sources import Case
@@ -412,6 +418,28 @@ def test_native_root_availability_survives_cleanup_without_current_bill_or_sourc
     case.repo.restore(dumped)
     case.repo.restore(dumped)
     assert original_amendment_input(case.repo, confirmed) == first
+    page = inspect_content_page(case.repo, confirmed, page=1)
+    assert page.status == "available" and page.original_amendment_input == "available"
+    assert page.history is not None and page.history.current_id == first.root_content_id
+    outcome = CommandOutcome(status=OutcomeStatus.DELIVERY, content_history_page=page)
+    rendered = (
+        MessageFormatter("en")
+        .command_reply(
+            IncomingCommand(
+                update_id=1,
+                chat_id="tech",
+                message_id=1,
+                text=f"/delivery {original.id} history",
+                received_at=NOW,
+            ),
+            outcome,
+        )
+        .text
+    )
+    assert "Original amendment input was retained." in rendered
+    for secret in (value.context.text, "https://offline.invalid/amendments", value.snapshot_id):
+        assert secret not in outcome.model_dump_json() and secret not in rendered
+    assert case.repo.dump() == dumped
 
 
 def test_later_refetched_revision_never_backfills_root_original_input(case: Case) -> None:
@@ -440,6 +468,39 @@ def test_later_refetched_revision_never_backfills_root_original_input(case: Case
     assert availability.state == "unavailable" and availability.reason == "legacy_input_unavailable"
     assert availability.result_id == original_result.result_id
     assert case.repo.get_computation_result(candidate.result_id) == candidate
+    root_page = inspect_content_page(case.repo, changed, page=1)
+    later_page = inspect_content_page(case.repo, changed, page=2)
+    assert root_page.original_amendment_input == "legacy_unavailable"
+    assert later_page.original_amendment_input is None
+    assert "original_amendment_input" not in later_page.model_dump_json()
+
+
+@pytest.mark.parametrize("corrupt", [False, True])
+def test_input_status_neither_confirms_delivery_nor_downgrades_valid_history(
+    case: Case, corrupt: bool
+) -> None:
+    value = input_snapshot()
+    case.repo.save_amendment_input(value)
+    original = queued(case.repo, case.bill, case.change, paid_input(value))
+    assert poster(case.repo, FakePublisher()).deliver(original)
+    assert original.id is not None, "the fixture writes an original physical publication"
+    if corrupt:
+        case.execute(
+            "DELETE FROM amendment_input_snapshots WHERE snapshot_id=?", (value.snapshot_id,)
+        )
+    else:
+        case.repo.mark_publication(original.id, PublicationStatus.UNKNOWN, count_attempt=False)
+    selected = case.repo.publication_by_id(original.id)
+    assert selected is not None, "the original physical record survives"
+    before = case.repo.dump()
+
+    page = inspect_content_page(case.repo, selected, page=1)
+
+    assert page.status == "available" and page.history is not None
+    assert page.history.integrity == "valid"
+    assert page.history.current_id == (page.history.original_id if corrupt else None)
+    assert page.original_amendment_input == ("invalid" if corrupt else None)
+    assert case.repo.dump() == before
 
 
 def test_old_receipt_is_lineage_not_a_fresh_request_binding() -> None:

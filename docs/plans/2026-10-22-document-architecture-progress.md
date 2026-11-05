@@ -11379,3 +11379,12 @@ part-relative map. The same intent can continue without the receipt if a parent
 cannot be verified before insert. Paired raw and cached preparation plus both collection
 outcomes passed with unchanged other SQL rows. No new document bodies are stored.
 [Replay and storage evidence](../assets/audits/2026-11-05-multipart-rcl-receipt-writer/report.md).
+
+<a id="j272"></a>
+
+## J272 — keep live review work out of new status plans
+
+New status plans reuse the existing publication projection without operational review
+work. The frozen route, render and other Bill fields are exact. The original amendment
+history page reports the bounded availability of its input without exposing the payload.
+[Native replay, dump comparison and history parity](../assets/audits/2026-11-05-editorial-freeze-and-input-history/report.md).

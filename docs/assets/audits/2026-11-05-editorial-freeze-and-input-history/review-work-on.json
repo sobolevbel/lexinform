@@ -1,0 +1,23 @@
+{
+  "state_sha": "7b2084b1c66421061c9031f28a4edabbe2cc0245",
+  "state_sql_sha256": "bc8ffb3a9c7481e4ed7844b67a57cb2d684d31da9da9f2df6dffec84c4236d64",
+  "publication": 244,
+  "stored_destination": "digest_only",
+  "stored_status": "sent",
+  "fresh_destination": "digest_only",
+  "fresh_plan_without_bill_sha256": "0c18c3d618dac776c8db6b236e16eae5ae9a83b8cd3fd4ada68222c9f4aae44b",
+  "render_sha256": "e160b4b551cebe54eb9513f05c77bffa3709e3ef70132b9a5d76feacb8fac8db",
+  "render_chars": 443,
+  "typed_context_except_review_work_exact": true,
+  "body_matches_original": false,
+  "frozen_work_items_before": 1,
+  "frozen_work_items_after": 0,
+  "stored_plan_bytes": 2378645,
+  "candidate_plan_bytes": 76138,
+  "full_original_sql": 25815220,
+  "full_original_gzip": 5208734,
+  "full_single_row_counterfactual_sql": 23512713,
+  "full_single_row_counterfactual_gzip": 4651623,
+  "network_calls": 0,
+  "publication_sends": 0
+}

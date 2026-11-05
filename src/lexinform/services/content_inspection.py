@@ -19,8 +19,10 @@ from lexinform.models.content import (
     ContentDecisionSummary,
     ContentDeliverySummary,
     ContentHistoryPage,
+    OriginalAmendmentInputStatus,
 )
 from lexinform.ports import BillRepository
+from lexinform.services.amendment_input_history import original_amendment_input
 
 
 def inspect_content(repo: BillRepository, publication: Publication) -> ContentHistoryView | None:
@@ -138,6 +140,24 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
     )
 
 
+def _original_input_status(
+    repo: BillRepository, publication: Publication
+) -> OriginalAmendmentInputStatus | None:
+    if (
+        publication.kind is not PublicationKind.STATUS_UPDATE
+        or publication.status is not PublicationStatus.SENT
+        or publication.message_id is None
+    ):
+        return None
+    try:
+        availability = original_amendment_input(repo, publication)
+    except ValueError:
+        return "invalid"
+    if availability.state == "available":
+        return "available"
+    return "legacy_unavailable" if availability.reason == "legacy_input_unavailable" else None
+
+
 def inspect_content_page(
     repo: BillRepository, publication: Publication, *, page: int
 ) -> ContentHistoryPage:
@@ -185,6 +205,12 @@ def inspect_content_page(
                     omitted_decisions=max(0, len(decisions) - 3),
                 )
             )
+        root = next((item for item in physical if item.id == history.root_publication_id), None)
+        original_input = (
+            _original_input_status(repo, root)
+            if root is not None and version.content_id == history.original_id
+            else None
+        )
         return ContentHistoryPage(
             status="available",
             page=page,
@@ -193,6 +219,7 @@ def inspect_content_page(
             version=ContentVersionSummary.from_version(version),
             deliveries=tuple(deliveries),
             omitted_deliveries=max(0, len(physical) - 3),
+            original_amendment_input=original_input,
         )
     except ValueError:
         return unavailable

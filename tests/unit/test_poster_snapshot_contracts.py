@@ -1,4 +1,5 @@
 import datetime as dt
+import json
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Literal, Never
@@ -10,17 +11,22 @@ from lexinform.models import (
     AnalysisRecord,
     Bill,
     DeliveryPlan,
+    DocumentReviewRecord,
+    LocatedText,
     Phase,
     ProcessDetail,
     Publication,
     PublicationKind,
     PublicationStatus,
+    ReadyAnalysis,
+    ReviewWork,
     Stage,
     StatusChange,
 )
 from lexinform.ports import PublishResult
 from lexinform.services.message_parts import freeze_parts
 from lexinform.services.posting import Poster
+from tests.computations import result_record
 from tests.fakes import FakePublisher, FakeSejmGateway, FixedClock, make_analysis
 from tests.harness import act, submission
 
@@ -174,6 +180,50 @@ def durable() -> Iterator[SqliteBillRepository]:
 
 def refuse_render(*args: object, **kwargs: object) -> Never:
     raise AssertionError("saved physical HTML must never be rendered from current data")
+
+
+def test_new_status_snapshot_omits_only_operational_review_work(
+    repo: SqliteBillRepository, process_3039: ProcessDetail
+) -> None:
+    case = contract(repo, process_3039, "on")
+    review = result_record("consultation_review")
+    analysis = case.bill().analysis
+    assert isinstance(review, DocumentReviewRecord) and analysis is not None, (
+        "the fixture carries a completed review and primary analysis"
+    )
+    ready = ReadyAnalysis(record=analysis, located=LocatedText(summary=process_3039))
+    now = case.clock.now()
+    work = ReviewWork(
+        memo_key="active-review",
+        purpose="consultation_review",
+        input_bill_json='{"operational":"retained only on the bill"}',
+        since=now,
+        baseline_day=now.date(),
+    )
+    repo.save_document_review(10, "3039", review)
+    repo.save_ready_analysis(10, "3039", ready)
+    repo.save_review_work(10, "3039", (work,))
+    original = case.bill()
+    assert original.consultation_review is not None and original.ready_analysis is not None, (
+        "both completed review and ready primary context survive the repository round trip"
+    )
+    change = case.change("compact-status", content_changed=True)
+
+    delivery = case.poster.prepare(original, change)
+
+    assert "review_work" not in json.loads(delivery.bill_json)
+    frozen = Bill.model_validate_json(delivery.bill_json)
+    assert frozen == original.model_copy(update={"review_work": ()})
+    assert case.bill().review_work == (work,)
+    publication = repo.get_update_publication(change.id or 0, CHANNEL)
+    assert publication is not None and publication.id is not None, "prepare stores the status row"
+    legacy = delivery.model_copy(update={"bill_json": original.model_dump_json()})
+    assert case.publisher.render_delivery(publication) == case.publisher.render_delivery(
+        publication.model_copy(update={"delivery": legacy})
+    )
+
+    assert repo.replace_unattempted_delivery(publication.id, legacy)
+    assert case.poster.prepare(original, change) == legacy
 
 
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])

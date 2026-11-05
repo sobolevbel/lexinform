@@ -2225,6 +2225,14 @@ class MessageFormatter:
                 lines.append(f"applications additional/opaque refs: {omitted}")
         if version.source_scope is not None:
             lines.append("Source scope: primary analysis context; amendment source unavailable.")
+        if page.original_amendment_input is not None:
+            lines.append(
+                {
+                    "available": "Original amendment input was retained.",
+                    "legacy_unavailable": "Original amendment input unavailable in legacy history.",
+                    "invalid": "Original amendment input reference is invalid.",
+                }[page.original_amendment_input]
+            )
         if not page.deliveries:
             lines.append("Physical delivery: unavailable; content alone does not confirm delivery.")
         for delivery in page.deliveries:

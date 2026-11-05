@@ -277,6 +277,9 @@ class ContentDeliverySummary(BaseModel):
     omitted_decisions: int = 0
 
 
+OriginalAmendmentInputStatus = Literal["available", "legacy_unavailable", "invalid"]
+
+
 class ContentHistoryPage(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -287,3 +290,6 @@ class ContentHistoryPage(BaseModel):
     version: ContentVersionSummary | None = None
     deliveries: tuple[ContentDeliverySummary, ...] = Field(default=(), max_length=3)
     omitted_deliveries: int = 0
+    original_amendment_input: OriginalAmendmentInputStatus | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
