@@ -11068,3 +11068,28 @@ partial. Actual J249 release follows publication.
 [Diagnostic report](../assets/audits/2026-11-05-batch-integrity-doctor/REPORT.md),
 [coverage](../assets/audits/2026-11-05-batch-integrity-doctor/coverage.json),
 [integration proof](../assets/audits/2026-11-05-batch-integrity-doctor/integration-proof.json).
+
+<a id="j250"></a>
+
+## J250 — exact paid receipts and retained batch populations
+
+The explicit --batch-receipts profile checks immutable provider/batch/custom tuples and both-known
+request checksums; another same-SHA item cannot supply a missing receipt. Known result purpose
+must match the actual item kind, independently of SHA availability. Mixed batch headers and
+foreign/current owners are not compared. Missing receipts/deficits are advisory, known structural
+contradictions/excess/invalid counts are errors, unavailable schema stays unknown. All retained
+items count, including consumed/forgotten ones; no automatic repair/retry/provider calls occur.
+
+Four technical false-negative shapes were reproduced before implementation. Final77focused/
+29newunits/0scenarios and exact V2 independent review pass. The purpose refinement has two
+unit-first negatives and a mixed-batch positive; original V1 package is preserved. Root72focused/
+8854full tests/298.13s/92%coverage, mypy762/Ruff/format831 and all831source/config pins pass.
+
+All five older default reports and the deployed v1 profile remain byte-exact on b9; DB source
+unchanged. New opt-in observes13exact/SHA-equal results and57equal batches/122items, with no
+natural errors/warnings. Actual release follows publication. DA10.2 whole-requirement acceptance
+is still pending; plan47complete/6N/A/21open unchanged.
+
+[Report](../assets/audits/2026-11-05-batch-receipt-integrity/REPORT.md),
+[integration proof](../assets/audits/2026-11-05-batch-receipt-integrity/integration-proof.json),
+[peer review](../assets/audits/2026-11-05-batch-receipt-integrity/peer-review.json).

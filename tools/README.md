@@ -122,6 +122,14 @@ The read-only snapshot report contains bounded row refs, no source/prose/payload
 a complete recorded census (warnings allowed),1 errors,2 unavailable/partial schema. Raw blob checks
 remain outside the current metadata-only archive profile. No provider/network call or action occurs.
 
+Add `--batch-receipts` for the separate `saved-batch-receipt-integrity-v1` profile.
+It joins retained results to exact provider/batch/custom-ID receipts and compares both-known
+request hashes and the actual typed item purpose (never the batch header kind). It also compares
+each saved batch request count with all retained item rows,
+including consumed/forgotten rows. Missing receipts and item deficits are advisory; known hash
+conflicts, invalid counts and excess rows are errors. Legacy unknown hashes and unavailable
+schemas stay explicit; current consumer owners and same-hash items are never substituted.
+
 ## Unfinished-work doctor
 
 ```bash

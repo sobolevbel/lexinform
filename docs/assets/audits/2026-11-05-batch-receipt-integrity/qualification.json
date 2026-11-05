@@ -1,0 +1,24 @@
+{
+  "focused_tests": 77,
+  "failures": 0,
+  "new_units": 29,
+  "new_scenarios": 0,
+  "mypy": "Success: no issues found in 3 source files",
+  "ruff": "All checks passed!",
+  "format": "3 files already formatted",
+  "unit_first": "26 cases failed before optional API existed; four proven gaps retained",
+  "root_full_gate": {
+    "status": "passed",
+    "tests": 8854,
+    "seconds": 298.13,
+    "mypy": 762,
+    "ruff_format": 831,
+    "source_config_pins_exact": 831
+  },
+  "provider_network_calls": 0,
+  "purpose_unit_first_failures": 2,
+  "mixed_header_positive": true,
+  "root_focus": 72,
+  "root_proof": "integration-proof.json",
+  "release": "pending publication"
+}

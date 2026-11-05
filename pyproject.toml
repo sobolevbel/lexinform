@@ -97,6 +97,7 @@ files = [
   "tools/corpus_runs.py",
   "tools/work_doctor.py",
   "tools/batch_integrity_doctor.py",
+    "tools/batch_receipts.py",
   "tools/observed_timing.py",
   "tools/timing_delivery_links.py",
   "tools/corpus_manifests.py",

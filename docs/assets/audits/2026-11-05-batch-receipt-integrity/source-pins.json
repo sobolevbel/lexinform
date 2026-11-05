@@ -1,0 +1,14 @@
+{
+  "base_commit": "889e3a9b541d1fdd7f777fa6764bd58719ecba13",
+  "workspace": "/private/tmp/lexinform-j250-batch-receipts",
+  "patch_sha256": "8064fb6514da8aa1ab24064c4a4bf4d771542646c24d80c832397ea5010b3d55",
+  "previous_patch_sha256": "b35bc9ef058a9aee82e25c4e1b1ee3ceb7bedbb3f1bdc09dc0e64397dc0784e2",
+  "increment_sha256": "af20166e2768ef4ccf85661dc251bc917515b5464e92091197be05378eba4ac6",
+  "files": {
+    "tools/batch_receipts.py": "079da880471e288725a3a598c90d4b92a2f98a9f3c41c80019aad9f9b3b6a03b",
+    "tools/batch_integrity_doctor.py": "d58bf6279274c9df1ce9b0145fcea8d26b9014b7b4ad4ff5219fdd645f8e0951",
+    "tests/unit/test_batch_receipts.py": "527ee00734cae23b90051350fbbe12af939d17e7fd4826a19698e141f9ba1b6d",
+    "pyproject.toml": "70a8ad46f80ee2cf2adb90fc1ae0818774dc475c7507da65be8f603246f168ef",
+    "tools/README.md": "2cff5e60646c7dd0d425028c634a53b0a64aceb381a231576b2239504304485f"
+  }
+}

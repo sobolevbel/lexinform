@@ -10,6 +10,7 @@ from lexinform.adapters.computation_history import read_result_application
 from lexinform.json_storage import read_json
 from lexinform.models import BatchIntent, BatchRequest, LlmBatchItem
 from lexinform.models.batch import batch_item_meta
+from tools.batch_receipts import audit_receipts
 from tools.corpus_artifacts import write_json
 from tools.sqlite_snapshot import open_snapshot
 
@@ -194,7 +195,7 @@ def _active(
     }
 
 
-def audit(database: Path) -> dict[str, Any]:
+def audit(database: Path, *, include_batch_receipts: bool = False) -> dict[str, Any]:
     findings: list[dict[str, str]] = []
     with open_snapshot(database) as snapshot:
         connection = snapshot.connection
@@ -214,13 +215,15 @@ def audit(database: Path) -> dict[str, Any]:
             except sqlite3.Error:
                 sections[name] = _unavailable(set(), keys)
                 _issue(findings, "integrity_schema_unavailable", name, warning=True)
+        if include_batch_receipts:
+            sections.update(audit_receipts(connection, findings))
         if not snapshot.unchanged():
             _issue(findings, "database_changed_during_audit", "database")
     findings.sort(key=lambda item: (item["level"], item["code"], item["ref"]))
     errors = sum(item["level"] == "error" for item in findings)
     warnings = sum(item["level"] == "warning" for item in findings)
     available = all(section["status"] == "available" for section in sections.values())
-    return {
+    report: dict[str, Any] = {
         "version": 1,
         "profile": "saved-batch-application-integrity-v1",
         "status": "failed" if errors else "recorded" if available else "partial",
@@ -243,11 +246,21 @@ def audit(database: Path) -> dict[str, Any]:
         ],
     }
 
+    if include_batch_receipts:
+        report["profile"] = "saved-batch-receipt-integrity-v1"
+        report["scope"] = (
+            "Saved application/work identities, exact paid receipts and batch populations."
+        )
+        report["limitations"].append(
+            "Absent receipts/population deficits are advisory; historical provenance stays unknown."
+        )
+    return report
 
-def run(database: Path, output: Path) -> int:
+
+def run(database: Path, output: Path, *, include_batch_receipts: bool = False) -> int:
     if database.resolve() == output.resolve():
         raise ValueError("Report must be separate from the input database")
-    report = audit(database)
+    report = audit(database, include_batch_receipts=include_batch_receipts)
     output.parent.mkdir(parents=True, exist_ok=True)
     write_json(output, report)
     return 1 if report["status"] == "failed" else 2 if report["status"] == "partial" else 0
@@ -257,9 +270,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--database", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--batch-receipts", action="store_true")
     args = parser.parse_args()
     try:
-        code = run(args.database, args.output)
+        code = run(args.database, args.output, include_batch_receipts=args.batch_receipts)
     except (OSError, sqlite3.Error, ValueError) as exc:
         parser.error(str(exc))
     raise SystemExit(code)
