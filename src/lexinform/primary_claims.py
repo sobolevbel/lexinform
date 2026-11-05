@@ -12,6 +12,7 @@ from lexinform.models.reviews import EvidenceCitation, ReviewDocument, citation_
 ClaimEvidenceStatus = Literal[
     "legacy_missing",
     "claim_index_invalid",
+    "claim_unavailable",
     "claim_hash_mismatch",
     "source_unavailable",
     "source_ambiguous",
@@ -21,6 +22,14 @@ ClaimEvidenceStatus = Literal[
     "quote_ambiguous",
     "quote_present",
 ]
+
+
+def _require_raw_hashes(claim_text_sha256: str, source_text_sha256: str) -> None:
+    if any(
+        re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        for digest in (claim_text_sha256, source_text_sha256)
+    ):
+        raise ValueError("Claim and source bindings require raw-text SHA-256 digests")
 
 
 @dataclass(frozen=True)
@@ -35,11 +44,7 @@ class _IndexedClaimEvidence:
     def __post_init__(self) -> None:
         if type(self.index) is not int or self.index < 0:
             raise ValueError(f"A {self._claim_name} address requires a nonnegative integer index")
-        if any(
-            re.fullmatch(r"[0-9a-f]{64}", digest) is None
-            for digest in (self.claim_text_sha256, self.source_text_sha256)
-        ):
-            raise ValueError("Claim and source bindings require raw-text SHA-256 digests")
+        _require_raw_hashes(self.claim_text_sha256, self.source_text_sha256)
 
 
 @dataclass(frozen=True)
@@ -50,6 +55,16 @@ class KeyChangeEvidence(_IndexedClaimEvidence):
 @dataclass(frozen=True)
 class AffectedGroupEvidence(_IndexedClaimEvidence):
     _claim_name = "affected-group"
+
+
+@dataclass(frozen=True)
+class ProposedCommencementEvidence:
+    claim_text_sha256: str
+    source_text_sha256: str
+    citation: EvidenceCitation
+
+    def __post_init__(self) -> None:
+        _require_raw_hashes(self.claim_text_sha256, self.source_text_sha256)
 
 
 @dataclass(frozen=True)
@@ -111,6 +126,25 @@ def validate_affected_group_evidence(
     return _validate_indexed_claim(record.analysis.affected_groups, evidence, documents)
 
 
+def validate_proposed_commencement_evidence(
+    record: AnalysisRecord,
+    evidence: ProposedCommencementEvidence | None,
+    documents: tuple[ReviewDocument, ...],
+) -> ClaimEvidenceCheck:
+    """Check an exact quote in proposed text for the saved effective-date field."""
+    if evidence is None:
+        return ClaimEvidenceCheck("legacy_missing")
+    if not isinstance(evidence, ProposedCommencementEvidence):
+        raise TypeError("Expected proposed-commencement evidence")
+    claim = record.analysis.effective_date
+    if claim is None or not claim.strip():
+        return ClaimEvidenceCheck("claim_unavailable")
+    checked = _validate_claim_text(claim, evidence, documents)
+    if checked.status == "quote_present" and checked.observed_text_span is None:
+        return ClaimEvidenceCheck("citation_mismatch", checked.source_complete)
+    return checked
+
+
 def _validate_indexed_claim(
     claims: Sequence[str],
     evidence: _IndexedClaimEvidence | None,
@@ -120,7 +154,14 @@ def _validate_indexed_claim(
         return ClaimEvidenceCheck("legacy_missing")
     if evidence.index >= len(claims):
         return ClaimEvidenceCheck("claim_index_invalid")
-    claim = claims[evidence.index]
+    return _validate_claim_text(claims[evidence.index], evidence, documents)
+
+
+def _validate_claim_text(
+    claim: str,
+    evidence: _IndexedClaimEvidence | ProposedCommencementEvidence,
+    documents: tuple[ReviewDocument, ...],
+) -> ClaimEvidenceCheck:
     if hashlib.sha256(claim.encode()).hexdigest() != evidence.claim_text_sha256:
         return ClaimEvidenceCheck("claim_hash_mismatch")
     matches = tuple(doc for doc in documents if doc.identity == evidence.citation.document_id)

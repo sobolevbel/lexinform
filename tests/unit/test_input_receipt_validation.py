@@ -22,6 +22,7 @@ from lexinform.models import (
     DocumentSelectionRecord,
     LlmBatch,
     LlmBatchItem,
+    PrimaryInputReceipt,
     SelectionArtifactReference,
     SelectionExtractionReference,
     SourceObservation,
@@ -283,6 +284,7 @@ def test_existing_foreign_parent_cannot_borrow_another_saved_source_binding(
             and intent.meta.prepared_input_receipt is not None
         ), "the fixture keeps exact known parents"
         receipt = intent.meta.prepared_input_receipt
+        assert isinstance(receipt, PrimaryInputReceipt), "the legacy fixture binds one source part"
         if parent == "selection":
             other = DocumentSelectionRecord.from_selection(
                 selection("Different actual cached source")

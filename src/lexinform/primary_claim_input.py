@@ -99,6 +99,8 @@ def validate_key_change_input(
     receipt = meta.prepared_input_receipt
     if receipt is None:
         return ClaimInputCheck(checked, "unknown", "receipt_missing")
+    if not isinstance(receipt, PrimaryInputReceipt):
+        return ClaimInputCheck(checked, "unknown", "source_binding_unavailable")
     ctx = question.ctx
     if (
         frozen.request.number != ctx.number

@@ -1,0 +1,41 @@
+{
+  "duration_mutation": {
+    "block_origins": "unmapped",
+    "observed_text_span": null,
+    "paid_origins": "unmapped",
+    "quote_occurrences": 0,
+    "semantic": "semantic_not_assessed",
+    "source_complete": false,
+    "status": "citation_mismatch"
+  },
+  "duration_mutation_sha256": "673c35c6fafa5527dc275f6e7d92f308738798f2861173a5cddcd6c0cdbb3387",
+  "enacted_role": {
+    "block_origins": "unmapped",
+    "observed_text_span": null,
+    "paid_origins": "unmapped",
+    "quote_occurrences": 0,
+    "semantic": "semantic_not_assessed",
+    "source_complete": false,
+    "status": "source_role_mismatch"
+  },
+  "literal": {
+    "block_origins": "unmapped",
+    "observed_text_span": [
+      9644,
+      9712
+    ],
+    "paid_origins": "unmapped",
+    "quote_occurrences": 1,
+    "semantic": "semantic_not_assessed",
+    "source_complete": false,
+    "status": "quote_present"
+  },
+  "quote_sha256": "042b7eff0cc5bc475167d6f3df87f7c9aaecc3354fbfe6268d7a4381cddcae81",
+  "raw_bytes": 166912,
+  "raw_sha256": "4cb3144a8e3c47d3e2a4e527d724ffec7646a754e84e1f231eb6530f1fd5133e",
+  "scope": "Natural extracted corpus text; document role and answer are technical fixtures.",
+  "source": "documents/files/447874.doc",
+  "text_chars": 40048,
+  "text_sha256": "2f5d874c6105776891af58485c14b06517a9f0cb96e890a89782cfab9693042f",
+  "unchanged": true
+}

@@ -36,3 +36,5 @@ uv run python -m tools.replay_word_textboxes --corpus ../lexinform-corpus \
   --case 418609.docx --case 676870.docx --case 709354.docx --case 722211.docx \
   --case 723373.docx --case 339907.docx --output textboxes.json
 ```
+
+[Exact CI and relay verification](release.json).

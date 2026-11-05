@@ -11349,3 +11349,13 @@ Selection behavior and retry semantics are preserved. A trace with insufficient 
 keeps its prior evidence. The 48-profile corpus replay changed only two diagnostic
 records and their trace links.
 [Paired evidence and source limits](../assets/audits/2026-11-05-normative-annex-gap-writer/report.md).
+
+<a id="j269"></a>
+
+## J269 — compatible loose RCL input receipts and proposed commencement
+
+A reader verifies the actual request, emitted ranges and exact existing extraction parents
+for a bounded loose multipart RCL receipt. The runtime writer remains a separate stage.
+The offline claim checker binds a proposed commencement to an exact project-text quote.
+The frozen cohort, old receipt formats and the full local gate passed.
+[Reader and mechanical checks](../assets/audits/2026-11-05-multipart-rcl-receipt-reader/report.md).

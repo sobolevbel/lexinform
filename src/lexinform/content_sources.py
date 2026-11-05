@@ -19,6 +19,7 @@ from lexinform.models import (
     StatusChange,
     amendments_stage,
 )
+from lexinform.models.input_receipts import PrimaryInputReceipt
 from lexinform.models.primary_projections import PRIMARY_USAGE_FIELDS
 from lexinform.primary_projections import primary_record_matches
 
@@ -146,7 +147,7 @@ def _inspect(
         return ContentSourceAudit("unknown", "collection_time_unknown")
     if queued_at > paid.collected_at:
         return ContentSourceAudit("invalid", "queue_after_collection")
-    if receipt.source_selection_id is None:
+    if not isinstance(receipt, PrimaryInputReceipt) or receipt.source_selection_id is None:
         return ContentSourceAudit("unknown", "selection_unmapped")
     selected = repo.get_document_selection(receipt.source_selection_id)
     if selected is None:

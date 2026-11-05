@@ -14,6 +14,7 @@ from lexinform.models import (
     BillContext,
     BillStatus,
     DocumentSelectionRecord,
+    PrimaryInputReceipt,
     SourceObservation,
     TextDocument,
 )
@@ -85,7 +86,9 @@ def test_primary_receipts_follow_actual_parent_checkpoint_and_prepare_once(
             "the actual primary caller stores primary metadata"
         )
         receipt = item.meta.prepared_input_receipt
-        assert receipt is not None, "native loose Word input has a corroborated receipt"
+        assert isinstance(receipt, PrimaryInputReceipt), (
+            "native loose Word input has a corroborated single-part receipt"
+        )
         assert receipt.text_chars < receipt.source_part.chars
         assert receipt.request_sha256 == item.meta.request_sha256
         assert (
@@ -184,7 +187,7 @@ def test_actual_unsafe_graph_keeps_only_independent_body_and_extraction_refs() -
         "the original unsafe URL still supplies primary text"
     )
     receipt = item.meta.prepared_input_receipt
-    assert receipt is not None, (
+    assert isinstance(receipt, PrimaryInputReceipt), (
         "physical-only capture preserves the actual independent known parents"
     )
     assert receipt.source_selection_id is None
@@ -268,9 +271,9 @@ def test_native_doc_note_metadata_preserves_paid_request_memo_and_same_byte_alia
     )
     assert old_meta.memo_key == new_meta.memo_key
     old_receipt, new_receipt = old_meta.prepared_input_receipt, new_meta.prepared_input_receipt
-    assert old_receipt is not None and new_receipt is not None, (
-        "The complete native leaf records independently persisted physical input receipts"
-    )
+    assert isinstance(old_receipt, PrimaryInputReceipt) and isinstance(
+        new_receipt, PrimaryInputReceipt
+    ), "The complete native leaf records independently persisted physical input receipts"
     assert old_receipt.extraction_id != new_receipt.extraction_id
     for current, receipt, expected in ((baseline, old_receipt, 0), (candidate, new_receipt, 1)):
         assert receipt.extraction_id is not None, "The native source receipt records its extraction"

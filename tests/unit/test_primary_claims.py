@@ -20,8 +20,10 @@ from lexinform.primary_claims import (
     AffectedGroupEvidence,
     ClaimEvidenceCheck,
     KeyChangeEvidence,
+    ProposedCommencementEvidence,
     validate_affected_group_evidence,
     validate_key_change_evidence,
+    validate_proposed_commencement_evidence,
 )
 
 CLAIM = "С 1 января 2027 года срок для студентов — 30 дней."
@@ -432,4 +434,106 @@ def test_equal_claim_text_does_not_interchange_group_and_key_change_evidence() -
     with pytest.raises(TypeError, match="Expected affected-group evidence"):
         validate_affected_group_evidence(
             answer, cast(AffectedGroupEvidence, key_evidence), (document,)
+        )
+
+
+COMMENCEMENT_QUOTE = (
+    "Art. 5. Ustawa wchodzi w życie po upływie 14 dni od dnia ogłoszenia, "
+    "z wyjątkiem art. 2, który wchodzi w życie z dniem 1 stycznia 2027 r."
+)
+COMMENCEMENT_CLAIM = "Через 14 дней после опубликования с исключением для статьи 2."
+
+
+def commencement_evidence(document: ReviewDocument) -> ProposedCommencementEvidence:
+    return ProposedCommencementEvidence(
+        claim_text_sha256=digest(COMMENCEMENT_CLAIM),
+        source_text_sha256=document.sha256,
+        citation=EvidenceCitation(
+            document_id=document.identity, locator="Art. 5", quote=COMMENCEMENT_QUOTE
+        ),
+    )
+
+
+def test_proposed_commencement_binds_only_the_literal_quote_in_project_text() -> None:
+    answer = record()
+    answer.analysis.effective_date = COMMENCEMENT_CLAIM
+    document = source(COMMENCEMENT_QUOTE).model_copy(update={"complete": False})
+
+    checked = validate_proposed_commencement_evidence(
+        answer, commencement_evidence(document), (document,)
+    )
+
+    assert checked.status == "quote_present"
+    assert checked.observed_text_span == (0, len(COMMENCEMENT_QUOTE))
+    assert checked.coverage == "partial" and checked.semantic == "semantic_not_assessed"
+    assert checked.block_origins == checked.paid_origins == "unmapped"
+    answer.analysis.effective_date += " "
+    assert (
+        validate_proposed_commencement_evidence(
+            answer, commencement_evidence(document), (document,)
+        ).status
+        == "claim_hash_mismatch"
+    )
+
+
+@pytest.mark.parametrize("value", [None, " "])
+def test_proposed_commencement_distinguishes_unavailable_claim_from_legacy_evidence(
+    value: str | None,
+) -> None:
+    answer = record()
+    answer.analysis.effective_date = value
+    document = source(COMMENCEMENT_QUOTE)
+
+    assert validate_proposed_commencement_evidence(answer, None, ()) == ClaimEvidenceCheck(
+        "legacy_missing"
+    )
+    assert validate_proposed_commencement_evidence(
+        answer, commencement_evidence(document), (document,)
+    ) == ClaimEvidenceCheck("claim_unavailable")
+
+
+@pytest.mark.parametrize("role", ["final_act", "response"])
+def test_proposed_commencement_cannot_use_enacted_or_procedural_source(role: DocumentRole) -> None:
+    answer = record()
+    answer.analysis.effective_date = COMMENCEMENT_CLAIM
+    document = source(COMMENCEMENT_QUOTE, role=role)
+
+    assert (
+        validate_proposed_commencement_evidence(
+            answer, commencement_evidence(document), (document,)
+        ).status
+        == "source_role_mismatch"
+    )
+
+
+@pytest.mark.parametrize(
+    "quote",
+    [
+        COMMENCEMENT_QUOTE.replace("14", "30"),
+        COMMENCEMENT_QUOTE.replace(" z wyjątkiem", " bez wyjątku"),
+        COMMENCEMENT_QUOTE.replace("wchodzi w życie", "wchodzi\nw życie", 1),
+    ],
+)
+def test_proposed_commencement_rejects_changed_duration_condition_or_literal_whitespace(
+    quote: str,
+) -> None:
+    answer = record()
+    answer.analysis.effective_date = COMMENCEMENT_CLAIM
+    document = source(COMMENCEMENT_QUOTE)
+    original = commencement_evidence(document)
+    changed = replace(original, citation=original.citation.model_copy(update={"quote": quote}))
+
+    checked = validate_proposed_commencement_evidence(answer, changed, (document,))
+
+    assert checked == ClaimEvidenceCheck("citation_mismatch", document.complete)
+
+
+def test_proposed_commencement_does_not_accept_an_indexed_claim_envelope() -> None:
+    answer = record()
+    answer.analysis.effective_date = CLAIM
+    document = source()
+
+    with pytest.raises(TypeError, match="Expected proposed-commencement evidence"):
+        validate_proposed_commencement_evidence(
+            answer, cast(ProposedCommencementEvidence, evidence(document)), (document,)
         )

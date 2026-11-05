@@ -36,6 +36,7 @@ from lexinform.models.documents import DocumentSelection
 from lexinform.models.enums import SourceKind, TextSource
 from lexinform.models.input_receipts import (
     AmendmentInputReceipt,
+    LooseRclInputReceipt,
     PrimaryInputReceipt,
     SupplementInputReceipt,
     amendment_context_sha256,
@@ -363,7 +364,7 @@ class BatchItemMeta(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     queued_at: dt.datetime | None = Field(default=None, exclude_if=lambda value: value is None)
-    prepared_input_receipt: PrimaryInputReceipt | None = Field(
+    prepared_input_receipt: PrimaryInputReceipt | LooseRclInputReceipt | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
 
@@ -389,6 +390,25 @@ class BatchItemMeta(BaseModel):
             and receipt.request_sha256 != self.request_sha256
         ):
             raise ValueError("Input receipt must identify the frozen batch request")
+        if isinstance(receipt, LooseRclInputReceipt):
+            if (
+                self.source_kind != "rcl"
+                or self.input_binding is None
+                or self.text_source == "scan"
+                or self.selection.scan_input is not None
+                or self.input_chars != receipt.text_chars
+                or len(self.selection.parts) != len(receipt.source_parts)
+                or self.source_url != self.selection.parts[0].url
+            ):
+                raise ValueError("Loose RCL receipt differs from its selected text input")
+            for part, recorded in zip(self.selection.parts, receipt.source_parts, strict=True):
+                if part.members or (
+                    part.role,
+                    part.text_sha256,
+                    part.text_start,
+                    part.text_end,
+                ) != (recorded.role, recorded.text_sha256, 0, recorded.chars):
+                    raise ValueError("Loose RCL receipt differs from its selected part")
         return self
 
 
@@ -496,6 +516,12 @@ def batch_item_meta(
             raise ValueError("Text receipts require their actual secondary purpose")
         if submitted and parsed.request_sha256 is None:
             raise ValueError("Submitted text receipts require their frozen request checksum")
+    if (
+        submitted
+        and isinstance(parsed.prepared_input_receipt, LooseRclInputReceipt)
+        and parsed.request_sha256 is None
+    ):
+        raise ValueError("Submitted loose RCL receipts require their frozen request checksum")
     timing = parsed.local_timing_witness
     if timing is not None:
         if timing.purpose != kind:
@@ -627,6 +653,16 @@ class BatchIntent(BaseModel):
             ):
                 raise ValueError("Primary receipts require their actual primary question")
             ctx: BillContext | SupplementContext | AmendmentsContext = request.question.ctx
+            if isinstance(receipt, LooseRclInputReceipt):
+                binding = self.meta.input_binding
+                if (
+                    ctx.source_kind != "rcl"
+                    or request.question.ctx.text_source == "scan"
+                    or ctx.number != request.number
+                    or binding is None
+                    or (binding.term, binding.number) != (request.term, request.number)
+                ):
+                    raise ValueError("Loose RCL receipt requires its actual RCL question")
             context_sha256 = primary_context_sha256(request.question.ctx)
         elif isinstance(receipt, AmendmentInputReceipt):
             if not isinstance(request.question, AmendmentsQuestion):

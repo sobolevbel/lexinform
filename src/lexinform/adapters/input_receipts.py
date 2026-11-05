@@ -8,18 +8,23 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from lexinform.adapters.computation_history import read_computation_result
+from lexinform.adapters.extraction_history import read_extraction_result
 from lexinform.json_storage import read_json
 from lexinform.models import (
     AmendmentInputReceipt,
     ArtifactMetadata,
     BatchIntent,
+    BatchItemMeta,
     BatchRequest,
+    DocumentSelection,
     DocumentSelectionRecord,
     ExtractionResult,
+    LlmBatchItem,
     PrimaryInputReceipt,
     SupplementInputReceipt,
 )
 from lexinform.models.batch import batch_item_meta
+from lexinform.models.input_receipts import LooseRclInputReceipt
 
 
 @dataclass(frozen=True)
@@ -73,26 +78,102 @@ def _reference(table: str, key: object) -> str:
     return table + "/" + hashlib.sha256(encoded).hexdigest()
 
 
-def _parents(
-    connection: sqlite3.Connection,
-    receipt: PrimaryInputReceipt | SupplementInputReceipt | AmendmentInputReceipt,
+def _source_selection(connection: sqlite3.Connection, identity: str) -> DocumentSelectionRecord:
+    row = _one(
+        connection,
+        "SELECT * FROM document_selections WHERE selection_id=?",
+        (identity,),
+    )
+    selection = DocumentSelectionRecord.model_validate_json(row["record_json"])
+    if (
+        selection.selection_id,
+        selection.selection.question,
+        selection.selection.policy_version,
+        selection.selection.state,
+    ) != (row["selection_id"], row["question"], row["policy_version"], row["state"]):
+        raise ValueError("input_receipt_selection_mismatch")
+    return selection
+
+
+def _loose_rcl_parents(
+    connection: sqlite3.Connection, receipt: LooseRclInputReceipt, fitted: DocumentSelection
 ) -> None:
-    selection = None
-    if receipt.source_selection_id is not None:
+    selection = _source_selection(connection, receipt.source_selection_id).selection
+    parts = selection.parts
+    if (
+        selection.scan_input is not None
+        or (selection.question, selection.policy_version)
+        != (fitted.question, fitted.policy_version)
+        or any(span.stage == "analysis" for span in selection.coverage)
+        or len(parts) != len(receipt.source_parts)
+        or len({part.url for part in parts}) != len(parts)
+        or parts != fitted.without_text().parts
+    ):
+        raise ValueError("input_receipt_selection_mismatch")
+    for index, (part, recorded) in enumerate(zip(parts, receipt.source_parts, strict=True)):
+        if (
+            part.members
+            or not part.url
+            or (part.role, part.text_sha256, part.text_start, part.text_end)
+            != (recorded.role, recorded.text_sha256, 0, recorded.chars)
+        ):
+            raise ValueError("input_receipt_selection_mismatch")
+        link = _one(
+            connection,
+            "SELECT a.* FROM selection_artifacts l JOIN artifacts a ON a.sha256=l.artifact_sha256"
+            " WHERE l.selection_id=? AND l.part_scope='parts' AND l.part_index=?",
+            (receipt.source_selection_id, index),
+        )
+        artifact = ArtifactMetadata(
+            sha256=link["sha256"], byte_size=link["byte_size"], recorded_at=link["recorded_at"]
+        )
+        if artifact.sha256 != part.sha256:
+            raise ValueError("input_receipt_body_mismatch")
         row = _one(
             connection,
-            "SELECT * FROM document_selections WHERE selection_id=?",
-            (receipt.source_selection_id,),
+            "SELECT e.* FROM selection_extractions l JOIN extraction_results e USING(extraction_id)"
+            " WHERE l.selection_id=? AND l.extraction_id=?",
+            (receipt.source_selection_id, recorded.extraction_id),
         )
-        selection = DocumentSelectionRecord.model_validate_json(row["record_json"])
+        extraction = read_extraction_result(row)
         if (
-            selection.selection_id,
-            selection.selection.question,
-            selection.selection.policy_version,
-            selection.selection.state,
-        ) != (row["selection_id"], row["question"], row["policy_version"], row["state"]) or len(
-            selection.selection.parts
-        ) != 1:
+            extraction.artifact_sha256 != artifact.sha256
+            or extraction.output_text_sha256 != recorded.text_sha256
+            or extraction.output_chars != recorded.chars
+            or extraction.physical_part_count != 1
+            or extraction.selected_part_count != 1
+            or extraction.omitted_selected_parts != 0
+            or len(extraction.selected_parts) != 1
+        ):
+            raise ValueError("input_receipt_extraction_mismatch")
+        summary = extraction.selected_parts[0]
+        if (
+            summary.physical_index != 0
+            or summary.sha256 != artifact.sha256
+            or summary.text_sha256 != recorded.text_sha256
+            or summary.text_chars != recorded.chars
+        ):
+            raise ValueError("input_receipt_extraction_mismatch")
+
+
+def _parents(
+    connection: sqlite3.Connection,
+    receipt: PrimaryInputReceipt
+    | LooseRclInputReceipt
+    | SupplementInputReceipt
+    | AmendmentInputReceipt,
+    *,
+    fitted: DocumentSelection | None = None,
+) -> None:
+    if isinstance(receipt, LooseRclInputReceipt):
+        if fitted is None:
+            raise ValueError("Loose RCL receipt requires its fitted selection")
+        _loose_rcl_parents(connection, receipt, fitted)
+        return
+    selection = None
+    if receipt.source_selection_id is not None:
+        selection = _source_selection(connection, receipt.source_selection_id)
+        if len(selection.selection.parts) != 1:
             raise ValueError("input_receipt_selection_mismatch")
         part = selection.selection.parts[0]
         if (
@@ -154,6 +235,29 @@ def _parents(
             )
 
 
+def validate_loose_rcl_intent(connection: sqlite3.Connection, intent: BatchIntent) -> None:
+    if not isinstance(intent.meta.prepared_input_receipt, LooseRclInputReceipt):
+        return
+    validated = BatchIntent.model_validate_json(intent.model_dump_json())
+    meta = validated.meta
+    if not isinstance(meta, BatchItemMeta) or not isinstance(
+        meta.prepared_input_receipt, LooseRclInputReceipt
+    ):
+        raise ValueError("Loose RCL receipt requires primary metadata")
+    _loose_rcl_parents(connection, meta.prepared_input_receipt, meta.selection)
+
+
+def validate_loose_rcl_item(connection: sqlite3.Connection, item: LlmBatchItem) -> None:
+    if not isinstance(item.meta.prepared_input_receipt, LooseRclInputReceipt):
+        return
+    meta = batch_item_meta(item.call_kind, item.meta.model_dump_json())
+    if not isinstance(meta, BatchItemMeta) or not isinstance(
+        meta.prepared_input_receipt, LooseRclInputReceipt
+    ):
+        raise ValueError("Loose RCL receipt requires primary metadata")
+    _loose_rcl_parents(connection, meta.prepared_input_receipt, meta.selection)
+
+
 def _input_snapshot_checks(
     connection: sqlite3.Connection, *, include_results: bool
 ) -> Iterator[InputSnapshotCheck]:
@@ -198,7 +302,13 @@ def _input_snapshot_checks(
                     if has_receipt:
                         if intent.meta.prepared_input_receipt is None:
                             raise ValueError("input_snapshot_receipt_metadata")
-                        _parents(connection, intent.meta.prepared_input_receipt)
+                        _parents(
+                            connection,
+                            intent.meta.prepared_input_receipt,
+                            fitted=intent.meta.selection
+                            if isinstance(intent.meta, BatchItemMeta)
+                            else None,
+                        )
                     if has_timing and intent.meta.local_timing_witness is None:
                         raise ValueError("input_snapshot_timing_metadata")
             except ValueError, TypeError, RecursionError, sqlite3.Error:
@@ -235,7 +345,13 @@ def _input_snapshot_checks(
                 if parent["provider"] not in ("anthropic", "openai"):
                     raise ValueError("input_snapshot_provider")
                 if item_meta.prepared_input_receipt is not None:
-                    _parents(connection, item_meta.prepared_input_receipt)
+                    _parents(
+                        connection,
+                        item_meta.prepared_input_receipt,
+                        fitted=item_meta.selection
+                        if isinstance(item_meta, BatchItemMeta)
+                        else None,
+                    )
                 if has_timing:
                     timing = item_meta.local_timing_witness
                     if timing is None:

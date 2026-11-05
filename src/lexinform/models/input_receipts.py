@@ -240,3 +240,63 @@ class SupplementInputReceipt(_TextInputReceipt):
 class AmendmentInputReceipt(_TextInputReceipt):
     profile: Literal["amendment-single-part-text-v1"] = "amendment-single-part-text-v1"
     context_encoding: Literal["amendments-context-json-v1"] = "amendments-context-json-v1"
+
+
+class LooseRclInputPart(PreparedTextPart):
+    chars: int = Field(gt=0, le=MAX_INPUT_RECEIPT_INTEGER, strict=True)
+    extraction_id: str = Field(pattern=r"^extraction-v1:[0-9a-f]{64}$", max_length=80)
+
+
+class LooseRclInputReceipt(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    schema_version: Literal[1] = 1
+    profile: Literal["primary-loose-rcl-annex-text-v1"] = "primary-loose-rcl-annex-text-v1"
+    coordinates: Literal["legacy_part_text_v1"] = "legacy_part_text_v1"
+    context_encoding: Literal["bill-context-json-v1"] = "bill-context-json-v1"
+    map_encoding: Literal["prepared-text-segments-json-v1"] = "prepared-text-segments-json-v1"
+    physical_origins: Literal["unmapped"] = "unmapped"
+    input_completeness: Literal["not_asserted"] = "not_asserted"
+    retention: Literal["complete"] = "complete"
+    source_selection_id: str = Field(pattern=r"^selection-v1:[0-9a-f]{64}$", max_length=80)
+    source_parts: tuple[LooseRclInputPart, ...] = Field(min_length=2, max_length=5)
+    context_sha256: str = Field(pattern=r"^[0-9a-f]{64}$", max_length=64)
+    request_sha256: str = Field(pattern=r"^[0-9a-f]{64}$", max_length=64)
+    text_sha256: str = Field(pattern=r"^[0-9a-f]{64}$", max_length=64)
+    text_chars: int = Field(gt=0, le=MAX_INPUT_RECEIPT_INTEGER, strict=True)
+    full_map_sha256: str = Field(pattern=r"^[0-9a-f]{64}$", max_length=64)
+    segments: tuple[PreparedTextSegment, ...] = Field(
+        min_length=1, max_length=MAX_INPUT_RECEIPT_SEGMENTS
+    )
+
+    @model_validator(mode="after")
+    def complete_map(self) -> Self:
+        if self.source_parts[0].role not in ("bill", "unknown") or self.source_parts[1].role != (
+            "normative_annex"
+        ):
+            raise ValueError("Loose RCL input requires a main part followed by annexes")
+        seen_support = False
+        for part in self.source_parts[1:]:
+            if part.role in ("justification", "osr", "unknown"):
+                seen_support = True
+            elif part.role != "normative_annex" or seen_support:
+                raise ValueError("Loose RCL annexes must precede optional support")
+        offset = 0
+        for segment in self.segments:
+            if segment.start != offset or segment.end > self.text_chars:
+                raise ValueError("Loose RCL segments must partition the emitted text")
+            if segment.origin == "unknown":
+                raise ValueError("Loose RCL segments require known origins")
+            if segment.origin == "source":
+                index, end = segment.part_index, segment.source_end
+                assert index is not None and end is not None, (
+                    "PreparedTextSegment validates its source coordinates"
+                )
+                if index >= len(self.source_parts) or end > self.source_parts[index].chars:
+                    raise ValueError("Loose RCL segment escapes its referenced part")
+            offset = segment.end
+        if offset != self.text_chars or self.full_map_sha256 != input_map_sha256(self.segments):
+            raise ValueError("Loose RCL receipt must keep its exact whole map")
+        if len(self.model_dump_json().encode()) > MAX_INPUT_RECEIPT_BYTES:
+            raise ValueError("Loose RCL receipt exceeds its serialized byte limit")
+        return self

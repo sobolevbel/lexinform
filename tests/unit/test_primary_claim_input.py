@@ -13,7 +13,7 @@ from lexinform.models import (
     PreparedTextSegment,
 )
 from lexinform.models.analysis import AnalysisRecord
-from lexinform.models.input_receipts import input_map_sha256
+from lexinform.models.input_receipts import PrimaryInputReceipt, input_map_sha256
 from lexinform.models.reviews import ReviewDocument
 from lexinform.primary_claim_input import ClaimInputCheck, validate_key_change_input
 from lexinform.primary_claims import validate_key_change_evidence
@@ -368,7 +368,9 @@ def test_relabelled_supporting_text_cannot_become_selected_project_evidence() ->
         "the controlled request has primary metadata"
     )
     receipt = item.intent.meta.prepared_input_receipt
-    assert receipt is not None, "the controlled input has a frozen source part"
+    assert isinstance(receipt, PrimaryInputReceipt), (
+        "the controlled input has one frozen source part"
+    )
     part = item.intent.meta.selection.parts[0].model_copy(update={"role": "justification"})
     receipt = receipt.model_copy(
         update={"source_part": receipt.source_part.model_copy(update={"role": "justification"})}
