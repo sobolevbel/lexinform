@@ -11427,3 +11427,16 @@ two restores verified the reader. The normal writer remains unchanged.
 A separate offline check binds one saved change to literal quotes from two distinct
 proposal editions. On the pinned UD325 pair, a duration mutation invalidated only
 the edited side. [Qualified scopes](../assets/audits/2026-11-05-proposal-relations-and-citations/report.md).
+
+<a id="j276"></a>
+
+## J276 — mixed RCL receipt reader and exact ODT inline-space verification
+
+The mixed RCL profile admits six ordered parts without widening the previous format.
+Four actual raw profiles qualified the reader in queued and submitted state. The
+writer remains a separate stage.
+
+The independent ODT verifier now checks eight actual note and embedded-call spans
+with bare space and tab elements. Original selected notes and separate references
+remain unobserved.
+[Reader and corpus evidence](../assets/audits/2026-11-05-mixed-reader-and-odt-inline-spans/report.md).

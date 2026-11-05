@@ -5,6 +5,7 @@ import io
 import json
 import logging
 import zipfile
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, Literal
 from xml.etree import ElementTree as ET
@@ -131,6 +132,32 @@ def verify_manifest(data: bytes, extracted: OdtTextExtraction) -> dict[str, Any]
     }
 
 
+def _note_text_with_inline_spacing(node: ET.Element) -> str | None:
+    spacing = {TEXT + "s": " ", TEXT + "tab": "\t"}
+    parts: list[str] = []
+    for event, element in _xml_text_events(node):
+        if event == "end":
+            if element is not node and element.tail:
+                parts.append(element.tail)
+            continue
+        if element.tag in spacing:
+            if element.text or len(element) or element.attrib:
+                return None
+            parts.append(spacing[element.tag])
+        elif element.tag in (TEXT + "line-break", TEXT + "soft-page-break"):
+            return None
+        elif element.text:
+            parts.append(element.text)
+    return "".join(parts)
+
+
+def _xml_text_events(node: ET.Element) -> Iterator[tuple[Literal["start", "end"], ET.Element]]:
+    yield "start", node
+    for child in node:
+        yield from _xml_text_events(child)
+    yield "end", node
+
+
 def verify_note_origins(
     data: bytes, body_manifest: OdtTextExtraction, value: OdtNoteOrigins
 ) -> dict[str, int]:
@@ -153,6 +180,7 @@ def verify_note_origins(
         return {"verified_note_paths": 0, "verified_call_paths": 0, "verified_plain_spans": 0}
     blocks = {block.path: block for block in body_manifest.blocks}
     plain_spans = 0
+    inline_space_spans = 0
     records: tuple[OdtNoteEntry | OdtNoteCall, ...] = (*value.entries, *value.calls)
     for record in records:
         node = xml_node(root, record.path)
@@ -167,14 +195,22 @@ def verify_note_origins(
         if record.identity != identity:
             raise ValueError("ODT note identity differs from its actual XML attribute")
         span = record.emitted
-        if span is not None and not any(
+        if span is None:
+            continue
+        has_spacing = any(
             child.tag in (TEXT + "s", TEXT + "tab", TEXT + "line-break", TEXT + "soft-page-break")
             for child in node.iter()
-        ):
-            if blocks[record.block_path].text[span.start : span.end] != "".join(node.itertext()):
-                raise ValueError(
-                    "ODT observed append range differs from independent plain XML text"
-                )
+        )
+        expected_text = (
+            _note_text_with_inline_spacing(node) if has_spacing else "".join(node.itertext())
+        )
+        if expected_text is None:
+            continue
+        if blocks[record.block_path].text[span.start : span.end] != expected_text:
+            raise ValueError("ODT observed append range differs from independent XML text")
+        if has_spacing:
+            inline_space_spans += 1
+        else:
             plain_spans += 1
     for note in value.entries:
         node = xml_node(root, note.path)
@@ -203,6 +239,7 @@ def verify_note_origins(
         "verified_note_paths": len(value.entries),
         "verified_call_paths": len(value.calls),
         "verified_plain_spans": plain_spans,
+        **({"verified_inline_space_spans": inline_space_spans} if inline_space_spans else {}),
     }
 
 

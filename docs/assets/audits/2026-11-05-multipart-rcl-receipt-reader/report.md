@@ -20,3 +20,6 @@ profile. The pinned DOC example accepted its exact Article 5 quote and rejected 
 duration mutation. Existing key-change and affected-group behavior is preserved.
 This verifies the literal binding. Semantic support and actual legal commencement
 remain separate questions. [Mechanical check](proposed-commencement.json).
+
+The exact reader commit passed hosted CI and the relay transition, restart and timer
+checks. [Release receipt](release.json).

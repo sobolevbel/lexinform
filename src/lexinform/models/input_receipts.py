@@ -251,7 +251,9 @@ class LooseRclInputReceipt(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
     schema_version: Literal[1] = 1
-    profile: Literal["primary-loose-rcl-annex-text-v1"] = "primary-loose-rcl-annex-text-v1"
+    profile: Literal["primary-loose-rcl-annex-text-v1", "primary-loose-rcl-mixed-text-v1"] = (
+        "primary-loose-rcl-annex-text-v1"
+    )
     coordinates: Literal["legacy_part_text_v1"] = "legacy_part_text_v1"
     context_encoding: Literal["bill-context-json-v1"] = "bill-context-json-v1"
     map_encoding: Literal["prepared-text-segments-json-v1"] = "prepared-text-segments-json-v1"
@@ -259,7 +261,7 @@ class LooseRclInputReceipt(BaseModel):
     input_completeness: Literal["not_asserted"] = "not_asserted"
     retention: Literal["complete"] = "complete"
     source_selection_id: str = Field(pattern=r"^selection-v1:[0-9a-f]{64}$", max_length=80)
-    source_parts: tuple[LooseRclInputPart, ...] = Field(min_length=2, max_length=5)
+    source_parts: tuple[LooseRclInputPart, ...] = Field(min_length=2, max_length=6)
     context_sha256: str = Field(pattern=r"^[0-9a-f]{64}$", max_length=64)
     request_sha256: str = Field(pattern=r"^[0-9a-f]{64}$", max_length=64)
     text_sha256: str = Field(pattern=r"^[0-9a-f]{64}$", max_length=64)
@@ -271,16 +273,24 @@ class LooseRclInputReceipt(BaseModel):
 
     @model_validator(mode="after")
     def complete_map(self) -> Self:
+        mixed = self.profile == "primary-loose-rcl-mixed-text-v1"
+        if not mixed and len(self.source_parts) > 5:
+            raise ValueError("Loose RCL annex receipt requires at most five source parts")
         if self.source_parts[0].role not in ("bill", "unknown") or self.source_parts[1].role != (
             "normative_annex"
         ):
             raise ValueError("Loose RCL input requires a main part followed by annexes")
         seen_support = False
+        seen_amendment = False
         for part in self.source_parts[1:]:
             if part.role in ("justification", "osr", "unknown"):
                 seen_support = True
-            elif part.role != "normative_annex" or seen_support:
-                raise ValueError("Loose RCL annexes must precede optional support")
+            elif mixed and part.role == "self_amendment" and not seen_support:
+                seen_amendment = True
+            elif part.role != "normative_annex" or seen_support or seen_amendment:
+                raise ValueError("Loose RCL input requires annexes, then amendments, then support")
+        if mixed and not seen_amendment:
+            raise ValueError("Mixed loose RCL input requires a self-amendment")
         offset = 0
         for segment in self.segments:
             if segment.start != offset or segment.end > self.text_chars:

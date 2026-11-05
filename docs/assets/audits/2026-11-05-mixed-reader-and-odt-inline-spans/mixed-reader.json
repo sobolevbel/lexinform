@@ -1,0 +1,193 @@
+{
+  "frozen_driver_sha256": "92c11b5c61e6b714cd3d3368e7926243761d7303a201e536eb636b5767fcf66d",
+  "no_provider_calls": true,
+  "profiles": {
+    "12294859/11/raw/normal": {
+      "native_writer_off": true,
+      "non_receipt_sql_exact": true,
+      "parts_with_emitted_ranges": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "queued": {
+        "off": {
+          "gzip": 220189,
+          "sql": 913657
+        },
+        "on": {
+          "gzip": 221105,
+          "sql": 916750
+        }
+      },
+      "queued_and_submitted_double_restore_exact": true,
+      "receipt_bytes": 3067,
+      "request_sha256": "95b78c077153ad9767e6d54353e633f5cc342c0013a542720e8bcaf0e3c53ad3",
+      "roles": [
+        "unknown",
+        "normative_annex",
+        "self_amendment",
+        "self_amendment",
+        "justification",
+        "osr"
+      ],
+      "segment_count": 11,
+      "submitted": {
+        "off": {
+          "gzip": 84030,
+          "sql": 382392
+        },
+        "on": {
+          "gzip": 84995,
+          "sql": 385485
+        }
+      },
+      "wrong_profile_restore_rejected_atomically": true
+    },
+    "12294859/11/raw/tight": {
+      "native_writer_off": true,
+      "non_receipt_sql_exact": true,
+      "parts_with_emitted_ranges": [
+        0,
+        4
+      ],
+      "queued": {
+        "off": {
+          "gzip": 68452,
+          "sql": 292615
+        },
+        "on": {
+          "gzip": 69330,
+          "sql": 295147
+        }
+      },
+      "queued_and_submitted_double_restore_exact": true,
+      "receipt_bytes": 2506,
+      "request_sha256": "beebc64a6d83255bba17d96b6d7155760d173266da1ccdb021d33fc22dbe0e63",
+      "roles": [
+        "unknown",
+        "normative_annex",
+        "self_amendment",
+        "self_amendment",
+        "justification",
+        "osr"
+      ],
+      "segment_count": 5,
+      "submitted": {
+        "off": {
+          "gzip": 46752,
+          "sql": 231605
+        },
+        "on": {
+          "gzip": 47640,
+          "sql": 234137
+        }
+      },
+      "wrong_profile_restore_rejected_atomically": true
+    },
+    "12294859/9/raw/normal": {
+      "native_writer_off": true,
+      "non_receipt_sql_exact": true,
+      "parts_with_emitted_ranges": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "queued": {
+        "off": {
+          "gzip": 220158,
+          "sql": 913402
+        },
+        "on": {
+          "gzip": 221073,
+          "sql": 916495
+        }
+      },
+      "queued_and_submitted_double_restore_exact": true,
+      "receipt_bytes": 3067,
+      "request_sha256": "95b78c077153ad9767e6d54353e633f5cc342c0013a542720e8bcaf0e3c53ad3",
+      "roles": [
+        "unknown",
+        "normative_annex",
+        "self_amendment",
+        "self_amendment",
+        "justification",
+        "osr"
+      ],
+      "segment_count": 11,
+      "submitted": {
+        "off": {
+          "gzip": 83992,
+          "sql": 382137
+        },
+        "on": {
+          "gzip": 84957,
+          "sql": 385230
+        }
+      },
+      "wrong_profile_restore_rejected_atomically": true
+    },
+    "12294859/9/raw/tight": {
+      "native_writer_off": true,
+      "non_receipt_sql_exact": true,
+      "parts_with_emitted_ranges": [
+        0,
+        4
+      ],
+      "queued": {
+        "off": {
+          "gzip": 68415,
+          "sql": 292360
+        },
+        "on": {
+          "gzip": 69294,
+          "sql": 294892
+        }
+      },
+      "queued_and_submitted_double_restore_exact": true,
+      "receipt_bytes": 2506,
+      "request_sha256": "beebc64a6d83255bba17d96b6d7155760d173266da1ccdb021d33fc22dbe0e63",
+      "roles": [
+        "unknown",
+        "normative_annex",
+        "self_amendment",
+        "self_amendment",
+        "justification",
+        "osr"
+      ],
+      "segment_count": 5,
+      "submitted": {
+        "off": {
+          "gzip": 46713,
+          "sql": 231350
+        },
+        "on": {
+          "gzip": 47602,
+          "sql": 233882
+        }
+      },
+      "wrong_profile_restore_rejected_atomically": true
+    }
+  },
+  "source_sha256": {
+    "INDEX.json": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "corpus/12294859.json": "a443652aa264e06c76fc124cd19811e8926e7796692775bf4357d2fa87f4c2ab",
+    "documents/files/300513.pdf": "3a3aba7b2ae342e7fd858c1555f635bb47f1e36646a73492660399a3a87b4998",
+    "documents/files/300514.pdf": "621059c9a5b64f77f4c08d6a0621ade9bdf056e8fbc907febc1b914f5517f00a",
+    "documents/files/300515.pdf": "c05a0aeb508c0f8cbbe83ef2c9e7df4cbbc5b50e1a2fd272de2f7fb1c53d780e",
+    "documents/files/300517.pdf": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514",
+    "documents/files/300519.pdf": "407850fe8da5e64cd468e0cf9553882f022658fa8a251aa91b3aaa52e2524a95",
+    "documents/files/300528.pdf": "a7ae7c89f365ea04fbe15bc5a36a1d189e8e61d53f1acd80f47ff673e3d4a190",
+    "documents/files/300531.pdf": "db8aa7ad5d3bd105041e2495517ab2cb469a36bcc13ae76ded124c8476e6326d",
+    "documents/files/300535.pdf": "2370b59270ac3beb7a6edf39773e3b9b14d4f6224e6313c4d342d0d655b6bc98",
+    "documents/files/300536.pdf": "68d31cbcc20561108dfb95de3dc6718fa2d4af4f71a34145debbbc7cd4a73971",
+    "documents/files/300677.pdf": "7c1c752693e01be2fe23f6c98f06f9ec7c646c4803a951243231e6cd512cd9cc",
+    "documents/files/301219.pdf": "12e78a7b1ecb87054f769bdf088ee38b57587587cb02048bbb94d6365fdb020b"
+  }
+}

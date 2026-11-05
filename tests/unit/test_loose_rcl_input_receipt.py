@@ -22,6 +22,7 @@ from lexinform.models import (
     SourceObservation,
     TextDocument,
 )
+from lexinform.models.documents import DocumentRole
 from lexinform.models.input_receipts import (
     LooseRclInputPart,
     LooseRclInputReceipt,
@@ -37,12 +38,27 @@ from tests.unit.test_input_receipts import NOW, SOURCE, meta, request
 from tests.unit.test_physical_extraction import docx, extractor
 
 
-def known_inputs(repo: SqliteBillRepository) -> tuple[BatchIntent, LooseRclInputReceipt]:
+def known_inputs(
+    repo: SqliteBillRepository, *, mixed: bool = False
+) -> tuple[BatchIntent, LooseRclInputReceipt]:
     repo.migrate()
     repo.upsert_summary(summary("3039", "Controlled RCL input"), now=NOW)
     parts = []
     extractions = []
-    for role, text in (("bill", SOURCE * 20), ("normative_annex", "Załącznik: 400 zł." * 20)):
+    sources: list[tuple[DocumentRole, str]] = [
+        ("bill", SOURCE * 20),
+        ("normative_annex", "Załącznik: 400 zł." * 20),
+    ]
+    if mixed:
+        sources.extend(
+            [
+                ("self_amendment", "Autopoprawka: 500 zł." * 20),
+                ("self_amendment", "Autopoprawka: 600 zł." * 20),
+                ("justification", "Uzasadnienie." * 20),
+                ("osr", "Ocena skutków regulacji." * 20),
+            ]
+        )
+    for index, (role, text) in enumerate(sources):
         data = docx(text)
         observed = extractor().extract_document_with_provenance(data)
         result = observed.result
@@ -54,7 +70,7 @@ def known_inputs(repo: SqliteBillRepository) -> tuple[BatchIntent, LooseRclInput
         parts.append(
             DocumentPart(
                 role=role,
-                url=f"https://example.test/{role}.docx",
+                url=f"https://example.test/{role}{index if role == 'self_amendment' else ''}.docx",
                 sha256=result.artifact_sha256,
                 text=observed.document.text,
                 text_end=result.output_chars,
@@ -69,7 +85,13 @@ def known_inputs(repo: SqliteBillRepository) -> tuple[BatchIntent, LooseRclInput
             term=10,
             number="3039",
             purpose="analysis",
-            document=TextDocument(url=parts[0].url, kind="rcl", normative_urls=(parts[1].url,)),
+            document=TextDocument(
+                url=parts[0].url,
+                kind="rcl",
+                normative_urls=(parts[1].url,),
+                amendment_urls=tuple(part.url for part in parts[2:4]),
+                extra_urls=tuple(part.url for part in parts[4:]),
+            ),
             selection_id=known.selection_id,
             recorded_at=NOW,
         ),
@@ -116,6 +138,7 @@ def known_inputs(repo: SqliteBillRepository) -> tuple[BatchIntent, LooseRclInput
     prepared = prepared_text_input(selection, ctx.text, projection=projection)
     assert frozen.payload_sha256 is not None, "the fixture retains the exact payload identity"
     receipt = LooseRclInputReceipt(
+        profile="primary-loose-rcl-mixed-text-v1" if mixed else "primary-loose-rcl-annex-text-v1",
         source_selection_id=known.selection_id,
         source_parts=tuple(
             LooseRclInputPart(**part.model_dump(), extraction_id=extraction.result_id)
@@ -142,13 +165,17 @@ def known_inputs(repo: SqliteBillRepository) -> tuple[BatchIntent, LooseRclInput
     ), receipt
 
 
-def test_loose_rcl_receipt_round_trips_queued_and_submitted_metadata(tmp_path: Path) -> None:
+@pytest.mark.parametrize("mixed", [False, True])
+def test_loose_rcl_receipt_round_trips_queued_and_submitted_metadata(
+    tmp_path: Path, mixed: bool
+) -> None:
     path = tmp_path / "rcl.db"
     with closing(SqliteBillRepository(path)) as repo:
-        intent, receipt = known_inputs(repo)
+        intent, receipt = known_inputs(repo, mixed=mixed)
         repo.save_batch_intent(intent)
         queued = repo.dump()
         repo.restore(queued)
+        repo.restore(repo.dump())
         assert repo.list_queued_batch_intents() == [intent] and repo.dump() == queued
         batch = LlmBatch(
             batch_id="rcl-reader",
@@ -164,10 +191,12 @@ def test_loose_rcl_receipt_round_trips_queued_and_submitted_metadata(tmp_path: P
         repo.delete_batch_intents([intent.request.custom_id])
         submitted = repo.dump()
         repo.restore(submitted)
+        repo.restore(repo.dump())
         assert repo.list_llm_batch_items(batch.batch_id) == [item] and repo.dump() == submitted
         assert receipt.segments[0].part_index == 0 and receipt.segments[2].part_index == 1
         assert receipt.segments[1].origin == "generated"
         assert SOURCE not in receipt.model_dump_json()
+        assert len(receipt.source_parts) == (6 if mixed else 2)
     observed = audit(path)
     assert observed["status"] == "recorded" and observed["summary"]["input_receipts"] == 1
 
@@ -192,17 +221,21 @@ def test_loose_rcl_map_rejects_cross_part_escape_even_with_recomputed_hash() -> 
         )
 
 
-def test_loose_rcl_receipt_rejects_swapped_parents_on_save_and_restore(tmp_path: Path) -> None:
+@pytest.mark.parametrize("mixed", [False, True])
+def test_loose_rcl_receipt_rejects_swapped_parents_on_save_and_restore(
+    tmp_path: Path, mixed: bool
+) -> None:
     path = tmp_path / "rcl.db"
     with closing(SqliteBillRepository(path)) as repo:
-        intent, receipt = known_inputs(repo)
+        intent, receipt = known_inputs(repo, mixed=mixed)
         assert isinstance(intent.meta, BatchItemMeta), "the fixture uses primary metadata"
-        first, second = receipt.source_parts
+        first, second, *rest = receipt.source_parts
         swapped = receipt.model_copy(
             update={
                 "source_parts": (
                     first.model_copy(update={"extraction_id": second.extraction_id}),
                     second.model_copy(update={"extraction_id": first.extraction_id}),
+                    *rest,
                 )
             }
         )
@@ -222,3 +255,21 @@ def test_loose_rcl_receipt_rejects_swapped_parents_on_save_and_restore(tmp_path:
         with pytest.raises(ValueError, match="invalid_input_intent_snapshot"):
             repo.restore(bad)
         assert repo.dump() == before
+
+
+def test_mixed_receipt_never_weakens_existing_profile_or_accepts_wrong_role_order() -> None:
+    with closing(SqliteBillRepository(":memory:")) as repo:
+        _, receipt = known_inputs(repo, mixed=True)
+    main, annex, first, second, justification, osr = receipt.source_parts
+    raw = receipt.model_dump()
+    for parts, profile in (
+        (receipt.source_parts, "primary-loose-rcl-annex-text-v1"),
+        ((main, annex, first), "primary-loose-rcl-annex-text-v1"),
+        ((main, annex, justification), receipt.profile),
+        ((main, first, annex), receipt.profile),
+        ((main, annex, first, osr, second), receipt.profile),
+        ((main, annex, first, annex), receipt.profile),
+        ((*receipt.source_parts, osr), receipt.profile),
+    ):
+        with pytest.raises(ValueError):
+            LooseRclInputReceipt.model_validate({**raw, "source_parts": parts, "profile": profile})

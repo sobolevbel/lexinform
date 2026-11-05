@@ -305,6 +305,12 @@ def run(corpus: Path, manifest_path: Path, output: Path) -> dict[str, Any]:
         "original_independent_plain_spans": sum(
             leaf["verified_xml"]["verified_plain_spans"] for leaf in original_leaves
         ),
+        "original_independent_inline_space_spans": sum(
+            leaf["verified_xml"].get("verified_inline_space_spans", 0) for leaf in original_leaves
+        ),
+        "standalone_independent_inline_space_spans": sum(
+            leaf["verified_xml"].get("verified_inline_space_spans", 0) for leaf in leaf_runs
+        ),
         "standalone_retained_note_positive": sum(
             leaf["selected"] and leaf["note_count"] > 0 and leaf["retained_prefix"]
             for leaf in leaf_runs

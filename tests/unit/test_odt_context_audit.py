@@ -7,11 +7,12 @@ from pathlib import Path
 
 import pytest
 from tools.audit_odt_context import run
+from tools.replay_odt_blocks import verify_note_origins
 
 from lexinform.adapters.document_text import DocumentTextExtractor
 from lexinform.models.odt_notes import OdtNotedParts
 from tests.unit.test_odt_blocks import odt_document
-from tests.unit.test_odt_note_capture import note
+from tests.unit.test_odt_note_capture import note, observed
 from tests.unit.test_physical_extraction import archive, docx
 
 MARKER = "CORPUS-BODY-MUST-NOT-APPEAR-IN-THE-REPORT"
@@ -136,3 +137,25 @@ def test_a_cohort_without_physical_odt_cannot_publish_acceptance(tmp_path: Path)
         run(corpus, manifest, output)
 
     assert not output.exists()
+
+
+@pytest.mark.parametrize(
+    ("spacing", "expected"),
+    [("<text:s/><text:tab/>", 2), ('<text:s text:c="2"/>', 0), ("<text:line-break/>", 0)],
+)
+def test_qualified_inline_spacing_is_checked_independently(spacing: str, expected: int) -> None:
+    raw = odt_document(f"<text:p>Before {note(content=f'A{spacing}B')} after</text:p>")
+    body, origins = observed(raw)
+
+    verified = verify_note_origins(raw, body, origins)
+    assert verified.get("verified_inline_space_spans", 0) == expected
+    assert verified["verified_plain_spans"] == 0
+    if expected:
+        entry = origins.entries[0]
+        span = entry.emitted
+        assert span is not None, "the native observed note records a span in this paragraph"
+        shortened = entry.model_copy(
+            update={"emitted": span.model_copy(update={"end": span.end - 1})}
+        )
+        with pytest.raises(ValueError, match="differs from independent XML text"):
+            verify_note_origins(raw, body, origins.model_copy(update={"entries": (shortened,)}))

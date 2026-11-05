@@ -1,0 +1,19 @@
+{
+  "changed_inputs": [],
+  "original_download_roots": 6,
+  "original_independent_inline_space_spans": 8,
+  "original_independent_plain_spans": 0,
+  "original_odt_leaf_occurrences": 8,
+  "original_raw_xml_notes": 4,
+  "original_raw_xml_separate_refs": 0,
+  "original_selected_note_positive": 0,
+  "original_selected_odt_leaves": 1,
+  "original_verified_xml_call_paths": 4,
+  "original_verified_xml_note_paths": 4,
+  "source_fingerprints_unchanged": true,
+  "standalone_independent_inline_space_spans": 8,
+  "standalone_retained_note_positive": 4,
+  "standalone_selected_note_positive": 4,
+  "unique_standalone_leaf_runs": 8,
+  "verified_input_paths": 7
+}
