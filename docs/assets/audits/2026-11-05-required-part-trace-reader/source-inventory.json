@@ -1,0 +1,19 @@
+{
+  "runtime_capture": "OFF",
+  "unchanged_runtime_paths": {
+    "src/lexinform/document_composition.py": "c3ecccb8587f54b67686582f9701f985493f9eeadf58aa9675ea9e2a7361b935",
+    "src/lexinform/document_admissibility.py": "2f7cc443ccb7cfedad5b55f816158de00ae9002b45d2ad53c77a2751e4916ddd",
+    "src/lexinform/document_candidates.py": "1d59d3dadc47b66d7c1462dea728cfaf311011a53affbb257070ffb2ed304c04",
+    "src/lexinform/services/documents.py": "2bc1022c0062287f2517f8ad3083c06e327dfaeda61d8605300171f52f3a4cd9",
+    "src/lexinform/services/analysis.py": "91f93400d4f07dfc4f063d589b320c842f25d384b077c11325f217c8b8b888fc",
+    "src/lexinform/services/input_receipts.py": "df83ef812dc1fa9150cc6f12716b91de51ff13b5c1d8eaafdee661ad747836e8",
+    "src/lexinform/services/document_reviews.py": "d0b2928a2d60e92a05def071670f117f787c273a8666b30b80090fbeb7c50155",
+    "src/lexinform/adapters/sqlite_repo.py": "3f8f7647543fe6b951ba50bd5bde676fe373a1f59b5d3dc2741c6c306726806a",
+    "src/lexinform/models/document_reads.py": "f70001423e2d3dd91bde87a087cbe9eda9fb1f10aa7b6fcd915897704e877d4d",
+    "tools/source_history_doctor.py": "0335d54dbbcaec8bdb4534cfe83077dc040c235968c697a7f3c229132412e081"
+  },
+  "archive_canonical_hash_body_AST_exact": true,
+  "schema_sql_migrations_unchanged": true,
+  "old_omitted_None_serialization": "legacy-proof.json",
+  "writer_B_requires_deployed_reader_A_and_frozen_real_corpus_qualification": true
+}

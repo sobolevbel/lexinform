@@ -100,6 +100,8 @@ from lexinform.models.candidate_trace import ArchiveMemberDisposition as Archive
 from lexinform.models.candidate_trace import ArchiveMemberDispositions as ArchiveMemberDispositions
 from lexinform.models.candidate_trace import CandidateDisposition as CandidateDisposition
 from lexinform.models.candidate_trace import CandidateDispositionTrace as CandidateDispositionTrace
+from lexinform.models.candidate_trace import RequiredPartExclusion as RequiredPartExclusion
+from lexinform.models.candidate_trace import RequiredPartExclusions as RequiredPartExclusions
 from lexinform.models.commands import (
     DISPATCHED,
     NEEDS_REFERENCE,

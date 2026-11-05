@@ -2,14 +2,17 @@
 
 import hashlib
 import json
+import re
 from collections.abc import Iterable
 from typing import Literal, Self, get_args
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from lexinform.models.documents import SelectionState
+from lexinform.metadata_urls import metadata_url_decision
+from lexinform.models.documents import DocumentPart, SelectionState
 from lexinform.models.physical_inventory import HeaderDisposition, Position, Sha256
 from lexinform.models.sejm import TextDocument
+from lexinform.sections import APPENDIX_KINDS, Kind
 
 MAX_CANDIDATE_TRACE_BYTES = 4_096
 CandidateTraceResult = Literal["selected", "ambiguous", "fallback"]
@@ -124,6 +127,10 @@ class ArchiveMemberDisposition(BaseModel):
 
 
 def archive_member_rows_sha256(rows: Iterable[ArchiveMemberDisposition]) -> str:
+    return _disposition_rows_sha256(rows)
+
+
+def _disposition_rows_sha256(rows: Iterable[BaseModel]) -> str:
     digest = hashlib.sha256(b"[")
     separator = b""
     for row in rows:
@@ -257,6 +264,86 @@ class ArchiveMemberDispositions(BaseModel):
         return self
 
 
+class RequiredPartExclusion(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    phase: Literal["version_comparison", "fallback"]
+    index: Position
+    required_index: Position
+    reason: Literal["required_non_annex_appendix"]
+    kind: Kind
+    file_sha256: Sha256 | None = Field(default=None, exclude_if=lambda value: value is None)
+    text_sha256: Sha256 | None = Field(default=None, exclude_if=lambda value: value is None)
+    parts: tuple[DocumentPart, ...]
+
+    @model_validator(mode="before")
+    @classmethod
+    def declared_part_fields(cls, value: object) -> object:
+        if isinstance(value, dict) and isinstance(value.get("parts"), (list, tuple)):
+            for part in value["parts"]:
+                if isinstance(part, dict) and set(part) - DocumentPart.model_fields.keys():
+                    raise ValueError("required descriptors cannot hide undeclared body fields")
+        return value
+
+    @model_validator(mode="after")
+    def body_free_descriptors(self) -> Self:
+        if self.kind not in APPENDIX_KINDS - {"annex"}:
+            raise ValueError("required exclusion must describe a non-annex appendix")
+        for part in self.parts:
+            if part.text or part.url and not metadata_url_decision(part.url).admitted:
+                raise ValueError("required exclusion requires body-free admitted metadata")
+            if any(
+                value and re.fullmatch(r"[0-9a-f]{64}", value) is None
+                for value in (part.sha256, part.container_sha256, part.text_sha256)
+            ):
+                raise ValueError("required descriptor hashes must be known SHA256 or absent")
+            if self.file_sha256 and part.source_sha256 and self.file_sha256 != part.source_sha256:
+                raise ValueError("required descriptor differs from its known file root")
+        return self
+
+
+def required_part_rows_sha256(rows: Iterable[RequiredPartExclusion]) -> str:
+    return _disposition_rows_sha256(rows)
+
+
+class RequiredPartExclusions(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    schema_version: Literal[1] = 1
+    retention: Literal["complete", "omitted"]
+    observed_rows: Position
+    rows_sha256: Sha256
+    omitted_rows: Position
+    rows: tuple[RequiredPartExclusion, ...]
+
+    @model_validator(mode="before")
+    @classmethod
+    def explicit_schema_type(cls, value: object) -> object:
+        if (
+            isinstance(value, dict)
+            and "schema_version" in value
+            and type(value["schema_version"]) is not int
+        ):
+            raise ValueError("required exclusion schema version must be an integer")
+        return value
+
+    @model_validator(mode="after")
+    def actual_retention(self) -> Self:
+        if not self.observed_rows or self.observed_rows != len(self.rows) + self.omitted_rows:
+            raise ValueError("required exclusion counts must describe actual observed rows")
+        if self.retention == "complete":
+            if self.omitted_rows or self.rows_sha256 != required_part_rows_sha256(self.rows):
+                raise ValueError("complete required exclusions require their exact whole hash")
+        elif self.rows or self.omitted_rows != self.observed_rows:
+            raise ValueError("omitted required exclusions retain only their full count and hash")
+        keys = [(row.phase == "fallback", row.index, row.required_index) for row in self.rows]
+        if keys != sorted(set(keys)):
+            raise ValueError("required exclusions must retain unique ordered relation positions")
+        if len(self.model_dump_json(exclude_defaults=True).encode()) > MAX_CANDIDATE_TRACE_BYTES:
+            raise ValueError("required exclusions exceed the existing whole trace budget")
+        return self
+
+
 class CandidateDispositionTrace(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -271,6 +358,9 @@ class CandidateDispositionTrace(BaseModel):
     reason: CandidateTraceReason
     selection_state: SelectionState
     archive_members: ArchiveMemberDispositions | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    required_exclusions: RequiredPartExclusions | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
 
@@ -384,6 +474,11 @@ class CandidateDispositionTrace(BaseModel):
                 raise ValueError("an omitted outer request retains only an archive summary")
             for member in members.rows:
                 validate_archive_member_parent(self, member)
+        if self.required_exclusions is not None:
+            if self.coverage != "complete" and self.required_exclusions.rows:
+                raise ValueError("omitted outer requests retain only required exclusion summaries")
+            for row in self.required_exclusions.rows:
+                validate_required_part_parent(self, row)
         if len(self.model_dump_json(exclude_defaults=True).encode()) > MAX_CANDIDATE_TRACE_BYTES:
             raise ValueError("candidate trace exceeds its metadata limit")
         return self
@@ -406,7 +501,26 @@ class CandidateDispositionTrace(BaseModel):
             and self.result == "selected"
             and self.selection_state in ("selected", "unverified")
             and all(item.outcome == "selected" for item in self.dispositions)
+            and self.required_exclusions is None
         )
+
+
+def validate_required_part_parent(
+    trace: CandidateDispositionTrace, row: RequiredPartExclusion
+) -> None:
+    if row.index >= trace.candidate_count or trace.requested_document is None:
+        raise ValueError("required exclusion has no retained outer request parent")
+    parent = next(
+        (item for item in trace.dispositions if (item.phase, item.index) == (row.phase, row.index)),
+        None,
+    )
+    if parent is None or parent.outcome in ("official_conflict", "unattempted"):
+        raise ValueError("required exclusion requires an actually attempted outer parent")
+    candidate = (trace.requested_document, *trace.requested_document.alternatives)[row.index]
+    if row.required_index >= len(candidate.required_urls):
+        raise ValueError("required exclusion exceeds the actual required URL namespace")
+    if not metadata_url_decision(candidate.required_urls[row.required_index]).admitted:
+        raise ValueError("required exclusion parent URL is outside metadata admission")
 
 
 def validate_archive_member_parent(

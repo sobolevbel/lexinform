@@ -34,5 +34,9 @@
     "source_pins_exact": 838
   },
   "root_focus": 31,
-  "release": "pending publication"
+  "release": {
+    "status": "verified",
+    "target_sha": "c12929f5c6ec1f0cbc86773f9a4a49c5613498b9",
+    "receipt": "release.json"
+  }
 }

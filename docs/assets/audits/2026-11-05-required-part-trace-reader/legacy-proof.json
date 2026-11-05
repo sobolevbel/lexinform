@@ -1,0 +1,18 @@
+{
+  "b9": {
+    "source_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+    "legacy_traces": 8,
+    "all_old_json_ids_exact": true,
+    "public_get_restore_double_restore_exact": true,
+    "five_default_and_opt_in_source_reports_byte_exact": true,
+    "source_unchanged": true
+  },
+  "fresh": {
+    "source_sha256": "b08843e5a6b3c51aba83852509ffbaa915c2b859945bc44204f1b214a38077c6",
+    "legacy_traces": 10,
+    "all_old_json_ids_exact": true,
+    "public_get_restore_double_restore_exact": true,
+    "five_default_and_opt_in_source_reports_byte_exact": true,
+    "source_unchanged": true
+  }
+}

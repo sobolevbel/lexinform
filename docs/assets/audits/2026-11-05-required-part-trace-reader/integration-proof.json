@@ -1,0 +1,30 @@
+{
+  "full_tests": 8958,
+  "seconds": 301.17,
+  "mypy": 770,
+  "ruff_format": 839,
+  "source_config_pins_exact": 839,
+  "root_focus": 21,
+  "new_units": 21,
+  "new_scenarios": 0,
+  "root_legacy_replay": {
+    "b9": {
+      "source_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+      "legacy_traces": 8,
+      "all_old_json_ids_exact": true,
+      "public_get_restore_double_restore_exact": true,
+      "eight_default_and_opt_in_source_reports_byte_exact": true,
+      "source_unchanged": true
+    },
+    "fresh": {
+      "source_sha256": "b08843e5a6b3c51aba83852509ffbaa915c2b859945bc44204f1b214a38077c6",
+      "legacy_traces": 10,
+      "all_old_json_ids_exact": true,
+      "public_get_restore_double_restore_exact": true,
+      "eight_default_and_opt_in_source_reports_byte_exact": true,
+      "source_unchanged": true
+    }
+  },
+  "full_log_sha256": "8c297d8061771fbebd71a783df44424430e921c379aae06612ed64d1dc7e71c1",
+  "full_xml_sha256": "24361f4f764fe0c33d7b418e1bcf711522050dd69a122d25283d5d444190e69c"
+}

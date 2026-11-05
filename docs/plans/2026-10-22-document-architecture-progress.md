@@ -11197,3 +11197,22 @@ J255 actual release follows publication.
 [integration](../assets/audits/2026-11-05-selection-limitation-coverage/integration-proof.json),
 [reproduce](../assets/audits/2026-11-05-selection-limitation-coverage/reproduce.md),
 [review](../assets/audits/2026-11-05-selection-limitation-coverage/peer-review.json).
+
+<a id="j257"></a>
+
+## J257 — compatible required-part trace reader
+
+Deploy the optional typed required-exclusion reader before any producer: actual outer/required
+namespaces, body-free metadata, known hashes and bounded omission summaries use the existing trace
+budget. Shared declared-trace SQL JSON rejects duplicate keys and excessive nesting with the
+original bounded error. No selection, admission, source witness or producer behavior changes.
+
+Focused units, independent exact-pin review, root full/static/docs gates and pinned historical
+read/double-restore/report replay pass. Exact scope/counts/hashes live in the linked evidence.
+J255 actual release is now recorded. J257 actual release follows publication; writer B still
+requires verified reader deployment and a frozen real-corpus OFF baseline. DA4.1 remains open.
+
+[Report](../assets/audits/2026-11-05-required-part-trace-reader/REPORT.md),
+[integration](../assets/audits/2026-11-05-required-part-trace-reader/integration-proof.json),
+[review](../assets/audits/2026-11-05-required-part-trace-reader/peer-review.json),
+[writer prerequisites](../assets/audits/2026-11-05-required-part-trace-reader/design.md).

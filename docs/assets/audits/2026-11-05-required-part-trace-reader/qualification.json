@@ -1,0 +1,24 @@
+{
+  "stage": "J257 inert reader A",
+  "status": "source-frozen",
+  "focused_passed": 141,
+  "new_units": 21,
+  "new_scenarios": 0,
+  "strict_mypy_files": 4,
+  "ruff": "4Python files green",
+  "format": "4Python files unchanged",
+  "unit_first": [
+    "new known extension rejected before reader",
+    "unknown descriptor body key accepted before strict descriptor guard",
+    "bool schema accepted before explicit schema guard",
+    "duplicate JSON hid private body before strict shared SQL decoder"
+  ],
+  "legacy_states": "8+10 actual old trace JSON/IDs/publicget/double restore exact; five source-doctor flag combinations byte-exact; sourceDBs unchanged",
+  "schema_storage_writer_changes": false,
+  "strict_declared_trace_JSON": "existing read_json and unchanged CandidateTraceRowError codes; duplicate/deep malformed legacy trace JSON now bounded invalid too",
+  "runtime_corpus_selection_replay": "deferred to writer B; no text/selection/composition/admission/receipt/witness/producer edits in reader A",
+  "full_gate_commit_push_root_edits": "not performed; root-owned",
+  "no_provider_network": true,
+  "root_gate": "passed; integration-proof.json",
+  "release": "pending publication"
+}

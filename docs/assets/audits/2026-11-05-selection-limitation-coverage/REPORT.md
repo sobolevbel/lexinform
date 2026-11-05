@@ -11,3 +11,5 @@ Author57focused and scoped static checks pass; exact three-file independent revi
 [Qualification](qualification.json), [pins](source-pins.json), [review](peer-review.json), [pinned replay](pinned-proof.json). Root integration/full gate and actual release follow. This finite slice leaves broader DA10.3 open.
 
 Root31focused/8937full/303.56s/92%coverage, mypy769/Ruff838 and all838source/config pins pass. [Integration](integration-proof.json): all four prior report flag combinations exact on both pinned50/54observation states, sources unchanged. Actual release follows publication.
+
+Actual c12929f5 [CI and relay release](release.json) verified: CI42021041904/deploy42021914325, exact transition/restart45/timer. No workflow rerun.

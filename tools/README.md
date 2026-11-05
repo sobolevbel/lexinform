@@ -533,6 +533,12 @@ observations (including unknown rows) and need not sum to one. Invalid/dangling 
 absent limitation fields remain unknown; unavailable schema is null, known empty is zero with
 undefined fractions. Default and `--selection-coverage` output stay unchanged without the new flag.
 
+Candidate-trace readers accept optional typed `required_exclusions` under the existing whole
+4 KiB trace bound. Actual required-URL positions remain separate from outer candidate and ZIP
+positions; descriptors contain no text and pass metadata URL admission. Omitted summaries retain
+counts/hash without claiming complete descriptors. Capture is OFF pending a separately qualified
+writer; legacy trace JSON/IDs and all ordinary singleton omission behavior stay unchanged.
+
 ## Document download profile
 
 ```bash
