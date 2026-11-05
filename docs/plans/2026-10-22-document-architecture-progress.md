@@ -11308,3 +11308,16 @@ The frozen cached/raw cohort preserved all 36 native requests and 12 no-request 
 Thirty saved selections changed only in analysis coverage. Four units and the full local
 gate passed. DA5.2 and DA5.4 remain open for other assembly shapes.
 [Corpus cohort and parity](../assets/audits/2026-11-05-loose-rcl-annex-projection/report.md).
+
+<a id="j265"></a>
+
+## J265 — evidence from the Word walk, Sejm proposals and group citations
+
+The compatible Word reader distinguishes absent textbox coverage from a recorded zero.
+The native writer remains separate. A read-only corpus replay compares bounded OOXML body
+inventory with nodes the legacy walk actually visits. The old extraction ledger remains exact.
+
+The Sejm replay proves a narrowly scoped official proposal relation to a selected candidate
+edition. The affected-group checker extends literal citation validation while preserving
+existing key-change checks. The evidence covers scope and literal bindings.
+[Replays and qualification](../assets/audits/2026-11-05-offline-provenance-evidence/report.md).

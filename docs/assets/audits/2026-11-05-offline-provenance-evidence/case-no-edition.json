@@ -1,0 +1,21 @@
+{
+  "term": 10,
+  "parent": "2082",
+  "proposal": "2082-A",
+  "official_prints": {
+    "path": "sejm/term10/prints.json",
+    "sha256": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72"
+  },
+  "official_processes_gzip": {
+    "path": "sejm/term10/process_details.json.gz",
+    "sha256": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+  },
+  "base_pdf": {
+    "path": "sejm/term10/files/2082__2082.pdf",
+    "sha256": "85194508ed837bbaedd56d646573c06c1737d29cc0fed645717f82a2108e7928"
+  },
+  "proposal_pdf": {
+    "path": "sejm/term10/autopoprawki/files/2082-A__2082-A.pdf",
+    "sha256": "867d63a7c087e3a6bf74f9d72b7c9a1a3df8cb967134bc2089faed5725e3dd6a"
+  }
+}

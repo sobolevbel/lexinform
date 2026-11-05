@@ -25,3 +25,5 @@ The existing local checkpoint benchmark replayed eight checkpoints with syntheti
 mutations. The initial dump was 5,276,152 bytes in gzip. The measured SQL growth was 5,178
 bytes and gzip growth was 162 bytes. Hosted latency and production growth remain unmeasured.
 [Qualification and scope](qualification.json).
+
+[Exact CI and relay verification](release.json).

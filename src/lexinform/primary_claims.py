@@ -2,8 +2,9 @@
 
 import hashlib
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import ClassVar, Literal
 
 from lexinform.models.analysis import AnalysisRecord
 from lexinform.models.reviews import EvidenceCitation, ReviewDocument, citation_document_in
@@ -23,7 +24,9 @@ ClaimEvidenceStatus = Literal[
 
 
 @dataclass(frozen=True)
-class KeyChangeEvidence:
+class _IndexedClaimEvidence:
+    _claim_name: ClassVar[str]
+
     index: int
     claim_text_sha256: str
     source_text_sha256: str
@@ -31,12 +34,22 @@ class KeyChangeEvidence:
 
     def __post_init__(self) -> None:
         if type(self.index) is not int or self.index < 0:
-            raise ValueError("A key-change address requires a nonnegative integer index")
+            raise ValueError(f"A {self._claim_name} address requires a nonnegative integer index")
         if any(
             re.fullmatch(r"[0-9a-f]{64}", digest) is None
             for digest in (self.claim_text_sha256, self.source_text_sha256)
         ):
             raise ValueError("Claim and source bindings require raw-text SHA-256 digests")
+
+
+@dataclass(frozen=True)
+class KeyChangeEvidence(_IndexedClaimEvidence):
+    _claim_name = "key-change"
+
+
+@dataclass(frozen=True)
+class AffectedGroupEvidence(_IndexedClaimEvidence):
+    _claim_name = "affected-group"
 
 
 @dataclass(frozen=True)
@@ -83,11 +96,31 @@ def validate_key_change_evidence(
     evidence: KeyChangeEvidence | None,
     documents: tuple[ReviewDocument, ...],
 ) -> ClaimEvidenceCheck:
+    if evidence is not None and not isinstance(evidence, KeyChangeEvidence):
+        raise TypeError("Expected key-change evidence")
+    return _validate_indexed_claim(record.analysis.key_changes, evidence, documents)
+
+
+def validate_affected_group_evidence(
+    record: AnalysisRecord,
+    evidence: AffectedGroupEvidence | None,
+    documents: tuple[ReviewDocument, ...],
+) -> ClaimEvidenceCheck:
+    if evidence is not None and not isinstance(evidence, AffectedGroupEvidence):
+        raise TypeError("Expected affected-group evidence")
+    return _validate_indexed_claim(record.analysis.affected_groups, evidence, documents)
+
+
+def _validate_indexed_claim(
+    claims: Sequence[str],
+    evidence: _IndexedClaimEvidence | None,
+    documents: tuple[ReviewDocument, ...],
+) -> ClaimEvidenceCheck:
     if evidence is None:
         return ClaimEvidenceCheck("legacy_missing")
-    if evidence.index >= len(record.analysis.key_changes):
+    if evidence.index >= len(claims):
         return ClaimEvidenceCheck("claim_index_invalid")
-    claim = record.analysis.key_changes[evidence.index]
+    claim = claims[evidence.index]
     if hashlib.sha256(claim.encode()).hexdigest() != evidence.claim_text_sha256:
         return ClaimEvidenceCheck("claim_hash_mismatch")
     matches = tuple(doc for doc in documents if doc.identity == evidence.citation.document_id)

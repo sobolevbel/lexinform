@@ -65,6 +65,9 @@ class WordViewStatus(BaseModel):
     observed_unclassified_nodes: int = Field(strict=True, ge=0, le=2**63 - 1)
     observed_legacy_recursion: int = Field(strict=True, ge=0, le=2**63 - 1)
     observed_ignored_fallbacks: int = Field(strict=True, ge=0, le=2**63 - 1)
+    observed_textbox_nodes: int | None = Field(
+        default=None, strict=True, ge=0, le=2**63 - 1, exclude_if=lambda value: value is None
+    )
 
     @model_validator(mode="after")
     def bounded_status(self) -> Self:

@@ -57,14 +57,16 @@ def test_maximum_counters_remain_within_the_compact_bound() -> None:
         observed_unclassified_nodes=2**63 - 1,
         observed_legacy_recursion=2**63 - 1,
         observed_ignored_fallbacks=2**63 - 1,
+        observed_textbox_nodes=2**63 - 1,
     )
     assert len(value.model_dump_json().encode()) <= 512
 
 
+@pytest.mark.parametrize("counter", ["observed_skipped_blocks", "observed_textbox_nodes"])
 @pytest.mark.parametrize("invalid", [-1, 2**63, True, 1.5, "1"])
-def test_invalid_counter_is_rejected_before_serialization(invalid: object) -> None:
+def test_invalid_counter_is_rejected_before_serialization(counter: str, invalid: object) -> None:
     payload = status().model_dump(mode="json")
-    payload["observed_skipped_blocks"] = invalid
+    payload[counter] = invalid
     with (
         patch.object(WordViewStatus, "model_dump_json", side_effect=AssertionError("serializer")),
         pytest.raises(ValidationError),
@@ -133,6 +135,18 @@ def test_optional_reader_field_does_not_invent_status_on_the_legacy_fixture() ->
     assert offered.result_id != observed.result_id
     assert ExtractionResult.model_validate_json(offered.model_dump_json()) == offered
     assert result().selected_parts[0].word_view_status is None
+
+
+def test_textbox_reader_distinguishes_unknown_and_observed_zero() -> None:
+    legacy = status()
+    payload = legacy.model_dump(mode="json")
+    assert "observed_textbox_nodes" not in payload
+    assert legacy.observed_textbox_nodes is None
+
+    observed = WordViewStatus.model_validate({**payload, "observed_textbox_nodes": 0})
+
+    assert observed.observed_textbox_nodes == 0
+    assert WordViewStatus.model_validate_json(observed.model_dump_json()) == observed
 
 
 @pytest.mark.parametrize("format_name", ["pdf", "odt", "unknown"])

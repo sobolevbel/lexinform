@@ -1,0 +1,32 @@
+{
+  "literal": {
+    "block_origins": "unmapped",
+    "observed_text_span": [
+      945,
+      1351
+    ],
+    "paid_origins": "unmapped",
+    "quote_occurrences": 1,
+    "semantic": "semantic_not_assessed",
+    "source_complete": false,
+    "status": "quote_present"
+  },
+  "quote_sha256": "5754e4a7fe214e435096beeec7673c892e2c9252fd7fc3353914f409cb453101",
+  "raw_bytes": 345600,
+  "raw_sha256": "572aee2f00b2e284b2687d16620acab5334c2a36b8b96eb8ad3245825f43572d",
+  "scope": "Natural extracted corpus text; document role and answer are technical fixtures.",
+  "scope_mutation": {
+    "block_origins": "unmapped",
+    "observed_text_span": null,
+    "paid_origins": "unmapped",
+    "quote_occurrences": 0,
+    "semantic": "semantic_not_assessed",
+    "source_complete": false,
+    "status": "citation_mismatch"
+  },
+  "scope_mutation_sha256": "1f9c134649ec12c897762103fae8699df8e752ecc7eb96eebcf1cc87a173b565",
+  "source": "documents/files/396900.doc",
+  "text_chars": 73975,
+  "text_sha256": "7d49b6c46c53042ce7f5554c6fcfd95414c930cfbfe058c5ec0e67363bb70ec4",
+  "unchanged": true
+}

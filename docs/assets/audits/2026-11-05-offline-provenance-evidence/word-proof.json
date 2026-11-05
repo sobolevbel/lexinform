@@ -1,0 +1,92 @@
+{
+  "suite": "word-textbox-walk-v1",
+  "status": "recorded",
+  "scope": "Bounded OOXML document.xml inventory and observed legacy body walk",
+  "completeness": "not_asserted",
+  "catalog_sha256": "7bfa79ac7ee2a6981d8106880cad2bde6bc86df0b5da9a966530fcaebbf057f5",
+  "code_sha": "452d3333b4ac51842762e6f10abcf168b0db0e7e",
+  "observations": {
+    "documents/files/339907.docx": {
+      "body_xml_sha256": "8e64353872ed0c20792a04abba90c00132f63e6a8b686bf3ae138de75820f2df",
+      "input_sha256": "311505c01eaa82b91deefc2968077b5ae27f4115b35580f22cf28e34a3baeb97",
+      "legacy_text_sha256": "4c984849982c0d5346f991b6c703a1e2e1997fc34ff7ad4d3b5f91efe642f5d7",
+      "physical_manifest_sha256": "1857aa454fb63436ff7a3cb832c34c09550a90c929122a83f8a08c8a245aa0cc",
+      "raw_textboxes": {
+        "choice": 0,
+        "fallback": 0,
+        "ordinary": 0
+      },
+      "visited_textboxes": {}
+    },
+    "documents/files/418609.docx": {
+      "body_xml_sha256": "6077dcd2de96566951e91b23a093703965fedae3a668e9f4cb54b8ce1ab8c314",
+      "input_sha256": "8bf2bd8fe6f94bdedb7edfe548d584a44868001be19111f58e88ddc435633cf2",
+      "legacy_text_sha256": "b2ca74d6771ba8a8add466bd66fb110c018c3e701c77a8cb119950a50dc19a4b",
+      "physical_manifest_sha256": "ee92dd55d80927a32a24d5c8115329c3552776ffe1aae8307432a2be284870e3",
+      "raw_textboxes": {
+        "choice": 9,
+        "fallback": 9,
+        "ordinary": 0
+      },
+      "visited_textboxes": {
+        "recursed": 9
+      }
+    },
+    "documents/files/676870.docx": {
+      "body_xml_sha256": "9670911d0d038c4719bdc2499fd68b589dfece8f6e2c50cc1837419685d2cfe2",
+      "input_sha256": "d4121b6dba77fdc869bce3ee5d938f7f3f49e36e4cf2d0a5ed97ef383914feef",
+      "legacy_text_sha256": "2bf7048d1ac1c89e15d7e83fe47e962e440fe30c7bd5694187307764a23f2618",
+      "physical_manifest_sha256": "662240ab61b0de49786bc5cfa51803b5eb9efc635801a028fd8f64621ec43f3a",
+      "raw_textboxes": {
+        "choice": 1,
+        "fallback": 1,
+        "ordinary": 0
+      },
+      "visited_textboxes": {
+        "recursed": 1
+      }
+    },
+    "documents/files/709354.docx": {
+      "body_xml_sha256": "70c92e297ae6d56e0c9af58c67007c12bf6548ab0fe39e7d7ab59ce8fa861180",
+      "input_sha256": "e089953d69de5262b60ea5f0119ea1a2c6ab91b914fbecd460fff0181db72d43",
+      "legacy_text_sha256": "1e8cdbf1af1c1e90b24d647600be92dd66b24ef255773738a33c6b73e2c90718",
+      "physical_manifest_sha256": "d8df4af29e783a9315197f6a060cbcf1b51c27d6eedad169c7a4e5de8f608913",
+      "raw_textboxes": {
+        "choice": 1,
+        "fallback": 1,
+        "ordinary": 0
+      },
+      "visited_textboxes": {
+        "recursed": 1
+      }
+    },
+    "documents/files/722211.docx": {
+      "body_xml_sha256": "a6bdf42ae126b0616a850ff806ccc394c82009029b6e7d9e06e5a2f6cdc00079",
+      "input_sha256": "2103a530e0513744318061bd893a3623633ed79e63f32b620470d7eea8ed1df5",
+      "legacy_text_sha256": "4b722d64db6b72b3b5e9b289fed1f08d207da4c49299fe40afd52171668c24ed",
+      "physical_manifest_sha256": "06af040e220de1bf222f6cec76c5d5fdc27a491192ed65875f4642ca610a15c1",
+      "raw_textboxes": {
+        "choice": 1,
+        "fallback": 1,
+        "ordinary": 0
+      },
+      "visited_textboxes": {
+        "recursed": 1
+      }
+    },
+    "documents/files/723373.docx": {
+      "body_xml_sha256": "9919bc44c777e9de716c89b47d71509f2e83d8975b37bf9bfd39c98a25004708",
+      "input_sha256": "3388a9b7b26fb4f81e946ca1c133f45040207ed66a8c27d266e93b54abe4d5f6",
+      "legacy_text_sha256": "57639ae0318ef73dad2515316fc232bc89d761b0ebad8f9b774981b5c57e4840",
+      "physical_manifest_sha256": "2336a178a5354372c23f2eb26bf76741b3361b9ef0c27227311e90a79d658a7b",
+      "raw_textboxes": {
+        "choice": 1,
+        "fallback": 1,
+        "ordinary": 0
+      },
+      "visited_textboxes": {
+        "recursed": 1
+      }
+    }
+  }
+}

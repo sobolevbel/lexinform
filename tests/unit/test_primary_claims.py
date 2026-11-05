@@ -1,6 +1,7 @@
 import datetime as dt
 import hashlib
 from dataclasses import replace
+from typing import cast
 
 import pytest
 
@@ -16,8 +17,10 @@ from lexinform.models.reviews import (
     citation_document_in,
 )
 from lexinform.primary_claims import (
+    AffectedGroupEvidence,
     ClaimEvidenceCheck,
     KeyChangeEvidence,
+    validate_affected_group_evidence,
     validate_key_change_evidence,
 )
 
@@ -356,3 +359,77 @@ def test_existing_matcher_keeps_first_admissible_duplicate_behavior() -> None:
 
     assert citation_document(citation, context, {"project_text"}) is other
     assert citation_document_in(citation, (other, original), {"project_text"}) is other
+
+
+def test_group_evidence_binds_the_affected_group_slot() -> None:
+    answer = record()
+    group = "Студенты"
+    answer.analysis.affected_groups = ["Другая группа", group]
+    document = source().model_copy(update={"complete": False})
+    group_evidence = AffectedGroupEvidence(
+        index=1,
+        claim_text_sha256=digest(group),
+        source_text_sha256=document.sha256,
+        citation=evidence(document).citation,
+    )
+
+    checked = validate_affected_group_evidence(answer, group_evidence, (document,))
+
+    assert checked.status == "quote_present" and checked.observed_text_span == (0, len(QUOTE))
+    assert checked.coverage == "partial" and checked.semantic == "semantic_not_assessed"
+    assert checked.block_origins == checked.paid_origins == "unmapped"
+    assert (
+        validate_affected_group_evidence(
+            answer, replace(group_evidence, index=0), (document,)
+        ).status
+        == "claim_hash_mismatch"
+    )
+    assert (
+        validate_affected_group_evidence(
+            answer, replace(group_evidence, index=2), (document,)
+        ).status
+        == "claim_index_invalid"
+    )
+
+
+def test_group_evidence_requires_a_project_text_quote() -> None:
+    answer = record()
+    answer.analysis.affected_groups = [CLAIM]
+    document = source(role="position")
+    key_evidence = evidence(document)
+    group_evidence = AffectedGroupEvidence(
+        index=key_evidence.index,
+        claim_text_sha256=key_evidence.claim_text_sha256,
+        source_text_sha256=key_evidence.source_text_sha256,
+        citation=key_evidence.citation,
+    )
+    changed = group_evidence.citation.model_copy(
+        update={"quote": QUOTE.replace("studentów", "osób")}
+    )
+    project_text = document.model_copy(update={"role": "project_text"})
+
+    assert validate_affected_group_evidence(answer, None, ()) == ClaimEvidenceCheck(
+        "legacy_missing"
+    )
+    assert (
+        validate_affected_group_evidence(answer, group_evidence, (document,)).status
+        == "source_role_mismatch"
+    )
+    assert (
+        validate_affected_group_evidence(
+            answer, replace(group_evidence, citation=changed), (project_text,)
+        ).status
+        == "citation_mismatch"
+    )
+
+
+def test_equal_claim_text_does_not_interchange_group_and_key_change_evidence() -> None:
+    answer = record()
+    answer.analysis.affected_groups = [CLAIM]
+    document = source()
+    key_evidence = evidence(document)
+
+    with pytest.raises(TypeError, match="Expected affected-group evidence"):
+        validate_affected_group_evidence(
+            answer, cast(AffectedGroupEvidence, key_evidence), (document,)
+        )

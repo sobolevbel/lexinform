@@ -1,0 +1,43 @@
+{
+  "case_sha256": "09c1d04aed9bb1ebe1d3d6eb6be49bb0ecbc959bb886233985c4b53f993d3dfc",
+  "code_version": "452d3333b4ac51842762e6f10abcf168b0db0e7e",
+  "exclusions": [
+    "Adoption",
+    "supersession",
+    "legal completeness",
+    "historical state backfill"
+  ],
+  "mock_metadata_requests": [
+    "/sejm/term10/processes/2320",
+    "/sejm/term10/prints/2320",
+    "/sejm/term10/prints"
+  ],
+  "native_emitted_text_sha256": "87f96cfc689357a34c77b1b5600a162c5fd1fb93c285dfce6a506ae0c5a26af6",
+  "proof": {
+    "base_sha256": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+    "base_url": "https://api.sejm.gov.pl/sejm/term10/prints/2320/2320.pdf",
+    "edition_id": "edition-v1:9f62895655e4e474fb9bb49d7523fa6594d46782d055d1068eced9ebeed56d3a",
+    "edition_members": 1,
+    "official_process_prints": [
+      "2320"
+    ],
+    "parent_print": "2320",
+    "proposal_print": "2320-A",
+    "proposal_sha256": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+    "proposal_url": "https://api.sejm.gov.pl/sejm/term10/prints/2320-A/2320-A.pdf",
+    "relation": "proposes_change_to",
+    "selection_id": "selection-v1:5be58199fc39b70e8f62397d24ca0d3f23f03e3ee7fd9527e8695c4accc04997",
+    "selection_state": "unverified",
+    "term": 10
+  },
+  "read_inputs": {
+    "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+    "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+    "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+    "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+  },
+  "scope": "One native original-print selection from supplied pinned Sejm inputs.",
+  "source_pins_sha256": "77dc560589d7bd70363a148a1d92fa86d130d74e84e34536d9257013f8a6845f",
+  "status": "recorded",
+  "version": "sejm-proposal-edition-v1"
+}
