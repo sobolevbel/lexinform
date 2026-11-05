@@ -11388,3 +11388,17 @@ New status plans reuse the existing publication projection without operational r
 work. The frozen route, render and other Bill fields are exact. The original amendment
 history page reports the bounded availability of its input without exposing the payload.
 [Native replay, dump comparison and history parity](../assets/audits/2026-11-05-editorial-freeze-and-input-history/report.md).
+
+<a id="j273"></a>
+
+## J273 — exact mixed RCL input ranges and main-part citation checks
+
+Verified loose annex and self-amendment assembly retains exact ranges through the
+final fit. Eight prepared profiles gained analysis coverage with unchanged omission
+decisions. Archive and waiting controls were exact. The current proven DA5.2 routes
+are accepted. Unverified deduplication and hybrid archive splices remain outside the
+exact-origin scope.
+
+An offline check can bind a key-change quote to the main part of a frozen multipart
+RCL receipt. Annexes and unavailable selection parents stay outside that profile.
+[Coverage and literal citation evidence](../assets/audits/2026-11-05-mixed-rcl-prepared-input/report.md).

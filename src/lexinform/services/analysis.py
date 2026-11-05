@@ -401,7 +401,7 @@ class _Loaded:
     selection: DocumentSelection = DocumentSelection()
     projection: TextProjection | None = None
     source_read: SourceReadCapture | None = None
-    loose_rcl_projection: bool = False
+    rcl_projection: Literal["annexes", "annexes_and_amendments"] | None = None
 
     @property
     def digest(self) -> str | None:
@@ -445,15 +445,31 @@ class _Loaded:
 class _FittedContext:
     ctx: BillContext
     projection: TextProjection | None
+    preserve_omissions: bool = False
 
     def __post_init__(self) -> None:
         if self.projection is not None and self.projection.text != self.ctx.text:
             raise ValueError("Fitted context differs from its text projection")
 
     def input_selection(self, selection: DocumentSelection) -> DocumentSelection:
-        return selection_for_input(
-            selection, self.ctx.text, projection=self.projection
-        ).without_text()
+        mapped = selection_for_input(selection, self.ctx.text, projection=self.projection)
+        if self.preserve_omissions and self.projection is not None:
+            previous = selection_for_input(selection, self.ctx.text)
+            if (
+                mapped.state != previous.state
+                or mapped.limitations != previous.limitations
+                or _omitted_normative_parts(mapped) != _omitted_normative_parts(previous)
+            ):
+                return previous.without_text()
+        return mapped.without_text()
+
+
+def _omitted_normative_parts(selection: DocumentSelection) -> set[int]:
+    return {
+        span.part_index
+        for span in selection.coverage
+        if span.stage == "analysis" and "normative part omitted from prepared input" in span.losses
+    }
 
 
 @dataclass(frozen=True)
@@ -3135,7 +3151,7 @@ class AnalysisService:
             try:
                 capture_receipt = (
                     capture_loose_rcl_input_receipt
-                    if loaded.loose_rcl_projection
+                    if loaded.rcl_projection == "annexes"
                     else capture_primary_input_receipt
                 )
                 receipt = capture_receipt(
@@ -3367,7 +3383,7 @@ class AnalysisService:
     ) -> _FittedContext:
         """Fit the original context and its copy map to the model's cost and input limits."""
         projection = loaded.projection if ctx.text == loaded.text else None
-        fitted = _FittedContext(ctx, projection)
+        fitted = _FittedContext(ctx, projection, loaded.rcl_projection == "annexes_and_amendments")
         limit = self._options.max_bill_cost_usd if cost_guard else 0.0
         price = (
             self._options.batch_input_price_usd_per_mtok
@@ -3440,7 +3456,7 @@ class AnalysisService:
                 limit,
                 measure=f"{counted} tokens after trimming to {len(reduced.text)} chars",
             )
-        return _FittedContext(reduced, projection)
+        return _FittedContext(reduced, projection, fitted.preserve_omissions)
 
     def _shorten(self, text: str, *, over_by: float) -> TextProjection | None:
         """Trace the same keyword cut, leaving room for the prompt and schema."""
@@ -3758,9 +3774,19 @@ class AnalysisService:
         )
         budgeted = self._budget.apply(combined, self._keywords.spans(combined))
         projection = None
-        loose_rcl_projection = False
+        rcl_projection: Literal["annexes", "annexes_and_amendments"] | None = None
         if amendments and trimmed.projection is not None and budgeted.projection is not None:
             amended = amended_input_projection(file.selection, trimmed.projection, combined)
+            if amended is None:
+                assembly = loose_normative_input_projection(
+                    document, file.selection, text, with_amendments=True
+                )
+                if assembly is not None:
+                    amended = amended_input_projection(
+                        file.selection, trimmed.projection, combined, assembly=assembly
+                    )
+                    if amended is not None:
+                        rcl_projection = "annexes_and_amendments"
             if amended is not None:
                 projection = budgeted.projection.compose(amended)
         if not amendments and trimmed.projection is not None and budgeted.projection is not None:
@@ -3770,7 +3796,7 @@ class AnalysisService:
                 assembly = loose_normative_input_projection(document, file.selection, text)
                 if assembly is not None:
                     projection = budgeted.projection.compose(trimmed.projection.compose(assembly))
-                    loose_rcl_projection = True
+                    rcl_projection = "annexes"
         source: TextSource = "documents" if document.kind == "rcl" else "pdf"
         return _Loaded(
             budgeted.text,
@@ -3781,7 +3807,7 @@ class AnalysisService:
             document=document,
             selection=file.selection,
             projection=projection,
-            loose_rcl_projection=loose_rcl_projection,
+            rcl_projection=rcl_projection,
         )
 
     def _load_scan(

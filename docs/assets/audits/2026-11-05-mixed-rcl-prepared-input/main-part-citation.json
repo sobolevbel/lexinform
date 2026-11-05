@@ -1,0 +1,83 @@
+{
+  "answer": "Controlled claim, no provider call.",
+  "driver_sha256": "92c11b5c61e6b714cd3d3368e7926243761d7303a201e536eb636b5767fcf66d",
+  "main_artifact_sha256": "c4568d7582962e62ac39d5d084936424f19edebae58b8925add7422d90360a5e",
+  "main_text_chars": 26182,
+  "main_text_sha256": "368e0fea8034fee29af37345061b13321a49a3e53799631ca045bb51e4a07101",
+  "missing_selection_parent": {
+    "block_origins": "unmapped",
+    "evidence": {
+      "block_origins": "unmapped",
+      "observed_text_span": [
+        204,
+        331
+      ],
+      "paid_origins": "unmapped",
+      "quote_occurrences": 1,
+      "semantic": "semantic_not_assessed",
+      "source_complete": false,
+      "status": "quote_present"
+    },
+    "input_span": null,
+    "physical_origins": "unmapped",
+    "reason": "source_binding_unavailable",
+    "semantic": "semantic_not_assessed",
+    "status": "unknown"
+  },
+  "parts": 4,
+  "pin_hashes": {
+    "corpus/12366453.json": "d688d78a6fce24fcc002804898ac1559872c5779b5fb4cec7a930e0639a71ab2",
+    "documents/files/587739.pdf": "c4568d7582962e62ac39d5d084936424f19edebae58b8925add7422d90360a5e",
+    "documents/files/587740.pdf": "7d61a08747d59296a1814d0dc0afde4736eb357235ea6480cb539f030e9eef41",
+    "documents/files/587741.pdf": "4db9e5070f716f8b34e1f6c0bb3c6f162bb66850e6696fd137f2f745a0e70ec3",
+    "documents/files/587742.pdf": "d3a2c333b29c0d70e8c2369c7c6dcedf547bbd4d1f86496268df0a1a477d3607"
+  },
+  "prepared_request_sha256": "f122920e49a6c9a037f57e6d204d3b7f3642bf41af5c29ff92d7d182c722b796",
+  "profile": "12366453/3/raw/normal",
+  "quote_sha256": "e2847c736055a9a3b081f377a370f22605cb65df3fd4ad8bd7ac1d6d5d40089d",
+  "source_match": {
+    "block_origins": "unmapped",
+    "evidence": {
+      "block_origins": "unmapped",
+      "observed_text_span": [
+        204,
+        331
+      ],
+      "paid_origins": "unmapped",
+      "quote_occurrences": 1,
+      "semantic": "semantic_not_assessed",
+      "source_complete": false,
+      "status": "quote_present"
+    },
+    "input_span": [
+      204,
+      331
+    ],
+    "physical_origins": "unmapped",
+    "reason": "retained_source_span",
+    "semantic": "semantic_not_assessed",
+    "status": "retained"
+  },
+  "source_role": "Technical project_text declaration over actual recorded main bill part.",
+  "source_selection_id": "selection-v1:a27cfe0618748daef0ab91e28488de66e40b3609994f13e7afe59c32745c7ad6",
+  "wrong_raw_artifact": {
+    "block_origins": "unmapped",
+    "evidence": {
+      "block_origins": "unmapped",
+      "observed_text_span": [
+        204,
+        331
+      ],
+      "paid_origins": "unmapped",
+      "quote_occurrences": 1,
+      "semantic": "semantic_not_assessed",
+      "source_complete": false,
+      "status": "quote_present"
+    },
+    "input_span": null,
+    "physical_origins": "unmapped",
+    "reason": "source_binding_mismatch",
+    "semantic": "semantic_not_assessed",
+    "status": "unknown"
+  }
+}

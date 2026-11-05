@@ -1,4 +1,5 @@
 from dataclasses import dataclass, replace
+from typing import Literal
 
 import pytest
 
@@ -8,15 +9,26 @@ from lexinform.models import (
     ArtifactIdentity,
     BatchIntent,
     BatchItemMeta,
+    BatchRequest,
     DocumentPart,
     DocumentSelection,
+    DocumentSelectionRecord,
     PreparedTextSegment,
 )
 from lexinform.models.analysis import AnalysisRecord
-from lexinform.models.input_receipts import PrimaryInputReceipt, input_map_sha256
+from lexinform.models.input_receipts import (
+    LooseRclInputPart,
+    LooseRclInputReceipt,
+    PrimaryInputReceipt,
+    input_map_sha256,
+    input_text_sha256,
+    primary_context_sha256,
+)
 from lexinform.models.reviews import ReviewDocument
+from lexinform.prepared_input import prepared_text_input
 from lexinform.primary_claim_input import ClaimInputCheck, validate_key_change_input
 from lexinform.primary_claims import validate_key_change_evidence
+from lexinform.sections import PAGE_BREAK
 from lexinform.text_projection import SourcePiece, project_pieces
 from tests.unit.test_input_receipts import NOW, meta, request
 from tests.unit.test_primary_claims import QUOTE, evidence, record, source
@@ -405,3 +417,172 @@ def test_result_rejects_incoherent_status_reason_and_coordinates() -> None:
         replace(result, input_span=(0, 1))
     with pytest.raises(ValueError, match="integer"):
         replace(result, input_span=(True, 2))
+
+
+ANNEX_QUOTE = QUOTE.replace("studentów", "pracowników")
+
+
+def loose_case(
+    *,
+    emit_main: bool = True,
+    main_role: Literal["bill", "unknown"] = "bill",
+) -> tuple[Case, DocumentSelectionRecord, ReviewDocument]:
+    main = source("Header\n" + QUOTE + "\nFooter")
+    annex = source("Annex\n" + ANNEX_QUOTE).model_copy(
+        update={
+            "identity": "annex/one",
+            "url": "https://example.test/annex",
+            "file_sha256": "e" * 64,
+        }
+    )
+    selection = DocumentSelection(
+        parts=(
+            DocumentPart(
+                url=main.url,
+                role=main_role,
+                sha256=main.file_sha256 or "",
+                text=main.text,
+                text_sha256=main.sha256,
+                text_end=len(main.text),
+            ),
+            DocumentPart(
+                url=annex.url,
+                role="normative_annex",
+                sha256=annex.file_sha256 or "",
+                text=annex.text,
+                text_sha256=annex.sha256,
+                text_end=len(annex.text),
+            ),
+        )
+    )
+    projection = project_pieces(
+        PAGE_BREAK.join((main.text, annex.text)),
+        (
+            SourcePiece(annex.text, len(main.text) + len(PAGE_BREAK)),
+            *((SourcePiece(PAGE_BREAK), SourcePiece(QUOTE, 7)) if emit_main else ()),
+        ),
+    )
+    initial = request(projection.text)
+    assert isinstance(initial.question, AnalysisQuestion), "the fixture freezes primary analysis"
+    ctx = initial.question.ctx.model_copy(update={"source_kind": "rcl"})
+    frozen = BatchRequest(
+        custom_id=initial.custom_id,
+        term=initial.term,
+        number=initial.number,
+        question=AnalysisQuestion(kind="analysis", ctx=ctx),
+    ).freeze(
+        payload_json=ctx.model_dump_json(),
+        model="gpt-6.1-sol",
+        prompt_version="pinned",
+        estimated_cost_usd=0.01,
+    )
+    prepared = prepared_text_input(selection, ctx.text, projection=projection)
+    assert frozen.payload_sha256 is not None, "the fixture retains the request identity"
+    receipt = LooseRclInputReceipt(
+        source_selection_id=prepared.source_selection_id,
+        source_parts=tuple(
+            LooseRclInputPart(**part.model_dump(), extraction_id="extraction-v1:" + digit * 64)
+            for part, digit in zip(prepared.parts, ("a", "b"), strict=True)
+        ),
+        context_sha256=primary_context_sha256(ctx),
+        request_sha256=frozen.payload_sha256,
+        text_sha256=input_text_sha256(ctx.text),
+        text_chars=len(ctx.text),
+        full_map_sha256=input_map_sha256(prepared.segments),
+        segments=prepared.segments,
+    )
+    retained = DocumentSelectionRecord.from_selection(selection)
+    metadata = meta().model_copy(
+        update={
+            "selection": retained.selection,
+            "source_kind": "rcl",
+            "source_url": main.url,
+            "input_chars": len(ctx.text),
+            "prepared_input_receipt": receipt,
+        }
+    )
+    intent = BatchIntent.from_request(
+        request=frozen, meta=metadata, provider="openai", created_at=NOW
+    )
+    answer = record().model_copy(
+        update={
+            "request_sha256": frozen.payload_sha256,
+            "input_chars": len(ctx.text),
+            "source_kind": "rcl",
+            "source_url": main.url,
+        }
+    )
+    return Case(answer, main, intent), retained, annex
+
+
+@pytest.mark.parametrize("emit_main", [True, False])
+def test_loose_rcl_only_uses_main_part_segments(emit_main: bool) -> None:
+    item, selection, annex = loose_case(emit_main=emit_main)
+
+    checked = validate_key_change_input(
+        item.record,
+        evidence(item.document),
+        (item.document,),
+        intent=item.intent,
+        source_selection=selection,
+    )
+
+    expected = len(annex.text) + len(PAGE_BREAK)
+    assert checked.status == ("retained" if emit_main else "omitted")
+    assert checked.input_span == ((expected, expected + len(QUOTE)) if emit_main else None)
+    assert checked.semantic == "semantic_not_assessed"
+    assert checked.block_origins == checked.physical_origins == "unmapped"
+
+
+def test_loose_rcl_does_not_treat_an_annex_quote_as_main_text() -> None:
+    item, selection, annex = loose_case()
+    claim = evidence(annex)
+    claim = replace(claim, citation=claim.citation.model_copy(update={"quote": ANNEX_QUOTE}))
+
+    checked = validate_key_change_input(
+        item.record, claim, (annex,), intent=item.intent, source_selection=selection
+    )
+
+    assert checked.evidence.status == "quote_present"
+    assert checked.status == "unknown" and checked.reason == "source_binding_mismatch"
+
+
+@pytest.mark.parametrize("fault", ["missing", "part_swap", "file", "text", "unknown_role"])
+def test_loose_rcl_requires_the_exact_recorded_main_part(fault: str) -> None:
+    item, selection, _ = loose_case(main_role="unknown" if fault == "unknown_role" else "bill")
+    document = item.document
+    if fault == "part_swap":
+        metadata = item.intent.meta
+        assert isinstance(metadata, BatchItemMeta), "the fixture uses primary metadata"
+        first, *rest = metadata.selection.parts
+        changed = first.model_copy(update={"url": "https://other.test/doc", "sha256": "1" * 64})
+        document = document.model_copy(update={"url": changed.url, "file_sha256": changed.sha256})
+        item = replace(
+            change_meta(
+                item,
+                selection=metadata.selection.model_copy(update={"parts": (changed, *rest)}),
+                source_url=changed.url,
+            ),
+            record=item.record.model_copy(update={"source_url": changed.url}),
+        )
+    elif fault == "file":
+        document = document.model_copy(update={"file_sha256": "1" * 64})
+    elif fault == "text":
+        changed_text = source(document.text + " Extra text.")
+        document = document.model_copy(
+            update={"text": changed_text.text, "sha256": changed_text.sha256}
+        )
+
+    checked = validate_key_change_input(
+        item.record,
+        evidence(document),
+        (document,),
+        intent=item.intent,
+        source_selection=None if fault == "missing" else selection,
+    )
+
+    assert checked.evidence.status == "quote_present"
+    assert checked.status == "unknown"
+    assert checked.reason == (
+        "source_binding_unavailable" if fault == "missing" else "source_binding_mismatch"
+    )

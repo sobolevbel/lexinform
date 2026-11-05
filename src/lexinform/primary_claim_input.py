@@ -1,11 +1,13 @@
 """Offline span checks describe frozen primary context text, never semantic or paid support."""
 
+import re
 from dataclasses import dataclass, field
 from typing import Literal
 
 from lexinform.models.analysis import AnalysisRecord
 from lexinform.models.batch import AnalysisQuestion, BatchIntent, BatchItemMeta
-from lexinform.models.input_receipts import PrimaryInputReceipt
+from lexinform.models.document_history import DocumentSelectionRecord
+from lexinform.models.input_receipts import LooseRclInputReceipt, PrimaryInputReceipt
 from lexinform.models.reviews import ReviewDocument
 from lexinform.primary_claims import (
     ClaimEvidenceCheck,
@@ -75,6 +77,7 @@ def validate_key_change_input(
     documents: tuple[ReviewDocument, ...],
     *,
     intent: BatchIntent | None,
+    source_selection: DocumentSelectionRecord | None = None,
 ) -> ClaimInputCheck:
     checked = validate_key_change_evidence(record, evidence, documents)
     if evidence is None or checked.observed_text_span is None:
@@ -99,8 +102,6 @@ def validate_key_change_input(
     receipt = meta.prepared_input_receipt
     if receipt is None:
         return ClaimInputCheck(checked, "unknown", "receipt_missing")
-    if not isinstance(receipt, PrimaryInputReceipt):
-        return ClaimInputCheck(checked, "unknown", "source_binding_unavailable")
     ctx = question.ctx
     if (
         frozen.request.number != ctx.number
@@ -116,12 +117,16 @@ def validate_key_change_input(
     ):
         return ClaimInputCheck(checked, "unknown", "request_binding_mismatch")
     document = next(doc for doc in documents if doc.identity == evidence.citation.document_id)
-    binding = _source_binding(document, meta, receipt, record.source_url)
+    binding = (
+        _loose_rcl_main_binding(document, meta, receipt, record.source_url, source_selection)
+        if isinstance(receipt, LooseRclInputReceipt)
+        else _source_binding(document, meta, receipt, record.source_url)
+    )
     if binding is not None:
         return ClaimInputCheck(checked, "unknown", binding)
     runs: list[tuple[int, int, int, int]] = []
     for segment in receipt.segments:
-        if segment.origin != "source":
+        if segment.origin != "source" or segment.part_index != 0:
             continue
         start, end = segment.source_start, segment.source_end
         assert start is not None and end is not None, (
@@ -198,6 +203,40 @@ def _source_binding(
         or part.text_start < 0
         or part.text
         and part.text != document.text
+    ):
+        return "source_binding_mismatch"
+    return None
+
+
+def _loose_rcl_main_binding(
+    document: ReviewDocument,
+    meta: BatchItemMeta,
+    receipt: LooseRclInputReceipt,
+    record_url: str | None,
+    source_selection: DocumentSelectionRecord | None,
+) -> ClaimInputReason | None:
+    if source_selection is None or not document.url or not document.file_sha256 or not record_url:
+        return "source_binding_unavailable"
+    source = source_selection.selection
+    if (
+        source_selection.selection_id != receipt.source_selection_id
+        or (source.question, source.policy_version)
+        != (meta.selection.question, meta.selection.policy_version)
+        or any(span.stage == "analysis" for span in source.coverage)
+        or source.parts != meta.selection.without_text().parts
+        or len({part.url for part in source.parts}) != len(source.parts)
+    ):
+        return "source_binding_mismatch"
+    part = source.parts[0]
+    recorded = receipt.source_parts[0]
+    if (
+        part.role != "bill"
+        or not re.fullmatch(r"[0-9a-f]{64}", part.sha256)
+        or part.sha256 != document.file_sha256
+        or part.url != document.url
+        or record_url != part.url
+        or recorded.text_sha256 != document.sha256
+        or recorded.chars != len(document.text)
     ):
         return "source_binding_mismatch"
     return None
