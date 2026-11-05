@@ -15,6 +15,7 @@ from lexinform.adapters.document_work import (
     revision_handoff_checks,
 )
 from lexinform.models import AmendmentRevisionApplicationWork, BatchRequest, ReviewWork
+from lexinform.saved_clock import saved_clock_age
 from tools.corpus_artifacts import write_json
 from tools.observed_latency import observed_latency
 from tools.sqlite_snapshot import open_snapshot
@@ -52,22 +53,11 @@ def work_ages(
         unknown: Counter[str] = Counter()
         for owner in items:
             raw = owner.get(field_name)
-            if not isinstance(raw, str) or not raw:
-                unknown["missing_timestamp"] += 1
-                continue
-            try:
-                started = datetime.fromisoformat(raw)
-            except ValueError:
-                unknown["invalid_timestamp"] += 1
-                continue
-            if started.utcoffset() is None:
-                unknown["timezone_unknown"] += 1
-                continue
-            elapsed = (observed_at - started).total_seconds()
-            if elapsed < 0:
-                unknown["timestamp_after_observation"] += 1
-                continue
-            ages.append((int(elapsed), owner["ref"]))
+            age = saved_clock_age(raw if isinstance(raw, str) else None, observed_at)
+            if age.unknown is not None:
+                unknown[age.unknown] += 1
+            elif age.seconds is not None:
+                ages.append((age.seconds, owner["ref"]))
         oldest = max(ages, key=lambda item: item[0]) if ages else None
         records.append(
             {

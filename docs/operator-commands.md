@@ -250,7 +250,11 @@ to send if either identity cannot be verified. The bot must be able to post ther
 between the runs: the queues as they stand, how many bills are followed, and by bill number and
 kind the posts stuck `pending`/`unknown` — nothing retries those on its own (BUGS.md #4), so this
 is what tells the operator one is there; use `/delivery ID` and an audited resolution after
-checking the channel. Under «failing checks» it names
+checking the channel. Submission intents are grouped by purpose and state, counting saved rows
+rather than unique bills. Their oldest known age runs from recorded intent creation, not entry
+into the current state or a source event; unknown clocks are shown explicitly. `submitting`
+means submission is uncertain, not that a request is known to be unsent. At most six groups are
+shown; `lexinform batch-intents` lists the individual rows. Under «failing checks» it names
 the live bills whose source has failed `FAILING_CHECK_MIN` (3) checks in a row — a listing that
 never returns a row is no error and no counter of any run report (B83). `/runs` is the row per run that
 `lexinform runs` prints — what each found, posted and cost — and `/cost` breaks the window's

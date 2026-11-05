@@ -1,0 +1,52 @@
+{
+  "reviewer": "secondary_dependency_review",
+  "status": "clear",
+  "frozen_patch_sha256": "cd19799f7a339e7ec02458166a192fb8374cc66d5c387bc2b68df86029b15844",
+  "owned_source_pins": {
+    "src/lexinform/saved_clock.py": {
+      "base_sha256": null,
+      "candidate_sha256": "4e73ec52a890c28aa6214ef90be54e87bd0be1ea5492f2b0edb94dbd66e6ee60"
+    },
+    "src/lexinform/intent_ages.py": {
+      "base_sha256": null,
+      "candidate_sha256": "888968d202adba00d0eeaea14988211fb9ce2bcd06fadc3da428ceeb8d0fdc0e"
+    },
+    "src/lexinform/models/commands.py": {
+      "base_sha256": "01038bc636dc79daf1810e7897236f74d2aae966a1fce7184df3d14d12b95ec4",
+      "candidate_sha256": "0f11558cf88be89d0792eee7c52039927496c53138833a12e7f286bc88ff3053"
+    },
+    "src/lexinform/services/commands.py": {
+      "base_sha256": "eaa34c5708851d8c683f4a73cead5150b5383e4070facbf7354739d67f99b768",
+      "candidate_sha256": "7aac9f1ce321332f84b9dd7dfc8b3beb401d5e5a0f7ffda62d00f55d5132b86d"
+    },
+    "src/lexinform/adapters/telegram_format.py": {
+      "base_sha256": "b833dadd0ecd99c4c1f37861723312bd9104908c9ee4bb0548c85e414182b2e5",
+      "candidate_sha256": "96313b1c84d3083e66b2f48f3ad2bb40589080742e439628d54638e7e2894702"
+    },
+    "tools/work_doctor.py": {
+      "base_sha256": "f5d7798ec5ecb7ace46f0e66455fbcfdd7faa4790de52ecae75df325fd13f9b7",
+      "candidate_sha256": "7c64805a4907ab65691d83417487389b3f01fb46524316bb0850d6c1043805cc"
+    },
+    "tests/unit/test_status_intent_ages.py": {
+      "base_sha256": null,
+      "candidate_sha256": "145a4e408d59a9f828455fc6bf31177ec538c4fb9165f4c0424d6e4aa7351f69"
+    },
+    "tests/scenario/test_commands.py": {
+      "base_sha256": "ff498d1a25c1db0e8a6deabf0812e31b1aac5f23cf49da44a506ade1dcb898d1",
+      "candidate_sha256": "006221f7685feb6e109c55f73ec136097396c88f8177c576c65630da26729803"
+    },
+    "docs/operator-commands.md": {
+      "base_sha256": "27ead25e5f92e66a3bddc38c8a0e14e4ac1e80ec0b6e26c1941a113e4670b135",
+      "candidate_sha256": "478ec6a7a6473a6b6143df4916cc67d6469343bc18dd680b71c0f44439cb2cef"
+    }
+  },
+  "root_delta": {
+    "status": "clear",
+    "scope": "Wall timedelta minus offsets avoids UTC datetime range overflow and preserves DST-fold elapsed time; two date-limit controls through helper and doctor",
+    "sha256": {
+      "src/lexinform/saved_clock.py": "c27f3481466cf0a4741caffbd6f74d4d3d653e6bd28540b6cdc432264be3ceed",
+      "tests/unit/test_status_intent_ages.py": "ed0dbc2078081530cf193691bb88ed3a73a1b6f4cf6e842cfdbf364274e247fd"
+    }
+  },
+  "execution": "Read-only source/evidence review, no tests/edits/network. Root independently qualifies."
+}

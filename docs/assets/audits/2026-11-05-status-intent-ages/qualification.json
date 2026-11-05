@@ -1,0 +1,46 @@
+{
+  "stage": "J228 status intent creation ages and shared clock evaluator",
+  "full_tests": 8269,
+  "pytest_xml": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "8269",
+    "time": "284.056",
+    "timestamp": "2026-11-05T00:54:07.672816+01:00",
+    "hostname": "Yauhenis-MacBook-Pro.local"
+  },
+  "new_unit_cases": 15,
+  "new_scenario_cases": 0,
+  "existing_scenario_extended": true,
+  "focused_root_cases": 207,
+  "strict_mypy_files": 721,
+  "coverage_percent": 92,
+  "mypy_ruff_format": "green",
+  "source_config_pins": 790,
+  "source_freeze_exact": true,
+  "state_proof": "state-proof.json",
+  "proof_sha256": {
+    "full.xml": "753269c8e59aadaace1785c67e8cd8ae250ca4baf1e55a354ebd7f4f01bd2f55",
+    "full.log": "4a2178dcbc8c783f80a8533f8ae927ce6a9d1f3b0e4ecfe94705bade2e0d5ae9",
+    "source-freeze.json": "8d0053b738007d70a9295df137439687b0b496afcbee21bffad6efce5898457d",
+    "state-proof.json": "5a1f7bb1204972f7946b9fc00c4279fcf06308d4d3ff2841898eab32964c295f",
+    "baseline-default.json": "ac962f45ac89588cf54a86d645e272328088afd4c37dccc02659a0191be7eee7",
+    "baseline-clock.json": "214ccade63064d52588088297a75a206a485fd29f543f0e7e8ffb08bbae2ad94",
+    "baseline-quiet.json": "c1ff5cdb87583c135652507f0c7e70713708a2f5a3b941acd864bdc45d809589"
+  },
+  "scope": "Derived intent-row creation ages only; no persisted fields/source/provider/state-entry latency or auto retry",
+  "previous_release": {
+    "target": "778bbd019eece72a361406a861f7511c779448e0",
+    "ci": 41936926006,
+    "deploy": 41937838598,
+    "complete": true
+  },
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  }
+}

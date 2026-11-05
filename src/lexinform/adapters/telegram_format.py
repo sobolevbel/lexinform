@@ -2363,6 +2363,24 @@ class MessageFormatter:
             )
         if snapshot.batches or snapshot.queued_intents or snapshot.uncertain_intents:
             lines.append(self._batches_block(snapshot))
+        if snapshot.intent_ages:
+            age_lines = ["⏱ <b>intent rows</b> · age since intent creation"]
+            for group in snapshot.intent_ages[:6]:
+                state = "submission uncertain" if group.state == "submitting" else "queued"
+                line = f"• {esc(group.purpose)}/{state}: {group.count} · {group.known_ages} known"
+                if group.oldest_seconds is not None:
+                    line += f" · oldest {group.oldest_seconds / 3600:.1f} h"
+                    if group.oldest_number is not None:
+                        line += f" · {group.oldest_term}/{esc(_clip(group.oldest_number, 48))}"
+                if group.unknown_ages:
+                    line += " · unknown " + ", ".join(
+                        f"{esc(reason)}={count}"
+                        for reason, count in sorted(group.unknown_ages.items())
+                    )
+                age_lines.append(line)
+            if len(snapshot.intent_ages) > 6:
+                age_lines.append(f"… {len(snapshot.intent_ages) - 6} more group(s)")
+            lines.append("\n".join(age_lines))
         if snapshot.awaiting_batch and snapshot.observed_at is not None:
             lines.append(
                 "⏳ <b>awaiting a batch digest</b>\n"

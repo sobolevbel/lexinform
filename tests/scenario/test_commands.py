@@ -9,8 +9,13 @@ import pytest
 from lexinform.errors import LlmUnavailableError
 from lexinform.models import (
     FAILING_CHECK_MIN,
+    BatchIntent,
+    BatchItemMeta,
+    BatchRequest,
     BillStatus,
     CheckAspect,
+    NameContext,
+    NameQuestion,
     OutcomeStatus,
     Publication,
     PublicationKind,
@@ -1055,6 +1060,34 @@ def test_status_shows_the_open_batch_and_a_batch_pending_bill_nothing_holds() ->
     w.add_bill("3100", TITLE)
     w.run(max_analyze=1)  # 3039 filed to a batch, 3100 still waiting
     w.repo.set_status(10, "3100", BillStatus.BATCH_PENDING)
+    created = w.clock.now()
+    for custom_id in ("name-queued", "name-uncertain"):
+        w.repo.save_batch_intent(
+            BatchIntent(
+                request=BatchRequest(
+                    custom_id=custom_id,
+                    term=10,
+                    number="3039",
+                    question=NameQuestion(
+                        ctx=NameContext(number="3039", title=TITLE, summary="Summary")
+                    ),
+                ),
+                meta=BatchItemMeta(
+                    input_chars=7,
+                    truncated=False,
+                    text_source="metadata_only",
+                    source_kind="print",
+                    source_url=None,
+                    revision=1,
+                    text_sha256=None,
+                    memo_key="name-key",
+                ),
+                provider="openai",
+                created_at=created,
+            )
+        )
+    w.repo.mark_batch_intents_submitting(["name-uncertain"])
+    w.clock.advance(days=2)
     w.command("/status")
 
     _commands_only(w)
@@ -1063,7 +1096,12 @@ def test_status_shows_the_open_batch_and_a_batch_pending_bill_nothing_holds() ->
     snapshot = outcome.snapshot
     assert snapshot is not None, "/status answers with a snapshot"
     assert [b.request_count for b in snapshot.batches] == [1]
-    assert (snapshot.queued_intents, snapshot.uncertain_intents) == (0, 0)
+    assert (snapshot.queued_intents, snapshot.uncertain_intents) == (1, 1)
+    assert [(g.purpose, g.state, g.count, g.oldest_seconds) for g in snapshot.intent_ages] == [
+        ("name", "queued", 1, 172800),
+        ("name", "submitting", 1, 172800),
+    ]
+    assert snapshot.observed_at == w.clock.now()
     assert [b.number for b in snapshot.orphaned] == ["3100"]
 
 

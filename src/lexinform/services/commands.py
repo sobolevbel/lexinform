@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from zoneinfo import ZoneInfo
 
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError, StateCheckpointError
+from lexinform.intent_ages import intent_ages
 from lexinform.log_context import log_context
 from lexinform.models import (
     DISPATCHED,
@@ -958,7 +959,8 @@ class CommandService:
     def _status(self) -> CommandOutcome:
         """The queues, what is stuck and what the recent runs cost — the state between the run
         reports, which each say what one run did and nothing about what has piled up."""
-        since = self._clock.now() - dt.timedelta(days=self._status_days)
+        observed_at = self._clock.now()
+        since = observed_at - dt.timedelta(days=self._status_days)
         batches = tuple(self._repo.list_open_llm_batches())
         queued = self._repo.list_queued_batch_intents()
         uncertain = self._repo.list_submitting_batch_intents()
@@ -995,6 +997,7 @@ class CommandService:
             batches=batches,
             queued_intents=len(queued),
             uncertain_intents=len(uncertain),
+            intent_ages=intent_ages((*queued, *uncertain), observed_at),
             document_work=self._repo.count_document_work(),
             orphaned=tuple(b for b in in_flight if (b.term, b.number) not in held),
             awaiting_batch=tuple(
@@ -1007,7 +1010,7 @@ class CommandService:
                     min_failures=FAILING_CHECK_MIN, limit=self._status_bills
                 )
             ),
-            observed_at=self._clock.now(),
+            observed_at=observed_at,
         )
         return CommandOutcome(
             status=OutcomeStatus.REPORTED,

@@ -16,7 +16,7 @@ from urllib.parse import parse_qs, urlparse
 from pydantic import BaseModel, ConfigDict, Field
 
 from lexinform.models.analysis import AnalysisRecord, TokenUsage
-from lexinform.models.batch import LlmBatch
+from lexinform.models.batch import BatchKind, LlmBatch
 from lexinform.models.bill import Bill, Publication
 from lexinform.models.content import ContentHistoryPage, ContentHistoryView
 from lexinform.models.digest import week_bounds
@@ -32,6 +32,7 @@ from lexinform.models.rcl import normalize_wykaz_number
 from lexinform.models.report import RunReport
 from lexinform.models.sejm import PrintInfo
 from lexinform.models.source_checks import AUTO_OBSERVATION, ObservationMode, SourceCheck
+from lexinform.saved_clock import ClockUnknown
 
 
 class IncomingCommand(BaseModel):
@@ -539,6 +540,21 @@ class OutcomeStatus(StrEnum):
     ERROR = "error"
 
 
+class IntentAgeGroup(BaseModel):
+    """Transient submission-intent row counts and age since recorded creation."""
+
+    model_config = ConfigDict(frozen=True)
+
+    purpose: BatchKind
+    state: Literal["queued", "submitting"]
+    count: int
+    known_ages: int
+    unknown_ages: dict[ClockUnknown, int] = Field(default_factory=dict)
+    oldest_seconds: int | None = None
+    oldest_term: int | None = None
+    oldest_number: str | None = None
+
+
 class StatusSnapshot(BaseModel):
     """What `/status` answers: the queues as they stand, what is stuck, and what the last runs
     did and cost.
@@ -560,6 +576,7 @@ class StatusSnapshot(BaseModel):
     batches: tuple[LlmBatch, ...] = ()
     queued_intents: int = 0
     uncertain_intents: int = 0
+    intent_ages: tuple[IntentAgeGroup, ...] = Field(default=(), exclude_if=lambda value: not value)
     document_work: dict[str, int] = Field(default_factory=dict)
     # `batch_pending` with neither an open batch item nor an intent: nothing will ever answer it.
     orphaned: tuple[Bill, ...] = ()

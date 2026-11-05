@@ -37,3 +37,5 @@ amendments history; DA7.5 stays partial. No paid calls, source downloads or prod
 [source pins](source-pins.json), [independent review](peer-review.json).
 
 Previous release: [exact CI and relay verification](previous-release.json).
+
+Actual release: [exact CI and relay verification](release.json), commit778bbd01.

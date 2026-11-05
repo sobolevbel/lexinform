@@ -10319,3 +10319,27 @@ DA7.5 partial;74total/43complete/6explicitNA/25applicableopen.
 [Report](../assets/audits/2026-11-05-delivery-content-history/report.md),
 [qualification](../assets/audits/2026-11-05-delivery-content-history/qualification.json),
 [state proof](../assets/audits/2026-11-05-delivery-content-history/state-proof.json).
+
+<a id="j228"></a>
+
+## J228 — intent creation ages and shared saved-clock evaluation
+
+5 November 2026. /status reuses existing queued/submitting lists and one injected Clock to
+group intent rows by purpose/state, report known/unknown ages and oldest known owner. Creation
+age is explicit; source/provider/current-state clocks are not inferred. Submitting uncertain.
+Caps6rendered groups, clipped/escaped refs, omitted counts; emptygroups omitted fromJSON,
+quiet status unchanged. No repository/schema/clock-field/provider/submission/retry changes.
+
+Pure saved-clock evaluator is shared with work_doctor, retaining its four unknown codes and
+non-string SQL-clock behavior. Root date-limit controls avoid UTC-conversion overflow without
+losing elapsed DST-fold semantics.15newunit cases; existing status scenario extended, none
+added. Root207focused,mypy721/Ruff/formatgreen; independent9file +root2file review clear.
+Fresh7b208 default/explicit-clock doctor reports, quiet status/model JSON byte exact, DBhash
+unchanged. This is not hosted/provider/source latency or natural full-cycle acceptance.
+Fullgate8269tests/284.056s/92%,mypy721/Ruff/formatgreen;790source/config pins exact. Strict staged docs precede commit.
+J227778bbd01 exactCI41936926006/relay41937838598 verified;45shealth/timer.
+DA10.3 partial;74total/43complete/6explicitNA/25applicableopen.
+
+[Report](../assets/audits/2026-11-05-status-intent-ages/report.md),
+[qualification](../assets/audits/2026-11-05-status-intent-ages/qualification.json),
+[state proof](../assets/audits/2026-11-05-status-intent-ages/state-proof.json).
