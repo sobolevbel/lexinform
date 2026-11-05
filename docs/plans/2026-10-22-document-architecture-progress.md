@@ -11339,3 +11339,13 @@ An optional bounded trace field can describe why the selected loose candidate st
 its normative annex. The reader verifies the actual parent slot and blocked state. Old
 trace bytes and identities are exact. The writer remains a separate release stage.
 [Compatibility and checkpoint parity](../assets/audits/2026-11-05-normative-annex-gap-reader/report.md).
+
+<a id="j268"></a>
+
+## J268 — record the actual blocked normative annex
+
+The selected loose candidate now retains the terminal annex reason and exact URL slot.
+Selection behavior and retry semantics are preserved. A trace with insufficient capacity
+keeps its prior evidence. The 48-profile corpus replay changed only two diagnostic
+records and their trace links.
+[Paired evidence and source limits](../assets/audits/2026-11-05-normative-annex-gap-writer/report.md).

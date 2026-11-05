@@ -1,0 +1,44 @@
+{
+  "compared_profiles": 48,
+  "only_declared_trace_delta": true,
+  "changes": {
+    "12394200/2/cached/normal": {
+      "traces": [
+        {
+          "file_sha256": "f863fec92677de339db2d771781afd5dde00b4017c94eca7681850f0a8caabe9",
+          "index": 0,
+          "normative_index": 0,
+          "phase": "version_comparison",
+          "reason": "returned_no_text"
+        }
+      ],
+      "persisted_traces": [
+        {
+          "file_sha256": "f863fec92677de339db2d771781afd5dde00b4017c94eca7681850f0a8caabe9",
+          "index": 0,
+          "normative_index": 0,
+          "phase": "version_comparison",
+          "reason": "returned_no_text"
+        }
+      ]
+    },
+    "12394200/2/raw/normal": {
+      "traces": [
+        {
+          "index": 0,
+          "normative_index": 0,
+          "phase": "version_comparison",
+          "reason": "no_returned_file"
+        }
+      ],
+      "persisted_traces": [
+        {
+          "index": 0,
+          "normative_index": 0,
+          "phase": "version_comparison",
+          "reason": "no_returned_file"
+        }
+      ]
+    }
+  }
+}

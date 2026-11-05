@@ -16,6 +16,7 @@ from lexinform.sections import APPENDIX_KINDS, Kind
 
 MAX_CANDIDATE_TRACE_BYTES = 4_096
 CandidateTraceResult = Literal["selected", "ambiguous", "fallback"]
+NormativeAnnexGapReason = Literal["no_returned_file", "returned_no_text", "non_annex_appendix"]
 CandidateTraceReason = Literal[
     "version_choice",
     "version_conflict",
@@ -350,7 +351,7 @@ class NormativeAnnexGap(BaseModel):
     phase: Literal["version_comparison", "fallback"]
     index: Position
     normative_index: Position
-    reason: Literal["no_returned_file", "returned_no_text", "non_annex_appendix"]
+    reason: NormativeAnnexGapReason
     file_sha256: Sha256 | None = Field(default=None, exclude_if=lambda value: value is None)
     kind: Kind | None = Field(default=None, exclude_if=lambda value: value is None)
 

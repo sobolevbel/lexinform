@@ -11,6 +11,7 @@ from lexinform.document_versions import (
     normative_annex_key,
     regulation_support,
 )
+from lexinform.models.candidate_trace import NormativeAnnexGapReason
 from lexinform.models.document_reads import LoadedFile
 from lexinform.models.documents import DocumentPart, DocumentSelection
 from lexinform.models.sejm import TextDocument
@@ -72,15 +73,31 @@ def required_part(
     )
 
 
+@dataclass(frozen=True)
+class NormativeAnnexFailure:
+    blocked: LoadedFile
+    reason: NormativeAnnexGapReason
+    kind: Kind | None = None
+
+
 def normative_part(
     bundle: BundleAssembly, url: str, file: LoadedFile | None
-) -> BundleAssembly | LoadedFile:
+) -> BundleAssembly | NormativeAnnexFailure:
     if file is None:
-        return _blocked("waiting", f"{url}: normative annex unavailable")
+        return NormativeAnnexFailure(
+            _blocked("waiting", f"{url}: normative annex unavailable"), "no_returned_file"
+        )
     if file.text is None:
-        return _blocked("waiting", f"{url}: normative annex unreadable")
-    if document_kind(file.text) in APPENDIX_KINDS - {"annex"}:
-        return _blocked("ambiguous", f"{url}: normative annex role not confirmed")
+        return NormativeAnnexFailure(
+            _blocked("waiting", f"{url}: normative annex unreadable"), "returned_no_text"
+        )
+    kind = document_kind(file.text)
+    if kind in APPENDIX_KINDS - {"annex"}:
+        return NormativeAnnexFailure(
+            _blocked("ambiguous", f"{url}: normative annex role not confirmed"),
+            "non_annex_appendix",
+            kind,
+        )
     return replace(
         bundle,
         normative=(*bundle.normative, file.text),

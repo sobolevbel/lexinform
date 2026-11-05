@@ -34,6 +34,7 @@ from lexinform.document_candidates import (
 )
 from lexinform.document_composition import (
     CandidateFallback,
+    NormativeAnnexFailure,
     amendment_part,
     finalize_selection,
     finish_bundle,
@@ -67,7 +68,11 @@ from lexinform.models import (
     ScannedDocument,
     TextDocument,
 )
-from lexinform.models.candidate_trace import CandidateTraceReason, CandidateTraceResult
+from lexinform.models.candidate_trace import (
+    CandidateTraceReason,
+    CandidateTraceResult,
+    NormativeAnnexGap,
+)
 from lexinform.models.document_reads import DocumentPhysicalDiagnostics
 from lexinform.models.document_reads import LoadedFile as LoadedFile
 from lexinform.models.source_omissions import SourceOmissionOwner
@@ -127,17 +132,25 @@ _ARCHIVE_READ_SINK: ContextVar[
 ] = ContextVar("archive_read_sink", default=None)
 
 
+@dataclass
+class _CompositionCapture:
+    required: RequiredPartCapture
+    normative_gap: NormativeAnnexGap | None = None
+
+
 @dataclass(frozen=True)
-class _RequiredScope:
+class _CompositionScope:
     owner: object
     thread_id: int
-    capture: RequiredPartCapture
+    capture: _CompositionCapture
     phase: Phase | None = None
     index: int | None = None
     document: TextDocument | None = None
 
 
-_REQUIRED_SCOPE: ContextVar[_RequiredScope | None] = ContextVar("required_part_scope", default=None)
+_COMPOSITION_SCOPE: ContextVar[_CompositionScope | None] = ContextVar(
+    "composition_scope", default=None
+)
 
 
 class TextLoader:
@@ -662,7 +675,8 @@ class TextLoader:
         bundle = start_bundle(self.read(document.url), min_chars=MIN_TEXT_CHARS)
         if isinstance(bundle, LoadedFile):
             return bundle
-        scope = _REQUIRED_SCOPE.get()
+        scope = _COMPOSITION_SCOPE.get()
+        attempt: tuple[_CompositionCapture, Phase, int] | None = None
         if (
             scope is not None
             and scope.owner is self
@@ -672,6 +686,8 @@ class TextLoader:
             and scope.index is not None
         ):
             phase, index = scope.phase, scope.index
+            capture = scope.capture
+            attempt = (capture, phase, index)
 
             def observed(position: int, url: str, kind: Kind, file: LoadedFile) -> None:
                 try:
@@ -680,25 +696,37 @@ class TextLoader:
                         or document.required_urls[position] != url
                     ):
                         raise ValueError("required exclusion differs from its actual relation")
-                    scope.capture.observe(phase, index, position, kind, file)
+                    capture.required.observe(phase, index, position, kind, file)
                 except Exception:
-                    scope.capture.fail()
+                    scope.capture.required.fail()
 
             bundle = replace(bundle, required_sink=observed)
         for url in document.required_urls:
             bundle = required_part(bundle, url, self.read(url))
             if isinstance(bundle, LoadedFile):
                 return bundle
-        for url in document.normative_urls:
+        for position, url in enumerate(document.normative_urls):
             try:
                 annex = self.read(url)
             except ServiceUnavailableError:
                 raise
             except Exception:
                 annex = None
-            bundle = normative_part(bundle, url, annex)
-            if isinstance(bundle, LoadedFile):
-                return bundle
+            composed = normative_part(bundle, url, annex)
+            if isinstance(composed, NormativeAnnexFailure):
+                if attempt is not None:
+                    gap_capture, gap_phase, gap_index = attempt
+                    with suppress(Exception):
+                        gap_capture.normative_gap = NormativeAnnexGap(
+                            phase=gap_phase,
+                            index=gap_index,
+                            normative_index=position,
+                            reason=composed.reason,
+                            file_sha256=annex.sha256 if annex is not None else None,
+                            kind=composed.kind,
+                        )
+                return composed.blocked
+            bundle = composed
         bundle = finish_normative(bundle)
         for url in document.amendment_urls:
             bundle = amendment_part(bundle, url, self.read(url))
@@ -721,7 +749,7 @@ class TextLoader:
         attempts: ArchiveDispositionAccumulator | None = None
         with suppress(Exception):
             attempts = ArchiveDispositionAccumulator()
-        with self._required_capture_scope() as required_capture:
+        with self._composition_capture_scope() as composition:
             selected, loaded, result, reason = self._select_document(
                 document, dispositions, attempts
             )
@@ -748,11 +776,16 @@ class TextLoader:
         if trace is not None and attempts is not None:
             with suppress(Exception):
                 trace = attempts.enrich(trace)
-        if trace is not None and required_capture is not None:
+        if trace is not None and composition is not None:
             with suppress(Exception):
-                trace = required_capture.enrich(
+                trace = composition.required.enrich(
                     trace, attempts.enrich if attempts is not None else None
                 )
+            if composition.normative_gap is not None:
+                with suppress(Exception):
+                    trace = CandidateDispositionTrace.model_validate(
+                        {**trace.model_dump(), "normative_annex_gap": composition.normative_gap}
+                    )
         if trace is not None and trace.is_routine_singleton and trace.archive_members is None:
             trace = None
         return selected, replace(
@@ -764,12 +797,12 @@ class TextLoader:
         )
 
     @contextmanager
-    def _required_capture_scope(self) -> Iterator[RequiredPartCapture | None]:
+    def _composition_capture_scope(self) -> Iterator[_CompositionCapture | None]:
         capture = None
-        token: Token[_RequiredScope | None] | None = None
+        token: Token[_CompositionScope | None] | None = None
         try:
-            capture = RequiredPartCapture()
-            token = _REQUIRED_SCOPE.set(_RequiredScope(self, threading.get_ident(), capture))
+            capture = _CompositionCapture(required=RequiredPartCapture())
+            token = _COMPOSITION_SCOPE.set(_CompositionScope(self, threading.get_ident(), capture))
         except Exception:
             capture = None
         try:
@@ -777,24 +810,26 @@ class TextLoader:
         finally:
             if token is not None:
                 with suppress(Exception):
-                    _REQUIRED_SCOPE.reset(token)
+                    _COMPOSITION_SCOPE.reset(token)
 
     def _read_composed_candidate(
         self, document: TextDocument, phase: Phase, index: int
     ) -> LoadedFile:
-        scope = _REQUIRED_SCOPE.get()
+        scope = _COMPOSITION_SCOPE.get()
         if scope is None or scope.owner is not self or scope.thread_id != threading.get_ident():
             return self.read_document(document)
         try:
-            token = _REQUIRED_SCOPE.set(replace(scope, phase=phase, index=index, document=document))
+            token = _COMPOSITION_SCOPE.set(
+                replace(scope, phase=phase, index=index, document=document)
+            )
         except Exception:
-            scope.capture.fail()
+            scope.capture.required.fail()
             return self.read_document(document)
         try:
             return self.read_document(document)
         finally:
             with suppress(Exception):
-                _REQUIRED_SCOPE.reset(token)
+                _COMPOSITION_SCOPE.reset(token)
 
     def _select_document(
         self,
