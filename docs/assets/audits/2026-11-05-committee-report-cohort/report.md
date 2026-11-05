@@ -44,3 +44,5 @@ uv run --frozen python -m tools.collect_committee_reports --corpus /path/to/corp
 [independent review](peer-review.json).
 
 Previous reader release: [exact CI and relay verification](previous-release.json).
+
+Actual collector release: [exact CI and relay verification](release.json), commit069cb6f4.

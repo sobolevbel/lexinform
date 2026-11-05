@@ -1,0 +1,12 @@
+{
+  "driver_sha256": "58581d5388fdf36be900949ba7e321359a773fd6c21f94b6435b9a0502dbacb1",
+  "baseline_sha256": "ded736f2b41305080741a3ec650c7f0dcb4f69532f63b9475aa34d1180e9c7c2",
+  "paired_sha256": "bb68d010559b07f2ffed949aa72a3d1f55cbe865c0a4674ef03766ee36d9489c",
+  "changed_core_cases": [],
+  "preparation_paths": 22,
+  "text_receipts": 14,
+  "unmapped_scan_paths": 8,
+  "excluded_collection_failures": 1,
+  "collection_manifest_sha256": "bc94e5d85183747af057b76aea34c32800b22f572d2e6ee92a77e68975fb480e",
+  "scope": "Controlled prior context/target; natural bytes, no gold labels/model calls"
+}

@@ -231,7 +231,7 @@ def test_public_supplement_queues_once_and_retains_exact_request_and_known_paren
 
 
 @pytest.mark.parametrize(
-    "hook", ["capture_supplement_input_receipt", "enrich_supplement_input_intent"]
+    "hook", ["capture_secondary_input_receipt", "enrich_secondary_input_intent"]
 )
 @pytest.mark.parametrize("error", [ValueError("metadata"), KeyboardInterrupt(), SystemExit(4)])
 def test_optional_capture_failures_preserve_intent_but_cancellation_propagates(

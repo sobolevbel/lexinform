@@ -1,0 +1,25 @@
+{
+  "evidence_reviewed": [
+    "candidate/candidate.patch",
+    "candidate/source-pins.json",
+    "candidate/HANDOFF.md",
+    "candidate/qualification.json",
+    "paired/report-final.json"
+  ],
+  "findings": [],
+  "independent_tests_run": false,
+  "network_used": false,
+  "patch_sha256": "8fdaefc6c987e9a26f7895ef1643094c02301cad16f70bdfeffdfff85caba9d9",
+  "release_prerequisite": "Root verifies actual reader A deployment before writer B publication.",
+  "scope": "Independent read-only review of exact frozen six-file writer B patch, helper boundaries, optional failure/cancellation, actual normative-source corroboration, single preparation, resumed-context unknowns, correction atomicity and supplement compatibility.",
+  "source_sha256": {
+    "src/lexinform/services/analysis.py": "91426b018d4c83b1b0a55e87321945a873468073dd9a2a795f0a29fba2769bbc",
+    "src/lexinform/services/input_receipts.py": "df83ef812dc1fa9150cc6f12716b91de51ff13b5c1d8eaafdee661ad747836e8",
+    "tests/unit/test_amendment_input_capture.py": "189f071ae5240279dde5d1d9d4115920b7ca8a6b08be6303da4988892315bbd6",
+    "tests/unit/test_replay_amendment_inputs.py": "569fbde50db3e778970e072b78498ae7e89f02bd474922bdbeb2e257363f64bd",
+    "tests/unit/test_supplement_input_capture.py": "fcd5c6e6b9274cd5a5860d5c454869e763a2eeb4f2e2fe80584a49181e3c1c40",
+    "tools/replay_amendment_inputs.py": "58581d5388fdf36be900949ba7e321359a773fd6c21f94b6435b9a0502dbacb1"
+  },
+  "stage": "J232",
+  "verdict": "clear"
+}

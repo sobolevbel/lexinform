@@ -10424,3 +10424,30 @@ J230ccb27d43 exactCI41942728330/relay41943488954 verified;45shealth/timer. DA0.6
 [Report and replay](../assets/audits/2026-11-05-committee-report-cohort/report.md),
 [qualification](../assets/audits/2026-11-05-committee-report-cohort/qualification.json),
 [collection proof](../assets/audits/2026-11-05-committee-report-cohort/collection-proof.json).
+
+<a id="j232"></a>
+
+## J232 — prospective amendment text-input receipt writer B
+
+5 November 2026. Fresh ordinary preparation retains the actual loaded normative source until its
+single request preparation. Corrections enrich the intent in the existing snapshot/target
+transaction. Shared secondary hooks preserve supplement interfaces and primary behavior. Context
+is fully hashed; only normative text receives source ranges. Recommendation-last cannot replace
+its parent. Scans, multipart, resumed context and unsupported Senate paths remain unstamped.
+No provider call, schema, raw storage or invented historical source evidence.
+
+Frozen OFF/ON public driver covers 22 paths from 11 freshly acquired originals: unchanged core
+request/context/preparation/cost/status decisions, 14 text receipts, eight unmapped scan paths,
+one collection failure excluded. Controlled prior context/targets are not legal gold. Actual
+metadata-only fixture growth: +1,248 SQL bytes per text receipt, gzip +417 ordinary/+402 correction;
+scans zero, duplicate saves exact, both variants restore idempotently. No production forecast.
+
+Nine new unit cases, no new scenarios; 65 root focused. Full gate: 8,343 tests, 92% coverage,
+mypy 729, Ruff/format green, all 798 source/config pins exact. Pinned 7b208 copy: 508 bills and
+201 changes serialize identically; full default doctor, double restore and DB hash unchanged.
+Reader A ccb27d43 verified before publication. J231 069cb6f4 exact CI41944621564 and
+relay41945453873 verified. DA5 remains partial; 74 total/43 complete/6 explicit N/A/25 applicable open.
+
+[Report](../assets/audits/2026-11-05-amendment-input-writer/report.md),
+[qualification](../assets/audits/2026-11-05-amendment-input-writer/qualification.json),
+[corpus proof](../assets/audits/2026-11-05-amendment-input-writer/corpus-proof.json).

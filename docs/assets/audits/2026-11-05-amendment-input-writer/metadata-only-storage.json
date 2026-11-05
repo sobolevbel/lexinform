@@ -1,0 +1,68 @@
+{
+  "collection_manifest_sha256": "bc94e5d85183747af057b76aea34c32800b22f572d2e6ee92a77e68975fb480e",
+  "driver_sha256": "58581d5388fdf36be900949ba7e321359a773fd6c21f94b6435b9a0502dbacb1",
+  "fixtures": {
+    "scan/correction": {
+      "candidate_and_stripped_restore_exact": true,
+      "candidate_gzip_bytes": 270736,
+      "candidate_sql_bytes": 428389,
+      "duplicate_saves_exact": true,
+      "gzip_delta_bytes": 0,
+      "has_receipt": false,
+      "metadata_json_delta_bytes": 0,
+      "other_rows_and_nonreceipt_fields_exact": true,
+      "receipt_json_bytes": 0,
+      "request_sha256": "f3d8f4903ce93ae2383ca596751ca818e44d051aa70e295cba91a8ff45fe1f47",
+      "sql_delta_bytes": 0,
+      "stripped_gzip_bytes": 270736,
+      "stripped_sql_bytes": 428389
+    },
+    "scan/ordinary": {
+      "candidate_and_stripped_restore_exact": true,
+      "candidate_gzip_bytes": 267777,
+      "candidate_sql_bytes": 413977,
+      "duplicate_saves_exact": true,
+      "gzip_delta_bytes": 0,
+      "has_receipt": false,
+      "metadata_json_delta_bytes": 0,
+      "other_rows_and_nonreceipt_fields_exact": true,
+      "receipt_json_bytes": 0,
+      "request_sha256": "5fc726e1f409693bb42d853cc79482a6c4b9427e01bb27b016bb97ad13b558ed",
+      "sql_delta_bytes": 0,
+      "stripped_gzip_bytes": 267777,
+      "stripped_sql_bytes": 413977
+    },
+    "text/correction": {
+      "candidate_and_stripped_restore_exact": true,
+      "candidate_gzip_bytes": 20040,
+      "candidate_sql_bytes": 97124,
+      "duplicate_saves_exact": true,
+      "gzip_delta_bytes": 402,
+      "has_receipt": true,
+      "metadata_json_delta_bytes": 1248,
+      "other_rows_and_nonreceipt_fields_exact": true,
+      "receipt_json_bytes": 1222,
+      "request_sha256": "c55beb46ffc46b338483dfe580cc3a4cf3eb90f41733d74ff17edc8967b05295",
+      "sql_delta_bytes": 1248,
+      "stripped_gzip_bytes": 19638,
+      "stripped_sql_bytes": 95876
+    },
+    "text/ordinary": {
+      "candidate_and_stripped_restore_exact": true,
+      "candidate_gzip_bytes": 17280,
+      "candidate_sql_bytes": 82632,
+      "duplicate_saves_exact": true,
+      "gzip_delta_bytes": 417,
+      "has_receipt": true,
+      "metadata_json_delta_bytes": 1248,
+      "other_rows_and_nonreceipt_fields_exact": true,
+      "receipt_json_bytes": 1222,
+      "request_sha256": "2eb5ac61fc7ee5e4683d28277b02910993039639581abbd45b5d6e1a7687adf3",
+      "sql_delta_bytes": 1248,
+      "stripped_gzip_bytes": 16863,
+      "stripped_sql_bytes": 81384
+    }
+  },
+  "measurement_script_sha256": "c3197b44ec7b92862b5fd09500344c44cf4beac37ebac2e431b946ed9601354c",
+  "scope": "Four genuine candidate public-preparation fixtures; controlled prior/target, natural freshly fetched report bytes. Optional receipt removed in scratch memory only; no production forecast or SQL/body artifact."
+}

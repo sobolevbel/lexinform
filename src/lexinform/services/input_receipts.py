@@ -1,7 +1,13 @@
 """Join prospective text receipts to parents from the actual captured read only."""
 
-from lexinform.input_receipts import primary_input_receipt, supplement_input_receipt
+from lexinform.input_receipts import (
+    amendment_input_receipt,
+    primary_input_receipt,
+    supplement_input_receipt,
+)
 from lexinform.models import (
+    AmendmentInputReceipt,
+    AmendmentsQuestion,
     AnalysisQuestion,
     ArtifactIdentity,
     BatchIntent,
@@ -99,7 +105,8 @@ def enrich_primary_input_intent(original: BatchIntent, receipt: PrimaryInputRece
 
 
 def _enrich_input_intent(
-    original: BatchIntent, receipt: PrimaryInputReceipt | SupplementInputReceipt
+    original: BatchIntent,
+    receipt: PrimaryInputReceipt | SupplementInputReceipt | AmendmentInputReceipt,
 ) -> BatchIntent:
     return BatchIntent.model_validate(
         {
@@ -112,14 +119,14 @@ def _enrich_input_intent(
     )
 
 
-def capture_supplement_input_receipt(
+def capture_secondary_input_receipt(
     request: BatchRequest,
     selection: DocumentSelection,
     projection: TextProjection | None,
     source: SourceReadCapture | None,
-) -> SupplementInputReceipt | None:
+) -> SupplementInputReceipt | AmendmentInputReceipt | None:
     if (
-        not isinstance(request.question, SupplementQuestion)
+        not isinstance(request.question, (SupplementQuestion, AmendmentsQuestion))
         or request.question.ctx.scan is not None
         or selection.scan_input is not None
         or not isinstance(source, DocumentSourceRead)
@@ -134,7 +141,12 @@ def capture_supplement_input_receipt(
     extraction = _extraction(part, body, source)
     if body is None or extraction is None:
         return None
-    return supplement_input_receipt(
+    builder = (
+        amendment_input_receipt
+        if isinstance(request.question, AmendmentsQuestion)
+        else supplement_input_receipt
+    )
+    return builder(
         request,
         selection,
         projection=projection,
@@ -142,6 +154,26 @@ def capture_supplement_input_receipt(
         body=body,
         extraction=extraction,
     )
+
+
+def capture_supplement_input_receipt(
+    request: BatchRequest,
+    selection: DocumentSelection,
+    projection: TextProjection | None,
+    source: SourceReadCapture | None,
+) -> SupplementInputReceipt | None:
+    if not isinstance(request.question, SupplementQuestion):
+        return None
+    receipt = capture_secondary_input_receipt(request, selection, projection, source)
+    return receipt if isinstance(receipt, SupplementInputReceipt) else None
+
+
+def enrich_secondary_input_intent(
+    original: BatchIntent, receipt: SupplementInputReceipt | AmendmentInputReceipt
+) -> BatchIntent:
+    if not isinstance(original.meta, DigestItemMeta):
+        raise ValueError("Secondary receipt enrichment requires secondary metadata")
+    return _enrich_input_intent(original, receipt)
 
 
 def enrich_supplement_input_intent(

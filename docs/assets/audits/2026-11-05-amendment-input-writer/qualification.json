@@ -1,0 +1,46 @@
+{
+  "stage": "J232 prospective amendment input receipt writer B",
+  "full_tests": 8343,
+  "pytest_xml": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "8343",
+    "time": "281.378",
+    "timestamp": "2026-11-05T01:58:30.444647+01:00",
+    "hostname": "Yauhenis-MacBook-Pro.local"
+  },
+  "new_unit_cases": 9,
+  "new_scenario_cases": 0,
+  "focused_root_cases": 65,
+  "strict_mypy_files": 729,
+  "coverage_percent": 92,
+  "mypy_ruff_format": "green",
+  "source_config_pins": 798,
+  "source_freeze_exact": true,
+  "reader_a_verified_commit": "ccb27d43d8124e6d57a900f57446ab32d6ae4716",
+  "runtime_writer_active": true,
+  "provider_calls": 0,
+  "schema_change": false,
+  "previous_release": {
+    "target": "069cb6f4950be53bb0a94058d4a0cc6bec7641b1",
+    "ci": 41944621564,
+    "deploy": 41945453873,
+    "complete": true
+  },
+  "proof_sha256": {
+    "full.xml": "c79e3bb3c582d7242693be4a7e0672ea210229142c25fd53fde026e969cfb747",
+    "full.log": "4aaa5ff60df5dae7c1d627e182dd9d8df6bfc34fd173c0dc6b0021a9275ecc8f",
+    "source-freeze.json": "06f10e0251ad17a7bf7913c51c7f111c98bac05bac3b1f4cda81ab5373e3461f",
+    "corpus-proof.json": "ff3c97f0c99a9284d4fd5d0aa154b76382f965d9bca620cb4a97eb0a239f2489",
+    "state-proof.json": "ec3a1131d0048aa86bec9b96652fe1e168b1bd20ce4ca97dbc8cb9bbcf59635d",
+    "metadata-only-storage.json": "451327819fd95cb3ba1bf85414b1da03fbbb3d3bd66605fe717334c351ceb0c1"
+  },
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  }
+}

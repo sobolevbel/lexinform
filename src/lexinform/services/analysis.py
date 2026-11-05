@@ -165,9 +165,9 @@ from lexinform.services.document_history import SourceReadCapture, record_source
 from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
 from lexinform.services.input_receipts import (
     capture_primary_input_receipt,
-    capture_supplement_input_receipt,
+    capture_secondary_input_receipt,
     enrich_primary_input_intent,
-    enrich_supplement_input_intent,
+    enrich_secondary_input_intent,
 )
 from lexinform.services.joint import primary_of, revive_prefilter_skips
 from lexinform.services.revision_applications import AmendmentRevisionApplications
@@ -1327,20 +1327,23 @@ class AnalysisService:
                 for snapshot in snapshots:
                     self._repo.save_content_snapshot(snapshot)
                 self._repo.save_batch_intent(
-                    BatchIntent.from_request(
-                        request=request,
-                        provider=provider,
-                        created_at=now,
-                        meta=DigestItemMeta(
-                            memo_key=key,
-                            queued_at=now,
-                            prompt_version=request.prompt_version,
-                            source_kind=document.kind,
-                            source_url=document.url,
-                            amendment_source=context.source_check,
-                            scan_input=context.scan.scan_input if context.scan else None,
-                            amendment_revision=frozen,
+                    self._secondary_input_intent(
+                        BatchIntent.from_request(
+                            request=request,
+                            provider=provider,
+                            created_at=now,
+                            meta=DigestItemMeta(
+                                memo_key=key,
+                                queued_at=now,
+                                prompt_version=request.prompt_version,
+                                source_kind=document.kind,
+                                source_url=document.url,
+                                amendment_source=context.source_check,
+                                scan_input=context.scan.scan_input if context.scan else None,
+                                amendment_revision=frozen,
+                            ),
                         ),
+                        loaded,
                     )
                 )
         except Exception:
@@ -1674,6 +1677,21 @@ class AnalysisService:
             self._clock.now() - bill.awaiting_batch_since < self._options.batch_max_wait
         )
 
+    @staticmethod
+    def _secondary_input_intent(intent: BatchIntent, source: _Loaded | None) -> BatchIntent:
+        if source is None:
+            return intent
+        try:
+            receipt = capture_secondary_input_receipt(
+                intent.request, source.selection, source.projection, source.source_read
+            )
+            if receipt is not None:
+                return enrich_secondary_input_intent(intent, receipt)
+        except Exception:
+            with suppress(Exception):
+                log.warning("Secondary input receipt omitted (capture_failed)")
+        return intent
+
     def _ask_or_wait[Record: (AmendmentsRecord, SupplementRecord, JointRecord, NameRecord)](
         self,
         bill: Bill,
@@ -1748,19 +1766,7 @@ class AnalysisService:
                             provider=provider,
                             created_at=now,
                         )
-                        if receipt_source is not None:
-                            try:
-                                receipt = capture_supplement_input_receipt(
-                                    request,
-                                    receipt_source.selection,
-                                    receipt_source.projection,
-                                    receipt_source.source_read,
-                                )
-                                if receipt is not None:
-                                    intent = enrich_supplement_input_intent(intent, receipt)
-                            except Exception:
-                                with suppress(Exception):
-                                    log.warning("Supplement input receipt omitted (capture_failed)")
+                        intent = self._secondary_input_intent(intent, receipt_source)
                         self._repo.save_batch_intent(intent)
                     except Exception:
                         self._ledger.release(request.estimated_cost_usd)
@@ -2293,6 +2299,16 @@ class AnalysisService:
         proposal: str | None = None,
         recommendation: TextDocument | None = None,
     ) -> AmendmentsContext | None:
+        prepared = self._prepare_amendments(bill, document, proposal, recommendation)
+        return prepared[0] if prepared is not None else None
+
+    def _prepare_amendments(
+        self,
+        bill: Bill,
+        document: TextDocument,
+        proposal: str | None,
+        recommendation: TextDocument | None,
+    ) -> tuple[AmendmentsContext, _Loaded] | None:
         assert bill.analysis is not None
         loaded = self._load_amendments_text(bill, document)
         if not loaded.text.strip() and loaded.scan is None:
@@ -2304,7 +2320,7 @@ class AnalysisService:
                 document.url,
             )
             return None
-        return self._amendments_context_of(bill, document, loaded, proposal, recommendation)
+        return self._amendments_context_of(bill, document, loaded, proposal, recommendation), loaded
 
     def _amendments_context_of(
         self,
@@ -2351,11 +2367,13 @@ class AnalysisService:
             "the tracker looks for amendments only of an analysed bill"
         )
         assert document.kind in AMENDMENT_SOURCES, f"not an amendments document: {document.kind}"
-        ctx = context or self.amendments_context(
-            bill, document, proposal=proposal, recommendation=recommendation
-        )
+        loaded = None
+        ctx = context
         if ctx is None:
-            return None
+            prepared = self._prepare_amendments(bill, document, proposal, recommendation)
+            if prepared is None:
+                return None
+            ctx, loaded = prepared
         key = _memo_key(bill, "amendments", ctx)
         record = self._ask_or_wait(
             bill,
@@ -2371,6 +2389,7 @@ class AnalysisService:
             AmendmentsRecord,
             lambda: self._llm.summarize_amendments(ctx),
             may_wait=may_wait,
+            receipt_source=loaded,
         )
         if not isinstance(record, Waiting):
             if ctx.source_check is not None:
