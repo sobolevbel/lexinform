@@ -1,0 +1,13 @@
+{
+  "actual_readable_pair_native_and_sql_exact": true,
+  "injected_gzip_growth": 31,
+  "injected_missing_exception_and_requests_exact": true,
+  "injected_sql_growth": 189,
+  "injected_unreadable_only_new_trace_field_and_id": true,
+  "normalized_sql_sha256": "8bd8eddfbfe95938fd2b37e5dfc3f6efadefc362c7444eab092cd61b20c80147",
+  "observation_id": "source-observation-v1:87b525eb2ca5ecdbd420b4f680b31cabdbab87bbcaba7be05318018cb6045117",
+  "on_repeated_byte_exact": true,
+  "restores_per_dump": 2,
+  "size_refusal_waits_without_gap_unit": true,
+  "writer_patch_sha256": "e49f7a39da4ec07509b46264adc9e2d678912e96db8dab25d3e7a4ea36639d02"
+}

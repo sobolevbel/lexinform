@@ -35,6 +35,7 @@ from lexinform.document_candidates import (
 from lexinform.document_composition import (
     CandidateFallback,
     NormativeAnnexFailure,
+    RequiredPartFailure,
     amendment_part,
     finalize_selection,
     finish_bundle,
@@ -72,6 +73,7 @@ from lexinform.models.candidate_trace import (
     CandidateTraceReason,
     CandidateTraceResult,
     NormativeAnnexGap,
+    RequiredPartGap,
 )
 from lexinform.models.document_reads import DocumentPhysicalDiagnostics
 from lexinform.models.document_reads import LoadedFile as LoadedFile
@@ -136,6 +138,7 @@ _ARCHIVE_READ_SINK: ContextVar[
 class _CompositionCapture:
     required: RequiredPartCapture
     normative_gap: NormativeAnnexGap | None = None
+    required_gap: RequiredPartGap | None = None
 
 
 @dataclass(frozen=True)
@@ -701,10 +704,22 @@ class TextLoader:
                     scope.capture.required.fail()
 
             bundle = replace(bundle, required_sink=observed)
-        for url in document.required_urls:
-            bundle = required_part(bundle, url, self.read(url))
-            if isinstance(bundle, LoadedFile):
-                return bundle
+        for position, url in enumerate(document.required_urls):
+            file = self.read(url)
+            continuation = required_part(bundle, url, file)
+            if isinstance(continuation, RequiredPartFailure):
+                if attempt is not None and not file.oversize:
+                    gap_capture, gap_phase, gap_index = attempt
+                    with suppress(Exception):
+                        gap_capture.required_gap = RequiredPartGap(
+                            phase=gap_phase,
+                            index=gap_index,
+                            required_index=position,
+                            reason="returned_no_text",
+                            file_sha256=file.sha256,
+                        )
+                return continuation.blocked
+            bundle = continuation
         for position, url in enumerate(document.normative_urls):
             try:
                 annex = self.read(url)
@@ -787,6 +802,11 @@ class TextLoader:
                 with suppress(Exception):
                     trace = CandidateDispositionTrace.model_validate(
                         {**trace.model_dump(), "normative_annex_gap": composition.normative_gap}
+                    )
+            if composition.required_gap is not None:
+                with suppress(Exception):
+                    trace = CandidateDispositionTrace.model_validate(
+                        {**trace.model_dump(), "required_part_gap": composition.required_gap}
                     )
         if (
             not retain_routine_trace

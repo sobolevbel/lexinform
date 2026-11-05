@@ -47,13 +47,18 @@ def start_bundle(main: LoadedFile, *, min_chars: int) -> BundleAssembly | Loaded
     )
 
 
+@dataclass(frozen=True)
+class RequiredPartFailure:
+    blocked: LoadedFile
+
+
 def required_part(
     bundle: BundleAssembly, url: str, file: LoadedFile
-) -> BundleAssembly | LoadedFile:
+) -> BundleAssembly | RequiredPartFailure:
     position = bundle.required_index
     bundle = replace(bundle, required_index=position + 1)
     if file.text is None:
-        return _blocked("waiting", f"{url}: required part unavailable")
+        return RequiredPartFailure(_blocked("waiting", f"{url}: required part unavailable"))
     kind = document_kind(file.text)
     if kind in APPENDIX_KINDS - {"annex"}:
         if bundle.required_sink is not None:

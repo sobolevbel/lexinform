@@ -1,0 +1,18 @@
+{
+  "adopted_text_locator": "https://api.sejm.gov.pl/sejm/term10/processes/2111/attachment/2111_u3.pdf",
+  "exclusions": [
+    "Adopted attachment bytes",
+    "Individual provisions and their proposal lineage",
+    "Later proceedings and legal force"
+  ],
+  "print_number": "2111",
+  "process_url": "https://api.sejm.gov.pl/sejm/term10/processes/2111",
+  "reading_outcome": "passed",
+  "scope": "Historical Sejm adoption of the whole bill at third reading",
+  "snapshot_sha256": "361c92de8a686ae161aa3154c3a30bf29a2a7980e6fb3b13578962cdf01075d9",
+  "stage_date": "2026-05-29",
+  "stage_index": 6,
+  "stage_sha256": "c74a53ca3d6a04cbcfcb973d80838e874d12551e19b983e4ef434031d50d261e",
+  "term": 10,
+  "version": 1
+}

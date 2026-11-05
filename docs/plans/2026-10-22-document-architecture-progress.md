@@ -11489,3 +11489,15 @@ The required-part diagnostic reader validates a terminal missing-text result aga
 the exact selected candidate and required URL. Both actual source files read normally.
 A deliberately damaged input verified the waiting and restore paths.
 [Audit and reader evidence](../assets/audits/2026-11-06-retained-delivery-and-required-part/report.md).
+
+<a id="j281"></a>
+
+## J281 — native required-part wait evidence and official historical reading outcome
+
+The native writer records a bounded diagnostic for the exact required part that
+returned no text. The actual readable PDFs were unchanged and a deliberately damaged
+derivative verified the writer and restore boundary.
+
+An offline audit separately proves the typed historical third-reading decision and
+official same-owner locator for print 2111. Proposal and later proceedings cannot
+satisfy this profile. [Qualified scopes](../assets/audits/2026-11-06-required-part-and-sejm-decision/report.md).

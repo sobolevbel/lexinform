@@ -1,0 +1,34 @@
+{
+  "1929:2": {
+    "reason": "Selected stage lacks a known Sejm third-reading adoption",
+    "status": "rejected"
+  },
+  "1929:4": {
+    "reason": "Selected stage lacks a known Sejm third-reading adoption",
+    "status": "rejected"
+  },
+  "1929:6": {
+    "reason": "Selected stage lacks the exact same-owner adopted text locator",
+    "status": "rejected"
+  },
+  "1929:7": {
+    "reason": "Selected stage lacks a known Sejm third-reading adoption",
+    "status": "rejected"
+  },
+  "2111:11": {
+    "reason": "Selected stage lacks a known Sejm third-reading adoption",
+    "status": "rejected"
+  },
+  "2111:12": {
+    "reason": "Selected stage lacks a known Sejm third-reading adoption",
+    "status": "rejected"
+  },
+  "2320:0": {
+    "reason": "Selected stage lacks a known Sejm third-reading adoption",
+    "status": "rejected"
+  },
+  "2320:1": {
+    "reason": "Selected stage lacks a known Sejm third-reading adoption",
+    "status": "rejected"
+  }
+}
