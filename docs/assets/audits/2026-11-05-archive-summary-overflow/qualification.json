@@ -1,0 +1,44 @@
+{
+  "base_commit": "dac5c747012c0c3a03ba84008080999cd6fa8b45",
+  "focused_tests": 56,
+  "full_tests": 8973,
+  "pytest_seconds": 319.17,
+  "mypy_files": 772,
+  "ruff_format_files": 841,
+  "source_config_pins_exact": 841,
+  "changed_file_pins": {
+    "src/lexinform/archive_dispositions.py": "2ea66fc337f84a7bbd3fde88941e94102aa4edb7b2a3f921f0f981c7363e3966",
+    "tests/unit/test_archive_disposition_builder.py": "fd331ed8e4ece3396fbe12c6d151bac744e99fa572fbc6093cf143a910d95148",
+    "tests/unit/test_replay_archive_dispositions.py": "ca3562ab6dcbeea5e9ba28c999ab2da3ce943c91ef09197a7f93b1f05ade4eff"
+  },
+  "raw": {
+    "before_sha256": "d33c7b2b947ba828dbb9f6d9b1218ccda8bfec98ce20e11d2dbedc2ea6049914",
+    "after_sha256": "77522438a62362c3ca9d36af2c57f84d2705c08f59103f95a23b2f5eed2f477c",
+    "scope": {
+      "natural_bytes": 14377628,
+      "natural_requests": 17,
+      "natural_roots": 16,
+      "not_zip_census": true
+    },
+    "only_report_delta": [
+      "source_sha256"
+    ],
+    "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666"
+  },
+  "cached": {
+    "before_sha256": "32f877eb752dd21ac8d4013cecf616adf38b30e7c9a7302565b4550e6f823e7e",
+    "after_sha256": "a7fcf863eb3060c89e90d7de31992e51780341336187c69e53b60f0031506977",
+    "cases": 4276,
+    "missing_inputs": 1383,
+    "read_inputs": 7599,
+    "only_report_delta": [
+      "source_sha256"
+    ]
+  },
+  "cached_public_core_and_io": {
+    "before_sha256": "22319d04a1744651b8db2f1aa24748f31b9b89e5a5b03eceb06c699d2fbecd44",
+    "after_sha256": "e654a746996fadd8c5d12150ad1084109e29435698447a230aaaba27f6facb2c",
+    "delta": []
+  },
+  "overflow_coverage": "Known and unavailable boundary controls use a synthetic near-limit request. No changed case was observed in the replay cohorts."
+}

@@ -11,6 +11,7 @@ from lexinform.models import (
 )
 from lexinform.models.candidate_trace import (
     MAX_ARCHIVE_MEMBER_ROWS,
+    MAX_CANDIDATE_TRACE_BYTES,
     ArchiveMemberRowChecker,
     archive_member_rows_sha256,
     validate_archive_member_parent,
@@ -57,9 +58,22 @@ def _observe(
 def _attach(
     trace: CandidateDispositionTrace, section: ArchiveMemberDispositions
 ) -> CandidateDispositionTrace:
-    return CandidateDispositionTrace.model_validate(
-        {**trace.model_dump(), "archive_members": section}
-    )
+    candidate = trace.model_copy(update={"archive_members": section})
+    if (
+        not section.rows
+        and trace.coverage == "complete"
+        and len(candidate.model_dump_json(exclude_defaults=True).encode())
+        > MAX_CANDIDATE_TRACE_BYTES
+    ):
+        candidate = candidate.model_copy(
+            update={
+                "coverage": "omitted_over_limit",
+                "requested_document": None,
+                "omitted_dispositions": len(trace.dispositions),
+                "dispositions": (),
+            }
+        )
+    return CandidateDispositionTrace.model_validate(candidate.model_dump())
 
 
 def enrich_archive_trace(

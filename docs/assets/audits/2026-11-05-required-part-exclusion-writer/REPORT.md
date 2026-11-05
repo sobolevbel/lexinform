@@ -8,4 +8,4 @@ The existing whole-trace budget applies. Complete rows or explicit full-count/or
 
 [Corpus and focused qualification](corpus-proof.json), [exact pins](source-pins.json), [independent review](peer-review.json), [frozen reproduction recipes](reproduce.md). Paired cached/raw results preserve prior cores; natural exact-branch coverage is zero and missing inputs remain explicit. The native technical positive adds only its exclusion trace while the real receipt/prompt/admission calls retain that trace. Fixed-owner fake-preparation probes are not historical or fitted production operations.
 
-The [root integration and full gate](integration-proof.json) pass with every source/config pin exact. Actual release follows publication. [Reader contract and prerequisites](../2026-11-05-required-part-trace-reader/design.md).
+The [root integration and full gate](integration-proof.json) pass with every source/config pin exact. [CI and relay deployment verified](release.json). [Reader contract and prerequisites](../2026-11-05-required-part-trace-reader/design.md).

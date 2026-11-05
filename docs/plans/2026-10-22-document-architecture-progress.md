@@ -11241,3 +11241,11 @@ At the user's70%used threshold, finish this stage, record handoff and pause the 
 [corpus qualification](../assets/audits/2026-11-05-required-part-exclusion-writer/corpus-proof.json),
 [integration](../assets/audits/2026-11-05-required-part-exclusion-writer/integration-proof.json),
 [review](../assets/audits/2026-11-05-required-part-exclusion-writer/peer-review.json).
+
+<a id="j259"></a>
+
+## J259 — archive summary overflow
+
+Preserve the archive summary when the outer request and archive evidence exceed the trace limit. The outer universe digest and omitted decision count remain available. Known and unknown archive observations retain their respective coverage. DA4.1 remains open.
+
+[Qualification and replay recipes](../assets/audits/2026-11-05-archive-summary-overflow/report.md).

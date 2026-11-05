@@ -109,15 +109,29 @@ def test_empty_known_stream_has_exact_zero_count_and_empty_array_hash() -> None:
     assert members.rows_sha256 == archive_member_rows_sha256(())
 
 
-def test_a_minimal_section_that_cannot_fit_never_discards_the_ordinary_outer_trace() -> None:
+@pytest.mark.parametrize("actual", [rows(20), None])
+def test_archive_summary_survives_a_nearly_full_outer_trace(
+    actual: tuple[ArchiveMemberDisposition, ...] | None,
+) -> None:
     original = legacy(url="https://api.test/" + "x" * 3500)
     assert original.coverage == "complete", (
         "the controlled ordinary trace still fits its own budget"
     )
     before = original.model_dump_json()
-    assert (
-        enrich_archive_trace(original, rows(20), walk="finished", unvisited="unknown") is original
-    ), "the public native loader retains this fixture's prospective archive trace"
+    enriched = enrich_archive_trace(original, actual, walk="finished", unvisited="unknown")
+    assert enriched.coverage == "omitted_over_limit"
+    assert enriched.universe_sha256 == original.universe_sha256
+    assert enriched.omitted_dispositions == len(original.dispositions)
+    assert enriched.requested_document is None and not enriched.dispositions
+    members = enriched.archive_members
+    assert members is not None, "the archive summary fits once the outer request is omitted"
+    assert not members.rows
+    if actual is None:
+        assert members.retention == "unknown" and members.observed_rows is None
+    else:
+        assert members.retention == "omitted"
+        assert members.observed_rows == members.omitted_rows == len(actual)
+        assert members.rows_sha256 == archive_member_rows_sha256(actual)
     assert original.model_dump_json() == before
 
 
