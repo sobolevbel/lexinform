@@ -1,0 +1,11 @@
+{
+  "state_commit": "620f09234a4959278811885b3e757593ae260bdd",
+  "database_sha256": "74633d215bb7ca04c5b0d3d996841306e01a801977082edb8aeae768fee2aba9",
+  "database_unchanged": true,
+  "canonical_dump_exact": true,
+  "all_table_rowids_and_rows_exact": true,
+  "tables_checked": 48,
+  "entire_default_doctor_exact": true,
+  "double_restore_exact": true,
+  "runs_report_json_unchanged": true
+}

@@ -156,9 +156,15 @@ Standalone operations without a run row omit `run_id`.
 
 `LEXINFORM_LOG_JSON=true` emits these as JSON fields; the default text format appends the same
 metadata. At `LEXINFORM_LOG_LEVEL=DEBUG`, local repository writes also include known source
-observation/selection/artifact-read IDs, request SHA, computation ID, application identity
-components, content binding and publication status. No synthetic application or extraction ID
-is inferred when the current schema has none. Unknown legacy request hashes stay absent.
+observation/selection/artifact-read/extraction IDs, frozen request SHA, computation ID,
+application identity components, content versions/bindings and publication creation/status.
+Intent and submitted-item traces include only their supplied receipt's known artifact, extraction
+and selection parents. The frozen request SHA identifies the input; a separate PreparedInput ID
+is not invented. Unknown legacy hashes and unavailable parents stay absent. Application identity
+uses its saved result/owner/generation/phase/target components, not a fabricated row ID.
+Ignored intent inserts do not emit a new write event. Publication upserts log the resolved ID and
+updated status; supplied bill keys are omitted because a conflict may retain another owner.
+Status updates use the already loaded physical row's owner and omit a trace when that row is absent.
 
 A `local … write` log describes a local write and validation. It does not prove SQL commit,
 remote checkpoint, provider acceptance or reader delivery. Use the existing immutable SQL

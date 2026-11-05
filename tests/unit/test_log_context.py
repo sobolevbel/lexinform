@@ -60,6 +60,7 @@ def test_formatter_omits_unknown_fields_bodies_urls_and_oversized_opaque_ids() -
             "correlation": {
                 "run_id": 5,
                 "selection_id": "s" * 257,
+                "extraction_id": "e" * 257,
                 "request_sha256": None,
                 "bill_term": True,
                 "url": "https://source.test/private",
@@ -72,7 +73,14 @@ def test_formatter_omits_unknown_fields_bodies_urls_and_oversized_opaque_ids() -
     text = TextFormatter("%(message)s").format(record)
 
     assert payload["run_id"] == 5
-    assert not set(payload) & {"selection_id", "request_sha256", "bill_term", "url", "body"}
+    assert not set(payload) & {
+        "selection_id",
+        "extraction_id",
+        "request_sha256",
+        "bill_term",
+        "url",
+        "body",
+    }
     assert text == 'local write | {"run_id": 5}'
 
 
@@ -98,3 +106,55 @@ def test_error_record_keeps_its_fields_on_the_message_line() -> None:
 
     assert lines[0] == 'failed | {"run_id": 5}'
     assert lines[1] == "Traceback (most recent call last):" and lines[-1] == "ValueError: boom"
+
+
+@pytest.mark.parametrize("provided", [None, "x" * 257, True, [], {}, 1.5, ""])
+def test_explicit_unavailable_or_invalid_ids_mask_outer_context_across_repeated_filters(
+    provided: object,
+) -> None:
+    record = logging.makeLogRecord(
+        {"msg": "local write", "correlation": {"selection_id": provided, "unknown": "PRIVATE_BODY"}}
+    )
+    with log_context(run_id=7, selection_id="outer-source"):
+        assert CorrelationFilter().filter(record)
+    bound: object = getattr(record, "correlation", None)
+    assert isinstance(bound, dict), "CorrelationFilter binds a bounded metadata dictionary"
+    first = dict(bound)
+    assert first["selection_id"] is None
+    with log_context(run_id=99, selection_id="later-source", publication_id=999):
+        assert CorrelationFilter().filter(record)
+    assert getattr(record, "correlation", None) == first
+    payload: dict[str, object] = json.loads(JsonFormatter().format(record))
+    assert payload["run_id"] == 7
+    assert not payload.keys() & {"selection_id", "publication_id", "unknown"}
+    assert "PRIVATE_BODY" not in JsonFormatter().format(record)
+    assert TextFormatter("%(message)s").format(record) == 'local write | {"run_id": 7}'
+
+
+def test_valid_explicit_identifier_overrides_context_and_stays_bound_to_first_filter() -> None:
+    record = logging.makeLogRecord(
+        {
+            "msg": "local write",
+            "correlation": {"extraction_id": "actual-extraction", "bill_number": None},
+        }
+    )
+    with log_context(run_id=7, extraction_id="outer-extraction", bill_number="outer-owner"):
+        assert CorrelationFilter().filter(record)
+    with log_context(
+        run_id=99, command_id=99, extraction_id="later-extraction", bill_number="later-owner"
+    ):
+        assert CorrelationFilter().filter(record)
+    payload: dict[str, object] = json.loads(JsonFormatter().format(record))
+    assert payload["extraction_id"] == "actual-extraction"
+    assert payload["run_id"] == 7
+    assert not payload.keys() & {"bill_number", "command_id"}
+
+
+def test_record_without_explicit_metadata_keeps_the_first_filter_context() -> None:
+    record = logging.makeLogRecord({"msg": "local write"})
+    with log_context(run_id=7):
+        assert CorrelationFilter().filter(record)
+    with log_context(run_id=99, command_id=88):
+        assert CorrelationFilter().filter(record)
+    payload: dict[str, object] = json.loads(JsonFormatter().format(record))
+    assert payload["run_id"] == 7 and "command_id" not in payload

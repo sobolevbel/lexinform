@@ -1,0 +1,19 @@
+{
+  "base_candidate_patch_sha256": "e709238d1546d1b24e3543d63a64fb1e12fca35cc0d545aca1356c24f61de670",
+  "findings": [],
+  "increment_patch_sha256": "1f9665998d6abb50c3e0f3b3a4cb53e6b5dd2e49d642f797d7833ca5511c5404",
+  "independent_tests_run": false,
+  "limitations": [
+    "Root owns fresh full gate and release; earlier failed full gate is not green evidence.",
+    "Existing loader INFO prose and formatter/configuration behavior remain unchanged."
+  ],
+  "network_used": false,
+  "scope": "Independent exact three-file correction review: bounded known-key None tombstones survive initial context merge and repeated filters; first-record context is fixed, formatters still omit unavailable/invalid/oversized/unknown fields; architecture tests exercise actual filter and restrict privacy assertions to repository events.",
+  "source_sha256": {
+    "src/lexinform/logging_setup.py": "65aa38f2099a7c4f8d67991fa4d5e89acf727d7ce32a0954e4b0bf9d7037a3a0",
+    "tests/unit/test_correlation_writes.py": "10e812d86f479844e951ff5df7073a8706ace993f517317f501d47b38406f45c",
+    "tests/unit/test_log_context.py": "5e0dd61896cc509168552b848322e50b72d98c12de70f8753abd072509b515ce"
+  },
+  "stage": "J235 filter correction",
+  "verdict": "clear"
+}

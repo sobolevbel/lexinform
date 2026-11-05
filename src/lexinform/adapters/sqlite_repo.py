@@ -111,7 +111,7 @@ from lexinform.legacy_results import (
     preserve_legacy_json,
     read_legacy_json,
 )
-from lexinform.log_context import log_extra
+from lexinform.log_context import LogFields, log_extra
 from lexinform.models import (
     DIGEST_NUMBER,
     DIGEST_TERM,
@@ -120,6 +120,7 @@ from lexinform.models import (
     WYKAZ_PREFIX,
     ActInfo,
     AgendaItem,
+    AmendmentInputReceipt,
     AmendmentRevisionApplicationWork,
     AmendmentsRecord,
     AnalysisRecord,
@@ -127,6 +128,7 @@ from lexinform.models import (
     ArtifactReadReceipt,
     AttentionAssessment,
     BatchIntent,
+    BatchItemMeta,
     BatchProvider,
     BatchRequest,
     BatchResult,
@@ -163,6 +165,7 @@ from lexinform.models import (
     ObservationBasis,
     ObservationMode,
     ObservedProcess,
+    PrimaryInputReceipt,
     ProcessSummary,
     Publication,
     PublicationKind,
@@ -185,6 +188,7 @@ from lexinform.models import (
     SourceObservation,
     Stage,
     StatusChange,
+    SupplementInputReceipt,
     SupplementRecord,
     WykazEntry,
     card_edit_owner_id,
@@ -901,6 +905,33 @@ MIGRATIONS: tuple[str, ...] = (
 
 SCHEMA_VERSION = len(MIGRATIONS)
 _VERSION_LINE = "PRAGMA user_version = "
+
+
+def _batch_log_fields(
+    term: int,
+    number: str,
+    custom_id: str,
+    meta: BatchItemMeta | DigestItemMeta,
+    *,
+    batch_id: str | None = None,
+    request_sha256: str | None = None,
+) -> LogFields:
+    fields: LogFields = {
+        "bill_term": term,
+        "bill_number": number,
+        "custom_id": custom_id,
+        "batch_id": batch_id,
+        "request_sha256": request_sha256 if request_sha256 is not None else meta.request_sha256,
+        "selection_id": None,
+        "artifact_sha256": None,
+        "extraction_id": None,
+    }
+    receipt = meta.prepared_input_receipt
+    if isinstance(receipt, (PrimaryInputReceipt, SupplementInputReceipt, AmendmentInputReceipt)):
+        fields["selection_id"] = receipt.source_selection_id
+        fields["artifact_sha256"] = receipt.artifact_sha256
+        fields["extraction_id"] = receipt.extraction_id
+    return fields
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -1869,6 +1900,15 @@ class SqliteBillRepository:
         assert saved is not None, "the insert retains the observation under its immutable identity"
         if saved != observation.model_copy(update={"created_at": saved.created_at}):
             raise ValueError("an immutable applicability observation cannot be replaced")
+        log.debug(
+            "local applicability observation write",
+            extra=log_extra(
+                bill_term=observation.term,
+                bill_number=observation.number,
+                observation_id=observation.observation_id,
+                computation_id=observation.result_id,
+            ),
+        )
 
     def get_applicability_observation(
         self, observation_id: str
@@ -2157,6 +2197,12 @@ class SqliteBillRepository:
             update={"recorded_at": saved.recorded_at if saved else None}
         ):
             raise ValueError("an immutable content version cannot be replaced")
+        log.debug(
+            "local content version write",
+            extra=log_extra(
+                content_id=version.content_id, publication_id=version.root_publication_id
+            ),
+        )
 
     def get_content_version(self, content_id: str) -> ContentVersion | None:
         row = self._conn.execute(
@@ -2683,6 +2729,10 @@ class SqliteBillRepository:
         )
         if self.get_extraction_result(result.result_id) != result:
             raise ValueError("an immutable extraction result cannot be replaced")
+        log.debug(
+            "local extraction result write",
+            extra=log_extra(extraction_id=result.result_id, artifact_sha256=result.artifact_sha256),
+        )
 
     def get_extraction_result(self, result_id: str) -> ExtractionResult | None:
         row = self._conn.execute(
@@ -2714,6 +2764,14 @@ class SqliteBillRepository:
         )
         if reference not in self.list_selection_extractions(reference.selection_id):
             raise ValueError("an immutable extraction link cannot be rebound")
+        log.debug(
+            "local selection extraction binding",
+            extra=log_extra(
+                selection_id=reference.selection_id,
+                extraction_id=reference.extraction_id,
+                artifact_sha256=reference.artifact_sha256,
+            ),
+        )
 
     def list_selection_extractions(self, selection_id: str) -> list[SelectionExtractionReference]:
         rows = self._conn.execute(
@@ -2735,6 +2793,7 @@ class SqliteBillRepository:
         assert saved is not None, "the insert retains metadata under its complete-body SHA"
         if saved != artifact.model_copy(update={"recorded_at": saved.recorded_at}):
             raise ValueError("an immutable artifact identity cannot change its byte size")
+        log.debug("local artifact metadata write", extra=log_extra(artifact_sha256=artifact.sha256))
 
     def get_artifact_metadata(self, sha256: str) -> ArtifactMetadata | None:
         row = self._conn.execute("SELECT * FROM artifacts WHERE sha256=?", (sha256,)).fetchone()
@@ -3474,7 +3533,7 @@ class SqliteBillRepository:
             self._save_llm_batch_rows(batch, items)
 
     def save_batch_intent(self, intent: BatchIntent) -> None:
-        self._conn.execute(
+        inserted = self._conn.execute(
             "INSERT OR IGNORE INTO llm_batch_intents"
             " (custom_id, provider, request_json, meta_json, state, created_at)"
             " VALUES (?, ?, ?, ?, ?, ?)",
@@ -3487,15 +3546,19 @@ class SqliteBillRepository:
                 intent.created_at.isoformat(),
             ),
         )
-        log.debug(
-            "local batch intent write",
-            extra=log_extra(
-                bill_term=intent.request.term,
-                bill_number=intent.request.number,
-                custom_id=intent.request.custom_id,
-                request_sha256=intent.meta.request_sha256,
-            ),
-        )
+        if inserted.rowcount == 1:
+            log.debug(
+                "local batch intent write",
+                extra=log_extra(
+                    **_batch_log_fields(
+                        intent.request.term,
+                        intent.request.number,
+                        intent.request.custom_id,
+                        intent.meta,
+                        request_sha256=intent.request.payload_sha256,
+                    )
+                ),
+            )
 
     def batch_job(self, custom_id: str) -> BatchJob | None:
         submissions = self._conn.execute(
@@ -3713,11 +3776,9 @@ class SqliteBillRepository:
             log.debug(
                 "local batch item write",
                 extra=log_extra(
-                    bill_term=item.term,
-                    bill_number=item.number,
-                    batch_id=item.batch_id,
-                    custom_id=item.custom_id,
-                    request_sha256=item.meta.request_sha256,
+                    **_batch_log_fields(
+                        item.term, item.number, item.custom_id, item.meta, batch_id=item.batch_id
+                    )
                 ),
             )
 
@@ -4605,6 +4666,15 @@ class SqliteBillRepository:
                 ),
             ).fetchone()
         assert row is not None, "the upsert above left a row under this natural key"
+        log.debug(
+            "local publication write",
+            extra=log_extra(
+                bill_term=None,
+                bill_number=None,
+                publication_id=int(row[0]),
+                delivery_status=publication.status.value,
+            ),
+        )
         return int(row[0])
 
     def list_digest_candidates(
@@ -5218,10 +5288,16 @@ class SqliteBillRepository:
                 publication_id,
             ),
         )
-        log.debug(
-            "local publication status write",
-            extra=log_extra(publication_id=publication_id, delivery_status=status.value),
-        )
+        if original is not None:
+            log.debug(
+                "local publication status write",
+                extra=log_extra(
+                    bill_term=original.term,
+                    bill_number=original.number,
+                    publication_id=publication_id,
+                    delivery_status=status.value,
+                ),
+            )
 
     def get_publication(
         self,

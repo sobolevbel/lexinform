@@ -35,3 +35,5 @@ Root full gate: 8,354 tests in 289.60 seconds, 92% coverage, strict mypy over 73
 Ruff and formatting green; all 799 source/config pins remain exact. The pinned state copy retains
 all 508 bill and 201 status-change public serializations, full default doctor output and double
 restore; its database hash remains unchanged. DA5 and the full lifecycle acceptance remain open.
+
+Actual Senate bridge release: [exact CI and relay verification](release.json), commit7b196312.

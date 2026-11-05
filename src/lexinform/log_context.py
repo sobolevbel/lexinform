@@ -15,6 +15,7 @@ class LogFields(TypedDict, total=False):
     artifact_sha256: str | None
     artifact_read_id: str | None
     selection_id: str | None
+    extraction_id: str | None
     request_sha256: str | None
     computation_id: str | None
     application_phase: str | None

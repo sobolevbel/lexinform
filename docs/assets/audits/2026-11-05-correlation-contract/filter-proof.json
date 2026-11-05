@@ -1,0 +1,19 @@
+{
+  "combined_source_pins_exact": true,
+  "unchanged_asts": [
+    "TextFormatter",
+    "JsonFormatter",
+    "MemoryLogHandler",
+    "configure_logging"
+  ],
+  "known_fields_only": true,
+  "configured_sequential_tests": 41,
+  "first_gate_failures": 3,
+  "first_gate_failed_cases": [
+    "test_native_source_receipt_result_application_content_and_physical_ids_match_sql",
+    "test_intent_request_and_parent_ids_are_only_logged_when_actually_available[False]",
+    "test_publication_collision_never_labels_the_retained_row_with_a_supplied_other_owner"
+  ],
+  "cause": "None masking lost before context merge; new privacy assertion included historical loader INFO logs",
+  "fix": "Preserve bounded known-key tombstones and first-context snapshot; scope privacy assertion to new repository events"
+}

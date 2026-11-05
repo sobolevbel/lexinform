@@ -6,15 +6,18 @@ import sys
 from datetime import UTC, datetime
 from typing import override
 
-from lexinform.log_context import correlation_fields, current_log_fields
+from lexinform.log_context import LogFields, correlation_fields, current_log_fields
 
 
 class CorrelationFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
-        record.correlation = {
-            **current_log_fields(),
-            **correlation_fields(getattr(record, "correlation", None)),
-        }
+        provided = getattr(record, "correlation", None)
+        fields: dict[str, object] = {key: None for key in LogFields.__annotations__}
+        fields.update(current_log_fields())
+        if isinstance(provided, dict):
+            fields.update({key: None for key in provided if key in LogFields.__annotations__})
+            fields.update(correlation_fields(provided))
+        record.correlation = fields
         return True
 
 

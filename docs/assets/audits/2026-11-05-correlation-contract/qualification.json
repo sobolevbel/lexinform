@@ -1,0 +1,53 @@
+{
+  "stage": "J235 finite correlation ID contract",
+  "full_tests": 8375,
+  "pytest_xml": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "8375",
+    "time": "279.676",
+    "timestamp": "2026-11-05T02:51:06.973258+01:00",
+    "hostname": "Yauhenis-MacBook-Pro.local"
+  },
+  "new_unit_cases": 21,
+  "new_scenario_cases": 0,
+  "focused_root_cases": 41,
+  "strict_mypy_files": 731,
+  "coverage_percent": 92,
+  "mypy_ruff_format": "green",
+  "source_config_pins": 800,
+  "source_freeze_exact": true,
+  "sql_call_asts_exact": 305,
+  "direct_write_boundaries": 98,
+  "dynamic_sites_reviewed": 37,
+  "native_core_identity_boundaries": 15,
+  "previous_failed_gate": {
+    "failed": 3,
+    "passed": 8363,
+    "fixed": "Known-key filter tombstones and actual handler privacy scope; see filter-proof.json"
+  },
+  "proof_sha256": {
+    "full-final.xml": "fd983350bb77da3cde2ae92d6eac8efc88ec950e63e084483819d4fbd6624ccc",
+    "full-final.log": "1b532d45ac4895453f81f65f1dc3248dd1f76e99ee284c1fea102ffd16019d48",
+    "full.xml": "273d72100979c94a0cc95ced9c83e12419a53dbc52b13fd3060dc5c7fa14cbab",
+    "full.log": "b122c263d421ae3760d97f475d3272817e7637a74ff49d513487132b4b21a551",
+    "source-freeze-final.json": "2774f691ed87a61cc6487a1f4ba12d691175b513274f3828605e340bd2ee0dbe",
+    "state-proof.json": "4189180f00aa538eb451172d633b4b012fbe162121ce2046f2584797c7500e78",
+    "filter-proof.json": "705d21484472623af231c8c1081515676e1807aec4235f0e3bdca61bf1f7a05b",
+    "portable-inventory.json": "6e33f84612f8f6038f926f9a0b4754752c85284a9e613cc0d37a29d214b74885"
+  },
+  "previous_release": {
+    "target": "7b1963122dd33e49b25a1718b68bc388ae344fce",
+    "ci": 41948171201,
+    "deploy": 41948673010,
+    "complete": true
+  },
+  "plan_counts": {
+    "total": 74,
+    "complete": 44,
+    "not_applicable": 6,
+    "applicable_open": 24
+  }
+}

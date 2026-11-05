@@ -790,7 +790,7 @@ flags ради различающихся контрактов. Отказ от 
 
 ### 10.1. Сквозная диагностика
 
-- [ ] DA10.1. **Частично: [J114](2026-10-22-document-architecture-progress.md#j114), scoped run/command context и bounded structured IDs для существующих source/result/application/content/publication writes. Extraction IDs появились в [J132](2026-10-22-document-architecture-progress.md#j132) для текущих producer scopes; PreparedInput history и полная structured-log цепочка ещё зависят от DA3/DA5.** Добавить структурированные `run_id`, bill key, observation/artifact/extraction/
+- [x] DA10.1. **Принято: [J114](2026-10-22-document-architecture-progress.md#j114) и [J235](2026-10-22-document-architecture-progress.md#j235). Полный finite inventory: 98 write/schema/restore boundaries, 37 dynamic SQL sites; 15 native events связывают фактически известные core IDs, frozen request SHA и composite application identity. Unknown/opaque parents отсутствуют; auxiliary IDs остаются в typed SQL. None-mask/repeated-handler isolation и collision guards проверены. Это контракт корреляции известных IDs; DA3/DA5 history и DA10.7 cycles остаются отдельными открытыми задачами.** Добавить структурированные `run_id`, bill key, observation/artifact/extraction/
   selection/input/result/application/content/publication IDs в логи. На первом этапе
   неприменимые поля отсутствуют; идентификаторы не извлекаются обратно из prose сообщения.
   В SQL-отчётах сохранять нужные IDs/краткие причины; подробные traces ограничивать сроком

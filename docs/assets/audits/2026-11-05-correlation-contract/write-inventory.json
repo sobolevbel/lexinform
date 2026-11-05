@@ -1,0 +1,1866 @@
+{
+  "base": "/private/tmp/lexinform-j235-correlation-base",
+  "all_repository_methods_identical_after_explicit_log_normalization": true,
+  "normalized_cursor_capture": [
+    "save_batch_intent"
+  ],
+  "normalized_log_only_guards": [
+    "save_batch_intent",
+    "mark_publication"
+  ],
+  "all_sql_call_asts_exact": true,
+  "sql_calls": 305,
+  "direct_sql_write_methods": 98,
+  "boundaries": [
+    {
+      "method": "upsert_summary",
+      "line": 1382,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 1385,
+          "operation": "INSERT INTO",
+          "table": "bills"
+        },
+        {
+          "line": 1412,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "set_status",
+      "line": 1442,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 1455,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_stages",
+      "line": 1478,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 1481,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_observed_closure",
+      "line": 1492,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 1493,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_analysis",
+      "line": 1498,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 1520,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_editorial",
+      "line": 1569,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 1570,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_ready_analysis",
+      "line": 1575,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 1576,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_observed_process",
+      "line": 1589,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 1590,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "apply_legacy_maintenance",
+      "line": 1684,
+      "category": "maintenance/rehydration",
+      "writes": [
+        {
+          "line": 1720,
+          "operation": "INSERT OR IGNORE INTO",
+          "table": "legacy_analysis_bodies"
+        },
+        {
+          "line": 1724,
+          "operation": "UPDATE",
+          "table": "legacy_result_values"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "import_legacy_results",
+      "line": 1779,
+      "category": "maintenance/rehydration",
+      "writes": [
+        {
+          "line": 1790,
+          "operation": "INSERT INTO",
+          "table": "legacy_result_imports"
+        },
+        {
+          "line": 1798,
+          "operation": "INSERT INTO",
+          "table": "legacy_result_values"
+        },
+        {
+          "line": 1802,
+          "operation": "INSERT INTO",
+          "table": "legacy_result_occurrences"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_computation_result",
+      "line": 1835,
+      "category": "native required-identity boundary",
+      "writes": [
+        {
+          "line": 1836,
+          "operation": "INSERT INTO",
+          "table": "computation_results"
+        }
+      ],
+      "structured_fields": "computation_id,batch_id,custom_id,request_sha256,bill key",
+      "debug_events": [
+        "log.debug('local computation result write', extra=log_extra(bill_term=result.term, bill_number=result.number, computation_id=result.result_id, batch_id=result.batch_id, custom_id=result.custom_id, request_sha256=result.request_sha256))"
+      ],
+      "delegates": []
+    },
+    {
+      "method": "save_applicability_observation",
+      "line": 1880,
+      "category": "native required-identity boundary",
+      "writes": [
+        {
+          "line": 1887,
+          "operation": "INSERT INTO",
+          "table": "result_applicability"
+        }
+      ],
+      "structured_fields": "observation_id,computation_id,bill key",
+      "debug_events": [
+        "log.debug('local applicability observation write', extra=log_extra(bill_term=observation.term, bill_number=observation.number, observation_id=observation.observation_id, computation_id=observation.result_id))"
+      ],
+      "delegates": []
+    },
+    {
+      "method": "save_source_observation",
+      "line": 1946,
+      "category": "native required-identity boundary",
+      "writes": [
+        {
+          "line": 1954,
+          "operation": "INSERT INTO",
+          "table": "document_selections"
+        },
+        {
+          "line": 1969,
+          "operation": "INSERT INTO",
+          "table": "source_observations"
+        }
+      ],
+      "structured_fields": "observation_id,selection_id,bill key",
+      "debug_events": [
+        "log.debug('local source observation write', extra=log_extra(bill_term=observation.term, bill_number=observation.number, observation_id=observation.observation_id, selection_id=selection.selection_id))"
+      ],
+      "delegates": []
+    },
+    {
+      "method": "save_selection_edition",
+      "line": 1998,
+      "category": "supporting metadata/edge",
+      "writes": [
+        {
+          "line": 2007,
+          "operation": "INSERT INTO",
+          "table": "document_editions"
+        },
+        {
+          "line": 2017,
+          "operation": "INSERT INTO",
+          "table": "selection_editions"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_candidate_disposition_trace",
+      "line": 2081,
+      "category": "supporting metadata/edge",
+      "writes": [
+        {
+          "line": 2090,
+          "operation": "INSERT INTO",
+          "table": "candidate_disposition_traces"
+        },
+        {
+          "line": 2103,
+          "operation": "INSERT INTO",
+          "table": "source_candidate_traces"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_content_snapshot",
+      "line": 2153,
+      "category": "supporting metadata/edge",
+      "writes": [
+        {
+          "line": 2155,
+          "operation": "INSERT INTO",
+          "table": "content_snapshots"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_content_version",
+      "line": 2166,
+      "category": "native required-identity boundary",
+      "writes": [
+        {
+          "line": 2181,
+          "operation": "INSERT INTO",
+          "table": "content_versions"
+        }
+      ],
+      "structured_fields": "content_id,root publication_id",
+      "debug_events": [
+        "log.debug('local content version write', extra=log_extra(content_id=version.content_id, publication_id=version.root_publication_id))"
+      ],
+      "delegates": []
+    },
+    {
+      "method": "bind_publication_content",
+      "line": 2293,
+      "category": "native required-identity boundary",
+      "writes": [
+        {
+          "line": 2297,
+          "operation": "INSERT INTO",
+          "table": "publication_content"
+        }
+      ],
+      "structured_fields": "content_id,publication_id,bill key",
+      "debug_events": [
+        "log.debug('local publication content binding', extra=log_extra(bill_term=publication.term, bill_number=publication.number, content_id=content_id, publication_id=publication_id))"
+      ],
+      "delegates": []
+    },
+    {
+      "method": "save_source_catalog_attempt",
+      "line": 2365,
+      "category": "supporting metadata/edge",
+      "writes": [
+        {
+          "line": 2387,
+          "operation": "INSERT INTO",
+          "table": "source_catalog_attempt_parents"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_source_metadata_omission",
+      "line": 2414,
+      "category": "supporting metadata/edge",
+      "writes": [
+        {
+          "line": 2436,
+          "operation": "INSERT INTO",
+          "table": "source_omission_parents"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_physical_inventory",
+      "line": 2464,
+      "category": "supporting metadata/edge",
+      "writes": [
+        {
+          "line": 2497,
+          "operation": "INSERT INTO",
+          "table": "physical_metadata"
+        },
+        {
+          "line": 2522,
+          "operation": "INSERT INTO",
+          "table": "physical_captures"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_senate_inspection",
+      "line": 2582,
+      "category": "supporting metadata/edge",
+      "writes": [
+        {
+          "line": 2602,
+          "operation": "INSERT INTO",
+          "table": "senate_inspections"
+        },
+        {
+          "line": 2621,
+          "operation": "INSERT INTO",
+          "table": "senate_inspection_sources"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_rcl_letter_use",
+      "line": 2672,
+      "category": "supporting metadata/edge",
+      "writes": [
+        {
+          "line": 2679,
+          "operation": "INSERT INTO",
+          "table": "rcl_letter_uses"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_extraction_result",
+      "line": 2713,
+      "category": "native required-identity boundary",
+      "writes": [
+        {
+          "line": 2719,
+          "operation": "INSERT INTO",
+          "table": "extraction_results"
+        }
+      ],
+      "structured_fields": "extraction_id,artifact_sha256",
+      "debug_events": [
+        "log.debug('local extraction result write', extra=log_extra(extraction_id=result.result_id, artifact_sha256=result.artifact_sha256))"
+      ],
+      "delegates": []
+    },
+    {
+      "method": "save_selection_extraction",
+      "line": 2745,
+      "category": "native required-identity boundary",
+      "writes": [
+        {
+          "line": 2760,
+          "operation": "INSERT INTO",
+          "table": "selection_extractions"
+        }
+      ],
+      "structured_fields": "selection_id,extraction_id,artifact_sha256",
+      "debug_events": [
+        "log.debug('local selection extraction binding', extra=log_extra(selection_id=reference.selection_id, extraction_id=reference.extraction_id, artifact_sha256=reference.artifact_sha256))"
+      ],
+      "delegates": []
+    },
+    {
+      "method": "save_artifact_metadata",
+      "line": 2785,
+      "category": "native required-identity boundary",
+      "writes": [
+        {
+          "line": 2787,
+          "operation": "INSERT INTO",
+          "table": "artifacts"
+        }
+      ],
+      "structured_fields": "artifact_sha256",
+      "debug_events": [
+        "log.debug('local artifact metadata write', extra=log_extra(artifact_sha256=artifact.sha256))"
+      ],
+      "delegates": []
+    },
+    {
+      "method": "save_artifact_read",
+      "line": 2810,
+      "category": "native required-identity boundary",
+      "writes": [
+        {
+          "line": 2815,
+          "operation": "INSERT INTO",
+          "table": "artifact_reads"
+        }
+      ],
+      "structured_fields": "artifact_sha256,artifact_read_id",
+      "debug_events": [
+        "log.debug('local artifact read write', extra=log_extra(artifact_sha256=receipt.sha256, artifact_read_id=receipt.read_id))"
+      ],
+      "delegates": []
+    },
+    {
+      "method": "save_selection_artifact",
+      "line": 2873,
+      "category": "native required-identity boundary",
+      "writes": [
+        {
+          "line": 2891,
+          "operation": "INSERT INTO",
+          "table": "selection_artifacts"
+        }
+      ],
+      "structured_fields": "selection_id,artifact_sha256",
+      "debug_events": [
+        "log.debug('local selection artifact binding', extra=log_extra(selection_id=reference.selection_id, artifact_sha256=reference.artifact_sha256))"
+      ],
+      "delegates": []
+    },
+    {
+      "method": "save_result_application",
+      "line": 2931,
+      "category": "native required-identity boundary",
+      "writes": [
+        {
+          "line": 2940,
+          "operation": "INSERT INTO",
+          "table": "result_applications"
+        }
+      ],
+      "structured_fields": "computation_id,bill key,generation,phase,target kind/ref (actual composite identity)",
+      "debug_events": [
+        "log.debug('local result application write', extra=log_extra(bill_term=application.term, bill_number=application.number, computation_id=application.result_id, application_phase=application.phase, application_generation=application.generation, application_target_kind=target.kind if target else None, application_target_ref=target.ref if target else None))"
+      ],
+      "delegates": []
+    },
+    {
+      "method": "save_review_work",
+      "line": 3008,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3009,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_committee_documents",
+      "line": 3018,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3021,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "reserve_effective_rules",
+      "line": 3082,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3084,
+          "operation": "INSERT INTO",
+          "table": "effective_rule_links"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_analysis_memo",
+      "line": 3089,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3127,
+          "operation": "INSERT INTO",
+          "table": "analysis_memo"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_update_delivery",
+      "line": 3137,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3141,
+          "operation": "UPDATE",
+          "table": "publications"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "replace_unsent_update_delivery",
+      "line": 3154,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3160,
+          "operation": "UPDATE",
+          "table": "publications"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "replace_unattempted_delivery",
+      "line": 3178,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3192,
+          "operation": "UPDATE",
+          "table": "publications"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "freeze_direct_delivery",
+      "line": 3207,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3262,
+          "operation": "UPDATE",
+          "table": "publications"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "freeze_sitting_delivery",
+      "line": 3319,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3393,
+          "operation": "UPDATE",
+          "table": "publications"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_delivery_alert",
+      "line": 3480,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3481,
+          "operation": "INSERT INTO",
+          "table": "delivery_alerts"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "tag_update_group",
+      "line": 3488,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3495,
+          "operation": "UPDATE",
+          "table": "publications"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "release_planned_changes",
+      "line": 3509,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3512,
+          "operation": "UPDATE",
+          "table": "publications"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "record_analysis_failure",
+      "line": 3522,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3523,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_batch_intent",
+      "line": 3535,
+      "category": "native required-identity boundary",
+      "writes": [
+        {
+          "line": 3536,
+          "operation": "INSERT OR IGNORE INTO",
+          "table": "llm_batch_intents"
+        }
+      ],
+      "structured_fields": "newly inserted only: custom_id,bill key,actual frozen request SHA; supplied receipt artifact/extraction/selection parents",
+      "debug_events": [
+        "log.debug('local batch intent write', extra=log_extra(**_batch_log_fields(intent.request.term, intent.request.number, intent.request.custom_id, intent.meta, request_sha256=intent.request.payload_sha256)))"
+      ],
+      "delegates": []
+    },
+    {
+      "method": "set_observation",
+      "line": 3613,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3620,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "record_check",
+      "line": 3631,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3643,
+          "operation": "INSERT INTO",
+          "table": "source_checks"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "set_awaiting_batch",
+      "line": 3699,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3700,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "mark_batch_intents_submitting",
+      "line": 3727,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3728,
+          "operation": "UPDATE",
+          "table": "llm_batch_intents"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "mark_batch_intents_queued",
+      "line": 3734,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3735,
+          "operation": "UPDATE",
+          "table": "llm_batch_intents"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "delete_batch_intents",
+      "line": 3741,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3742,
+          "operation": "DELETE FROM",
+          "table": "llm_batch_intents"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "_save_llm_batch_rows",
+      "line": 3747,
+      "category": "native required-identity boundary",
+      "writes": [
+        {
+          "line": 3748,
+          "operation": "INSERT INTO",
+          "table": "llm_batches"
+        },
+        {
+          "line": 3765,
+          "operation": "INSERT INTO",
+          "table": "llm_batch_items"
+        }
+      ],
+      "structured_fields": "batch_id,custom_id,bill key,saved request SHA; supplied receipt artifact/extraction/selection parents",
+      "debug_events": [
+        "log.debug('local batch item write', extra=log_extra(**_batch_log_fields(item.term, item.number, item.custom_id, item.meta, batch_id=item.batch_id)))"
+      ],
+      "delegates": []
+    },
+    {
+      "method": "mark_llm_batch_polled",
+      "line": 3793,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3796,
+          "operation": "UPDATE",
+          "table": "llm_batches"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "mark_llm_batch_collected",
+      "line": 3801,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3802,
+          "operation": "UPDATE",
+          "table": "llm_batches"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "mark_llm_batch_forgotten",
+      "line": 3816,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3817,
+          "operation": "UPDATE",
+          "table": "llm_batches"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "mark_llm_batch_item_consumed",
+      "line": 3837,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3845,
+          "operation": "UPDATE",
+          "table": "llm_batch_items"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "mark_batch_item_accounted",
+      "line": 3860,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3861,
+          "operation": "UPDATE",
+          "table": "llm_batch_items"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "reset_bill",
+      "line": 3866,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 3872,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_authors",
+      "line": 4174,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 4175,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_agenda",
+      "line": 4180,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 4182,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_senate",
+      "line": 4202,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 4203,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_act",
+      "line": 4208,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 4209,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_submission",
+      "line": 4292,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 4293,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_rcl",
+      "line": 4315,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 4316,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_seen_supplements",
+      "line": 4347,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 4348,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_joint_comparison",
+      "line": 4353,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 4355,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_wykaz",
+      "line": 4368,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 4369,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_rcl_num",
+      "line": 4407,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 4408,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "remember_rcl_wykaz_number",
+      "line": 4423,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 4426,
+          "operation": "INSERT INTO",
+          "table": "rcl_wykaz_numbers"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "move_government_rows",
+      "line": 4474,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 4483,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "link_bills",
+      "line": 4532,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 4549,
+          "operation": "UPDATE",
+          "table": "bills"
+        },
+        {
+          "line": 4553,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "move_primary_analysis_work",
+      "line": 4559,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 4560,
+          "operation": "UPDATE",
+          "table": "llm_batch_items"
+        },
+        {
+          "line": 4566,
+          "operation": "UPDATE",
+          "table": "llm_batch_intents"
+        },
+        {
+          "line": 4574,
+          "operation": "UPDATE",
+          "table": "bills"
+        },
+        {
+          "line": 4580,
+          "operation": "UPDATE",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "create_publication",
+      "line": 4585,
+      "category": "native required-identity boundary",
+      "writes": [
+        {
+          "line": 4619,
+          "operation": "INSERT INTO",
+          "table": "publications"
+        },
+        {
+          "line": 4615,
+          "operation": "UPDATE",
+          "table": "publication_sequence"
+        }
+      ],
+      "structured_fields": "actual retained publication_id,updated delivery_status; supplied/inherited bill key masked on possible upsert collision",
+      "debug_events": [
+        "log.debug('local publication write', extra=log_extra(bill_term=None, bill_number=None, publication_id=int(row[0]), delivery_status=publication.status.value))"
+      ],
+      "delegates": []
+    },
+    {
+      "method": "reserve_digest_events",
+      "line": 4709,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 4737,
+          "operation": "INSERT OR IGNORE INTO",
+          "table": "digest_event_links"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "freeze_legacy_digest_parts",
+      "line": 4742,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 4840,
+          "operation": "UPDATE",
+          "table": "publications"
+        },
+        {
+          "line": 4857,
+          "operation": "INSERT INTO",
+          "table": "digest_event_links"
+        },
+        {
+          "line": 4861,
+          "operation": "UPDATE",
+          "table": "digest_event_links"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": [
+        "create_publication"
+      ]
+    },
+    {
+      "method": "resolve_delivery",
+      "line": 4926,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 5063,
+          "operation": "INSERT INTO",
+          "table": "delivery_resolutions"
+        },
+        {
+          "line": 4993,
+          "operation": "UPDATE",
+          "table": "publications"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": [
+        "mark_publication"
+      ]
+    },
+    {
+      "method": "recover_source_context_retry",
+      "line": 5076,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 5175,
+          "operation": "UPDATE",
+          "table": "publications"
+        },
+        {
+          "line": 5181,
+          "operation": "INSERT INTO",
+          "table": "delivery_resolutions"
+        },
+        {
+          "line": 5190,
+          "operation": "UPDATE",
+          "table": "publications"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": [
+        "bind_publication_content",
+        "save_content_version"
+      ]
+    },
+    {
+      "method": "mark_publication",
+      "line": 5250,
+      "category": "native required-identity boundary",
+      "writes": [
+        {
+          "line": 5272,
+          "operation": "UPDATE",
+          "table": "publications"
+        }
+      ],
+      "structured_fields": "publication_id,delivery_status,already-loaded actual bill key; missing physical row emits no event",
+      "debug_events": [
+        "log.debug('local publication status write', extra=log_extra(bill_term=original.term, bill_number=original.number, publication_id=publication_id, delivery_status=status.value))"
+      ],
+      "delegates": []
+    },
+    {
+      "method": "delete_publication",
+      "line": 5350,
+      "category": "maintenance/rehydration",
+      "writes": [
+        {
+          "line": 5355,
+          "operation": "DELETE FROM",
+          "table": "publications"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "set_card_digest",
+      "line": 5392,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 5394,
+          "operation": "UPDATE",
+          "table": "publications"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "mark_stale_pending_as_unknown",
+      "line": 5398,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 5405,
+          "operation": "UPDATE",
+          "table": "publications"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "add_status_change",
+      "line": 5415,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 5420,
+          "operation": "INSERT INTO",
+          "table": "status_changes"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_status_change_amendments",
+      "line": 5457,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 5459,
+          "operation": "UPDATE",
+          "table": "status_changes"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_status_change_supplements",
+      "line": 5471,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 5481,
+          "operation": "UPDATE",
+          "table": "status_changes"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_document_work",
+      "line": 5516,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 5524,
+          "operation": "INSERT INTO",
+          "table": "document_work"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_revision_application_work",
+      "line": 5547,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 5559,
+          "operation": "INSERT INTO",
+          "table": "document_work"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_revision_application_handoff",
+      "line": 5597,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 5633,
+          "operation": "UPDATE",
+          "table": "llm_batch_items"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "release_held_status_changes",
+      "line": 5652,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 5656,
+          "operation": "UPDATE",
+          "table": "publications"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "prune_runs",
+      "line": 5689,
+      "category": "maintenance/rehydration",
+      "writes": [
+        {
+          "line": 5691,
+          "operation": "DELETE FROM",
+          "table": "runs"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "prune_history",
+      "line": 5738,
+      "category": "maintenance/rehydration",
+      "writes": [
+        {
+          "line": 5769,
+          "operation": "DELETE FROM",
+          "table": "analysis_memo"
+        },
+        {
+          "line": 5791,
+          "operation": "UPDATE",
+          "table": "llm_batch_items"
+        },
+        {
+          "line": 5764,
+          "operation": "UPDATE",
+          "table": "publications"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "start_run",
+      "line": 5815,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 5816,
+          "operation": "INSERT INTO",
+          "table": "runs"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "finish_run",
+      "line": 5822,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 5823,
+          "operation": "UPDATE",
+          "table": "runs"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "record_command",
+      "line": 5878,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 5880,
+          "operation": "INSERT OR IGNORE INTO",
+          "table": "commands"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "mark_command_executed",
+      "line": 5907,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 5908,
+          "operation": "UPDATE",
+          "table": "commands"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "mark_command_handled",
+      "line": 5913,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "line": 5914,
+          "operation": "UPDATE",
+          "table": "commands"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "migrate",
+      "line": 1248,
+      "category": "maintenance/rehydration",
+      "writes": [
+        {
+          "operation": "reviewed dynamic SQL",
+          "table": "schema/version"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "restore",
+      "line": 1290,
+      "category": "maintenance/rehydration",
+      "writes": [
+        {
+          "operation": "reviewed dynamic SQL",
+          "table": "restored schema/typed rows and legacy bill projections"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_source_catalog_snapshot",
+      "line": 2335,
+      "category": "supporting metadata/edge",
+      "writes": [
+        {
+          "operation": "reviewed dynamic SQL",
+          "table": "source_catalog_snapshots"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "save_document_review",
+      "line": 3026,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "operation": "reviewed dynamic SQL",
+          "table": "bills review projection"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    },
+    {
+      "method": "discontinue_unfinished",
+      "line": 4525,
+      "category": "operational projection/work/cache/control",
+      "writes": [
+        {
+          "operation": "reviewed dynamic SQL",
+          "table": "bills"
+        }
+      ],
+      "structured_fields": null,
+      "debug_events": [],
+      "delegates": []
+    }
+  ],
+  "dynamic_sql_sites": [
+    {
+      "method": "_validate_legacy_import",
+      "line": 1015,
+      "expression": "f'PRAGMA foreign_key_check({table})'",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "_validate_legacy_projections",
+      "line": 1082,
+      "expression": "f'SELECT {column} FROM {table} WHERE {column} IS NOT NULL'",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "_validate_legacy_projections",
+      "line": 1079,
+      "expression": "f'PRAGMA table_info({table})'",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "_preserve_legacy_json",
+      "line": 1236,
+      "expression": "query",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "migrate",
+      "line": 1252,
+      "expression": "f'BEGIN;{script}PRAGMA user_version = {version};COMMIT;'",
+      "reviewed_effect": "schema migration/restore"
+    },
+    {
+      "method": "restore",
+      "line": 1348,
+      "expression": "f'PRAGMA user_version = {_dump_version(script)}'",
+      "reviewed_effect": "schema migration/restore"
+    },
+    {
+      "method": "restore",
+      "line": 1300,
+      "expression": "script",
+      "reviewed_effect": "schema migration/restore"
+    },
+    {
+      "method": "restore",
+      "line": 1343,
+      "expression": "script",
+      "reviewed_effect": "schema migration/restore"
+    },
+    {
+      "method": "restore",
+      "line": 1307,
+      "expression": "f'BEGIN;{migration}PRAGMA user_version = {number};COMMIT;'",
+      "reviewed_effect": "schema migration/restore"
+    },
+    {
+      "method": "restore",
+      "line": 1340,
+      "expression": "'DROP VIEW IF EXISTS \"' + name.replace('\"', '\"\"') + '\"'",
+      "reviewed_effect": "schema migration/restore"
+    },
+    {
+      "method": "restore",
+      "line": 1342,
+      "expression": "f'DROP TABLE IF EXISTS \"{name}\"'",
+      "reviewed_effect": "schema migration/restore"
+    },
+    {
+      "method": "restore",
+      "line": 1353,
+      "expression": "f'SELECT term, number, {column} FROM bills WHERE {column} IS NOT NULL'",
+      "reviewed_effect": "schema migration/restore"
+    },
+    {
+      "method": "restore",
+      "line": 1359,
+      "expression": "f'UPDATE bills SET {column} = ? WHERE term = ? AND number = ?'",
+      "reviewed_effect": "schema migration/restore"
+    },
+    {
+      "method": "_legacy_snapshot_columns",
+      "line": 1615,
+      "expression": "f\"SELECT {', '.join(selected)} FROM {table} ORDER BY {', '.join(shape.keys)}\"",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "_legacy_snapshot_columns",
+      "line": 1612,
+      "expression": "f'PRAGMA table_info({table})'",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "_legacy_maintenance_views",
+      "line": 1649,
+      "expression": "query",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "apply_legacy_maintenance",
+      "line": 1735,
+      "expression": "f'UPDATE {original.table} SET {original.column} = ? WHERE {predicate} AND {original.column} = ?'",
+      "reviewed_effect": "finite existing projection compaction"
+    },
+    {
+      "method": "list_computation_results",
+      "line": 1877,
+      "expression": "query + ' ORDER BY rowid'",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "save_source_catalog_snapshot",
+      "line": 2350,
+      "expression": "'INSERT INTO source_catalog_snapshots (' + ','.join((*CATALOG_COLUMNS, 'record_json')) + ') VALUES (?,?,?,?,?,?)'",
+      "reviewed_effect": "known catalog/omission metadata insert"
+    },
+    {
+      "method": "save_source_catalog_attempt",
+      "line": 2380,
+      "expression": "'INSERT INTO source_catalog_attempts (' + ','.join((*ATTEMPT_COLUMNS, 'record_json')) + ') VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'",
+      "reviewed_effect": "known catalog/omission metadata insert"
+    },
+    {
+      "method": "save_source_metadata_omission",
+      "line": 2429,
+      "expression": "'INSERT INTO source_metadata_omissions (' + ','.join((*SOURCE_REFERENCE_COLUMNS, 'record_json')) + ') VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'",
+      "reviewed_effect": "known catalog/omission metadata insert"
+    },
+    {
+      "method": "list_artifact_reads",
+      "line": 2858,
+      "expression": "query + ' ORDER BY rowid'",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "save_document_review",
+      "line": 3033,
+      "expression": "f'UPDATE bills SET {column} = ? WHERE term = ? AND number = ?'",
+      "reviewed_effect": "existing bill projection/update"
+    },
+    {
+      "method": "list_by_status",
+      "line": 3894,
+      "expression": "f'\\n            SELECT * FROM bills WHERE status IN ({placeholders}) {attempts_clause}\\n              AND discontinued_at IS NULL\\n            ORDER BY change_date DESC LIMIT ?\\n            '",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "list_publish_candidates",
+      "line": 4029,
+      "expression": "f'\\n            SELECT b.* FROM bills b\\n            WHERE b.status = ? AND b.analysis_json IS NOT NULL\\n              AND b.discontinued_at IS NULL\\n              AND {_NO_CARD_YET}\\n            '",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "list_joint_reply_candidates",
+      "line": 4066,
+      "expression": "f\"\\n            SELECT b.* FROM bills b\\n            WHERE b.status = ? AND b.analysis_json IS NOT NULL\\n              AND b.discontinued_at IS NULL\\n              AND json_array_length(\\n                      json_extract(b.summary_json, '$.prints_considered_jointly')\\n                  ) > 0\\n              AND {_NO_CARD_YET}\\n            ORDER BY b.term, b.number\\n            LIMIT ?\\n            \"",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "list_tracked",
+      "line": 4171,
+      "expression": "sql + ' ORDER BY b.term, b.number'",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "list_due_in_force",
+      "line": 4251,
+      "expression": "f\"\\n            SELECT b.* FROM bills b\\n            JOIN publications p ON p.term = b.term AND p.number = b.number\\n            WHERE p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?\\n              AND b.entry_into_force IS NOT NULL AND b.entry_into_force <= ?\\n              AND b.status != 'linked' AND b.discontinued_at IS NULL\\n              {self._NO_SETTLED_POST}\\n            ORDER BY b.entry_into_force, b.number\\n            \"",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "list_due_consultations",
+      "line": 4271,
+      "expression": "f\"\\n            SELECT b.* FROM bills b\\n            JOIN publications p ON p.term = b.term AND p.number = b.number\\n            WHERE p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?\\n              AND b.status != ? AND b.discontinued_at IS NULL\\n              AND {self._CONSULTATION_END} BETWEEN ? AND ?\\n              {self._NO_SETTLED_POST}\\n            ORDER BY {self._CONSULTATION_END}, b.number\\n            \"",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "_find_rcl",
+      "line": 4448,
+      "expression": "f\"SELECT * FROM bills WHERE json_extract(rcl_json, '{path}') = ? ORDER BY term DESC, number LIMIT 1\"",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "move_government_rows",
+      "line": 4493,
+      "expression": "f\"UPDATE bills SET term = ?, summary_json = json_set(summary_json, '$.term', ?) WHERE term = ? AND number IN ({placeholders})\"",
+      "reviewed_effect": "existing bill projection/update"
+    },
+    {
+      "method": "move_government_rows",
+      "line": 4489,
+      "expression": "f'UPDATE {table} SET term = ? WHERE term = ? AND number IN ({placeholders})'",
+      "reviewed_effect": "existing bill projection/update"
+    },
+    {
+      "method": "list_unfinished_published",
+      "line": 4510,
+      "expression": "f\"\\n            SELECT * FROM bills\\n            WHERE term = ? AND {self._UNFINISHED}\\n              AND EXISTS (\\n                  SELECT 1 FROM publications p\\n                  WHERE p.term = bills.term AND p.number = bills.number\\n                    AND p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?\\n              )\\n            ORDER BY number\\n            \"",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "discontinue_unfinished",
+      "line": 4526,
+      "expression": "f'UPDATE bills SET discontinued_at = ? WHERE term = ? AND {self._UNFINISHED}'",
+      "reviewed_effect": "existing bill projection/update"
+    },
+    {
+      "method": "get_publication",
+      "line": 5319,
+      "expression": "sql + ' ORDER BY id DESC LIMIT 1'",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "list_revision_application_work",
+      "line": 5593,
+      "expression": "query + ' ORDER BY next_at, key'",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    },
+    {
+      "method": "digest",
+      "line": 1649,
+      "expression": "query",
+      "reviewed_effect": "read-only query/PRAGMA; callsites inspected"
+    }
+  ],
+  "delegated_write_wrappers": {
+    "save_physical_metadata": "save_physical_inventory",
+    "save_physical_capture": "save_physical_inventory",
+    "save_llm_batch": "_save_llm_batch_rows"
+  },
+  "not_a_sql_journal": true,
+  "unsupported_or_unknown": {
+    "prepared_input_id": "No new persisted PreparedInput identity; exact request SHA is the actual frozen input identity.",
+    "legacy": "Missing actual hashes/receipts/parents remain absent.",
+    "application_row_id": "Existing typed API carries composite identity; numeric row IDs are not fetched/invented for logs.",
+    "supporting_record_ids": "Catalog/omission/physical/edition/snapshot-specific IDs remain in their typed SQL rows; required core endpoint IDs are traced at native creation/binding boundaries.",
+    "commit": "Local validation/write traces do not attest commit/checkpoint/provider or remote delivery.",
+    "history": "No retroactive traces are generated during restore/legacy import/cleanup."
+  }
+}

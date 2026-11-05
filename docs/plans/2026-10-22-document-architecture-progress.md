@@ -10478,3 +10478,36 @@ CI41946923557/relay41947818432 verified, including45s health/timer. DA5 remains 
 [Report](../assets/audits/2026-11-05-senate-input-bridge/report.md),
 [qualification](../assets/audits/2026-11-05-senate-input-bridge/qualification.json),
 [corpus proof](../assets/audits/2026-11-05-senate-input-bridge/corpus-proof.json).
+
+<a id="j235"></a>
+
+## J235 — complete finite correlation ID contract
+
+5 November 2026. Full repository inventory: 98 write/schema/restore boundaries, 37 dynamic SQL
+sites, three delegated wrappers. Fifteen native boundaries cover the stated core ID contract.
+Add extraction ID and actual request/receipt parents through one shared adapter helper. Request
+SHA comes from the actual frozen input when known. Auxiliary metadata IDs remain typed SQL-only;
+no artificial input/application ID, retroactive trace or universal SQL journal is introduced.
+
+Collision controls: ignored intent insert logs no supplied replacement IDs; publication upsert
+uses resolved ID/status and masks an unverified supplied owner; missing status rows emit no
+success-shaped event. Events are local validated writes, never commit or remote delivery proof.
+All305 SQL call ASTs remain exact; repository business AST exact after explicitly checked cursor
+capture and two logging-only guards. Portable inventory recipe reproduces the same proof.
+
+Initial full gate caught three NEW test failures: the existing handler filter removed explicit
+None before context merge and restored unrelated IDs; a privacy assertion also captured old
+loader INFO URLs. Corrected bounded known-key tombstones freeze first context across handlers;
+formatters remain exact. Actual filter fixtures, nine direct controls and root41 sequential
+cases cover the correction. Twenty-one new unit cases/no scenarios. Final full gate:
+8375 tests/279.676s/92%, mypy731, Ruff/format green; all800 source/config pins exact.
+Fresh620f092 every table row/rowid, canonical dump, entire default doctor and double restore exact.
+J2337b196312 exactCI41948171201/relay41948673010 verified, including45shealth/timer.
+
+DA10.1 accepted for its stated finite known-ID contract. Plan: 74 total/44 complete/6 explicit
+N/A/24 applicable open. Source/input history and natural lifecycle acceptance remain open.
+
+[Report](../assets/audits/2026-11-05-correlation-contract/report.md),
+[qualification](../assets/audits/2026-11-05-correlation-contract/qualification.json),
+[boundary inventory](../assets/audits/2026-11-05-correlation-contract/inventory.md),
+[filter proof](../assets/audits/2026-11-05-correlation-contract/filter-proof.json).
