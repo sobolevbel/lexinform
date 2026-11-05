@@ -12,11 +12,15 @@ class ComputationRowError(ValueError):
         super().__init__(code)
 
 
-def read_computation_result(row: sqlite3.Row) -> ComputationResult:
+def parse_computation_result(raw: str) -> ComputationResult:
     try:
-        result = ComputationResult.model_validate(read_json(row["result_json"]))
+        return ComputationResult.model_validate(read_json(raw))
     except ValueError, TypeError, RecursionError:
         raise ComputationRowError("invalid_computation_result") from None
+
+
+def read_computation_result(row: sqlite3.Row) -> ComputationResult:
+    result = parse_computation_result(row["result_json"])
     if (
         result.result_id,
         result.provider,

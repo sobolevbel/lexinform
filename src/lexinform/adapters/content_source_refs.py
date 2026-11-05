@@ -3,6 +3,7 @@
 import sqlite3
 from datetime import datetime
 
+from lexinform.adapters.computation_history import parse_computation_result
 from lexinform.content_sources import verify_primary_content_source
 from lexinform.models import (
     AnalysisRecord,
@@ -59,7 +60,7 @@ class ContentSourceRows:
         row = self._query(
             "SELECT result_json FROM computation_results WHERE result_id = ?", (result_id,)
         ).fetchone()
-        return ComputationResult.model_validate_json(row[0]) if row else None
+        return parse_computation_result(row[0]) if row else None
 
     def get_consumed_primary_input(
         self, provider: BatchProvider, batch_id: str, custom_id: str, generation: int
@@ -78,7 +79,7 @@ class ContentSourceRows:
             return None
         if row["batch_provider"] != provider or row["paid_json"] is None:
             raise ValueError("consumed item and original provider/computation disagree")
-        result = ComputationResult.model_validate_json(row["paid_json"])
+        result = parse_computation_result(row["paid_json"])
         if (
             result.result_id,
             result.provider,
@@ -284,7 +285,7 @@ def validate_projected_application(
     ).fetchone()
     if row is None:
         raise ValueError("a projected generation requires its retained primary result")
-    result = ComputationResult.model_validate_json(row["result_json"])
+    result = parse_computation_result(row["result_json"])
     if (
         result.result_id,
         result.provider,

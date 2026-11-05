@@ -2,10 +2,21 @@
 
 import datetime as dt
 import hashlib
+import re
 from typing import Annotated, Literal, Self
 
-from pydantic import AliasChoices, BaseModel, Field, model_validator
+from pydantic import (
+    AliasChoices,
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
+from lexinform.json_storage import read_json
 from lexinform.models.analysis import (
     Amendments,
     AmendmentsContext,
@@ -36,6 +47,7 @@ from lexinform.models.report import CallKind
 from lexinform.models.reviews import DocumentReview, ReviewContext
 from lexinform.models.scan_input import ScanInputManifest
 from lexinform.models.senate import SenateResolutionIdentity
+from lexinform.saved_clock import saved_clock_age
 
 BatchProvider = Literal["anthropic", "openai"]
 BatchStatus = Literal["submitted", "ended", "failed"]
@@ -98,6 +110,99 @@ BatchKind = Literal[
     "act_application",
     "name",
 ]
+
+
+class LocalTimingWitness(BaseModel):
+    """Local event clocks bind a frozen input without claiming source or remote completion."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    schema_version: Literal[1] = 1
+    purpose: BatchKind
+    request_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    input_scope: ComputationInputBinding
+    trigger_kind: (
+        Literal["bill_discovered", "document_candidate_observed", "work_requested"] | None
+    ) = Field(default=None, exclude_if=lambda value: value is None)
+    triggered_at: AwareDatetime | None = Field(default=None, exclude_if=lambda value: value is None)
+    read_kind: Literal["fresh", "cache_reuse", "mixed"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    read_completed_at: AwareDatetime | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    @field_validator("triggered_at", "read_completed_at", mode="before")
+    @classmethod
+    def explicit_clock(cls, value: object) -> object:
+        if isinstance(value, str):
+            if len(value) > 64 or re.search(r"[.,]\d{7,}", value):
+                raise ValueError("Local timing exceeds explicit datetime clock precision")
+            value = dt.datetime.fromisoformat(value)
+        if isinstance(value, dt.datetime):
+            offset = value.utcoffset()
+            return value if offset is None else value.replace(tzinfo=dt.timezone(offset), fold=0)
+        if value is None:
+            return None
+        raise ValueError("Local timing requires an explicit aware timestamp")
+
+    @field_serializer("triggered_at", "read_completed_at", when_used="json")
+    def lossless_clock(self, value: dt.datetime | None) -> str | None:
+        return value.isoformat() if value is not None else None
+
+    @model_validator(mode="after")
+    def known_event_pairs(self) -> Self:
+        if (self.trigger_kind is None) != (self.triggered_at is None):
+            raise ValueError("A local trigger requires both its event kind and clock")
+        if (self.read_kind is None) != (self.read_completed_at is None):
+            raise ValueError("A local read completion requires both its kind and clock")
+        if self.trigger_kind == "bill_discovered" and self.purpose != "analysis":
+            raise ValueError("Bill discovery is a trigger only for initial analysis")
+        if len(self.model_dump_json().encode()) > 1024:
+            raise ValueError("Local timing witness exceeds its 1 KiB metadata cap")
+        return self
+
+    def require_scope(self, binding: ComputationInputBinding | None) -> None:
+        if binding is None or self.input_scope != binding:
+            raise ValueError("Local timing must retain its exact original input scope")
+
+    def require_request(self, purpose: str, request_sha256: str | None) -> None:
+        if (
+            self.purpose != purpose
+            or request_sha256 is None
+            or self.request_sha256 != request_sha256
+        ):
+            raise ValueError("Local timing must identify the actual purpose and frozen request")
+
+    def require_not_after(self, endpoint: dt.datetime, *, json_endpoint: bool = False) -> None:
+        offset = endpoint.utcoffset()
+        if offset is None:
+            raise ValueError("A local timing endpoint requires an aware clock")
+        if json_endpoint and offset % dt.timedelta(minutes=1):
+            raise ValueError("unsupported_timing_endpoint_offset")
+        if any(
+            stamp is not None and saved_clock_age(stamp, endpoint).unknown is not None
+            for stamp in (self.triggered_at, self.read_completed_at)
+        ):
+            raise ValueError("Local timing cannot follow its enclosing recorded endpoint")
+
+
+def _timing_meta(
+    witness: LocalTimingWitness | None,
+    binding: ComputationInputBinding | None,
+    request_sha256: str | None,
+    queued_at: dt.datetime | None,
+    *,
+    primary: bool,
+) -> None:
+    if witness is None:
+        return
+    witness.require_scope(binding)
+    if (witness.purpose in ("analysis", "reanalysis")) != primary:
+        raise ValueError("Local timing must use its actual primary or secondary metadata")
+    witness.require_request(witness.purpose, request_sha256)
+    if queued_at is not None:
+        witness.require_not_after(queued_at, json_endpoint=True)
 
 
 def batch_output_model(kind: CallKind) -> type[BatchAnswer]:
@@ -261,8 +366,19 @@ class BatchItemMeta(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    local_timing_witness: LocalTimingWitness | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     @model_validator(mode="after")
     def frozen_binding(self) -> Self:
+        _timing_meta(
+            self.local_timing_witness,
+            self.input_binding,
+            self.request_sha256,
+            self.queued_at,
+            primary=True,
+        )
         if self.input_binding is not None and self.input_binding.reuse_key != self.memo_key:
             raise ValueError("input binding must keep its frozen memo key")
         receipt = self.prepared_input_receipt
@@ -324,8 +440,19 @@ class DigestItemMeta(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    local_timing_witness: LocalTimingWitness | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     @model_validator(mode="after")
     def frozen_binding(self) -> Self:
+        _timing_meta(
+            self.local_timing_witness,
+            self.input_binding,
+            self.request_sha256,
+            self.queued_at,
+            primary=False,
+        )
         if self.input_binding is not None and self.input_binding.reuse_key != self.memo_key:
             raise ValueError("input binding must keep its frozen memo key")
         receipt = self.prepared_input_receipt
@@ -341,7 +468,11 @@ def batch_item_meta(
     kind: str, raw: str, *, submitted: bool = True
 ) -> BatchItemMeta | DigestItemMeta:
     model = BatchItemMeta if kind in ("analysis", "reanalysis") else DigestItemMeta
-    parsed = model.model_validate_json(raw)
+    try:
+        decoded = read_json(raw)
+    except ValueError, TypeError, RecursionError:
+        raise ValueError("invalid_batch_metadata_json") from None
+    parsed = model.model_validate(decoded)
     if isinstance(parsed, DigestItemMeta) and parsed.prepared_input_receipt is not None:
         expected = (
             "amendments"
@@ -352,6 +483,12 @@ def batch_item_meta(
             raise ValueError("Text receipts require their actual secondary purpose")
         if submitted and parsed.request_sha256 is None:
             raise ValueError("Submitted text receipts require their frozen request checksum")
+    timing = parsed.local_timing_witness
+    if timing is not None:
+        if timing.purpose != kind:
+            raise ValueError("Local timing must identify the submitted purpose")
+        if submitted:
+            timing.require_request(kind, parsed.request_sha256)
     return parsed
 
 
@@ -366,6 +503,14 @@ class LlmBatchItem(BaseModel):
     meta: BatchItemMeta | DigestItemMeta
     consumed_at: dt.datetime | None = None
     result: BatchResult | None = None
+
+    @model_validator(mode="after")
+    def actual_local_timing(self) -> Self:
+        timing = self.meta.local_timing_witness
+        if timing is not None:
+            timing.require_scope(self.meta.input_binding)
+            timing.require_request(self.call_kind, self.meta.request_sha256)
+        return self
 
     @classmethod
     def from_intent(cls, batch_id: str, intent: BatchIntent) -> Self:
@@ -391,6 +536,25 @@ class BatchIntent(BaseModel):
     def receipt_meta_cannot_fall_back(cls, value: object) -> object:
         if isinstance(value, dict):
             meta = value.get("meta")
+            timing = (
+                meta.get("local_timing_witness")
+                if isinstance(meta, dict)
+                else (
+                    meta.local_timing_witness
+                    if isinstance(meta, (BatchItemMeta, DigestItemMeta))
+                    else None
+                )
+            )
+            if timing is not None:
+                purpose = (
+                    timing.get("purpose")
+                    if isinstance(timing, dict)
+                    else (timing.purpose if isinstance(timing, LocalTimingWitness) else None)
+                )
+                if isinstance(meta, DigestItemMeta) or purpose not in ("analysis", "reanalysis"):
+                    DigestItemMeta.model_validate(meta)
+                else:
+                    BatchItemMeta.model_validate(meta)
             receipt = (
                 meta.get("prepared_input_receipt")
                 if isinstance(meta, dict)
@@ -448,6 +612,25 @@ class BatchIntent(BaseModel):
             or receipt.text_chars != len(ctx.text)
         ):
             raise ValueError("Input receipt differs from the frozen request and context")
+        return self
+
+    @model_validator(mode="after")
+    def actual_local_timing(self) -> Self:
+        timing = self.meta.local_timing_witness
+        if timing is not None:
+            if (self.request.call_kind in ("analysis", "reanalysis")) != isinstance(
+                self.meta, BatchItemMeta
+            ):
+                raise ValueError("Local timing requires the actual request metadata shape")
+            timing.require_scope(self.meta.input_binding)
+            timing.require_request(self.request.call_kind, self.meta.request_sha256)
+            timing.require_request(self.request.call_kind, self.request.payload_sha256)
+            if (
+                self.request.payload_json is None
+                or input_text_sha256(self.request.payload_json) != timing.request_sha256
+            ):
+                raise ValueError("Local timing requires the exact frozen serialized request")
+            timing.require_not_after(self.created_at, json_endpoint=True)
         return self
 
     @classmethod

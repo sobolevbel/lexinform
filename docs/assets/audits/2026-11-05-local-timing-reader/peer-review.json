@@ -1,0 +1,26 @@
+{
+  "findings": [],
+  "independent_tests_run": false,
+  "limitations": [
+    "Runtime capture/writer remains OFF; no natural timing or DA10.4 completion claim.",
+    "Release includes ordering increment 6a2677eca43d4eec0b2951c0c9d024d5e8b12f52398ffc6d51574af0247322b1 to preserve domain restore error ownership.",
+    "Malformed duplicate/deep legacy JSON becomes explicit invalid evidence; valid legacy None serialization remains unchanged.",
+    "Root preserves newer card/logging overlay and owns full gate and staged deployment."
+  ],
+  "network_used": false,
+  "patch_sha256": "225e02ccff36e449708aa67cc3658d32800f6a4323177bebe830060170ee6f30",
+  "scope": "Independent exact nine-file timing reader review: original binding/request/purpose corroboration, lossless aware event clocks and enclosing endpoint bounds, timing-only carriers across all purposes, immutable reuse/None compatibility and strict bounded JSON reader inventory.",
+  "source_sha256": {
+    "src/lexinform/adapters/computation_history.py": "06a8c545836cd145fd47bc2a16dad4d39f31cb1f971df52883fb9ac66ddcd05f",
+    "src/lexinform/adapters/content_source_refs.py": "1a2117b8fb3c0929677f9c924b90366d12bf48df5ed1c02391cf27035cb06320",
+    "src/lexinform/adapters/input_receipts.py": "631133acea295aa7bffac1685de9b4d9c06052de8f1b11a39e792130dc8abfc3",
+    "src/lexinform/adapters/sqlite_repo.py": "13e0983e92c9e80ea51c085a74cab743a0a99dadc441b9a50b737c18a0883ac5",
+    "src/lexinform/models/__init__.py": "444160c3b87aeedae973e0720ec91bb149cacc6bab961035f4389f4e9b04c661",
+    "src/lexinform/models/batch.py": "25dab2527da52f327c68d431301c571ec1de74c6511a3ee4a9cafd39d5bc70db",
+    "src/lexinform/models/computations.py": "2d5c4c8537e4a251809fe18b91d335e2212b6b4a019a638c342153913a5c70cf",
+    "tests/unit/test_local_timing_reader.py": "65191ff197d10cab7e72f019fe1c70d8adfe86f4d7a92a2b06631f7274cbfa39",
+    "tools/computation_doctor.py": "f52d26530c89aaf78439e6b9dd539865e69910c10abebc0ee8f39af5d5dca810"
+  },
+  "stage": "J236 reader A",
+  "verdict": "clear"
+}

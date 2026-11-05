@@ -1,0 +1,18 @@
+{
+  "intentional_source_pin_overlays": [
+    "src/lexinform/adapters/content_source_refs.py",
+    "src/lexinform/adapters/sqlite_repo.py"
+  ],
+  "repository_changed_methods": [
+    "_batch_intents",
+    "list_computation_results",
+    "restore"
+  ],
+  "all_repository_sql_call_asts_exact": true,
+  "repository_other_methods_including_lifecycle_exact": true,
+  "snapshot_identity_reader_ast_exact": true,
+  "runtime_services_ports_loader_clock_unchanged": true,
+  "restore_change": "Only first preflight include_results=False; final full validation default True after existing domain validators",
+  "all_sql_asts_exact": true,
+  "card_lifecycle_other_methods_preserved": true
+}

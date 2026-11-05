@@ -1,0 +1,18 @@
+{
+  "findings": [],
+  "independent_tests_run": false,
+  "limitations": [
+    "No parser or final validation weakening; exact SupplementDependencyError ownership is preserved.",
+    "Runtime timing writer remains OFF; root owns merged full gate and release."
+  ],
+  "network_used": false,
+  "patch_sha256": "6a2677eca43d4eec0b2951c0c9d024d5e8b12f52398ffc6d51574af0247322b1",
+  "scope": "Independent exact three-file correction review: first restore preflight defers only new retained-result scan; intent/item checks and existing domain validator ordering remain; final full scanner is mandatory and public/doctor defaults remain strict.",
+  "source_sha256": {
+    "src/lexinform/adapters/input_receipts.py": "22f2e423cbb47929b5bd27cbe3d6bcf232be19d7f5d985a71543f47f3d0dc223",
+    "src/lexinform/adapters/sqlite_repo.py": "71ad8ee2a8849d5f568bf1c5ddb00256877ffd01e4ad7bd7aaee510657499f75",
+    "tests/unit/test_supplement_dependencies.py": "43d2a0c4bbc0c103f88120efde74aaaac443cf8b3f33b18bace74149b870b026"
+  },
+  "stage": "J236 restore ordering correction",
+  "verdict": "clear"
+}

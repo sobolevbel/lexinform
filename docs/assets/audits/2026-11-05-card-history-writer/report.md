@@ -53,3 +53,5 @@ partial; plan74total/44complete/6explicitN/A/24applicableopen.
 [lifecycle review](lifecycle-review.json), [strict predecessor review](predecessor-review.json).
 
 Previous reader release: [exact CI and relay verification](previous-release.json).
+
+Actual card writer release: [exact CI and relay verification](release.json), commitc1a5a04d.

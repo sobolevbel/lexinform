@@ -15,7 +15,7 @@ from lexinform.models.analysis import (
     SupplementRecord,
     TokenUsage,
 )
-from lexinform.models.batch import BatchKind, BatchProvider
+from lexinform.models.batch import BatchKind, BatchProvider, LocalTimingWitness
 from lexinform.models.computation_inputs import ComputationInputBinding
 from lexinform.models.enums import BillStatus
 from lexinform.models.reviews import (
@@ -176,6 +176,9 @@ class ComputationResult(BaseModel):
     request_sha256: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$", exclude_if=lambda value: value is None
     )
+    local_timing_witness: LocalTimingWitness | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     validation: Literal["validated", "error"]
     record: ComputationRecord | None
     model: str | None
@@ -189,6 +192,11 @@ class ComputationResult(BaseModel):
 
     @model_validator(mode="after")
     def validated_record(self) -> Self:
+        timing = self.local_timing_witness
+        if timing is not None:
+            timing.require_scope(self.input_binding)
+            timing.require_request(self.purpose, self.request_sha256)
+            timing.require_not_after(self.collected_at, json_endpoint=True)
         primary = self.purpose in ("analysis", "reanalysis")
         if not primary and self.schema_version == 1:
             raise ValueError("secondary results require schema version 2")

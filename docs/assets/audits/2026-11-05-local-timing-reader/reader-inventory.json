@@ -1,0 +1,45 @@
+{
+  "owned_files": [
+    "src/lexinform/adapters/computation_history.py",
+    "src/lexinform/adapters/content_source_refs.py",
+    "src/lexinform/adapters/input_receipts.py",
+    "src/lexinform/adapters/sqlite_repo.py",
+    "src/lexinform/models/__init__.py",
+    "src/lexinform/models/batch.py",
+    "src/lexinform/models/computations.py",
+    "tests/unit/test_local_timing_reader.py",
+    "tools/computation_doctor.py"
+  ],
+  "unchanged_src_files": 232,
+  "runtime_services_loader_clock_unchanged": true,
+  "repository_changed_methods": [
+    "_batch_intents",
+    "list_computation_results"
+  ],
+  "repository_writer_methods_exact": true,
+  "sql_execute_asts": {
+    "src/lexinform/adapters/sqlite_repo.py": {
+      "execute_call_asts_exact": true,
+      "count": 305
+    },
+    "src/lexinform/adapters/content_source_refs.py": {
+      "execute_call_asts_exact": true,
+      "count": 5
+    }
+  },
+  "identity_factories_properties_exact": [
+    "BatchIntent.from_request",
+    "LlmBatchItem.from_intent",
+    "ComputationResult.result_id"
+  ],
+  "reader_added_sql": "input_snapshot_checks scans computation_results; timing-only submitted branch reads submitted_at. No mutations/new storage.",
+  "strict_reader_scope": [
+    "batch_item_meta",
+    "parse_batch_request",
+    "parse_computation_result",
+    "input_snapshot_checks malformed/modern gates",
+    "content_source_refs result readers",
+    "computation_doctor result reader"
+  ],
+  "known_legacy_change": "Duplicate/deep/malformed JSON now yields bounded invalid evidence; valid None carriers unchanged."
+}

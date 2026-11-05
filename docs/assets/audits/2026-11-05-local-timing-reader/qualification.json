@@ -1,0 +1,56 @@
+{
+  "stage": "J236 local timing witness reader A",
+  "full_tests": 8549,
+  "pytest_xml": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "8549",
+    "time": "291.896",
+    "timestamp": "2026-11-05T05:12:15.443004+01:00",
+    "hostname": "Yauhenis-MacBook-Pro.local"
+  },
+  "new_unit_cases": 108,
+  "new_scenario_cases": 0,
+  "removed_cases": 0,
+  "root_focused_initial": 103,
+  "root_focused_final": 171,
+  "strict_mypy_files": 739,
+  "coverage_percent": 92,
+  "mypy_ruff_format": "green",
+  "source_config_pins": 808,
+  "source_freeze_exact": true,
+  "runtime_writer_active": false,
+  "sql_mutations_schema_provider_payload_changes": false,
+  "first_failed_gate": {
+    "failed": 1,
+    "passed": 8543,
+    "cause": "Generic retained-result scan preempted established supplement domain error; first preflight now preserves prior ordering, final full scan mandatory"
+  },
+  "legacy_serialized_hashes_exact": 79,
+  "legacy_result_ids_exact": 13,
+  "proof_sha256": {
+    "full-final.xml": "31439222abf0c87573f2b1329b65bc1e06cb33a8a35d13606004abe731c3092f",
+    "full-final.log": "44de0f0654bc42b51a000179b000f72db38226001193e7bfaea64894900faa20",
+    "full.xml": "3f69e1398e8301270121e65276300238fb0c1155cb9199511dee853b3541e320",
+    "full.log": "c5735f6eb7a14e43503c3c8bf3227c51edf208050a645f1b32ed860d945fe2d8",
+    "source-freeze-final.json": "f3b73113b2e443017900aa4c00ebbdb8d9e57190c307c90f83114ff1f9bde4c3",
+    "integration-proof-final.json": "a7774e0e8778569bfe0788334b7289d28e6a897f8be8f0aa5a9653352b635309",
+    "state-proof.json": "e0f6dd06bb6c43f2965226292ad2e36b1d71442b72c9ce8e8f2458c69bb7c36c",
+    "none-proof.json": "1b17bc9785e08f8943cd3e5a320f7da2976ba823cc3d81dfc9b07303767d34bc",
+    "storage.json": "e8132954c7ea785736cff46232c2c09a912d7b5d3c7c6b0c292747a70479e552"
+  },
+  "previous_release": {
+    "target": "c1a5a04deb5b2d2af3f1869ac03be0228df4367c",
+    "ci": 41963996232,
+    "deploy": 41964819087,
+    "complete": true
+  },
+  "plan_counts": {
+    "total": 74,
+    "complete": 44,
+    "not_applicable": 6,
+    "applicable_open": 24
+  }
+}

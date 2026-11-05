@@ -1,0 +1,9 @@
+{
+  "state_commit": "620f09234a4959278811885b3e757593ae260bdd",
+  "database_sha256": "d5ea22908a416054a43b95178034a15cb2dabe5aab949802d04d406a096d5d48",
+  "source_and_copy_unchanged": true,
+  "whole_default_doctor_exact_except_schema_db_headers": true,
+  "all48table_rows_rowids_exact": true,
+  "double_restore_exact": true,
+  "legacy_witness_not_inferred": true
+}

@@ -5,7 +5,10 @@ import json
 import sqlite3
 from collections.abc import Iterator
 from dataclasses import dataclass
+from datetime import datetime
 
+from lexinform.adapters.computation_history import read_computation_result
+from lexinform.json_storage import read_json
 from lexinform.models import (
     AmendmentInputReceipt,
     ArtifactMetadata,
@@ -49,10 +52,17 @@ def _object(raw: object) -> dict[str, object] | None:
     if not isinstance(raw, str):
         return None
     try:
-        value = json.loads(raw)
-    except ValueError:
+        value = read_json(raw)
+    except ValueError, TypeError, RecursionError:
         return None
-    return value if isinstance(value, dict) else None
+    return {key: item for key, item in value.items()} if isinstance(value, dict) else None
+
+
+def parse_batch_request(raw: object) -> BatchRequest:
+    try:
+        return BatchRequest.model_validate(read_json(raw) if isinstance(raw, str) else raw)
+    except ValueError, TypeError, RecursionError:
+        raise ValueError("invalid_input_request_json") from None
 
 
 def _reference(table: str, key: object) -> str:
@@ -144,7 +154,9 @@ def _parents(
             )
 
 
-def _input_snapshot_checks(connection: sqlite3.Connection) -> Iterator[InputSnapshotCheck]:
+def _input_snapshot_checks(
+    connection: sqlite3.Connection, *, include_results: bool
+) -> Iterator[InputSnapshotCheck]:
     tables = {
         row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
     }
@@ -152,19 +164,28 @@ def _input_snapshot_checks(connection: sqlite3.Connection) -> Iterator[InputSnap
         for row in _rows(connection, "SELECT * FROM llm_batch_intents"):
             meta = _object(row["meta_json"])
             request = _object(row["request_json"])
+            if meta is None or request is None:
+                yield InputSnapshotCheck(
+                    _reference("llm_batch_intents", row["custom_id"]),
+                    False,
+                    False,
+                    "invalid_input_intent_snapshot",
+                )
+                continue
             has_receipt = meta is not None and meta.get("prepared_input_receipt") is not None
+            has_timing = meta is not None and meta.get("local_timing_witness") is not None
             frozen = request is not None and request.get("payload_sha256") is not None
-            if not has_receipt and not frozen:
+            if not has_receipt and not has_timing and not frozen:
                 continue
             ref = _reference("llm_batch_intents", row["custom_id"])
             try:
-                actual = BatchRequest.model_validate_json(row["request_json"])
+                actual = parse_batch_request(request)
                 if actual.custom_id != row["custom_id"] or row["provider"] not in (
                     "anthropic",
                     "openai",
                 ):
                     raise ValueError("input_snapshot_request_columns")
-                if has_receipt:
+                if has_receipt or has_timing:
                     intent = BatchIntent.model_validate(
                         {
                             "request": actual,
@@ -174,45 +195,85 @@ def _input_snapshot_checks(connection: sqlite3.Connection) -> Iterator[InputSnap
                             "created_at": row["created_at"],
                         }
                     )
-                    if intent.meta.prepared_input_receipt is None:
-                        raise ValueError("input_snapshot_receipt_metadata")
-                    _parents(connection, intent.meta.prepared_input_receipt)
-            except ValueError, TypeError, sqlite3.Error:
+                    if has_receipt:
+                        if intent.meta.prepared_input_receipt is None:
+                            raise ValueError("input_snapshot_receipt_metadata")
+                        _parents(connection, intent.meta.prepared_input_receipt)
+                    if has_timing and intent.meta.local_timing_witness is None:
+                        raise ValueError("input_snapshot_timing_metadata")
+            except ValueError, TypeError, RecursionError, sqlite3.Error:
                 yield InputSnapshotCheck(ref, has_receipt, frozen, "invalid_input_intent_snapshot")
             else:
                 yield InputSnapshotCheck(ref, has_receipt, frozen)
     if "llm_batch_items" in tables:
         for row in _rows(connection, "SELECT * FROM llm_batch_items"):
             raw = _object(row["meta_json"])
-            if raw is None or raw.get("prepared_input_receipt") is None:
+            if raw is None:
+                yield InputSnapshotCheck(
+                    _reference("llm_batch_items", (row["batch_id"], row["custom_id"])),
+                    False,
+                    False,
+                    "invalid_input_item_snapshot",
+                )
+                continue
+            has_receipt = raw is not None and raw.get("prepared_input_receipt") is not None
+            has_timing = raw is not None and raw.get("local_timing_witness") is not None
+            if not has_receipt and not has_timing:
                 continue
             ref = _reference("llm_batch_items", (row["batch_id"], row["custom_id"]))
             try:
                 item_meta = batch_item_meta(row["call_kind"], row["meta_json"])
-                if item_meta.prepared_input_receipt is None:
+                if has_receipt and item_meta.prepared_input_receipt is None:
                     raise ValueError("input_snapshot_receipt_metadata")
                 parent = _one(
                     connection,
-                    "SELECT provider FROM llm_batches WHERE batch_id=?",
+                    "SELECT provider, submitted_at FROM llm_batches WHERE batch_id=?"
+                    if has_timing
+                    else "SELECT provider FROM llm_batches WHERE batch_id=?",
                     (row["batch_id"],),
                 )
                 if parent["provider"] not in ("anthropic", "openai"):
                     raise ValueError("input_snapshot_provider")
-                _parents(connection, item_meta.prepared_input_receipt)
-            except ValueError, TypeError, sqlite3.Error:
-                yield InputSnapshotCheck(ref, True, False, "invalid_input_item_snapshot")
+                if item_meta.prepared_input_receipt is not None:
+                    _parents(connection, item_meta.prepared_input_receipt)
+                if has_timing:
+                    timing = item_meta.local_timing_witness
+                    if timing is None:
+                        raise ValueError("input_snapshot_timing_metadata")
+                    timing.require_not_after(datetime.fromisoformat(parent["submitted_at"]))
+            except ValueError, TypeError, RecursionError, sqlite3.Error:
+                yield InputSnapshotCheck(ref, has_receipt, False, "invalid_input_item_snapshot")
             else:
-                yield InputSnapshotCheck(ref, True, False)
+                yield InputSnapshotCheck(ref, has_receipt, False)
+
+    if include_results and "computation_results" in tables:
+        for row in _rows(connection, "SELECT * FROM computation_results"):
+            raw = _object(row["result_json"])
+            if raw is not None and raw.get("local_timing_witness") is None:
+                continue
+            ref = _reference("computation_results", row["result_id"])
+            try:
+                result = read_computation_result(row)
+                if result.local_timing_witness is None:
+                    raise ValueError("input_snapshot_timing_metadata")
+            except ValueError, TypeError, RecursionError, sqlite3.Error:
+                yield InputSnapshotCheck(ref, False, False, "invalid_input_result_snapshot")
+            else:
+                yield InputSnapshotCheck(ref, False, False)
 
 
-def input_snapshot_checks(connection: sqlite3.Connection) -> Iterator[InputSnapshotCheck]:
+def input_snapshot_checks(
+    connection: sqlite3.Connection, *, include_results: bool = True
+) -> Iterator[InputSnapshotCheck]:
     try:
-        yield from _input_snapshot_checks(connection)
+        yield from _input_snapshot_checks(connection, include_results=include_results)
     except IndexError, KeyError, sqlite3.Error:
         yield InputSnapshotCheck("input_snapshots", False, False, "invalid_input_snapshot_layout")
 
 
-def validate_input_snapshots(connection: sqlite3.Connection) -> None:
-    for check in input_snapshot_checks(connection):
+def validate_input_snapshots(
+    connection: sqlite3.Connection, *, include_results: bool = True
+) -> None:
+    for check in input_snapshot_checks(connection, include_results=include_results):
         if check.code is not None:
             raise ValueError(check.code) from None

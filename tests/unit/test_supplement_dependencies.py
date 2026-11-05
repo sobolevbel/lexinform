@@ -10,6 +10,7 @@ from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.adapters.supplement_dependencies import SupplementDependencyError
 from lexinform.models import ComputationResult, ProcessSummary, StatusChange, SupplementRecord
 from tests.computations import NOW, result_record, retained_result
+from tests.unit.test_local_timing_reader import timed_result
 
 
 def change(record: SupplementRecord, *, number: str = "3039") -> StatusChange:
@@ -66,6 +67,8 @@ def test_public_add_save_get_list_and_restore_preserve_typed_modern_and_unknown_
     [
         ("missing", "supplement_result_unavailable"),
         ("invalid_result", "supplement_result_invalid"),
+        ("duplicate_result", "supplement_result_invalid"),
+        ("deep_result", "supplement_result_invalid"),
         ("failed", "supplement_result_failed"),
         ("purpose", "supplement_result_purpose_mismatch"),
         ("request", "supplement_request_mismatch"),
@@ -83,6 +86,16 @@ def test_corrupt_known_dependencies_fail_public_reads_and_atomic_restore(
             connection.execute("DELETE FROM computation_results")
         elif fault == "invalid_result":
             connection.execute("UPDATE computation_results SET result_json='bad'")
+        elif fault == "duplicate_result":
+            connection.execute(
+                "UPDATE computation_results SET result_json=?",
+                ('{"local_timing_witness":null,"local_timing_witness":null}',),
+            )
+        elif fault == "deep_result":
+            connection.execute(
+                "UPDATE computation_results SET result_json=?",
+                ('{"local_timing_witness":' + "[" * 2500 + "null" + "]" * 2500 + "}",),
+            )
         elif fault == "failed":
             value = result.model_dump(mode="json")
             value.update(validation="error", record=None, error="provider failure")
@@ -126,8 +139,9 @@ def test_corrupt_known_dependencies_fail_public_reads_and_atomic_restore(
         with pytest.raises(SupplementDependencyError):
             repo.list_status_changes(10, "3039")
         repo.restore(original)
-        with pytest.raises(SupplementDependencyError):
+        with pytest.raises(SupplementDependencyError) as restored:
             repo.restore(damaged)
+        assert restored.value.code == code
         assert repo.dump() == original
 
 
@@ -170,3 +184,28 @@ def test_original_paid_owner_and_missing_request_hash_are_not_reconstructed(
         assert saved is not None, "the inserted status change is retained"
         assert saved.supplements == [projected]
         repo.restore(repo.dump())
+
+
+@pytest.mark.parametrize("fault", ["malformed", "deep", "future_timing"])
+def test_standalone_result_is_still_rejected_by_final_restore_validation(fault: str) -> None:
+    result = timed_result("name")
+    value = result.model_dump(mode="json")
+    value["collected_at"] = "2000-01-01T00:00:00Z"
+    raw = {
+        "malformed": "bad",
+        "deep": '{"local_timing_witness":' + "[" * 2500 + "null" + "]" * 2500 + "}",
+        "future_timing": json.dumps(value),
+    }[fault]
+    with closing(SqliteBillRepository(":memory:")) as repo:
+        repo.migrate()
+        repo.save_computation_result(result)
+        before = repo.dump()
+        damaged = (
+            before
+            + "\nUPDATE computation_results SET result_json='"
+            + raw.replace("'", "''")
+            + "';"
+        )
+        with pytest.raises(ValueError, match="invalid_input_result_snapshot"):
+            repo.restore(damaged)
+        assert repo.dump() == before

@@ -22,6 +22,7 @@ from lexinform.adapters.candidate_trace_history import (
     read_candidate_disposition_trace,
     validate_candidate_disposition_traces,
 )
+from lexinform.adapters.computation_history import parse_computation_result
 from lexinform.adapters.content_history import (
     card_publication_rows,
     read_content_version,
@@ -45,7 +46,7 @@ from lexinform.adapters.extraction_history import (
     read_extraction_result,
     validate_extraction_results,
 )
-from lexinform.adapters.input_receipts import validate_input_snapshots
+from lexinform.adapters.input_receipts import parse_batch_request, validate_input_snapshots
 from lexinform.adapters.physical_history import (
     PHYSICAL_INVENTORY_MIGRATION,
     PhysicalInventoryReader,
@@ -136,7 +137,6 @@ from lexinform.models import (
     BatchIntent,
     BatchItemMeta,
     BatchProvider,
-    BatchRequest,
     BatchResult,
     BatchStatus,
     Bill,
@@ -1332,7 +1332,7 @@ class SqliteBillRepository:
             scratch.executescript(script)
             # A dump cut at a statement boundary replays cleanly and fails only in the migrations.
             version = _dump_version(script)
-            validate_input_snapshots(scratch)
+            validate_input_snapshots(scratch, include_results=False)
             validate_source_omissions(scratch)
             validate_catalog_attempts(scratch)
             for number, migration in enumerate(MIGRATIONS[version:], start=version + 1):
@@ -1906,7 +1906,7 @@ class SqliteBillRepository:
             query += " AND json_extract(result_json, '$.purpose') = ?"
             parameters += (purpose,)
         return [
-            ComputationResult.model_validate_json(row[0])
+            parse_computation_result(row[0])
             for row in self._conn.execute(query + " ORDER BY rowid", parameters)
         ]
 
@@ -3740,7 +3740,7 @@ class SqliteBillRepository:
         ).fetchall()
         return [
             BatchIntent(
-                request=(request := BatchRequest.model_validate_json(row["request_json"])),
+                request=(request := parse_batch_request(row["request_json"])),
                 meta=batch_item_meta(request.call_kind, row["meta_json"], submitted=False),
                 provider=row["provider"],
                 state=row["state"],

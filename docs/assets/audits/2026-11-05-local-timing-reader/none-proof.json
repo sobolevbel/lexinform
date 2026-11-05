@@ -1,0 +1,8 @@
+{
+  "whole_legacy_fixture_exact": true,
+  "purposes": 10,
+  "compact_schema3_reviews": 3,
+  "serialized_hashes": 79,
+  "result_ids": 13,
+  "provider_context_request_scope_reuse_unchanged": true
+}

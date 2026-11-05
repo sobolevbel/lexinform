@@ -10591,3 +10591,39 @@ Final8441tests/293.335s/92%,mypy738,Ruff/formatgreen, all807source/config pins e
 [qualification](../assets/audits/2026-11-05-card-history-writer/qualification.json),
 [measured budget](../assets/audits/2026-11-05-card-history-writer/budget.md),
 [storage proof](../assets/audits/2026-11-05-card-history-writer/storage-proof.json).
+
+<a id="j236"></a>
+
+## J236 — compatible local timing witness reader A
+
+5 November 2026. Parallel stage published after J237. Optional LocalTimingWitness in batch
+metadata/retained results binds actual frozen request SHA, purpose and ORIGINAL input scope,
+independent of current item/application owner. Ten purposes; no new enum/schema/source inference.
+Old None omits itself from JSON; immutable reuse preserves original witness/None. Event pairs
+explicitly distinguish unknown, local discovery/candidate/work request and fresh/cache/mixed
+read completion. Read may precede trigger; enclosing known clocks are upper bounds. No source
+publication/provider/delivery clock or source-coverage claim. Aware clock normalization/ISO preserve
+fold/offset precision; shared clock math handles DST/extreme dates. Unsupported subminute JSON
+carrier endpoints reject only new witness, old None remains permissive; actual SystemClockUTC valid.
+
+Strict duplicate/deep JSON reader expansion is explicit across request/meta/result paths, including
+timing-only records. Root preserves newer card lifecycle and snapshot identity readers; exact SQL
+call ASTs and all repository methods except two read helpers +first restore preflight flag unchanged.
+First gate1failed/8543passed caught domain error ordering: only FIRST restore preflight defers
+retained-result scan. Intent/item checks keep order, established domain validators own their errors,
+and final full scan still rejects standalone malformed/deep/future timing atomically. No parser
+or expectederror weakening. Runtime capture/services/loader/Clock remain unchanged/OFF.
+
+Root old-wire proof:79serialized hashes/13result IDs exact across10purposes+3compact review schemas.
+Fresh620f092 all48table rows/rowids, full default doctor except schema/DB headers, double restore
+and original/copy hashes exact; no retrospective clocks. Same-carrier technical growth queued10
++3,562SQL/+280gzip; submitted10+result10 +7,124/+309; maxwitness362JSONbytes; duplicate saves0,
+double restore exact. No production forecast. Root103focus+171affected; final8549tests/
+291.896s/92%,mypy739,Ruff/formatgreen, all808pins exact.108newunit cases,0newscenarios/removals.
+J237c1a5a04d exactCI41963996232/relay41964819087 verified. DA10.4 remains open pending actual
+all-purpose capture/retention/report qualification.74total/44complete/6explicitN/A/24applicableopen.
+
+[Report](../assets/audits/2026-11-05-local-timing-reader/report.md),
+[qualification](../assets/audits/2026-11-05-local-timing-reader/qualification.json),
+[integration proof](../assets/audits/2026-11-05-local-timing-reader/integration-proof.json),
+[storage proof](../assets/audits/2026-11-05-local-timing-reader/storage-proof.json).

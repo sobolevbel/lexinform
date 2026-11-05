@@ -1,0 +1,46 @@
+{
+  "none": {
+    "queued_10": {
+      "sql_bytes": 44481,
+      "gzip_bytes": 7189,
+      "sha256": "2ad4646a9c2e46689f3c9c2b62bed6e2550cd4416376edcc832962c91f3520d7"
+    },
+    "submitted_items_and_results_10": {
+      "sql_bytes": 55060,
+      "gzip_bytes": 8955,
+      "sha256": "d4f8de37fcb318c757ad992843dd5f1b9c4239d86674bf3c397deb5cd9c8ca26"
+    },
+    "duplicate_saves_exact": true,
+    "double_restore_exact": true
+  },
+  "timed": {
+    "queued_10": {
+      "sql_bytes": 48043,
+      "gzip_bytes": 7469,
+      "sha256": "f3647cf2c2b668a91c28063e8edc09a625d2d241259d92afa14370acb6822f99"
+    },
+    "submitted_items_and_results_10": {
+      "sql_bytes": 62184,
+      "gzip_bytes": 9264,
+      "sha256": "1d12fc8a57c61b8eaac99e364c1a8659c76d339e8ef6674df8a198507d7be5b1"
+    },
+    "duplicate_saves_exact": true,
+    "double_restore_exact": true
+  },
+  "deltas": {
+    "queued_10": {
+      "sql_bytes": 3562,
+      "gzip_bytes": 280
+    },
+    "submitted_items_and_results_10": {
+      "sql_bytes": 7124,
+      "gzip_bytes": 309
+    }
+  },
+  "comparison": "Same known carrier checksums/input scopes and records; only optional witness differs. Primary schema1, secondary schema2 incl full reviews; schema3 compact review compatibility separately unit-tested. Synthetic fixture, no production growth forecast.",
+  "witness_copies": {
+    "queued_10": 10,
+    "submitted_items_and_results_10": 20
+  },
+  "max_witness_json_bytes": 362
+}

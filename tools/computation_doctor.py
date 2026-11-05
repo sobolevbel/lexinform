@@ -9,13 +9,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from lexinform.adapters.computation_history import parse_computation_result
 from lexinform.adapters.content_source_refs import validate_projected_application
 from lexinform.adapters.input_receipts import input_snapshot_checks
 from lexinform.adapters.primary_projections import primary_projection_issues
 from lexinform.adapters.secondary_dependencies import secondary_dependency_issues
 from lexinform.adapters.supplement_deliveries import supplement_delivery_links
 from lexinform.adapters.supplement_dependencies import supplement_dependency_issues
-from lexinform.models import ComputationResult, ResultApplicabilityObservation, ResultApplication
+from lexinform.models import ResultApplicabilityObservation, ResultApplication
 from tools.application_targets import application_target
 from tools.corpus_artifacts import write_json
 from tools.saved_records import (
@@ -56,7 +57,7 @@ class ComputationAudit:
             ref = f"computation_results/{row['result_id']}"
             self.counts["result_rows"] += 1
             try:
-                result = ComputationResult.model_validate_json(row["result_json"])
+                result = parse_computation_result(row["result_json"])
             except ValueError:
                 self.issue("invalid_computation_result", ref)
                 continue
