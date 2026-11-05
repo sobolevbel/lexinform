@@ -1,0 +1,33 @@
+{
+  "focused": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 67
+  },
+  "format": "2 files already formatted",
+  "independent_review": {
+    "findings": [],
+    "independent_tests": false,
+    "status": "clear"
+  },
+  "mypy": "Success: no issues found in 2 source files",
+  "network_calls": 0,
+  "new_scenarios": 0,
+  "new_unit_cases": 6,
+  "release": "pending",
+  "root_full_gate": {
+    "status": "passed",
+    "tests": 8802,
+    "pytest_seconds": 295.45,
+    "coverage_percent": 92,
+    "mypy_files": 758,
+    "ruff_format_files": 827,
+    "source_config_pins_exact": 827
+  },
+  "root_writes": false,
+  "ruff": "All checks passed!",
+  "unit_first_failures": 5,
+  "root_focused": 56,
+  "root_state": "root-state-proof.json"
+}

@@ -32,3 +32,5 @@ No workflow, provider/network call, corpus extraction, production processing or 
 policy changes. No plan checkbox closes from this bounded DA10.2 reader-integrity change.
 
 Root82focused and8796full tests pass; mypy757/Ruff/format826green, all826source/config pins exact. [Root state proof](root-state-proof.json):13gets/13ownerlists, entire default doctor including physical DB SHA and dump exact on independently fresh copies. Publication/release follows the green docs gate.
+
+Actualfd34b019 [CI and relay release](release.json) verified after publication; no workflow rerun.

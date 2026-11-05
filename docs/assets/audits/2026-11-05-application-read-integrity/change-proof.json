@@ -1,0 +1,12 @@
+{
+  "all_other_production_module_AST_exact": true,
+  "decoder_byte_exact": true,
+  "existing_shared_decoder_sha256": "3885767e8a0d2d943341ac9f46d1b4d52ec3dec0161bb0eded209101275e01fb",
+  "id_precondition": "id-contract.json",
+  "new_target_scope_policy": false,
+  "only_changed_production_method": "SqliteBillRepository.list_result_applications",
+  "pinned_public_read_parity": "state-parity.json",
+  "schema_or_writer_changes": false,
+  "sql_delta": "SELECT application_json -> SELECT * only",
+  "where_order_and_parameter_shape_exact": true
+}

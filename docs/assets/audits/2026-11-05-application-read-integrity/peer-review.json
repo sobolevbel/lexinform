@@ -1,0 +1,12 @@
+{
+  "evidence_origin": "Direct independent reviewer message after exact frozen patch and two physical source hashes; root notified separately.",
+  "findings": [],
+  "independent_tests": false,
+  "network_calls": 0,
+  "patch_sha256": "bbbf59e6b9a134dcf9f41a505bff4dfaa6983cb6ea2f7bfe07a620cf5ed2978d",
+  "reviewer": "secondary_dependency_review",
+  "scope": "One-method existing strict-decoder integration, owner/filter/order, exact decoder/doctor, controls and explicit positive-ID compatibility limitation.",
+  "source_edits": false,
+  "source_manifest_sha256": "e9d748cb664dd96626554eff23f902083a0613e052a6d399f572ae2d4ad56465",
+  "status": "clear"
+}

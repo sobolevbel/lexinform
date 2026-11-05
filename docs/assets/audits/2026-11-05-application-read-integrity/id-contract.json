@@ -1,0 +1,38 @@
+{
+  "existing_legacy_ids_preserved_through_migration": true,
+  "historical_contract": {
+    "migration50": "Copies old rowid explicitly into id, ordered by rowid.",
+    "schema": "id INTEGER PRIMARY KEY has no separate positive CHECK; no generated negative/zero legacy IDs are asserted or invented.",
+    "shared_decoder": "Existing read_result_application requires integer id>0; all observed pinned rows satisfy it.",
+    "writer": "SqliteBillRepository.save_result_application omits id; SQLite allocates the positive normal rowid."
+  },
+  "network_calls": 0,
+  "pinned_state_ref": "620f09234a4959278811885b3e757593ae260bdd",
+  "source_edits": false,
+  "states": [
+    {
+      "database_sha256": "74633d215bb7ca04c5b0d3d996841306e01a801977082edb8aeae768fee2aba9",
+      "maximum_id": 26,
+      "minimum_id": 1,
+      "nonpositive_or_noninteger_ids": 0,
+      "ordered_ids_sha256": "cf9d50f5ee2dc9baa4c2f3ed33e9836ceaaa82fede1c09337903f41efdf87451",
+      "path": "out/corpus/j234-card-history-reader/fresh-state/state.db",
+      "profile": "raw_schema65",
+      "rows": 26,
+      "schema": 65,
+      "source_unchanged": true
+    },
+    {
+      "database_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+      "maximum_id": 26,
+      "minimum_id": 1,
+      "nonpositive_or_noninteger_ids": 0,
+      "ordered_ids_sha256": "cf9d50f5ee2dc9baa4c2f3ed33e9836ceaaa82fede1c09337903f41efdf87451",
+      "path": "out/corpus/j237-card-history-writer/fresh-b.db",
+      "profile": "migrated_schema66",
+      "rows": 26,
+      "schema": 66,
+      "source_unchanged": true
+    }
+  ]
+}

@@ -10995,3 +10995,33 @@ DA10.2 remains partial and plan46/6/22 unchanged.
 [source pins](../assets/audits/2026-11-05-computation-read-integrity/source-pins.json),
 [change proof](../assets/audits/2026-11-05-computation-read-integrity/change-proof.json),
 [doctor parity](../assets/audits/2026-11-05-computation-read-integrity/doctor-parity.json).
+
+
+<a id="j248"></a>
+
+## J248 — strict indexed identities on the public application list
+
+5 November 2026. One list method now uses existing read_result_application instead of JSON-only
+history. Indexed result/owner/generation/phase contradictions reject; WHERE/ORDER/parameters and
+return shape stay exact. No new target/current-owner policy, schema, writer or abstraction.
+Before enabling its existing id>0 guard, pinned raw65/migrated66 each show26 actual IDs1..26,
+zero nonpositive/noninteger IDs and identical ordered-ID hash, with source SHAs unchanged.
+Public writer/v50 migration preserve normal positive IDs; arbitrary nonpositive legacy IDs are
+not promised compatible. The default doctor gains no positive-ID check; no new restore-validator
+coverage or doctor completeness is claimed.
+
+Five unit-first controls fail before correction;67 focused tests pass,6newunits/0scenarios,
+strict mypy2/Ruff/format2green. Existing nullable/opaque/migration/name/government/primary contracts
+pass. Independent exact-two-pin review CLEAR/findings[], no independent tests/network/edits.
+J247/candidate replay preserves all26 applications/13 owner lists/public JSON/dump/entire default
+doctor/copied physical DB/source SHA. Root56focused/8802full tests/295.45s/92%coverage, mypy758/Ruff/format827 and all827source
+pins pass; independent root26-app/13-owner/IDs/dump/doctor/physical-SHA replay exact. Actual
+release follows publication. This
+bounded DA10.2 change closes no task; plan46/6/22 unchanged.
+
+[Report](../assets/audits/2026-11-05-application-read-integrity/report.md),
+[qualification](../assets/audits/2026-11-05-application-read-integrity/qualification.json),
+[peer review](../assets/audits/2026-11-05-application-read-integrity/peer-review.json),
+[ID contract](../assets/audits/2026-11-05-application-read-integrity/id-contract.json),
+[state parity](../assets/audits/2026-11-05-application-read-integrity/state-parity.json),
+[source pins](../assets/audits/2026-11-05-application-read-integrity/source-pins.json).

@@ -1,0 +1,14 @@
+{
+  "all_application_rows": 26,
+  "baseline_workspace": "/private/tmp/lexinform-j247-computation-row-integrity",
+  "before_after_bytes_exact": true,
+  "candidate_workspace": "/private/tmp/lexinform-j248-application-row-integrity",
+  "copy_physical_sha_unchanged": true,
+  "default_doctor_sha256": "84b41aac852b0af3a609a19d66f2894acd892858da385d6e662537da53981da8",
+  "dump_sha256": "b5f318428ccf9cc1b59ae7b3d835d8eda1af559dcb1ac1b4bfc0fb3606c61346",
+  "network_calls": 0,
+  "owner_lists": 13,
+  "public_json_sha256": "932dd7052ba716edc60b896288f73a8300cdf28e3d07f4e727942ec252f6a325",
+  "source_db_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+  "source_unchanged": true
+}

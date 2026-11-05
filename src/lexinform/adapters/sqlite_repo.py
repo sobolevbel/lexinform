@@ -3038,10 +3038,9 @@ class SqliteBillRepository:
 
     def list_result_applications(self, term: int, number: str) -> list[ResultApplication]:
         return [
-            ResultApplication.model_validate_json(row[0])
+            read_result_application(row)
             for row in self._conn.execute(
-                "SELECT application_json FROM result_applications WHERE term = ? AND number = ?"
-                " ORDER BY rowid",
+                "SELECT * FROM result_applications WHERE term = ? AND number = ? ORDER BY rowid",
                 (term, number),
             )
         ]

@@ -15,7 +15,11 @@
   "network_calls": 0,
   "new_scenarios": 0,
   "new_unit_cases": 20,
-  "release": "pending",
+  "release": {
+    "status": "verified",
+    "target_sha": "fd34b019153ad32da86b167991299fa9bc99a7aa",
+    "receipt": "release.json"
+  },
   "root_full_gate": {
     "status": "passed",
     "tests": 8796,
