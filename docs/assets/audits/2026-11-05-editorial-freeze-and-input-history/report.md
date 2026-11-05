@@ -18,3 +18,6 @@ show whether its original request is available, absent from legacy history or in
 The response contains a status only. It does not show the question, URL or snapshot ID.
 The ordinary delivery response, unrelated history and unavailable pages matched the
 previous serialized and rendered output. [History response parity](history-parity.json).
+
+The exact stage passed hosted CI and the relay transition, restart and timer checks.
+[Release receipt](release.json).

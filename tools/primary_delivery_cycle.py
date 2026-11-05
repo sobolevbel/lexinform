@@ -2,25 +2,35 @@
 
 import argparse
 import hashlib
+import json
 import sqlite3
 from datetime import datetime
 from pathlib import Path
 
+from pydantic import TypeAdapter
+
 from lexinform.adapters.computation_history import read_result_application
+from lexinform.adapters.content_history import read_expired_card_primary_cycle
 from lexinform.adapters.content_source_refs import ContentSourceRows, validate_projected_application
 from lexinform.adapters.input_receipts import validate_input_snapshots
 from lexinform.models import (
+    AmendmentsRecord,
     BatchItemMeta,
     Bill,
     ComputationResult,
     DeliveryPlan,
     PrimaryInputReceipt,
     ResultApplication,
+    ResultApplicationTarget,
+    StatusChange,
+    SupplementRecord,
 )
 from lexinform.models.primary_projections import PRIMARY_USAGE_FIELDS
 from lexinform.primary_projections import primary_record_matches
 from tools.corpus_artifacts import write_json
 from tools.sqlite_snapshot import open_snapshot
+
+_SUPPLEMENTS = TypeAdapter(list[SupplementRecord])
 
 
 class CycleNotObservedError(ValueError):
@@ -44,9 +54,7 @@ def _application(
     return row["id"], value
 
 
-def _direct_plan(row: sqlite3.Row) -> DeliveryPlan:
-    if row["kind"] != "new_bill":
-        raise CycleNotObservedError("publication_outside_primary_card_scope")
+def _sent_plan(row: sqlite3.Row) -> DeliveryPlan:
     if (
         row["status"] != "sent"
         or type(row["message_id"]) is not int
@@ -57,8 +65,11 @@ def _direct_plan(row: sqlite3.Row) -> DeliveryPlan:
         raise CycleNotObservedError("recorded_send_unavailable")
     if row["delivery_json"] is None:
         raise CycleNotObservedError("frozen_plan_unavailable")
-    plan = DeliveryPlan.model_validate_json(row["delivery_json"])
-    if (
+    return DeliveryPlan.model_validate_json(row["delivery_json"])
+
+
+def _outside_direct_original(plan: DeliveryPlan) -> bool:
+    return bool(
         plan.destination != "direct"
         or plan.publication_ids
         or plan.continuation_ids
@@ -72,10 +83,16 @@ def _direct_plan(row: sqlite3.Row) -> DeliveryPlan:
         or plan.digest_ref
         or plan.digest_event_ids
         or plan.revision_of is not None
-        or plan.reply_to is not None
         or plan.edit_message_id is not None
         or plan.primary_json
-    ):
+    )
+
+
+def _direct_plan(row: sqlite3.Row) -> DeliveryPlan:
+    if row["kind"] != "new_bill":
+        raise CycleNotObservedError("publication_outside_primary_card_scope")
+    plan = _sent_plan(row)
+    if _outside_direct_original(plan) or plan.reply_to is not None:
         raise CycleNotObservedError("publication_outside_direct_original_scope")
     if not plan.bill_json or not plan.rendered_text:
         raise CycleNotObservedError("frozen_render_context_unavailable")
@@ -201,19 +218,193 @@ def _inspect(db: sqlite3.Connection, publication_id: int) -> dict[str, object]:
     }
 
 
-def audit(database: Path, publication_id: int) -> dict[str, object]:
+def _secondary_suffix(
+    db: sqlite3.Connection, publication_id: int, application_id: int
+) -> dict[str, object]:
+    row = db.execute("SELECT * FROM publications WHERE id=?", (publication_id,)).fetchone()
+    if row is None:
+        raise CycleNotObservedError("publication_unavailable")
+    if row["kind"] != "status_update":
+        raise CycleNotObservedError("publication_outside_secondary_status_scope")
+    plan = _sent_plan(row)
+    if (
+        _outside_direct_original(plan)
+        or json.loads(row["document_message_ids"]) != []
+        or db.execute(
+            "SELECT 1 FROM digest_event_links WHERE source_publication_id=?", (publication_id,)
+        ).fetchone()
+        or db.execute(
+            "SELECT 1 FROM delivery_resolutions WHERE publication_id=?", (publication_id,)
+        ).fetchone()
+    ):
+        raise CycleNotObservedError("publication_outside_direct_status_scope")
+    if (
+        not plan.rendered_text
+        or not plan.change_json
+        or not plan.bill_json
+        or row["status_change_id"] is None
+    ):
+        raise CycleNotObservedError("frozen_change_unavailable")
+    if (
+        db.execute(
+            "SELECT count(*) FROM publications WHERE channel_id=? AND message_id=?",
+            (row["channel_id"], row["message_id"]),
+        ).fetchone()[0]
+        != 1
+    ):
+        raise CycleNotObservedError("physical_root_ambiguous")
+
+    change = StatusChange.model_validate_json(plan.change_json)
+    owner = (row["term"], row["number"])
+    bill = Bill.model_validate_json(plan.bill_json)
+    if (bill.term, bill.number) != owner:
+        raise ValueError("frozen bill differs from its publication")
+    if change.id != row["status_change_id"] or (change.term, change.number) != owner:
+        raise ValueError("frozen change differs from its publication")
+    stored = db.execute("SELECT * FROM status_changes WHERE id=?", (change.id,)).fetchone()
+    if stored is None:
+        raise CycleNotObservedError("stored_change_unavailable")
+    if (stored["term"], stored["number"], stored["new_fingerprint"]) != (
+        change.term,
+        change.number,
+        change.new_fingerprint,
+    ):
+        raise ValueError("stored change differs from the frozen event")
+
+    application_row = db.execute(
+        "SELECT * FROM result_applications WHERE id=?", (application_id,)
+    ).fetchone()
+    if application_row is None:
+        raise CycleNotObservedError("typed_application_unavailable")
+    application = read_result_application(application_row)
+    if (
+        application.target != ResultApplicationTarget(kind="status_change", ref=str(change.id))
+        or (application.term, application.number) != owner
+        or application.phase != "projection"
+        or application.outcome != "applied"
+        or application.reason != "retained_result"
+    ):
+        raise CycleNotObservedError("application_outside_exact_status_target")
+    paid = ContentSourceRows(db).get_computation_result(application.result_id)
+    if paid is None:
+        raise CycleNotObservedError("paid_result_unavailable")
+    if (paid.term, paid.number) != owner:
+        raise ValueError("paid result differs from the application owner")
+    frozen, persisted = _secondary_records(change, stored, paid)
+    if len(frozen) != 1 or len(persisted) != 1:
+        raise CycleNotObservedError("unique_secondary_record_unavailable")
+    if frozen[0] != persisted[0]:
+        raise ValueError("frozen secondary record differs from the stored projection")
+    usage = {
+        "input_tokens",
+        "output_tokens",
+        "cache_read_input_tokens",
+        "cache_creation_input_tokens",
+    }
+    if paid.record is None or frozen[0].model_dump(exclude=usage) != paid.record.model_dump(
+        exclude=usage
+    ):
+        raise ValueError("frozen secondary record differs from the paid record")
+    sent_at = datetime.fromisoformat(row["sent_at"])
+    dates = (
+        paid.collected_at,
+        application.created_at,
+        datetime.fromisoformat(row["created_at"]),
+        sent_at,
+    )
+    if any(date.utcoffset() is None for date in dates) or dates != tuple(sorted(dates)):
+        raise ValueError("recorded secondary chronology disagrees")
+    return {
+        "purpose": paid.purpose,
+        "result_id": paid.result_id,
+        "application_id": application_id,
+        "status_change_id": change.id,
+        "recorded_sent_at": sent_at.isoformat(),
+        "frozen_render_sha256": hashlib.sha256(plan.rendered_text.encode()).hexdigest(),
+    }
+
+
+def _secondary_records(
+    change: StatusChange, stored: sqlite3.Row, paid: ComputationResult
+) -> tuple[list[AmendmentsRecord | SupplementRecord], list[AmendmentsRecord | SupplementRecord]]:
+    if paid.purpose == "amendments":
+        if change.amendments is None or stored["amendments_json"] is None:
+            return [], []
+        persisted = AmendmentsRecord.model_validate_json(stored["amendments_json"])
+        return (
+            [change.amendments] if change.amendments.computation_id == paid.result_id else [],
+            [persisted] if persisted.computation_id == paid.result_id else [],
+        )
+    if paid.purpose == "supplement":
+        persisted_supplements = _SUPPLEMENTS.validate_json(stored["supplements_json"] or "[]")
+        return (
+            [record for record in change.supplements if record.computation_id == paid.result_id],
+            [record for record in persisted_supplements if record.computation_id == paid.result_id],
+        )
+    raise CycleNotObservedError("result_outside_secondary_status_scope")
+
+
+def _inspect_card(
+    db: sqlite3.Connection, publication_id: int, *, include_compact: bool
+) -> tuple[str, dict[str, object]]:
+    try:
+        return "exact_retained_cycle", _inspect(db, publication_id)
+    except CycleNotObservedError as exc:
+        if include_compact and str(exc) == "frozen_plan_unavailable":
+            compact = read_expired_card_primary_cycle(db, publication_id)
+            if compact is not None:
+                return "exact_retained_compact_cycle", compact
+        raise
+
+
+def audit(
+    database: Path,
+    publication_id: int,
+    *,
+    secondary_application_id: int | None = None,
+    include_compact: bool = False,
+) -> dict[str, object]:
     if not 0 < publication_id < 2**63:
         raise ValueError("Publication ID must be a positive SQLite integer")
+    if secondary_application_id is not None and not 0 < secondary_application_id < 2**63:
+        raise ValueError("Application ID must be a positive SQLite integer")
+    if include_compact and secondary_application_id is not None:
+        raise ValueError("Compact and secondary evidence modes are mutually exclusive")
     with open_snapshot(database) as snapshot:
         status, reason, cycle = "recorded", "exact_retained_cycle", None
         try:
-            cycle = _inspect(snapshot.connection, publication_id)
+            if secondary_application_id is None:
+                reason, cycle = _inspect_card(
+                    snapshot.connection, publication_id, include_compact=include_compact
+                )
+            else:
+                reason = "exact_retained_secondary_suffix"
+                cycle = _secondary_suffix(
+                    snapshot.connection, publication_id, secondary_application_id
+                )
         except CycleNotObservedError as exc:
             status, reason = "not_observed", str(exc)
         except ValueError, TypeError, RecursionError, KeyError, IndexError, sqlite3.Error:
             status, reason = "invalid", "invalid_snapshot_evidence"
         if not snapshot.unchanged():
             status, reason, cycle = "invalid", "database_changed_during_audit", None
+    if secondary_application_id is not None:
+        return {
+            "version": 1,
+            "status": status,
+            "reason": reason,
+            "database_sha256": snapshot.sha256,
+            "publication_id": publication_id,
+            "requested_application_id": secondary_application_id,
+            "scope": "One retained secondary status-change projection and recorded direct send.",
+            "exclusions": [
+                "Source observation and selection",
+                "Current Telegram content",
+                "live verification",
+                "source-family acceptance",
+            ],
+            "suffix": cycle,
+        }
     return {
         "version": 1,
         "status": status,
@@ -230,12 +421,24 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--database", type=Path, required=True)
     parser.add_argument("--publication-id", type=int, required=True)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--secondary-application-id", type=int)
+    mode.add_argument(
+        "--include-compact",
+        action="store_true",
+        help="allow validated compact original history after the frozen plan expires",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
         if args.output.resolve() == args.database.resolve():
             raise ValueError("Report must be separate from the input database")
-        report = audit(args.database, args.publication_id)
+        report = audit(
+            args.database,
+            args.publication_id,
+            secondary_application_id=args.secondary_application_id,
+            include_compact=args.include_compact,
+        )
         write_json(args.output, report)
     except (OSError, ValueError) as exc:
         parser.error(str(exc))

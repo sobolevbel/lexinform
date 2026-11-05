@@ -1,0 +1,69 @@
+{
+  "double_restore_exact": true,
+  "gzip_growth": 112,
+  "legacy_trace_id": "candidate-trace-v1:6a5d5103ff0444ff19631d16f47a36748d920ca524260ce0d7fa71c8c9763fe1",
+  "native_absent_propagation_exact": true,
+  "native_raw_no_terminal_gap": true,
+  "native_reader_output_byte_exact": true,
+  "prior_state_legacy_rows_sha256": "6ff88a0cb2c11e0a0fbc68c41a1ed8e50cb72b4ad9fae14187a8a0e23353fc9a",
+  "prior_state_legacy_trace_count": 10,
+  "reader_only_trace": {
+    "candidate_count": 2,
+    "coverage": "complete",
+    "dispositions": [
+      {
+        "index": 0,
+        "observed_sha256": "8083379d89cf6ce82ff164e5a6057b0c567aefcca33208e7a13ccf71b6dc0a02",
+        "outcome": "selected",
+        "phase": "version_comparison",
+        "reason": "version_choice"
+      },
+      {
+        "index": 1,
+        "observed_sha256": "14bcd090baf31edba64e9cbd8cdfc15f943344aa72cb3675ad8e91bfcbce03ad",
+        "outcome": "unclassified",
+        "phase": "version_comparison",
+        "reason": "no_readable_body"
+      }
+    ],
+    "omitted_dispositions": 0,
+    "reason": "version_choice",
+    "requested_document": {
+      "alternatives": [
+        {
+          "compare_versions": true,
+          "kind": "print",
+          "required_urls": [
+            "https://api.sejm.gov.pl/sejm/term8/prints/108/108-cz%C4%99%C5%9B%C4%87%201.pdf"
+          ],
+          "url": "https://api.sejm.gov.pl/sejm/term8/prints/108/108-cz%C4%99%C5%9B%C4%87%202.pdf",
+          "version_basis": [
+            "sejm/8/print/108"
+          ]
+        }
+      ],
+      "compare_versions": true,
+      "kind": "print",
+      "required_urls": [
+        "https://api.sejm.gov.pl/sejm/term8/prints/108/108-cz%C4%99%C5%9B%C4%87%202.pdf"
+      ],
+      "url": "https://api.sejm.gov.pl/sejm/term8/prints/108/108-cz%C4%99%C5%9B%C4%87%201.pdf",
+      "version_basis": [
+        "sejm/8/print/108"
+      ]
+    },
+    "required_part_gap": {
+      "file_sha256": "14bcd090baf31edba64e9cbd8cdfc15f943344aa72cb3675ad8e91bfcbce03ad",
+      "index": 0,
+      "phase": "version_comparison",
+      "reason": "returned_no_text",
+      "required_index": 0
+    },
+    "result": "selected",
+    "selection_state": "waiting",
+    "universe_sha256": "a39c86ee02c4451abd62cd1cf7714f2963086254207a4ff8cb0556b8bbbb25fa"
+  },
+  "reader_only_trace_id": "candidate-trace-v1:442e1dbef24f6685fe19e36d1caba01ee4754dc22a9d596f42100bbeece33fb1",
+  "scope": "real pinned original inputs and injected corrupt continuation; no natural failure",
+  "sql_growth": 1727
+}

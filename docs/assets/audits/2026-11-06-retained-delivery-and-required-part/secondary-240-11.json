@@ -1,0 +1,16 @@
+{
+  "database_sha256": "93fd8769679b86b4a95f830ac48fe5330a13afe212ea6ecae6ac94ad82498f91",
+  "exclusions": [
+    "Source observation and selection",
+    "Current Telegram content",
+    "live verification",
+    "source-family acceptance"
+  ],
+  "publication_id": 240,
+  "reason": "application_outside_exact_status_target",
+  "requested_application_id": 11,
+  "scope": "One retained secondary status-change projection and recorded direct send.",
+  "status": "not_observed",
+  "suffix": null,
+  "version": 1
+}

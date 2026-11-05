@@ -1,5 +1,6 @@
 """Read known card-history rows without turning missing physical evidence into confirmation."""
 
+import hashlib
 import sqlite3
 from datetime import datetime
 from typing import Literal
@@ -147,7 +148,7 @@ def _verify_card_primary_evidence(
     version: ContentVersion,
     bill: Bill,
     root: Publication | None,
-) -> None:
+) -> dict[str, object]:
     projection_row = _query(
         connection,
         "SELECT * FROM result_applications WHERE id=?",
@@ -265,13 +266,25 @@ def _verify_card_primary_evidence(
         or not paid.collected_at <= item.consumed_at <= projection.created_at
     ):
         raise CardPrimaryEvidenceError("card_primary_chronology")
+    return {
+        "source_kind": source.document.kind,
+        "source_observation_id": source.observation_id,
+        "source_selection_id": receipt.source_selection_id,
+        "artifact_sha256": receipt.artifact_sha256,
+        "extraction_id": receipt.extraction_id,
+        "purpose": paid.purpose,
+        "result_id": paid.result_id,
+        "request_sha256": paid.request_sha256,
+        "collection_application_id": collections[0]["id"],
+        "projection_application_id": reference.projection_application_id,
+    }
 
 
 def _verify_card_content(
     connection: sqlite3.Connection, value: ContentVersion, *, retained: bool
-) -> int | None:
+) -> tuple[int | None, dict[str, object] | None]:
     if value.change_snapshot_id is not None:
-        return None
+        return None, None
     root_row = _query(
         connection, "SELECT * FROM publications WHERE id=?", (value.root_publication_id,)
     ).fetchone()
@@ -299,11 +312,12 @@ def _verify_card_content(
         and semantic.edit_message_id != root.message_id
     ):
         raise ValueError("card_content_root_scope")
+    primary = None
     if value.card_primary_evidence is not None:
         if semantic.reply_to is not None or semantic.update_group or semantic.sitting_group:
             raise CardPrimaryEvidenceError("card_primary_plan_scope")
         try:
-            _verify_card_primary_evidence(
+            primary = _verify_card_primary_evidence(
                 connection, value.card_primary_evidence, value, bill, root
             )
         except CardPrimaryEvidenceError:
@@ -376,7 +390,7 @@ def _verify_card_content(
             raise ValueError("card_content_binding_scope")
     if root is None:
         if retained:
-            return None
+            return None, primary
         raise ValueError("card_content_root_missing")
     assert root_row is not None, "the available typed root comes from its physical row"
     rows = (
@@ -402,12 +416,12 @@ def _verify_card_content(
         if physical.id is not None:
             matches.append(physical.id)
     if not matches and retained and value.previous_version_id is not None:
-        return None
+        return None, primary
     if len(matches) != 1:
         raise ValueError("card_content_physical_scope")
     if retained and missing:
-        return None
-    return matches[0]
+        return None, primary
+    return matches[0], primary
 
 
 def validate_content_history(connection: sqlite3.Connection) -> None:
@@ -494,9 +508,69 @@ def verify_card_content(
     connection: sqlite3.Connection, value: ContentVersion, *, retained: bool = False
 ) -> int | None:
     try:
-        return _verify_card_content(connection, value, retained=retained)
+        physical_id, _ = _verify_card_content(connection, value, retained=retained)
+        return physical_id
     except RecursionError as exc:
         raise ValueError("invalid_card_content_history") from exc
+
+
+def read_expired_card_primary_cycle(
+    connection: sqlite3.Connection, publication_id: int
+) -> dict[str, object] | None:
+    """Read a confirmed original using its validated compact evidence and expired plan."""
+    if (
+        _query(
+            connection,
+            "SELECT 1 FROM sqlite_schema WHERE type='table' AND name='publication_content'",
+        ).fetchone()
+        is None
+    ):
+        return None
+    row = _query(connection, "SELECT * FROM publications WHERE id=?", (publication_id,)).fetchone()
+    if row is None:
+        return None
+    root = read_content_publication(row)
+    if (
+        root.kind is not PublicationKind.NEW_BILL
+        or root.status is not PublicationStatus.SENT
+        or root.message_id is None
+        or root.message_id <= 0
+        or root.sent_at is None
+        or not root.channel_id
+        or root.delivery is not None
+    ):
+        return None
+    binding = _query(
+        connection,
+        "SELECT v.* FROM publication_content p LEFT JOIN content_versions v USING(content_id)"
+        " WHERE p.publication_id=?",
+        (publication_id,),
+    ).fetchone()
+    if binding is None:
+        return None
+    if binding["content_id"] is None:
+        raise ValueError("compact_card_content_missing")
+    version = read_content_version(binding)
+    if version.card_primary_evidence is None:
+        return None
+    if version.root_publication_id != publication_id:
+        raise ValueError("compact_card_original_binding_scope")
+    aliases = _query(
+        connection,
+        "SELECT count(*) FROM publications WHERE kind='new_bill' AND channel_id=? AND message_id=?",
+        (root.channel_id, root.message_id),
+    ).fetchone()[0]
+    if aliases != 1:
+        return None
+    physical_id, primary = _verify_card_content(connection, version, retained=True)
+    if physical_id != publication_id or primary is None or not version.rendered_text:
+        raise ValueError("compact_card_primary_evidence_unavailable")
+    return {
+        **primary,
+        "content_version_id": version.content_id,
+        "recorded_sent_at": root.sent_at.isoformat(),
+        "frozen_render_sha256": hashlib.sha256(version.rendered_text.encode()).hexdigest(),
+    }
 
 
 def card_current_content(connection: sqlite3.Connection, root_id: int) -> str | None:

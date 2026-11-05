@@ -1,0 +1,23 @@
+{
+  "database_sha256": "93fd8769679b86b4a95f830ac48fe5330a13afe212ea6ecae6ac94ad82498f91",
+  "exclusions": [
+    "Source observation and selection",
+    "Current Telegram content",
+    "live verification",
+    "source-family acceptance"
+  ],
+  "publication_id": 231,
+  "reason": "exact_retained_secondary_suffix",
+  "requested_application_id": 11,
+  "scope": "One retained secondary status-change projection and recorded direct send.",
+  "status": "recorded",
+  "suffix": {
+    "application_id": 11,
+    "frozen_render_sha256": "af26c58b2caf434f91bbde2d0464857e0b949db4c650410c1cb1d62bb2c325ed",
+    "purpose": "amendments",
+    "recorded_sent_at": "2026-10-28T19:18:31+00:00",
+    "result_id": "result-v1:ac61beabf382607e4fb057cd3b70531f02a44fc1083a25df16b114834ab6c2b8",
+    "status_change_id": 189
+  },
+  "version": 1
+}

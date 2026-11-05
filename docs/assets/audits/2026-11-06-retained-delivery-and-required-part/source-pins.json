@@ -1,0 +1,42 @@
+{
+  "term": 8,
+  "print": "108",
+  "listings_sha256": "587016a4138fa6339ebb71a034d4f4b2d29c78f00ae8f054cade4ea7b87e30a2",
+  "recorded_at": "2026-11-05T23:07:47.121787+00:00",
+  "parts": [
+    {
+      "file": "8-108-part-1.pdf",
+      "required_urls": [
+        "https://api.sejm.gov.pl/sejm/term8/prints/108/108-cz%C4%99%C5%9B%C4%87%202.pdf"
+      ],
+      "provenance": {
+        "bytes": 2583623,
+        "content_type": "application/pdf",
+        "etag": null,
+        "fetched_at": "2026-11-05T23:07:43.001394+00:00",
+        "final_url": "https://api.sejm.gov.pl/sejm/term8/prints/108/108-cz%C4%99%C5%9B%C4%87%201.pdf",
+        "last_modified": null,
+        "requested_url": "https://api.sejm.gov.pl/sejm/term8/prints/108/108-cz%C4%99%C5%9B%C4%87%201.pdf",
+        "sha256": "8083379d89cf6ce82ff164e5a6057b0c567aefcca33208e7a13ccf71b6dc0a02",
+        "status_code": 200
+      }
+    },
+    {
+      "file": "8-108-part-2.pdf",
+      "required_urls": [
+        "https://api.sejm.gov.pl/sejm/term8/prints/108/108-cz%C4%99%C5%9B%C4%87%201.pdf"
+      ],
+      "provenance": {
+        "bytes": 5368068,
+        "content_type": "application/pdf",
+        "etag": null,
+        "fetched_at": "2026-11-05T23:07:47.116876+00:00",
+        "final_url": "https://api.sejm.gov.pl/sejm/term8/prints/108/108-cz%C4%99%C5%9B%C4%87%202.pdf",
+        "last_modified": null,
+        "requested_url": "https://api.sejm.gov.pl/sejm/term8/prints/108/108-cz%C4%99%C5%9B%C4%87%202.pdf",
+        "sha256": "837465c269ae1298107d01405a1607454d1189e4fc10d5b3ffa0a121945cba8b",
+        "status_code": 200
+      }
+    }
+  ]
+}

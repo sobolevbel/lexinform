@@ -11476,3 +11476,16 @@ An offline proof records report 587 as a recommendation for Senate resolution 58
 within process 471. A different report from the same process is a negative control.
 The proof leaves adoption unasserted.
 [Qualification and limits](../assets/audits/2026-11-06-card-lineage-and-committee-recommendation/report.md).
+
+<a id="j280"></a>
+
+## J280 — retained delivery audit modes and compatible required-part diagnostic
+
+The direct-cycle auditor can opt in to compact original history after the full plan
+expires. A separate mode checks two exact retained secondary applications through
+their frozen changes and recorded sends. The primary default report stays exact.
+
+The required-part diagnostic reader validates a terminal missing-text result against
+the exact selected candidate and required URL. Both actual source files read normally.
+A deliberately damaged input verified the waiting and restore paths.
+[Audit and reader evidence](../assets/audits/2026-11-06-retained-delivery-and-required-part/report.md).

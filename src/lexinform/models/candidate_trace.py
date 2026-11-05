@@ -345,6 +345,16 @@ class RequiredPartExclusions(BaseModel):
         return self
 
 
+class RequiredPartGap(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    phase: Literal["version_comparison", "fallback"]
+    index: Position
+    required_index: Position
+    reason: Literal["returned_no_text"]
+    file_sha256: Sha256 | None = Field(default=None, exclude_if=lambda value: value is None)
+
+
 class NormativeAnnexGap(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
@@ -426,6 +436,9 @@ class CandidateDispositionTrace(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     sejm_original_proposal: SejmOriginalProposal | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    required_part_gap: RequiredPartGap | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
 
@@ -546,6 +559,8 @@ class CandidateDispositionTrace(BaseModel):
                 validate_required_part_parent(self, row)
         if self.normative_annex_gap is not None:
             validate_normative_annex_parent(self, self.normative_annex_gap)
+        if self.required_part_gap is not None:
+            validate_required_part_gap_parent(self, self.required_part_gap)
         if self.sejm_original_proposal is not None:
             validate_sejm_original_proposal(self, self.sejm_original_proposal)
         if len(self.model_dump_json(exclude_defaults=True).encode()) > MAX_CANDIDATE_TRACE_BYTES:
@@ -608,6 +623,7 @@ def validate_sejm_original_proposal(
         or trace.archive_members is not None
         or trace.required_exclusions is not None
         or trace.normative_annex_gap is not None
+        or trace.required_part_gap is not None
     ):
         raise ValueError("Sejm proposal requires the selected original singleton print")
     disposition = _parent_disposition(trace, "version_comparison", 0)
@@ -618,6 +634,40 @@ def validate_sejm_original_proposal(
         or disposition.observed_sha256 != proposal.base_sha256
     ):
         raise ValueError("Sejm proposal requires the observed original PDF identity")
+
+
+def validate_required_part_gap_parent(
+    trace: CandidateDispositionTrace, gap: RequiredPartGap
+) -> None:
+    request = trace.requested_document
+    if request is None or gap.index >= trace.candidate_count:
+        raise ValueError("a required part gap requires its retained outer request")
+    parent = _parent_disposition(trace, gap.phase, gap.index)
+    expected_reason = (
+        "version_choice" if gap.phase == "version_comparison" else "first_acceptable_candidate"
+    )
+    if (
+        parent is None
+        or parent.outcome != "selected"
+        or trace.result != "selected"
+        or parent.reason != expected_reason
+        or trace.reason != expected_reason
+    ):
+        raise ValueError("a required part gap requires the selected outer disposition")
+    if trace.selection_state != "waiting" or trace.normative_annex_gap is not None:
+        raise ValueError("a required part gap requires its own terminal waiting state")
+    candidate = (request, *request.alternatives)[gap.index]
+    if gap.required_index >= len(candidate.required_urls):
+        raise ValueError("required part gap exceeds the actual required URL namespace")
+    if not metadata_url_decision(candidate.required_urls[gap.required_index]).admitted:
+        raise ValueError("required part gap parent URL is outside metadata admission")
+    exclusions = trace.required_exclusions
+    if exclusions is not None and any(
+        (row.phase, row.index) == (gap.phase, gap.index)
+        and row.required_index >= gap.required_index
+        for row in exclusions.rows
+    ):
+        raise ValueError("required exclusions cannot occur after a terminal required part gap")
 
 
 def validate_normative_annex_parent(
