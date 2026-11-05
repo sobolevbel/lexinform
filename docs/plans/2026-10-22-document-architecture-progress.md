@@ -11171,3 +11171,29 @@ Complete finite DA10.2 acceptance and J254 actual release remain separately reco
 [Report](../assets/audits/2026-11-05-continuation-child-availability/REPORT.md),
 [integration](../assets/audits/2026-11-05-continuation-child-availability/integration-proof.json),
 [review](../assets/audits/2026-11-05-continuation-child-availability/peer-review.json).
+
+J254 actual f9a4efa9 CI42018529750/deploy42019390877 verified: exact transition/restart45/timer. Root reviewed the complete eight-requirement/sixteen-class matrix and accepts DA10.2 for the current metadata/retained-body profile. Raw originals/backend remain deferred; unknown legacy and legal/natural-cycle boundaries remain explicit. Plan48complete/6N.A./20applicable open (74total). [Acceptance](../assets/audits/2026-11-05-continuation-child-availability/acceptance.json).
+
+<a id="j255"></a>
+
+## J255 — saved selection limitation census
+
+Explicit source-doctor `--selection-limitations` counts only saved typed DocumentLimitation codes,
+including missing_own_annex. Each persisted observation remains a denominator unit even if unknown;
+each code counts once per row. Codes overlap and fractions need not sum to one. Explicit empty,
+legacy absent, invalid/dangling, unavailable schema and known empty populations remain distinct.
+No new classifier, runtime blocker, source availability or legal completeness inference is added.
+
+Native public producer controls prove missing-annex evidence and overlapping2/3fractions.
+Ten new units/0scenarios, author57focused and exact-pin independent review CLEAR. Root31focused/
+8937full/303.56s/mypy769/Ruff838 and all838source/config pins pass. Four prior source-doctor
+flag combinations stay byte-exact on both pinned states (50/54observations), sources unchanged.
+Natural missing-own-annex positive is not present or claimed. Broader DA10.3 stays open.
+
+The same commit records actual J254 release and root DA10.2 acceptance; plan48complete/6N.A./20open.
+J255 actual release follows publication.
+
+[Report](../assets/audits/2026-11-05-selection-limitation-coverage/REPORT.md),
+[integration](../assets/audits/2026-11-05-selection-limitation-coverage/integration-proof.json),
+[reproduce](../assets/audits/2026-11-05-selection-limitation-coverage/reproduce.md),
+[review](../assets/audits/2026-11-05-selection-limitation-coverage/peer-review.json).

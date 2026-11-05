@@ -5,7 +5,7 @@ import sqlite3
 import sys
 from contextlib import closing
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from tools.source_history_doctor import audit, main, selection_state_coverage
@@ -49,6 +49,164 @@ def selected_record() -> DocumentSelectionRecord:
     chosen = bill_selection(DocumentSelection(parts=(part,)), source_basis=("official_relation",))
     assert chosen.state == "selected", "the pure policy confirms all four required facts"
     return DocumentSelectionRecord.from_selection(chosen)
+
+
+def missing_annex_record() -> DocumentSelectionRecord:
+    text = (
+        "Projekt z dnia 1 stycznia 2027 r.\nUSTAWA\nz dnia 1 stycznia 2027 r.\n"
+        "Art. 1. Termin wynosi 30 dni.\n"
+        "Art. 2. Wzór określa załącznik nr 2 do niniejszej ustawy.\n"
+        "Art. 3. Ustawa wchodzi w życie po upływie 14 dni od dnia ogłoszenia."
+    )
+    part = DocumentPart(
+        url="https://example.test/" + MARKER,
+        role="bill",
+        text=text,
+        text_sha256=hashlib.sha256(text.encode()).hexdigest(),
+        text_end=len(text),
+    )
+    chosen = bill_selection(DocumentSelection(parts=(part,)), source_basis=("rcl/1/stage/1",))
+    assert chosen.state == "waiting" and "missing_own_annex" in chosen.limitations, (
+        "the native producer identifies the explicitly referenced absent annex"
+    )
+    return DocumentSelectionRecord.from_selection(chosen)
+
+
+def save_limitation_observation(path: Path, record: DocumentSelectionRecord) -> None:
+    with closing(SqliteBillRepository(path)) as repo:
+        repo.migrate()
+        repo.save_source_observation(
+            record,
+            SourceObservation(
+                term=10,
+                number="technical",
+                purpose="analysis",
+                document=TextDocument(url="https://example.test/" + MARKER, kind="print"),
+                selection_id=record.selection_id,
+                recorded_at=NOW,
+            ),
+        )
+
+
+def limitation_report(path: Path) -> dict[str, Any]:
+    return cast(
+        dict[str, Any],
+        audit(path, include_selection_limitations=True)["selection_limitation_coverage"],
+    )
+
+
+def test_native_missing_annex_has_multilabel_observation_denominator(tmp_path: Path) -> None:
+    path = tmp_path / "limitations.db"
+    record = missing_annex_record()
+    save_limitation_observation(path, record)
+    with closing(SqliteBillRepository(path)) as repo:
+        for number in ("shared", "damaged"):
+            repo.save_source_observation(
+                record,
+                SourceObservation(
+                    term=10,
+                    number=number,
+                    purpose="review",
+                    document=TextDocument(url="https://example.test/" + MARKER, kind="rcl"),
+                    selection_id=record.selection_id,
+                    recorded_at=NOW,
+                ),
+            )
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute("UPDATE source_observations SET observation_json='{' WHERE number='damaged'")
+    before = path.read_bytes()
+    report = limitation_report(path)
+    assert report["total"] == 3 and report["known_limitations_rows"] == 2
+    assert report["counts"]["missing_own_annex"] == 2
+    assert report["counts"]["missing_evidence"] == 2
+    assert report["fractions"]["missing_own_annex"] == 2 / 3
+    assert sum(report["fractions"].values()) > 1
+    assert report["multi_label"] is True and report["unattributed"] == 1
+    assert MARKER not in json.dumps(report) and path.read_bytes() == before
+
+
+def test_repeated_saved_code_counts_once_per_observation(tmp_path: Path) -> None:
+    path = tmp_path / "duplicates.db"
+    original = missing_annex_record().selection
+    repeated = original.model_copy(
+        update={"limitations": (*original.limitations, "missing_own_annex")}
+    )
+    save_limitation_observation(path, DocumentSelectionRecord.from_selection(repeated))
+    assert limitation_report(path)["counts"]["missing_own_annex"] == 1
+
+
+def test_known_empty_limitation_population_has_no_defined_fraction(tmp_path: Path) -> None:
+    path = tmp_path / "empty.db"
+    with closing(SqliteBillRepository(path)) as repo:
+        repo.migrate()
+    report = limitation_report(path)
+    assert report["status"] == "available" and report["total"] == 0
+    assert all(value == 0 for value in report["counts"].values())
+    assert all(value is None for value in report["fractions"].values())
+
+
+@pytest.mark.parametrize("fault", ["observation", "selection", "missing"])
+def test_unknown_limitation_rows_stay_in_the_denominator(tmp_path: Path, fault: str) -> None:
+    path = tmp_path / "unknown.db"
+    save_limitation_observation(path, missing_annex_record())
+    with closing(sqlite3.connect(path)) as db, db:
+        if fault == "missing":
+            db.execute("DELETE FROM document_selections")
+        elif fault == "selection":
+            db.execute("UPDATE document_selections SET record_json='{' ")
+        else:
+            db.execute("UPDATE source_observations SET observation_json='{' ")
+    report = limitation_report(path)
+    assert report["total"] == report["unattributed"] == 1
+    assert report["known_limitations_rows"] == 0
+    assert report["counts"]["missing_own_annex"] == 0
+    assert report["fractions"]["missing_own_annex"] == 0
+
+
+def test_absent_legacy_limitation_field_does_not_infer_empty_evidence(tmp_path: Path) -> None:
+    path = tmp_path / "legacy.db"
+    save_limitation_observation(path, selected_record())
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute(
+            "UPDATE document_selections SET record_json=json_remove(record_json,'$.selection.limitations')"
+        )
+    report = limitation_report(path)
+    assert report["total"] == report["unknown_rows"]["unknown_missing_limitations"] == 1
+    assert report["known_limitations_rows"] == report["no_recorded_limitations_rows"] == 0
+
+
+@pytest.mark.parametrize("table", ["source_observations", "document_selections"])
+def test_unavailable_limitation_schema_is_not_known_empty(tmp_path: Path, table: str) -> None:
+    path = tmp_path / "schema.db"
+    save_limitation_observation(path, missing_annex_record())
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute(f"DROP TABLE {table}")
+    report = limitation_report(path)
+    assert report["status"] == "unavailable"
+    assert report["total"] is report["counts"] is report["fractions"] is None
+
+
+def test_limitation_opt_in_cli_preserves_existing_coverage(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "cli.db"
+    save_limitation_observation(path, selected_record())
+    default = audit(path)
+    old = audit(path, include_selection_coverage=True)
+    combined = audit(path, include_selection_coverage=True, include_selection_limitations=True)
+    report = combined.pop("selection_limitation_coverage")
+    assert combined == old and "selection_limitation_coverage" not in default
+    assert report["no_recorded_limitations_rows"] == 1
+    output = tmp_path / "limitations.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["doctor", "--database", str(path), "--output", str(output), "--selection-limitations"],
+    )
+    with pytest.raises(SystemExit) as raised:
+        main()
+    assert raised.value.code == 0
+    assert json.loads(output.read_text())["selection_limitation_coverage"] == report
 
 
 def coverage(path: Path) -> dict[str, Any]:

@@ -1,0 +1,173 @@
+{
+  "item": "DA10.2",
+  "assessment_version": 3,
+  "technical_decision": "SUPPORTED for the explicitly registered current metadata/retained-state profile after J254; no demonstrated applicable implementation residual remains in the audited eight requirements/sixteen class groups. Full gate passed; root actual J254 release/checkbox decision pending.",
+  "literal": "Добавить read-only doctor для missing/corrupt blobs, dangling refs/work, duplicate application, stale generation, orphaned batch, missing receipt и archive coverage. Ремонт и повтор отправки не выполняются doctor автоматически.",
+  "base_matrix": {
+    "file": "requirement-matrix.json",
+    "sha256": "fe86d124548c7ebb6f313d078c6e8f2606d5ebad614d8965e7a1c09917b73f26",
+    "role": "complete commands/source/test/ownership/class registry; its pre-J254 OPEN decision and RESIDUAL-1 are superseded only by this post-assessment"
+  },
+  "requirements": {
+    "missing_corrupt_retained_bodies": "Covered by strict frozen payload/snapshot hashes, shared immutable legacy archive guards, declared native delivery/work/review/accounting models. Strict serialization/ref failures ERROR; unproven legacy/unknown-model data remains unavailable/advisory, not fabricated modern corruption.",
+    "dangling_refs_work": "Covered for registered typed known parents/work/current+previous paid-name refs, J251 amendment snapshots/carriers/lineage, source/content metadata and actual continuation parent+listed child Publication IDs. No currentowner equality or arbitrary-JSON traversal claim.",
+    "duplicate_application": "Covered by complete actual generation/phase or explicit target namespace/ref key; known invalid null-key rows not duplicates. Distinct keys valid; no duplicate-billing verdict.",
+    "stale_generation": "Covered advisory only where current producer defines primary queued/submitting/unconsumed generation. Raw explicit saved generation required; secondary/generationless/historical scopes not invented.",
+    "orphaned_batch": "Covered item-parent existence plus all saved batch expected count vs all retained item rows, including consumed/forgotten. Deficit advisory; excess/invalid count error; unavailable schema/count evidence null.",
+    "missing_receipt": "Covered exact original(provider,batch,custom), actual item purpose and both-known request SHA for all10purposes. SameSHA/currentconsumer never substitutes. Historical absent receipt advisory/legacySHA unknown.",
+    "archive_coverage": "Covered bounded captured extraction/candidate/selection/source graph identity/count/ordinal/bounds/parent checks. Stored prefix/omission/unknown explicit; no complete raw traversal or legal selection quality claim.",
+    "read_only_no_auto_action": "Covered immutable read-only checkpointed snapshots, before/after hashes/livejournal guards, separate create-only output. No repair, provider, capture, retry, resend, pipeline or production processing."
+  },
+  "class_groups": [
+    {
+      "class": "BatchIntent",
+      "carrier": "llm_batch_intents",
+      "status": "qualified within base-matrix explicit scope"
+    },
+    {
+      "class": "LlmBatch/LlmBatchItem",
+      "carrier": "llm_batches/items",
+      "status": "qualified within base-matrix explicit scope"
+    },
+    {
+      "class": "ComputationResult",
+      "carrier": "computation_results",
+      "status": "qualified within base-matrix explicit scope"
+    },
+    {
+      "class": "ResultApplication/ApplicabilityObservation",
+      "carrier": "result_applications/result_applicability",
+      "status": "qualified within base-matrix explicit scope"
+    },
+    {
+      "class": "Primary compact projections",
+      "carrier": "bills analysis/ready; memo admittedpositions",
+      "status": "qualified within base-matrix explicit scope"
+    },
+    {
+      "class": "Secondary projected refs",
+      "carrier": "status amendments; bills joint/reviews; bills/status supplements",
+      "status": "qualified within base-matrix explicit scope"
+    },
+    {
+      "class": "Modern review memo",
+      "carrier": "analysis_memo modern_review_ref",
+      "status": "qualified within base-matrix explicit scope"
+    },
+    {
+      "class": "Current/previous Mnemonic",
+      "carrier": "bills.editorial_json",
+      "status": "qualified within base-matrix explicit scope"
+    },
+    {
+      "class": "DocumentWork",
+      "carrier": "document_work ordinary",
+      "status": "qualified within base-matrix explicit scope"
+    },
+    {
+      "class": "AmendmentRevisionApplicationWork/handoff",
+      "carrier": "document_work; consumed item meta workkey",
+      "status": "qualified within base-matrix explicit scope"
+    },
+    {
+      "class": "ReviewWork",
+      "carrier": "bills.review_work_json",
+      "status": "qualified within base-matrix explicit scope"
+    },
+    {
+      "class": "ContentSnapshot/Version/Binding",
+      "carrier": "content_snapshots/versions/publication_content",
+      "status": "qualified within base-matrix explicit scope"
+    },
+    {
+      "class": "Source/artifact/extraction/candidate/edition/letter/Senate classes",
+      "carrier": "source-history tables",
+      "status": "qualified within base-matrix explicit scope"
+    },
+    {
+      "class": "Legacy import/value/body/occurrence",
+      "carrier": "legacy_* tables and admitted projection columns",
+      "status": "qualified within base-matrix explicit scope"
+    },
+    {
+      "class": "DeliveryPlan/BatchResult operational bodies",
+      "carrier": "publication delivery; item result_json",
+      "status": "qualified within base-matrix explicit scope"
+    },
+    {
+      "class": "AmendmentInputSnapshot/AmendmentInputRef (J251)",
+      "carrier": "amendment_input_snapshots; intent/item meta and computation result ref",
+      "status": "qualified within base-matrix explicit scope"
+    }
+  ],
+  "j254_residual_closure": {
+    "prior_id": "RESIDUAL-1",
+    "status": "closed_in_reviewed_implementation",
+    "exact_patch_sha256": "1c802a075f83b6fcba95c073cbf13af5ab2d5b42069f3ea78b7ffae8dcd1149a",
+    "manifest_sha256": "2a45cb12ab6315e6fab4cf3fb8270e8373572c9ae670305f9234636b9c90f2cc",
+    "source_pins": {
+      "tools/retained_integrity_doctor.py": "8051a2d9b54d73ae770c513885503b6ab36c8164cbf60c6738cb9a7305f1c88a",
+      "tests/unit/test_retained_integrity_doctor.py": "36f85cabfdd5867cbae3d948b0c0fe571e2a72f3470d96f08c60a58fc1960b02",
+      "tools/README.md": "c4711f5e1d2387806c0e7d49fb1ad0a47ff318732086a92719697480bf8aeaa1"
+    },
+    "implementation": "continuation_children counts exact listed continuation_ids edge slots; tests physical Publication ID presence from already inventoried rows. Parent uses same observed-ID set, so oversized ints never reach SQLite bind or diagnostics.",
+    "tests": [
+      "tests/unit/test_retained_integrity_doctor.py::test_frozen_continuation_child_availability_is_advisory[complete]",
+      "tests/unit/test_retained_integrity_doctor.py::test_frozen_continuation_child_availability_is_advisory[missing_last]",
+      "tests/unit/test_retained_integrity_doctor.py::test_frozen_continuation_child_availability_is_advisory[cleaned]",
+      "tests/unit/test_retained_integrity_doctor.py::test_frozen_continuation_child_availability_is_advisory[oversized_child]",
+      "tests/unit/test_retained_integrity_doctor.py::test_frozen_continuation_child_availability_is_advisory[oversized_parent]"
+    ],
+    "schema_control": "existing missing-publications case asserts all child counts null/unavailable",
+    "namespace": "local Publication IDs only; not Telegram message, event or content-version IDs",
+    "semantics": "availability advisory only; presence does not prove ownership/current content/send/retry eligibility; cleaned/unreadable membership unknown",
+    "qualification": {
+      "author_focused": 63,
+      "new_units": 5,
+      "new_scenarios": 0,
+      "mypy": "3targets green",
+      "ruff_format": "2files green",
+      "peer_review": "exact final three-file pins CLEAR; no independent tests/edits/network"
+    },
+    "root_pinned_observation": {
+      "database_sha256": "118f84ec0862f247d3a05db9be3b5432ebeb8b995fbe70cc9210080a7b2f2a70",
+      "schema": 67,
+      "publication_rows": 226,
+      "listed_edge_slots": 2,
+      "present_edge_slots": 2,
+      "no_children_rows": 165,
+      "unavailable_rows": 59,
+      "errors": 0,
+      "warnings": 0,
+      "prior_seven_profiles": "root independently byte-exact",
+      "prior_retained_fields": "root independently exact excluding declared new section/limitation"
+    }
+  },
+  "qualified_source_gates": {
+    "j252": "971aba3e415425ee0487840e5621c909a9036e73,8922tests/mypy769/Ruff838, actualCI42016266907/deploy42017158295 verified",
+    "j251": "dc7d2f27, amendment readerA schema67; actualCI42008952868/deploy42010102446 verified",
+    "j254": {
+      "root_full_tests": 8927,
+      "failures": 0,
+      "seconds": 300.87,
+      "mypy_files": 769,
+      "ruff_format_files": 838,
+      "coverage_percent": 92,
+      "all_source_pins_exact": 838,
+      "release": "actual publication/CI/relay verification pending; parent-owned",
+      "root_integration_proof_sha256": "3153cb14f6e4dae820124396304e01eba751ef226c2a4b2127984d0b79c2c2aa",
+      "full_xml_sha256": "d2a1c736c454fe29c0212d1b4e9d8e40dcf1380400c7d308dc9653d461bdf034"
+    }
+  },
+  "remaining_implementation_gaps": [],
+  "deferred_or_inherently_unknown": {
+    "raw_originals": "User-deferred raw legislative/archive body store/backends and full raw traversal are N.A. to this current profile, not silently implemented. Retained application bodies remain in scope.",
+    "legacy": "Missing unstamped/cleaned/erased data and unsupported layouts remain explicit unavailable/unknown; no old source events/clocks, paid calls, original questions or provenance fabricated.",
+    "legal_whole_db": "No legal/materiality/source applicability verdict, human gold, every arbitrary JSON key/wholeDB semantic completeness or complete history claim.",
+    "natural_cycles": "Other DA10.7 natural lifecycle acceptance remains a separate requirement, not a reason to redefine this technical doctor requirement."
+  },
+  "decision_owner": "root after final full gate and actual J254 release; this artifact does not modify a checkbox",
+  "source_edits": false,
+  "checkbox_edits": false,
+  "provider_network_calls": 0
+}

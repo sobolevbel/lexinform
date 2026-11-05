@@ -1,0 +1,116 @@
+{
+  "full_tests": 8937,
+  "seconds": 303.56,
+  "mypy": 769,
+  "ruff_format": 838,
+  "source_pins_exact": 838,
+  "root_focus": 31,
+  "new_units": 10,
+  "new_scenarios": 0,
+  "both_sources_unchanged": true,
+  "four_prior_flag_combinations_byte_exact": true,
+  "root_replay": {
+    "b9": {
+      "database_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+      "all_four_previous_flag_combinations_byte_exact": true,
+      "prior_report_sha256": {
+        "coverage0_candidates0": "f1a95e565ebb95ec132b43a007f20aae0ce18cf8369955ebaeef6a9bd14e12e5",
+        "coverage1_candidates0": "ae0f6f9afd94e6bddde8a7cb813027b8423d37db77b3a9af145d35c8fe6de3fc",
+        "coverage0_candidates1": "00dc86c2dea6c4b1d64e6abcf2fab352debf815215b016e1d8974d51f427a2fc",
+        "coverage1_candidates1": "e664cc845ccb12a3089e08059c0ca75aae92755eaa4a1a765688ca5bca56ef8b"
+      },
+      "source_unchanged": true,
+      "limitation_report": {
+        "status": "available",
+        "unit": "persisted_source_observation_row",
+        "denominator": "all_source_observation_rows",
+        "total": 50,
+        "known_limitations_rows": 50,
+        "no_recorded_limitations_rows": 6,
+        "unknown_rows": {
+          "unknown_invalid_observation": 0,
+          "unknown_missing_selection": 0,
+          "unknown_invalid_selection": 0,
+          "unknown_identity_mismatch": 0,
+          "unknown_missing_limitations": 0
+        },
+        "unattributed": 0,
+        "counts": {
+          "support_applicability_unknown": 18,
+          "missing_evidence": 33,
+          "missing_own_annex": 0,
+          "annex_link_unknown": 15,
+          "foreign_annex": 0,
+          "support_conflict": 0,
+          "normative_text_omitted": 0,
+          "draft_version_conflict": 0
+        },
+        "fractions": {
+          "support_applicability_unknown": 0.36,
+          "missing_evidence": 0.66,
+          "missing_own_annex": 0.0,
+          "annex_link_unknown": 0.3,
+          "foreign_annex": 0.0,
+          "support_conflict": 0.0,
+          "normative_text_omitted": 0.0,
+          "draft_version_conflict": 0.0
+        },
+        "multi_label": true,
+        "unavailable_schema": [],
+        "scope": "Saved coded limitations per observation; labels overlap, not current blockers or legal completeness."
+      }
+    },
+    "fresh": {
+      "database_sha256": "b08843e5a6b3c51aba83852509ffbaa915c2b859945bc44204f1b214a38077c6",
+      "all_four_previous_flag_combinations_byte_exact": true,
+      "prior_report_sha256": {
+        "coverage0_candidates0": "9edc640685499a4ce9ad295d015e758ae0abf0ec1c44fc831aac9a7e48885f2d",
+        "coverage1_candidates0": "f0cce5a628c1c598410b80e65e20c3c4136ea876b3d4eb45401f5b1308eac86b",
+        "coverage0_candidates1": "4531a93aff61dacb628feacfd71de78281cec201c822a55ce9cd795b39a4445c",
+        "coverage1_candidates1": "82d320de8b5df495226d4e96adbe61ff0203b4d228e81a2991e899c6b10b8626"
+      },
+      "source_unchanged": true,
+      "limitation_report": {
+        "status": "available",
+        "unit": "persisted_source_observation_row",
+        "denominator": "all_source_observation_rows",
+        "total": 54,
+        "known_limitations_rows": 54,
+        "no_recorded_limitations_rows": 6,
+        "unknown_rows": {
+          "unknown_invalid_observation": 0,
+          "unknown_missing_selection": 0,
+          "unknown_invalid_selection": 0,
+          "unknown_identity_mismatch": 0,
+          "unknown_missing_limitations": 0
+        },
+        "unattributed": 0,
+        "counts": {
+          "support_applicability_unknown": 19,
+          "missing_evidence": 36,
+          "missing_own_annex": 0,
+          "annex_link_unknown": 16,
+          "foreign_annex": 0,
+          "support_conflict": 0,
+          "normative_text_omitted": 0,
+          "draft_version_conflict": 0
+        },
+        "fractions": {
+          "support_applicability_unknown": 0.35185185185185186,
+          "missing_evidence": 0.6666666666666666,
+          "missing_own_annex": 0.0,
+          "annex_link_unknown": 0.2962962962962963,
+          "foreign_annex": 0.0,
+          "support_conflict": 0.0,
+          "normative_text_omitted": 0.0,
+          "draft_version_conflict": 0.0
+        },
+        "multi_label": true,
+        "unavailable_schema": [],
+        "scope": "Saved coded limitations per observation; labels overlap, not current blockers or legal completeness."
+      }
+    }
+  },
+  "full_log_sha256": "6c269ed1fbcd0b5b247df4f3729051f73928307ff1da8cb97ac87b15e5c1887e",
+  "full_xml_sha256": "ebf1b943a812891d12811b3d3b64815e2f2d6fa74a668a3f29cf0c34062758b0"
+}

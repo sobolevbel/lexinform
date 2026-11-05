@@ -1,0 +1,24 @@
+{
+  "item": "DA10.2",
+  "decision": "accepted for current metadata and retained application-body profile",
+  "owner": "root",
+  "literal_requirements": 8,
+  "registered_class_groups": 16,
+  "remaining_applicable_demonstrated_gaps": [],
+  "post_matrix_sha256": "6003022e65e657abf910cb6278f9abc6cc044064e11a9cb9910052c80c605b28",
+  "qualified_commit": "f9a4efa97ae97556a9eeef98575f9d2763649a5a",
+  "actual_release": "release.json",
+  "actual_release_sha256": "f1fb4c8b641c70c0eac860f04f5f77f539f821426623aedcfd2867589536b5e3",
+  "tests": 8927,
+  "mypy": 769,
+  "ruff_format": 838,
+  "seven_prior_profiles_exact": true,
+  "prior_retained_fields_exact": true,
+  "source_unchanged": true,
+  "exclusions": [
+    "Deferred raw legislative originals, backend selection and full raw traversal",
+    "Unknown legacy, cleaned and unsupported layouts remain unavailable",
+    "No legal, full arbitrary-JSON or complete historical coverage claim",
+    "Natural lifecycle acceptance DA10.7 remains separate"
+  ]
+}

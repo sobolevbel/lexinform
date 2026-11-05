@@ -1,0 +1,15 @@
+{
+  "base_commit": "f9a4efa97ae97556a9eeef98575f9d2763649a5a",
+  "workspace": "/private/tmp/lexinform-j255-selection-limitations",
+  "patch_sha256": "b0b04c39fa599b395f5ecde5751618ed3ae905fcf4ddb7ca77665bb196ea5586",
+  "files": {
+    "tools/source_history_doctor.py": "0335d54dbbcaec8bdb4534cfe83077dc040c235968c697a7f3c229132412e081",
+    "tests/unit/test_selection_state_coverage.py": "ec956156399fd254817f53a8708bf42fd145db044e89a5f1af696d11eecf0307",
+    "tools/README.md": "07f3eb260d15aca94790c2891568a2b029b32d1d56129e5b703d63b63f9d6a99"
+  },
+  "base_files": {
+    "tools/source_history_doctor.py": "792862a0bc907a3cff6e3e8b541061ef8f5478e06faa8eab9bc579990f288d8c",
+    "tests/unit/test_selection_state_coverage.py": "9deac7f3deabdd160897be33a3156264a9e920ddb27bcd897c4f7193228bd416",
+    "tools/README.md": "c4711f5e1d2387806c0e7d49fb1ad0a47ff318732086a92719697480bf8aeaa1"
+  }
+}

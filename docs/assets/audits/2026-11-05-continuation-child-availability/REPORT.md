@@ -11,3 +11,5 @@ Author63focused, strict scoped types, Ruff and format pass. Both immutable pinne
 Root full gate, final integration and complete requirement acceptance follow. Raw legislative originals remain separately deferred.
 
 Root43focused/8927full tests/300.87s/92%coverage, mypy769/Ruff838 and all838source/config pins pass. [Integration](integration-proof.json): seven prior report profiles and all prior retained-state fields exact, source unchanged, new child census226publications/2present edges/0missing/59unavailable plans. Actual release follows publication.
+
+Actual f9a4efa9 [CI and relay release](release.json) verified: CI42018529750/deploy42019390877, exact transition/restart45/timer. Root accepts [DA10.2 within the explicit current profile](acceptance.json), using the [post-J254 matrix](../2026-11-05-retained-state-integrity/requirement-matrix-post-j254.json). Deferred raw originals and unknown historical evidence remain excluded.

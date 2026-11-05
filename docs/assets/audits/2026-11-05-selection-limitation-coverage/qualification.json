@@ -1,0 +1,38 @@
+{
+  "status": "source-frozen",
+  "focused_passed": 57,
+  "new_units": 10,
+  "new_scenarios": 0,
+  "unit_first": "native public missing-annex producer assertion passed, then new opt-in API failed before implementation; log retained",
+  "mypy": "3files strict green (unchanged document_selection anchors isolated imports)",
+  "ruff": "2 owned Python files green",
+  "format": "2 owned Python files unchanged",
+  "default_compatibility": "both pinned states all four previous source-doctor flag combinations serialized byte-exact vs frozen base",
+  "pinned_observations": {
+    "b9": 50,
+    "fresh": 54
+  },
+  "known_limitations_rows": {
+    "b9": 50,
+    "fresh": 54
+  },
+  "unattributed_rows": {
+    "b9": 0,
+    "fresh": 0
+  },
+  "state_database_sha_unchanged": true,
+  "no_new_storage_classifier_runtime_writer": true,
+  "provider_network_scenarios": false,
+  "commit_push_root_source_edits": false,
+  "full_gate": "passed",
+  "acceptance": "finite DA10.3 reporting slice only; no complete DA10.3/current blocker/legal coverage claim",
+  "root_full_gate": {
+    "tests": 8937,
+    "seconds": 303.56,
+    "mypy": 769,
+    "ruff_format": 838,
+    "source_pins_exact": 838
+  },
+  "root_focus": 31,
+  "release": "pending publication"
+}

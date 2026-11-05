@@ -525,6 +525,14 @@ not a GC decision. No bodies, source URLs or evidence quotes are emitted. Exit c
 scope, 1 for errors, 2 for no observed history. The common immutable snapshot guard refuses a live
 WAL/journal, and exclusive outputs preserve earlier evidence.
 
+`--selection-limitations` adds a separate coded-limitation census over every persisted source
+observation. It reuses validated observation/selection identities and the existing state census;
+`missing_own_annex` names recorded missing-annex evidence, not a current blocker or a fresh source
+verdict. Each code counts at most once per observation. Labels overlap, so fractions use all
+observations (including unknown rows) and need not sum to one. Invalid/dangling rows and legacy
+absent limitation fields remain unknown; unavailable schema is null, known empty is zero with
+undefined fractions. Default and `--selection-coverage` output stay unchanged without the new flag.
+
 ## Document download profile
 
 ```bash

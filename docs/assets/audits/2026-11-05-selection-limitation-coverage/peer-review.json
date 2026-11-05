@@ -1,0 +1,17 @@
+{
+  "stage": "J255",
+  "verdict": "CLEAR",
+  "reviewer": "/root/plan_remaining_audit",
+  "patch_sha256": "b0b04c39fa599b395f5ecde5751618ed3ae905fcf4ddb7ca77665bb196ea5586",
+  "manifest_sha256": "cff680d8f8113523cc33c1b96fdcf8b9851ccc65904cf83ba4e7d7b9a19dffed",
+  "physical_pins_verified": {
+    "tools/source_history_doctor.py": "0335d54dbbcaec8bdb4534cfe83077dc040c235968c697a7f3c229132412e081",
+    "tests/unit/test_selection_state_coverage.py": "ec956156399fd254817f53a8708bf42fd145db044e89a5f1af696d11eecf0307",
+    "tools/README.md": "07f3eb260d15aca94790c2891568a2b029b32d1d56129e5b703d63b63f9d6a99"
+  },
+  "findings": [],
+  "scope": "Opt-in typed already-saved limitation codes, each once per observation, all persisted observation rows in denominator. Multilabel sums may exceed one. Absent legacy field unknown via fields_set; invalid/dangling/identity failures retained unknown; schema null vs knownempty0; no fresh classification/currentblocker/source/legal inference. Shared state output branch preserved.",
+  "independent_tests": false,
+  "source_edits": false,
+  "network": false
+}

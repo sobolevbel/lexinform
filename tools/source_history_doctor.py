@@ -35,7 +35,7 @@ from lexinform.models import (
     SelectionEditionReference,
     SourceObservation,
 )
-from lexinform.models.documents import SelectionState
+from lexinform.models.documents import DocumentLimitation, SelectionState
 from tools.artifact_metadata import (
     ArtifactMetadataIssue,
     ArtifactReadIssue,
@@ -125,23 +125,27 @@ _COVERAGE_UNKNOWN = (
 )
 
 
-def _selection_coverage_state(
+def _selection_coverage_details(
     connection: sqlite3.Connection, reader: ContentSourceRows, selection_id: str
-) -> str:
+) -> tuple[str, tuple[DocumentLimitation, ...] | None]:
     row = connection.execute(
         "SELECT record_json FROM document_selections WHERE selection_id=?", (selection_id,)
     ).fetchone()
     if row is None:
-        return "unknown_missing_selection"
+        return "unknown_missing_selection", None
     try:
         DocumentSelectionRecord.model_validate_json(row[0])
     except ValueError, TypeError:
-        return "unknown_invalid_selection"
+        return "unknown_invalid_selection", None
     try:
         selection = reader.get_document_selection(selection_id)
     except ValueError, TypeError:
-        return "unknown_identity_mismatch"
-    return selection.selection.state if selection is not None else "unknown_missing_selection"
+        return "unknown_identity_mismatch", None
+    if selection is None:
+        return "unknown_missing_selection", None
+    value = selection.selection
+    limitations = value.limitations if "limitations" in value.model_fields_set else None
+    return value.state, limitations
 
 
 def _selection_coverage_unavailable(connection: sqlite3.Connection) -> list[str]:
@@ -171,7 +175,9 @@ def _selection_coverage_unavailable(connection: sqlite3.Connection) -> list[str]
     )
 
 
-def selection_state_coverage(connection: sqlite3.Connection) -> dict[str, Any]:
+def selection_state_coverage(
+    connection: sqlite3.Connection, *, include_limitations: bool = False
+) -> dict[str, Any]:
     """Each persisted observation is one unit, including rows whose state cannot be verified."""
     unavailable = _selection_coverage_unavailable(connection)
 
@@ -186,12 +192,35 @@ def selection_state_coverage(connection: sqlite3.Connection) -> dict[str, Any]:
         "unattributed": None,
         "unavailable_schema": sorted(unavailable),
     }
+    limitation_report: dict[str, Any] = {
+        "status": report["status"],
+        "unit": report["unit"],
+        "denominator": report["denominator"],
+        "total": None,
+        "known_limitations_rows": None,
+        "no_recorded_limitations_rows": None,
+        "unknown_rows": None,
+        "unattributed": None,
+        "counts": None,
+        "fractions": None,
+        "multi_label": True,
+        "unavailable_schema": report["unavailable_schema"],
+        "scope": (
+            "Saved coded limitations per observation; labels overlap, "
+            "not current blockers or legal completeness."
+        ),
+    }
+    if include_limitations:
+        report["limitation_coverage"] = limitation_report
     if unavailable:
         return report
     counts = dict.fromkeys((*get_args(SelectionState), *_COVERAGE_UNKNOWN), 0)
     groups: dict[tuple[str, str], Counter[str]] = {}
     reader = ContentSourceRows(connection)
-    cached: dict[str, str] = {}
+    cached: dict[str, tuple[str, tuple[DocumentLimitation, ...] | None]] = {}
+    limitation_counts = dict.fromkeys(get_args(DocumentLimitation), 0)
+    limitation_unknown: Counter[str] = Counter()
+    known_limitations = no_limitations = 0
     cursor = connection.cursor()
     cursor.row_factory = sqlite3.Row
     for row in cursor.execute("SELECT observation_id, observation_json FROM source_observations"):
@@ -199,6 +228,7 @@ def selection_state_coverage(connection: sqlite3.Connection) -> dict[str, Any]:
             SourceObservation.model_validate_json(row["observation_json"])
         except ValueError, TypeError:
             counts["unknown_invalid_observation"] += 1
+            limitation_unknown["unknown_invalid_observation"] += 1
             continue
         try:
             observation = reader.get_source_observation(row["observation_id"])
@@ -206,16 +236,40 @@ def selection_state_coverage(connection: sqlite3.Connection) -> dict[str, Any]:
             observation = None
         if observation is None:
             counts["unknown_identity_mismatch"] += 1
+            limitation_unknown["unknown_identity_mismatch"] += 1
             continue
         selection_id = observation.selection_id
         if selection_id not in cached:
-            cached[selection_id] = _selection_coverage_state(connection, reader, selection_id)
-        state = cached[selection_id]
+            cached[selection_id] = _selection_coverage_details(connection, reader, selection_id)
+        state, limitations = cached[selection_id]
         counts[state] += 1
+        if limitations is None:
+            limitation_unknown[
+                state if state in _COVERAGE_UNKNOWN else "unknown_missing_limitations"
+            ] += 1
+        else:
+            known_limitations += 1
+            no_limitations += not limitations
+            for limitation in set(limitations):
+                limitation_counts[limitation] += 1
         if state not in _COVERAGE_UNKNOWN:
             key = (observation.purpose, observation.document.kind)
             groups.setdefault(key, Counter())[state] += 1
     total = sum(counts.values())
+    limitation_report.update(
+        total=total,
+        known_limitations_rows=known_limitations,
+        no_recorded_limitations_rows=no_limitations,
+        unknown_rows={
+            key: limitation_unknown[key]
+            for key in (*_COVERAGE_UNKNOWN, "unknown_missing_limitations")
+        },
+        unattributed=sum(limitation_unknown.values()),
+        counts=limitation_counts,
+        fractions={
+            key: count / total if total else None for key, count in limitation_counts.items()
+        },
+    )
     report.update(
         total=total,
         counts=counts,
@@ -345,6 +399,7 @@ def audit(
     *,
     include_selection_coverage: bool = False,
     include_candidate_traces: bool = False,
+    include_selection_limitations: bool = False,
 ) -> dict[str, Any]:
     counts: Counter[str] = Counter()
     findings: list[dict[str, str]] = []
@@ -367,7 +422,9 @@ def audit(
         }
         coverage_unavailable = (
             set(_selection_coverage_unavailable(connection))
-            if include_selection_coverage or include_candidate_traces
+            if include_selection_coverage
+            or include_candidate_traces
+            or include_selection_limitations
             else set()
         )
         for name in sorted(coverage_unavailable & tables):
@@ -585,8 +642,10 @@ def audit(
                     != linked_edition
                 ):
                     issue("edition_membership_mismatch", ref)
-        if include_selection_coverage:
-            coverage_report = selection_state_coverage(connection)
+        if include_selection_coverage or include_selection_limitations:
+            coverage_report = selection_state_coverage(
+                connection, include_limitations=include_selection_limitations
+            )
         if include_candidate_traces:
             candidate_report = candidate_trace_inventory(connection)
             findings.extend(candidate_report["findings"])
@@ -644,6 +703,8 @@ def audit(
         ],
     }
 
+    if include_selection_limitations and coverage_report is not None:
+        report["selection_limitation_coverage"] = coverage_report.pop("limitation_coverage")
     if include_selection_coverage:
         report["selection_state_coverage"] = coverage_report
     if include_candidate_traces:
@@ -657,6 +718,7 @@ def run(
     *,
     include_selection_coverage: bool = False,
     include_candidate_traces: bool = False,
+    include_selection_limitations: bool = False,
 ) -> int:
     if output.resolve() == database.resolve():
         raise ValueError("Report must be separate from the input database")
@@ -664,6 +726,7 @@ def run(
         database,
         include_selection_coverage=include_selection_coverage,
         include_candidate_traces=include_candidate_traces,
+        include_selection_limitations=include_selection_limitations,
     )
     output.parent.mkdir(parents=True, exist_ok=True)
     write_json(output, report)
@@ -676,6 +739,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--selection-coverage", action="store_true")
     parser.add_argument("--candidate-traces", action="store_true")
+    parser.add_argument("--selection-limitations", action="store_true")
     args = parser.parse_args()
     try:
         code = run(
@@ -683,6 +747,7 @@ def main() -> None:
             args.output,
             include_selection_coverage=args.selection_coverage,
             include_candidate_traces=args.candidate_traces,
+            include_selection_limitations=args.selection_limitations,
         )
     except (OSError, sqlite3.Error, ValueError) as exc:
         parser.error(str(exc))
