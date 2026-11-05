@@ -1,0 +1,25 @@
+{
+  "new_units": 18,
+  "new_scenarios": 0,
+  "removed_cases": 0,
+  "new": [
+    "tests.unit.test_government_review_reuse::test_actual_government_projection_receipt_reuses_old_review_after_replacement_and_cleanup[commission_review-RCL/123]",
+    "tests.unit.test_government_review_reuse::test_actual_government_projection_receipt_reuses_old_review_after_replacement_and_cleanup[commission_review-WPL/UD123]",
+    "tests.unit.test_government_review_reuse::test_actual_government_projection_receipt_reuses_old_review_after_replacement_and_cleanup[consultation_review-RCL/123]",
+    "tests.unit.test_government_review_reuse::test_actual_government_projection_receipt_reuses_old_review_after_replacement_and_cleanup[consultation_review-WPL/UD123]",
+    "tests.unit.test_government_review_reuse::test_corrupt_current_owner_receipt_rejects_before_prepare[duplicate]",
+    "tests.unit.test_government_review_reuse::test_corrupt_current_owner_receipt_rejects_before_prepare[generation]",
+    "tests.unit.test_government_review_reuse::test_corrupt_current_owner_receipt_rejects_before_prepare[owner]",
+    "tests.unit.test_government_review_reuse::test_corrupt_current_owner_receipt_rejects_before_prepare[phase]",
+    "tests.unit.test_government_review_reuse::test_corrupt_current_owner_receipt_rejects_before_prepare[result_id]",
+    "tests.unit.test_government_review_reuse::test_corrupt_current_owner_receipt_rejects_before_prepare[wrong_key]",
+    "tests.unit.test_government_review_reuse::test_corrupt_current_owner_receipt_rejects_before_prepare[wrong_purpose]",
+    "tests.unit.test_government_review_reuse::test_default_owner_matching_never_scans_government_receipts",
+    "tests.unit.test_government_review_reuse::test_known_same_number_rollover_receipt_cannot_name_another_government_result",
+    "tests.unit.test_government_review_reuse::test_unproven_or_changed_review_uses_ordinary_prepare[changed_scope]",
+    "tests.unit.test_government_review_reuse::test_unproven_or_changed_review_uses_ordinary_prepare[changed_text]",
+    "tests.unit.test_government_review_reuse::test_unproven_or_changed_review_uses_ordinary_prepare[missing_receipt]",
+    "tests.unit.test_government_review_reuse::test_unproven_or_changed_review_uses_ordinary_prepare[opaque_address]",
+    "tests.unit.test_government_review_reuse::test_unproven_or_changed_review_uses_ordinary_prepare[reordered_inputs]"
+  ]
+}

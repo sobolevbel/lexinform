@@ -1,0 +1,38 @@
+{
+  "task": "DA10.4",
+  "status": "complete",
+  "accepted_capability": "Saved local observed latency and trustworthy-source latency are distinct; missing clocks remain explicit unknown",
+  "requirements": [
+    {
+      "requirement": "Local discovery and actual read endpoints",
+      "evidence": "../2026-11-05-observed-timing-report/joined-proof.json",
+      "proof": "Actual native preparation/original witness survives submit, collection, retention, projection and public recorded delivery"
+    },
+    {
+      "requirement": "Analysis/application/delivery intervals",
+      "evidence": "../2026-11-05-observed-timing-report/joined-proof.json",
+      "proof": "1200/1500/1800 seconds from original trigger/read; actual paid generation0/projected1 and known-request frozen physical slot"
+    },
+    {
+      "requirement": "Source latency only with trustworthy source clock",
+      "evidence": "../2026-11-05-observed-timing-report/joined-v1-wykaz.json",
+      "proof": "Existing exactly bound Wykaz source/discovery control retained; unknown official availability is never replaced by download time"
+    },
+    {
+      "requirement": "Independent actual-current release",
+      "evidence": "previous-release.json",
+      "proof": "Exact d85feff2 CI41980800311/relay41981573411, transition/45-second restart/timer verified"
+    },
+    {
+      "requirement": "Compatibility and unknown coverage",
+      "evidence": "../2026-11-05-observed-timing-report/integration-proof.json",
+      "proof": "8683 full tests, old default/full observed V1 bytes exact; separate SQL populations, explicit missing-schema/clock reasons"
+    }
+  ],
+  "boundaries": [
+    "Controlled offline model/Telegram doubles establish software capability, not natural/legal acceptance under DA10.7",
+    "Explanation command APPLICATION is counted; physical best-effort operator reply is explicitly unrecorded, outside channel Publication receipt scope",
+    "Historical missing clocks and source availability remain unknown; no legacy enrichment, source-date inference or new operator outbox required"
+  ],
+  "release_sha256": "2dc4d49d994a4123f7d98346942860a372c94d18961da09910df63d1e361424a"
+}

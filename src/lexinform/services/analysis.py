@@ -2051,7 +2051,15 @@ class AnalysisService:
             }[context.purpose]
             if retained is not None and retained.context.memo_key(term) == key:
                 return False
-        if retained_review(self._repo, term, context) is not None:
+        if (
+            retained_review(
+                self._repo,
+                term,
+                context,
+                government=bill is not None and (bill.is_rcl or bill.is_wykaz),
+            )
+            is not None
+        ):
             return False
         job = self._repo.batch_job(self._review_request_key(key))
         return (
@@ -2092,7 +2100,9 @@ class AnalysisService:
             record = DocumentReviewRecord.model_validate_json(cached)
             self._remember_analysis(bill, key, record)
             return _reused(record)
-        historical = retained_review(self._repo, bill.term, context)
+        historical = retained_review(
+            self._repo, bill.term, context, government=bill.is_rcl or bill.is_wykaz
+        )
         if historical is not None:
             self._remember_analysis(bill, key, historical)
             return _reused(historical)

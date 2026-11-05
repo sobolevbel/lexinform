@@ -1,0 +1,7 @@
+{
+  "src/lexinform/ports.py": "062f3b71685a2eaf58f00cc320348244fc1d2f2291c5cfd96484ee51ce8b7899",
+  "src/lexinform/adapters/sqlite_repo.py": "638bd67803401ea2447688c6b67813480a553c075bfd38b07ae758c7b2f51590",
+  "src/lexinform/services/computation_reuse.py": "e07393ec433c83dc8733751382c08783623accc52cf5bfc472dc562fd15f0ca3",
+  "src/lexinform/services/analysis.py": "c00eacd0428e29698528533891703d28e95ce1c9658fb981fd71297d8919d6b8",
+  "tests/unit/test_government_review_reuse.py": "7d6cb4f543a6a63d915b2704b07701da0691b4b5b8bdec2f4303052d85ca3e05"
+}

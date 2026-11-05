@@ -1,0 +1,24 @@
+{
+  "src/lexinform/adapters/sqlite_repo.py": {
+    "added_functions": [
+      "list_government_review_applications"
+    ],
+    "changed_functions": [],
+    "removed_functions": []
+  },
+  "src/lexinform/services/analysis.py": {
+    "added_functions": [],
+    "changed_functions": [
+      "request_document_review",
+      "review_exhausted"
+    ],
+    "removed_functions": []
+  },
+  "src/lexinform/services/computation_reuse.py": {
+    "added_functions": [],
+    "changed_functions": [
+      "retained_review"
+    ],
+    "removed_functions": []
+  }
+}

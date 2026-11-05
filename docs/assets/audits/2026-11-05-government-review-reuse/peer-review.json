@@ -1,0 +1,52 @@
+{
+  "status": "clear",
+  "patch_sha256": "6ac45075f368c1952ec0a222a4dede1e42aa4faeef2da82ac8500c3d306197ef",
+  "incremental_patch_sha256": "661b7043c1b6354b0a7dc03c9cda875c093867b6e4717fb7f16c531978517cc1",
+  "supersedes_patch_sha256": "c5e60154cf9c84447d0234afda64c24e7c3368debda1f7c31779b1fbe1c20f1c",
+  "source_pins": {
+    "src/lexinform/ports.py": "062f3b71685a2eaf58f00cc320348244fc1d2f2291c5cfd96484ee51ce8b7899",
+    "src/lexinform/adapters/sqlite_repo.py": "638bd67803401ea2447688c6b67813480a553c075bfd38b07ae758c7b2f51590",
+    "src/lexinform/services/computation_reuse.py": "e07393ec433c83dc8733751382c08783623accc52cf5bfc472dc562fd15f0ca3",
+    "src/lexinform/services/analysis.py": "c00eacd0428e29698528533891703d28e95ce1c9658fb981fd71297d8919d6b8",
+    "tests/unit/test_government_review_reuse.py": "7d6cb4f543a6a63d915b2704b07701da0691b4b5b8bdec2f4303052d85ca3e05"
+  },
+  "findings": [],
+  "independent_tests": false,
+  "source_edits": false,
+  "closed_finding": {
+    "scope": "Finite canonical government same-number TermRollover bridge only, after known schema3/binding/input/request checks.",
+    "resolution": "A known result/binding number outside unchanged requested government bill now raises before preparation. Actual public second-government paid-result tamper regression failed beforefix and passes afterfix.",
+    "compatibility": "Original paid TERM remains independent. Default/local matching, Sejm calls, missing binding/schema and opaque legacy address policy remain unchanged. No global application-owner/paid-owner invariant was added."
+  },
+  "review_scope": [
+    "Original five-file bridge and final two-file narrow increment.",
+    "Actual review-input source work address remains distinct from document-review binding/reuse key; the latter requires exact equality.",
+    "Current-owner SQL/JSON applied projection authority uses exact shared J241 decoder; retained result keeps original owner/binding/schema3 ordered inputs/record/request identity.",
+    "Existing same-owner matching function and existing SQLite methods AST remain unchanged.",
+    "Actual public A\u2192pruneA\u2192TermRollover\u2192B\u2192pruneB/restore\u2192A controls across RCL/WPL consultation/commission, zero new preparations/reuse tokens and unchanged paid bytes/application rows.",
+    "No receipt writes, rekey, backfill or retention changes; known contradiction fails before prepare, missing/opaque or changed context follows normal preparation."
+  ],
+  "dependency": {
+    "file": "src/lexinform/adapters/computation_history.py",
+    "sha256": "3885767e8a0d2d943341ac9f46d1b4d52ec3dec0161bb0eded209101275e01fb",
+    "exact_verified": true,
+    "must_merge_first": true
+  },
+  "author_evidence": {
+    "focused_tests": 250,
+    "new_units": 18,
+    "new_scenarios": 0,
+    "strict_mypy_owned_files": 5,
+    "ruff_format": "passed",
+    "natural_terminal_cohort": false,
+    "fresh_government_owners": 257,
+    "fresh_eligible_receipts": 0,
+    "fresh_dump_restore_source_DB_exact": true
+  },
+  "limitations": [
+    "Read-only source/test/artifact review; no independent tests or full gate.",
+    "Terminal acceptance is four controlled native-service cases; no natural eligible-receipt population was claimed.",
+    "Future cross-number review transfer requires an explicit compatible bridge; this same-number rule must not be generalized to other application consumers.",
+    "Root owns merged-source gate and actual deployment."
+  ]
+}

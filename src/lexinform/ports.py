@@ -792,6 +792,10 @@ class BillRepository(Protocol):
 
     def list_result_applications(self, term: int, number: str) -> list[ResultApplication]: ...
 
+    def list_government_review_applications(
+        self, term: int, number: str
+    ) -> list[ResultApplication]: ...
+
     def save_applicability_observation(
         self, observation: ResultApplicabilityObservation
     ) -> None: ...

@@ -109,3 +109,5 @@ Telegram double prove functional local timing, not natural production/legal acce
 DA10.4's final decision follows actual release verification; legacy/source unknowns are not
 a reason to invent clocks or add an unrelated operator-reply outbox. Previousdb73fee3
 [CI and relay](previous-release.json) are actually verified.
+
+Actual d85feff2 release and DA10.4 completion: [CI/relay](../2026-11-05-government-review-reuse/previous-release.json), [requirement audit](../2026-11-05-government-review-reuse/timing-completion-audit.json). DA10.7 natural/legal acceptance remains separate.

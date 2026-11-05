@@ -10838,3 +10838,43 @@ DA7.1/DA7.5 remain partial outside scope.
 [qualification](../assets/audits/2026-11-05-application-reference-writer/qualification.json),
 [peer review](../assets/audits/2026-11-05-application-reference-writer/peer-review.json),
 [metadata evidence](../assets/audits/2026-11-05-application-reference-writer/artifacts.json).
+
+
+<a id="j243"></a>
+
+## J243 — government review reuse through exact carried projection receipts
+
+5 November 2026. A finite receipt-backed bridge recovers exact government review A after the
+current review becomes B and memo is cleaned: A → public pruneA before rollover → TermRollover →
+paid B → public pruneB/restore → AnalysisService exact caller A. Four unit-first failures become
+passing actual public-service lifecycle controls across RCL/WPL consultation/commission; exact
+reuse makes zero extra preparations, charges zero repeat tokens and preserves original paid
+owner/binding/result bytes. Existing orphan-memo protection remains unchanged; both memos are
+not claimed removable after rollover.
+
+Current-owner applied receipt SQL/JSON identity uses the exact J241 shared decoder3885767e…;
+original schema3 ordered input, binding term, purpose and request/record identity remain separate.
+Actual purpose/review-input:<64hex> is a stored work address, not a reconstructed text hash;
+known purpose/document-review:<64hex> must equal the original binding reuse key. Same-owner and
+Sejm matching stay strict. Known contradictions reject before prepare; missing/opaque evidence
+and changed input do not grant reuse. Current producer TermRollover carries the same government
+number, so known foreign-number scope rejects in this bridge only. A real second paid government
+result reproduces the pre-fix hole. Different original TERM stays valid; no global receipt-owner
+invariant or inferred authority for future cross-number transfer is introduced.
+
+250 focused tests pass,18newunits/0newscenarios, strict mypy5/Ruff/format green. Independent final
+five-pin review is CLEAR/findings[], with no independent test rerun. Pinned fresh DB b9f86131…:
+257government owners,0eligible scoped receipts; read/dump/double restore/source DB stay exact.
+No natural terminal cohort or legal gold is claimed. No schema/retention/backfill/rekey/receipt
+writes or provider/network calls occur. Root55focused and8701full tests/294.878s/92%coverage pass,
+mypy752/Ruff/format821green; all821source/config pins exact,18newunits/0newscenarios/0removed.
+Fresh read/dump/restore and strict AST checks pass. Previousd85feff2 actualCI41980800311/relay41981573411
+verified; this release follows publication. DA6.4 is
+OPEN pending remaining-requirements audit, with DA6.3/DA6.6 untouched.
+
+[Report](../assets/audits/2026-11-05-government-review-reuse/report.md),
+[qualification](../assets/audits/2026-11-05-government-review-reuse/qualification.json),
+[peer review](../assets/audits/2026-11-05-government-review-reuse/peer-review.json),
+[metadata evidence](../assets/audits/2026-11-05-government-review-reuse/artifacts.json).
+
+DA10.4 completion recorded after exact d85feff2 deployment: [requirement-by-requirement audit](../assets/audits/2026-11-05-government-review-reuse/timing-completion-audit.json). Native input through recorded technical delivery, separate trusted Wykaz control and unchanged V1 meet the item; DA10.7 natural/legal cycles and unrecorded best-effort operator replies are not silently imported as its requirements. Current plan:74tasks/45complete/6explicitN.A./23applicableopen.

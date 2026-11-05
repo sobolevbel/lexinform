@@ -1,6 +1,7 @@
 """Match recorded logical input scopes without changing paid results."""
 
 import hashlib
+import re
 from collections.abc import Sequence
 
 from pydantic import BaseModel
@@ -118,8 +119,52 @@ def matching_review(
 
 
 def retained_review(
-    repo: BillRepository, term: int, context: ReviewContext
+    repo: BillRepository, term: int, context: ReviewContext, *, government: bool = False
 ) -> DocumentReviewRecord | None:
-    return matching_review(
+    local = matching_review(
         repo.list_computation_results(term, context.number, purpose=context.purpose), term, context
     )
+    if local is not None or not government:
+        return local
+    seen: set[str] = set()
+    for application in reversed(repo.list_government_review_applications(term, context.number)):
+        target = application.target
+        if (
+            (application.term, application.number) != (term, context.number)
+            or application.phase != "projection"
+            or application.outcome != "applied"
+            or application.generation is not None
+            or target is None
+            or target.kind != "document_review"
+        ):
+            raise ValueError("invalid_government_review_application")
+        address = re.fullmatch(
+            r"(consultation_review|commission_review|act_application)/"
+            r"((?:review-input|document-review):[0-9a-f]{64})",
+            target.ref,
+        )
+        if address is None:
+            continue
+        result = repo.get_computation_result(application.result_id)
+        if result is None or result.purpose != address[1]:
+            raise ValueError("invalid_government_review_application")
+        if result.purpose != context.purpose or result.result_id in seen:
+            continue
+        seen.add(result.result_id)
+        binding = result.input_binding
+        if (
+            binding is None
+            or result.schema_version != 3
+            or result.validation != "validated"
+            or result.review_input is None
+            or result.request_sha256 is None
+        ):
+            continue
+        if binding.number != context.number or result.number != context.number:
+            raise ValueError("invalid_government_review_application")
+        if address[2].startswith("document-review:") and address[2] != binding.reuse_key:
+            raise ValueError("invalid_government_review_application")
+        matched = matching_review((result,), binding.term, context)
+        if matched is not None:
+            return matched
+    return None

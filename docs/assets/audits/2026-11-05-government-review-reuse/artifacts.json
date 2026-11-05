@@ -1,0 +1,19 @@
+{
+  "local_artifacts": "out/corpus/j243-government-review-reuse/candidate",
+  "sha256": {
+    "candidate.patch": "6ac45075f368c1952ec0a222a4dede1e42aa4faeef2da82ac8500c3d306197ef",
+    "incremental.patch": "661b7043c1b6354b0a7dc03c9cda875c093867b6e4717fb7f16c531978517cc1",
+    "source-pins.json": "35cdd6aed2ec2509f3c7d0fc5064bd67d548d2a3f9530bb23f4f82d07e5f7da2",
+    "peer-review.json": "2f1839defa6d1dca97346bf3490b64bb5e15cd90c94084d3bc87110aebe46be0",
+    "strict-number-unit-first.log": "1e104b61c7162c5d1217deb8cafd5e3354f063aaa001e1b5697a453590b1043a",
+    "unit-first.log": "dd056f5a9d89c1e02082b596eec6212434694dca1c6fe81a93ddbd6274ce2083",
+    "focused-v2.log": "956a01bf6e085aab738b43d0b32c1fee0a51d0d66796e4466bc23c561b6a08fc",
+    "mypy-v2.log": "e317872697c2cbfdefa321527a6efe73290dff3a390b0fa8723b87092eccba6a",
+    "ruff-v2.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "format-v2.log": "f114d83b30c5c657ee43a847a45bafccaea255d82673feb87c26d252c61e29c1",
+    "fresh.json": "47395a33f9cdf1313bd2256459285fef42615bef63734df7368c2889d65905e2",
+    "fresh_proof.py": "89dc1227960446f6730b8d7186e9da8356a1e8c0e88ca0eaf8baec3abe6353ff",
+    "function-inventory.json": "58a131594b72872be157862e81e309a13b638a13a31be9e0150a8ebcd5dfb4f9"
+  },
+  "committed_payload": "metadata only; no raw answers, Bill bodies, databases or source trees"
+}

@@ -1,0 +1,13 @@
+{
+  "source_db_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+  "source_db_unchanged": true,
+  "government_owners_read": 257,
+  "scoped_projection_receipts_read": 0,
+  "dump_unchanged": true,
+  "double_restore_exact": true,
+  "matching_review_AST_unchanged": true,
+  "legacy_list_result_applications_AST_unchanged": true,
+  "SQL_schema_storage_change": false,
+  "natural_terminal_memo_cleanup_reuse_cohort": "not assessed: original exact caller context unavailable in compact paid rows; four actual-service controlled lifecycle units provide this acceptance",
+  "DA6.3_inline_compaction": "out of scope"
+}

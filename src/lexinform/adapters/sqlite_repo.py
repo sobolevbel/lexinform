@@ -22,7 +22,7 @@ from lexinform.adapters.candidate_trace_history import (
     read_candidate_disposition_trace,
     validate_candidate_disposition_traces,
 )
-from lexinform.adapters.computation_history import parse_computation_result
+from lexinform.adapters.computation_history import parse_computation_result, read_result_application
 from lexinform.adapters.content_applications import (
     find_projection_application_ids,
     verify_content_applications,
@@ -3044,6 +3044,33 @@ class SqliteBillRepository:
                 (term, number),
             )
         ]
+
+    def list_government_review_applications(
+        self, term: int, number: str
+    ) -> list[ResultApplication]:
+        if not number.startswith((RCL_PREFIX, WYKAZ_PREFIX)):
+            return []
+        cursor = self._conn.cursor()
+        cursor.row_factory = sqlite3.Row
+        try:
+            applications: list[ResultApplication] = []
+            for row in cursor.execute(
+                "SELECT * FROM result_applications WHERE term=? AND number=? ORDER BY id",
+                (term, number),
+            ):
+                application = read_result_application(row)
+                if (
+                    application.phase == "projection"
+                    and application.generation is None
+                    and application.target is not None
+                    and application.target.kind == "document_review"
+                ):
+                    applications.append(application)
+            return applications
+        except ValueError, TypeError, IndexError, KeyError, sqlite3.Error, RecursionError:
+            raise ValueError("invalid_government_review_application") from None
+        finally:
+            cursor.close()
 
     def save_review_work(self, term: int, number: str, work: tuple[ReviewWork, ...]) -> None:
         self._conn.execute(
