@@ -151,6 +151,7 @@ from lexinform.pricing import (
     input_cost,
     tiered,
 )
+from lexinform.review_memos import read_review_memo
 from lexinform.sections import (
     PAGE_BREAK,
     TextBudget,
@@ -167,6 +168,7 @@ from lexinform.services.computation_reuse import (
     matching_record,
     retained_review,
     retained_secondary,
+    review_memo,
 )
 from lexinform.services.cost import CostLedger
 from lexinform.services.document_history import (
@@ -2040,9 +2042,19 @@ class AnalysisService:
     def review_exhausted(self, term: int, context: ReviewContext) -> bool:
         """Exhausted submissions stop only reviews without a reusable validated result."""
         key = context.memo_key(term)
-        if key in self._memo:
+        cached = self._memo.get(key)
+        if cached is not None and read_review_memo(cached) is None:
             return False
         bill = self._repo.get(term, context.number)
+        if cached is not None:
+            review_memo(
+                self._repo,
+                term,
+                context,
+                cached,
+                government=bill is not None and (bill.is_rcl or bill.is_wykaz),
+            )
+            return False
         if bill is not None:
             retained = {
                 "consultation_review": bill.consultation_review,
@@ -2087,6 +2099,14 @@ class AnalysisService:
         ) or (context.purpose == "commission_review" and not self.review_enabled(context.purpose)):
             return Waiting(self._clock.now())
         key = context.memo_key(bill.term)
+        cached = self._memo.get(key)
+        cached_record = (
+            review_memo(
+                self._repo, bill.term, context, cached, government=bill.is_rcl or bill.is_wykaz
+            )
+            if cached is not None and read_review_memo(cached) is not None
+            else None
+        )
         retained = {
             "consultation_review": bill.consultation_review,
             "commission_review": bill.commission_review,
@@ -2095,9 +2115,10 @@ class AnalysisService:
         if retained is not None and retained.context.memo_key(bill.term) == key:
             self._remember_analysis(bill, key, retained)
             return _reused(retained)
-        cached = self._memo.get(key)
         if cached is not None:
-            record = DocumentReviewRecord.model_validate_json(cached)
+            record = cached_record or review_memo(
+                self._repo, bill.term, context, cached, government=bill.is_rcl or bill.is_wykaz
+            )
             self._remember_analysis(bill, key, record)
             return _reused(record)
         historical = retained_review(

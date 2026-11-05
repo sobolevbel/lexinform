@@ -1,0 +1,16 @@
+{
+  "before": 36,
+  "after": 44,
+  "added": [
+    "tests/unit/test_review_memo_reader.py::test_escaped_top_level_marker_key_is_still_strictly_validated",
+    "tests/unit/test_review_memo_reader.py::test_known_blob_marker_has_bounded_error_in_each_reader[doctor]",
+    "tests/unit/test_review_memo_reader.py::test_known_blob_marker_has_bounded_error_in_each_reader[load]",
+    "tests/unit/test_review_memo_reader.py::test_known_blob_marker_has_bounded_error_in_each_reader[restore]",
+    "tests/unit/test_review_memo_reader.py::test_nonmarker_escaped_unicode_preserves_original_restore_error_owner[duplicate]",
+    "tests/unit/test_review_memo_reader.py::test_nonmarker_escaped_unicode_preserves_original_restore_error_owner[malformed]",
+    "tests/unit/test_review_memo_reader.py::test_profile_is_not_inferred_from_body_text_or_nested_keys[body]",
+    "tests/unit/test_review_memo_reader.py::test_profile_is_not_inferred_from_body_text_or_nested_keys[nested]"
+  ],
+  "removed": [],
+  "existing_recipe_change": "known [deep] control now uses deep projection VALUE under actual top-level marker; nested-only keys intentionally do not own profile"
+}

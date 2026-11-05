@@ -1,0 +1,43 @@
+{
+  "patch_sha256": "e045096994bef319dbd40b2e2b9fd15a6f5ada794c717484d1449da08b963ec3",
+  "source_pins": {
+    "src/lexinform/models/review_memos.py": "722b148a115196c02d12af3e6905b37529884ef5c54b9caa9b38e69fa97795e7",
+    "src/lexinform/review_memos.py": "289d34eee7eca10be5aa91d7a44b9c9cb185b899ab76d5ec17adf088f3686ac8",
+    "src/lexinform/adapters/review_memos.py": "9f1c4fd46644e872e7887c89969e7c4c8ca9b91d175154b3bac42d94496c55b9",
+    "src/lexinform/adapters/sqlite_repo.py": "937414bc7cc14541a359c380c85a228e2ef4ad351cad421106b54bfbb4ed3ab9",
+    "src/lexinform/services/computation_reuse.py": "6ca8a2851fe1914558306b0a48e989876dda264cdf06fb7b931af7c5302ef861",
+    "src/lexinform/services/analysis.py": "91f93400d4f07dfc4f063d589b320c842f25d384b077c11325f217c8b8b888fc",
+    "tools/computation_doctor.py": "9d953920b6e62e4213dfa4d2c2ce5fd6ffbe93efdb2aa1e8bc3ae3ad3dbd3517",
+    "tests/unit/test_review_memo_reader.py": "156f591e7ffd59e44246c0cc4ebcbaf41810e1ccfe781fc1b50c53284e53bda5"
+  },
+  "focused": "360 passed in 14.30s",
+  "new_units": 44,
+  "new_scenarios": 0,
+  "unit_first": "2 actual known missing-parent load/atomic-restore negatives failed before implementation",
+  "mypy": "8 owned files pass",
+  "Ruff_format": "8 files pass",
+  "writer": "OFF; no automatic marker emission",
+  "root_fullgate": {
+    "status": "passed",
+    "tests": 8776,
+    "seconds": 300.66,
+    "coverage_percent": 92,
+    "mypy_files": 756,
+    "ruff_format_files": 825,
+    "source_config_pins_exact": 825
+  },
+  "provider_network_calls": 0,
+  "root_edits": "Public model reexports only; author eight source pins exact",
+  "J241_decoder_sha256": "3885767e8a0d2d943341ac9f46d1b4d52ec3dec0161bb0eded209101275e01fb",
+  "incremental_patch_sha256": "0e643b6e65e6e4995a9b2d23e90370042004c7121d6c595f30e6a8decf568e12",
+  "supersedes_patch_sha256": "8c625a92d02fbf06e28b092de3126df0220f68bcac0ab1cadd3e093c3c465f88",
+  "scanner_unit_first": "6 failed/2 passed/36 deselected",
+  "scanner_scope": "top-level actual reserved key only; BLOB known marker bounded; old nonmarker error ownership exact",
+  "publication": "pending after commit and push",
+  "reader_only": true,
+  "writer_emission": false,
+  "source_db_unchanged": true,
+  "natural_eligible_compaction": 0,
+  "DA6_3": "OPEN; reader stage only",
+  "root_focused_tests": 92
+}

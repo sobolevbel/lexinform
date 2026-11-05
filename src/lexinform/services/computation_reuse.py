@@ -1,6 +1,5 @@
 """Match recorded logical input scopes without changing paid results."""
 
-import hashlib
 import re
 from collections.abc import Sequence
 
@@ -13,14 +12,12 @@ from lexinform.models import (
     JointRecord,
     NameRecord,
     ReviewContext,
-    ReviewDocument,
-    ReviewInputReference,
-    ReviewResultRecord,
     SupplementRecord,
 )
 from lexinform.models.batch import BatchKind
-from lexinform.models.reviews import ReviewPurpose
 from lexinform.ports import BillRepository
+from lexinform.review_memos import matching_review as matching_review
+from lexinform.review_memos import read_review_memo, resolve_review_memo
 
 
 def matching_record[Record: BaseModel](
@@ -70,64 +67,27 @@ def retained_secondary[Record: (AmendmentsRecord, SupplementRecord, JointRecord,
     )
 
 
-def _review_text_matches(document: ReviewDocument, purpose: ReviewPurpose) -> bool:
-    """Accept exact text or the commission producer's explicit unavailable-input sentinel."""
-    if (
-        purpose == "commission_review"
-        and document.text == ""
-        and document.sha256 == ""
-        and document.normalized_sha256 == ""
-        and document.complete is False
-        and document.file_sha256 is None
-    ):
-        return True
-    return hashlib.sha256(document.text.encode("utf-8")).hexdigest() == document.sha256
-
-
-def matching_review(
-    results: Sequence[ComputationResult], term: int, context: ReviewContext
-) -> DocumentReviewRecord | None:
-    try:
-        if any(
-            not _review_text_matches(document, context.purpose) for document in context.documents
-        ):
-            return None
-    except UnicodeEncodeError:
-        return None
-    reference = ReviewInputReference.from_context(context, term=term)
-    for result in reversed(results):
-        binding = result.input_binding
-        record = result.record
-        if (
-            result.schema_version != 3
-            or result.validation != "validated"
-            or (result.term, result.number, result.purpose)
-            != (term, context.number, context.purpose)
-            or binding is None
-            or (binding.term, binding.number, binding.reuse_key)
-            != (term, context.number, reference.key)
-            or result.review_input != reference
-            or not isinstance(record, ReviewResultRecord)
-            or record.review.purpose != context.purpose
-            or record.computation_id != result.result_id
-            or result.request_sha256 is None
-            or record.request_sha256 != result.request_sha256
-        ):
-            continue
-        return DocumentReviewRecord(context=context, **record.model_dump())
-    return None
-
-
 def retained_review(
-    repo: BillRepository, term: int, context: ReviewContext, *, government: bool = False
+    repo: BillRepository,
+    term: int,
+    context: ReviewContext,
+    *,
+    government: bool = False,
+    result_id: str | None = None,
 ) -> DocumentReviewRecord | None:
-    local = matching_review(
-        repo.list_computation_results(term, context.number, purpose=context.purpose), term, context
+    selected = repo.get_computation_result(result_id) if result_id is not None else None
+    candidates = (
+        ([selected] if selected is not None else [])
+        if result_id is not None
+        else repo.list_computation_results(term, context.number, purpose=context.purpose)
     )
+    local = matching_review(candidates, term, context)
     if local is not None or not government:
         return local
     seen: set[str] = set()
     for application in reversed(repo.list_government_review_applications(term, context.number)):
+        if result_id is not None and application.result_id != result_id:
+            continue
         target = application.target
         if (
             (application.term, application.number) != (term, context.number)
@@ -168,3 +128,20 @@ def retained_review(
         if matched is not None:
             return matched
     return None
+
+
+def review_memo(
+    repo: BillRepository, term: int, context: ReviewContext, raw: str, *, government: bool = False
+) -> DocumentReviewRecord:
+    reference = read_review_memo(raw)
+    if reference is None:
+        return DocumentReviewRecord.model_validate_json(raw)
+    result = repo.get_computation_result(reference.modern_review_ref)
+    record = resolve_review_memo(reference, result, context)
+    if result is None:
+        raise ValueError("invalid_review_memo")
+    if (result.term, result.number) != (term, context.number) and retained_review(
+        repo, term, context, government=government, result_id=result.result_id
+    ) is None:
+        raise ValueError("invalid_review_memo")
+    return record

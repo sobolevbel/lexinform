@@ -1,0 +1,22 @@
+{
+  "source_db_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+  "source_db_unchanged": true,
+  "all_Bill_reads": 508,
+  "memo_rows": 163,
+  "all_memo_stored_value_bytes": 972078,
+  "review_memo_rows": 3,
+  "review_memo_stored_value_bytes": 492635,
+  "review_context_canonical_bytes": 471999,
+  "review_memos_with_computation_id": 0,
+  "natural_eligible_compaction_rows": 0,
+  "review_contexts_equal_current_Bill": 3,
+  "OFF_ON_full_probe_exact": true,
+  "memo_values_exact": true,
+  "all_SQL_dump_and_double_restore_exact": true,
+  "dump_sha256": "b5f318428ccf9cc1b59ae7b3d835d8eda1af559dcb1ac1b4bfc0fb3606c61346",
+  "memo_sha256": "8084068d21675b6972e2e05b44ab3afddfcaecac7e0b6b5d714b1640443e3bba",
+  "storage_reduction_claim": false,
+  "default_doctor_semantic_report_exact": true,
+  "cross_run_excluded_field": "doctor.database_sha256; physical file also differs in identical OFF repetition",
+  "root_state_comparison": "root-state-comparison.json"
+}

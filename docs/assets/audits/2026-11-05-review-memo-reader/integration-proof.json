@@ -1,0 +1,16 @@
+{
+  "stage": "J245",
+  "full_tests": 8776,
+  "new_unit_cases": 44,
+  "new_scenario_cases": 0,
+  "removed_cases": 0,
+  "source_config_pins_exact": 825,
+  "mypy_files": 756,
+  "ruff_format_files": 825,
+  "root_focused_tests": 92,
+  "full_log_sha256": "3ea07c43f6e86778db432464a1e7ba00ebcde2133118f998ddb72165bbf267d3",
+  "full_xml_sha256": "b99b60f83d6cfe9d335c5c7c47876b85b936513745f074884cd5da5e5c04a828",
+  "model_reexports_sha256": "2f6b4ddd45e8823dfb14f34078bb1aa371b49483adbcdf468461c3d44b5d3b2f",
+  "previous_release": "../2026-11-05-release-metadata-consistency/release.json",
+  "writer": "OFF"
+}

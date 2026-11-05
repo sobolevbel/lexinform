@@ -1,0 +1,10 @@
+{
+  "src/lexinform/models/review_memos.py": "722b148a115196c02d12af3e6905b37529884ef5c54b9caa9b38e69fa97795e7",
+  "src/lexinform/review_memos.py": "289d34eee7eca10be5aa91d7a44b9c9cb185b899ab76d5ec17adf088f3686ac8",
+  "src/lexinform/adapters/review_memos.py": "9f1c4fd46644e872e7887c89969e7c4c8ca9b91d175154b3bac42d94496c55b9",
+  "src/lexinform/adapters/sqlite_repo.py": "937414bc7cc14541a359c380c85a228e2ef4ad351cad421106b54bfbb4ed3ab9",
+  "src/lexinform/services/computation_reuse.py": "6ca8a2851fe1914558306b0a48e989876dda264cdf06fb7b931af7c5302ef861",
+  "src/lexinform/services/analysis.py": "91f93400d4f07dfc4f063d589b320c842f25d384b077c11325f217c8b8b888fc",
+  "tools/computation_doctor.py": "9d953920b6e62e4213dfa4d2c2ce5fd6ffbe93efdb2aa1e8bc3ae3ad3dbd3517",
+  "tests/unit/test_review_memo_reader.py": "156f591e7ffd59e44246c0cc4ebcbaf41810e1ccfe781fc1b50c53284e53bda5"
+}

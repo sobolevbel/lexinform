@@ -1,0 +1,22 @@
+{
+  "local_artifacts": "out/corpus/j245-review-memo-reader/candidate",
+  "sha256": {
+    "candidate.patch": "e045096994bef319dbd40b2e2b9fd15a6f5ada794c717484d1449da08b963ec3",
+    "incremental.patch": "0e643b6e65e6e4995a9b2d23e90370042004c7121d6c595f30e6a8decf568e12",
+    "source-pins.json": "2ff14f5cb651626f4cf32df684822dc5a0dd761d935b009c07cd2a48d982ac79",
+    "peer-review.json": "63a15fe985b5d0efd37f18602fa28ec3a3837f5d5be209d21a0b55741d05457a",
+    "pinned-proof.json": "40b343cbc20ade28b7034c97e05ed655e06069e68a64be88d491e78588bcedc4",
+    "invariants.json": "a5863ae74917b2d60ba530a3fa0991aba47b9f4a6f894223f9752b3d4bb32354",
+    "unit-first.log": "4ab9f70e6ddb3e221be9fe7a7937cd5d50c254f4bfa154c3b8a60d2834539f71",
+    "scanner-unit-first.log": "ddb1d19e6e38f0c365254b18d0386442e4ecb3f9140619eb44418e2f5645d231",
+    "scanner-test-id-delta.json": "f75b9b09c82454477bd68f5266797f88aae094368cac7cb7ae37be5fd0f3f632",
+    "focused-scanner-final.log": "1f9307874becfc9fec60ce7ebb79abc986836890dd110f17c2ea9ae9a915dc04",
+    "mypy-scanner-final.log": "157a09cfcdfdfb5977479c5a1c08345149263a3e990a2ec976ef28aaeec9cae6",
+    "ruff-scanner-final.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "format-scanner-final.log": "8e93d18ae56550d4eef2feac77e6630617c7e169246e56e39c75d58b46167985",
+    "state_probe.py": "43cdd87675981a55b4f8cba4dff8875fcf541db99510d570a11fa1a5ce9dc105",
+    "state-off.json": "9a30bd58ecb672c2dc08eb0b47bb29b9e39e49a519d643783426dcc5254e356f",
+    "state-on-scanner-final.json": "9a30bd58ecb672c2dc08eb0b47bb29b9e39e49a519d643783426dcc5254e356f"
+  },
+  "committed_payload": "metadata only; no raw memo/context, Bill bodies, databases or source trees"
+}

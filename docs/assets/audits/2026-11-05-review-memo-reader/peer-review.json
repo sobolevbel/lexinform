@@ -1,0 +1,57 @@
+{
+  "status": "clear",
+  "patch_sha256": "e045096994bef319dbd40b2e2b9fd15a6f5ada794c717484d1449da08b963ec3",
+  "incremental_patch_sha256": "0e643b6e65e6e4995a9b2d23e90370042004c7121d6c595f30e6a8decf568e12",
+  "supersedes_patch_sha256": "8c625a92d02fbf06e28b092de3126df0220f68bcac0ab1cadd3e093c3c465f88",
+  "source_pins": {
+    "src/lexinform/models/review_memos.py": "722b148a115196c02d12af3e6905b37529884ef5c54b9caa9b38e69fa97795e7",
+    "src/lexinform/review_memos.py": "289d34eee7eca10be5aa91d7a44b9c9cb185b899ab76d5ec17adf088f3686ac8",
+    "src/lexinform/adapters/review_memos.py": "9f1c4fd46644e872e7887c89969e7c4c8ca9b91d175154b3bac42d94496c55b9",
+    "src/lexinform/adapters/sqlite_repo.py": "937414bc7cc14541a359c380c85a228e2ef4ad351cad421106b54bfbb4ed3ab9",
+    "src/lexinform/services/computation_reuse.py": "6ca8a2851fe1914558306b0a48e989876dda264cdf06fb7b931af7c5302ef861",
+    "src/lexinform/services/analysis.py": "91f93400d4f07dfc4f063d589b320c842f25d384b077c11325f217c8b8b888fc",
+    "tools/computation_doctor.py": "9d953920b6e62e4213dfa4d2c2ce5fd6ffbe93efdb2aa1e8bc3ae3ad3dbd3517",
+    "tests/unit/test_review_memo_reader.py": "156f591e7ffd59e44246c0cc4ebcbaf41810e1ccfe781fc1b50c53284e53bda5"
+  },
+  "findings": [],
+  "independent_tests": false,
+  "source_edits": false,
+  "closed_findings": [
+    {
+      "finding": "Escaped-Unicode nonmarker corruption took new marker error ownership",
+      "resolution": "Finite string-token preflight identifies top-level actual reserved keys only; body strings/nested keys/Unicode-only legacy values remain under prior paths. Full nonmarker restore error-owner controls preserve PrimaryProjectionError/JSONDecodeError."
+    },
+    {
+      "finding": "BLOB marker caused uncaught TypeError/doctor crash",
+      "resolution": "Raw storage input is classified as object; known UTF8 BLOB markers yield bounded ReviewMemoError at load/doctor/atomic-restore boundaries, while unrelated BLOB/None stays nonmarker."
+    }
+  ],
+  "review_scope": [
+    "Original eight-file Reader A plus final narrow three-file scanner increment.",
+    "Strict top-level layout, exact SQL parent/schema3/request/record hash/original binding, no adapter caller-context materialization.",
+    "Pure actual caller exact ordered review-input/record matcher and J243 exact-result government authority; no alternative-result substitution or current-Bill bypass.",
+    "Finite4KiB marker and typed projection overrides; paid-or-zero accounting preserves immutable original result.",
+    "Original matcher AST move/reexport and writerOFF/memo-before-retain/SQL mutation/retention invariants.",
+    "Escaped actual top key and duplicate/deep known-marker controls remain strict; deep test now targets deep value under actual top-level key.",
+    "Version1 canonical hash excludes unset saved typed fields; future writer must reload retained saved parent before deriving hash."
+  ],
+  "author_evidence": {
+    "focused_tests": 360,
+    "new_units": 44,
+    "new_scenarios": 0,
+    "mypy_owned_files": 8,
+    "ruff_format": "passed",
+    "scanner_unit_first_failures": 6,
+    "scanner_added_cases": 8,
+    "scanner_removed_cases": 0,
+    "pinned_OFF_ON_reads_memos_doctor_dump_restore_exact": true,
+    "natural_eligible_compaction": 0
+  },
+  "limitations": [
+    "Read-only source/test/artifact inspection; no independent tests or full gate.",
+    "Writer remains OFF and existing memo-before-retain order unchanged; writer B requires deployment of this reader and retain/reload-before-marker construction inside atomic save.",
+    "Three natural legacy review memos lack modern retained parents; no compaction/storage-reduction acceptance is claimed.",
+    "Original input owner and application target remain distinct; no generalized ownership equality was added.",
+    "Root owns final merged-source gate/CI/deployment."
+  ]
+}

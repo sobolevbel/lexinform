@@ -62,6 +62,7 @@ from lexinform.adapters.primary_projections import (
     validate_primary_cost_projections,
     validate_primary_projections,
 )
+from lexinform.adapters.review_memos import validate_review_memo_row, validate_review_memos
 from lexinform.adapters.secondary_dependencies import (
     validate_secondary_dependencies,
     validate_secondary_dependency,
@@ -1343,6 +1344,7 @@ class SqliteBillRepository:
             for number, migration in enumerate(MIGRATIONS[version:], start=version + 1):
                 scratch.executescript(f"BEGIN;{migration}PRAGMA user_version = {number};COMMIT;")
             validate_extraction_results(scratch)
+            validate_review_memos(scratch)
             _validate_legacy_projections(scratch)
             validate_primary_projections(scratch)
             validate_status_supplement_dependencies(scratch)
@@ -1631,12 +1633,11 @@ class SqliteBillRepository:
         )
 
     def load_analysis_memo(self) -> dict[str, str]:
-        return {
-            row["key"]: row["record_json"]
-            for row in self._conn.execute(
-                "SELECT key, record_json, term, number FROM analysis_memo"
-            )
-        }
+        result: dict[str, str] = {}
+        for row in self._conn.execute("SELECT key, record_json, term, number FROM analysis_memo"):
+            validate_review_memo_row(self._conn, row["record_json"], row["term"], row["number"])
+            result[row["key"]] = row["record_json"]
+        return result
 
     def get_legacy_result(self, value_id: str) -> LegacyResultValue | None:
         return _read_legacy_result(self._conn, value_id)
@@ -3171,6 +3172,10 @@ class SqliteBillRepository:
                 ).fetchone()
             finally:
                 cursor.close()
+            if previous is not None:
+                validate_review_memo_row(
+                    self._conn, previous["record_json"], previous["term"], previous["number"]
+                )
             reader = PrimaryProjectionReader(self._conn)
             if previous is None:
                 if term is not None and number is not None:

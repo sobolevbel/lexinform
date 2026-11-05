@@ -13,6 +13,7 @@ from lexinform.adapters.computation_history import parse_computation_result
 from lexinform.adapters.content_source_refs import validate_projected_application
 from lexinform.adapters.input_receipts import input_snapshot_checks
 from lexinform.adapters.primary_projections import primary_projection_issues
+from lexinform.adapters.review_memos import review_memo_issues
 from lexinform.adapters.secondary_dependencies import secondary_dependency_issues
 from lexinform.adapters.supplement_deliveries import supplement_delivery_links
 from lexinform.adapters.supplement_dependencies import supplement_dependency_issues
@@ -196,6 +197,14 @@ class ComputationAudit:
                         },
                         item.ref,
                     )
+                elif "modern_review_ref" in item.value:
+                    self.reference(
+                        {
+                            "computation_id": item.value["modern_review_ref"],
+                            "request_sha256": item.value.get("request_sha256"),
+                        },
+                        item.ref,
+                    )
                 elif "computation_id" in item.value or is_saved_answer(item.value):
                     self.reference(item.value, item.ref)
 
@@ -249,6 +258,8 @@ def audit(database: Path, *, include_supplement_deliveries: bool = False) -> dic
             elif schema >= 51:
                 result.issue("applicability_table_unavailable", "result_applicability")
             result.projections(connection, tables)
+            for code, ref in review_memo_issues(connection):
+                result.issue(code, ref)
             for code, ref in primary_projection_issues(connection):
                 result.issue(code, ref)
             for code, ref in supplement_dependency_issues(connection):

@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "semantic_reports_exact": true,
+  "physical_database_hashes": [
+    "276b535bcd49a24ee16feaf9997368cc44047b1e04ac088930c0c15a49ab01ee",
+    "f6b7b420142a9b8ae9ab1d3fa87e7aab1ba2a9b796c40b445329d7560dce2318",
+    "faada6f54d87b426cc672d910da8b4b01583476516cc61ee733733aeecfd88ad"
+  ],
+  "physical_hash_repeat_control_differs": true,
+  "excluded_field": "doctor.database_sha256",
+  "dump_and_memo_hashes_exact": true,
+  "source_db_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+  "bills_read": 508,
+  "memo_rows": 163
+}

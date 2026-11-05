@@ -871,6 +871,12 @@ from lexinform.models.odt_notes import (
 from lexinform.models.odt_notes import (
     OdtPartNoteOrigins as OdtPartNoteOrigins,
 )
+from lexinform.models.review_memos import (
+    ReviewMemoProjection as ReviewMemoProjection,
+)
+from lexinform.models.review_memos import (
+    ReviewMemoReference as ReviewMemoReference,
+)
 from lexinform.models.revision_work import (
     AmendmentRevisionApplicationWork as AmendmentRevisionApplicationWork,
 )

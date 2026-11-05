@@ -10911,3 +10911,42 @@ no DA10 checkbox closes.
 [metadata artifacts](../assets/audits/2026-11-05-release-metadata-consistency/artifacts.json).
 
 DA6.4 accepted after actual2bba2c79 release: [literal requirement/source/test audit](../assets/audits/2026-11-05-release-metadata-consistency/paid-history-completion-audit.json). Memo is an index over immutable paid history, exact known reuse survives cleanup for all ten current purposes, request identity/policy keys differ and quiet source pointers do not rewrite paid results. Unknown legacy/changed or forced questions and undefined future aliases are not silently accepted. DA6.3/6.5/6.6/10.7 remain independent. Current plan:74tasks/46complete/6explicitN.A./22applicableopen.
+
+
+<a id="j245"></a>
+
+## J245 — reader A for body-free review memo result indexes
+
+5 November 2026. A finite version1 marker pins immutable schema3 result ID/request/saved-record
+hash and bounded projection metadata with paid-or-zero usage. Shared load/scratch-restore/doctor
+checks establish intrinsic parent and SQL identity; actual caller ReviewContext separately proves
+ordered original-term input/binding/purpose/request. Exact-ID J243 authority cannot substitute
+another receipted government result. Full current Bill reviews/contexts remain untouched.
+The saved-field hash excludes future unset defaults; future writer B must reload SAVED parent
+before hashing. Unknown projection fields and unsupported clocks are rejected, not discarded.
+
+Scanner ownership is an actual top-level reserved key, including escaped keys; nested keys/body
+strings/Unicode alone do not infer a profile. Strict known-marker corruption checks remain.
+Known BLOB markers produce bounded invalid_review_memo on load/doctor/atomic restore; prior
+nonmarker duplicate/malformed error ownership stays PrimaryProjectionError/JSONDecodeError.
+Six scanner unit-first failures close with eight added controls/0removed; the existing deep-case
+ID now supplies a deep value beneath an actual root marker. Final360focused/44newunits/0newscenarios,
+strictmypy8/Ruff/format8 pass; final exact-eight-pin peer review CLEAR/findings[], no independent
+rerun. Technical act_application carriers do not enable its production purpose.
+
+Pinned b9f86131…fc485 OFF/ON proof is exact across508Bill reads/163memo values, default doctor,
+dump/double restore and source DB. Three legacy review memos492635B/context471999B have0retained
+parents/natural eligible rows; no storage saving or natural modern-marker cohort is claimed.
+Writer remains OFF. Memo-before-retain order, current Bill/context, paid retention, migrations and
+all source SQL mutation literals remain unchanged; old inline/null values stay exact. No backfill,
+raw/context store, provider/network or retention/cleanup changes occur. Root J245 gate is green:8776tests/300.66s/92%coverage, mypy756/Ruff/format825;
+all825source/config pins exact. Root92focused pass; release follows publication. DA6.3 stays OPEN; already accepted DA6.4/DA10.4 and plan46/6/22 remain unchanged.
+
+[Report](../assets/audits/2026-11-05-review-memo-reader/report.md),
+[qualification](../assets/audits/2026-11-05-review-memo-reader/qualification.json),
+[peer review](../assets/audits/2026-11-05-review-memo-reader/peer-review.json),
+[metadata artifacts](../assets/audits/2026-11-05-review-memo-reader/artifacts.json).
+
+Root OFF/ON repeats preserve exact dump/memo hashes and semantic doctor fields. Physical SQLite
+file SHA differs also between two identical OFF runs after double restore; only that physical
+hash is excluded from cross-run equality. Original source SHA stays unchanged.

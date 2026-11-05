@@ -45,3 +45,5 @@ archived committed baseline changes only the pending status/reason, preserving a
 fields, read sequence, input SHA and zero log/network/rerun calls. [Root proof](integration-proof.json),
 [root observed replay](root-observed-proof.json), [case delta](case-delta.json).
 Previous2bba2c79 [CI and relay](previous-release.json) actually verified.
+
+Actual15670786 [CI and relay release](release.json) verified after publication; no workflow rerun.
