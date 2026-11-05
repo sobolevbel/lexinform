@@ -129,7 +129,14 @@ def run_summary(read: Read, run: dict[str, Any]) -> dict[str, Any]:
     attempt = run.get("run_attempt")
     if type(identity) is not int or identity <= 0 or type(attempt) is not int or attempt <= 0:
         raise EvidenceError("invalid_run_identity")
-    jobs = items_at(read, f"actions/runs/{identity}/attempts/{attempt}/jobs?per_page=100", "jobs")
+    try:
+        jobs = items_at(
+            read, f"actions/runs/{identity}/attempts/{attempt}/jobs?per_page=100", "jobs"
+        )
+    except EvidenceError as exc:
+        if str(exc) != "github_read_failed":
+            raise
+        jobs = []
     for item in [run, *jobs]:
         if item.get("status") not in (
             "queued",
@@ -184,9 +191,15 @@ def run_state(run: dict[str, Any], *, deploy: bool) -> Status:
     jobs = run["jobs"]
     if run["status"] != "completed":
         return "pending"
-    if run["conclusion"] != "success" or any(job["conclusion"] != "success" for job in jobs):
+    if run["conclusion"] not in (None, "success") or any(
+        job["conclusion"] not in (None, "success") for job in jobs
+    ):
         return "failed"
-    if any(job["status"] != "completed" for job in jobs):
+    if (
+        run["conclusion"] is None
+        or not jobs
+        or any(job["status"] != "completed" or job["conclusion"] is None for job in jobs)
+    ):
         return "pending"
     names = [job["name"] for job in jobs]
     if deploy:
@@ -274,7 +287,12 @@ def verify(target: str, *, previous: str | None = None, read: Read = gh_read) ->
                 report["deploy"] = summary
             state = run_state(summary, deploy=key == "deploy")
             if state != "verified":
-                report.update({"status": state, "reason": f"{key}_not_successful"})
+                reason = (
+                    "metadata_pending"
+                    if state == "pending" and summary["status"] == "completed"
+                    else f"{key}_not_successful"
+                )
+                report.update({"status": state, "reason": reason})
                 return report
         ci, deploy = report["ci"], report["deploy"]
         assert ci is not None and deploy is not None, (

@@ -368,3 +368,130 @@ def test_malformed_deploy_date_is_not_silently_excluded() -> None:
 
     assert report["status"] == "unproven"
     assert report["reason"] == "invalid_workflow_timestamp"
+
+
+@pytest.mark.parametrize("phase", ["ci", "deploy"])
+@pytest.mark.parametrize(
+    ("status", "conclusion"),
+    [("in_progress", None), ("queued", None), ("completed", None), ("in_progress", "success")],
+)
+def test_successful_workflow_waits_for_nonterminal_job_metadata(
+    phase: str, status: str, conclusion: str | None
+) -> None:
+    github = GitHub()
+    jobs = github.ci_jobs if phase == "ci" else github.deploy_jobs
+    jobs[0].update(status=status, conclusion=conclusion)
+    report = verify(TARGET, previous=PREVIOUS, read=github.read)
+    assert report["status"] == "pending"
+    assert report["reason"] == "metadata_pending"
+    assert not report["proof"]["complete"]
+    assert not any(endpoint.endswith("/logs") for endpoint in github.calls)
+
+
+@pytest.mark.parametrize("phase", ["ci", "deploy"])
+@pytest.mark.parametrize("unavailable", ["empty", "read_failure"])
+def test_successful_workflow_waits_for_unavailable_job_metadata(
+    phase: str, unavailable: str
+) -> None:
+    github = GitHub()
+    identity = CI if phase == "ci" else DEPLOY
+    jobs = github.ci_jobs if phase == "ci" else github.deploy_jobs
+    if unavailable == "empty":
+        jobs.clear()
+
+    def read(endpoint: str) -> str:
+        if (
+            unavailable == "read_failure"
+            and endpoint == f"actions/runs/{identity}/attempts/1/jobs?per_page=100"
+        ):
+            raise EvidenceError("github_read_failed")
+        return github.read(endpoint)
+
+    report = verify(TARGET, read=read)
+    assert report["status"] == "pending"
+    assert report["reason"] == "metadata_pending"
+    assert not report["proof"]["complete"]
+
+
+@pytest.mark.parametrize("phase", ["ci", "deploy"])
+@pytest.mark.parametrize(
+    "failure", ["workflow_failure", "workflow_cancelled", "job_failure", "job_cancelled"]
+)
+def test_actual_terminal_failures_dominate_incomplete_job_metadata(
+    phase: str, failure: str
+) -> None:
+    github = GitHub()
+    workflow = github.ci[0] if phase == "ci" else github.deploy[0]
+    jobs = github.ci_jobs if phase == "ci" else github.deploy_jobs
+    if failure.startswith("workflow_"):
+        workflow["conclusion"] = failure.removeprefix("workflow_")
+        jobs[0].update(status="in_progress", conclusion=None)
+    else:
+        jobs[0]["conclusion"] = failure.removeprefix("job_")
+        jobs.append(
+            {
+                "id": 999,
+                "name": "lint" if phase == "ci" else "deploy",
+                "status": "in_progress",
+                "conclusion": None,
+            }
+        )
+    report = verify(TARGET, read=github.read)
+    assert report["status"] == "failed"
+    assert not report["proof"]["complete"]
+
+
+def test_pending_job_snapshot_can_become_verified_only_with_all_original_proofs() -> None:
+    github = GitHub()
+    github.deploy_jobs[0].update(status="in_progress", conclusion=None)
+    assert verify(TARGET, previous=PREVIOUS, read=github.read)["status"] == "pending"
+    github.deploy_jobs[0].update(status="completed", conclusion="success")
+    github.log = PROOF.replace("lexinform-batch-poll.timer enabled", "")
+    assert verify(TARGET, previous=PREVIOUS, read=github.read)["status"] == "unproven"
+    github.log = PROOF
+    assert verify(TARGET, previous=PREVIOUS, read=github.read)["status"] == "verified"
+
+
+@pytest.mark.parametrize("phase", ["ci", "deploy"])
+@pytest.mark.parametrize("conclusion", ["failure", "cancelled"])
+def test_terminal_workflow_failure_is_not_hidden_by_missing_job_read(
+    phase: str, conclusion: str
+) -> None:
+    github = GitHub()
+    identity = CI if phase == "ci" else DEPLOY
+    workflow = github.ci[0] if phase == "ci" else github.deploy[0]
+    workflow["conclusion"] = conclusion
+
+    def read(endpoint: str) -> str:
+        if endpoint == f"actions/runs/{identity}/attempts/1/jobs?per_page=100":
+            raise EvidenceError("github_read_failed")
+        return github.read(endpoint)
+
+    assert verify(TARGET, read=read)["status"] == "failed"
+
+
+@pytest.mark.parametrize("phase", ["ci", "deploy"])
+@pytest.mark.parametrize("reason", ["invalid_github_response", "incomplete_github_listing"])
+def test_malformed_job_listing_remains_unproven(phase: str, reason: str) -> None:
+    github = GitHub()
+    identity = CI if phase == "ci" else DEPLOY
+
+    def read(endpoint: str) -> str:
+        if endpoint == f"actions/runs/{identity}/attempts/1/jobs?per_page=100":
+            raise EvidenceError(reason)
+        return github.read(endpoint)
+
+    report = verify(TARGET, read=read)
+    assert report["status"] == "unproven"
+    assert report["reason"] == reason
+
+
+@pytest.mark.parametrize("phase", ["ci", "deploy"])
+def test_completed_workflow_without_conclusion_is_pending_metadata(phase: str) -> None:
+    github = GitHub()
+    workflow = github.ci[0] if phase == "ci" else github.deploy[0]
+    workflow["conclusion"] = None
+    report = verify(TARGET, read=github.read)
+    assert report["status"] == "pending"
+    assert report["reason"] == "metadata_pending"
+    assert not report["proof"]["complete"]

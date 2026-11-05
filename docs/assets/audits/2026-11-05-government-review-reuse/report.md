@@ -23,3 +23,5 @@ Pinned fresh DB SHA `b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27
 [Qualification](qualification.json), [source pins](source-pins.json), [peer review](peer-review.json), [fresh proof](fresh.json), [function inventory](function-inventory.json), [artifact hashes](artifacts.json).
 
 Root:55 focused и8701 full tests/294.878s/92%coverage; mypy752/Ruff/format821green, все821source/config pins неизменны. Повторный pinned read/dump/double restore и AST-пробы неизменны. [Root proof](integration-proof.json), [case delta](case-delta.json), [root fresh](root-fresh.json). Новые18unit/0scenario/0removed; [предыдущий CI и relay](previous-release.json) подтверждены.
+
+Actual2bba2c79 release and DA6.4 acceptance: [CI/relay](../2026-11-05-release-metadata-consistency/previous-release.json), [literal requirement audit](../2026-11-05-release-metadata-consistency/paid-history-completion-audit.json).

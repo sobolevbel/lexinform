@@ -1,0 +1,216 @@
+{
+  "audit_actions": {
+    "network_calls": 0,
+    "production_processing": false,
+    "root_docs_edits": false,
+    "source_edits": false,
+    "tests_run": false
+  },
+  "finite_current_batch_purposes": [
+    {
+      "lookup": "src/lexinform/services/analysis.py::AnalysisService._cached_analysis",
+      "policy": "Known original caller input binding and exact purpose/context; no inferred unbound legacy owner; explicit force bypass applies to primary analysis.",
+      "purpose": "analysis",
+      "test": "tests/scenario/test_primary_history_reuse.py::test_primary_history_after_cleanup"
+    },
+    {
+      "lookup": "src/lexinform/services/analysis.py::AnalysisService._cached_analysis",
+      "policy": "Known original caller input binding and exact purpose/context; no inferred unbound legacy owner; explicit force bypass applies to primary analysis.",
+      "purpose": "reanalysis",
+      "test": "tests/scenario/test_primary_history_reuse.py::test_reanalysis_reuses_exact_paid_input_after_a_generation_reset"
+    },
+    {
+      "lookup": "src/lexinform/services/analysis.py::AnalysisService._cached_analysis",
+      "policy": "Known original caller input binding and exact purpose/context; no inferred unbound legacy owner; explicit force bypass applies to primary analysis.",
+      "purpose": "explanation",
+      "test": "tests/scenario/test_explanation_history_reuse.py::test_explanation_reuses_its_recorded_input_after_memo_cleanup"
+    },
+    {
+      "lookup": "src/lexinform/services/computation_reuse.py::retained_secondary",
+      "policy": "Exact supported current scope/key; legacy custom-id fallback only where existing finite secondary policy permits. No blanket Sejm-term or arbitrary cross-number alias. Government naming original-term handling remains the existing explicit _name_request_key policy.",
+      "purpose": "amendments",
+      "test": "tests/scenario/test_secondary_history_reuse.py::test_exact_secondary_question_reuses_paid_history_after_memo_cleanup"
+    },
+    {
+      "lookup": "src/lexinform/services/computation_reuse.py::retained_secondary",
+      "policy": "Exact supported current scope/key; legacy custom-id fallback only where existing finite secondary policy permits. No blanket Sejm-term or arbitrary cross-number alias. Government naming original-term handling remains the existing explicit _name_request_key policy.",
+      "purpose": "supplement",
+      "test": "tests/scenario/test_secondary_history_reuse.py::test_exact_secondary_question_reuses_paid_history_after_memo_cleanup"
+    },
+    {
+      "lookup": "src/lexinform/services/computation_reuse.py::retained_secondary",
+      "policy": "Exact supported current scope/key; legacy custom-id fallback only where existing finite secondary policy permits. No blanket Sejm-term or arbitrary cross-number alias. Government naming original-term handling remains the existing explicit _name_request_key policy.",
+      "purpose": "joint",
+      "test": "tests/scenario/test_secondary_history_reuse.py::test_exact_secondary_question_reuses_paid_history_after_memo_cleanup"
+    },
+    {
+      "lookup": "src/lexinform/services/computation_reuse.py::retained_secondary",
+      "policy": "Exact supported current scope/key; legacy custom-id fallback only where existing finite secondary policy permits. No blanket Sejm-term or arbitrary cross-number alias. Government naming original-term handling remains the existing explicit _name_request_key policy.",
+      "purpose": "name",
+      "test": "tests/scenario/test_secondary_history_reuse.py::test_exact_secondary_question_reuses_paid_history_after_memo_cleanup"
+    },
+    {
+      "lookup": "src/lexinform/services/computation_reuse.py::retained_review",
+      "policy": "Exact caller context and ordered schema3 review input/binding; J243 permits only proven current-owner same-number government carried receipts to original-term paid results. Missing/opaque evidence, changed input and arbitrary aliases grant no reuse. Act production enablement remains separate.",
+      "purpose": "consultation_review",
+      "test": "tests/unit/test_review_computation_reuse.py::test_compact_history_uses_only_the_exact_caller_context_and_preserves_paid_record"
+    },
+    {
+      "lookup": "src/lexinform/services/computation_reuse.py::retained_review",
+      "policy": "Exact caller context and ordered schema3 review input/binding; J243 permits only proven current-owner same-number government carried receipts to original-term paid results. Missing/opaque evidence, changed input and arbitrary aliases grant no reuse. Act production enablement remains separate.",
+      "purpose": "commission_review",
+      "test": "tests/unit/test_review_computation_reuse.py::test_compact_history_uses_only_the_exact_caller_context_and_preserves_paid_record"
+    },
+    {
+      "lookup": "src/lexinform/services/computation_reuse.py::retained_review",
+      "policy": "Exact caller context and ordered schema3 review input/binding; J243 permits only proven current-owner same-number government carried receipts to original-term paid results. Missing/opaque evidence, changed input and arbitrary aliases grant no reuse. Act production enablement remains separate.",
+      "purpose": "act_application",
+      "test": "tests/unit/test_review_computation_reuse.py::test_compact_history_uses_only_the_exact_caller_context_and_preserves_paid_record"
+    }
+  ],
+  "intentional_nonreuse": [
+    "Changed question/context or ordered review input",
+    "Unbound primary/explanation legacy scope; no guessed provenance",
+    "Known incompatible purpose/number/request or corrupt receipt",
+    "Different Sejm term without an explicit supported transfer",
+    "Explicit primary force/cache bypass",
+    "Missing or opaque government bridge evidence; future arbitrary aliases are not assumed"
+  ],
+  "item": "DA6.4",
+  "j243": {
+    "five_physical_source_pins_exact": true,
+    "four_controls": [
+      {
+        "number": "RCL/123",
+        "purpose": "consultation_review"
+      },
+      {
+        "number": "RCL/123",
+        "purpose": "commission_review"
+      },
+      {
+        "number": "WPL/UD123",
+        "purpose": "consultation_review"
+      },
+      {
+        "number": "WPL/UD123",
+        "purpose": "commission_review"
+      }
+    ],
+    "guard_controls": [
+      "tests/unit/test_government_review_reuse.py::test_corrupt_current_owner_receipt_rejects_before_prepare",
+      "tests/unit/test_government_review_reuse.py::test_unproven_or_changed_review_uses_ordinary_prepare",
+      "tests/unit/test_government_review_reuse.py::test_default_owner_matching_never_scans_government_receipts",
+      "tests/unit/test_government_review_reuse.py::test_known_same_number_rollover_receipt_cannot_name_another_government_result"
+    ],
+    "lifecycle": "Paid A; public prune before rollover; actual TermRollover; distinct paid B; public cleanup/restore; exact caller A reused with zero new preparation/tokens and unchanged original-term paid bytes.",
+    "pinned_state": {
+      "eligible_scoped_receipts": 0,
+      "government_owners": 257,
+      "interpretation": "No natural eligible receipt was observed; not counted as a successful natural cycle or an implementation failure.",
+      "read_dump_double_restore_source_DB_exact": true
+    },
+    "production_source_functions": [
+      "src/lexinform/adapters/sqlite_repo.py::SqliteBillRepository.list_government_review_applications",
+      "src/lexinform/services/computation_reuse.py::retained_review",
+      "src/lexinform/services/analysis.py::AnalysisService.request_document_review"
+    ],
+    "public_lifecycle_control": "tests/unit/test_government_review_reuse.py::test_actual_government_projection_receipt_reuses_old_review_after_replacement_and_cleanup",
+    "qualification": {
+      "author_focused": 250,
+      "basis": "Existing J243 report plus parent-qualified root gate; no audit rerun.",
+      "new_scenarios": 0,
+      "new_units": 18,
+      "root_focused": 55,
+      "root_full_tests": 8701,
+      "ruff_format_files": 821,
+      "strict_mypy_files": 752
+    },
+    "source_pins": {
+      "src/lexinform/adapters/sqlite_repo.py": "638bd67803401ea2447688c6b67813480a553c075bfd38b07ae758c7b2f51590",
+      "src/lexinform/ports.py": "062f3b71685a2eaf58f00cc320348244fc1d2f2291c5cfd96484ee51ce8b7899",
+      "src/lexinform/services/analysis.py": "c00eacd0428e29698528533891703d28e95ce1c9658fb981fd71297d8919d6b8",
+      "src/lexinform/services/computation_reuse.py": "e07393ec433c83dc8733751382c08783623accc52cf5bfc472dc562fd15f0ca3",
+      "tests/unit/test_government_review_reuse.py": "7d6cb4f543a6a63d915b2704b07701da0691b4b5b8bdec2f4303052d85ca3e05"
+    },
+    "source_pins_path": "docs/assets/audits/2026-11-05-government-review-reuse/source-pins.json",
+    "source_pins_sha256": "35cdd6aed2ec2509f3c7d0fc5064bd67d548d2a3f9530bb23f4f82d07e5f7da2"
+  },
+  "mode": "read_only_requirement_audit",
+  "observed_head": "2bba2c79632baf760f1eb2d9cb9d89c125ba142b",
+  "plan": "docs/plans/2026-10-22-document-architecture.md",
+  "recommendation": {
+    "after_actual_j243_release": "Root may accept DA6.4 for this literal contract after independently verifying exact 2bba CI and relay.",
+    "checkbox_changed": false,
+    "closure_performed": false,
+    "remaining_required_implementation_identified": false,
+    "scope": "Finite currently supported ten batch-purpose ledger/index/reuse policies, including the proven J243 government bridge; no claim for undefined future aliases or unknown legacy inputs."
+  },
+  "requirement_parts": {
+    "ledger_independence": {
+      "finding": "Immutable retained results remain separate from memo and operational batch/delivery payload cleanup; reuse retains the paid identity while returning zero repeated usage.",
+      "literal": "Сохранить memo как индекс переиспользования, не единственную историю оплаченного ответа.",
+      "source_functions": [
+        "src/lexinform/adapters/sqlite_repo.py::SqliteBillRepository.save_computation_result",
+        "src/lexinform/adapters/sqlite_repo.py::SqliteBillRepository.get_computation_result",
+        "src/lexinform/adapters/sqlite_repo.py::SqliteBillRepository.list_computation_results",
+        "src/lexinform/adapters/sqlite_repo.py::SqliteBillRepository.prune_history"
+      ],
+      "tests": [
+        "tests/scenario/test_computation_history.py::test_paid_primary_answer_survives_supersession_and_operational_cleanup",
+        "tests/scenario/test_computation_history.py::test_collected_result_is_independent_of_projection_memo_and_request_retention",
+        "tests/scenario/test_secondary_computation_history.py::test_secondary_answer_survives_collect_restore_reuse_and_operational_cleanup",
+        "tests/scenario/test_review_computation_history.py::test_review_history_retains_paid_output_and_compact_input_across_reuse_and_cleanup"
+      ]
+    },
+    "quiet_pointer_updates": {
+      "finding": "Quiet source/pointer updates use observation/projection metadata; immutable paid result bytes are not replaced, and the quiet reanalysis does not produce a new substantive event.",
+      "literal": "Нынешний `_unchanged()` меняет pointer/source_checked_at: в новой истории это отдельное подтверждение применимости к наблюдению, а не перезапись immutable оплаченного результата.",
+      "source_functions": [
+        "src/lexinform/services/analysis.py::AnalysisService._unchanged",
+        "src/lexinform/services/analysis.py::AnalysisService._accept_preparation",
+        "src/lexinform/services/analysis.py::AnalysisService._record_source_read",
+        "src/lexinform/adapters/sqlite_repo.py::SqliteBillRepository.save_applicability_observation"
+      ],
+      "tests": [
+        "tests/scenario/test_analysis_source_history.py::test_quiet_reanalysis_records_new_source_without_replacing_the_paid_result",
+        "tests/scenario/test_analysis_input_coverage.py::test_an_unchanged_recheck_keeps_the_paid_input_ranges"
+      ]
+    },
+    "reuse_policy_not_request_fingerprint": {
+      "finding": "Policy key covers purpose, owner scope and actual context/text/scan identity without prompt/model. Original request SHA remains immutable paid provenance; current request preparation is bypassed on exact eligible reuse. New prompt alone does not schedule old cards. Explicit force intentionally bypasses primary cache.",
+      "literal": "Request fingerprint и policy reuse — разные сущности; смена prompt сама по себе не инвалидирует старые карточки и не инициирует платные вызовы.",
+      "prompt_semantics_evidence": "Source-key and lookup-before-prepare inspection; no new runtime/provider experiment performed.",
+      "source_functions": [
+        "src/lexinform/services/analysis.py::_memo_key",
+        "src/lexinform/services/analysis.py::AnalysisService._cached_analysis",
+        "src/lexinform/services/analysis.py::AnalysisService._ask_or_wait",
+        "src/lexinform/services/computation_reuse.py::matching_record",
+        "src/lexinform/services/computation_reuse.py::matching_review"
+      ],
+      "tests": [
+        "tests/scenario/test_primary_history_reuse.py::test_primary_history_after_cleanup",
+        "tests/scenario/test_primary_history_reuse.py::test_primary_history_does_not_guess_an_unbound_or_changed_question",
+        "tests/scenario/test_primary_history_reuse.py::test_explicit_force_keeps_its_existing_cache_bypass",
+        "tests/scenario/test_secondary_history_reuse.py::test_a_changed_secondary_question_does_not_reuse_an_old_answer",
+        "tests/scenario/test_secondary_history_reuse.py::test_matching_secondary_text_does_not_cross_sejm_terms"
+      ]
+    }
+  },
+  "schema_version": 1,
+  "separate_requirements": {
+    "DA10.7": "Natural source-family/purpose end-to-end acceptance cycles",
+    "DA6.3": "Inline/compact projection reference coverage",
+    "DA6.5": "Actual legacy import and missing historical provenance",
+    "DA6.6": "Retention ownership/blob dependencies and operational cleanup policy"
+  },
+  "root_acceptance": {
+    "status": "complete",
+    "actual_release": "previous-release.json",
+    "actual_sha": "2bba2c79632baf760f1eb2d9cb9d89c125ba142b",
+    "ci": 41983076567,
+    "deploy": 41983674162,
+    "all_literal_requirement_parts_proved": true,
+    "complete_contract_not_natural_legal_acceptance": "DA10.7 remains separate; legacy/import/inline compaction/retention policy do not substitute for this item"
+  }
+}

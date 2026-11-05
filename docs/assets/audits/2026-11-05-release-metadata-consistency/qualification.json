@@ -1,0 +1,53 @@
+{
+  "focused": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 73
+  },
+  "format": "2 files already formatted",
+  "independent_review": {
+    "findings": [],
+    "independent_tests": false,
+    "status": "clear"
+  },
+  "mypy": "Success: no issues found in 2 source files",
+  "network_calls": 0,
+  "new_scenarios": 0,
+  "new_unit_cases": 31,
+  "release": "pending",
+  "root_full_gate": {
+    "stage": "J244 eventual release-metadata consistency",
+    "root_focused": 73,
+    "full_tests": 8732,
+    "xml_seconds": 297.433,
+    "mypy_files": 752,
+    "ruff_format_files": 821,
+    "coverage_percent": 92,
+    "source_config_pins": 821,
+    "source_freeze_exact": true,
+    "new_units": 31,
+    "new_scenarios": 0,
+    "removed_cases": 0,
+    "root_review_findings": [],
+    "actual_saved_snapshot_offline_replayed_against_committed_baseline": true,
+    "only_status_and_reason_change_to_pending": true,
+    "no_rerun_or_weakening_of_verified_requirements": true,
+    "proof_sha256": {
+      "full.xml": "4466f1d251f7e65bd3a20b2307e7ac5b9d3b740696127d814dd45d6e3fbeb9a9",
+      "full.log": "0054a147d45506087ba1d314699e11261365189fe68104caaff458a37a76c410",
+      "focused.xml": "0532d30b394c99dd6364f5bf224a8297c773d35d599bd36ca791a9762184c38e",
+      "source-freeze.json": "83ebb037d30c9f1b4e824614cdb436205c92a4fbc3f374227028f21707dc43ac",
+      "observed-proof.json": "c7623edecc2910323b12cadfae4fc986201c2db81cfe98d778cef7d5b24d996f",
+      "case-delta.json": "859e413e7031d2e120bb403f249841efd9455118cef46715ec32f7bc47624219"
+    }
+  },
+  "ruff": "All checks passed!",
+  "runtime_or_workflow_changes": false,
+  "workflow_reruns": 0,
+  "previous_verified_release": {
+    "sha": "2bba2c79632baf760f1eb2d9cb9d89c125ba142b",
+    "ci": 41983076567,
+    "deploy": 41983674162
+  }
+}

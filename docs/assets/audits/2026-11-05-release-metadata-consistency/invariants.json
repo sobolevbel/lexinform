@@ -1,0 +1,18 @@
+{
+  "changed_functions": [
+    "run_summary",
+    "run_state",
+    "verify"
+  ],
+  "unchanged_call_transport": "gh GET only",
+  "unchanged_function_AST": {
+    "full_sha": "18d21379d7d7ed6dc6a5448b6a850f59f57869a737782654c203fbd2927bd30b",
+    "gh_read": "1778494a1da5ad8b7ba3344449088fc5fff093b39a074ccc25d8483978b1c5a9",
+    "items_at": "49ad10ee2f82ae4ac005bc8072c187a0409973bb83499308ebf0bb5e408f163a",
+    "main": "a43e293b76be1987f0488797c05e91c11fd11444f0c5e8fba567550f89b9b4fd",
+    "object_at": "0ad9b86eeb660b3fe7ae7eb8d10263b361a5f5ed3b25e941921f7febb5e56a6e",
+    "one_run": "cf219d1abfe3956f8bf7eb123825bdf6d8701699b4422b5eab258550647647d7",
+    "relay_proof": "b9c5c9811c5bfd5030c4b5d64c1016e4283294b841a16c5a0d8eccc0ae2774c3"
+  },
+  "workflow_or_deploy_edits": false
+}

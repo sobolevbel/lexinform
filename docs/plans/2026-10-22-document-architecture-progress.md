@@ -10878,3 +10878,36 @@ OPEN pending remaining-requirements audit, with DA6.3/DA6.6 untouched.
 [metadata evidence](../assets/audits/2026-11-05-government-review-reuse/artifacts.json).
 
 DA10.4 completion recorded after exact d85feff2 deployment: [requirement-by-requirement audit](../assets/audits/2026-11-05-government-review-reuse/timing-completion-audit.json). Native input through recorded technical delivery, separate trusted Wykaz control and unchanged V1 meet the item; DA10.7 natural/legal cycles and unrecorded best-effort operator replies are not silently imported as its requirements. Current plan:74tasks/45complete/6explicitN.A./23applicableopen.
+
+<a id="j244"></a>
+
+## J244 — eventual GitHub job metadata stays pending
+
+5 November 2026. The read-only exact-release verifier no longer reports failure solely because a
+completed-success workflow's job metadata remains nonterminal/null. Both CI and deploy use
+pending/metadata_pending for incomplete or unavailable job metadata. Explicit non-success
+completed workflow/job outcomes stay failed; malformed listings and unproven structure remain
+unproven. Exact SHA/expected jobs/CI chronology/ordered transition/45-second restart/timer/final
+main proof is unchanged. Existing bounded optional wait is retained; no rerun, workflow/deploy,
+bot, provider, state write or new polling mechanism is introduced.
+
+Unit-first13 regression checks fail before correction; all73 focused cases pass,31 new units and
+0scenarios. Strict mypy2/Ruff/format2 green; independent exact-two-pin review CLEAR/findings[],
+no independent tests/network. Offline replay reproduces the full actual db73 check-2 report
+SHA1ad4dc59 before correction and changes only failed→pending/deploy_not_successful→metadata_pending
+afterward. All other fields/read sequence/input bytes stay exact;0log reads/network/reruns.
+This preserves historical evidence and is not remote deployment verification. A later consistent
+actual observation still needs the original proof. Root73focused and8732full tests/297.433s/92%coverage
+pass, mypy752/Ruff/format821green; all821source/config pins exact.31newunits/0newscenarios/0removed.
+Root replay of the real saved snapshot against committed baseline confirms status/reason-only
+delta, unchanged read sequence and0network/log/rerun calls. Previous2bba2c79 actualCI41983076567/
+relay41983674162 verified; this release verification follows publication;
+no DA10 checkbox closes.
+
+[Report](../assets/audits/2026-11-05-release-metadata-consistency/report.md),
+[qualification](../assets/audits/2026-11-05-release-metadata-consistency/qualification.json),
+[peer review](../assets/audits/2026-11-05-release-metadata-consistency/peer-review.json),
+[observed proof](../assets/audits/2026-11-05-release-metadata-consistency/observed-proof.json),
+[metadata artifacts](../assets/audits/2026-11-05-release-metadata-consistency/artifacts.json).
+
+DA6.4 accepted after actual2bba2c79 release: [literal requirement/source/test audit](../assets/audits/2026-11-05-release-metadata-consistency/paid-history-completion-audit.json). Memo is an index over immutable paid history, exact known reuse survives cleanup for all ten current purposes, request identity/policy keys differ and quiet source pointers do not rewrite paid results. Unknown legacy/changed or forced questions and undefined future aliases are not silently accepted. DA6.3/6.5/6.6/10.7 remain independent. Current plan:74tasks/46complete/6explicitN.A./22applicableopen.

@@ -1,0 +1,9 @@
+{
+  "base_commit": "db73fee3f950bbe025ac6bbbd1db686d3ec15646",
+  "files": {
+    "tests/unit/test_verify_release.py": "315f2dab5122986c1c54561aae912767b15d23786aa38a7f9e95d4087c2da126",
+    "tools/verify_release.py": "0c00c6767d2d7d9f1089cb09332937183553ca31e773b19c32d6ef2bc6006d1d"
+  },
+  "patch_sha256": "a35e96b73aa34b3cd174f0fd18e5198b6c87ebea019e6450c8810c3c948c6179",
+  "workspace": "/private/tmp/lexinform-j244-release-metadata"
+}

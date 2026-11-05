@@ -1,0 +1,34 @@
+{
+  "status": "clear",
+  "patch_sha256": "a35e96b73aa34b3cd174f0fd18e5198b6c87ebea019e6450c8810c3c948c6179",
+  "source_pins": {
+    "tests/unit/test_verify_release.py": "315f2dab5122986c1c54561aae912767b15d23786aa38a7f9e95d4087c2da126",
+    "tools/verify_release.py": "0c00c6767d2d7d9f1089cb09332937183553ca31e773b19c32d6ef2bc6006d1d"
+  },
+  "findings": [],
+  "independent_tests": false,
+  "source_edits": false,
+  "review_scope": [
+    "Completed-success workflow plus nonterminal/null/empty/transport-unavailable job metadata stays pending, never verified.",
+    "Actual non-success workflow/job conclusions still fail for completed workflow; malformed/incomplete listings remain unproven.",
+    "Required names, duplicate/head/main/chronology selection and relay transition/45-second/timer/final-main proof remain necessary before green.",
+    "Pending returns before log reads; gh GET transport, parser/listing, selectors, relay proof and CLI AST remain exact.",
+    "Exact two physical source hashes and patch SHA verified; only three intended functions have changed AST.",
+    "Saved actual db73 check2 SHA and completed-success/nonterminal-null deploy-job shape verified; author replay reports only status/reason change, same read sequence and zero logs/network/reruns."
+  ],
+  "author_evidence": {
+    "focused_tests": 73,
+    "new_units": 31,
+    "new_scenarios": 0,
+    "mypy_owned_files": 2,
+    "ruff_format": "passed",
+    "actual_saved_source_sha256": "1ad4dc597336a0f6b32a155c8e8bd1f030949a6cc4f02aecef6e134022f1a326",
+    "saved_report_status_reason_only_delta": true,
+    "unit_first_failing_checks": 13
+  },
+  "limitations": [
+    "Read-only source/test/artifact review; no independent tests, remote GitHub queries or full gate.",
+    "Saved replay uses documented selector/listing envelopes around filtered saved summaries, not raw API evidence.",
+    "Pending metadata is incomplete evidence and cannot authorize release; actual later consistent proof and root gate/deployment checks remain required."
+  ]
+}

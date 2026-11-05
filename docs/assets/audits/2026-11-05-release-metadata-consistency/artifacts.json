@@ -1,0 +1,31 @@
+{
+  "no_network_or_workflow_rerun": true,
+  "observed-check-2.json.gz": {
+    "compressed_bytes": 483,
+    "compressed_sha256": "065305faa3a5330f16965824ad672e77035afcfe1b3ea8c8517ce23107627719",
+    "expanded_bytes": 1689,
+    "expanded_sha256": "1ad4dc597336a0f6b32a155c8e8bd1f030949a6cc4f02aecef6e134022f1a326",
+    "kind": "historical_filtered_release_observer_report_not_raw_API_response",
+    "source": "out/corpus/j242-application-writer/release/check-2.json"
+  },
+  "omitted": [
+    "relay_logs",
+    "provider_bodies",
+    "database",
+    "source_tree"
+  ],
+  "qualification_proof_sha256": {
+    "invariants.json": "f753ce4a1085e4654bf9c7fe949e3ce9d1bde2ef210ca521aed17e80a13b9e60",
+    "logs/before.log": "651aac7b9b6e38ff5a5804537cc4650ad1ba8bc64ea8fcb01c8568e442058813",
+    "logs/focused.log": "19da9087d92935b2064df20f632357e22786ce3e50fd7075c1f2ef56c47433ca",
+    "logs/focused.xml": "fc0aa4ac56a8c64b6f7e6557a1ee5ed93c1756e31fcf4124141a56ea0b619923",
+    "logs/format.log": "3bc53bf3e981a98a34a852e175bf9b77af841edea74fca595d9aedcbaf9a4938",
+    "logs/mypy.log": "f9b031e5c45aa702cd4fef028d465551cb20a2c4698e0913c7b00766b20ac4d8",
+    "logs/ruff.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "observed-proof.json": "c7623edecc2910323b12cadfae4fc986201c2db81cfe98d778cef7d5b24d996f",
+    "peer-review.json": "3d3e2b0d67d795f7205e84f871f4b53138ba1ff49c8c90ac144f8d6b3f51cdb9",
+    "qualification.json": "9bb1ac4df86b02c9b1ea48bd7d4a5ba46b96ddf2eb5cba501ad8d85654c13055",
+    "source-pins.json": "6f21bedb398f6920eb5a55e42c05d08115757c8d99ecac81ce6ee1084242362e"
+  },
+  "source_patch_sha256": "a35e96b73aa34b3cd174f0fd18e5198b6c87ebea019e6450c8810c3c948c6179"
+}

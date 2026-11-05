@@ -1,0 +1,21 @@
+{
+  "after": {
+    "reason": "metadata_pending",
+    "status": "pending"
+  },
+  "all_other_report_fields_exact": true,
+  "baseline_full_report_exact": true,
+  "before": {
+    "reason": "deploy_not_successful",
+    "status": "failed"
+  },
+  "envelope_note": "Known branch/path and total_count API envelopes wrap the already selected filtered summary; no claim to retain raw API response bytes.",
+  "network_calls": 0,
+  "offline_replay": true,
+  "read_calls_exact": true,
+  "relay_log_reads": 0,
+  "source_path": "out/corpus/j242-application-writer/release/check-2.json",
+  "source_sha256": "1ad4dc597336a0f6b32a155c8e8bd1f030949a6cc4f02aecef6e134022f1a326",
+  "source_unchanged": true,
+  "workflow_reruns": 0
+}
