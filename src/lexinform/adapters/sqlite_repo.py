@@ -963,6 +963,14 @@ MIGRATIONS: tuple[str, ...] = (
         question_json TEXT NOT NULL
     );
     """,
+    """
+    CREATE TABLE amendment_input_texts (
+        text_sha256 TEXT PRIMARY KEY NOT NULL,
+        text TEXT NOT NULL
+    );
+    ALTER TABLE amendment_input_snapshots ADD COLUMN text_sha256 TEXT
+        REFERENCES amendment_input_texts(text_sha256);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)

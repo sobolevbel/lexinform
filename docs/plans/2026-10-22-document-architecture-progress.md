@@ -11249,3 +11249,13 @@ At the user's70%used threshold, finish this stage, record handoff and pause the 
 Preserve the archive summary when the outer request and archive evidence exceed the trace limit. The outer universe digest and omitted decision count remain available. Known and unknown archive observations retain their respective coverage. DA4.1 remains open.
 
 [Qualification and replay recipes](../assets/audits/2026-11-05-archive-summary-overflow/report.md).
+
+<a id="j260"></a>
+
+## J260 — compatible reader for shared amendment text
+
+Schema v68 reads canonical inline and shared-text amendment questions through the same snapshot
+identity. A known shared body is digest checked before reconstruction. The current writer still
+uses inline encoding. Pipeline capture remains a separate stage.
+
+[Qualification and replay recipes](../assets/audits/2026-11-05-amendment-shared-text-reader/report.md).

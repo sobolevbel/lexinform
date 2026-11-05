@@ -1,0 +1,19 @@
+{
+  "state_sha": "6937d727a64f5369ab8f5a51ff9dcdab9d58fd28",
+  "dump_sha256": "e5b948332fe05bf39ba9f050c289b0dfc0554fb8a2750a3d669ea8f4c38be884",
+  "before": 67,
+  "after": 68,
+  "bills": 509,
+  "known_bill": [
+    10,
+    "2699"
+  ],
+  "known_bill_row_exact": true,
+  "old_tables_rows_exact": 49,
+  "shared_texts": 0,
+  "integrity": "ok",
+  "foreign_key_errors": 0,
+  "double_restore_exact": true,
+  "sql_delta_bytes": 171,
+  "gzip_delta_bytes": 31
+}

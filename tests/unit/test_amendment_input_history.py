@@ -10,7 +10,7 @@ from tools.computation_doctor import audit
 from tools.replay_content_applications import poster, queued, revision
 
 from lexinform.adapters.amendment_inputs import amendment_input_issues
-from lexinform.adapters.sqlite_repo import SqliteBillRepository
+from lexinform.adapters.sqlite_repo import MIGRATIONS, SqliteBillRepository
 from lexinform.json_storage import canonical_json
 from lexinform.models import (
     AmendmentInputRef,
@@ -70,6 +70,86 @@ def reference(snapshot: AmendmentInputSnapshot, request_sha256: str) -> Amendmen
         question_sha256=snapshot.question_sha256,
         request_sha256=request_sha256,
     )
+
+
+def share_snapshot_text(path: Path, snapshot: AmendmentInputSnapshot) -> None:
+    context = snapshot.context.model_dump(mode="json", exclude_unset=True)
+    text = snapshot.context.text
+    del context["text"]
+    digest = hashlib.sha256(text.encode()).hexdigest()
+    with closing(sqlite3.connect(path)) as connection, connection:
+        connection.execute("INSERT INTO amendment_input_texts VALUES (?,?)", (digest, text))
+        connection.execute(
+            "UPDATE amendment_input_snapshots SET question_json=?,text_sha256=? WHERE snapshot_id=?",
+            (canonical_json({"kind": "amendments", "ctx": context}), digest, snapshot.snapshot_id),
+        )
+
+
+def test_restore_of_v67_inline_question_preserves_original_bytes() -> None:
+    value = input_snapshot("Art. 1. Zmiana: 200 zł.\n")
+    with closing(sqlite3.connect(":memory:")) as legacy:
+        legacy.executescript("\n".join(MIGRATIONS[:67]))
+        legacy.execute(
+            "INSERT INTO amendment_input_snapshots VALUES (?,?,?,?)",
+            (value.snapshot_id, value.profile, value.question_sha256, value.question_json),
+        )
+        legacy.commit()
+        dump = "\n".join(legacy.iterdump()) + "\nPRAGMA user_version = 67;\n"
+    with closing(SqliteBillRepository(":memory:")) as repo:
+        repo.restore(dump)
+        assert repo.get_amendment_input(value.snapshot_id) == value
+        migrated = repo.dump()
+        repo.restore(migrated)
+        assert repo.dump() == migrated
+
+
+def test_shared_text_preserves_snapshot_and_paid_reference_through_restore(tmp_path: Path) -> None:
+    path = tmp_path / "state.db"
+    shared = input_snapshot("Art. 1. Kwota wynosi 200 zł.\n\n")
+    inline = input_snapshot()
+    result = paid_input(shared)
+    with closing(SqliteBillRepository(path)) as repo:
+        repo.migrate()
+        repo.save_amendment_input(shared)
+        repo.save_amendment_input(inline)
+        repo.save_computation_result(result)
+        share_snapshot_text(path, shared)
+        assert repo.get_amendment_input(shared.snapshot_id) == shared
+        assert repo.get_amendment_input(inline.snapshot_id) == inline
+        assert repo.get_computation_result(result.result_id) == result
+        before = repo.dump()
+        repo.save_amendment_input(shared)
+        repo.restore(before)
+        assert repo.dump() == before
+        assert repo.get_amendment_input(shared.snapshot_id) == shared
+
+
+@pytest.mark.parametrize("damage", ["missing", "text", "inline_manifest"])
+def test_shared_text_corruption_fails_reads_doctor_and_restore(tmp_path: Path, damage: str) -> None:
+    path = tmp_path / "state.db"
+    value = input_snapshot()
+    with closing(SqliteBillRepository(path)) as repo:
+        repo.migrate()
+        repo.save_amendment_input(value)
+        share_snapshot_text(path, value)
+        with closing(sqlite3.connect(path)) as connection, connection:
+            if damage == "missing":
+                connection.execute("DELETE FROM amendment_input_texts")
+            elif damage == "text":
+                connection.execute("UPDATE amendment_input_texts SET text='changed'")
+            else:
+                connection.execute(
+                    "UPDATE amendment_input_snapshots SET question_json=?", (value.question_json,)
+                )
+        with pytest.raises(ValueError, match="invalid_amendment_input"):
+            repo.get_amendment_input(value.snapshot_id)
+        with closing(SqliteBillRepository(":memory:")) as target:
+            target.migrate()
+            before = target.dump()
+            with pytest.raises(ValueError, match="invalid_amendment_input"):
+                target.restore(repo.dump())
+            assert target.dump() == before
+    assert any(item["code"] == "invalid_amendment_input" for item in audit(path)["findings"])
 
 
 def paid_input(snapshot: AmendmentInputSnapshot, *, bound: bool = True) -> ComputationResult:

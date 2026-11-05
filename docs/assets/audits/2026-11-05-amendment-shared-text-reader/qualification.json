@@ -1,0 +1,19 @@
+{
+  "base_commit": "443613e63a4ae88666b8b39c4a8af00f1362585d",
+  "full_tests": 8978,
+  "pytest_seconds": 289.55,
+  "mypy_files": 772,
+  "ruff_format_files": 841,
+  "source_config_pins": 841,
+  "changed_file_pins": {
+    "src/lexinform/adapters/amendment_inputs.py": "01d1c0121d33096f2ccc4ebb13713cfe3e52028efdcc19b685bf515ad699cd73",
+    "src/lexinform/adapters/sqlite_repo.py": "2540ee5d09ad1b4a3b29c3aeb9c657137eb4d5024ebf0c0d297b7d5aa99fbc90",
+    "tests/unit/test_amendment_input_history.py": "e40e7754075db1577359e7048abd1cd7e3a07a10fa9e896f2919f02560b844c6",
+    "tests/unit/test_sqlite_repo.py": "979fbcfdd597f6f7b7b6362ec1c1ac885be11610ef75a7eb611a30232e7795ec"
+  },
+  "new_units": 5,
+  "new_scenarios": 0,
+  "state_proof_sha256": "4b06eee23bb1e2de64a1e576fca742680536ab51c6e819a9969f31d2ee90bade",
+  "storage_measurement_sha256": "cf7aa3ec8fb688e9753f44fa3dbe251f0bc11ae11b356ff690f6282697798338",
+  "scope": "Compatible reader and append-only schema. Stored question payload and request identity are reconstructed exactly. Pipeline capture remains off."
+}

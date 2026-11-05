@@ -6,7 +6,7 @@ from collections.abc import Iterator
 
 from lexinform.adapters.computation_history import read_computation_result
 from lexinform.adapters.input_receipts import _parents, _reference, parse_batch_request
-from lexinform.json_storage import canonical_json
+from lexinform.json_storage import canonical_json, read_json
 from lexinform.models.amendment_inputs import AmendmentInputRef, AmendmentInputSnapshot
 from lexinform.models.batch import BatchIntent, DigestItemMeta, LlmBatchItem, batch_item_meta
 from lexinform.models.computation_inputs import ComputationInputBinding
@@ -17,6 +17,28 @@ from lexinform.models.input_receipts import amendment_context_sha256
 class AmendmentInputError(ValueError):
     def __init__(self) -> None:
         super().__init__("invalid_amendment_input")
+
+
+def _checked_text(digest: object, text: object) -> str:
+    if not isinstance(text, str) or hashlib.sha256(text.encode()).hexdigest() != digest:
+        raise AmendmentInputError()
+    return text
+
+
+def _shared_question(cursor: sqlite3.Cursor, manifest: str, text_sha256: str) -> str:
+    body = cursor.execute(
+        "SELECT text FROM amendment_input_texts WHERE text_sha256=?", (text_sha256,)
+    ).fetchone()
+    if body is None:
+        raise AmendmentInputError()
+    question = read_json(manifest)
+    if not isinstance(question, dict) or canonical_json(question) != manifest:
+        raise AmendmentInputError()
+    context = question.get("ctx")
+    if not isinstance(context, dict) or "text" in context:
+        raise AmendmentInputError()
+    context["text"] = _checked_text(text_sha256, body["text"])
+    return canonical_json(question)
 
 
 def read_amendment_input(
@@ -30,11 +52,16 @@ def read_amendment_input(
         ).fetchone()
         if row is None:
             return None
-        if not isinstance(row["question_json"], str):
+        question_json = row["question_json"]
+        if not isinstance(question_json, str):
             raise AmendmentInputError()
-        snapshot = AmendmentInputSnapshot(
-            profile=row["profile"], question_json=row["question_json"]
-        )
+        columns = row.keys()
+        text_sha256 = row["text_sha256"] if "text_sha256" in columns else None
+        if text_sha256 is not None:
+            if not isinstance(text_sha256, str):
+                raise AmendmentInputError()
+            question_json = _shared_question(cursor, question_json, text_sha256)
+        snapshot = AmendmentInputSnapshot(profile=row["profile"], question_json=question_json)
         if (snapshot.snapshot_id, snapshot.profile, snapshot.question_sha256) != (
             row["snapshot_id"],
             row["profile"],
@@ -124,12 +151,29 @@ def amendment_input_issues(connection: sqlite3.Connection) -> Iterator[tuple[str
             row[0]
             for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
-        if (
-            "amendment_input_snapshots" not in tables
-            and connection.execute("PRAGMA user_version").fetchone()[0] >= 67
-        ):
+        version = connection.execute("PRAGMA user_version").fetchone()[0]
+        if "amendment_input_snapshots" not in tables and version >= 67:
             yield "invalid_amendment_input", "amendment_input_snapshots"
             return
+        if version >= 68:
+            if "amendment_input_texts" not in tables:
+                yield "invalid_amendment_input", "amendment_input_texts"
+                return
+            columns = {
+                row[1] for row in cursor.execute("PRAGMA table_info(amendment_input_snapshots)")
+            }
+            if "text_sha256" not in columns:
+                yield "invalid_amendment_input", "amendment_input_snapshots"
+                return
+        if "amendment_input_texts" in tables:
+            for row in cursor.execute("SELECT text_sha256, text FROM amendment_input_texts"):
+                try:
+                    _checked_text(row["text_sha256"], row["text"])
+                except AmendmentInputError:
+                    yield (
+                        "invalid_amendment_input",
+                        _reference("amendment_input_texts", row["text_sha256"]),
+                    )
         for row in (
             cursor.execute("SELECT snapshot_id FROM amendment_input_snapshots")
             if "amendment_input_snapshots" in tables

@@ -1,6 +1,6 @@
 # База данных и миграции
 
-Статус: актуальный справочник · миграции описаны по схеме **v67** включительно.
+Статус: актуальный справочник · миграции описаны по схеме **v68** включительно.
 
 Источник истины — append-only
 [`MIGRATIONS` в sqlite_repo.py](https://github.com/sobolevbel/lexinform/blob/main/src/lexinform/adapters/sqlite_repo.py).
@@ -37,7 +37,8 @@ HTML содержит снимок v34, включая SQL ограничени�
 | `physical_metadata` (v62) | `metadata_id`; kind/body index; nullable header FK; JSON ≤ 32 KiB | Инертный reader закрытых header/graph/container execution/root order/recipe записей. SQL views раскрывают все сохранённые ссылки и ordinal; code/options/versions не копируются в каждый capture. |
 | `physical_captures` (v62) | `capture_id`; mandatory artifact/recipe/inventory/execution FK; nullable actual extraction FK; partial unique indexes | Наблюдение принадлежит известному полному artifact root даже без результата извлечения. Envelope ≤ 1 KiB; distinct transitive union вместе с recipe ≤ 512 KiB. Producer не подключён. |
 | `content_snapshots` (v55) | `snapshot_id`; kind + exact JSON | Общие immutable editorial Bill/change/metadata-plan snapshots; plan не копирует отдельные bodies. |
-| `amendment_input_snapshots` (v67) | `snapshot_id`; profile + exact canonical question JSON/hash | Immutable text amendment questions; reader only, producer OFF. |
+| `amendment_input_snapshots` (v67–68) | `snapshot_id`; profile + canonical question hash | Inline question or manifest with a shared text reference. |
+| `amendment_input_texts` (v68) | `text_sha256` | Exact UTF-8 text shared by immutable amendment questions. |
 | `content_versions` (v55) | `content_id`; root publication index; предыдущая версия | Editorial edition: semantic snapshot refs, known paid/event refs, exact rendered text либо явный unknown legacy, язык/formatter version при известности. |
 | `publication_content` (v55) | `publication_id` → `content_id` | Immutable связь физической publication с edition; не является receipt отправки. |
 | `document_work` | `key` | Поздний документ: исходное событие, исторический baseline, контекст batch, backoff и состояние. |
@@ -704,3 +705,12 @@ Reader разрешает availability только через exact result ко
 остаётся lineage с его исходным request SHA. Capture и correction consumer пока выключены.
 Новый произвольный byte cap не вводится; универсальная граница body не установлена. Включение
 writer требует отдельного operational storage budget и public OFF/ON qualification.
+
+
+### v68: shared amendment text reader
+
+`amendment_input_snapshots.text_sha256` связывает manifest с точным `ctx.text` в
+`amendment_input_texts`. NULL сохраняет v67 inline encoding. Reader восстанавливает canonical
+question JSON и проверяет text digest, question digest и snapshot ID. Manifest сохраняет все
+остальные поля оригинального вопроса. Миграция оставляет прежние записи inline. Pipeline capture
+и выбор shared encoding при записи требуют следующего этапа.

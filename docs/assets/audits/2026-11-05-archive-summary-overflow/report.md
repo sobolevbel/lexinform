@@ -7,3 +7,5 @@ The regression controls cover both summary forms and check that the original tra
 Run `uv run --frozen pytest -q tests/unit/test_archive_disposition_builder.py tests/unit/test_archive_disposition_writer.py tests/unit/test_required_part_writer.py` for the focused gate. Use the pinned raw command and cached observer from the earlier qualifications for the corpus comparisons. [Raw replay recipe](../2026-11-05-archive-disposition-writer/report.md). [Cached replay recipe](../2026-11-05-required-part-exclusion-writer/reproduce.md).
 
 [Qualification](qualification.json).
+
+[CI and relay deployment verified](release.json).

@@ -1,0 +1,34 @@
+{
+  "source_sha256": "c952273be9455e61e73d2a5318b458ee013ac49fd4ee713bf796827418be160e",
+  "questions": 2,
+  "shared_bodies": 1,
+  "exact_restore_and_identity": true,
+  "production_reader_verified": true,
+  "representations": {
+    "inline": {
+      "empty": {
+        "sql": 273,
+        "gzip": 190,
+        "sqlite": 12288
+      },
+      "populated": {
+        "sql": 83961,
+        "gzip": 22572,
+        "sqlite": 94208
+      }
+    },
+    "shared_context_text": {
+      "empty": {
+        "sql": 511,
+        "gzip": 233,
+        "sqlite": 20480
+      },
+      "populated": {
+        "sql": 44326,
+        "gzip": 12874,
+        "sqlite": 57344
+      }
+    }
+  },
+  "scope": "isolated tables for two prepared questions"
+}

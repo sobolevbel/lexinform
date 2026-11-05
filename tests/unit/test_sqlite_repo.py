@@ -959,7 +959,13 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         assert conn.execute("SELECT count(*) FROM amendment_input_snapshots").fetchone() == (0,)
         indexes = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='index'")}
     assert digest_links == {"source_publication_id", "owner_publication_id"}
-    assert amendment_inputs == {"snapshot_id", "profile", "question_sha256", "question_json"}
+    assert amendment_inputs == {
+        "snapshot_id",
+        "profile",
+        "question_sha256",
+        "question_json",
+        "text_sha256",
+    }
     assert {"use_id", "project_id", "stage_id", "letter_id", "record_json"} <= rcl_uses
     assert "ix_rcl_letter_uses_owner" in indexes
     assert {"inspection_id", "owner_term", "owner_number", "record_json"} <= senate
