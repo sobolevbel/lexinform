@@ -1,0 +1,18 @@
+{
+  "database_sha256": "93fd8769679b86b4a95f830ac48fe5330a13afe212ea6ecae6ac94ad82498f91",
+  "history_created": false,
+  "pinned_database_unchanged": true,
+  "profile_candidate": {
+    "profile": "card-primary-evidence-v1",
+    "projection_application_id": 19,
+    "source_observation_id": "source-observation-v1:05cb66bed72975b7ced46a6da62fb3251a4b156082ff3627f1e5078a8d780e04"
+  },
+  "publication_id": 258,
+  "query_plan": [
+    "SEARCH r USING INDEX sqlite_autoindex_computation_results_1 (result_id=?)",
+    "SEARCH i USING INDEX sqlite_autoindex_llm_batch_items_1 (batch_id=? AND custom_id=?)",
+    "SEARCH a USING INDEX ux_result_application_generation (result_id=? AND term=? AND number=? AND generation=? AND phase=?)",
+    "SEARCH o USING INDEX ix_source_observations_selection (selection_id=?)"
+  ],
+  "scope": "Read-only shortlist against an old direct card, no writer or acceptance."
+}

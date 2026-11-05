@@ -40,6 +40,7 @@ from lexinform.adapters.content_applications import (
     verify_content_applications,
 )
 from lexinform.adapters.content_history import (
+    card_primary_evidence_candidate,
     card_publication_rows,
     read_content_version,
     validate_content_history,
@@ -234,7 +235,7 @@ from lexinform.models import (
 )
 from lexinform.models.amendment_inputs import AmendmentInputSnapshot
 from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
-from lexinform.models.content import editorial_bill_snapshot
+from lexinform.models.content import CardPrimaryEvidence, editorial_bill_snapshot
 from lexinform.models.legacy_results import canonical_legacy_json, legacy_json
 from lexinform.models.physical_inventory import PhysicalCapture, PhysicalMetadata
 from lexinform.models.senate_inspection import SenateInspectionLink, SenateInspectionRecord
@@ -2179,6 +2180,9 @@ class SqliteBillRepository:
 
     def get_content_snapshot(self, snapshot_id: str) -> ContentSnapshot | None:
         return ContentSourceRows(self._conn).get_content_snapshot(snapshot_id)
+
+    def find_card_primary_evidence(self, bill: Bill) -> CardPrimaryEvidence | None:
+        return card_primary_evidence_candidate(self._conn, bill)
 
     def save_content_version(self, version: ContentVersion) -> None:
         version = ContentVersion.model_validate_json(version.model_dump_json())

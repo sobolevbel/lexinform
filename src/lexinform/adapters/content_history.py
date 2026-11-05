@@ -16,6 +16,7 @@ from lexinform.content_versions import (
     content_delivery_mismatch,
     content_snapshot_refs,
 )
+from lexinform.errors import CardPrimaryEvidenceError
 from lexinform.json_storage import read_json
 from lexinform.models import (
     AnalysisRecord,
@@ -87,6 +88,59 @@ def read_content_publication(row: sqlite3.Row) -> Publication:
     )
 
 
+def card_primary_evidence_candidate(
+    connection: sqlite3.Connection, bill: Bill
+) -> CardPrimaryEvidence | None:
+    record = bill.analysis
+    if record is None or record.computation_id is None or record.request_sha256 is None:
+        return None
+    rows = _query(
+        connection,
+        """
+        WITH item AS (
+            SELECT r.result_id,r.term,r.number,
+              CASE WHEN json_valid(r.result_json)
+                THEN json_extract(r.result_json,'$.generation') END AS generation,
+              CASE WHEN json_valid(i.meta_json) THEN i.meta_json ELSE '{}' END AS meta
+            FROM computation_results r JOIN llm_batch_items i
+              ON i.batch_id=r.batch_id AND i.custom_id=r.custom_id
+            WHERE r.result_id=? AND r.term=? AND r.number=? AND i.consumed_at IS NOT NULL
+        )
+        SELECT a.id,o.observation_id
+        FROM item JOIN result_applications a INDEXED BY ux_result_application_generation
+          ON a.result_id=item.result_id AND a.term=item.term AND a.number=item.number
+          AND a.generation=item.generation
+        JOIN source_observations o INDEXED BY ix_source_observations_selection
+          ON o.term=item.term AND o.number=item.number
+          AND o.selection_id=json_extract(item.meta,'$.prepared_input_receipt.source_selection_id')
+        WHERE a.phase='projection' AND a.generation IS NOT NULL
+          AND json_extract(a.application_json,'$.projected_generation')=?
+          AND json_extract(a.application_json,'$.reason')='batch_result'
+          AND json_extract(item.meta,'$.request_sha256')=?
+          AND json_extract(item.meta,'$.prepared_input_receipt.profile')
+              ='primary-single-part-text-v1'
+          AND o.purpose='analysis' AND o.source_kind=json_extract(item.meta,'$.source_kind')
+          AND o.source_url=json_extract(item.meta,'$.source_url')
+        LIMIT 2
+        """,
+        (
+            record.computation_id,
+            bill.term,
+            bill.number,
+            bill.analysis_generation,
+            record.request_sha256,
+        ),
+    ).fetchall()
+    if len(rows) != 1:
+        return None
+    try:
+        return CardPrimaryEvidence(
+            projection_application_id=rows[0]["id"], source_observation_id=rows[0]["observation_id"]
+        )
+    except ValueError:
+        return None
+
+
 def _verify_card_primary_evidence(
     connection: sqlite3.Connection,
     reference: CardPrimaryEvidence,
@@ -100,7 +154,7 @@ def _verify_card_primary_evidence(
         (reference.projection_application_id,),
     ).fetchone()
     if projection_row is None:
-        raise ValueError("card_primary_projection_missing")
+        raise CardPrimaryEvidenceError("card_primary_projection_missing")
     projection = read_result_application(projection_row)
     if (
         (projection.term, projection.number) != (bill.term, bill.number)
@@ -111,7 +165,7 @@ def _verify_card_primary_evidence(
         or root is not None
         and (root.term, root.number) != (bill.term, bill.number)
     ):
-        raise ValueError("card_primary_projection_scope")
+        raise CardPrimaryEvidenceError("card_primary_projection_scope")
     reader = ContentSourceRows(connection)
     paid = reader.get_computation_result(projection.result_id)
     if (
@@ -125,7 +179,7 @@ def _verify_card_primary_evidence(
         or paid.input_binding is None
         or (paid.input_binding.term, paid.input_binding.number) != (paid.term, paid.number)
     ):
-        raise ValueError("card_primary_paid_scope")
+        raise CardPrimaryEvidenceError("card_primary_paid_scope")
     if root is not None and root.delivery is not None:
         rendered_bill = Bill.model_validate(read_json(root.delivery.bill_json))
         record = rendered_bill.analysis
@@ -135,12 +189,12 @@ def _verify_card_primary_evidence(
             or record.model_dump(exclude=set(PRIMARY_USAGE_FIELDS))
             != paid.record.model_dump(exclude=set(PRIMARY_USAGE_FIELDS))
         ):
-            raise ValueError("card_primary_render_result_mismatch")
+            raise CardPrimaryEvidenceError("card_primary_render_result_mismatch")
     item = reader.get_consumed_primary_input(
         paid.provider, paid.batch_id, paid.custom_id, bill.analysis_generation
     )
     if item is None or item.consumed_at is None or not isinstance(item.meta, BatchItemMeta):
-        raise ValueError("card_primary_item_missing")
+        raise CardPrimaryEvidenceError("card_primary_item_missing")
     meta = item.meta
     receipt = meta.prepared_input_receipt
     if (
@@ -158,7 +212,7 @@ def _verify_card_primary_evidence(
         or meta.input_chars != receipt.text_chars
         or paid.record.input_chars != receipt.text_chars
     ):
-        raise ValueError("card_primary_item_scope")
+        raise CardPrimaryEvidenceError("card_primary_item_scope")
     source = reader.get_source_observation(reference.source_observation_id)
     selection = reader.get_document_selection(receipt.source_selection_id)
     if (
@@ -171,7 +225,7 @@ def _verify_card_primary_evidence(
         or selection.selection.parts[0].url != meta.source_url
         or selection.selection.parts != meta.selection.without_text().parts
     ):
-        raise ValueError("card_primary_source_scope")
+        raise CardPrimaryEvidenceError("card_primary_source_scope")
     validate_primary_receipt_parents(connection, receipt)
     collections = _query(
         connection,
@@ -180,20 +234,20 @@ def _verify_card_primary_evidence(
         (paid.result_id, paid.term, paid.number, paid.generation),
     ).fetchall()
     if len(collections) != 1:
-        raise ValueError("card_primary_collection_missing")
+        raise CardPrimaryEvidenceError("card_primary_collection_missing")
     collection = read_result_application(collections[0])
     if collection.target is not None or (collection.outcome, collection.reason) != (
         "ready",
         "current_generation",
     ):
-        raise ValueError("card_primary_collection_scope")
+        raise CardPrimaryEvidenceError("card_primary_collection_scope")
     batch = _query(
         connection,
         "SELECT submitted_at FROM llm_batches WHERE batch_id=? AND provider=?",
         (paid.batch_id, paid.provider),
     ).fetchone()
     if batch is None or not batch["submitted_at"]:
-        raise ValueError("card_primary_batch_missing")
+        raise CardPrimaryEvidenceError("card_primary_batch_missing")
     chronology = (
         source.recorded_at,
         meta.queued_at,
@@ -210,7 +264,7 @@ def _verify_card_primary_evidence(
         or chronology != tuple(sorted(chronology))
         or not paid.collected_at <= item.consumed_at <= projection.created_at
     ):
-        raise ValueError("card_primary_chronology")
+        raise CardPrimaryEvidenceError("card_primary_chronology")
 
 
 def _verify_card_content(
@@ -247,8 +301,15 @@ def _verify_card_content(
         raise ValueError("card_content_root_scope")
     if value.card_primary_evidence is not None:
         if semantic.reply_to is not None or semantic.update_group or semantic.sitting_group:
-            raise ValueError("card_primary_plan_scope")
-        _verify_card_primary_evidence(connection, value.card_primary_evidence, value, bill, root)
+            raise CardPrimaryEvidenceError("card_primary_plan_scope")
+        try:
+            _verify_card_primary_evidence(
+                connection, value.card_primary_evidence, value, bill, root
+            )
+        except CardPrimaryEvidenceError:
+            raise
+        except ValueError as exc:
+            raise CardPrimaryEvidenceError("invalid_card_primary_evidence") from exc
     previous_ids: set[int] = set()
     if value.previous_version_id is not None:
         row = _query(

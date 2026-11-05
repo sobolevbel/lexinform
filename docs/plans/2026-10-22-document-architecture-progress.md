@@ -11463,3 +11463,16 @@ result evidence. The synthetic example survives the ordinary cleanup paths. The 
 writer and legacy cards are unchanged. The two-snapshot cycle inventory retains the one
 proved 3281 cycle and records missing links for the next candidates.
 [Coverage and retention qualification](../assets/audits/2026-11-06-coverage-views-and-card-evidence/report.md).
+
+<a id="j279"></a>
+
+## J279 — native compact card lineage and offline committee recommendation
+
+New eligible original direct cards bind their exact primary source and result
+before first send. The unchanged plain content remains available on missing evidence.
+The synthetic replay confirms the compact reference survives normal expiry.
+
+An offline proof records report 587 as a recommendation for Senate resolution 584
+within process 471. A different report from the same process is a negative control.
+The proof leaves adoption unasserted.
+[Qualification and limits](../assets/audits/2026-11-06-card-lineage-and-committee-recommendation/report.md).

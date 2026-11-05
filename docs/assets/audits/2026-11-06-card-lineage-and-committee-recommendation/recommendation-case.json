@@ -1,0 +1,23 @@
+{
+  "official_prints": {
+    "path": "sejm/snapshots/2026-10-03/term10/prints.json",
+    "sha256": "05e7b4a7105e9a6d8aff1c87293749c5c77c6bfefc6882491c8d2701b39b8938"
+  },
+  "official_processes_gzip": {
+    "path": "sejm/snapshots/2026-10-03/term10/process_details.json.gz",
+    "sha256": "361c92de8a686ae161aa3154c3a30bf29a2a7980e6fb3b13578962cdf01075d9"
+  },
+  "process": "471",
+  "report": "587",
+  "report_pdf": {
+    "path": "downloads/0546cb0a533bac10b11a5053373b065288aa9245190e8e009426b2eadeefa964.pdf",
+    "sha256": "cc8bf876f8a9d2164d0cfdd2108f531060fe464e30047ed7010fc7d5ac672502"
+  },
+  "resolution": "584",
+  "resolution_attachment": "584-uchwała.docx",
+  "resolution_docx": {
+    "path": "sejm/supplements/2026-10-16-senate-resolutions/files/7c5c599a661fd7de48e9c673ae11042e0bce78ac35679e40f2aabadad27957dc.docx",
+    "sha256": "772fdc7f605947445934f32eb879772f28d46074795a7d7626245553b3a9f5bd"
+  },
+  "term": 10
+}

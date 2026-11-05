@@ -8,6 +8,7 @@ from lexinform.content_sources import (
     supported_source_context,
 )
 from lexinform.content_versions import card_physical_matches
+from lexinform.errors import CardPrimaryEvidenceError
 from lexinform.models import (
     AmendmentsRecord,
     Bill,
@@ -116,6 +117,19 @@ def record_publication_content(
         version = capture_content_applications(
             repo, version, publication, origin=application_origin
         )
+        if card_history_parent == "original" and publication.delivery is not None:
+            bill = Bill.model_validate_json(publication.delivery.bill_json)
+            reference = repo.find_card_primary_evidence(bill)
+            if reference is not None:
+                marked = version.model_copy(update={"card_primary_evidence": reference})
+                try:
+                    with repo.atomic():
+                        repo.save_content_version(marked)
+                        repo.bind_publication_content(publication.id, marked.content_id)
+                except CardPrimaryEvidenceError:
+                    pass
+                else:
+                    return marked
         repo.save_content_version(version)
         repo.bind_publication_content(publication.id, version.content_id)
     return version

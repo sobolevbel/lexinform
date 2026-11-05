@@ -46,6 +46,10 @@ class PreparedInputParentError(ValueError):
     """An optional prepared-input receipt lacks corroborating parents before intent save."""
 
 
+class CardPrimaryEvidenceError(ValueError):
+    """Optional card evidence lacks an exact retained primary chain."""
+
+
 class SourceHistoryPersistenceError(RuntimeError):
     def __init__(self, failure_class: str) -> None:
         self.failure_class = failure_class[:128]

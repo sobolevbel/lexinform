@@ -1,0 +1,16 @@
+{
+  "checkpoints": {
+    "pruned": {
+      "gzip_growth": 48,
+      "normalized_rows_exact": true,
+      "sql_growth": 206
+    },
+    "sent": {
+      "gzip_growth": 45,
+      "normalized_rows_exact": true,
+      "sql_growth": 206
+    }
+  },
+  "rendered_sha256": "a945c9239d91cc2a046a0711d3537161e5dd924488dbc267ef1a4916be76060d",
+  "scope": "Synthetic first direct card and standard delivery retention"
+}

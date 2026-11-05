@@ -14,3 +14,6 @@ reproduced the same dump after restore. There are no new body rows.
 The receipt occupied 1,462–2,794 bytes. The paired queue dumps added up to 870 gzip bytes.
 The measured positive lifecycle stages added 421–806 gzip bytes. These are per-fixture
 whole-dump changes. [Paired lifecycle and storage evidence](qualification.json).
+
+The exact writer commit passed hosted CI and the relay transition, restart and timer
+checks. [Release receipt](release.json).
