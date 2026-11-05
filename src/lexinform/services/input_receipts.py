@@ -21,6 +21,14 @@ from lexinform.models import (
     SupplementInputReceipt,
     SupplementQuestion,
 )
+from lexinform.models.input_receipts import (
+    MAX_INPUT_RECEIPT_SEGMENTS,
+    LooseRclInputPart,
+    LooseRclInputReceipt,
+    input_map_sha256,
+    primary_context_sha256,
+)
+from lexinform.prepared_input import prepared_text_input
 from lexinform.services.document_history import DocumentSourceRead, SourceReadCapture
 from lexinform.text_projection import TextProjection
 
@@ -98,7 +106,75 @@ def capture_primary_input_receipt(
     )
 
 
-def enrich_primary_input_intent(original: BatchIntent, receipt: PrimaryInputReceipt) -> BatchIntent:
+def capture_loose_rcl_input_receipt(
+    request: BatchRequest,
+    selection: DocumentSelection,
+    projection: TextProjection | None,
+    source: SourceReadCapture | None,
+) -> LooseRclInputReceipt | None:
+    if (
+        not isinstance(request.question, AnalysisQuestion)
+        or request.call_kind not in ("analysis", "reanalysis")
+        or request.question.ctx.source_kind != "rcl"
+        or request.question.ctx.scan is not None
+        or request.question.ctx.text_source == "scan"
+        or request.payload_sha256 is None
+        or projection is None
+        or len(projection.segments) > MAX_INPUT_RECEIPT_SEGMENTS
+        or not isinstance(source, DocumentSourceRead)
+        or source.document.kind != "rcl"
+        or not 2 <= len(selection.parts) <= 5
+        or source.document.url != selection.parts[0].url
+        or selection.scan_input is not None
+        or any(span.stage == "analysis" for span in selection.coverage)
+    ):
+        return None
+    ctx = request.question.ctx
+    if projection.text != ctx.text:
+        return None
+    parts: list[LooseRclInputPart] = []
+    for part in selection.parts:
+        if (
+            part.members
+            or not part.text_sha256
+            or part.text_start != 0
+            or part.text_end != len(part.text)
+        ):
+            return None
+        body = _body(part, source)
+        extraction = _extraction(part, body, source)
+        if extraction is None:
+            return None
+        parts.append(
+            LooseRclInputPart(
+                role=part.role,
+                chars=len(part.text),
+                text_sha256=part.text_sha256,
+                extraction_id=extraction.result_id,
+            )
+        )
+    request.verify_payload()
+    prepared = prepared_text_input(selection, ctx.text, projection=projection)
+    if (
+        prepared.source_selection_id != source.selection.selection_id
+        or len(prepared.segments) > MAX_INPUT_RECEIPT_SEGMENTS
+    ):
+        return None
+    return LooseRclInputReceipt(
+        source_selection_id=prepared.source_selection_id,
+        source_parts=tuple(parts),
+        context_sha256=primary_context_sha256(ctx),
+        request_sha256=request.payload_sha256,
+        text_sha256=prepared.text_sha256,
+        text_chars=prepared.text_chars,
+        full_map_sha256=input_map_sha256(prepared.segments),
+        segments=prepared.segments,
+    )
+
+
+def enrich_primary_input_intent(
+    original: BatchIntent, receipt: PrimaryInputReceipt | LooseRclInputReceipt
+) -> BatchIntent:
     if not isinstance(original.meta, BatchItemMeta):
         raise ValueError("Primary receipt enrichment requires primary metadata")
     return _enrich_input_intent(original, receipt)
@@ -106,7 +182,10 @@ def enrich_primary_input_intent(original: BatchIntent, receipt: PrimaryInputRece
 
 def _enrich_input_intent(
     original: BatchIntent,
-    receipt: PrimaryInputReceipt | SupplementInputReceipt | AmendmentInputReceipt,
+    receipt: PrimaryInputReceipt
+    | LooseRclInputReceipt
+    | SupplementInputReceipt
+    | AmendmentInputReceipt,
 ) -> BatchIntent:
     return BatchIntent.model_validate(
         {

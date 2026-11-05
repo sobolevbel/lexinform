@@ -11369,3 +11369,13 @@ daily state boundaries provide actual SQL and compressed net growth. Saved read 
 provide cache-reuse counts for their recorded population. The direct-card auditor found
 one exact original Sejm analysis-to-SENT chain and four explicit negative controls.
 [Scope, pins and commands](../assets/audits/2026-11-05-hosted-state-and-delivery-cycle/report.md).
+
+<a id="j271"></a>
+
+## J271 — write exact loose RCL multipart input receipts
+
+The native primary writer captures the actual returned question and its bounded
+part-relative map. The same intent can continue without the receipt if a parent
+cannot be verified before insert. Paired raw and cached preparation plus both collection
+outcomes passed with unchanged other SQL rows. No new document bodies are stored.
+[Replay and storage evidence](../assets/audits/2026-11-05-multipart-rcl-receipt-writer/report.md).

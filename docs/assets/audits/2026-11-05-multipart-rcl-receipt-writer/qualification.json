@@ -1,0 +1,483 @@
+{
+  "artifact_sha256": {
+    "off-lifecycle.json": "d0756245d5b63bf90e7f6439612625d74829e5b21b0c064a02b80e7b115c9a8b",
+    "off-prepare.json": "93b08a772664b49c76972fb8b5ac82dfcc6a0611c5cad27613c610e6b89a2024",
+    "on-lifecycle.json": "ff1766c5e56baecfd4769e8955882406c714fcf826a205f0415c70fdf1367fa5",
+    "on-prepare.json": "e553231ab60567e9c62807bde1ec440fedb89ce89fcf759ed6b63b7ce985c7c8",
+    "replay_writer.py": "23e9d4a787944282d767bba6faa5724d3bd6c346209b9efef777e48c0a03697c"
+  },
+  "lifecycle": {
+    "eligible_receipts": 2,
+    "frozen_profiles": 2,
+    "gzip_delta_range": [
+      421,
+      806
+    ],
+    "logical_rows_equal_except_receipt": true,
+    "measurements_bytes_off_on": {
+      "12366453/3/raw/normal/collected": {
+        "gzip_bytes": [
+          58031,
+          58782
+        ],
+        "sql_bytes": [
+          233624,
+          235979
+        ]
+      },
+      "12366453/3/raw/normal/pruned": {
+        "gzip_bytes": [
+          58031,
+          58782
+        ],
+        "sql_bytes": [
+          233618,
+          235973
+        ]
+      },
+      "12366453/3/raw/normal/queue": {
+        "gzip_bytes": [
+          79127,
+          79916
+        ],
+        "sql_bytes": [
+          303495,
+          305850
+        ]
+      },
+      "12366453/3/raw/normal/submitted": {
+        "gzip_bytes": [
+          33578,
+          34329
+        ],
+        "sql_bytes": [
+          144426,
+          146781
+        ]
+      },
+      "12403302/4/raw/tight/collected": {
+        "gzip_bytes": [
+          40836,
+          41632
+        ],
+        "sql_bytes": [
+          179940,
+          182252
+        ]
+      },
+      "12403302/4/raw/tight/pruned": {
+        "gzip_bytes": [
+          13860,
+          14281
+        ],
+        "sql_bytes": [
+          85512,
+          87824
+        ]
+      },
+      "12403302/4/raw/tight/queue": {
+        "gzip_bytes": [
+          56883,
+          57665
+        ],
+        "sql_bytes": [
+          235394,
+          237706
+        ]
+      },
+      "12403302/4/raw/tight/submitted": {
+        "gzip_bytes": [
+          40141,
+          40947
+        ],
+        "sql_bytes": [
+          177643,
+          179955
+        ]
+      }
+    },
+    "receipt_bytes_max": 2329,
+    "receipt_bytes_min": 2286,
+    "sql_delta_range": [
+      2312,
+      2355
+    ]
+  },
+  "prepare": {
+    "eligible_receipts": 18,
+    "frozen_profiles": 48,
+    "gzip_delta_range": [
+      0,
+      870
+    ],
+    "logical_rows_equal_except_receipt": true,
+    "measurements_bytes_off_on": {
+      "12366453/2/cached/normal/queue": {
+        "gzip_bytes": [
+          41914,
+          41914
+        ],
+        "sql_bytes": [
+          161442,
+          161442
+        ]
+      },
+      "12366453/2/cached/tight/queue": {
+        "gzip_bytes": [
+          41914,
+          41914
+        ],
+        "sql_bytes": [
+          161442,
+          161442
+        ]
+      },
+      "12366453/2/raw/normal/queue": {
+        "gzip_bytes": [
+          43405,
+          43980
+        ],
+        "sql_bytes": [
+          168105,
+          169593
+        ]
+      },
+      "12366453/2/raw/tight/queue": {
+        "gzip_bytes": [
+          43405,
+          43980
+        ],
+        "sql_bytes": [
+          168105,
+          169593
+        ]
+      },
+      "12366453/3/cached/normal/queue": {
+        "gzip_bytes": [
+          76930,
+          76930
+        ],
+        "sql_bytes": [
+          290225,
+          290225
+        ]
+      },
+      "12366453/3/cached/tight/queue": {
+        "gzip_bytes": [
+          55090,
+          55090
+        ],
+        "sql_bytes": [
+          208716,
+          208716
+        ]
+      },
+      "12366453/3/raw/normal/queue": {
+        "gzip_bytes": [
+          79127,
+          79916
+        ],
+        "sql_bytes": [
+          303495,
+          305850
+        ]
+      },
+      "12366453/3/raw/tight/queue": {
+        "gzip_bytes": [
+          57249,
+          58101
+        ],
+        "sql_bytes": [
+          221986,
+          224806
+        ]
+      },
+      "12366453/4/cached/normal/queue": {
+        "gzip_bytes": [
+          77287,
+          77287
+        ],
+        "sql_bytes": [
+          294313,
+          294313
+        ]
+      },
+      "12366453/4/cached/tight/queue": {
+        "gzip_bytes": [
+          55460,
+          55460
+        ],
+        "sql_bytes": [
+          212804,
+          212804
+        ]
+      },
+      "12366453/4/raw/normal/queue": {
+        "gzip_bytes": [
+          79538,
+          80327
+        ],
+        "sql_bytes": [
+          307583,
+          309938
+        ]
+      },
+      "12366453/4/raw/tight/queue": {
+        "gzip_bytes": [
+          57650,
+          58493
+        ],
+        "sql_bytes": [
+          226074,
+          228894
+        ]
+      },
+      "12386961/6/cached/normal/queue": {
+        "gzip_bytes": [
+          331238,
+          331238
+        ],
+        "sql_bytes": [
+          1367886,
+          1367886
+        ]
+      },
+      "12386961/6/cached/tight/queue": {
+        "gzip_bytes": [
+          70212,
+          70212
+        ],
+        "sql_bytes": [
+          291133,
+          291133
+        ]
+      },
+      "12386961/6/raw/normal/queue": {
+        "gzip_bytes": [
+          332926,
+          333614
+        ],
+        "sql_bytes": [
+          1377625,
+          1379526
+        ]
+      },
+      "12386961/6/raw/tight/queue": {
+        "gzip_bytes": [
+          71886,
+          72729
+        ],
+        "sql_bytes": [
+          300872,
+          303687
+        ]
+      },
+      "12390754/2/cached/normal/queue": {
+        "gzip_bytes": [
+          94266,
+          94266
+        ],
+        "sql_bytes": [
+          408051,
+          408051
+        ]
+      },
+      "12390754/2/cached/tight/queue": {
+        "gzip_bytes": [
+          45226,
+          45226
+        ],
+        "sql_bytes": [
+          218462,
+          218462
+        ]
+      },
+      "12390754/2/raw/normal/queue": {
+        "gzip_bytes": [
+          97024,
+          97774
+        ],
+        "sql_bytes": [
+          423191,
+          425550
+        ]
+      },
+      "12390754/2/raw/tight/queue": {
+        "gzip_bytes": [
+          47673,
+          48390
+        ],
+        "sql_bytes": [
+          233008,
+          234921
+        ]
+      },
+      "12394200/3/cached/normal/queue": {
+        "gzip_bytes": [
+          90323,
+          90323
+        ],
+        "sql_bytes": [
+          336146,
+          336146
+        ]
+      },
+      "12394200/3/cached/tight/queue": {
+        "gzip_bytes": [
+          55632,
+          55632
+        ],
+        "sql_bytes": [
+          210507,
+          210507
+        ]
+      },
+      "12394200/3/raw/normal/queue": {
+        "gzip_bytes": [
+          92326,
+          93073
+        ],
+        "sql_bytes": [
+          349416,
+          351771
+        ]
+      },
+      "12394200/3/raw/tight/queue": {
+        "gzip_bytes": [
+          57802,
+          58587
+        ],
+        "sql_bytes": [
+          223777,
+          226236
+        ]
+      },
+      "12394200/4/cached/normal/queue": {
+        "gzip_bytes": [
+          90477,
+          90477
+        ],
+        "sql_bytes": [
+          338274,
+          338274
+        ]
+      },
+      "12394200/4/cached/tight/queue": {
+        "gzip_bytes": [
+          55803,
+          55803
+        ],
+        "sql_bytes": [
+          212635,
+          212635
+        ]
+      },
+      "12394200/4/raw/normal/queue": {
+        "gzip_bytes": [
+          92482,
+          93223
+        ],
+        "sql_bytes": [
+          351544,
+          353899
+        ]
+      },
+      "12394200/4/raw/tight/queue": {
+        "gzip_bytes": [
+          57967,
+          58757
+        ],
+        "sql_bytes": [
+          225905,
+          228364
+        ]
+      },
+      "12403302/3/cached/normal/queue": {
+        "gzip_bytes": [
+          67652,
+          67652
+        ],
+        "sql_bytes": [
+          264854,
+          264854
+        ]
+      },
+      "12403302/3/cached/tight/queue": {
+        "gzip_bytes": [
+          34774,
+          34774
+        ],
+        "sql_bytes": [
+          154484,
+          154484
+        ]
+      },
+      "12403302/3/raw/normal/queue": {
+        "gzip_bytes": [
+          70024,
+          70689
+        ],
+        "sql_bytes": [
+          277038,
+          278923
+        ]
+      },
+      "12403302/3/raw/tight/queue": {
+        "gzip_bytes": [
+          36780,
+          37361
+        ],
+        "sql_bytes": [
+          165850,
+          167374
+        ]
+      },
+      "12403302/4/cached/normal/queue": {
+        "gzip_bytes": [
+          227550,
+          227550
+        ],
+        "sql_bytes": [
+          856582,
+          856582
+        ]
+      },
+      "12403302/4/cached/tight/queue": {
+        "gzip_bytes": [
+          53671,
+          53671
+        ],
+        "sql_bytes": [
+          215895,
+          215895
+        ]
+      },
+      "12403302/4/raw/normal/queue": {
+        "gzip_bytes": [
+          234700,
+          235570
+        ],
+        "sql_bytes": [
+          888063,
+          890825
+        ]
+      },
+      "12403302/4/raw/tight/queue": {
+        "gzip_bytes": [
+          56883,
+          57665
+        ],
+        "sql_bytes": [
+          235394,
+          237706
+        ]
+      }
+    },
+    "receipt_bytes_max": 2794,
+    "receipt_bytes_min": 1462,
+    "sql_delta_range": [
+      0,
+      2820
+    ]
+  }
+}

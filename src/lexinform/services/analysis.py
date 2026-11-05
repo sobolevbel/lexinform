@@ -36,6 +36,7 @@ from lexinform.errors import (
     LlmContextExceededError,
     LlmUnavailableError,
     OrkaUnreachableError,
+    PreparedInputParentError,
     ServiceUnavailableError,
 )
 from lexinform.json_storage import canonical_json
@@ -139,6 +140,7 @@ from lexinform.models.batch import (
     SupplementQuestion,
 )
 from lexinform.models.computations import CollectionReason, ComputationRecord
+from lexinform.models.input_receipts import LooseRclInputReceipt
 from lexinform.models.source_omissions import SenateOmissionOwner, SourceReferenceOmissionOwner
 from lexinform.ports import (
     AnalysisBackend,
@@ -187,6 +189,7 @@ from lexinform.services.document_history import (
 )
 from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
 from lexinform.services.input_receipts import (
+    capture_loose_rcl_input_receipt,
     capture_primary_input_receipt,
     capture_secondary_input_receipt,
     enrich_primary_input_intent,
@@ -398,6 +401,7 @@ class _Loaded:
     selection: DocumentSelection = DocumentSelection()
     projection: TextProjection | None = None
     source_read: SourceReadCapture | None = None
+    loose_rcl_projection: bool = False
 
     @property
     def digest(self) -> str | None:
@@ -474,7 +478,7 @@ class _Prepared:
     triage_memo_key: str | None = None
     from_batch: bool = False
     source_read: SourceReadCapture | None = None
-    input_receipt: PrimaryInputReceipt | None = None
+    input_receipt: PrimaryInputReceipt | LooseRclInputReceipt | None = None
     local_read: LocalReadTiming | None = None
 
 
@@ -3129,7 +3133,12 @@ class AnalysisService:
             )
             receipt = None
             try:
-                receipt = capture_primary_input_receipt(
+                capture_receipt = (
+                    capture_loose_rcl_input_receipt
+                    if loaded.loose_rcl_projection
+                    else capture_primary_input_receipt
+                )
+                receipt = capture_receipt(
                     request, loaded.selection, fitted.projection, loaded.source_read
                 )
             except Exception:
@@ -3567,7 +3576,19 @@ class AnalysisService:
                 prepared.local_read,
                 discovery_at=bill.first_seen_at if intent.request.call_kind == "analysis" else None,
             )
-            self._repo.save_batch_intent(intent)
+            try:
+                self._repo.save_batch_intent(intent)
+            except PreparedInputParentError:
+                if not isinstance(intent.meta.prepared_input_receipt, LooseRclInputReceipt):
+                    raise
+                log.warning("Prepared input receipt omitted (parents_unavailable)")
+                self._repo.save_batch_intent(
+                    intent.model_copy(
+                        update={
+                            "meta": intent.meta.model_copy(update={"prepared_input_receipt": None})
+                        }
+                    )
+                )
             self._repo.set_status(bill.term, bill.number, BillStatus.BATCH_PENDING)
         return True
 
@@ -3737,6 +3758,7 @@ class AnalysisService:
         )
         budgeted = self._budget.apply(combined, self._keywords.spans(combined))
         projection = None
+        loose_rcl_projection = False
         if amendments and trimmed.projection is not None and budgeted.projection is not None:
             amended = amended_input_projection(file.selection, trimmed.projection, combined)
             if amended is not None:
@@ -3748,6 +3770,7 @@ class AnalysisService:
                 assembly = loose_normative_input_projection(document, file.selection, text)
                 if assembly is not None:
                     projection = budgeted.projection.compose(trimmed.projection.compose(assembly))
+                    loose_rcl_projection = True
         source: TextSource = "documents" if document.kind == "rcl" else "pdf"
         return _Loaded(
             budgeted.text,
@@ -3758,6 +3781,7 @@ class AnalysisService:
             document=document,
             selection=file.selection,
             projection=projection,
+            loose_rcl_projection=loose_rcl_projection,
         )
 
     def _load_scan(

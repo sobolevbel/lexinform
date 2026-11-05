@@ -9,6 +9,7 @@ from datetime import datetime
 
 from lexinform.adapters.computation_history import read_computation_result
 from lexinform.adapters.extraction_history import read_extraction_result
+from lexinform.errors import PreparedInputParentError
 from lexinform.json_storage import read_json
 from lexinform.models import (
     AmendmentInputReceipt,
@@ -244,7 +245,10 @@ def validate_loose_rcl_intent(connection: sqlite3.Connection, intent: BatchInten
         meta.prepared_input_receipt, LooseRclInputReceipt
     ):
         raise ValueError("Loose RCL receipt requires primary metadata")
-    _loose_rcl_parents(connection, meta.prepared_input_receipt, meta.selection)
+    try:
+        _loose_rcl_parents(connection, meta.prepared_input_receipt, meta.selection)
+    except ValueError as exc:
+        raise PreparedInputParentError(str(exc)) from None
 
 
 def validate_loose_rcl_item(connection: sqlite3.Connection, item: LlmBatchItem) -> None:

@@ -15,11 +15,13 @@ from lexinform.models import (
     BillStatus,
     DocumentSelectionRecord,
     PrimaryInputReceipt,
+    SelectionExtractionReference,
     SourceObservation,
     TextDocument,
 )
+from lexinform.models.input_receipts import LooseRclInputReceipt
 from lexinform.services import analysis as module
-from tests.harness import World, print_url
+from tests.harness import World, print_url, rcl_document, rcl_folder, rcl_project, rcl_stage
 from tests.scenario.test_extraction_source_history import reader
 from tests.unit.test_doc_note_extraction import source_notes
 from tests.unit.test_doc_note_physical_parts import ole_document
@@ -286,3 +288,50 @@ def test_native_doc_note_metadata_preserves_paid_request_memo_and_same_byte_alia
         current.gateway.files[alias.url] = data
         assert current.analysis.reanalyze_bill(current.bill("4100"), alias) is None
         assert len(current.batch.submitted) == 1
+
+
+@pytest.mark.parametrize("missing_parent", [False, True])
+def test_loose_rcl_receipt_is_saved_only_with_its_recorded_parents(
+    missing_parent: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    current = World(extractor=reader(), batch_only=True, text_prefilter=False)
+    main = rcl_document(1, "Projekt ustawy.docx")
+    annex = rcl_document(2, "Załącznik do ustawy.docx")
+    project = rcl_project(
+        stages=(rcl_stage(1, "Projekt", "reached", rcl_folder(1, "Projekt", main, annex)),),
+        consultation=None,
+    )
+    current.add_rcl_project(project)
+    current.rcl.files.update(
+        {
+            main.url: docx(TEXT + "\nUZASADNIENIE\n" + "Treść uzasadnienia. " * 40),
+            annex.url: docx(
+                "Załącznik do ustawy\n" + "Wniosek składa się w terminie 30 dni. " * 30
+            ),
+        }
+    )
+    if missing_parent:
+
+        def omit_link(reference: SelectionExtractionReference) -> None:
+            pass
+
+        monkeypatch.setattr(current.repo, "save_selection_extraction", omit_link)
+
+    current.run(track=False)
+
+    (batch,) = current.repo.list_open_llm_batches()
+    (item,) = current.repo.list_llm_batch_items(batch.batch_id)
+    receipt = item.meta.prepared_input_receipt
+    if missing_parent:
+        assert receipt is None
+    else:
+        assert isinstance(receipt, LooseRclInputReceipt), (
+            "the exact loose bundle and every extracted part were corroborated"
+        )
+        assert len(receipt.source_parts) == 2
+        assert receipt.request_sha256 == current.batch.submitted[0].payload_sha256
+    assert current.bill(f"RCL/{project.id}").status is BillStatus.BATCH_PENDING
+    dumped = current.repo.dump()
+    current.repo.restore(dumped)
+    assert current.repo.list_llm_batch_items(batch.batch_id) == [item]
+    assert current.repo.dump() == dumped
