@@ -1,0 +1,29 @@
+{
+  "core_exact": true,
+  "files": 1825,
+  "observations": 816,
+  "counts": {
+    "8/selected": 203,
+    "mutation_probes": 4903,
+    "8/scan_pending_verification": 5,
+    "8/no_unique_stage_date": 1,
+    "9/selected": 333,
+    "9/not_amendments": 90,
+    "9/scan_pending_verification": 14,
+    "10/selected": 165,
+    "10/scan_pending_verification": 4,
+    "10/no_unique_stage_date": 1
+  },
+  "baseline_sha256": "16a8c1cfce919ddd17bdd08ad04102a1f2e9c830263c906e5f43320fe63cd128",
+  "candidate_sha256": "f2ff012ed5444cbb568a3f34a688fa8499d5015dbc67b5eadc9c9121883451f1",
+  "old_code": {
+    "src/lexinform/senate_documents.py": "419cf36eb90542c5349a0762a4461eeccc67e42debbd44c514d8d2f2808eaade",
+    "src/lexinform/services/senate_documents.py": "b34c494b9209a3a1ad526677af033e0735cf8d2a6dbe025a02cbd77a4f7a4336",
+    "src/lexinform/services/analysis.py": "91426b018d4c83b1b0a55e87321945a873468073dd9a2a795f0a29fba2769bbc"
+  },
+  "new_code": {
+    "src/lexinform/senate_documents.py": "419cf36eb90542c5349a0762a4461eeccc67e42debbd44c514d8d2f2808eaade",
+    "src/lexinform/services/senate_documents.py": "b34c494b9209a3a1ad526677af033e0735cf8d2a6dbe025a02cbd77a4f7a4336",
+    "src/lexinform/services/analysis.py": "8eb0991435a04d25ee8f2612d516abd44ac9c35fdc48da430781499590bc6b55"
+  }
+}

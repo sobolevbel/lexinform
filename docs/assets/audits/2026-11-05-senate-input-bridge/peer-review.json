@@ -1,0 +1,19 @@
+{
+  "evidence_reviewed": [
+    "candidate/candidate.patch",
+    "candidate/source-pins.json",
+    "candidate/HANDOFF.md",
+    "candidate/qualification.json"
+  ],
+  "findings": [],
+  "independent_tests_run": false,
+  "network_used": false,
+  "patch_sha256": "ab5a2c2d03390f042ecc0a673e09cc26b4b05a175cc3e662efee9d12558edffd",
+  "scope": "Independent read-only review of exact frozen Senate bridge: actual captured read, unchanged admission/budget, raw-file and text identities, exact metadata-selection hydration, no extra IO, prefix/scan/resumed unknowns and optional-error/cancellation boundaries.",
+  "source_sha256": {
+    "src/lexinform/services/analysis.py": "8eb0991435a04d25ee8f2612d516abd44ac9c35fdc48da430781499590bc6b55",
+    "tests/unit/test_senate_input_capture.py": "20d458782604b838c6a30c36a6d4c8663b35d6241b2e593a72aecaf4d2274e3f"
+  },
+  "stage": "J233",
+  "verdict": "clear"
+}

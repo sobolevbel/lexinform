@@ -35,3 +35,5 @@ and submitting intents do not establish natural modern amendment coverage. DA5 r
 [source pins](source-pins.json), [independent review](peer-review.json).
 
 Previous release: [exact CI and relay verification](previous-release.json).
+
+Actual writer release: [exact CI and relay verification](release.json), commitf050d68c.

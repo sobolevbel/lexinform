@@ -1,0 +1,17 @@
+{
+  "preparation_paths": 701,
+  "core_exact": true,
+  "counts": {
+    "independent_parents_checked": 636,
+    "retained": 636,
+    "stored_identity": 636,
+    "waiting": 701,
+    "unstamped": 65,
+    "stored_prefix": 65
+  },
+  "baseline_sha256": "860806b77348790677e06096b660925e4e6516900af1998cbc535a67cb4f3e59",
+  "candidate_sha256": "4abcdd63d63c7ff02de66110ba857bea9f79aed2428c6f91256ca9ec202c23a8",
+  "source_freeze_exact": true,
+  "provider_calls": 0,
+  "historical_paid_input_linkage": "not_assessed"
+}

@@ -10451,3 +10451,30 @@ relay41945453873 verified. DA5 remains partial; 74 total/43 complete/6 explicit 
 [Report](../assets/audits/2026-11-05-amendment-input-writer/report.md),
 [qualification](../assets/audits/2026-11-05-amendment-input-writer/qualification.json),
 [corpus proof](../assets/audits/2026-11-05-amendment-input-writer/corpus-proof.json).
+
+<a id="j233"></a>
+
+## J233 — Senate full-text identity input bridge
+
+5 November 2026. Reuse the actual verified Senate loaded file and source capture after unchanged
+identity/budget checks. Hydrate only the exact captured selection when raw SHA, text SHA, bounds
+and selection identity agree. Shared amendment profile persists prospective receipts. No second
+read, source-policy change or offset inference for removed cover prefixes. Scans, prefix variants
+and resumed contexts remain unstamped; cancellation and original validation failures propagate.
+
+Root public preparation replay covers all 701 selected text inputs/39,243,213 raw bytes against
+the frozen pre-code baseline: request/context/source observation/download order/preparation count
+exact. All 636 identity receipt parents checked independently; 65 prefix paths remain unmapped.
+The stage replay preserves 1,825 files/816 observations/4,903 mutation probes. Excluded: 23 scans,
+two cases without a unique date, 90 non-amendments. Prior context is controlled fixture data;
+no provider call, historical paid-intent reconstruction or independent legal gold claim.
+
+Eleven new unit cases/no scenarios; 66 root focused. Full gate: 8,354 tests/289.60s/92%, mypy730,
+Ruff/format green; all799 source/config pins exact. Pinned state: all508 bills/201 changes public
+serialization, full default doctor, double restore and DB hash exact. J232 f050d68c exact
+CI41946923557/relay41947818432 verified, including45s health/timer. DA5 remains partial;
+74 total/43 complete/6 explicit N/A/25 applicable open.
+
+[Report](../assets/audits/2026-11-05-senate-input-bridge/report.md),
+[qualification](../assets/audits/2026-11-05-senate-input-bridge/qualification.json),
+[corpus proof](../assets/audits/2026-11-05-senate-input-bridge/corpus-proof.json).

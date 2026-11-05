@@ -69,6 +69,7 @@ from lexinform.models import (
     DocumentReview,
     DocumentReviewRecord,
     DocumentSelection,
+    DocumentSelectionRecord,
     JointBillDescription,
     JointComparison,
     JointContext,
@@ -161,7 +162,11 @@ from lexinform.services.computation_reuse import (
     retained_secondary,
 )
 from lexinform.services.cost import CostLedger
-from lexinform.services.document_history import SourceReadCapture, record_source_read
+from lexinform.services.document_history import (
+    DocumentSourceRead,
+    SourceReadCapture,
+    record_source_read,
+)
 from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
 from lexinform.services.input_receipts import (
     capture_primary_input_receipt,
@@ -180,7 +185,7 @@ from lexinform.services.senate_history import SenateInspectionCollector
 from lexinform.services.senate_inspection import SenateInspectionCapture
 from lexinform.services.source_omissions import SourceOmissionInput
 from lexinform.source_graph_admission import source_graph_url_decisions
-from lexinform.text_projection import TextProjection
+from lexinform.text_projection import SourcePiece, TextProjection, project_pieces
 
 log = logging.getLogger(__name__)
 
@@ -2262,12 +2267,13 @@ class AnalysisService:
                 raise ValueError("Полный текст поправок комиссии не помещается в бюджет текста")
             return loaded
 
-        def observe(sha256: str | None, pages: int, text: str | None) -> None:
+        def observe(sha256: str | None, pages: int, text: str | None) -> SourceReadCapture | None:
             source = resolution_source_read(
                 self._loader, document, sha256=sha256, pages=pages, text=text
             )
             if source is not None:
                 self._record_source_read(bill, source)
+            return source
 
         if document.senate is not None and document.senate.scan:
             scan = self._loader.load_scan(document.url, cover_letter=False)
@@ -2281,15 +2287,46 @@ class AnalysisService:
             ):
                 raise ValueError("Полный скан постановления не прочитан или файл изменился")
             return _Loaded("", False, "scan", scan=scan)
-        text = verified_senate_text(
-            self._loader,
-            document,
-            on_read=lambda loaded: observe(loaded.sha256, loaded.pages, loaded.text),
-        )
+        captured: tuple[LoadedFile, SourceReadCapture | None] | None = None
+
+        def observe_file(file: LoadedFile) -> None:
+            nonlocal captured
+            captured = file, observe(file.sha256, file.pages, file.text)
+
+        text = verified_senate_text(self._loader, document, on_read=observe_file)
         budgeted = self._budget.apply(text, self._keywords.spans(text))
         if budgeted.truncated:
             raise ValueError("Полный текст поправок Сената не помещается в бюджет текста")
-        return _Loaded(text, False, "pdf", whole=text)
+        loaded = _Loaded(text, False, "pdf", whole=text)
+        with suppress(Exception):
+            if captured is not None:
+                file, source = captured
+                if (
+                    file.text == text
+                    and isinstance(source, DocumentSourceRead)
+                    and len(source.selection.selection.parts) == 1
+                ):
+                    original = source.selection.selection
+                    part = original.parts[0]
+                    if (
+                        part.sha256 == file.sha256
+                        and part.url == document.url
+                        and not part.members
+                        and part.text_start == 0
+                        and part.text_end in (None, len(text))
+                        and part.text_sha256 == hashlib.sha256(text.encode()).hexdigest()
+                    ):
+                        selection = original.model_copy(
+                            update={"parts": (part.model_copy(update={"text": text}),)}
+                        )
+                        if DocumentSelectionRecord.from_selection(selection) == source.selection:
+                            loaded = replace(
+                                loaded,
+                                selection=selection,
+                                projection=project_pieces(text, (SourcePiece(text, 0),)),
+                                source_read=source,
+                            )
+        return loaded
 
     def amendments_context(
         self,
