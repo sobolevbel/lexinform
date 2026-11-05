@@ -102,3 +102,4 @@ class AmendmentInputAvailability(BaseModel):
     root_content_id: str | None = None
     result_id: str | None = None
     snapshot: AmendmentInputSnapshot | None = None
+    reference: AmendmentInputRef | None = None

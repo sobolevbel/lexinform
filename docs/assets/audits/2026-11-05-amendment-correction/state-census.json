@@ -1,0 +1,12 @@
+{
+  "state_sha": "13440124b6f38f1124beb9b99f35a7c8a227c08b",
+  "source_dump_sha256": "baee693eefec358f018cf8265096d9d5acca1eaba2d5f9bfa4afd363166c4bec",
+  "sent_status_updates": 65,
+  "counts": {
+    "no_frozen_change": 12,
+    "amendment_roots_examined": 6,
+    "root_history_unavailable": 5,
+    "legacy_input_unavailable": 1
+  },
+  "dump_unchanged": true
+}

@@ -50,6 +50,7 @@ from lexinform.models import (
     AMENDMENT_SOURCES,
     FULL_TEXT_SOURCES,
     SUPPLEMENT_SOURCES,
+    AmendmentInputAvailability,
     AmendmentInputReceipt,
     AmendmentInputRef,
     AmendmentInputSnapshot,
@@ -359,6 +360,20 @@ class _ReviewRead:
     local_read: LocalReadTiming | None = None
 
 
+def _estimate_document_input_cost(
+    chars: int,
+    pages: int | None,
+    input_price: float,
+    page_tokens: int,
+    tier: tuple[int, float] | None,
+) -> float:
+    if pages is not None:
+        return tiered(
+            estimate_scan_cost(pages, input_price, page_tokens), pages * page_tokens, tier
+        )
+    return tiered(estimate_input_cost(chars, input_price), int(chars / CHARS_PER_TOKEN), tier)
+
+
 @dataclass(frozen=True)
 class _Loaded:
     """What a document turned into for the model: its text, or its pages when it has none.
@@ -403,11 +418,13 @@ class _Loaded:
         tier: tuple[int, float] | None = None,
     ) -> float:
         """What the model will charge to read it, before it is asked."""
-        if self.scan is not None:
-            cost = estimate_scan_cost(self.scan.pages, input_price, page_tokens)
-            return tiered(cost, self.scan.pages * page_tokens, tier)
-        cost = estimate_input_cost(len(self.text), input_price)
-        return tiered(cost, int(len(self.text) / CHARS_PER_TOKEN), tier)
+        return _estimate_document_input_cost(
+            len(self.text),
+            self.scan.pages if self.scan is not None else None,
+            input_price,
+            page_tokens,
+            tier,
+        )
 
     def measure(self, tokens: int | None) -> str:
         """What the price was worked out from, for the record a skipped bill keeps."""
@@ -1302,6 +1319,7 @@ class AnalysisService:
         proposal: str | None = None,
         recommendation: TextDocument | None = None,
         force_id: str = "",
+        original_input: AmendmentInputAvailability | None = None,
     ) -> Waiting | Publication:
         if not bill.has_process:
             raise ValueError("Amendment corrections require a Sejm process")
@@ -1312,14 +1330,25 @@ class AnalysisService:
         if pending is not None:
             return Waiting(pending)
         assert bill.analysis is not None
-        with optional_read_timing(self._loader, self._clock.now) as capture:
-            loaded = self._load_amendments_text(bill, document)
-            if not loaded.text.strip() and loaded.scan is None:
-                raise ValueError("Полный текст поправок не извлечён; исправление не запущено")
-            if self._too_expensive_to_digest(loaded):
+        loaded = None
+        local_read = None
+        if original_input is not None and original_input.snapshot is not None:
+            context = original_input.snapshot.context
+            if context.number != bill.number:
+                raise ValueError("invalid_amendment_input")
+            if self._too_expensive_to_digest(context):
                 raise ValueError("Разбор поправок превышает лимит стоимости документа")
-            context = self._amendments_context_of(bill, document, loaded, proposal, recommendation)
-        local_read = read_timing(capture)
+        else:
+            with optional_read_timing(self._loader, self._clock.now) as capture:
+                loaded = self._load_amendments_text(bill, document)
+                if not loaded.text.strip() and loaded.scan is None:
+                    raise ValueError("Полный текст поправок не извлечён; исправление не запущено")
+                if self._too_expensive_to_digest(loaded):
+                    raise ValueError("Разбор поправок превышает лимит стоимости документа")
+                context = self._amendments_context_of(
+                    bill, document, loaded, proposal, recommendation
+                )
+            local_read = read_timing(capture)
         content_key = _memo_key(bill, "amendments", context)
         revisions = self._repo.list_amendment_revisions(target.publication_id)
         latest = revisions[0] if revisions else None
@@ -1391,7 +1420,8 @@ class AnalysisService:
                             loaded,
                         ),
                         local_read,
-                    )
+                    ),
+                    original_input=original_input,
                 )
         except Exception:
             self._ledger.release(request.estimated_cost_usd)
@@ -1759,7 +1789,9 @@ class AnalysisService:
                 log.warning("Secondary input receipt omitted (capture_failed)")
         return intent
 
-    def _save_secondary_intent(self, intent: BatchIntent) -> None:
+    def _save_secondary_intent(
+        self, intent: BatchIntent, *, original_input: AmendmentInputAvailability | None = None
+    ) -> None:
         question = intent.request.question
         request_sha256 = intent.request.payload_sha256
         if (
@@ -1774,11 +1806,21 @@ class AnalysisService:
             question_json=canonical_json(question.model_dump(mode="json"))
         )
         receipt = intent.meta.prepared_input_receipt
+        lineage_result_id = None
+        if (
+            original_input is not None
+            and original_input.snapshot == snapshot
+            and original_input.reference is not None
+            and original_input.reference.lineage_receipt is not None
+        ):
+            receipt = original_input.reference.lineage_receipt
+            lineage_result_id = original_input.result_id
         reference = AmendmentInputRef(
             snapshot_id=snapshot.snapshot_id,
             question_sha256=snapshot.question_sha256,
             request_sha256=request_sha256,
             lineage_receipt=receipt if isinstance(receipt, AmendmentInputReceipt) else None,
+            lineage_result_id=lineage_result_id,
         )
         bound = intent.model_copy(
             update={"meta": intent.meta.model_copy(update={"amendment_input_ref": reference})}
@@ -2746,7 +2788,7 @@ class AnalysisService:
                     return candidate
         return key
 
-    def _too_expensive_to_digest(self, loaded: _Loaded) -> bool:
+    def _too_expensive_to_digest(self, loaded: _Loaded | AmendmentsContext) -> bool:
         """The per-bill cost limit applies to a filed document too, and here it is the whole
         answer rather than a reason to skip the bill: a reader who is told what the document is
         and where it lies has lost little. A bill's own text is worth its price; the assessment
@@ -2758,7 +2800,13 @@ class AnalysisService:
         if self._options.require_batch:
             price *= 0.5
         return (
-            loaded.estimate(price, self._options.scan_page_tokens, self._options.long_input_tier)
+            _estimate_document_input_cost(
+                len(loaded.text),
+                loaded.scan.pages if loaded.scan is not None else None,
+                price,
+                self._options.scan_page_tokens,
+                self._options.long_input_tier,
+            )
             > limit
         )
 

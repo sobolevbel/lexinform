@@ -11272,3 +11272,13 @@ preserved. Correction source reuse remains a separate step.
 The deployed v68 reader preceded capture. Pinned offline replay and 19 controls passed.
 Whole-dump size and row parity were checked at 31 points across the collect and cleanup
 lifecycle. [Scope, storage measurements and evidence](../assets/audits/2026-11-05-amendment-input-capture/report.md).
+
+<a id="j262"></a>
+
+## J262 — reuse the original amendment question
+
+Known single-message roots use their saved question before source selection. The same prepared
+question can retain old source lineage. Legacy roots still fetch their source and later
+revisions cannot fill a missing root. Correction and cost guards continue to apply.
+
+[Offline qualification and prior release](../assets/audits/2026-11-05-amendment-correction/report.md).

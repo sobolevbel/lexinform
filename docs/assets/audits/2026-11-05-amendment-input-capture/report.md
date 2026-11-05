@@ -34,3 +34,5 @@ failed request or cancelled queue returned to the baseline SQL and gzip size aft
 SQLite retains freed pages for reuse. Pending and unknown delivery retained the failed input,
 as intended. These are whole-dump measurements for the fixture. Successful unique text adds
 retained data over time and this replay establishes no universal size cap.
+
+[Exact CI and relay verification](release.json).

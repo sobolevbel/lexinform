@@ -1,0 +1,113 @@
+{
+  "driver_sha256": {
+    "controls.py": "aaac82409ce720b5be9cea2cb3330d49e43fe85da3dce72a9876d265cb6c593c",
+    "control_fixtures.py": "786af2d803c6b5b23655093032c8f346bf498beaf373c0cf40ff8a074c98a901",
+    "replay_paired.py": "c5b8e560608cdab083a38af4eed697f4940f4f1ff9a1ccbd3500ecb08965fc70"
+  },
+  "j253_control_core_equal": true,
+  "controls": 19,
+  "correction_roots": [
+    {
+      "case": "known-root",
+      "fixture": "technical retained response/physical send over actual prepared native question",
+      "root_available": "available",
+      "root_reason": null,
+      "downloads": 0,
+      "source_read_calls": 0,
+      "gateway_calls": [],
+      "request_sha256": "c0eef8f7525220f38ee97907cd3e2daf8f015b2781bb1d8a839bf81b725dc9d3",
+      "question_sha256": "af39fad1779c5262a975623c3656099968884d130ec73507cd44af51701e0386",
+      "prepare_calls": 1,
+      "root_unchanged": true,
+      "queue_cost_core_sha256": "9ace737768550fee9b3c6096a4e53a13cec94e68464b5ca4918addabe51da502",
+      "budget": {
+        "events": [
+          [
+            "reserve",
+            0.083816,
+            true
+          ]
+        ],
+        "spent_usd": 0.0,
+        "exhausted": false,
+        "calls": []
+      },
+      "outcome_type": "CommandOutcome"
+    },
+    {
+      "case": "legacy-root",
+      "fixture": "technical retained response/physical send over actual prepared native question",
+      "root_available": "unavailable",
+      "root_reason": "legacy_input_unavailable",
+      "downloads": 1,
+      "source_read_calls": 2,
+      "gateway_calls": [
+        "get_print:3213"
+      ],
+      "request_sha256": "c0eef8f7525220f38ee97907cd3e2daf8f015b2781bb1d8a839bf81b725dc9d3",
+      "question_sha256": "af39fad1779c5262a975623c3656099968884d130ec73507cd44af51701e0386",
+      "prepare_calls": 1,
+      "root_unchanged": true,
+      "queue_cost_core_sha256": "4f38f435e0c96aba99f3aa83cb0c331a5125e377a2f547c11f979774861b09eb",
+      "budget": {
+        "events": [
+          [
+            "reserve",
+            0.083816,
+            true
+          ]
+        ],
+        "spent_usd": 0.0,
+        "exhausted": false,
+        "calls": []
+      },
+      "outcome_type": "CommandOutcome"
+    },
+    {
+      "case": "legacy-root-later",
+      "fixture": "technical retained response/physical send over actual prepared native question",
+      "root_available": "unavailable",
+      "root_reason": "legacy_input_unavailable",
+      "downloads": 1,
+      "source_read_calls": 2,
+      "gateway_calls": [
+        "get_print:3213"
+      ],
+      "request_sha256": "c0eef8f7525220f38ee97907cd3e2daf8f015b2781bb1d8a839bf81b725dc9d3",
+      "question_sha256": "af39fad1779c5262a975623c3656099968884d130ec73507cd44af51701e0386",
+      "prepare_calls": 1,
+      "root_unchanged": true,
+      "queue_cost_core_sha256": "a79fbdba6420fcfbb6388362d464db23f634cb85c34cca1b072e06997001cd10",
+      "budget": {
+        "events": [
+          [
+            "reserve",
+            0.083816,
+            true
+          ]
+        ],
+        "spent_usd": 0.0,
+        "exhausted": false,
+        "calls": []
+      },
+      "outcome_type": "CommandOutcome"
+    }
+  ],
+  "j253_native": {
+    "actual_returned_prepares": 3,
+    "baseline_core_equal": true,
+    "network_calls": 0,
+    "provider_calls": 0,
+    "raw_pins": {
+      "files/8b6ac745e45cb061bb3ee0528d78880711166fbd83388d0548073af32c906352.pdf": {
+        "sha256": "60616640944bb40ab091c1963e75e6db97da26b7d9b8715b029cb448122ed81a",
+        "bytes": 1259217
+      },
+      "files/a32e476af90d9970a8487e0cbc1f5baea224443cdec183295948efd798dbd34d.docx": {
+        "sha256": "3fb01ff9790b8b4e5c494644ed8ca6fb9855767ed3302434a4d630fd7caa2a87",
+        "bytes": 59451
+      }
+    },
+    "source_unchanged": true
+  }
+}

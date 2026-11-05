@@ -21,6 +21,7 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, SejmGateway
 from lexinform.senate_documents import adoption_before_senate
+from lexinform.services.amendment_input_history import original_amendment_input
 from lexinform.services.analysis import AnalysisService, Waiting
 from lexinform.services.content_history import record_publication_content, restore_content_delivery
 
@@ -141,15 +142,26 @@ class AmendmentsService:
             stage = amendments_stage(change.new_stages)
             if stage is None:
                 raise ValueError("В сообщении нет стадии с поправками")
-            source = amendments_source(
-                self._gateway,
-                self._analysis,
-                stage,
-                snapshot.stages,
-                term=bill.term,
-                titles=(snapshot.summary.title,),
-                owner=bill,
-            )
+            retained = original_amendment_input(self._repo, original)
+            source: AmendmentsSource | None
+            if retained.snapshot is not None:
+                if change.amendments is None:
+                    raise ValueError("invalid_amendment_input")
+                source = AmendmentsSource(
+                    TextDocument(
+                        url=change.amendments.source_url, kind=change.amendments.source_kind
+                    )
+                )
+            else:
+                source = amendments_source(
+                    self._gateway,
+                    self._analysis,
+                    stage,
+                    snapshot.stages,
+                    term=bill.term,
+                    titles=(snapshot.summary.title,),
+                    owner=bill,
+                )
             if source is None:
                 raise ValueError("Полный текст поправок Сената не подтверждён по содержимому")
             saved = original.delivery
@@ -180,6 +192,7 @@ class AmendmentsService:
                 proposal=source.proposal,
                 recommendation=source.recommendation,
                 force_id=force_id,
+                original_input=retained if retained.snapshot is not None else None,
             )
             if isinstance(result, Waiting):
                 return self._waiting_outcome(bill, original.id, result)

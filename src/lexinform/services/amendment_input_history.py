@@ -61,4 +61,5 @@ def original_amendment_input(
         root_content_id=root.content_id,
         result_id=result.result_id,
         snapshot=retained,
+        reference=reference,
     )

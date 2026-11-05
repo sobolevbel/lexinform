@@ -403,6 +403,7 @@ def test_native_root_availability_survives_cleanup_without_current_bill_or_sourc
         first.state == "available"
         and first.snapshot == value
         and first.result_id == result.result_id
+        and first.reference == result.amendment_input_ref
     )
     case.repo.prune_history(
         before=NOW + dt.timedelta(days=181), memo_before=NOW + dt.timedelta(days=181)
