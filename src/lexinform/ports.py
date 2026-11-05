@@ -91,6 +91,7 @@ from lexinform.models import (
     ReadyAnalysis,
     ResultApplicabilityObservation,
     ResultApplication,
+    ResultApplicationTarget,
     ReviewPurpose,
     ReviewSource,
     ReviewWork,
@@ -785,6 +786,10 @@ class BillRepository(Protocol):
     def get_primary_projection_application(
         self, result_id: str, term: int, number: str, generation: int
     ) -> ResultApplication | None: ...
+    def find_projection_application_ids(
+        self, result_id: str, target: ResultApplicationTarget
+    ) -> tuple[int, ...]: ...
+
     def list_result_applications(self, term: int, number: str) -> list[ResultApplication]: ...
 
     def save_applicability_observation(

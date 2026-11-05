@@ -1,0 +1,12 @@
+{
+  "root_review": "root-review.json",
+  "root_focused": 94,
+  "root_full_gate": "passed:8584tests,mypy743,Ruff812,all812pins exact",
+  "commit": null,
+  "CI": null,
+  "deploy": null,
+  "reader_deploy_required_before_writer": true,
+  "root_state_proof": "root-state-proof.json",
+  "root_ast_proof": "root-ast-proof.json",
+  "new_cases": "case-delta.json"
+}

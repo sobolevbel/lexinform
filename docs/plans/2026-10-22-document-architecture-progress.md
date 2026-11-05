@@ -10658,3 +10658,40 @@ DA10.4 remain open; no checkbox closes.
 [qualification](../assets/audits/2026-11-05-local-timing-off-baseline/qualification.json),
 [root integration proof](../assets/audits/2026-11-05-local-timing-off-baseline/integration-proof.json),
 [compressed evidence](../assets/audits/2026-11-05-local-timing-off-baseline/artifacts.json).
+
+
+<a id="j239"></a>
+
+## J239 — explicit amendment application-reference reader A
+
+5 November 2026. Reader stage only: omitted-None `amendment-projections-v1` interprets real
+positive SQL `result_applications.id` values for frozen single-message amendment originals and
+revisions. Existing unprofiled integers stay opaque and byte-stable; no receipt creation,
+retro-enrichment, schema migration or runtime producer change. DA7.1 and DA7.5 remain partial;
+prospective capture needs reader deployment followed by J242 writer B.
+
+One shared adapter validates strict application SQL/JSON, retained result identity/purpose,
+frozen change computation IDs and known request SHA, exact event/publication target and known
+physical plan/binding. It compares no current Bill, answer/title/time or paid/application owner.
+Retained deleted physical targets and cleaned payloads remain availability unknown; strict new
+save/bind admission is unchanged. Public narrow lookup returns validated actual IDs; paginated
+history renders at most two known refs and an omitted count, without presenting opaque integers
+as verified SQL references.
+
+27 new unit cases and250 focused cases pass; strict mypy8/Ruff/format green. Tests cover
+original/revision/supplement, display differences, foreign/rehome, SQL/result/target/JSON
+corruption, duplicates, cleanup/deleted targets, atomic restore and bounded public display.
+Existing306 repository SQL call ASTs and all service source bytes remain exact. Existing fresh-b
+reader proof preserves all table rowids/data, old JSON/IDs, default doctor, complete dump and
+double restore. Baseline/candidate25,816,929SQL bytes and5,208,775gzip bytes are exact:0/0 reader
+overhead. Modern chains here are unit fixtures; this is not prospective writer storage evidence.
+
+Root independent review found no issues;94 focused and8584 full tests/297.169s/92%coverage
+passed, strict mypy743/Ruff/format812green, all812 source/config pins exact. Root state replay
+and306 SQL AST checks pass;27newunits/0newscenarios/0removed cases. Previous f7ee12c0 release
+CI41970157905/relay41970627223 actually verified. This reader release verification follows publication.
+
+[Report](../assets/audits/2026-11-05-application-reference-reader/report.md),
+[qualification](../assets/audits/2026-11-05-application-reference-reader/qualification.json),
+[source pins](../assets/audits/2026-11-05-application-reference-reader/source-pins.json),
+[compatibility evidence](../assets/audits/2026-11-05-application-reference-reader/evidence.json).

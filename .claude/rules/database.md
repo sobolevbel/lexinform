@@ -44,3 +44,5 @@ Schema, tables and what each version added: `docs/reference/database.md`; retent
 
 - Extraction history stores bounded metadata and exact source links, never block bodies or a raw-retention promise; missing origins and truncated summaries stay explicit.
 - Physical inventory is observed metadata, not complete archive exploration; root-owned captures retain a shared code/dependency/options recipe even without an extraction result, and readers never replay walker or selection policy.
+
+- Editorial application-reference profiles validate retained receipt IDs without adding tables or backfilling legacy values; see the editorial-history contract in `operations.md`.

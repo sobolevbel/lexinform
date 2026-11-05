@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from lexinform.adapters.content_applications import verify_content_applications
 from lexinform.adapters.content_history import (
     ContentVersionRowError,
     card_current_content,
@@ -98,6 +99,10 @@ def _read_history(
                 continue
             versions[version.content_id] = version
     for version in versions.values():
+        try:
+            verify_content_applications(db, version)
+        except ValueError:
+            findings.add("content_application_reference_invalid", version.content_id)
         try:
             verify_content_source(db, version)
         except ValueError:

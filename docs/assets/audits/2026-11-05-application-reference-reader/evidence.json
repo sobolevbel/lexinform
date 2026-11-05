@@ -1,0 +1,13 @@
+{
+  "file": "reader-proofs.json.gz",
+  "sha256": "a3462dd39ddd7c86458100f95552dd0ee460aad74f5b603b537f84620875f714",
+  "uncompressed_bytes": 12372,
+  "baseline_candidate_exact": true,
+  "source_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+  "source_unchanged": true,
+  "reader_only_delta": {
+    "sql_bytes": 0,
+    "gzip_bytes": 0
+  },
+  "scope": "Pinned existing fresh-b database; modern chains are unit fixtures, not prospective natural capture."
+}

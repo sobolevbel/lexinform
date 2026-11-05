@@ -61,3 +61,5 @@ covered here. No plan checkbox or natural lifecycle acceptance closes.
 [input provenance](input-provenance.json), [compatible reader](../2026-11-05-local-timing-reader/report.md).
 
 Actual reader release4f16442: [CI and relay verification](previous-release.json).
+
+Actual f7ee12c0 release: [CI and relay verification](../2026-11-05-application-reference-reader/previous-release.json).

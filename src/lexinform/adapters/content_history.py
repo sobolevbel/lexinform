@@ -3,6 +3,7 @@
 import sqlite3
 from typing import Literal
 
+from lexinform.adapters.content_applications import verify_content_applications
 from lexinform.adapters.content_source_refs import ContentSourceRows
 from lexinform.content_versions import (
     card_confirmation_matches,
@@ -238,6 +239,7 @@ def validate_content_history(connection: sqlite3.Connection) -> None:
                 previous = read_content_version(previous_row) if previous_row is not None else None
                 if previous is None or previous.root_publication_id != value.root_publication_id:
                     raise ValueError("content_predecessor_unavailable")
+            verify_content_applications(connection, value)
             physical_identity = verify_card_content(connection, value, retained=True)
             if value.change_snapshot_id is None:
                 bindings = _query(

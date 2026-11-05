@@ -23,6 +23,10 @@ from lexinform.adapters.candidate_trace_history import (
     validate_candidate_disposition_traces,
 )
 from lexinform.adapters.computation_history import parse_computation_result
+from lexinform.adapters.content_applications import (
+    find_projection_application_ids,
+    verify_content_applications,
+)
 from lexinform.adapters.content_history import (
     card_publication_rows,
     read_content_version,
@@ -182,6 +186,7 @@ from lexinform.models import (
     ReadyAnalysis,
     ResultApplicabilityObservation,
     ResultApplication,
+    ResultApplicationTarget,
     ReviewSource,
     ReviewWork,
     RunMode,
@@ -2199,6 +2204,7 @@ class SqliteBillRepository:
     def save_content_version(self, version: ContentVersion) -> None:
         version = ContentVersion.model_validate_json(version.model_dump_json())
         verify_content_source(self._conn, version)
+        verify_content_applications(self._conn, version, retained=False)
         verify_card_content(self._conn, version)
         for kind, identity in content_snapshot_refs(version):
             snapshot = self.get_content_snapshot(identity)
@@ -2242,6 +2248,7 @@ class SqliteBillRepository:
             return None
         version = read_content_version(row)
         verify_content_source(self._conn, version)
+        verify_content_applications(self._conn, version)
         verify_card_content(self._conn, version, retained=True)
         return version
 
@@ -2270,6 +2277,9 @@ class SqliteBillRepository:
             root.channel_id,
         ):
             raise ValueError("content must belong to the same publication owner")
+        verify_content_applications(
+            self._conn, version, publication_id=publication_id, retained=False
+        )
         plan = publication.delivery
         if (
             plan is None
@@ -3019,6 +3029,11 @@ class SqliteBillRepository:
             raise ValueError("the primary projection key differs from its immutable receipt")
         validate_projected_application(self._conn, application)
         return application
+
+    def find_projection_application_ids(
+        self, result_id: str, target: ResultApplicationTarget
+    ) -> tuple[int, ...]:
+        return find_projection_application_ids(self._conn, result_id, target)
 
     def list_result_applications(self, term: int, number: str) -> list[ResultApplication]:
         return [

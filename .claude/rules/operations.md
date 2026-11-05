@@ -156,6 +156,7 @@ Command reference and the relay: `docs/operator-commands.md`.
 
 - **Editorial content history** survives delivery/memo cleanup; single-message amendments restore the original frozen Bill/change/date, never today's Bill. Versions do not confirm delivery, unknown legacy payload/formatter/language stays unknown, and grouped/multipart/digest refusal remains. Bump `content_history.FORMATTER_VERSION` when changing newly rendered content semantics.
 
+- Profiled amendment application references (`amendment-projections-v1`) name retained SQL receipt IDs and exact frozen event/publication targets; unprofiled integers remain opaque. Missing physical targets affect availability, and no reader creates receipts or enriches old versions.
 - Card editorial history has no synthetic change event; later unbound/uncertain physical editions cannot confirm current content from the original SENT alone, and rollover never rewrites the frozen owner. The nullable-card `continuation-v1` context reuses the canonical continuation projection, retains physical/render history after cleanup and explicitly cannot restore full original semantic context.
 
 - `continuation-v1` freezes the current Bill field/default and projection semantics; deploy a compatible profile reader before changing them, never reinterpret retained compact snapshots through new defaults.

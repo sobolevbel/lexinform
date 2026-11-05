@@ -1,0 +1,16 @@
+{
+  "base": "4f16442ecbcccd16ebb15bcadfb375df306be39b",
+  "patch_sha256": "cc0315c9223cba33075117840d529d8634a561a5ad1facb41dea17c2879ad22a",
+  "files": {
+    "src/lexinform/adapters/content_applications.py": "cdc7c5543bf62d8a9b2eae26c532b9e98a5197163ac1247d1dcb43b8c2a2b81d",
+    "src/lexinform/adapters/content_history.py": "f435171ec82c22d410558ed8e1be001ca0334d39f5258324ab82c75f180d7253",
+    "src/lexinform/adapters/sqlite_repo.py": "75c0df0952cd36e5ade8e347cb1bcd23189474b8f37b92d7b28ee5043690f464",
+    "src/lexinform/adapters/telegram_format.py": "297948789f67f5ffcf4a3785ddb8e898168f1f216b89a63e6c71d78bf74e7cdb",
+    "src/lexinform/models/content.py": "80d581e2bd78b892d0c21ce41dcef4f467008c8e882059c3b28836299db80496",
+    "src/lexinform/ports.py": "9bce727393f5c96deeec3a32f57f6ffa94c99ac294203dd1f044a36545f94741",
+    "tests/unit/test_content_application_refs.py": "1f0e739a9c597459d300d6fc766208cf6c705255ec7e429f2c5ac1a873722ffb",
+    "tools/content_history_doctor.py": "6066a601b4f427da6f5c53c3f2981cd3c6259e1841fbf8601f9dadd3db73a0d6",
+    ".claude/rules/database.md": "c8cef1f94c16b1214179ae730bf6f8f0d792dbdb9409ef8352ce14ade54378dc",
+    ".claude/rules/operations.md": "b31ff78d3a77797b0e08ef01e691ee32890382726d02974371b745730525b2c1"
+  }
+}

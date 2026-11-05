@@ -2217,6 +2217,12 @@ class MessageFormatter:
             lines.append(label + ": " + (", ".join(map(esc, refs[:2])) or "unavailable"))
             if len(refs) > 2 or opaque:
                 lines.append(f"{label} additional/opaque refs: {max(0, len(refs) - 2) + opaque}")
+        if version.application_ids:
+            refs = version.known_application_refs
+            lines.append("applications: " + (", ".join(refs[:2]) or "opaque legacy references"))
+            omitted = max(0, len(refs) - 2) if refs else len(version.application_ids)
+            if omitted:
+                lines.append(f"applications additional/opaque refs: {omitted}")
         if version.source_scope is not None:
             lines.append("Source scope: primary analysis context; amendment source unavailable.")
         if not page.deliveries:

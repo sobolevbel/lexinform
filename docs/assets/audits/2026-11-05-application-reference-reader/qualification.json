@@ -1,0 +1,48 @@
+{
+  "focused_tests": 250,
+  "new_unit_cases": 27,
+  "mypy_owned_files": 8,
+  "ruff": "passed",
+  "format": "passed",
+  "root_apply_check": "passed",
+  "independent_tests": true,
+  "full_gate": {
+    "tests": 8584,
+    "xml_seconds": 297.169,
+    "strict_mypy_files": 743,
+    "source_config_pins": 812,
+    "ruff_format": "passed",
+    "coverage_percent": 92,
+    "source_freeze_exact": true,
+    "new_units": 27,
+    "new_scenarios": 0,
+    "removed_cases": 0,
+    "proof_sha256": {
+      "full.xml": "f8ffeef27c6b3f45286c6c95a1fe0303797a2fc233098a28a658ce6e0187a97e",
+      "full.log": "ead86305b497c8ba7e07551cd367aacebf8eeaea3058ad35f9d2bccde855a049",
+      "source-freeze.json": "11b49808f0d14d665f60d69967b0c44e42ec89592e1ddc991bf400f5e0787d70",
+      "new-cases.json": "a4729e39766a336edd48ca13fcd1556b9c8117faddec57392185fffc21107480",
+      "reader-proof.json": "16acc661655fda85e1602083cddd538bb477bfcd892d204ff8cacdcb0cd806f0",
+      "ast-proof.json": "560b8ccdba17738d2a4bcbf8a6c6d1ebbe417c23c1cae910f5c3a80b640d871c",
+      "root-review.json": "f461849a92e60ff47a7099c18619ae93fc7e1eb7ff20300346047fbe36afb600"
+    }
+  },
+  "network": false,
+  "runtime_producer": "OFF",
+  "schema_changes": 0,
+  "reader_only_sql_bytes_delta": 0,
+  "reader_only_gzip_bytes_delta": 0,
+  "all_table_rowids_data_exact": true,
+  "default_doctor_exact": true,
+  "legacy_JSON_ID_goldens": 3,
+  "existing_version_count": 1,
+  "double_restore_exact": true,
+  "source_DB_unchanged": true,
+  "source_DB_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+  "limitations": [
+    "Prospective modern chains are unit fixtures; runtime writer remains OFF.",
+    "Missing physical evidence is availability unknown; reference integrity does not confirm delivery.",
+    "Legacy unprofiled integer values are opaque and never retro-enriched."
+  ],
+  "root_focused_tests": 94
+}

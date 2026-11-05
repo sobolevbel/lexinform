@@ -1,0 +1,8 @@
+{
+  "existing_repository_SQL_call_ASTs_exact": 306,
+  "repository_class_exact_except_three_profile_checks_and_new_lookup": true,
+  "all_service_sources_byte_exact": true,
+  "runtime_application_ref_producer": "OFF",
+  "new_application_rows": 0,
+  "schema_changes": 0
+}

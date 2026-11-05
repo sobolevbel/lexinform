@@ -76,9 +76,21 @@ class ContentVersion(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     computation_ids: tuple[str, ...] = ()
+    application_ref_profile: Literal["amendment-projections-v1"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     application_ids: tuple[PositiveInt, ...] = ()
     status_change_id: PositiveInt | None = None
     recorded_at: AwareDatetime
+
+    @model_validator(mode="before")
+    @classmethod
+    def profiled_integer_ids(cls, value: object) -> object:
+        if isinstance(value, dict) and value.get("application_ref_profile") is not None:
+            ids = value.get("application_ids")
+            if not isinstance(ids, (tuple, list)) or any(type(item) is not int for item in ids):
+                raise ValueError("profiled references require actual integer IDs")
+        return value
 
     @model_validator(mode="after")
     def predecessor(self) -> Self:
@@ -106,6 +118,14 @@ class ContentVersion(BaseModel):
             )
         ):
             raise ValueError("a scoped primary context has at most one canonical source ID")
+        if self.application_ref_profile is not None and (
+            self.change_snapshot_id is None
+            or self.reason == "card_revision"
+            or not 1 <= len(self.application_ids) <= 32
+            or tuple(sorted(set(self.application_ids))) != self.application_ids
+            or any(value >= 2**63 for value in self.application_ids)
+        ):
+            raise ValueError("profiled amendment references require bounded canonical SQL IDs")
         return self
 
     @property
@@ -136,6 +156,9 @@ class ContentVersionSummary(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     computation_ids: tuple[str, ...]
+    application_ref_profile: Literal["amendment-projections-v1"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     application_ids: tuple[int, ...]
     status_change_id: int | None
     recorded_at: AwareDatetime
@@ -145,6 +168,14 @@ class ContentVersionSummary(BaseModel):
     source_observation_ids_opaque_count: int = 0
     computation_ids_opaque_count: int = 0
     unrecognized_labels: tuple[str, ...] = ()
+
+    @property
+    def known_application_refs(self) -> tuple[str, ...]:
+        return (
+            tuple(f"result-application-v1:{value}" for value in self.application_ids)
+            if self.application_ref_profile is not None
+            else ()
+        )
 
     @property
     def full_context_available(self) -> bool | None:
@@ -186,6 +217,7 @@ class ContentVersionSummary(BaseModel):
             card_context_profile=version.card_context_profile,
             computation_ids=result_ids,
             application_ids=version.application_ids,
+            application_ref_profile=version.application_ref_profile,
             status_change_id=version.status_change_id,
             recorded_at=version.recorded_at,
             rendered_text_known=text is not None,

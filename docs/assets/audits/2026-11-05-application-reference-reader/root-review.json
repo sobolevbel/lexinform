@@ -1,0 +1,14 @@
+{
+  "reviewer": "root",
+  "patch_sha256": "cc0315c9223cba33075117840d529d8634a561a5ad1facb41dea17c2879ad22a",
+  "source_pins_exact": true,
+  "reviewed_boundaries": [
+    "known profile admits exact persisted receipt IDs; None/opaque unchanged",
+    "SQL/JSON/purpose/frozen projection/physical target validation",
+    "strict new writes and retained missing physical availability",
+    "bounded public history and lookup; no receipt creation or owner guessing"
+  ],
+  "findings": [],
+  "focused_public_tests": 94,
+  "source_config_pins": 812
+}
