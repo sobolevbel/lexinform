@@ -11330,3 +11330,12 @@ The native collector records a bounded count without expanding another XML branc
 changing the selected text. Existing extraction metadata gets priority at the byte cap.
 The 3,055-file corpus comparison and six-result checkpoint round trip passed.
 [Parity and storage measurements](../assets/audits/2026-11-05-word-textbox-writer/report.md).
+
+<a id="j267"></a>
+
+## J267 — compatible reader for a blocked normative annex
+
+An optional bounded trace field can describe why the selected loose candidate stopped at
+its normative annex. The reader verifies the actual parent slot and blocked state. Old
+trace bytes and identities are exact. The writer remains a separate release stage.
+[Compatibility and checkpoint parity](../assets/audits/2026-11-05-normative-annex-gap-reader/report.md).

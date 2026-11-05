@@ -344,6 +344,28 @@ class RequiredPartExclusions(BaseModel):
         return self
 
 
+class NormativeAnnexGap(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    phase: Literal["version_comparison", "fallback"]
+    index: Position
+    normative_index: Position
+    reason: Literal["no_returned_file", "returned_no_text", "non_annex_appendix"]
+    file_sha256: Sha256 | None = Field(default=None, exclude_if=lambda value: value is None)
+    kind: Kind | None = Field(default=None, exclude_if=lambda value: value is None)
+
+    @model_validator(mode="after")
+    def observed_return(self) -> Self:
+        if self.reason == "no_returned_file" and self.file_sha256 is not None:
+            raise ValueError("a known file hash requires a returned file")
+        if self.reason == "non_annex_appendix":
+            if self.kind not in APPENDIX_KINDS - {"annex"}:
+                raise ValueError("a non-annex gap requires the actual appendix kind")
+        elif self.kind is not None:
+            raise ValueError("an appendix kind requires returned text")
+        return self
+
+
 class CandidateDispositionTrace(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -361,6 +383,9 @@ class CandidateDispositionTrace(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     required_exclusions: RequiredPartExclusions | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    normative_annex_gap: NormativeAnnexGap | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
 
@@ -479,6 +504,8 @@ class CandidateDispositionTrace(BaseModel):
                 raise ValueError("omitted outer requests retain only required exclusion summaries")
             for row in self.required_exclusions.rows:
                 validate_required_part_parent(self, row)
+        if self.normative_annex_gap is not None:
+            validate_normative_annex_parent(self, self.normative_annex_gap)
         if len(self.model_dump_json(exclude_defaults=True).encode()) > MAX_CANDIDATE_TRACE_BYTES:
             raise ValueError("candidate trace exceeds its metadata limit")
         return self
@@ -505,15 +532,49 @@ class CandidateDispositionTrace(BaseModel):
         )
 
 
+def _parent_disposition(
+    trace: CandidateDispositionTrace, phase: str, index: int
+) -> CandidateDisposition | None:
+    return next(
+        (item for item in trace.dispositions if (item.phase, item.index) == (phase, index)),
+        None,
+    )
+
+
+def validate_normative_annex_parent(
+    trace: CandidateDispositionTrace, gap: NormativeAnnexGap
+) -> None:
+    request = trace.requested_document
+    if request is None or gap.index >= trace.candidate_count:
+        raise ValueError("a normative annex gap requires its retained outer request")
+    parent = _parent_disposition(trace, gap.phase, gap.index)
+    expected_reason = (
+        "version_choice" if gap.phase == "version_comparison" else ("first_acceptable_candidate")
+    )
+    if (
+        parent is None
+        or parent.outcome != "selected"
+        or trace.result != "selected"
+        or parent.reason != expected_reason
+        or trace.reason != expected_reason
+    ):
+        raise ValueError("a normative annex gap requires the selected outer disposition")
+    expected_state = "ambiguous" if gap.reason == "non_annex_appendix" else "waiting"
+    if trace.selection_state != expected_state:
+        raise ValueError("normative annex gap differs from the blocked selection state")
+    candidate = (request, *request.alternatives)[gap.index]
+    if gap.normative_index >= len(candidate.normative_urls):
+        raise ValueError("normative annex gap exceeds the actual normative URL namespace")
+    if not metadata_url_decision(candidate.normative_urls[gap.normative_index]).admitted:
+        raise ValueError("normative annex gap parent URL is outside metadata admission")
+
+
 def validate_required_part_parent(
     trace: CandidateDispositionTrace, row: RequiredPartExclusion
 ) -> None:
     if row.index >= trace.candidate_count or trace.requested_document is None:
         raise ValueError("required exclusion has no retained outer request parent")
-    parent = next(
-        (item for item in trace.dispositions if (item.phase, item.index) == (row.phase, row.index)),
-        None,
-    )
+    parent = _parent_disposition(trace, row.phase, row.index)
     if parent is None or parent.outcome in ("official_conflict", "unattempted"):
         raise ValueError("required exclusion requires an actually attempted outer parent")
     candidate = (trace.requested_document, *trace.requested_document.alternatives)[row.index]
@@ -530,14 +591,7 @@ def validate_archive_member_parent(
     if member.index >= trace.candidate_count:
         raise ValueError("archive member outer index exceeds the known candidate count")
     if trace.coverage == "complete":
-        parent = next(
-            (
-                item
-                for item in trace.dispositions
-                if (item.phase, item.index) == (member.phase, member.index)
-            ),
-            None,
-        )
+        parent = _parent_disposition(trace, member.phase, member.index)
         if parent is None or parent.outcome in ("official_conflict", "unattempted"):
             raise ValueError("archive member must reference an actually attempted outer phase")
         if parent.outcome == "read_failure" and member.stage != "walk":
