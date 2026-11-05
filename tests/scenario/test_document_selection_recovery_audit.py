@@ -128,12 +128,20 @@ def test_late_batch_keeps_its_context_when_the_source_disappears_after_submissio
     world.set_stages("1929", REFERRED + (STAGE,))
     world.clock.advance(days=1)
     world.run()
-    world.gateway.files[url] = b"resolution"
     world.clock.advance(days=1)
+    world.run()
+    deferred = world.repo.list_document_work(due=world.clock.now() + dt.timedelta(days=7))
+    assert len(deferred) == 1 and deferred[0].attempts == 1
+    assert deferred[0].last_defer_reason == "amendments_source_unconfirmed"
+    assert deferred[0].next_at == world.clock.now() + dt.timedelta(days=2)
+    assert not world.batch.submitted
+    world.gateway.files[url] = b"resolution"
+    world.clock.advance(days=2)
     world.run()
     assert len(world.batch.submitted) == 1
     work = world.repo.list_document_work(due=world.clock.now())
     assert len(work) == 1 and work[0].context_json is not None
+    assert work[0].last_defer_reason == deferred[0].last_defer_reason
     world.repo.restore(world.repo.dump())
     del world.gateway.files[url]
     world.batch.resolve()
@@ -143,6 +151,7 @@ def test_late_batch_keeps_its_context_when_the_source_disappears_after_submissio
 
     assert len(world.batch.submitted) == 1
     assert not world.repo.list_document_work(due=world.clock.now())
+    assert '"last_defer_reason"' not in world.repo.dump()
     change = world.repo.list_status_changes(10, "1929")[-1]
     assert change.amendments is not None
     assert change.amendments.source_url == url

@@ -15,6 +15,7 @@ from lexinform.adapters.document_work import (
     revision_handoff_checks,
 )
 from lexinform.models import AmendmentRevisionApplicationWork, BatchRequest, ReviewWork
+from lexinform.models.documents import DocumentDeferReason
 from lexinform.saved_clock import saved_clock_age
 from tools.corpus_artifacts import write_json
 from tools.observed_latency import observed_latency
@@ -22,6 +23,29 @@ from tools.observed_timing import observed_timing
 from tools.sqlite_snapshot import open_snapshot
 
 _REQUIRED = {"bills", "document_work", "status_changes", "publications", "analysis_memo"}
+
+
+def _age_group(
+    items: list[dict[str, Any]], observed_at: datetime, field_name: str
+) -> dict[str, Any]:
+    ages: list[tuple[int, str]] = []
+    unknown: Counter[str] = Counter()
+    for owner in items:
+        raw = owner.get(field_name)
+        age = saved_clock_age(raw if isinstance(raw, str) else None, observed_at)
+        if age.unknown is not None:
+            unknown[age.unknown] += 1
+        elif age.seconds is not None:
+            ages.append((age.seconds, owner["ref"]))
+    oldest = max(ages, key=lambda item: item[0]) if ages else None
+    return {
+        "count": len(items),
+        "timestamp_field": field_name,
+        "known_ages": len(ages),
+        "unknown_ages": dict(sorted(unknown.items())),
+        "oldest_seconds": oldest[0] if oldest is not None else None,
+        "oldest_ref": oldest[1] if oldest is not None else None,
+    }
 
 
 def work_ages(
@@ -54,26 +78,11 @@ def work_ages(
         field_name = (
             "since" if kind == "review" else "submitted_at" if kind == "llm_item" else "created_at"
         )
-        ages: list[tuple[int, str]] = []
-        unknown: Counter[str] = Counter()
-        for owner in items:
-            raw = owner.get(field_name)
-            age = saved_clock_age(raw if isinstance(raw, str) else None, observed_at)
-            if age.unknown is not None:
-                unknown[age.unknown] += 1
-            elif age.seconds is not None:
-                ages.append((age.seconds, owner["ref"]))
-        oldest = max(ages, key=lambda item: item[0]) if ages else None
         records.append(
             {
                 "kind": kind,
                 "state": state,
-                "count": len(items),
-                "timestamp_field": field_name,
-                "known_ages": len(ages),
-                "unknown_ages": dict(sorted(unknown.items())),
-                "oldest_seconds": oldest[0] if oldest is not None else None,
-                "oldest_ref": oldest[1] if oldest is not None else None,
+                **_age_group(items, observed_at, field_name),
             }
         )
     return {
@@ -191,6 +200,7 @@ class WorkAudit:
     counts: Counter[str] = field(default_factory=Counter)
     findings: list[dict[str, str]] = field(default_factory=list)
     owners: list[dict[str, Any]] = field(default_factory=list)
+    document_defer_reasons: dict[str, DocumentDeferReason] = field(default_factory=dict)
 
     def issue(self, code: str, ref: str, *, level: str = "error") -> None:
         self.findings.append({"code": code, "ref": ref, "level": level})
@@ -233,6 +243,8 @@ class WorkAudit:
             ).fetchall()
             if work.state != "complete" and not publications:
                 self.issue("document_publication_unavailable", ref, level="warning")
+            if work.state == "waiting" and work.last_defer_reason is not None:
+                self.document_defer_reasons[ref] = work.last_defer_reason
             self.owners.append(
                 {
                     "ref": ref,
@@ -255,6 +267,20 @@ class WorkAudit:
                     else 0,
                 }
             )
+
+    def document_wait_ages_by_reason(self, observed_at: datetime) -> dict[str, Any]:
+        groups: dict[str, list[dict[str, Any]]] = {}
+        for owner in self.owners:
+            if owner["kind"] == "document" and owner["state"] == "waiting":
+                reason = self.document_defer_reasons.get(owner["ref"])
+                groups.setdefault(reason or "unknown", []).append(owner)
+        return {
+            "groups": {
+                reason: _age_group(items, observed_at, "created_at")
+                for reason, items in sorted(groups.items())
+            },
+            "scope": "Age since saved work creation, grouped by historical deferral reason.",
+        }
 
     def revision_application(
         self, connection: sqlite3.Connection, ref: str, work: AmendmentRevisionApplicationWork
@@ -434,9 +460,14 @@ def audit(
         ],
     }
     if observed_at is not None:
-        report["work_ages"] = work_ages(
+        ages = work_ages(
             result.owners, observed_at, complete=not missing and not result.counts["errors"]
         )
+        if result.document_defer_reasons:
+            ages["document_wait_ages_by_last_defer_reason"] = result.document_wait_ages_by_reason(
+                observed_at
+            )
+        report["work_ages"] = ages
         assert latencies is not None, "The explicit observation clock enables latency inspection"
         report["latencies"] = latencies.model_dump(mode="json")
         report["llm_work_ages"] = llm_ages

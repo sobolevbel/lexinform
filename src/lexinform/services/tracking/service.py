@@ -44,6 +44,7 @@ from lexinform.models import (
     supplement_kind,
     valid_mnemonic,
 )
+from lexinform.models.documents import DocumentDeferReason
 from lexinform.models.source_checks import observation_for
 from lexinform.name_binding import bind_mnemonic
 from lexinform.ports import (
@@ -845,15 +846,18 @@ class StatusTrackingService:
                 result.abort(exc)
                 return
             except Exception as exc:
-                self._defer_document(work, f"{type(exc).__name__}: {exc}")
+                self._defer_document(work, f"{type(exc).__name__}: {exc}", reason="retry_exception")
 
-    def _defer_document(self, work: DocumentWork, problem: str) -> None:
+    def _defer_document(
+        self, work: DocumentWork, problem: str, *, reason: DocumentDeferReason
+    ) -> None:
         attempts = work.attempts + 1
         self._repo.save_document_work(
             work.model_copy(
                 update={
                     "attempts": attempts,
                     "problem": problem,
+                    "last_defer_reason": reason,
                     "state": "unsupported" if attempts >= 7 else "waiting",
                     "next_at": self._clock.now() + timedelta(days=min(7, 2**attempts)),
                 }
@@ -865,7 +869,9 @@ class StatusTrackingService:
     ) -> None:
         change = self._repo.get_status_change(work.change_id)
         if change is None:
-            self._defer_document(work, "historical event unavailable")
+            self._defer_document(
+                work, "historical event unavailable", reason="historical_event_unavailable"
+            )
             return
         original = self._repo.get_update_publication(work.change_id, self._options.channel_id)
         if not publish or original is None or original.status is not PublicationStatus.SENT:
@@ -891,7 +897,11 @@ class StatusTrackingService:
             or saved.continuation_ids
             or self._repo.digest_owner(original.id or 0) is not None
         ):
-            self._defer_document(work, "historical delivery cannot be revised independently")
+            self._defer_document(
+                work,
+                "historical delivery cannot be revised independently",
+                reason="historical_delivery_unsupported",
+            )
             return
         historical = Bill.model_validate_json(work.bill_json)
         detail = ProcessDetail.model_validate_json(work.detail_json)
@@ -899,7 +909,11 @@ class StatusTrackingService:
         if work.document_json is None or work.context_json is None:
             found = self._document_for_stage(historical, stage, detail)
             if found is None:
-                self._defer_document(work, "amendments document not confirmed")
+                self._defer_document(
+                    work,
+                    "amendments document not confirmed",
+                    reason="amendments_source_unconfirmed",
+                )
                 return
             assert self._analysis is not None
             context = self._analysis.amendments_context(
@@ -909,7 +923,9 @@ class StatusTrackingService:
                 recommendation=found.recommendation,
             )
             if context is None:
-                self._defer_document(work, "amendments document unreadable")
+                self._defer_document(
+                    work, "amendments document unreadable", reason="amendments_context_unavailable"
+                )
                 return
             work = work.model_copy(
                 update={
@@ -932,7 +948,9 @@ class StatusTrackingService:
         if isinstance(record, Waiting):
             return
         if record is None:
-            self._defer_document(work, "amendments document unreadable")
+            self._defer_document(
+                work, "amendments document unreadable", reason="amendments_result_unavailable"
+            )
             return
         revised = StatusChange.model_validate_json(saved.change_json)
         revised.amendments = record
@@ -965,7 +983,9 @@ class StatusTrackingService:
                 )
             )
             self._repo.save_document_work(
-                work.model_copy(update={"state": "complete", "problem": ""})
+                work.model_copy(
+                    update={"state": "complete", "problem": "", "last_defer_reason": None}
+                )
             )
 
     def _summarize_amendments(

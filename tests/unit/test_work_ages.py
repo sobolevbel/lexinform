@@ -2,12 +2,16 @@ import datetime as dt
 import json
 import sqlite3
 from collections.abc import Iterator
+from contextlib import closing
+from pathlib import Path
 from typing import Any
 
 import pytest
-from tools.work_doctor import llm_work_ages, work_ages
+from tools.work_doctor import audit, llm_work_ages, work_ages
 
-from lexinform.models import BatchRequest, NameContext, NameQuestion
+from lexinform.adapters.sqlite_repo import SqliteBillRepository
+from lexinform.models import BatchRequest, DocumentWork, NameContext, NameQuestion, StatusChange
+from lexinform.models.sejm import ProcessDetail
 
 
 def owner(kind: str, state: str, ref: str, timestamp: str | None) -> dict[str, Any]:
@@ -98,6 +102,74 @@ def test_partial_inventory_keeps_its_coverage_limit_even_with_no_nonterminal_own
 def test_observation_without_timezone_is_refused() -> None:
     with pytest.raises(ValueError, match="timezone"):
         work_ages([], dt.datetime(2026, 10, 28), complete=True)
+
+
+def test_saved_deferral_reasons_split_wait_ages_without_guessing_legacy(
+    tmp_path: Path, process_3039: ProcessDetail
+) -> None:
+    path = tmp_path / "checkpoint.db"
+    now = dt.datetime(2026, 10, 28, tzinfo=dt.UTC)
+    with closing(SqliteBillRepository(path)) as repo:
+        repo.migrate()
+        repo.upsert_summary(process_3039, now=now)
+        change = repo.add_status_change(
+            StatusChange(
+                term=10,
+                number="3039",
+                old_fingerprint=None,
+                new_fingerprint="fixture",
+                new_stages=[],
+                detected_at=now,
+            )
+        )
+        assert change is not None, "the fixture stores its owner event"
+        legacy = DocumentWork(
+            key="amendments/legacy",
+            term=10,
+            number="3039",
+            change_id=change,
+            bill_json="{}",
+            detail_json="{}",
+            stage_json="{}",
+            created_at=now - dt.timedelta(days=2),
+            next_at=now,
+            attempts=1,
+            problem="amendments document unreadable",
+        )
+        repo.save_document_work(legacy)
+        saved = legacy.model_copy(
+            update={
+                "key": "amendments/recorded",
+                "created_at": now - dt.timedelta(days=1),
+                "last_defer_reason": "amendments_context_unavailable",
+                "problem": "PRIVATE BODY",
+            }
+        )
+        repo.save_document_work(saved)
+        repo.save_document_work(
+            saved.model_copy(update={"key": "amendments/terminal", "state": "unsupported"})
+        )
+        before = repo.dump()
+        repo.restore(before)
+        assert repo.dump() == before
+    assert "last_defer_reason" not in json.loads(legacy.model_dump_json())
+    baseline = audit(path)
+    observed = audit(path, observed_at=now)
+    reasons = observed.pop("work_ages")["document_wait_ages_by_last_defer_reason"]["groups"]
+    observed.pop("llm_work_ages")
+    observed.pop("latencies")
+
+    assert observed == baseline and "last_defer_reason" not in json.dumps(baseline)
+    assert {
+        reason: (group["count"], group["oldest_seconds"]) for reason, group in reasons.items()
+    } == {
+        "amendments_context_unavailable": (1, 86_400),
+        "unknown": (1, 172_800),
+    }
+    assert "PRIVATE BODY" not in json.dumps(reasons)
+    for changes in ({"last_defer_reason": "arbitrary text"}, {"state": "complete"}):
+        with pytest.raises(ValueError):
+            DocumentWork.model_validate({**saved.model_dump(), **changes})
 
 
 @pytest.fixture

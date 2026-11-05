@@ -593,6 +593,16 @@ class ExtractedDocument(BaseModel):
     selection: DocumentSelection = DocumentSelection()
 
 
+DocumentDeferReason = Literal[
+    "retry_exception",
+    "historical_event_unavailable",
+    "historical_delivery_unsupported",
+    "amendments_source_unconfirmed",
+    "amendments_context_unavailable",
+    "amendments_result_unavailable",
+]
+
+
 class DocumentWork(BaseModel):
     """Saved Senate amendment continuation; generalise only for a second consumer."""
 
@@ -610,3 +620,12 @@ class DocumentWork(BaseModel):
     problem: str = ""
     document_json: str | None = None
     context_json: str | None = None
+    last_defer_reason: DocumentDeferReason | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    @model_validator(mode="after")
+    def complete_without_deferral(self) -> Self:
+        if self.state == "complete" and self.last_defer_reason is not None:
+            raise ValueError("completed work must clear its last deferral reason")
+        return self

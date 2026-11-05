@@ -182,7 +182,7 @@ def refuse_render(*args: object, **kwargs: object) -> Never:
     raise AssertionError("saved physical HTML must never be rendered from current data")
 
 
-def test_new_status_snapshot_omits_only_operational_review_work(
+def test_new_status_snapshot_omits_review_data_reserved_for_its_own_message(
     repo: SqliteBillRepository, process_3039: ProcessDetail
 ) -> None:
     case = contract(repo, process_3039, "on")
@@ -211,10 +211,10 @@ def test_new_status_snapshot_omits_only_operational_review_work(
 
     delivery = case.poster.prepare(original, change)
 
-    assert "review_work" not in json.loads(delivery.bill_json)
+    assert {"review_work", "consultation_review"}.isdisjoint(json.loads(delivery.bill_json))
     frozen = Bill.model_validate_json(delivery.bill_json)
-    assert frozen == original.model_copy(update={"review_work": ()})
-    assert case.bill().review_work == (work,)
+    assert frozen == original.model_copy(update={"review_work": (), "consultation_review": None})
+    assert case.bill() == original
     publication = repo.get_update_publication(change.id or 0, CHANNEL)
     assert publication is not None and publication.id is not None, "prepare stores the status row"
     legacy = delivery.model_copy(update={"bill_json": original.model_dump_json()})
@@ -224,6 +224,10 @@ def test_new_status_snapshot_omits_only_operational_review_work(
 
     assert repo.replace_unattempted_delivery(publication.id, legacy)
     assert case.poster.prepare(original, change) == legacy
+    review_publication = case.poster.prepare_message(original, PublicationKind.CONSULTATION_REVIEW)
+    assert review_publication.delivery is not None, "the dedicated review freezes its own context"
+    review_bill = Bill.model_validate_json(review_publication.delivery.bill_json)
+    assert review_bill == original.model_copy(update={"review_work": ()})
 
 
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])

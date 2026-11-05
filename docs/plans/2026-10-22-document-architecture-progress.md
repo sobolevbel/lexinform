@@ -11402,3 +11402,16 @@ exact-origin scope.
 An offline check can bind a key-change quote to the main part of a frozen multipart
 RCL receipt. Annexes and unavailable selection parents stay outside that profile.
 [Coverage and literal citation evidence](../assets/audits/2026-11-05-mixed-rcl-prepared-input/report.md).
+
+<a id="j274"></a>
+
+## J274 — smaller status plans and coded document deferrals
+
+New status plans omit the saved consultation-review record. The dedicated review
+publication keeps its context. Fresh route, rendering and digest parity were verified
+on a saved status update. A single-row counterfactual reduced the copied gzip dump
+by 109,168 bytes.
+
+The work doctor can group the age of waiting document work by its last coded deferral
+reason. Backoff and completion behavior are unchanged, with report parity across
+three retained snapshots. [Replay and compatibility](../assets/audits/2026-11-05-purpose-freeze-and-deferral-ages/report.md).

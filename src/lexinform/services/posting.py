@@ -105,8 +105,11 @@ FROZEN_REPLIES = frozenset(
 )
 
 
-def _delivery_bill_json(bill: Bill) -> str:
-    return bill.model_dump_json(exclude={"review_work"} if bill.review_work else set())
+def _delivery_bill_json(bill: Bill, kind: PublicationKind) -> str:
+    excluded = {"review_work"} if bill.review_work else set()
+    if kind is PublicationKind.STATUS_UPDATE and bill.consultation_review is not None:
+        excluded.add("consultation_review")
+    return bill.model_dump_json(exclude=excluded)
 
 
 def routine_update(bill: Bill, change: StatusChange, plan: DeliveryPlan) -> bool:
@@ -951,7 +954,7 @@ class Poster:
         snapshot = self._repo.get(bill.term, bill.number) or bill
         card = self.card(bill)
         delivery = DeliveryPlan(
-            bill_json=_delivery_bill_json(snapshot),
+            bill_json=_delivery_bill_json(snapshot, PublicationKind.STATUS_UPDATE),
             attention=assess_attention(
                 snapshot,
                 PublicationKind.STATUS_UPDATE,
@@ -1193,7 +1196,7 @@ class Poster:
             return stored
         card = self.card(bill)
         delivery = DeliveryPlan(
-            bill_json=_delivery_bill_json(bill),
+            bill_json=_delivery_bill_json(bill, kind),
             attention=assess_attention(
                 bill,
                 kind,

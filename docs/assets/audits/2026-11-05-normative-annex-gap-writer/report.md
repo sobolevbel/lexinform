@@ -16,3 +16,6 @@ observation IDs matched. The saved link carried the new gap and both SQL dumps r
 twice exactly. Other SQL rows, selected text and order, queued payloads, token counts
 and reservation stayed exact across the cohort.
 [Paired observations](qualification.json).
+
+The hosted CI and relay verified the exact writer commit, including the restart and
+timer checks. [Release receipt](release.json).
