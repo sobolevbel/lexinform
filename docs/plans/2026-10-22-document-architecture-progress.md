@@ -10627,3 +10627,34 @@ all-purpose capture/retention/report qualification.74total/44complete/6explicitN
 [qualification](../assets/audits/2026-11-05-local-timing-reader/qualification.json),
 [integration proof](../assets/audits/2026-11-05-local-timing-reader/integration-proof.json),
 [storage proof](../assets/audits/2026-11-05-local-timing-reader/storage-proof.json).
+
+
+<a id="j238"></a>
+
+## J238 — frozen producer-OFF public preparation replay tool
+
+5 November 2026. Tooling stage only: no runtime capture/status/schema/result transfer. Exactly18
+planned cases span ten real local batch preparation purposes plus eight controls. Seventeen initial
+intents/23 actual prepare_request calls; planned read failure remains0requests, no unexpected case
+or provider/client/submit/synchronous model/delivery call. Active review request→advance and
+explanation preparation dry-run use existing public APIs. Eight new unit cases,0newscenarios.
+
+Three pinned natural local source bodies total3,826,880bytes; priors/targets/descriptions, blank
+scan and disabled act_application context are explicitly technical, not natural/gold acceptance.
+Fixed and event clocks do not infer upstream time. Paired core compares request/context/IO/status/
+accounting/reuse exactly; only new witness and approved fresh derived nullable metaSHA normalize,
+with known-value equality and raw None/hash retained separately. Existing BOTH-None legacy packet
+and known-witness packet reuse remain full-byte exact; passed/resumed context reads stay unknown.
+
+OFF/selfcheck precede writer edits. Root exact driver/unit replay passes18cases/all10purposes,
+no unexpected failures; runtime src diff empty and810 source/config pins exact. Strict mypy tool
+entry included. Root8focus and final8557tests/303.067s XML (303.15s summary)/92%coverage pass;
+mypy741/Ruff/format810green, all810 source/config pins exact after gate. Root case delta proves
+8newunit/0newscenario/0removed. Reader4f16442 actualCI41967036140/relay41967663979 verified.
+Runtime capture/retention/report qualification and
+DA10.4 remain open; no checkbox closes.
+
+[Report](../assets/audits/2026-11-05-local-timing-off-baseline/report.md),
+[qualification](../assets/audits/2026-11-05-local-timing-off-baseline/qualification.json),
+[root integration proof](../assets/audits/2026-11-05-local-timing-off-baseline/integration-proof.json),
+[compressed evidence](../assets/audits/2026-11-05-local-timing-off-baseline/artifacts.json).

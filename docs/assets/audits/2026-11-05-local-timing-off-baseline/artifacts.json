@@ -1,0 +1,23 @@
+{
+  "plan.json.gz": {
+    "compressed_bytes": 2298,
+    "compressed_sha256": "014e3e3a37a47f581faa951307d0c17509091723149344053075bb579a18d552",
+    "expanded_bytes": 7020,
+    "expanded_sha256": "590535b333fcbd0fce839259c6de344271c44092c21d0aed634756b0c965c17d",
+    "origin": "out/corpus/j238-timing-baseline/case-plan.json"
+  },
+  "off.json.gz": {
+    "compressed_bytes": 45584,
+    "compressed_sha256": "d5bdbc8fcdeba40029e04b53dfddf78b339bd37bfad1147629cee54372278db2",
+    "expanded_bytes": 217253,
+    "expanded_sha256": "e713d4857c513de12e8782d4e320eaefa5beb246b0cfec1281364dbc79eb6721",
+    "origin": "out/corpus/j238-timing-baseline/off.json"
+  },
+  "selfcheck.json.gz": {
+    "compressed_bytes": 45878,
+    "compressed_sha256": "29b759a5c89344b4fe378aa9c53b1bdc94fe1b00cd2bedc372f0f50c1966c2d1",
+    "expanded_bytes": 218048,
+    "expanded_sha256": "7ca7a158a922b106cbe89207a1566741c451399c11e9281a16a4a9d4e069d34e",
+    "origin": "out/corpus/j238-timing-baseline/root-qa/selfcheck.json"
+  }
+}

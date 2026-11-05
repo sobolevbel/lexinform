@@ -107,6 +107,7 @@ files = [
   "tools/replay_supplement_inputs.py",
   "tools/replay_amendment_inputs.py",
   "tools/replay_card_history.py",
+  "tools/replay_local_timing.py",
   "tools/replay_archive_dispositions.py",
   "tools/qualify_archive_storage.py",
   "tools/collect_committee_reports.py",

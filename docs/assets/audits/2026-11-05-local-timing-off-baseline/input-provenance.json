@@ -1,0 +1,65 @@
+{
+  "frozen_plan_sha256": "590535b333fcbd0fce839259c6de344271c44092c21d0aed634756b0c965c17d",
+  "case_count": 18,
+  "first_pass_intents": 17,
+  "actual_local_prepare_calls": 23,
+  "purpose_count": 10,
+  "raw_asset_bytes": 3826880,
+  "assets": {
+    "primary": {
+      "logical_path": "corpus:sejm/term10/files/3039__3039.pdf",
+      "bytes": 1100981,
+      "sha256": "d9600e2c8a0d84376be10b9122a357138467c6e42722ba90e6114ada8e71693a",
+      "owner": "3039",
+      "source_kind": "print",
+      "url_sha256": "67cf4863663ca3d618ec4a2c7281f346bcebf52b143e714b1dee1744eaff9436"
+    },
+    "supplement": {
+      "logical_path": "corpus:sejm/term10/supplements/files/1319-001__1319-001.pdf",
+      "bytes": 2453973,
+      "sha256": "37be6751fd52f1bd5317c6a1de0961f0d7d40dbad7e9c7b563012026fb29a82e",
+      "owner": "1319",
+      "source_kind": "impact_assessment",
+      "url_sha256": "d71d4ca36880a423dc14dd95ad895f8e485fd077f6cc1478e7114da2cab7cd97"
+    },
+    "amendments": {
+      "logical_path": "J231-generation:downloads/004660aeb84e5e4d4fa61b97ff2b87fcc195682d1b61c73966eea641a66d24b1.pdf",
+      "bytes": 271926,
+      "sha256": "7de3c88bb96c31b7ad92f6f87d4425c6813c91ffe58962ac0c4fd15c713779a6",
+      "owner": "2449",
+      "source_kind": "committee_amendments",
+      "url_sha256": "004660aeb84e5e4d4fa61b97ff2b87fcc195682d1b61c73966eea641a66d24b1"
+    }
+  },
+  "source_index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "tokenizer_resources": {
+    "existing_encoding_cache": {
+      "sha256": "446a9538cb6c348e3516120d7c08b09f57c36495e2acfffe59a5bf8b0cfb1a2d",
+      "bytes": 3613922,
+      "scope": "existing dependency resource; read-only; no download"
+    }
+  },
+  "technical_controls": [
+    "No natural final-act applicability cohort; act_application typed technical fixture, production-disabled",
+    "Consultation uses actual project_text, not a response/outcome gold label",
+    "Synthetic prior/targets and blank PDF are technical controls, not natural labels",
+    "No completed-result collection in preparation driver; separate transfer unit qualification"
+  ],
+  "technical_scan": {
+    "recipe": "pypdf.PdfWriter.add_blank_page(200,200), no legal content",
+    "sha256": "3de2b3788e3232e4fcc07525e218a18d7d81a158d452654317a044163dfb710b",
+    "bytes": 431
+  },
+  "frozen_options": {
+    "model": "gpt-6.1-sol",
+    "budget_chars": 120000,
+    "triage_min_chars": 1000000,
+    "require_batch": true,
+    "workers": 1,
+    "max_bill_cost_usd": 0,
+    "max_run_cost_usd": 0,
+    "ordinary_clock": "2026-11-05T12:00:00+00:00",
+    "primary_prior": "controlled typed AnalysisRecord; no semantic gold"
+  },
+  "artifact_portability": "Gzip contains exact original evidence. Logical refs identify bytes portably; the frozen CLI recipe retains original absolute local paths. Rebinding paths needs explicit new recipe qualification, not an unchanged-plan claim."
+}

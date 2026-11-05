@@ -1,0 +1,32 @@
+{
+  "frozen_driver_and_unit_exact": true,
+  "paired_core_exact": true,
+  "planned_cases": 18,
+  "proof_sha256": {
+    "out/corpus/j238-timing-baseline/root-qa/selfcheck.json": "7ca7a158a922b106cbe89207a1566741c451399c11e9281a16a4a9d4e069d34e",
+    "out/corpus/j238-timing-baseline/root-qa/source-freeze.json": "48f930a13ec94a31030c6d142945d5b0b1d32e2159f7e70b0ca4d3a5c1fe5673"
+  },
+  "replay_source_pins_exact": true,
+  "runtime_src_diff_empty": true,
+  "source_config_pins": 810,
+  "stage": "J238 OFF replay tool",
+  "summary": {
+    "missing_purposes": [],
+    "planned_no_preparation": [
+      "analysis_failed_read"
+    ],
+    "prepared_purposes": [
+      "act_application",
+      "amendments",
+      "analysis",
+      "commission_review",
+      "consultation_review",
+      "explanation",
+      "joint",
+      "name",
+      "reanalysis",
+      "supplement"
+    ],
+    "unexpected_failed_cases": []
+  }
+}

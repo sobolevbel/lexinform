@@ -52,3 +52,5 @@ Previous release: [exact CI and relay verification](previous-release.json).
 Final full gate: 8549 tests in 291.896 seconds,92%coverage,mypy739,
 Ruff/format green; all808source/config pins exact. [Case-set comparison](new-cases.json)
 confirms108new units, zero new scenarios and zero removed cases. No DA10.4 closure claimed.
+
+Actual reader release4f16442: [CI and relay verification](../2026-11-05-local-timing-off-baseline/previous-release.json).

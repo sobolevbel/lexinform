@@ -1,0 +1,16 @@
+{
+  "new_unit_cases": 8,
+  "new_scenario_cases": 0,
+  "removed_cases": 0,
+  "new": [
+    "tests.unit.test_replay_local_timing::test_existing_none_and_witness_remain_full_byte_exact_without_repreparation",
+    "tests.unit.test_replay_local_timing::test_fresh_binding_normalization_rejects_a_known_wrong_sha_without_mutating_legacy",
+    "tests.unit.test_replay_local_timing::test_persisted_review_context_has_no_invocation_read_or_second_work",
+    "tests.unit.test_replay_local_timing::test_planned_failed_read_is_an_observation_without_a_prepared_request",
+    "tests.unit.test_replay_local_timing::test_real_public_preparation_refuses_provider_and_preserves_queued_packet[act_application]",
+    "tests.unit.test_replay_local_timing::test_real_public_preparation_refuses_provider_and_preserves_queued_packet[explanation]",
+    "tests.unit.test_replay_local_timing::test_real_public_preparation_refuses_provider_and_preserves_queued_packet[joint]",
+    "tests.unit.test_replay_local_timing::test_real_public_preparation_refuses_provider_and_preserves_queued_packet[name]"
+  ],
+  "removed": []
+}
