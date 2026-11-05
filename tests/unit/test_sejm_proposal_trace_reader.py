@@ -9,6 +9,7 @@ from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.document_editions import candidate_edition
 from lexinform.models import (
     ArtifactMetadata,
+    ArtifactReadIdentity,
     DocumentPart,
     DocumentSelection,
     DocumentSelectionRecord,
@@ -21,6 +22,8 @@ from lexinform.models.candidate_trace import (
     CandidateDispositionTrace,
     SejmOriginalProposal,
 )
+from lexinform.models.sejm import SejmProposalOrigin
+from lexinform.services.document_history import record_document_source
 from tests.unit.test_input_receipts import NOW
 
 BASE_URL = "https://api.sejm.gov.pl/sejm/term10/prints/2320/2320.pdf"
@@ -209,3 +212,31 @@ def test_sejm_proposal_trace_parent_corruption_is_visible_and_restore_is_atomic(
         with pytest.raises(ValueError, match="candidate_trace_proposal_parent_mismatch"):
             repo.restore(bad)
         assert repo.dump() == before
+
+
+@pytest.mark.parametrize("current_read", [True, False])
+def test_native_writer_requires_exact_current_proposal_read(
+    tmp_path: Path, current_read: bool
+) -> None:
+    with closing(SqliteBillRepository(tmp_path / "state.db")) as repo:
+        observation, legacy, proof = known_source(repo)
+        selection = repo.get_document_selection(observation.selection_id)
+        assert selection is not None, "known_source stores the selection"
+        artifacts = (
+            ArtifactReadIdentity(sha256=BASE_SHA, byte_size=1, requested_url=BASE_URL),
+            ArtifactReadIdentity(sha256=PROPOSAL_SHA, byte_size=1, requested_url=PROPOSAL_URL),
+        )
+
+        record_document_source(
+            repo,
+            selection,
+            observation,
+            artifacts,
+            reads=artifacts if current_read else artifacts[:1],
+            candidate_trace=legacy,
+            sejm_proposal=SejmProposalOrigin(10, "2320", "2320-A", ("2320",)),
+        )
+
+        assert repo.list_candidate_disposition_traces(observation.observation_id) == (
+            [proof] if current_read else []
+        )

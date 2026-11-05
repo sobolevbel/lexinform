@@ -36,3 +36,6 @@ Checkpoint sizes use the SQL blob at each pinned state SHA and gzip with mtime z
 Publication INSERTs contributed 3,568,476 bytes to the 5,437,096-byte increase in SQL.
 Physical metadata contributed 741,966 bytes. These are UTF-8 SQL statement lengths.
 They do not attribute gzip bytes to individual tables. [Table contributions](checkpoint-tables.json).
+
+The exact audit commit passed hosted CI and the relay transition, restart and timer
+checks. [Release receipt](release.json).

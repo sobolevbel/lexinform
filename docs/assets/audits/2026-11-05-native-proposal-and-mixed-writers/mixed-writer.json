@@ -1,0 +1,331 @@
+{
+  "artifact_sha256": {
+    "off-final-lifecycle.json": "2050412a09162a455023857aaf4c6c0ebbe992c4432e68d267a9501356489324",
+    "off-final-parents.json": "04f59b552b616f2adda1e34f6122f6e9a9b4323b0dd4e64523871541f532690e",
+    "off-final-prepare.json": "3bd2dd267ef0b0d396e987e9e461c9a80530d11e0317f4798ccdb6c912e00694",
+    "on-lifecycle.json": "61b445cb223b1eb136c97c239f4d6993d818e3b0fe573272e48874a506862fb6",
+    "on-parents.json": "907f9904932309aee6d54b031b93abd40f3a282c17ad6d935f214009528f9046",
+    "on-prepare.json": "1b29c852a05335c2006d23800b369132652c01f5eaf1c925c5647c4bbbcbeb49"
+  },
+  "lifecycle": {
+    "deltas": {
+      "12294859/11/raw/normal": {
+        "collected": {
+          "gzip": 917,
+          "sql": 3093
+        },
+        "pruned": {
+          "gzip": 916,
+          "sql": 3093
+        },
+        "queue": {
+          "gzip": 916,
+          "sql": 3093
+        },
+        "submitted": {
+          "gzip": 966,
+          "sql": 3093
+        }
+      },
+      "12294859/11/raw/tight": {
+        "collected": {
+          "gzip": 877,
+          "sql": 2532
+        },
+        "pruned": {
+          "gzip": 528,
+          "sql": 2532
+        },
+        "queue": {
+          "gzip": 878,
+          "sql": 2532
+        },
+        "submitted": {
+          "gzip": 886,
+          "sql": 2532
+        }
+      },
+      "12294859/9/raw/normal": {
+        "collected": {
+          "gzip": 917,
+          "sql": 3093
+        },
+        "pruned": {
+          "gzip": 918,
+          "sql": 3093
+        },
+        "queue": {
+          "gzip": 915,
+          "sql": 3093
+        },
+        "submitted": {
+          "gzip": 966,
+          "sql": 3093
+        }
+      },
+      "12294859/9/raw/tight": {
+        "collected": {
+          "gzip": 876,
+          "sql": 2532
+        },
+        "pruned": {
+          "gzip": 528,
+          "sql": 2532
+        },
+        "queue": {
+          "gzip": 879,
+          "sql": 2532
+        },
+        "submitted": {
+          "gzip": 890,
+          "sql": 2532
+        }
+      }
+    },
+    "frozen_rows": 4,
+    "observations": {
+      "12294859/11/raw/normal": {
+        "bytes": 3067,
+        "parts": 6,
+        "parts_with_emitted_ranges": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "payload": "95b78c077153ad9767e6d54353e633f5cc342c0013a542720e8bcaf0e3c53ad3",
+        "roles": [
+          "unknown",
+          "normative_annex",
+          "self_amendment",
+          "self_amendment",
+          "justification",
+          "osr"
+        ],
+        "segments": 11
+      },
+      "12294859/11/raw/tight": {
+        "bytes": 2506,
+        "parts": 6,
+        "parts_with_emitted_ranges": [
+          0,
+          4
+        ],
+        "payload": "beebc64a6d83255bba17d96b6d7155760d173266da1ccdb021d33fc22dbe0e63",
+        "roles": [
+          "unknown",
+          "normative_annex",
+          "self_amendment",
+          "self_amendment",
+          "justification",
+          "osr"
+        ],
+        "segments": 5
+      },
+      "12294859/9/raw/normal": {
+        "bytes": 3067,
+        "parts": 6,
+        "parts_with_emitted_ranges": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "payload": "95b78c077153ad9767e6d54353e633f5cc342c0013a542720e8bcaf0e3c53ad3",
+        "roles": [
+          "unknown",
+          "normative_annex",
+          "self_amendment",
+          "self_amendment",
+          "justification",
+          "osr"
+        ],
+        "segments": 11
+      },
+      "12294859/9/raw/tight": {
+        "bytes": 2506,
+        "parts": 6,
+        "parts_with_emitted_ranges": [
+          0,
+          4
+        ],
+        "payload": "beebc64a6d83255bba17d96b6d7155760d173266da1ccdb021d33fc22dbe0e63",
+        "roles": [
+          "unknown",
+          "normative_annex",
+          "self_amendment",
+          "self_amendment",
+          "justification",
+          "osr"
+        ],
+        "segments": 5
+      }
+    },
+    "parent_failures": 0
+  },
+  "parents": {
+    "deltas": {
+      "12294859/9/raw/normal": {
+        "queue": {
+          "gzip": 0,
+          "sql": 0
+        }
+      }
+    },
+    "frozen_rows": 1,
+    "observations": {},
+    "parent_failures": 1
+  },
+  "prepare": {
+    "deltas": {
+      "12294859/11/cached/normal": {
+        "queue": {
+          "gzip": 0,
+          "sql": 0
+        }
+      },
+      "12294859/11/cached/tight": {
+        "queue": {
+          "gzip": 0,
+          "sql": 0
+        }
+      },
+      "12294859/11/raw/normal": {
+        "queue": {
+          "gzip": 916,
+          "sql": 3093
+        }
+      },
+      "12294859/11/raw/tight": {
+        "queue": {
+          "gzip": 878,
+          "sql": 2532
+        }
+      },
+      "12294859/9/cached/normal": {
+        "queue": {
+          "gzip": 0,
+          "sql": 0
+        }
+      },
+      "12294859/9/cached/tight": {
+        "queue": {
+          "gzip": 0,
+          "sql": 0
+        }
+      },
+      "12294859/9/raw/normal": {
+        "queue": {
+          "gzip": 915,
+          "sql": 3093
+        }
+      },
+      "12294859/9/raw/tight": {
+        "queue": {
+          "gzip": 879,
+          "sql": 2532
+        }
+      },
+      "12403302/12/raw/normal": {
+        "queue": {
+          "gzip": 0,
+          "sql": 0
+        }
+      },
+      "12405004/9/raw/normal": {
+        "queue": {
+          "gzip": 0,
+          "sql": 0
+        }
+      }
+    },
+    "frozen_rows": 16,
+    "observations": {
+      "12294859/11/raw/normal": {
+        "bytes": 3067,
+        "parts": 6,
+        "parts_with_emitted_ranges": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "payload": "95b78c077153ad9767e6d54353e633f5cc342c0013a542720e8bcaf0e3c53ad3",
+        "roles": [
+          "unknown",
+          "normative_annex",
+          "self_amendment",
+          "self_amendment",
+          "justification",
+          "osr"
+        ],
+        "segments": 11
+      },
+      "12294859/11/raw/tight": {
+        "bytes": 2506,
+        "parts": 6,
+        "parts_with_emitted_ranges": [
+          0,
+          4
+        ],
+        "payload": "beebc64a6d83255bba17d96b6d7155760d173266da1ccdb021d33fc22dbe0e63",
+        "roles": [
+          "unknown",
+          "normative_annex",
+          "self_amendment",
+          "self_amendment",
+          "justification",
+          "osr"
+        ],
+        "segments": 5
+      },
+      "12294859/9/raw/normal": {
+        "bytes": 3067,
+        "parts": 6,
+        "parts_with_emitted_ranges": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "payload": "95b78c077153ad9767e6d54353e633f5cc342c0013a542720e8bcaf0e3c53ad3",
+        "roles": [
+          "unknown",
+          "normative_annex",
+          "self_amendment",
+          "self_amendment",
+          "justification",
+          "osr"
+        ],
+        "segments": 11
+      },
+      "12294859/9/raw/tight": {
+        "bytes": 2506,
+        "parts": 6,
+        "parts_with_emitted_ranges": [
+          0,
+          4
+        ],
+        "payload": "beebc64a6d83255bba17d96b6d7155760d173266da1ccdb021d33fc22dbe0e63",
+        "roles": [
+          "unknown",
+          "normative_annex",
+          "self_amendment",
+          "self_amendment",
+          "justification",
+          "osr"
+        ],
+        "segments": 5
+      }
+    },
+    "parent_failures": 0
+  }
+}

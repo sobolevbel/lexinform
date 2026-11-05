@@ -11,10 +11,11 @@ import hashlib
 import json
 import re
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import Literal, Self
 from zoneinfo import ZoneInfo
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from lexinform.models.enums import (
     BILL_DOCUMENT_TYPE,
@@ -604,6 +605,8 @@ class PrintInfo(BaseModel):
     attachments: tuple[Attachment, ...] = ()
     additional_prints: tuple[PrintInfo, ...] = ()
     process_prints: tuple[str, ...] = ()
+    official_term_confirmed: bool = Field(default=False, exclude=True)
+    official_single_process_parent: str | None = Field(default=None, exclude=True)
 
     @property
     def web_url(self) -> str:
@@ -872,6 +875,14 @@ def diff_stages(
         for stage, key in zip(flatten_stages(new), stage_keys(new), strict=True)
         if key not in old_keys
     ]
+
+
+@dataclass(frozen=True)
+class SejmProposalOrigin:
+    term: int
+    parent_print: str
+    proposal_print: str
+    official_process_prints: tuple[str, ...]
 
 
 class TextDocument(BaseModel):

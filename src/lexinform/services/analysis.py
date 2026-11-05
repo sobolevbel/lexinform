@@ -141,6 +141,7 @@ from lexinform.models.batch import (
 )
 from lexinform.models.computations import CollectionReason, ComputationRecord
 from lexinform.models.input_receipts import LooseRclInputReceipt
+from lexinform.models.sejm import SejmProposalOrigin
 from lexinform.models.source_omissions import SenateOmissionOwner, SourceReferenceOmissionOwner
 from lexinform.ports import (
     AnalysisBackend,
@@ -2931,9 +2932,13 @@ class AnalysisService:
     ) -> _Prepared:
         """Prepare input; historical reanalysis records rereads on its calling thread."""
         document = located.document
+        sejm_proposal = located.sejm_proposal
+        if sejm_proposal is not None:
+            located = located.model_copy(update={"sejm_proposal": None})
         try:
             loaded = self._load_source(
                 document,
+                sejm_proposal=sejm_proposal,
                 owner=SourceReferenceOmissionOwner(
                     term=bill.term, number=bill.number, purpose="analysis"
                 ),
@@ -3147,16 +3152,20 @@ class AnalysisService:
                     model=self._options.overflow_model if overflow else "",
                 )
             )
-            receipt = None
+            receipt: PrimaryInputReceipt | LooseRclInputReceipt | None = None
             try:
-                capture_receipt = (
-                    capture_loose_rcl_input_receipt
-                    if loaded.rcl_projection == "annexes"
-                    else capture_primary_input_receipt
-                )
-                receipt = capture_receipt(
-                    request, loaded.selection, fitted.projection, loaded.source_read
-                )
+                if loaded.rcl_projection is None:
+                    receipt = capture_primary_input_receipt(
+                        request, loaded.selection, fitted.projection, loaded.source_read
+                    )
+                else:
+                    receipt = capture_loose_rcl_input_receipt(
+                        request,
+                        loaded.selection,
+                        fitted.projection,
+                        loaded.source_read,
+                        with_amendments=loaded.rcl_projection == "annexes_and_amendments",
+                    )
             except Exception:
                 with suppress(Exception):
                     log.warning("Prepared input receipt omitted (capture_failed)")
@@ -3684,19 +3693,30 @@ class AnalysisService:
         *,
         trim: bool = True,
         owner: SourceReferenceOmissionOwner | None = None,
+        sejm_proposal: SejmProposalOrigin | None = None,
     ) -> _Loaded:
         if owner is None or document is None:
-            return self._load_source_inner(document, trim=trim)
+            return self._load_source_inner(document, trim=trim, sejm_proposal=sejm_proposal)
         with self._loader.source_omission_scope(owner, document):
-            return self._load_source_inner(document, trim=trim)
+            return self._load_source_inner(document, trim=trim, sejm_proposal=sejm_proposal)
 
-    def _load_source_inner(self, document: TextDocument | None, *, trim: bool = True) -> _Loaded:
+    def _load_source_inner(
+        self,
+        document: TextDocument | None,
+        *,
+        trim: bool = True,
+        sejm_proposal: SejmProposalOrigin | None = None,
+    ) -> _Loaded:
         """Prepare admitted text or pages, propagating failures and blocked selections."""
         if document is None:
             return _Loaded("", False, "metadata_only")
         requested = document
         try:
-            document, file = self._loader.select_document(document)
+            document, file = (
+                self._loader.select_document(document, retain_routine_trace=True)
+                if sejm_proposal is not None
+                else self._loader.select_document(document)
+            )
         except ServiceUnavailableError:
             raise
         except OrkaUnreachableError as exc:
@@ -3710,6 +3730,8 @@ class AnalysisService:
                 f"{document.url}: {type(exc).__name__}: {exc}",
             ) from exc
         source = self._loader.capture_source_read(requested, document, file)
+        if sejm_proposal is not None and isinstance(source, DocumentSourceRead):
+            source = replace(source, sejm_proposal=sejm_proposal)
         try:
             return replace(self._load_selected(document, file, trim=trim), source_read=source)
         except Exception as exc:

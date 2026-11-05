@@ -1,6 +1,7 @@
 """Calling transactions record known physical metadata independently of body retention."""
 
 import datetime as dt
+import logging
 from dataclasses import dataclass
 from typing import Literal
 
@@ -20,6 +21,9 @@ from lexinform.models import (
     TextDocument,
 )
 from lexinform.models.artifacts import SelectionPartScope
+from lexinform.models.candidate_trace import SejmOriginalProposal
+from lexinform.models.document_editions import DocumentEdition
+from lexinform.models.sejm import SejmProposalOrigin
 from lexinform.models.source_omissions import (
     BillOmissionOwner,
     RclOmissionOwner,
@@ -29,6 +33,8 @@ from lexinform.models.source_omissions import (
 )
 from lexinform.ports import BillRepository, SourceHistoryPersistence
 from lexinform.source_omission_frames import source_omission_owner
+
+log = logging.getLogger(__name__)
 
 
 def persist_source_history(
@@ -49,6 +55,7 @@ class DocumentSourceRead:
     reads: tuple[ArtifactReadIdentity, ...] = ()
     extractions: tuple[ExtractionResult, ...] = ()
     candidate_trace: CandidateDispositionTrace | None = None
+    sejm_proposal: SejmProposalOrigin | None = None
 
 
 @dataclass(frozen=True)
@@ -112,6 +119,7 @@ def record_source_read(
         reads=source.reads,
         extractions=source.extractions,
         candidate_trace=source.candidate_trace,
+        sejm_proposal=source.sejm_proposal,
     )
 
 
@@ -179,13 +187,22 @@ def record_document_source(
     reads: tuple[ArtifactReadIdentity, ...] = (),
     extractions: tuple[ExtractionResult, ...] = (),
     candidate_trace: CandidateDispositionTrace | None = None,
+    sejm_proposal: SejmProposalOrigin | None = None,
 ) -> None:
     """Write the source and known outer-body links inside the caller's transaction."""
     record_artifacts(repo, artifacts, recorded_at=observation.recorded_at)
     record_artifact_reads(repo, reads, recorded_at=observation.recorded_at)
     repo.save_source_observation(selection, observation)
+    proposal_trace = None
     if candidate_trace is not None:
-        repo.save_candidate_disposition_trace(observation.observation_id, candidate_trace)
+        if (
+            sejm_proposal is not None
+            and candidate_trace.is_routine_singleton
+            and candidate_trace.archive_members is None
+        ):
+            proposal_trace = candidate_trace
+        else:
+            repo.save_candidate_disposition_trace(observation.observation_id, candidate_trace)
     edition = candidate_edition(selection, recorded_at=observation.recorded_at)
     if edition is not None:
         repo.save_selection_edition(selection.selection_id, edition)
@@ -214,3 +231,58 @@ def record_document_source(
                     artifact_sha256=part.source_sha256,
                 )
             )
+    if proposal_trace is not None and sejm_proposal is not None and edition is not None:
+        try:
+            proved = _prove_sejm_proposal(
+                proposal_trace, sejm_proposal, selection, observation, edition, reads
+            )
+            if proved is not None:
+                repo.save_candidate_disposition_trace(observation.observation_id, proved)
+        except ValueError:
+            log.debug("Original Sejm proposal proof failed validation")
+
+
+def _prove_sejm_proposal(
+    trace: CandidateDispositionTrace,
+    origin: SejmProposalOrigin,
+    selection: DocumentSelectionRecord,
+    observation: SourceObservation,
+    edition: DocumentEdition,
+    reads: tuple[ArtifactReadIdentity, ...],
+) -> CandidateDispositionTrace | None:
+    parts = selection.selection.parts
+    if (
+        (observation.term, observation.number) != (origin.term, origin.parent_print)
+        or observation.purpose != "analysis"
+        or len(parts) != 2
+        or edition.member_count != 1
+    ):
+        return None
+    base, proposal = parts
+    if (
+        (base.role, proposal.role) != ("bill", "self_amendment")
+        or base.members
+        or proposal.members
+        or base.source_sha256 is None
+        or proposal.source_sha256 is None
+    ):
+        return None
+    actual_reads = {(read.requested_url, read.sha256) for read in reads}
+    if (base.url, base.source_sha256) not in actual_reads or (
+        proposal.url,
+        proposal.source_sha256,
+    ) not in actual_reads:
+        return None
+    proof = SejmOriginalProposal(
+        term=origin.term,
+        parent_print=origin.parent_print,
+        proposal_print=origin.proposal_print,
+        official_process_prints=origin.official_process_prints,
+        base_sha256=base.source_sha256,
+        proposal_sha256=proposal.source_sha256,
+        selection_id=selection.selection_id,
+        edition_id=edition.edition_id,
+    )
+    return CandidateDispositionTrace.model_validate(
+        {**trace.model_dump(), "sejm_original_proposal": proof}
+    )

@@ -1,0 +1,172 @@
+{
+  "cases": {
+    "duplicate-proposal": {
+      "checkpoints": {
+        "collected": {
+          "gzip_growth": 0,
+          "normalized_state_equal": true,
+          "sql_growth": 0,
+          "trace_bytes": 0
+        },
+        "queue": {
+          "gzip_growth": 0,
+          "normalized_state_equal": true,
+          "sql_growth": 0,
+          "trace_bytes": 0
+        },
+        "submitted": {
+          "gzip_growth": 0,
+          "normalized_state_equal": true,
+          "sql_growth": 0,
+          "trace_bytes": 0
+        }
+      },
+      "same_request_and_reads": true
+    },
+    "missing-term": {
+      "checkpoints": {
+        "collected": {
+          "gzip_growth": 0,
+          "normalized_state_equal": true,
+          "sql_growth": 0,
+          "trace_bytes": 0
+        },
+        "queue": {
+          "gzip_growth": 0,
+          "normalized_state_equal": true,
+          "sql_growth": 0,
+          "trace_bytes": 0
+        },
+        "submitted": {
+          "gzip_growth": 0,
+          "normalized_state_equal": true,
+          "sql_growth": 0,
+          "trace_bytes": 0
+        }
+      },
+      "same_request_and_reads": true
+    },
+    "no-edition": {
+      "checkpoints": {
+        "collected": {
+          "gzip_growth": 0,
+          "normalized_state_equal": true,
+          "sql_growth": 0,
+          "trace_bytes": 0
+        },
+        "queue": {
+          "gzip_growth": 0,
+          "normalized_state_equal": true,
+          "sql_growth": 0,
+          "trace_bytes": 0
+        },
+        "submitted": {
+          "gzip_growth": 0,
+          "normalized_state_equal": true,
+          "sql_growth": 0,
+          "trace_bytes": 0
+        }
+      },
+      "same_request_and_reads": true
+    },
+    "non-list-parent": {
+      "checkpoints": {
+        "collected": {
+          "gzip_growth": 0,
+          "normalized_state_equal": true,
+          "sql_growth": 0,
+          "trace_bytes": 0
+        },
+        "queue": {
+          "gzip_growth": 0,
+          "normalized_state_equal": true,
+          "sql_growth": 0,
+          "trace_bytes": 0
+        },
+        "submitted": {
+          "gzip_growth": 0,
+          "normalized_state_equal": true,
+          "sql_growth": 0,
+          "trace_bytes": 0
+        }
+      },
+      "same_request_and_reads": true
+    },
+    "positive-error": {
+      "checkpoints": {
+        "collected": {
+          "gzip_growth": 370,
+          "normalized_state_equal": true,
+          "sql_growth": 1516,
+          "trace_bytes": 1140
+        },
+        "queue": {
+          "gzip_growth": 377,
+          "normalized_state_equal": true,
+          "sql_growth": 1516,
+          "trace_bytes": 1140
+        },
+        "submitted": {
+          "gzip_growth": 364,
+          "normalized_state_equal": true,
+          "sql_growth": 1516,
+          "trace_bytes": 1140
+        }
+      },
+      "same_request_and_reads": true
+    },
+    "positive-success": {
+      "checkpoints": {
+        "collected": {
+          "gzip_growth": 372,
+          "normalized_state_equal": true,
+          "sql_growth": 1516,
+          "trace_bytes": 1140
+        },
+        "queue": {
+          "gzip_growth": 377,
+          "normalized_state_equal": true,
+          "sql_growth": 1516,
+          "trace_bytes": 1140
+        },
+        "submitted": {
+          "gzip_growth": 364,
+          "normalized_state_equal": true,
+          "sql_growth": 1516,
+          "trace_bytes": 1140
+        }
+      },
+      "same_request_and_reads": true
+    },
+    "wrong-base-term": {
+      "checkpoints": {
+        "collected": {
+          "gzip_growth": 0,
+          "normalized_state_equal": true,
+          "sql_growth": 0,
+          "trace_bytes": 0
+        },
+        "queue": {
+          "gzip_growth": 0,
+          "normalized_state_equal": true,
+          "sql_growth": 0,
+          "trace_bytes": 0
+        },
+        "submitted": {
+          "gzip_growth": 0,
+          "normalized_state_equal": true,
+          "sql_growth": 0,
+          "trace_bytes": 0
+        }
+      },
+      "same_request_and_reads": true
+    }
+  },
+  "intentional_delta": [
+    "candidate_disposition_traces",
+    "source_candidate_traces"
+  ],
+  "lifecycle_restores_per_checkpoint": 2,
+  "writer_base_commit": "c956cb42",
+  "writer_patch_sha256": "0d6f67473758ce248ebeaf9336045c857d4739f1e6f2dbe8772e2cd45b6065d0"
+}

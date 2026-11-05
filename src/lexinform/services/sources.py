@@ -33,7 +33,7 @@ from lexinform.models import (
     third_reading_kept_the_text,
 )
 from lexinform.models.rcl import text_rank, text_role
-from lexinform.models.sejm import print_part_number
+from lexinform.models.sejm import SejmProposalOrigin, print_part_number
 from lexinform.ports import ConsultationDocuments, SejmGateway, TextSource
 
 
@@ -114,6 +114,39 @@ def original_document(print_info: PrintInfo | None) -> TextDocument | None:
     return documents[0].model_copy(update={"alternatives": documents[1:]})
 
 
+def _original_proposal(
+    bill: Bill, parent: PrintInfo | None, document: TextDocument | None
+) -> SejmProposalOrigin | None:
+    if (
+        parent is None
+        or document is None
+        or not parent.official_term_confirmed
+        or (parent.term, parent.number) != (bill.term, bill.number)
+        or len(parent.pdf_candidates) != 1
+        or len(document.amendment_urls) != 1
+    ):
+        return None
+    amendments = [
+        extra
+        for extra in parent.additional_prints
+        if extra.title.strip().casefold().startswith("autopoprawka") and extra.pdf_candidates
+    ]
+    if len(amendments) != 1:
+        return None
+    proposal = amendments[0]
+    if (
+        not proposal.official_term_confirmed
+        or proposal.term != parent.term
+        or proposal.number != f"{parent.number}-A"
+        or proposal.official_single_process_parent != parent.number
+        or proposal.process_prints != (parent.number,)
+        or len(proposal.pdf_candidates) != 1
+        or document.amendment_urls != (proposal.pdf_candidates[0].url,)
+    ):
+        return None
+    return SejmProposalOrigin(parent.term, parent.number, proposal.number, proposal.process_prints)
+
+
 class SejmTextSource:
     """Numbered prints: the process (metadata, stages) and the print's main PDF."""
 
@@ -126,9 +159,15 @@ class SejmTextSource:
     def locate(self, bill: Bill) -> LocatedText:
         detail = self._gateway.get_process(bill.term, bill.number)
         document = latest_text_document(detail.stages)
+        proposal = None
         if document is None:
-            document = original_document(fetch_print(self._gateway, bill))
-        return LocatedText(summary=detail, stages=detail.stages, document=document)
+            info = fetch_print(self._gateway, bill)
+            document = original_document(info)
+            if (detail.term, detail.number) == (bill.term, bill.number):
+                proposal = _original_proposal(bill, info, document)
+        return LocatedText(
+            summary=detail, stages=detail.stages, document=document, sejm_proposal=proposal
+        )
 
     def supporting_documents(self, bill: Bill, purpose: ReviewPurpose) -> tuple[ReviewSource, ...]:
         if purpose == "commission_review":

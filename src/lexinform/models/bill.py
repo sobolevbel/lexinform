@@ -39,6 +39,7 @@ from lexinform.models.sejm import (
     BillAuthors,
     BillSubmission,
     ProcessSummary,
+    SejmProposalOrigin,
     Stage,
     TextDocument,
 )
@@ -52,6 +53,7 @@ class LocatedText(BaseModel):
     summary: ProcessSummary | None = None
     stages: tuple[Stage, ...] | None = None
     document: TextDocument | None = None
+    sejm_proposal: SejmProposalOrigin | None = Field(default=None, exclude=True)
 
 
 class ReadyAnalysis(BaseModel):

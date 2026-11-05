@@ -111,6 +111,8 @@ def capture_loose_rcl_input_receipt(
     selection: DocumentSelection,
     projection: TextProjection | None,
     source: SourceReadCapture | None,
+    *,
+    with_amendments: bool = False,
 ) -> LooseRclInputReceipt | None:
     if (
         not isinstance(request.question, AnalysisQuestion)
@@ -123,7 +125,7 @@ def capture_loose_rcl_input_receipt(
         or len(projection.segments) > MAX_INPUT_RECEIPT_SEGMENTS
         or not isinstance(source, DocumentSourceRead)
         or source.document.kind != "rcl"
-        or not 2 <= len(selection.parts) <= 5
+        or not 2 <= len(selection.parts) <= (6 if with_amendments else 5)
         or source.document.url != selection.parts[0].url
         or selection.scan_input is not None
         or any(span.stage == "analysis" for span in selection.coverage)
@@ -161,6 +163,11 @@ def capture_loose_rcl_input_receipt(
     ):
         return None
     return LooseRclInputReceipt(
+        profile=(
+            "primary-loose-rcl-mixed-text-v1"
+            if with_amendments
+            else "primary-loose-rcl-annex-text-v1"
+        ),
         source_selection_id=prepared.source_selection_id,
         source_parts=tuple(parts),
         context_sha256=primary_context_sha256(ctx),

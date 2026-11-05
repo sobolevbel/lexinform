@@ -11,6 +11,7 @@ Verified behaviour (September 2026):
 
 import logging
 import time
+from collections import Counter
 from collections.abc import Callable, Iterator
 from datetime import UTC, date, datetime, timedelta
 from threading import Lock
@@ -232,11 +233,21 @@ class SejmApiClient:
                 data = self._get_json(f"/sejm/term{term}/prints")
                 if not isinstance(data, list):
                     raise SejmApiError("Unexpected /prints payload")
+                counts = Counter(str(row["number"]) for row in data)
                 related: dict[str, list[PrintInfo]] = {}
                 for raw in data:
                     info = parse_print(raw, term=term, base_url=self._base_url)
                     if not info.title.casefold().startswith("autopoprawka"):
                         continue
+                    if (
+                        info.official_term_confirmed
+                        and counts[info.number] == 1
+                        and len(info.process_prints) == 1
+                        and raw.get("processPrint") == list(info.process_prints)
+                    ):
+                        info = info.model_copy(
+                            update={"official_single_process_parent": info.process_prints[0]}
+                        )
                     for parent in info.process_prints:
                         if parent != info.number:
                             related.setdefault(parent, []).append(info)
@@ -652,4 +663,5 @@ def parse_print(
         attachments=attachments,
         additional_prints=additional,
         process_prints=tuple(str(n) for n in item.get("processPrint") or ()),
+        official_term_confirmed=type(item.get("term")) is int and item["term"] == term,
     )

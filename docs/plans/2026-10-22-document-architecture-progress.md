@@ -11440,3 +11440,13 @@ The independent ODT verifier now checks eight actual note and embedded-call span
 with bare space and tab elements. Original selected notes and separate references
 remain unobserved.
 [Reader and corpus evidence](../assets/audits/2026-11-05-mixed-reader-and-odt-inline-spans/report.md).
+
+<a id="j277"></a>
+
+## J277 — prospective writers for confirmed Sejm proposals and mixed RCL receipts
+
+The native Sejm writer preserves the official singleton proposal relation after
+validating the observed PDFs and saved source parents. A separate writer records exact
+mixed RCL receipts for the previously qualified profile. Both use the pre-existing
+selection and preparation decisions, with bounded storage and an unchanged fallback when
+evidence is unavailable. [Native replays and size checks](../assets/audits/2026-11-05-native-proposal-and-mixed-writers/report.md).

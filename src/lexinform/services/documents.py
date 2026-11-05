@@ -744,7 +744,9 @@ class TextLoader:
             bundle = supporting_part(bundle, url, loaded)
         return finish_bundle(bundle, document)
 
-    def select_document(self, document: TextDocument) -> tuple[TextDocument, LoadedFile]:
+    def select_document(
+        self, document: TextDocument, *, retain_routine_trace: bool = False
+    ) -> tuple[TextDocument, LoadedFile]:
         dispositions: list[CandidateDisposition] = []
         attempts: ArchiveDispositionAccumulator | None = None
         with suppress(Exception):
@@ -786,7 +788,12 @@ class TextLoader:
                     trace = CandidateDispositionTrace.model_validate(
                         {**trace.model_dump(), "normative_annex_gap": composition.normative_gap}
                     )
-        if trace is not None and trace.is_routine_singleton and trace.archive_members is None:
+        if (
+            not retain_routine_trace
+            and trace is not None
+            and trace.is_routine_singleton
+            and trace.archive_members is None
+        ):
             trace = None
         return selected, replace(
             loaded,

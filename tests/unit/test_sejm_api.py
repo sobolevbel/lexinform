@@ -126,6 +126,7 @@ def test_self_amendments_use_official_process_links_and_cache_the_catalog() -> N
                 {"number": "100", "title": "Rządowy projekt ustawy"},
                 {
                     "number": "100-A",
+                    "term": 10,
                     "title": "Autopoprawka do projektu ustawy",
                     "processPrint": ["100"],
                     "attachments": ["100-A.pdf"],
@@ -148,7 +149,10 @@ def test_self_amendments_use_official_process_links_and_cache_the_catalog() -> N
 
     assert [p.number for p in amendments] == ["100-A"]
     assert amendments[0].process_prints == ("100",)
-    assert [p.number for p in client.self_amendments(10, "101")] == ["101-A"]
+    assert amendments[0].official_single_process_parent == "100"
+    (unconfirmed,) = client.self_amendments(10, "101")
+    assert unconfirmed.number == "101-A"
+    assert unconfirmed.official_single_process_parent is None
     assert calls == ["/sejm/term10/prints"]
 
 
