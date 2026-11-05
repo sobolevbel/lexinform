@@ -11216,3 +11216,28 @@ requires verified reader deployment and a frozen real-corpus OFF baseline. DA4.1
 [integration](../assets/audits/2026-11-05-required-part-trace-reader/integration-proof.json),
 [review](../assets/audits/2026-11-05-required-part-trace-reader/peer-review.json),
 [writer prerequisites](../assets/audits/2026-11-05-required-part-trace-reader/design.md).
+
+<a id="j258"></a>
+
+## J258 — actual required-part exclusion provenance
+
+The existing native non-annex required-file branch now emits bounded typed provenance for its
+actual attempted outer/required scope. Body-free returned descriptors and count/digest summaries
+survive the existing whole trace bound alongside archive evidence. Selection, observed/rejected
+parts, admission, source witnesses/receipts, text/digests, question, policy and IO stay unchanged.
+Source exceptions/cancellation propagate; optional metadata failures stay neutral and scope resets.
+
+The deployed reader precedes this producer. Unit-first controls, scoped checks, exact-pin review,
+paired cached/raw/technical qualification and root full/static gates pass; numbers, hashes and
+coverage live in the linked evidence. Natural target-branch coverage is zero; missing cached
+inputs and fixed-owner fake-preparation probes stay explicit. No schema/classifier/backend or
+raw traversal expansion. Archive-only near-full-parent summary omission remains a follow-up;
+DA4.1 stays open and plan48complete/6N.A./20open is unchanged.
+
+J257 actual release is recorded with this stage. J258 actual release follows publication.
+At the user's70%used threshold, finish this stage, record handoff and pause the full goal.
+
+[Report](../assets/audits/2026-11-05-required-part-exclusion-writer/REPORT.md),
+[corpus qualification](../assets/audits/2026-11-05-required-part-exclusion-writer/corpus-proof.json),
+[integration](../assets/audits/2026-11-05-required-part-exclusion-writer/integration-proof.json),
+[review](../assets/audits/2026-11-05-required-part-exclusion-writer/peer-review.json).

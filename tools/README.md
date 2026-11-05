@@ -536,8 +536,10 @@ undefined fractions. Default and `--selection-coverage` output stay unchanged wi
 Candidate-trace readers accept optional typed `required_exclusions` under the existing whole
 4 KiB trace bound. Actual required-URL positions remain separate from outer candidate and ZIP
 positions; descriptors contain no text and pass metadata URL admission. Omitted summaries retain
-counts/hash without claiming complete descriptors. Capture is OFF pending a separately qualified
-writer; legacy trace JSON/IDs and all ordinary singleton omission behavior stay unchanged.
+counts/hash without claiming complete descriptors. Native required-part reads capture exclusions
+prospectively without changing selected text, admission or source witnesses. Optional metadata
+failure leaves delivery unchanged; cancellation propagates. Legacy trace JSON/IDs and ordinary
+singleton omission stay unchanged when no required exclusion was observed.
 
 ## Document download profile
 

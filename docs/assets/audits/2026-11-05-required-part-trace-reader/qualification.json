@@ -20,5 +20,9 @@
   "full_gate_commit_push_root_edits": "not performed; root-owned",
   "no_provider_network": true,
   "root_gate": "passed; integration-proof.json",
-  "release": "pending publication"
+  "release": {
+    "status": "verified",
+    "target_sha": "68b1da43328b57fbac94f5157890a905b93e639c",
+    "receipt": "release.json"
+  }
 }

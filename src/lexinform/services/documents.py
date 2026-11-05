@@ -15,7 +15,7 @@ import time
 from collections import Counter
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import AbstractContextManager, contextmanager, suppress
-from contextvars import ContextVar
+from contextvars import ContextVar, Token
 from dataclasses import dataclass, replace
 from typing import Literal
 from urllib.parse import urlparse
@@ -84,7 +84,8 @@ from lexinform.ports import (
     StructuredTextExtractor,
     TextExtractor,
 )
-from lexinform.sections import scan_page_window
+from lexinform.required_part_capture import RequiredPartCapture
+from lexinform.sections import Kind, scan_page_window
 from lexinform.services.document_history import (
     DocumentSourceRead,
     PhysicalSourceRead,
@@ -124,6 +125,19 @@ class _CachedDocument:
 _ARCHIVE_READ_SINK: ContextVar[
     tuple[object, str, int, Callable[[ArchiveRootObservation], None]] | None
 ] = ContextVar("archive_read_sink", default=None)
+
+
+@dataclass(frozen=True)
+class _RequiredScope:
+    owner: object
+    thread_id: int
+    capture: RequiredPartCapture
+    phase: Phase | None = None
+    index: int | None = None
+    document: TextDocument | None = None
+
+
+_REQUIRED_SCOPE: ContextVar[_RequiredScope | None] = ContextVar("required_part_scope", default=None)
 
 
 class TextLoader:
@@ -648,6 +662,29 @@ class TextLoader:
         bundle = start_bundle(self.read(document.url), min_chars=MIN_TEXT_CHARS)
         if isinstance(bundle, LoadedFile):
             return bundle
+        scope = _REQUIRED_SCOPE.get()
+        if (
+            scope is not None
+            and scope.owner is self
+            and scope.thread_id == threading.get_ident()
+            and scope.document is document
+            and scope.phase is not None
+            and scope.index is not None
+        ):
+            phase, index = scope.phase, scope.index
+
+            def observed(position: int, url: str, kind: Kind, file: LoadedFile) -> None:
+                try:
+                    if (
+                        position >= len(document.required_urls)
+                        or document.required_urls[position] != url
+                    ):
+                        raise ValueError("required exclusion differs from its actual relation")
+                    scope.capture.observe(phase, index, position, kind, file)
+                except Exception:
+                    scope.capture.fail()
+
+            bundle = replace(bundle, required_sink=observed)
         for url in document.required_urls:
             bundle = required_part(bundle, url, self.read(url))
             if isinstance(bundle, LoadedFile):
@@ -684,7 +721,10 @@ class TextLoader:
         attempts: ArchiveDispositionAccumulator | None = None
         with suppress(Exception):
             attempts = ArchiveDispositionAccumulator()
-        selected, loaded, result, reason = self._select_document(document, dispositions, attempts)
+        with self._required_capture_scope() as required_capture:
+            selected, loaded, result, reason = self._select_document(
+                document, dispositions, attempts
+            )
         try:
             trace = (
                 CandidateDispositionTrace.from_decisions(
@@ -708,6 +748,11 @@ class TextLoader:
         if trace is not None and attempts is not None:
             with suppress(Exception):
                 trace = attempts.enrich(trace)
+        if trace is not None and required_capture is not None:
+            with suppress(Exception):
+                trace = required_capture.enrich(
+                    trace, attempts.enrich if attempts is not None else None
+                )
         if trace is not None and trace.is_routine_singleton and trace.archive_members is None:
             trace = None
         return selected, replace(
@@ -717,6 +762,39 @@ class TextLoader:
             ),
             candidate_trace=trace,
         )
+
+    @contextmanager
+    def _required_capture_scope(self) -> Iterator[RequiredPartCapture | None]:
+        capture = None
+        token: Token[_RequiredScope | None] | None = None
+        try:
+            capture = RequiredPartCapture()
+            token = _REQUIRED_SCOPE.set(_RequiredScope(self, threading.get_ident(), capture))
+        except Exception:
+            capture = None
+        try:
+            yield capture
+        finally:
+            if token is not None:
+                with suppress(Exception):
+                    _REQUIRED_SCOPE.reset(token)
+
+    def _read_composed_candidate(
+        self, document: TextDocument, phase: Phase, index: int
+    ) -> LoadedFile:
+        scope = _REQUIRED_SCOPE.get()
+        if scope is None or scope.owner is not self or scope.thread_id != threading.get_ident():
+            return self.read_document(document)
+        try:
+            token = _REQUIRED_SCOPE.set(replace(scope, phase=phase, index=index, document=document))
+        except Exception:
+            scope.capture.fail()
+            return self.read_document(document)
+        try:
+            return self.read_document(document)
+        finally:
+            with suppress(Exception):
+                _REQUIRED_SCOPE.reset(token)
 
     def _select_document(
         self,
@@ -788,7 +866,9 @@ class TextLoader:
                     )
                 )
                 continue
-            loaded = self._with_evidence(candidate, self.read_document(candidate))
+            loaded = self._with_evidence(
+                candidate, self._read_composed_candidate(candidate, "fallback", index)
+            )
             dispositions.append(
                 CandidateDisposition(
                     phase="fallback",
@@ -899,8 +979,11 @@ class TextLoader:
                 "version_conflict",
             )
         candidate, _ = candidates[choice.index]
-        loaded = self._with_evidence(candidate, self.read_document(candidate))
         selected_index = candidate_indices[choice.index]
+        loaded = self._with_evidence(
+            candidate,
+            self._read_composed_candidate(candidate, "version_comparison", selected_index),
+        )
         dispositions.extend(
             item.model_copy(update={"outcome": "selected", "reason": "version_choice"})
             if item.index == selected_index

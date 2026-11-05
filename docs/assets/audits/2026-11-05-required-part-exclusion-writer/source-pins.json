@@ -1,0 +1,10 @@
+{
+  "base": "68b1da43328b57fbac94f5157890a905b93e639c",
+  "files": {
+    "src/lexinform/required_part_capture.py": "43b76aa77f3e64c3c03efd1ed43576f94b5c14011bc9fa79e857f13a1967334e",
+    "src/lexinform/document_composition.py": "ab2a2359609fdcd7e842ae9c7e81c0ee2e6978a4599d01795f554c5cd7cb91c4",
+    "src/lexinform/services/documents.py": "3695b4d9ddf4f9159ffb3ba1182160d78513d491d23b23a1dc4a82a85e8e3bde",
+    "tests/unit/test_required_part_writer.py": "c0c4930f1a3a34e08ac8e54c4e39490ce94959268feff2901691fd19f74bd426",
+    "tools/README.md": "b6ada20e394a4214c1225a01fea5f45b1447b5bd9519fe2a97e0f67898f839a6"
+  }
+}

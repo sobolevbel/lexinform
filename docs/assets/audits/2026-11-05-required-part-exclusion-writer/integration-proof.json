@@ -1,0 +1,15 @@
+{
+  "full_tests": 8972,
+  "seconds": 303.67,
+  "mypy": 772,
+  "ruff_format": 841,
+  "source_config_pins_exact": 841,
+  "root_focus": 14,
+  "new_units": 14,
+  "new_scenarios": 0,
+  "author_frozen_pins_match_root": true,
+  "corpus_proof_sha256": "7a1ba89b7fa2acb1064417cc97ea2d7b618fe24ca507f3e888d9407dd5c7ee5d",
+  "full_log_sha256": "7831d7fb71a8630d9f749e7a18f63a8ec98cc36b1ebf249a610b267347a0409f",
+  "full_xml_sha256": "a0191898174db1714c96de72dc991ceb67192a924cdd27ae56ee5902b2761579",
+  "actual_release": "pending publication"
+}

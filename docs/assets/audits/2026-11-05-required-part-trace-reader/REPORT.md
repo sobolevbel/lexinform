@@ -11,3 +11,5 @@ The focused unit suite, scoped static checks and independent exact-pin review pa
 [Qualification](qualification.json), [pins](source-pins.json), [review](peer-review.json), [legacy proof](legacy-proof.json), [unchanged source inventory](source-inventory.json), [design and writer prerequisites](design.md), [reproduce](reproduce.md). The [root integration and full gate](integration-proof.json) pass with all source/config pins exact. Actual release follows publication.
 
 Writer B remains separate: actual reader deployment, frozen OFF corpus baseline, real corpus comparison and inspection of every metadata delta are prerequisites. The demonstrated provenance omission remains unfixed in runtime until B; DA4.1 stays open. No raw archive/backend decision or natural missing-file acceptance is implied.
+
+Actual reader deployment is [verified](release.json); the prospective producer is qualified separately.

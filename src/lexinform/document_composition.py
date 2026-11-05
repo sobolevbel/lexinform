@@ -1,5 +1,7 @@
 """Compose existing loose-file snapshots without downloads or question-specific admission."""
 
+from collections.abc import Callable
+from contextlib import suppress
 from dataclasses import dataclass, field, replace
 from typing import Literal
 
@@ -12,7 +14,7 @@ from lexinform.document_versions import (
 from lexinform.models.document_reads import LoadedFile
 from lexinform.models.documents import DocumentPart, DocumentSelection
 from lexinform.models.sejm import TextDocument
-from lexinform.sections import APPENDIX_KINDS, PAGE_BREAK, carries_the_document, document_kind
+from lexinform.sections import APPENDIX_KINDS, PAGE_BREAK, Kind, carries_the_document, document_kind
 
 
 @dataclass(frozen=True)
@@ -24,6 +26,10 @@ class BundleAssembly:
     normative: tuple[str, ...] = ()
     annex_parts: tuple[DocumentPart, ...] = ()
     opaque_failure_prose: bool = field(default=False, compare=False, repr=False)
+    required_index: int = field(default=0, compare=False, repr=False)
+    required_sink: Callable[[int, str, Kind, LoadedFile], None] | None = field(
+        default=None, compare=False, repr=False
+    )
 
 
 def start_bundle(main: LoadedFile, *, min_chars: int) -> BundleAssembly | LoadedFile:
@@ -43,9 +49,15 @@ def start_bundle(main: LoadedFile, *, min_chars: int) -> BundleAssembly | Loaded
 def required_part(
     bundle: BundleAssembly, url: str, file: LoadedFile
 ) -> BundleAssembly | LoadedFile:
+    position = bundle.required_index
+    bundle = replace(bundle, required_index=position + 1)
     if file.text is None:
         return _blocked("waiting", f"{url}: required part unavailable")
-    if document_kind(file.text) in APPENDIX_KINDS - {"annex"}:
+    kind = document_kind(file.text)
+    if kind in APPENDIX_KINDS - {"annex"}:
+        if bundle.required_sink is not None:
+            with suppress(Exception):
+                bundle.required_sink(position, url, kind, file)
         return bundle
     return replace(
         bundle,

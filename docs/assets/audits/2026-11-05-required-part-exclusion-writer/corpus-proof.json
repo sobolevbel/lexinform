@@ -1,0 +1,166 @@
+{
+  "stage": "J258",
+  "base": "68b1da43328b57fbac94f5157890a905b93e639c",
+  "patch_sha256": "0cfe772fdaf2b60b16fabdd5596400d88cfb590bf7d9d6f7e2631dda2f0f3d69",
+  "source_pins_sha256": "ab52cb8cbe0b5e866848f016e8913b4cb01759e1368604a3c703f2094684704f",
+  "source_frozen_before_replays_and_unchanged_after": true,
+  "qa": {
+    "focused": 104,
+    "new_units": 14,
+    "new_scenarios": 0,
+    "strict_mypy_files": 4,
+    "ruff_files": 4,
+    "diff_check": true
+  },
+  "cached": {
+    "cases": 4276,
+    "states": {
+      "ambiguous": 123,
+      "no_candidate": 205,
+      "selected": 2273,
+      "unsupported": 669,
+      "unverified": 925,
+      "waiting": 81
+    },
+    "read_inputs": 7599,
+    "missing_inputs": 1383,
+    "complete_population": false,
+    "actual_required_part_calls": 0,
+    "actual_required_exclusion_hits": 0,
+    "all_public_selection_text_digest_admission_receipt_question_io_cores_exact": true,
+    "selection_calls": 4071,
+    "io_calls": 13242,
+    "technical_fixed_owner_prepared_questions": 3230,
+    "technical_fixed_owner_input_receipts": 1799,
+    "only_report_delta": [
+      "source_sha256"
+    ]
+  },
+  "raw": {
+    "comparison": {
+      "natural": true,
+      "synthetic": true
+    },
+    "only_report_delta": [
+      "source_sha256"
+    ],
+    "cohort_sha256": "f788bb15d668827d5fc6130df92084fca3099da90ef093bb98cd5a2b360d4859",
+    "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "read_inputs": 17,
+    "verification_extension": {
+      "extension_source_sha256": "cc8c81b786a80c34c9e0d72047de4f2e7dc361eab088e1dd50d19a72c5b8ba78",
+      "frozen_driver_sha256": "4eea367f98858d8add00a1ea043f5eed4707b0ed83c42b5f02ae9f4f64dc6319",
+      "inflate64_version": "1.0.4",
+      "original_archive_leaf_sha256": "461dd233a8037b335cb3d1c1f8730d1e9669fcf53cec6332c3547e1b287b1875",
+      "scope": "Independent raw ordinal payload checks only; no production selection helpers.",
+      "successful_member_decodes_by_method": {
+        "0": 16,
+        "8": 116,
+        "9": 16
+      },
+      "version": "archive-ordinal-deflate64-v1"
+    },
+    "actual_required_exclusion_hits": 0,
+    "scope": "Existing runner creates no required_urls; no target-branch natural acceptance."
+  },
+  "technical": {
+    "scope": "Native public technical branch, fake extraction/preparation; no natural/legal/provider claim.",
+    "frozen_recipe_sha256": "1ae000d8c99dd99cbcf5a1a2e9398717347083300341381c7731a0c539aa36a0",
+    "off_refusal_preserved": true,
+    "legacy_core_exact_after_only_candidate_trace_removed": true,
+    "all_other_public_core_fields_exact": [
+      "admission",
+      "exact_excluded_required_non_annex",
+      "input_pins",
+      "input_receipt",
+      "no_network_provider_or_pipeline",
+      "normalized_text_digest",
+      "off_exclusion_reasons",
+      "off_observed_descriptors",
+      "off_trace_retained",
+      "public_prompt_builder_sha256",
+      "read_metrics",
+      "required_part_calls",
+      "scope",
+      "source_capture",
+      "technical_prepared_request_sha256",
+      "technical_question_sha256"
+    ],
+    "intentional_delta": {
+      "candidate_trace": {
+        "coverage": "complete",
+        "requested_document": {
+          "url": "https://off.test/main",
+          "kind": "print",
+          "required_urls": [
+            "https://off.test/required"
+          ],
+          "version_basis": [
+            "official/technical-off-relation"
+          ]
+        },
+        "universe_sha256": "4296f119c30cd0aad49ec0ea9a8182cc4c90c59a670a608aaf2cb33b450ef188",
+        "candidate_count": 1,
+        "omitted_dispositions": 0,
+        "dispositions": [
+          {
+            "phase": "fallback",
+            "index": 0,
+            "outcome": "selected",
+            "reason": "first_acceptable_candidate",
+            "observed_sha256": "0fe3a36557e4769844e8d6c07052309238ced1b52cefaa10d397f82b0fe85ff6"
+          }
+        ],
+        "result": "selected",
+        "reason": "first_acceptable_candidate",
+        "selection_state": "selected",
+        "required_exclusions": {
+          "retention": "complete",
+          "observed_rows": 1,
+          "rows_sha256": "8740b38d0bef5ebd0013bae5397a3853fd5360117415b699fea90a24d231742b",
+          "omitted_rows": 0,
+          "rows": [
+            {
+              "phase": "fallback",
+              "index": 0,
+              "required_index": 0,
+              "reason": "required_non_annex_appendix",
+              "kind": "regulation",
+              "file_sha256": "061ddc1c4003b46d2f47263fdfad1f1f14569b156670e7e19275c8d4a133dd5e",
+              "text_sha256": "061ddc1c4003b46d2f47263fdfad1f1f14569b156670e7e19275c8d4a133dd5e",
+              "parts": [
+                {
+                  "url": "https://off.test/required",
+                  "sha256": "061ddc1c4003b46d2f47263fdfad1f1f14569b156670e7e19275c8d4a133dd5e",
+                  "text_end": 536,
+                  "text_sha256": "061ddc1c4003b46d2f47263fdfad1f1f14569b156670e7e19275c8d4a133dd5e"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "observed_descriptors": 1,
+    "new_trace_bytes": 1259,
+    "actual_downloads": 2,
+    "actual_known_file_sha256": "061ddc1c4003b46d2f47263fdfad1f1f14569b156670e7e19275c8d4a133dd5e",
+    "actual_returned_text_sha256": "061ddc1c4003b46d2f47263fdfad1f1f14569b156670e7e19275c8d4a133dd5e",
+    "paid_calls": 0
+  },
+  "off_baseline_report_sha256": "7dd5d0ec73347cf2b342cb9a650254c64c894a0b9ba6b52b7a512b75258f67b7",
+  "limitations": [
+    "No natural exact required-exclusion case in these cohorts.",
+    "1383 recorded cached inputs are absent; this is not complete corpus population coverage.",
+    "Question/receipt probes use a fixed technical owner and fake preparation, not historical or native fitted paid operations.",
+    "Pre-existing archive-only near-full-parent summary omission remains when no required evidence exists.",
+    "No selection text or classifier changes; no legal-gold, applicability, provider, database storage, delivery or full DA4.1 closure claim."
+  ],
+  "no_network_provider_pipeline_corpus_writes": true,
+  "reader_actual_deployment": {
+    "commit": "68b1da43328b57fbac94f5157890a905b93e639c",
+    "ci": "42027326742",
+    "deploy": "42028378775",
+    "verified_by_parent": true
+  }
+}
