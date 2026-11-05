@@ -10371,3 +10371,30 @@ DA10.2/DA10.7 partial;74total/43complete/6explicitNA/25open.
 [Report](../assets/audits/2026-11-05-supplement-deliveries/report.md),
 [qualification](../assets/audits/2026-11-05-supplement-deliveries/qualification.json),
 [state proof](../assets/audits/2026-11-05-supplement-deliveries/state-proof.json).
+
+<a id="j230"></a>
+
+## J230 — compatible amendment text-input receipt reader A
+
+5 November 2026. Internal AmendmentInputReceipt profile/context encoding reuses existing bounded
+text-map builder and parent validator. Complete actual AmendmentsContext is hashed, source
+segments cover only ctx.text; previoussummary/keychanges/proposal/recommendation never acquire
+normative ranges. Digest metadata, exact question/profile/purpose/request/context hashes and
+submitted-item checks recognize the new profile. Ordinary and correction share amendments purpose.
+
+Primary/supplement defaults/IDs unchanged; correction target contract unchanged. Runtime writer
+OFF: analysis/loading/correction services and repository/doctor source untouched. Resumed context
+without original capture remains unstamped; scans/multipart/unsupported origins remain unmapped.
+No provider preparation/calls, raw storage, schema or legacy provenance reconstruction.
+
+24newunit cases/no newscenarios;125root focused,mypy724/Ruff/formatgreen. Independent6file review
+clear. Fresh7b208 ENTIREdefaultdoctor, double canonical restore and DBhash exact; queued/submitting
+population0/0 explicitly not modern amendment production evidence. The separate11raw originals/
+22public preparation OFF baseline belongs to futureB acceptance, not activation in this reader.
+Fullgate8328tests/282.881s/92%,mypy724/Ruff/formatgreen;793source/config pins exact. Strict staged docs precede commit.
+J22977970851 exactCI41940853777/relay41941627412 verified;45shealth/timer.
+DA5 partial;74total/43complete/6explicitNA/25applicableopen.
+
+[Report](../assets/audits/2026-11-05-amendment-input-reader/report.md),
+[qualification](../assets/audits/2026-11-05-amendment-input-reader/qualification.json),
+[state proof](../assets/audits/2026-11-05-amendment-input-reader/state-proof.json).

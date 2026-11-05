@@ -1,0 +1,44 @@
+{
+  "stage": "J230 compatible amendment text input reader A",
+  "full_tests": 8328,
+  "pytest_xml": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "8328",
+    "time": "282.881",
+    "timestamp": "2026-11-05T01:25:14.289068+01:00",
+    "hostname": "Yauhenis-MacBook-Pro.local"
+  },
+  "new_unit_cases": 24,
+  "new_scenario_cases": 0,
+  "focused_root_cases": 125,
+  "strict_mypy_files": 724,
+  "coverage_percent": 92,
+  "mypy_ruff_format": "green",
+  "source_config_pins": 793,
+  "source_freeze_exact": true,
+  "runtime_writer_active": false,
+  "schema_or_provider_preparation_change": false,
+  "state_proof": "state-proof.json",
+  "proof_sha256": {
+    "full.xml": "15bce10cd16bde264f2edd271a2f6e3d6df43db7f9782f36a13f8709ad5af05f",
+    "full.log": "de4e534ffe4349596bfe9e7275420217077ce13b74e24d73fcc8b0af7f420ea9",
+    "source-freeze.json": "38054fbb2e73589c1fd3a34e2cae60537b43fa32c99f03a68a0e25dc0e7e6ea0",
+    "state-proof.json": "6d893a2e6b31af1aa9a408c784299990e5b4242fbf1125714ffa6d9833147193"
+  },
+  "previous_release": {
+    "target": "7797085152b6734905b82e23207aa89e5a2c3059",
+    "ci": 41940853777,
+    "deploy": 41941627412,
+    "complete": true
+  },
+  "scope": "Reader/default compatibility only; future B requires actual A deployment and frozen raw public-preparation baseline",
+  "plan_counts": {
+    "total": 74,
+    "complete": 43,
+    "not_applicable": 6,
+    "applicable_open": 25
+  }
+}

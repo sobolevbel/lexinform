@@ -284,6 +284,7 @@ from lexinform.models.extractions import (
     SelectionExtractionReference as SelectionExtractionReference,
 )
 from lexinform.models.extractions import WordViewStatus as WordViewStatus
+from lexinform.models.input_receipts import AmendmentInputReceipt as AmendmentInputReceipt
 from lexinform.models.input_receipts import PrimaryInputReceipt as PrimaryInputReceipt
 from lexinform.models.input_receipts import SupplementInputReceipt as SupplementInputReceipt
 from lexinform.models.legacy_results import LegacyResultImport as LegacyResultImport

@@ -3,9 +3,14 @@
 import hashlib
 from collections.abc import Iterator
 
-from lexinform.models.analysis import BillContext, SupplementContext
+from lexinform.models.analysis import AmendmentsContext, BillContext, SupplementContext
 from lexinform.models.artifacts import ArtifactIdentity
-from lexinform.models.batch import AnalysisQuestion, BatchRequest, SupplementQuestion
+from lexinform.models.batch import (
+    AmendmentsQuestion,
+    AnalysisQuestion,
+    BatchRequest,
+    SupplementQuestion,
+)
 from lexinform.models.document_history import DocumentSelectionRecord
 from lexinform.models.documents import DocumentSelection
 from lexinform.models.extractions import ExtractionResult
@@ -13,8 +18,10 @@ from lexinform.models.input_receipts import (
     MAX_INPUT_RECEIPT_BYTES,
     MAX_INPUT_RECEIPT_INTEGER,
     MAX_INPUT_RECEIPT_SEGMENTS,
+    AmendmentInputReceipt,
     PrimaryInputReceipt,
     SupplementInputReceipt,
+    amendment_context_sha256,
     input_json_chunks,
     input_map_sha256,
     input_text_sha256,
@@ -145,11 +152,37 @@ def supplement_input_receipt(
     )
 
 
-def _text_input_receipt[Receipt: (PrimaryInputReceipt, SupplementInputReceipt)](
+def amendment_input_receipt(
     request: BatchRequest,
     selection: DocumentSelection,
     *,
-    ctx: BillContext | SupplementContext,
+    projection: TextProjection | None,
+    known_selection: DocumentSelectionRecord | None = None,
+    body: ArtifactIdentity | None = None,
+    extraction: ExtractionResult | None = None,
+) -> AmendmentInputReceipt:
+    if not isinstance(request.question, AmendmentsQuestion):
+        raise ValueError("The receipt profile requires an amendments text request")
+    return _text_input_receipt(
+        request,
+        selection,
+        ctx=request.question.ctx,
+        receipt_model=AmendmentInputReceipt,
+        context_sha256=amendment_context_sha256(request.question.ctx),
+        projection=projection,
+        known_selection=known_selection,
+        body=body,
+        extraction=extraction,
+    )
+
+
+def _text_input_receipt[
+    Receipt: (PrimaryInputReceipt, SupplementInputReceipt, AmendmentInputReceipt)
+](
+    request: BatchRequest,
+    selection: DocumentSelection,
+    *,
+    ctx: BillContext | SupplementContext | AmendmentsContext,
     receipt_model: type[Receipt],
     context_sha256: str,
     projection: TextProjection | None,

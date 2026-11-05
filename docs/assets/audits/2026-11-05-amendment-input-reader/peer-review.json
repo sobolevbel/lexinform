@@ -1,0 +1,41 @@
+{
+  "reviewer": "secondary_dependency_review",
+  "status": "clear",
+  "patch_sha256": "92f4be4357166b19bac7c74e2c4029fd816994558278a23bd178c7d179609eb8",
+  "owned_source_pins": {
+    "src/lexinform/models/input_receipts.py": {
+      "base_sha256": "82f5a46c25c2a1ab137bdfd7d6a7531da8576ddf63609363609ec4d8813fdde3",
+      "candidate_sha256": "9a2b648ac5a1a27966fd0a76e574a6328e36175f48b1e381708379224772034b"
+    },
+    "src/lexinform/input_receipts.py": {
+      "base_sha256": "f40b8af94b2796363a13c0e4fc91eca866f90aedf694f717a522118f72f5db1e",
+      "candidate_sha256": "7ca843277bab0caec577f917d558cfe11553dbdecda7cf76cd711a3791045275"
+    },
+    "src/lexinform/models/__init__.py": {
+      "base_sha256": "557b9b149e21f86e63c9d943a3e8d547f669b0e6502df876d564dd34549674a9",
+      "candidate_sha256": "b21c85d4c70ab20e37b963e27876434e251b7192dead99a20c7bb5012782e299"
+    },
+    "src/lexinform/models/batch.py": {
+      "base_sha256": "285c1f1b47f38854b18ff4bab348c48c41a227ef8a94dec296d7fd8657fa75dd",
+      "candidate_sha256": "e5ae1428d0b13c47c2f13e00b50ca21f93cfda78c2edcd8c1f58b60a8b1c0fc9"
+    },
+    "src/lexinform/adapters/input_receipts.py": {
+      "base_sha256": "6cf2a6f6281f6097767a5c69535006838780e7e03da424a0165b2aa94a7fa522",
+      "candidate_sha256": "8dbf2d6a0855289a935ee5d8589a5b1fd7cdf651666413d0fca68ebd464bac64"
+    },
+    "tests/unit/test_amendment_input_receipts.py": {
+      "base_sha256": null,
+      "candidate_sha256": "1c288619a3487af650130b35ff66d342cc79da4db0d83d2ea47025b9c8fd2cc4"
+    }
+  },
+  "checks": [
+    "six exact frozen file hashes",
+    "whole actual amendment context hashed",
+    "source segments normative text only",
+    "profile/purpose/context/request checks",
+    "compatible shared parent validation",
+    "primary/supplement/legacy defaults and IDs preserved",
+    "runtime writer OFF"
+  ],
+  "execution": "Read-only review; no tests/edits/network. Root independently qualifies."
+}

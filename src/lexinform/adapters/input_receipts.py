@@ -7,6 +7,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 
 from lexinform.models import (
+    AmendmentInputReceipt,
     ArtifactMetadata,
     BatchIntent,
     BatchRequest,
@@ -63,7 +64,8 @@ def _reference(table: str, key: object) -> str:
 
 
 def _parents(
-    connection: sqlite3.Connection, receipt: PrimaryInputReceipt | SupplementInputReceipt
+    connection: sqlite3.Connection,
+    receipt: PrimaryInputReceipt | SupplementInputReceipt | AmendmentInputReceipt,
 ) -> None:
     selection = None
     if receipt.source_selection_id is not None:

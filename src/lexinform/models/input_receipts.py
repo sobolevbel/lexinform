@@ -7,7 +7,7 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from lexinform.models.analysis import BillContext, SupplementContext
+from lexinform.models.analysis import AmendmentsContext, BillContext, SupplementContext
 from lexinform.models.prepared_input import PreparedTextPart, PreparedTextSegment
 
 MAX_INPUT_RECEIPT_BYTES = 8192
@@ -69,7 +69,7 @@ def input_json_chunks(value: object, *, ensure_ascii: bool = True) -> Iterator[s
         raise ValueError("Unsupported frozen context JSON value")
 
 
-def _text_context_sha256(ctx: BillContext | SupplementContext) -> str:
+def _text_context_sha256(ctx: BillContext | SupplementContext | AmendmentsContext) -> str:
     if ctx.scan is not None:
         raise ValueError("Text receipts cannot describe scan contexts")
     context = ctx.model_dump(mode="json", exclude={"text", "previous_key_changes"})
@@ -85,6 +85,10 @@ def primary_context_sha256(ctx: BillContext) -> str:
 
 
 def supplement_context_sha256(ctx: SupplementContext) -> str:
+    return _text_context_sha256(ctx)
+
+
+def amendment_context_sha256(ctx: AmendmentsContext) -> str:
     return _text_context_sha256(ctx)
 
 
@@ -107,13 +111,15 @@ class _TextInputReceipt(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
     schema_version: Literal[1] = 1
-    profile: Literal["primary-single-part-text-v1", "supplement-single-part-text-v1"] = (
-        "primary-single-part-text-v1"
-    )
+    profile: Literal[
+        "primary-single-part-text-v1",
+        "supplement-single-part-text-v1",
+        "amendment-single-part-text-v1",
+    ] = "primary-single-part-text-v1"
     coordinates: Literal["legacy_part_text_v1"] = "legacy_part_text_v1"
-    context_encoding: Literal["bill-context-json-v1", "supplement-context-json-v1"] = (
-        "bill-context-json-v1"
-    )
+    context_encoding: Literal[
+        "bill-context-json-v1", "supplement-context-json-v1", "amendments-context-json-v1"
+    ] = "bill-context-json-v1"
     map_encoding: Literal["prepared-text-segments-json-v1"] = "prepared-text-segments-json-v1"
     physical_origins: Literal["unmapped"] = "unmapped"
     block_origins: Literal["unmapped"] = "unmapped"
@@ -229,3 +235,8 @@ class PrimaryInputReceipt(_TextInputReceipt):
 class SupplementInputReceipt(_TextInputReceipt):
     profile: Literal["supplement-single-part-text-v1"] = "supplement-single-part-text-v1"
     context_encoding: Literal["supplement-context-json-v1"] = "supplement-context-json-v1"
+
+
+class AmendmentInputReceipt(_TextInputReceipt):
+    profile: Literal["amendment-single-part-text-v1"] = "amendment-single-part-text-v1"
+    context_encoding: Literal["amendments-context-json-v1"] = "amendments-context-json-v1"

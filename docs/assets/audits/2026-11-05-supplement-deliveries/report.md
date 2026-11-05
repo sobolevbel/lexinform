@@ -35,3 +35,5 @@ outside this diagnostic; DA10.2 and DA10.7 stay partial.
 [source pins](source-pins.json), [independent review](peer-review.json).
 
 Previous release: [exact CI and relay verification](previous-release.json).
+
+Actual release: [exact CI and relay verification](release.json), commit77970851.
