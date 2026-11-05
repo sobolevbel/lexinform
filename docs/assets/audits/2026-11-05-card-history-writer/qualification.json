@@ -1,0 +1,65 @@
+{
+  "stage": "J237 prospective compact card history writer B",
+  "full_tests": 8441,
+  "pytest_xml": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "8441",
+    "time": "293.335",
+    "timestamp": "2026-11-05T04:35:07.444948+01:00",
+    "hostname": "Yauhenis-MacBook-Pro.local"
+  },
+  "new_unit_cases": 28,
+  "new_scenario_cases": 0,
+  "removed_cases": 0,
+  "root_focused_writer_reader_doctor": 74,
+  "root_focused_sitting": 66,
+  "root_focused_lifecycle_delivery_corpus": 112,
+  "root_focused_strict_predecessor": 45,
+  "strict_mypy_files": 738,
+  "coverage_percent": 92,
+  "mypy_ruff_format": "green",
+  "source_config_pins": 807,
+  "source_freeze_exact": true,
+  "runtime_writer_active": true,
+  "new_schema_or_raw_storage": false,
+  "initial_failed_gate": {
+    "failed": 19,
+    "passed": 8405,
+    "causes": [
+      "contradictory fixture rewrite of confirmed card receipt",
+      "real missing-physical lifecycle read/restore bug",
+      "six corpus child failures from delivery-retry"
+    ]
+  },
+  "intermediate_green_gate": {
+    "tests": 8435,
+    "followup": "Peer found strict new-predecessor admission gap, then added six directed unit cases and final guard/no-op correction"
+  },
+  "reader_a_verified_before_publication": {
+    "target": "6fa7c906dbe611299e783d990ae37a530d10dc35",
+    "ci": 41957557486,
+    "deploy": 41958372822,
+    "complete": true
+  },
+  "proof_sha256": {
+    "full-qualified.xml": "ea0b1fec91c502d6a2e17c3fc98b8b9fdad362361d8ec5486aeaeeae544de573",
+    "full-qualified.log": "a60f5163a98e5963121e700cd8916f12801d84139f8c792332b6d110fc196008",
+    "full.xml": "56a06c7acb4907a0b3610affd1cd941af49e049c2616fd2b7a2a14f99a22fee0",
+    "full.log": "80fe7aa95a7eab78ab9d756c55537783a1bdea492dec3bf853cf51151384a615",
+    "full-final.xml": "602bcd025443760ebcadbf74439e58f2cffeb1729b9bf7fcbde22d368f7453af",
+    "full-final.log": "792651e0fb744e7aa513595c0337f26b0d28addc10afc8cb329a8d0365fba454",
+    "source-freeze-qualified.json": "64e0242097c629aa41b38952933b8cfa302f25bf69f9c805490043a0ccbd713a",
+    "paired-qualified.json": "9f304a4a4c5edbaf8e19602e7fc74161a8633efe9171c747e5b9bf08807f0b8f",
+    "storage-probe-final.json": "81d6674285f7aa0ad7d916daefcf53114e61d3318bad594444a17321f265b937",
+    "state-proof.json": "0743d4dc8cd349cb4ab739360703a9e61fdd625e4bb5e2282e07636f46ed85f1"
+  },
+  "plan_counts": {
+    "total": 74,
+    "complete": 44,
+    "not_applicable": 6,
+    "applicable_open": 24
+  }
+}

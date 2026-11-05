@@ -710,7 +710,7 @@ Bill и кэша. Повтор записанного результата да�
 **Изменяемые места:** `models/observations.py`, `services/amendments.py`, `posting.py`,
 `message_parts.py`, formatter, publication repository и retention.
 
-- [ ] DA7.1. **Частично: [J109](2026-10-22-document-architecture-progress.md#j109), snapshot/version/binding history для одиночных amendments status updates и revisions; [J234](2026-10-22-document-architecture-progress.md#j234) добавляет compatible compact-card reader continuation-v1 и одну append-only миграцию, с honest event/full-context absence; writer OFF. Полные source/application refs и остальные kinds остаются.** Ввести `content_versions`: immutable event/source/application refs, язык,
+- [ ] DA7.1. **Частично: [J109](2026-10-22-document-architecture-progress.md#j109), snapshot/version/binding history для одиночных amendments status updates и revisions; [J234](2026-10-22-document-architecture-progress.md#j234) добавляет compatible compact-card reader continuation-v1 и одну append-only миграцию, с honest event/full-context absence. [J237](2026-10-22-document-architecture-progress.md#j237) после actual reader deployment включает prospective single-root/card-edit writer, atomic history/outbox, actual language, no legacy backfill и измеренный компактный budget; retained physical availability отделена от strict new admission. Полные source/application refs и остальные kinds остаются.** Ввести `content_versions`: immutable event/source/application refs, язык,
   semantic content и exact rendered payload/formatter version, предыдущая версия и причина.
   Physical Publication ссылается на content version; существующие IDs не пересоздаются.
   Общие source/bill/change snapshots не копируются в каждую версию содержания; переход к refs

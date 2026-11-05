@@ -63,6 +63,10 @@ class RenderingPublisher(ABC):
     def __init__(self, formatter: MessageFormatter) -> None:
         self._formatter = formatter
 
+    @property
+    def language(self) -> str | None:
+        return self._formatter.language
+
     @abstractmethod
     def _deliver(self, message: Outgoing) -> PublishResult:
         """Send a rendered message and return the id it got."""

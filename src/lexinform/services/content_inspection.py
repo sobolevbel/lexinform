@@ -109,7 +109,11 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
     )
     current_id = confirmation.current_id
     if original.change_snapshot_id is None and (
-        any(item.id not in bound_by_publication for item in inventory)
+        any(
+            version.content_id not in {bound.content_id for bound in bound_by_publication.values()}
+            for version in versions
+        )
+        or any(item.id not in bound_by_publication for item in inventory)
         or not card_confirmation_matches(
             root,
             repo.card_refresh_parts(root_id),

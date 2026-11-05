@@ -256,8 +256,9 @@ def test_deleted_original_keeps_history_without_guessing_the_current_message(
 
     assert result["status"] == "recorded" and not result["summary"]["errors"]
     assert result["summary"]["warnings"] == 1
-    assert len(result["histories"][0]["versions"]) == 2
-    assert result["histories"][0]["current_content_id"] is None
+    history = next(row for row in result["histories"] if row["root_publication_id"] == root)
+    assert len(history["versions"]) == 2
+    assert history["current_content_id"] is None
     assert path.read_bytes() == before
     repo = SqliteBillRepository(path)
     versions = repo.list_content_versions(root)

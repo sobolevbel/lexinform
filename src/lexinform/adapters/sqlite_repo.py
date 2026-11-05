@@ -2242,7 +2242,7 @@ class SqliteBillRepository:
             return None
         version = read_content_version(row)
         verify_content_source(self._conn, version)
-        verify_card_content(self._conn, version)
+        verify_card_content(self._conn, version, retained=True)
         return version
 
     def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]:
@@ -2332,11 +2332,10 @@ class SqliteBillRepository:
         version = self.get_content_version(row["content_id"])
         if version is None:
             raise ValueError("a publication content binding has lost its version")
-        if (
-            version.change_snapshot_id is None
-            and verify_card_content(self._conn, version) != publication_id
-        ):
-            raise ValueError("card content binding differs from its physical operation")
+        if version.change_snapshot_id is None:
+            physical_id = verify_card_content(self._conn, version, retained=True)
+            if physical_id is not None and physical_id != publication_id:
+                raise ValueError("card content binding differs from its physical operation")
         return version
 
     def list_content_publications(self, root_publication_id: int) -> list[Publication]:

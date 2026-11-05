@@ -7,6 +7,7 @@ from lexinform.adapters.content_source_refs import ContentSourceRows
 from lexinform.content_versions import (
     card_confirmation_matches,
     card_physical_matches,
+    card_plan_matches,
     confirmed_content_version,
     content_delivery_mismatch,
     content_snapshot_refs,
@@ -18,6 +19,7 @@ from lexinform.models import (
     ContentVersion,
     DeliveryPlan,
     Publication,
+    PublicationKind,
     PublicationStatus,
 )
 from lexinform.models.content import card_bill_snapshot
@@ -76,15 +78,15 @@ def read_content_publication(row: sqlite3.Row) -> Publication:
     )
 
 
-def _verify_card_content(connection: sqlite3.Connection, value: ContentVersion) -> int | None:
+def _verify_card_content(
+    connection: sqlite3.Connection, value: ContentVersion, *, retained: bool
+) -> int | None:
     if value.change_snapshot_id is not None:
         return None
     root_row = _query(
         connection, "SELECT * FROM publications WHERE id=?", (value.root_publication_id,)
     ).fetchone()
-    if root_row is None:
-        raise ValueError("card_content_root_missing")
-    root = read_content_publication(root_row)
+    root = read_content_publication(root_row) if root_row is not None else None
     reader = ContentSourceRows(connection)
     snapshots: dict[str, ContentSnapshot] = {}
     for kind, identity in content_snapshot_refs(value):
@@ -99,6 +101,15 @@ def _verify_card_content(connection: sqlite3.Connection, value: ContentVersion) 
     semantic = DeliveryPlan.model_validate(
         read_json(snapshots[value.plan_snapshot_id].payload_json)
     )
+    if semantic.bill_json or semantic.rendered_text or not card_plan_matches(value, semantic):
+        raise ValueError("card_content_plan_scope")
+    if root is not None and (
+        root.kind is not PublicationKind.NEW_BILL
+        or root.status_change_id is not None
+        or value.previous_version_id is not None
+        and semantic.edit_message_id != root.message_id
+    ):
+        raise ValueError("card_content_root_scope")
     previous_ids: set[int] = set()
     if value.previous_version_id is not None:
         row = _query(
@@ -122,6 +133,52 @@ def _verify_card_content(connection: sqlite3.Connection, value: ContentVersion) 
                 (value.previous_version_id,),
             )
         }
+        if not retained:
+            previous_id = verify_card_content(connection, previous, retained=True)
+            previous_row = (
+                _query(
+                    connection, "SELECT * FROM publications WHERE id=?", (previous_id,)
+                ).fetchone()
+                if previous_id is not None
+                else None
+            )
+            physical = read_content_publication(previous_row) if previous_row is not None else None
+            if (
+                root is None
+                or root.status is not PublicationStatus.SENT
+                or root.message_id is None
+                or physical is None
+                or physical.status is not PublicationStatus.SENT
+                or physical.message_id != root.message_id
+            ):
+                raise ValueError("card_content_predecessor_unconfirmed")
+    bindings = _query(
+        connection,
+        "SELECT publication_id FROM publication_content WHERE content_id=?",
+        (value.content_id,),
+    ).fetchall()
+    missing = False
+    for binding in bindings:
+        identity = binding[0]
+        if (identity == value.root_publication_id) != (value.previous_version_id is None):
+            raise ValueError("card_content_binding_scope")
+        physical_row = _query(
+            connection, "SELECT * FROM publications WHERE id=?", (identity,)
+        ).fetchone()
+        if physical_row is None:
+            missing = True
+            continue
+        physical = read_content_publication(physical_row)
+        if not card_physical_matches(value, physical, root, semantic, previous_ids) or (
+            physical.delivery is not None
+            and content_delivery_mismatch(value, snapshots, physical.delivery) is not None
+        ):
+            raise ValueError("card_content_binding_scope")
+    if root is None:
+        if retained:
+            return None
+        raise ValueError("card_content_root_missing")
+    assert root_row is not None, "the available typed root comes from its physical row"
     rows = (
         [root_row]
         if value.previous_version_id is None
@@ -144,8 +201,12 @@ def _verify_card_content(connection: sqlite3.Connection, value: ContentVersion) 
             continue
         if physical.id is not None:
             matches.append(physical.id)
+    if not matches and retained and value.previous_version_id is not None:
+        return None
     if len(matches) != 1:
         raise ValueError("card_content_physical_scope")
+    if retained and missing:
+        return None
     return matches[0]
 
 
@@ -177,14 +238,16 @@ def validate_content_history(connection: sqlite3.Connection) -> None:
                 previous = read_content_version(previous_row) if previous_row is not None else None
                 if previous is None or previous.root_publication_id != value.root_publication_id:
                     raise ValueError("content_predecessor_unavailable")
-            physical_identity = verify_card_content(connection, value)
+            physical_identity = verify_card_content(connection, value, retained=True)
             if value.change_snapshot_id is None:
                 bindings = _query(
                     connection,
                     "SELECT publication_id FROM publication_content WHERE content_id=?",
                     (value.content_id,),
                 ).fetchall()
-                if any(binding[0] != physical_identity for binding in bindings):
+                if physical_identity is not None and any(
+                    binding[0] != physical_identity for binding in bindings
+                ):
                     raise ValueError("card_content_binding_mismatch")
         for table in ("content_snapshots", "content_versions", "publication_content"):
             if _query(connection, f"PRAGMA foreign_key_check({table})").fetchone() is not None:
@@ -226,9 +289,11 @@ def card_publication_rows(connection: sqlite3.Connection, root_id: int) -> list[
     )
 
 
-def verify_card_content(connection: sqlite3.Connection, value: ContentVersion) -> int | None:
+def verify_card_content(
+    connection: sqlite3.Connection, value: ContentVersion, *, retained: bool = False
+) -> int | None:
     try:
-        return _verify_card_content(connection, value)
+        return _verify_card_content(connection, value, retained=retained)
     except RecursionError as exc:
         raise ValueError("invalid_card_content_history") from exc
 
@@ -238,6 +303,15 @@ def card_current_content(connection: sqlite3.Connection, root_id: int) -> str | 
     if from_root is None:
         return None
     root = read_content_publication(from_root)
+    for row in _query(
+        connection, "SELECT * FROM content_versions WHERE root_publication_id=?", (root_id,)
+    ):
+        value = read_content_version(row)
+        if (
+            value.change_snapshot_id is None
+            and verify_card_content(connection, value, retained=True) is None
+        ):
+            return None
     bound: dict[int, ContentVersion] = {}
     for row in _query(
         connection,

@@ -103,7 +103,9 @@ def _read_history(
         except ValueError:
             findings.add("content_source_reference_invalid", version.content_id)
         try:
-            verify_card_content(db, version)
+            physical_id = verify_card_content(db, version, retained=True)
+            if version.change_snapshot_id is None and physical_id is None:
+                findings.add("card_content_physical_unavailable", version.content_id, warning=True)
         except ValueError, TypeError, RecursionError, sqlite3.Error, IndexError, KeyError:
             findings.add("invalid_card_content_history", version.content_id)
         for kind, identity in content_snapshot_refs(version):
@@ -177,7 +179,8 @@ def _publication_bindings(
                     findings.add("content_message_target_mismatch", str(identity))
             if bound.change_snapshot_id is None:
                 try:
-                    if verify_card_content(db, bound) != identity:
+                    physical_id = verify_card_content(db, bound, retained=True)
+                    if physical_id is not None and physical_id != identity:
                         findings.add("content_binding_kind_mismatch", str(identity))
                 except ValueError, TypeError, RecursionError, sqlite3.Error, IndexError, KeyError:
                     findings.add("invalid_card_content_history", str(identity))

@@ -64,3 +64,5 @@ Ruff and formatting green. All805 source/config pins remain exact. [Case-set com
 confirms38newunit cases, zero new scenarios and zero removed logical cases. The unknown-schema
 boundary parameter advances from66 to67. State620f092 was re-fetched before publication.
 DA7 remains partial; 74total/44complete/6explicitN/A/24applicableopen.
+
+Actual reader release: [exact CI and relay verification](release.json), commit6fa7c906.

@@ -40,6 +40,7 @@ from lexinform.ports import (
 )
 from lexinform.services.analysis import AnalysisService, Waiting
 from lexinform.services.card_edits import edit_card
+from lexinform.services.content_history import FORMATTER_VERSION, record_publication_content
 from lexinform.services.direct_delivery import freeze_direct_root
 from lexinform.services.joint import group_of, primary_of
 from lexinform.services.message_parts import freeze_parts, send_continuations
@@ -337,27 +338,30 @@ class PublishingService:
         if plan.inherited is not None:
             return self._inherit_card(plan.bill, plan.inherited, plan.print_info, result)
         bill, print_info = plan.bill, plan.print_info
-        pub_id = self._repo.create_publication(
-            Publication(
-                term=identity.term,
-                number=identity.number,
-                kind=PublicationKind.NEW_BILL,
-                delivery=DeliveryPlan(
-                    bill_json=bill.model_dump_json(),
-                    policy_version="attention-v1" if self._attention_enabled else "legacy",
-                    today=self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date(),
-                    attention=assess_attention(
-                        bill, PublicationKind.NEW_BILL, now=self._clock.now()
-                    )
-                    if self._attention_assess
-                    else None,
-                    print_json=print_info.model_dump_json() if print_info else None,
-                ),
-                status=PublicationStatus.QUEUED,
-                channel_id=self._channel_id,
-                created_at=self._clock.now(),
+        with self._repo.atomic():
+            pub_id = self._repo.create_publication(
+                Publication(
+                    term=identity.term,
+                    number=identity.number,
+                    kind=PublicationKind.NEW_BILL,
+                    delivery=DeliveryPlan(
+                        bill_json=bill.model_dump_json(),
+                        policy_version="attention-v1" if self._attention_enabled else "legacy",
+                        today=self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date(),
+                        attention=assess_attention(
+                            bill, PublicationKind.NEW_BILL, now=self._clock.now()
+                        )
+                        if self._attention_assess
+                        else None,
+                        print_json=print_info.model_dump_json() if print_info else None,
+                    ),
+                    status=PublicationStatus.QUEUED,
+                    channel_id=self._channel_id,
+                    created_at=self._clock.now(),
+                )
             )
-        )
+            if existing is None:
+                self._freeze_send(pub_id, capture_card=True)
         if not self._send(pub_id, bill):
             return False
         self._repo.set_card_digest(pub_id, self._publisher.card_digest(bill))
@@ -626,7 +630,7 @@ class PublishingService:
     def _primary_of(self, bill: Bill) -> tuple[Bill, int] | None:
         return primary_of(self._repo, bill, self._channel_id)
 
-    def _send(self, pub_id: int, bill: Bill) -> bool:
+    def _freeze_send(self, pub_id: int, *, capture_card: bool = False) -> Publication:
         pub = self._repo.publication_by_id(pub_id)
         if pub is None or pub.delivery is None:
             raise ValueError("The first publication lacks its stored delivery plan")
@@ -651,6 +655,19 @@ class PublishingService:
         assert pub.delivery is not None and pub.delivery.rendered_text, (
             "both direct preparation paths freeze the first physical HTML before sending"
         )
+        if capture_card:
+            record_publication_content(
+                self._repo,
+                self._clock,
+                pub,
+                formatter_version=FORMATTER_VERSION,
+                language=getattr(self._publisher, "language", None),
+                card_history_parent="original",
+            )
+        return pub
+
+    def _send(self, pub_id: int, bill: Bill) -> bool:
+        pub = self._freeze_send(pub_id)
         self._repo.mark_publication(pub_id, PublicationStatus.PENDING, count_attempt=False)
         message_id = send_publication(
             self._repo,

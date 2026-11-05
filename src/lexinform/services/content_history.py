@@ -1,10 +1,13 @@
 """Preserve single-message editorial history without using a current Bill as historical context."""
 
+from typing import Literal
+
 from lexinform.content_sources import (
     SourceContextInvalidError,
     inspect_primary_content_sources,
     supported_source_context,
 )
+from lexinform.content_versions import card_physical_matches
 from lexinform.models import (
     Bill,
     ContentSnapshot,
@@ -16,7 +19,7 @@ from lexinform.models import (
     StatusChange,
     amendments_stage,
 )
-from lexinform.models.content import editorial_bill_snapshot
+from lexinform.models.content import card_bill_snapshot, editorial_bill_snapshot
 from lexinform.ports import BillRepository, Clock
 
 FORMATTER_VERSION = "telegram-format-v2"
@@ -55,17 +58,27 @@ def record_publication_content(
     formatter_version: str | None = None,
     language: str | None = None,
     source_origin: Publication | None = None,
+    card_history_parent: ContentVersion | Literal["original"] | None = None,
 ) -> ContentVersion | None:
     if publication.id is None:
         raise ValueError("Editorial history requires a saved physical publication")
     existing = repo.get_publication_content(publication.id)
     if existing is not None:
         current = repo.publication_by_id(publication.id)
-        if current is not None and current.delivery is not None:
+        if (
+            existing.change_snapshot_id is not None
+            and current is not None
+            and current.delivery is not None
+        ):
             repo.bind_publication_content(publication.id, existing.content_id)
         return existing
     prepared = prepare_publication_content(
-        repo, clock, publication, formatter_version=formatter_version, language=language
+        repo,
+        clock,
+        publication,
+        formatter_version=formatter_version,
+        language=language,
+        card_history_parent=card_history_parent,
     )
     if prepared is None:
         return None
@@ -108,9 +121,19 @@ def prepare_publication_content(
     *,
     formatter_version: str | None = None,
     language: str | None = None,
+    card_history_parent: ContentVersion | Literal["original"] | None = None,
 ) -> tuple[ContentVersion, tuple[ContentSnapshot, ...]] | None:
     if publication.id is None:
         raise ValueError("Editorial history requires a saved physical publication")
+    if card_history_parent is not None:
+        return _prepare_card_content(
+            repo,
+            clock,
+            publication,
+            parent=card_history_parent,
+            language=language,
+            formatter_version=formatter_version,
+        )
     plan = publication.delivery
     if (
         publication.kind not in (PublicationKind.STATUS_UPDATE, PublicationKind.AMENDMENTS_REVISION)
@@ -169,10 +192,7 @@ def prepare_publication_content(
     )
     bill_snapshot = editorial_bill_snapshot(plan.bill_json)
     change_snapshot = ContentSnapshot(kind="change", payload_json=plan.change_json)
-    semantic_plan = plan.model_copy(
-        update={"bill_json": "", "change_json": "", "rendered_text": ""}
-    )
-    plan_snapshot = ContentSnapshot(kind="plan", payload_json=semantic_plan.model_dump_json())
+    plan_snapshot = _plan_snapshot(plan)
     version = ContentVersion(
         root_publication_id=root_id,
         previous_version_id=previous.content_id if previous else None,
@@ -188,3 +208,69 @@ def prepare_publication_content(
         recorded_at=clock.now(),
     )
     return version, (bill_snapshot, change_snapshot, plan_snapshot)
+
+
+def _plan_snapshot(plan: DeliveryPlan) -> ContentSnapshot:
+    semantic = plan.model_copy(update={"bill_json": "", "change_json": "", "rendered_text": ""})
+    return ContentSnapshot(kind="plan", payload_json=semantic.model_dump_json())
+
+
+def _prepare_card_content(
+    repo: BillRepository,
+    clock: Clock,
+    publication: Publication,
+    *,
+    parent: ContentVersion | Literal["original"],
+    language: str | None,
+    formatter_version: str | None,
+) -> tuple[ContentVersion, tuple[ContentSnapshot, ...]] | None:
+    plan = publication.delivery
+    if (
+        publication.id is None
+        or publication.status is not PublicationStatus.QUEUED
+        or publication.attempts
+        or plan is None
+        or not plan.rendered_text
+        or language not in ("ru", "en")
+        or not formatter_version
+        or repo.digest_owner(publication.id) is not None
+    ):
+        return None
+    previous = parent if isinstance(parent, ContentVersion) else None
+    root = repo.publication_by_id(previous.root_publication_id) if previous else publication
+    if root is None:
+        return None
+    previous_ids: set[int] = set()
+    if previous is not None:
+        if (
+            previous.change_snapshot_id is not None
+            or previous.card_context_profile != "continuation-v1"
+            or repo.get_content_version(previous.content_id) != previous
+            or root.status is not PublicationStatus.SENT
+        ):
+            return None
+        for physical in repo.list_content_publications(previous.root_publication_id):
+            if (
+                physical.id is not None
+                and physical.status is PublicationStatus.SENT
+                and physical.message_id == root.message_id
+                and repo.get_publication_content(physical.id) == previous
+            ):
+                previous_ids.add(physical.id)
+    bill_snapshot = card_bill_snapshot(plan.bill_json)
+    plan_snapshot = _plan_snapshot(plan)
+    version = ContentVersion(
+        root_publication_id=previous.root_publication_id if previous else publication.id,
+        previous_version_id=previous.content_id if previous else None,
+        reason="card_revision" if previous else "original",
+        language=language,
+        bill_snapshot_id=bill_snapshot.snapshot_id,
+        card_context_profile="continuation-v1",
+        plan_snapshot_id=plan_snapshot.snapshot_id,
+        rendered_text=plan.rendered_text,
+        formatter_version=formatter_version,
+        recorded_at=clock.now(),
+    )
+    if not card_physical_matches(version, publication, root, plan, previous_ids):
+        return None
+    return version, (bill_snapshot, plan_snapshot)

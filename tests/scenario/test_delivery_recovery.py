@@ -74,7 +74,20 @@ def test_retry_uses_saved_snapshot_and_parent_once_after_restart() -> None:
     )
     card = w.publication("3039")
     assert card is not None and card.id is not None
-    w.repo.mark_publication(card.id, PublicationStatus.SENT, message_id=999)
+    for operation in w.repo.list_content_publications(card.id):
+        if (
+            operation.kind is PublicationKind.MESSAGE_PART
+            and operation.status is PublicationStatus.FAILED
+        ):
+            w.command(f"/delivery {operation.id} dismiss obsolete card refresh")
+            _commands_only(w)
+    w.command("/republish 3039")
+    _commands_only(w)
+    replacement = w.publication("3039")
+    assert replacement is not None and replacement.message_id is not None, (
+        "the public republish command stores the new current card without rewriting the original"
+    )
+    assert replacement.id != card.id
     w.command(f"/delivery {identity} retry")
     queued = _commands_only(w)
     w.command(f"/delivery {identity} retry")
@@ -89,7 +102,7 @@ def test_retry_uses_saved_snapshot_and_parent_once_after_restart() -> None:
     assert queued.commands_failed == 0
     assert (report.updates, repeated.updates) == (1, 0)
     bill, change, reply = w.publisher.updates[0]
-    assert reply == pub.delivery.reply_to and reply != 999
+    assert reply == pub.delivery.reply_to and reply != replacement.message_id
     assert w.formatter.status_update(bill, change).text == before
     assert len(w.repo.delivery_resolutions(identity)) == 1
 
@@ -177,8 +190,15 @@ def test_deleted_publication_id_is_never_reused() -> None:
     w.run()
     old = w.publication("3039")
     assert old is not None and old.id is not None
+    retained = w.repo.list_content_versions(old.id)
+    assert retained, "the native card writer retains its original editorial history"
     w.repo.delete_publication(10, "3039", PublicationKind.NEW_BILL, CHANNEL)
-    w.repo.restore(w.repo.dump())
+    before = w.repo.dump()
+    w.repo.restore(before)
+    assert w.repo.dump() == before
+    w.repo.restore(before)
+    assert w.repo.dump() == before
+    assert w.repo.list_content_versions(old.id) == retained
     w.run()
 
     new = w.publication("3039")

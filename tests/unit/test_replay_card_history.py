@@ -37,6 +37,6 @@ def test_public_card_fixture_has_frozen_operations_and_no_models(mode: str) -> N
     value = snapshot(state(), 10, "RCL/1", mode)
     assert value["core"]["published"] and value["core"]["repeat_dump_exact"]
     assert value["core"]["restore_exact"] and value["core"]["new_model_requests"] == 0
-    assert value["metadata"]["content_versions"] == 0
+    assert value["metadata"]["content_versions"] == 2
     statuses = [row["status"] for row in value["core"]["physical"]]
     assert "unknown" in statuses if mode == "uncertain" else "sent" in statuses

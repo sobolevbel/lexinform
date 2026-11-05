@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 from lexinform.models import (
     Bill,
+    ContentVersion,
     DeliveryPlan,
     PrintInfo,
     Publication,
@@ -14,6 +15,8 @@ from lexinform.models import (
     PublicationStatus,
 )
 from lexinform.ports import BillRepository, Clock, Publisher, StateCheckpoint
+from lexinform.services.content_history import FORMATTER_VERSION, record_publication_content
+from lexinform.services.content_inspection import inspect_content
 from lexinform.services.message_parts import continuation_snapshot, send_continuations
 from lexinform.services.publications import (
     card_revision_owner,
@@ -226,6 +229,17 @@ def edit_card(
     if desired == owner.rendered_sha256:
         return CardEditResult()
     previous = current[0]
+    parent: ContentVersion | None = None
+    history = inspect_content(repo, owner)
+    if (
+        history is not None
+        and history.integrity == "valid"
+        and history.current_id is not None
+        and previous.id is not None
+    ):
+        candidate = repo.get_publication_content(previous.id)
+        if candidate is not None and candidate.content_id == history.current_id:
+            parent = candidate
     if previous.rendered_sha256 == desired and any(
         part.status is PublicationStatus.DISMISSED for part in current
     ):
@@ -274,6 +288,17 @@ def edit_card(
         if not repo.replace_unattempted_delivery(identities[0], plan):
             raise ValueError("Cannot change an attempted card edition")
         repo.set_card_digest(identities[0], desired)
+        if parent is not None:
+            frozen = repo.publication_by_id(identities[0])
+            assert frozen is not None, "the new physical edition was saved in this transaction"
+            record_publication_content(
+                repo,
+                clock,
+                frozen,
+                formatter_version=FORMATTER_VERSION,
+                language=getattr(publisher, "language", None),
+                card_history_parent=parent,
+            )
         repo.mark_publication(identities[0], PublicationStatus.PENDING, count_attempt=False)
         root = repo.publication_by_id(identities[0])
         assert root is not None, "the immutable root is saved before its edit"

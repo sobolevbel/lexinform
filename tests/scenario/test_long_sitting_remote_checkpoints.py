@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal
 
@@ -30,6 +30,7 @@ from tests.scenario.test_tracking_agenda import ASW, _sitting
 
 Boundary = Literal["root_intent", "root_receipt", "final_intent", "final_receipt"]
 TITLE = "Projekt ustawy o cudzoziemcach"
+SYNTHETIC_CALLBACK_ID = 900001
 SAVED_HTML = "<b>Previously saved sitting</b>\nThe original target and facts stay unchanged."
 
 
@@ -131,11 +132,18 @@ def test_every_long_sitting_part_has_remote_html_and_parent_receipt_before_api(
 ) -> None:
     case = queued(mode, cancelled=cancelled)
     world = case.world
+    saved = plan(world, case.identity)
+    assert saved.reply_to is not None, "the real watcher froze its card callback before attempts"
+    historical_callback = SYNTHETIC_CALLBACK_ID
+    assert world.repo.replace_unattempted_delivery(
+        case.identity, saved.model_copy(update={"reply_to": historical_callback})
+    )
+    case = replace(case, card_id=historical_callback)
     expected = expected_parts(case)
     card = world.publication("3039")
     assert card is not None and card.id is not None, "the initial production batch published a card"
-    world.repo.mark_publication(
-        card.id, PublicationStatus.SENT, message_id=999, count_attempt=False
+    assert card.message_id != case.card_id, (
+        "the saved historical callback differs from the current immutable card receipt"
     )
     remote = connect(world, tmp_path)
     original = world.publisher.publish_prepared

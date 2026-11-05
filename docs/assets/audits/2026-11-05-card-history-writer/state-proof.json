@@ -1,0 +1,11 @@
+{
+  "source_state": "620f09234a4959278811885b3e757593ae260bdd",
+  "migrated_copy_sha256": "d5ea22908a416054a43b95178034a15cb2dabe5aab949802d04d406a096d5d48",
+  "copy_unchanged": true,
+  "original_source_unchanged": true,
+  "all48table_rows_and_rowids_exact": true,
+  "whole_computation_doctor_exact_except_schema_db_headers": true,
+  "double_restore_exact": true,
+  "no_legacy_backfill": true,
+  "scope": "No public publication operation executed; prospective writer enabled only for future real operations"
+}

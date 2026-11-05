@@ -1,0 +1,253 @@
+{
+  "kind": "public-card-history-storage-probe",
+  "source_sha256": "04b69acd02f46522f32ff02cd13a91590d44aacc4083f2c6f82ce05e4995a453",
+  "cases": {
+    "10/RCL/12398102/confirmed": {
+      "original": {
+        "sql_bytes": 28208722,
+        "gzip_bytes": 5781287,
+        "version_ids": [
+          "content-v1:7c293b1bca5d81fe2d5d0ab552f5bc66f919349e92331f52a6a16e1d08189bda"
+        ],
+        "unique_snapshot_count": 2,
+        "snapshot_reference_count": 2,
+        "snapshots": [
+          {
+            "id": "content-snapshot-v1:ea738bf614a56c09f15acf70519bd416b0ec1fc73177ea60f960d30df17ee5ff",
+            "kind": "bill",
+            "payload_utf8_bytes": 2621,
+            "distance_from_original_publication_insert_bytes": 14876481
+          },
+          {
+            "id": "content-snapshot-v1:be9a0d802912dcc1241e98b5984b7165f019a13e40ba912de0cd21dd8882ece6",
+            "kind": "plan",
+            "payload_utf8_bytes": 865,
+            "distance_from_original_publication_insert_bytes": 14873722
+          }
+        ],
+        "metadata_only_sql_delta": 9254,
+        "metadata_only_gzip_delta": 2401,
+        "without_receipts": {
+          "sql_bytes": 28199468,
+          "gzip_bytes": 5778886,
+          "sha256": "d105349f41a9037b5891b44e9336ce4e1acc46d0baa1d2f5b6d15ae9933b809a",
+          "all_nonreceipt_rowids_exact": true,
+          "compatible_double_restore_exact": true
+        }
+      },
+      "after_edit": {
+        "sql_bytes": 28226022,
+        "gzip_bytes": 5782605,
+        "version_ids": [
+          "content-v1:7c293b1bca5d81fe2d5d0ab552f5bc66f919349e92331f52a6a16e1d08189bda",
+          "content-v1:6c8b23c098778e458bbb4f05af3ced54164cd0573d4dd88c02c57a709bda595f"
+        ],
+        "unique_snapshot_count": 4,
+        "snapshot_reference_count": 4,
+        "snapshots": [
+          {
+            "id": "content-snapshot-v1:ea738bf614a56c09f15acf70519bd416b0ec1fc73177ea60f960d30df17ee5ff",
+            "kind": "bill",
+            "payload_utf8_bytes": 2621,
+            "distance_from_original_publication_insert_bytes": 14885563
+          },
+          {
+            "id": "content-snapshot-v1:be9a0d802912dcc1241e98b5984b7165f019a13e40ba912de0cd21dd8882ece6",
+            "kind": "plan",
+            "payload_utf8_bytes": 865,
+            "distance_from_original_publication_insert_bytes": 14882804
+          },
+          {
+            "id": "content-snapshot-v1:73c5da2947daf5dd6e68696eccfa1a65db3925c3e29735917131e34de7cbe020",
+            "kind": "bill",
+            "payload_utf8_bytes": 2327,
+            "distance_from_original_publication_insert_bytes": 14881801
+          },
+          {
+            "id": "content-snapshot-v1:1f4c10a712daaca77784395d82fd9d6a2baec1511fffc1add46e56ca0d4e7bbc",
+            "kind": "plan",
+            "payload_utf8_bytes": 861,
+            "distance_from_original_publication_insert_bytes": 14879336
+          }
+        ],
+        "metadata_only_sql_delta": 18336,
+        "metadata_only_gzip_delta": 3018,
+        "without_receipts": {
+          "sql_bytes": 28207686,
+          "gzip_bytes": 5779587,
+          "sha256": "04b8642e3a9c368f2ebbb51062a8bed315fdb0891f6d7a36882ea322e3b992f7",
+          "all_nonreceipt_rowids_exact": true,
+          "compatible_double_restore_exact": true
+        }
+      },
+      "duplicate_poll_delta_sql": 0,
+      "duplicate_poll_delta_gzip": 0,
+      "restore_exact": true
+    },
+    "10/RCL/12411950/confirmed": {
+      "original": {
+        "sql_bytes": 26966923,
+        "gzip_bytes": 5531795,
+        "version_ids": [
+          "content-v1:af7e206fa8b835301d99f8e55ff6268a71aa207fa755e5c795e604206a34fb53"
+        ],
+        "unique_snapshot_count": 2,
+        "snapshot_reference_count": 2,
+        "snapshots": [
+          {
+            "id": "content-snapshot-v1:cc89ccd79cbe9dc55365b2674215fd928a35a5fa5762f234e9c01b3497815876",
+            "kind": "bill",
+            "payload_utf8_bytes": 1737,
+            "distance_from_original_publication_insert_bytes": 14876655
+          },
+          {
+            "id": "content-snapshot-v1:be9a0d802912dcc1241e98b5984b7165f019a13e40ba912de0cd21dd8882ece6",
+            "kind": "plan",
+            "payload_utf8_bytes": 865,
+            "distance_from_original_publication_insert_bytes": 14874780
+          }
+        ],
+        "metadata_only_sql_delta": 9428,
+        "metadata_only_gzip_delta": 2684,
+        "without_receipts": {
+          "sql_bytes": 26957495,
+          "gzip_bytes": 5529111,
+          "sha256": "6df4e8c8a277cbcacd862ddea80cb3fe5409ba4ddb0826f374ee66d469b87a5e",
+          "all_nonreceipt_rowids_exact": true,
+          "compatible_double_restore_exact": true
+        }
+      },
+      "after_edit": {
+        "sql_bytes": 26984881,
+        "gzip_bytes": 5533073,
+        "version_ids": [
+          "content-v1:af7e206fa8b835301d99f8e55ff6268a71aa207fa755e5c795e604206a34fb53",
+          "content-v1:d113a552f64b7f88a83715bc714f5e066c033adba52564a49f0a6d6a49e56d3c"
+        ],
+        "unique_snapshot_count": 4,
+        "snapshot_reference_count": 4,
+        "snapshots": [
+          {
+            "id": "content-snapshot-v1:cc89ccd79cbe9dc55365b2674215fd928a35a5fa5762f234e9c01b3497815876",
+            "kind": "bill",
+            "payload_utf8_bytes": 1737,
+            "distance_from_original_publication_insert_bytes": 14886086
+          },
+          {
+            "id": "content-snapshot-v1:be9a0d802912dcc1241e98b5984b7165f019a13e40ba912de0cd21dd8882ece6",
+            "kind": "plan",
+            "payload_utf8_bytes": 865,
+            "distance_from_original_publication_insert_bytes": 14884211
+          },
+          {
+            "id": "content-snapshot-v1:29d571556176b0d6f81f4f15385e941f3ff03dbfa53996ab3cd994f3e399e6f1",
+            "kind": "bill",
+            "payload_utf8_bytes": 1595,
+            "distance_from_original_publication_insert_bytes": 14883208
+          },
+          {
+            "id": "content-snapshot-v1:1f4c10a712daaca77784395d82fd9d6a2baec1511fffc1add46e56ca0d4e7bbc",
+            "kind": "plan",
+            "payload_utf8_bytes": 861,
+            "distance_from_original_publication_insert_bytes": 14881475
+          }
+        ],
+        "metadata_only_sql_delta": 18859,
+        "metadata_only_gzip_delta": 3197,
+        "without_receipts": {
+          "sql_bytes": 26966022,
+          "gzip_bytes": 5529876,
+          "sha256": "c7426099ad7803c98f9cda6a70659d7aa15cb14fb644dbde949ab5ff26b493a4",
+          "all_nonreceipt_rowids_exact": true,
+          "compatible_double_restore_exact": true
+        }
+      },
+      "duplicate_poll_delta_sql": 0,
+      "duplicate_poll_delta_gzip": 0,
+      "restore_exact": true
+    },
+    "10/WPL/UD491/confirmed": {
+      "original": {
+        "sql_bytes": 25856909,
+        "gzip_bytes": 5218758,
+        "version_ids": [
+          "content-v1:831c46fdb4f109e48a83b77c883414c8335fc7226241433507eac20af5ee4914"
+        ],
+        "unique_snapshot_count": 2,
+        "snapshot_reference_count": 2,
+        "snapshots": [
+          {
+            "id": "content-snapshot-v1:4a80f9c342b97fc2d8be44526a252a639c5253cfa50efb85aa304fb77f8c24a7",
+            "kind": "bill",
+            "payload_utf8_bytes": 8138,
+            "distance_from_original_publication_insert_bytes": 14881818
+          },
+          {
+            "id": "content-snapshot-v1:be9a0d802912dcc1241e98b5984b7165f019a13e40ba912de0cd21dd8882ece6",
+            "kind": "plan",
+            "payload_utf8_bytes": 865,
+            "distance_from_original_publication_insert_bytes": 14873542
+          }
+        ],
+        "metadata_only_sql_delta": 14591,
+        "metadata_only_gzip_delta": 5142,
+        "without_receipts": {
+          "sql_bytes": 25842318,
+          "gzip_bytes": 5213616,
+          "sha256": "e2caabc53cd0743cca02eb99021f3da6b2472fc2cad6f8d246213638798f3504",
+          "all_nonreceipt_rowids_exact": true,
+          "compatible_double_restore_exact": true
+        }
+      },
+      "after_edit": {
+        "sql_bytes": 25885098,
+        "gzip_bytes": 5219691,
+        "version_ids": [
+          "content-v1:831c46fdb4f109e48a83b77c883414c8335fc7226241433507eac20af5ee4914",
+          "content-v1:ec4a858029df86ebe5138c61f54632d7772eb8703853fb0795304f373e49b564"
+        ],
+        "unique_snapshot_count": 4,
+        "snapshot_reference_count": 4,
+        "snapshots": [
+          {
+            "id": "content-snapshot-v1:4a80f9c342b97fc2d8be44526a252a639c5253cfa50efb85aa304fb77f8c24a7",
+            "kind": "bill",
+            "payload_utf8_bytes": 8138,
+            "distance_from_original_publication_insert_bytes": 14896348
+          },
+          {
+            "id": "content-snapshot-v1:be9a0d802912dcc1241e98b5984b7165f019a13e40ba912de0cd21dd8882ece6",
+            "kind": "plan",
+            "payload_utf8_bytes": 865,
+            "distance_from_original_publication_insert_bytes": 14888072
+          },
+          {
+            "id": "content-snapshot-v1:1e9db2daf872096e6b8c6b54cd1d9ab37ac7d5ab2b98f81db9cd870646247182",
+            "kind": "bill",
+            "payload_utf8_bytes": 7937,
+            "distance_from_original_publication_insert_bytes": 14887069
+          },
+          {
+            "id": "content-snapshot-v1:1f4c10a712daaca77784395d82fd9d6a2baec1511fffc1add46e56ca0d4e7bbc",
+            "kind": "plan",
+            "payload_utf8_bytes": 861,
+            "distance_from_original_publication_insert_bytes": 14878994
+          }
+        ],
+        "metadata_only_sql_delta": 29121,
+        "metadata_only_gzip_delta": 5791,
+        "without_receipts": {
+          "sql_bytes": 25855977,
+          "gzip_bytes": 5213900,
+          "sha256": "e8e382447dbfb14456bd5bbb4cda5ba9a5394681163c11d63d3c42218ed33243",
+          "all_nonreceipt_rowids_exact": true,
+          "compatible_double_restore_exact": true
+        }
+      },
+      "duplicate_poll_delta_sql": 0,
+      "duplicate_poll_delta_gzip": 0,
+      "restore_exact": true
+    }
+  },
+  "boundary": "Same real Bills and fixed synthetic render-only marker as frozen driver; public operations; no bodies or fabricated semantic gold"
+}

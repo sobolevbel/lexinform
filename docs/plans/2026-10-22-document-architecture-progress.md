@@ -10548,3 +10548,46 @@ J2353aa0a1ed CI41952153634/relay41953006717 verified. DA7 partial;74total/44comp
 [qualification](../assets/audits/2026-11-05-card-history-reader/qualification.json),
 [migration proof](../assets/audits/2026-11-05-card-history-reader/migration-proof.json),
 [paired proof](../assets/audits/2026-11-05-card-history-reader/corpus-proof.json).
+
+<a id="j237"></a>
+
+## J237 — prospective compact card history writer B
+
+5 November 2026. Fresh single NEW_BILL root creation/render freeze/history and single card-edit
+outbox/history commit atomically before API. Revisions require confirmed bound predecessors and
+exact previous physical target. Reuse continuation-v1 snapshots plus shared plan builder; actual
+formatter language via read-only publisher capability. Unknown language, legacy-unbound, inherited
+and multipart scopes stay unbound, without orphan snapshots or backfill. No full Bill copy,
+StatusChange invention, new schema/outbox/backend or delivery/attempt/operator policy change.
+
+First full gate19failed/8405passed uncovered a real supported deletion lifecycle incompatibility:
+retained history after forget/republish needs physical availability separated from intrinsic
+integrity. Reads/restore/doctor retain exact rows/IDs with unavailable physical evidence/currentNone;
+new revisions/save/bind stay strict, live contradictions and snapshot/predecessor FKs still fail.
+No synthetic root/tombstone or inferred historical existence. Late independent review adds strict
+available-SENT predecessor admission for new lineage, while exact already-bound card retry is a
+validated no-op. Intermediate corrected gate8435 passed; six further directed units precede final.
+
+Other failing sitting/retry fixtures rewrote confirmed card receipts. Tests now freeze a distinct
+synthetic historical callback through public unattempted-plan replacement, or audited dismissal +
+public republish, leaving actual histories immutable. Six corpus failures were a delivery-retry
+child cascade; root reran real subprocess qualification in its actual Git checkout. No skipped
+checks, fabricated Git SHA, weakened baseline or new World flow.
+
+Root exact frozen public replay14fixtures preserves physical/render/request/result/IO cores;
+final metadata equals original writer measurement. Two retained versions per fixture; unsupported
+controls follow the valid edit, initial exclusions separately unit-tested. Actual original+edit
+metadata +18,336–29,121SQL/+3,018–5,915gzip; largest2.36MBRCL +9,254/+2,401 original-only,
++18,336/+3,018 total. Poll growth0; no cross-version reuse claimed in controls. Compatible receipt
+removal preserves every nonreceipt rowid and OFF canonical dump. No production forecast/gold.
+All48old-state table rows/rowids, doctor and double restore exact, no source writes/backfill.
+
+Final8441tests/293.335s/92%,mypy738,Ruff/formatgreen, all807source/config pins exact;28newunits,
+0newscenarios/removals. Root74focus+66sitting+112lifecycle/corpus+45predecessor. Actual readerA3
+6fa7c906 CI41957557486/relay41958372822 verified before B publication. DA7 remains partial;
+74total/44complete/6explicitN/A/24applicableopen.
+
+[Report](../assets/audits/2026-11-05-card-history-writer/report.md),
+[qualification](../assets/audits/2026-11-05-card-history-writer/qualification.json),
+[measured budget](../assets/audits/2026-11-05-card-history-writer/budget.md),
+[storage proof](../assets/audits/2026-11-05-card-history-writer/storage-proof.json).

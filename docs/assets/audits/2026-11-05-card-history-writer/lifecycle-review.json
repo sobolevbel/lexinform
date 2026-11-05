@@ -1,0 +1,26 @@
+{
+  "findings": [],
+  "independent_tests_run": false,
+  "limitations": [
+    "Requires strict-predecessor increment d853b20d4c468ea7b9461660e2625a22caf976b28f38fbe74ad899eabfc74cde; b882 alone admitted unavailable/unconfirmed predecessors to new lineage.",
+    "Historical availability does not confer current confirmation or permit new save/bind against missing physical evidence."
+  ],
+  "network_used": false,
+  "patch_sha256": "b882259e5e0a06087daa9479422637da6de9f31aeb639845e246a12bca81b8a6",
+  "resolved_findings": [
+    "Supported delete/forget/republish no longer invalidates retained history.",
+    "Direct mutation of bound card message ID replaced with legitimate replacement-card flow."
+  ],
+  "scope": "Exact seven-file historical availability correction review: preserve intrinsic immutable refs/profile/FKs while missing physical history is unavailable with current None; live contradictions remain invalid; supported forget/republish and saved-parent recovery fixtures.",
+  "source_sha256": {
+    "src/lexinform/adapters/content_history.py": "cbc10ad7f1065595294b25306d16c306024f6d17f2a3c41849b8fb3312e512d8",
+    "src/lexinform/adapters/sqlite_repo.py": "06ebdbf1be968600c7dcf57ab48ecb14cdc52b8578aa092bb91613e6bb810463",
+    "src/lexinform/content_versions.py": "675cbd7a5f6f4973ff465f11152a80bb27cd338cad139de0bbbc66ed219d8e15",
+    "src/lexinform/services/content_inspection.py": "08bdb5d016d734f246fc72c4af954d34d8a86948f1f7b86f55eade77a17caf9f",
+    "tests/scenario/test_delivery_recovery.py": "6e0d3cdc5fae8f19a6dcda846dcece64b759473a3f6d3700d6ef9dbc4c642e27",
+    "tests/unit/test_card_history_retention.py": "7cdc7417d5f6102d591d2579d2af89149a0aa3bf06222142751189e9f2d33260",
+    "tools/content_history_doctor.py": "884b371f45e594100133eb4a10c6f4cb8d0261b75cf91916c13dceb9485c7a80"
+  },
+  "stage": "J237 lifecycle-correction",
+  "verdict": "clear"
+}

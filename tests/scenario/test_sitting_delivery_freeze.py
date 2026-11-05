@@ -21,6 +21,7 @@ from tests.scenario.test_card_remote_checkpoints import RunnerLost, connect, git
 from tests.scenario.test_commands import _commands_only
 from tests.scenario.test_group_remote_checkpoints import flush, queued_world, restored, rows
 from tests.scenario.test_long_sitting_remote_checkpoints import (
+    SYNTHETIC_CALLBACK_ID,
     expected_parts,
     plan,
     queued,
@@ -42,6 +43,7 @@ def attempted_sittings(
     single: bool = False,
     mixed: bool = False,
     cancelled: bool = False,
+    historical_callback: bool = False,
 ) -> tuple[World, tuple[int, ...]]:
     world, identities = queued_world("sittings", "off")
     selected: list[int] = []
@@ -52,9 +54,14 @@ def attempted_sittings(
         if single and index:
             world.repo.mark_publication(original.id, PublicationStatus.SKIPPED, count_attempt=False)
             continue
+        callback = original.delivery.reply_to
+        if historical_callback:
+            assert callback is not None, "the real watcher froze its card callback before attempts"
+            callback = SYNTHETIC_CALLBACK_ID + index
         saved = original.delivery.model_copy(
             update={
                 "policy_version": policy,
+                "reply_to": callback,
                 "participation": ParticipationSnapshot(
                     consultation=None, checked_at=world.clock.now()
                 ),
@@ -102,7 +109,13 @@ def test_retained_sitting_attempts_freeze_saved_callback_context_before_api(
     cancelled: bool,
 ) -> None:
     world, identities = attempted_sittings(
-        policy, status, attempts, single=single, mixed=mixed, cancelled=cancelled
+        policy,
+        status,
+        attempts,
+        single=single,
+        mixed=mixed,
+        cancelled=cancelled,
+        historical_callback=True,
     )
     original = rows(world, identities)
     news = tuple(SittingNews.of(pub.kind, pub.delivery) for pub in original if pub.delivery)
@@ -116,8 +129,8 @@ def test_retained_sitting_attempts_freeze_saved_callback_context_before_api(
         )
         card = world.publication(pub.number)
         assert card is not None and card.id is not None, "queued_world published the bill card"
-        world.repo.mark_publication(
-            card.id, PublicationStatus.SENT, message_id=999, count_attempt=False
+        assert pub.delivery is not None and card.message_id != pub.delivery.reply_to, (
+            "the saved historical callback differs from the current immutable card receipt"
         )
     remote = connect(world, tmp_path)
     publish = world.publisher.publish_prepared

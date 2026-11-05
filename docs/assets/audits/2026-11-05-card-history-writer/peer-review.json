@@ -1,0 +1,25 @@
+{
+  "findings": [],
+  "independent_tests_run": false,
+  "limitations": [
+    "Writer source must be released with lifecycle b882259e5e0a06087daa9479422637da6de9f31aeb639845e246a12bca81b8a6 and strict-predecessor d853b20d4c468ea7b9461660e2625a22caf976b28f38fbe74ad899eabfc74cde corrections.",
+    "Root verifies deployed A3, merged full gate and final paired replay before B publication."
+  ],
+  "network_used": false,
+  "patch_sha256": "d8af5005968475635cecf8d8daf73a07aace08996b03eccf9771f92ec4f480c8",
+  "scope": "Exact ten-file prospective compact writer review: atomic outbox/history before API, actual language capability, confirmed parent, no backfill, multipart/uncertainty/retry boundaries and paired fixture/storage evidence.",
+  "source_sha256": {
+    "docs/reference/database.md": "06831b9d2bf9b151618d633209e378e3503df3acc7d7b6e5f7b8e650e09ee457",
+    "src/lexinform/adapters/publisher_base.py": "f77be603b3a01673b2537c09d848656dfc10d8f47270c334c62f6c5a6d588662",
+    "src/lexinform/adapters/telegram_format.py": "1d6ebc518c1ab22904fab0f9f555b517a7bc6a1e1678ceea93ffb4f6a1fdbff7",
+    "src/lexinform/ports.py": "c261a39b72ce4b845f996d4eabfb776f14aaabbb4a34c8ea1246dfeef4d39c7e",
+    "src/lexinform/services/card_edits.py": "db48a86e31e7cb845aa3ef3008a02ec0284bb22fd0d6e6a0dce2fe167b9dd2a4",
+    "src/lexinform/services/content_history.py": "76817656e60f34c7198b8131a4ea57d68c15402ce094e0d0ccd444bccd0ab3e0",
+    "src/lexinform/services/publishing.py": "cf4f286d163f349021eec059d84ae77b37603994f0ccc0948662115f653a2f12",
+    "tests/unit/test_card_content_writer.py": "932aa406a3eb6ce99e1ee65e5471328db2bd7432706f6442c900122bbb3e7e60",
+    "tests/unit/test_content_history_doctor.py": "88bceb37d6b4bf5f83deb49694106a94bb2508da8ed4d0a5d550b0e8417d023d",
+    "tests/unit/test_replay_card_history.py": "3755b1fa250bb898ca100da2bda139c49f5671c7d6c2827a87b58c897400dd6a"
+  },
+  "stage": "J237 candidate",
+  "verdict": "clear"
+}

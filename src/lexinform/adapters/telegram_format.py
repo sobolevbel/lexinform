@@ -445,6 +445,10 @@ class MessageFormatter:
         self._single_message_cards = single_message_cards
         self._language = language
 
+    @property
+    def language(self) -> str | None:
+        return self._language.lower() if self._language.lower() in ("ru", "en") else None
+
     def superseded_card_part(self) -> str:
         return self._labels.card_part_superseded
 

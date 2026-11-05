@@ -522,6 +522,9 @@ class PublishResult(Protocol):
 class Publisher(Protocol):
     """Where the messages go: Telegram in production, stdout in a dry run."""
 
+    @property
+    def language(self) -> str | None: ...
+
     def publish_new_bill(self, bill: Bill, print_info: PrintInfo | None) -> PublishResult: ...
 
     def edit_new_bill(self, bill: Bill, print_info: PrintInfo | None, *, message_id: int) -> None:

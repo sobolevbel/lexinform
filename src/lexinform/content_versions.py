@@ -93,21 +93,9 @@ def content_snapshot_refs(version: ContentVersion) -> tuple[tuple[str, str], ...
     )
 
 
-def card_physical_matches(
-    version: ContentVersion,
-    publication: Publication,
-    root: Publication,
-    plan: DeliveryPlan,
-    previous_publications: Set[int],
-) -> bool:
+def card_plan_matches(version: ContentVersion, plan: DeliveryPlan) -> bool:
     if (
-        root.kind is not PublicationKind.NEW_BILL
-        or root.id != version.root_publication_id
-        or root.status_change_id is not None
-        or publication.status_change_id is not None
-        or (publication.term, publication.number, publication.channel_id)
-        != (root.term, root.number, root.channel_id)
-        or plan.destination != "direct"
+        plan.destination != "direct"
         or plan.change_json
         or plan.primary_json
         or plan.publication_ids
@@ -122,7 +110,42 @@ def card_physical_matches(
         return False
     if version.previous_version_id is None:
         return (
-            publication.id == root.id
+            plan.revision_of is None
+            and plan.edit_message_id is None
+            and plan.continuation_parent is None
+        )
+    return (
+        version.reason == "card_revision"
+        and plan.revision_of == version.root_publication_id
+        and plan.edit_message_id is not None
+        and plan.continuation_parent == version.root_publication_id
+        and plan.reply_to == plan.edit_message_id
+    )
+
+
+def card_physical_matches(
+    version: ContentVersion,
+    publication: Publication,
+    root: Publication | None,
+    plan: DeliveryPlan,
+    previous_publications: Set[int],
+) -> bool:
+    if (
+        root is not None
+        and (
+            root.kind is not PublicationKind.NEW_BILL
+            or root.id != version.root_publication_id
+            or root.status_change_id is not None
+            or (publication.term, publication.number, publication.channel_id)
+            != (root.term, root.number, root.channel_id)
+        )
+        or publication.status_change_id is not None
+        or not card_plan_matches(version, plan)
+    ):
+        return False
+    if version.previous_version_id is None:
+        return (
+            publication.id == version.root_publication_id
             and publication.kind is PublicationKind.NEW_BILL
             and plan.revision_of is None
             and plan.edit_message_id is None
@@ -133,17 +156,17 @@ def card_physical_matches(
         publication.kind is PublicationKind.MESSAGE_PART
         and version.reason == "card_revision"
         and match is not None
-        and int(match[1]) == root.id
+        and int(match[1]) == version.root_publication_id
         and int(match[2]) in previous_publications
-        and plan.revision_of == root.id
-        and plan.edit_message_id == root.message_id
-        and root.message_id is not None
+        and plan.revision_of == version.root_publication_id
+        and plan.edit_message_id is not None
+        and (root is None or plan.edit_message_id == root.message_id)
         and (
             publication.status is not PublicationStatus.SENT
-            or publication.message_id == root.message_id
+            or publication.message_id == plan.edit_message_id
         )
-        and plan.continuation_parent == root.id
-        and plan.reply_to == root.message_id
+        and plan.continuation_parent == version.root_publication_id
+        and plan.reply_to == plan.edit_message_id
     )
 
 
