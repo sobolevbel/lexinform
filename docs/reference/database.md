@@ -1,6 +1,6 @@
 # База данных и миграции
 
-Статус: актуальный справочник · миграции описаны по схеме **v65** включительно.
+Статус: актуальный справочник · миграции описаны по схеме **v66** включительно.
 
 Источник истины — append-only
 [`MIGRATIONS` в sqlite_repo.py](https://github.com/sobolevbel/lexinform/blob/main/src/lexinform/adapters/sqlite_repo.py).
@@ -666,3 +666,21 @@ count/hash и явной partial coverage; ранее существующая s
 URL policy snapshot сейчас явно `metadata-url-safety-v1`, соответствующий
 `METADATA_URL_POLICY_VERSION`. Перед будущим изменением policy нужен совместимый versioned reader:
 сохранённые snapshots нельзя переинтерпретировать по новой admission policy.
+
+
+### v66: nullable event reference for card content
+
+`content_versions.change_snapshot_id` допускает NULL для сохранённого single-message card content:
+карточка не создаёт фиктивный StatusChange. Миграция сохраняет rowid, immutable JSON/IDs,
+predecessor и publication bindings; остальные snapshot FK остаются обязательными. Новый reader
+понимает original/card_revision по существующему NEW_BILL/MESSAGE_PART outbox, runtime writer
+пока выключен. Поздняя unbound/unknown/multipart/aliased edition не подтверждает current из
+одного original SENT; смена владельца при rollover не переписывает исторический Bill.
+
+Nullable card versions явно используют JSON profile `continuation-v1`: тот же canonical
+continuation projection и удаление незавершённой editorial work. Полный исходный Bill/analysis
+не дублируется; сохранённые render и physical confirmation доступны после cleanup, но такой
+context не восстанавливает полный исходный контекст для смысловой correction. Legacy amendment
+JSON и IDs не меняются, runtime writer остаётся выключенным.
+
+Правило совместимости profile/defaults: `.claude/rules/operations.md`.

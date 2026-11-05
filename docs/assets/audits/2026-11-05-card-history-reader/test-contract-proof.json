@@ -1,0 +1,13 @@
+{
+  "changed_fields": {
+    "schema_version": [
+      65,
+      66
+    ],
+    "database_sha256": [
+      "9cd0a3e744825dfeeb870bd280985c51abfd7978ecf4e5506c828ed7a2f130e5",
+      "4e0e46be1115115c3aca7b13667b20d71cb2c2d6702e0639d4dc9b5530d5984a"
+    ]
+  },
+  "prechange_semantics_sha256": "3a2b5ea524ac08c948f3fd5c89803ebb74e596d094a60186bff40fe9e3504f70"
+}

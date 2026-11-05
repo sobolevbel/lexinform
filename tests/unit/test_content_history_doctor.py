@@ -168,6 +168,8 @@ def test_consistent_but_wrong_content_cannot_become_the_confirmed_current_versio
             "change": original.change_snapshot_id,
             "plan": original.plan_snapshot_id,
         }[part]
+        assert identity is not None, "the amendment fixture has its real event snapshot"
+        assert identity is not None, "the amendment fixture has its real event snapshot"
         snapshot = repo.get_content_snapshot(identity)
         assert snapshot is not None, "the version has all immutable semantic snapshots"
         fields = json.loads(snapshot.payload_json)

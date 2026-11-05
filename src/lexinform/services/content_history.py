@@ -23,12 +23,16 @@ FORMATTER_VERSION = "telegram-format-v2"
 
 
 def restore_content_delivery(repo: BillRepository, content: ContentVersion) -> DeliveryPlan:
+    if content.card_context_profile is not None:
+        raise ValueError("Compact card history does not retain the full original context")
     snapshots: dict[str, ContentSnapshot] = {}
     for kind, identity in (
         ("bill", content.bill_snapshot_id),
         ("change", content.change_snapshot_id),
         ("plan", content.plan_snapshot_id),
     ):
+        if identity is None:
+            continue
         snapshot = repo.get_content_snapshot(identity)
         if snapshot is None or snapshot.kind != kind:
             raise ValueError("Editorial history has lost its semantic snapshot")
@@ -37,7 +41,7 @@ def restore_content_delivery(repo: BillRepository, content: ContentVersion) -> D
     return plan.model_copy(
         update={
             "bill_json": snapshots["bill"].payload_json,
-            "change_json": snapshots["change"].payload_json,
+            "change_json": snapshots["change"].payload_json if "change" in snapshots else "",
             "rendered_text": content.rendered_text or "",
         }
     )

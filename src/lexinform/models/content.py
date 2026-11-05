@@ -7,6 +7,9 @@ from typing import Literal, Self
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, PositiveInt, model_validator
 
+from lexinform.bill_context import continuation_snapshot
+from lexinform.json_storage import read_json
+from lexinform.models.bill import Bill
 from lexinform.models.enums import PublicationStatus
 
 
@@ -44,20 +47,31 @@ def editorial_bill_snapshot(raw: str) -> ContentSnapshot:
     return ContentSnapshot(kind="bill", payload_json=raw)
 
 
+def card_bill_snapshot(raw: str) -> ContentSnapshot:
+    return editorial_bill_snapshot(continuation_snapshot(Bill.model_validate(read_json(raw))))
+
+
 class ContentVersion(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     schema_version: Literal[1] = 1
     root_publication_id: int = Field(gt=0)
     previous_version_id: str | None = Field(default=None, pattern=r"^content-v1:[0-9a-f]{64}$")
-    reason: Literal["original", "amendments_revision"]
+    reason: Literal["original", "amendments_revision", "card_revision"]
     language: str | None = Field(default=None, min_length=1)
     bill_snapshot_id: str = Field(pattern=r"^content-snapshot-v1:[0-9a-f]{64}$")
-    change_snapshot_id: str = Field(pattern=r"^content-snapshot-v1:[0-9a-f]{64}$")
+    change_snapshot_id: str | None = Field(
+        default=None,
+        pattern=r"^content-snapshot-v1:[0-9a-f]{64}$",
+        exclude_if=lambda value: value is None,
+    )
     plan_snapshot_id: str = Field(pattern=r"^content-snapshot-v1:[0-9a-f]{64}$")
     rendered_text: str | None = Field(default=None, min_length=1)
     formatter_version: str | None = Field(default=None, min_length=1)
     source_observation_ids: tuple[str, ...] = ()
+    card_context_profile: Literal["continuation-v1"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -70,6 +84,20 @@ class ContentVersion(BaseModel):
     def predecessor(self) -> Self:
         if (self.reason == "original") != (self.previous_version_id is None):
             raise ValueError("an original has no predecessor; a revision requires one")
+        if self.change_snapshot_id is None and (
+            self.card_context_profile != "continuation-v1"
+            or self.reason == "amendments_revision"
+            or self.status_change_id is not None
+            or self.source_scope is not None
+            or not self.rendered_text
+            or self.language is None
+            or self.formatter_version is None
+        ):
+            raise ValueError("Card content requires a frozen render without a change event")
+        if self.card_context_profile is not None and self.change_snapshot_id is not None:
+            raise ValueError("Compact card context cannot describe an amendment")
+        if self.reason == "card_revision" and self.change_snapshot_id is not None:
+            raise ValueError("Card revisions cannot borrow a change event")
         if self.source_scope is not None and (
             len(self.source_observation_ids) > 1
             or any(
@@ -94,13 +122,16 @@ class ContentVersionSummary(BaseModel):
     content_id: str
     root_publication_id: int
     previous_version_id: str | None
-    reason: Literal["original", "amendments_revision"]
+    reason: Literal["original", "amendments_revision", "card_revision"]
     language: str | None
     bill_snapshot_id: str
-    change_snapshot_id: str
+    change_snapshot_id: str | None
     plan_snapshot_id: str
     formatter_version: str | None
     source_observation_ids: tuple[str, ...]
+    card_context_profile: Literal["continuation-v1"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -114,6 +145,10 @@ class ContentVersionSummary(BaseModel):
     source_observation_ids_opaque_count: int = 0
     computation_ids_opaque_count: int = 0
     unrecognized_labels: tuple[str, ...] = ()
+
+    @property
+    def full_context_available(self) -> bool | None:
+        return False if self.card_context_profile is not None else None
 
     @classmethod
     def from_version(cls, version: ContentVersion) -> Self:
@@ -148,6 +183,7 @@ class ContentVersionSummary(BaseModel):
             formatter_version=None if "formatter_version" in unknown else version.formatter_version,
             source_observation_ids=source_ids,
             source_scope=version.source_scope,
+            card_context_profile=version.card_context_profile,
             computation_ids=result_ids,
             application_ids=version.application_ids,
             status_change_id=version.status_change_id,

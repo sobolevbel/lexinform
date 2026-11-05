@@ -1,0 +1,20 @@
+{
+  "state_commit": "620f09234a4959278811885b3e757593ae260bdd",
+  "original_database_sha256": "74633d215bb7ca04c5b0d3d996841306e01a801977082edb8aeae768fee2aba9",
+  "source_unchanged": true,
+  "schema_before": 65,
+  "schema_after": 66,
+  "all_table_rows_and_rowids_exact": true,
+  "tables_checked": 48,
+  "all_declared_fks_clean": true,
+  "legacy_versions_snapshots_bindings_exact": true,
+  "double_restore_exact": true,
+  "history_doctor_histories_findings_exact_across_migration": true,
+  "default_computation_doctor_exact_except_schema_db_headers": true,
+  "canonical_sql_before_bytes": 25816934,
+  "canonical_sql_after_bytes": 25816929,
+  "sql_delta_bytes": -5,
+  "gzip_delta_bytes": 7,
+  "runtime_writer_active": false,
+  "new_content_rows": 0
+}

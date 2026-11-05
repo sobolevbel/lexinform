@@ -10511,3 +10511,40 @@ N/A/24 applicable open. Source/input history and natural lifecycle acceptance re
 [qualification](../assets/audits/2026-11-05-correlation-contract/qualification.json),
 [boundary inventory](../assets/audits/2026-11-05-correlation-contract/inventory.md),
 [filter proof](../assets/audits/2026-11-05-correlation-contract/filter-proof.json).
+
+<a id="j234"></a>
+
+## J234 — compatible compact-card history reader A3
+
+5 November 2026. Parallel stage published after J235. Exactly one schema66 migration permits
+honest absence of a change event, with explicit continuation-v1 compact card context. Prior65
+migration ASTs, old IDs/JSON and amendment behavior stay compatible. Shared typed row/snapshot/FK
+and physical-scope checks cover repository, scratch restore, doctor and inspection; known typed
+corruption is atomically rejected. Unknown/unbound/malformed/multipart/inherited operations and
+numeric-string targets cannot leave a stale confirmed current version. Rehome retains old context.
+
+Exact existing continuation projection is shared in a pure module with service re-export;
+unfinished work is stripped. Its profile fixes field/default/projection semantics. Integrity,
+render/physical history and full context are separate: default semantic restoration refuses compact
+context while valid history survives cleanup. No fake StatusChange, new outbox or producer.
+Writer OFF. Largest qualified RCL full Bill2,362,572B versus compact2,621B is a sample, not a bound.
+
+Frozen public driverd75f5a precedes changes. Root repeats14 fixtures/3 real Bills: physical,
+render, request/result and IO cores plus metadata exact; zero new model requests/results.
+Twelve repeats dump-exact; two rehome repeats explicitly inapplicable. Driver in default mypy.
+Runtime replay pins remain exact after three test-only fixes; no gold/natural-cycle acceptance.
+
+Fresh620f092 copy, re-fetched before publication: every row/rowid in48tables, old versions,
+snapshots/bindings, declared FKs, double restore and doctor parity independently checked.
+Reader-only -5SQL/+7gzip bytes, zero new content rows, original DB unchanged. First full gate
+caught two schema-header hash assumptions and one corrupt-history-import test. Original semantic
+checksums remain pinned with actual-schema assertions; scenario proves atomic rejection/UNKNOWN
+preservation and public optional-read failure. No runtime weakening.38newunit cases/0newscenarios/
+0removed logical cases; unknown-schema boundary advances66→67. Root83focus+46affected; final
+8413tests/308.878s/92%,mypy736,Ruff/formatgreen,all805source/config pins exact.
+J2353aa0a1ed CI41952153634/relay41953006717 verified. DA7 partial;74total/44complete/6N/A/24open.
+
+[Report](../assets/audits/2026-11-05-card-history-reader/report.md),
+[qualification](../assets/audits/2026-11-05-card-history-reader/qualification.json),
+[migration proof](../assets/audits/2026-11-05-card-history-reader/migration-proof.json),
+[paired proof](../assets/audits/2026-11-05-card-history-reader/corpus-proof.json).

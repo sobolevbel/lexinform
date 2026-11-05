@@ -22,6 +22,12 @@ from lexinform.adapters.candidate_trace_history import (
     read_candidate_disposition_trace,
     validate_candidate_disposition_traces,
 )
+from lexinform.adapters.content_history import (
+    card_publication_rows,
+    read_content_version,
+    validate_content_history,
+    verify_card_content,
+)
 from lexinform.adapters.content_source_refs import (
     ContentSourceRows,
     validate_content_sources,
@@ -93,7 +99,7 @@ from lexinform.content_sources import (
     source_context_blocked,
     supported_source_context,
 )
-from lexinform.content_versions import content_delivery_mismatch
+from lexinform.content_versions import content_delivery_mismatch, content_snapshot_refs
 from lexinform.direct_delivery import direct_root_plan
 from lexinform.document_editions import candidate_edition
 from lexinform.json_storage import compact_json, storage_json
@@ -901,6 +907,32 @@ MIGRATIONS: tuple[str, ...] = (
     SOURCE_OMISSION_MIGRATION,
     SOURCE_REFERENCE_OMISSION_MIGRATION,
     SOURCE_CATALOG_MIGRATION,
+    """
+    CREATE TEMP TABLE saved_content_bindings AS SELECT * FROM publication_content;
+    DROP TABLE publication_content;
+    CREATE TABLE content_versions_next (
+        content_id TEXT PRIMARY KEY NOT NULL,
+        root_publication_id INTEGER NOT NULL,
+        previous_version_id TEXT REFERENCES content_versions_next(content_id),
+        bill_snapshot_id TEXT NOT NULL REFERENCES content_snapshots(snapshot_id),
+        change_snapshot_id TEXT REFERENCES content_snapshots(snapshot_id),
+        plan_snapshot_id TEXT NOT NULL REFERENCES content_snapshots(snapshot_id),
+        version_json TEXT NOT NULL
+    );
+    INSERT INTO content_versions_next(rowid,content_id,root_publication_id,previous_version_id,
+        bill_snapshot_id,change_snapshot_id,plan_snapshot_id,version_json)
+        SELECT rowid,* FROM content_versions ORDER BY rowid;
+    DROP TABLE content_versions;
+    ALTER TABLE content_versions_next RENAME TO content_versions;
+    CREATE INDEX ix_content_versions_root ON content_versions(root_publication_id);
+    CREATE TABLE publication_content (
+        publication_id INTEGER PRIMARY KEY NOT NULL,
+        content_id TEXT NOT NULL REFERENCES content_versions(content_id)
+    );
+    INSERT INTO publication_content SELECT * FROM saved_content_bindings;
+    DROP TABLE saved_content_bindings;
+    CREATE INDEX ix_publication_content_version ON publication_content(content_id);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -1320,6 +1352,7 @@ class SqliteBillRepository:
             validate_input_snapshots(scratch)
             validate_projected_applications(scratch)
             validate_content_sources(scratch)
+            validate_content_history(scratch)
         finally:
             scratch.close()
         tables = [
@@ -2166,11 +2199,8 @@ class SqliteBillRepository:
     def save_content_version(self, version: ContentVersion) -> None:
         version = ContentVersion.model_validate_json(version.model_dump_json())
         verify_content_source(self._conn, version)
-        for kind, identity in (
-            ("bill", version.bill_snapshot_id),
-            ("change", version.change_snapshot_id),
-            ("plan", version.plan_snapshot_id),
-        ):
+        verify_card_content(self._conn, version)
+        for kind, identity in content_snapshot_refs(version):
             snapshot = self.get_content_snapshot(identity)
             if snapshot is None or snapshot.kind != kind:
                 raise ValueError("a content version requires matching semantic snapshots")
@@ -2210,26 +2240,9 @@ class SqliteBillRepository:
         ).fetchone()
         if row is None:
             return None
-        version = ContentVersion.model_validate_json(row["version_json"])
-        columns = (
-            "content_id",
-            "root_publication_id",
-            "previous_version_id",
-            "bill_snapshot_id",
-            "change_snapshot_id",
-            "plan_snapshot_id",
-        )
-        expected = (
-            version.content_id,
-            version.root_publication_id,
-            version.previous_version_id,
-            version.bill_snapshot_id,
-            version.change_snapshot_id,
-            version.plan_snapshot_id,
-        )
-        if expected != tuple(row[key] for key in columns):
-            raise ValueError("content version columns differ from the recorded identity")
+        version = read_content_version(row)
         verify_content_source(self._conn, version)
+        verify_card_content(self._conn, version)
         return version
 
     def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]:
@@ -2267,7 +2280,10 @@ class SqliteBillRepository:
             )
         ):
             raise ValueError("content must match the frozen physical publication")
-        if publication_id != version.root_publication_id and (
+        if version.change_snapshot_id is None:
+            if verify_card_content(self._conn, version) != publication_id:
+                raise ValueError("card content must bind its known physical operation")
+        elif publication_id != version.root_publication_id and (
             publication.kind is not PublicationKind.AMENDMENTS_REVISION
             or plan.edit_message_id != root.message_id
             or root.status is not PublicationStatus.SENT
@@ -2276,11 +2292,7 @@ class SqliteBillRepository:
         if (publication_id == version.root_publication_id) != (version.previous_version_id is None):
             raise ValueError("a content binding must distinguish the original and its revision")
         snapshots: dict[str, ContentSnapshot] = {}
-        for identity in (
-            version.bill_snapshot_id,
-            version.change_snapshot_id,
-            version.plan_snapshot_id,
-        ):
+        for _, identity in content_snapshot_refs(version):
             snapshot = self.get_content_snapshot(identity)
             if snapshot is not None:
                 snapshots[identity] = snapshot
@@ -2320,9 +2332,23 @@ class SqliteBillRepository:
         version = self.get_content_version(row["content_id"])
         if version is None:
             raise ValueError("a publication content binding has lost its version")
+        if (
+            version.change_snapshot_id is None
+            and verify_card_content(self._conn, version) != publication_id
+        ):
+            raise ValueError("card content binding differs from its physical operation")
         return version
 
     def list_content_publications(self, root_publication_id: int) -> list[Publication]:
+        if self._conn.execute(
+            "SELECT 1 FROM content_versions WHERE root_publication_id=? "
+            "AND change_snapshot_id IS NULL",
+            (root_publication_id,),
+        ).fetchone():
+            return [
+                self._row_to_publication(row)
+                for row in card_publication_rows(self._conn, root_publication_id)
+            ]
         rows = self._conn.execute(
             "SELECT p.* FROM publications p"
             " JOIN publication_content binding ON binding.publication_id=p.id"

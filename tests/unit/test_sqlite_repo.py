@@ -1006,6 +1006,12 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         batch_items = {r[1] for r in conn.execute("PRAGMA table_info(llm_batch_items)")}
         batches = {r[1] for r in conn.execute("PRAGMA table_info(llm_batches)")}
         memo = {r[1] for r in conn.execute("PRAGMA table_info(analysis_memo)")}
+        change_ref = next(
+            row
+            for row in conn.execute("PRAGMA table_info(content_versions)")
+            if row[1] == "change_snapshot_id"
+        )
+        assert change_ref[3] == 0
     assert "amendments_json" in changes  # v11
     assert "supplements_json" in changes  # v18
     assert "consultation_opened" in changes

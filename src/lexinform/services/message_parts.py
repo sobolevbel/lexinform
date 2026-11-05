@@ -3,29 +3,13 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from functools import partial
 
+from lexinform.bill_context import continuation_snapshot as continuation_snapshot
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import Bill, DeliveryPlan, Publication, PublicationKind, PublicationStatus
 from lexinform.ports import BillRepository, Clock, Publisher, StateCheckpoint
 from lexinform.services.publications import send_publication, source_context_blocked
 
 log = logging.getLogger(__name__)
-
-
-def continuation_snapshot(bill: Bill) -> str:
-    return bill.model_dump_json(
-        exclude={
-            "analysis",
-            "consultation_review",
-            "act_application_review",
-            "review_work",
-            "rcl",
-            "submission",
-            "wykaz",
-            "observed_process",
-            "agenda",
-            "stages",
-        }
-    )
 
 
 def freeze_parts(

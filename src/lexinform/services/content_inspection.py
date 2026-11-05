@@ -1,9 +1,15 @@
 """Inspect available editorial metadata without changing a delivery or its recovery state."""
 
-from lexinform.content_versions import confirmed_content_version, content_delivery_mismatch
+from lexinform.content_versions import (
+    card_confirmation_matches,
+    confirmed_content_version,
+    content_delivery_mismatch,
+    content_snapshot_refs,
+)
 from lexinform.models import (
     ContentHistoryView,
     ContentSnapshot,
+    ContentVersion,
     ContentVersionSummary,
     Publication,
     PublicationKind,
@@ -51,11 +57,7 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
     snapshots: dict[str, ContentSnapshot] = {}
     by_id = {version.content_id: version for version in versions}
     for version in versions:
-        for identity, kind in (
-            (version.bill_snapshot_id, "bill"),
-            (version.change_snapshot_id, "change"),
-            (version.plan_snapshot_id, "plan"),
-        ):
+        for kind, identity in content_snapshot_refs(version):
             if identity not in snapshots:
                 snapshot = repo.get_content_snapshot(identity)
                 if snapshot is None:
@@ -66,12 +68,15 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
         if version.previous_version_id is not None and version.previous_version_id not in by_id:
             return base.model_copy(update={"integrity": "unavailable"})
     confirmed: set[str] = set()
-    for physical in repo.list_content_publications(root_id):
+    inventory = repo.list_content_publications(root_id)
+    bound_by_publication: dict[int, ContentVersion] = {}
+    for physical in inventory:
         if physical.id is None:
             continue
         bound = repo.get_publication_content(physical.id)
         if bound is None:
             continue
+        bound_by_publication[physical.id] = bound
         if bound.root_publication_id != root_id or (
             physical.term,
             physical.number,
@@ -80,7 +85,11 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
             return base.model_copy(update={"integrity": "unavailable"})
         if (physical.id == root_id) != (bound.previous_version_id is None):
             return base.model_copy(update={"integrity": "unavailable"})
-        if physical.id != root_id and physical.kind is not PublicationKind.AMENDMENTS_REVISION:
+        if physical.id != root_id and physical.kind is not (
+            PublicationKind.MESSAGE_PART
+            if bound.change_snapshot_id is None
+            else PublicationKind.AMENDMENTS_REVISION
+        ):
             return base.model_copy(update={"integrity": "unavailable"})
         plan = physical.delivery
         if plan is not None and content_delivery_mismatch(bound, snapshots, plan) is not None:
@@ -98,7 +107,21 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
     confirmation = confirmed_content_version(
         {version.content_id: version.previous_version_id for version in versions}, confirmed
     )
-    current = by_id.get(confirmation.current_id) if confirmation.current_id is not None else None
+    current_id = confirmation.current_id
+    if original.change_snapshot_id is None and (
+        any(item.id not in bound_by_publication for item in inventory)
+        or not card_confirmation_matches(
+            root,
+            repo.card_refresh_parts(root_id),
+            bound_by_publication,
+            current_id,
+            alias_count=len(repo.card_aliases(root.channel_id, root.message_id))
+            if root.message_id is not None
+            else 0,
+        )
+    ):
+        current_id = None
+    current = by_id.get(current_id) if current_id is not None else None
     if current is not None:
         summaries[current.content_id] = ContentVersionSummary.from_version(current)
     return base.model_copy(

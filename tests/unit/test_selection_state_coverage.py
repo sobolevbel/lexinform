@@ -10,7 +10,7 @@ from typing import Any
 import pytest
 from tools.source_history_doctor import audit, main, selection_state_coverage
 
-from lexinform.adapters.sqlite_repo import SqliteBillRepository
+from lexinform.adapters.sqlite_repo import SCHEMA_VERSION, SqliteBillRepository
 from lexinform.document_selection import bill_selection
 from lexinform.models import (
     DocumentPart,
@@ -192,7 +192,8 @@ def test_default_audit_output_matches_fixed_prechange_bytes_and_opt_in_only_adds
 ) -> None:
     path = database(tmp_path)
     original = audit(path)
-    normalized = {**original, "database_sha256": "<fixture>"}
+    assert original["schema_version"] == SCHEMA_VERSION
+    normalized = {**original, "database_sha256": "<fixture>", "schema_version": 65}
     encoded = json.dumps(normalized, sort_keys=True, separators=(",", ":")).encode()
     assert (
         hashlib.sha256(encoded).hexdigest()

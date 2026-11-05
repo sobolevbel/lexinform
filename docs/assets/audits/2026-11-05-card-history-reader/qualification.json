@@ -1,0 +1,57 @@
+{
+  "stage": "J234 compatible compact-card history reader A3",
+  "full_tests": 8413,
+  "pytest_xml": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "8413",
+    "time": "308.878",
+    "timestamp": "2026-11-05T03:38:25.649372+01:00",
+    "hostname": "Yauhenis-MacBook-Pro.local"
+  },
+  "new_unit_cases": 38,
+  "new_scenario_cases": 0,
+  "removed_logical_cases": 0,
+  "unknown_schema_boundary_parameter": "66 -> 67",
+  "focused_root_cases": 83,
+  "test_contract_focused": 46,
+  "strict_mypy_files": 736,
+  "coverage_percent": 92,
+  "mypy_ruff_format": "green",
+  "source_config_pins": 805,
+  "source_freeze_exact": true,
+  "runtime_writer_active": false,
+  "schema_before": 65,
+  "schema_after": 66,
+  "source_state": "620f09234a4959278811885b3e757593ae260bdd",
+  "source_state_refreshed_before_publication": true,
+  "previous_failed_gate": {
+    "failed": 3,
+    "passed": 8410,
+    "reason": "Schema headers in fixed hashes; deliberate corrupt restore now rejected atomically",
+    "runtime_source_changed_after_first_gate": false
+  },
+  "proof_sha256": {
+    "full-final.xml": "bd1623906244fe5f0c903c2ccba5ec9b5a4ce6539268eff1ab7c61b6a32c9180",
+    "full-final.log": "9cf589cc4d09acb8d797dda5667b183bc0f7bb0a96e8c7fe486d975c1ba0de8c",
+    "full.xml": "c2fd5469467c5eb0ea943f6c836a88a25611ce569898bacd9e505f249e83fb7e",
+    "full.log": "7d96e8faa74791bb5ba24f137127c94e3360849c030405f462320ee36d116088",
+    "source-freeze-final.json": "2929883814b9e9212785f56b093864b60197bbfe2ba54f78d89d158ab9fb9286",
+    "migration-proof.json": "cba666c09d5b48ab739cf75249e2a969565cae0cb74635bfbf221d3bf0ea612e",
+    "corpus-proof.json": "7cc7959a4755646113907ca5c790a9a4d4e5cd0796049a58450f801768849d70"
+  },
+  "previous_release": {
+    "target": "3aa0a1ed959969fefbb7beebf11864db338f7cc3",
+    "ci": 41952153634,
+    "deploy": 41953006717,
+    "complete": true
+  },
+  "plan_counts": {
+    "total": 74,
+    "complete": 44,
+    "not_applicable": 6,
+    "applicable_open": 24
+  }
+}

@@ -51,3 +51,5 @@ Final full gate: 8375 tests in 279.676 seconds, 92% coverage, strict mypy over73
 Ruff and formatting green. All800 source/config pins remain exact. Fresh state620f092 retains
 every table row and rowid, full canonical dump, default doctor and double restore. DA10.1 is
 complete for its stated known-ID contract; broader lifecycle/history tasks remain open.
+
+Actual correlation release: [exact CI and relay verification](release.json), commit3aa0a1ed.

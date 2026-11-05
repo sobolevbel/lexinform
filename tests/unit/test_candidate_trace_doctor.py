@@ -186,7 +186,7 @@ def test_default_report_is_unchanged_and_opt_in_has_no_body_or_database_write(
     path = database(tmp_path)
     before = path.read_bytes()
     original = audit(path)
-    normalized = {**original, "database_sha256": "<fixture>"}
+    normalized = {**original, "database_sha256": "<fixture>", "schema_version": 65}
     assert (
         hashlib.sha256(
             json.dumps(normalized, sort_keys=True, separators=(",", ":")).encode()

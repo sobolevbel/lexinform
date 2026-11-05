@@ -1,0 +1,9 @@
+{
+  "runtime_replay_pins_exact": true,
+  "explicit_post_replay_test_only_changes": [
+    "tests/scenario/test_content_inspection.py",
+    "tests/unit/test_candidate_trace_doctor.py",
+    "tests/unit/test_selection_state_coverage.py"
+  ],
+  "reason": "Pinned schema header normalization and atomic corrupt-restore contract; runtime, driver and raw input remain unchanged"
+}

@@ -210,6 +210,7 @@ def validate_revision_application_work(
                 or retained.reason != "amendments_revision"
                 or retained.root_publication_id != work.original_publication_id
                 or retained.bill_snapshot_id != work.bill_snapshot_id
+                or retained.change_snapshot_id is None
             ):
                 raise DocumentWorkRowError("revision_application_publication_mismatch")
             retained_change = StatusChange.model_validate_json(

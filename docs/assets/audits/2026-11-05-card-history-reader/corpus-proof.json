@@ -1,0 +1,14 @@
+{
+  "driver_sha256": "d75f5afce228682d12c2a5e4292e847d7142a4c1e676576487cf43a64a58761f",
+  "source_sql_sha256": "04b69acd02f46522f32ff02cd13a91590d44aacc4083f2c6f82ce05e4995a453",
+  "off_report_sha256": "3a14ba40235e7a7b4e097aca75255dbca10a4809b16bb080a75cfb5b8d3aaba2",
+  "root_pre_reader_report_sha256": "3ac0c8f4158db102a10fbffbca167d4301e261bc69e237999125db948db91759",
+  "root_paired_report_sha256": "dafd49a6bb77737afe3b7254b6acd8791b53a2fd561ab327a05890b54ba5686f",
+  "physical_render_request_io_cores_exact": true,
+  "fixtures": 14,
+  "reader_off_metadata_exact": true,
+  "model_requests": 0,
+  "new_results": 0,
+  "rehome_repeat_poll": "not_applicable for two cases; twelve other repeats dump-exact",
+  "scope": "Real frozen Bills with controlled mnemonic/unsupported cases, fake transport; no legal gold or writer activation"
+}

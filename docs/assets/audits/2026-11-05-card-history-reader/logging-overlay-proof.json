@@ -1,0 +1,7 @@
+{
+  "previous_commit": "3aa0a1ed959969fefbb7beebf11864db338f7cc3",
+  "batch_log_helper_ast_exact": true,
+  "all_debug_event_asts_exact": true,
+  "debug_events": 15,
+  "reason": "Root retains newer verified correlation code while applying the reader patch from an older base"
+}

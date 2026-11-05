@@ -56,7 +56,7 @@ class ContentSourceAudit:
 
 
 def inspect_primary_content_sources(
-    repo: ContentSourceReader, *, bill_snapshot_id: str, change_snapshot_id: str
+    repo: ContentSourceReader, *, bill_snapshot_id: str, change_snapshot_id: str | None
 ) -> ContentSourceAudit:
     try:
         return _inspect(repo, bill_snapshot_id, change_snapshot_id)
@@ -67,11 +67,13 @@ def inspect_primary_content_sources(
 def _inspect(
     repo: ContentSourceReader,
     bill_snapshot_id: str,
-    change_snapshot_id: str,
+    change_snapshot_id: str | None,
     observation_id: str | None = None,
 ) -> ContentSourceAudit:
     bill_source = repo.get_content_snapshot(bill_snapshot_id)
-    change_source = repo.get_content_snapshot(change_snapshot_id)
+    change_source = (
+        repo.get_content_snapshot(change_snapshot_id) if change_snapshot_id is not None else None
+    )
     if bill_source is None or change_source is None:
         return ContentSourceAudit("unknown", "context_missing")
     if (
@@ -192,7 +194,7 @@ def verify_primary_content_source(
     repo: ContentSourceReader,
     *,
     bill_snapshot_id: str,
-    change_snapshot_id: str,
+    change_snapshot_id: str | None,
     observation_id: str,
 ) -> ContentSourceAudit:
     try:

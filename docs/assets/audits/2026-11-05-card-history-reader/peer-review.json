@@ -1,0 +1,38 @@
+{
+  "final_docs_note": "Final patch supersedes e28a8dec6c5195e870ab56a56a8e4e3d1ea895a5a030a27243b82e8a2c8fed1a only with explicit profile compatibility rule and database pointer; 19 Python pins unchanged.",
+  "findings": [],
+  "independent_tests_run": false,
+  "limitations": [
+    "Runtime writer remains off; compact render/physical history does not provide full original semantic context.",
+    "Future Bill field/default/projection changes require a compatible continuation-v1 reader.",
+    "Root preserves its logging overlay and owns full gate, migration/replay qualification and staged deployment."
+  ],
+  "network_used": false,
+  "patch_sha256": "58e205db65f6ced675af715efb05e4410581a0d308cbd71ac8024ba5d007dc80",
+  "scope": "Independent exact 21-file reader A3 review: nullable card history and migration, compact canonical projection of actual frozen payload, explicit full-context unavailability and default restore refusal, conservative physical confirmation, legacy compatibility, bounded doctor handling and future profile-reader invariant.",
+  "source_sha256": {
+    ".claude/rules/operations.md": "aad00eaadfb06a6d22061ace6886671d62e248b7e881aff34f697472d5ec208d",
+    "docs/reference/database.md": "2beede15faa20c7d72c13084fcad3ebccde76b0ce2f513e05fe44e7e6c353af1",
+    "src/lexinform/adapters/content_history.py": "50ddd78886c994956f9d980cba12ac6bcf6745dcac19f16b59227d8b8c84eede",
+    "src/lexinform/adapters/content_source_refs.py": "08e098caadef01060fae88c3f5fc2f7a09460974f13d9f793da18176dfc92137",
+    "src/lexinform/adapters/document_work.py": "f1c25c4d50666fa81526203398661fc8283c367f8ad57bc21d7f48583b746ca9",
+    "src/lexinform/adapters/sqlite_repo.py": "13ad5e0a1b426e51dca4ac92c0691aa5b1ef0db658a61f00c0cbbe0aa3ea5c24",
+    "src/lexinform/adapters/telegram_format.py": "ffed6c4729f42371719a23edcd2d6063fe059adc45bb700f97b79a071e5ec413",
+    "src/lexinform/bill_context.py": "0453ed6fc87e1a71abb5ef4d538c146579a41b7f89f5fa1655f055713e65c127",
+    "src/lexinform/content_sources.py": "225133d67f68ae01be9a02bcbb7ed613c412b64d2823f3b698ccdeb4f2d63f98",
+    "src/lexinform/content_versions.py": "bb5f122fe21f6e49da3d18f79ca307fafd5f17d04aac7976e4a2801a266e6abe",
+    "src/lexinform/models/content.py": "24e84594694a3fa7d4fd4810b39c36570e6a1d31982f3c5d83027a532394e856",
+    "src/lexinform/services/content_history.py": "0b4dfd38ab9e058514b432235aff8acd091a3fb476a1d97b8d904e43779514bb",
+    "src/lexinform/services/content_inspection.py": "0ab01406ffd1de7fc606ca4fb80ee1213874e6541b60d7a8051f558d1fc47bcd",
+    "src/lexinform/services/message_parts.py": "86083623e18864642adc27aa9c0cb2ae56fb2efd9a1d222e724bf9cd5ac9b581",
+    "tests/scenario/test_content_history.py": "f8f30d0d3f544843d6fe16d0d212bf10b767f1e4605dc648b7f62a50555748ab",
+    "tests/unit/test_card_content_reader.py": "5da5303a991625c13d40bf3ef318c520f328ea2f93e164c7eed6373b854a7563",
+    "tests/unit/test_content_history_doctor.py": "510ed0c62058fe9c4e71d3802297e95e77de664c2cc2073f8190e7832d8cb561",
+    "tests/unit/test_replay_card_history.py": "5904aef4d0af984262a668ba1dcac823ac54830845bf71197403327cb09c0030",
+    "tests/unit/test_sqlite_repo.py": "6bb354b759b30ce69439bef0428022fc35f4c2f75841591b291e61d907af0ee7",
+    "tools/content_history_doctor.py": "b1bfac2bab9075ce4d7d9de8f6e70b98b19b4dcd9c3ee3f416b42c6a0ad59809",
+    "tools/replay_card_history.py": "d75f5afce228682d12c2a5e4292e847d7142a4c1e676576487cf43a64a58761f"
+  },
+  "stage": "J234 reader A3 final",
+  "verdict": "clear"
+}

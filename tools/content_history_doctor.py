@@ -7,8 +7,18 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from lexinform.adapters.content_history import (
+    ContentVersionRowError,
+    card_current_content,
+    read_content_version,
+    verify_card_content,
+)
 from lexinform.adapters.content_source_refs import verify_content_source
-from lexinform.content_versions import confirmed_content_version, content_delivery_mismatch
+from lexinform.content_versions import (
+    confirmed_content_version,
+    content_delivery_mismatch,
+    content_snapshot_refs,
+)
 from lexinform.models import (
     ContentSnapshot,
     ContentVersion,
@@ -28,7 +38,7 @@ def _frozen_content_issue(
     try:
         plan = DeliveryPlan.model_validate_json(raw)
         mismatch = content_delivery_mismatch(version, snapshots, plan)
-    except ValueError, TypeError:
+    except ValueError, TypeError, RecursionError, sqlite3.Error, IndexError, KeyError:
         return "invalid_content_frozen_context"
     return "content_frozen_" + mismatch + "_mismatch" if mismatch else None
 
@@ -69,7 +79,7 @@ def _read_history(
             ref = f"content_snapshots/{row['audit_id']}"
             try:
                 value = ContentSnapshot(kind=row["kind"], payload_json=row["payload_json"])
-            except ValueError, TypeError:
+            except ValueError, TypeError, RecursionError, sqlite3.Error, IndexError, KeyError:
                 findings.add("invalid_content_snapshot", ref)
                 continue
             if value.snapshot_id != row["snapshot_id"]:
@@ -82,28 +92,9 @@ def _read_history(
             counts["version_rows"] += 1
             ref = f"content_versions/{row['audit_id']}"
             try:
-                version = ContentVersion.model_validate_json(row["version_json"])
-            except ValueError, TypeError:
-                findings.add("invalid_content_version", ref)
-                continue
-            expected = (
-                version.content_id,
-                version.root_publication_id,
-                version.previous_version_id,
-                version.bill_snapshot_id,
-                version.change_snapshot_id,
-                version.plan_snapshot_id,
-            )
-            columns = (
-                "content_id",
-                "root_publication_id",
-                "previous_version_id",
-                "bill_snapshot_id",
-                "change_snapshot_id",
-                "plan_snapshot_id",
-            )
-            if expected != tuple(row[key] for key in columns):
-                findings.add("content_version_columns_mismatch", ref)
+                version = read_content_version(row)
+            except ContentVersionRowError as exc:
+                findings.add(exc.code, ref)
                 continue
             versions[version.content_id] = version
     for version in versions.values():
@@ -111,11 +102,11 @@ def _read_history(
             verify_content_source(db, version)
         except ValueError:
             findings.add("content_source_reference_invalid", version.content_id)
-        for kind, identity in (
-            ("bill", version.bill_snapshot_id),
-            ("change", version.change_snapshot_id),
-            ("plan", version.plan_snapshot_id),
-        ):
+        try:
+            verify_card_content(db, version)
+        except ValueError, TypeError, RecursionError, sqlite3.Error, IndexError, KeyError:
+            findings.add("invalid_card_content_history", version.content_id)
+        for kind, identity in content_snapshot_refs(version):
             saved = snapshots.get(identity)
             if saved is None or saved.kind != kind:
                 findings.add("content_snapshot_unavailable", version.content_id)
@@ -173,9 +164,8 @@ def _publication_bindings(
                     findings.add("content_owner_mismatch", str(identity))
                 if (identity == bound.root_publication_id) != (bound.previous_version_id is None):
                     findings.add("content_binding_role_mismatch", str(identity))
-                if (
-                    identity != bound.root_publication_id
-                    and publication["kind"] != "amendments_revision"
+                if identity != bound.root_publication_id and publication["kind"] != (
+                    "message_part" if bound.change_snapshot_id is None else "amendments_revision"
                 ):
                     findings.add("content_binding_kind_mismatch", str(identity))
                 if (
@@ -185,6 +175,12 @@ def _publication_bindings(
                     and publication["message_id"] != root["message_id"]
                 ):
                     findings.add("content_message_target_mismatch", str(identity))
+            if bound.change_snapshot_id is None:
+                try:
+                    if verify_card_content(db, bound) != identity:
+                        findings.add("content_binding_kind_mismatch", str(identity))
+                except ValueError, TypeError, RecursionError, sqlite3.Error, IndexError, KeyError:
+                    findings.add("invalid_card_content_history", str(identity))
             if "delivery_resolutions" in tables:
                 for resolution in db.execute(
                     "SELECT id, command_update_id, resolution_json FROM delivery_resolutions"
@@ -195,7 +191,14 @@ def _publication_bindings(
                         decision = DeliveryResolution.model_validate_json(
                             resolution["resolution_json"]
                         )
-                    except ValueError, TypeError:
+                    except (
+                        ValueError,
+                        TypeError,
+                        RecursionError,
+                        sqlite3.Error,
+                        IndexError,
+                        KeyError,
+                    ):
                         findings.add("invalid_content_operator_decision", str(resolution["id"]))
                         continue
                     if (
@@ -220,6 +223,7 @@ def _history_rows(
     bindings: dict[str, list[dict[str, Any]]],
     findings: _Findings,
     publication_id: int | None,
+    cards: dict[int, str | None],
 ) -> list[dict[str, Any]]:
     roots = sorted({value.root_publication_id for value in versions.values()})
     if publication_id is not None:
@@ -256,7 +260,7 @@ def _history_rows(
                 "original_content_ids": [
                     version.content_id for version in members if version.previous_version_id is None
                 ],
-                "current_content_id": confirmation.current_id,
+                "current_content_id": cards.get(root, confirmation.current_id),
                 "confirmation_scope": "DB sent/message-ID evidence; no independent Telegram read.",
                 "versions": [
                     {
@@ -287,10 +291,23 @@ def audit(database: Path, *, publication_id: int | None = None) -> dict[str, Any
             for name in missing:
                 findings.add("content_history_table_unavailable", name)
         snapshots, versions = _read_history(db, tables, counts, findings)
-        bindings = _publication_bindings(db, tables, counts, findings, snapshots, versions)
+        try:
+            bindings = _publication_bindings(db, tables, counts, findings, snapshots, versions)
+        except sqlite3.Error, IndexError, KeyError:
+            findings.add("content_publication_layout_unavailable", "publications")
+            bindings = {}
+        cards: dict[int, str | None] = {}
+        for value in versions.values():
+            if value.change_snapshot_id is None:
+                try:
+                    cards[value.root_publication_id] = card_current_content(
+                        db, value.root_publication_id
+                    )
+                except ValueError, TypeError, RecursionError, sqlite3.Error, IndexError, KeyError:
+                    cards[value.root_publication_id] = None
         if not snapshot.unchanged():
             findings.add("database_changed_during_audit", "database")
-    histories = _history_rows(versions, bindings, findings, publication_id)
+    histories = _history_rows(versions, bindings, findings, publication_id, cards)
     counts["errors"] = sum(row["level"] == "error" for row in findings.rows)
     counts["warnings"] = sum(row["level"] == "warning" for row in findings.rows)
     if counts["errors"]:

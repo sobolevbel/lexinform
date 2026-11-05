@@ -213,6 +213,8 @@ def verify_content_source(connection: sqlite3.Connection, version: ContentVersio
     if snapshot is None or snapshot.kind != "bill":
         raise ValueError("scoped content has no frozen bill")
     bill = Bill.model_validate_json(snapshot.payload_json)
+    if version.change_snapshot_id is None:
+        raise ValueError("scoped content requires a frozen change")
     change_snapshot = reader.get_content_snapshot(version.change_snapshot_id)
     if change_snapshot is None or change_snapshot.kind != "change":
         raise ValueError("scoped content has no frozen change")

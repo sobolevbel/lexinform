@@ -110,15 +110,27 @@ def test_corrupt_optional_history_does_not_resolve_an_unknown_delivery(
     with patch.object(content_history, "supported_source_context", return_value=False):
         world, original = published_world()
     assert original.id is not None, "the fixture stores the original publication"
+    world.repo.mark_publication(original.id, PublicationStatus.UNKNOWN, count_attempt=False)
+    uncertain = world.repo.publication_by_id(original.id)
+    assert uncertain is not None and uncertain.status is PublicationStatus.UNKNOWN, (
+        "the fixture preserves an uncertain physical delivery"
+    )
+    before = world.repo.dump()
     with closing(sqlite3.connect(tmp_path / "damaged.db")) as db:
         db.executescript(world.repo.dump())
         db.execute("UPDATE content_snapshots SET payload_json='bad'")
         db.commit()
         dump = "\n".join(db.iterdump()) + f"\nPRAGMA user_version = {SCHEMA_VERSION};\n"
-    world.repo.restore(dump)
+    with pytest.raises(ValueError, match="invalid_content_history"):
+        world.repo.restore(dump)
+    assert world.repo.dump() == before
+    assert world.repo.publication_by_id(original.id) == uncertain
 
-    world.command(f"/delivery {original.id}")
-    world.run(track=False)
+    with patch.object(
+        world.repo, "get_content_snapshot", side_effect=ValueError("Invalid history")
+    ):
+        world.command(f"/delivery {original.id}")
+        world.run(track=False)
 
     outcome = world.replier.replies[-1][1]
     assert outcome.status is OutcomeStatus.DELIVERY
@@ -129,7 +141,7 @@ def test_corrupt_optional_history_does_not_resolve_an_unknown_delivery(
         outcome.content_history.integrity == "unavailable"
         and outcome.content_history.current is None
     )
-    assert world.repo.publication_by_id(original.id) == original
+    assert world.repo.publication_by_id(original.id) == uncertain
 
 
 @pytest.mark.parametrize("damage", ["removed_payloads", "wrong_owner", "wrong_kind"])

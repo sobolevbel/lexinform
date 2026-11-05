@@ -156,7 +156,9 @@ def test_successive_revisions_link_confirmed_editions_and_reuse_the_original_bil
     assert Bill.model_validate_json(snapshot.payload_json) == Bill.model_validate_json(
         original.delivery.bill_json
     )
-    change = world.repo.get_content_snapshot(versions[-1].change_snapshot_id)
+    change_identity = versions[-1].change_snapshot_id
+    assert change_identity is not None, "the amendment version has its real event snapshot"
+    change = world.repo.get_content_snapshot(change_identity)
     assert (
         change is not None
         and StatusChange.model_validate_json(change.payload_json).amendments is not None
