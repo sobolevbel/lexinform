@@ -19,6 +19,7 @@ from lexinform.adapters.secondary_dependencies import secondary_dependency_issue
 from lexinform.adapters.supplement_deliveries import supplement_delivery_links
 from lexinform.adapters.supplement_dependencies import supplement_dependency_issues
 from lexinform.models import ResultApplicabilityObservation, ResultApplication
+from lexinform.models.computations import ApplicationReason
 from tools.application_targets import application_target
 from tools.corpus_artifacts import write_json
 from tools.saved_records import (
@@ -40,6 +41,29 @@ _REQUIRED = {*RESULT_TABLES, "computation_results", "result_applications"}
 class ResultIdentity:
     has_record: bool
     request_sha256: str | None
+    input_binding_known: bool
+    columns_match: bool
+
+
+@dataclass
+class ProjectionReceiptCensus:
+    collection: int = 0
+    invalid: int = 0
+    projections: Counter[tuple[ApplicationReason, bool]] = field(default_factory=Counter)
+
+    def report(self) -> dict[str, Any]:
+        return {
+            "application_rows": self.collection + self.invalid + self.projections.total(),
+            "collection_rows": self.collection,
+            "invalid_rows": self.invalid,
+            "projections_by_reason": {
+                reason: {
+                    "input_binding_known": self.projections[reason, True],
+                    "input_binding_unknown": self.projections[reason, False],
+                }
+                for reason in ("batch_result", "memo_reuse", "retained_result")
+            },
+        }
 
 
 @dataclass
@@ -50,6 +74,7 @@ class ComputationAudit:
     refs: dict[str, list[str]] = field(default_factory=dict)
     application_targets: Counter[str] = field(default_factory=Counter)
     target_links: list[dict[str, Any]] = field(default_factory=list)
+    receipt_census: ProjectionReceiptCensus | None = None
 
     def issue(self, code: str, ref: str, *, level: str = "error") -> None:
         self.findings.append({"code": code, "ref": ref, "level": level})
@@ -75,10 +100,14 @@ class ComputationAudit:
                 row[key]
                 for key in ("result_id", "provider", "batch_id", "custom_id", "term", "number")
             )
-            if observed != expected:
+            columns_match = observed == expected
+            if not columns_match:
                 self.issue("computation_columns_mismatch", ref)
             self.results[row["result_id"]] = ResultIdentity(
-                result.record is not None, result.request_sha256
+                result.record is not None,
+                result.request_sha256,
+                result.input_binding is not None,
+                columns_match,
             )
             self.counts[f"result_{result.validation}"] += 1
             self.counts[f"purpose_{result.purpose}"] += 1
@@ -90,15 +119,19 @@ class ComputationAudit:
             ] += 1
 
     def applications(self, connection: sqlite3.Connection, tables: set[str]) -> None:
+        census = self.receipt_census
         for row in connection.execute(
             "SELECT rowid AS audit_id, * FROM result_applications ORDER BY rowid"
         ):
             ref = f"result_applications/{row['audit_id']}"
             self.counts["application_rows"] += 1
+            findings_before = len(self.findings)
             try:
                 application = ResultApplication.model_validate_json(row["application_json"])
             except ValueError:
                 self.issue("invalid_result_application", ref)
+                if census is not None:
+                    census.invalid += 1
                 continue
             expected = (
                 application.result_id,
@@ -126,6 +159,17 @@ class ComputationAudit:
                     validate_projected_application(connection, application)
                 except ValueError:
                     self.issue("invalid_primary_projection_witness", ref)
+            if census is not None:
+                if (
+                    result is None
+                    or not result.columns_match
+                    or len(self.findings) != findings_before
+                ):
+                    census.invalid += 1
+                elif application.phase == "collection":
+                    census.collection += 1
+                else:
+                    census.projections[application.reason, result.input_binding_known] += 1
             self.refs.setdefault(application.result_id, []).append(ref)
             self.counts[f"application_{application.phase}"] += 1
             self.counts[f"application_outcome_{application.outcome}"] += 1
@@ -234,8 +278,14 @@ class ComputationAudit:
                 self.issue("projection_request_mismatch", ref)
 
 
-def audit(database: Path, *, include_supplement_deliveries: bool = False) -> dict[str, Any]:
-    result = ComputationAudit()
+def audit(
+    database: Path,
+    *,
+    include_supplement_deliveries: bool = False,
+    include_projection_receipts: bool = False,
+) -> dict[str, Any]:
+    census = ProjectionReceiptCensus() if include_projection_receipts else None
+    result = ComputationAudit(receipt_census=census)
     deliveries: dict[str, Any] | None = None
     with open_snapshot(database) as snapshot:
         connection = snapshot.connection
@@ -319,16 +369,28 @@ def audit(database: Path, *, include_supplement_deliveries: bool = False) -> dic
 
     if include_supplement_deliveries:
         report["supplement_deliveries"] = deliveries
+    if census is not None:
+        report["projection_receipt_census"] = {
+            "status": "schema_unavailable" if missing else "recorded",
+            "counts": None if missing else census.report(),
+            "scope": "Saved application receipts; not cache lookups, hit rate or billing.",
+        }
     return report
 
 
-def run(database: Path, output: Path, *, include_supplement_deliveries: bool = False) -> int:
+def run(
+    database: Path,
+    output: Path,
+    *,
+    include_supplement_deliveries: bool = False,
+    include_projection_receipts: bool = False,
+) -> int:
     if output.resolve() == database.resolve():
         raise ValueError("Report must be separate from the input database")
-    report = (
-        audit(database, include_supplement_deliveries=True)
-        if include_supplement_deliveries
-        else audit(database)
+    report = audit(
+        database,
+        include_supplement_deliveries=include_supplement_deliveries,
+        include_projection_receipts=include_projection_receipts,
     )
     output.parent.mkdir(parents=True, exist_ok=True)
     write_json(output, report)
@@ -340,10 +402,14 @@ def main() -> None:
     parser.add_argument("--database", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--supplement-deliveries", action="store_true")
+    parser.add_argument("--projection-receipts", action="store_true")
     args = parser.parse_args()
     try:
         code = run(
-            args.database, args.output, include_supplement_deliveries=args.supplement_deliveries
+            args.database,
+            args.output,
+            include_supplement_deliveries=args.supplement_deliveries,
+            include_projection_receipts=args.projection_receipts,
         )
     except (OSError, sqlite3.Error, ValueError) as exc:
         parser.error(str(exc))

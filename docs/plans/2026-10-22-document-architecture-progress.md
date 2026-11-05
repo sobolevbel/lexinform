@@ -11282,3 +11282,16 @@ question can retain old source lineage. Legacy roots still fetch their source an
 revisions cannot fill a missing root. Correction and cost guards continue to apply.
 
 [Offline qualification and prior release](../assets/audits/2026-11-05-amendment-correction/report.md).
+
+<a id="j263"></a>
+
+## J263 — offline inventories for retained computations
+
+The computation doctor can count saved application receipts and classify projection reasons
+and input binding availability. The primary claim census reports exact field hashes for saved
+validated answers and distinguishes missing legacy citations from semantic adjudication.
+The default doctor report is preserved. The existing checkpoint benchmark supplies local
+compressed size and timing measurements.
+
+DA9.4 and DA10.3 remain open for independent adjudication and hosted measurements.
+[Commands, scope and checkpoint results](../assets/audits/2026-11-05-saved-computation-censuses/report.md).

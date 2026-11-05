@@ -1,0 +1,78 @@
+{
+  "state_sha": "13440124b6f38f1124beb9b99f35a7c8a227c08b",
+  "dump_sha256": "baee693eefec358f018cf8265096d9d5acca1eaba2d5f9bfa4afd363166c4bec",
+  "sqlite_sha256": "93fd8769679b86b4a95f830ac48fe5330a13afe212ea6ecae6ac94ad82498f91",
+  "projection_default_core_equal": true,
+  "projection_receipts": {
+    "counts": {
+      "application_rows": 28,
+      "collection_rows": 12,
+      "invalid_rows": 0,
+      "projections_by_reason": {
+        "batch_result": {
+          "input_binding_known": 9,
+          "input_binding_unknown": 0
+        },
+        "memo_reuse": {
+          "input_binding_known": 0,
+          "input_binding_unknown": 0
+        },
+        "retained_result": {
+          "input_binding_known": 7,
+          "input_binding_unknown": 0
+        }
+      }
+    },
+    "scope": "Saved application receipts; not cache lookups, hit rate or billing.",
+    "status": "recorded"
+  },
+  "saved_claim_report_repeat_exact": true,
+  "saved_claim_report_sha256": "453f8fa5e1c2cbbd8c896ae2d7e668e47c021c29a93c990802ac8c63f0a3e836",
+  "saved_claims": {
+    "answers_without_nonblank_claims": 0,
+    "blank_claim_slots": 0,
+    "citation_evidence": "legacy_missing",
+    "database_sha256": "93fd8769679b86b4a95f830ac48fe5330a13afe212ea6ecae6ac94ad82498f91",
+    "exclusions": [
+      "Bills, memos, content snapshots and pre-ledger answers are outside this census.",
+      "Free-form adoption or commencement assertions are not inferred."
+    ],
+    "invalid_counts": {},
+    "nonblank_claim_counts": {
+      "affected_groups": 44,
+      "changes_since_previous": 8,
+      "effective_date": 10,
+      "key_changes": 55
+    },
+    "result_rows": 14,
+    "row_counts": {
+      "failed_primary": 0,
+      "invalid": 0,
+      "other_purposes": 2,
+      "validated_primary": 12
+    },
+    "schema_version": 68,
+    "scope": "Canonical computation_results rows, one answer per validated primary result.",
+    "semantic": "semantic_not_assessed",
+    "status": "recorded",
+    "version": 1
+  },
+  "local_checkpoint": {
+    "initial_sql_bytes": 26281478,
+    "initial_sql_gzip_bytes": 5276152,
+    "final_sql_bytes": 26286656,
+    "final_sql_gzip_bytes": 5276314,
+    "final_sqlite_bytes": 28557312,
+    "checkpoint_count": 8,
+    "restore_seconds": 0.661643,
+    "dump_seconds": 0.14907,
+    "sql_growth_bytes": 5178,
+    "transport": "isolated local filesystem Git remote",
+    "limitations": [
+      "Does not measure GitHub network, authentication or runner latency",
+      "Report-row mutations are synthetic and do not estimate production daily growth",
+      "Packed history is measured after explicit local GC, not after every checkpoint",
+      "Temporary Git repositories and copied SQLite are removed after measurement"
+    ]
+  }
+}
