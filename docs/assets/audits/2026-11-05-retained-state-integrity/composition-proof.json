@@ -1,0 +1,11 @@
+{
+  "baseline": "J251 dc7d2f27",
+  "all_other_repo_definitions_AST_exact": true,
+  "removed_helpers": [
+    "_read_legacy_result",
+    "_validate_legacy_import",
+    "_validate_legacy_projections"
+  ],
+  "reader67_hooks_and_methods_preserved": true,
+  "all_module_constants_and_migrations_AST_exact": true
+}

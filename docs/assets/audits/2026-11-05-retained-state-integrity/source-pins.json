@@ -1,0 +1,20 @@
+{
+  "base_commit": "11557f163a2bdb38ba9416c78296078888629dd8",
+  "workspace": "/private/tmp/lexinform-j252-retained-integrity",
+  "patch_sha256": "a7d09c16dccd36c9079f210cce0fb0700f591ab2c8175c0ea013bc15d00333cb",
+  "previous_patch_sha256": "4866debdcae345e482bcf697d5eadb7d072926f846aa11c39f16dd3d3392e1a5",
+  "increment_sha256": "02871119644bb6e8f5da2e428de7d76553f92865b395b2df3b1668541da72653",
+  "increment_files": [
+    "tools/retained_integrity_doctor.py",
+    "tests/unit/test_retained_integrity_doctor.py",
+    "tools/README.md"
+  ],
+  "files": {
+    "src/lexinform/adapters/legacy_history.py": "0f12ddc2de692cacdea8fe99d3e0ba878b96abbf8aa59550a684a7490412a7e2",
+    "src/lexinform/adapters/sqlite_repo.py": "c694cf71921643a478807e6d2acfd2e2268bbbc1db7ea23023141d31c1ff8a71",
+    "tools/retained_integrity_doctor.py": "34ac9a81a6dc40102b9c2fec0214b70dd74d01fd1641f7e4748577b67d619e4c",
+    "tests/unit/test_retained_integrity_doctor.py": "5bf077bf07be18610ab256996811a744f5ff304ee44756848665e4d29538bbcd",
+    "pyproject.toml": "acb380f3f0fcd1cd44a6d2c2e25fe54b97691ee4dd59daaec9eff7796f468669",
+    "tools/README.md": "802e3533d92a4089279517e760bcf03786e609c9c4a11bc37f9eb51517ce2c08"
+  }
+}

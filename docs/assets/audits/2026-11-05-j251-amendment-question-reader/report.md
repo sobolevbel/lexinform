@@ -13,3 +13,5 @@ Strict shared storage/read/list/intent/item/result/restore/doctor checks preserv
 The [native-byte baseline](question-baseline-boundary.json) has14text/8scan paths with controlled prior/proposal fields and120kchar budget. A [1.5M-budget subset](production-budget-boundary.json) has no exact prior-owner matches and no real proposal/recommendation coverage. Neither establishes a universal body bound; the arbitrary128KiB proposal was rejected. Writer activation, real comparison-field qualification, pending/history pins and populated SQL/gzip growth remain future work. No DA7 checkbox closes here. Publication/release follows the root docs gate.
 
 [Reproduction recipe](recipe.md) and [immutable source manifest](source-manifest.json) pin the local-copy comparison; raw dumps, Bill bodies and questions are not published.
+
+Actualdc7d2f27 [CI and relay release](release.json) verified after publication; no workflow rerun.

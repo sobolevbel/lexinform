@@ -1,0 +1,288 @@
+{
+  "scope": "current and previous typed Mnemonic refs; same finite validator, no currentowner equality or proposed-name/string interpretation",
+  "qualification": {
+    "focused_tests": 215,
+    "new_units": 38,
+    "new_scenarios": 0,
+    "failures": 0,
+    "mypy": "Success: no issues found in 2 source files",
+    "ruff": "All checks passed!",
+    "format": "2 files already formatted",
+    "root_full_gate": "not run; parent-owned",
+    "provider_network_calls": 0,
+    "unit_first": "new API collection red; concrete preexisting false negatives separately pinned by prior requirement audit",
+    "runtime_delta": "three helpers relocated with exact AST after name-only normalization; all other repo definitions AST exact",
+    "refinement_red_controls": "native outer already errors; legacy/future/missing-stamp outer controls red; nested invalid JSON red; nested recognized-ref V1CLI warning\u2192V2ERROR pinned separately; missing-native-slot counter red",
+    "v1_preserved": "qualification/frozen-source contains all six exact original physical files",
+    "historical_name_controls": 3,
+    "root_previous_full_gate": "8919 passed on composed schema67 V2; preserved, V3 root full gate pending"
+  },
+  "author_source_pins": {
+    "base_commit": "11557f163a2bdb38ba9416c78296078888629dd8",
+    "workspace": "/private/tmp/lexinform-j252-retained-integrity",
+    "patch_sha256": "a7d09c16dccd36c9079f210cce0fb0700f591ab2c8175c0ea013bc15d00333cb",
+    "previous_patch_sha256": "4866debdcae345e482bcf697d5eadb7d072926f846aa11c39f16dd3d3392e1a5",
+    "increment_sha256": "02871119644bb6e8f5da2e428de7d76553f92865b395b2df3b1668541da72653",
+    "increment_files": [
+      "tools/retained_integrity_doctor.py",
+      "tests/unit/test_retained_integrity_doctor.py",
+      "tools/README.md"
+    ],
+    "files": {
+      "src/lexinform/adapters/legacy_history.py": "0f12ddc2de692cacdea8fe99d3e0ba878b96abbf8aa59550a684a7490412a7e2",
+      "src/lexinform/adapters/sqlite_repo.py": "c694cf71921643a478807e6d2acfd2e2268bbbc1db7ea23023141d31c1ff8a71",
+      "tools/retained_integrity_doctor.py": "34ac9a81a6dc40102b9c2fec0214b70dd74d01fd1641f7e4748577b67d619e4c",
+      "tests/unit/test_retained_integrity_doctor.py": "5bf077bf07be18610ab256996811a744f5ff304ee44756848665e4d29538bbcd",
+      "pyproject.toml": "acb380f3f0fcd1cd44a6d2c2e25fe54b97691ee4dd59daaec9eff7796f468669",
+      "tools/README.md": "802e3533d92a4089279517e760bcf03786e609c9c4a11bc37f9eb51517ce2c08"
+    }
+  },
+  "pinned_proof": {
+    "states": {
+      "b9": {
+        "database_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+        "seven_previous_report_objects_byte_exact": true,
+        "default_packet_sha256": "22f976d06f8c6ca492f89286883c993b318590d78edafbd00b16e7f4bd5cc26a",
+        "new_report_sha256": "686420492dcbe24078c58534b008d5b88a50ad650920eeced8162c62d79fe3fc",
+        "sections": {
+          "continuation_parents": {
+            "missing_columns": {},
+            "missing_rows": 0,
+            "no_parent_rows": 127,
+            "present_rows": 38,
+            "publication_rows": 224,
+            "rows": 38,
+            "status": "available",
+            "unavailable_rows": 59
+          },
+          "editorial_refs": {
+            "invalid_rows": 0,
+            "known_rows": 1,
+            "missing_columns": {},
+            "rows": 508,
+            "status": "available",
+            "unbound_rows": 507,
+            "unknown_rows": 0,
+            "valid_rows": 1
+          },
+          "legacy_archive": {
+            "analysis_bodies_rows": 0,
+            "archive_graph_errors": 0,
+            "body_value_invalid_rows": 0,
+            "missing_columns": {},
+            "result_imports_rows": 0,
+            "result_occurrences_rows": 0,
+            "status": "available",
+            "value_rows": 0
+          },
+          "saved_bodies": {
+            "absent_rows": 1142,
+            "invalid_rows": 0,
+            "missing_columns": {},
+            "slots": 1538,
+            "status": "available",
+            "unknown_rows": 0,
+            "valid_rows": 396
+          }
+        },
+        "previous_name_counts": {
+          "previous_invalid_rows": 0,
+          "previous_known_rows": 0,
+          "previous_rows": 0,
+          "previous_unbound_rows": 0,
+          "previous_unknown_rows": 0,
+          "previous_valid_rows": 0
+        }
+      },
+      "fresh": {
+        "database_sha256": "b08843e5a6b3c51aba83852509ffbaa915c2b859945bc44204f1b214a38077c6",
+        "seven_previous_report_objects_byte_exact": true,
+        "default_packet_sha256": "6224c761c2e2c0bec56b51ea5de0c8cc99b2d0aaee23cb572dcf342c68111ed6",
+        "new_report_sha256": "6b3ce902b19537da806980f420b5dd73f1269e18b158d40037ef1358aa97c720",
+        "sections": {
+          "continuation_parents": {
+            "missing_columns": {},
+            "missing_rows": 0,
+            "no_parent_rows": 127,
+            "present_rows": 40,
+            "publication_rows": 226,
+            "rows": 40,
+            "status": "available",
+            "unavailable_rows": 59
+          },
+          "editorial_refs": {
+            "invalid_rows": 0,
+            "known_rows": 1,
+            "missing_columns": {},
+            "rows": 509,
+            "status": "available",
+            "unbound_rows": 508,
+            "unknown_rows": 0,
+            "valid_rows": 1
+          },
+          "legacy_archive": {
+            "analysis_bodies_rows": 0,
+            "archive_graph_errors": 0,
+            "body_value_invalid_rows": 0,
+            "missing_columns": {},
+            "result_imports_rows": 0,
+            "result_occurrences_rows": 0,
+            "status": "available",
+            "value_rows": 0
+          },
+          "saved_bodies": {
+            "absent_rows": 1156,
+            "invalid_rows": 0,
+            "missing_columns": {},
+            "slots": 1554,
+            "status": "available",
+            "unknown_rows": 0,
+            "valid_rows": 398
+          }
+        },
+        "previous_name_counts": {
+          "previous_invalid_rows": 0,
+          "previous_known_rows": 0,
+          "previous_rows": 0,
+          "previous_unbound_rows": 0,
+          "previous_unknown_rows": 0,
+          "previous_valid_rows": 0
+        }
+      }
+    },
+    "original_gap_probes": {
+      "legacy_corrupt": {
+        "summary": {
+          "errors": 3,
+          "warnings": 0
+        },
+        "findings": [
+          {
+            "code": "invalid_legacy_archive_graph",
+            "level": "error",
+            "ref": "legacy_archive"
+          },
+          {
+            "code": "invalid_legacy_archive_row",
+            "level": "error",
+            "ref": "legacy_analysis_bodies/row-1"
+          },
+          {
+            "code": "invalid_legacy_archive_row",
+            "level": "error",
+            "ref": "legacy_result_values/row-1"
+          }
+        ],
+        "report_sha256": "b9743ff7415ee9f745001d22c4d025878cde35f7fac36621c4cd0655687b8094"
+      },
+      "legacy_missing": {
+        "summary": {
+          "errors": 2,
+          "warnings": 0
+        },
+        "findings": [
+          {
+            "code": "invalid_legacy_archive_graph",
+            "level": "error",
+            "ref": "legacy_archive"
+          },
+          {
+            "code": "invalid_legacy_archive_row",
+            "level": "error",
+            "ref": "legacy_result_values/row-1"
+          }
+        ],
+        "report_sha256": "8ed2ece8f69622f9599874f3ed987b5acb178365af8a95fbb6eb0d16409f74f3"
+      },
+      "delivery": {
+        "summary": {
+          "errors": 0,
+          "warnings": 1
+        },
+        "findings": [
+          {
+            "code": "legacy_body_unavailable",
+            "level": "warning",
+            "ref": "publications/row-58/bill_json"
+          }
+        ],
+        "report_sha256": "50c93db69e2938806a3e45c61978fa232ccb5af25b7bd5633718a57ac06a2043"
+      },
+      "name": {
+        "summary": {
+          "errors": 1,
+          "warnings": 0
+        },
+        "findings": [
+          {
+            "code": "invalid_editorial_paid_ref",
+            "level": "error",
+            "ref": "bills/row-228/editorial"
+          }
+        ],
+        "report_sha256": "6c90081fe55fb14f3ee3c11643d92c88455601e7a572e82ef5ad8993a5cd4c19"
+      },
+      "parent": {
+        "summary": {
+          "errors": 0,
+          "warnings": 1
+        },
+        "findings": [
+          {
+            "code": "continuation_parent_unavailable",
+            "level": "warning",
+            "ref": "publications/row-205"
+          }
+        ],
+        "report_sha256": "7dfbefa02d56bd715b528f56b99e7be8e90764876167f1add190069cf2ae5d27"
+      }
+    },
+    "raw_originals": "deferred/not assessed",
+    "native_body_profile": "attention-v1; unstamped legacy/unknown policy typed failures are availability warnings",
+    "read_only": true,
+    "recognized_nested_legacy_ref": {
+      "before": {
+        "errors": 0,
+        "warnings": 1
+      },
+      "after": {
+        "errors": 1,
+        "warnings": 0
+      },
+      "before_sha256": "c5ec4421d89d5aa50d732233fe9a1d0407f8bfef043f84925a80701a5223d753",
+      "after_sha256": "cbed0b91905fa38a5a63bd3972e1de22d51d7f67fd62dc469fcc1b85562725e1"
+    },
+    "compatibility": "Strict JSON/hydration failures ERROR for all profiles; decoded legacy/unknown policy current-model failures WARNING; explicit decoded attention-v1 model failures ERROR. No policy inferred from defaults.",
+    "historical_paid_name_probe": {
+      "summary": {
+        "errors": 1,
+        "warnings": 0
+      },
+      "findings": [
+        {
+          "code": "invalid_editorial_paid_ref",
+          "level": "error",
+          "ref": "bills/row-1/editorial/previous/0"
+        }
+      ],
+      "sha256": "6c15332c80fa43235a3f20021e2dcdd95fe748df6211d987aecddecf29cde01d",
+      "producer": "public bind_mnemonic then Editorial.rename/save; exact prior paid binding preserved"
+    }
+  },
+  "peer_review": {
+    "stage": "J252",
+    "version": 3,
+    "reviewer": "/root/secondary_dependency_review",
+    "verdict": "CLEAR",
+    "full_patch_sha256": "a7d09c16dccd36c9079f210cce0fb0700f591ab2c8175c0ea013bc15d00333cb",
+    "increment_sha256": "02871119644bb6e8f5da2e428de7d76553f92865b395b2df3b1668541da72653",
+    "physical_pins_verified": 6,
+    "findings": [],
+    "independent_tests": false,
+    "source_edits": false,
+    "network": false,
+    "independent_report_diff": "b9/fresh only six added zero previous counters",
+    "provenance": "Direct final reviewer message; root independently notified."
+  },
+  "root_previous_gate": "8919 V2 passed, preserved; final V3 gate/release parent-owned pending"
+}

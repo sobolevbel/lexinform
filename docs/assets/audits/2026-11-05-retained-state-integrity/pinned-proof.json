@@ -1,0 +1,201 @@
+{
+  "states": {
+    "b9": {
+      "database_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+      "seven_previous_report_objects_byte_exact": true,
+      "default_packet_sha256": "22f976d06f8c6ca492f89286883c993b318590d78edafbd00b16e7f4bd5cc26a",
+      "new_report_sha256": "76b639b8d512eed85ba3aa2a2203873b3ebe9e5269de7ea8c1fda92c1e01e27c",
+      "sections": {
+        "continuation_parents": {
+          "missing_columns": {},
+          "missing_rows": 0,
+          "no_parent_rows": 127,
+          "present_rows": 38,
+          "publication_rows": 224,
+          "rows": 38,
+          "status": "available",
+          "unavailable_rows": 59
+        },
+        "editorial_refs": {
+          "invalid_rows": 0,
+          "known_rows": 1,
+          "missing_columns": {},
+          "rows": 508,
+          "status": "available",
+          "unbound_rows": 507,
+          "unknown_rows": 0,
+          "valid_rows": 1
+        },
+        "legacy_archive": {
+          "analysis_bodies_rows": 0,
+          "archive_graph_errors": 0,
+          "body_value_invalid_rows": 0,
+          "missing_columns": {},
+          "result_imports_rows": 0,
+          "result_occurrences_rows": 0,
+          "status": "available",
+          "value_rows": 0
+        },
+        "saved_bodies": {
+          "absent_rows": 1142,
+          "invalid_rows": 0,
+          "missing_columns": {},
+          "slots": 1538,
+          "status": "available",
+          "unknown_rows": 0,
+          "valid_rows": 396
+        }
+      }
+    },
+    "fresh": {
+      "database_sha256": "b08843e5a6b3c51aba83852509ffbaa915c2b859945bc44204f1b214a38077c6",
+      "seven_previous_report_objects_byte_exact": true,
+      "default_packet_sha256": "6224c761c2e2c0bec56b51ea5de0c8cc99b2d0aaee23cb572dcf342c68111ed6",
+      "new_report_sha256": "8bf65e8332a27ef5e1736b1be6bf563b1c79d18fa95b8506cf9604d134b9323b",
+      "sections": {
+        "continuation_parents": {
+          "missing_columns": {},
+          "missing_rows": 0,
+          "no_parent_rows": 127,
+          "present_rows": 40,
+          "publication_rows": 226,
+          "rows": 40,
+          "status": "available",
+          "unavailable_rows": 59
+        },
+        "editorial_refs": {
+          "invalid_rows": 0,
+          "known_rows": 1,
+          "missing_columns": {},
+          "rows": 509,
+          "status": "available",
+          "unbound_rows": 508,
+          "unknown_rows": 0,
+          "valid_rows": 1
+        },
+        "legacy_archive": {
+          "analysis_bodies_rows": 0,
+          "archive_graph_errors": 0,
+          "body_value_invalid_rows": 0,
+          "missing_columns": {},
+          "result_imports_rows": 0,
+          "result_occurrences_rows": 0,
+          "status": "available",
+          "value_rows": 0
+        },
+        "saved_bodies": {
+          "absent_rows": 1156,
+          "invalid_rows": 0,
+          "missing_columns": {},
+          "slots": 1554,
+          "status": "available",
+          "unknown_rows": 0,
+          "valid_rows": 398
+        }
+      }
+    }
+  },
+  "original_gap_probes": {
+    "legacy_corrupt": {
+      "summary": {
+        "errors": 3,
+        "warnings": 0
+      },
+      "findings": [
+        {
+          "code": "invalid_legacy_archive_graph",
+          "level": "error",
+          "ref": "legacy_archive"
+        },
+        {
+          "code": "invalid_legacy_archive_row",
+          "level": "error",
+          "ref": "legacy_analysis_bodies/row-1"
+        },
+        {
+          "code": "invalid_legacy_archive_row",
+          "level": "error",
+          "ref": "legacy_result_values/row-1"
+        }
+      ],
+      "report_sha256": "b9743ff7415ee9f745001d22c4d025878cde35f7fac36621c4cd0655687b8094"
+    },
+    "legacy_missing": {
+      "summary": {
+        "errors": 2,
+        "warnings": 0
+      },
+      "findings": [
+        {
+          "code": "invalid_legacy_archive_graph",
+          "level": "error",
+          "ref": "legacy_archive"
+        },
+        {
+          "code": "invalid_legacy_archive_row",
+          "level": "error",
+          "ref": "legacy_result_values/row-1"
+        }
+      ],
+      "report_sha256": "8ed2ece8f69622f9599874f3ed987b5acb178365af8a95fbb6eb0d16409f74f3"
+    },
+    "delivery": {
+      "summary": {
+        "errors": 0,
+        "warnings": 1
+      },
+      "findings": [
+        {
+          "code": "legacy_body_unavailable",
+          "level": "warning",
+          "ref": "publications/row-58/bill_json"
+        }
+      ],
+      "report_sha256": "50c93db69e2938806a3e45c61978fa232ccb5af25b7bd5633718a57ac06a2043"
+    },
+    "name": {
+      "summary": {
+        "errors": 1,
+        "warnings": 0
+      },
+      "findings": [
+        {
+          "code": "invalid_editorial_paid_ref",
+          "level": "error",
+          "ref": "bills/row-228/editorial"
+        }
+      ],
+      "report_sha256": "6c90081fe55fb14f3ee3c11643d92c88455601e7a572e82ef5ad8993a5cd4c19"
+    },
+    "parent": {
+      "summary": {
+        "errors": 0,
+        "warnings": 1
+      },
+      "findings": [
+        {
+          "code": "continuation_parent_unavailable",
+          "level": "warning",
+          "ref": "publications/row-205"
+        }
+      ],
+      "report_sha256": "7dfbefa02d56bd715b528f56b99e7be8e90764876167f1add190069cf2ae5d27"
+    }
+  },
+  "raw_originals": "deferred/not assessed",
+  "native_body_profile": "attention-v1; unstamped legacy/unknown policy typed failures are availability warnings",
+  "read_only": true,
+  "recognized_nested_legacy_ref": {
+    "before": {
+      "errors": 0,
+      "warnings": 1
+    },
+    "after": {
+      "errors": 1,
+      "warnings": 0
+    },
+    "before_sha256": "c5ec4421d89d5aa50d732233fe9a1d0407f8bfef043f84925a80701a5223d753",
+    "after_sha256": "cbed0b91905fa38a5a63bd3972e1de22d51d7f67fd62dc469fcc1b85562725e1"
+  },
+  "compatibility": "Strict JSON/hydration failures ERROR for all profiles; decoded legacy/unknown policy current-model failures WARNING; explicit decoded attention-v1 model failures ERROR. No policy inferred from defaults."
+}

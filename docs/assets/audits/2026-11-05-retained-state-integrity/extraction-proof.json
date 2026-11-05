@@ -1,0 +1,9 @@
+{
+  "helpers_ast_exact_after_only_name_relocation": {
+    "_read_legacy_result": true,
+    "_validate_legacy_import": true,
+    "_validate_legacy_projections": true
+  },
+  "all_other_repo_definitions_ast_exact": true,
+  "namespace": "services/message_parts.py::freeze_parts assigns parent=pub.id, creates children with continuation_parent=parent then chains child IDs; resolve_continuation_parent uses repository.publication_by_id, never Telegram reply_to"
+}

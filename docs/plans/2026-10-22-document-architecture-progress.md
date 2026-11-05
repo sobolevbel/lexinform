@@ -11118,3 +11118,33 @@ runtime or test-ID delta. Actual release follows publication. DA7 tasks stay ope
 [Root report](../assets/audits/2026-11-05-j251-amendment-question-reader/report.md),
 [integration](../assets/audits/2026-11-05-j251-amendment-question-reader/integration-proof.json),
 [review](../assets/audits/2026-11-05-j251-amendment-question-reader/peer-review.json).
+
+<a id="j252"></a>
+
+## J252 — retained operational bodies, paid names and parent availability
+
+An explicit read-only profile checks recognized shared legacy bodies/refs, native saved bodies
+and current paid editorial name refs. Three legacy validators move to a public shared adapter
+with old aliases; root composition preserves every other J251 repo definition and all constants.
+
+Strict JSON/recognized-parent failures are errors. Decoded unproven legacy/future layouts that
+cannot match current typed models are unavailable/advisory; native admission uses the explicit
+raw policy stamp, never defaults. Cleaned/absent/unknown data remain distinct. Name validation
+accepts actual analysis/reanalysis/name provenance, manual unbound values and permitted foreign
+owners. Local continuation_parent points to publications.id; historical absence is advisory,
+never a send/retry verdict. No repair, provider calls or schema/storage-policy changes.
+
+Three retained-body/ref gaps and a parent-availability omission were reproduced before this
+feature; the V2 boundary refinement has unit-first red controls. Final212focused/35newunits/
+0scenarios and independent exact-pin review CLEAR. Root118focused/8919full tests/310.64s,
+mypy769/Ruff/format838 and all838source/config pins pass. Seven prior reports remain byte-exact
+on composed schema67; new profile0errors/0warnings and source unchanged.
+
+Actual release and complete DA10.2 named-requirement acceptance follow; plan47/6/21 unchanged.
+
+[Report](../assets/audits/2026-11-05-retained-state-integrity/REPORT.md),
+[integration](../assets/audits/2026-11-05-retained-state-integrity/integration-proof.json),
+[composition](../assets/audits/2026-11-05-retained-state-integrity/composition-proof.json),
+[review](../assets/audits/2026-11-05-retained-state-integrity/peer-review.json).
+
+J252 final V3: current and previous selected names share validation; actual public rename damaged-parent control now reports the bounded previous/0 reference. Author215focused/38newunits/0scenarios, exact-pin independent review CLEAR. Root38dedicated units/8922full/307.25s/mypy769/Ruff838 and all838source/config pins pass; seven prior report profiles exact, immutable source unchanged. DA10.2 remains open: an independently reproduced missing inverse continuation child needs an advisory availability finding. No auto repair or resend.

@@ -130,6 +130,17 @@ including consumed/forgotten rows. Missing receipts and item deficits are adviso
 conflicts, invalid counts and excess rows are errors. Legacy unknown hashes and unavailable
 schemas stay explicit; current consumer owners and same-hash items are never substituted.
 
+## Retained-state integrity doctor
+
+`uv run --offline --frozen python -m tools.retained_integrity_doctor --database COPY.db
+--output out/retained-integrity.json` explicitly audits retained application data without repair.
+It reuses the immutable legacy archive guards, declared native payload models and selected-name
+paid-source rules for current and previous names. Cleaned/legacy absent bodies remain unavailable;
+native known malformed bodies
+and obligated paid/archive parent failures are errors. Known continuation parents resolve only
+against local publication IDs; historical absence is advisory and never authorizes a send.
+Existing doctor reports remain unchanged. Raw legislative originals are outside this profile.
+
 ## Unfinished-work doctor
 
 ```bash

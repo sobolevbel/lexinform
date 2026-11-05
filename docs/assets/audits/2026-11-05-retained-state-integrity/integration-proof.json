@@ -1,0 +1,78 @@
+{
+  "full_tests": 8922,
+  "seconds": 307.25,
+  "mypy_files": 769,
+  "ruff_format_files": 838,
+  "source_config_pins_exact": 838,
+  "root_focused": 38,
+  "new_units": 38,
+  "new_scenarios": 0,
+  "seven_prior_reports_byte_exact": true,
+  "source_sha256": "118f84ec0862f247d3a05db9be3b5432ebeb8b995fbe70cc9210080a7b2f2a70",
+  "source_unchanged": true,
+  "observed_status": "recorded",
+  "observed_summary": {
+    "errors": 0,
+    "warnings": 0
+  },
+  "observed_sections": {
+    "legacy_archive": {
+      "status": "available",
+      "missing_columns": {},
+      "analysis_bodies_rows": 0,
+      "value_rows": 0,
+      "result_imports_rows": 0,
+      "result_occurrences_rows": 0,
+      "body_value_invalid_rows": 0,
+      "archive_graph_errors": 0
+    },
+    "saved_bodies": {
+      "status": "available",
+      "missing_columns": {},
+      "slots": 1554,
+      "valid_rows": 398,
+      "invalid_rows": 0,
+      "unknown_rows": 0,
+      "absent_rows": 1156
+    },
+    "editorial_refs": {
+      "status": "available",
+      "missing_columns": {},
+      "rows": 509,
+      "known_rows": 1,
+      "unbound_rows": 508,
+      "valid_rows": 1,
+      "invalid_rows": 0,
+      "unknown_rows": 0,
+      "previous_rows": 0,
+      "previous_known_rows": 0,
+      "previous_unbound_rows": 0,
+      "previous_valid_rows": 0,
+      "previous_invalid_rows": 0,
+      "previous_unknown_rows": 0
+    },
+    "continuation_parents": {
+      "status": "available",
+      "missing_columns": {},
+      "publication_rows": 226,
+      "rows": 40,
+      "present_rows": 40,
+      "missing_rows": 0,
+      "no_parent_rows": 127,
+      "unavailable_rows": 59
+    }
+  },
+  "default_report_sha256": "1ff3831b8adac5c54d969569d76164406e702220990882c7fedcea809bd6c268",
+  "full_log_sha256": "70e290688781e29ddab502277ddc3d86430f053fedf56f7b8750eb63ed48fc9f",
+  "full_xml_sha256": "a51c65456968692b47b5004964ddabaa5a5b56b44772fda0486166d88fec8572",
+  "composition": "composition-proof.json",
+  "previous_v2_gate": {
+    "full_tests": 8919,
+    "seconds": 310.64,
+    "new_units": 35,
+    "root_focused": 118,
+    "full_log_sha256": "889561142969fb59a60da9ac888026b1043a59f9bbeca52d408658a169b663b6",
+    "full_xml_sha256": "2860292d4f2b85bcbdc73b72f64fb7f9995258be0934b87f5bdb94a160bb663e"
+  },
+  "root_focus_scope": "Final V3 dedicated module; prior V2 composed reader/repository118 retained above"
+}

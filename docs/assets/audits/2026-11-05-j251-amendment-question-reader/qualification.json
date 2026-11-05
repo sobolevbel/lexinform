@@ -58,5 +58,9 @@
     "schema_storage": "storage-proof.json",
     "writer_capture": "OFF"
   },
-  "release": "pending publication"
+  "release": {
+    "status": "verified",
+    "target_sha": "dc7d2f27e854a9b00a682a776c731619beb555a8",
+    "receipt": "release.json"
+  }
 }
