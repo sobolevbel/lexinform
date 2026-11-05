@@ -255,6 +255,7 @@ def test_original_revision_duplicate_restore_and_bounded_display(tmp_path: Path)
         "UPDATE computation_results SET custom_id='wrong-index'",
         "UPDATE computation_results SET result_json=json_set(result_json,'$.request_sha256','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')",
         "DELETE FROM result_applications",
+        pytest.param("UPDATE publications SET kind='joint_bill'", id="physical-kind"),
     ],
 )
 def test_corrupt_known_reference_rejected_get_doctor_atomic_restore(

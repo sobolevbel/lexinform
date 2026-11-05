@@ -67,3 +67,5 @@ exact18case pair, actual storage deltas and fresh-state no-enrichment checks on 
 [Root integration proof](integration-proof.json), [case delta](case-delta.json),
 [fixture proof](fixture-case-proof.json), [fixture review](fixture-review.json),
 [fixture pins](fixture-source-pins.json). Previous4cb430d2 [CI and relay](previous-release.json) verified.
+
+Actuala703da5f release: [CI and relay verification](../2026-11-05-application-reference-writer/previous-release.json).

@@ -1,0 +1,13 @@
+{
+  "reviewer": "root",
+  "patch_sha256": "fff2f4a87e63c893913b3632deacc878ec6f38c6099c8025c9500b60a7478a2f",
+  "findings": [],
+  "test_only": true,
+  "producer_off_before_legacy_first_freeze": true,
+  "no_hashed_payload_or_id_rewrites": true,
+  "other_two_scenario_slices_remain_modern": true,
+  "modern_kind_corruption_get_doctor_atomic_restore_unit_added": true,
+  "original_five_pins_exact": true,
+  "new_scenarios": 0,
+  "root_focused": 57
+}

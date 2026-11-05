@@ -10742,3 +10742,52 @@ separate; DA10.4 stays OPEN and no task checkbox closes.
 [qualification](../assets/audits/2026-11-05-local-timing-writer/qualification.json),
 [peer review](../assets/audits/2026-11-05-local-timing-writer/peer-review.json),
 [compressed paired evidence](../assets/audits/2026-11-05-local-timing-writer/artifacts.json).
+
+
+<a id="j242"></a>
+
+## J242 — prospective amendment application-reference writer B
+
+5 November 2026. Fresh single-message amendment original/revision freeze and the existing audited
+fresh-unrendered recovery route capture only validated existing result_applications SQL IDs.
+Original targets are frozen status-change IDs; revisions target the actual revision publication.
+Capture commits with snapshots/version/binding/outbox before API. Missing0refs stays unprofiled
+unknown; partial known refs assert no complete inventory. No receipt creation, current-Bill/owner/
+answer/title/time inference, enrichment of old history or expansion of recovery authority occurs.
+Legacy rendered/unprofiled/opaque reuse remains byte-exact; card and historical fallback paths stay
+unchanged. Multipart/digest/group/absorbed operations cannot enter this finite profile.
+
+OFF driver596bd286…559c93b was frozen BEFORE runtime edits, with exact repeated OFF outputs and
+source/input pins. Natural evidence is one31,091-byte existing frozen3146 Bill/change/result
+envelope (publication231/change189); no new raw extraction or download. Existing parent/original/
+correction operations and the separate known-source primary prior for recovery are technical
+controls, not natural legal gold. The envelope remains local/untracked; committed evidence holds
+only its provenance and before/after SHA, not bodies.
+
+Final same-source ON natural and recovery chains preserve ALL nonhistory table rowids/values,
+application rows and snapshots, physical plans/render/outcomes and normalized history/bindings.
+Repeated confirmed delivery and double restore stay exact. Measured independent fixture totals:
+natural original54SQL/28gzip bytes, original+revision108/29; technical recovery54/20 and108/23.
+These deltas are neither additive across phases nor a production-growth forecast. Existing fresh-b
+startup/readers/default doctor/dump/old IDs/all-table rows/double restore remain exact and source
+DB unchanged. Adapters/models/ports/SQL/application writers are untouched.
+
+Author176 focused tests across11modules,21newunits (20writer+1baseline),0newscenarios; strict
+mypy5/Ruff/format green. Unit-first controls cover pre-API capture, original/revision/recovery,
+missing/partial/foreign/rehome refs, actual SQL contradiction, post-save fault/cancellation atomicity,
+legacy reuse, multipart/digest, cleanup/deleted physical target and restore. Independent five-pin
+peer review CLEAR/findings[], no independent test rerun; root static review reports no findings.
+Reader prerequisite4cb430d2 actualCI41970912310/relay41971451869 is verified. Root142focused
+and57 final affected cases pass; full8626tests/298.190s/92%coverage,mypy748/Ruff/format817green,
+all817source/config pins exact. First gate exposed one old opaque wrong-kind fixture that now
+acquired known refs. Test-only producer-OFF seeding before first freeze preserves that legacy
+path; a new UNIT independently verifies modern get/doctor/atomic-restore rejection without
+operational work. No reader/runtime/hash/ID weakening. Final public pair and full existing-state
+proof remain exact;22newunits/0newscenarios/0removed; all prior scenario IDs preserved. Previous
+a703da5f CI41972960477/relay41973777988 verified; this release verification follows publication.
+DA7.1/DA7.5 remain partial outside scope.
+
+[Report](../assets/audits/2026-11-05-application-reference-writer/report.md),
+[qualification](../assets/audits/2026-11-05-application-reference-writer/qualification.json),
+[peer review](../assets/audits/2026-11-05-application-reference-writer/peer-review.json),
+[metadata evidence](../assets/audits/2026-11-05-application-reference-writer/artifacts.json).

@@ -1,0 +1,34 @@
+{
+  "new_unit_cases": 22,
+  "new_scenario_cases": 0,
+  "removed_cases": 0,
+  "all_first_gate_scenario_ids_preserved": true,
+  "additional_unit_after_first_gate": [
+    "tests.unit.test_content_application_refs::test_corrupt_known_reference_rejected_get_doctor_atomic_restore[physical-kind]"
+  ],
+  "new": [
+    "tests.unit.test_content_application_refs::test_corrupt_known_reference_rejected_get_doctor_atomic_restore[physical-kind]",
+    "tests.unit.test_content_application_writer::test_already_rendered_legacy_outbox_does_not_gain_references",
+    "tests.unit.test_content_application_writer::test_audited_recovery_capture_failure_is_atomic_without_api[False]",
+    "tests.unit.test_content_application_writer::test_audited_recovery_capture_failure_is_atomic_without_api[True]",
+    "tests.unit.test_content_application_writer::test_audited_recovery_uses_same_fresh_capture_without_new_applications",
+    "tests.unit.test_content_application_writer::test_digest_only_never_freezes_known_refs",
+    "tests.unit.test_content_application_writer::test_existing_unprofiled_versions_are_never_enriched_by_later_reuse",
+    "tests.unit.test_content_application_writer::test_failed_known_capture_rolls_back_frozen_payload_and_history_before_api[False]",
+    "tests.unit.test_content_application_writer::test_failed_known_capture_rolls_back_frozen_payload_and_history_before_api[True]",
+    "tests.unit.test_content_application_writer::test_foreign_application_owners_use_actual_ids_without_latest_guess",
+    "tests.unit.test_content_application_writer::test_missing_receipts_leave_unprofiled_unknown_history",
+    "tests.unit.test_content_application_writer::test_multipart_physical_operation_cannot_capture_single_message_refs",
+    "tests.unit.test_content_application_writer::test_opaque_legacy_reference_bytes_survive_delivery_and_restore",
+    "tests.unit.test_content_application_writer::test_original_revision_bind_actual_projection_ids_before_api",
+    "tests.unit.test_content_application_writer::test_partial_known_receipts_do_not_claim_completeness[False]",
+    "tests.unit.test_content_application_writer::test_partial_known_receipts_do_not_claim_completeness[True]",
+    "tests.unit.test_content_application_writer::test_prospective_refs_survive_cleanup_and_missing_physical_publication",
+    "tests.unit.test_content_application_writer::test_public_government_rehome_uses_frozen_context_without_owner_equality",
+    "tests.unit.test_content_application_writer::test_real_corrupt_receipt_refuses_freeze_atomically",
+    "tests.unit.test_content_application_writer::test_version_write_failure_rolls_back_refs_snapshots_and_frozen_render[False]",
+    "tests.unit.test_content_application_writer::test_version_write_failure_rolls_back_refs_snapshots_and_frozen_render[True]",
+    "tests.unit.test_replay_content_applications::test_public_original_revision_and_audited_recovery_baseline"
+  ],
+  "removed": []
+}

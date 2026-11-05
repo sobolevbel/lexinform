@@ -1,6 +1,6 @@
 import datetime as dt
 import sqlite3
-from contextlib import closing
+from contextlib import closing, nullcontext
 from pathlib import Path
 from unittest.mock import patch
 
@@ -8,7 +8,14 @@ import pytest
 
 from lexinform.adapters.sqlite_repo import SCHEMA_VERSION
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import CommandOutcome, OutcomeStatus, PublicationStatus
+from lexinform.models import (
+    CommandOutcome,
+    ContentVersion,
+    OutcomeStatus,
+    Publication,
+    PublicationStatus,
+)
+from lexinform.ports import BillRepository
 from lexinform.services import content_history
 from tests.scenario.test_amendments_command import published_world
 
@@ -148,16 +155,34 @@ def test_corrupt_optional_history_does_not_resolve_an_unknown_delivery(
 def test_history_bindings_are_independent_of_retry_plans_and_check_physical_owners(
     damage: str,
 ) -> None:
-    world, original = published_world()
-    assert original.id is not None, "the fixture stores the original publication"
-    world.command("/amendments 1929")
-    world.run(track=False)
-    world.batch.resolve()
-    world.run()
-    revision = world.repo.list_amendment_revisions(original.id)[0]
-    assert revision.id is not None, "the collected amendment has a separate physical edition"
-    expected = world.repo.get_publication_content(revision.id)
-    assert expected is not None, "posting binds the confirmed revision to its editorial version"
+    def old_capture(
+        repo: BillRepository,
+        version: ContentVersion,
+        publication: Publication,
+        *,
+        origin: Publication | None,
+    ) -> ContentVersion:
+        return version
+
+    with (
+        patch.object(content_history, "capture_content_applications", side_effect=old_capture)
+        if damage == "wrong_kind"
+        else nullcontext()
+    ):
+        world, original = published_world()
+        assert original.id is not None, "the fixture stores the original publication"
+        world.command("/amendments 1929")
+        world.run(track=False)
+        world.batch.resolve()
+        world.run()
+        revision = world.repo.list_amendment_revisions(original.id)[0]
+        assert revision.id is not None, "the collected amendment has a separate physical edition"
+        expected = world.repo.get_publication_content(revision.id)
+        assert expected is not None, "posting binds the confirmed revision to its editorial version"
+    if damage == "wrong_kind":
+        assert expected.application_ref_profile is None and expected.application_ids == ()
+    else:
+        assert expected.application_ref_profile == "amendment-projections-v1"
     with closing(sqlite3.connect(":memory:")) as snapshot:
         snapshot.executescript(world.repo.dump())
         if damage == "removed_payloads":

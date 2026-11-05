@@ -1,0 +1,12 @@
+{
+  "base": "4f16442ecbcccd16ebb15bcadfb375df306be39b + exact frozen J239 cc0315c9223cba33075117840d529d8634a561a5ad1facb41dea17c2879ad22a",
+  "workspace": "/private/tmp/lexinform-j242-application-writer",
+  "patch_sha256": "6dd54152e9dc88414c58d5fddd1dcbc48ef4c828be3c00b6da7856c1e42f47e5",
+  "files": {
+    "src/lexinform/services/content_history.py": "5e455aee143c02aa6f74a14b6019eb0219e8dd2f4b6d449168513babead5a4ec",
+    "src/lexinform/services/posting.py": "b434b2739a4741c76fef0c4c9fa1615704b1826b65f976d4850933f9686d963f",
+    "tests/unit/test_content_application_writer.py": "18d4fb85cc39fd57e24968225818adbb47da10e1999732722aa705c9566f8104",
+    "tests/unit/test_replay_content_applications.py": "2627dea0bf92b94eab1c749673882ad740b05c84ba1d1216096b3caac9b978d9",
+    "tools/replay_content_applications.py": "596bd28694509d009da4984b57c89d1a7a11704888cc7ea5d6601a289559c93b"
+  }
+}

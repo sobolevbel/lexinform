@@ -1,0 +1,28 @@
+{
+  "status": "clear",
+  "patch_sha256": "6dd54152e9dc88414c58d5fddd1dcbc48ef4c828be3c00b6da7856c1e42f47e5",
+  "source_pins": {
+    "src/lexinform/services/content_history.py": "5e455aee143c02aa6f74a14b6019eb0219e8dd2f4b6d449168513babead5a4ec",
+    "src/lexinform/services/posting.py": "b434b2739a4741c76fef0c4c9fa1615704b1826b65f976d4850933f9686d963f",
+    "tests/unit/test_content_application_writer.py": "18d4fb85cc39fd57e24968225818adbb47da10e1999732722aa705c9566f8104",
+    "tests/unit/test_replay_content_applications.py": "2627dea0bf92b94eab1c749673882ad740b05c84ba1d1216096b3caac9b978d9",
+    "tools/replay_content_applications.py": "596bd28694509d009da4984b57c89d1a7a11704888cc7ea5d6601a289559c93b"
+  },
+  "findings": [],
+  "independent_tests": false,
+  "source_edits": false,
+  "review_scope": [
+    "Fresh-only explicit first-freeze/audited-recovery origin, existing-bound/rendered/legacy paths unchanged.",
+    "Only exact retained projection IDs; existing shared purpose/result/target/physical reader validates before saved binding.",
+    "Atomic snapshot/version/binding/outbox boundary precedes publisher; ordinary faults and cancellation roll back without API.",
+    "Missing receipts stay unprofiled unknown; partial lists assert no completeness; foreign/rehome owners not inferred.",
+    "All five physical hashes and patch exact; final ON natural/recovery gzip bytes match final same-source outputs and OFF package bytes.",
+    "Paired driver normalizes only new history profile/IDs and their derived chain IDs; all nonhistory/application/physical-table hashes remain compared."
+  ],
+  "limitations": [
+    "Read-only source/test/artifact review; author tests were not independently rerun.",
+    "Natural input is an existing frozen state envelope; original/revision/recovery operations and source prior are controlled technical fixtures.",
+    "Known IDs do not prove complete application inventory, upstream availability, current ownership or independent Telegram delivery.",
+    "Root owns merged-source gate and actual deployment; DA7.1/DA7.5 remain partial beyond this finite scope."
+  ]
+}

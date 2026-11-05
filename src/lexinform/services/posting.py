@@ -55,6 +55,7 @@ from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway, State
 from lexinform.services.card_edits import edit_card
 from lexinform.services.content_history import (
     FORMATTER_VERSION,
+    capture_content_applications,
     prepare_publication_content,
     record_publication_content,
 )
@@ -1468,6 +1469,7 @@ class Poster:
                     formatter_version=FORMATTER_VERSION,
                     language=self._language,
                     source_origin=pub if capture else None,
+                    application_origin=pub,
                 )
         except SourceContextInvalidError:
             self._repo.mark_publication(
@@ -1541,6 +1543,7 @@ class Poster:
                         "source_observation_ids": audit.source_observation_ids,
                     }
                 )
+                version = capture_content_applications(self._repo, version, frozen, origin=pub)
                 recovered = self._repo.recover_source_context_retry(
                     resolution, delivery=frozen.delivery, version=version, snapshots=snapshots
                 )

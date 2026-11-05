@@ -1,0 +1,23 @@
+{
+  "workspace": "/private/tmp/lexinform-j242-inspection-fixture-fix",
+  "base_workspace": "/private/tmp/lexinform-j242-inspection-fixture-base",
+  "test_files": {
+    "tests/scenario/test_content_inspection.py": {
+      "before_sha256": "08c940ac657625e9b35c0c9a14f819e05ce3f8033f2b0733f8627de8142dc49d",
+      "after_sha256": "587a91ef6176a8a1606147299e87e7e01e71ce095440442ff9a8f8d03cde3197"
+    },
+    "tests/unit/test_content_application_refs.py": {
+      "before_sha256": "1f0e739a9c597459d300d6fc766208cf6c705255ec7e429f2c5ac1a873722ffb",
+      "after_sha256": "50cfcb6c5e7bc37f08b1e75ed99b55eb63818fd61093b33c477b34d1a7d38285"
+    }
+  },
+  "patch_sha256": "fff2f4a87e63c893913b3632deacc878ec6f38c6099c8025c9500b60a7478a2f",
+  "original_five_J242_pins_unchanged": {
+    "src/lexinform/services/content_history.py": "5e455aee143c02aa6f74a14b6019eb0219e8dd2f4b6d449168513babead5a4ec",
+    "src/lexinform/services/posting.py": "b434b2739a4741c76fef0c4c9fa1615704b1826b65f976d4850933f9686d963f",
+    "tests/unit/test_content_application_writer.py": "18d4fb85cc39fd57e24968225818adbb47da10e1999732722aa705c9566f8104",
+    "tests/unit/test_replay_content_applications.py": "2627dea0bf92b94eab1c749673882ad740b05c84ba1d1216096b3caac9b978d9",
+    "tools/replay_content_applications.py": "596bd28694509d009da4984b57c89d1a7a11704888cc7ea5d6601a289559c93b"
+  },
+  "test_only": true
+}

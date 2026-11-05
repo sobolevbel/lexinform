@@ -1,0 +1,70 @@
+{
+  "focused_tests": 176,
+  "focused_modules": 11,
+  "new_writer_unit_cases": 20,
+  "new_baseline_unit_cases": 1,
+  "new_scenarios": 0,
+  "mypy_owned_files": 5,
+  "ruff": "passed",
+  "format": "passed",
+  "root_apply_check": "passed",
+  "fullgate": false,
+  "independent_tests": false,
+  "network": false,
+  "provider_calls": 0,
+  "new_downloads": 0,
+  "reader_prerequisite": {
+    "commit": "4cb430d2",
+    "CI": 41970912310,
+    "relay": 41971451869,
+    "status": "verified by parent"
+  },
+  "OFF_freeze_before_runtime_edits": true,
+  "same_driver_core_exact": true,
+  "all_nonhistory_and_application_rows_exact": true,
+  "fresh_startup_readers_default_doctor_dump_IDs_double_restore_exact": true,
+  "fresh_source_DB_unchanged": true,
+  "legacy_opaque_unprofiled_rendered_reuse_full_bytes": true,
+  "storage": "paired-proof.json",
+  "limits": [
+    "Two controlled original/revision chains; recovery uses explicit technical known-source prior.",
+    "Natural input is frozen existing delivery state, not a new raw extraction or human gold verdict.",
+    "Known reference lists are not complete application inventories; missing references stay unknown.",
+    "DA7.1/DA7.5 remain partial outside finite single-message amendment scope."
+  ],
+  "root_full_gate": {
+    "tests": 8626,
+    "xml_seconds": 298.19,
+    "mypy_files": 748,
+    "ruff_format_files": 817,
+    "coverage_percent": 92,
+    "source_config_pins": 817
+  },
+  "root_focused_initial": 142,
+  "root_focused_final": 57,
+  "root_natural_envelope_checked_against_pinned_SQL": true,
+  "root_final_natural_recovery_byte_exact": true,
+  "root_all48tables_dump_doctor_oldids_double_restore_exact": true,
+  "first_root_gate": {
+    "failed": 1,
+    "passed": 8624,
+    "reason": "Old opaque-history kind-corruption fallback fixture now retained known profiled refs; corrected only that producer-OFF legacy slice, added independent modern strict unit."
+  },
+  "fixture_correction": {
+    "files": 2,
+    "new_unit_cases": 1,
+    "new_scenarios": 0,
+    "all_old_scenario_ids_preserved": true,
+    "original_five_source_pins_exact": true,
+    "reader_changes": false,
+    "hashed_payload_or_id_rewrites": false
+  },
+  "root_new_unit_cases": 22,
+  "root_new_scenario_cases": 0,
+  "previous_release": {
+    "sha": "a703da5fef0bc2e823a6ab5172831b582ab46b6b",
+    "ci": 41972960477,
+    "deploy": 41973777988,
+    "verified": true
+  }
+}

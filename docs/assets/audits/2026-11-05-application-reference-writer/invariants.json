@@ -1,0 +1,10 @@
+{
+  "all_adapters_models_ports_byte_exact": true,
+  "all_existing_content_history_helpers_except_record_function_AST_exact": true,
+  "new_runtime_source_files": 2,
+  "receipt_writers_and_application_services_byte_exact": true,
+  "new_receipts_created_by_history": 0,
+  "existing_SQL_calls_changed": 0,
+  "runtime_enrichment_scope": "Fresh unrendered single amendment original/revision; existing audited recovery only.",
+  "old_profile_None_reuse": "No backfill; full bytes retained in tests."
+}

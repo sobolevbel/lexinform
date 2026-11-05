@@ -9,6 +9,7 @@ from lexinform.content_sources import (
 )
 from lexinform.content_versions import card_physical_matches
 from lexinform.models import (
+    AmendmentsRecord,
     Bill,
     ContentSnapshot,
     ContentVersion,
@@ -16,7 +17,9 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    ResultApplicationTarget,
     StatusChange,
+    SupplementRecord,
     amendments_stage,
 )
 from lexinform.models.content import card_bill_snapshot, editorial_bill_snapshot
@@ -58,6 +61,7 @@ def record_publication_content(
     formatter_version: str | None = None,
     language: str | None = None,
     source_origin: Publication | None = None,
+    application_origin: Publication | None = None,
     card_history_parent: ContentVersion | Literal["original"] | None = None,
 ) -> ContentVersion | None:
     if publication.id is None:
@@ -109,9 +113,80 @@ def record_publication_content(
                     "source_observation_ids": audit.source_observation_ids,
                 }
             )
+        version = capture_content_applications(
+            repo, version, publication, origin=application_origin
+        )
         repo.save_content_version(version)
         repo.bind_publication_content(publication.id, version.content_id)
     return version
+
+
+def capture_content_applications(
+    repo: BillRepository,
+    version: ContentVersion,
+    publication: Publication,
+    *,
+    origin: Publication | None,
+) -> ContentVersion:
+    plan = publication.delivery
+    if (
+        origin is None
+        or origin.id != publication.id
+        or origin.status is not PublicationStatus.QUEUED
+        or origin.attempts
+        or origin.delivery is None
+        or origin.delivery.rendered_text
+        or publication.id is None
+        or publication.kind
+        not in (PublicationKind.STATUS_UPDATE, PublicationKind.AMENDMENTS_REVISION)
+        or version.change_snapshot_id is None
+        or plan is None
+        or not plan.rendered_text
+        or plan.destination != "direct"
+        or plan.publication_ids
+        or plan.update_group
+        or plan.sitting_group
+        or plan.continuation_ids
+        or plan.continuation_parent is not None
+        or plan.continuation_root is not None
+        or plan.absorbed_by is not None
+        or plan.digest_event_ids
+        or plan.digest_parts
+        or plan.digest_ref
+        or repo.digest_owner(publication.id) is not None
+        or repo.get_publication_content(publication.id) is not None
+    ):
+        return version
+    change = StatusChange.model_validate_json(plan.change_json)
+    if change.id is None:
+        return version
+    records: list[AmendmentsRecord | SupplementRecord] = (
+        [change.amendments] if change.amendments is not None else []
+    )
+    target = ResultApplicationTarget(kind="publication", ref=str(publication.id))
+    if publication.kind is PublicationKind.STATUS_UPDATE:
+        target = ResultApplicationTarget(kind="status_change", ref=str(change.id))
+        records.extend(change.supplements)
+    identities = tuple(
+        sorted(
+            {
+                identity
+                for record in records
+                if record.computation_id is not None
+                for identity in repo.find_projection_application_ids(record.computation_id, target)
+            }
+        )
+    )
+    if not identities:
+        return version
+    return ContentVersion.model_validate_json(
+        version.model_copy(
+            update={
+                "application_ref_profile": "amendment-projections-v1",
+                "application_ids": identities,
+            }
+        ).model_dump_json()
+    )
 
 
 def prepare_publication_content(

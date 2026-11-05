@@ -1,0 +1,19 @@
+{
+  "source_provenance": {
+    "source_DB_sha256": "b9f86131e34d8a7e9c983d20d690bd2bd062836b0c86a50f69a1a978f27fc485",
+    "publication_id": 231,
+    "status_change_id": 189,
+    "result_id": "result-v1:ac61beabf382607e4fb057cd3b70531f02a44fc1083a25df16b114834ab6c2b8",
+    "scope": "Natural frozen 3146 delivery context and retained amendment result; prospective root/revision operation and existing parent are controlled technical operations, no new paid result or extraction claim."
+  },
+  "natural_envelope_bytes": 31091,
+  "input_sha256_before": "98bc5c74cec19281d15e09e380fbf4a05bcbfde9eb5b78ccb1e0ce1ec643836f",
+  "input_sha256_after": "98bc5c74cec19281d15e09e380fbf4a05bcbfde9eb5b78ccb1e0ce1ec643836f",
+  "before_after_exact": true,
+  "fresh_raw_downloads": 0,
+  "network_calls": 0,
+  "provider_calls": 0,
+  "raw_bodies_committed": false,
+  "natural_scope": "Existing frozen Bill/change/amendment-result state, not new extraction or human legal gold.",
+  "technical_scope": "Controlled parent/original/revision operations; recovery uses existing technical known-source primary fixture."
+}

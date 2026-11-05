@@ -1,0 +1,36 @@
+{
+  "reviewer": "root",
+  "source_patch_sha256": "6dd54152e9dc88414c58d5fddd1dcbc48ef4c828be3c00b6da7856c1e42f47e5",
+  "owned_five_pins_exact": true,
+  "source_config_pins": 817,
+  "source_freeze_exact": true,
+  "root_focused": 142,
+  "old_content_helpers_AST_exact_except_explicit_record_hook": true,
+  "adapters_models_ports_receipt_writers_diff_empty": true,
+  "natural_envelope_independently_matches_pinned_SQL_source": true,
+  "natural_and_recovery_ON_reports_exact_to_reviewed_packet": true,
+  "fresh_state_rows_dump_doctor_legacy_ids_double_restore_exact": true,
+  "findings": [],
+  "proof_sha256": {
+    "on-natural-final.json": "234c596ff623ca89302bb6c8c2e252ca7662b10751b214f202eefd540113a3f0",
+    "on-recovery-final.json": "8cd36704bd562e2bd1096abc10f5c616aba14d79e7a74ffe67ccb2bb5173ff45",
+    "state-proof.json": "16acc661655fda85e1602083cddd538bb477bfcd892d204ff8cacdcb0cd806f0",
+    "source-freeze-final.json": "6a085a170105838fb4fb315a49ef51c69d5a11c77ed8b0927033a750215d71be",
+    "full-final.xml": "b5f2a71a5534f2aee7585b1d21bae33287dff806002adb39e2b1ed6e9be5eecf",
+    "full-final.log": "b2853997ed6f9d96f5e463b8c2b88735c8ec938a0500d899491fc50cd4d4bb84",
+    "focused-final.xml": "34a772d34479421731c393d83089905977296c91fcf0d84c5f2af15118a54139",
+    "new-cases.json": "2d5b07c1a854b25c872fd8309c02194b3891f0e2ef42a4428b201a53780f1ca9"
+  },
+  "root_focused_final": 57,
+  "final_source_freeze_exact": true,
+  "full_gate": {
+    "tests": 8626,
+    "xml_seconds": 298.19,
+    "mypy_files": 748,
+    "ruff_format_files": 817,
+    "coverage_percent": 92,
+    "source_config_pins": 817
+  },
+  "fixture_patch_sha256": "fff2f4a87e63c893913b3632deacc878ec6f38c6099c8025c9500b60a7478a2f",
+  "final_natural_recovery_packets_byte_exact": true
+}

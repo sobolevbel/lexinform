@@ -1,0 +1,18 @@
+{
+  "before": 56,
+  "after": 57,
+  "added": [
+    "tests/unit/test_content_application_refs.py::test_corrupt_known_reference_rejected_get_doctor_atomic_restore[physical-kind]"
+  ],
+  "removed": [],
+  "new_scenarios": 0,
+  "new_unit_cases": 1,
+  "frozen_runtime_pins_exact": true,
+  "reader_changes": false,
+  "hashed_profile_ID_rewrites": false,
+  "modern_negative": "Physical-kind corruption rejects public get, doctor and atomic restore in genuinely profiled UNIT without document_work.",
+  "legacy_positive": "Only existing wrong_kind scenario captures unprofiled versions from producer-OFF before first freeze; legacy bindings/inspection assertions retained.",
+  "complete_case_proof_sha256": "5b939d4ad804c2e6ff77f3f639997b553d43a86e071cf1206f22482ccf26f8d3",
+  "all_original_nodeids_preserved": true,
+  "all_scenario_nodeids_ordered_exact": true
+}

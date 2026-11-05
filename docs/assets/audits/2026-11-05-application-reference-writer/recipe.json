@@ -1,0 +1,20 @@
+{
+  "frozen_driver_sha256": "596bd28694509d009da4984b57c89d1a7a11704888cc7ea5d6601a289559c93b",
+  "baseline_before_runtime_edits": true,
+  "off_repeat_exact": true,
+  "before_runtime_source_pins": {
+    "tools/replay_content_applications.py": "596bd28694509d009da4984b57c89d1a7a11704888cc7ea5d6601a289559c93b",
+    "tests/unit/test_replay_content_applications.py": "2627dea0bf92b94eab1c749673882ad740b05c84ba1d1216096b3caac9b978d9",
+    "src/lexinform/services/content_history.py": "5b9ae510a08d82710d8d462afa5ef1d3c9be16b0957a6462983836a19d01c0a0",
+    "src/lexinform/services/posting.py": "eaf0e5476cf73596911e45385cba533f8a3b09756024c31c508046254974988b",
+    "out/qualification/natural-input.json": "98bc5c74cec19281d15e09e380fbf4a05bcbfde9eb5b78ccb1e0ce1ec643836f",
+    "out/qualification/off-natural.json": "bbb041fd926e8d03eb896b190398691cdf61adbe0595e58ae5c6324d77141b6e",
+    "out/qualification/off-recovery.json": "eb2930d5457ddf93598fb624427c800b5662d6cc1aadc094717271531169ed54"
+  },
+  "commands": [
+    "PYTHONPATH=src:. uv run --no-sync --offline python tools/replay_content_applications.py --input LOCAL_NATURAL_ENVELOPE.json --output LOCAL_REPORT.json",
+    "LEXINFORM_APPLICATION_REPLAY_OUTPUT=LOCAL_RECOVERY_REPORT.json PYTHONPATH=src:. uv run --no-sync --offline pytest -o addopts= -q tests/unit/test_replay_content_applications.py"
+  ],
+  "local_envelope_recipe": "Read immutable pinned fresh-b database publication231.delivery_json bill_json/change_json and the retained result named by its amendments.computation_id; provenance and expected envelope SHA are in input-provenance.json.",
+  "publication_gate": "Actual reader release verified; J242 merged-source gate/CI/deploy pending."
+}

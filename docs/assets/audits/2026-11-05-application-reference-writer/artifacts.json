@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "compressed_metadata_only": {
+    "core-row-hashes.json.gz": {
+      "sha256": "ff3bdc54b7c54444708170a964b3cb073d4b8bba94f8c1874b8843bf95c8b53e",
+      "bytes": 2542,
+      "uncompressed_bytes": 36072,
+      "content": "IDs, counts and hashes only; no snapshots, SQL dump or bodies."
+    },
+    "fresh-compatibility.json.gz": {
+      "sha256": "f208bf09a9798475da6b87eadf2e8966cdc9c26d70e1757399d863b5d9b29398",
+      "bytes": 2560,
+      "uncompressed_bytes": 6175,
+      "content": "IDs, counts and hashes only; no snapshots, SQL dump or bodies."
+    }
+  },
+  "no_raw_envelope_or_bodies": true,
+  "source_trees_included": false,
+  "full_SQL_dumps_included": false
+}
