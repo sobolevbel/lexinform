@@ -22,7 +22,7 @@ from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager, suppress
 from dataclasses import dataclass, field
 from functools import partial
-from typing import IO, Literal
+from typing import IO, Literal, Protocol
 from xml.etree import ElementTree as ET
 from zipfile import ZipInfo
 
@@ -157,6 +157,19 @@ _MAX_XML_BYTES = 32_000_000
 _MAX_SPACES = 4096  # `<text:s text:c="N"/>`: the count is the file's to choose
 
 
+class _WordNoteObserver(Protocol):
+    def reference(
+        self,
+        kind: Literal["footnote", "endnote"],
+        identity: str,
+        path: tuple[int, ...],
+        paragraph: tuple[int, ...],
+        legacy: dict[str, str],
+    ) -> None: ...
+
+    def inline_note(self) -> None: ...
+
+
 class _WordNoteOrigins:
     def __init__(self) -> None:
         self.parts: list[WordNoteXmlPart] = []
@@ -165,6 +178,9 @@ class _WordNoteOrigins:
         self.losses: list[str] = []
         self.targets: dict[str, int] = {}
         self.seen: set[str] = set()
+
+    def inline_note(self) -> None:
+        self.losses.append("inline Word notes lack note-part origins")
 
     def part(self, name: NotePartName, content: bytes, root: ET.Element | None) -> bool:
         namespace, local = _split_tag(root.tag) if root is not None else ("", "")
@@ -408,7 +424,7 @@ def _wordml_text(
     notes: dict[str, str] | None = None,
     blocks: list[WordTextBlock] | None = None,
     projection: list[str] | None = None,
-    origins: _WordNoteOrigins | None = None,
+    origins: _WordNoteObserver | None = None,
 ) -> str:
     """The legacy body view of a supported WordprocessingML document element."""
     namespace, local = _split_tag(root.tag)
@@ -422,7 +438,7 @@ def _wordml_text(
         return ""
     path = (
         (next(index for index, child in enumerate(root) if child is body),)
-        if blocks is not None
+        if blocks is not None or origins is not None
         else None
     )
     return legacy_word_text(reader.blocks(body, path=path, project=True))
@@ -434,6 +450,115 @@ _WORD_XML_MARKERS = (b"xmlPackage", b'progid="Word.Document"', b"wordDocument")
 
 def _is_word_xml(head: bytes) -> bool:
     return head.lstrip()[:6] == b"<?xml " and any(m in head for m in _WORD_XML_MARKERS)
+
+
+_MAX_FLAT_OPC_FOOTNOTES = 64
+_MAX_FLAT_OPC_NOTE_PATH = 32
+
+
+@dataclass(frozen=True)
+class FlatOpcFootnoteLink:
+    """Zero-based XML element paths from the original package root."""
+
+    identity: str
+    call_path: tuple[int, ...]
+    paragraph_path: tuple[int, ...]
+    definition_path: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class FlatOpcNoteProof:
+    """Exact footnote links in one bounded standalone Flat OPC observation."""
+
+    input_sha256: str
+    legacy_text_sha256: str
+    footnote_links: tuple[FlatOpcFootnoteLink, ...]
+    unproven_footnote_calls: int
+
+
+class _FlatOpcNoteOrigins:
+    def __init__(self, main_path: tuple[int, ...], targets: dict[str, tuple[int, ...]]) -> None:
+        self.main_path = main_path
+        self.targets = targets
+        self.links: list[FlatOpcFootnoteLink] = []
+        self.unproven = 0
+        self.overflow = False
+
+    def inline_note(self) -> None:
+        pass
+
+    def reference(
+        self,
+        kind: Literal["footnote", "endnote"],
+        identity: str,
+        path: tuple[int, ...],
+        paragraph: tuple[int, ...],
+        legacy: dict[str, str],
+    ) -> None:
+        if kind != "footnote" or self.overflow:
+            return
+        call_path = (*self.main_path, *path)
+        if (
+            len(self.links) + self.unproven == _MAX_FLAT_OPC_FOOTNOTES
+            or len(call_path) > _MAX_FLAT_OPC_NOTE_PATH
+        ):
+            self.overflow = True
+            return
+        definition = self.targets.get(identity)
+        if definition is None or not legacy.get(f"footnote/{identity}"):
+            self.unproven += 1
+            return
+        self.links.append(
+            FlatOpcFootnoteLink(
+                identity=identity,
+                call_path=call_path,
+                paragraph_path=(*self.main_path, *paragraph),
+                definition_path=definition,
+            )
+        )
+
+
+def _flat_opc_note_parts(
+    root: ET.Element,
+) -> tuple[tuple[int, ...], tuple[int, ...], ET.Element] | None:
+    if root.tag != f"{_PKG}package":
+        return None
+    part_tag = f"{_PKG}part"
+    expected = {
+        "/word/document.xml": "document",
+        "/word/footnotes.xml": "footnotes",
+        "/word/endnotes.xml": "endnotes",
+    }
+    # Legacy lookup uses iter(), so a nested matching part can change the source of a note.
+    direct = {
+        part: index
+        for index, part in enumerate(root)
+        if part.tag == part_tag and part.get(f"{_PKG}name") in expected
+    }
+    paths: dict[str, tuple[int, ...]] = {}
+    footnotes = None
+    for part in root.iter(part_tag):
+        name = part.get(f"{_PKG}name", "")
+        if name not in expected:
+            continue
+        if part not in direct or name in paths:
+            return None
+        payloads = part.findall(f"{_PKG}xmlData")
+        if len(payloads) != 1 or len(payloads[0]) != 1:
+            return None
+        payload = payloads[0]
+        node = payload[0]
+        namespace, local = _split_tag(node.tag)
+        if namespace not in WORDML_NAMESPACES or local != expected[name]:
+            return None
+        paths[name] = (direct[part], list(part).index(payload), 0)
+        if local == "footnotes":
+            footnotes = node
+        if local == "endnotes" and any(child.tag != f"{{{namespace}}}endnote" for child in node):
+            return None
+    if footnotes is None or "/word/document.xml" not in paths:
+        return None
+    return paths["/word/document.xml"], paths["/word/footnotes.xml"], footnotes
 
 
 class WordXmlTextExtractor:
@@ -462,6 +587,50 @@ class WordXmlTextExtractor:
         namespace, local = _split_tag(root.tag)
         if local in _WORDML_ROOTS and namespace in WORDML_NAMESPACES:
             return _wordml_text(root)  # Word 2003 XML: the root is the document
+        return self._flat_opc_text(root)
+
+    def observe_flat_opc_notes(self, data: bytes) -> FlatOpcNoteProof | None:
+        """Locate native footnote calls in the same standalone Flat OPC view as extract."""
+        if len(data) > _MAX_XML_BYTES or b"\x00" in data or b"<!DOCTYPE" in data:
+            return None
+        try:
+            root = ET.fromstring(data)
+        except ET.ParseError, LookupError, ValueError:
+            return None
+        parts = _flat_opc_note_parts(root)
+        if parts is None:
+            return None
+        main_path, footnotes_path, footnotes = parts
+        if len(footnotes) > _MAX_FLAT_OPC_FOOTNOTES:
+            return None
+        targets: dict[str, tuple[int, ...]] = {}
+        seen: set[str] = set()
+        namespace, _ = _split_tag(footnotes.tag)
+        for index, note in enumerate(footnotes):
+            if note.tag != f"{{{namespace}}}footnote":
+                return None
+            identity = note.get(f"{{{namespace}}}id", "")
+            if not re.fullmatch(r"-?[0-9]{1,31}", identity) or identity in seen:
+                return None
+            seen.add(identity)
+            if note.get(f"{{{namespace}}}type", "normal") == "normal":
+                targets[identity] = (*footnotes_path, index)
+        observer = _FlatOpcNoteOrigins(main_path, targets)
+        try:
+            text = self._flat_opc_text(root, origins=observer)
+        except RecursionError:
+            return None
+        if observer.overflow or not observer.links:
+            return None
+        return FlatOpcNoteProof(
+            input_sha256=hashlib.sha256(data).hexdigest(),
+            legacy_text_sha256=hashlib.sha256(text.encode()).hexdigest(),
+            footnote_links=tuple(observer.links),
+            unproven_footnote_calls=observer.unproven,
+        )
+
+    @staticmethod
+    def _flat_opc_text(root: ET.Element, *, origins: _WordNoteObserver | None = None) -> str:
         notes: dict[str, str] = {}
         for part in root.iter(f"{_PKG}part"):
             if part.get(f"{_PKG}name") not in ("/word/footnotes.xml", "/word/endnotes.xml"):
@@ -483,7 +652,7 @@ class WordXmlTextExtractor:
             if payload is None or len(payload) == 0:
                 log.warning("Flat OPC document part carries no XML; no text")
                 return ""
-            return _wordml_text(payload[0], notes=notes)
+            return _wordml_text(payload[0], notes=notes, origins=origins)
         log.warning("Word XML file with neither a document root nor a document part; no text")
         return ""
 
@@ -506,7 +675,7 @@ class _WordMl:
         notes: dict[str, str] | None = None,
         blocks: list[WordTextBlock] | None = None,
         projection: list[str] | None = None,
-        origins: _WordNoteOrigins | None = None,
+        origins: _WordNoteObserver | None = None,
     ) -> None:
         self._origins = origins
         self._ns = f"{{{namespace}}}"
@@ -769,7 +938,7 @@ class _WordMl:
             elif el.tag in (self.tag("footnote"), self.tag("endnote")):
                 self._inline_notes += 1
                 if self._origins is not None:
-                    self._origins.losses.append("inline Word notes lack note-part origins")
+                    self._origins.inline_note()
                 note = "\n".join(self.blocks(el, structure_path=located))
                 parts.append(f" [przypis {self._inline_notes}: {note}] ")
             else:

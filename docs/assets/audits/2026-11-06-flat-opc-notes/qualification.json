@@ -1,0 +1,104 @@
+{
+  "all_osr_calls_inside_table_cells": true,
+  "matched_legacy_xml_inputs": {
+    "677202.xml": {
+      "document_sha256": "501e0a2579762a4e0029f05ee3adda58cc8811f568498a1e905b50533337257d",
+      "input_sha256": "22feb479048d1d74a071aaff3b2751869740875cd6b392bb68e1a9d6154674a0",
+      "law_digest": "law-v2:975ee95353d6120505630e5b11e02a44a09d1e66aeb353f15041b86471107ef0",
+      "physical_sha256": "b9dc8da7f3498297a9fcdfac6ad82799ee5ae9c581521bd8c2fe97dc914ea0cb",
+      "text_sha256": "565bbc84ac1bfd5294e3fb0eebc5419134c72762c899344246a5abe5592384a2"
+    },
+    "677204.xml": {
+      "document_sha256": "1baf75e1a6c4c8547a2f2b762c11f98e6921698073c899edba8b149888d6e2bc",
+      "input_sha256": "5bb962512501bf0816e3f80aa3022fd2256c05284d76a171cc8851887ec2ab7b",
+      "law_digest": null,
+      "physical_sha256": "d814b41392e6eba2cc6a644a41c31fd136dc056bc76fe8fb6cac8955b8ef88a6",
+      "text_sha256": "b75629c0aa59ee5557bbe279dfe04a08df7e1001a6ce7d15a5c1b739148dc960"
+    },
+    "679039.xml": {
+      "document_sha256": "ee6bb50f4bc5e9fa84cd00d192c82cd50db5289acfd025358700190f8639fd8c",
+      "input_sha256": "9b952c552a46ee99b11d16ecd12efaf648946eea1c8629cf4a02307a752f4af9",
+      "law_digest": null,
+      "physical_sha256": "34f41008bfe61ed624458c9fcdcd53ae831b98ba9535ca2e37a88eb4cab6b067",
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "721047.xml": {
+      "document_sha256": "f0927769e6c68694c6c9774adea5fa659b81a8eee7793e33920c88a8a21dc17e",
+      "input_sha256": "a89711d639a0081efc06925f320f06ac153845ffb9d13f657f40af45ef096a06",
+      "law_digest": "law-v2:72d20d61efb84c7bb403946a077ffaa73401b89fed0291c10831023a205aa695",
+      "physical_sha256": "b5df4248c567a22d270f26005bbc7d2308999f6f7ce10ea0099e47ac57a3a996",
+      "text_sha256": "2add8c3ccaae38f362adee47ce73f493523808d34e66d714a5bce1a6c8d073c1"
+    },
+    "721049.xml": {
+      "document_sha256": "fd8a13570b5bd223e3d12e8f938a2a338441515d8622fc57ed195a1e234db41f",
+      "input_sha256": "f7dc5ada164a76cfa4539071049733a51e11ca6edf33390690ff3b5d401e9b84",
+      "law_digest": null,
+      "physical_sha256": "16dfec3e7807089fe13c6c0a9c9a53d26b1118482d93e1e45a719a2d8202c6c1",
+      "text_sha256": "bd8cc4190615300d553d36a432dbcd07a10bb58cd7b6ede94a2dcb77f005c267"
+    },
+    "723473.xml": {
+      "document_sha256": "6ebf1dabedf39f79b3fdcf4eefd8c46c5bfc7faf081a5da138e02fb0ba1cf871",
+      "input_sha256": "001cf3981b8637c53ae1172430a893823d3b6fb93a89cac118959fdb213635c6",
+      "law_digest": null,
+      "physical_sha256": "3cf0f1ba9b65270f11826cfc1e9c48cd157161b8cc0c19ba1591505fc2edd892",
+      "text_sha256": "425cd056a89add997861e988e1f5c101d4a9ea6006befbfa12b7294458beade7"
+    },
+    "723474.xml": {
+      "document_sha256": "a94e2b463110f71a11287d86a6a1f143d76e1ba91e67971a29a91e45780f22c6",
+      "input_sha256": "897dae7f79c2998334f650d49715c5a33697ef2f9e9c5f7debc1b4f2bba516a8",
+      "law_digest": null,
+      "physical_sha256": "0b2f39e425756502426be7e237d23287c8788d5811ac4424f49de76ef9025b12",
+      "text_sha256": "35742731f81f3abeaa9e5d8f03fc3384a4d4715cbdfcb4765f88ecd8cd92979a"
+    },
+    "730362.xml": {
+      "document_sha256": "31746ce139740eb2642b6d438b34236713912bda652aa1d320df8e4a4181d6f9",
+      "input_sha256": "4ee8cdfc12a0ce822f5e8510a5a25dc06b2563b364c37a850bc305abb0a997d0",
+      "law_digest": "law-v2:9dbb4b552c3bc09f93802743f892f43baec87b17e0a7addc0f4ab9cbbd5cae2b",
+      "physical_sha256": "4f958ff23bcaa8be691311b51cd929b777edad9a14acb4ca6f1f87cc3bde1f7f",
+      "text_sha256": "86c54977c2fc89250d7230813c879c695025ebaaacd207929b15732a9922ced7"
+    },
+    "730366.xml": {
+      "document_sha256": "31746ce139740eb2642b6d438b34236713912bda652aa1d320df8e4a4181d6f9",
+      "input_sha256": "4ee8cdfc12a0ce822f5e8510a5a25dc06b2563b364c37a850bc305abb0a997d0",
+      "law_digest": "law-v2:9dbb4b552c3bc09f93802743f892f43baec87b17e0a7addc0f4ab9cbbd5cae2b",
+      "physical_sha256": "4f958ff23bcaa8be691311b51cd929b777edad9a14acb4ca6f1f87cc3bde1f7f",
+      "text_sha256": "86c54977c2fc89250d7230813c879c695025ebaaacd207929b15732a9922ced7"
+    },
+    "743395.xml": {
+      "document_sha256": "ee6b9bd32b9a40b9c0071f43c2a1b3463e78e089b7658390c016dda1aae8d08d",
+      "input_sha256": "72404e91da23bff6db210d5bed0836c1df73983d1d4dd86dfad56d1265d1f821",
+      "law_digest": "law-v2:b8d2b4a4bac8fef2d5e9ade7bb98050a5b393e4e63fd0e6d0a6b483b60e4a03f",
+      "physical_sha256": "0fcc331f526512e73c930978bc018dac443e3f58e6e80f883f72b2d7b61ada3d",
+      "text_sha256": "c9c800637ec026b755d898435abba308e7d614eb5dd276b92dcdefba41881b68"
+    },
+    "743397.xml": {
+      "document_sha256": "239581f4ecca31ccede77e47395e33f82bd56cee551a8326eed4114bdf0aad72",
+      "input_sha256": "06e00fbf1d84f1740cb8e04cc0abaaf6345dc7e7f858bb8e6fe425ebc4db9e08",
+      "law_digest": null,
+      "physical_sha256": "f8831fd5cd23d4b70e86a9aaeda320a424139dd7297edf9de86a7da28081d27b",
+      "text_sha256": "89d53cb41612795c8ca0636bf5f0e5d9bfd36d2042df80971d40c3dd63a0165c"
+    },
+    "771044.xml": {
+      "document_sha256": "be73eb6830707478f3b4ef47796f4564ff19fab66ad2981a047008c8b3e62d0b",
+      "input_sha256": "8a390d06877097563dadd70eb55a867a43ff37c29257ad71fae6938ac6a80fc5",
+      "law_digest": null,
+      "physical_sha256": "e20bd3b456edb23e49d1ee442823b7acd266e9777923816f5acf5b52220787ec",
+      "text_sha256": "1c7d689840dc1b28cd244a0575cf77a4296c7e13eba66c0584c2bba21ab6065c"
+    },
+    "779452.xml": {
+      "document_sha256": "8abb53de6318425426a01ff1c09ab2435b579bf60646f78579d8868baa171b7c",
+      "input_sha256": "04f334ffde9ed4ddb291328b05757888c78047ff099dafdeda36e406f673557e",
+      "law_digest": null,
+      "physical_sha256": "1e85a03c99b7a281fb79674bd8ce8d40bd842b9c28710b84a6d4f969090d3871",
+      "text_sha256": "cf755a523d9201e153457e4008ac9f600a5dbb5557a6173fa6faeeaa55de636d"
+    }
+  },
+  "paired_report_sha256": "3118ca317303f58070bbd9b31157cd891991302e28881dcebc1edad91f7b31b2",
+  "project": "12403303",
+  "scope": "Standalone Flat OPC footnotes visited by the legacy body walk; no storage, endnote or completeness claim.",
+  "tool_report_sha256": "2875f80365d8871c29074deac9fb5b6679713f8ea161596fe211641edd520850",
+  "verified_footnote_counts": {
+    "743395.xml": 7,
+    "743397.xml": 14
+  }
+}

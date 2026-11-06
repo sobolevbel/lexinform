@@ -12847,6 +12847,9 @@ restores. The retained record added 2,902 SQL bytes and 570 gzip bytes
 after cleanup.
 [Qualification](../assets/audits/2026-11-06-rcl-archive-input-writer/qualification.json).
 
+The exact `7cb97701` release passed CI run 42246269671 and relay
+deployment 42247165823. Restart and timer were verified.
+
 <a id="j344"></a>
 
 ## J344 — count verified corpus splits across sealed runs
@@ -12862,3 +12865,19 @@ reserved holdout cases in three groups. The 180 distinct case IDs form
 or human question labels were present in these runs. Repeated reports
 matched byte-for-byte. Independent human review remains open.
 [Qualification](../assets/audits/2026-11-06-corpus-split-census/qualification.json).
+
+<a id="j345"></a>
+
+## J345 — verify footnote paths in standalone Flat OPC
+
+The opt-in replay checks the call, containing paragraph and definition
+against the SHA-pinned original XML package. Paths are relative to the
+outer document. It uses the same Word body traversal as the legacy text
+and keeps incomplete or unsupported proof outside the result.
+
+The official RCL 12403303 bill and impact assessment confirmed seven and
+14 links respectively. All 14 impact-assessment calls were inside table
+cells. The paired cohort of 13 XML files preserved text, selected
+documents, law fingerprints and physical extraction metadata. The
+production route and dump do not carry the proof.
+[Qualification](../assets/audits/2026-11-06-flat-opc-notes/qualification.json).

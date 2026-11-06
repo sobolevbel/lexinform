@@ -75,6 +75,20 @@ configuration, consumed fixtures, runner or environment differ. It never adopts 
 recording as a verified cache. These six suites remain separate from default pytest and the
 external-corpus registry. Cross-run comparison remains a separate acceptance step.
 
+## Standalone Flat OPC footnotes
+
+Verify exact note call, containing paragraph and inline definition paths on the RCL 12403303 bill
+and its same-stage impact assessment. The replay uses local SHA-pinned XML and writes a new report
+with paths and hashes. Its scope is the footnotes visited by the legacy Word body reader.
+
+```sh
+uv run --offline --frozen python -m tools.replay_flat_opc_notes \
+  --corpus /path/to/lexinform-corpus \
+  --case 743395.xml 72404e91da23bff6db210d5bed0836c1df73983d1d4dd86dfad56d1265d1f821 \
+  --case 743397.xml 06e00fbf1d84f1740cb8e04cc0abaaf6345dc7e7f858bb8e6fe425ebc4db9e08 \
+  --output /path/outside/corpus/flat-opc-notes.json
+```
+
 ## Choosing a state doctor
 
 Choose the check by the saved record involved. Use a checkpointed SQLite copy and a fresh
