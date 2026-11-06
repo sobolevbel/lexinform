@@ -10,7 +10,7 @@ from lexinform.adapters.extraction_history import read_extraction_result
 from lexinform.document_editions import candidate_edition
 from lexinform.json_storage import read_json
 from lexinform.models.artifacts import ArtifactMetadata, ArtifactReadReceipt
-from lexinform.models.candidate_trace import CandidateDispositionTrace
+from lexinform.models.candidate_trace import CandidateDispositionTrace, SejmPrintRepresentation
 from lexinform.models.document_editions import DocumentEdition
 
 CANDIDATE_TRACE_SCHEMA_VERSION = 59
@@ -24,6 +24,7 @@ class CandidateTraceRowError(ValueError):
             "candidate_trace_identity_mismatch",
             "candidate_trace_proposal_parent_mismatch",
             "candidate_trace_representation_parent_mismatch",
+            "candidate_trace_adoption_parent_mismatch",
         ],
     ) -> None:
         self.code = code
@@ -114,7 +115,7 @@ def validate_candidate_trace_link(
     connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
 ) -> None:
     validate_sejm_proposal_link(connection, trace, observation_id)
-    proof = trace.sejm_print_representation
+    proof = trace.sejm_print_representation or trace.sejm_adopted_text
     if proof is None:
         return
     try:
@@ -159,10 +160,10 @@ def validate_candidate_trace_link(
                 or candidate_edition(record, recorded_at=edition.recorded_at) != edition
             ):
                 raise ValueError("representation edition differs from its recorded selection")
-            for url, sha in (
-                (proof.pdf_url, proof.pdf_sha256),
-                (proof.docx_url, proof.docx_sha256),
-            ):
+            reads = [(proof.pdf_url, proof.pdf_sha256)]
+            if isinstance(proof, SejmPrintRepresentation):
+                reads.append((proof.docx_url, proof.docx_sha256))
+            for url, sha in reads:
                 row = cursor.execute(
                     "SELECT r.*, a.byte_size AS artifact_size FROM artifact_reads AS r"
                     " JOIN artifacts AS a ON a.sha256=r.artifact_sha256"
@@ -179,6 +180,8 @@ def validate_candidate_trace_link(
                 )
                 if receipt.read_id != row["read_id"] or receipt.byte_size != row["artifact_size"]:
                     raise ValueError("representation body read differs from its artifact")
+            if not isinstance(proof, SejmPrintRepresentation):
+                return
             row = cursor.execute(
                 "SELECT * FROM extraction_results WHERE extraction_id=?",
                 (proof.docx_extraction_id,),
@@ -192,21 +195,29 @@ def validate_candidate_trace_link(
             ) or proof.core_chars > extraction.output_chars:
                 raise ValueError("representation DOCX extraction differs from the proof")
     except ValueError, TypeError, RecursionError, IndexError, KeyError, sqlite3.Error:
-        raise CandidateTraceRowError("candidate_trace_representation_parent_mismatch") from None
+        raise CandidateTraceRowError(
+            "candidate_trace_representation_parent_mismatch"
+            if isinstance(proof, SejmPrintRepresentation)
+            else "candidate_trace_adoption_parent_mismatch"
+        ) from None
 
 
 def validate_candidate_trace_links(
     connection: sqlite3.Connection, trace: CandidateDispositionTrace
 ) -> None:
-    if trace.sejm_original_proposal is None and trace.sejm_print_representation is None:
-        return
     code: Literal[
-        "candidate_trace_proposal_parent_mismatch", "candidate_trace_representation_parent_mismatch"
-    ] = (
-        "candidate_trace_representation_parent_mismatch"
-        if trace.sejm_print_representation is not None
-        else "candidate_trace_proposal_parent_mismatch"
-    )
+        "candidate_trace_adoption_parent_mismatch",
+        "candidate_trace_representation_parent_mismatch",
+        "candidate_trace_proposal_parent_mismatch",
+    ]
+    if trace.sejm_adopted_text is not None:
+        code = "candidate_trace_adoption_parent_mismatch"
+    elif trace.sejm_print_representation is not None:
+        code = "candidate_trace_representation_parent_mismatch"
+    elif trace.sejm_original_proposal is not None:
+        code = "candidate_trace_proposal_parent_mismatch"
+    else:
+        return
     try:
         with closing(connection.cursor()) as cursor:
             cursor.row_factory = sqlite3.Row

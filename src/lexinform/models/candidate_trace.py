@@ -1,5 +1,6 @@
 """Bounded outer-URL candidate decisions without extracted bodies or inferred source relations."""
 
+import datetime as dt
 import hashlib
 import json
 import re
@@ -10,8 +11,9 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from lexinform.metadata_urls import metadata_url_decision
 from lexinform.models.documents import DocumentPart, SelectionState
+from lexinform.models.evidence import DecisionState, ReadingOutcome, reading_evidence
 from lexinform.models.physical_inventory import HeaderDisposition, Position, Sha256
-from lexinform.models.sejm import TextDocument
+from lexinform.models.sejm import Stage, TextDocument
 from lexinform.sections import APPENDIX_KINDS, Kind
 
 MAX_CANDIDATE_TRACE_BYTES = 4_096
@@ -448,6 +450,38 @@ class SejmPrintRepresentation(BaseModel):
         return self
 
 
+class SejmAdoptedText(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    profile: Literal["sejm-third-reading-adopted-text-v1"] = "sejm-third-reading-adopted-text-v1"
+    term: int = Field(gt=0, le=99, strict=True)
+    number: str = Field(pattern=r"^[1-9][0-9]{0,8}$")
+    stage_name: str = Field(min_length=1, max_length=128)
+    decision: str = Field(min_length=1, max_length=128)
+    stage_date: dt.date
+    pdf_sha256: Sha256
+    pdf_text_sha256: Sha256
+    selection_id: str = Field(pattern=r"^selection-v1:[0-9a-f]{64}$")
+    edition_id: str = Field(pattern=r"^edition-v1:[0-9a-f]{64}$")
+
+    @property
+    def pdf_url(self) -> str:
+        process = f"https://api.sejm.gov.pl/sejm/term{self.term}/processes/{self.number}"
+        return f"{process}/attachment/{self.number}_u3.pdf"
+
+    @model_validator(mode="after")
+    def known_third_reading(self) -> Self:
+        evidence = reading_evidence(
+            Stage(stage_name=self.stage_name, stage_type="SejmReading", decision=self.decision)
+        )
+        if (
+            evidence.state is not DecisionState.KNOWN
+            or evidence.reading is not ReadingOutcome.PASSED
+        ):
+            raise ValueError("Adopted text requires a known third-reading adoption")
+        return self
+
+
 class CandidateDispositionTrace(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -474,6 +508,9 @@ class CandidateDispositionTrace(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     sejm_print_representation: SejmPrintRepresentation | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    sejm_adopted_text: SejmAdoptedText | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     required_part_gap: RequiredPartGap | None = Field(
@@ -603,6 +640,8 @@ class CandidateDispositionTrace(BaseModel):
             validate_sejm_original_proposal(self, self.sejm_original_proposal)
         if self.sejm_print_representation is not None:
             validate_sejm_print_representation(self, self.sejm_print_representation)
+        if self.sejm_adopted_text is not None:
+            validate_sejm_adopted_text(self, self.sejm_adopted_text)
         if len(self.model_dump_json(exclude_defaults=True).encode()) > MAX_CANDIDATE_TRACE_BYTES:
             raise ValueError("candidate trace exceeds its metadata limit")
         return self
@@ -628,6 +667,7 @@ class CandidateDispositionTrace(BaseModel):
             and self.required_exclusions is None
             and self.sejm_original_proposal is None
             and self.sejm_print_representation is None
+            and self.sejm_adopted_text is None
         )
 
 
@@ -713,6 +753,31 @@ def validate_sejm_print_representation(
         or disposition.observed_sha256 != proof.pdf_sha256
     ):
         raise ValueError("Sejm representation requires the observed PDF identity")
+
+
+def validate_sejm_adopted_text(trace: CandidateDispositionTrace, proof: SejmAdoptedText) -> None:
+    if (
+        trace.requested_document != TextDocument(url=proof.pdf_url, kind="text_after3")
+        or trace.candidate_count != 1
+        or trace.result != "selected"
+        or trace.reason != "first_acceptable_candidate"
+        or trace.selection_state not in ("selected", "unverified")
+        or trace.archive_members is not None
+        or trace.required_exclusions is not None
+        or trace.normative_annex_gap is not None
+        or trace.required_part_gap is not None
+        or trace.sejm_original_proposal is not None
+        or trace.sejm_print_representation is not None
+    ):
+        raise ValueError("Adopted text requires its selected same-owner attachment")
+    disposition = _parent_disposition(trace, "fallback", 0)
+    if (
+        disposition is None
+        or disposition.outcome != "selected"
+        or disposition.reason != "first_acceptable_candidate"
+        or disposition.observed_sha256 != proof.pdf_sha256
+    ):
+        raise ValueError("Adopted text requires the observed PDF identity")
 
 
 def validate_required_part_gap_parent(

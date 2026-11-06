@@ -11607,3 +11607,24 @@ The state `ff49a74a` copy provides eight claims for the reanalysis of print
 text controls are refused. Only body-free qualification is tracked in Git.
 DA9.4 remains open pending the independent judgment.
 [Qualification](../assets/audits/2026-11-06-saved-primary-claim-review/qualification.json).
+
+<a id="j289"></a>
+
+## J289 — bind a third-reading decision to its adopted text edition
+
+The compatible trace reader validates the explicit third-reading decision,
+its same-owner official locator, the selected PDF, the exact body read
+and the saved edition. It leaves individual provision lineage, later
+proceedings and legal force outside the evidence profile.
+
+The pinned term 10 process snapshot and a separately acquired official
+2111 PDF qualified the profile. The trace survived two restores. Second
+reading, rejection and a different owner were refused. No default writer
+was added, and no historical state was backfilled.
+[Qualification and acquisition receipt](../assets/audits/2026-11-06-adopted-text-trace-reader/qualification.json).
+
+Among 980 numeric term 10 bill owners, the existing selector chose 610
+third-reading locators. Of these, 579 matched the unique same-owner
+dated adoption metadata and 31 had another locator. This count does
+not qualify PDF bodies beyond the pinned 2111 case. The older state
+copy produced identical trace and gap doctor reports.
