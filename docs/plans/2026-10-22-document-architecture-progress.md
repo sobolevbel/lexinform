@@ -12163,5 +12163,25 @@ baseline. An invalid observation reference produced the same plain card.
 The fixture added 40 gzip bytes after cleanup.
 [Qualification](../assets/audits/2026-11-06-sejm-card-lineage-reader/qualification.json).
 
-DA7.1 stays open for the native writer and other editorial histories.
-Deploy this reader before allowing automatic capture of the new lineage.
+Commit `1ae1601f` passed CI 42196958682 and relay deployment 42197931787
+before automatic capture was enabled.
+
+<a id="j312"></a>
+
+## J312 — bind an original card to the exact Sejm self-amendment input
+
+The original-card lookup can now select the J308 receipt's exact observation
+before first send. Another observation of the same selection is not a candidate.
+The existing content verifier validates the reference before persistence.
+Single-part matching retains its previous ambiguity rule.
+
+The pinned native 2320/2320-A lifecycle included a second observation of the
+same selection and a fake delivery boundary. The exact reference was present
+while the publication was pending before the fake send. The request, source
+calls, rendered card and publication/message identities matched baseline.
+Batch and delivery payloads expired, both restores were byte-exact, and
+compact history still exposed the two physical parents. Final SQL matched
+after normalizing only the new reference and derived content ID.
+[Qualification](../assets/audits/2026-11-06-sejm-card-lineage-writer/qualification.json).
+
+DA7.1 remains open for other editorial profiles.

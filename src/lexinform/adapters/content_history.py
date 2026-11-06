@@ -122,8 +122,16 @@ def card_primary_evidence_candidate(
           AND json_extract(a.application_json,'$.projected_generation')=?
           AND json_extract(a.application_json,'$.reason')='batch_result'
           AND json_extract(item.meta,'$.request_sha256')=?
-          AND json_extract(item.meta,'$.prepared_input_receipt.profile')
-              ='primary-single-part-text-v1'
+          AND (
+            json_extract(item.meta,'$.prepared_input_receipt.profile')='primary-single-part-text-v1'
+            OR (
+              json_extract(item.meta,'$.prepared_input_receipt.profile')
+                  ='primary-sejm-self-amendment-text-v1'
+              AND o.observation_id=json_extract(
+                item.meta,'$.prepared_input_receipt.source_observation_id'
+              )
+            )
+          )
           AND o.purpose='analysis' AND o.source_kind=json_extract(item.meta,'$.source_kind')
           AND o.source_url=json_extract(item.meta,'$.source_url')
         LIMIT 2
