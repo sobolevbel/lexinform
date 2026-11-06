@@ -11654,3 +11654,32 @@ This covers one native PDF case and the stated controls. It establishes
 the adoption of that whole text at third reading. Representation,
 supersession and recommendation coverage remain open under DA4.7.
 [Qualification](../assets/audits/2026-11-06-adopted-text-trace-writer/qualification.json).
+
+<a id="j291"></a>
+
+## J291 — share the committee recommendation evidence rules
+
+The application owns the pure rules for pairing an official committee
+report with an earlier amending Senate position and checking its first-page
+heading. The replay calls those same rules. The result carries the heading
+hash and page number; the checks keep the exact cited print and require
+a recommendation formula. An empty first page yields no proof.
+
+Against baseline `c42e5269`, the pinned report 587 and resolution 584
+produced the same proof and input hashes. Report 849 and resolution 847
+matched the metadata profile, but the first page of the retained PDF
+provided no extractable text. Both revisions refused that case at the
+heading check. The case files pin the source bytes and can be run through
+`tools.replay_committee_recommendation` using the existing J231 collection
+and the Senate resolution supplement.
+[Positive case](../assets/audits/2026-11-06-card-lineage-and-committee-recommendation/recommendation-case.json) and
+[empty first page](../assets/audits/2026-11-06-committee-recommendation-contract/empty-first-page-case.json).
+
+Native persistence remains open. The native extraction already visits
+the PDF pages. The next writer needs a bounded first-page observation
+from that read and exact parents for both documents before it can record
+a recommendation. A later adoption decision requires separate evidence.
+
+The native `DocumentTextExtractor.extract_parts` sees one direct root
+PDF in each case and reproduces both outcomes without a second parse.
+[First-page hashes and character counts](../assets/audits/2026-11-06-committee-recommendation-contract/physical-observations.json).

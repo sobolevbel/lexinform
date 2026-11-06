@@ -1,8 +1,8 @@
 import datetime as dt
 
 import pytest
-from tools.replay_committee_recommendation import official_recommendation_stages, report_evidence
 
+from lexinform.committee_recommendation import official_recommendation_stages, report_evidence
 from lexinform.models import Stage
 
 URL = "https://api.sejm.gov.pl/sejm/term10/prints/587/587.pdf"
@@ -65,6 +65,7 @@ def test_typed_sequence_requires_unambiguous_non_adoptive_official_report(
 @pytest.mark.parametrize(
     "first_page",
     [
+        "",
         HEADING.replace("584", "585") + RECOMMENDATION,
         HEADING + " (druk nr 584)" + RECOMMENDATION,
         HEADING + " (druk nr 585)" + RECOMMENDATION,

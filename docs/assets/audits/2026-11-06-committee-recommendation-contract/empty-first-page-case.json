@@ -1,0 +1,23 @@
+{
+  "official_prints": {
+    "path": "sejm/snapshots/2026-10-03/term10/prints.json",
+    "sha256": "05e7b4a7105e9a6d8aff1c87293749c5c77c6bfefc6882491c8d2701b39b8938"
+  },
+  "official_processes_gzip": {
+    "path": "sejm/snapshots/2026-10-03/term10/process_details.json.gz",
+    "sha256": "361c92de8a686ae161aa3154c3a30bf29a2a7980e6fb3b13578962cdf01075d9"
+  },
+  "process": "744",
+  "report": "849",
+  "report_pdf": {
+    "path": "downloads/0257b3b2b4ff205f5672886ecc63978e20615e74f60e8d7e08564185def8a736.pdf",
+    "sha256": "5874b15192a35b7a757682fa1eb0ffede3b01cbcfa2c843418839bd19866a0fc"
+  },
+  "resolution": "847",
+  "resolution_attachment": "847-uchwa\u0142a.docx",
+  "resolution_docx": {
+    "path": "sejm/supplements/2026-10-16-senate-resolutions/files/067b41629614dd522e5a162e2cd0165674d32564638fc9639750f9cf75a90697.docx",
+    "sha256": "9f5efbad6c160406aa3f9b92335495a3a42a0eed9cfb9d4338aa0775e8e9731c"
+  },
+  "term": 10
+}
