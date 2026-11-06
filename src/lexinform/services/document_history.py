@@ -21,9 +21,9 @@ from lexinform.models import (
     TextDocument,
 )
 from lexinform.models.artifacts import SelectionPartScope
-from lexinform.models.candidate_trace import SejmOriginalProposal
+from lexinform.models.candidate_trace import SejmAdoptedText, SejmOriginalProposal
 from lexinform.models.document_editions import DocumentEdition
-from lexinform.models.sejm import SejmProposalOrigin
+from lexinform.models.sejm import SejmAdoptionOrigin, SejmProposalOrigin, SejmSourceOrigin
 from lexinform.models.source_omissions import (
     BillOmissionOwner,
     RclOmissionOwner,
@@ -55,7 +55,7 @@ class DocumentSourceRead:
     reads: tuple[ArtifactReadIdentity, ...] = ()
     extractions: tuple[ExtractionResult, ...] = ()
     candidate_trace: CandidateDispositionTrace | None = None
-    sejm_proposal: SejmProposalOrigin | None = None
+    sejm_origin: SejmSourceOrigin | None = None
 
 
 @dataclass(frozen=True)
@@ -119,7 +119,7 @@ def record_source_read(
         reads=source.reads,
         extractions=source.extractions,
         candidate_trace=source.candidate_trace,
-        sejm_proposal=source.sejm_proposal,
+        sejm_origin=source.sejm_origin,
     )
 
 
@@ -187,20 +187,20 @@ def record_document_source(
     reads: tuple[ArtifactReadIdentity, ...] = (),
     extractions: tuple[ExtractionResult, ...] = (),
     candidate_trace: CandidateDispositionTrace | None = None,
-    sejm_proposal: SejmProposalOrigin | None = None,
+    sejm_origin: SejmSourceOrigin | None = None,
 ) -> None:
     """Write the source and known outer-body links inside the caller's transaction."""
     record_artifacts(repo, artifacts, recorded_at=observation.recorded_at)
     record_artifact_reads(repo, reads, recorded_at=observation.recorded_at)
     repo.save_source_observation(selection, observation)
-    proposal_trace = None
+    origin_trace = None
     if candidate_trace is not None:
         if (
-            sejm_proposal is not None
+            sejm_origin is not None
             and candidate_trace.is_routine_singleton
             and candidate_trace.archive_members is None
         ):
-            proposal_trace = candidate_trace
+            origin_trace = candidate_trace
         else:
             repo.save_candidate_disposition_trace(observation.observation_id, candidate_trace)
     edition = candidate_edition(selection, recorded_at=observation.recorded_at)
@@ -231,15 +231,67 @@ def record_document_source(
                     artifact_sha256=part.source_sha256,
                 )
             )
-    if proposal_trace is not None and sejm_proposal is not None and edition is not None:
+    if origin_trace is not None and sejm_origin is not None and edition is not None:
         try:
-            proved = _prove_sejm_proposal(
-                proposal_trace, sejm_proposal, selection, observation, edition, reads
-            )
+            if isinstance(sejm_origin, SejmAdoptionOrigin):
+                proved = _prove_sejm_adoption(
+                    origin_trace, sejm_origin, selection, observation, edition, reads
+                )
+            else:
+                proved = _prove_sejm_proposal(
+                    origin_trace, sejm_origin, selection, observation, edition, reads
+                )
             if proved is not None:
                 repo.save_candidate_disposition_trace(observation.observation_id, proved)
         except ValueError:
-            log.debug("Original Sejm proposal proof failed validation")
+            log.debug("Sejm source proof failed validation")
+
+
+def _prove_sejm_adoption(
+    trace: CandidateDispositionTrace,
+    origin: SejmAdoptionOrigin,
+    selection: DocumentSelectionRecord,
+    observation: SourceObservation,
+    edition: DocumentEdition,
+    reads: tuple[ArtifactReadIdentity, ...],
+) -> CandidateDispositionTrace | None:
+    parts, stage = selection.selection.parts, origin.stage
+    if (
+        (observation.term, observation.number) != (origin.term, origin.number)
+        or observation.purpose != "analysis"
+        or edition.member_count != 1
+        or len(parts) != 1
+        or stage.stage_type != "SejmReading"
+        or stage.date is None
+        or stage.decision is None
+        or stage.text_after3 != observation.document.url
+    ):
+        return None
+    (part,) = parts
+    if (
+        part.role != "bill"
+        or part.members
+        or part.url != observation.document.url
+        or part.source_sha256 is None
+        or not any(
+            (read.requested_url, read.sha256) == (part.url, part.source_sha256) for read in reads
+        )
+    ):
+        return None
+    proof = SejmAdoptedText(
+        term=origin.term,
+        number=origin.number,
+        stage_name=stage.stage_name,
+        decision=stage.decision,
+        stage_date=stage.date,
+        pdf_sha256=part.source_sha256,
+        pdf_text_sha256=part.text_sha256,
+        selection_id=selection.selection_id,
+        edition_id=edition.edition_id,
+    )
+    return CandidateDispositionTrace.model_validate(
+        {**trace.model_dump(), "sejm_adopted_text": proof}
+    )
 
 
 def _prove_sejm_proposal(

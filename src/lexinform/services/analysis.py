@@ -141,7 +141,7 @@ from lexinform.models.batch import (
 )
 from lexinform.models.computations import CollectionReason, ComputationRecord
 from lexinform.models.input_receipts import LooseRclInputReceipt
-from lexinform.models.sejm import SejmProposalOrigin
+from lexinform.models.sejm import SejmSourceOrigin
 from lexinform.models.source_omissions import SenateOmissionOwner, SourceReferenceOmissionOwner
 from lexinform.ports import (
     AnalysisBackend,
@@ -2932,13 +2932,13 @@ class AnalysisService:
     ) -> _Prepared:
         """Prepare input; historical reanalysis records rereads on its calling thread."""
         document = located.document
-        sejm_proposal = located.sejm_proposal
-        if sejm_proposal is not None:
-            located = located.model_copy(update={"sejm_proposal": None})
+        sejm_origin = located.sejm_origin
+        if sejm_origin is not None:
+            located = located.model_copy(update={"sejm_origin": None})
         try:
             loaded = self._load_source(
                 document,
-                sejm_proposal=sejm_proposal,
+                sejm_origin=sejm_origin,
                 owner=SourceReferenceOmissionOwner(
                     term=bill.term, number=bill.number, purpose="analysis"
                 ),
@@ -3693,19 +3693,19 @@ class AnalysisService:
         *,
         trim: bool = True,
         owner: SourceReferenceOmissionOwner | None = None,
-        sejm_proposal: SejmProposalOrigin | None = None,
+        sejm_origin: SejmSourceOrigin | None = None,
     ) -> _Loaded:
         if owner is None or document is None:
-            return self._load_source_inner(document, trim=trim, sejm_proposal=sejm_proposal)
+            return self._load_source_inner(document, trim=trim, sejm_origin=sejm_origin)
         with self._loader.source_omission_scope(owner, document):
-            return self._load_source_inner(document, trim=trim, sejm_proposal=sejm_proposal)
+            return self._load_source_inner(document, trim=trim, sejm_origin=sejm_origin)
 
     def _load_source_inner(
         self,
         document: TextDocument | None,
         *,
         trim: bool = True,
-        sejm_proposal: SejmProposalOrigin | None = None,
+        sejm_origin: SejmSourceOrigin | None = None,
     ) -> _Loaded:
         """Prepare admitted text or pages, propagating failures and blocked selections."""
         if document is None:
@@ -3714,7 +3714,7 @@ class AnalysisService:
         try:
             document, file = (
                 self._loader.select_document(document, retain_routine_trace=True)
-                if sejm_proposal is not None
+                if sejm_origin is not None
                 else self._loader.select_document(document)
             )
         except ServiceUnavailableError:
@@ -3730,8 +3730,8 @@ class AnalysisService:
                 f"{document.url}: {type(exc).__name__}: {exc}",
             ) from exc
         source = self._loader.capture_source_read(requested, document, file)
-        if sejm_proposal is not None and isinstance(source, DocumentSourceRead):
-            source = replace(source, sejm_proposal=sejm_proposal)
+        if sejm_origin is not None and isinstance(source, DocumentSourceRead):
+            source = replace(source, sejm_origin=sejm_origin)
         try:
             return replace(self._load_selected(document, file, trim=trim), source_read=source)
         except Exception as exc:

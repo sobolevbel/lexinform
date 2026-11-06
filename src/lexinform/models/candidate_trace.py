@@ -13,7 +13,7 @@ from lexinform.metadata_urls import metadata_url_decision
 from lexinform.models.documents import DocumentPart, SelectionState
 from lexinform.models.evidence import DecisionState, ReadingOutcome, reading_evidence
 from lexinform.models.physical_inventory import HeaderDisposition, Position, Sha256
-from lexinform.models.sejm import Stage, TextDocument
+from lexinform.models.sejm import Stage, TextDocument, sejm_adopted_text_url
 from lexinform.sections import APPENDIX_KINDS, Kind
 
 MAX_CANDIDATE_TRACE_BYTES = 4_096
@@ -466,8 +466,7 @@ class SejmAdoptedText(BaseModel):
 
     @property
     def pdf_url(self) -> str:
-        process = f"https://api.sejm.gov.pl/sejm/term{self.term}/processes/{self.number}"
-        return f"{process}/attachment/{self.number}_u3.pdf"
+        return sejm_adopted_text_url(self.term, self.number)
 
     @model_validator(mode="after")
     def known_third_reading(self) -> Self:

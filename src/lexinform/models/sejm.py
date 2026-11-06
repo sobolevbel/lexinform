@@ -885,6 +885,21 @@ class SejmProposalOrigin:
     official_process_prints: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class SejmAdoptionOrigin:
+    term: int
+    number: str
+    stage: Stage
+
+
+type SejmSourceOrigin = SejmProposalOrigin | SejmAdoptionOrigin
+
+
+def sejm_adopted_text_url(term: int, number: str) -> str:
+    process = f"https://api.sejm.gov.pl/sejm/term{term}/processes/{number}"
+    return f"{process}/attachment/{number}_u3.pdf"
+
+
 class TextDocument(BaseModel):
     """A document carrying the bill text at some point of the process.
 

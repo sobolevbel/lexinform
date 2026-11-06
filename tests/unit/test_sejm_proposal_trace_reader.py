@@ -234,7 +234,7 @@ def test_native_writer_requires_exact_current_proposal_read(
             artifacts,
             reads=artifacts if current_read else artifacts[:1],
             candidate_trace=legacy,
-            sejm_proposal=SejmProposalOrigin(10, "2320", "2320-A", ("2320",)),
+            sejm_origin=SejmProposalOrigin(10, "2320", "2320-A", ("2320",)),
         )
 
         assert repo.list_candidate_disposition_traces(observation.observation_id) == (

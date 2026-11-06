@@ -20,20 +20,30 @@ from lexinform.models import (
     ORKA_BASE_URL,
     AnalysisRecord,
     Bill,
+    DecisionState,
+    DocumentType,
     LocatedText,
     PrintInfo,
     ProcessDetail,
     RclDocument,
     RclProject,
+    ReadingOutcome,
     ReviewPurpose,
     ReviewSource,
     TextDocument,
+    flatten_stages,
     latest_text_document,
+    reading_evidence,
     submission_pdf_url,
     third_reading_kept_the_text,
 )
 from lexinform.models.rcl import text_rank, text_role
-from lexinform.models.sejm import SejmProposalOrigin, print_part_number
+from lexinform.models.sejm import (
+    SejmAdoptionOrigin,
+    SejmProposalOrigin,
+    print_part_number,
+    sejm_adopted_text_url,
+)
 from lexinform.ports import ConsultationDocuments, SejmGateway, TextSource
 
 
@@ -147,6 +157,35 @@ def _original_proposal(
     return SejmProposalOrigin(parent.term, parent.number, proposal.number, proposal.process_prints)
 
 
+def _adoption_origin(
+    bill: Bill, detail: ProcessDetail, document: TextDocument | None
+) -> SejmAdoptionOrigin | None:
+    if (
+        document is None
+        or document.kind != "text_after3"
+        or (detail.term, detail.number) != (bill.term, bill.number)
+        or detail.document_type_enum is not DocumentType.BILL
+        or not 1 <= detail.term <= 99
+        or re.fullmatch(r"[1-9][0-9]{0,8}", detail.number) is None
+        or document.url != sejm_adopted_text_url(detail.term, detail.number)
+    ):
+        return None
+    matches = [
+        stage for stage in flatten_stages(detail.stages) if stage.text_after3 == document.url
+    ]
+    if len(matches) != 1:
+        return None
+    (stage,) = matches
+    evidence = reading_evidence(stage)
+    if (
+        stage.date is None
+        or evidence.state is not DecisionState.KNOWN
+        or evidence.reading is not ReadingOutcome.PASSED
+    ):
+        return None
+    return SejmAdoptionOrigin(detail.term, detail.number, stage)
+
+
 class SejmTextSource:
     """Numbered prints: the process (metadata, stages) and the print's main PDF."""
 
@@ -166,7 +205,10 @@ class SejmTextSource:
             if (detail.term, detail.number) == (bill.term, bill.number):
                 proposal = _original_proposal(bill, info, document)
         return LocatedText(
-            summary=detail, stages=detail.stages, document=document, sejm_proposal=proposal
+            summary=detail,
+            stages=detail.stages,
+            document=document,
+            sejm_origin=proposal or _adoption_origin(bill, detail, document),
         )
 
     def supporting_documents(self, bill: Bill, purpose: ReviewPurpose) -> tuple[ReviewSource, ...]:

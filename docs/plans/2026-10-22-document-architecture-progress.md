@@ -11628,3 +11628,29 @@ third-reading locators. Of these, 579 matched the unique same-owner
 dated adoption metadata and 31 had another locator. This count does
 not qualify PDF bodies beyond the pinned 2111 case. The older state
 copy produced identical trace and gap doctor reports.
+
+<a id="j290"></a>
+
+## J290 — record the adopted Sejm edition during analysis
+
+Analysis records a third-reading adoption trace when fresh same-owner
+process metadata identifies a unique dated passed stage and the selected
+official PDF has a matching read receipt and a one-part normative edition.
+The stage metadata travels in memory. The existing selection, request and
+durable batch metadata keep their prior behavior.
+
+The paired offline run used the pinned term 10 process snapshot and the
+official PDF for print 2111 from J289. The same analysis ran with a successful
+result, a simulated provider failure, an omitted decision, a foreign locator
+and a duplicated stage. Each run read one process and one attachment.
+The request digest and normalized SQL were identical to baseline in all five
+profiles at queue, submission and collection, after two restores per
+checkpoint. The qualified cases added one trace and its source link.
+The three metadata controls added zero bytes. The two positive profiles
+added 1,433 SQL bytes and 334–385 gzip bytes per checkpoint. No model
+requests were submitted and no historical rows were backfilled.
+
+This covers one native PDF case and the stated controls. It establishes
+the adoption of that whole text at third reading. Representation,
+supersession and recommendation coverage remain open under DA4.7.
+[Qualification](../assets/audits/2026-11-06-adopted-text-trace-writer/qualification.json).
