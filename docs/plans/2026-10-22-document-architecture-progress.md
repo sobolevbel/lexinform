@@ -12317,3 +12317,25 @@ matched baseline. Unit controls cover missing and mismatched ownership.
 
 DA5.6 remains open for incomplete prepared-input profiles. The retained
 hashes support verification of known material after cleanup.
+
+<a id="j319"></a>
+
+## J319 — compatible reader for visited Word field and revision markers
+
+The optional Word view metadata can distinguish visited field and revision node
+counts from absent evidence. The reader accepts a pair of strict nonnegative
+32-bit counts. The maximum serialized view status is 507 bytes under the existing
+512-byte cap. Both view flags still report unresolved semantics. These counts do
+not establish which field content is displayed or which revisions are accepted.
+
+Legacy serialization and native output stay exact. The reader stage leaves
+the production collector unchanged. The next stage will capture the counters
+from the existing walk after this reader is deployed.
+
+The pinned 3,055-file Word cohort reproduced the baseline ledger byte for
+byte. The ledger compares text, selection, extraction metadata, textbox
+counts, component fingerprints and errors. A separate scratch checkpoint
+round trip used explicitly synthetic marker counts on one pinned Word
+extraction. Both the legacy and new records survived two restores with
+identical SQL, successful integrity checks and no foreign-key errors.
+[Qualification](../assets/audits/2026-11-06-word-inline-reader/qualification.json).

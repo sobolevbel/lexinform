@@ -1,0 +1,49 @@
+{
+  "baseline_commit": "39a944c4e3ddbac201b38070af5400849ac5087d",
+  "corpus": {
+    "catalog": "docs/assets/audits/2026-10-30-word-structure/catalog.json",
+    "catalog_sha256": "7bfa79ac7ee2a6981d8106880cad2bde6bc86df0b5da9a966530fcaebbf057f5",
+    "files": 3055,
+    "extractions": 3055,
+    "errors": 0,
+    "paired_ledger_sha256": "e0a75d9cd6fe52d5efda959bb64352f3ce80ecd8b70a5e07b86002f5dd8e4e55",
+    "equal": [
+      "text_sha256",
+      "selection_sha256",
+      "remaining_result_sha256",
+      "textbox_counts",
+      "extractor_component_hashes",
+      "result_bytes",
+      "error_sha256"
+    ],
+    "scope": "Catalogued Word paths only; reader does not activate production capture.",
+    "files_with_word_view_status": 3053,
+    "word_view_statuses": 3053
+  },
+  "checkpoint": {
+    "checkpoint_sha256": "29dfe8566f02ceb810a1a43e8ea9a7b0fd0d9f6fc54ffa7212c4dda23945cd6d",
+    "input_sha256": "311505c01eaa82b91deefc2968077b5ae27f4115b35580f22cf28e34a3baeb97",
+    "reader_fixture_counts_are_synthetic": true,
+    "snapshots": {
+      "legacy": {
+        "sql_bytes": 25790959,
+        "gzip_bytes": 5220798,
+        "result_bytes": 3100,
+        "checkpoint_round_trips": 2,
+        "integrity_check": "ok",
+        "foreign_key_errors": 0
+      },
+      "reader_fixture": {
+        "sql_bytes": 25791004,
+        "gzip_bytes": 5220812,
+        "result_bytes": 3145,
+        "checkpoint_round_trips": 2,
+        "integrity_check": "ok",
+        "foreign_key_errors": 0
+      }
+    }
+  },
+  "maximum_word_status_bytes": 507,
+  "word_status_cap_bytes": 512,
+  "production_writer_active": false
+}

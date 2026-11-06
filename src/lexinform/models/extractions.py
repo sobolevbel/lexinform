@@ -57,6 +57,15 @@ class ExtractionOptions(BaseModel):
     xml_bytes: int = Field(ge=0)
 
 
+class WordInlineMarkers(BaseModel):
+    """Counts of field and revision nodes actually visited by the legacy walk."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    fields: int = Field(strict=True, ge=0, le=2**32 - 1)
+    revisions: int = Field(strict=True, ge=0, le=2**32 - 1)
+
+
 class WordViewStatus(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
@@ -72,6 +81,9 @@ class WordViewStatus(BaseModel):
     observed_ignored_fallbacks: int = Field(strict=True, ge=0, le=2**63 - 1)
     observed_textbox_nodes: int | None = Field(
         default=None, strict=True, ge=0, le=2**63 - 1, exclude_if=lambda value: value is None
+    )
+    observed_inline: WordInlineMarkers | None = Field(
+        default=None, exclude_if=lambda value: value is None
     )
 
     @model_validator(mode="after")

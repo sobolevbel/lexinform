@@ -12,6 +12,7 @@ from lexinform.models.extractions import (
     ExtractionComponent,
     ExtractionOptions,
     ExtractionResult,
+    WordInlineMarkers,
 )
 from tests.unit.test_physical_extraction import docx, extractor
 from tests.unit.test_word_blocks import paragraph, word
@@ -59,6 +60,7 @@ def test_maximum_counters_remain_within_the_compact_bound() -> None:
         observed_legacy_recursion=2**63 - 1,
         observed_ignored_fallbacks=2**63 - 1,
         observed_textbox_nodes=2**63 - 1,
+        observed_inline=WordInlineMarkers(fields=2**32 - 1, revisions=2**32 - 1),
     )
     assert len(value.model_dump_json().encode()) <= 512
 
@@ -148,6 +150,44 @@ def test_textbox_reader_distinguishes_unknown_and_observed_zero() -> None:
 
     assert observed.observed_textbox_nodes == 0
     assert WordViewStatus.model_validate_json(observed.model_dump_json()) == observed
+
+
+def test_inline_marker_reader_preserves_legacy_bytes_and_reads_known_counts() -> None:
+    legacy = status()
+    payload = legacy.model_dump(mode="json")
+    assert "observed_inline" not in payload
+    assert WordViewStatus.model_validate(
+        {**payload, "observed_inline": None}
+    ).model_dump_json() == (legacy.model_dump_json())
+
+    markers = WordInlineMarkers(fields=0, revisions=3)
+    payload["observed_inline"] = markers.model_dump()
+    extraction = result().model_dump(mode="json")
+    extraction["selected_parts"][0]["word_view_status"] = payload
+    restored = ExtractionResult.model_validate(extraction)
+
+    assert restored.selected_parts[0].word_view_status == legacy.model_copy(
+        update={"observed_inline": markers}
+    )
+    assert ExtractionResult.model_validate_json(restored.model_dump_json()) == restored
+
+
+@pytest.mark.parametrize(
+    "markers",
+    [
+        {"fields": -1, "revisions": 0},
+        {"fields": 0, "revisions": 2**32},
+        {"fields": True, "revisions": 0},
+        {"fields": 0, "revisions": "1"},
+        {"fields": 0},
+        {"fields": 0, "revisions": 0, "view": "accepted"},
+    ],
+)
+def test_inline_marker_reader_rejects_invalid_or_semantic_claims(
+    markers: dict[str, object],
+) -> None:
+    with pytest.raises(ValidationError):
+        WordViewStatus.model_validate({**status().model_dump(), "observed_inline": markers})
 
 
 @pytest.mark.parametrize("format_name", ["pdf", "odt", "unknown"])
