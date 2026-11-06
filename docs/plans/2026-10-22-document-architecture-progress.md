@@ -13129,6 +13129,7 @@ builders and two exact compact restores. The restored frozen requests
 matched the original. The preceding reader accepted inline controls and
 rejected compact ones without changing state. No provider was called.
 [Qualification](../assets/audits/2026-11-06-senate-scan-reader/qualification.json).
+Exact release verified for `176f0cfc` via [CI](https://github.com/sobolevbel/lexinform/actions/runs/42267403238) and [relay](https://github.com/sobolevbel/lexinform/actions/runs/42268575508).
 
 <a id="j359"></a>
 
@@ -13145,3 +13146,25 @@ queue samples the writer saved 410,157–1,849,285 SQL bytes and
 297,057–1,345,975 gzip bytes. The previous compatible reader restored
 the writer's pinned dumps exactly.
 [Qualification](../assets/audits/2026-11-06-senate-scan-writer/qualification.json).
+Exact release verified for `b462dd8c` via [CI](https://github.com/sobolevbel/lexinform/actions/runs/42268814718) and [relay](https://github.com/sobolevbel/lexinform/actions/runs/42270170658).
+
+<a id="j360"></a>
+
+## J360 — read bounded Office Math source structures
+
+The offline reader inventories formulas in the main OOXML document body.
+It records source paths, ordered structure and explicit unsupported or limited
+outcomes. Word rendering and formula semantics remain unresolved. Runtime
+extraction, selection, request building and state writes continue on their
+existing paths.
+
+The pinned corpus slice covers 69 paths and 28 unique bodies, including
+12 controls without formulas. It records 117 structured formulas, 49 unsupported
+and eight over the formula bounds. Native RCL selection confirmed three primaries
+and two unverified controls. Missing companion sources are listed in the
+qualification. Changing the divisor from 100% to 200% in one selected source
+changed its formula structure and checksum while preserving the legacy text
+and law digest.
+
+[Input manifest](../assets/audits/2026-11-06-word-formulas/manifest.json) ·
+[Qualification](../assets/audits/2026-11-06-word-formulas/qualification.json).

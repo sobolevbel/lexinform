@@ -1,0 +1,177 @@
+{
+  "formula_counts": {
+    "formula_limit": 8,
+    "structured": 117,
+    "unsupported_structure": 49
+  },
+  "manifest_sha256": "05e2aba8554ae9c77e086a3af6999d51290ec386a3fdc62f98a5286df46bfcc2",
+  "native": {
+    "mutation": {
+      "changed_formula_sha256": [
+        "0701022d3e01e618954d5f0d4238d16d2bb5fdde9447b2ef33e4525a27a0818a",
+        "342bebd462497294c9d908b6a2c466406b1fc6a32a1fa554fbd78f85d0a4bdd9"
+      ],
+      "legacy_law_digest": "law-v2:b84e35a871e2d4622d295b05751c6d2ccc3c6b0d818b0a62daaba3b5668c1548",
+      "legacy_text_sha256": "6e5e0d507caeeac706f9f8bb62675074a531a1241128b100deb1162c41d59f87",
+      "ordered_structure_changed": [
+        true,
+        false
+      ],
+      "original_formula_sha256": [
+        "0ffb02f319ac952b6302707db48f58eb29faed9a6ed8fabb9b408b2325c0020b",
+        "342bebd462497294c9d908b6a2c466406b1fc6a32a1fa554fbd78f85d0a4bdd9"
+      ]
+    },
+    "read_inputs": {
+      "corpus/12385705.json": "76b24719971e6bbe53c4c6293e47aa4d80de908acfdaae18b6047b1ed5d3bf5e",
+      "corpus/12387255.json": "c6d2d8b1ac33b59ab1ffe49ba9d6b4ffdcfaee61c4a45b384d4ba3b827cd1192",
+      "corpus/12387701.json": "c2bca05704a7b59896ca702311670d1d95ba6884555f4f8500f59e4a49977151",
+      "corpus/12410805.json": "754e22ef8d2ce21793d42bc7069ff30d2ac09ec9aee79f068d1235d463d7fc5e",
+      "corpus/12414153.json": "e54f5a140705771b904909e4b302b72e3a0c121b3e1922858401f1d061e6fbe1",
+      "documents/files/669181.docm": "e42b6173836c1be687a991b71c14f9aa1fddd378dfb1c8a51d06ee1395c21273",
+      "documents/files/675297.docm": "bf64119c4bd50b2c646e683111684635bf94b014252bfa689129261f1586802d",
+      "documents/files/675298.docm": "d9203be12db5046a885d4e1eb9f5e1734842b2af2d360828dbf378add50769c2",
+      "documents/files/675299.docm": "8e6d7a40a308b208fb047daa65a1ab364a3f06c7cec5c29425d8a5d2793d3b63",
+      "documents/files/676875.docx": "d4121b6dba77fdc869bce3ee5d938f7f3f49e36e4cf2d0a5ed97ef383914feef",
+      "documents/files/676876.docx": "01ba8a1793c49bdb69548ddda86becd7d050b29b98cb9f1959314cc075aea557",
+      "documents/files/676877.doc": "328a16f1943cda9f9a2dbcf582b3380fb549d4a920c67f0184e215267052f7cc",
+      "documents/files/778990.docm": "9bc086cf4d703efc6447fd00dab30f5e5eed4402a49d5c0c503cc0ee18079572",
+      "documents/files/795368.docx": "d329bb635fadd2ac3ba27d433c1879aeb52855500fc3f63a55e95f66ab39f69f",
+      "documents/files/795369.docx": "43f005bf998696b33baf8782009d3b38d83e72578e7ce8028185c5caf7f297da"
+    },
+    "rows": {
+      "12385705/2": {
+        "calls": [
+          [
+            "669181.docm",
+            "e42b6173836c1be687a991b71c14f9aa1fddd378dfb1c8a51d06ee1395c21273"
+          ],
+          [
+            "669182",
+            "missing"
+          ],
+          [
+            "669183",
+            "missing"
+          ]
+        ],
+        "primary": "669181.docm",
+        "selected_roles": [
+          "bill"
+        ],
+        "state": "unverified",
+        "text_chars": 29218,
+        "text_sha256": "8693354006fd5e5bde79912b2026045437d8ea4a12a0ec38436212d138162dda"
+      },
+      "12387255/2": {
+        "calls": [
+          [
+            "675297.docm",
+            "bf64119c4bd50b2c646e683111684635bf94b014252bfa689129261f1586802d"
+          ],
+          [
+            "675298.docm",
+            "d9203be12db5046a885d4e1eb9f5e1734842b2af2d360828dbf378add50769c2"
+          ],
+          [
+            "675299.docm",
+            "8e6d7a40a308b208fb047daa65a1ab364a3f06c7cec5c29425d8a5d2793d3b63"
+          ]
+        ],
+        "primary": "675297.docm",
+        "selected_roles": [
+          "bill",
+          "justification",
+          "osr"
+        ],
+        "state": "selected",
+        "text_chars": 283084,
+        "text_sha256": "0fd2a54f4bdcfeb94f4f2dbb1ebda9ff84e32971971ee3daef628e320206a262"
+      },
+      "12387701/4": {
+        "calls": [
+          [
+            "676875.docx",
+            "d4121b6dba77fdc869bce3ee5d938f7f3f49e36e4cf2d0a5ed97ef383914feef"
+          ],
+          [
+            "676876.docx",
+            "01ba8a1793c49bdb69548ddda86becd7d050b29b98cb9f1959314cc075aea557"
+          ],
+          [
+            "676877.doc",
+            "328a16f1943cda9f9a2dbcf582b3380fb549d4a920c67f0184e215267052f7cc"
+          ]
+        ],
+        "primary": "676875.docx",
+        "selected_roles": [
+          "bill",
+          "justification",
+          "osr"
+        ],
+        "state": "selected",
+        "text_chars": 258419,
+        "text_sha256": "b35f31a217187c876b158a6d4f3f9d5c60532885893f2a75dc0dec33fc2058bb"
+      },
+      "12410805/2": {
+        "calls": [
+          [
+            "779002",
+            "missing"
+          ],
+          [
+            "778990.docm",
+            "9bc086cf4d703efc6447fd00dab30f5e5eed4402a49d5c0c503cc0ee18079572"
+          ],
+          [
+            "778991",
+            "missing"
+          ],
+          [
+            "778992",
+            "missing"
+          ]
+        ],
+        "primary": "778990.docm",
+        "selected_roles": [
+          "bill"
+        ],
+        "state": "selected",
+        "text_chars": 8706,
+        "text_sha256": "6e5e0d507caeeac706f9f8bb62675074a531a1241128b100deb1162c41d59f87"
+      },
+      "12414153/2": {
+        "calls": [
+          [
+            "795368.docx",
+            "d329bb635fadd2ac3ba27d433c1879aeb52855500fc3f63a55e95f66ab39f69f"
+          ],
+          [
+            "795369.docx",
+            "43f005bf998696b33baf8782009d3b38d83e72578e7ce8028185c5caf7f297da"
+          ],
+          [
+            "795370",
+            "missing"
+          ]
+        ],
+        "primary": "795368.docx",
+        "selected_roles": [
+          "bill",
+          "unknown"
+        ],
+        "state": "unverified",
+        "text_chars": 101801,
+        "text_sha256": "284af46dc03dcacc593deb784fa77c12a5d3680839735fc3abbefa6a59be53a9"
+      }
+    }
+  },
+  "native_replay_sha256": "dcb203c98b44fcccb1055ec8134768bd2493af326dd6a2a56fb38fc6e824f79b",
+  "pinned_paths": 69,
+  "positive_paths": 57,
+  "provider_submissions": 0,
+  "rendered_view": "unresolved",
+  "replay_sha256": "7e2bbff1aad4f79d2b72b28c843d407646f3949699cd18afbea04156e56bf8b7",
+  "scope": "Office Math source structure in the Word main XML body.",
+  "unique_bodies": 28
+}

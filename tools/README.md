@@ -677,3 +677,18 @@ request receipt and the paid result matches the batch item. It contains the
 claim text and retained input, so keep it with local review artifacts.
 The default census remains body-free. Reviewers assess support and record
 evidence separately. The sheet contains no adjudication or legal-force verdict.
+
+## Office Math source structures
+
+Replay the SHA-pinned OOXML manifest from the
+[J360 qualification](../docs/plans/2026-10-22-document-architecture-progress.md#j360)
+to record formula paths, ordered structure hashes and unsupported or limited cases.
+The replay covers the main document XML and reports the rendered view as unresolved.
+
+```sh
+uv run --offline --frozen python -m tools.replay_word_formulas \
+  --corpus /path/to/lexinform-corpus \
+  --manifest docs/assets/audits/2026-11-06-word-formulas/manifest.json \
+  --manifest-sha256 05e2aba8554ae9c77e086a3af6999d51290ec386a3fdc62f98a5286df46bfcc2 \
+  --output out/corpus/word-formulas.json
+```
