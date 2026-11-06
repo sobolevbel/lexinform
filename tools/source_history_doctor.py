@@ -13,7 +13,7 @@ from lexinform.adapters.candidate_trace_history import (
     CANDIDATE_TRACE_SCHEMA_VERSION,
     CandidateTraceRowError,
     read_candidate_disposition_trace,
-    validate_sejm_proposal_links,
+    validate_candidate_trace_links,
 )
 from lexinform.adapters.content_source_refs import ContentSourceRows
 from lexinform.adapters.extraction_history import (
@@ -360,7 +360,7 @@ def candidate_trace_inventory(
                 report["trace_rows"] += 1
                 try:
                     trace = read_candidate_disposition_trace(row)
-                    validate_sejm_proposal_links(connection, trace)
+                    validate_candidate_trace_links(connection, trace)
                 except CandidateTraceRowError as exc:
                     traces[row["trace_id"]] = False
                     issue(exc.code, f"candidate_disposition_traces/row-{row['audit_id']}")

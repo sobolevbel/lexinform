@@ -11555,3 +11555,24 @@ Eight matched. The strict proof left 552 unproven, 51 exceeded its byte bound
 and one lacked a local pair. The final command reproduced all eight positives
 and the strict boundary control.
 [Counts and replay pins](../assets/audits/2026-11-06-print-representation-cohort/evidence.json).
+
+<a id="j286"></a>
+
+## J286 — validate stored Sejm normative-core representations
+
+The candidate trace reader accepts optional bounded representation metadata.
+It checks the original observation and edition, the selected PDF, both
+complete-body read receipts and the exact DOCX extraction identity. The
+trace records the profile and core digest, with no claim of retained
+bodies, complete-document equivalence, or adoption. Existing trace IDs
+and the schema stay unchanged.
+
+Fresh scratch observations for all eight pinned positive pairs survived
+two restores apiece. Removing the DOCX receipt is rejected in the reader,
+restore and doctor paths. The ordinary producer remains unchanged.
+[Replay results](../assets/audits/2026-11-06-representation-trace-reader/qualification.json).
+
+The existing state snapshot `ff49a74a` produced byte-identical trace and gap
+doctor reports before and after the reader change. The largest measured
+increment with all parents already present was 1,820 SQL bytes and 435 gzip
+bytes for one trace and its observation link.

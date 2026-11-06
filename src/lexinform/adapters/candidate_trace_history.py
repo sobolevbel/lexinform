@@ -6,9 +6,10 @@ from datetime import UTC
 from typing import Literal
 
 from lexinform.adapters.content_source_refs import ContentSourceRows
+from lexinform.adapters.extraction_history import read_extraction_result
 from lexinform.document_editions import candidate_edition
 from lexinform.json_storage import read_json
-from lexinform.models.artifacts import ArtifactMetadata
+from lexinform.models.artifacts import ArtifactMetadata, ArtifactReadReceipt
 from lexinform.models.candidate_trace import CandidateDispositionTrace
 from lexinform.models.document_editions import DocumentEdition
 
@@ -22,6 +23,7 @@ class CandidateTraceRowError(ValueError):
             "invalid_candidate_trace",
             "candidate_trace_identity_mismatch",
             "candidate_trace_proposal_parent_mismatch",
+            "candidate_trace_representation_parent_mismatch",
         ],
     ) -> None:
         self.code = code
@@ -108,11 +110,103 @@ def validate_sejm_proposal_link(
         raise CandidateTraceRowError("candidate_trace_proposal_parent_mismatch") from None
 
 
-def validate_sejm_proposal_links(
+def validate_candidate_trace_link(
+    connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
+) -> None:
+    validate_sejm_proposal_link(connection, trace, observation_id)
+    proof = trace.sejm_print_representation
+    if proof is None:
+        return
+    try:
+        reader = ContentSourceRows(connection)
+        source = reader.get_source_observation(observation_id)
+        if source is None or (source.term, source.number, source.document, source.selection_id) != (
+            proof.term,
+            proof.number,
+            trace.requested_document,
+            proof.selection_id,
+        ):
+            raise ValueError("representation source differs from its original print")
+        record = reader.get_document_selection(proof.selection_id)
+        if record is None:
+            raise ValueError("representation selection is unavailable")
+        selection = record.selection
+        if (
+            selection.state != trace.selection_state
+            or selection.version != source.document.version_basis
+            or len(selection.parts) != 1
+            or (part := selection.parts[0]).members
+            or (part.role, part.url, part.source_sha256, part.text_sha256)
+            != ("bill", proof.pdf_url, proof.pdf_sha256, proof.pdf_text_sha256)
+        ):
+            raise ValueError("representation differs from its selected PDF")
+        with closing(connection.cursor()) as cursor:
+            cursor.row_factory = sqlite3.Row
+            parent = cursor.execute(
+                "SELECT e.*, a.artifact_sha256 FROM selection_editions AS link"
+                " JOIN document_editions AS e USING (edition_id)"
+                " JOIN selection_artifacts AS a USING (selection_id)"
+                " WHERE link.selection_id=? AND e.edition_id=?"
+                " AND a.part_scope='parts' AND a.part_index=0",
+                (proof.selection_id, proof.edition_id),
+            ).fetchone()
+            if parent is None or parent["artifact_sha256"] != proof.pdf_sha256:
+                raise ValueError("representation requires an exact edition and PDF artifact link")
+            edition = DocumentEdition.model_validate_json(parent["edition_json"])
+            if (
+                edition.edition_id != proof.edition_id
+                or edition.recorded_at.astimezone(UTC).isoformat() != parent["recorded_at"]
+                or candidate_edition(record, recorded_at=edition.recorded_at) != edition
+            ):
+                raise ValueError("representation edition differs from its recorded selection")
+            for url, sha in (
+                (proof.pdf_url, proof.pdf_sha256),
+                (proof.docx_url, proof.docx_sha256),
+            ):
+                row = cursor.execute(
+                    "SELECT r.*, a.byte_size AS artifact_size FROM artifact_reads AS r"
+                    " JOIN artifacts AS a ON a.sha256=r.artifact_sha256"
+                    " WHERE r.requested_url=? AND r.artifact_sha256=?",
+                    (url, sha),
+                ).fetchone()
+                if row is None:
+                    raise ValueError("representation requires both exact body reads")
+                receipt = ArtifactReadReceipt(
+                    requested_url=url,
+                    sha256=sha,
+                    byte_size=row["byte_size"],
+                    recorded_at=row["recorded_at"],
+                )
+                if receipt.read_id != row["read_id"] or receipt.byte_size != row["artifact_size"]:
+                    raise ValueError("representation body read differs from its artifact")
+            row = cursor.execute(
+                "SELECT * FROM extraction_results WHERE extraction_id=?",
+                (proof.docx_extraction_id,),
+            ).fetchone()
+            if row is None:
+                raise ValueError("representation requires its DOCX extraction")
+            extraction = read_extraction_result(row)
+            if (extraction.artifact_sha256, extraction.output_text_sha256) != (
+                proof.docx_sha256,
+                proof.docx_text_sha256,
+            ) or proof.core_chars > extraction.output_chars:
+                raise ValueError("representation DOCX extraction differs from the proof")
+    except ValueError, TypeError, RecursionError, IndexError, KeyError, sqlite3.Error:
+        raise CandidateTraceRowError("candidate_trace_representation_parent_mismatch") from None
+
+
+def validate_candidate_trace_links(
     connection: sqlite3.Connection, trace: CandidateDispositionTrace
 ) -> None:
-    if trace.sejm_original_proposal is None:
+    if trace.sejm_original_proposal is None and trace.sejm_print_representation is None:
         return
+    code: Literal[
+        "candidate_trace_proposal_parent_mismatch", "candidate_trace_representation_parent_mismatch"
+    ] = (
+        "candidate_trace_representation_parent_mismatch"
+        if trace.sejm_print_representation is not None
+        else "candidate_trace_proposal_parent_mismatch"
+    )
     try:
         with closing(connection.cursor()) as cursor:
             cursor.row_factory = sqlite3.Row
@@ -123,11 +217,11 @@ def validate_sejm_proposal_links(
             found = False
             for row in links:
                 found = True
-                validate_sejm_proposal_link(connection, trace, row["observation_id"])
+                validate_candidate_trace_link(connection, trace, row["observation_id"])
             if not found:
-                raise CandidateTraceRowError("candidate_trace_proposal_parent_mismatch")
+                raise CandidateTraceRowError(code)
     except sqlite3.Error:
-        raise CandidateTraceRowError("candidate_trace_proposal_parent_mismatch") from None
+        raise CandidateTraceRowError(code) from None
 
 
 def validate_candidate_disposition_traces(connection: sqlite3.Connection) -> None:
@@ -136,7 +230,7 @@ def validate_candidate_disposition_traces(connection: sqlite3.Connection) -> Non
     try:
         for row in cursor.execute("SELECT * FROM candidate_disposition_traces"):
             trace = read_candidate_disposition_trace(row)
-            validate_sejm_proposal_links(connection, trace)
+            validate_candidate_trace_links(connection, trace)
     finally:
         cursor.close()
     if (

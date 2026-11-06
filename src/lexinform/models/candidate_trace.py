@@ -413,6 +413,41 @@ class SejmOriginalProposal(BaseModel):
         return self
 
 
+class SejmPrintRepresentation(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    profile: Literal["sejm-print-core-representation-v1"] = "sejm-print-core-representation-v1"
+    relation: Literal["representation_of"] = "representation_of"
+    term: int = Field(gt=0, le=99, strict=True)
+    number: str = Field(pattern=r"^[1-9][0-9]{0,8}$")
+    listing_sha256: Sha256
+    pdf_sha256: Sha256
+    docx_sha256: Sha256
+    pdf_text_sha256: Sha256
+    docx_text_sha256: Sha256
+    core_sha256: Sha256
+    core_chars: int = Field(ge=200, strict=True)
+    selection_id: str = Field(pattern=r"^selection-v1:[0-9a-f]{64}$")
+    edition_id: str = Field(pattern=r"^edition-v1:[0-9a-f]{64}$")
+    docx_extraction_id: str = Field(pattern=r"^extraction-v1:[0-9a-f]{64}$")
+
+    @property
+    def pdf_url(self) -> str:
+        return (
+            f"https://api.sejm.gov.pl/sejm/term{self.term}/prints/{self.number}/{self.number}.pdf"
+        )
+
+    @property
+    def docx_url(self) -> str:
+        return self.pdf_url.removesuffix(".pdf") + "-ustawa.docx"
+
+    @model_validator(mode="after")
+    def distinct_bodies(self) -> Self:
+        if self.pdf_sha256 == self.docx_sha256:
+            raise ValueError("Sejm representation requires distinct PDF and DOCX bodies")
+        return self
+
+
 class CandidateDispositionTrace(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -436,6 +471,9 @@ class CandidateDispositionTrace(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     sejm_original_proposal: SejmOriginalProposal | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    sejm_print_representation: SejmPrintRepresentation | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     required_part_gap: RequiredPartGap | None = Field(
@@ -563,6 +601,8 @@ class CandidateDispositionTrace(BaseModel):
             validate_required_part_gap_parent(self, self.required_part_gap)
         if self.sejm_original_proposal is not None:
             validate_sejm_original_proposal(self, self.sejm_original_proposal)
+        if self.sejm_print_representation is not None:
+            validate_sejm_print_representation(self, self.sejm_print_representation)
         if len(self.model_dump_json(exclude_defaults=True).encode()) > MAX_CANDIDATE_TRACE_BYTES:
             raise ValueError("candidate trace exceeds its metadata limit")
         return self
@@ -587,6 +627,7 @@ class CandidateDispositionTrace(BaseModel):
             and all(item.outcome == "selected" for item in self.dispositions)
             and self.required_exclusions is None
             and self.sejm_original_proposal is None
+            and self.sejm_print_representation is None
         )
 
 
@@ -634,6 +675,44 @@ def validate_sejm_original_proposal(
         or disposition.observed_sha256 != proposal.base_sha256
     ):
         raise ValueError("Sejm proposal requires the observed original PDF identity")
+
+
+def validate_sejm_print_representation(
+    trace: CandidateDispositionTrace, proof: SejmPrintRepresentation
+) -> None:
+    request = trace.requested_document
+    if (
+        request is None
+        or request.kind != "print"
+        or request.url != proof.pdf_url
+        or request.version_basis != (f"sejm/{proof.term}/print/{proof.number}",)
+        or not request.compare_versions
+        or request.senate is not None
+        or request.official_link_conflict
+        or request.alternatives
+        or request.required_urls
+        or request.extra_urls
+        or request.normative_urls
+        or request.amendment_urls
+        or trace.candidate_count != 1
+        or trace.result != "selected"
+        or trace.reason != "version_choice"
+        or trace.selection_state not in ("selected", "unverified")
+        or trace.archive_members is not None
+        or trace.required_exclusions is not None
+        or trace.normative_annex_gap is not None
+        or trace.required_part_gap is not None
+        or trace.sejm_original_proposal is not None
+    ):
+        raise ValueError("Sejm representation requires the selected original singleton print")
+    disposition = _parent_disposition(trace, "version_comparison", 0)
+    if (
+        disposition is None
+        or disposition.outcome != "selected"
+        or disposition.reason != "version_choice"
+        or disposition.observed_sha256 != proof.pdf_sha256
+    ):
+        raise ValueError("Sejm representation requires the observed PDF identity")
 
 
 def validate_required_part_gap_parent(

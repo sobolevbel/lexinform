@@ -31,8 +31,8 @@ from lexinform.adapters.amendment_inputs import (
 from lexinform.adapters.candidate_trace_history import (
     read_candidate_disposition_trace,
     validate_candidate_disposition_traces,
-    validate_sejm_proposal_link,
-    validate_sejm_proposal_links,
+    validate_candidate_trace_link,
+    validate_candidate_trace_links,
 )
 from lexinform.adapters.computation_history import read_result_application
 from lexinform.adapters.content_applications import (
@@ -2074,7 +2074,7 @@ class SqliteBillRepository:
         with self.atomic():
             if self.get_source_observation(observation_id) is None:
                 raise ValueError("a candidate trace requires a recorded source observation")
-            validate_sejm_proposal_link(self._conn, trace, observation_id)
+            validate_candidate_trace_link(self._conn, trace, observation_id)
             self._conn.execute(
                 "INSERT INTO candidate_disposition_traces"
                 " (trace_id, coverage, candidate_count, trace_json) VALUES (?, ?, ?, ?)"
@@ -2101,7 +2101,7 @@ class SqliteBillRepository:
         if row is None:
             return None
         trace = read_candidate_disposition_trace(row)
-        validate_sejm_proposal_links(self._conn, trace)
+        validate_candidate_trace_links(self._conn, trace)
         return trace
 
     def list_candidate_disposition_traces(
@@ -2117,7 +2117,7 @@ class SqliteBillRepository:
             )
         ]
         for trace in traces:
-            validate_sejm_proposal_link(self._conn, trace, observation_id)
+            validate_candidate_trace_link(self._conn, trace, observation_id)
         return traces
 
     @staticmethod
