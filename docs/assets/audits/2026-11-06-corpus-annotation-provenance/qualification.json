@@ -1,0 +1,114 @@
+{
+  "historical_manifest_coverage": {
+    "annotations": {
+      "cases": 177,
+      "excerpt_texts_reverified": 177,
+      "groups": 105,
+      "label_status": {
+        "pending": 177
+      },
+      "manifest_sha256": "c22d7f71d1dff8392dc3ac4aa481017fbcb9b3ea383d1d832ed44cc8a17bbe6b",
+      "raw_identity": "not included in excerpt rows",
+      "source_pin_count": 425,
+      "source_url_rows": 177,
+      "unverified_excerpt_texts": {}
+    },
+    "empty-review": {
+      "cases": 170,
+      "container_pins": 170,
+      "groups": 102,
+      "label_status": {
+        "unknown": 170
+      },
+      "manifest_sha256": "a70c86f3714e6753dd82b00aef4d5294ad24b491c740a8b1b260e8365ca2c0ef",
+      "member_hash_rows": 355,
+      "source_pin_count": 434,
+      "source_url_rows": 170
+    },
+    "holdout": {
+      "cases": 3,
+      "consumed_entities": 13786,
+      "consumed_raw_identities": 12367,
+      "evaluation_use": "unknown",
+      "groups": 3,
+      "historical_archive_coverage": {
+        "checked_size_matching_direct_members": 6032
+      },
+      "manifest_sha256": "3b8846cd6f625a19d1da4033d88b0ed8e4764d4f7b2c013d0a2c8a23f208c820",
+      "originals_reverified": 3,
+      "rows": [
+        {
+          "group": "doc:a6909d881ba9d4798daca1bf5be0ab7de59b88e6950cbb6222f56982727d642d",
+          "id": "rpw:RPW/35346/2026",
+          "labels": "unknown",
+          "metadata_number": "RPW/35346/2026",
+          "originals": [
+            "a6909d881ba9d4798daca1bf5be0ab7de59b88e6950cbb6222f56982727d642d"
+          ]
+        },
+        {
+          "group": "doc:33761f4ec89a0677f646a3de6547c08683bf93c826a67c3daa5f304b367b115e",
+          "id": "rpw:RPW/35635/2026",
+          "labels": "unknown",
+          "metadata_number": "RPW/35635/2026",
+          "originals": [
+            "33761f4ec89a0677f646a3de6547c08683bf93c826a67c3daa5f304b367b115e"
+          ]
+        },
+        {
+          "group": "doc:f1399ebb12e6887b8c316c8130ed0fff3f319905d8880be3a746089954f6fa36",
+          "id": "rpw:RPW/35783/2026",
+          "labels": "unknown",
+          "metadata_number": "RPW/35783/2026",
+          "originals": [
+            "f1399ebb12e6887b8c316c8130ed0fff3f319905d8880be3a746089954f6fa36"
+          ]
+        }
+      ],
+      "source_pin_count": 434
+    }
+  },
+  "generation": {
+    "case_count": 177,
+    "derivative_report_sha256": "9e0386be3efb18602f631652510db0122f91174db11127f46a546013fe3effa9",
+    "health_sha256": "0c673c1e5972f832f2ea36af657d51db6c8e88867d34cd5e2512e942a5cf8688",
+    "legacy_excerpt_without_raw_binding": 0,
+    "unchanged_except_source_binding": true,
+    "verified_derivative_sources": 177
+  },
+  "new_annotation_manifest_sha256": "de0e65ea8b3f639eddc5091156f73b6e8f0f85ab40f5baf6f972457313993bf3",
+  "combined_split": {
+    "case_components_after_raw_aliases": 163,
+    "case_ids_with_conflicting_groups": [],
+    "diagnostic_case_ids": 177,
+    "diagnostic_recorded_groups": 105,
+    "exact_case_ids": 180,
+    "holdout_evaluation_use": "unknown",
+    "human_review_question_counts": {
+      "conflict": 0,
+      "known": 0,
+      "unknown": 0
+    },
+    "independence_confirmed_case_ids": [],
+    "inputs": {
+      "3b8846cd6f625a19d1da4033d88b0ed8e4764d4f7b2c013d0a2c8a23f208c820": "holdout",
+      "62be5a0aeb1cf115a2b7a737f799983dcdce70d0d4f6d95605509baca3ade0b1": "review-form",
+      "a70c86f3714e6753dd82b00aef4d5294ad24b491c740a8b1b260e8365ca2c0ef": "empty-review",
+      "c22d7f71d1dff8392dc3ac4aa481017fbcb9b3ea383d1d832ed44cc8a17bbe6b": "annotations",
+      "c77fdc48db0a85eb74a94e2f2a1bc6c85012acd737ecae458ddd354b2d699b5c": "review-form",
+      "de0e65ea8b3f639eddc5091156f73b6e8f0f85ab40f5baf6f972457313993bf3": "annotations"
+    },
+    "recorded_groups": 108,
+    "reserved_holdout_case_ids": 3,
+    "reserved_overlap_case_ids": [],
+    "reserved_recorded_groups": 3,
+    "runs_by_suite": {
+      "annotations": 2,
+      "empty-review": 1,
+      "holdout": 1,
+      "review-form": 2
+    },
+    "scope": "Supplied sealed runs only; raw aliases record identical bytes.",
+    "version": 1
+  }
+}

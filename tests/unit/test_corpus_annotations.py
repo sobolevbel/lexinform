@@ -88,6 +88,11 @@ def test_pending_queue_can_show_a_pinned_new_derivative_without_replacing_the_ol
     assert result["cases"][0]["status"] == "pending"
     assert result["cases"][0]["read_ranges"][0]["text"].startswith("USTAWA")
     assert result["cases"][0]["used_for_tuning"] is True
+    derivative = json.loads(derived.read_bytes())["observations"]["1"]
+    assert result["cases"][0]["derived_from"] == {
+        "path": derivative["raw_path"],
+        "sha256": derivative["raw_sha256"],
+    }
     assert target.with_suffix(".html").exists()
     assert str(derived) in result["derivative_inputs"]
     (root / "documents/files/1.zip").write_bytes(b"changed raw source")

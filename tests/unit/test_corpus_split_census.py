@@ -246,3 +246,36 @@ def test_holdout_original_aliases_a_read_archive_member(tmp_path: Path) -> None:
     assert result["reserved_overlap_case_ids"] == ["rpw:unseen"]
     assert result["case_components_after_raw_aliases"] == 1
     assert result["recorded_groups"] == 2
+
+
+@pytest.mark.parametrize("valid_pin", [True, False])
+def test_holdout_original_aliases_the_raw_source_of_an_excerpt(
+    tmp_path: Path, valid_pin: bool
+) -> None:
+    holdout = seal(tmp_path, "holdout", "holdout", {"cases": [holdout_case()]})
+    annotations = seal(
+        tmp_path,
+        "annotations",
+        "annotations",
+        {
+            "read_inputs": {"documents/files/1.pdf": ("a" if valid_pin else "b") * 64},
+            "cases": [
+                {
+                    "id": "doc:excerpt",
+                    "group": "excerpt",
+                    "questions": {"role": "unknown"},
+                    "derived_from": {"path": "documents/files/1.pdf", "sha256": "a" * 64},
+                }
+            ],
+        },
+    )
+
+    output = tmp_path / "census.json"
+    if not valid_pin:
+        with pytest.raises(ValueError, match="Derivative source differs"):
+            audit([holdout, annotations], output)
+        assert not output.exists()
+        return
+    result = audit([holdout, annotations], output)
+
+    assert result["reserved_overlap_case_ids"] == ["rpw:unseen"]

@@ -129,10 +129,16 @@ def run(
                 raise ValueError("Review source changed since health inspection")
             text = gzip.decompress(data).decode()
             source_path = str(root / row["text_path"])
+            provenance = {}
             current = derived.get(identity) if derived is not None else None
             if current is not None and derived is not None:
                 text = current
-                source_path = str(derived.base / derived.rows[identity]["extraction"])
+                derivative = derived.rows[identity]
+                source_path = str(derived.base / derivative["extraction"])
+                provenance["derived_from"] = {
+                    "path": derivative["raw_path"],
+                    "sha256": derivative["raw_sha256"],
+                }
             meta = records[identity]
             cases[f"doc:{identity}"] = {
                 "status": "pending",
@@ -159,6 +165,7 @@ def run(
                     "draft_date": "unknown",
                 },
                 "used_for_tuning": True,
+                **provenance,
             }
     if (
         not cases

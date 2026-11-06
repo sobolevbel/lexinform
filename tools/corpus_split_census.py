@@ -62,7 +62,7 @@ def population(suite: str, report: dict[str, Any]) -> dict[str, dict[str, Any]]:
             if suite == "holdout"
             else []
         )
-        members = [
+        additional_raw = [
             leaf["sha256"]
             for leaf in row.get("leaves", ())
             if suite == "empty-review"
@@ -70,7 +70,12 @@ def population(suite: str, report: dict[str, Any]) -> dict[str, dict[str, Any]]:
             and leaf.get("bytes", 0) > 0
             and "sha256" in leaf
         ]
-        if any(not _SHA256.fullmatch(value) for value in (*hashes, *members)):
+        if suite == "annotations" and "derived_from" in row:
+            source = row["derived_from"]
+            if report["read_inputs"].get(source["path"]) != source["sha256"]:
+                raise ValueError("Derivative source differs from its recorded input")
+            additional_raw.append(source["sha256"])
+        if any(not _SHA256.fullmatch(value) for value in (*hashes, *additional_raw)):
             raise ValueError("Queue raw alias is not a SHA-256")
         cases[key] = {
             "title": row.get("title", row.get("name", key)),
@@ -84,7 +89,7 @@ def population(suite: str, report: dict[str, Any]) -> dict[str, dict[str, Any]]:
                 and row["used_for_tuning"] is False
             ),
             "raw": hashes,
-            "member_raw": members,
+            "additional_raw": additional_raw,
         }
     return cases
 
@@ -115,7 +120,7 @@ def audit(runs: list[tuple[Path, str]], output: Path) -> dict[str, Any]:
         for identity, row in cases.items():
             case_groups[identity].add(row["group"])
             case_suites[identity].add(sealed[pin][0])
-            for sha256 in (*row["raw"], *row["member_raw"]):
+            for sha256 in (*row["raw"], *row["additional_raw"]):
                 aliases[sha256].add(identity)
 
     parent = {identity: identity for identity in case_groups}
@@ -157,7 +162,9 @@ def audit(runs: list[tuple[Path, str]], output: Path) -> dict[str, Any]:
         for row in report["cases"]:
             identity = row["id"]
             target = {
-                key: value for key, value in queues[pin][identity].items() if key != "member_raw"
+                key: value
+                for key, value in queues[pin][identity].items()
+                if key != "additional_raw"
             }
             if target["group"] != row["group"] or any(
                 value not in report["answers"].values()

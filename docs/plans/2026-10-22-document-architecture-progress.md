@@ -13277,6 +13277,7 @@ send suffix. The original prepared input and collection receipt remain
 unavailable. DA10.7 remains open.
 
 [Qualification](../assets/audits/2026-11-06-retained-delivery-census/qualification.json).
+Exact release verified for `b2e7809e` via [CI](https://github.com/sobolevbel/lexinform/actions/runs/42279706606) and [relay](https://github.com/sobolevbel/lexinform/actions/runs/42280954430).
 
 <a id="j367"></a>
 
@@ -13299,6 +13300,7 @@ The previous release candidate also restored the actual J365 enabled
 queue twice with the same frozen request and dump bytes.
 
 [Qualification](../assets/audits/2026-11-06-word-nary-source/qualification.json).
+Exact release verified for `224ed04c` via [CI](https://github.com/sobolevbel/lexinform/actions/runs/42281161841) and [relay](https://github.com/sobolevbel/lexinform/actions/runs/42282271102).
 
 <a id="j368"></a>
 
@@ -13349,3 +13351,23 @@ checksums. The three reserved cases still have no verified overlap in
 these seals. Existing human review counts are unchanged.
 
 [Qualification](../assets/audits/2026-11-06-corpus-archive-alias/qualification.json).
+
+<a id="j371"></a>
+
+## J371 — bind derivative review excerpts to verified raw sources
+
+New annotation queues carry the exact raw path and SHA when a pinned
+derivative was selected and its raw input was re-read. The split census
+uses this evidence for overlap checks. Cached excerpts without a verified
+derivative still omit the binding, and existing sealed queues stay intact.
+
+All 177 annotation excerpts and three reserved originals were reverified
+against their historical seals. The historical empty review contains
+170 container pins and 355 leaf hash rows. The newly sealed annotation
+generation verified all 177 raw sources. Its previous case fields and
+excerpts matched the baseline, and the combined census retained 180
+cases, 163 byte-connected components and zero observed holdout overlaps.
+No human labels or evaluation-use records were added. The historical
+holdout archive scan covered size-matching direct members.
+
+[Qualification](../assets/audits/2026-11-06-corpus-annotation-provenance/qualification.json).
