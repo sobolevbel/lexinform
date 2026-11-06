@@ -4,8 +4,9 @@ import argparse
 import gzip
 import io
 import json
-from bisect import bisect_left
+from bisect import bisect_left, bisect_right
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Literal
@@ -14,7 +15,7 @@ from unittest.mock import patch
 import olefile
 from pydantic import BaseModel, Field
 
-from lexinform.adapters.doc_notes import DocNoteLinks, read_doc_note_links
+from lexinform.adapters.doc_notes import DocNoteLink, DocNoteLinks, read_doc_note_links
 from lexinform.adapters.doc_text import (
     _CONTROL,
     _FIELD_BEGIN,
@@ -201,9 +202,77 @@ def _cleanup_positions(raw: str) -> tuple[str, list[int]]:
     return text.strip(), [index for _, index in cleaned[left:right]]
 
 
+def _unit_location(
+    pieces: list[tuple[int, int, int, bool]], cp: int
+) -> tuple[int, int] | Literal["unsupported_reference", "shared_physical_bytes"]:
+    matches = [(index, piece) for index, piece in enumerate(pieces) if piece[0] <= cp < piece[1]]
+    if len(matches) != 1:
+        return "unsupported_reference"
+    index, (first, _, start, compressed) = matches[0]
+    width = 1 if compressed else 2
+    offset = start + width * (cp - first)
+    if any(
+        other != index
+        and fc < offset + width
+        and offset < fc + (end - begin) * (1 if packed else 2)
+        for other, (begin, end, fc, packed) in enumerate(pieces)
+    ):
+        return "shared_physical_bytes"
+    return offset, width
+
+
+def _raw_unit_position(
+    word: bytes,
+    pieces: list[tuple[int, int, int, bool]],
+    spans: list[tuple[int, int]],
+    row_ends: frozenset[int],
+    raw: str,
+    cp: int,
+    marker: str,
+) -> int | None:
+    location = _unit_location(pieces, cp)
+    if isinstance(location, str):
+        return None
+    offset, width = location
+    encoding = "cp1252" if width == 1 else "utf-16-le"
+    try:
+        unit = word[offset : offset + width].decode(encoding)
+    except UnicodeDecodeError:
+        return None
+    altered = word[:offset] + marker.encode(encoding) + word[offset + width :]
+    marked = _read_pieces(altered, pieces, spans=spans, row_ends=row_ends)
+    if marked.count(marker) != 1 or marked.replace(marker, unit) != raw:
+        return None
+    return marked.index(marker)
+
+
+def _project_note_body(
+    link: DocNoteLink, locate: Callable[[int], int | None], origins: list[int], baseline: str
+) -> dict[str, int | str]:
+    start = link.story_start_cp + link.note_start_cp
+    last = link.story_start_cp + link.note_end_cp - 1
+    first_raw = locate(start)
+    last_raw = locate(last)
+    if first_raw is None or last_raw is None or first_raw > last_raw:
+        return {"status": "unverified_boundary"}
+    first_output = bisect_left(origins, first_raw)
+    end_output = bisect_right(origins, last_raw)
+    return {
+        "status": "empty_output" if first_output == end_output else "mapped",
+        "output_start": first_output,
+        "output_end": end_output,
+        "text_sha256": digest(baseline[first_output:end_output].encode()),
+    }
+
+
 def _reference_projection(
-    data: bytes, links: DocNoteLinks, expected: str, *, track_cleanup: bool = False
-) -> list[dict[str, int | str]]:
+    data: bytes,
+    links: DocNoteLinks,
+    expected: str,
+    *,
+    track_cleanup: bool = False,
+    note_body_projection: bool = False,
+) -> list[dict[str, Any]]:
     word, table, extra = _streams(data)
     baseline, pieces, _ = _word_text(word, table, extra)
     if baseline != expected:
@@ -216,32 +285,34 @@ def _reference_projection(
     cleaned, origins = _cleanup_positions(raw) if tracked else ("", [])
     if tracked and cleaned != baseline:
         raise ValueError("Tracked DOC cleanup differs from the legacy projection")
+
+    def locate(cp: int) -> int | None:
+        return _raw_unit_position(word, pieces, spans, row_ends, raw, cp, marker)
+
     observations = []
     for link in links.links:
         cp = link.reference_cp
-        row: dict[str, int | str] = {"kind": link.kind, "reference_cp": cp}
+        row: dict[str, Any] = {"kind": link.kind, "reference_cp": cp}
         observations.append(row)
-        matches = [
-            (index, piece) for index, piece in enumerate(pieces) if piece[0] <= cp < piece[1]
-        ]
-        if not link.numbering_flag or len(matches) != 1:
+        if note_body_projection:
+            if not tracked:
+                row["note_body"] = {"status": "input_limit"}
+            elif marker in raw:
+                row["note_body"] = {"status": "unverified_boundary"}
+            else:
+                row["note_body"] = _project_note_body(link, locate, origins, baseline)
+        if not link.numbering_flag:
             row["status"] = "unsupported_reference"
+            continue
+        location = _unit_location(pieces, cp)
+        if isinstance(location, str):
+            row["status"] = location
             continue
         if marker in baseline:
             row["status"] = "marker_already_present"
             continue
-        index, (first, _, start, compressed) = matches[0]
-        width = 1 if compressed else 2
-        offset = start + width * (cp - first)
-        if any(
-            other != index
-            and fc < offset + width
-            and offset < fc + (end - begin) * (1 if packed else 2)
-            for other, (begin, end, fc, packed) in enumerate(pieces)
-        ):
-            row["status"] = "shared_physical_bytes"
-            continue
-        encoding = "cp1252" if compressed else "utf-16-le"
+        offset, width = location
+        encoding = "cp1252" if width == 1 else "utf-16-le"
         if word[offset : offset + width] != "\x02".encode(encoding):
             raise ValueError("DOC reference probe differs from the qualified source unit")
         altered = word[:offset] + marker.encode(encoding) + word[offset + width :]
@@ -276,6 +347,7 @@ def inspect(
     source_characters: bool = False,
     reference_projection: bool = False,
     track_cleanup: bool = False,
+    note_body_projection: bool = False,
 ) -> dict[str, Any]:
     if source_characters:
         if max_notes != 256:
@@ -298,7 +370,11 @@ def inspect(
             **(
                 {
                     "reference_projection": _reference_projection(
-                        data, text.links, text.legacy_text, track_cleanup=track_cleanup
+                        data,
+                        text.links,
+                        text.legacy_text,
+                        track_cleanup=track_cleanup,
+                        note_body_projection=note_body_projection,
                     )
                 }
                 if reference_projection and text.links is not None and text.links.links
@@ -326,6 +402,7 @@ def run(
     source_characters: bool = False,
     reference_projection: bool = False,
     track_cleanup: bool = False,
+    note_body_projection: bool = False,
     physical_binding: bool = False,
     reference: Path | None = None,
     reference_sha256: str | None = None,
@@ -339,6 +416,8 @@ def run(
         raise ValueError("Replay output must be outside the read-only corpus")
     if max_notes < 0 or max_notes > 256:
         raise ValueError("Replay max_notes must be between 0 and 256")
+    if note_body_projection and not track_cleanup:
+        raise ValueError("DOC note body projection requires tracked cleanup")
     if track_cleanup and not reference_projection:
         raise ValueError("Tracked DOC cleanup requires reference projection")
     if reference_projection and not source_characters:
@@ -393,6 +472,7 @@ def run(
                     source_characters=source_characters,
                     reference_projection=reference_projection,
                     track_cleanup=track_cleanup,
+                    note_body_projection=note_body_projection,
                 )
                 if physical_binding:
                     results[item.sha256]["physical_binding"] = physical_snapshot(
@@ -439,6 +519,14 @@ def run(
                 for item in record.get("reference_projection", [])
             )
         )
+    if note_body_projection:
+        summary["note_body_projection"] = dict(
+            Counter(
+                item["note_body"]["status"]
+                for record in results.values()
+                for item in record.get("reference_projection", [])
+            )
+        )
     report = {
         "version": 1,
         **({"cleanup_tracking": "legacy-text-positions-v1"} if track_cleanup else {}),
@@ -467,7 +555,9 @@ def run(
         "exclusions": [
             "Non-DOC inputs",
             "Nested archive leaves absent from the manifest",
-            "CFSpec and note-body offsets"
+            "CFSpec"
+            if note_body_projection
+            else "CFSpec and note-body offsets"
             if reference_projection
             else "CFSpec/emitted offset checks"
             if source_characters
@@ -492,6 +582,7 @@ def main() -> None:
     parser.add_argument("--source-characters", action="store_true")
     parser.add_argument("--reference-projection", action="store_true")
     parser.add_argument("--track-cleanup", action="store_true")
+    parser.add_argument("--note-body-projection", action="store_true")
     parser.add_argument("--physical-binding", action="store_true")
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--reference-sha256")
@@ -509,6 +600,7 @@ def main() -> None:
                 source_characters=args.source_characters,
                 reference_projection=args.reference_projection,
                 track_cleanup=args.track_cleanup,
+                note_body_projection=args.note_body_projection,
                 physical_binding=args.physical_binding,
                 reference=args.reference,
                 reference_sha256=args.reference_sha256,

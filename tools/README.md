@@ -724,6 +724,10 @@ Add `--track-cleanup` to verify reference offsets against source-character
 origins in the cleaned text. The replay requires exact equality with the
 legacy projection and limits the origin map to one million raw characters.
 
+Add `--note-body-projection` with tracked cleanup to record half-open note
+body ranges and text hashes. Empty output and unverified boundaries remain
+distinct from mapped nonempty text. The report contains no note text.
+
 ### Word revision projection
 
 `python -m tools.replay_word_revisions` accepts a corpus path, a pinned external

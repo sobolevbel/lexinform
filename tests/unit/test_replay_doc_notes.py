@@ -305,3 +305,29 @@ def test_tracked_doc_cleanup_keeps_the_exact_projection_at_a_trimmed_boundary() 
             "output_offset": 1,
         }
     ]
+
+
+@pytest.mark.parametrize(
+    ("note", "expected", "status"),
+    [("\x02note\r\r", "note", "mapped"), ("\x02\r\r", "", "empty_output")],
+)
+def test_doc_note_body_projection_preserves_exact_bounds_and_empty_output(
+    note: str, expected: str, status: str
+) -> None:
+    data = ole_document(*source_notes(note=note))
+
+    report = inspect(
+        data,
+        max_notes=256,
+        source_characters=True,
+        reference_projection=True,
+        track_cleanup=True,
+        note_body_projection=True,
+    )
+
+    (row,) = report["reference_projection"]
+    body = row["note_body"]
+    assert row["status"] == "anchored"
+    assert body["status"] == status
+    assert body["output_end"] - body["output_start"] == len(expected)
+    assert body["text_sha256"] == hashlib.sha256(expected.encode()).hexdigest()

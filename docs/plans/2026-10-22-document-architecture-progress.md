@@ -13798,3 +13798,20 @@ hashes and unrelated observations stayed identical. This check does not
 validate CFSpec or infer note-body spans.
 
 [Qualification](../assets/audits/2026-11-06-doc-note-cleanup-projection/qualification.json).
+
+<a id="j394"></a>
+
+## J394 — map binary DOC note bodies into cleaned output
+
+The opt-in replay maps both declared note boundaries through the same exact
+legacy text comparison used for reference positions. It reports half-open
+output ranges and text hashes, with distinct states for empty output and
+unverified boundaries. It retains no note text.
+
+The pinned corpus qualified 376 nonempty note body ranges and one empty
+range. The nonempty ranges and hashes matched the exploratory probe. All
+377 reference observations and unrelated extraction observations remained
+identical. Synthetic controls cover nonempty and empty note output. CFSpec
+and runtime retention remain separate.
+
+[Qualification](../assets/audits/2026-11-06-doc-note-body-projection/qualification.json).

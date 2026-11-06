@@ -1,0 +1,25 @@
+{
+  "baseline": "3d67f1996fa4ccab564f533629e915f7f9918f5b",
+  "baseline_text_reference_sha256": "03c2d9639ef4e5ecfcbdce4c8df21a08ca70ccdefb30cb868edc3bbf5d43cca1",
+  "body_report_sha256": "de6adda4930a672d1b2b0d097aa8476586015e57b04e85a16818765e9004bc5f",
+  "counts": {
+    "empty_output": 1,
+    "mapped": 376
+  },
+  "empty_body": [
+    {
+      "input_sha256": "0be72d0d1a70b21adbab3075ca42c3f3710f03042b741abbcd6eb7dcdb7a1477",
+      "output_end": 954729,
+      "output_start": 954729,
+      "reference_cp": 781353,
+      "status": "empty_output",
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "independent_body_probe_sha256": "9150f91b380ba3e38a9e9b55cdddfd2ed95e33f3693c98a1f28ac28b06450e49",
+  "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "manifest_sha256": "449d893ca8d9b89933a3ac84abd3b757d0f89298d06fc9ae6e5c31ecb38775d5",
+  "scope": "Cleaned output ranges for retained DOC note declarations; no CFSpec or retained note text.",
+  "tracked_reference_report_sha256": "f55906e8634af93542e9e2a7315853372b798d723b189f4b4fa5898513fd1185",
+  "unchanged_reference_observations": 377
+}
