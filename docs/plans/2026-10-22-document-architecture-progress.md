@@ -12292,4 +12292,28 @@ retained the manifest with byte-exact restore. The fixtures added 325 and
 control rejected save and restore before changing the target repository.
 [Qualification](../assets/audits/2026-11-06-frozen-request-manifest-reader/qualification.json).
 
-Reader only. Deploy before enabling native manifest capture.
+Commit `3182bc9c` passed CI 42207149596 and relay deployment 42208235918
+before native capture was enabled.
+
+<a id="j318"></a>
+
+## J318 — retain the exact frozen request manifest at submission
+
+The submitted item writer captures the J317 manifest from the matching
+submitting intent before removing the queue row. It checks the provider,
+owner, purpose, custom ID and request checksum. Both native submission
+and audited attachment use this boundary. Missing, queued-only, mismatched
+and unrecognized request shapes keep the existing metadata. There is no
+legacy reconstruction.
+
+The paired pinned 2320/2320-A replay used the real OpenAI and Anthropic
+builders and fake SDKs. The submitted manifests matched independent
+structural hashes. After removal of the queue and cleanup of batch text,
+the dumps restored byte-for-byte. Normalizing the new manifest alone
+reproduced baseline SQL. The isolated post-cleanup snapshots grew by
+245 and 249 gzip bytes respectively. Provider payload and request identity
+matched baseline. Unit controls cover missing and mismatched ownership.
+[Qualification](../assets/audits/2026-11-06-frozen-request-manifest-writer/qualification.json).
+
+DA5.6 remains open for incomplete prepared-input profiles. The retained
+hashes support verification of known material after cleanup.

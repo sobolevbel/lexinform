@@ -19,6 +19,15 @@ The queue reader rejoins the exact bytes and verifies the original checksum.
 Submitting after a restart uses the same payload even if model or prompt defaults
 have changed. The compact representation is confined to the queue row.
 
+A confirmed submission retains a `frozen-provider-request-v1` manifest when the
+submitting row matches the item's owner, purpose, provider and request checksum.
+It records payload size, model and prompt version plus SHA-256 digests of canonical
+JSON message, output format and options blocks. OpenAI uses its input and text
+blocks. Anthropic uses the system and message lists and the output format, with
+the remaining output configuration included in options. These digests survive
+batch-body cleanup. They support checking known bytes and carry no replay promise
+after the full payload has expired.
+
 Bill summaries, Sejm stages, RCL snapshots and observed processes use compact JSON. Only fields
 whose explicit default is `None` omit their null value. Required nulls, unknown fields, false,
 zero and empty collections survive. Restoring an older SQL dump compacts these snapshots too;

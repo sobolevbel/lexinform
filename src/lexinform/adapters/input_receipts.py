@@ -15,13 +15,14 @@ from lexinform.adapters.computation_history import read_computation_result
 from lexinform.adapters.document_source_rows import DocumentSourceRows
 from lexinform.adapters.extraction_history import read_extraction_result
 from lexinform.errors import PreparedInputParentError
-from lexinform.json_storage import read_json
+from lexinform.json_storage import canonical_json, read_json
 from lexinform.models import (
     AmendmentInputReceipt,
     AnalysisQuestion,
     ArtifactMetadata,
     BatchIntent,
     BatchItemMeta,
+    BatchProvider,
     BatchRequest,
     DigestItemMeta,
     DocumentSelectionRecord,
@@ -30,7 +31,7 @@ from lexinform.models import (
     PrimaryInputReceipt,
     SupplementInputReceipt,
 )
-from lexinform.models.batch import batch_item_meta, validate_batch_item_meta
+from lexinform.models.batch import FrozenRequestManifest, batch_item_meta, validate_batch_item_meta
 from lexinform.models.input_receipts import (
     LooseMultipartInputReceipt,
     LooseRclInputReceipt,
@@ -134,6 +135,59 @@ def serialize_intent_request(request: BatchRequest) -> str:
             }
             return json.dumps(values, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
     return request.model_dump_json()
+
+
+def capture_frozen_request_manifest(
+    request: BatchRequest, provider: BatchProvider
+) -> FrozenRequestManifest | None:
+    payload = request.payload_json
+    checksum = request.payload_sha256
+    if payload is None or checksum is None:
+        return None
+    request.verify_payload()
+    envelope = read_json(payload)
+    if not isinstance(envelope, dict) or envelope.get("custom_id") != request.custom_id:
+        return None
+    body = envelope.get("body" if provider == "openai" else "params")
+    if not isinstance(body, dict) or body.get("model") != request.model:
+        return None
+    options = body.copy()
+    if provider == "openai":
+        messages = options.pop("input", None)
+        output_format = options.pop("text", None)
+        if (
+            envelope.get("method") != "POST"
+            or envelope.get("url") != "/v1/responses"
+            or not isinstance(messages, list)
+            or not isinstance(output_format, dict)
+            or not isinstance(output_format.get("format"), dict)
+        ):
+            return None
+    else:
+        system = options.pop("system", None)
+        user_messages = options.pop("messages", None)
+        output_config = options.get("output_config")
+        if not isinstance(system, list) or not isinstance(user_messages, list):
+            return None
+        if not isinstance(output_config, dict):
+            return None
+        output_options = output_config.copy()
+        output_format = output_options.pop("format", None)
+        if not isinstance(output_format, dict):
+            return None
+        messages = {"system": system, "messages": user_messages}
+        options["output_config"] = output_options
+    return FrozenRequestManifest(
+        provider=provider,
+        purpose=request.call_kind,
+        request_sha256=checksum,
+        model=request.model,
+        prompt_version=request.prompt_version,
+        payload_bytes=len(payload.encode()),
+        messages_sha256=hashlib.sha256(canonical_json(messages).encode()).hexdigest(),
+        output_format_sha256=hashlib.sha256(canonical_json(output_format).encode()).hexdigest(),
+        options_sha256=hashlib.sha256(canonical_json(options).encode()).hexdigest(),
+    )
 
 
 def intent_metadata(

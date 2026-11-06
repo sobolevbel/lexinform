@@ -1,0 +1,45 @@
+{
+  "baseline_git_sha": "3182bc9cd9c0739f3955f3f8f1ca62144d93de1a",
+  "inputs": {
+    "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+    "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+    "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+    "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+  },
+  "providers": {
+    "anthropic": {
+      "manifest": {
+        "messages_sha256": "19f1cd26878f144924306ac018e6286d322d51eaad97fe1920a20bcb6841de6c",
+        "model": "claude-sonnet-5",
+        "options_sha256": "80881976fa450ddd73799ea9cd5098d157742de8de1ccba7c38957a6a7e30b27",
+        "output_format_sha256": "91e7cc331e34375b5c8b089c26df9068b9fef30fe2b57ac8d665e4156333fa85",
+        "payload_bytes": 64450,
+        "profile": "frozen-provider-request-v1",
+        "prompt_version": "2026-10-v14",
+        "provider": "anthropic",
+        "purpose": "analysis",
+        "request_sha256": "8b217e395dc2a42f452e2f7048e94a41e8a69a793828a705f09f0ccca7bf1211"
+      },
+      "normalized_post_cleanup_sql_sha256": "73ea8e048afa0245fda495f79ae11c85c30f8a8fafcf7941b27f57eaf1e960ce",
+      "baseline_gzip_bytes": 7959,
+      "writer_gzip_bytes": 8208
+    },
+    "openai": {
+      "manifest": {
+        "messages_sha256": "dff19dd46026f1f336cf5fc0dd8375b92013045a6c19ac8f4d8105432633a764",
+        "model": "gpt-6.1-sol",
+        "options_sha256": "ec28012f4c29a1eba73c394a131a6dfbe4d9b5851c1ec95fa12befa0d3bd5dca",
+        "output_format_sha256": "bfdcd18a31b06ffa2f1ceb68125c91da00461b06933f002d48aea014925b148c",
+        "payload_bytes": 67126,
+        "profile": "frozen-provider-request-v1",
+        "prompt_version": "2026-10-v14",
+        "provider": "openai",
+        "purpose": "analysis",
+        "request_sha256": "c4b69c31ca1591a9af621c73688bd798bfb45a13e16701364bb34edb6cde8ada"
+      },
+      "normalized_post_cleanup_sql_sha256": "451de31f6fd49c54e49f315638e24f67b3d2579a4cf3ad51039fa0e50a68dd45",
+      "baseline_gzip_bytes": 7956,
+      "writer_gzip_bytes": 8201
+    }
+  }
+}

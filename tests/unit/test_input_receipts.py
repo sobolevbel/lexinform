@@ -220,6 +220,54 @@ def test_submitted_request_manifest_survives_cleanup_and_rejects_foreign_provide
         assert repo.dump() == retained
 
 
+@pytest.mark.parametrize("intent_state", ["submitting", "queued", "missing", "wrong_owner"])
+def test_manifest_capture_requires_matching_submitting_intent(intent_state: str) -> None:
+    draft = request().model_copy(update={"payload_json": None, "payload_sha256": None})
+    payload = json.dumps(
+        {
+            "custom_id": draft.custom_id,
+            "method": "POST",
+            "url": "/v1/responses",
+            "body": {
+                "model": "gpt-6.1-sol",
+                "input": [],
+                "text": {"format": {"type": "json_schema"}},
+            },
+        }
+    )
+    frozen = draft.freeze(
+        payload_json=payload, model="gpt-6.1-sol", prompt_version="pinned", estimated_cost_usd=0.01
+    )
+    intent = BatchIntent.from_request(
+        request=frozen, meta=meta(), provider="openai", created_at=NOW
+    )
+    batch = LlmBatch(
+        batch_id="manifest",
+        provider="openai",
+        call_kind="analysis",
+        submitted_at=NOW,
+        status="submitted",
+        request_count=1,
+        estimated_cost_usd=0.01,
+    )
+    item = LlmBatchItem.from_intent(batch.batch_id, intent)
+    with closing(SqliteBillRepository(":memory:")) as repo:
+        repo.migrate()
+        if intent_state != "missing":
+            repo.save_batch_intent(intent)
+        if intent_state in ("submitting", "wrong_owner"):
+            repo.mark_batch_intents_submitting([item.custom_id])
+        if intent_state == "wrong_owner":
+            item = item.model_copy(update={"number": "3040"})
+        repo.save_llm_batch(batch, [item])
+        (stored,) = repo.list_llm_batch_items(batch.batch_id)
+        manifest = stored.meta.frozen_request_manifest
+        assert (manifest is not None) == (intent_state == "submitting")
+        if manifest is not None:
+            assert manifest.request_sha256 == frozen.payload_sha256
+            assert manifest.payload_bytes == len(payload.encode())
+
+
 def test_provider_payload_reference_reconstructs_the_exact_frozen_bytes(tmp_path: Path) -> None:
     path = tmp_path / "provider-intent.db"
     text = 'Tekst „ą” with "quotes", a backslash \\ and\nnew line.'

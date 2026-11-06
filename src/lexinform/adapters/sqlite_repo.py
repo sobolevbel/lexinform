@@ -64,6 +64,7 @@ from lexinform.adapters.extraction_history import (
     validate_extraction_results,
 )
 from lexinform.adapters.input_receipts import (
+    capture_frozen_request_manifest,
     intent_metadata,
     parse_batch_request,
     serialize_intent_metadata,
@@ -3854,7 +3855,14 @@ class SqliteBillRepository:
             VALUES (?, ?, ?, ?, ?, ?)
             """,
             [
-                (i.batch_id, i.custom_id, i.call_kind, i.term, i.number, i.meta.model_dump_json())
+                (
+                    i.batch_id,
+                    i.custom_id,
+                    i.call_kind,
+                    i.term,
+                    i.number,
+                    self._submitted_item_metadata(batch.provider, i),
+                )
                 for i in items
             ],
         )
@@ -3867,6 +3875,34 @@ class SqliteBillRepository:
                     )
                 ),
             )
+
+    def _submitted_item_metadata(self, provider: BatchProvider, item: LlmBatchItem) -> str:
+        meta = item.meta
+        if meta.request_sha256 is None or meta.frozen_request_manifest is not None:
+            return meta.model_dump_json()
+        row = self._conn.execute(
+            "SELECT request_json FROM llm_batch_intents"
+            " WHERE custom_id=? AND provider=? AND state='submitting'",
+            (item.custom_id, provider),
+        ).fetchone()
+        if row is None:
+            return meta.model_dump_json()
+        try:
+            request = parse_batch_request(row["request_json"])
+            if (
+                request.custom_id,
+                request.term,
+                request.number,
+                request.call_kind,
+                request.payload_sha256,
+            ) != (item.custom_id, item.term, item.number, item.call_kind, meta.request_sha256):
+                return meta.model_dump_json()
+            manifest = capture_frozen_request_manifest(request, provider)
+        except ValueError, RecursionError:
+            return meta.model_dump_json()
+        if manifest is None:
+            return meta.model_dump_json()
+        return meta.model_copy(update={"frozen_request_manifest": manifest}).model_dump_json()
 
     def list_open_llm_batches(self) -> list[LlmBatch]:
         rows = self._conn.execute(
