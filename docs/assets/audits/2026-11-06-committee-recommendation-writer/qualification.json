@@ -1,0 +1,47 @@
+{
+  "baseline": "abad53c6513735424c64eef9b9b48ad210fea550",
+  "restores_per_case": 2,
+  "byte_deltas_and_proof": {
+    "587": {
+      "sql_bytes": 1654,
+      "gzip_bytes": 2495,
+      "request_sha256": "d63294190b60a28a698c3a917bc94e52371080fd22bd27692991a3a81edbf89c",
+      "normalized_sql_sha256": "03fdc05d1abcfaf2aaabb5453b0b557021323b86537b56a484ce31d46c6a58a6",
+      "reads": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/584/584-uchwa%C5%82a.docx",
+        "https://api.sejm.gov.pl/sejm/term10/prints/587/587.pdf"
+      ],
+      "missing_parent_rejected": [
+        "report",
+        "resolution"
+      ],
+      "proof": {
+        "heading_sha256": "85c07d74334c83e5c67349358facfbfa8efcd9fbdd078cfedb6791d3b5cca42a",
+        "number": "471",
+        "report": "587",
+        "report_date": "2024-07-26",
+        "report_read_id": "artifact-read-v1:539b1f629f7bfdf278db9761fa2b3ca98b2afc221e179d627cc19a1170625bff",
+        "report_sha256": "cc8bf876f8a9d2164d0cfdd2108f531060fe464e30047ed7010fc7d5ac672502",
+        "resolution": "584",
+        "resolution_date": "2024-07-25",
+        "resolution_observation_id": "source-observation-v1:6c826c952daf1cdb97e06edc68f5b38d7cf4fc7a99bf380dc5ffac62dc40aedc",
+        "resolution_read_id": "artifact-read-v1:53162cee7b6e6aca109ad2748fcdc5c8d0f33bcefa0b9ecc6f75cf4259094442",
+        "resolution_sha256": "772fdc7f605947445934f32eb879772f28d46074795a7d7626245553b3a9f5bd",
+        "term": 10
+      }
+    },
+    "849": {
+      "sql_bytes": 0,
+      "gzip_bytes": 0,
+      "request_sha256": "eb7e04cdcfdc49b287624681a57a418c16503f5ae2c2528fed1369bef5b1294e",
+      "normalized_sql_sha256": "82c748e2ba615c6d58eb411c616bd9f31890903cdb9e38f4dbd03d9af2a72167",
+      "reads": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/847/847-uchwa%C5%82a.docx",
+        "https://api.sejm.gov.pl/sejm/term10/prints/849/849.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/prints/849/849.pdf"
+      ],
+      "missing_parent_rejected": [],
+      "proof": null
+    }
+  }
+}

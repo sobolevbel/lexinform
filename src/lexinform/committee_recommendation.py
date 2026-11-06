@@ -2,9 +2,16 @@
 
 import hashlib
 import re
+from dataclasses import dataclass
 from typing import Literal, TypedDict
 
 from lexinform.models import Stage, flatten_stages, senate_position_reported
+
+
+@dataclass(frozen=True)
+class CommitteeRecommendationOrigin:
+    report: Stage
+    resolution: Stage
 
 
 class CommitteeReportEvidence(TypedDict):

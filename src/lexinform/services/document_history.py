@@ -5,6 +5,7 @@ import logging
 from dataclasses import dataclass
 from typing import Literal
 
+from lexinform.committee_recommendation import CommitteeRecommendationOrigin, report_evidence
 from lexinform.document_editions import candidate_edition
 from lexinform.errors import SourceHistoryPersistenceError
 from lexinform.models import (
@@ -12,6 +13,7 @@ from lexinform.models import (
     ArtifactMetadata,
     ArtifactReadIdentity,
     ArtifactReadReceipt,
+    Bill,
     CandidateDispositionTrace,
     DocumentSelectionRecord,
     ExtractionResult,
@@ -21,8 +23,13 @@ from lexinform.models import (
     TextDocument,
 )
 from lexinform.models.artifacts import SelectionPartScope
-from lexinform.models.candidate_trace import SejmAdoptedText, SejmOriginalProposal
+from lexinform.models.candidate_trace import (
+    SejmAdoptedText,
+    SejmCommitteeRecommendation,
+    SejmOriginalProposal,
+)
 from lexinform.models.document_editions import DocumentEdition
+from lexinform.models.document_history import SourceObservationIdentity
 from lexinform.models.sejm import SejmAdoptionOrigin, SejmProposalOrigin, SejmSourceOrigin
 from lexinform.models.source_omissions import (
     BillOmissionOwner,
@@ -77,6 +84,76 @@ class SourceHistoryPair:
     def persist_source_history(self, repo: BillRepository, *, recorded_at: dt.datetime) -> None:
         self.first.persist_source_history(repo, recorded_at=recorded_at)
         self.second.persist_source_history(repo, recorded_at=recorded_at)
+
+
+def record_committee_recommendation(
+    repo: BillRepository,
+    bill: Bill,
+    origin: CommitteeRecommendationOrigin,
+    left: SourceReadCapture | None,
+    right: SourceReadCapture | None,
+    first_pdf_page: str | None,
+) -> None:
+    if (
+        not isinstance(left, DocumentSourceRead)
+        or not isinstance(right, DocumentSourceRead)
+        or left.candidate_trace is None
+        or first_pdf_page is None
+        or origin.report.print_number is None
+        or origin.resolution.print_number is None
+        or origin.report.date is None
+        or origin.resolution.date is None
+        or right.document.senate is None
+        or right.document.senate.scan
+    ):
+        return
+    left_reads = [read for read in left.reads if read.requested_url == left.document.url]
+    right_reads = [
+        read
+        for read in right.reads
+        if (read.requested_url, read.sha256) == (right.document.url, right.document.senate.sha256)
+    ]
+    if len(left_reads) != 1 or len(right_reads) != 1:
+        return
+    (report_read,), (target_read,) = left_reads, right_reads
+    report_observation = SourceObservationIdentity(
+        term=bill.term,
+        number=bill.number,
+        purpose="analysis",
+        document=left.document,
+        selection_id=left.selection.selection_id,
+    )
+    target_observation = SourceObservationIdentity(
+        term=bill.term,
+        number=bill.number,
+        purpose="analysis",
+        document=right.document,
+        selection_id=right.selection.selection_id,
+    )
+    try:
+        heading = report_evidence(
+            first_pdf_page, origin.report.print_number, origin.resolution.print_number
+        )
+        proof = SejmCommitteeRecommendation(
+            term=bill.term,
+            number=bill.number,
+            report=origin.report.print_number,
+            resolution=origin.resolution.print_number,
+            report_date=origin.report.date,
+            resolution_date=origin.resolution.date,
+            heading_sha256=heading["heading_sha256"],
+            report_sha256=report_read.sha256,
+            resolution_sha256=target_read.sha256,
+            report_read_id=report_read.read_id,
+            resolution_read_id=target_read.read_id,
+            resolution_observation_id=target_observation.observation_id,
+        )
+        trace = type(left.candidate_trace).model_validate(
+            {**left.candidate_trace.model_dump(), "sejm_committee_recommendation": proof}
+        )
+        repo.save_candidate_disposition_trace(report_observation.observation_id, trace)
+    except ValueError:
+        log.debug("Sejm committee recommendation proof failed validation")
 
 
 def record_source_read(

@@ -834,6 +834,7 @@ class StatusTrackingService:
             term=detail.term,
             titles=(detail.title_final or "", detail.title),
             owner=bill,
+            process_number=detail.number,
         )
 
     def _retry_documents(self, result: TrackingResult, *, publish: bool, may_wait: bool) -> None:
@@ -921,6 +922,7 @@ class StatusTrackingService:
                 found.document,
                 proposal=found.proposal,
                 recommendation=found.recommendation,
+                recommendation_origin=found.recommendation_origin,
             )
             if context is None:
                 self._defer_document(
@@ -1001,6 +1003,7 @@ class StatusTrackingService:
                 found.document,
                 proposal=found.proposal,
                 recommendation=found.recommendation,
+                recommendation_origin=found.recommendation_origin,
                 may_wait=may_wait,
             )
         except ServiceUnavailableError:

@@ -11706,3 +11706,29 @@ artifact links and download sequences for both pairs as J291.
 The report view is ready for a native recommendation writer. The writer
 still needs to bind the exact report and resolution observations and
 verify their existing physical receipts before persisting the relation.
+
+<a id="j293"></a>
+
+## J293 — record the committee recommendation during amendment preparation
+
+The ordinary amendment path records a bounded recommendation trace when
+the owner and official process stage match, the resolution is confirmed
+by its existing reader, and the report's first page names that exact
+resolution and recommends action. The recommendation uses the report's
+existing candidate trace and refers to the resolution observation.
+Lookups and restore verify both same-owner singleton selections and
+their exact artifact read receipts. The proof makes no adoption claim.
+
+The offline native run against `abad53c6` used the two pinned pairs
+from J291 and queued a request without submitting it. Both cases retained
+the same request hashes, download sequences and SQL after excluding the
+new trace and its source link. Report 587 added one trace after two
+restores. Removing either artifact read caused restore to refuse the
+dump while preserving the valid state. Report 849 added no trace.
+In this fixture the 587 trace and source link added 1,654 SQL bytes
+and changed the gzip size by 2,495 bytes. The control added zero bytes.
+[Qualification](../assets/audits/2026-11-06-committee-recommendation-writer/qualification.json).
+
+This covers the verified mixed-recommendation text profile. Other
+recommendation forms, representation and supersession still require
+their own qualification under DA4.7.

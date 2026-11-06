@@ -25,6 +25,7 @@ class CandidateTraceRowError(ValueError):
             "candidate_trace_proposal_parent_mismatch",
             "candidate_trace_representation_parent_mismatch",
             "candidate_trace_adoption_parent_mismatch",
+            "candidate_trace_recommendation_parent_mismatch",
         ],
     ) -> None:
         self.code = code
@@ -111,10 +112,75 @@ def validate_sejm_proposal_link(
         raise CandidateTraceRowError("candidate_trace_proposal_parent_mismatch") from None
 
 
+def validate_committee_recommendation_link(
+    connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
+) -> None:
+    proof = trace.sejm_committee_recommendation
+    if proof is None:
+        return
+    try:
+        reader = ContentSourceRows(connection)
+        report = reader.get_source_observation(observation_id)
+        resolution = reader.get_source_observation(proof.resolution_observation_id)
+        if (
+            report is None
+            or resolution is None
+            or report.document != trace.requested_document
+            or resolution.document.kind != "senate_amendments"
+            or not resolution.document.url.startswith(proof.resolution_url_prefix)
+            or resolution.document.senate is None
+            or resolution.document.senate.scan
+            or (resolution.document.senate.sha256, resolution.document.senate.adopted_on)
+            != (proof.resolution_sha256, proof.resolution_date)
+        ):
+            raise ValueError("Recommendation requires its two exact source observations")
+        with closing(connection.cursor()) as cursor:
+            cursor.row_factory = sqlite3.Row
+            for source, sha, read_id in (
+                (report, proof.report_sha256, proof.report_read_id),
+                (resolution, proof.resolution_sha256, proof.resolution_read_id),
+            ):
+                record = reader.get_document_selection(source.selection_id)
+                if (
+                    (source.term, source.number, source.purpose)
+                    != (proof.term, proof.number, "analysis")
+                    or record is None
+                    or (source is report and record.selection.state != trace.selection_state)
+                    or len(record.selection.parts) != 1
+                    or (part := record.selection.parts[0]).members
+                    or (part.url, part.source_sha256) != (source.document.url, sha)
+                ):
+                    raise ValueError("Recommendation source differs from its singleton selection")
+                row = cursor.execute(
+                    "SELECT r.*, a.byte_size AS artifact_size FROM artifact_reads AS r"
+                    " JOIN artifacts AS a ON a.sha256=r.artifact_sha256"
+                    " JOIN selection_artifacts AS link ON link.artifact_sha256=a.sha256"
+                    " WHERE r.read_id=? AND link.selection_id=?"
+                    " AND link.part_scope='parts' AND link.part_index=0",
+                    (read_id, source.selection_id),
+                ).fetchone()
+                if row is None or (row["requested_url"], row["artifact_sha256"]) != (
+                    source.document.url,
+                    sha,
+                ):
+                    raise ValueError("Recommendation requires an exact artifact read")
+                receipt = ArtifactReadReceipt(
+                    requested_url=source.document.url,
+                    sha256=sha,
+                    byte_size=row["byte_size"],
+                    recorded_at=row["recorded_at"],
+                )
+                if receipt.read_id != read_id or receipt.byte_size != row["artifact_size"]:
+                    raise ValueError("Recommendation read differs from its artifact")
+    except ValueError, TypeError, RecursionError, IndexError, KeyError, sqlite3.Error:
+        raise CandidateTraceRowError("candidate_trace_recommendation_parent_mismatch") from None
+
+
 def validate_candidate_trace_link(
     connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
 ) -> None:
     validate_sejm_proposal_link(connection, trace, observation_id)
+    validate_committee_recommendation_link(connection, trace, observation_id)
     proof = trace.sejm_print_representation or trace.sejm_adopted_text
     if proof is None:
         return
@@ -207,10 +273,13 @@ def validate_candidate_trace_links(
 ) -> None:
     code: Literal[
         "candidate_trace_adoption_parent_mismatch",
+        "candidate_trace_recommendation_parent_mismatch",
         "candidate_trace_representation_parent_mismatch",
         "candidate_trace_proposal_parent_mismatch",
     ]
-    if trace.sejm_adopted_text is not None:
+    if trace.sejm_committee_recommendation is not None:
+        code = "candidate_trace_recommendation_parent_mismatch"
+    elif trace.sejm_adopted_text is not None:
         code = "candidate_trace_adoption_parent_mismatch"
     elif trace.sejm_print_representation is not None:
         code = "candidate_trace_representation_parent_mismatch"

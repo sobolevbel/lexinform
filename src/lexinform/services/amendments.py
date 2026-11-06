@@ -1,7 +1,12 @@
 import logging
+from contextlib import suppress
 from dataclasses import dataclass
 from zoneinfo import ZoneInfo
 
+from lexinform.committee_recommendation import (
+    CommitteeRecommendationOrigin,
+    official_recommendation_stages,
+)
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     AmendmentRevisionTarget,
@@ -35,6 +40,7 @@ class AmendmentsSource:
     document: TextDocument
     proposal: str | None = None
     recommendation: TextDocument | None = None
+    recommendation_origin: CommitteeRecommendationOrigin | None = None
 
 
 def amendments_source(
@@ -46,6 +52,7 @@ def amendments_source(
     term: int,
     titles: tuple[str, ...],
     owner: Bill | None = None,
+    process_number: str | None = None,
 ) -> AmendmentsSource | None:
     """A report on the Senate's amendments lists only votes: the resolution is read with it."""
     senate = stage if stage.stage_type == "SenatePosition" else None
@@ -77,7 +84,24 @@ def amendments_source(
         return AmendmentsSource(document)
     assert stage.report_file is not None, "amendments_stage takes a report only with its file"
     report = TextDocument(url=stage.report_file, kind="committee_amendments")
-    return AmendmentsSource(document, stage.proposal, report)
+    origin = None
+    if (
+        owner is not None
+        and owner.number == process_number
+        and owner.term == term == info.term
+        and info.number == senate.print_number
+        and info.process_prints == (owner.number,)
+        and stage.print_number is not None
+    ):
+        with suppress(ValueError):
+            pair = official_recommendation_stages(
+                stages,
+                report=stage.print_number,
+                resolution=senate.print_number,
+                report_url=report.url,
+            )
+            origin = CommitteeRecommendationOrigin(*pair)
+    return AmendmentsSource(document, stage.proposal, report, origin)
 
 
 class AmendmentsService:
@@ -161,6 +185,7 @@ class AmendmentsService:
                     term=bill.term,
                     titles=(snapshot.summary.title,),
                     owner=bill,
+                    process_number=snapshot.number,
                 )
             if source is None:
                 raise ValueError("Полный текст поправок Сената не подтверждён по содержимому")
@@ -191,6 +216,7 @@ class AmendmentsService:
                 ),
                 proposal=source.proposal,
                 recommendation=source.recommendation,
+                recommendation_origin=source.recommendation_origin,
                 force_id=force_id,
                 original_input=retained if retained.snapshot is not None else None,
             )

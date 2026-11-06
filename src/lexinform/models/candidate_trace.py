@@ -481,6 +481,44 @@ class SejmAdoptedText(BaseModel):
         return self
 
 
+class SejmCommitteeRecommendation(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    profile: Literal["sejm-committee-recommendation-v1"] = "sejm-committee-recommendation-v1"
+    term: int = Field(gt=0, le=99, strict=True)
+    number: str = Field(pattern=r"^[1-9][0-9]{0,8}$")
+    report: str = Field(pattern=r"^[1-9][0-9]{0,8}$")
+    resolution: str = Field(pattern=r"^[1-9][0-9]{0,8}$")
+    report_date: dt.date
+    resolution_date: dt.date
+    heading_sha256: Sha256
+    report_sha256: Sha256
+    resolution_sha256: Sha256
+    report_read_id: str = Field(pattern=r"^artifact-read-v1:[0-9a-f]{64}$")
+    resolution_read_id: str = Field(pattern=r"^artifact-read-v1:[0-9a-f]{64}$")
+    resolution_observation_id: str = Field(pattern=r"^source-observation-v1:[0-9a-f]{64}$")
+
+    @property
+    def report_url(self) -> str:
+        return (
+            f"https://api.sejm.gov.pl/sejm/term{self.term}/prints/{self.report}/{self.report}.pdf"
+        )
+
+    @property
+    def resolution_url_prefix(self) -> str:
+        return f"https://api.sejm.gov.pl/sejm/term{self.term}/prints/{self.resolution}/"
+
+    @model_validator(mode="after")
+    def distinct_earlier_resolution(self) -> Self:
+        if (
+            len({self.number, self.report, self.resolution}) != 3
+            or self.resolution_date >= self.report_date
+            or self.report_sha256 == self.resolution_sha256
+        ):
+            raise ValueError("Recommendation requires a distinct earlier Senate resolution")
+        return self
+
+
 class CandidateDispositionTrace(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -510,6 +548,9 @@ class CandidateDispositionTrace(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     sejm_adopted_text: SejmAdoptedText | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    sejm_committee_recommendation: SejmCommitteeRecommendation | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     required_part_gap: RequiredPartGap | None = Field(
@@ -641,6 +682,8 @@ class CandidateDispositionTrace(BaseModel):
             validate_sejm_print_representation(self, self.sejm_print_representation)
         if self.sejm_adopted_text is not None:
             validate_sejm_adopted_text(self, self.sejm_adopted_text)
+        if self.sejm_committee_recommendation is not None:
+            validate_sejm_committee_recommendation(self, self.sejm_committee_recommendation)
         if len(self.model_dump_json(exclude_defaults=True).encode()) > MAX_CANDIDATE_TRACE_BYTES:
             raise ValueError("candidate trace exceeds its metadata limit")
         return self
@@ -667,6 +710,7 @@ class CandidateDispositionTrace(BaseModel):
             and self.sejm_original_proposal is None
             and self.sejm_print_representation is None
             and self.sejm_adopted_text is None
+            and self.sejm_committee_recommendation is None
         )
 
 
@@ -777,6 +821,25 @@ def validate_sejm_adopted_text(trace: CandidateDispositionTrace, proof: SejmAdop
         or disposition.observed_sha256 != proof.pdf_sha256
     ):
         raise ValueError("Adopted text requires the observed PDF identity")
+
+
+def validate_sejm_committee_recommendation(
+    trace: CandidateDispositionTrace, proof: SejmCommitteeRecommendation
+) -> None:
+    disposition = _parent_disposition(trace, "fallback", 0)
+    if (
+        not trace.model_copy(update={"sejm_committee_recommendation": None}).is_routine_singleton
+        or trace.requested_document
+        != TextDocument(url=proof.report_url, kind="committee_amendments")
+        or trace.reason != "first_acceptable_candidate"
+        or trace.archive_members is not None
+        or trace.normative_annex_gap is not None
+        or trace.required_part_gap is not None
+        or disposition is None
+        or disposition.reason != "first_acceptable_candidate"
+        or disposition.observed_sha256 != proof.report_sha256
+    ):
+        raise ValueError("Recommendation requires its exact selected committee report")
 
 
 def validate_required_part_gap_parent(

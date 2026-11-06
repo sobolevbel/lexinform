@@ -20,6 +20,7 @@ from pydantic import BaseModel
 
 from lexinform.analysis_records import RecordFactory, UsageFields
 from lexinform.commission_reviews import COMMISSION_ROLES
+from lexinform.committee_recommendation import CommitteeRecommendationOrigin
 from lexinform.concurrency import fan_out
 from lexinform.document_admissibility import analysis_admission, review_admission
 from lexinform.document_fingerprints import text_digest as text_digest
@@ -186,6 +187,7 @@ from lexinform.services.cost import CostLedger
 from lexinform.services.document_history import (
     DocumentSourceRead,
     SourceReadCapture,
+    record_committee_recommendation,
     record_source_read,
 )
 from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
@@ -402,6 +404,7 @@ class _Loaded:
     selection: DocumentSelection = DocumentSelection()
     projection: TextProjection | None = None
     source_read: SourceReadCapture | None = None
+    first_pdf_page: str | None = None
     rcl_projection: Literal["annexes", "annexes_and_amendments"] | None = None
 
     @property
@@ -1343,6 +1346,7 @@ class AnalysisService:
         *,
         proposal: str | None = None,
         recommendation: TextDocument | None = None,
+        recommendation_origin: CommitteeRecommendationOrigin | None = None,
         force_id: str = "",
         original_input: AmendmentInputAvailability | None = None,
     ) -> Waiting | Publication:
@@ -1371,7 +1375,7 @@ class AnalysisService:
                 if self._too_expensive_to_digest(loaded):
                     raise ValueError("Разбор поправок превышает лимит стоимости документа")
                 context = self._amendments_context_of(
-                    bill, document, loaded, proposal, recommendation
+                    bill, document, loaded, proposal, recommendation, recommendation_origin
                 )
             local_read = read_timing(capture)
         content_key = _memo_key(bill, "amendments", context)
@@ -2443,22 +2447,38 @@ class AnalysisService:
             if capture is not None:
                 capture.finish(document, error)
 
-    def _load_secondary_text(self, bill: Bill, document: TextDocument) -> _Loaded:
+    def _load_secondary_text(
+        self, bill: Bill, document: TextDocument, *, retain_routine_trace: bool = False
+    ) -> _Loaded:
         """Record a secondary consumer's completed source read before using its input."""
         try:
             loaded = self._load_source(
                 document,
                 trim=False,
+                retain_routine_trace=retain_routine_trace,
                 owner=SourceReferenceOmissionOwner(
                     term=bill.term, number=bill.number, purpose="analysis"
                 ),
             )
         except _SourceReadError as failure:
-            self._record_source_read(bill, failure.source)
+            self._record_secondary_source(bill, failure.source, retain_routine_trace)
             raise failure.cause from failure
         if loaded.source_read is not None:
-            self._record_source_read(bill, loaded.source_read)
+            self._record_secondary_source(bill, loaded.source_read, retain_routine_trace)
         return loaded
+
+    def _record_secondary_source(
+        self, bill: Bill, source: SourceReadCapture, retained_routine: bool
+    ) -> None:
+        if (
+            retained_routine
+            and isinstance(source, DocumentSourceRead)
+            and source.candidate_trace is not None
+            and source.candidate_trace.is_routine_singleton
+            and source.candidate_trace.archive_members is None
+        ):
+            source = replace(source, candidate_trace=None)
+        self._record_source_read(bill, source)
 
     def _load_amendments_text(self, bill: Bill, document: TextDocument) -> _Loaded:
         if document.kind != "senate_amendments":
@@ -2542,8 +2562,11 @@ class AnalysisService:
         *,
         proposal: str | None = None,
         recommendation: TextDocument | None = None,
+        recommendation_origin: CommitteeRecommendationOrigin | None = None,
     ) -> AmendmentsContext | None:
-        prepared = self._prepare_amendments(bill, document, proposal, recommendation)
+        prepared = self._prepare_amendments(
+            bill, document, proposal, recommendation, recommendation_origin
+        )
         return prepared[0] if prepared is not None else None
 
     def _prepare_amendments(
@@ -2552,6 +2575,7 @@ class AnalysisService:
         document: TextDocument,
         proposal: str | None,
         recommendation: TextDocument | None,
+        recommendation_origin: CommitteeRecommendationOrigin | None,
     ) -> tuple[AmendmentsContext, _Loaded] | None:
         assert bill.analysis is not None
         loaded = self._load_amendments_text(bill, document)
@@ -2564,7 +2588,9 @@ class AnalysisService:
                 document.url,
             )
             return None
-        return self._amendments_context_of(bill, document, loaded, proposal, recommendation), loaded
+        return self._amendments_context_of(
+            bill, document, loaded, proposal, recommendation, recommendation_origin
+        ), loaded
 
     def _amendments_context_of(
         self,
@@ -2573,13 +2599,25 @@ class AnalysisService:
         loaded: _Loaded,
         proposal: str | None,
         recommendation: TextDocument | None,
+        recommendation_origin: CommitteeRecommendationOrigin | None,
     ) -> AmendmentsContext:
         assert bill.analysis is not None
         report = None
         if recommendation is not None:
-            read = self._load_secondary_text(bill, recommendation)
+            read = self._load_secondary_text(
+                bill, recommendation, retain_routine_trace=recommendation_origin is not None
+            )
             if read.text.strip() and not read.truncated:
                 report = read.text
+                if recommendation_origin is not None:
+                    record_committee_recommendation(
+                        self._repo,
+                        bill,
+                        recommendation_origin,
+                        read.source_read,
+                        loaded.source_read,
+                        read.first_pdf_page,
+                    )
             else:
                 log.info("%s: %s not read whole", bill.number, recommendation.url)
         return AmendmentsContext(
@@ -2603,6 +2641,7 @@ class AnalysisService:
         *,
         proposal: str | None = None,
         recommendation: TextDocument | None = None,
+        recommendation_origin: CommitteeRecommendationOrigin | None = None,
         may_wait: bool = False,
         context: AmendmentsContext | None = None,
     ) -> AmendmentsRecord | Waiting | None:
@@ -2615,7 +2654,9 @@ class AnalysisService:
         ctx = context
         with optional_read_timing(self._loader, self._clock.now) as capture:
             if ctx is None:
-                prepared = self._prepare_amendments(bill, document, proposal, recommendation)
+                prepared = self._prepare_amendments(
+                    bill, document, proposal, recommendation, recommendation_origin
+                )
                 if prepared is None:
                     return None
                 ctx, loaded = prepared
@@ -3694,11 +3735,22 @@ class AnalysisService:
         trim: bool = True,
         owner: SourceReferenceOmissionOwner | None = None,
         sejm_origin: SejmSourceOrigin | None = None,
+        retain_routine_trace: bool = False,
     ) -> _Loaded:
         if owner is None or document is None:
-            return self._load_source_inner(document, trim=trim, sejm_origin=sejm_origin)
+            return self._load_source_inner(
+                document,
+                trim=trim,
+                sejm_origin=sejm_origin,
+                retain_routine_trace=retain_routine_trace,
+            )
         with self._loader.source_omission_scope(owner, document):
-            return self._load_source_inner(document, trim=trim, sejm_origin=sejm_origin)
+            return self._load_source_inner(
+                document,
+                trim=trim,
+                sejm_origin=sejm_origin,
+                retain_routine_trace=retain_routine_trace,
+            )
 
     def _load_source_inner(
         self,
@@ -3706,6 +3758,7 @@ class AnalysisService:
         *,
         trim: bool = True,
         sejm_origin: SejmSourceOrigin | None = None,
+        retain_routine_trace: bool = False,
     ) -> _Loaded:
         """Prepare admitted text or pages, propagating failures and blocked selections."""
         if document is None:
@@ -3714,7 +3767,7 @@ class AnalysisService:
         try:
             document, file = (
                 self._loader.select_document(document, retain_routine_trace=True)
-                if sejm_origin is not None
+                if sejm_origin is not None or retain_routine_trace
                 else self._loader.select_document(document)
             )
         except ServiceUnavailableError:
@@ -3733,7 +3786,13 @@ class AnalysisService:
         if sejm_origin is not None and isinstance(source, DocumentSourceRead):
             source = replace(source, sejm_origin=sejm_origin)
         try:
-            return replace(self._load_selected(document, file, trim=trim), source_read=source)
+            return replace(
+                self._load_selected(document, file, trim=trim),
+                source_read=source,
+                first_pdf_page=file.first_pdf_page.text
+                if file.first_pdf_page is not None
+                else None,
+            )
         except Exception as exc:
             raise _SourceReadError(source, exc) from exc
 
