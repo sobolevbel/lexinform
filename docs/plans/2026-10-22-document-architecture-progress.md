@@ -11683,3 +11683,26 @@ a recommendation. A later adoption decision requires separate evidence.
 The native `DocumentTextExtractor.extract_parts` sees one direct root
 PDF in each case and reproduces both outcomes without a second parse.
 [First-page hashes and character counts](../assets/audits/2026-11-06-committee-recommendation-contract/physical-observations.json).
+
+<a id="j292"></a>
+
+## J292 — carry the root PDF first page through source selection
+
+The structured extractor supplies an ephemeral first page from its existing
+physical PDF walk. The loader keeps it with the root file through its cache
+and normal selection. A PDF inside an archive, a failed first page, or a page
+over 4,096 characters has no view. A readable but empty first page stays
+empty even if a later page has text. The page is excluded from serialized
+extraction output and does not enter state or the model request.
+
+The existing recommendation replay now consumes that view through
+`TextLoader.select_document`. The pinned 587 → 584 proof matches J291
+after excluding the code fingerprint fields. The pinned 849 → 847 pair
+still fails the heading check. An offline preparation through the normal
+amendment path produced the same request hashes, source observations,
+artifact links and download sequences for both pairs as J291.
+[Positive and empty-page source pins](#j291).
+
+The report view is ready for a native recommendation writer. The writer
+still needs to bind the exact report and resolution observations and
+verify their existing physical receipts before persisting the relation.

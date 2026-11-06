@@ -166,6 +166,7 @@ def finish_bundle(bundle: BundleAssembly, document: TextDocument) -> LoadedFile:
         PAGE_BREAK.join(bundle.texts),
         pages=bundle.main.pages,
         sha256=bundle.main.sha256,
+        first_pdf_page=bundle.main.first_pdf_page,
         opaque_failure_prose=bundle.opaque_failure_prose,
         selection=bundle.main.selection.model_copy(
             update={
@@ -187,6 +188,7 @@ def finalize_selection(document: TextDocument, file: LoadedFile) -> LoadedFile:
         pages=file.pages,
         oversize=file.oversize,
         sha256=file.sha256,
+        first_pdf_page=file.first_pdf_page,
         opaque_failure_prose=file.opaque_failure_prose,
         selection=bill_selection(selection, source_basis=document.version_basis),
     )

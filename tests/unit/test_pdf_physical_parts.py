@@ -10,14 +10,17 @@ from lexinform.models import (
     PdfPageText,
     PdfPartExtraction,
     PdfTextExtraction,
+    TextDocument,
 )
+from lexinform.services.documents import TextLoader
 from tests.fakes import FakeTextExtractor
 from tests.unit.test_physical_extraction import archive
 
 
 class PdfWithPages(FakeTextExtractor):
-    def __init__(self) -> None:
+    def __init__(self, second_page: str = "USTAWA") -> None:
         super().__init__("USTAWA", page_count=3)
+        self.second_page = second_page
         self.page_reads = 0
         self.string_reads = 0
 
@@ -32,7 +35,7 @@ class PdfWithPages(FakeTextExtractor):
             pypdf_version="fixture",
             pages=(
                 PdfPageText(number=1),
-                PdfPageText(number=2, text="USTAWA"),
+                PdfPageText(number=2, text=self.second_page),
                 PdfPageText(number=3),
             ),
         )
@@ -132,3 +135,33 @@ def test_pdf_records_cannot_claim_an_absent_or_different_physical_part(problem: 
 
     with pytest.raises(ValidationError, match="physical part|physical bytes"):
         ExtractedParts(input_sha256=sha, parts=parts, pdf_pages=links)
+
+
+def test_root_first_page_stays_in_memory_and_survives_a_loader_cache_hit() -> None:
+    data = b"%PDF-1.7 fixture"
+    pdf = PdfWithPages("Art. 1. Przepisy ustawy stosuje się do dokumentów. " * 100)
+    reader = extractor(pdf)
+    extraction = reader.extract_document_with_provenance(data)
+    report_url = "https://example.test/report.pdf"
+
+    def download(url: str, *, max_bytes: int | None = None) -> bytes:
+        assert url == report_url and max_bytes == 1024
+        return data
+
+    loader = TextLoader({"example.test": download}, reader, max_bytes=1024)
+    first = loader.read(report_url)
+    _, cached = loader.select_document(TextDocument(url=report_url, kind="committee_amendments"))
+    assert cached.text is not None
+
+    assert first.first_pdf_page == cached.first_pdf_page == PdfPageText(number=1)
+    assert extraction.first_pdf_page == first.first_pdf_page
+    assert "first_pdf_page" not in extraction.model_dump()
+    assert pdf.page_reads == 2
+
+
+def test_a_single_archived_pdf_does_not_offer_a_root_first_page() -> None:
+    reader = extractor(PdfWithPages())
+
+    result = reader.extract_document_with_provenance(archive({"report.pdf": b"%PDF-1.7 fixture"}))
+
+    assert result.first_pdf_page is None

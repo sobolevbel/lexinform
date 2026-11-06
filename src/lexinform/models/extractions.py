@@ -7,7 +7,7 @@ from typing import Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from lexinform.models.doc_notes import MAX_DOC_NOTE_SUMMARY_BYTES, DocNoteSummary
-from lexinform.models.documents import ExtractedDocument
+from lexinform.models.documents import ExtractedDocument, ExtractedParts, PdfPageText
 from lexinform.models.odt_notes import (
     MAX_ODT_NOTE_EVENTS,
     Count,
@@ -433,11 +433,31 @@ class SelectionExtractionReference(BaseModel):
     artifact_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
+MAX_ROOT_PDF_FIRST_PAGE_CHARS = 4096
+
+
+def root_pdf_first_page(physical: ExtractedParts) -> PdfPageText | None:
+    if len(physical.parts) != 1 or len(physical.pdf_pages) != 1:
+        return None
+    (part,) = physical.parts
+    (pdf,) = physical.pdf_pages
+    if part.members or part.sha256 != physical.input_sha256:
+        return None
+    pages = pdf.extraction.pages
+    if pdf.extraction.error_type is not None or not pages:
+        return None
+    first = pages[0]
+    if first.error_type is not None or len(first.text) > MAX_ROOT_PDF_FIRST_PAGE_CHARS:
+        return None
+    return first
+
+
 class DocumentExtraction(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     document: ExtractedDocument
     result: ExtractionResult
+    first_pdf_page: PdfPageText | None = Field(default=None, exclude=True, repr=False)
 
 
 def extraction_metadata_sha256(value: object) -> str:

@@ -1162,8 +1162,10 @@ class TextLoader:
                 optional_archive_policy_capture() as capture,
                 self._physical_invocation(artifact) as invocation,
             ):
+                first_pdf_page = None
                 if isinstance(self._extractor, ProvenanceTextExtractor):
                     observed = self._extractor.extract_document_with_provenance(data)
+                    first_pdf_page = observed.first_pdf_page
                     text = observed.document.text
                     selection = observed.document.selection
                     with self._lock:
@@ -1210,13 +1212,18 @@ class TextLoader:
                 log.info(
                     "%s: %d chars extracted in %.1fs", url, len(text), time.perf_counter() - started
                 )
-                if len(text.strip()) < MIN_TEXT_CHARS:
+                has_text = len(text.strip()) >= MIN_TEXT_CHARS
+                if not has_text:
                     log.warning(
                         "%s yielded almost no text (%d chars, %d pages)", url, len(text), pages
                     )
-                    loaded = LoadedFile(None, pages=pages, sha256=digest, selection=selection)
-                else:
-                    loaded = LoadedFile(text, pages=pages, sha256=digest, selection=selection)
+                loaded = LoadedFile(
+                    text if has_text else None,
+                    pages=pages,
+                    sha256=digest,
+                    selection=selection,
+                    first_pdf_page=first_pdf_page,
+                )
                 completed = True
         finally:
             try:

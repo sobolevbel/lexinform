@@ -6,7 +6,7 @@ from typing import Annotated, Literal, Self, get_args
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from lexinform.models.candidate_trace import CandidateDispositionTrace
-from lexinform.models.documents import DocumentSelection
+from lexinform.models.documents import DocumentSelection, PdfPageText
 
 
 class HostDocumentReads(BaseModel):
@@ -161,6 +161,7 @@ class LoadedFile:
     sha256: str | None = None
     selection: DocumentSelection = DocumentSelection()
     candidate_trace: CandidateDispositionTrace | None = None
+    first_pdf_page: PdfPageText | None = field(default=None, compare=False, repr=False)
     opaque_failure_prose: bool = field(default=False, compare=False, repr=False)
 
     @property

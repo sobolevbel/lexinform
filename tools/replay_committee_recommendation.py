@@ -8,14 +8,17 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-from lexinform.adapters.document_text import DocxTextExtractor
+from lexinform.adapters.doc_text import DocTextExtractor
+from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.sejm_api import parse_print, parse_process_detail
 from lexinform.committee_recommendation import (
     official_recommendation_stages,
     report_evidence,
 )
+from lexinform.models import TextDocument
 from lexinform.senate_documents import inspect_senate_resolution, senate_subject, senate_subject_key
+from lexinform.services.documents import TextLoader
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 from tools.replay_proposal_edition import PinnedInput, official_print
@@ -85,10 +88,20 @@ def prove(
         resolution=case.resolution,
         report_url=report_attachment.url,
     )
-    extracted = PypdfTextExtractor().extract_pages(report_pdf)
-    if not extracted.pages or extracted.pages[0].error_type is not None:
-        raise ValueError("Report heading has no readable first page")
-    evidence = report_evidence(extracted.pages[0].text, case.report, case.resolution)
+
+    def report_body(url: str, *, max_bytes: int | None = None) -> bytes:
+        if url != stage.report_file or (max_bytes is not None and len(report_pdf) > max_bytes):
+            raise ValueError("Unexpected report read")
+        return report_pdf
+
+    extractor = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
+    loader = TextLoader({"api.sejm.gov.pl": report_body}, extractor, max_bytes=len(report_pdf))
+    _, loaded = loader.select_document(
+        TextDocument(url=report_attachment.url, kind="committee_amendments")
+    )
+    if loaded.first_pdf_page is None:
+        raise ValueError("Report heading has no readable bounded first page")
+    evidence = report_evidence(loaded.first_pdf_page.text, case.report, case.resolution)
     word = DocxTextExtractor().extract_blocks(resolution_docx)
     if word.body_state != "read":
         raise ValueError("Resolution DOCX has no readable body")
@@ -108,7 +121,7 @@ def prove(
         "owner_print": case.process,
         "report_print": case.report,
         "report_url": report_attachment.url,
-        "report_sha256": extracted.input_sha256,
+        "report_sha256": loaded.sha256,
         "report_stage": stage.model_dump(mode="json"),
         "report_evidence": evidence,
         "target_kind": "senate_amendment_resolution",
