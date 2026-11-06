@@ -13588,3 +13588,21 @@ the extraction parent remains a snapshot error. Original request bytes and
 collection applications remain outside the evidence of these three chains.
 
 [Qualification](../assets/audits/2026-11-06-secondary-cycle-source-binding/qualification.json).
+
+<a id="j383"></a>
+
+## J383 — verify the original amendment question in secondary delivery chains
+
+The retained-cycle request prefix compares the validated paid result's
+amendment input reference and scan witness with the consumed item's metadata.
+A verified text question is reported separately from provider payload bytes.
+A scan witness still requires the exact PDF. Missing legacy evidence remains
+explicit, and supplements are outside the amendment question profile.
+
+State `9a802a55` proves the retained question for applications 33, 34 and 35.
+All prior report fields are identical. Removing the reference from only the
+paid result invalidates the request prefix while leaving the recorded delivery
+suffix visible. The provider request body and collection application remain
+unverified for these chains.
+
+[Qualification](../assets/audits/2026-11-06-secondary-cycle-amendment-question/qualification.json).

@@ -490,3 +490,37 @@ def test_census_reuses_retained_secondary_evidence_without_writing(
         }
     ]
     assert target.read_bytes() == before
+
+
+@pytest.mark.parametrize("secondary_snapshot", ["amendments"], indirect=True)
+def test_secondary_question_requires_agreement_with_the_paid_result(
+    secondary_snapshot: tuple[Path, int, int],
+) -> None:
+    target, publication, application = secondary_snapshot
+    add_secondary_batch(target)
+    with closing(sqlite3.connect(target)) as db, db:
+        db.execute(
+            "UPDATE llm_batch_items SET meta_json=json_set(meta_json,'$.amendment_input_ref',json(?))"
+            " WHERE batch_id='secondary-batch'",
+            (
+                json.dumps(
+                    {
+                        "snapshot_id": "amendment-input-v1:" + "b" * 64,
+                        "question_sha256": "b" * 64,
+                        "request_sha256": "a" * 64,
+                    }
+                ),
+            ),
+        )
+
+    report = audit(
+        target, publication, secondary_application_id=application, include_request_prefix=True
+    )
+
+    suffix = report["suffix"]
+    assert isinstance(suffix, dict)
+    assert report["reason"] == "exact_retained_secondary_suffix"
+    assert suffix["request_prefix"] == {
+        "status": "invalid",
+        "reason": "invalid_snapshot_evidence",
+    }

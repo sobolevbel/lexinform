@@ -412,7 +412,23 @@ def _secondary_request_prefix(
         "prepared_input_receipt": receipt,
         "original_request_payload": "not_verified",
         "source_selection_binding": source,
+        "original_amendment_question": _retained_amendment_question(paid, meta),
     }
+
+
+def _retained_amendment_question(paid: ComputationResult, meta: DigestItemMeta) -> str:
+    if paid.purpose != "amendments":
+        return "outside_scope"
+    if (
+        paid.amendment_input_ref != meta.amendment_input_ref
+        or paid.amendment_scan_input != meta.amendment_scan_input
+    ):
+        raise ValueError("Submitted amendment question differs from the paid result")
+    if paid.amendment_input_ref is None and paid.amendment_scan_input is None:
+        return "not_retained"
+    if paid.amendment_input_ref is not None:
+        return "exact_retained_question"
+    return "requires_exact_scan"
 
 
 def _secondary_prepared_source(
@@ -600,6 +616,7 @@ def census(database: Path) -> dict[str, object]:
                             "prepared_input_receipt",
                             "original_request_payload",
                             "source_selection_binding",
+                            "original_amendment_question",
                         )
                         if key in prefix
                     }

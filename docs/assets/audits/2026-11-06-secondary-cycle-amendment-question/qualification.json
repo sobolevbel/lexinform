@@ -1,0 +1,30 @@
+{
+  "after_report_sha256": "f9cc54628838e1df2e3cdcd208c49d8c9acfbac16299e1ff7fcfc84258ade635",
+  "baseline": "3d3a8a54fb2b1f02fe9d6e60edf62b175bb6691f",
+  "before_report_sha256": "aa81e3ffd8e9e9dc770a0532d5c92a0ca818ec422a0958735ecb590a7ec48e97",
+  "control": {
+    "database_sha256": "bbaec2e8f3dac1d29ad1e567c6901745bf73a2a683796ace372629a0f55b178d",
+    "mutation": "Remove the amendment_input_ref from the retained result for application 33 only.",
+    "report_sha256": "a4ef68e77ec32e02ffce390d52487c92250a329a9e6fabd47d849a8af195220c",
+    "row": {
+      "application_id": 33,
+      "prefix": {
+        "reason": "invalid_snapshot_evidence",
+        "status": "invalid"
+      },
+      "publication_id": 293,
+      "reason": "exact_retained_secondary_suffix",
+      "status": "recorded"
+    }
+  },
+  "database_sha256": "c53f468cea246f6a8f2b74eaef46dbf5ea46fc72efa5a3af28741fbe919c974a",
+  "legacy_report_fields_identical": true,
+  "question_status_by_application_id": {
+    "11": "not_retained",
+    "16": "outside_scope",
+    "33": "exact_retained_question",
+    "34": "exact_retained_question",
+    "35": "exact_retained_question"
+  },
+  "state_commit": "9a802a5514d3333de72c76454d115a7d91538e0d"
+}

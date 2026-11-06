@@ -726,5 +726,7 @@ and lists sent status changes with a retained projection application. Secondary
 request identity, prepared-input receipt, source selection, projection and send
 are reported separately. Exact retained source selection requires a unique scoped
 observation and verified selection, artifact and extraction parents. Original
-provider payload bytes and collection remain separate evidence. The database checksum pins the inspected
+provider payload bytes and collection remain separate evidence. The amendment
+question status distinguishes a retained text question from a scan witness
+that still requires the exact PDF. The database checksum pins the inspected
 snapshot. A recorded census does not establish live or source-family acceptance.
