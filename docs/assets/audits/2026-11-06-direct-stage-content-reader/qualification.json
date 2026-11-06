@@ -1,0 +1,25 @@
+{
+  "after_expiry": {
+    "gzip_delta": 7117,
+    "sql_delta": 29828
+  },
+  "before_expiry": {
+    "gzip_delta": 5630,
+    "sql_delta": 29828
+  },
+  "full_bill_recovery": false,
+  "legacy_dump_sha256": "34561eb18821e99fb12fb3e324cf8ac828ca666da1c66add43a5e2138e7d3dc0",
+  "original_state_ref": "13440124b6f3",
+  "paired_render_exact": true,
+  "population": 52,
+  "profiled_dump_sha256": "34fbb80829a27950f0d058c1779320e8af14add0241e7beb43990d3c065785a9",
+  "qualified_publications": [
+    153,
+    164,
+    188,
+    228
+  ],
+  "snapshot_sha256": "93fd8769679b86b4a95f830ac48fe5330a13afe212ea6ecae6ac94ad82498f91",
+  "two_exact_restores": true,
+  "writer_enabled": false
+}

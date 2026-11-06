@@ -47,6 +47,7 @@ from lexinform.adapters.content_history import (
     read_content_version,
     validate_content_history,
     verify_card_content,
+    verify_direct_stage_content,
 )
 from lexinform.adapters.content_source_refs import (
     ContentSourceRows,
@@ -128,6 +129,7 @@ from lexinform.adapters.source_omissions import (
     read_source_omission,
     validate_source_omissions,
 )
+from lexinform.adapters.status_changes import read_status_change
 from lexinform.adapters.supplement_dependencies import (
     validate_status_supplement_dependencies,
     validate_supplement_dependencies,
@@ -2205,6 +2207,7 @@ class SqliteBillRepository:
         verify_content_source(self._conn, version)
         verify_content_applications(self._conn, version, retained=False)
         verify_card_content(self._conn, version)
+        verify_direct_stage_content(self._conn, version)
         for kind, identity in content_snapshot_refs(version):
             snapshot = self.get_content_snapshot(identity)
             if snapshot is None or snapshot.kind != kind:
@@ -2249,6 +2252,7 @@ class SqliteBillRepository:
         verify_content_source(self._conn, version)
         verify_content_applications(self._conn, version)
         verify_card_content(self._conn, version, retained=True)
+        verify_direct_stage_content(self._conn, version)
         return version
 
     def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]:
@@ -2341,6 +2345,11 @@ class SqliteBillRepository:
         version = self.get_content_version(row["content_id"])
         if version is None:
             raise ValueError("a publication content binding has lost its version")
+        if (
+            version.direct_stage_evidence is not None
+            and version.root_publication_id != publication_id
+        ):
+            raise ValueError("direct_stage_binding_scope")
         if version.change_snapshot_id is None:
             physical_id = verify_card_content(self._conn, version, retained=True)
             if physical_id is not None and physical_id != publication_id:
@@ -6193,33 +6202,8 @@ class SqliteBillRepository:
         return bill
 
     def _row_to_status_change(self, row: sqlite3.Row) -> StatusChange:
-        supplements = [
-            SupplementRecord.model_validate(value)
-            for value in json.loads(row["supplements_json"] or "[]")
-        ]
-        validate_supplement_dependencies(self._conn, supplements)
-        change = StatusChange(
-            id=int(row["id"]),
-            term=int(row["term"]),
-            consultation_opened=bool(row["consultation_opened"]),
-            number=row["number"],
-            old_fingerprint=row["old_fingerprint"],
-            new_fingerprint=row["new_fingerprint"],
-            new_stages=[Stage.model_validate(s) for s in json.loads(row["new_stages_json"])],
-            closure_detected=bool(row["closure_detected"]),
-            decision_changed=bool(row["decision_changed"]),
-            passed=None if row["passed"] is None else bool(row["passed"]),
-            content_changed=bool(row["content_changed"]),
-            withdrawn=bool(row["withdrawn"]),
-            discontinued=bool(row["discontinued"]),
-            amendments=(
-                AmendmentsRecord.model_validate_json(row["amendments_json"])
-                if row["amendments_json"]
-                else None
-            ),
-            supplements=supplements,
-            detected_at=datetime.fromisoformat(row["detected_at"]),
-        )
+        change = read_status_change(row)
+        validate_supplement_dependencies(self._conn, change.supplements)
         if change.amendments is not None:
             validate_secondary_dependency(self._conn, change.amendments, "amendments")
         return change

@@ -12,6 +12,7 @@ from lexinform.adapters.input_receipts import (
     validate_multipart_item,
     validate_primary_receipt_parents,
 )
+from lexinform.adapters.status_changes import read_status_change
 from lexinform.content_versions import (
     card_confirmation_matches,
     card_physical_matches,
@@ -33,8 +34,14 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    StatusChange,
 )
-from lexinform.models.content import CardPrimaryEvidence, card_bill_snapshot
+from lexinform.models.content import (
+    MAX_DIRECT_STAGE_CONTENT_BYTES,
+    CardPrimaryEvidence,
+    card_bill_snapshot,
+)
+from lexinform.models.events import amendments_stage
 from lexinform.models.input_receipts import (
     LooseRclInputReceipt,
     RclArchiveInputReceipt,
@@ -487,6 +494,114 @@ def _verify_card_content(
     return matches[0], primary
 
 
+def verify_direct_stage_content(connection: sqlite3.Connection, version: ContentVersion) -> None:
+    evidence = version.direct_stage_evidence
+    if evidence is None:
+        return
+    root_row = _query(
+        connection, "SELECT * FROM publications WHERE id=?", (version.root_publication_id,)
+    ).fetchone()
+    anchor_row = _query(
+        connection, "SELECT * FROM publications WHERE id=?", (evidence.anchor_publication_id,)
+    ).fetchone()
+    event = _query(
+        connection, "SELECT * FROM status_changes WHERE id=?", (version.status_change_id,)
+    ).fetchone()
+    if root_row is None or anchor_row is None or event is None:
+        raise ValueError("direct_stage_parent_missing")
+    root, anchor = read_content_publication(root_row), read_content_publication(anchor_row)
+    if (
+        root.kind is not PublicationKind.STATUS_UPDATE
+        or root.status_change_id != version.status_change_id
+        or anchor.kind is not PublicationKind.NEW_BILL
+        or anchor.status is not PublicationStatus.SENT
+        or anchor.message_id is None
+        or anchor.message_id <= 0
+        or anchor.sent_at is None
+        or anchor.sent_at > root.created_at
+        or (anchor.term, anchor.number, anchor.channel_id)
+        != (root.term, root.number, root.channel_id)
+        or _query(
+            connection,
+            "SELECT 1 FROM digest_event_links WHERE source_publication_id=?",
+            (root.id,),
+        ).fetchone()
+        is not None
+    ):
+        raise ValueError("direct_stage_publication_scope")
+    bindings = _query(
+        connection,
+        "SELECT publication_id FROM publication_content WHERE content_id=? LIMIT 2",
+        (version.content_id,),
+    ).fetchall()
+    if bindings and [binding[0] for binding in bindings] != [root.id]:
+        raise ValueError("direct_stage_binding_scope")
+    reader = ContentSourceRows(connection)
+    snapshots: dict[str, ContentSnapshot] = {}
+    for kind, identity in content_snapshot_refs(version):
+        snapshot = reader.get_content_snapshot(identity)
+        if snapshot is None or snapshot.kind != kind:
+            raise ValueError("direct_stage_snapshot_missing")
+        snapshots[identity] = snapshot
+    if (
+        sum(len(s.payload_json.encode()) for s in snapshots.values())
+        + len((version.rendered_text or "").encode())
+        > MAX_DIRECT_STAGE_CONTENT_BYTES
+    ):
+        raise ValueError("direct_stage_content_bound")
+    bill = snapshots[version.bill_snapshot_id]
+    owner = Bill.model_validate_json(bill.payload_json)
+    if card_bill_snapshot(bill.payload_json) != bill or (owner.term, owner.number) != (
+        root.term,
+        root.number,
+    ):
+        raise ValueError("direct_stage_bill_scope")
+    if version.change_snapshot_id is None:
+        raise ValueError("direct_stage_snapshot_missing")
+    change = StatusChange.model_validate_json(snapshots[version.change_snapshot_id].payload_json)
+    # Amendments and supplements can be appended after the original status text is frozen.
+    current = read_status_change(event).model_copy(update={"amendments": None, "supplements": []})
+    if (
+        change != current
+        or (change.term, change.number) != (root.term, root.number)
+        or len(change.new_stages) != 1
+        or amendments_stage(change.new_stages) is not None
+    ):
+        raise ValueError("direct_stage_event_scope")
+    plan = DeliveryPlan.model_validate_json(snapshots[version.plan_snapshot_id].payload_json)
+    if (
+        plan.destination != "direct"
+        or plan.reply_to != anchor.message_id
+        or plan.today is None
+        or plan.edit_message_id is not None
+        or plan.revision_of is not None
+        or plan.primary_json
+        or plan.publication_ids
+        or plan.update_group
+        or plan.sitting_group
+        or plan.continuation_ids
+        or plan.continuation_parent is not None
+        or plan.continuation_root is not None
+        or plan.continuation_index != 1
+        or plan.absorbed_by is not None
+        or plan.digest_ref
+        or plan.digest_parts
+        or plan.digest_event_ids
+    ):
+        raise ValueError("direct_stage_plan_scope")
+    if root.delivery is not None:
+        if content_delivery_mismatch(version, snapshots, root.delivery) is not None:
+            raise ValueError("direct_stage_frozen_delivery_mismatch")
+    elif (
+        root.status is not PublicationStatus.SENT
+        or root.message_id is None
+        or root.message_id <= 0
+        or root.sent_at is None
+        or not bindings
+    ):
+        raise ValueError("direct_stage_expired_delivery_scope")
+
+
 def validate_content_history(connection: sqlite3.Connection) -> None:
     try:
         tables = {
@@ -516,6 +631,7 @@ def validate_content_history(connection: sqlite3.Connection) -> None:
                 if previous is None or previous.root_publication_id != value.root_publication_id:
                     raise ValueError("content_predecessor_unavailable")
             verify_content_applications(connection, value)
+            verify_direct_stage_content(connection, value)
             physical_identity = verify_card_content(connection, value, retained=True)
             if value.change_snapshot_id is None:
                 bindings = _query(

@@ -1,5 +1,6 @@
 """Editorial confirmation and frozen-context checks shared by writers and inspectors."""
 
+import hashlib
 import re
 from collections.abc import Mapping, Sequence, Set
 from dataclasses import dataclass
@@ -56,9 +57,15 @@ def content_delivery_mismatch(
         return "text"
     if version.change_snapshot_id is None and plan.change_json:
         return "body"
+    stage = version.direct_stage_evidence
+    if (
+        stage is not None
+        and hashlib.sha256(plan.bill_json.encode()).hexdigest() != stage.original_bill_sha256
+    ):
+        return "body"
     bill = (
         card_bill_snapshot(plan.bill_json)
-        if version.card_context_profile == "continuation-v1"
+        if version.card_context_profile == "continuation-v1" or stage is not None
         else editorial_bill_snapshot(plan.bill_json)
     )
     for identity, kind, expected in (

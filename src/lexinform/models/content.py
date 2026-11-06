@@ -65,6 +65,17 @@ class SupplementContentEvidence(BaseModel):
     source_observation_id: str = Field(pattern=r"^source-observation-v1:[0-9a-f]{64}$")
 
 
+MAX_DIRECT_STAGE_CONTENT_BYTES = 8_192
+
+
+class DirectStageContentEvidence(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    profile: Literal["direct-stage-content-v1"] = "direct-stage-content-v1"
+    anchor_publication_id: int = Field(gt=0, lt=2**63, strict=True)
+    original_bill_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
 class ContentVersion(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -87,6 +98,9 @@ class ContentVersion(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     card_primary_evidence: CardPrimaryEvidence | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    direct_stage_evidence: DirectStageContentEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
@@ -165,6 +179,23 @@ class ContentVersion(BaseModel):
             )
         ):
             raise ValueError("Supplement evidence requires one original editorial projection")
+        if self.direct_stage_evidence is not None and (
+            self.reason != "original"
+            or self.change_snapshot_id is None
+            or self.status_change_id is None
+            or self.language not in ("ru", "en")
+            or not self.formatter_version
+            or not self.rendered_text
+            or len(self.rendered_text.encode()) > MAX_DIRECT_STAGE_CONTENT_BYTES
+            or self.source_scope is not None
+            or self.source_observation_ids
+            or self.computation_ids
+            or self.application_ref_profile is not None
+            or self.application_ids
+        ):
+            raise ValueError(
+                "Direct stage evidence requires a bounded original without result claims"
+            )
         return self
 
     @property
@@ -189,6 +220,9 @@ class ContentVersionSummary(BaseModel):
     formatter_version: str | None
     source_observation_ids: tuple[str, ...]
     card_context_profile: Literal["continuation-v1"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    direct_stage_evidence: DirectStageContentEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(

@@ -13,6 +13,7 @@ from lexinform.adapters.content_history import (
     card_current_content,
     read_content_version,
     verify_card_content,
+    verify_direct_stage_content,
 )
 from lexinform.adapters.content_source_refs import verify_content_source
 from lexinform.content_versions import (
@@ -113,6 +114,10 @@ def _read_history(
             verify_content_source(db, version)
         except ValueError:
             findings.add("content_source_reference_invalid", version.content_id)
+        try:
+            verify_direct_stage_content(db, version)
+        except ValueError:
+            findings.add("invalid_direct_stage_content_history", version.content_id)
         try:
             physical_id = verify_card_content(db, version, retained=True)
             if version.change_snapshot_id is None and physical_id is None:

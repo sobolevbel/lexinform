@@ -12980,6 +12980,9 @@ unconfirmed. A wrong observation was rejected without a state write.
 The legacy audit matched byte-for-byte.
 [Qualification](../assets/audits/2026-11-06-rcl-archive-card-reader/qualification.json).
 
+The exact `5dc1a5d1` release passed CI run 42256002182 and relay
+deployment 42256857976. Restart and timer were verified.
+
 <a id="j351"></a>
 
 ## J351 — attach qualified archive lineage to the original card
@@ -12994,3 +12997,19 @@ parent preserved ordinary delivery with no lineage. After cleanup the
 sample added 206 SQL bytes and 91 gzip bytes, and both versions of the
 reader restored the saved dump twice.
 [Qualification](../assets/audits/2026-11-06-rcl-archive-card-writer/qualification.json).
+
+<a id="j352"></a>
+
+## J352 — read compact direct stage content
+
+The optional profile binds a frozen render and typed status event to a
+same-owner sent original card. It preserves exact visible content after
+delivery expiry and cannot restore a full historical Bill for corrections.
+The amendment command retains its existing handling of direct stage updates.
+
+Four of 52 pinned historical candidates met the exact conditions.
+Their renders matched the existing delivery. After cleanup the manually
+attached records added 29,828 SQL bytes and 7,117 gzip bytes in total.
+Both restores were exact. Wrong event or anchor and unknown delivery
+were rejected. The ordinary writer remains disabled.
+[Qualification](../assets/audits/2026-11-06-direct-stage-content-reader/qualification.json).

@@ -129,7 +129,7 @@ class AmendmentsService:
             original = self._original(bill, publication_id)
             assert original.id is not None and original.delivery is not None
             content = record_publication_content(self._repo, self._clock, original)
-            if content is not None:
+            if content is not None and content.direct_stage_evidence is None:
                 original = original.model_copy(
                     update={"delivery": restore_content_delivery(self._repo, content)}
                 )
@@ -248,7 +248,7 @@ class AmendmentsService:
         plan = original.delivery
         if plan is None and original.id is not None:
             content = self._repo.get_publication_content(original.id)
-            if content is not None:
+            if content is not None and content.direct_stage_evidence is None:
                 if (
                     content.root_publication_id != original.id
                     or content.previous_version_id is not None
