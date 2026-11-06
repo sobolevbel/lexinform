@@ -12943,6 +12943,9 @@ are outside the check.
 [Case](../assets/audits/2026-11-06-pdf-page-citation/case.json) and
 [qualification](../assets/audits/2026-11-06-pdf-page-citation/qualification.json).
 
+The exact `9bd571b1` release passed CI run 42253278845 and relay
+deployment 42254325917. Restart and timer were verified.
+
 <a id="j349"></a>
 
 ## J349 — verify literal quotes in two multipart prepared inputs
@@ -12957,3 +12960,19 @@ and wrong quote rejected both cases. Database bytes stayed exact.
 Reports matched across checkouts apart from the code pins. The claims
 are controlled; semantic support and provider submission are unassessed.
 [Qualification](../assets/audits/2026-11-06-multipart-citation/qualification.json).
+
+<a id="j350"></a>
+
+## J350 — read original card lineage for one RCL archive
+
+The existing card evidence identity now accepts a verified one-root
+archive receipt and checks its source observation, physical slots and
+paid/application parents. The public audit confirms only a recorded
+original send. The ordinary candidate writer remains disabled.
+
+In the native 778150.zip case, manually attached evidence survived
+cleanup and two exact restores. The public audit reported six exact
+source parts after the mock send. Queued and unknown sends remained
+unconfirmed. A wrong observation was rejected without a state write.
+The legacy audit matched byte-for-byte.
+[Qualification](../assets/audits/2026-11-06-rcl-archive-card-reader/qualification.json).

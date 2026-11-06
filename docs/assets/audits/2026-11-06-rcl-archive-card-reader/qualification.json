@@ -1,0 +1,62 @@
+{
+  "case": "RCL 12403302/12, 778150.zip",
+  "legacy_audit_exact": true,
+  "native_report_sha256": "abd60505f7fc18ad7d8bdf5edfe8ca8dcf4e4ef8b076ebc1e59dbfadf5f46b4a",
+  "provider_submissions": 0,
+  "public_audit": {
+    "cycle": {
+      "artifact_sha256": "659ac5e0b08f211d09ba3d6fc9054c972299f9450a2b1ec55db4ca91fce44a03",
+      "collection_application_id": 1,
+      "content_version_id": "content-v1:87618bef536417f059c9798e8a862078f0a2983652ad089cb6b38c2ecd7509d1",
+      "extraction_id": "extraction-v1:b20c56f91c40c993394c371bd766a7858274b33d68741bc5d0f1fb0a97cdb25a",
+      "frozen_render_sha256": "b9a59029724f54574e5dec0f75bd9688b64b86c12d8bf1ce64a51e56fbeae665",
+      "projection_application_id": 2,
+      "purpose": "analysis",
+      "recorded_sent_at": "2026-10-17T00:00:00+00:00",
+      "request_sha256": "8059b6d8e02c4b092f5eb015d12eda81da57019f57b8f6e2ceb93bf4bca281ee",
+      "result_id": "result-v1:d0b13e28ee0117b5ce9830235b7a05859a1c1c9dc2e65ef80d8713d01cfd72a4",
+      "source_kind": "rcl",
+      "source_observation_id": "source-observation-v1:85424c7988fc8360355ff80c04abcc55a90acffd20f502f43cab1679b05077b9",
+      "source_parts": [
+        {
+          "physical_index": 7,
+          "role": "bill"
+        },
+        {
+          "physical_index": 9,
+          "role": "normative_annex"
+        },
+        {
+          "physical_index": 10,
+          "role": "normative_annex"
+        },
+        {
+          "physical_index": 11,
+          "role": "normative_annex"
+        },
+        {
+          "physical_index": 8,
+          "role": "justification"
+        },
+        {
+          "physical_index": 1,
+          "role": "osr"
+        }
+      ],
+      "source_selection_id": "selection-v1:dd28972539745a147426a45aa389f0057d1817ccc9e1eed189b5df98a30ced72"
+    },
+    "database_sha256": "679780df5db74657b12224080777ac22c22df0790daf99c7f96155caa2ce9539",
+    "exclusions": [
+      "Current Telegram content",
+      "live verification",
+      "source-family acceptance"
+    ],
+    "publication_id": 1,
+    "reason": "exact_retained_compact_cycle",
+    "scope": "One historical database-recorded direct card send.",
+    "status": "recorded",
+    "version": 1
+  },
+  "telegram_sends": 0,
+  "writer_enabled": false
+}

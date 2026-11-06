@@ -35,7 +35,11 @@ from lexinform.models import (
     PublicationStatus,
 )
 from lexinform.models.content import CardPrimaryEvidence, card_bill_snapshot
-from lexinform.models.input_receipts import LooseRclInputReceipt, SejmSelfAmendmentInputReceipt
+from lexinform.models.input_receipts import (
+    LooseRclInputReceipt,
+    RclArchiveInputReceipt,
+    SejmSelfAmendmentInputReceipt,
+)
 from lexinform.models.primary_projections import PRIMARY_USAGE_FIELDS
 from lexinform.primary_projections import primary_record_matches
 
@@ -219,7 +223,13 @@ def _verify_card_primary_evidence(
         or meta.generation != paid.generation
         or meta.queued_at is None
         or not isinstance(
-            receipt, (PrimaryInputReceipt, LooseRclInputReceipt, SejmSelfAmendmentInputReceipt)
+            receipt,
+            (
+                PrimaryInputReceipt,
+                LooseRclInputReceipt,
+                RclArchiveInputReceipt,
+                SejmSelfAmendmentInputReceipt,
+            ),
         )
         or receipt.source_selection_id is None
         or not meta.source_url
@@ -257,20 +267,30 @@ def _verify_card_primary_evidence(
         if receipt.source_observation_id != reference.source_observation_id:
             raise CardPrimaryEvidenceError("card_primary_source_scope")
         validate_multipart_item(connection, item)
-        physical = {
-            "source_parts": [
-                {
-                    "role": part.role,
-                    "artifact_sha256": part.source_sha256,
-                    "extraction_id": recorded.extraction_id,
-                }
-                for part, recorded in zip(
-                    selection.selection.parts, receipt.source_parts, strict=True
-                )
-            ],
-        }
-        if isinstance(receipt, SejmSelfAmendmentInputReceipt):
-            physical["proposal_trace_id"] = receipt.proposal_trace_id
+        if isinstance(receipt, RclArchiveInputReceipt):
+            physical = {
+                "artifact_sha256": selection.selection.parts[0].source_sha256,
+                "extraction_id": receipt.extraction_id,
+                "source_parts": [
+                    {"role": recorded.role, "physical_index": recorded.physical_index}
+                    for recorded in receipt.source_parts
+                ],
+            }
+        else:
+            physical = {
+                "source_parts": [
+                    {
+                        "role": part.role,
+                        "artifact_sha256": part.source_sha256,
+                        "extraction_id": recorded.extraction_id,
+                    }
+                    for part, recorded in zip(
+                        selection.selection.parts, receipt.source_parts, strict=True
+                    )
+                ],
+            }
+            if isinstance(receipt, SejmSelfAmendmentInputReceipt):
+                physical["proposal_trace_id"] = receipt.proposal_trace_id
     collections = _query(
         connection,
         "SELECT * FROM result_applications WHERE result_id=? AND term=? AND number=?"
