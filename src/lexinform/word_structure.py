@@ -92,6 +92,7 @@ class WordStructureCollector:
             "textbox_nodes": 0,
             "fields": 0,
             "revisions": 0,
+            "removal_text_nodes": 0,
         }
         self.retention = retention
         self._orders: list[int] = []
@@ -133,7 +134,7 @@ class WordStructureCollector:
         )
         fields = self._view_counts["fields"]
         revisions = self._view_counts["revisions"]
-        return WordViewStatus(
+        baseline = WordViewStatus(
             known_walk="finished" if finished else "interrupted",
             observed_skipped_blocks=self._view_counts["skipped_blocks"],
             observed_unclassified_nodes=self._view_counts["unclassified_nodes"],
@@ -146,6 +147,29 @@ class WordStructureCollector:
                 else None
             ),
         )
+
+        count = self._view_counts["removal_text_nodes"]
+        markers = baseline.observed_inline
+        if not count or markers is None:
+            return baseline
+        try:
+            return WordViewStatus.model_validate(
+                baseline.model_copy(
+                    update={
+                        "observed_inline": markers.model_copy(update={"removal_text_nodes": count})
+                    }
+                )
+            )
+        except ValueError:
+            return baseline
+
+    def report_removal_text(self) -> None:
+        if (
+            self._view_status_only
+            and not self._view_failed
+            and self._thread == threading.get_ident()
+        ):
+            self._view_counts["removal_text_nodes"] += 1
 
     @contextmanager
     def view_scope(self) -> Iterator[None]:

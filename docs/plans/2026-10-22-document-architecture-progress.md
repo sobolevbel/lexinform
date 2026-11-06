@@ -13725,3 +13725,21 @@ restores and SQLite integrity and foreign-key checks. The synthetic field
 added 23 bytes to that extraction record.
 
 [Qualification](../assets/audits/2026-11-06-word-removal-text-reader/qualification.json).
+
+<a id="j390"></a>
+
+## J390 — record ordinary text emitted from Word removal wrappers
+
+The existing inline walk counts nonempty `w:t` nodes it emits under visited
+`w:del` or `w:moveFrom` wrappers. The counter is optional and is dropped
+before existing metadata when either status or result reaches its size cap.
+The legacy projection and unresolved revision semantics remain unchanged.
+
+All 3,055 pinned files retained identical text, selection and observations
+apart from code fingerprints. The natural cohort had no positive counter.
+A separate mutation inserted one ordinary text node into an existing deletion
+wrapper in a pinned file. Both versions emitted the same text. The candidate
+added one observation and 23 bytes to the extraction record. Both SQLite
+checkpoints passed two exact restores and integrity checks.
+
+[Qualification](../assets/audits/2026-11-06-word-removal-text-writer/qualification.json).

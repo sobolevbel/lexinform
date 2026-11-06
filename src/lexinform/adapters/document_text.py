@@ -709,6 +709,11 @@ class _WordMl:
             if self._status_inline_tags is not None
             else frozenset()
         )
+        self._removal_tags = (
+            {self.tag("del"), self.tag("moveFrom")}
+            if self._status_inline_tags is not None
+            else frozenset()
+        )
         self._status_block_tags = (
             wrappers | {self.tag("p"), self.tag("tbl")}
             if self._status_inline_tags is not None
@@ -890,6 +895,7 @@ class _WordMl:
         paragraph: tuple[int, ...] | None = None,
         structure_path: tuple[int, ...] | None = None,
         structure_paragraph: tuple[int, ...] | None = None,
+        in_removal: bool = False,
     ) -> None:
         observed = (
             (path if path is not None else structure_path)
@@ -907,6 +913,8 @@ class _WordMl:
                 continue
             if el.tag == self.tag("t"):
                 parts.append(el.text or "")
+                if in_removal and el.text and self._structure is not None:
+                    self._structure.report_removal_text()
             elif el.tag == self.tag("tab"):
                 parts.append("\t")
             elif el.tag == self.tag("br"):
@@ -949,6 +957,7 @@ class _WordMl:
                     paragraph=paragraph,
                     structure_path=located,
                     structure_paragraph=structure_paragraph,
+                    in_removal=in_removal or el.tag in self._removal_tags,
                 )
 
     def _support_inline(self, node: ET.Element, path: tuple[int, ...]) -> None:

@@ -16,6 +16,7 @@ from lexinform.models.extractions import (
 )
 from tests.unit.test_physical_extraction import docx, extractor
 from tests.unit.test_word_blocks import paragraph, word
+from tests.unit.test_word_note_origins import package
 
 
 def status(known_walk: str = "finished") -> WordViewStatus:
@@ -397,3 +398,45 @@ def test_word_removal_text_count_requires_positive_count_and_visited_wrapper(
         WordInlineMarkers.model_validate(
             {"fields": 0, "revisions": revisions, "removal_text_nodes": count}
         )
+
+
+@pytest.mark.parametrize("limit", ["none", "status", "result"])
+def test_observed_removal_text_preserves_legacy_text_and_prior_metadata(
+    monkeypatch: pytest.MonkeyPatch, limit: str
+) -> None:
+    data = package(
+        "<w:p><w:r><w:t>Ordinary</w:t></w:r>"
+        '<w:del w:id="1"><w:r><w:t>Still emitted</w:t></w:r></w:del>'
+        '<w:del w:id="2"><w:r><w:delText>Omitted</w:delText></w:r></w:del>'
+        '<w:moveFrom w:id="3"><w:r><w:t>Also emitted</w:t></w:r></w:moveFrom></w:p>',
+        {},
+    )
+    reader = extractor()
+    original = reader.extract_document(data)
+    complete = reader.extract_document_with_provenance(data)
+    (part,) = complete.result.selected_parts
+    view = part.word_view_status
+    assert view is not None and view.observed_inline is not None, (
+        "the native reader visited revisions"
+    )
+    assert view.observed_inline.removal_text_nodes == 2
+    old_markers = view.observed_inline.model_copy(update={"removal_text_nodes": None})
+    old_view = view.model_copy(update={"observed_inline": old_markers})
+    old_part = part.model_copy(update={"word_view_status": old_view})
+    old_result = complete.result.model_copy(update={"selected_parts": (old_part,)})
+    if limit == "status":
+        monkeypatch.setattr(
+            models, "MAX_WORD_VIEW_STATUS_BYTES", len(old_view.model_dump_json().encode())
+        )
+    elif limit == "result":
+        monkeypatch.setattr(
+            extraction_records,
+            "MAX_EXTRACTION_METADATA_BYTES",
+            len(old_result.model_dump_json().encode()),
+        )
+
+    observed = reader.extract_document_with_provenance(data)
+
+    assert observed.document == original
+    assert "Still emitted" in original.text and "Omitted" not in original.text
+    assert observed.result == (complete.result if limit == "none" else old_result)

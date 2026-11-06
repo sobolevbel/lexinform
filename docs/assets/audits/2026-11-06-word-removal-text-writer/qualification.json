@@ -1,0 +1,47 @@
+{
+  "after_report_sha256": "81480ff250ec269169cc83bc13a87d0f11e801783d985ba8f3fff51e4a095c2a",
+  "baseline": "2d052debdbe3da0140866c5002f17c98b550616c",
+  "before_report_sha256": "5d7ae5851bf0e4ad4e0fad213ab6253d25766937a579b89f4818c2916704bf0c",
+  "catalog_sha256": "7bfa79ac7ee2a6981d8106880cad2bde6bc86df0b5da9a966530fcaebbf057f5",
+  "checkpoint_replay_sha256": "89dd7a7e68b8697170e7b395bcd7f5cb64f8dabf9e6733aa96c3688c1b22026d",
+  "corpus_inputs": 3055,
+  "natural_positive_removal_text_count": 0,
+  "rows_with_changed_code_fingerprints_only": 3055,
+  "synthetic_checkpoint": {
+    "after": {
+      "exact_checkpoint_restores": 2,
+      "extracted_text_sha256": "5dfe81fa1113570bc9769fdc887d9e7a41b65849068c3a75349671ea3f71c6f1",
+      "foreign_key_errors": 0,
+      "gzip_bytes": 5220836,
+      "input_checkpoint_sha256": "29dfe8566f02ceb810a1a43e8ea9a7b0fd0d9f6fc54ffa7212c4dda23945cd6d",
+      "integrity": "ok",
+      "markers": {
+        "fields": 108,
+        "removal_text_nodes": 1,
+        "revisions": 4
+      },
+      "result_bytes": 3174,
+      "selection_sha256": "1bec08cf7ad4e5326778974375647376b2363b568029509b724fabba5ff076f5",
+      "source_sha256": "0f046d601b5fee43afa43a7f7230691ed53f973531f9ff32cd484fd96b11196c",
+      "sql_bytes": 25791033,
+      "synthetic_archive_sha256": "d6777638f126228454fd8aa00198b1a8b9901b7fba82b30b62084135742474fa"
+    },
+    "before": {
+      "exact_checkpoint_restores": 2,
+      "extracted_text_sha256": "5dfe81fa1113570bc9769fdc887d9e7a41b65849068c3a75349671ea3f71c6f1",
+      "foreign_key_errors": 0,
+      "gzip_bytes": 5220815,
+      "input_checkpoint_sha256": "29dfe8566f02ceb810a1a43e8ea9a7b0fd0d9f6fc54ffa7212c4dda23945cd6d",
+      "integrity": "ok",
+      "markers": {
+        "fields": 108,
+        "revisions": 4
+      },
+      "result_bytes": 3151,
+      "selection_sha256": "1bec08cf7ad4e5326778974375647376b2363b568029509b724fabba5ff076f5",
+      "source_sha256": "0f046d601b5fee43afa43a7f7230691ed53f973531f9ff32cd484fd96b11196c",
+      "sql_bytes": 25791010,
+      "synthetic_archive_sha256": "d6777638f126228454fd8aa00198b1a8b9901b7fba82b30b62084135742474fa"
+    }
+  }
+}

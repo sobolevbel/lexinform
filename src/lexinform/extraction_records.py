@@ -283,13 +283,31 @@ def summarize_word_observations(
             if item.status.observed_textbox_nodes is not None
         },
     )
-    return _with_word_view_observations(
+    inline = {
+        item.part_index: item.status.observed_inline
+        for item in linked
+        if item.status.observed_inline is not None
+    }
+    removal = {index: markers for index, markers in inline.items() if markers.removal_text_nodes}
+    with_inline = _with_word_view_observations(
         with_textboxes,
         "observed_inline",
         {
-            item.part_index: item.status.observed_inline
-            for item in linked
-            if item.status.observed_inline is not None
+            index: markers.model_copy(update={"removal_text_nodes": None})
+            if index in removal
+            else markers
+            for index, markers in inline.items()
+        },
+    )
+    return _with_word_view_observations(
+        with_inline,
+        "observed_inline",
+        {
+            part.physical_index: removal[part.physical_index]
+            for part in with_inline.selected_parts
+            if part.physical_index in removal
+            and part.word_view_status is not None
+            and part.word_view_status.observed_inline is not None
         },
     )
 
