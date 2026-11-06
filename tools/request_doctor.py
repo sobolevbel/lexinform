@@ -6,10 +6,12 @@ import json
 import re
 import sqlite3
 from collections import Counter
+from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from lexinform.adapters.input_receipts import parse_batch_request
 from tools.corpus_artifacts import write_json
 from tools.saved_records import SavedRecordIssue, is_saved_answer, saved_columns, saved_records
 from tools.sqlite_snapshot import open_snapshot
@@ -59,6 +61,9 @@ class RequestAudit:
             return
         recorded = self.identity(request.get("payload_sha256"), ref, "intents")
         payload = request.get("payload_json")
+        if isinstance(payload, dict):
+            with suppress(ValueError):
+                payload = parse_batch_request(request).payload_json
         if payload is not None and not isinstance(payload, str):
             self.issue("invalid_frozen_payload", ref)
         observed = (

@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import Any
 
 from lexinform.adapters.computation_history import read_result_application
-from lexinform.adapters.input_receipts import intent_metadata
+from lexinform.adapters.input_receipts import intent_metadata, parse_batch_request
 from lexinform.json_storage import read_json
-from lexinform.models import BatchIntent, BatchRequest, LlmBatchItem
+from lexinform.models import BatchIntent, LlmBatchItem
 from lexinform.models.batch import batch_item_meta
 from tools.batch_receipts import audit_receipts
 from tools.corpus_artifacts import write_json
@@ -107,7 +107,7 @@ def _explicit_generation(raw: str) -> int | None:
 
 
 def _intent(row: sqlite3.Row) -> tuple[str, int, str, int | None]:
-    request = BatchRequest.model_validate(read_json(row["request_json"]))
+    request = parse_batch_request(row["request_json"])
     meta = intent_metadata(request, row["meta_json"])
     intent = BatchIntent(
         request=request,

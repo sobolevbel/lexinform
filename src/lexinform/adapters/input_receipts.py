@@ -38,6 +38,7 @@ from lexinform.models.input_receipts import (
 )
 
 _QUESTION_TEXT_PROFILE = "question-text-v1"
+_PROVIDER_PAYLOAD_PROFILE = "question-text-json-v1"
 _MIN_SHARED_QUESTION_BYTES = 32 * 1024
 
 
@@ -79,9 +80,32 @@ def _object(raw: object) -> dict[str, object] | None:
 
 def parse_batch_request(raw: object) -> BatchRequest:
     try:
-        return BatchRequest.model_validate(read_json(raw) if isinstance(raw, str) else raw)
+        decoded = read_json(raw) if isinstance(raw, str) else raw
+        if isinstance(decoded, dict) and isinstance(payload := decoded.get("payload_json"), dict):
+            decoded = {**decoded, "payload_json": _provider_payload(decoded, payload)}
+        return BatchRequest.model_validate(decoded)
     except ValueError, TypeError, RecursionError:
         raise ValueError("invalid_input_request_json") from None
+
+
+def _provider_payload(request: dict[str, object], value: dict[str, object]) -> str:
+    question = request.get("question")
+    context = question.get("ctx") if isinstance(question, dict) else None
+    prefix, suffix = value.get("prefix"), value.get("suffix")
+    text = context.get("text") if isinstance(context, dict) else None
+    if (
+        set(value) != {"profile", "prefix", "suffix"}
+        or value["profile"] != _PROVIDER_PAYLOAD_PROFILE
+        or not isinstance(prefix, str)
+        or not isinstance(suffix, str)
+        or not isinstance(text, str)
+        or not text
+        or not isinstance(question, dict)
+        or question.get("kind") not in ("analysis", "reanalysis")
+        or not isinstance(request.get("payload_sha256"), str)
+    ):
+        raise ValueError("invalid_provider_payload_reference")
+    return prefix + json.dumps(text, ensure_ascii=False)[1:-1] + suffix
 
 
 def intent_metadata(
@@ -394,7 +418,10 @@ def _input_snapshot_checks(
             has_timing = meta is not None and meta.get("local_timing_witness") is not None
             frozen = request is not None and request.get("payload_sha256") is not None
             has_text_reference = isinstance(meta.get("text"), dict)
-            if not has_receipt and not has_timing and not frozen and not has_text_reference:
+            has_provider_reference = isinstance(request.get("payload_json"), dict)
+            if not (
+                has_receipt or has_timing or frozen or has_text_reference or has_provider_reference
+            ):
                 continue
             ref = _reference("llm_batch_intents", row["custom_id"])
             try:

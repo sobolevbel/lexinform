@@ -14,7 +14,8 @@ from lexinform.adapters.document_work import (
     read_document_work,
     revision_handoff_checks,
 )
-from lexinform.models import AmendmentRevisionApplicationWork, BatchRequest, ReviewWork
+from lexinform.adapters.input_receipts import parse_batch_request
+from lexinform.models import AmendmentRevisionApplicationWork, ReviewWork
 from lexinform.models.documents import DocumentDeferReason
 from lexinform.saved_clock import saved_clock_age
 from tools.corpus_artifacts import write_json
@@ -141,7 +142,7 @@ def llm_work_ages(connection: sqlite3.Connection, observed_at: datetime) -> dict
         ):
             ref = f"llm_batch_intents/{row['custom_id']}"
             try:
-                request = BatchRequest.model_validate_json(row["request_json"])
+                request = parse_batch_request(row["request_json"])
             except ValueError, TypeError, KeyError:
                 request = None
             candidates = submitted.get(row["custom_id"], [])

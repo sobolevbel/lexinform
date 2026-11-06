@@ -12230,3 +12230,24 @@ references and the derived content ID. The four positive profiles added
 [Qualification](../assets/audits/2026-11-06-rcl-card-lineage-writer/qualification.json).
 
 DA7.1 remains open for other editorial histories.
+
+<a id="j315"></a>
+
+## J315 — read a compact frozen provider payload
+
+The queue reader can reconstruct one frozen provider payload from its
+saved prefix and suffix and the JSON-escaped text of the same question.
+The original payload checksum validates the reconstructed bytes. The
+reader does not rebuild prompts, options or schemas. Restore and the
+request, work and batch integrity diagnostics use the same decoder.
+
+The pinned 2320/2320-A offline control used the actual OpenAI and Anthropic
+request builders with no provider calls. Anthropic used its offline token
+estimate. Both reconstructed payloads matched exactly through two restores
+and the transition to submitting. The isolated compact queue dumps saved
+14,103 and 14,049 gzip bytes respectively. The unit control includes
+Unicode, quotes, backslashes and newlines and rejects a changed prefix
+before replacing a restored repository.
+[Qualification](../assets/audits/2026-11-06-provider-payload-reader/qualification.json).
+
+Reader only. Deploy before writing the new representation. DA5.6 remains open.

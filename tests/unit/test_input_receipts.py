@@ -137,6 +137,46 @@ def test_intent_text_reference_restores_frozen_input_and_rejects_a_wrong_hash(
         assert repo.dump() == inline and repo.list_queued_batch_intents() == [intent]
 
 
+def test_provider_payload_reference_reconstructs_the_exact_frozen_bytes(tmp_path: Path) -> None:
+    path = tmp_path / "provider-intent.db"
+    text = 'Tekst „ą” with "quotes", a backslash \\ and\nnew line.'
+    draft = request(text).model_copy(update={"payload_json": None, "payload_sha256": None})
+    payload = json.dumps({"content": f"fixed prompt\n{text}\nfixed suffix"}, ensure_ascii=False)
+    frozen = draft.freeze(
+        payload_json=payload, model="gpt-6.1-sol", prompt_version="frozen", estimated_cost_usd=0.01
+    )
+    intent = BatchIntent.from_request(
+        request=frozen, meta=meta(), provider="openai", created_at=NOW
+    )
+    escaped = json.dumps(text, ensure_ascii=False)[1:-1]
+    prefix, _, suffix = payload.partition(escaped)
+    reference = {"profile": "question-text-json-v1", "prefix": prefix, "suffix": suffix}
+    with closing(SqliteBillRepository(path)) as repo:
+        repo.migrate()
+        repo.save_batch_intent(intent)
+        inline = repo.dump()
+        with closing(sqlite3.connect(path)) as sql, sql:
+            sql.execute(
+                "UPDATE llm_batch_intents SET request_json=json_set(request_json,'$.payload_json',json(?))",
+                (json.dumps(reference),),
+            )
+        compact = repo.dump()
+        repo.restore(compact)
+        assert repo.dump() == compact and repo.list_queued_batch_intents() == [intent]
+        repo.mark_batch_intents_submitting([frozen.custom_id])
+        (submitting,) = repo.list_submitting_batch_intents()
+        assert submitting.request.model_dump_json() == frozen.model_dump_json()
+        with closing(sqlite3.connect(path)) as sql, sql:
+            sql.execute(
+                "UPDATE llm_batch_intents SET request_json=json_set(request_json,'$.payload_json.prefix','tampered')"
+            )
+        invalid = repo.dump()
+        repo.restore(inline)
+        with pytest.raises(ValueError, match="invalid_input_intent_snapshot"):
+            repo.restore(invalid)
+        assert repo.dump() == inline
+
+
 @pytest.mark.parametrize("profile", ["exact", "different", "short", "unfrozen"])
 def test_only_large_exact_frozen_question_text_is_shared(tmp_path: Path, profile: str) -> None:
     path = tmp_path / "intent.db"
