@@ -10,6 +10,7 @@ from tools.source_history_doctor import audit
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.concurrency import fan_out
+from lexinform.errors import DocumentSelectionError, DownloadError, SejmApiUnavailableError
 from lexinform.models import ProcessSummary, TextDocument
 from lexinform.models.source_catalog_attempts import SourceCatalogAttempt, SourceCatalogSnapshot
 from lexinform.models.source_omissions import (
@@ -94,6 +95,88 @@ def test_no_body_failure_never_borrows_the_global_inventory(repo: SqliteBillRepo
     assert not frame.artifacts and not frame.reads and not frame.extractions
     history(loader).persist_source_history(repo, recorded_at=NOW)
     assert repo.get_artifact_metadata(hashlib.sha256(b"prior body").hexdigest()) is None
+
+
+@pytest.mark.parametrize(
+    ("relation", "reason", "boundary"),
+    [
+        ("required", "missing_response", "direct"),
+        ("required", "missing_response", "analysis_wrapper"),
+        ("required", "missing_response", "unrelated_wrapper"),
+        ("amendment", "source_unavailable", "direct"),
+        ("amendment", "pre_send_rejected", "direct"),
+        ("required", "missing_response", "caught"),
+    ],
+)
+def test_terminal_composition_failure_keeps_the_original_exception_and_exact_relation(
+    repo: SqliteBillRepository,
+    relation: str,
+    reason: str,
+    boundary: str,
+) -> None:
+    part_url = "https://source.test/part.docx"
+    fallback_url = "https://source.test/fallback.docx"
+    failure = {
+        "missing_response": DownloadError("PRIVATE").with_download_details(
+            "http_status", status_code=404
+        ),
+        "source_unavailable": SejmApiUnavailableError("PRIVATE"),
+        "pre_send_rejected": SejmApiUnavailableError("PRIVATE").with_download_details(
+            "failure_budget"
+        ),
+    }[reason]
+    fallback = relation == "amendment"
+    selected = TextDocument(
+        url=fallback_url if fallback else URL,
+        kind="print",
+        required_urls=(part_url,) if not fallback else (),
+        amendment_urls=(part_url,) if fallback else (),
+    )
+    document = DOCUMENT.model_copy(update={"alternatives": (selected,)}) if fallback else selected
+    calls: list[str] = []
+
+    def download(url: str, *, max_bytes: int | None = None) -> bytes:
+        calls.append(url)
+        if url == part_url:
+            raise failure
+        if fallback and url == URL:
+            raise FileNotFoundError("earlier rejected candidate")
+        return b"complete bill"
+
+    loader = TextLoader({"source.test": download}, FakeTextExtractor(), max_bytes=1000)
+    if boundary == "direct":
+        with pytest.raises(DownloadError) as caught, loader.source_omission_scope(OWNER, document):
+            loader.select_document(document)
+        assert caught.value is failure
+    elif boundary == "caught":
+        with loader.source_omission_scope(OWNER, document), pytest.raises(DownloadError):
+            loader.read_document(document)
+    else:
+        wrapper = (
+            DocumentSelectionError("waiting", "PRIVATE")
+            if boundary == "analysis_wrapper"
+            else RuntimeError("PRIVATE")
+        )
+        with pytest.raises(RuntimeError) as wrapped, loader.source_omission_scope(OWNER, document):
+            try:
+                loader.select_document(document)
+            except DownloadError as error:
+                raise wrapper from error
+        assert wrapped.value is wrapper and wrapped.value.__cause__ is failure
+    assert calls == ([URL, fallback_url, part_url] if fallback else [URL, part_url])
+    history(loader).persist_source_history(repo, recorded_at=NOW)
+    (attempt,) = repo.list_source_catalog_attempts()
+    assert attempt.selection == "unknown"
+    assert attempt.error_class == ("FileNotFoundError" if fallback else type(failure).__name__)
+    part = attempt.terminal_part_read
+    if boundary in ("caught", "unrelated_wrapper"):
+        assert part is None
+    else:
+        assert part is not None
+        assert part.address == ((0,) if fallback else ())
+        assert part.relation == relation and part.position == 0
+        assert part.requested_url_sha256 == hashlib.sha256(part_url.encode()).hexdigest()
+        assert part.reason == reason and "PRIVATE" not in attempt.model_dump_json()
 
 
 def test_base_exception_retains_completed_body_and_original_object() -> None:

@@ -659,7 +659,11 @@ metadata admission; exception prose, тексты документов и creden
 
 Attempt имеет настоящий enrolled Bill с FK или canonical source reference без фиктивного
 зачисления Bill; purpose — prefilter/analysis/review, status — read_failed, selection — unknown,
-ошибка — только bounded class name. Не более 32 known-available parent links с полным
+ошибка сохраняет bounded class name. Для вышедшего из scope исключения обязательной части
+или автопоправки может сохраняться точная позиция в каталоге, хеш URL и тип причины.
+Analysis также сохраняет эту связь, когда передаёт исходное исключение как cause.
+Ошибка чтения того же URL в роли внешнего кандидата не получает позицию части.
+Не более 32 known-available parent links с полным
 count/hash и явной partial coverage; ранее существующая source observation не выдаётся
 за selection неудачного чтения. SQL columns и links сверяются с immutable JSON; shared doctor
 и scratch restore проверяют schema/данные до замены target. Повторы сохраняют первое время.

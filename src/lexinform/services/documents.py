@@ -749,8 +749,10 @@ class TextLoader:
                     scope.capture.required.fail()
 
             bundle = replace(bundle, required_sink=observed)
+        candidate_index = attempt[2] if attempt is not None else 0
+        address = (candidate_index - 1,) if candidate_index else ()
         for position, url in enumerate(document.required_urls):
-            file = self.read(url)
+            file = self._read_composed_part(document, address, "required", position, url)
             continuation = required_part(bundle, url, file)
             if isinstance(continuation, RequiredPartFailure):
                 if attempt is not None:
@@ -793,7 +795,7 @@ class TextLoader:
             bundle = composed
         bundle = finish_normative(bundle)
         for position, url in enumerate(document.amendment_urls):
-            file = self.read(url)
+            file = self._read_composed_part(document, address, "amendment", position, url)
             bundle = amendment_part(bundle, url, file)
             if isinstance(bundle, LoadedFile):
                 if attempt is not None:
@@ -836,6 +838,24 @@ class TextLoader:
                     )
             bundle = composed
         return finish_bundle(bundle, document)
+
+    def _read_composed_part(
+        self,
+        document: TextDocument,
+        address: tuple[int, ...],
+        relation: Literal["required", "amendment"],
+        position: int,
+        url: str,
+    ) -> LoadedFile:
+        try:
+            return self.read(url)
+        except Exception as error:
+            with suppress(BaseException):
+                scope = self._source_omissions.current()
+                if scope is not None:
+                    with scope.capture():
+                        scope.part_read_failed(error, document, address, relation, position, url)
+            raise
 
     def select_document(
         self, document: TextDocument, *, retain_routine_trace: bool = False

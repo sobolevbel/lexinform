@@ -11996,6 +11996,7 @@ second target representation, pinning original delivery payloads, or creating
 retrospective handoffs. Modern targets continue to use their separate durable
 work reference. DA6.6 remains open for other retention dependencies.
 [Qualification](../assets/audits/2026-11-06-legacy-revision-retention/qualification.json).
+Commit `b38cbdc5` passed CI 42184444571 and relay deployment 42185161482.
 
 <a id="j305"></a>
 
@@ -12016,6 +12017,31 @@ restores with identical SQL. Unit controls rejected invalid addresses,
 positions and hashes without changing the repository. The pinned state dump
 from J303 also restored twice byte-for-byte and had zero catalog attempts.
 
-Runtime capture stays inactive until this reader's deployment is verified.
-Older readers reject the new field once a writer persists it. DA4.1 and
-DA4.4 remain open for the producer and its native failure qualification.
+Commit `a4ecb11a` passed CI 42185343068 and relay deployment 42186307729
+before the producer was enabled. Older readers reject the new field once
+a writer persists it. DA4.1 and DA4.4 remain open for the remaining profiles.
+
+<a id="j306"></a>
+
+## J306 — record terminal required and self-amendment read failures
+
+Native loose-file composition records the exact catalog slot only when the
+same exception escapes the observation scope directly or as the explicit cause
+of the primary analysis selection error. Existing generic error class
+semantics remain intact if an earlier outer candidate failed. The retained
+detail separates 404, refusal, pre-send rejection, source outage and other
+read errors. Unsafe or omitted descriptors receive no detail. The exception
+object, retry behavior and unknown selection are preserved.
+
+Sixteen paired offline cases used the pinned term 8 druk 108 and term 10
+druk 2320 catalogs and body hashes. On druk 108 the same URL appears as
+both an outer candidate and a required part. Pre-send rejection and outage
+stop the selection path at the outer read and do not produce part evidence.
+The direct composition controls reach the required slot and do produce it.
+Both readable cases and direct readable control stayed byte-exact. All
+sixteen matched read order, selection or escaping exception and SQL after
+normalizing the new detail and its attempt identity. Typed controls added
+87–95 bytes of gzip per attempt. Every checkpoint restored twice. No network
+or model calls were made. [Qualification](../assets/audits/2026-11-06-terminal-part-read/qualification.json).
+
+DA4.1 and DA4.4 remain open for the remaining catalog and decision coverage.

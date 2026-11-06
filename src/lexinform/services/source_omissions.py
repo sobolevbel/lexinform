@@ -1,6 +1,7 @@
 """Invocation-scoped omission collectors leave all persistence and enrollment checks to callers."""
 
 import datetime as dt
+import hashlib
 import logging
 import threading
 from collections.abc import Callable, Iterable, Iterator
@@ -10,12 +11,18 @@ from dataclasses import dataclass
 from threading import Lock
 from typing import Literal
 
+from lexinform.document_downloads import read_exclusion_reason
+from lexinform.errors import DocumentSelectionError, ServiceUnavailableError
 from lexinform.metadata_omissions import MetadataUrlOmissionCollector
 from lexinform.metadata_urls import MetadataUrlDecision
 from lexinform.models import ArtifactIdentity, ArtifactReadIdentity, ExtractionResult
 from lexinform.models.metadata_omissions import MetadataUrlOmissions
 from lexinform.models.sejm import TextDocument
-from lexinform.models.source_catalog_attempts import SourceCatalogAttempt, SourceCatalogSnapshot
+from lexinform.models.source_catalog_attempts import (
+    SourceCatalogAttempt,
+    SourceCatalogSnapshot,
+    TerminalPartRead,
+)
 from lexinform.models.source_omissions import (
     BillOmissionOwner,
     SourceMetadataOmission,
@@ -110,6 +117,7 @@ class SourceOmissionScope:
         self._diagnostics: MetadataUrlOmissions | None = None
         self._catalog: SourceCatalogSnapshot | None = None
         self._failure_class: str | None = None
+        self._part_failure: tuple[Exception, TerminalPartRead] | None = None
         self._selection_observed = False
         with self.capture():
             self.update(view, decisions)
@@ -150,6 +158,37 @@ class SourceOmissionScope:
         if self._failure_class is None:
             self._failure_class = type(error).__name__
 
+    def part_read_failed(
+        self,
+        error: Exception,
+        document: TextDocument,
+        address: tuple[int, ...],
+        relation: Literal["required", "amendment"],
+        position: int,
+        url: str,
+    ) -> None:
+        if self._catalog is None:
+            return
+        descriptor = next((d for d in self._catalog.descriptors if d.address == address), None)
+        if descriptor is None or descriptor.document != document.model_copy(
+            update={"alternatives": ()}
+        ):
+            return
+        reason = read_exclusion_reason(error)
+        part = TerminalPartRead(
+            address=address,
+            relation=relation,
+            position=position,
+            requested_url_sha256=hashlib.sha256(url.encode()).hexdigest(),
+            reason=(
+                "source_unavailable"
+                if reason == "read_error" and isinstance(error, ServiceUnavailableError)
+                else reason
+            ),
+        )
+        part.validate_catalog(self._catalog)
+        self._part_failure = (error, part)
+
     def selection_observed(self) -> None:
         self._selection_observed = True
 
@@ -180,7 +219,15 @@ class SourceOmissionScope:
                     )
         return tuple(parents)
 
-    def catalog_observation(self) -> SourceCatalogObservation | None:
+    def catalog_observation(
+        self, escaping_error: BaseException | None
+    ) -> SourceCatalogObservation | None:
+        part_failure, self._part_failure = self._part_failure, None
+        original_error = (
+            escaping_error.__cause__
+            if isinstance(escaping_error, DocumentSelectionError) and escaping_error.__cause__
+            else escaping_error
+        )
         if (
             self.failed
             or self._catalog is None
@@ -191,7 +238,15 @@ class SourceOmissionScope:
             return None
         catalog = serializable_catalog(self._catalog)
         attempt = SourceCatalogAttempt.of(
-            self.owner, catalog.catalog_id, self._failure_class, self.parents()
+            self.owner,
+            catalog.catalog_id,
+            self._failure_class,
+            self.parents(),
+            terminal_part_read=(
+                part_failure[1]
+                if part_failure is not None and part_failure[0] is original_error
+                else None
+            ),
         )
         attempt = SourceCatalogAttempt.model_validate_json(attempt.model_dump_json())
         return SourceCatalogObservation(
@@ -376,9 +431,11 @@ class SourceOmissionCollector:
             with suppress(BaseException):
                 log.warning("source omission setup failed (%s)", type(exc).__name__[:128])
         token = _ACTIVE.set(scope)
+        escaping_error = None
         try:
             yield scope
         except BaseException as error:
+            escaping_error = error
             if scope is not None:
                 with scope.capture():
                     scope.read_failed(error)
@@ -390,7 +447,7 @@ class SourceOmissionCollector:
             if scope is not None and not scope.failed:
                 with scope.capture():
                     observation = scope.observation()
-                    catalog = scope.catalog_observation()
+                    catalog = scope.catalog_observation(escaping_error)
                     if observation is not None:
                         with self._lock:
                             previous = self._records.get(observation.record.omission_id)
