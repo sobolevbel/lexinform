@@ -67,6 +67,7 @@ from lexinform.adapters.input_receipts import (
     intent_metadata,
     parse_batch_request,
     serialize_intent_metadata,
+    serialize_intent_request,
     validate_input_snapshots,
     validate_multipart_intent,
     validate_multipart_item,
@@ -3613,7 +3614,7 @@ class SqliteBillRepository:
             (
                 intent.request.custom_id,
                 intent.provider,
-                intent.request.model_dump_json(),
+                serialize_intent_request(intent.request),
                 serialize_intent_metadata(intent),
                 intent.state,
                 intent.created_at.isoformat(),

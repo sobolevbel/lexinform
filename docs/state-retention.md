@@ -12,6 +12,13 @@ full metadata before submission. Submitted items retain inline text because the 
 is then deleted. The marker is local to the SQL representation and does not change the
 provider request. Rollback after activation requires a marker-aware queue reader.
 
+The queued provider payload can also use a `question-text-json-v1` representation.
+It stores the prefix and suffix of the original frozen payload if the JSON-escaped
+question text is at least 32 KiB before escaping and occurs exactly once.
+The queue reader rejoins the exact bytes and verifies the original checksum.
+Submitting after a restart uses the same payload even if model or prompt defaults
+have changed. The compact representation is confined to the queue row.
+
 Bill summaries, Sejm stages, RCL snapshots and observed processes use compact JSON. Only fields
 whose explicit default is `None` omit their null value. Required nulls, unknown fields, false,
 zero and empty collections survive. Restoring an older SQL dump compacts these snapshots too;

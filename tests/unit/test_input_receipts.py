@@ -177,6 +177,45 @@ def test_provider_payload_reference_reconstructs_the_exact_frozen_bytes(tmp_path
         assert repo.dump() == inline
 
 
+@pytest.mark.parametrize("profile", ["unique", "repeated", "overlapping", "short", "missing"])
+def test_only_unique_large_provider_payload_text_is_shared(tmp_path: Path, profile: str) -> None:
+    path = tmp_path / "provider-intent.db"
+    text = "abc" if profile == "short" else "x" * 32768
+    content = {
+        "unique": text,
+        "repeated": text + "\n" + text,
+        "overlapping": text + "x",
+        "short": text,
+        "missing": "other text",
+    }[profile]
+    payload = json.dumps({"content": content}, ensure_ascii=False)
+    frozen = (
+        request(text)
+        .model_copy(update={"payload_json": None, "payload_sha256": None})
+        .freeze(
+            payload_json=payload,
+            model="gpt-6.1-sol",
+            prompt_version="pinned",
+            estimated_cost_usd=0.01,
+        )
+    )
+    intent = BatchIntent.from_request(
+        request=frozen, meta=meta(), provider="openai", created_at=NOW
+    )
+    with closing(SqliteBillRepository(path)) as repo:
+        repo.migrate()
+        repo.save_batch_intent(intent)
+        with closing(sqlite3.connect(path)) as sql:
+            (raw,) = sql.execute("SELECT request_json FROM llm_batch_intents").fetchone()
+        if profile == "unique":
+            assert json.loads(raw)["payload_json"]["profile"] == "question-text-json-v1"
+        else:
+            assert raw == frozen.model_dump_json()
+        stored = repo.dump()
+        repo.restore(stored)
+        assert repo.dump() == stored and repo.list_queued_batch_intents() == [intent]
+
+
 @pytest.mark.parametrize("profile", ["exact", "different", "short", "unfrozen"])
 def test_only_large_exact_frozen_question_text_is_shared(tmp_path: Path, profile: str) -> None:
     path = tmp_path / "intent.db"

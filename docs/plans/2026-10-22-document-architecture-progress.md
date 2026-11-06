@@ -12250,4 +12250,25 @@ Unicode, quotes, backslashes and newlines and rejects a changed prefix
 before replacing a restored repository.
 [Qualification](../assets/audits/2026-11-06-provider-payload-reader/qualification.json).
 
-Reader only. Deploy before writing the new representation. DA5.6 remains open.
+Commit `e68d923a` passed CI 42203668477 and relay deployment 42204730124
+before activation.
+
+<a id="j316"></a>
+
+## J316 — share the exact question text inside a frozen provider payload
+
+Primary queue writes use the J315 representation when at least 32 KiB of
+question text has one exact JSON-escaped occurrence in the frozen payload.
+Missing, repeated, overlapping and short matches keep the original inline
+format. The existing provider checksum still names the full payload.
+
+The paired 2320/2320-A replay used the actual OpenAI and Anthropic request
+builders. Both compact queues restored twice. With different sender
+model and language defaults, a local fake SDK received the same OpenAI
+JSONL bytes and Anthropic request object. Submitted SQL and queue SQL
+normalized for the representation matched the baseline. The isolated
+queue dumps saved 14,103 and 14,049 gzip bytes respectively.
+[Qualification](../assets/audits/2026-11-06-provider-payload-writer/qualification.json).
+
+DA5.6 remains open for the remaining input profiles and post-submission
+request-manifest coverage.

@@ -105,7 +105,35 @@ def _provider_payload(request: dict[str, object], value: dict[str, object]) -> s
         or not isinstance(request.get("payload_sha256"), str)
     ):
         raise ValueError("invalid_provider_payload_reference")
-    return prefix + json.dumps(text, ensure_ascii=False)[1:-1] + suffix
+    return prefix + _escaped_question_text(text) + suffix
+
+
+def _escaped_question_text(text: str) -> str:
+    return json.dumps(text, ensure_ascii=False)[1:-1]
+
+
+def serialize_intent_request(request: BatchRequest) -> str:
+    question = request.question
+    payload = request.payload_json
+    if (
+        isinstance(question, AnalysisQuestion)
+        and question.kind in ("analysis", "reanalysis")
+        and request.payload_sha256 is not None
+        and payload is not None
+        and len(question.ctx.text.encode()) >= _MIN_SHARED_QUESTION_BYTES
+    ):
+        escaped = _escaped_question_text(question.ctx.text)
+        start = payload.find(escaped)
+        if start >= 0 and payload.find(escaped, start + 1) < 0:
+            request.verify_payload()
+            values = request.model_dump(mode="json")
+            values["payload_json"] = {
+                "profile": _PROVIDER_PAYLOAD_PROFILE,
+                "prefix": payload[:start],
+                "suffix": payload[start + len(escaped) :],
+            }
+            return json.dumps(values, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+    return request.model_dump_json()
 
 
 def intent_metadata(
