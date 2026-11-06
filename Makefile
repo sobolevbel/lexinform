@@ -2,7 +2,7 @@
 
 UV ?= uv
 ARGS ?=
-STATE_DOCTORS = request|batch_integrity|retained_integrity|work|computation|source_history
+STATE_DOCTORS = request|batch_integrity|retained_integrity|work|computation|source_history|content_history
 CORPUS ?=
 CORPUS_OUTPUT ?=
 CORPUS_PROFILES ?= extraction,selection,comparison,delivery

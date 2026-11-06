@@ -94,14 +94,15 @@ uv run --offline --frozen python -m tools.replay_flat_opc_notes \
 Choose the check by the saved record involved. Use a checkpointed SQLite copy and a fresh
 output path for each report.
 
-| Investigating | Tool |
-| --- | --- |
-| Which input produced a saved result | [Request provenance](#request-provenance-doctor) |
-| Queue ownership, batch receipts or result counts | [Batch/application integrity](#batchapplication-integrity-doctor) |
-| Retained payloads or publication continuation links | [Retained-state integrity](#retained-state-integrity-doctor) |
-| Stalled document or review work | [Unfinished work](#unfinished-work-doctor) |
-| How a saved result was applied | [Computation graph](#computation-graph-doctor) |
-| Saved document selection or artifact links | [Source history](#source-history-doctor) |
+| Investigating | Profile | Details |
+| --- | --- | --- |
+| Which input produced a saved result | `request` | [Request provenance](#request-provenance-doctor) |
+| Queue ownership, batch receipts or result counts | `batch_integrity` | [Batch/application integrity](#batchapplication-integrity-doctor) |
+| Retained payloads or publication continuation links | `retained_integrity` | [Retained-state integrity](#retained-state-integrity-doctor) |
+| Stalled document or review work | `work` | [Unfinished work](#unfinished-work-doctor) |
+| How a saved result was applied | `computation` | [Computation graph](#computation-graph-doctor) |
+| Saved document selection or artifact links | `source_history` | [Source history](#source-history-doctor) |
+| Original or revised card, edit target or operator decision | `content_history` | [Editorial history](../docs/reference/database.md#read-only-просмотр-editorial-history) |
 
 For a single check, use the same profiles through Make:
 

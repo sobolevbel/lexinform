@@ -551,8 +551,8 @@ Editorial Bill view исключает только `review_work` и `ready_anal
 для checkpointed SQLite copy:
 
 ```bash
-uv run python -m tools.content_history_doctor --database COPY.db --output NEW_REPORT.json
-uv run python -m tools.content_history_doctor --database COPY.db --publication 136 --output NEW_REPORT.json
+make state-doctor DOCTOR=content_history DATABASE=COPY.db REPORT=NEW_REPORT.json
+make state-doctor DOCTOR=content_history DATABASE=COPY.db REPORT=PUBLICATION_REPORT.json ARGS="--publication 136"
 ```
 
 Он проверяет canonical snapshot/version IDs, semantic refs и predecessor/root; пока delivery
@@ -564,6 +564,9 @@ physical status/attempts и confirm/retry/dismiss decisions, не выполня
 Current version выводится только из подтверждённой цепочки `sent`/message ID. Prepared/unknown
 edit не заменяет её; при повреждении current не угадывается. Отсутствие physical original оставляет
 history и warning без обещания current message. Это DB evidence, не независимая проверка Telegram.
+
+Для исходных кодов возврата запустите `uv run --offline --frozen python -m tools.content_history_doctor`
+с теми же путями через `--database` и `--output`.
 
 В отчёте нет rendered/source bodies, URLs или prose operator reasons. Unknown opaque refs/labels
 остаются в SQL, а в отчёте указаны counts/warnings без их содержимого. Missing legacy tables
