@@ -4,7 +4,7 @@ from typing import Literal
 
 import pytest
 
-from lexinform.errors import SejmApiUnavailableError
+from lexinform.errors import DownloadError, SejmApiUnavailableError
 from lexinform.models import TextDocument
 from lexinform.services.documents import TextLoader
 from tests.fakes import FakeSejmGateway, FakeTextExtractor
@@ -18,7 +18,7 @@ ANNEX_BYTES = b"annex"
 @pytest.mark.parametrize(
     ("annex", "reason", "state", "kind", "oversize"),
     [
-        (None, "no_returned_file", "waiting", None, False),
+        (None, "read_error", "waiting", None, False),
         ("", "download_size_limit", "waiting", None, True),
         ("", "returned_no_text", "waiting", None, False),
         (APPENDIX, "non_annex_appendix", "ambiguous", "regulation", False),
@@ -98,3 +98,38 @@ def test_normative_gap_does_not_displace_an_omitted_outer_trace() -> None:
     assert trace.coverage == "omitted_over_limit"
     assert trace.normative_annex_gap is None
     assert trace.selection_state == "waiting"
+
+
+@pytest.mark.parametrize(
+    ("error", "reason"),
+    [
+        (
+            DownloadError("hidden").with_download_details("http_status", status_code=404),
+            "missing_response",
+        ),
+        (
+            DownloadError("hidden").with_download_details("http_status", status_code=403),
+            "refused_response",
+        ),
+        (DownloadError("hidden").with_download_details("failure_budget"), "pre_send_rejected"),
+    ],
+)
+def test_normative_annex_classifies_only_the_observed_read_failure(
+    error: DownloadError, reason: str
+) -> None:
+    def download(url: str, *, max_bytes: int | None = None) -> bytes:
+        if url == ANNEX:
+            raise error
+        return BODY.encode()
+
+    loader = TextLoader(
+        {"source.test": download}, FakeTextExtractor(BODY, page_count=0), max_bytes=100000
+    )
+    _, file = loader.select_document(TextDocument(url=MAIN, kind="rcl", normative_urls=(ANNEX,)))
+
+    assert file.selection.state == "waiting"
+    trace = file.candidate_trace
+    assert trace is not None and trace.normative_annex_gap is not None
+    assert trace.normative_annex_gap.reason == reason
+    assert trace.normative_annex_gap.file_sha256 is None
+    assert "hidden" not in trace.model_dump_json()

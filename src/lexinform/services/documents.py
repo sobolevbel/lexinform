@@ -46,7 +46,11 @@ from lexinform.document_composition import (
     supporting_failure,
     supporting_part,
 )
-from lexinform.document_downloads import DocumentDownloadRecorder, download_failure
+from lexinform.document_downloads import (
+    DocumentDownloadRecorder,
+    download_failure,
+    read_exclusion_reason,
+)
 from lexinform.document_selection import DOCUMENT_SELECTION_POLICY_VERSION
 from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
 from lexinform.local_timing import observe_read_timing
@@ -762,12 +766,16 @@ class TextLoader:
                 return continuation.blocked
             bundle = continuation
         for position, url in enumerate(document.normative_urls):
+            failure_reason = None
             try:
                 annex = self.read(url)
             except ServiceUnavailableError:
                 raise
-            except Exception:
+            except Exception as exc:
                 annex = None
+                if attempt is not None:
+                    with suppress(Exception):
+                        failure_reason = read_exclusion_reason(exc)
             composed = normative_part(bundle, url, annex)
             if isinstance(composed, NormativeAnnexFailure):
                 if attempt is not None:
@@ -777,7 +785,7 @@ class TextLoader:
                             phase=gap_phase,
                             index=gap_index,
                             normative_index=position,
-                            reason=composed.reason,
+                            reason=failure_reason or composed.reason,
                             file_sha256=annex.sha256 if annex is not None else None,
                             kind=composed.kind,
                         )
@@ -810,19 +818,7 @@ class TextLoader:
                 if attempt is not None:
                     capture, phase, index = attempt
                     with suppress(Exception):
-                        outcome, _, _ = download_failure(exc)
-                        capture.exclude_support(
-                            phase,
-                            index,
-                            position,
-                            "missing_response"
-                            if outcome == "missing"
-                            else "refused_response"
-                            if outcome == "refused"
-                            else "pre_send_rejected"
-                            if outcome == "pre_send_rejected"
-                            else "read_error",
-                        )
+                        capture.exclude_support(phase, index, position, read_exclusion_reason(exc))
                 continue
             composed = supporting_part(bundle, url, loaded)
             if attempt is not None and composed.missing != bundle.missing:

@@ -1,0 +1,130 @@
+{
+  "baseline": "0e5c85b6d3b1bb8f99dcb4f36f6f946b85bbb3ff",
+  "rcl_catalog_sha256": "d9a86f6575030b8c875457d57076624c6901ed467fa1e70175613d017700c878",
+  "rcl_body_pins": {
+    "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703529.pdf": "cea344fa0b25170c12d151274877d2f9c8185e6412ab6727767370c61ab896dc"
+  },
+  "restores_per_checkpoint": 2,
+  "cases": {
+    "budget": {
+      "calls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703529.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703531.pdf"
+      ],
+      "gap": {
+        "index": 0,
+        "normative_index": 0,
+        "phase": "version_comparison",
+        "reason": "pre_send_rejected"
+      },
+      "gzip_bytes": 7658,
+      "normalized": "b2e18baaa99ab62ce4b373297acf14159e8c0d9e44a6613f10f1b371d2cf5154",
+      "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703529.pdf",
+      "selection_id": "selection-v1:26fd1741f98b256c8b273b9d705ffda74b35350eeab640e01290ab10f29522f3",
+      "sql_bytes": 38746,
+      "state": "waiting",
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "trace_id": "candidate-trace-v1:ad2c0013c335593a6f93d57933c87b88161b4dc296dda8a2c09d760ddf0bf428",
+      "previous_trace_id": "candidate-trace-v1:f9ae824c8ea4228bf5ed90e86f4bcd8249aaf38cf7635da4fcb668918735beee",
+      "sql_delta_bytes": 1,
+      "gzip_delta_bytes": -3
+    },
+    "empty": {
+      "calls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703529.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703531.pdf"
+      ],
+      "gap": {
+        "file_sha256": "14bcd090baf31edba64e9cbd8cdfc15f943344aa72cb3675ad8e91bfcbce03ad",
+        "index": 0,
+        "normative_index": 0,
+        "phase": "version_comparison",
+        "reason": "returned_no_text"
+      },
+      "gzip_bytes": 7709,
+      "normalized": "1f1668169197e61d0f228abbc8dff2053bd04141cae1cbab6c4063b06692d890",
+      "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703529.pdf",
+      "selection_id": "selection-v1:c4790a4a9b664faaf5ab56ca9144f6b7533aee497c6a84aabfb4684c3e8765a9",
+      "sql_bytes": 38825,
+      "state": "waiting",
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "trace_id": "candidate-trace-v1:08f691730c0e7877455c46bdd572e72e51100625d810b2ee486eeb07e1656b86"
+    },
+    "http_missing": {
+      "calls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703529.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703531.pdf"
+      ],
+      "gap": {
+        "index": 0,
+        "normative_index": 0,
+        "phase": "version_comparison",
+        "reason": "missing_response"
+      },
+      "gzip_bytes": 7660,
+      "normalized": "b2e18baaa99ab62ce4b373297acf14159e8c0d9e44a6613f10f1b371d2cf5154",
+      "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703529.pdf",
+      "selection_id": "selection-v1:26fd1741f98b256c8b273b9d705ffda74b35350eeab640e01290ab10f29522f3",
+      "sql_bytes": 38745,
+      "state": "waiting",
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "trace_id": "candidate-trace-v1:c072a39f03ddbad46c879e1a47bbb4161e4c7304d8467ece7476e50817d13e78",
+      "previous_trace_id": "candidate-trace-v1:f9ae824c8ea4228bf5ed90e86f4bcd8249aaf38cf7635da4fcb668918735beee",
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": -1
+    },
+    "http_refused": {
+      "calls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703529.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703531.pdf"
+      ],
+      "gap": {
+        "index": 0,
+        "normative_index": 0,
+        "phase": "version_comparison",
+        "reason": "refused_response"
+      },
+      "gzip_bytes": 7659,
+      "normalized": "b2e18baaa99ab62ce4b373297acf14159e8c0d9e44a6613f10f1b371d2cf5154",
+      "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703529.pdf",
+      "selection_id": "selection-v1:26fd1741f98b256c8b273b9d705ffda74b35350eeab640e01290ab10f29522f3",
+      "sql_bytes": 38745,
+      "state": "waiting",
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "trace_id": "candidate-trace-v1:7e527853a048e44ec0c1a28919a3ad97f4cb612f7c419ad8450410d6cd9c52e4",
+      "previous_trace_id": "candidate-trace-v1:f9ae824c8ea4228bf5ed90e86f4bcd8249aaf38cf7635da4fcb668918735beee",
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": -2
+    },
+    "local_missing": {
+      "calls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703529.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703531.pdf"
+      ],
+      "gap": {
+        "index": 0,
+        "normative_index": 0,
+        "phase": "version_comparison",
+        "reason": "read_error"
+      },
+      "gzip_bytes": 7653,
+      "normalized": "b2e18baaa99ab62ce4b373297acf14159e8c0d9e44a6613f10f1b371d2cf5154",
+      "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703529.pdf",
+      "selection_id": "selection-v1:26fd1741f98b256c8b273b9d705ffda74b35350eeab640e01290ab10f29522f3",
+      "sql_bytes": 38739,
+      "state": "waiting",
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "trace_id": "candidate-trace-v1:515b6145024a4e185427bd6a3fc7e1d5b5ef902602028327c46dcf8a7f69af2e",
+      "previous_trace_id": "candidate-trace-v1:f9ae824c8ea4228bf5ed90e86f4bcd8249aaf38cf7635da4fcb668918735beee",
+      "sql_delta_bytes": -6,
+      "gzip_delta_bytes": -8
+    },
+    "outage": {
+      "calls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703529.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703531.pdf"
+      ],
+      "raised": "RclUnavailableError"
+    }
+  }
+}

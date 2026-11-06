@@ -10,6 +10,7 @@ from lexinform.errors import (
     DownloadFailureDetails,
     ServiceUnavailableError,
 )
+from lexinform.models.candidate_trace import ReadExclusionReason
 from lexinform.models.document_reads import (
     DOWNLOAD_FAILURE_OUTCOMES,
     MAX_DOWNLOAD_DIAGNOSTIC_BYTES,
@@ -44,6 +45,19 @@ def download_failure(
     if reason == "rejected_response" or status in (401, 403, 429):
         return "refused", reason, status
     return "error", reason, status
+
+
+def read_exclusion_reason(error: Exception) -> ReadExclusionReason:
+    outcome, _, _ = download_failure(error)
+    match outcome:
+        case "missing":
+            return "missing_response"
+        case "refused":
+            return "refused_response"
+        case "pre_send_rejected":
+            return "pre_send_rejected"
+        case _:
+            return "read_error"
 
 
 class DocumentDownloadRecorder:

@@ -11924,3 +11924,25 @@ reads and kept the earlier trace unchanged. No model requests were made.
 [Qualification](../assets/audits/2026-11-06-supporting-exclusions/qualification.json).
 
 DA4.1 and DA4.4 remain open for the remaining decision provenance.
+
+<a id="j302"></a>
+
+## J302 — distinguish observed read failures for a normative annex
+
+The selected candidate trace reuses the loader's typed download
+classification for annex reads. Known missing and refused responses,
+pre-send rejection and an unclassified read error stay distinct.
+A legacy `no_returned_file` remains readable. The new reasons cannot
+carry a completed-body hash. A source outage still propagates.
+
+The pinned RCL 12394200 input has no retained body for annex 703531.
+The paired replay used that local absence, controlled 404 and 403
+responses and a pre-send budget refusal. It also covered a damaged
+returned PDF and a source outage. The selected URL, selection ID, read
+order and waiting outcome matched baseline. SQL was exact after
+normalizing the refined gap and trace identity. The damaged-PDF and
+outage controls were unchanged. The checkpoints restored twice.
+[Qualification](../assets/audits/2026-11-06-annex-read-reasons/qualification.json).
+
+The controlled response statuses do not establish the live availability
+of this attachment. DA4.1 and DA4.4 remain open for other profiles.

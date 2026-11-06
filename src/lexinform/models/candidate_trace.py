@@ -18,8 +18,15 @@ from lexinform.sections import APPENDIX_KINDS, Kind
 
 MAX_CANDIDATE_TRACE_BYTES = 4_096
 CandidateTraceResult = Literal["selected", "ambiguous", "fallback"]
+ReadExclusionReason = Literal[
+    "missing_response", "refused_response", "pre_send_rejected", "read_error"
+]
 NormativeAnnexGapReason = Literal[
-    "no_returned_file", "returned_no_text", "non_annex_appendix", "download_size_limit"
+    "no_returned_file",
+    "returned_no_text",
+    "non_annex_appendix",
+    "download_size_limit",
+    ReadExclusionReason,
 ]
 CandidateTraceReason = Literal[
     "version_choice",
@@ -354,10 +361,7 @@ SupportingExclusionReason = Literal[
     "draft_regulation",
     "returned_no_text",
     "download_size_limit",
-    "missing_response",
-    "refused_response",
-    "pre_send_rejected",
-    "read_error",
+    ReadExclusionReason,
 ]
 
 
@@ -448,7 +452,7 @@ class NormativeAnnexGap(BaseModel):
     @model_validator(mode="after")
     def observed_return(self) -> Self:
         if (
-            self.reason in ("no_returned_file", "download_size_limit")
+            self.reason not in ("returned_no_text", "non_annex_appendix")
             and self.file_sha256 is not None
         ):
             raise ValueError("a known file hash requires a returned file")
