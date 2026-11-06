@@ -108,3 +108,23 @@ def test_long_formula_walk_reports_prefix() -> None:
 
 def test_plain_word_paragraph_has_no_formulas() -> None:
     assert read_word_formulas(_document("<w:p><w:r><w:t>3+4</w:t></w:r></w:p>")).formulas == ()
+
+
+def test_offline_nary_preserves_operator_and_bound_order() -> None:
+    properties = "<m:naryPr><m:chr m:val='∑'/><m:limLoc m:val='undOvr'/></m:naryPr>"
+    lower = f"<m:sub>{_run('i=1')}</m:sub>"
+    upper = f"<m:sup>{_run('n')}</m:sup>"
+    body = f"<m:e>{_run('x')}</m:e>"
+    data = _formula(f"<m:nary>{properties}{lower}{upper}{body}</m:nary>")
+
+    (legacy,) = read_word_formulas(data).formulas
+    (observed,) = read_word_formulas(data, include_nary=True).formulas
+
+    assert legacy.unknown == "unsupported_structure"
+    assert observed.structure is not None, "The offline profile supports ordered n-ary nodes"
+    (operator,) = observed.structure.children
+    assert [child.kind for child in operator.children] == ["naryPr", "sub", "sup", "e"]
+    assert operator.children[0].children[0].attributes == ((f"{{{_MATH}}}val", "∑"),)
+    reordered = _formula(f"<m:nary>{properties}{upper}{lower}{body}</m:nary>")
+    (unsupported,) = read_word_formulas(reordered, include_nary=True).formulas
+    assert unsupported.unknown == "unsupported_structure"

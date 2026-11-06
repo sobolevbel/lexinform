@@ -6,12 +6,12 @@ from typing import Annotated, Literal, Self, get_args
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from lexinform.models.physical_inventory import Sha256
-from lexinform.word_formulas import Kind, MathNode
+from lexinform.word_formulas import NARY_SOURCE_KINDS, Kind, MathNode
 
 _MAX_BYTES = 4096
 _INT = Annotated[int, Field(strict=True, ge=0, le=16_777_216)]
 _HEADER = "\n\n=== STRUKTURA ŹRÓDŁOWA WZORÓW WORD (OMML) ===\n"
-_KINDS = frozenset(get_args(Kind))
+_KINDS = frozenset(get_args(Kind)) - NARY_SOURCE_KINDS
 _SLOTS = {
     "f": ("num", "den"),
     "sSub": ("e", "sub"),

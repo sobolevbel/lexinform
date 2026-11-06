@@ -44,6 +44,12 @@ Kind = Literal[
     "type",
     "grow",
     "shp",
+    "nary",
+    "naryPr",
+    "chr",
+    "limLoc",
+    "subHide",
+    "supHide",
     "opaque_properties",
 ]
 _UNKNOWN = Literal[
@@ -72,6 +78,17 @@ _KINDS: dict[str, Kind] = {
     "grow": "grow",
     "shp": "shp",
 }
+_NARY_KINDS: dict[str, Kind] = {
+    "nary": "nary",
+    "naryPr": "naryPr",
+    "chr": "chr",
+    "limLoc": "limLoc",
+    "subHide": "subHide",
+    "supHide": "supHide",
+}
+NARY_SOURCE_KINDS = frozenset(_NARY_KINDS)
+_KINDS_WITH_NARY = _KINDS | _NARY_KINDS
+_NARY_PROPERTIES = {"chr", "limLoc", "subHide", "supHide"}
 _OPAQUE = frozenset({"fPr", "sSubPr", "sSupPr", "sSubSupPr", "eqArrPr", "rPr", "ctrlPr"})
 _SLOTS = {
     "f": ("num", "den"),
@@ -115,7 +132,7 @@ class _FormulaLimitError(ValueError):
     pass
 
 
-def read_word_formulas(data: bytes) -> WordFormulaScan:
+def read_word_formulas(data: bytes, *, include_nary: bool = False) -> WordFormulaScan:
     with zipfile.ZipFile(io.BytesIO(data)) as package:
         matches = [item for item in package.infolist() if item.filename == _MEMBER]
         if len(matches) != 1 or matches[0].file_size > _MAX_XML:
@@ -139,14 +156,15 @@ def read_word_formulas(data: bytes) -> WordFormulaScan:
     if len(bodies) != 1:
         raise ValueError("Expected one WordML document body")
     index, body = bodies[0]
-    formulas, complete = _body_formulas(body, (index,), word)
+    kinds = _KINDS_WITH_NARY if include_nary else _KINDS
+    formulas, complete = _body_formulas(body, (index,), word, kinds)
     return WordFormulaScan(
         hashlib.sha256(xml).hexdigest(), "complete_body_walk" if complete else "prefix", formulas
     )
 
 
 def _body_formulas(
-    body: ET.Element, path: tuple[int, ...], word: str
+    body: ET.Element, path: tuple[int, ...], word: str, kinds: dict[str, Kind]
 ) -> tuple[tuple[FormulaObservation, ...], bool]:
     todo: list[tuple[ET.Element, tuple[int, ...], tuple[int, ...] | None, bool]] = [
         (body, path, None, False)
@@ -165,7 +183,7 @@ def _body_formulas(
         if math is not None:
             if len(observations) == _MAX_FORMULAS:
                 return tuple(observations), False
-            observations.append(_observe(node, located, paragraph, alternate, math, word))
+            observations.append(_observe(node, located, paragraph, alternate, math, word, kinds))
             continue
         todo.extend(
             (child, (*located, index), paragraph, alternate)
@@ -181,6 +199,7 @@ def _observe(
     alternate: bool,
     math: str,
     word: str,
+    kinds: dict[str, Kind],
 ) -> FormulaObservation:
     try:
         checksum = _formula_hash(node)
@@ -194,7 +213,7 @@ def _observe(
         unknown = "outside_paragraph"
     else:
         try:
-            structure = _structure(node, math, word)
+            structure = _structure(node, math, word, kinds)
         except _UnsupportedError:
             unknown = "unsupported_structure"
         except _FormulaLimitError:
@@ -214,12 +233,14 @@ def _formula_hash(node: ET.Element) -> str:
     return hashlib.sha256(ET.tostring(node)).hexdigest()
 
 
-def _structure(node: ET.Element, math: str, word: str, parent: str = "") -> MathNode:
+def _structure(
+    node: ET.Element, math: str, word: str, kinds: dict[str, Kind], parent: str = ""
+) -> MathNode:
     tag = node.tag.removeprefix(math) if node.tag.startswith(math) else ""
     if (node.tail or "").strip():
         raise _UnsupportedError()
     opaque_property = (tag in _OPAQUE and tag == f"{parent}Pr") or (
-        parent == "dPr" and tag == "ctrlPr"
+        parent in ("dPr", "naryPr") and tag == "ctrlPr"
     )
     if opaque_property or (parent == "r" and node.tag == word + "rPr"):
         return MathNode(
@@ -227,7 +248,7 @@ def _structure(node: ET.Element, math: str, word: str, parent: str = "") -> Math
             opaque_tag=node.tag,
             property_sha256=hashlib.sha256(ET.tostring(node)).hexdigest(),
         )
-    kind = _KINDS.get(tag)
+    kind = kinds.get(tag)
     if kind is None or (tag == "oMath" and parent) or ((node.text or "").strip() and tag != "t"):
         raise _UnsupportedError()
     attributes = tuple(sorted(node.attrib.items()))
@@ -236,7 +257,9 @@ def _structure(node: ET.Element, math: str, word: str, parent: str = "") -> Math
     content = (node.text or "") if tag == "t" else None
     if content is not None and len(content) > 512:
         raise _FormulaLimitError()
-    if tag in ("t", "begChr", "endChr", "sepChr", "type", "grow", "shp") and len(node):
+    if (
+        tag in ("t", "begChr", "endChr", "sepChr", "type", "grow", "shp") or tag in _NARY_PROPERTIES
+    ) and len(node):
         raise _UnsupportedError()
     names = tuple(child.tag.removeprefix(math) for child in node if child.tag.startswith(math))
     operands = names[1:] if names and names[0] == f"{tag}Pr" else names
@@ -244,5 +267,19 @@ def _structure(node: ET.Element, math: str, word: str, parent: str = "") -> Math
         raise _UnsupportedError()
     if tag in ("d", "eqArr") and (not operands or any(name != "e" for name in operands)):
         raise _UnsupportedError()
-    children = tuple(_structure(child, math, word, tag) for child in node)
+    if tag == "nary" and names != ("naryPr", "sub", "sup", "e"):
+        raise _UnsupportedError()
+    if tag == "naryPr" and (
+        parent != "nary"
+        or any(name not in _NARY_PROPERTIES and name != "ctrlPr" for name in names)
+        or len(set(names)) != len(names)
+        or "chr" not in names
+        or "limLoc" not in names
+    ):
+        raise _UnsupportedError()
+    if tag in _NARY_PROPERTIES and (
+        parent != "naryPr" or len(attributes) != 1 or attributes[0][0] != math + "val"
+    ):
+        raise _UnsupportedError()
+    children = tuple(_structure(child, math, word, kinds, tag) for child in node)
     return MathNode(kind, attributes, content, children)

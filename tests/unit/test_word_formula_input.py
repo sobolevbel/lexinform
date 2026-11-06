@@ -51,3 +51,10 @@ def test_formula_input_requires_canonical_structure_and_same_anchor_offset() -> 
     )
     with pytest.raises(ValidationError, match="operand order"):
         _entry(encode_formula_tree(reversed_fraction))
+
+
+def test_offline_nary_nodes_are_outside_the_frozen_formula_profile() -> None:
+    tree = encode_formula_tree(MathNode("oMath", children=(MathNode("nary"),)))
+
+    with pytest.raises(ValidationError, match="Invalid Word formula node"):
+        _entry(tree)

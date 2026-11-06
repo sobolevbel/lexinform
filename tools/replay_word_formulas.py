@@ -29,7 +29,9 @@ class WordFormulaManifest(BaseModel):
     inputs: tuple[PinnedInput, ...] = Field(min_length=1, max_length=512)
 
 
-def replay(corpus: Path, manifest: WordFormulaManifest) -> dict[str, object]:
+def replay(
+    corpus: Path, manifest: WordFormulaManifest, *, include_nary: bool = False
+) -> dict[str, object]:
     root = corpus.resolve(strict=True)
     reads, before = CorpusReads(root), source_fingerprints()
     reader = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
@@ -42,7 +44,7 @@ def replay(corpus: Path, manifest: WordFormulaManifest) -> dict[str, object]:
             data = item.read(root)
             if len(data) > _MAX_BYTES:
                 raise ValueError("Pinned Word body exceeds the replay limit")
-            scan = read_word_formulas(data)
+            scan = read_word_formulas(data, include_nary=include_nary)
             ordinary = reader.extract_document(data)
             formulas = []
             for formula in scan.formulas:
@@ -95,6 +97,7 @@ def main() -> None:
     parser.add_argument("--corpus", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--manifest-sha256", required=True)
+    parser.add_argument("--include-nary", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
@@ -103,7 +106,13 @@ def main() -> None:
         raw = read_artifact(args.manifest)
         if digest(raw) != args.manifest_sha256:
             raise ValueError("Formula manifest SHA differs")
-        result = replay(args.corpus, WordFormulaManifest.model_validate_json(raw))
+        result = replay(
+            args.corpus,
+            WordFormulaManifest.model_validate_json(raw),
+            include_nary=args.include_nary,
+        )
+        if args.include_nary:
+            result["source_profile"] = "word-omml-source-nary-v1"
         write_json(args.output, {**result, "manifest_sha256": args.manifest_sha256})
     except (OSError, ValueError, ET.ParseError, zipfile.BadZipFile) as exc:
         parser.error(str(exc))

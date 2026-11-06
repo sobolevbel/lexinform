@@ -1,0 +1,482 @@
+{
+  "source_profile": "word-omml-source-nary-v1",
+  "comparison": {
+    "paths": {
+      "documents/files/675297.docm": [
+        [
+          0,
+          272,
+          2
+        ]
+      ],
+      "documents/files/675298.docm": [
+        [
+          0,
+          151,
+          2
+        ]
+      ],
+      "documents/files/675302.docm": [
+        [
+          0,
+          272,
+          2
+        ]
+      ],
+      "documents/files/675303.docm": [
+        [
+          0,
+          151,
+          2
+        ]
+      ],
+      "documents/files/676870.docx": [
+        [
+          0,
+          53,
+          1,
+          0
+        ]
+      ],
+      "documents/files/676875.docx": [
+        [
+          0,
+          53,
+          1,
+          0
+        ]
+      ],
+      "documents/files/684404.docx": [
+        [
+          0,
+          416,
+          1,
+          0
+        ]
+      ],
+      "documents/files/691301.docx": [
+        [
+          0,
+          5,
+          105,
+          4,
+          2,
+          1,
+          0
+        ],
+        [
+          0,
+          5,
+          106,
+          4,
+          4,
+          1,
+          0
+        ],
+        [
+          0,
+          5,
+          106,
+          4,
+          8,
+          1
+        ],
+        [
+          0,
+          5,
+          107,
+          4,
+          9,
+          1
+        ],
+        [
+          0,
+          5,
+          108,
+          4,
+          10,
+          1
+        ],
+        [
+          0,
+          5,
+          109,
+          4,
+          8,
+          1
+        ],
+        [
+          0,
+          5,
+          110,
+          4,
+          4,
+          1,
+          0
+        ],
+        [
+          0,
+          5,
+          111,
+          4,
+          4,
+          1,
+          0
+        ],
+        [
+          0,
+          5,
+          120,
+          4,
+          4,
+          1,
+          0
+        ],
+        [
+          0,
+          5,
+          120,
+          4,
+          8,
+          1
+        ],
+        [
+          0,
+          5,
+          121,
+          4,
+          4,
+          1,
+          0
+        ],
+        [
+          0,
+          5,
+          121,
+          4,
+          8,
+          1
+        ]
+      ]
+    },
+    "counts_before": {
+      "formula_limit": 8,
+      "structured": 117,
+      "unsupported_structure": 49
+    },
+    "counts_after": {
+      "formula_limit": 8,
+      "structured": 136,
+      "unsupported_structure": 30
+    },
+    "read_inputs_equal": true,
+    "legacy_text_and_selection_equal": true
+  },
+  "operator_mutation": {
+    "formula_path": [
+      0,
+      53,
+      1,
+      0
+    ],
+    "formula_sha256_after": "8cf1e9791b6484b1947ebefa9ccbb04b7b6896fa502c58e654edaa0b1ced1540",
+    "formula_sha256_before": "f1b8d5381a70cc86a5714eba3363ebc7c4c7a81d7ea141711a9e85a863d21bca",
+    "legacy_law_digest": "law-v2:b7125dee2c27b15a83ecdffcc9fd1eeb7a1884242b37d3459cdd764ac0a9f662",
+    "legacy_text_sha256": "2bf7048d1ac1c89e15d7e83fe47e962e440fe30c7bd5694187307764a23f2618",
+    "operator_after": "∏",
+    "operator_before": "∑",
+    "source_path": "documents/files/676875.docx"
+  },
+  "entry_preflight": {
+    "manifest_sha256": "05e2aba8554ae9c77e086a3af6999d51290ec386a3fdc62f98a5286df46bfcc2",
+    "outcomes": {
+      "String should have at most 4096 characters": 5,
+      "outside_top_level_paragraph": 12,
+      "validated": 2
+    },
+    "rows": [
+      {
+        "entry_result": "String should have at most 4096 characters",
+        "formula_path": [
+          0,
+          272,
+          2
+        ],
+        "path": "documents/files/675297.docm",
+        "subtree_sha256": "ddd4cead620fb681cd69b2e3b4d2f5493e2ca1af26b7961e38be5b81f6880825",
+        "tree_bytes": 6837,
+        "tree_sha256": "03b3a1f1552cddd022dfaeef28efb986c6cb1930076a95e5cddbd70f344fb616"
+      },
+      {
+        "entry_result": "String should have at most 4096 characters",
+        "formula_path": [
+          0,
+          151,
+          2
+        ],
+        "path": "documents/files/675298.docm",
+        "subtree_sha256": "ddd4cead620fb681cd69b2e3b4d2f5493e2ca1af26b7961e38be5b81f6880825",
+        "tree_bytes": 6837,
+        "tree_sha256": "03b3a1f1552cddd022dfaeef28efb986c6cb1930076a95e5cddbd70f344fb616"
+      },
+      {
+        "entry_result": "String should have at most 4096 characters",
+        "formula_path": [
+          0,
+          272,
+          2
+        ],
+        "path": "documents/files/675302.docm",
+        "subtree_sha256": "ddd4cead620fb681cd69b2e3b4d2f5493e2ca1af26b7961e38be5b81f6880825",
+        "tree_bytes": 6837,
+        "tree_sha256": "03b3a1f1552cddd022dfaeef28efb986c6cb1930076a95e5cddbd70f344fb616"
+      },
+      {
+        "entry_result": "String should have at most 4096 characters",
+        "formula_path": [
+          0,
+          151,
+          2
+        ],
+        "path": "documents/files/675303.docm",
+        "subtree_sha256": "ddd4cead620fb681cd69b2e3b4d2f5493e2ca1af26b7961e38be5b81f6880825",
+        "tree_bytes": 6837,
+        "tree_sha256": "03b3a1f1552cddd022dfaeef28efb986c6cb1930076a95e5cddbd70f344fb616"
+      },
+      {
+        "entry_result": "validated",
+        "formula_path": [
+          0,
+          53,
+          1,
+          0
+        ],
+        "path": "documents/files/676870.docx",
+        "subtree_sha256": "f1b8d5381a70cc86a5714eba3363ebc7c4c7a81d7ea141711a9e85a863d21bca",
+        "tree_bytes": 2161,
+        "tree_sha256": "81afaabe325f06eaf982a1f7f2ce92c8ffab561b90c27450730bcf24db296a3d"
+      },
+      {
+        "entry_result": "validated",
+        "formula_path": [
+          0,
+          53,
+          1,
+          0
+        ],
+        "path": "documents/files/676875.docx",
+        "subtree_sha256": "f1b8d5381a70cc86a5714eba3363ebc7c4c7a81d7ea141711a9e85a863d21bca",
+        "tree_bytes": 2161,
+        "tree_sha256": "81afaabe325f06eaf982a1f7f2ce92c8ffab561b90c27450730bcf24db296a3d"
+      },
+      {
+        "entry_result": "String should have at most 4096 characters",
+        "formula_path": [
+          0,
+          416,
+          1,
+          0
+        ],
+        "path": "documents/files/684404.docx",
+        "subtree_sha256": "f067f56444a79f1440f368508f82c2c5dfb7890d8f0178b36bb6c3ddc04bded4",
+        "tree_bytes": 5182,
+        "tree_sha256": "4b7d0011deaa7cc72e2145434194815e9b10e084d44f41f5803bd434baa994ab"
+      },
+      {
+        "entry_result": "outside_top_level_paragraph",
+        "formula_path": [
+          0,
+          5,
+          105,
+          4,
+          2,
+          1,
+          0
+        ],
+        "path": "documents/files/691301.docx",
+        "subtree_sha256": "9cc94fcaa46e67dc9dd2390bbea264acac3a10dfda36a73a31b9d6f5c7ef0393",
+        "tree_bytes": 4683,
+        "tree_sha256": "d651b2e668ec0b3c80d8bbaa7b830b969757a6ed7110cd181756b953a90a67b5"
+      },
+      {
+        "entry_result": "outside_top_level_paragraph",
+        "formula_path": [
+          0,
+          5,
+          106,
+          4,
+          4,
+          1,
+          0
+        ],
+        "path": "documents/files/691301.docx",
+        "subtree_sha256": "9cc94fcaa46e67dc9dd2390bbea264acac3a10dfda36a73a31b9d6f5c7ef0393",
+        "tree_bytes": 4683,
+        "tree_sha256": "d651b2e668ec0b3c80d8bbaa7b830b969757a6ed7110cd181756b953a90a67b5"
+      },
+      {
+        "entry_result": "outside_top_level_paragraph",
+        "formula_path": [
+          0,
+          5,
+          106,
+          4,
+          8,
+          1
+        ],
+        "path": "documents/files/691301.docx",
+        "subtree_sha256": "8e9273258193ee858cdb5e72de006a6068c98e6b1b9cc531a90563bc57b7e4f2",
+        "tree_bytes": 1722,
+        "tree_sha256": "e861a4aa60e0b9baeb3946f3ee6858849cbd9a7d9d20a39d9db310440e2372a7"
+      },
+      {
+        "entry_result": "outside_top_level_paragraph",
+        "formula_path": [
+          0,
+          5,
+          107,
+          4,
+          9,
+          1
+        ],
+        "path": "documents/files/691301.docx",
+        "subtree_sha256": "6a1f4ec95724b36bbd263548eb359547d1f0e9377c4ed2d904d77ad9ba6ed504",
+        "tree_bytes": 1722,
+        "tree_sha256": "bb9537ae3c239909f19bb01184316fde4dff74667782c0c19b7dd0ca29f91b9f"
+      },
+      {
+        "entry_result": "outside_top_level_paragraph",
+        "formula_path": [
+          0,
+          5,
+          108,
+          4,
+          10,
+          1
+        ],
+        "path": "documents/files/691301.docx",
+        "subtree_sha256": "6d4a6d194a0dcb6ad120dbc80a579335634c2f27f65ea87472165fa30a15f72b",
+        "tree_bytes": 1446,
+        "tree_sha256": "aff9f1c97908471f0c778d006371c1b04a08a3b8a79afe1b36a82c2f52d00d57"
+      },
+      {
+        "entry_result": "outside_top_level_paragraph",
+        "formula_path": [
+          0,
+          5,
+          109,
+          4,
+          8,
+          1
+        ],
+        "path": "documents/files/691301.docx",
+        "subtree_sha256": "8e9273258193ee858cdb5e72de006a6068c98e6b1b9cc531a90563bc57b7e4f2",
+        "tree_bytes": 1722,
+        "tree_sha256": "e861a4aa60e0b9baeb3946f3ee6858849cbd9a7d9d20a39d9db310440e2372a7"
+      },
+      {
+        "entry_result": "outside_top_level_paragraph",
+        "formula_path": [
+          0,
+          5,
+          110,
+          4,
+          4,
+          1,
+          0
+        ],
+        "path": "documents/files/691301.docx",
+        "subtree_sha256": "c09623ca8720aa94eb70d8efab951ec391678f7645e902f387bf0164e7dd350f",
+        "tree_bytes": 4185,
+        "tree_sha256": "592296c82b7e2b05fabc78d87665d225c7d917e2f4de2de2c5ffcfa41c461a01"
+      },
+      {
+        "entry_result": "outside_top_level_paragraph",
+        "formula_path": [
+          0,
+          5,
+          111,
+          4,
+          4,
+          1,
+          0
+        ],
+        "path": "documents/files/691301.docx",
+        "subtree_sha256": "9cc94fcaa46e67dc9dd2390bbea264acac3a10dfda36a73a31b9d6f5c7ef0393",
+        "tree_bytes": 4683,
+        "tree_sha256": "d651b2e668ec0b3c80d8bbaa7b830b969757a6ed7110cd181756b953a90a67b5"
+      },
+      {
+        "entry_result": "outside_top_level_paragraph",
+        "formula_path": [
+          0,
+          5,
+          120,
+          4,
+          4,
+          1,
+          0
+        ],
+        "path": "documents/files/691301.docx",
+        "subtree_sha256": "9146c7bf423ebe70d34fc7ebc57b9c83f721b2f79c7b9f85593edf2dda12e72f",
+        "tree_bytes": 4684,
+        "tree_sha256": "5ef4d549198add728867bcd9c9d53865893e0db4f7c886fbabcdabb0ab9877bb"
+      },
+      {
+        "entry_result": "outside_top_level_paragraph",
+        "formula_path": [
+          0,
+          5,
+          120,
+          4,
+          8,
+          1
+        ],
+        "path": "documents/files/691301.docx",
+        "subtree_sha256": "0502c97877c13f6f38972384a00c48776088ffec472ffce3079eea3bb76f69dd",
+        "tree_bytes": 1446,
+        "tree_sha256": "b33f3c41959c53df665f38ca0b540882cd58f97ada5cfc8a3e4e75bbd1ba1afc"
+      },
+      {
+        "entry_result": "outside_top_level_paragraph",
+        "formula_path": [
+          0,
+          5,
+          121,
+          4,
+          4,
+          1,
+          0
+        ],
+        "path": "documents/files/691301.docx",
+        "subtree_sha256": "9146c7bf423ebe70d34fc7ebc57b9c83f721b2f79c7b9f85593edf2dda12e72f",
+        "tree_bytes": 4684,
+        "tree_sha256": "5ef4d549198add728867bcd9c9d53865893e0db4f7c886fbabcdabb0ab9877bb"
+      },
+      {
+        "entry_result": "outside_top_level_paragraph",
+        "formula_path": [
+          0,
+          5,
+          121,
+          4,
+          8,
+          1
+        ],
+        "path": "documents/files/691301.docx",
+        "subtree_sha256": "0502c97877c13f6f38972384a00c48776088ffec472ffce3079eea3bb76f69dd",
+        "tree_bytes": 1446,
+        "tree_sha256": "b33f3c41959c53df665f38ca0b540882cd58f97ada5cfc8a3e4e75bbd1ba1afc"
+      }
+    ],
+    "scope": "One formula entry per newly readable source subtree, synthetic anchors for validation only."
+  },
+  "prior_writer_rollback": {
+    "exact_restores": 2,
+    "provider_submissions": 0,
+    "queue_sql_sha256": "24cbb29d77322ab0352141d79dc7e3f2b7935ffb7d282b6ef78f91f233effb1f",
+    "request_sha256": "6accb07a3f952ae367c194a6dff819245833ab93ada323c8313c9cf44c0f61d3",
+    "rollback_sha": "aa79cc2f",
+    "writer_sha": "d97b8328"
+  }
+}

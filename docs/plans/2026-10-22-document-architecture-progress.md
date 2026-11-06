@@ -13274,3 +13274,25 @@ send suffix. The original prepared input and collection receipt remain
 unavailable. DA10.7 remains open.
 
 [Qualification](../assets/audits/2026-11-06-retained-delivery-census/qualification.json).
+
+<a id="j367"></a>
+
+## J367 — inventory explicit Word n-ary operators offline
+
+The opt-in corpus profile records operator properties and ordered lower,
+upper and body operands. It rejects ambiguous property structure and
+keeps rendered meaning unresolved. The production parser and frozen
+companion stay on their existing profile.
+
+On the J360 manifest the profile recognized 19 more formulas across eight
+paths. Text and selection matched for every path. Replacing a sum with a
+product changed the recorded structure and checksum while preserving the
+legacy text and law digest. Only two entries fit the standalone request
+shape and size preflight. Both point to the same file, whose verified
+native selection is multipart. Preflight uses synthetic anchors and
+establishes no request eligibility.
+
+The previous release candidate also restored the actual J365 enabled
+queue twice with the same frozen request and dump bytes.
+
+[Qualification](../assets/audits/2026-11-06-word-nary-source/qualification.json).

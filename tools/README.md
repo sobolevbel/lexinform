@@ -684,6 +684,7 @@ Replay the SHA-pinned OOXML manifest from the
 [J360 qualification](../docs/plans/2026-10-22-document-architecture-progress.md#j360)
 to record formula paths, ordered structure hashes and unsupported or limited cases.
 The replay covers the main document XML and reports the rendered view as unresolved.
+Pass `--include-nary` to inventory explicit operators with lower and upper bounds.
 
 ```sh
 uv run --offline --frozen python -m tools.replay_word_formulas \
