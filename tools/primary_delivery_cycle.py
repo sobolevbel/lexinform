@@ -436,9 +436,9 @@ def _retained_provider_answer(paid: ComputationResult, raw: str | None) -> str:
 
     record = paid.record
     if isinstance(record, AmendmentsRecord):
-        answer = record.amendments
+        answer_matches = result.answer == record.amendments
     elif isinstance(record, SupplementRecord):
-        answer = record.digest
+        answer_matches = result.answer == record.digest
     else:
         raise ValueError("Retained provider answer has no supported paid result")
     usage = TokenUsage(
@@ -450,7 +450,7 @@ def _retained_provider_answer(paid: ComputationResult, raw: str | None) -> str:
     if (
         result.error is not None
         or result.context_exceeded
-        or result.answer != answer
+        or not answer_matches
         or result.model != paid.model
         or usage != paid.usage
     ):

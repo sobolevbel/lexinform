@@ -13611,6 +13611,10 @@ unverified for these chains.
 
 ## J384 — verify retained provider exchange evidence in secondary chains
 
+The clean CI type check for `1a7b9b1e` found incompatible inferred answer
+types in the amendment and supplement branches. The follow-up compares
+each typed branch directly and retains the same report output.
+
 The secondary request prefix checks the frozen request manifest against the
 recorded provider, purpose and request SHA. The retained parsed answer must
 agree with the paid computation's custom ID, answer, model and token usage.
