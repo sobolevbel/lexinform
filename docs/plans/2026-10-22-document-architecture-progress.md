@@ -13334,6 +13334,7 @@ The five real J344 seals returned the same report byte-for-byte.
 No independent human judgments were added.
 
 [Qualification](../assets/audits/2026-11-06-corpus-review-identity/qualification.json).
+Exact release verified for `bc6851aa` via [CI](https://github.com/sobolevbel/lexinform/actions/runs/42283909548) and [relay](https://github.com/sobolevbel/lexinform/actions/runs/42285108700).
 
 <a id="j370"></a>
 
@@ -13388,3 +13389,22 @@ holdout originals, the 170-case empty queue and both 177-case excerpt
 generations. This is an integrity check, and adds no human labels.
 
 [Qualification](../assets/audits/2026-11-06-corpus-review-queue-seal/qualification.json).
+
+<a id="j373"></a>
+
+## J373 — verify retained evidence after supplemental scan cleanup
+
+The J364 six-file slice ran through both frozen provider builders,
+mock submission, validated collection, accounting, provider-forgotten
+state and ordinary payload cleanup. All 12 cases kept their scanned
+source manifest, supplement number, source URL and exact request
+checksum in the result. Submitted metadata retained the request
+manifest and scan identity. Each cleaned dump restored twice exactly.
+
+The cleaned state omits the PDF and frozen provider request. The result
+and manifest can identify known bytes, but do not recover the original
+prompt context or prove a publication. This qualifies the retained
+identity for these scans. A replayable original context and delivery
+proof remain separate requirements.
+
+[Qualification](../assets/audits/2026-11-06-supplement-scan-retention/qualification.json).
