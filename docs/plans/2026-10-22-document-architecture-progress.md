@@ -13688,3 +13688,23 @@ handoff into a mock SDK. Exact correction and missing or changed PDF controls
 retained their prior outcomes.
 
 [Qualification](../assets/audits/2026-11-06-provider-scan-manifest-bytes/qualification.json).
+
+<a id="j388"></a>
+
+## J388 — replay the legacy projection of Word revision text
+
+The offline replay pins Word inputs by SHA and replaces text inside selected
+OOXML revision wrappers on copies held in memory. It first verifies that a
+no-op repackage preserves the extraction. The report records only hashes,
+scope and marker counts.
+
+All 18 files with visited revision markers in J320 passed the no-op control.
+The existing projection emitted all 27 markers replacing insertion text and
+none of the 29 markers replacing deletion text. No natural move wrappers
+carried the profiled text in this cohort. A separate synthetic control emitted
+the destination text and omitted the deleted source text. In a second
+synthetic control the legacy walk also emitted ordinary `w:t` under removal
+wrappers. The profiled natural inputs contained no such nodes. The scope is
+`word/document.xml`. Complete Word revision semantics remain unresolved.
+
+[Qualification](../assets/audits/2026-11-06-word-revision-view/qualification.json).

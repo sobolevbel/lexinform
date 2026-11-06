@@ -1,0 +1,680 @@
+{
+  "baseline": "c97f4fe239217490ddd2d513adfb41db7632ca9f",
+  "catalog_sha256": "7bfa79ac7ee2a6981d8106880cad2bde6bc86df0b5da9a966530fcaebbf057f5",
+  "cohort": "All 18 positive files in the pinned J320 visited revision marker ledger.",
+  "exclusions": [
+    "Other revision types",
+    "Parts outside word/document.xml",
+    "Word UI and legal acceptance"
+  ],
+  "observations": {
+    "documents/files/649928.docx": {
+      "body_xml_sha256": "701c8b0fee54507dbf8c3650ea4b976f6dde86daf2c3b2357162831677a188ed",
+      "input_sha256": "d8e10f343ba1c6340b48a52dbafc6fbc922ff6286e6fd1bc5d2be1495effd100",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 1,
+          "mutated": 1
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "d7ce07d843b46596dbaf70ef4146fb7b573d29873dfd2df85e23db86d9b4a185"
+    },
+    "documents/files/649932.docx": {
+      "body_xml_sha256": "701c8b0fee54507dbf8c3650ea4b976f6dde86daf2c3b2357162831677a188ed",
+      "input_sha256": "d8e10f343ba1c6340b48a52dbafc6fbc922ff6286e6fd1bc5d2be1495effd100",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 1,
+          "mutated": 1
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "d7ce07d843b46596dbaf70ef4146fb7b573d29873dfd2df85e23db86d9b4a185"
+    },
+    "documents/files/663502.docx": {
+      "body_xml_sha256": "cf199e6658acf210603fa0232092c6742be1d377ca7239c20beaba6a1b02cdb4",
+      "input_sha256": "c3f0792b147c963130a2bc44cc5ac057a825b4de364ce20812411fa47819e9af",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "918da4efd02ac764be1f465f81a22fa7a01c026b235b7d3493a871cef74a05a3"
+    },
+    "documents/files/708892.docx": {
+      "body_xml_sha256": "a62747efcc04340e9f9e2765a4615cd2060ceb1573026c6abe5606aaa45dda33",
+      "input_sha256": "0f046d601b5fee43afa43a7f7230691ed53f973531f9ff32cd484fd96b11196c",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 1
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 1,
+          "mutated": 1
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "fdd5f3d0dc635954ff65236ae51a074cae47e1531c0be105fc386b01a0f522e9"
+    },
+    "documents/files/715337.docx": {
+      "body_xml_sha256": "eee962b2a244abbd38049d68414e6a454d5189ecf87e0f83b2df17367761e33f",
+      "input_sha256": "5a8d8e29c20373bab8ba70df3d5161a2ea4ddb2c57e0874c8eeb04d4be6e2b1e",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 3
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 4,
+          "mutated": 4
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "803ffcbda04377460fe8c0c913eb61a99ee49f89346218e57c4de3e57a2bc38f"
+    },
+    "documents/files/715343.docx": {
+      "body_xml_sha256": "eee962b2a244abbd38049d68414e6a454d5189ecf87e0f83b2df17367761e33f",
+      "input_sha256": "5a8d8e29c20373bab8ba70df3d5161a2ea4ddb2c57e0874c8eeb04d4be6e2b1e",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 3
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 4,
+          "mutated": 4
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "803ffcbda04377460fe8c0c913eb61a99ee49f89346218e57c4de3e57a2bc38f"
+    },
+    "documents/files/715806.docx": {
+      "body_xml_sha256": "5d1114be9cf6b7f5dacd5f972c3eb294d2a6b16dc93172c9a7bbb7ac32f57e4e",
+      "input_sha256": "b0aacbb1c8937ab41647427a523c913016192d0eb0eb44b2c3130122b259171d",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "f1002b5db1b7ef0aab85d11bb2896e0ebe71df380888be0f29844b099decec02"
+    },
+    "documents/files/716972.docx": {
+      "body_xml_sha256": "9f2f4e9e9e2d09736c9dae7d42f8c073d74730db2cae42baf93c543219dd133f",
+      "input_sha256": "9550406e18f7581d607c6529445db6344808c61e07fe34cb5340789df527d1da",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 1
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "d436e41f371b1bb437b9a7731258c0467efcc41b633e258d4a73b4f78350ca08"
+    },
+    "documents/files/743752.docx": {
+      "body_xml_sha256": "e7ad8f715458df046aa1ad9152d6cfd7d2dbb27da9e2a7104e83c937cf09c347",
+      "input_sha256": "b92520915ee1414477aeaade4e87283494aedfee13f2b812403e141a8bcf9a2f",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 3
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 2,
+          "mutated": 2
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "a0344b8cf75b1545e5b3d5d20ca378a6bedf9909909bb282581e0823cd835252"
+    },
+    "documents/files/763410.docx": {
+      "body_xml_sha256": "edca4bd74a90db503db38b3099ee4e7c6e223064063b425c137aac2ca1e1b912",
+      "input_sha256": "4cd6db86c8ba0c7495b3c7e5e730f9672c892e532989cdd1b3e9bfa74ca7200c",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 3
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "4bc3f97fe077c1908dd57370f4636269c1f20877f43a0f1875c85ccec18bcc52"
+    },
+    "documents/files/763412.docx": {
+      "body_xml_sha256": "edca4bd74a90db503db38b3099ee4e7c6e223064063b425c137aac2ca1e1b912",
+      "input_sha256": "4cd6db86c8ba0c7495b3c7e5e730f9672c892e532989cdd1b3e9bfa74ca7200c",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 3
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "4bc3f97fe077c1908dd57370f4636269c1f20877f43a0f1875c85ccec18bcc52"
+    },
+    "documents/files/769688.docx": {
+      "body_xml_sha256": "c42d6a6b33aac0084251a74fec35c05ec9e42a7b58013133d1920f121c9efb8b",
+      "input_sha256": "23c6aa94120351face0257b313a89d63122e1e0067d4b26641f311fb0ed1628d",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 2,
+          "mutated": 2
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "f1402e9ec06d28b6409b2f29110e06a31433d29c0573184904e3ce14ea2ca3f4"
+    },
+    "documents/files/770691.docx": {
+      "body_xml_sha256": "1168e4b7ab865ef9635dc17d014184ab48a48be43e0a67b15fcd2420a0e9ed07",
+      "input_sha256": "a195a3dc12a094d2d964483568ec6a06215a5f4e9e78512254cca29e56789de5",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 4,
+          "mutated": 4
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "67c29b1f4d881ce9bcf3d370fa6298558e77ad3c45028badce0ccb57976fdffe"
+    },
+    "documents/files/774586.docx": {
+      "body_xml_sha256": "f154d6f36d1d27396ec3d3677e1873e772cd031632ade1042c35abef58b42a15",
+      "input_sha256": "df0e5cbc79d6576c90ea312517e1542fcab75b0cac659fd33af35c5aaf540b2a",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "33770a93297fef5466b87939ac3dbc30cf9e5fbe19247c021ecc5ffee8d06fc8"
+    },
+    "documents/files/778894.docx": {
+      "body_xml_sha256": "f6f06d22d0bf5601c4401ba1c990ae255e01b63834d29153326c4711f70abbe1",
+      "input_sha256": "52541844329260036f4f1ccb3ecec123b6489249779a91041e05e02eae7a617c",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 3
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 2,
+          "mutated": 2
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "c89a914d7d18954d7c08818bc080c17178e8d436d969721149bcb5769faf3a36"
+    },
+    "documents/files/789644.docx": {
+      "body_xml_sha256": "ac3bc84cb2243bdbfe982107a627f97aa0712815fb822ae6ea44cf79c3596a54",
+      "input_sha256": "cf5a775a253baa86c5bb7379dee172ce3737f94c953ea3b2c6637468137e54b6",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 3
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 2,
+          "mutated": 2
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "11688425dce7dcede1b6d32db6209e9ec3d9c73b9c43ed27da707985841b44ba"
+    },
+    "documents/files/796510.docx": {
+      "body_xml_sha256": "3cc6a106cccc556e89f62fccf528a2ed49b1c7b7bbdac3053cac1decf676ffa2",
+      "input_sha256": "ae206f3abcad5c48013d1d07a6eab1aac49d51af2d58d1cea5f8ad3d3e05b1c4",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 3
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 2,
+          "mutated": 2
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "b515c1f2a2d644880db7059a21b5d50620f8808a31e424ef314ef137a9557b0e"
+    },
+    "documents/files/796516.docx": {
+      "body_xml_sha256": "3cc6a106cccc556e89f62fccf528a2ed49b1c7b7bbdac3053cac1decf676ffa2",
+      "input_sha256": "ae206f3abcad5c48013d1d07a6eab1aac49d51af2d58d1cea5f8ad3d3e05b1c4",
+      "noop_text_identical": true,
+      "observations": {
+        "del/delText": {
+          "emitted": 0,
+          "mutated": 3
+        },
+        "del/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "ins/t": {
+          "emitted": 2,
+          "mutated": 2
+        },
+        "moveFrom/delText": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveFrom/t": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "moveTo/t": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "b515c1f2a2d644880db7059a21b5d50620f8808a31e424ef314ef137a9557b0e"
+    }
+  },
+  "replay_tool_sha256": "f99d0df94c29b9279bf86bdecd51bd773531250441fb5315bc58631460a4c171",
+  "run_report_sha256": "52c635d2148ccc00d21aa75427cc7ad4d7644b102cac3c8fa91e9182af7a770b",
+  "synthetic_move_control": {
+    "body_xml_sha256": "a5d83e5a44cbf663c988f9a0684e1d10b8b55baf857d97c12e76ef8a5e5f0b37",
+    "input_sha256": "d5298102b61da0e34e244fe4b2124f2c34d7a8a06969c901cc7f06b2643d9e09",
+    "noop_text_identical": true,
+    "observations": {
+      "del/delText": {
+        "emitted": 0,
+        "mutated": 1
+      },
+      "del/t": {
+        "emitted": 0,
+        "mutated": 0
+      },
+      "ins/t": {
+        "emitted": 1,
+        "mutated": 1
+      },
+      "moveFrom/delText": {
+        "emitted": 0,
+        "mutated": 1
+      },
+      "moveFrom/t": {
+        "emitted": 0,
+        "mutated": 0
+      },
+      "moveTo/t": {
+        "emitted": 1,
+        "mutated": 1
+      }
+    },
+    "text_sha256": "0e07d267f6ff535d6774a135e22d905d8cfbd487660bef661914b3738ef755ec"
+  },
+  "synthetic_ordinary_text_in_removal_wrappers": {
+    "body_xml_sha256": "223c627b2be681a50b3ee1bb67b5a55b177c37f61d58e5a4768e1b26f53dbca7",
+    "input_sha256": "524a9bce6d863e0936d918319b3ed3cea6f344ad678ff07fa03133689c8c4080",
+    "noop_text_identical": true,
+    "observations": {
+      "del/delText": {
+        "emitted": 0,
+        "mutated": 0
+      },
+      "del/t": {
+        "emitted": 1,
+        "mutated": 1
+      },
+      "ins/t": {
+        "emitted": 0,
+        "mutated": 0
+      },
+      "moveFrom/delText": {
+        "emitted": 0,
+        "mutated": 0
+      },
+      "moveFrom/t": {
+        "emitted": 1,
+        "mutated": 1
+      },
+      "moveTo/t": {
+        "emitted": 0,
+        "mutated": 0
+      }
+    },
+    "text_sha256": "c4d5bb105431f3e2d4aeb4fa8138af408bfcc689ff4478affa8a5fef3161f215"
+  },
+  "totals": {
+    "del/delText": {
+      "emitted": 0,
+      "mutated": 29
+    },
+    "del/t": {
+      "emitted": 0,
+      "mutated": 0
+    },
+    "ins/t": {
+      "emitted": 27,
+      "mutated": 27
+    },
+    "moveFrom/delText": {
+      "emitted": 0,
+      "mutated": 0
+    },
+    "moveFrom/t": {
+      "emitted": 0,
+      "mutated": 0
+    },
+    "moveTo/t": {
+      "emitted": 0,
+      "mutated": 0
+    }
+  }
+}

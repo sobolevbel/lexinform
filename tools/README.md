@@ -712,6 +712,15 @@ uv run --offline --frozen python -m tools.replay_word_formulas \
   --output out/corpus/word-formulas.json
 ```
 
+### Word revision projection
+
+`python -m tools.replay_word_revisions` accepts a corpus path, a pinned external
+catalog and up to 64 explicit `--case` basenames. Use the catalog SHA with
+`--catalog-sha256` and a fresh `--output` outside the corpus. The tool compares a
+no-op repackage and marker substitutions in OOXML body revision wrappers using
+the normal extractor. Reports contain counts and hashes. A wrapper with zero
+mutated nodes supplies no projection evidence for its class.
+
 ### Retained delivery census
 
 Run the same retained-cycle readers across a checkpointed SQLite copy.
