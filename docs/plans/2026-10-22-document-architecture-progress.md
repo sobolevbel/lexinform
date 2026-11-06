@@ -12866,6 +12866,9 @@ or human question labels were present in these runs. Repeated reports
 matched byte-for-byte. Independent human review remains open.
 [Qualification](../assets/audits/2026-11-06-corpus-split-census/qualification.json).
 
+The exact `27f9c6de` release passed CI run 42247382377 and relay
+deployment 42248364412. Restart and timer were verified.
+
 <a id="j345"></a>
 
 ## J345 — verify footnote paths in standalone Flat OPC
@@ -12881,3 +12884,20 @@ cells. The paired cohort of 13 XML files preserved text, selected
 documents, law fingerprints and physical extraction metadata. The
 production route and dump do not carry the proof.
 [Qualification](../assets/audits/2026-11-06-flat-opc-notes/qualification.json).
+
+<a id="j346"></a>
+
+## J346 — verify the submitted request identity of secondary sends
+
+The read-only audit adds the exact batch item identity and ordered
+queue, submit, collect and consume times to the existing status-change
+projection and send proof. Use `tools.primary_delivery_cycle` with
+`--secondary-application-id` and `--include-request-prefix`. Default
+reports stay identical.
+
+The pinned ff49a74a state matched publications 231 and 240. The original
+prepared input receipt and collection application were absent, and the
+request payload and source selection remain unverified. The census of
+50 original sends still proves only the full cycle for druk 3281. The
+database and repeated reports matched byte-for-byte.
+[Qualification](../assets/audits/2026-11-06-secondary-request-prefix/qualification.json).

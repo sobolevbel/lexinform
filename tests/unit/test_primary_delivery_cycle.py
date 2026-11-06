@@ -4,10 +4,11 @@ from contextlib import closing
 from pathlib import Path
 
 import pytest
-from tools.primary_delivery_cycle import audit
+from tools.primary_delivery_cycle import audit, main
 
 from lexinform.models import (
     AmendmentsRecord,
+    ComputationInputBinding,
     ComputationResult,
     DeliveryPlan,
     Publication,
@@ -171,6 +172,7 @@ def secondary_snapshot(
             source_url="https://example.test/private-source",
             created_at=NOW,
             computation_id=result_id,
+            request_sha256="a" * 64,
         )
     else:
         record = SupplementRecord(
@@ -183,6 +185,7 @@ def secondary_snapshot(
             source_url="https://example.test/private-source",
             created_at=NOW,
             computation_id=result_id,
+            request_sha256="a" * 64,
         )
     paid = ComputationResult(
         schema_version=2,
@@ -194,6 +197,10 @@ def secondary_snapshot(
         number=case.bill.number,
         generation=None,
         collected_at=NOW,
+        request_sha256="a" * 64,
+        input_binding=ComputationInputBinding(
+            term=case.bill.term, number=case.bill.number, reuse_key="fixture"
+        ),
         validation="validated",
         record=record,
         model="frozen-model",
@@ -318,3 +325,117 @@ def test_secondary_suffix_rejects_missing_or_conflicting_parents(
     assert report["status"] == status
     assert report["reason"] == reason
     assert report["suffix"] is None
+
+
+def add_secondary_batch(target: Path) -> None:
+    with closing(sqlite3.connect(target)) as db, db:
+        paid = ComputationResult.model_validate_json(
+            db.execute(
+                "SELECT result_json FROM computation_results WHERE batch_id='secondary-batch'"
+            ).fetchone()[0]
+        )
+        binding = paid.input_binding
+        assert binding is not None, "secondary fixture retains the original binding"
+        request_sha = paid.request_sha256
+        assert request_sha is not None, "secondary fixture retains the request digest"
+        db.execute(
+            "INSERT INTO llm_batches (batch_id, provider, call_kind, submitted_at, status,"
+            " request_count, estimated_cost_usd) VALUES (?,?,?,?,?,?,?)",
+            (paid.batch_id, paid.provider, paid.purpose, NOW.isoformat(), "ended", 1, 0),
+        )
+        db.execute(
+            "INSERT INTO llm_batch_items (batch_id, custom_id, call_kind, term, number,"
+            " meta_json, consumed_at) VALUES (?,?,?,?,?,?,?)",
+            (
+                paid.batch_id,
+                paid.custom_id,
+                paid.purpose,
+                paid.term,
+                paid.number,
+                json.dumps(
+                    {
+                        "input_binding": binding.model_dump(),
+                        "memo_key": binding.reuse_key,
+                        "request_sha256": request_sha,
+                        "queued_at": NOW.isoformat(),
+                    }
+                ),
+                NOW.isoformat(),
+            ),
+        )
+
+
+@pytest.mark.parametrize("control", ["exact", "missing", "request", "owner", "timestamp"])
+def test_secondary_request_prefix_keeps_exact_suffix_and_rejects_prefix_conflicts(
+    secondary_snapshot: tuple[Path, int, int], control: str
+) -> None:
+    target, publication, application = secondary_snapshot
+    if control != "missing":
+        add_secondary_batch(target)
+    mutations = {
+        "request": "UPDATE llm_batch_items SET meta_json=json_set(meta_json,'$.request_sha256',?)"
+        " WHERE batch_id='secondary-batch'",
+        "owner": "UPDATE llm_batch_items SET number=? WHERE batch_id='secondary-batch'",
+        "timestamp": "UPDATE llm_batches SET submitted_at=? WHERE batch_id='secondary-batch'",
+    }
+    if control in mutations:
+        value = {"request": "b" * 64, "owner": "other", "timestamp": "2099-01-01T00:00:00Z"}[
+            control
+        ]
+        with closing(sqlite3.connect(target)) as db, db:
+            db.execute(mutations[control], (value,))
+    before = target.read_bytes()
+
+    ordinary = audit(target, publication, secondary_application_id=application)
+    report = audit(
+        target, publication, secondary_application_id=application, include_request_prefix=True
+    )
+
+    suffix = report["suffix"]
+    assert isinstance(suffix, dict)
+    prefix = suffix.pop("request_prefix")
+    assert report == ordinary and report["reason"] == "exact_retained_secondary_suffix"
+    assert prefix["status"] == {"exact": "recorded", "missing": "not_observed"}.get(
+        control, "invalid"
+    )
+    if control == "exact":
+        assert prefix["request_sha256"] == "a" * 64
+        assert (
+            prefix["original_collection_application"]
+            == prefix["prepared_input_receipt"]
+            == "not_retained"
+        )
+        assert (
+            prefix["original_request_payload"]
+            == prefix["source_selection_binding"]
+            == "not_verified"
+        )
+    assert target.read_bytes() == before
+
+
+def test_prefix_cli_cannot_write_database_sidecar(
+    secondary_snapshot: tuple[Path, int, int], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target, publication, application = secondary_snapshot
+    sidecar = Path(str(target) + "-wal")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "primary_delivery_cycle",
+            "--database",
+            str(target),
+            "--publication-id",
+            str(publication),
+            "--secondary-application-id",
+            str(application),
+            "--include-request-prefix",
+            "--output",
+            str(sidecar),
+        ],
+    )
+
+    with pytest.raises(SystemExit) as error:
+        main()
+
+    assert error.value.code == 2
+    assert not sidecar.exists()

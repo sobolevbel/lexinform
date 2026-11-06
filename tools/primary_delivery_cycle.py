@@ -19,12 +19,14 @@ from lexinform.models import (
     Bill,
     ComputationResult,
     DeliveryPlan,
+    DigestItemMeta,
     PrimaryInputReceipt,
     ResultApplication,
     ResultApplicationTarget,
     StatusChange,
     SupplementRecord,
 )
+from lexinform.models.batch import batch_item_meta
 from lexinform.models.primary_projections import PRIMARY_USAGE_FIELDS
 from lexinform.primary_projections import primary_record_matches
 from tools.corpus_artifacts import write_json
@@ -219,7 +221,11 @@ def _inspect(db: sqlite3.Connection, publication_id: int) -> dict[str, object]:
 
 
 def _secondary_suffix(
-    db: sqlite3.Connection, publication_id: int, application_id: int
+    db: sqlite3.Connection,
+    publication_id: int,
+    application_id: int,
+    *,
+    include_request_prefix: bool = False,
 ) -> dict[str, object]:
     row = db.execute("SELECT * FROM publications WHERE id=?", (publication_id,)).fetchone()
     if row is None:
@@ -314,13 +320,94 @@ def _secondary_suffix(
     )
     if any(date.utcoffset() is None for date in dates) or dates != tuple(sorted(dates)):
         raise ValueError("recorded secondary chronology disagrees")
-    return {
+    suffix = {
         "purpose": paid.purpose,
         "result_id": paid.result_id,
         "application_id": application_id,
         "status_change_id": change.id,
         "recorded_sent_at": sent_at.isoformat(),
         "frozen_render_sha256": hashlib.sha256(plan.rendered_text.encode()).hexdigest(),
+    }
+    if include_request_prefix:
+        try:
+            suffix["request_prefix"] = _secondary_request_prefix(
+                db, paid, application.created_at, dates[2], sent_at
+            )
+        except CycleNotObservedError as exc:
+            suffix["request_prefix"] = {"status": "not_observed", "reason": str(exc)}
+        except ValueError, TypeError, RecursionError, KeyError, IndexError, sqlite3.Error:
+            suffix["request_prefix"] = {"status": "invalid", "reason": "invalid_snapshot_evidence"}
+    return suffix
+
+
+def _secondary_request_prefix(
+    db: sqlite3.Connection,
+    paid: ComputationResult,
+    applied: datetime,
+    publication_created: datetime,
+    sent: datetime,
+) -> dict[str, object]:
+    if paid.request_sha256 is None or paid.input_binding is None:
+        raise CycleNotObservedError("original_secondary_request_binding_unavailable")
+    row = db.execute(
+        "SELECT i.*, b.provider, b.call_kind AS batch_kind, b.submitted_at"
+        ", b.status AS batch_status"
+        " FROM llm_batch_items i JOIN llm_batches b USING (batch_id)"
+        " WHERE i.batch_id=? AND i.custom_id=?",
+        (paid.batch_id, paid.custom_id),
+    ).fetchone()
+    if row is None or not row["consumed_at"]:
+        raise CycleNotObservedError("original_consumed_secondary_item_unavailable")
+    if (
+        paid.validation != "validated"
+        or row["batch_status"] != "ended"
+        or (row["provider"], row["term"], row["number"], row["call_kind"], row["batch_kind"])
+        != (paid.provider, paid.term, paid.number, paid.purpose, paid.purpose)
+        or (paid.input_binding.term, paid.input_binding.number) != (paid.term, paid.number)
+    ):
+        raise ValueError("Submitted secondary item differs from its exact paid owner")
+    meta = batch_item_meta(paid.purpose, row["meta_json"])
+    if not isinstance(meta, DigestItemMeta):
+        raise ValueError("Expected the original submitted secondary metadata")
+    if meta.request_sha256 is None or meta.input_binding is None:
+        raise CycleNotObservedError("submitted_secondary_request_binding_unavailable")
+    if (meta.request_sha256, meta.input_binding) != (paid.request_sha256, paid.input_binding):
+        raise ValueError("Submitted secondary item differs from its exact paid request")
+    if meta.queued_at is None or not row["submitted_at"]:
+        raise CycleNotObservedError("original_secondary_batch_chronology_unavailable")
+    submitted = datetime.fromisoformat(row["submitted_at"])
+    consumed = datetime.fromisoformat(row["consumed_at"])
+    dates = (
+        meta.queued_at,
+        submitted,
+        paid.collected_at,
+        consumed,
+        applied,
+        publication_created,
+        sent,
+    )
+    if any(date.utcoffset() is None for date in dates) or dates != tuple(sorted(dates)):
+        raise ValueError("Original secondary request and delivery chronology disagree")
+    collection = db.execute(
+        "SELECT 1 FROM result_applications WHERE result_id=? AND phase='collection'",
+        (paid.result_id,),
+    ).fetchone()
+    return {
+        "status": "recorded",
+        "reason": "exact_submitted_secondary_request_identity",
+        "request_sha256": paid.request_sha256,
+        "queued_at": meta.queued_at.isoformat(),
+        "submitted_at": submitted.isoformat(),
+        "collected_at": paid.collected_at.isoformat(),
+        "consumed_at": consumed.isoformat(),
+        "original_collection_application": "not_retained"
+        if collection is None
+        else "outside_scope",
+        "prepared_input_receipt": "not_retained"
+        if meta.prepared_input_receipt is None
+        else "outside_scope",
+        "original_request_payload": "not_verified",
+        "source_selection_binding": "not_verified",
     }
 
 
@@ -363,11 +450,14 @@ def audit(
     *,
     secondary_application_id: int | None = None,
     include_compact: bool = False,
+    include_request_prefix: bool = False,
 ) -> dict[str, object]:
     if not 0 < publication_id < 2**63:
         raise ValueError("Publication ID must be a positive SQLite integer")
     if secondary_application_id is not None and not 0 < secondary_application_id < 2**63:
         raise ValueError("Application ID must be a positive SQLite integer")
+    if include_request_prefix and secondary_application_id is None:
+        raise ValueError("Request identity requires a secondary application")
     if include_compact and secondary_application_id is not None:
         raise ValueError("Compact and secondary evidence modes are mutually exclusive")
     with open_snapshot(database) as snapshot:
@@ -380,7 +470,10 @@ def audit(
             else:
                 reason = "exact_retained_secondary_suffix"
                 cycle = _secondary_suffix(
-                    snapshot.connection, publication_id, secondary_application_id
+                    snapshot.connection,
+                    publication_id,
+                    secondary_application_id,
+                    include_request_prefix=include_request_prefix,
                 )
         except CycleNotObservedError as exc:
             status, reason = "not_observed", str(exc)
@@ -428,23 +521,37 @@ def main() -> None:
         action="store_true",
         help="allow validated compact original history after the frozen plan expires",
     )
+    parser.add_argument(
+        "--include-request-prefix",
+        action="store_true",
+        help="verify retained submitted request identity for an exact secondary status send",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
-        if args.output.resolve() == args.database.resolve():
+        database = args.database.resolve()
+        protected = {database}
+        if args.include_request_prefix:
+            protected.update(
+                Path(str(database) + suffix) for suffix in ("-wal", "-shm", "-journal")
+            )
+        if args.output.resolve() in protected:
             raise ValueError("Report must be separate from the input database")
         report = audit(
             args.database,
             args.publication_id,
             secondary_application_id=args.secondary_application_id,
             include_compact=args.include_compact,
+            include_request_prefix=args.include_request_prefix,
         )
         write_json(args.output, report)
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
-    raise SystemExit(
-        0 if report["status"] == "recorded" else 1 if report["status"] == "invalid" else 2
-    )
+    status = report["status"]
+    suffix = report.get("suffix")
+    if args.include_request_prefix and isinstance(suffix, dict):
+        status = suffix["request_prefix"]["status"]
+    raise SystemExit(0 if status == "recorded" else 1 if status == "invalid" else 2)
 
 
 if __name__ == "__main__":

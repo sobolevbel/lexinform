@@ -1,0 +1,93 @@
+{
+  "database_sha256": "f15cc42ef9bae61a88aa0d1030934e07d5396d640ee26db23e9e3aa6b2cdc0cd",
+  "database_unchanged": true,
+  "primary_census": {
+    "consumed_projection_unavailable": 4,
+    "exact_retained_cycle": 1,
+    "frozen_paid_reference_unavailable": 3,
+    "frozen_plan_unavailable": 26,
+    "frozen_render_context_unavailable": 13,
+    "prepared_receipt_unavailable": 1,
+    "publication_outside_direct_original_scope": 1,
+    "recorded_send_unavailable": 1
+  },
+  "secondary_exact_prefixes": {
+    "231": {
+      "request_prefix": {
+        "collected_at": "2026-10-28T19:12:04+00:00",
+        "consumed_at": "2026-10-28T19:12:04+00:00",
+        "original_collection_application": "not_retained",
+        "original_request_payload": "not_verified",
+        "prepared_input_receipt": "not_retained",
+        "queued_at": "2026-10-28T18:58:10+00:00",
+        "reason": "exact_submitted_secondary_request_identity",
+        "request_sha256": "b024647583eebcc3ae4b5991249fe836094c7aa78accff4be8210ba2cea8a363",
+        "source_selection_binding": "not_verified",
+        "status": "recorded",
+        "submitted_at": "2026-10-28T18:58:56+00:00"
+      },
+      "unchanged_suffix": {
+        "database_sha256": "f15cc42ef9bae61a88aa0d1030934e07d5396d640ee26db23e9e3aa6b2cdc0cd",
+        "exclusions": [
+          "Source observation and selection",
+          "Current Telegram content",
+          "live verification",
+          "source-family acceptance"
+        ],
+        "publication_id": 231,
+        "reason": "exact_retained_secondary_suffix",
+        "requested_application_id": 11,
+        "scope": "One retained secondary status-change projection and recorded direct send.",
+        "status": "recorded",
+        "suffix": {
+          "application_id": 11,
+          "frozen_render_sha256": "af26c58b2caf434f91bbde2d0464857e0b949db4c650410c1cb1d62bb2c325ed",
+          "purpose": "amendments",
+          "recorded_sent_at": "2026-10-28T19:18:31+00:00",
+          "result_id": "result-v1:ac61beabf382607e4fb057cd3b70531f02a44fc1083a25df16b114834ab6c2b8",
+          "status_change_id": 189
+        },
+        "version": 1
+      }
+    },
+    "240": {
+      "request_prefix": {
+        "collected_at": "2026-10-29T19:33:09+00:00",
+        "consumed_at": "2026-10-29T19:33:09+00:00",
+        "original_collection_application": "not_retained",
+        "original_request_payload": "not_verified",
+        "prepared_input_receipt": "not_retained",
+        "queued_at": "2026-10-29T19:28:03+00:00",
+        "reason": "exact_submitted_secondary_request_identity",
+        "request_sha256": "e40b9d4ba0ced69e2b232a407a5e0eea027f2614a12300614541b309695d5283",
+        "source_selection_binding": "not_verified",
+        "status": "recorded",
+        "submitted_at": "2026-10-29T19:28:34+00:00"
+      },
+      "unchanged_suffix": {
+        "database_sha256": "f15cc42ef9bae61a88aa0d1030934e07d5396d640ee26db23e9e3aa6b2cdc0cd",
+        "exclusions": [
+          "Source observation and selection",
+          "Current Telegram content",
+          "live verification",
+          "source-family acceptance"
+        ],
+        "publication_id": 240,
+        "reason": "exact_retained_secondary_suffix",
+        "requested_application_id": 16,
+        "scope": "One retained secondary status-change projection and recorded direct send.",
+        "status": "recorded",
+        "suffix": {
+          "application_id": 16,
+          "frozen_render_sha256": "ded11fac32c096201d4da4510794b5b5935f4077639b77ac9d3f99b7856b704d",
+          "purpose": "supplement",
+          "recorded_sent_at": "2026-10-29T19:44:54+00:00",
+          "result_id": "result-v1:b04bcddd31fe7e80800a409a160bc8b2ec34b06ab0e68157a2b7bbe925d7c79e",
+          "status_change_id": 192
+        },
+        "version": 1
+      }
+    }
+  },
+  "state_git_sha": "ff49a74a8d5e5b846a8f11d98ca71c2f421930b8"
+}
