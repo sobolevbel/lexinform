@@ -1402,10 +1402,11 @@ class AnalysisService:
                 raise ValueError("Разбор поправок превышает лимит стоимости документа")
         elif original_input is not None and original_input.scan_witness is not None:
             witness = original_input.scan_witness
+            original_context = witness.context_without_scan
             if (
                 document.url != witness.source_url
-                or document.kind != "committee_amendments"
-                or witness.context_without_scan.number != bill.number
+                or document.kind != original_context.source_kind
+                or original_context.number != bill.number
             ):
                 raise ValueError("invalid_amendment_input")
             message = "Исходный скан поправок изменился или недоступен; исправление не запущено"

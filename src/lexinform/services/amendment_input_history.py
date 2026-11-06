@@ -49,7 +49,7 @@ def original_amendment_input(
             or (result.term, result.number) != owner
             or (change.term, change.number) != owner
             or record.request_sha256 != witness.request_sha256
-            or record.source_kind != "committee_amendments"
+            or record.source_kind != witness.context_without_scan.source_kind
             or record.source_url != witness.source_url
             or record.scan_input != witness.scan_input
         ):

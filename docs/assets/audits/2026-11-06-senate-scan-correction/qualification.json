@@ -1,0 +1,95 @@
+{
+  "pairs": {
+    "377-anthropic": {
+      "context_sha256": "6b231e9559a07fe12308dfc3d817c8c58ef487a32efd274c5ac91c92af9256ba",
+      "correction_controls": {
+        "cancelled": {
+          "downloads": 1,
+          "prepared": 0,
+          "state_unchanged": true
+        },
+        "changed": {
+          "downloads": 1,
+          "prepared": 0,
+          "state_unchanged": true
+        },
+        "identical": {
+          "downloads": 1,
+          "exact_question": true,
+          "original_message_edited": true,
+          "prepared": 1
+        },
+        "missing": {
+          "downloads": 1,
+          "prepared": 0,
+          "state_unchanged": true
+        },
+        "outage": {
+          "downloads": 1,
+          "prepared": 0,
+          "state_unchanged": true
+        }
+      },
+      "enriched_sql_sha256": "e81449df7dac8309016f7d80a93c09cf32831f64754b296ac5dfa20ba565b4b7",
+      "file_sha256": "d562dcf64770bd36810c7dff14d4de63a65e430d25e2f4f2e3e25b4c68c3cabb",
+      "frozen_sha256": "7327213043f4b368725fd1b67c6bd0c0da9b31f43feed9a61f19fbe0d7fd69c3",
+      "pages": 5,
+      "question_sha256": "4a7ce91f34085a0476403fdd6e08f69744b6c6ec2b745d5a117e08e4b340d561",
+      "queue_gzip": 310007,
+      "queue_metadata_sha256": "cebe6273dd08b0a72b8ccc9a127d7d29abe0833f2a6d375b29aee1c9585b86c4",
+      "queue_sql": 459263,
+      "raw_bytes": 307661,
+      "submitted_sql_sha256": "88c5fa67fefa08e5a2b59802deaf480874400a8d73a048547a8dd2a37b959f8f",
+      "two_exact_restores": true,
+      "witness_bytes": 1546
+    },
+    "377-openai": {
+      "context_sha256": "6b231e9559a07fe12308dfc3d817c8c58ef487a32efd274c5ac91c92af9256ba",
+      "correction_controls": {
+        "cancelled": {
+          "downloads": 1,
+          "prepared": 0,
+          "state_unchanged": true
+        },
+        "changed": {
+          "downloads": 1,
+          "prepared": 0,
+          "state_unchanged": true
+        },
+        "identical": {
+          "downloads": 1,
+          "exact_question": true,
+          "original_message_edited": true,
+          "prepared": 1
+        },
+        "missing": {
+          "downloads": 1,
+          "prepared": 0,
+          "state_unchanged": true
+        },
+        "outage": {
+          "downloads": 1,
+          "prepared": 0,
+          "state_unchanged": true
+        }
+      },
+      "enriched_sql_sha256": "8b91f34a0bf09b3fec57cf39d195f4a53d1ee7f4ba2142cfa07def08660c5248",
+      "file_sha256": "d562dcf64770bd36810c7dff14d4de63a65e430d25e2f4f2e3e25b4c68c3cabb",
+      "frozen_sha256": "e2fce13b1fffd505e54807ae49c6e8905032313e42d43b03e66e1616f41d8629",
+      "pages": 5,
+      "question_sha256": "4a7ce91f34085a0476403fdd6e08f69744b6c6ec2b745d5a117e08e4b340d561",
+      "queue_gzip": 310303,
+      "queue_metadata_sha256": "5ba8e681a37d54d4ae76669fca405b99e242967e16bec1d4c19652fe283bba26",
+      "queue_sql": 459650,
+      "raw_bytes": 307661,
+      "submitted_sql_sha256": "30de53d62fd4dc1c5488c9db77ea80d3296cc54ad0096c5206b6edda166a8b39",
+      "two_exact_restores": true,
+      "witness_bytes": 1546
+    }
+  },
+  "committee_v1_replay_sha256": "2582247aeedac8aa37585012f62ede551c123507c785e6a78eb213ffdfa562ea",
+  "committee_v1_parent_parity": true,
+  "witness_fixture": "constructed submitted metadata read by the ordinary collection path",
+  "provider_submissions": 0,
+  "telegram_sends": 0
+}

@@ -13352,6 +13352,7 @@ checksums. The three reserved cases still have no verified overlap in
 these seals. Existing human review counts are unchanged.
 
 [Qualification](../assets/audits/2026-11-06-corpus-archive-alias/qualification.json).
+Exact release verified for `8e542eb5` via [CI](https://github.com/sobolevbel/lexinform/actions/runs/42285315584) and [relay](https://github.com/sobolevbel/lexinform/actions/runs/42286521257).
 
 <a id="j371"></a>
 
@@ -13372,6 +13373,7 @@ No human labels or evaluation-use records were added. The historical
 holdout archive scan covered size-matching direct members.
 
 [Qualification](../assets/audits/2026-11-06-corpus-annotation-provenance/qualification.json).
+Exact release verified for `c4b0cc25` via [CI](https://github.com/sobolevbel/lexinform/actions/runs/42286743655) and [relay](https://github.com/sobolevbel/lexinform/actions/runs/42287542185).
 
 <a id="j372"></a>
 
@@ -13429,3 +13431,22 @@ legacy state. The correction consumer and automatic witness writer
 remain open.
 
 [Qualification](../assets/audits/2026-11-06-senate-scan-context-reader/qualification.json).
+
+<a id="j375"></a>
+
+## J375 — correct a Senate scan from its retained original question
+
+The correction command accepts a retained Senate scan witness only
+for the original publication, source kind, owner and URL. It reads the
+PDF once and reconstructs the exact original question with its Senate
+source check. The existing committee scan path remains compatible.
+
+The official Senate resolution for druk 377 passed both offline provider
+builders. A constructed submitted witness was collected and then used
+after cleanup and two restores. The command queued the identical question
+and the fake publisher edited the original message. A repeated command
+while queued did not fetch or prepare again. Changed PDF, missing file,
+outage and cancellation each stopped before preparation or a state write.
+The committee v1 replay matched the direct parent byte-for-byte.
+
+[Qualification](../assets/audits/2026-11-06-senate-scan-correction/qualification.json).

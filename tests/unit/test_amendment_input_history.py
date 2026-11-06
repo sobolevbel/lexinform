@@ -742,11 +742,12 @@ def test_older_unavailable_layout_has_no_new_amendment_finding() -> None:
         assert list(amendment_input_issues(connection)) == []
 
 
+@pytest.mark.parametrize("senate", [False, True])
 @pytest.mark.parametrize("known", [True, False])
 def test_original_scan_resolution_never_infers_a_witness_from_a_manifest(
-    case: Case, known: bool
+    case: Case, known: bool, senate: bool
 ) -> None:
-    witness, _, _ = scan_original()
+    witness, _, _ = scan_original(senate=senate)
     result = paid_scan_result(witness)
     if not known:
         result = result.model_copy(update={"amendment_scan_input": None})
