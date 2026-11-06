@@ -2,7 +2,7 @@
 
 import hashlib
 import json
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal, NamedTuple, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -15,6 +15,7 @@ MAX_DOC_NOTE_SUMMARY_BYTES = 4096
 Count = Annotated[int, Field(strict=True, ge=0, lt=0x7FFFFFFF)]
 Sha256 = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 Validation = Literal["source_characters_checked_cf_spec_unknown"]
+type CfSpecSource = Literal["chpx", "prm0", "prm1"]
 
 
 class DocSourceNoteLink(BaseModel):
@@ -114,12 +115,24 @@ class DocNoteProjection(BaseModel):
         return self
 
 
+class DocNoteCfSpec(NamedTuple):
+    reference_cp: Count
+    value: Annotated[bool, Field(strict=True)]
+    source: CfSpecSource
+
+
 class DocNoteSummary(_Source):
     observed_links: Count | None
     links: tuple[DocSourceNoteLink, ...] = Field(max_length=MAX_DOC_RETAINED_LINKS)
     captured_manifest_sha256: Sha256
     retained_manifest_sha256: Sha256
     projections: tuple[DocNoteProjection, ...] | None = Field(
+        default=None,
+        min_length=1,
+        max_length=MAX_DOC_RETAINED_LINKS,
+        exclude_if=lambda value: value is None,
+    )
+    cfspec: tuple[DocNoteCfSpec, ...] | None = Field(
         default=None,
         min_length=1,
         max_length=MAX_DOC_RETAINED_LINKS,
@@ -137,6 +150,17 @@ class DocNoteSummary(_Source):
         complete = observed == len(self.links) or self.state == "unavailable"
         _validate_links(self, self.links, complete=complete)
         _validate_projections(self.links, self.projections)
+        if self.cfspec is not None:
+            automatic = {
+                link.reference_cp: index
+                for index, link in enumerate(self.links)
+                if link.numbering_flag
+            }
+            indices = [automatic.get(item.reference_cp, -1) for item in self.cfspec]
+            if -1 in indices or indices != sorted(set(indices)):
+                raise ValueError(
+                    "DOC CFSpec requires unique retained automatic links in source order"
+                )
         retained = _capture_digest(self, self.links)
         if self.retained_manifest_sha256 != retained:
             raise ValueError("Retained DOC links differ from their stored prefix hash")

@@ -13940,3 +13940,24 @@ Source and prepared-input evidence and live Telegram verification remain
 outside this check.
 
 [Qualification](../assets/audits/2026-11-07-mnemonic-delivery-cycle/qualification.json).
+
+<a id="j402"></a>
+
+## J402 — read explicit CFSpec evidence for binary DOC note calls
+
+The bounded binary reader resolves automatic reference CPs through the CLX,
+CHPX and piece properties. It distinguishes an explicit on or off value from
+absence and unknown. Malformed structures and unresolved operands stay
+unknown. The persisted reader accepts optional compact evidence tied to an
+existing automatic link and preserves the legacy link digests. Default
+extraction emits the previous format.
+
+The typed reader reproduced all 377 explicit on observations from 404 pinned
+paths and 246 distinct DOC files. The model qualification preserved the
+previous metadata and fit 229 compact observations under the existing caps.
+On a scratch checkpoint with the three largest increments, SQL grew by
+567 bytes and gzip by 147 bytes. Both forms survived two exact restores
+and integrity checks. The previous reader rejected the new checkpoint
+without changing its legacy state.
+
+[Qualification](../assets/audits/2026-11-07-doc-note-cfspec-reader/qualification.json).

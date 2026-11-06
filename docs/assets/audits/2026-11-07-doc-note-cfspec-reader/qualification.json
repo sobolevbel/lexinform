@@ -1,0 +1,45 @@
+{
+  "manifest_sha256": "449d893ca8d9b89933a3ac84abd3b757d0f89298d06fc9ae6e5c31ecb38775d5",
+  "observations_sha256": "7871841ca89126f6e6ac215db225de06d29e773cef95125f328f888bbd00a804",
+  "input_sql_sha256": "29dfe8566f02ceb810a1a43e8ea9a7b0fd0d9f6fc54ffa7212c4dda23945cd6d",
+  "counts": {
+    "unique_inputs": 246,
+    "explicit": 377,
+    "retained": 229,
+    "record_growth_bytes": 5195
+  },
+  "files_with_retained": 68,
+  "max_record_growth_bytes": 190,
+  "sample_sha256": [
+    "4c6857b5d2b93232d5674f2ad9112a0692178ad9eb3e67c33b491056ef8dcf61",
+    "f0aa2283f2aa4fe997ba101adf1be3a933242069583736a25169d8cf54d8e1fe",
+    "fea15d8e3bd49bf1ba622f11605371cf402d8b8dd908f4d3bb8b45f813d76e2c"
+  ],
+  "checkpoints": {
+    "before": {
+      "sql_bytes": 25806631,
+      "gzip_bytes": 5222975,
+      "sha256": "131e0a449f05c2a4598dfab3e13b54811e7bc3b0d42609ffbbef0355ad5a5d9e",
+      "exact_restores": 2
+    },
+    "after": {
+      "sql_bytes": 25807198,
+      "gzip_bytes": 5223122,
+      "sha256": "cfaa01d602345f06420643a4f8beef9663585950b5f9eb851c1eafbd3731a089",
+      "exact_restores": 2
+    }
+  },
+  "typed_parser": {
+    "manifest_sha256": "449d893ca8d9b89933a3ac84abd3b757d0f89298d06fc9ae6e5c31ecb38775d5",
+    "reference_sha256": "7871841ca89126f6e6ac215db225de06d29e773cef95125f328f888bbd00a804",
+    "unique_inputs": 246,
+    "counts": {
+      "paths": 404,
+      "on": 377
+    }
+  },
+  "prior_reader_test_sha": "2c072dac541204e6c05ccb7d1463adc189bf8c02",
+  "prior_reader_rejects_new_checkpoint_atomically": true,
+  "probe_sha256": "1e56331adb7a516a3ae450be13597bb33848ae2dce2643458d30592d80021071",
+  "baseline": "3eab7aa84db79b04a710fd149367d5497910be45"
+}

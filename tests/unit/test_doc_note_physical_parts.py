@@ -544,3 +544,31 @@ def test_doc_physical_projection_rejects_wrong_note_body_hash() -> None:
 
     with pytest.raises(ValidationError, match="DOC note body differs"):
         DocNotedParts.model_validate(payload)
+
+
+@pytest.mark.parametrize("control", ["valid", "unknown", "duplicate", "non_boolean", "custom"])
+def test_doc_cfspec_reader_binds_explicit_properties_to_retained_automatic_links(
+    control: str,
+) -> None:
+    source = captured()
+    if control == "custom":
+        source = source.model_copy(
+            update={"links": (source.links[0].model_copy(update={"numbering_flag": 0}),)}
+        )
+    legacy = DocNoteSummary.from_capture(source, retained_links=1)
+    payload = legacy.model_dump(mode="json")
+    evidence = {"reference_cp": 1 if control == "unknown" else 0, "value": True, "source": "chpx"}
+    if control == "non_boolean":
+        evidence["value"] = "true"
+    payload["cfspec"] = [evidence, evidence] if control == "duplicate" else [evidence]
+
+    if control == "valid":
+        observed = DocNoteSummary.model_validate(payload)
+        assert observed.model_dump(mode="json")["cfspec"] == [[0, True, "chpx"]]
+        assert (
+            observed.model_copy(update={"cfspec": None}).model_dump_json()
+            == legacy.model_dump_json()
+        )
+    else:
+        with pytest.raises(ValidationError):
+            DocNoteSummary.model_validate(payload)
