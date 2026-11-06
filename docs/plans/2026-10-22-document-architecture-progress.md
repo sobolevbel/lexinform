@@ -12924,6 +12924,9 @@ the new trace twice. The raw pair matched 16 roots and four controls.
 The broad cached pair matched all 4,276 outcomes and 1,383 missing inputs.
 [Qualification](../assets/audits/2026-11-06-outer-archive-choice/qualification.json).
 
+The exact `7a0b1790` release passed CI run 42251735573 and relay
+deployment 42253001766. Restart and timer were verified.
+
 <a id="j348"></a>
 
 ## J348 — validate a literal citation on one physical PDF page
@@ -12939,3 +12942,18 @@ differed as expected. Geometry, semantics and paid-input retention
 are outside the check.
 [Case](../assets/audits/2026-11-06-pdf-page-citation/case.json) and
 [qualification](../assets/audits/2026-11-06-pdf-page-citation/qualification.json).
+
+<a id="j349"></a>
+
+## J349 — verify literal quotes in two multipart prepared inputs
+
+The offline replay validates the frozen queued request and retained
+parent records in one pinned SQLite snapshot before locating a unique
+quote in the first bill part and exact prepared input.
+
+The native Sejm 2320 preparation retained `[1297, 1411)`, and RCL
+778150 retained `[157, 272)`. Missing parents, wrong request identity
+and wrong quote rejected both cases. Database bytes stayed exact.
+Reports matched across checkouts apart from the code pins. The claims
+are controlled; semantic support and provider submission are unassessed.
+[Qualification](../assets/audits/2026-11-06-multipart-citation/qualification.json).

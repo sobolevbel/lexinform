@@ -84,6 +84,20 @@ def validate_key_change_input(
     intent: BatchIntent | None,
     source_selection: DocumentSelectionRecord | None = None,
 ) -> ClaimInputCheck:
+    return _validate_key_change_input(
+        record, evidence, documents, intent=intent, source_selection=source_selection
+    )
+
+
+def _validate_key_change_input(
+    record: AnalysisRecord,
+    evidence: KeyChangeEvidence | None,
+    documents: tuple[ReviewDocument, ...],
+    *,
+    intent: BatchIntent | None,
+    source_selection: DocumentSelectionRecord | None = None,
+    verified_multipart_selection: DocumentSelectionRecord | None = None,
+) -> ClaimInputCheck:
     checked = validate_key_change_evidence(record, evidence, documents)
     if evidence is None or checked.observed_text_span is None:
         return ClaimInputCheck(checked, "unknown", "evidence_unresolved")
@@ -121,14 +135,17 @@ def validate_key_change_input(
         or record.source_kind != ctx.source_kind
     ):
         return ClaimInputCheck(checked, "unknown", "request_binding_mismatch")
-    if isinstance(receipt, (RclArchiveInputReceipt, SejmSelfAmendmentInputReceipt)):
-        return ClaimInputCheck(checked, "unknown", "source_binding_unavailable")
     document = next(doc for doc in documents if doc.identity == evidence.citation.document_id)
-    binding = (
-        _loose_rcl_main_binding(document, meta, receipt, record.source_url, source_selection)
-        if isinstance(receipt, LooseRclInputReceipt)
-        else _source_binding(document, meta, receipt, record.source_url)
-    )
+    if isinstance(receipt, (RclArchiveInputReceipt, SejmSelfAmendmentInputReceipt)):
+        binding = _bound_multipart_main(
+            document, meta, receipt, record.source_url, verified_multipart_selection
+        )
+    elif isinstance(receipt, LooseRclInputReceipt):
+        binding = _loose_rcl_main_binding(
+            document, meta, receipt, record.source_url, source_selection
+        )
+    else:
+        binding = _source_binding(document, meta, receipt, record.source_url)
     if binding is not None:
         return ClaimInputCheck(checked, "unknown", binding)
     runs: list[tuple[int, int, int, int]] = []
@@ -244,6 +261,40 @@ def _loose_rcl_main_binding(
         or record_url != part.url
         or recorded.text_sha256 != document.sha256
         or recorded.chars != len(document.text)
+    ):
+        return "source_binding_mismatch"
+    return None
+
+
+def _bound_multipart_main(
+    document: ReviewDocument,
+    meta: BatchItemMeta,
+    receipt: RclArchiveInputReceipt | SejmSelfAmendmentInputReceipt,
+    record_url: str | None,
+    selection: DocumentSelectionRecord | None,
+) -> ClaimInputReason | None:
+    if selection is None or not document.file_sha256 or not document.url or not record_url:
+        return "source_binding_unavailable"
+    if (
+        selection.selection_id != receipt.source_selection_id
+        or not selection.selection.parts
+        or selection.selection.parts != meta.selection.without_text().parts
+    ):
+        return "source_binding_mismatch"
+    part, saved = selection.selection.parts[0], receipt.source_parts[0]
+    if (
+        part.role != "bill"
+        or saved.role != "bill"
+        or part.sha256 != document.file_sha256
+        or part.url != document.url
+        or part.url != record_url
+        or part.url != meta.source_url
+        or bool(part.members) != isinstance(receipt, RclArchiveInputReceipt)
+        or part.text_sha256 != document.sha256
+        or saved.text_sha256 != document.sha256
+        or part.text_start != 0
+        or part.text_end != len(document.text)
+        or saved.chars != len(document.text)
     ):
         return "source_binding_mismatch"
     return None

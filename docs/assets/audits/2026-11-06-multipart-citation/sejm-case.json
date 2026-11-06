@@ -1,0 +1,13 @@
+{
+  "claim": "Controlled claim, no provider call.",
+  "custom_id": "77fd62c4ca274619fb2d7b791c98efbfed2bff6d32d9219b02cfaf9d38c24b1a",
+  "locator": "Art. 1",
+  "original": {
+    "path": "sejm/term10/files/2320__2320.pdf",
+    "sha256": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5"
+  },
+  "quote_end": 1411,
+  "quote_sha256": "ec3b17b23802584bb46bc7305b16a668202e97a9a0d13358781da814d7ec4023",
+  "quote_start": 1297,
+  "request_sha256": "c4b69c31ca1591a9af621c73688bd798bfb45a13e16701364bb34edb6cde8ada"
+}

@@ -1,0 +1,112 @@
+{
+  "archive": {
+    "case_sha256": "4ee3b704a078ce245d9415f72050589c3a392764b3e444757eff3b49fa4d0d9f",
+    "controls": {
+      "missing_parent": "input_receipt_parent_missing",
+      "wrong_quote": "The selected literal quote differs from its pin",
+      "wrong_request": "The durable original request differs from its pin"
+    },
+    "database_unchanged": true,
+    "positive": {
+      "code_version": "9bd571b11801b4e39d8ecb185835f4e25718dbbe",
+      "database_sha256": "22603a9be8b98d55cadef73684e50016355e539b8c3dcdbfeb77a130cbb9fb71",
+      "proof": {
+        "artifact_sha256": "659ac5e0b08f211d09ba3d6fc9054c972299f9450a2b1ec55db4ca91fce44a03",
+        "check": {
+          "block_origins": "unmapped",
+          "evidence": {
+            "block_origins": "unmapped",
+            "observed_text_span": [
+              157,
+              272
+            ],
+            "paid_origins": "unmapped",
+            "quote_occurrences": 1,
+            "semantic": "semantic_not_assessed",
+            "source_complete": false,
+            "status": "quote_present"
+          },
+          "input_span": [
+            157,
+            272
+          ],
+          "physical_origins": "unmapped",
+          "reason": "retained_source_span",
+          "semantic": "semantic_not_assessed",
+          "status": "retained"
+        },
+        "claim_text_sha256": "1b32d3e306b9959e85050cf68beaf75da05cc5f24d20b4fb03e29c5671ff8970",
+        "member_sha256": "aad76ba10e42eabcccec9b5207e2e89b8753bb12cde5097f209fc905de8e52b5",
+        "profile": "primary-rcl-archive-package-text-v1",
+        "quote_sha256": "8c9b2ba16e9cbdeb34b0294b5299df1450d97e3b5acdfa04a6e2839aed3cbedf",
+        "request_sha256": "8059b6d8e02c4b092f5eb015d12eda81da57019f57b8f6e2ceb93bf4bca281ee",
+        "source_observation_id": "source-observation-v1:85424c7988fc8360355ff80c04abcc55a90acffd20f502f43cab1679b05077b9",
+        "source_selection_id": "selection-v1:dd28972539745a147426a45aa389f0057d1817ccc9e1eed189b5df98a30ced72",
+        "source_text_sha256": "6d7e8d4520299daff7cfd88da3d0806687e1519840fb4634880ad8fdaec53c61"
+      },
+      "read_inputs": {
+        "documents/files/778150.zip": "659ac5e0b08f211d09ba3d6fc9054c972299f9450a2b1ec55db4ca91fce44a03"
+      },
+      "scope": "Literal text in a durable offline prepared context.",
+      "source_pins_sha256": "25ddba226bbbe9a996743f40d5dd54e892860a24ac5619a40463c460fa08ebae",
+      "status": "recorded",
+      "version": "primary-multipart-citation-v1"
+    },
+    "repeated_exact": true
+  },
+  "sejm": {
+    "case_sha256": "139fea0809809b26b6c20d934b6b11592e4bf9bb56c03a151e6b62023e5ea7be",
+    "controls": {
+      "missing_parent": "input_receipt_parent_missing",
+      "wrong_quote": "The selected literal quote differs from its pin",
+      "wrong_request": "The durable original request differs from its pin"
+    },
+    "database_unchanged": true,
+    "positive": {
+      "code_version": "9bd571b11801b4e39d8ecb185835f4e25718dbbe",
+      "database_sha256": "279cfe182e9319cdcc3a1f0953fae9491d9631a7d1e2d678364ef667f53aa317",
+      "proof": {
+        "artifact_sha256": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+        "check": {
+          "block_origins": "unmapped",
+          "evidence": {
+            "block_origins": "unmapped",
+            "observed_text_span": [
+              1297,
+              1411
+            ],
+            "paid_origins": "unmapped",
+            "quote_occurrences": 1,
+            "semantic": "semantic_not_assessed",
+            "source_complete": false,
+            "status": "quote_present"
+          },
+          "input_span": [
+            1297,
+            1411
+          ],
+          "physical_origins": "unmapped",
+          "reason": "retained_source_span",
+          "semantic": "semantic_not_assessed",
+          "status": "retained"
+        },
+        "claim_text_sha256": "1b32d3e306b9959e85050cf68beaf75da05cc5f24d20b4fb03e29c5671ff8970",
+        "member_sha256": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+        "profile": "primary-sejm-self-amendment-text-v1",
+        "quote_sha256": "ec3b17b23802584bb46bc7305b16a668202e97a9a0d13358781da814d7ec4023",
+        "request_sha256": "c4b69c31ca1591a9af621c73688bd798bfb45a13e16701364bb34edb6cde8ada",
+        "source_observation_id": "source-observation-v1:a637d889f043d97bab4854f317676a43b5ae1c75cbd650474dd0fa33854d8292",
+        "source_selection_id": "selection-v1:5be58199fc39b70e8f62397d24ca0d3f23f03e3ee7fd9527e8695c4accc04997",
+        "source_text_sha256": "87f96cfc689357a34c77b1b5600a162c5fd1fb93c285dfce6a506ae0c5a26af6"
+      },
+      "read_inputs": {
+        "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5"
+      },
+      "scope": "Literal text in a durable offline prepared context.",
+      "source_pins_sha256": "25ddba226bbbe9a996743f40d5dd54e892860a24ac5619a40463c460fa08ebae",
+      "status": "recorded",
+      "version": "primary-multipart-citation-v1"
+    },
+    "repeated_exact": true
+  }
+}
