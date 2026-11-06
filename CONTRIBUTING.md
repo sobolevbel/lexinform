@@ -56,6 +56,10 @@ shortcuts (`make web-sync`, `make web-check`, `make web-serve`) are described in
 server commands; quote expressions inside it, for example `ARGS="-k 'closure or hearing'"`.
 Override the uv command with `make check UV="uv --offline"` after dependencies are installed.
 
+After a push to `main`, use `make release-check RELEASE_SHA=<full-sha>` to check CI and
+the relay deployment for that commit. See the [release runbook](docs/operations/index.md#проверить-выпуск-и-автоматическое-обновление-relay)
+for waiting and saving a receipt.
+
 The underlying commands remain available:
 
 ```bash

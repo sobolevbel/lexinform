@@ -17,7 +17,7 @@ DOCS = $(RUN) --group docs
 BOT_PATHS = src tests tools
 WEB_PATHS = web/src web/tests web/stubs
 
-.PHONY: help sync test test-unit test-scenario test-local-http test-integration coverage corpus-check lint typecheck format format-check check docs docs-build docs-check web-sync web-test web-lint web-typecheck web-format web-check web-serve
+.PHONY: help sync test test-unit test-scenario test-local-http test-integration coverage corpus-check release-check lint typecheck format format-check check docs docs-build docs-check web-sync web-test web-lint web-typecheck web-format web-check web-serve
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  make %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -47,6 +47,10 @@ coverage: ## Run bot tests with a coverage report
 corpus-check: ## Replay explicit offline corpus/output paths (CORPUS=... CORPUS_OUTPUT=...)
 	@test -n "$(CORPUS)" -a -n "$(CORPUS_OUTPUT)" || { echo "Set CORPUS and CORPUS_OUTPUT explicitly"; exit 2; }
 	$(RUN) python -m tools.corpus_check --corpus "$(CORPUS)" --output "$(CORPUS_OUTPUT)" --profiles "$(CORPUS_PROFILES)" --suite "$(CORPUS_SUITE)" $(if $(CORPUS_MODE),--mode "$(CORPUS_MODE)") $(if $(CORPUS_REFERENCE),--reference "$(CORPUS_REFERENCE)") $(if $(CORPUS_REFERENCE_SHA256),--reference-sha256 "$(CORPUS_REFERENCE_SHA256)") $(if $(CORPUS_PLAN),--plan "$(CORPUS_PLAN)") $(if $(CORPUS_PLAN_SHA256),--plan-sha256 "$(CORPUS_PLAN_SHA256)")
+
+release-check: ## Verify CI and relay deployment for RELEASE_SHA (optional flags in ARGS)
+	@test -n "$(RELEASE_SHA)" || { echo "Set RELEASE_SHA to the full target commit SHA"; exit 2; }
+	$(RUN) python -m tools.verify_release "$(RELEASE_SHA)" $(ARGS)
 
 lint: ## Check bot and tools with Ruff
 	$(RUN) ruff check $(BOT_PATHS)

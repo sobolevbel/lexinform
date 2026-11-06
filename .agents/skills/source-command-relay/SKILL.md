@@ -5,9 +5,10 @@ description: "Проверить реле операторских команд,
 
 # source-command-relay
 
-For a specific release, use `tools/verify_release.py` with the full target SHA. Follow the
+For a specific release, use `make release-check RELEASE_SHA=<full-sha>`. Follow the
 [release runbook](../../../docs/operations/index.md#проверить-выпуск-и-автоматическое-обновление-relay)
-for bounded waiting, the optional previous verified SHA and the JSON receipt. Report the exact
+for bounded waiting, the optional previous verified SHA and the JSON receipt. Pass those flags
+through `ARGS`. Report the exact
 SHA, CI and deploy run links, and the verifier's status. A verified deploy is evidence of the
 restart and timer, with Telegram delivery checked separately when requested.
 
