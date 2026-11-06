@@ -13055,6 +13055,9 @@ consumed item kept the map after cleanup and two restores. The previous
 reader rejected the new profile atomically. Automatic capture stays off.
 [Qualification](../assets/audits/2026-11-06-hybrid-input-reader/qualification.json).
 
+The exact `998a2de3` release passed CI run 42261453165 and relay
+deployment 42262708414. Restart and timer were verified.
+
 <a id="j355"></a>
 
 ## J355 — retain the actual prepared map for ZIP and self-amendment
@@ -13069,3 +13072,19 @@ map survived mocked submission, collection, application and cleanup.
 The cleaned dump added 2,574 SQL bytes and 524 gzip bytes. The prior
 compatible reader restored all four lifecycle checkpoints twice.
 [Qualification](../assets/audits/2026-11-06-hybrid-input-writer/qualification.json).
+
+<a id="j356"></a>
+
+## J356 — record declared judgments over a pinned saved answer
+
+The offline intake binds the saved result, request, text and claim
+hashes before checking literal spans. Reviewer-declared judgments are
+separate from mechanical evidence. Unknown and conflict stay explicit.
+The blank template supplies the pins and leaves judgment fields empty;
+intake rejects the template until a reviewer completes it.
+
+On the authentic 3231 snapshot the synthetic control verified one
+literal citation and contributed zero independent semantic labels.
+The eight-slot template, prior HTML and repeated report matched.
+No saved answer, reader card or provider request was changed.
+[Qualification](../assets/audits/2026-11-06-primary-review-intake/qualification.json).

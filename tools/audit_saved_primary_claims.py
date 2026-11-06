@@ -4,6 +4,7 @@ import argparse
 import sqlite3
 from collections import Counter
 from collections.abc import Iterator
+from dataclasses import dataclass
 from html import escape
 from pathlib import Path
 
@@ -116,7 +117,16 @@ def run(database: Path, output: Path) -> int:
     return 1 if report["status"] == "failed" else 2 if report["status"] == "not_run" else 0
 
 
-def review_page(database: Path, *, database_sha256: str, result_id: str) -> str:
+@dataclass(frozen=True)
+class SavedClaimReview:
+    record: AnalysisRecord
+    number: str
+    request_sha256: str
+    text_sha256: str
+    text: str
+
+
+def saved_claim_review(database: Path, *, database_sha256: str, result_id: str) -> SavedClaimReview:
     with open_snapshot(database) as snapshot:
         if snapshot.sha256 != database_sha256:
             raise ValueError("Review snapshot SHA-256 differs from its pin")
@@ -165,8 +175,15 @@ def review_page(database: Path, *, database_sha256: str, result_id: str) -> str:
         validate_input_snapshots(db)
         if not snapshot.unchanged():
             raise ValueError("Input database changed during review preparation")
+    return SavedClaimReview(
+        record, paid.number, paid.request_sha256, receipt.text_sha256, meta.text
+    )
+
+
+def review_page(database: Path, *, database_sha256: str, result_id: str) -> str:
+    review = saved_claim_review(database, database_sha256=database_sha256, result_id=result_id)
     claims = []
-    for field, index, text in _claim_slots(record):
+    for field, index, text in _claim_slots(review.record):
         if not text.strip():
             continue
         identity = field if index is None else f"{field}[{index}]"
@@ -180,7 +197,7 @@ def review_page(database: Path, *, database_sha256: str, result_id: str) -> str:
         "<style>body{font:16px system-ui;max-width:75rem;margin:2rem auto;padding:0 1rem}"
         "pre{white-space:pre-wrap;overflow-wrap:anywhere}"
         "code{overflow-wrap:anywhere}</style>"
-        f"<h1>Проверка анализа проекта {escape(paid.number)}</h1>"
+        f"<h1>Проверка анализа проекта {escape(review.number)}</h1>"
         "<p>Смысловая проверка ожидается. Для каждого пункта укажите цитату и отметьте, "
         "подтверждает ли она вывод, круг лиц, условия и дату. Для сравнения редакций "
         "и утверждений о принятии нужны отдельные источники.</p>"
@@ -188,12 +205,12 @@ def review_page(database: Path, *, database_sha256: str, result_id: str) -> str:
         "прежняя редакция и последующие решения здесь не проверены.</p>"
         f"<p>Снимок <code>{database_sha256}</code><br>"
         f"Результат <code>{escape(result_id)}</code><br>"
-        f"Запрос <code>{paid.request_sha256}</code><br>"
-        f"Текст <code>{receipt.text_sha256}</code></p>"
+        f"Запрос <code>{review.request_sha256}</code><br>"
+        f"Текст <code>{review.text_sha256}</code></p>"
         "<h2>Утверждения</h2>"
         + "".join(claims)
         + "<h2>Текст запроса</h2><pre>"
-        + escape(meta.text)
+        + escape(review.text)
         + "</pre></html>\n"
     )
 

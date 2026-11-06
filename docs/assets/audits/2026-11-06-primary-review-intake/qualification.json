@@ -1,0 +1,31 @@
+{
+  "claim_slots": 8,
+  "database_sha256": "f15cc42ef9bae61a88aa0d1030934e07d5396d640ee26db23e9e3aa6b2cdc0cd",
+  "independent_semantic_labels": 0,
+  "input_unchanged": true,
+  "negative_controls": {
+    "synthetic-independent": "Require one named reviewer and a valid independence declaration",
+    "wrong-claim": "Review requires the exact saved claim and a nonempty judgment reason",
+    "wrong-context": "Review answers refer to a different saved answer or request",
+    "wrong-offset": "Citation differs from its exact submitted-context text span or locator"
+  },
+  "prior_census_and_review_sheet_exact": true,
+  "repeat_intake_sha256": "d0cda614dc2b41988b9f1a7bd8e39f4de6b1c6035eda8965a027cfef8cf89b7b",
+  "review_sheet_sha256": "ac9d3e46cb4150283cc73be84692c0614db3383308416ea55645c3061a8b69c4",
+  "state_sha": "ff49a74a8d5e5b846a8f11d98ca71c2f421930b8",
+  "synthetic_mechanical_citations_verified": 1,
+  "synthetic_only": true,
+  "template": {
+    "blank_template_rejected": true,
+    "case": "3231",
+    "database_sha256": "f15cc42ef9bae61a88aa0d1030934e07d5396d640ee26db23e9e3aa6b2cdc0cd",
+    "database_unchanged": true,
+    "default_html_exact_sha256": "ac9d3e46cb4150283cc73be84692c0614db3383308416ea55645c3061a8b69c4",
+    "filled_citations": 0,
+    "filled_judgments": 0,
+    "reviewer_placeholders": null,
+    "slots": 8,
+    "template_exact_repeat": true,
+    "template_sha256": "2b4b3d881932518a5cf3c5b942522c96752187cf973b6e888f199c0517673b8e"
+  }
+}

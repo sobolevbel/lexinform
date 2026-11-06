@@ -356,6 +356,30 @@ stay `conflict`. A reserved case becomes `holdout` only when humans agree on
 `independent_initiative: yes` and no agent reviewed it; previously consumed queues stay
 `regression`. Several `--answers`/`--answers-sha256` pairs record several reviewers in one run.
 
+
+### Saved primary claim judgments
+
+Create a review sheet with `tools.audit_saved_primary_claims --review-result RESULT_ID`.
+Create a blank, pinned answer template with the same command and `--template` in place
+of `--answers`. Fill the review fields and remove unanswered slots before recording the
+completed JSON. The empty template is rejected by intake.
+
+```bash
+uv run --offline --frozen python -m tools.record_primary_claim_review \
+  --database /path/to/checkpoint.db --database-sha256 SNAPSHOT_SHA \
+  --result-id RESULT_ID --answers /path/to/answers.json ANSWERS_SHA \
+  --output /path/to/new-review.json
+```
+
+The answer format `saved-primary-claim-review-v1` includes the snapshot, result, request
+and text pins, a reviewer name, ISO date, kind and independence declaration. Each answered
+slot has its field, index (null for the date), claim hash, explicit judgment and reason.
+A supported judgment requires an `EvidenceCitation` naming `submitted-context` with exact
+Python string offsets in the retained text. Unknown and conflicting judgments remain explicit.
+Synthetic controls and nonindependent responses contribute no consensus labels. This profile
+covers only the supplied primary text and leaves comparisons with an unavailable earlier
+edition unknown.
+
 ## Explicit public collection
 
 These entry points allow public source requests only when `--allow-network` is present.
