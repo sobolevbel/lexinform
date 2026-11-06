@@ -13371,3 +13371,20 @@ No human labels or evaluation-use records were added. The historical
 holdout archive scan covered size-matching direct members.
 
 [Qualification](../assets/audits/2026-11-06-corpus-annotation-provenance/qualification.json).
+
+<a id="j372"></a>
+
+## J372 — bind review targets to the verified queue bytes
+
+Form generation and review recording now parse the result bytes only
+after checking their hash against the verified seal and rechecking the
+manifest pin. A queue changed during that read is rejected before the
+caller receives any review target.
+
+A controlled edit after seal verification reproduced historical acceptance
+of a changed case title. The new form refused it without writing output.
+The four real seals yielded the same targets as before, including three
+holdout originals, the 170-case empty queue and both 177-case excerpt
+generations. This is an integrity check, and adds no human labels.
+
+[Qualification](../assets/audits/2026-11-06-corpus-review-queue-seal/qualification.json).

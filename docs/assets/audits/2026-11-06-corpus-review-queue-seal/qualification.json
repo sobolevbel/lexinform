@@ -1,0 +1,34 @@
+{
+  "baseline_accepted_changed_title": true,
+  "candidate_rejects_changed_result": true,
+  "unchanged_pinned_queues": [
+    {
+      "case_count": 3,
+      "manifest_sha256": "3b8846cd6f625a19d1da4033d88b0ed8e4764d4f7b2c013d0a2c8a23f208c820",
+      "original_references": 3,
+      "suite": "holdout",
+      "text_references": 0
+    },
+    {
+      "case_count": 170,
+      "manifest_sha256": "a70c86f3714e6753dd82b00aef4d5294ad24b491c740a8b1b260e8365ca2c0ef",
+      "original_references": 355,
+      "suite": "empty-review",
+      "text_references": 0
+    },
+    {
+      "case_count": 177,
+      "manifest_sha256": "c22d7f71d1dff8392dc3ac4aa481017fbcb9b3ea383d1d832ed44cc8a17bbe6b",
+      "original_references": 0,
+      "suite": "annotations",
+      "text_references": 177
+    },
+    {
+      "case_count": 177,
+      "manifest_sha256": "de0e65ea8b3f639eddc5091156f73b6e8f0f85ab40f5baf6f972457313993bf3",
+      "original_references": 0,
+      "suite": "annotations",
+      "text_references": 177
+    }
+  ]
+}

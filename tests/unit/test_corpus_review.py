@@ -7,9 +7,10 @@ from typing import Any
 
 import pytest
 from pypdf import PdfWriter
+from tools import corpus_review
 from tools.corpus_artifacts import digest, write_json
 from tools.corpus_review import form, record, valid_answer
-from tools.corpus_runs import execute, finish
+from tools.corpus_runs import execute, finish, verify
 
 from lexinform.models import PdfPageText, PdfTextExtraction
 
@@ -358,3 +359,25 @@ def test_answers_use_a_closed_vocabulary_and_unknown_is_always_allowed(
 def test_review_mode_preset_cannot_be_overridden(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="controlled"):
         execute(tmp_path / "runs", "bad", "review", tmp_path / "corpus", ["--mode", "form"])
+
+
+def test_review_form_refuses_changed_queue_after_verification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    corpus, queue, pin, _ = holdout_queue(tmp_path)
+
+    def verify_then_change(directory: Path) -> dict[str, Any]:
+        manifest = verify(directory)
+        result = directory / "result.json"
+        payload = json.loads(result.read_bytes())
+        payload["cases"][0]["title"] = "Changed after verifying"
+        result.write_text(json.dumps(payload))
+        return manifest
+
+    monkeypatch.setattr(corpus_review, "verify", verify_then_change)
+    output = tmp_path / "form.json"
+
+    with pytest.raises(ValueError, match="Sealed review queue changed"):
+        form(corpus, queue, pin, output)
+    assert not output.exists()
+    assert not output.with_suffix(".html").exists()

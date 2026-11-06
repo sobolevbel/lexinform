@@ -100,7 +100,13 @@ def queue_targets(root: Path, queue: Path, pin: str) -> tuple[str, dict[str, Any
     manifest = verify(directory)
     if manifest["status"] != "recorded":
         raise ValueError("Only a sealed recorded queue can be reviewed")
-    report = json.loads(read_artifact(directory / "result.json"))
+    payload = read_artifact(directory / "result.json")
+    if (
+        digest(payload) != manifest["artifacts"]["result.json"]["sha256"]
+        or digest(read_artifact(directory / "manifest.json")) != pin
+    ):
+        raise ValueError("Sealed review queue changed during verification")
+    report = json.loads(payload)
     targets: dict[str, Any] = {}
     if manifest["suite"] == "holdout":
         for case in report["cases"]:
