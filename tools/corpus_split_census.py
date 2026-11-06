@@ -62,7 +62,15 @@ def population(suite: str, report: dict[str, Any]) -> dict[str, dict[str, Any]]:
             if suite == "holdout"
             else []
         )
-        if any(not _SHA256.fullmatch(value) for value in hashes):
+        members = [
+            leaf["sha256"]
+            for leaf in row.get("leaves", ())
+            if suite == "empty-review"
+            and leaf.get("members")
+            and leaf.get("bytes", 0) > 0
+            and "sha256" in leaf
+        ]
+        if any(not _SHA256.fullmatch(value) for value in (*hashes, *members)):
             raise ValueError("Queue raw alias is not a SHA-256")
         cases[key] = {
             "title": row.get("title", row.get("name", key)),
@@ -76,6 +84,7 @@ def population(suite: str, report: dict[str, Any]) -> dict[str, dict[str, Any]]:
                 and row["used_for_tuning"] is False
             ),
             "raw": hashes,
+            "member_raw": members,
         }
     return cases
 
@@ -106,7 +115,7 @@ def audit(runs: list[tuple[Path, str]], output: Path) -> dict[str, Any]:
         for identity, row in cases.items():
             case_groups[identity].add(row["group"])
             case_suites[identity].add(sealed[pin][0])
-            for sha256 in row["raw"]:
+            for sha256 in (*row["raw"], *row["member_raw"]):
                 aliases[sha256].add(identity)
 
     parent = {identity: identity for identity in case_groups}
@@ -147,7 +156,9 @@ def audit(runs: list[tuple[Path, str]], output: Path) -> dict[str, Any]:
             continue
         for row in report["cases"]:
             identity = row["id"]
-            target = queues[pin][identity]
+            target = {
+                key: value for key, value in queues[pin][identity].items() if key != "member_raw"
+            }
             if target["group"] != row["group"] or any(
                 value not in report["answers"].values()
                 for value in (review["answers_sha256"] for review in row["reviews"])

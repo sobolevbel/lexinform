@@ -219,3 +219,30 @@ def test_census_deduplicates_exact_reviews_and_rejects_distinct_answers_by_same_
         with pytest.raises(ValueError, match="Multiple pinned answers by one reviewer"):
             audit([queue, *reviews], output)
         assert not output.exists()
+
+
+def test_holdout_original_aliases_a_read_archive_member(tmp_path: Path) -> None:
+    holdout = seal(tmp_path, "holdout", "holdout", {"cases": [holdout_case()]})
+    empty = seal(
+        tmp_path,
+        "empty",
+        "empty-review",
+        {
+            "records": {
+                "archive": {
+                    "group": "archive",
+                    "raw_sha256": "b" * 64,
+                    "leaves": [
+                        {"members": ["read.pdf"], "sha256": "a" * 64, "bytes": 12},
+                        {"members": ["unavailable.pdf"], "declared_bytes": 12},
+                    ],
+                }
+            }
+        },
+    )
+
+    result = audit([holdout, empty], tmp_path / "census.json")
+
+    assert result["reserved_overlap_case_ids"] == ["rpw:unseen"]
+    assert result["case_components_after_raw_aliases"] == 1
+    assert result["recorded_groups"] == 2

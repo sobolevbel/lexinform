@@ -13332,3 +13332,20 @@ The five real J344 seals returned the same report byte-for-byte.
 No independent human judgments were added.
 
 [Qualification](../assets/audits/2026-11-06-corpus-review-identity/qualification.json).
+
+<a id="j370"></a>
+
+## J370 — include observed archive members in corpus split checks
+
+The split census compares a standalone original with nonempty archive
+member bytes recorded in a sealed empty-review queue. It skips unread
+members and does not infer a shared initiative from shared bytes.
+
+The regression control covers a holdout PDF that matches a diagnostic
+archive member. On the five J344 seals, the 180 cases now form 163
+byte-connected components instead of 165. Eight member occurrences
+were re-read from five pinned containers and matched their recorded
+checksums. The three reserved cases still have no verified overlap in
+these seals. Existing human review counts are unchanged.
+
+[Qualification](../assets/audits/2026-11-06-corpus-archive-alias/qualification.json).

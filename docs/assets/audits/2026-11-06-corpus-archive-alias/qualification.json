@@ -1,0 +1,107 @@
+{
+  "inputs": {
+    "3b8846cd6f625a19d1da4033d88b0ed8e4764d4f7b2c013d0a2c8a23f208c820": "holdout",
+    "62be5a0aeb1cf115a2b7a737f799983dcdce70d0d4f6d95605509baca3ade0b1": "review-form",
+    "a70c86f3714e6753dd82b00aef4d5294ad24b491c740a8b1b260e8365ca2c0ef": "empty-review",
+    "c22d7f71d1dff8392dc3ac4aa481017fbcb9b3ea383d1d832ed44cc8a17bbe6b": "annotations",
+    "c77fdc48db0a85eb74a94e2f2a1bc6c85012acd737ecae458ddd354b2d699b5c": "review-form"
+  },
+  "baseline_components": 165,
+  "candidate_components": 163,
+  "case_count": 180,
+  "reserved_overlap_case_ids": [],
+  "verified_cross_container_matches": [
+    {
+      "sha256": "010adc167090e840d599c4f52446a66978b24121be5baeba6012844423132d9e",
+      "case_ids": [
+        "doc:714973",
+        "doc:714974"
+      ],
+      "verified_paths": [
+        {
+          "case_id": "doc:714973",
+          "container_path": "documents/files/714973.zip",
+          "members": [
+            "Pismo przewodnie Ministry ds. Równosci na SKRM 30.04 (7619317).pdf"
+          ]
+        },
+        {
+          "case_id": "doc:714974",
+          "container_path": "documents/files/714974.zip",
+          "members": [
+            "1. Pismo przewodnie Ministry ds. Równosci na SKRM 30.04 (7619317).pdf"
+          ]
+        }
+      ]
+    },
+    {
+      "sha256": "65cefb6727e21f882eb83bb6c10370afa59aafda7f007f531df0c30026dc4684",
+      "case_ids": [
+        "doc:720000",
+        "doc:768376",
+        "doc:768381"
+      ],
+      "verified_paths": [
+        {
+          "case_id": "doc:720000",
+          "container_path": "documents/files/720000.zip",
+          "members": [
+            "Rozpatrzenie uwag - konsultacje publiczne_nowelizacja upzp_UDER13 (7832477).xlsx",
+            "xl/worksheets/_rels/sheet1.xml.rels"
+          ]
+        },
+        {
+          "case_id": "doc:768376",
+          "container_path": "documents/files/768376.zip",
+          "members": [
+            "ZaêÑcznik do raportu z konsultacji i opiniowania 18.03.2026.xlsx",
+            "xl/worksheets/_rels/sheet1.xml.rels"
+          ]
+        },
+        {
+          "case_id": "doc:768381",
+          "container_path": "documents/files/768381.zip",
+          "members": [
+            "ZaêÑcznik do raportu z konsultacji i opiniowania 18.03.2026.xlsx",
+            "xl/worksheets/_rels/sheet1.xml.rels"
+          ]
+        }
+      ]
+    },
+    {
+      "sha256": "73e5a29f48d5ab979eeda062493bc7e679265c1344ef936978b8becec5549497",
+      "case_ids": [
+        "doc:720000",
+        "doc:768376",
+        "doc:768381"
+      ],
+      "verified_paths": [
+        {
+          "case_id": "doc:720000",
+          "container_path": "documents/files/720000.zip",
+          "members": [
+            "Rozpatrzenie uwag - konsultacje publiczne_nowelizacja upzp_UDER13 (7832477).xlsx",
+            "_rels/.rels"
+          ]
+        },
+        {
+          "case_id": "doc:768376",
+          "container_path": "documents/files/768376.zip",
+          "members": [
+            "ZaêÑcznik do raportu z konsultacji i opiniowania 18.03.2026.xlsx",
+            "_rels/.rels"
+          ]
+        },
+        {
+          "case_id": "doc:768381",
+          "container_path": "documents/files/768381.zip",
+          "members": [
+            "ZaêÑcznik do raportu z konsultacji i opiniowania 18.03.2026.xlsx",
+            "_rels/.rels"
+          ]
+        }
+      ]
+    }
+  ],
+  "control": "A standalone holdout original matched the same bytes in a diagnostic ZIP."
+}
