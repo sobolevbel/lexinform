@@ -1,0 +1,154 @@
+{
+  "cohort_manifest_sha256": "bc94e5d85183747af057b76aea34c32800b22f572d2e6ee92a77e68975fb480e",
+  "context_size_sample": {
+    "count": 178,
+    "max_bytes": 3097,
+    "median_bytes": 971,
+    "min_bytes": 489,
+    "scope": "Stored analysis summary and key changes in a synthetic committee context before optional proposal, recommendation and witness metadata."
+  },
+  "legacy_computation_count": 14,
+  "legacy_dump_and_result_serialization_exact": true,
+  "legacy_snapshot_sha256": "73d98a076454e84108c6f8cb809fbf6170c65918314c43345161f61c0d8c8add",
+  "reader_report_sha256": "5677859e0daaaa97238e6c774dfebbe6dbcf78a832369c5dc6df49d800d14ad3",
+  "scan_paths": [
+    {
+      "correction": false,
+      "manifest": {
+        "first_page": 1,
+        "input_bytes": 138030,
+        "input_sha256": "79ab9c0745e7939b04aac222276e8001b6a403856f246bf92c6c544b16bb7bdd",
+        "page_count": 3,
+        "source_bytes": 138030,
+        "source_pages": 3,
+        "source_sha256": "79ab9c0745e7939b04aac222276e8001b6a403856f246bf92c6c544b16bb7bdd",
+        "transformations": [],
+        "version": 1
+      },
+      "owner": "2317",
+      "raw_sha256": "79ab9c0745e7939b04aac222276e8001b6a403856f246bf92c6c544b16bb7bdd",
+      "witness_bytes": 988
+    },
+    {
+      "correction": true,
+      "manifest": {
+        "first_page": 1,
+        "input_bytes": 138030,
+        "input_sha256": "79ab9c0745e7939b04aac222276e8001b6a403856f246bf92c6c544b16bb7bdd",
+        "page_count": 3,
+        "source_bytes": 138030,
+        "source_pages": 3,
+        "source_sha256": "79ab9c0745e7939b04aac222276e8001b6a403856f246bf92c6c544b16bb7bdd",
+        "transformations": [],
+        "version": 1
+      },
+      "owner": "2317",
+      "raw_sha256": "79ab9c0745e7939b04aac222276e8001b6a403856f246bf92c6c544b16bb7bdd",
+      "witness_bytes": 988
+    },
+    {
+      "correction": false,
+      "manifest": {
+        "first_page": 1,
+        "input_bytes": 50445,
+        "input_sha256": "5874b15192a35b7a757682fa1eb0ffede3b01cbcfa2c843418839bd19866a0fc",
+        "page_count": 2,
+        "source_bytes": 50445,
+        "source_pages": 2,
+        "source_sha256": "5874b15192a35b7a757682fa1eb0ffede3b01cbcfa2c843418839bd19866a0fc",
+        "transformations": [],
+        "version": 1
+      },
+      "owner": "744",
+      "raw_sha256": "5874b15192a35b7a757682fa1eb0ffede3b01cbcfa2c843418839bd19866a0fc",
+      "witness_bytes": 988
+    },
+    {
+      "correction": true,
+      "manifest": {
+        "first_page": 1,
+        "input_bytes": 50445,
+        "input_sha256": "5874b15192a35b7a757682fa1eb0ffede3b01cbcfa2c843418839bd19866a0fc",
+        "page_count": 2,
+        "source_bytes": 50445,
+        "source_pages": 2,
+        "source_sha256": "5874b15192a35b7a757682fa1eb0ffede3b01cbcfa2c843418839bd19866a0fc",
+        "transformations": [],
+        "version": 1
+      },
+      "owner": "744",
+      "raw_sha256": "5874b15192a35b7a757682fa1eb0ffede3b01cbcfa2c843418839bd19866a0fc",
+      "witness_bytes": 988
+    },
+    {
+      "correction": false,
+      "manifest": {
+        "first_page": 1,
+        "input_bytes": 56955,
+        "input_sha256": "42955998986601078cfe6830ee4b725f958fa549392858bc966a8a28dd97f43a",
+        "page_count": 2,
+        "source_bytes": 56955,
+        "source_pages": 2,
+        "source_sha256": "42955998986601078cfe6830ee4b725f958fa549392858bc966a8a28dd97f43a",
+        "transformations": [],
+        "version": 1
+      },
+      "owner": "664",
+      "raw_sha256": "42955998986601078cfe6830ee4b725f958fa549392858bc966a8a28dd97f43a",
+      "witness_bytes": 979
+    },
+    {
+      "correction": true,
+      "manifest": {
+        "first_page": 1,
+        "input_bytes": 56955,
+        "input_sha256": "42955998986601078cfe6830ee4b725f958fa549392858bc966a8a28dd97f43a",
+        "page_count": 2,
+        "source_bytes": 56955,
+        "source_pages": 2,
+        "source_sha256": "42955998986601078cfe6830ee4b725f958fa549392858bc966a8a28dd97f43a",
+        "transformations": [],
+        "version": 1
+      },
+      "owner": "664",
+      "raw_sha256": "42955998986601078cfe6830ee4b725f958fa549392858bc966a8a28dd97f43a",
+      "witness_bytes": 979
+    },
+    {
+      "correction": false,
+      "manifest": {
+        "first_page": 1,
+        "input_bytes": 42527,
+        "input_sha256": "427d56b6baad47f8340968d280ca69569a55b0f61e62b235ce4dbe4b2d0c2a2c",
+        "page_count": 1,
+        "source_bytes": 42527,
+        "source_pages": 1,
+        "source_sha256": "427d56b6baad47f8340968d280ca69569a55b0f61e62b235ce4dbe4b2d0c2a2c",
+        "transformations": [],
+        "version": 1
+      },
+      "owner": "1451",
+      "raw_sha256": "427d56b6baad47f8340968d280ca69569a55b0f61e62b235ce4dbe4b2d0c2a2c",
+      "witness_bytes": 982
+    },
+    {
+      "correction": true,
+      "manifest": {
+        "first_page": 1,
+        "input_bytes": 42527,
+        "input_sha256": "427d56b6baad47f8340968d280ca69569a55b0f61e62b235ce4dbe4b2d0c2a2c",
+        "page_count": 1,
+        "source_bytes": 42527,
+        "source_pages": 1,
+        "source_sha256": "427d56b6baad47f8340968d280ca69569a55b0f61e62b235ce4dbe4b2d0c2a2c",
+        "transformations": [],
+        "version": 1
+      },
+      "owner": "1451",
+      "raw_sha256": "427d56b6baad47f8340968d280ca69569a55b0f61e62b235ce4dbe4b2d0c2a2c",
+      "witness_bytes": 982
+    }
+  ],
+  "scope": "Full identity windows and controlled paid result records; no producer, refetch, or paid submission.",
+  "text_control_paths": 14
+}

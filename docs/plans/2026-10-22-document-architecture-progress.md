@@ -12707,6 +12707,9 @@ twice through SQLite and kept the submitting request byte-exact in the
 focused tests. No provider batch was submitted.
 [Qualification](../assets/audits/2026-11-06-committee-scan-reader/qualification.json).
 
+The exact `e2993cfe` release passed CI run 42236699461 and relay
+deployment 42237789610. Restart and timer were verified.
+
 <a id="j337"></a>
 
 ## J337 — store one inline PDF for qualified committee amendments
@@ -12721,6 +12724,9 @@ public OpenAI dump saved 56,645–183,981 SQL bytes and 34,345–127,830 gzip
 bytes per scan. Controlled queues for both providers restored twice and
 submitted the same request to mock transports.
 [Qualification](../assets/audits/2026-11-06-committee-scan-writer/qualification.json).
+
+The exact `f0d6ee46` release passed CI run 42238010102 and relay
+deployment 42238720278. Restart and timer were verified.
 
 <a id="j338"></a>
 
@@ -12738,3 +12744,21 @@ as did 12 raw modern references. The second import was a no-op and two
 restores were exact. The sample dump grew by 593,042 SQL bytes and 133,498
 gzip bytes (2.53%). Production import remains a separate manual operation.
 [Qualification](../assets/audits/2026-11-06-legacy-raw-validation/qualification.json).
+
+<a id="j339"></a>
+
+## J339 — read the original committee scan context without a PDF copy
+
+A validated paid result can carry the original comparison context, source
+URL, request and question hashes, and full PDF manifest in a 4 KiB record.
+The reader reconstructs the question only from a supplied matching PDF.
+It checks the paid result owner, request, manifest and exact question hash.
+Submitted-item metadata preserves the same evidence across rewrites and
+restores; a queued intent cannot carry it. Old records stay unavailable when the original context was never captured.
+
+All eight J232 scan paths from four official PDFs restored the exact
+question through controlled paid records. The retained witness occupied
+979–988 bytes. Fourteen text preparations were controls. The pinned legacy
+dump and JSON for all 14 retained results matched across revisions. The
+runtime writer and correction consumer remain inactive.
+[Qualification](../assets/audits/2026-11-06-amendment-scan-context-reader/qualification.json).

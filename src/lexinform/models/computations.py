@@ -7,7 +7,7 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from lexinform.models.amendment_inputs import AmendmentInputRef
+from lexinform.models.amendment_inputs import AmendmentInputRef, AmendmentScanInputWitness
 from lexinform.models.analysis import (
     AmendmentsRecord,
     AnalysisRecord,
@@ -183,6 +183,9 @@ class ComputationResult(BaseModel):
     amendment_input_ref: AmendmentInputRef | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    amendment_scan_input: AmendmentScanInputWitness | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     validation: Literal["validated", "error"]
     record: ComputationRecord | None
     model: str | None
@@ -200,6 +203,20 @@ class ComputationResult(BaseModel):
             self.amendment_input_ref.require_carrier(
                 self.purpose, self.request_sha256, self.input_binding
             )
+        witness = self.amendment_scan_input
+        if witness is not None and (
+            self.amendment_input_ref is not None
+            or self.purpose != "amendments"
+            or not isinstance(self.record, AmendmentsRecord)
+            or self.input_binding is None
+            or (self.input_binding.term, self.input_binding.number) != (self.term, self.number)
+            or witness.context_without_scan.number != self.number
+            or witness.request_sha256 != self.request_sha256
+            or witness.source_url != self.record.source_url
+            or self.record.source_kind != "committee_amendments"
+            or witness.scan_input != self.record.scan_input
+        ):
+            raise ValueError("invalid_amendment_scan_input")
         timing = self.local_timing_witness
         if timing is not None:
             timing.require_scope(self.input_binding)

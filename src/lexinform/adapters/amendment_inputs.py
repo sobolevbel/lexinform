@@ -5,7 +5,7 @@ import sqlite3
 from collections.abc import Iterator
 
 from lexinform.adapters.computation_history import read_computation_result
-from lexinform.adapters.input_receipts import _parents, _reference, parse_batch_request
+from lexinform.adapters.input_receipts import _object, _parents, _reference, parse_batch_request
 from lexinform.json_storage import canonical_json, read_json
 from lexinform.models.amendment_inputs import AmendmentInputRef, AmendmentInputSnapshot
 from lexinform.models.batch import BatchIntent, DigestItemMeta, LlmBatchItem, batch_item_meta
@@ -194,6 +194,12 @@ def amendment_input_issues(connection: sqlite3.Connection) -> Iterator[tuple[str
             try:
                 result = read_computation_result(row)
             except ValueError, TypeError, RecursionError:
+                raw = _object(row["result_json"])
+                if raw is not None and "amendment_scan_input" in raw:
+                    yield (
+                        "invalid_amendment_input",
+                        _reference("computation_results", row["result_id"]),
+                    )
                 continue
             try:
                 validate_result_input(connection, result)
@@ -215,8 +221,20 @@ def amendment_input_issues(connection: sqlite3.Connection) -> Iterator[tuple[str
                         submitted=request is None,
                     )
                 except ValueError, TypeError, RecursionError:
+                    raw = _object(row["meta_json"])
+                    if raw is not None and "amendment_scan_input" in raw:
+                        yield "invalid_amendment_input", _reference(table, row["custom_id"])
                     continue
-                if not isinstance(meta, DigestItemMeta) or meta.amendment_input_ref is None:
+                if not isinstance(meta, DigestItemMeta):
+                    continue
+                if meta.amendment_scan_input is not None:
+                    try:
+                        meta.require_amendment_scan_carrier(
+                            row["call_kind"], row["term"], row["number"]
+                        )
+                    except ValueError:
+                        yield "invalid_amendment_input", _reference(table, row["custom_id"])
+                if meta.amendment_input_ref is None:
                     continue
                 try:
                     _direct_receipt(meta)
@@ -382,6 +400,7 @@ def validate_intent_input(connection: sqlite3.Connection, intent: BatchIntent) -
 
 def validate_item_input(connection: sqlite3.Connection, item: LlmBatchItem) -> None:
     if isinstance(item.meta, DigestItemMeta):
+        item.meta.require_amendment_scan_carrier(item.call_kind, item.term, item.number)
         _direct_receipt(item.meta)
         validate_amendment_ref(
             connection,
@@ -397,7 +416,8 @@ def validate_result_input(connection: sqlite3.Connection, result: ComputationRes
     validate_amendment_ref(
         connection, reference, result.purpose, result.request_sha256, result.input_binding
     )
-    if reference is None:
+    witness = result.amendment_scan_input
+    if reference is None and witness is None:
         return
     cursor = connection.cursor()
     cursor.row_factory = sqlite3.Row
@@ -415,6 +435,7 @@ def validate_result_input(connection: sqlite3.Connection, result: ComputationRes
                 or row["call_kind"] != "amendments"
                 or not isinstance(meta, DigestItemMeta)
                 or meta.amendment_input_ref != reference
+                or (witness is not None and meta.amendment_scan_input != witness)
                 or meta.input_binding != result.input_binding
                 or meta.request_sha256 != result.request_sha256
             ):

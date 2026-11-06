@@ -17,7 +17,7 @@ from pydantic import (
 )
 
 from lexinform.json_storage import read_json
-from lexinform.models.amendment_inputs import AmendmentInputRef
+from lexinform.models.amendment_inputs import AmendmentInputRef, AmendmentScanInputWitness
 from lexinform.models.analysis import (
     Amendments,
     AmendmentsContext,
@@ -496,6 +496,30 @@ class DigestItemMeta(BaseModel):
     amendment_input_ref: AmendmentInputRef | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    amendment_scan_input: AmendmentScanInputWitness | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    def require_amendment_scan_carrier(self, purpose: str, term: int, number: str) -> None:
+        witness, binding = self.amendment_scan_input, self.input_binding
+        if witness is not None and (
+            purpose != "amendments"
+            or binding is None
+            or (binding.term, binding.number) != (term, number)
+            or witness.context_without_scan.number != number
+            or witness.request_sha256 != self.request_sha256
+            or self.source_kind != "committee_amendments"
+            or witness.source_url != self.source_url
+            or (
+                self.amendment_revision is not None
+                and self.amendment_revision.source_url != witness.source_url
+            )
+            or witness.scan_input != self.scan_input
+            or self.amendment_source is not None
+            or self.amendment_input_ref is not None
+            or self.prepared_input_receipt is not None
+        ):
+            raise ValueError("invalid_amendment_scan_input")
 
     @model_validator(mode="after")
     def frozen_binding(self) -> Self:
@@ -534,6 +558,12 @@ def batch_item_meta(
 def validate_batch_item_meta(
     kind: str, decoded: object, *, submitted: bool
 ) -> BatchItemMeta | DigestItemMeta:
+    if (
+        isinstance(decoded, dict)
+        and "amendment_scan_input" in decoded
+        and (not submitted or kind != "amendments")
+    ):
+        raise ValueError("invalid_amendment_scan_input")
     model = BatchItemMeta if kind in ("analysis", "reanalysis") else DigestItemMeta
     parsed = model.model_validate(decoded)
     manifest = parsed.frozen_request_manifest
@@ -573,7 +603,7 @@ def validate_batch_item_meta(
 def _amendment_input_metadata(value: object) -> object:
     if isinstance(value, dict) and isinstance(value.get("meta"), dict):
         meta = value["meta"]
-        if meta.get("amendment_input_ref") is not None:
+        if meta.get("amendment_input_ref") is not None or "amendment_scan_input" in meta:
             return {**value, "meta": DigestItemMeta.model_validate(meta)}
     return value
 
@@ -604,6 +634,8 @@ class LlmBatchItem(BaseModel):
             self.meta.amendment_input_ref.require_carrier(
                 self.call_kind, self.meta.request_sha256, self.meta.input_binding
             )
+        if isinstance(self.meta, DigestItemMeta):
+            self.meta.require_amendment_scan_carrier(self.call_kind, self.term, self.number)
         timing = self.meta.local_timing_witness
         if timing is not None:
             timing.require_scope(self.meta.input_binding)
@@ -680,6 +712,8 @@ class BatchIntent(BaseModel):
 
     @model_validator(mode="after")
     def actual_input_receipt(self) -> Self:
+        if isinstance(self.meta, DigestItemMeta) and self.meta.amendment_scan_input is not None:
+            raise ValueError("invalid_amendment_scan_input")
         if self.meta.frozen_request_manifest is not None:
             raise ValueError("Frozen request manifests belong to submitted items")
         if isinstance(self.meta, DigestItemMeta) and self.meta.amendment_input_ref is not None:
