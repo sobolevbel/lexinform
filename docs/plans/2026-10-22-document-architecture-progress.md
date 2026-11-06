@@ -13433,6 +13433,7 @@ legacy state. The correction consumer and automatic witness writer
 remain open.
 
 [Qualification](../assets/audits/2026-11-06-senate-scan-context-reader/qualification.json).
+Exact release verified for `56dbb3ef` via [CI](https://github.com/sobolevbel/lexinform/actions/runs/42290054935) and [relay](https://github.com/sobolevbel/lexinform/actions/runs/42291286826).
 
 <a id="j375"></a>
 
@@ -13507,3 +13508,22 @@ preserves state on failed restore. Eight Senate and 12 supplemental
 scan lifecycle reports match J377 byte-for-byte.
 
 [Qualification](../assets/audits/2026-11-06-secondary-scan-provider-binding/qualification.json).
+
+<a id="j379"></a>
+
+## J379 — bind primary scan selections and frozen provider attachments
+
+Primary intents with a recorded scan manifest must match both their
+frozen question and the PDF attached to a recognized provider request.
+The shared queue check still covers amendments and supplements. Legacy
+primary rows without the manifest remain readable.
+
+Pinned Sejm prints 24 and 25 passed both offline provider builders,
+including the whole-file case and the cover-letter removal case.
+Their selection manifests, request hashes, checkpoint identities and
+mock SDK handoffs matched the direct parent. The previous reader
+accepted rehashed substituted primary attachments. The new guard
+rejects both provider controls and rejects a mismatched selection. Eight Senate and twelve
+supplement scan lifecycle reports matched the direct parent byte-for-byte.
+
+[Qualification](../assets/audits/2026-11-06-primary-scan-provider-binding/qualification.json).

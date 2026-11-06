@@ -311,20 +311,16 @@ def _scan_payload_slot(shell: Mapping[str, object], model: object, marker: str) 
             return False
 
 
-def validate_secondary_scan_attachment(intent: BatchIntent) -> None:
-    request, meta = intent.request, intent.meta
-    if (
-        not isinstance(meta, DigestItemMeta)
-        or meta.scan_input is None
-        or request.payload_json is None
-    ):
+def validate_scan_attachment(intent: BatchIntent) -> None:
+    request = intent.request
+    if intent.recorded_scan_input is None or request.payload_json is None:
         return
     question = request.question
     if (
-        not isinstance(question, (AmendmentsQuestion, SupplementQuestion))
+        not isinstance(question, (AnalysisQuestion, AmendmentsQuestion, SupplementQuestion))
         or question.ctx.scan is None
     ):
-        raise ValueError("Secondary scan metadata differs from its frozen question")
+        raise ValueError("Recorded scan is missing from its frozen question")
     payload = read_json(request.payload_json)
     if not isinstance(payload, dict) or not ({"method", "url", "body", "params"} & payload.keys()):
         return
@@ -335,7 +331,7 @@ def validate_secondary_scan_attachment(intent: BatchIntent) -> None:
         or scan.media_type != "application/pdf"
         or not _scan_payload_slot(payload, request.model, scan.data)
     ):
-        raise ValueError("Frozen provider attachment differs from the secondary scan")
+        raise ValueError("Frozen provider attachment differs from the recorded scan")
     request.verify_payload()
 
 
@@ -976,7 +972,10 @@ def _input_snapshot_checks(
             question = request.get("question")
             ctx = question.get("ctx") if isinstance(question, dict) else None
             has_formula = isinstance(ctx, dict) and ctx.get("word_formula_input") is not None
-            has_scan_manifest = meta.get("scan_input") is not None
+            selection = meta.get("selection")
+            has_scan_manifest = meta.get("scan_input") is not None or (
+                isinstance(selection, dict) and selection.get("scan_input") is not None
+            )
             if not (
                 has_receipt
                 or has_timing
@@ -1014,7 +1013,7 @@ def _input_snapshot_checks(
                         }
                     )
                     if has_scan_manifest:
-                        validate_secondary_scan_attachment(intent)
+                        validate_scan_attachment(intent)
                     if has_word_formula_input(actual):
                         validate_word_formula_intent(connection, intent)
                     elif has_receipt:

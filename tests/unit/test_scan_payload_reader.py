@@ -24,6 +24,7 @@ from lexinform.models import (
     BatchRequest,
     BillContext,
     DigestItemMeta,
+    DocumentSelection,
     SenateResolutionIdentity,
     SourceKind,
     SupplementContext,
@@ -670,18 +671,30 @@ def test_secondary_scan_manifest_is_bound_on_save_and_restore(
     ("provider", "factory"),
     [("openai", offline_openai_backend), ("anthropic", offline_anthropic_backend)],
 )
-def test_secondary_provider_attachment_must_match_the_frozen_scan(
-    repo: SqliteBillRepository, provider: BatchProvider, factory: Callable[[], BatchBackend]
+@pytest.mark.parametrize("primary", [False, True])
+def test_provider_attachment_must_match_the_frozen_scan(
+    repo: SqliteBillRepository,
+    provider: BatchProvider,
+    factory: Callable[[], BatchBackend],
+    primary: bool,
 ) -> None:
-    request = supplement_scan_request(factory, "government_position")
+    request = (
+        scan_request(factory, "analysis")
+        if primary
+        else supplement_scan_request(factory, "government_position")
+    )
     question = request.question
-    assert isinstance(question, SupplementQuestion), "The fixture is a supplement"
+    assert isinstance(question, (AnalysisQuestion, SupplementQuestion)), "The fixture is a scan"
     scan = question.ctx.scan
     assert scan is not None and scan.scan_input is not None, "The fixture has a manifested PDF"
     assert request.payload_json is not None, "The provider builder froze the request"
     intent = BatchIntent.from_request(
         request=request,
-        meta=DigestItemMeta(memo_key="scan", scan_input=scan.scan_input),
+        meta=(
+            meta().model_copy(update={"selection": DocumentSelection(scan_input=scan.scan_input)})
+            if primary
+            else DigestItemMeta(memo_key="scan", scan_input=scan.scan_input)
+        ),
         provider=provider,
         created_at=NOW,
     )
@@ -709,3 +722,16 @@ def test_secondary_provider_attachment_must_match_the_frozen_scan(
     with pytest.raises(ValueError):
         repo.restore(forged)
     assert repo.dump() == saved
+
+
+def test_primary_scan_selection_must_match_the_frozen_question() -> None:
+    frozen = scan_request(offline_openai_backend, "analysis")
+    question = frozen.question
+    assert isinstance(question, AnalysisQuestion), "The fixture is a primary scan"
+    scan = question.ctx.scan
+    assert scan is not None and scan.scan_input is not None, "The fixture has a manifested PDF"
+    foreign = scan.scan_input.model_copy(update={"input_sha256": "f" * 64})
+    recorded = meta().model_copy(update={"selection": DocumentSelection(scan_input=foreign)})
+
+    with pytest.raises(ValueError, match="Primary scan selection differs"):
+        BatchIntent.from_request(request=frozen, meta=recorded, provider="openai", created_at=NOW)
