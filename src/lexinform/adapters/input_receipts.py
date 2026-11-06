@@ -38,6 +38,7 @@ from lexinform.models import (
     LlmBatchItem,
     PrimaryInputReceipt,
     SupplementInputReceipt,
+    SupplementQuestion,
 )
 from lexinform.models.batch import FrozenRequestManifest, batch_item_meta, validate_batch_item_meta
 from lexinform.models.input_receipts import (
@@ -315,13 +316,19 @@ def _escaped_question_text(text: str) -> str:
 
 
 def _shared_scan_payload(
-    request: BatchRequest, question: AnalysisQuestion | AmendmentsQuestion, payload: str
+    request: BatchRequest,
+    question: AnalysisQuestion | AmendmentsQuestion | SupplementQuestion,
+    payload: str,
 ) -> dict[str, str] | None:
     if isinstance(question, AnalysisQuestion):
         if question.kind not in ("analysis", "reanalysis") or question.ctx.text_source != "scan":
             return None
-    elif question.ctx.source_kind not in ("committee_amendments", "senate_amendments") or (
-        question.ctx.source_kind == "committee_amendments" and question.ctx.source_check is not None
+    elif isinstance(question, AmendmentsQuestion) and (
+        question.ctx.source_kind not in ("committee_amendments", "senate_amendments")
+        or (
+            question.ctx.source_kind == "committee_amendments"
+            and question.ctx.source_check is not None
+        )
     ):
         return None
     context = question.ctx
@@ -346,6 +353,13 @@ def _shared_scan_payload(
             scan.model_dump(mode="json", exclude={"data", "scan_input"}),
             scan.scan_input.model_dump(mode="json"),
         )
+    ):
+        return None
+    if isinstance(question, SupplementQuestion) and not _supplement_scan_payload_matches(
+        context.model_dump(mode="json", exclude={"scan"}),
+        request.number,
+        scan.model_dump(mode="json", exclude={"data", "scan_input"}),
+        scan.scan_input.model_dump(mode="json"),
     ):
         return None
     start = payload.find(scan.data)
@@ -383,7 +397,7 @@ def serialize_intent_request(request: BatchRequest) -> str:
                 return json.dumps(
                     values, ensure_ascii=False, separators=(",", ":"), allow_nan=False
                 )
-        elif isinstance(question, (AnalysisQuestion, AmendmentsQuestion)) and (
+        elif isinstance(question, (AnalysisQuestion, AmendmentsQuestion, SupplementQuestion)) and (
             reference := _shared_scan_payload(request, question, payload)
         ):
             values = request.model_dump(mode="json", exclude={"payload_json"})

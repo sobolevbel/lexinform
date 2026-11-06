@@ -13222,3 +13222,18 @@ The prior reader restored the ordinary dump and rejected the enriched
 dump atomically.
 
 [Qualification](../assets/audits/2026-11-06-word-formula-companion-reader/qualification.json).
+
+<a id="j364"></a>
+
+## J364 — store one PDF in qualified frozen supplemental scan requests
+
+The queue writer stores one PDF with an exact provider attachment reference
+for a full scanned government position or impact assessment. Other requests
+use their existing storage representation.
+
+Six pinned official files passed both offline provider builders and mock
+submission. The writer and previous compatible reader restored the compact
+checkpoints exactly. The single-intent samples saved 408,273–2,285,529 SQL
+bytes and 291,860–1,636,748 gzip bytes.
+
+[Qualification](../assets/audits/2026-11-06-supplement-scan-writer/qualification.json).

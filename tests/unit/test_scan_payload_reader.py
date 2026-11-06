@@ -541,12 +541,13 @@ def supplement_scan_request(factory: Callable[[], BatchBackend], kind: SourceKin
 
 @pytest.mark.parametrize("factory", [offline_openai_backend, offline_anthropic_backend])
 @pytest.mark.parametrize("kind", ["government_position", "impact_assessment"])
-def test_supplement_reference_recovers_exact_request_without_enabling_writer(
+def test_supplement_writer_recovers_exact_frozen_request(
     factory: Callable[[], BatchBackend], kind: SourceKind
 ) -> None:
     frozen = supplement_scan_request(factory, kind)
-    assert serialize_intent_request(frozen) == frozen.model_dump_json()
-    recovered = parse_batch_request(compact(frozen))
+    encoded = serialize_intent_request(frozen)
+    assert json.loads(encoded) == compact(frozen)
+    recovered = parse_batch_request(encoded)
     assert recovered == frozen
     assert factory().prepare_request(recovered) == frozen
 
@@ -588,3 +589,35 @@ def test_supplement_reference_refuses_hash_valid_non_attachment_slot() -> None:
     ).hexdigest()
     with pytest.raises(ValueError, match="invalid_input_request_json"):
         parse_batch_request(raw)
+
+
+@pytest.mark.parametrize(
+    ("owner", "key", "value"),
+    [
+        ("context", "source_kind", "print"),
+        ("context", "number", "3038"),
+        ("context", "document_title", ""),
+        ("context", "truncated", True),
+        ("scan", "scan_input", None),
+    ],
+)
+def test_supplement_writer_keeps_unsupported_contexts_inline(
+    owner: str, key: str, value: object
+) -> None:
+    frozen = supplement_scan_request(offline_openai_backend, "government_position")
+    raw = frozen.model_dump(mode="json")
+    context = raw["question"]["ctx"]
+    owners = {"context": context, "scan": context["scan"]}
+    owners[owner][key] = value
+    request = BatchRequest.model_validate(raw)
+    assert serialize_intent_request(request) == request.model_dump_json()
+
+
+def test_supplement_writer_keeps_non_attachment_slot_inline() -> None:
+    frozen = supplement_scan_request(offline_openai_backend, "impact_assessment")
+    raw = frozen.model_dump(mode="json")
+    payload = raw["payload_json"].replace('"file_data"', '"unrelated_data"')
+    raw["payload_json"] = payload
+    raw["payload_sha256"] = hashlib.sha256(payload.encode()).hexdigest()
+    changed = BatchRequest.model_validate(raw)
+    assert serialize_intent_request(changed) == changed.model_dump_json()
