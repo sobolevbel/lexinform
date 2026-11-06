@@ -125,8 +125,19 @@ from lexinform.source_graph_admission import source_graph_admission, source_grap
 log = logging.getLogger(__name__)
 
 MAX_DEFERRED_ARCHIVE_TRACES = 256
-
 MIN_TEXT_CHARS = 200
+
+
+def _trace_with_archive_evidence(
+    trace: CandidateDispositionTrace,
+    evidence: ArchiveVersionConflictEvidence | ArchiveVersionDecisionEvidence,
+) -> CandidateDispositionTrace:
+    field = (
+        "archive_version_conflict"
+        if isinstance(evidence, ArchiveVersionConflictEvidence)
+        else "archive_version_decision"
+    )
+    return CandidateDispositionTrace.model_validate({**trace.model_dump(), field: evidence})
 
 
 @dataclass(frozen=True)
@@ -156,6 +167,7 @@ class _CompositionCapture:
     supporting: list[SupportingPartExclusion] = field(default_factory=list)
     supporting_omitted: int = 0
     version_decision: VersionDecisionEvidence | None = None
+    version_decision_includes_archive: bool = False
 
     def exclude_support(
         self,
@@ -588,14 +600,7 @@ class TextLoader:
         evidence = file.archive_version_evidence
         if evidence is not None and file.candidate_trace is not None:
             with suppress(Exception):
-                proof_field = (
-                    "archive_version_conflict"
-                    if isinstance(evidence, ArchiveVersionConflictEvidence)
-                    else "archive_version_decision"
-                )
-                enriched = CandidateDispositionTrace.model_validate(
-                    {**file.candidate_trace.model_dump(), proof_field: evidence}
-                )
+                enriched = _trace_with_archive_evidence(file.candidate_trace, evidence)
                 defer_archive_trace = partial(
                     self._defer_archive_trace, file.candidate_trace.trace_id, enriched
                 )
@@ -961,11 +966,6 @@ class TextLoader:
                             ),
                         }
                     )
-            if composition.version_decision is not None and trace.archive_members is None:
-                with suppress(Exception):
-                    trace = CandidateDispositionTrace.model_validate(
-                        {**trace.model_dump(), "version_decision": composition.version_decision}
-                    )
         if (
             not retain_routine_trace
             and trace is not None
@@ -980,6 +980,19 @@ class TextLoader:
             archive_version_evidence = attempts.conflict_evidence
             if archive_version_evidence is None and trace.candidate_count == 1:
                 archive_version_evidence = attempts.version_evidence
+        if (
+            trace is not None
+            and composition is not None
+            and composition.version_decision is not None
+            and (trace.archive_members is not None) == composition.version_decision_includes_archive
+        ):
+            with suppress(Exception):
+                enriched = CandidateDispositionTrace.model_validate(
+                    {**trace.model_dump(), "version_decision": composition.version_decision}
+                )
+                if archive_version_evidence is not None:
+                    _trace_with_archive_evidence(enriched, archive_version_evidence)
+                trace = enriched
         return selected, replace(
             loaded,
             archive_version_evidence=archive_version_evidence,
@@ -1195,13 +1208,14 @@ class TextLoader:
         if choice is None:
             dispositions.extend(decisions)
             return None
+        includes_archive = any(
+            part.members for item in prepared for part in (*item.parts, *item.observed_parts)
+        )
         if (
             composition is not None
             and 2 <= len(prepared) <= MAX_VERSION_DECISION_ROWS
-            and all(
-                item.parts and not any(part.members for part in (*item.parts, *item.observed_parts))
-                for item in prepared
-            )
+            and all(item.parts for item in prepared)
+            and (not includes_archive or isinstance(choice, AmbiguousCandidates))
         ):
             comparison = choice.comparison
             with suppress(Exception):
@@ -1221,6 +1235,7 @@ class TextLoader:
                     if comparison.date_filter is not None
                     else None,
                 )
+                composition.version_decision_includes_archive = includes_archive
         if isinstance(choice, AmbiguousCandidates):
             dispositions.extend(
                 item.model_copy(update={"reason": "version_conflict"})

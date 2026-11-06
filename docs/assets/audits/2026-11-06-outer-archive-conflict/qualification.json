@@ -1,0 +1,107 @@
+{
+  "baseline_commit": "a01cfa590a87e14e973461b08c234329c8c55d37",
+  "cached_candidate_replay": {
+    "identical_except_source_fingerprints": true,
+    "missing_inputs": 1383,
+    "read_inputs": 7599,
+    "report_sha256": "9bdefc94312aa0dd487e4109da01e86f15235efc6d421f47e0f5bcf902803d09",
+    "results": 4276
+  },
+  "native": {
+    "archive_aggregate": "unknown",
+    "capture_id": "b04773bd904a633ee8f60914a1598411a40d8ba8834a76392014f20e9babe248",
+    "catalogue_sha256": "03461b12dd17aeb5d1e174599a37f14f225616d0e0463cbc728d79c610ab504b",
+    "compared": [
+      {
+        "index": 3,
+        "leaf_sha256": "58d9b35ea3df41e888004c85de0e05f5613758ba1142b6eed5aa086542488bd4",
+        "ordinals": [
+          1
+        ],
+        "outcome": "policy_excluded",
+        "phase": "version_comparison",
+        "physical_part_index": 1,
+        "reason": "version_conflict",
+        "root_sha256": "2df22e4f1dcdb6b5d395ec4f361d7795b90c3300d5fb55a502b26a6eeb63bea7",
+        "stage": "policy",
+        "text_sha256": "0bbe2a5a01542ca4c8806290a29e0564a48a5d8fb9a4bf56e1893be845acddf2"
+      },
+      {
+        "index": 3,
+        "leaf_sha256": "a3509d6d588344db3188f2eeefe7a9761cdbdb4504a944432cfe0ec701a6e103",
+        "ordinals": [
+          3
+        ],
+        "outcome": "policy_excluded",
+        "phase": "version_comparison",
+        "physical_part_index": 3,
+        "reason": "version_conflict",
+        "root_sha256": "2df22e4f1dcdb6b5d395ec4f361d7795b90c3300d5fb55a502b26a6eeb63bea7",
+        "stage": "policy",
+        "text_sha256": "8faeb7d75c84da88175ce2074fa17a0bfa05aa9cec3d19515d7fd05679ca8ee1"
+      }
+    ],
+    "downloads": [
+      "760993.zip",
+      "736716.zip",
+      "740748.zip",
+      "749446.zip",
+      "762601.zip"
+    ],
+    "extraction_id": "extraction-v1:a92774dc01ad63d3332ad6d1ac9a417bc68ac7eebe7e88522b1f476d31cf3504",
+    "gzip_delta": 174,
+    "legacy_conflict_slots": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "observation_id": "source-observation-v1:8d2b45451c079f76cc8fcbad240efcb9e5a6b2262957aa54295d9886071ad8fe",
+    "outer_version_decision": {
+      "compared_indices": [
+        0,
+        1
+      ],
+      "outcome": "distinct_policy_identity",
+      "retained_indices": [
+        0,
+        1
+      ]
+    },
+    "physical_recorded_at": "2026-10-17T00:20:00+00:00",
+    "pins": {
+      "736716.zip": "9674405f21ee706b312cb61ec062df8edb438d4da5a4b9ee69a871d08df61581",
+      "740748.zip": "7b5e6779290f8586f03618d7b1675ea5a51100ebef31fee35e1628ca692aaca3",
+      "749446.zip": "2df22e4f1dcdb6b5d395ec4f361d7795b90c3300d5fb55a502b26a6eeb63bea7",
+      "760993.zip": "2c7c65bc6564ccd41d3cbcd5a57b041ca0a8eaba97c526ebaa5613b6c5f84b26",
+      "762601.zip": "820594d835a4aed267a78501721c09653e8758bc388a658f203fc2287f166018"
+    },
+    "selection_id": "selection-v1:a8027c71e93de42cb793da610e34cb7db0b5ef4e3405080d088a0dc59d87663b",
+    "sql_delta": 3840,
+    "trace_bytes": 3464,
+    "trace_id": "candidate-trace-v1:cb0c1fe99d4b5a2785badf3a9de3b2a6a302e9dc3db3a16cd77dd66a9d70ba8f"
+  },
+  "paired_raw_archives": {
+    "cohort_sha256": "f788bb15d668827d5fc6130df92084fca3099da90ef093bb98cd5a2b360d4859",
+    "core_member_rows_and_recipes_equal_to_j334": true,
+    "legacy_producer_off_pair_rejected_for_core_mismatch": true,
+    "methods": {
+      "0": 16,
+      "8": 116,
+      "9": 16
+    },
+    "natural_requests": 17,
+    "natural_roots": 16,
+    "report_sha256": "72781f888192782a846ec28861749eb7794fee8b8df36116447ffd979e67a2aa",
+    "synthetic_requests": 4
+  },
+  "provider_calls": 0,
+  "same_interpreter_checkpoint": {
+    "baseline_sha256": "3876fd99784bac0262306848ccbc9b90a237ea7dd57e29e6c7039f22593915d4",
+    "gzip_delta": 42,
+    "normalized_checkpoint_exact": true,
+    "repeat_exact": true,
+    "sql_delta": 216,
+    "writer_sha256": "58f75845e96179844bb2630327f0cb7b8d07d050368bb6545a3af4884eda1c3e"
+  }
+}

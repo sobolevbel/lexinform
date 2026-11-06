@@ -12661,3 +12661,27 @@ after accounting for the updated code fingerprint.
 All 4,276 cached candidate decisions, 7,599 input hashes and 1,383
 missing inputs matched the preceding reader.
 [Qualification](../assets/audits/2026-11-06-archive-conflict-writer/qualification.json).
+
+The exact `a01cfa59` release passed CI run 42232312851 and relay
+deployment 42233467897. Restart and timer were verified.
+
+<a id="j335"></a>
+
+## J335 — retain the outer comparison of ZIP packages
+
+The outer comparator records the actual compared and retained candidate
+positions for a conflict involving archive packages. It uses the existing
+version evidence format. When the combined trace would exceed 4 KiB, the
+previously supported nested evidence takes priority.
+
+On RCL 12390551 stage 9, the outer conflict compared positions 0 and 1.
+The independent inner conflict belongs to outer position 3 and member
+slots 1 and 3. The five pinned downloads and cached result were identical.
+The new trace added 108 bytes. Two restores and the injected optional write
+failure passed. Comparing both revisions with the same interpreter, the
+checkpoint differed only in the new field and its trace identity and link.
+The sample dump grew by 216 bytes of SQL and 42 bytes of gzip.
+The paired J334 raw cohort matched all 16 roots and four synthetic
+controls. Cached candidate replay matched 4,276 outcomes and coverage,
+including 1,383 unavailable inputs.
+[Qualification](../assets/audits/2026-11-06-outer-archive-conflict/qualification.json).
