@@ -5,17 +5,40 @@ import datetime as dt
 import gzip
 import json
 import re
+from contextlib import closing
 from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from lexinform.adapters.doc_text import DocTextExtractor
+from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.sejm_api import parse_process_detail
-from lexinform.models import PdfTextExtraction, flatten_stages, latest_text_document
+from lexinform.adapters.sqlite_repo import SqliteBillRepository
+from lexinform.models import (
+    DocumentPart,
+    DocumentSelection,
+    DocumentSelectionRecord,
+    PdfTextExtraction,
+    SourceObservation,
+    Stage,
+    TextDocument,
+    flatten_stages,
+    latest_text_document,
+)
+from lexinform.models.artifacts import ArtifactReadIdentity
+from lexinform.models.candidate_trace import (
+    CandidateDispositionTrace,
+    SejmAdoptedText,
+    SejmSupersededDraft,
+)
 from lexinform.models.reviews import date_in_quote
+from lexinform.pdf_projection import legacy_pdf_text
+from lexinform.services.document_history import DocumentSourceRead, record_document_source
+from lexinform.services.documents import TextLoader
 from tools.audit_sejm_adoption import audit_adoption
-from tools.corpus_artifacts import digest, read_artifact, write_json
+from tools.corpus_artifacts import create_only, digest, read_artifact, write_json
 from tools.replay_proposal_edition import PinnedInput, official_print
 
 
@@ -122,7 +145,150 @@ def prove_bodies(
     }
 
 
-def replay(corpus: Path, bodies: Path, case: SupersessionCase) -> dict[str, object]:
+def _snapshot(
+    case: SupersessionCase,
+    report_document: TextDocument,
+    report_bytes: bytes,
+    report: PdfTextExtraction,
+    report_date: dt.date,
+    adopted_stage: Stage,
+    adopted_bytes: bytes,
+    recorded_at: dt.datetime,
+) -> tuple[str, dict[str, str]]:
+    first, last = case.report_draft_page, len(report.pages)
+    text = legacy_pdf_text(page.text for page in report.pages[first - 1 :])
+    report_read = ArtifactReadIdentity(
+        requested_url=report_document.url, sha256=report.input_sha256, byte_size=len(report_bytes)
+    )
+    prior = DocumentSelectionRecord.from_selection(
+        DocumentSelection(
+            question="sejm_committee_draft",
+            policy_version="sejm-committee-draft-pages-v1",
+            parts=(
+                DocumentPart(
+                    url=report_document.url,
+                    sha256=report_read.sha256,
+                    role="bill",
+                    pages=last,
+                    page_start=first,
+                    page_end=last,
+                    text_end=len(text),
+                    text_sha256=digest(text.encode()),
+                ),
+            ),
+        )
+    )
+    if (
+        adopted_stage.text_after3 is None
+        or adopted_stage.decision is None
+        or adopted_stage.date is None
+    ):
+        raise ValueError("The adopted stage needs its official attachment, date and decision")
+    adopted_document = TextDocument(url=adopted_stage.text_after3, kind="text_after3")
+
+    def download(url: str, *, max_bytes: int | None = None) -> bytes:
+        if url != adopted_document.url or (
+            max_bytes is not None and len(adopted_bytes) > max_bytes
+        ):
+            raise ValueError("Unexpected adopted attachment read")
+        return adopted_bytes
+
+    loader = TextLoader(
+        {"api.sejm.gov.pl": download},
+        DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor()),
+        max_bytes=len(adopted_bytes),
+    )
+    selected, loaded = loader.select_document(adopted_document, retain_routine_trace=True)
+    source = loader.capture_source_read(adopted_document, selected, loaded)
+    if not isinstance(source, DocumentSourceRead) or source.candidate_trace is None:
+        raise ValueError("Expected the exact native adopted text selection")
+
+    report_observation = SourceObservation(
+        term=case.term,
+        number=case.owner,
+        purpose="analysis",
+        document=report_document,
+        selection_id=prior.selection_id,
+        recorded_at=recorded_at,
+    )
+    adopted_observation = SourceObservation(
+        term=case.term,
+        number=case.owner,
+        purpose="analysis",
+        document=source.document,
+        selection_id=source.selection.selection_id,
+        recorded_at=recorded_at,
+    )
+    with closing(SqliteBillRepository(":memory:")) as repo:
+        repo.migrate()
+        with repo.atomic():
+            record_document_source(
+                repo, prior, report_observation, (report_read,), reads=(report_read,)
+            )
+            record_document_source(
+                repo,
+                source.selection,
+                adopted_observation,
+                source.artifacts,
+                reads=source.reads,
+                extractions=source.extractions,
+            )
+            report_edition = repo.get_selection_edition(prior.selection_id)
+            adopted_edition = repo.get_selection_edition(source.selection.selection_id)
+            if report_edition is None or adopted_edition is None:
+                raise ValueError("Expected two exact edition parents")
+            (part,) = source.selection.selection.parts
+            draft = SejmSupersededDraft(
+                report=case.report,
+                report_date=report_date,
+                observation_id=report_observation.observation_id,
+                edition_id=report_edition.edition_id,
+                pdf_sha256=report_read.sha256,
+                text_sha256=prior.selection.parts[0].text_sha256,
+                first_page=first,
+                last_page=last,
+            )
+            proof = SejmAdoptedText(
+                term=case.term,
+                number=case.owner,
+                stage_name=adopted_stage.stage_name,
+                decision=adopted_stage.decision,
+                stage_date=adopted_stage.date,
+                pdf_sha256=part.sha256,
+                pdf_text_sha256=part.text_sha256,
+                selection_id=source.selection.selection_id,
+                edition_id=adopted_edition.edition_id,
+                supersedes=draft,
+            )
+            trace = CandidateDispositionTrace.model_validate(
+                {**source.candidate_trace.model_dump(), "sejm_adopted_text": proof}
+            )
+            repo.save_candidate_disposition_trace(adopted_observation.observation_id, trace)
+        checkpoint = repo.dump()
+        for _ in range(2):
+            repo.restore(checkpoint)
+            if (
+                repo.get_candidate_disposition_trace(trace.trace_id) != trace
+                or repo.dump() != checkpoint
+            ):
+                raise ValueError("Supersession changed during snapshot restore")
+    return checkpoint, {
+        "trace_id": trace.trace_id,
+        "report_edition_id": report_edition.edition_id,
+        "adopted_edition_id": adopted_edition.edition_id,
+        "report_selection_id": prior.selection_id,
+        "adopted_selection_id": source.selection.selection_id,
+    }
+
+
+def replay(
+    corpus: Path,
+    bodies: Path,
+    case: SupersessionCase,
+    *,
+    snapshot_output: Path | None = None,
+    recorded_at: dt.datetime | None = None,
+) -> dict[str, object]:
     raw: dict[str, Any] = json.loads(gzip.decompress(case.processes.read(corpus)))[case.owner]
     adopted = audit_adoption(
         corpus / case.processes.path,
@@ -164,14 +330,16 @@ def replay(corpus: Path, bodies: Path, case: SupersessionCase) -> dict[str, obje
     ):
         raise ValueError("Expected the exact preceding committee draft in the official stage tree")
     pdf = PypdfTextExtractor()
+    report_bytes, adopted_bytes = case.report_pdf.read(bodies), case.adopted_pdf.read(bodies)
+    report_pdf = pdf.extract_pages(report_bytes)
     evidence = prove_bodies(
         case,
-        pdf.extract_pages(case.report_pdf.read(bodies)),
-        pdf.extract_pages(case.adopted_pdf.read(bodies)),
+        report_pdf,
+        pdf.extract_pages(adopted_bytes),
         report_date=reports[0].date,
         adoption_date=adoption_stage.date,
     )
-    return {
+    result: dict[str, object] = {
         "relation": "supersedes",
         "scope": "Sejm process text at third reading",
         "term": case.term,
@@ -184,6 +352,24 @@ def replay(corpus: Path, bodies: Path, case: SupersessionCase) -> dict[str, obje
         "evidence": evidence,
     }
 
+    if snapshot_output is not None:
+        if recorded_at is None or recorded_at.utcoffset() is None:
+            raise ValueError("Snapshot requires an explicit recording timestamp with timezone")
+        checkpoint, parents = _snapshot(
+            case,
+            previous,
+            report_bytes,
+            report_pdf,
+            reports[0].date,
+            adoption_stage,
+            adopted_bytes,
+            recorded_at,
+        )
+        payload = checkpoint.encode()
+        create_only(snapshot_output, payload)
+        result["snapshot"] = {**parents, "sql_sha256": digest(payload), "sql_bytes": len(payload)}
+    return result
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -192,10 +378,18 @@ def main() -> None:
     parser.add_argument("--case", type=Path, required=True)
     parser.add_argument("--case-sha256", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--snapshot-output", type=Path)
+    parser.add_argument("--recorded-at", type=dt.datetime.fromisoformat)
     args = parser.parse_args()
     try:
+        outputs = [
+            path.resolve() for path in (args.output, args.snapshot_output) if path is not None
+        ]
+        if len(set(outputs)) != len(outputs) or any(path.exists() for path in outputs):
+            raise ValueError("Replay requires distinct new output paths")
         if any(
-            args.output.resolve().is_relative_to(root.resolve())
+            path.is_relative_to(root.resolve())
+            for path in outputs
             for root in (args.corpus, args.bodies)
         ):
             raise ValueError("Output must be outside the source roots")
@@ -206,6 +400,8 @@ def main() -> None:
             args.corpus.resolve(strict=True),
             args.bodies.resolve(strict=True),
             SupersessionCase.model_validate_json(raw),
+            snapshot_output=args.snapshot_output,
+            recorded_at=args.recorded_at,
         )
         write_json(args.output, {"case_sha256": args.case_sha256, **result})
     except (OSError, ValueError, KeyError, TypeError) as exc:

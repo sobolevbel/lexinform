@@ -450,6 +450,26 @@ class SejmPrintRepresentation(BaseModel):
         return self
 
 
+class SejmSupersededDraft(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    profile: Literal["sejm-committee-draft-pages-v1"] = "sejm-committee-draft-pages-v1"
+    report: str = Field(pattern=r"^[1-9][0-9]{0,8}$")
+    report_date: dt.date
+    observation_id: str = Field(pattern=r"^source-observation-v1:[0-9a-f]{64}$")
+    edition_id: str = Field(pattern=r"^edition-v1:[0-9a-f]{64}$")
+    pdf_sha256: Sha256
+    text_sha256: Sha256
+    first_page: int = Field(ge=2, le=600, strict=True)
+    last_page: int = Field(ge=2, le=600, strict=True)
+
+    @model_validator(mode="after")
+    def ordered_pages(self) -> Self:
+        if self.first_page >= self.last_page:
+            raise ValueError("Superseded committee draft needs a bounded physical page range")
+        return self
+
+
 class SejmAdoptedText(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
@@ -463,6 +483,9 @@ class SejmAdoptedText(BaseModel):
     pdf_text_sha256: Sha256
     selection_id: str = Field(pattern=r"^selection-v1:[0-9a-f]{64}$")
     edition_id: str = Field(pattern=r"^edition-v1:[0-9a-f]{64}$")
+    supersedes: SejmSupersededDraft | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @property
     def pdf_url(self) -> str:
@@ -478,6 +501,15 @@ class SejmAdoptedText(BaseModel):
             or evidence.reading is not ReadingOutcome.PASSED
         ):
             raise ValueError("Adopted text requires a known third-reading adoption")
+        prior = self.supersedes
+        if prior is not None and (
+            prior.report == self.number
+            or prior.report_date >= self.stage_date
+            or prior.pdf_sha256 == self.pdf_sha256
+            or prior.edition_id == self.edition_id
+            or prior.text_sha256 == self.pdf_text_sha256
+        ):
+            raise ValueError("Adopted text must supersede a distinct earlier edition")
         return self
 
 

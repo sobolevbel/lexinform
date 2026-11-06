@@ -11761,3 +11761,27 @@ checkout, the local body root, case path and SHA-256, and a new output
 path outside both source roots. The ordinary selector still classifies
 2594 as unknown. Native edition capture and the durable supersession link
 remain open, as do provision-level lineage and later legislative events.
+
+<a id="j295"></a>
+
+## J295 — export the proved supersession with both edition parents
+
+The pinned replay can export a standalone SQL snapshot. The report draft
+is addressed separately from the whole committee report by its body
+hash, text-view hash and physical pages 5–324. The adopted edition is
+the ordinary selected 2111 text, with the same identity as J289.
+The adoption trace references the exact report observation and edition.
+The reader checks the report range, same-owner observation, selection
+artifact, edition membership and complete body read. Existing adoption-only
+traces keep their original identity.
+
+Two exports at the same recording timestamp produced byte-identical SQL
+and proof, and each export passed two restores. A missing prior edition
+link, prior artifact link, prior body read or adopted body read was
+rejected without replacing the valid SQLite state.
+[Snapshot qualification](../assets/audits/2026-11-06-sejm-supersession/sql-qualification.json).
+
+Use the J294 replay with `--snapshot-output` and a timezone-aware
+`--recorded-at` to reproduce the separate snapshot. The normal analysis
+selector and runtime writer keep their existing behavior. Native capture
+of the report range and native supersession remain open under DA4.7.

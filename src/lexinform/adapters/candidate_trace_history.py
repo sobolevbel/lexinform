@@ -10,7 +10,11 @@ from lexinform.adapters.extraction_history import read_extraction_result
 from lexinform.document_editions import candidate_edition
 from lexinform.json_storage import read_json
 from lexinform.models.artifacts import ArtifactMetadata, ArtifactReadReceipt
-from lexinform.models.candidate_trace import CandidateDispositionTrace, SejmPrintRepresentation
+from lexinform.models.candidate_trace import (
+    CandidateDispositionTrace,
+    SejmAdoptedText,
+    SejmPrintRepresentation,
+)
 from lexinform.models.document_editions import DocumentEdition
 
 CANDIDATE_TRACE_SCHEMA_VERSION = 59
@@ -176,6 +180,78 @@ def validate_committee_recommendation_link(
         raise CandidateTraceRowError("candidate_trace_recommendation_parent_mismatch") from None
 
 
+def _validate_superseded_draft(
+    reader: ContentSourceRows, cursor: sqlite3.Cursor, proof: SejmAdoptedText
+) -> None:
+    prior = proof.supersedes
+    if prior is None:
+        return
+    url = f"https://api.sejm.gov.pl/sejm/term{proof.term}/prints/{prior.report}/{prior.report}.pdf"
+    observation = reader.get_source_observation(prior.observation_id)
+    if (
+        observation is None
+        or (observation.term, observation.number, observation.purpose)
+        != (proof.term, proof.number, "analysis")
+        or (observation.document.kind, observation.document.url) != ("committee_report", url)
+    ):
+        raise ValueError("Supersession requires the same owner's exact report observation")
+    record = reader.get_document_selection(observation.selection_id)
+    if (
+        record is None
+        or record.selection.question != "sejm_committee_draft"
+        or record.selection.policy_version != prior.profile
+        or len(record.selection.parts) != 1
+        or (part := record.selection.parts[0]).members
+        or (
+            part.role,
+            part.url,
+            part.sha256,
+            part.text_sha256,
+            part.page_start,
+            part.page_end,
+            part.pages,
+        )
+        != (
+            "bill",
+            url,
+            prior.pdf_sha256,
+            prior.text_sha256,
+            prior.first_page,
+            prior.last_page,
+            prior.last_page,
+        )
+    ):
+        raise ValueError("Supersession requires the proved range inside the report")
+    row = cursor.execute(
+        "SELECT e.*, r.read_id, r.byte_size, r.recorded_at AS read_at, a.byte_size AS artifact_size"
+        " FROM selection_editions AS link JOIN document_editions AS e USING (edition_id)"
+        " JOIN selection_artifacts AS part USING (selection_id)"
+        " JOIN artifacts AS a ON a.sha256=part.artifact_sha256"
+        " JOIN artifact_reads AS r ON r.artifact_sha256=a.sha256"
+        " WHERE link.selection_id=? AND e.edition_id=?"
+        " AND part.part_scope='parts' AND part.part_index=0"
+        " AND r.requested_url=? AND a.sha256=?",
+        (record.selection_id, prior.edition_id, url, prior.pdf_sha256),
+    ).fetchone()
+    if row is None:
+        raise ValueError("Supersession requires an exact prior edition and report body read")
+    edition = DocumentEdition.model_validate_json(row["edition_json"])
+    receipt = ArtifactReadReceipt(
+        requested_url=url,
+        sha256=prior.pdf_sha256,
+        byte_size=row["byte_size"],
+        recorded_at=row["read_at"],
+    )
+    if (
+        edition.edition_id != prior.edition_id
+        or edition.recorded_at.astimezone(UTC).isoformat() != row["recorded_at"]
+        or candidate_edition(record, recorded_at=edition.recorded_at) != edition
+        or receipt.read_id != row["read_id"]
+        or receipt.byte_size != row["artifact_size"]
+    ):
+        raise ValueError("Supersession parents differ from the recorded report edition")
+
+
 def validate_candidate_trace_link(
     connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
 ) -> None:
@@ -246,7 +322,8 @@ def validate_candidate_trace_link(
                 )
                 if receipt.read_id != row["read_id"] or receipt.byte_size != row["artifact_size"]:
                     raise ValueError("representation body read differs from its artifact")
-            if not isinstance(proof, SejmPrintRepresentation):
+            if isinstance(proof, SejmAdoptedText):
+                _validate_superseded_draft(reader, cursor, proof)
                 return
             row = cursor.execute(
                 "SELECT * FROM extraction_results WHERE extraction_id=?",

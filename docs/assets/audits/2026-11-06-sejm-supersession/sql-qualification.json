@@ -1,0 +1,19 @@
+{
+  "adopted_edition_id": "edition-v1:37d83994a51fba9d9a1283bbc2e3b2a7db6813ee4015d6b05f61cfdf47596885",
+  "adopted_selection_id": "selection-v1:49232be48f74c5f0504be58551a37a5a28daa1163cd7d02fea95e7f9bb40b74c",
+  "adoption_only_trace_id": "candidate-trace-v1:6f819a56bf69c5ac95ce80641d54e1808e09a51689fa38596bac219db08a9c26",
+  "recorded_at": "2026-11-06T06:45:00+00:00",
+  "rejected_missing_parents": {
+    "adopted_artifact_read": "candidate_trace_adoption_parent_mismatch",
+    "prior_artifact_link": "candidate_trace_adoption_parent_mismatch",
+    "prior_artifact_read": "candidate_trace_adoption_parent_mismatch",
+    "prior_edition_link": "candidate_trace_adoption_parent_mismatch"
+  },
+  "report_edition_id": "edition-v1:f025151ad4c81494144feadf07ae2f91aa76691b9326a94145748d103340d33c",
+  "report_selection_id": "selection-v1:cb33a480d7913584fe700a88192b7b770d1572fb6dcda93182f7aaf560e44a98",
+  "restores_per_export": 2,
+  "snapshot_gzip_bytes": 8765,
+  "sql_bytes": 42860,
+  "sql_sha256": "24265c66f44e7695532c357ffb1db25bd68090b93a908be7c4819db6743f7d8b",
+  "trace_id": "candidate-trace-v1:6826b77a647150a8fc4bfbf8cf57133d496d740becaa0309bf595373500fa057"
+}
