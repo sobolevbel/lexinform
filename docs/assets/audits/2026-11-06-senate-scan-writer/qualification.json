@@ -1,0 +1,39 @@
+{
+  "2103-anthropic": {
+    "queue_gzip": 810952,
+    "queue_sql": 1103553
+  },
+  "2103-openai": {
+    "queue_gzip": 811028,
+    "queue_sql": 1103553
+  },
+  "377-anthropic": {
+    "queue_gzip": 297073,
+    "queue_sql": 410157
+  },
+  "377-openai": {
+    "queue_gzip": 297057,
+    "queue_sql": 410157
+  },
+  "378-anthropic": {
+    "queue_gzip": 681675,
+    "queue_sql": 939677
+  },
+  "378-openai": {
+    "queue_gzip": 681703,
+    "queue_sql": 939677
+  },
+  "919-anthropic": {
+    "queue_gzip": 1345975,
+    "queue_sql": 1849285
+  },
+  "919-openai": {
+    "queue_gzip": 1345967,
+    "queue_sql": 1849285
+  },
+  "provider_submissions": 0,
+  "replay_sha256": {
+    "baseline": "523889c5b739fd5c91ed4fab1feaaa56d8c2d1bd50b827a5141b2e6061f8c19e",
+    "writer": "ec3f3804a17f0b35617ef86935dbf233a79ef036810f8e53df201e773b31aa3d"
+  }
+}

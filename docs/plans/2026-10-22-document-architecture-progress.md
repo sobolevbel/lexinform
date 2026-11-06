@@ -13113,6 +13113,9 @@ The unit control with equal ZIP and DOCX text now checks both compared
 positions and the matching-policy-identity outcome.
 [Qualification](../assets/audits/2026-11-06-mixed-outer-choice/qualification.json).
 
+The exact `e2d465a2` release passed CI run 42265952087 and relay
+deployment 42267188218. Restart and timer were verified.
+
 <a id="j358"></a>
 
 ## J358 — read compact frozen Senate scan requests
@@ -13126,3 +13129,19 @@ builders and two exact compact restores. The restored frozen requests
 matched the original. The preceding reader accepted inline controls and
 rejected compact ones without changing state. No provider was called.
 [Qualification](../assets/audits/2026-11-06-senate-scan-reader/qualification.json).
+
+<a id="j359"></a>
+
+## J359 — store one PDF in qualified frozen Senate scan requests
+
+The queue writer uses the compatible reader's full-scan and exact
+source checks. It keeps one PDF and a verified provider attachment
+reference. Other requests retain their existing format.
+
+Four official resolutions passed both offline provider builders,
+mock submission and two restores at each checkpoint. Request and
+context hashes, metadata and submitted SQL matched. In the single-item
+queue samples the writer saved 410,157–1,849,285 SQL bytes and
+297,057–1,345,975 gzip bytes. The previous compatible reader restored
+the writer's pinned dumps exactly.
+[Qualification](../assets/audits/2026-11-06-senate-scan-writer/qualification.json).

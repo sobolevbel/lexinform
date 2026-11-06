@@ -283,8 +283,8 @@ def _shared_scan_payload(
     if isinstance(question, AnalysisQuestion):
         if question.kind not in ("analysis", "reanalysis") or question.ctx.text_source != "scan":
             return None
-    elif (
-        question.ctx.source_kind != "committee_amendments" or question.ctx.source_check is not None
+    elif question.ctx.source_kind not in ("committee_amendments", "senate_amendments") or (
+        question.ctx.source_kind == "committee_amendments" and question.ctx.source_check is not None
     ):
         return None
     context = question.ctx
@@ -298,6 +298,17 @@ def _shared_scan_payload(
         or len(scan.data) < _MIN_SHARED_QUESTION_BYTES
         or not _scan_data_fits(scan.data, scan.pages)
         or len(payload) - len(scan.data) > _MAX_SCAN_PAYLOAD_SHELL_CHARS
+    ):
+        return None
+    if (
+        isinstance(question, AmendmentsQuestion)
+        and question.ctx.source_kind == "senate_amendments"
+        and not _senate_scan_payload_matches(
+            question.kind,
+            question.ctx.model_dump(mode="json", exclude={"scan"}),
+            scan.model_dump(mode="json", exclude={"data", "scan_input"}),
+            scan.scan_input.model_dump(mode="json"),
+        )
     ):
         return None
     start = payload.find(scan.data)

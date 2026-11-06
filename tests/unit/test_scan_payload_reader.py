@@ -391,12 +391,12 @@ def senate_scan_request(factory: Callable[[], BatchBackend]) -> BatchRequest:
     ("provider", "factory"),
     [("openai", offline_openai_backend), ("anthropic", offline_anthropic_backend)],
 )
-def test_reader_restores_full_senate_scan_before_writer_activation(
+def test_writer_compacts_full_senate_scan_and_preserves_frozen_request(
     tmp_path: Path, provider: BatchProvider, factory: Callable[[], BatchBackend]
 ) -> None:
     request = senate_scan_request(factory)
-    assert serialize_intent_request(request) == request.model_dump_json()
     reference = compact(request)
+    assert json.loads(serialize_intent_request(request)) == reference
     assert parse_batch_request(reference) == request
     question = request.question
     assert isinstance(question, AmendmentsQuestion), "the fixture keeps the Senate source"
@@ -417,14 +417,16 @@ def test_reader_restores_full_senate_scan_before_writer_activation(
     with closing(SqliteBillRepository(path)) as repo:
         repo.migrate()
         repo.save_batch_intent(intent)
+        compact_dump = repo.dump()
+        with closing(sqlite3.connect(path)) as connection, connection:
+            (actual,) = connection.execute("SELECT request_json FROM llm_batch_intents").fetchone()
+            assert json.loads(actual) == reference
+            connection.execute(
+                "UPDATE llm_batch_intents SET request_json=?", (request.model_dump_json(),)
+            )
         inline = repo.dump()
         repo.restore(inline)
         assert repo.dump() == inline
-        with closing(sqlite3.connect(path)) as connection, connection:
-            connection.execute(
-                "UPDATE llm_batch_intents SET request_json=?", (json.dumps(reference),)
-            )
-        compact_dump = repo.dump()
         for _ in range(2):
             repo.restore(compact_dump)
             assert repo.dump() == compact_dump
@@ -485,3 +487,25 @@ def test_senate_compact_reference_refuses_mismatched_source_and_attachment(fault
 
     with pytest.raises(ValueError, match="invalid_input_request_json"):
         parse_batch_request(raw)
+
+
+@pytest.mark.parametrize("fault", ["source_hash", "source_pages", "truncated", "missing_manifest"])
+def test_senate_writer_keeps_unsupported_source_checks_inline(fault: str) -> None:
+    request = senate_scan_request(offline_openai_backend)
+    question = request.question
+    assert isinstance(question, AmendmentsQuestion), "the fixture retains the Senate question"
+    scan, source = question.ctx.scan, question.ctx.source_check
+    assert scan is not None and source is not None, "the fixture supplies complete scan identity"
+    updates: dict[str, object]
+    if fault == "source_hash":
+        updates = {"source_check": source.model_copy(update={"sha256": "0" * 64})}
+    elif fault == "source_pages":
+        updates = {"source_check": source.model_copy(update={"pages": scan.pages + 1})}
+    elif fault == "truncated":
+        updates = {"truncated": True}
+    else:
+        updates = {"scan": scan.model_copy(update={"scan_input": None})}
+    changed = question.model_copy(update={"ctx": question.ctx.model_copy(update=updates)})
+    request = request.model_copy(update={"question": changed})
+
+    assert serialize_intent_request(request) == request.model_dump_json()
