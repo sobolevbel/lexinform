@@ -1,6 +1,9 @@
 import hashlib
 import json
+import sqlite3
+from contextlib import closing
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -19,6 +22,7 @@ from lexinform.models import (
     DocumentPart,
     DocumentSelection,
     DocumentSelectionRecord,
+    LlmBatchItem,
     PrimaryInputReceipt,
 )
 from lexinform.models.input_receipts import MAX_INPUT_RECEIPT_BYTES, primary_context_sha256
@@ -82,6 +86,55 @@ def meta(receipt: PrimaryInputReceipt | None = None) -> BatchItemMeta:
         memo_key="frozen-key",
         prepared_input_receipt=receipt,
     )
+
+
+def test_intent_text_reference_restores_frozen_input_and_rejects_a_wrong_hash(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "intent.db"
+    with closing(SqliteBillRepository(path)) as repo:
+        repo.migrate()
+        text = SOURCE + "\nZażółć gęślą."
+        frozen = request(text)
+        metadata = meta().model_copy(update={"text": text})
+        intent = BatchIntent.from_request(
+            request=frozen, meta=metadata, provider="openai", created_at=NOW
+        )
+        repo.save_batch_intent(intent)
+        inline = repo.dump()
+        with closing(sqlite3.connect(path)) as sql, sql:
+            marker = {
+                "profile": "question-text-v1",
+                "sha256": hashlib.sha256(text.encode()).hexdigest(),
+            }
+            sql.execute(
+                "UPDATE llm_batch_intents SET meta_json=json_set(meta_json,'$.text',json(?))",
+                (json.dumps(marker),),
+            )
+        compact = repo.dump()
+        for _ in range(2):
+            repo.restore(compact)
+            assert repo.dump() == compact
+        (queued,) = repo.list_queued_batch_intents()
+        assert queued == intent
+        repo.mark_batch_intents_submitting([intent.request.custom_id])
+        (submitting,) = repo.list_submitting_batch_intents()
+        assert LlmBatchItem.from_intent("batch", submitting) == LlmBatchItem.from_intent(
+            "batch", intent
+        )
+        assert submitting.request.model_dump_json() == frozen.model_dump_json()
+        with closing(sqlite3.connect(path)) as sql, sql:
+            sql.execute(
+                "UPDATE llm_batch_intents SET meta_json=json_set(meta_json,'$.text.sha256',?)",
+                ("0" * 64,),
+            )
+        invalid = repo.dump()
+        with pytest.raises(ValueError, match="invalid_intent_question_text_reference"):
+            repo.list_submitting_batch_intents()
+        repo.restore(inline)
+        with pytest.raises(ValueError, match="invalid_input_intent_snapshot"):
+            repo.restore(invalid)
+        assert repo.dump() == inline and repo.list_queued_batch_intents() == [intent]
 
 
 def test_receipt_matches_existing_j125_order_roles_and_actual_frozen_bytes() -> None:

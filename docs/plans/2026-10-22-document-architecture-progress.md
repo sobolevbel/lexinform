@@ -12097,3 +12097,26 @@ The controls added zero. No model requests were sent.
 The native replay covers first analysis. DA5.1 and DA5.6 remain open for
 reanalysis without a current proposal witness, other assemblies, exact
 physical spans and the request-payload retention boundary.
+
+<a id="j309"></a>
+
+## J309 — read an exact question-text reference in queued metadata
+
+An intent reader can resolve a bounded marker in the primary metadata text
+slot against that row's frozen question and payload. It checks the UTF-8
+text hash and verifies the frozen payload checksum before yielding hydrated
+metadata. Restore and the integrity doctor use the same reader. Submitted
+items keep ordinary metadata with the reconstructed text.
+
+Eight offline queue variants from two pinned Sejm source bundles had an
+exact context/metadata text duplicate. The controlled representation saved
+13,553–64,470 bytes in gzip per isolated queue snapshot. Every compact
+checkpoint restored twice and reproduced the original queued intent,
+submitting intent and submitted item. A tampered text hash failed reads
+and scratch restore. The saved schema 66 queue from J241 restored to the
+same SQL and intent as the previous code. The J303 copy had no active batch
+intents or unconsumed items, so this evidence does not estimate production
+prevalence. [Qualification](../assets/audits/2026-11-06-pending-question-text-reader/qualification.json).
+
+Reader only. The prior runtime rejects the marker in a primary text slot.
+The writer can be enabled after a verified reader release.

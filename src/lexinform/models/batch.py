@@ -498,11 +498,17 @@ class DigestItemMeta(BaseModel):
 def batch_item_meta(
     kind: str, raw: str, *, submitted: bool = True
 ) -> BatchItemMeta | DigestItemMeta:
-    model = BatchItemMeta if kind in ("analysis", "reanalysis") else DigestItemMeta
     try:
         decoded = read_json(raw)
     except ValueError, TypeError, RecursionError:
         raise ValueError("invalid_batch_metadata_json") from None
+    return validate_batch_item_meta(kind, decoded, submitted=submitted)
+
+
+def validate_batch_item_meta(
+    kind: str, decoded: object, *, submitted: bool
+) -> BatchItemMeta | DigestItemMeta:
+    model = BatchItemMeta if kind in ("analysis", "reanalysis") else DigestItemMeta
     parsed = model.model_validate(decoded)
     if isinstance(parsed, DigestItemMeta) and parsed.amendment_input_ref is not None:
         parsed.amendment_input_ref.require_carrier(

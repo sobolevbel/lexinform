@@ -64,6 +64,7 @@ from lexinform.adapters.extraction_history import (
     validate_extraction_results,
 )
 from lexinform.adapters.input_receipts import (
+    intent_metadata,
     parse_batch_request,
     validate_input_snapshots,
     validate_multipart_intent,
@@ -3787,7 +3788,7 @@ class SqliteBillRepository:
         intents = [
             BatchIntent(
                 request=(request := parse_batch_request(row["request_json"])),
-                meta=batch_item_meta(request.call_kind, row["meta_json"], submitted=False),
+                meta=intent_metadata(request, row["meta_json"]),
                 provider=row["provider"],
                 state=row["state"],
                 created_at=datetime.fromisoformat(row["created_at"]),

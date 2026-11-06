@@ -17,17 +17,19 @@ from lexinform.errors import PreparedInputParentError
 from lexinform.json_storage import read_json
 from lexinform.models import (
     AmendmentInputReceipt,
+    AnalysisQuestion,
     ArtifactMetadata,
     BatchIntent,
     BatchItemMeta,
     BatchRequest,
+    DigestItemMeta,
     DocumentSelectionRecord,
     ExtractionResult,
     LlmBatchItem,
     PrimaryInputReceipt,
     SupplementInputReceipt,
 )
-from lexinform.models.batch import batch_item_meta
+from lexinform.models.batch import batch_item_meta, validate_batch_item_meta
 from lexinform.models.input_receipts import (
     LooseMultipartInputReceipt,
     LooseRclInputReceipt,
@@ -76,6 +78,29 @@ def parse_batch_request(raw: object) -> BatchRequest:
         return BatchRequest.model_validate(read_json(raw) if isinstance(raw, str) else raw)
     except ValueError, TypeError, RecursionError:
         raise ValueError("invalid_input_request_json") from None
+
+
+def intent_metadata(
+    request: BatchRequest, raw: str | dict[str, object]
+) -> BatchItemMeta | DigestItemMeta:
+    decoded = read_json(raw) if isinstance(raw, str) else raw
+    if isinstance(decoded, dict) and isinstance(reference := decoded.get("text"), dict):
+        question = request.question
+        if (
+            not isinstance(question, AnalysisQuestion)
+            or request.call_kind not in ("analysis", "reanalysis")
+            or request.payload_sha256 is None
+            or not question.ctx.text
+            or reference
+            != {
+                "profile": "question-text-v1",
+                "sha256": hashlib.sha256(question.ctx.text.encode()).hexdigest(),
+            }
+        ):
+            raise ValueError("invalid_intent_question_text_reference")
+        request.verify_payload()
+        decoded = {**decoded, "text": question.ctx.text}
+    return validate_batch_item_meta(request.call_kind, decoded, submitted=False)
 
 
 def _reference(table: str, key: object) -> str:
@@ -328,7 +353,8 @@ def _input_snapshot_checks(
             has_receipt = meta is not None and meta.get("prepared_input_receipt") is not None
             has_timing = meta is not None and meta.get("local_timing_witness") is not None
             frozen = request is not None and request.get("payload_sha256") is not None
-            if not has_receipt and not has_timing and not frozen:
+            has_text_reference = isinstance(meta.get("text"), dict)
+            if not has_receipt and not has_timing and not frozen and not has_text_reference:
                 continue
             ref = _reference("llm_batch_intents", row["custom_id"])
             try:
@@ -338,11 +364,11 @@ def _input_snapshot_checks(
                     "openai",
                 ):
                     raise ValueError("input_snapshot_request_columns")
-                if has_receipt or has_timing:
+                if has_receipt or has_timing or has_text_reference:
                     intent = BatchIntent.model_validate(
                         {
                             "request": actual,
-                            "meta": meta,
+                            "meta": intent_metadata(actual, meta) if has_text_reference else meta,
                             "provider": row["provider"],
                             "state": row["state"],
                             "created_at": row["created_at"],

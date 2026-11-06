@@ -1,0 +1,145 @@
+{
+  "baseline_git_sha": "741b79100e43402695b570b516266fecf8981075",
+  "pending_census": {
+    "duplicate-proposal": {
+      "inputs": {
+        "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+        "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+      },
+      "request_model_json_sha256": "cd45a6c3e3b1b12d40165ed37a3c617803e1a1ce7b6b00929131a2738b9c25e9",
+      "baseline_gzip_bytes": 59094,
+      "baseline_sql_bytes": 234361,
+      "context_bytes": 54267,
+      "equal": true,
+      "hypothetical_gzip_bytes": 45541,
+      "hypothetical_sql_bytes": 179284,
+      "meta_bytes": 54267
+    },
+    "missing-term": {
+      "inputs": {
+        "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+        "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+      },
+      "request_model_json_sha256": "cd45a6c3e3b1b12d40165ed37a3c617803e1a1ce7b6b00929131a2738b9c25e9",
+      "baseline_gzip_bytes": 59094,
+      "baseline_sql_bytes": 234361,
+      "context_bytes": 54267,
+      "equal": true,
+      "hypothetical_gzip_bytes": 45541,
+      "hypothetical_sql_bytes": 179284,
+      "meta_bytes": 54267
+    },
+    "no-edition": {
+      "inputs": {
+        "sejm/term10/autopoprawki/files/2082-A__2082-A.pdf": "867d63a7c087e3a6bf74f9d72b7c9a1a3df8cb967134bc2089faed5725e3dd6a",
+        "sejm/term10/files/2082__2082.pdf": "85194508ed837bbaedd56d646573c06c1737d29cc0fed645717f82a2108e7928",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+      },
+      "request_model_json_sha256": "a4a55950685995cbe7ef5b604542dd043a77dc0f90c6ffd95304c859ca934b5d",
+      "baseline_gzip_bytes": 211107,
+      "baseline_sql_bytes": 637703,
+      "context_bytes": 186470,
+      "equal": true,
+      "hypothetical_gzip_bytes": 146637,
+      "hypothetical_sql_bytes": 448429,
+      "meta_bytes": 186470
+    },
+    "non-list-parent": {
+      "inputs": {
+        "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+        "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+      },
+      "request_model_json_sha256": "cd45a6c3e3b1b12d40165ed37a3c617803e1a1ce7b6b00929131a2738b9c25e9",
+      "baseline_gzip_bytes": 59094,
+      "baseline_sql_bytes": 234361,
+      "context_bytes": 54267,
+      "equal": true,
+      "hypothetical_gzip_bytes": 45541,
+      "hypothetical_sql_bytes": 179284,
+      "meta_bytes": 54267
+    },
+    "parent-refused": {
+      "inputs": {
+        "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+        "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+      },
+      "request_model_json_sha256": "cd45a6c3e3b1b12d40165ed37a3c617803e1a1ce7b6b00929131a2738b9c25e9",
+      "baseline_gzip_bytes": 59094,
+      "baseline_sql_bytes": 234361,
+      "context_bytes": 54267,
+      "equal": true,
+      "hypothetical_gzip_bytes": 45541,
+      "hypothetical_sql_bytes": 179284,
+      "meta_bytes": 54267
+    },
+    "positive-error": {
+      "inputs": {
+        "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+        "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+      },
+      "request_model_json_sha256": "cd45a6c3e3b1b12d40165ed37a3c617803e1a1ce7b6b00929131a2738b9c25e9",
+      "baseline_gzip_bytes": 60033,
+      "baseline_sql_bytes": 237589,
+      "context_bytes": 54267,
+      "equal": true,
+      "hypothetical_gzip_bytes": 46318,
+      "hypothetical_sql_bytes": 182512,
+      "meta_bytes": 54267
+    },
+    "positive-success": {
+      "inputs": {
+        "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+        "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+      },
+      "request_model_json_sha256": "cd45a6c3e3b1b12d40165ed37a3c617803e1a1ce7b6b00929131a2738b9c25e9",
+      "baseline_gzip_bytes": 60033,
+      "baseline_sql_bytes": 237589,
+      "context_bytes": 54267,
+      "equal": true,
+      "hypothetical_gzip_bytes": 46318,
+      "hypothetical_sql_bytes": 182512,
+      "meta_bytes": 54267
+    },
+    "wrong-base-term": {
+      "inputs": {
+        "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+        "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+      },
+      "request_model_json_sha256": "cd45a6c3e3b1b12d40165ed37a3c617803e1a1ce7b6b00929131a2738b9c25e9",
+      "baseline_gzip_bytes": 59094,
+      "baseline_sql_bytes": 234361,
+      "context_bytes": 54267,
+      "equal": true,
+      "hypothetical_gzip_bytes": 45541,
+      "hypothetical_sql_bytes": 179284,
+      "meta_bytes": 54267
+    }
+  },
+  "saved_state_control": {
+    "state_git_sha": "13440124b6f38f1124beb9b99f35a7c8a227c08b",
+    "queued_or_submitting_intents": 0,
+    "unconsumed_items": 0
+  },
+  "legacy_queue_control": {
+    "schema": 66,
+    "source_sql_sha256": "e7f7fffb9efe8b34059ce8fe94d45194788020c416e34a287ea31ee5c3cb96c2",
+    "restored_sql_sha256": "c13bc1de7c12e81803982220deb50f5fba6f9b1c6eada4111d3b1e68e5f353ae",
+    "intent_json_sha256": "200c4b12b7069db5c8b925dc2800d66a20ed5ecc6e40744d991990141109ef73",
+    "matches_previous_code": true
+  }
+}
