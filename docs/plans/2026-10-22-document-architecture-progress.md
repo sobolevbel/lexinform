@@ -12143,3 +12143,25 @@ repeat saves. [Qualification](../assets/audits/2026-11-06-pending-question-text-
 
 DA5.1 remains open for other payload copies and source profiles. This stage
 covers only one duplicate while its immutable question is present.
+
+<a id="j311"></a>
+
+## J311 — read the original card lineage for a Sejm self-amendment input
+
+The original-card verifier accepts the exact two-part receipt when the
+reference names that receipt's own observation. It verifies the official
+proposal trace and both extraction parents through the shared batch receipt
+validator. The compact read exposes both parts with their roles and physical
+identities. The existing single-part profile keeps its output shape.
+
+The pinned druk 2320/2320-A lifecycle used local batch and delivery fakes.
+The reader fixture supplied the exact lineage before the original send.
+The normal candidate lookup remained inactive. After batch and delivery
+payload cleanup and two restores, the compact read kept both part identities.
+The request, rendered card, publication and message IDs matched the plain
+baseline. An invalid observation reference produced the same plain card.
+The fixture added 40 gzip bytes after cleanup.
+[Qualification](../assets/audits/2026-11-06-sejm-card-lineage-reader/qualification.json).
+
+DA7.1 stays open for the native writer and other editorial histories.
+Deploy this reader before allowing automatic capture of the new lineage.

@@ -8,7 +8,10 @@ from typing import Literal
 from lexinform.adapters.computation_history import read_result_application
 from lexinform.adapters.content_applications import verify_content_applications
 from lexinform.adapters.content_source_refs import ContentSourceRows
-from lexinform.adapters.input_receipts import validate_primary_receipt_parents
+from lexinform.adapters.input_receipts import (
+    validate_multipart_item,
+    validate_primary_receipt_parents,
+)
 from lexinform.content_versions import (
     card_confirmation_matches,
     card_physical_matches,
@@ -32,6 +35,7 @@ from lexinform.models import (
     PublicationStatus,
 )
 from lexinform.models.content import CardPrimaryEvidence, card_bill_snapshot
+from lexinform.models.input_receipts import SejmSelfAmendmentInputReceipt
 from lexinform.models.primary_projections import PRIMARY_USAGE_FIELDS
 from lexinform.primary_projections import primary_record_matches
 
@@ -203,10 +207,8 @@ def _verify_card_primary_evidence(
         or meta.input_binding != paid.input_binding
         or meta.generation != paid.generation
         or meta.queued_at is None
-        or not isinstance(receipt, PrimaryInputReceipt)
+        or not isinstance(receipt, (PrimaryInputReceipt, SejmSelfAmendmentInputReceipt))
         or receipt.source_selection_id is None
-        or receipt.artifact_sha256 is None
-        or receipt.extraction_id is None
         or not meta.source_url
         or receipt.request_sha256 != paid.request_sha256
         or meta.request_sha256 != paid.request_sha256
@@ -222,12 +224,39 @@ def _verify_card_primary_evidence(
         or source.selection_id != receipt.source_selection_id
         or (source.document.kind, source.document.url) != (meta.source_kind, meta.source_url)
         or selection is None
-        or len(selection.selection.parts) != 1
+        or not selection.selection.parts
+        or isinstance(receipt, PrimaryInputReceipt)
+        and len(selection.selection.parts) != 1
         or selection.selection.parts[0].url != meta.source_url
         or selection.selection.parts != meta.selection.without_text().parts
     ):
         raise CardPrimaryEvidenceError("card_primary_source_scope")
-    validate_primary_receipt_parents(connection, receipt)
+    physical: dict[str, object]
+    if isinstance(receipt, PrimaryInputReceipt):
+        if receipt.artifact_sha256 is None or receipt.extraction_id is None:
+            raise CardPrimaryEvidenceError("card_primary_item_scope")
+        validate_primary_receipt_parents(connection, receipt)
+        physical = {
+            "artifact_sha256": receipt.artifact_sha256,
+            "extraction_id": receipt.extraction_id,
+        }
+    else:
+        if receipt.source_observation_id != reference.source_observation_id:
+            raise CardPrimaryEvidenceError("card_primary_source_scope")
+        validate_multipart_item(connection, item)
+        physical = {
+            "proposal_trace_id": receipt.proposal_trace_id,
+            "source_parts": [
+                {
+                    "role": part.role,
+                    "artifact_sha256": part.source_sha256,
+                    "extraction_id": recorded.extraction_id,
+                }
+                for part, recorded in zip(
+                    selection.selection.parts, receipt.source_parts, strict=True
+                )
+            ],
+        }
     collections = _query(
         connection,
         "SELECT * FROM result_applications WHERE result_id=? AND term=? AND number=?"
@@ -270,8 +299,7 @@ def _verify_card_primary_evidence(
         "source_kind": source.document.kind,
         "source_observation_id": source.observation_id,
         "source_selection_id": receipt.source_selection_id,
-        "artifact_sha256": receipt.artifact_sha256,
-        "extraction_id": receipt.extraction_id,
+        **physical,
         "purpose": paid.purpose,
         "result_id": paid.result_id,
         "request_sha256": paid.request_sha256,

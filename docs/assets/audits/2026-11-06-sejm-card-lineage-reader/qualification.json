@@ -1,0 +1,43 @@
+{
+  "baseline_git_sha": "88c4f233d7d52400cf7d2c38fe80c478c69da47b",
+  "inputs": {
+    "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+    "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+    "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+    "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+  },
+  "request_model_sha256": "cd45a6c3e3b1b12d40165ed37a3c617803e1a1ce7b6b00929131a2738b9c25e9",
+  "render_sha256": "c468204941979f52709d857dcaae9580cfcfed9f36acb518e325c95777b46ab0",
+  "publication_id": 1,
+  "message_id": 101,
+  "baseline_gzip_bytes": 14220,
+  "reader_gzip_bytes": 14260,
+  "retained_lineage": {
+    "collection_application_id": 1,
+    "content_version_id": "content-v1:c21254a839dd0105f3ddcd13fd773164bdd51dc251d0e8218f060fb58424e3ca",
+    "frozen_render_sha256": "c468204941979f52709d857dcaae9580cfcfed9f36acb518e325c95777b46ab0",
+    "projection_application_id": 2,
+    "proposal_trace_id": "candidate-trace-v1:217544dbcf02634e003956a1514fa13bce09bb0ba3d48b70bb6d1e6e0474e410",
+    "purpose": "analysis",
+    "recorded_sent_at": "2026-11-05T12:00:00+00:00",
+    "request_sha256": "c4b69c31ca1591a9af621c73688bd798bfb45a13e16701364bb34edb6cde8ada",
+    "result_id": "result-v1:b635af1134558f06833d2a335301159355bf71e7988d5f74a225eee98b2dea36",
+    "source_kind": "print",
+    "source_observation_id": "source-observation-v1:a637d889f043d97bab4854f317676a43b5ae1c75cbd650474dd0fa33854d8292",
+    "source_parts": [
+      {
+        "artifact_sha256": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+        "extraction_id": "extraction-v1:8e0fed5623dae09852be4623f88f93b1058e441114c686c3c8c59a52b8ac2fa4",
+        "role": "bill"
+      },
+      {
+        "artifact_sha256": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+        "extraction_id": "extraction-v1:66ea891581676101a5ee65b74836e2fe7719375c67140057e57c9197b8ad7a9e",
+        "role": "self_amendment"
+      }
+    ],
+    "source_selection_id": "selection-v1:5be58199fc39b70e8f62397d24ca0d3f23f03e3ee7fd9527e8695c4accc04997"
+  },
+  "invalid_reference_matches_plain": true,
+  "native_writer_enabled": false
+}
