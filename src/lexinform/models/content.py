@@ -59,6 +59,12 @@ class CardPrimaryEvidence(BaseModel):
     source_observation_id: str = Field(pattern=r"^source-observation-v1:[0-9a-f]{64}$")
 
 
+class SupplementContentEvidence(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    source_observation_id: str = Field(pattern=r"^source-observation-v1:[0-9a-f]{64}$")
+
+
 class ContentVersion(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -87,7 +93,10 @@ class ContentVersion(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     computation_ids: tuple[str, ...] = ()
-    application_ref_profile: Literal["amendment-projections-v1"] | None = Field(
+    application_ref_profile: (
+        Literal["amendment-projections-v1", "supplement-projection-v1"] | None
+    ) = Field(default=None, exclude_if=lambda value: value is None)
+    supplement_evidence: SupplementContentEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     application_ids: tuple[PositiveInt, ...] = ()
@@ -143,6 +152,19 @@ class ContentVersion(BaseModel):
             or any(value >= 2**63 for value in self.application_ids)
         ):
             raise ValueError("profiled amendment references require bounded canonical SQL IDs")
+        supplement_profile = self.application_ref_profile == "supplement-projection-v1"
+        if supplement_profile != (self.supplement_evidence is not None) or (
+            supplement_profile
+            and (
+                self.reason != "original"
+                or len(self.application_ids) != 1
+                or not self.rendered_text
+                or self.language is None
+                or self.formatter_version is None
+                or self.source_scope is not None
+            )
+        ):
+            raise ValueError("Supplement evidence requires one original editorial projection")
         return self
 
     @property
@@ -173,9 +195,9 @@ class ContentVersionSummary(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     computation_ids: tuple[str, ...]
-    application_ref_profile: Literal["amendment-projections-v1"] | None = Field(
-        default=None, exclude_if=lambda value: value is None
-    )
+    application_ref_profile: (
+        Literal["amendment-projections-v1", "supplement-projection-v1"] | None
+    ) = Field(default=None, exclude_if=lambda value: value is None)
     application_ids: tuple[int, ...]
     status_change_id: int | None
     recorded_at: AwareDatetime

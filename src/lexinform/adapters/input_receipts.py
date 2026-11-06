@@ -572,6 +572,12 @@ def validate_primary_receipt_parents(
     _parents(connection, receipt)
 
 
+def validate_supplement_receipt_parents(
+    connection: sqlite3.Connection, receipt: SupplementInputReceipt
+) -> None:
+    _parents(connection, receipt)
+
+
 def validate_multipart_intent(connection: sqlite3.Connection, intent: BatchIntent) -> None:
     if not isinstance(intent.meta.prepared_input_receipt, LooseMultipartInputReceipt):
         return

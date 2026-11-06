@@ -1,0 +1,81 @@
+{
+  "baseline_commit": "0777b61722c8bfa6ce495f2695cc217888025604",
+  "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "input_sha256": {
+    "INDEX.json": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "sejm/term10/supplements/catalogue.json": "eca98c9e586df4a42aba1c3f74e401ea12d279f7f9926d033e8ce5abb880a7ca",
+    "sejm/term10/supplements/files/1319-001__1319-001.pdf": "37be6751fd52f1bd5317c6a1de0961f0d7d40dbad7e9c7b563012026fb29a82e",
+    "sejm/term10/supplements/files/1528-004__1528-004.pdf": "2c27b6125146d6ebb23cbf427de896f95d04e02deba4f7f8062e9e387eefbd39",
+    "sejm/term10/supplements/files/1676-s__1676-s.pdf": "b4f6aa0ccf9b2dd6ddd0e38ed58b5eb2524f4210f1d9d8cca770725c77e2db82",
+    "sejm/term10/supplements/files/2883-005__2883-005.pdf": "cc06a5905f3b7f4d7f8203cd03e0e84b2d1e5dc5bdfef5cedb75863c5a178427",
+    "sejm/term10/supplements/files/3033-001__3033-001.pdf": "63c5a0981e304979be8b097ffb9cd255a7101293314206b42819e84f4ecce85b",
+    "sejm/term10/supplements/files/3039-005__3039-005.pdf": "6a2705ea005751e87a2bbe15588d738c3141f2411e6fb716a046e4174f2d873f",
+    "sejm/term10/supplements/files/439-s__439-s.pdf": "fff8de5521a0f1d2f2b0a7fb8b2a904d2c529719f22371720c4f1125fbfbc6da",
+    "sejm/term10/supplements/files/494-s__494-s.pdf": "38d7a16ea10ff10f9db97db8e7b513bfe6e712981b9876cac367f6c53a7ef939",
+    "sejm/term10/supplements/records/1295-001.json": "00346a34ec6b471db8962ca8fbd8db2b4e1d7471300bad671b67363384d20fd2",
+    "sejm/term10/supplements/records/1319-001.json": "fc9d2ff9f156b79841b56b026df8db0b888942224fc11559187041607f80ce36",
+    "sejm/term10/supplements/records/1528-004.json": "d80d620b0c5c6bf1a62f6c6d6711637f60f3879cf971ed62e222266f7ecb872f",
+    "sejm/term10/supplements/records/1676-s.json": "07815b6195fa23633428f03f395fc1221b1a61e56e278470bedaa268cb8bc869",
+    "sejm/term10/supplements/records/2883-005.json": "208dbe08e1d5944c1f48fa2f8a8d8102560ebd6951a32c2c39057afe880d194b",
+    "sejm/term10/supplements/records/3033-001.json": "b0e52f87905344124aab4d946143d1561e7fd66573891ac6b22b5d73726c8b21",
+    "sejm/term10/supplements/records/3039-005.json": "4808045e8cd540240e9451b2db3940716c23b39a8830fc2fdca1351a66e58c75",
+    "sejm/term10/supplements/records/346-003.json": "1238d45d76c7b4ce8bff6fa0629c4d04d1d4d0d10116865960e4f12e9912fcfe",
+    "sejm/term10/supplements/records/439-s.json": "f103ae61feed89c4cb3fbeef11d9df24ccd809b5759f3ed2239bf5e796ac5985",
+    "sejm/term10/supplements/records/494-s.json": "a7b66f24cdf6e779c4a478c8d7ac16dbd0606889c33640c863085248df6d2015",
+    "sejm/term10/supplements/records/672-011.json": "4e384ce3704cd77ab6709a061690feeb0f711b291e61d7a0327b87796f393909"
+  },
+  "ledger_sha256": {
+    "native-baseline": "d113e79899604cd5c15c23ed6c45936e25142640955eb3299d218f2f06c39bef",
+    "root-qualified": "047a32a0160a7bec3ef8d607a92914062baf001004fa1e8733e98c2fa379e50f"
+  },
+  "population": {
+    "natural": 16,
+    "controlled": 10,
+    "excluded": [
+      {
+        "number": "1295-001",
+        "reason": "official_title_not_reader_eligible"
+      },
+      {
+        "number": "346-003",
+        "reason": "official_title_not_reader_eligible"
+      },
+      {
+        "number": "672-011",
+        "reason": "official_title_not_reader_eligible"
+      }
+    ]
+  },
+  "unchanged": [
+    "source inputs",
+    "request and context identity",
+    "existing input receipt",
+    "text projection"
+  ],
+  "post_cleanup": {
+    "exact_restores_per_case": 2,
+    "linked_profiles": 26,
+    "removed": [
+      "physical delivery payload",
+      "consumed batch answer body"
+    ],
+    "retained": [
+      "content",
+      "application",
+      "result",
+      "source observation",
+      "selection",
+      "extraction",
+      "input receipt"
+    ]
+  },
+  "legacy": {
+    "publication": 240,
+    "checkpoint_sha256": "3ca8e3c7f1b9d94aaceb6c775168fccf6f56711a3076f93b7554ce0720b815a9",
+    "doctor_sha256": "4953ff8d00d114478897a3ef0f5ab232a2cf49e5839720980ca8e42a193f2618",
+    "before_after_exact": true,
+    "lineage": "unknown"
+  },
+  "fixture": "Native preparation with a controlled paid answer and manually bound reader profile; runtime writer inactive.",
+  "provider_calls": 0
+}

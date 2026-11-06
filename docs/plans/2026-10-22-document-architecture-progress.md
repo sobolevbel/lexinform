@@ -12497,3 +12497,25 @@ Omitting five copied document texts saved 470,637 SQL bytes and
 121,142 gzip bytes in the paired checkpoint comparison. The focused retry control preserves
 the same rendered message after failure and restore.
 [Qualification](../assets/audits/2026-11-06-consultation-delivery/qualification.json).
+
+Commit `0777b617` passed exact CI 42219457180 and relay deployment
+42220134391.
+
+<a id="j327"></a>
+
+## J327 — read exact source lineage for a direct supplement update
+
+The optional editorial profile binds one standalone supplement
+update to its applied result, consumed batch item, complete input
+receipt and exact source observation. It checks the frozen owner,
+filing and physical publication. Normal retention can clear the
+delivery and answer payloads while keeping their verified references.
+Existing versions and unqualified history keep their original scope.
+
+Sixteen natural preparations from eight official PDFs and ten
+controlled cases kept the original requests, receipts and projections.
+Manually attached reader profiles survived cleanup and two exact
+restores on every case. The legacy publication 240 doctor report
+remained byte-identical. Qualification uses controlled answers and
+does not activate an editorial writer.
+[Qualification](../assets/audits/2026-11-06-supplement-lineage-reader/qualification.json).

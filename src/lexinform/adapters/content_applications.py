@@ -1,9 +1,11 @@
 """Resolve explicitly profiled editorial references against retained projection receipts."""
 
 import sqlite3
+from datetime import datetime
 
 from lexinform.adapters.computation_history import read_computation_result, read_result_application
 from lexinform.adapters.content_source_refs import ContentSourceRows
+from lexinform.adapters.input_receipts import validate_supplement_receipt_parents
 from lexinform.adapters.secondary_dependencies import (
     SecondaryPurpose,
     validate_secondary_dependency,
@@ -12,13 +14,20 @@ from lexinform.content_versions import content_delivery_mismatch, content_snapsh
 from lexinform.json_storage import read_json
 from lexinform.models import (
     AmendmentsRecord,
+    Bill,
+    ComputationResult,
     ContentVersion,
     DeliveryPlan,
+    DigestItemMeta,
     ResultApplication,
     ResultApplicationTarget,
     StatusChange,
+    SupplementInputReceipt,
+    SupplementRecord,
     amendments_stage,
 )
+from lexinform.models.batch import batch_item_meta
+from lexinform.models.content import SupplementContentEvidence
 
 
 class ContentApplicationError(ValueError):
@@ -52,7 +61,7 @@ def _application(row: sqlite3.Row) -> ResultApplication:
     return application
 
 
-def _result(connection: sqlite3.Connection, application: ResultApplication) -> str:
+def _result(connection: sqlite3.Connection, application: ResultApplication) -> ComputationResult:
     rows = _rows(
         connection, "SELECT * FROM computation_results WHERE result_id=?", (application.result_id,)
     )
@@ -66,7 +75,7 @@ def _result(connection: sqlite3.Connection, application: ResultApplication) -> s
     )
     if result.validation != "validated" or result.purpose not in allowed:
         raise ContentApplicationError("content_application_result_invalid")
-    return result.purpose
+    return result
 
 
 def find_projection_application_ids(
@@ -125,13 +134,30 @@ def _verify(
     if change_snapshot is None or change_snapshot.kind != "change":
         raise ValueError("content_application_change_unavailable")
     change = StatusChange.model_validate(read_json(change_snapshot.payload_json))
+    supplement = version.supplement_evidence
     if (
         change.id is None
         or change.id <= 0
         or change.id != version.status_change_id
-        or (version.reason == "original" and amendments_stage(change.new_stages) is None)
+        or (
+            version.reason == "original"
+            and supplement is None
+            and amendments_stage(change.new_stages) is None
+        )
     ):
         raise ValueError("content_application_change_mismatch")
+    if supplement is not None:
+        bill_snapshot = snapshots.get(version.bill_snapshot_id)
+        if bill_snapshot is None or bill_snapshot.kind != "bill":
+            raise ValueError("supplement_content_bill_unavailable")
+        bill = Bill.model_validate(read_json(bill_snapshot.payload_json))
+        if (
+            (bill.term, bill.number) != (change.term, change.number)
+            or change.amendments is not None
+            or len(change.supplements) != 1
+            or amendments_stage(change.new_stages) is not None
+        ):
+            raise ValueError("supplement_content_change_scope_invalid")
     saved_plan = snapshots.get(version.plan_snapshot_id)
     if saved_plan is None or saved_plan.kind != "plan":
         raise ValueError("content_application_plan_unavailable")
@@ -153,6 +179,14 @@ def _verify(
         )
     ):
         raise ValueError("content_application_plan_scope_invalid")
+    if supplement is not None and (
+        semantic.publication_ids
+        or semantic.continuation_root is not None
+        or semantic.continuation_index != 1
+        or semantic.edit_message_id is not None
+        or semantic.primary_json
+    ):
+        raise ValueError("supplement_content_plan_scope_invalid")
     projections = ([change.amendments] if change.amendments else []) + (
         [] if version.reason == "amendments_revision" else list(change.supplements)
     )
@@ -162,7 +196,8 @@ def _verify(
         if len(rows) != 1:
             raise ValueError("content_application_unavailable")
         application = _application(rows[0])
-        purpose = _result(connection, application)
+        result = _result(connection, application)
+        purpose = result.purpose
         target = application.target
         assert target is not None, "the application decoder requires an explicit target"
         if application.result_id not in version.computation_ids:
@@ -179,6 +214,8 @@ def _verify(
             if purpose != expected:
                 raise ValueError("content_application_purpose_mismatch")
             validate_secondary_dependency(connection, record, expected)
+        if supplement is not None:
+            _verify_supplement(connection, reader, supplement, change, application, result)
         if version.reason == "original":
             if target.kind != "status_change" or target.ref != str(change.id):
                 raise ValueError("content_application_target_mismatch")
@@ -210,6 +247,15 @@ def _verify(
         version.reason == "original" and physical["status_change_id"] != change.id
     ):
         raise ValueError("content_application_physical_target_mismatch")
+    if supplement is not None and (
+        (physical["term"], physical["number"]) != (change.term, change.number)
+        or _rows(
+            connection,
+            "SELECT 1 FROM digest_event_links WHERE source_publication_id=?",
+            (physical_id,),
+        )
+    ):
+        raise ValueError("supplement_content_publication_owner_invalid")
     if physical["delivery_json"]:
         plan = DeliveryPlan.model_validate(read_json(physical["delivery_json"]))
         if (
@@ -221,3 +267,77 @@ def _verify(
             raise ValueError("content_application_frozen_target_mismatch")
     elif not retained:
         raise ValueError("content_application_physical_unavailable")
+
+
+def _verify_supplement(
+    connection: sqlite3.Connection,
+    reader: ContentSourceRows,
+    evidence: SupplementContentEvidence,
+    change: StatusChange,
+    application: ResultApplication,
+    result: ComputationResult,
+) -> None:
+    projected = change.supplements[0]
+    owner = (change.term, change.number)
+    paid = result.record
+    if (
+        application.outcome != "applied"
+        or application.reason != "retained_result"
+        or (application.term, application.number) != owner
+        or (result.term, result.number) != owner
+        or not isinstance(paid, SupplementRecord)
+        or not paid.number
+        or paid.scan_input is not None
+        or paid.digest is None
+        or projected.digest != paid.digest
+        or result.request_sha256 is None
+        or projected.request_sha256 != result.request_sha256
+        or (projected.number, projected.source_kind, projected.source_url)
+        != (paid.number, paid.source_kind, paid.source_url)
+    ):
+        raise ValueError("supplement_content_result_invalid")
+    rows = _rows(
+        connection,
+        "SELECT i.*, b.provider FROM llm_batch_items i JOIN llm_batches b USING (batch_id)"
+        " WHERE i.batch_id=? AND i.custom_id=?",
+        (result.batch_id, result.custom_id),
+    )
+    if len(rows) != 1:
+        raise ValueError("supplement_content_item_unavailable")
+    item = rows[0]
+    if (
+        (item["term"], item["number"]) != owner
+        or item["provider"] != result.provider
+        or item["call_kind"] != "supplement"
+        or item["consumed_at"] is None
+        or datetime.fromisoformat(item["consumed_at"]).utcoffset() is None
+    ):
+        raise ValueError("supplement_content_item_invalid")
+    meta = batch_item_meta("supplement", item["meta_json"])
+    if not isinstance(meta, DigestItemMeta):
+        raise ValueError("supplement_content_item_metadata_invalid")
+    receipt = meta.prepared_input_receipt
+    if (
+        not isinstance(receipt, SupplementInputReceipt)
+        or meta.scan_input is not None
+        or receipt.retention != "complete"
+        or receipt.source_selection_id is None
+        or receipt.artifact_sha256 is None
+        or receipt.extraction_id is None
+        or receipt.request_sha256 != result.request_sha256
+        or meta.request_sha256 != result.request_sha256
+        or (meta.document_number, meta.source_kind, meta.source_url)
+        != (paid.number, paid.source_kind, paid.source_url)
+    ):
+        raise ValueError("supplement_content_receipt_invalid")
+    validate_supplement_receipt_parents(connection, receipt)
+    observation = reader.get_source_observation(evidence.source_observation_id)
+    if observation is None or (
+        observation.term,
+        observation.number,
+        observation.purpose,
+        observation.selection_id,
+        observation.document.kind,
+        observation.document.url,
+    ) != (*owner, "analysis", receipt.source_selection_id, paid.source_kind, paid.source_url):
+        raise ValueError("supplement_content_observation_invalid")
