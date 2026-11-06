@@ -1,5 +1,6 @@
 """Preserve single-message editorial history without using a current Bill as historical context."""
 
+import hashlib
 from typing import Literal
 
 from lexinform.content_sources import (
@@ -7,7 +8,7 @@ from lexinform.content_sources import (
     inspect_primary_content_sources,
     supported_source_context,
 )
-from lexinform.content_versions import card_physical_matches
+from lexinform.content_versions import card_physical_matches, direct_stage_plan_matches
 from lexinform.errors import CardPrimaryEvidenceError, SupplementContentEvidenceError
 from lexinform.models import (
     AmendmentsRecord,
@@ -24,6 +25,8 @@ from lexinform.models import (
     amendments_stage,
 )
 from lexinform.models.content import (
+    MAX_DIRECT_STAGE_CONTENT_BYTES,
+    DirectStageContentEvidence,
     SupplementContentEvidence,
     card_bill_snapshot,
     editorial_bill_snapshot,
@@ -291,6 +294,16 @@ def prepare_publication_content(
         publication.kind is PublicationKind.STATUS_UPDATE
         and amendments_stage(change.new_stages) is None
     ):
+        if change.amendments is None and not change.supplements:
+            return _prepare_direct_stage_content(
+                repo,
+                clock,
+                publication,
+                change,
+                origin=application_origin,
+                formatter_version=formatter_version,
+                language=language,
+            )
         if (
             change.amendments is not None
             or len(change.supplements) != 1
@@ -342,6 +355,90 @@ def prepare_publication_content(
         recorded_at=clock.now(),
     )
     return version, (bill_snapshot, change_snapshot, plan_snapshot)
+
+
+def _prepare_direct_stage_content(
+    repo: BillRepository,
+    clock: Clock,
+    publication: Publication,
+    change: StatusChange,
+    *,
+    origin: Publication | None,
+    formatter_version: str | None,
+    language: str | None,
+) -> tuple[ContentVersion, tuple[ContentSnapshot, ...]] | None:
+    plan = publication.delivery
+    if (
+        publication.id is None
+        or plan is None
+        or plan.reply_to is None
+        or not direct_stage_plan_matches(plan)
+        or plan.held_change_ids
+        or plan.with_act
+        or plan.render_origin is not None
+        or publication.status is not PublicationStatus.QUEUED
+        or publication.attempts
+        or language not in ("ru", "en")
+        or not formatter_version
+        or change.id is None
+        or change.id != publication.status_change_id
+        or (change.term, change.number) != (publication.term, publication.number)
+        or len(change.new_stages) != 1
+        or origin is None
+        or origin.kind is not PublicationKind.STATUS_UPDATE
+        or origin.delivery is None
+        or origin.delivery.destination != "direct"
+        or (origin.delivery.bill_json, origin.delivery.change_json)
+        != (plan.bill_json, plan.change_json)
+        or not _first_direct_application(repo, publication, origin)
+        or repo.get_status_change(change.id) != change
+    ):
+        return None
+    aliases = repo.card_aliases(publication.channel_id, plan.reply_to)
+    if len(aliases) != 1:
+        return None
+    (anchor,) = aliases
+    if (
+        anchor.id is None
+        or anchor.message_id is None
+        or anchor.message_id <= 0
+        or anchor.sent_at is None
+        or anchor.sent_at > publication.created_at
+        or (anchor.term, anchor.number) != (publication.term, publication.number)
+    ):
+        return None
+    bill = Bill.model_validate_json(plan.bill_json)
+    if (bill.term, bill.number) != (publication.term, publication.number):
+        return None
+    bill_snapshot = card_bill_snapshot(plan.bill_json)
+    change_snapshot = ContentSnapshot(kind="change", payload_json=plan.change_json)
+    plan_snapshot = _plan_snapshot(plan)
+    snapshots = (bill_snapshot, change_snapshot, plan_snapshot)
+    if (
+        sum(len(snapshot.payload_json.encode()) for snapshot in snapshots)
+        + len(plan.rendered_text.encode())
+        > MAX_DIRECT_STAGE_CONTENT_BYTES
+    ):
+        return None
+    return (
+        ContentVersion(
+            root_publication_id=publication.id,
+            reason="original",
+            language=language,
+            bill_snapshot_id=bill_snapshot.snapshot_id,
+            change_snapshot_id=change_snapshot.snapshot_id,
+            plan_snapshot_id=plan_snapshot.snapshot_id,
+            rendered_text=plan.rendered_text,
+            formatter_version=formatter_version,
+            status_change_id=change.id,
+            direct_stage_evidence=DirectStageContentEvidence(
+                anchor_publication_id=anchor.id,
+                original_bill_sha256=hashlib.sha256(plan.bill_json.encode()).hexdigest(),
+            ),
+            recorded_at=clock.now(),
+        ),
+        snapshots,
+    )
 
 
 def _plan_snapshot(plan: DeliveryPlan) -> ContentSnapshot:

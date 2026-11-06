@@ -12998,6 +12998,9 @@ sample added 206 SQL bytes and 91 gzip bytes, and both versions of the
 reader restored the saved dump twice.
 [Qualification](../assets/audits/2026-11-06-rcl-archive-card-writer/qualification.json).
 
+The exact `5d2e7fe5` release passed CI run 42257112369 and relay
+deployment 42258416505. Restart and timer were verified.
+
 <a id="j352"></a>
 
 ## J352 — read compact direct stage content
@@ -13013,3 +13016,19 @@ attached records added 29,828 SQL bytes and 7,117 gzip bytes in total.
 Both restores were exact. Wrong event or anchor and unknown delivery
 were rejected. The ordinary writer remains disabled.
 [Qualification](../assets/audits/2026-11-06-direct-stage-content-reader/qualification.json).
+
+<a id="j353"></a>
+
+## J353 — save compact content for qualified direct stage updates
+
+The writer attaches the compact version only on the first freeze of a
+qualified direct stage update. The full delivery plan stays available
+until ordinary expiry. Unqualified updates still follow ordinary delivery.
+
+Across four pinned replays, both revisions sent the same text, plan and
+test message IDs. For two older RCL updates, both used the existing
+pre-attempt attention and participation refresh and differed from the
+historical render. Legacy frozen, ambiguous anchor, budget and changed
+event controls wrote no version. After expiry the four records added
+30,231 SQL bytes and 6,978 gzip bytes. Both readers restored the dumps twice.
+[Qualification](../assets/audits/2026-11-06-direct-stage-content-writer/qualification.json).

@@ -20,6 +20,7 @@ from lexinform.content_versions import (
     confirmed_content_version,
     content_delivery_mismatch,
     content_snapshot_refs,
+    direct_stage_plan_matches,
 )
 from lexinform.errors import CardPrimaryEvidenceError
 from lexinform.json_storage import read_json
@@ -569,25 +570,7 @@ def verify_direct_stage_content(connection: sqlite3.Connection, version: Content
     ):
         raise ValueError("direct_stage_event_scope")
     plan = DeliveryPlan.model_validate_json(snapshots[version.plan_snapshot_id].payload_json)
-    if (
-        plan.destination != "direct"
-        or plan.reply_to != anchor.message_id
-        or plan.today is None
-        or plan.edit_message_id is not None
-        or plan.revision_of is not None
-        or plan.primary_json
-        or plan.publication_ids
-        or plan.update_group
-        or plan.sitting_group
-        or plan.continuation_ids
-        or plan.continuation_parent is not None
-        or plan.continuation_root is not None
-        or plan.continuation_index != 1
-        or plan.absorbed_by is not None
-        or plan.digest_ref
-        or plan.digest_parts
-        or plan.digest_event_ids
-    ):
+    if plan.reply_to != anchor.message_id or not direct_stage_plan_matches(plan):
         raise ValueError("direct_stage_plan_scope")
     if root.delivery is not None:
         if content_delivery_mismatch(version, snapshots, root.delivery) is not None:

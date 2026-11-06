@@ -22,14 +22,17 @@ from lexinform.models.content import (
     DirectStageContentEvidence,
     card_bill_snapshot,
 )
-from lexinform.services.content_history import restore_content_delivery
+from lexinform.services.content_history import record_publication_content, restore_content_delivery
 from lexinform.services.content_inspection import inspect_content
+from tests.fakes import FixedClock
 from tests.unit.test_content_history import NOW
 from tests.unit.test_content_history import repo as repo
 
 
+@pytest.mark.parametrize("first_freeze", [False, True])
 def test_compact_direct_stage_history_survives_expiry_and_checks_its_event(
     repo: SqliteBillRepository,
+    first_freeze: bool,
 ) -> None:
     summary = ProcessSummary(
         term=10, number="1", title="Projekt", document_type="projekt", change_date=NOW
@@ -71,6 +74,8 @@ def test_compact_direct_stage_history_survives_expiry_and_checks_its_event(
                 "status_change_id": change_id,
                 "message_id": 11,
                 "delivery": plan,
+                "status": PublicationStatus.QUEUED if first_freeze else PublicationStatus.SENT,
+                "sent_at": None if first_freeze else NOW,
             }
         )
     )
@@ -108,8 +113,28 @@ def test_compact_direct_stage_history_survives_expiry_and_checks_its_event(
         repo.save_content_version(
             version.model_copy(update={"rendered_text": "ą" * MAX_DIRECT_STAGE_CONTENT_BYTES})
         )
-    repo.save_content_version(version)
-    repo.bind_publication_content(pub_id, version.content_id)
+    if first_freeze:
+        frozen = repo.publication_by_id(pub_id)
+        assert frozen is not None, "the fixture retains its freshly frozen update"
+        assert record_publication_content(repo, FixedClock(NOW), frozen) is None
+        origin = frozen.model_copy(
+            update={"delivery": plan.model_copy(update={"rendered_text": ""})}
+        )
+        assert (
+            record_publication_content(
+                repo,
+                FixedClock(NOW),
+                frozen,
+                application_origin=origin,
+                formatter_version="telegram-format-v2",
+                language="ru",
+            )
+            == version
+        )
+        repo.mark_publication(pub_id, PublicationStatus.SENT, sent_at=NOW, message_id=11)
+    else:
+        repo.save_content_version(version)
+        repo.bind_publication_content(pub_id, version.content_id)
     repo.prune_history(before=NOW + timedelta(days=1), memo_before=NOW)
     dump = repo.dump()
     repo.restore(dump)

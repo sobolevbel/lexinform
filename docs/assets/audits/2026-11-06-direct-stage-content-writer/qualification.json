@@ -1,0 +1,33 @@
+{
+  "after_expiry": {
+    "gzip_delta": 6978,
+    "sql_delta": 30231
+  },
+  "before_expiry": {
+    "gzip_delta": 5498,
+    "sql_delta": 30231
+  },
+  "cohort": [
+    153,
+    164,
+    188,
+    228
+  ],
+  "historical_render_refresh_on_both_revisions": [
+    153,
+    164
+  ],
+  "ordinary_fallback_controls": [
+    "legacy",
+    "duplicate",
+    "too_large",
+    "changed_event"
+  ],
+  "reports_sha256": {
+    "reader": "f73f50d1061310c97861d172daf3f04ab2c8103e64f2c09b498b6e1fd3a6bd18",
+    "writer": "3fccd574fb5e23abdff885029026e639d4432d6fbfe40744bf87b73c0900336b"
+  },
+  "same_delivery_and_idempotent_retry": true,
+  "telegram_sends": 0,
+  "two_exact_restores_on_reader_and_writer": true
+}

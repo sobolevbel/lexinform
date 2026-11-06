@@ -100,6 +100,29 @@ def content_snapshot_refs(version: ContentVersion) -> tuple[tuple[str, str], ...
     )
 
 
+def direct_stage_plan_matches(plan: DeliveryPlan) -> bool:
+    return not (
+        plan.destination != "direct"
+        or plan.reply_to is None
+        or plan.reply_to <= 0
+        or plan.today is None
+        or plan.edit_message_id is not None
+        or plan.revision_of is not None
+        or plan.primary_json
+        or plan.publication_ids
+        or plan.update_group
+        or plan.sitting_group
+        or plan.continuation_ids
+        or plan.continuation_parent is not None
+        or plan.continuation_root is not None
+        or plan.continuation_index != 1
+        or plan.absorbed_by is not None
+        or plan.digest_ref
+        or plan.digest_parts
+        or plan.digest_event_ids
+    )
+
+
 def card_plan_matches(version: ContentVersion, plan: DeliveryPlan) -> bool:
     if (
         plan.destination != "direct"
