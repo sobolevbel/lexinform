@@ -728,5 +728,6 @@ are reported separately. Exact retained source selection requires a unique scope
 observation and verified selection, artifact and extraction parents. Original
 provider payload bytes and collection remain separate evidence. The amendment
 question status distinguishes a retained text question from a scan witness
-that still requires the exact PDF. The database checksum pins the inspected
+that still requires the exact PDF. The retained provider manifest and parsed
+answer are reported separately from the original provider payload bytes. The database checksum pins the inspected
 snapshot. A recorded census does not establish live or source-family acceptance.

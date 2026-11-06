@@ -21,6 +21,7 @@ from lexinform.adapters.input_receipts import (
 from lexinform.models import (
     AmendmentsRecord,
     BatchItemMeta,
+    BatchResult,
     Bill,
     ComputationResult,
     DeliveryPlan,
@@ -30,6 +31,7 @@ from lexinform.models import (
     ResultApplicationTarget,
     StatusChange,
     SupplementRecord,
+    TokenUsage,
 )
 from lexinform.models.batch import batch_item_meta
 from lexinform.models.primary_projections import PRIMARY_USAGE_FIELDS
@@ -398,6 +400,9 @@ def _secondary_request_prefix(
         (paid.result_id,),
     ).fetchone()
     receipt, source = _secondary_prepared_source(db, paid, meta, submitted)
+    manifest = meta.frozen_request_manifest
+    if manifest is not None and manifest.provider != paid.provider:
+        raise ValueError("Frozen request manifest differs from the paid provider")
     return {
         "status": "recorded",
         "reason": "exact_submitted_secondary_request_identity",
@@ -413,7 +418,44 @@ def _secondary_request_prefix(
         "original_request_payload": "not_verified",
         "source_selection_binding": source,
         "original_amendment_question": _retained_amendment_question(paid, meta),
+        "retained_provider_request_manifest": (
+            "verified_retained_manifest" if manifest is not None else "not_retained"
+        ),
+        "retained_provider_answer": _retained_provider_answer(paid, row["result_json"]),
     }
+
+
+def _retained_provider_answer(paid: ComputationResult, raw: str | None) -> str:
+    if raw is None:
+        return "not_retained"
+    result = BatchResult.model_validate_json(raw)
+    if result.custom_id != paid.custom_id:
+        raise ValueError("Retained provider answer differs from its submitted item")
+    if result.answer is None:
+        return "not_retained"
+
+    record = paid.record
+    if isinstance(record, AmendmentsRecord):
+        answer = record.amendments
+    elif isinstance(record, SupplementRecord):
+        answer = record.digest
+    else:
+        raise ValueError("Retained provider answer has no supported paid result")
+    usage = TokenUsage(
+        batch_input=result.input_tokens or 0,
+        batch_output=result.output_tokens or 0,
+        batch_cache_read=result.cache_read_input_tokens or 0,
+        batch_cache_creation=result.cache_creation_input_tokens or 0,
+    )
+    if (
+        result.error is not None
+        or result.context_exceeded
+        or result.answer != answer
+        or result.model != paid.model
+        or usage != paid.usage
+    ):
+        raise ValueError("Retained provider answer differs from the paid result")
+    return "exact_retained_answer"
 
 
 def _retained_amendment_question(paid: ComputationResult, meta: DigestItemMeta) -> str:
@@ -617,6 +659,8 @@ def census(database: Path) -> dict[str, object]:
                             "original_request_payload",
                             "source_selection_binding",
                             "original_amendment_question",
+                            "retained_provider_request_manifest",
+                            "retained_provider_answer",
                         )
                         if key in prefix
                     }

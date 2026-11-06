@@ -1,0 +1,94 @@
+{
+  "after_report_sha256": "c40aa290f8c6d29bd47c7de228df63ecbd8e9ee834b99451e27132794abd3a92",
+  "baseline": "d7c71207",
+  "before_report_sha256": "f9cc54628838e1df2e3cdcd208c49d8c9acfbac16299e1ff7fcfc84258ade635",
+  "controls": {
+    "answer": {
+      "database_sha256": "13b950af43bce18e70fad775d0c08267c8b92d133da1e90fe8371908e29e33e4",
+      "report_sha256": "e0188fbff0f66b9ef851e77e0c91709319d86b43d1ff9afb66f028dbd7d549ea",
+      "row": {
+        "application_id": 33,
+        "prefix": {
+          "reason": "invalid_snapshot_evidence",
+          "status": "invalid"
+        },
+        "publication_id": 293,
+        "reason": "exact_retained_secondary_suffix",
+        "status": "recorded"
+      }
+    },
+    "provider-conflict": {
+      "database_sha256": "0737b0bc045e8935266133b78357b4683a7a6c45401f49c571f610b0c90c8a17",
+      "report_sha256": "b1af1201a73fad66068bb6e3f6d57e6394e5fb9d617cd34fde8a7d594c47acc1",
+      "row": {
+        "application_id": 33,
+        "prefix": {
+          "reason": "invalid_snapshot_evidence",
+          "status": "invalid"
+        },
+        "publication_id": 293,
+        "reason": "exact_retained_secondary_suffix",
+        "status": "recorded"
+      }
+    },
+    "unavailable": {
+      "database_sha256": "2d1600580822e765fd981fd353d654b6e72e2bab531484432ba419eee8073522",
+      "report_sha256": "845e27d6f3540d3ffeeed8934592a6584796a9f790486f4c58c481f957fcd89f",
+      "row": {
+        "application_id": 33,
+        "prefix": {
+          "original_amendment_question": "exact_retained_question",
+          "original_collection_application": "not_retained",
+          "original_request_payload": "not_verified",
+          "prepared_input_receipt": "validated_retained_receipt",
+          "reason": "exact_submitted_secondary_request_identity",
+          "retained_provider_answer": "not_retained",
+          "source_selection_binding": "exact_retained_source_selection",
+          "status": "recorded"
+        },
+        "publication_id": 293,
+        "reason": "exact_retained_secondary_suffix",
+        "status": "recorded"
+      }
+    },
+    "usage": {
+      "database_sha256": "49a903834103acfd3714eaed4f4c8908a3441934bce05b52bcec2d8068eaa1e2",
+      "report_sha256": "89b38bc8ecb5d300719c8c955432ada22dafa90cf17d64fdd14c7754259d01ad",
+      "row": {
+        "application_id": 33,
+        "prefix": {
+          "reason": "invalid_snapshot_evidence",
+          "status": "invalid"
+        },
+        "publication_id": 293,
+        "reason": "exact_retained_secondary_suffix",
+        "status": "recorded"
+      }
+    }
+  },
+  "database_sha256": "c53f468cea246f6a8f2b74eaef46dbf5ea46fc72efa5a3af28741fbe919c974a",
+  "exchange_checks_by_application_id": {
+    "11": {
+      "answer": "not_retained",
+      "manifest": "not_retained"
+    },
+    "16": {
+      "answer": "not_retained",
+      "manifest": "not_retained"
+    },
+    "33": {
+      "answer": "exact_retained_answer",
+      "manifest": "verified_retained_manifest"
+    },
+    "34": {
+      "answer": "exact_retained_answer",
+      "manifest": "verified_retained_manifest"
+    },
+    "35": {
+      "answer": "exact_retained_answer",
+      "manifest": "verified_retained_manifest"
+    }
+  },
+  "prior_report_fields_identical": true,
+  "state_commit": "9a802a5514d3333de72c76454d115a7d91538e0d"
+}

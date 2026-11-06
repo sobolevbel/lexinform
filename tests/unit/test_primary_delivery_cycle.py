@@ -8,6 +8,7 @@ from tools.primary_delivery_cycle import audit, census, main
 
 from lexinform.models import (
     AmendmentsRecord,
+    BatchResult,
     ComputationInputBinding,
     ComputationResult,
     DeliveryPlan,
@@ -524,3 +525,64 @@ def test_secondary_question_requires_agreement_with_the_paid_result(
         "status": "invalid",
         "reason": "invalid_snapshot_evidence",
     }
+
+
+@pytest.mark.parametrize("control", ["exact", "provider", "usage"])
+def test_secondary_exchange_checks_manifest_and_parsed_answer(
+    secondary_snapshot: tuple[Path, int, int], control: str
+) -> None:
+    target, publication, application = secondary_snapshot
+    add_secondary_batch(target)
+    with closing(sqlite3.connect(target)) as db, db:
+        paid = ComputationResult.model_validate_json(
+            db.execute(
+                "SELECT result_json FROM computation_results WHERE batch_id='secondary-batch'"
+            ).fetchone()[0]
+        )
+        record = paid.record
+        assert isinstance(record, (AmendmentsRecord, SupplementRecord)), (
+            "the secondary fixture has a validated answer"
+        )
+        answer = record.amendments if isinstance(record, AmendmentsRecord) else record.digest
+        sha = "a" * 64
+        db.execute(
+            "UPDATE llm_batch_items"
+            " SET meta_json=json_set(meta_json,'$.frozen_request_manifest',json(?)), result_json=?"
+            " WHERE batch_id='secondary-batch'",
+            (
+                json.dumps(
+                    {
+                        "provider": "anthropic" if control == "provider" else paid.provider,
+                        "purpose": paid.purpose,
+                        "request_sha256": sha,
+                        "model": paid.model,
+                        "prompt_version": "fixture",
+                        "payload_bytes": 1,
+                        "messages_sha256": sha,
+                        "output_format_sha256": sha,
+                        "options_sha256": sha,
+                    }
+                ),
+                BatchResult(
+                    custom_id=paid.custom_id,
+                    answer=answer,
+                    model=paid.model,
+                    input_tokens=1 if control == "usage" else 0,
+                ).model_dump_json(),
+            ),
+        )
+
+    report = audit(
+        target, publication, secondary_application_id=application, include_request_prefix=True
+    )
+
+    suffix = report["suffix"]
+    assert isinstance(suffix, dict)
+    assert report["reason"] == "exact_retained_secondary_suffix"
+    prefix = suffix["request_prefix"]
+    if control == "exact":
+        assert prefix["retained_provider_request_manifest"] == "verified_retained_manifest"
+        assert prefix["retained_provider_answer"] == "exact_retained_answer"
+        assert prefix["original_request_payload"] == "not_verified"
+    else:
+        assert prefix == {"status": "invalid", "reason": "invalid_snapshot_evidence"}

@@ -13606,3 +13606,21 @@ suffix visible. The provider request body and collection application remain
 unverified for these chains.
 
 [Qualification](../assets/audits/2026-11-06-secondary-cycle-amendment-question/qualification.json).
+
+<a id="j384"></a>
+
+## J384 — verify retained provider exchange evidence in secondary chains
+
+The secondary request prefix checks the frozen request manifest against the
+recorded provider, purpose and request SHA. The retained parsed answer must
+agree with the paid computation's custom ID, answer, model and token usage.
+Both checks remain separate from verification of original request bytes or
+the presence of a collection application.
+
+State `9a802a55` proves both checks for applications 33, 34 and 35. Neither
+piece of evidence was retained for 11 or 16. Prior census fields are unchanged.
+Conflicting provider, answer and token usage controls invalidate the request
+prefix while preserving the recorded delivery suffix. Removing the retained
+answer makes it unavailable.
+
+[Qualification](../assets/audits/2026-11-06-secondary-cycle-provider-answer/qualification.json).
