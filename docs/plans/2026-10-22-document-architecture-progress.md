@@ -12538,3 +12538,23 @@ matched in every case. After cleanup those rows added 1,519–1,539
 gzip bytes per isolated case. Qualification used controlled answers
 and a fake publisher.
 [Qualification](../assets/audits/2026-11-06-supplement-lineage-writer/qualification.json).
+
+Commit `655efee9` passed exact CI 42221996508 and relay deployment
+42222713911.
+
+<a id="j329"></a>
+
+## J329 — read a bounded explanation of version comparison
+
+The optional trace field validates the ordered compared and retained
+candidate positions against the existing outcomes. It distinguishes a
+single survivor, matching normative identities and a conflict. When
+textual dates actually removed a candidate, the field records the
+dates used in that decision. Existing trace identities are unchanged.
+
+Four pinned official comparisons ran on original files and cached
+extractions. Six manually attached explanations survived two exact
+restores. Two overflowed the existing 4 KiB bound and kept the old
+trace and SQL. The paired cached corpus and legacy doctor kept their
+previous observations. The runtime writer is inactive.
+[Qualification](../assets/audits/2026-11-06-version-decision-reader/qualification.json).

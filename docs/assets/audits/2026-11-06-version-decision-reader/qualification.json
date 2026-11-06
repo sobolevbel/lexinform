@@ -1,0 +1,271 @@
+{
+  "baseline_commit": "655efee9885dc94b310915946a269ba54d4db980",
+  "reader_only": true,
+  "pinned": {
+    "cases": {
+      "cached/12333806/2": {
+        "evidence": {
+          "compared_indices": [
+            1,
+            2
+          ],
+          "outcome": "distinct_policy_identity",
+          "retained_indices": [
+            1,
+            2
+          ]
+        },
+        "gzip_delta": 42,
+        "legacy_trace": "candidate-trace-v1:b5da78c24150b2c47f208e96222f571acb90122266f368a4509fc7b6cd3979c7",
+        "retained": true,
+        "retained_trace": "candidate-trace-v1:af83b42fcdc4479629ac1d66111cf5951fcd1705ea3e38dd851b606c0045384c",
+        "selection": "selection-v1:869bfeb6aaa41c5f9a60ca9de73c7f37b6dafc3b73735a0cbfaa4237363c7e37",
+        "sql_delta": 108,
+        "state": "ambiguous",
+        "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "cached/12398502/3": {
+        "evidence": {
+          "compared_indices": [
+            1,
+            2
+          ],
+          "outcome": "matching_policy_identity",
+          "retained_indices": [
+            1,
+            2
+          ]
+        },
+        "gzip_delta": 43,
+        "legacy_trace": "candidate-trace-v1:bea158f0664ae40c33116f8e793d14fb2884f14b9a83351ea790a94a60ab2a13",
+        "retained": true,
+        "retained_trace": "candidate-trace-v1:859f3036e26b5fcadb07fa8840356b6b2dfa4b603d9deab2318ee0464586049d",
+        "selection": "selection-v1:bb3888bd6a9340488a993ccda32c6fe96274627b8b815002318f043d1e8e14b6",
+        "sql_delta": 108,
+        "state": "selected",
+        "text_sha256": "ef5e035bc0d71e6bfd9c4ef53a084c00a311b9068deb547acdb108d788e61a72"
+      },
+      "cached/12398502/4": {
+        "evidence": {
+          "compared_indices": [
+            0,
+            1,
+            2
+          ],
+          "date_filter": [
+            "2026-07-13",
+            "2025-05-17",
+            "2025-05-17"
+          ],
+          "outcome": "single_survivor",
+          "retained_indices": [
+            0
+          ]
+        },
+        "gzip_delta": 66,
+        "legacy_trace": "candidate-trace-v1:208fa184ca19585465fe2bd2d1b7c55bac27076062c75a592d9acc110510f903",
+        "retained": true,
+        "retained_trace": "candidate-trace-v1:9f71da4d8c1616af84ea52e28700d2af1928b1666befe4917c36ab7f81a7eaf0",
+        "selection": "selection-v1:8af8f213e6b64f2551777955848a00067cfbaca06aa76a9b7b134ae5c290f3b3",
+        "sql_delta": 154,
+        "state": "selected",
+        "text_sha256": "3e3ba88e5ad189b265b7279f6db76b52192d20070848f7c2f7058686301c6378"
+      },
+      "cached/12402550/4": {
+        "evidence": {
+          "compared_indices": [
+            0,
+            1
+          ],
+          "date_filter": [
+            "2026-05-27",
+            "2025-09-26"
+          ],
+          "outcome": "single_survivor",
+          "retained_indices": [
+            0
+          ]
+        },
+        "gzip_delta": 0,
+        "legacy_trace": "candidate-trace-v1:b01ab612b5e50d0e2228757c8705dfcd9d50cdeec1e3e911576d44932d25d608",
+        "retained": false,
+        "retained_trace": "candidate-trace-v1:b01ab612b5e50d0e2228757c8705dfcd9d50cdeec1e3e911576d44932d25d608",
+        "selection": "selection-v1:ef10a8ddfd57be1c5d5c1739b4d73fb9270dddb427b6a71717ff09ff161d8e89",
+        "sql_delta": 0,
+        "state": "selected",
+        "text_sha256": "47848647f7e8899eb96796f555c7d481cf6076e279f9877db2cb6d18bd24edbf"
+      },
+      "raw/12333806/2": {
+        "evidence": {
+          "compared_indices": [
+            1,
+            2
+          ],
+          "outcome": "distinct_policy_identity",
+          "retained_indices": [
+            1,
+            2
+          ]
+        },
+        "gzip_delta": 42,
+        "legacy_trace": "candidate-trace-v1:0537aa1e238a49bd4aca4fa68248945505798044765adf0a50c53b7d3e3ff1e2",
+        "retained": true,
+        "retained_trace": "candidate-trace-v1:76197021d5e9b8ac0eb320d110d43cf93da5b15350dec1cee323fa33172b8dd9",
+        "selection": "selection-v1:7459d51be37d7628e3bd80833372e6b77ee6d1667e1d72f120555bbb9448f0e8",
+        "sql_delta": 108,
+        "state": "ambiguous",
+        "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "raw/12398502/3": {
+        "evidence": {
+          "compared_indices": [
+            1,
+            2
+          ],
+          "outcome": "matching_policy_identity",
+          "retained_indices": [
+            1,
+            2
+          ]
+        },
+        "gzip_delta": 43,
+        "legacy_trace": "candidate-trace-v1:2249c5f591f9caa15ff0243af920730ed75d7322f23059802c2ed5a19796ee30",
+        "retained": true,
+        "retained_trace": "candidate-trace-v1:bad5dc04aedcf7f4b47bebec37a3214a8e2af93129683c001664a94a6c109af5",
+        "selection": "selection-v1:9a18a28d9ed831a74f2262315b47a1ecf20c45f3d89b09d568a9035d7fe9a4a3",
+        "sql_delta": 108,
+        "state": "selected",
+        "text_sha256": "ef5e035bc0d71e6bfd9c4ef53a084c00a311b9068deb547acdb108d788e61a72"
+      },
+      "raw/12398502/4": {
+        "evidence": {
+          "compared_indices": [
+            0,
+            1,
+            2
+          ],
+          "date_filter": [
+            "2026-07-13",
+            "2025-05-17",
+            "2025-05-17"
+          ],
+          "outcome": "single_survivor",
+          "retained_indices": [
+            0
+          ]
+        },
+        "gzip_delta": 66,
+        "legacy_trace": "candidate-trace-v1:492b735bdb2019a92908742bb8fdd43c6ac7205a332650e1d336708341ef3949",
+        "retained": true,
+        "retained_trace": "candidate-trace-v1:64aec5cea4b88802e48573dcab0b96718de5f4bca828513ad2b7542e715f59bd",
+        "selection": "selection-v1:16a3a6e4c3b82e6bdc3201b8b965287ea02c7a8e1b06c64d7d8ae755af5ef6ab",
+        "sql_delta": 154,
+        "state": "selected",
+        "text_sha256": "8504e6c7214c35821e75765c808da182afcde33b9d1b4abb3634c2d9faecb01d"
+      },
+      "raw/12402550/4": {
+        "evidence": {
+          "compared_indices": [
+            0,
+            1
+          ],
+          "date_filter": [
+            "2026-05-27",
+            "2025-09-26"
+          ],
+          "outcome": "single_survivor",
+          "retained_indices": [
+            0
+          ]
+        },
+        "gzip_delta": 0,
+        "legacy_trace": "candidate-trace-v1:392293490512a5b576ca8da71e40109d8dd478fe85f28720c234ba67e050e588",
+        "retained": false,
+        "retained_trace": "candidate-trace-v1:392293490512a5b576ca8da71e40109d8dd478fe85f28720c234ba67e050e588",
+        "selection": "selection-v1:43fcd23a093fb758449069c914adf24d08df5b070f18ac29630b05c922e1499b",
+        "sql_delta": 0,
+        "state": "selected",
+        "text_sha256": "6468a833ee49c1bea7ef4076056a12b9579e2d5193ea8d2dd13adccd54d3e428"
+      }
+    },
+    "inputs": {
+      "cached": {
+        "INDEX.json": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+        "corpus/12333806.json": "10798b053e18268569069bf0a91045e390b0cc9eab28a21e16ecb6f9c5aa67b4",
+        "corpus/12398502.json": "c72f45d635a45640af35cf2a020cb65a05e10268fd8d8d7f1c33249665638a1b",
+        "corpus/12402550.json": "47fa9c5b4d07cd9d5a562147164459c6171cd1939af9a34a81da6dba9322ec0e",
+        "documents/text/447874.txt.gz": "de81ce07dad76b0f998cc4d1df2ef805e8003cd9be1bc60f736945a455cb36b7",
+        "documents/text/447875.txt.gz": "2d09320cd9cbe87514a39ec0125cce2c6682424aa0f55e5290797bd95d019db1",
+        "documents/text/472288.txt.gz": null,
+        "documents/text/472289.txt.gz": null,
+        "documents/text/720752.txt.gz": "84069ba7c227d0b68a4553f018f3f4ca88e1ce49b215a84085e9854e0f8c2a12",
+        "documents/text/720753.txt.gz": "b9b3c6938d350d1c3ca100ff14e0ceb4b3d0a75890b00b09c39c3f41157eba6b",
+        "documents/text/720754.txt.gz": "ac7e8f71fcc37567f62d0c35def990adf2d3d2f1136d030f55f4f50d8e1e80fd",
+        "documents/text/720756.txt.gz": null,
+        "documents/text/720759.txt.gz": "84069ba7c227d0b68a4553f018f3f4ca88e1ce49b215a84085e9854e0f8c2a12",
+        "documents/text/720760.txt.gz": "b9b3c6938d350d1c3ca100ff14e0ceb4b3d0a75890b00b09c39c3f41157eba6b",
+        "documents/text/739326.txt.gz": "711f5c3c7e85869d72f6679e6df701454e078e49345c79f676e1f8083be06179",
+        "documents/text/739332.txt.gz": "ca52eb7ace04a73b18559ef58e74d7675f216e0d8f192c41c18e410820d7cc37",
+        "documents/text/739334.txt.gz": "10408f2d26d23547d0c8018e43890c0f1b93a67e4bd94f23ea5ae3ff1e877ce5",
+        "documents/text/739335.txt.gz": "243e530a0ab81fea748fa2023fa1e52385f469c0f227413d03b93adf4d20ee80",
+        "documents/text/739336.txt.gz": "1772bfd7f2234443e96172f03e047928ced90665b592da8106db50360943a837",
+        "documents/text/779125.txt.gz": "b30ef042e42870a7de3f13a1ee2601f68bbeed81972671a7b4e43f258233f3b3",
+        "documents/text/779126.txt.gz": "de131fe8a3397df4a6006f6993e7b22834e04bd67d91c16e288f478a30e198f7",
+        "documents/text/779127.txt.gz": "642470b3f2ef1b5e534b2205fb3fa73a607da6b341012ce3bea5b4dc6bd4d084",
+        "documents/text/787675.txt.gz": null,
+        "documents/text/787678.txt.gz": "dabf71eae7a3058ed6d0f25824485fd3a7d68304c8c16539313ce5d66006d05a",
+        "documents/text/787679.txt.gz": "003606e9946cc53ee37d13d830570505080d321db354a70cd3dab12a0f5e37db",
+        "documents/text/787680.txt.gz": "76e9569fbb15443b022d3031bfb2ee45541f58bb6112cf93eff0e6069d2baf57"
+      },
+      "raw": {
+        "INDEX.json": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+        "corpus/12333806.json": "10798b053e18268569069bf0a91045e390b0cc9eab28a21e16ecb6f9c5aa67b4",
+        "corpus/12398502.json": "c72f45d635a45640af35cf2a020cb65a05e10268fd8d8d7f1c33249665638a1b",
+        "corpus/12402550.json": "47fa9c5b4d07cd9d5a562147164459c6171cd1939af9a34a81da6dba9322ec0e",
+        "documents/files/447874.doc": "4cb3144a8e3c47d3e2a4e527d724ffec7646a754e84e1f231eb6530f1fd5133e",
+        "documents/files/447875.pdf": "5d649fccde8dddcc9e64a31573db782277259b736eebc83311a3912bb63ce99d",
+        "documents/files/720752.pdf": "cf215804800a82bef541545e83b6068c8ce7816d53d85dcd9db6af3011fdd3e0",
+        "documents/files/720753.docm": "277b96faf17bc53293128d4afaa3272268d76130bfbd81a4521c0369fca67a5e",
+        "documents/files/720754.pdf": "8c522724b65d1cbe0bddb803bf4a7f42dc1526fa204ad0329c9ee7833ee744c3",
+        "documents/files/720759.pdf": "cf215804800a82bef541545e83b6068c8ce7816d53d85dcd9db6af3011fdd3e0",
+        "documents/files/720760.docm": "277b96faf17bc53293128d4afaa3272268d76130bfbd81a4521c0369fca67a5e",
+        "documents/files/739326.docx": "ba828f5fbcb7e6f95575a0fd1c7998528bb71976926b9457a391b39c74e1d566",
+        "documents/files/739332.pdf": "232907f2b1fdfb192753fcbb176aabc1746605437ff83b6a23249a552bed1d3d",
+        "documents/files/739334.pdf": "4cb21c71b6b67800b904e41b006c86cfabd1f651ae13eecd9a41b0b1e39411e2",
+        "documents/files/739335.pdf": "c368fe447fd3e93b631465b8e8ee0aeb82857fd4e73b251002b6a7423b4daa55",
+        "documents/files/739336.pdf": "3cc0024533d2e2e76559a6b9d0f6f748874dcc4d7d8ae40bb783c4647fa85afc",
+        "documents/files/779125.docx": "f2f326a5cb5e15671414ff9d7795cf110869500e1857ab43eeaa64ea166eaa8d",
+        "documents/files/779126.docx": "bad66480fe7eef296220594f2e0dad99f451c43e1ae37f3610274009055fbbbd",
+        "documents/files/779127.docx": "6d32e16e557aa163ca6efc79f15131f877a70a7c3b18249b833c06360c702ca8",
+        "documents/files/787678.docx": "da191b72bb9e4f2519d68427448a19c7de3e0d1e08db1147af2ed0a83030cba6",
+        "documents/files/787679.docx": "05dac789f4194deb44cb11554574e2fa28f9800132b9d47f26c92980b5d28c81",
+        "documents/files/787680.doc": "5d2cc96932bcd3d684fd0e9a1a543e3892fa1ec05eba1c19d7d5d65aa14ad8e1"
+      }
+    },
+    "scope": "Manual evidence attachment to a reader-only native offline comparison"
+  },
+  "broad_cached": {
+    "cases": 4276,
+    "inputs": 7599,
+    "missing_inputs": 1383,
+    "complete_population": false,
+    "counts": {
+      "ambiguous": 123,
+      "no_candidate": 205,
+      "selected": 2273,
+      "unsupported": 669,
+      "unverified": 925,
+      "waiting": 81
+    },
+    "observations_exact": true,
+    "ledgers_sha256": {
+      "broad-before": "037b24d64d030e3c1b5e06e426ae0207e8da701985a33fd5f95b21cf9ed34c78",
+      "broad-after": "271aecb35ab86148489ea482fa0a6719702c4dd9660e9ead3f8928c30ff1e7eb"
+    }
+  },
+  "legacy_doctor": {
+    "exact": true,
+    "sha256": "fb3c98c8f2cf8f990b651cec04f55d345258f952b0cd7847fa10539a18b01cea"
+  },
+  "provider_calls": 0
+}

@@ -5,7 +5,7 @@ import hashlib
 import json
 import re
 from collections.abc import Iterable
-from typing import Literal, Self, get_args
+from typing import Annotated, Literal, Self, get_args
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -647,6 +647,49 @@ class SejmCommitteeRecommendation(BaseModel):
         return self
 
 
+MAX_VERSION_DECISION_ROWS = 8
+
+
+class VersionDecisionEvidence(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    compared_indices: tuple[Position, ...] = Field(
+        min_length=2, max_length=MAX_VERSION_DECISION_ROWS
+    )
+    retained_indices: tuple[Position, ...] = Field(
+        min_length=1, max_length=MAX_VERSION_DECISION_ROWS
+    )
+    outcome: Literal["single_survivor", "matching_policy_identity", "distinct_policy_identity"]
+    date_filter: (
+        tuple[Annotated[str, Field(strict=True, pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")], ...]
+        | None
+    ) = Field(
+        default=None, max_length=MAX_VERSION_DECISION_ROWS, exclude_if=lambda value: value is None
+    )
+
+    @model_validator(mode="after")
+    def comparison_steps(self) -> Self:
+        compared = self.compared_indices
+        if tuple(sorted(set(compared))) != compared:
+            raise ValueError("version comparison requires unique ordered candidate positions")
+        expected = compared
+        if self.date_filter is not None:
+            if len(self.date_filter) != len(compared) or len(set(self.date_filter)) < 2:
+                raise ValueError(
+                    "the saved date filter must eliminate at least one compared candidate"
+                )
+            dates = tuple(dt.date.fromisoformat(value) for value in self.date_filter)
+            latest = max(dates)
+            expected = tuple(
+                index for index, date in zip(compared, dates, strict=True) if date == latest
+            )
+        if self.retained_indices != expected:
+            raise ValueError("retained comparison positions differ from the applied date filter")
+        if (len(expected) == 1) != (self.outcome == "single_survivor"):
+            raise ValueError("version outcome differs from the number of retained candidates")
+        return self
+
+
 class CandidateDispositionTrace(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -689,6 +732,10 @@ class CandidateDispositionTrace(BaseModel):
     )
 
     supporting_exclusions: SupportingPartExclusions | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    version_decision: VersionDecisionEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
 
@@ -823,6 +870,8 @@ class CandidateDispositionTrace(BaseModel):
             validate_sejm_committee_recommendation(self, self.sejm_committee_recommendation)
         if self.supporting_exclusions is not None:
             validate_supporting_exclusions(self, self.supporting_exclusions)
+        if self.version_decision is not None:
+            validate_version_decision(self, self.version_decision)
         if len(self.model_dump_json(exclude_defaults=True).encode()) > MAX_CANDIDATE_TRACE_BYTES:
             raise ValueError("candidate trace exceeds its metadata limit")
         return self
@@ -851,7 +900,37 @@ class CandidateDispositionTrace(BaseModel):
             and self.sejm_adopted_text is None
             and self.sejm_committee_recommendation is None
             and self.supporting_exclusions is None
+            and self.version_decision is None
         )
+
+
+def validate_version_decision(
+    trace: CandidateDispositionTrace, evidence: VersionDecisionEvidence
+) -> None:
+    conflict = evidence.outcome == "distinct_policy_identity"
+    if (
+        trace.coverage != "complete"
+        or (trace.result, trace.reason)
+        != (("ambiguous", "version_conflict") if conflict else ("selected", "version_choice"))
+        or any(row.phase != "version_comparison" for row in trace.dispositions)
+    ):
+        raise ValueError("version evidence requires the completed comparison phase")
+    compared = tuple(
+        row
+        for row in trace.dispositions
+        if row.outcome in ("policy_excluded", "selected")
+        or row.reason in ("version_choice", "version_preference", "version_conflict")
+    )
+    if tuple(row.index for row in compared) != evidence.compared_indices:
+        raise ValueError("version evidence differs from compared candidate dispositions")
+    chosen = None if conflict else evidence.retained_indices[0]
+    for row in compared:
+        if row.index == chosen:
+            expected = ("selected", "version_choice")
+        else:
+            expected = ("policy_excluded", "version_conflict" if conflict else "version_preference")
+        if (row.outcome, row.reason) != expected:
+            raise ValueError("version evidence differs from the selected or rejected disposition")
 
 
 def _parent_disposition(
