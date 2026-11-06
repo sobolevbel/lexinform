@@ -12,7 +12,8 @@ matrix when the change crosses extraction, selection, comparison, or delivery bo
 - Find the external corpus checkout and start at its `INDEX.json`. Pin the actual input
   hashes, options, and baseline before running a comparison. Keep source and output roots
   separate. Use a new output path, even when repeating an identical run.
-- Use `python -m tools.corpus_runs run` for a registered suite, then `verify` and `diff`
+- Use `python -m tools.corpus_runs list` to find the registered suite, its child module and
+  preset options. Use `run` for a registered suite, then `verify` and `diff`
   for sealed runs. Use the existing standalone replay when it owns the exact proof.
   Check denominators, missing inputs and exclusions alongside the changed decisions.
 - For extraction or selection changes, replay old matches, inspect every changed decision,

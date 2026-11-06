@@ -5,10 +5,24 @@ from typing import Any
 
 import pytest
 from tools.corpus_artifacts import digest
-from tools.corpus_runs import compare, execute, register, verify
+from tools.corpus_runs import RECORD_ONLY, SUITES, compare, execute, main, register, verify
 
 from tests.unit.test_odt_blocks import odt_document
 from tests.unit.test_odt_blocks_replay import population
+
+
+def test_list_exposes_runnable_suites_and_presets(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr("sys.argv", ["corpus_runs", "list"])
+
+    main()
+
+    commands = dict(line.split(maxsplit=1) for line in capsys.readouterr().out.splitlines())
+    assert commands.keys() == SUITES.keys()
+    assert commands.keys().isdisjoint(RECORD_ONLY)
+    assert commands["word"] == "python -m tools.replay_word_blocks"
+    assert commands["senate"] == "python -m tools.corpus_legacy_suites --kind senate"
 
 
 def report_at(path: Path, *, value: int = 1, sha: str = "a") -> Path:

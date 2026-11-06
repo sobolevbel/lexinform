@@ -13,5 +13,10 @@ freshness, open entry-into-force work, and wykaz backlog. Treat stale `pending` 
 check failed publication attempts, and distinguish a normal GitHub schedule delay from a missed
 day.
 
+For a specific saved-record anomaly, choose the matching read-only doctor from
+[`tools/README.md`](../../../tools/README.md#choosing-a-state-doctor). Use a checkpointed
+copy with its connections closed and a fresh report path. Treat an unavailable census as
+incomplete evidence and check the tool's documented scope before proposing a repair.
+
 Give a brief dated health summary, then ranked anomalies with the affected record and exact repair
 command. If clean, say so without reciting counters.

@@ -31,10 +31,10 @@ that current code generated it. Diffs separate observations, input identities an
 `recorded` means completed observation, `passed` means declared assertions passed, and `not_run`
 means an incomplete requested check. An empty population never becomes a completed run.
 
-Offline suites: `health`, `ci`, `external`, `pdf`, `word`, `odt`, `input`, `cost`, `amendments`,
-`reextract`, `annotations`, `empty-review`, `physical`, `holdout`, `review-form`, `review`,
-`candidates`, `admissibility`, `review-admissibility`, `process`, `senate`, `scan`. Extra arguments follow `--`;
-each child module's `--help` lists its required pins/options. `external` uses the existing
+Discover runnable suites and their child modules with
+`uv run --offline --frozen python -m tools.corpus_runs list`. The listing includes options the
+registry supplies automatically. Append `--help` to a child command to see its pins and options.
+When using the registry, pass only additional child arguments after `--`. `external` uses the existing
 corpus-check profiles; the default `ci` suite requires a manifest corpus such as
 `tests/fixtures/corpus_check`. Process/Senate wrappers preserve old observation semantics and
 record missing inputs. Senate's default supplement is
@@ -72,6 +72,20 @@ external writes and credential-file reads. Reuse returns nonzero if the requeste
 configuration, consumed fixtures, runner or environment differ. It never adopts an older ad-hoc
 recording as a verified cache. These six suites remain separate from default pytest and the
 external-corpus registry. Cross-run comparison remains a separate acceptance step.
+
+## Choosing a state doctor
+
+Choose the check by the saved record involved. Use a checkpointed SQLite copy and a fresh
+output path for each report.
+
+| Investigating | Tool |
+| --- | --- |
+| Which input produced a saved result | [Request provenance](#request-provenance-doctor) |
+| Queue ownership, batch receipts or result counts | [Batch/application integrity](#batchapplication-integrity-doctor) |
+| Retained payloads or publication continuation links | [Retained-state integrity](#retained-state-integrity-doctor) |
+| Stalled document or review work | [Unfinished work](#unfinished-work-doctor) |
+| How a saved result was applied | [Computation graph](#computation-graph-doctor) |
+| Saved document selection or artifact links | [Source history](#source-history-doctor) |
 
 ## Request provenance doctor
 

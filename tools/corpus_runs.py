@@ -4,6 +4,7 @@ import argparse
 import datetime as dt
 import json
 import re
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -679,6 +680,7 @@ def check(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
+    commands.add_parser("list", help="List runnable suites and their child commands")
     for name in ("run", "register"):
         command = commands.add_parser(name)
         command.add_argument("--root", type=Path, required=True)
@@ -700,6 +702,10 @@ def main() -> None:
     diff.add_argument("after", type=Path)
     diff.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    if args.command == "list":
+        for suite, (module, preset) in SUITES.items():
+            print(f"{suite:22} {shlex.join(('python', '-m', f'tools.{module}', *preset))}")
+        return
     if args.command == "run":
         extra = args.extra[1:] if args.extra[:1] == ["--"] else args.extra
         result = execute(args.root, args.id, args.suite, args.corpus, extra)
