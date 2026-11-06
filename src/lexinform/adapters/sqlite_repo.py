@@ -11,7 +11,7 @@ import json
 import logging
 import sqlite3
 from collections.abc import Callable, Iterator, Sequence
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -19,6 +19,7 @@ from zoneinfo import ZoneInfo
 from pydantic import TypeAdapter
 
 from lexinform.adapters.amendment_inputs import (
+    capture_submitted_amendment_scan_input,
     checked_computation_result,
     prune_amendment_inputs,
     read_amendment_input,
@@ -3892,7 +3893,7 @@ class SqliteBillRepository:
         if meta.request_sha256 is None or meta.frozen_request_manifest is not None:
             return meta.model_dump_json()
         row = self._conn.execute(
-            "SELECT request_json FROM llm_batch_intents"
+            "SELECT request_json, meta_json FROM llm_batch_intents"
             " WHERE custom_id=? AND provider=? AND state='submitting'",
             (item.custom_id, provider),
         ).fetchone()
@@ -3913,6 +3914,13 @@ class SqliteBillRepository:
             return meta.model_dump_json()
         if manifest is None:
             return meta.model_dump_json()
+        if isinstance(meta, DigestItemMeta) and meta.scan_input is not None:
+            with suppress(ValueError, TypeError, RecursionError):
+                witness = capture_submitted_amendment_scan_input(
+                    request, item, intent_metadata(request, row["meta_json"])
+                )
+                if witness is not None:
+                    meta = meta.model_copy(update={"amendment_scan_input": witness})
         return meta.model_copy(update={"frozen_request_manifest": manifest}).model_dump_json()
 
     def list_open_llm_batches(self) -> list[LlmBatch]:

@@ -1191,12 +1191,14 @@ class AnalysisService:
             except Exception:
                 timing = None
         amendment_input_ref = existing.amendment_input_ref if existing is not None else None
+        amendment_scan_input = existing.amendment_scan_input if existing is not None else None
         if (
             existing is None
             and isinstance(record, AmendmentsRecord)
             and isinstance(item.meta, DigestItemMeta)
         ):
             amendment_input_ref = item.meta.amendment_input_ref
+            amendment_scan_input = item.meta.amendment_scan_input
         result = ComputationResult(
             schema_version=1 if primary else 3 if review else 2,
             provider=provider,
@@ -1212,6 +1214,7 @@ class AnalysisService:
             request_sha256=item.meta.request_sha256,
             local_timing_witness=timing,
             amendment_input_ref=amendment_input_ref,
+            amendment_scan_input=amendment_scan_input,
             validation="validated" if record is not None else "error",
             record=record,
             model=response.model,

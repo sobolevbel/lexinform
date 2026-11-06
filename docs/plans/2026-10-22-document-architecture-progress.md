@@ -12745,6 +12745,9 @@ restores were exact. The sample dump grew by 593,042 SQL bytes and 133,498
 gzip bytes (2.53%). Production import remains a separate manual operation.
 [Qualification](../assets/audits/2026-11-06-legacy-raw-validation/qualification.json).
 
+The exact `f89b607d` release passed CI run 42238915113 and relay
+deployment 42240242715. Restart and timer were verified.
+
 <a id="j339"></a>
 
 ## J339 — read the original committee scan context without a PDF copy
@@ -12762,3 +12765,20 @@ question through controlled paid records. The retained witness occupied
 dump and JSON for all 14 retained results matched across revisions. The
 runtime writer and correction consumer remain inactive.
 [Qualification](../assets/audits/2026-11-06-amendment-scan-context-reader/qualification.json).
+
+<a id="j340"></a>
+
+## J340 — retain committee scan context from the submitted request
+
+The writer captures the bounded witness from the exact frozen submitting
+row when submission is confirmed. A validated paid result keeps it after
+operational cleanup. Failed collection keeps only the submitted evidence.
+There is no extra copy in the queued request or a historical backfill.
+
+The 24 offline paths included eight successful scans, two scan failures,
+and 14 text controls. Requests, normalized SQL, cost and delivery work
+matched after excluding the new witness. Cleanup and two restores preserved
+the evidence. A successful isolated dump grew by 153–242 gzip bytes.
+The submitted copy accounts for 8–23 gzip bytes and remains available for
+cross-checking the paid record. The correction consumer stays separate.
+[Qualification](../assets/audits/2026-11-06-amendment-scan-context-writer/qualification.json).

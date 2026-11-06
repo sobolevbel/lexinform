@@ -1,0 +1,455 @@
+{
+  "baseline_commit": "f4f3e2f68c33ca6b28ab18be85d9471a73740c33",
+  "normalized_sql_identical": true,
+  "paths": 24,
+  "provider_submissions": 0,
+  "report_sha256": {
+    "reader": "775eac264080e5148a1dc70bba32b12e2d336f03615505b36e446dc1e24d1ca5",
+    "writer": "fcd6374c55011b9cb057060fd6546b33b9096efa9aa2bdc07c23ad137c6f1e0f"
+  },
+  "rows": [
+    {
+      "case": "0186b95c00c20540975ee84d6ffcf000afde4489d32783e901a0752d8f472bc3/correction",
+      "cleaned": {
+        "gzip_delta": 154,
+        "retirement_counterfactual": {
+          "gzip_delta": 8,
+          "sql_delta": 1012
+        },
+        "sql_delta": 2024,
+        "witness_bytes": {
+          "item": [
+            1228
+          ],
+          "result": [
+            1228
+          ]
+        }
+      },
+      "collected": {
+        "gzip_delta": 155,
+        "retirement_counterfactual": {
+          "gzip_delta": 8,
+          "sql_delta": 1012
+        },
+        "sql_delta": 2024,
+        "witness_bytes": {
+          "item": [
+            1228
+          ],
+          "result": [
+            1228
+          ]
+        }
+      },
+      "submitted": {
+        "gzip_delta": 139,
+        "retirement_counterfactual": null,
+        "sql_delta": 1012,
+        "witness_bytes": {
+          "item": [
+            1228
+          ],
+          "result": []
+        }
+      }
+    },
+    {
+      "case": "0186b95c00c20540975ee84d6ffcf000afde4489d32783e901a0752d8f472bc3/correction/failure",
+      "cleaned": {
+        "gzip_delta": 132,
+        "retirement_counterfactual": null,
+        "sql_delta": 1012,
+        "witness_bytes": {
+          "item": [
+            1228
+          ],
+          "result": []
+        }
+      },
+      "collected": {
+        "gzip_delta": 130,
+        "retirement_counterfactual": null,
+        "sql_delta": 1012,
+        "witness_bytes": {
+          "item": [
+            1228
+          ],
+          "result": []
+        }
+      },
+      "submitted": {
+        "gzip_delta": 139,
+        "retirement_counterfactual": null,
+        "sql_delta": 1012,
+        "witness_bytes": {
+          "item": [
+            1228
+          ],
+          "result": []
+        }
+      }
+    },
+    {
+      "case": "0186b95c00c20540975ee84d6ffcf000afde4489d32783e901a0752d8f472bc3/ordinary",
+      "cleaned": {
+        "gzip_delta": 234,
+        "retirement_counterfactual": {
+          "gzip_delta": 23,
+          "sql_delta": 1012
+        },
+        "sql_delta": 2024,
+        "witness_bytes": {
+          "item": [
+            1228
+          ],
+          "result": [
+            1228
+          ]
+        }
+      },
+      "collected": {
+        "gzip_delta": 227,
+        "retirement_counterfactual": {
+          "gzip_delta": 14,
+          "sql_delta": 1012
+        },
+        "sql_delta": 2024,
+        "witness_bytes": {
+          "item": [
+            1228
+          ],
+          "result": [
+            1228
+          ]
+        }
+      },
+      "submitted": {
+        "gzip_delta": 220,
+        "retirement_counterfactual": null,
+        "sql_delta": 1012,
+        "witness_bytes": {
+          "item": [
+            1228
+          ],
+          "result": []
+        }
+      }
+    },
+    {
+      "case": "0186b95c00c20540975ee84d6ffcf000afde4489d32783e901a0752d8f472bc3/ordinary/failure",
+      "cleaned": {
+        "gzip_delta": 209,
+        "retirement_counterfactual": null,
+        "sql_delta": 1012,
+        "witness_bytes": {
+          "item": [
+            1228
+          ],
+          "result": []
+        }
+      },
+      "collected": {
+        "gzip_delta": 209,
+        "retirement_counterfactual": null,
+        "sql_delta": 1012,
+        "witness_bytes": {
+          "item": [
+            1228
+          ],
+          "result": []
+        }
+      },
+      "submitted": {
+        "gzip_delta": 220,
+        "retirement_counterfactual": null,
+        "sql_delta": 1012,
+        "witness_bytes": {
+          "item": [
+            1228
+          ],
+          "result": []
+        }
+      }
+    },
+    {
+      "case": "0257b3b2b4ff205f5672886ecc63978e20615e74f60e8d7e08564185def8a736/correction",
+      "cleaned": {
+        "gzip_delta": 157,
+        "retirement_counterfactual": {
+          "gzip_delta": 13,
+          "sql_delta": 1012
+        },
+        "sql_delta": 2024,
+        "witness_bytes": {
+          "item": [
+            1240
+          ],
+          "result": [
+            1240
+          ]
+        }
+      },
+      "collected": {
+        "gzip_delta": 155,
+        "retirement_counterfactual": {
+          "gzip_delta": 6,
+          "sql_delta": 1012
+        },
+        "sql_delta": 2024,
+        "witness_bytes": {
+          "item": [
+            1240
+          ],
+          "result": [
+            1240
+          ]
+        }
+      },
+      "submitted": {
+        "gzip_delta": 139,
+        "retirement_counterfactual": null,
+        "sql_delta": 1012,
+        "witness_bytes": {
+          "item": [
+            1240
+          ],
+          "result": []
+        }
+      }
+    },
+    {
+      "case": "0257b3b2b4ff205f5672886ecc63978e20615e74f60e8d7e08564185def8a736/ordinary",
+      "cleaned": {
+        "gzip_delta": 242,
+        "retirement_counterfactual": {
+          "gzip_delta": 22,
+          "sql_delta": 1012
+        },
+        "sql_delta": 2024,
+        "witness_bytes": {
+          "item": [
+            1240
+          ],
+          "result": [
+            1240
+          ]
+        }
+      },
+      "collected": {
+        "gzip_delta": 237,
+        "retirement_counterfactual": {
+          "gzip_delta": 16,
+          "sql_delta": 1012
+        },
+        "sql_delta": 2024,
+        "witness_bytes": {
+          "item": [
+            1240
+          ],
+          "result": [
+            1240
+          ]
+        }
+      },
+      "submitted": {
+        "gzip_delta": 224,
+        "retirement_counterfactual": null,
+        "sql_delta": 1012,
+        "witness_bytes": {
+          "item": [
+            1240
+          ],
+          "result": []
+        }
+      }
+    },
+    {
+      "case": "0365154e09710557bbaf2fc7d31288a3da6c6c5518adabe92ab9a63a6ef97c5b/correction",
+      "cleaned": {
+        "gzip_delta": 154,
+        "retirement_counterfactual": {
+          "gzip_delta": 12,
+          "sql_delta": 1003
+        },
+        "sql_delta": 2006,
+        "witness_bytes": {
+          "item": [
+            1219
+          ],
+          "result": [
+            1219
+          ]
+        }
+      },
+      "collected": {
+        "gzip_delta": 158,
+        "retirement_counterfactual": {
+          "gzip_delta": 10,
+          "sql_delta": 1003
+        },
+        "sql_delta": 2006,
+        "witness_bytes": {
+          "item": [
+            1219
+          ],
+          "result": [
+            1219
+          ]
+        }
+      },
+      "submitted": {
+        "gzip_delta": 140,
+        "retirement_counterfactual": null,
+        "sql_delta": 1003,
+        "witness_bytes": {
+          "item": [
+            1219
+          ],
+          "result": []
+        }
+      }
+    },
+    {
+      "case": "0365154e09710557bbaf2fc7d31288a3da6c6c5518adabe92ab9a63a6ef97c5b/ordinary",
+      "cleaned": {
+        "gzip_delta": 231,
+        "retirement_counterfactual": {
+          "gzip_delta": 22,
+          "sql_delta": 1003
+        },
+        "sql_delta": 2006,
+        "witness_bytes": {
+          "item": [
+            1219
+          ],
+          "result": [
+            1219
+          ]
+        }
+      },
+      "collected": {
+        "gzip_delta": 226,
+        "retirement_counterfactual": {
+          "gzip_delta": 16,
+          "sql_delta": 1003
+        },
+        "sql_delta": 2006,
+        "witness_bytes": {
+          "item": [
+            1219
+          ],
+          "result": [
+            1219
+          ]
+        }
+      },
+      "submitted": {
+        "gzip_delta": 221,
+        "retirement_counterfactual": null,
+        "sql_delta": 1003,
+        "witness_bytes": {
+          "item": [
+            1219
+          ],
+          "result": []
+        }
+      }
+    },
+    {
+      "case": "040450ab97a3bc9e280a14755de1a7cb74e4d67b805fefa4bce32e93c0d5a0a4/correction",
+      "cleaned": {
+        "gzip_delta": 153,
+        "retirement_counterfactual": {
+          "gzip_delta": 8,
+          "sql_delta": 1006
+        },
+        "sql_delta": 2012,
+        "witness_bytes": {
+          "item": [
+            1222
+          ],
+          "result": [
+            1222
+          ]
+        }
+      },
+      "collected": {
+        "gzip_delta": 152,
+        "retirement_counterfactual": {
+          "gzip_delta": 8,
+          "sql_delta": 1006
+        },
+        "sql_delta": 2012,
+        "witness_bytes": {
+          "item": [
+            1222
+          ],
+          "result": [
+            1222
+          ]
+        }
+      },
+      "submitted": {
+        "gzip_delta": 138,
+        "retirement_counterfactual": null,
+        "sql_delta": 1006,
+        "witness_bytes": {
+          "item": [
+            1222
+          ],
+          "result": []
+        }
+      }
+    },
+    {
+      "case": "040450ab97a3bc9e280a14755de1a7cb74e4d67b805fefa4bce32e93c0d5a0a4/ordinary",
+      "cleaned": {
+        "gzip_delta": 232,
+        "retirement_counterfactual": {
+          "gzip_delta": 23,
+          "sql_delta": 1006
+        },
+        "sql_delta": 2012,
+        "witness_bytes": {
+          "item": [
+            1222
+          ],
+          "result": [
+            1222
+          ]
+        }
+      },
+      "collected": {
+        "gzip_delta": 226,
+        "retirement_counterfactual": {
+          "gzip_delta": 14,
+          "sql_delta": 1006
+        },
+        "sql_delta": 2012,
+        "witness_bytes": {
+          "item": [
+            1222
+          ],
+          "result": [
+            1222
+          ]
+        }
+      },
+      "submitted": {
+        "gzip_delta": 218,
+        "retirement_counterfactual": null,
+        "sql_delta": 1006,
+        "witness_bytes": {
+          "item": [
+            1222
+          ],
+          "result": []
+        }
+      }
+    }
+  ],
+  "scan_failures": 2,
+  "scan_successes": 8,
+  "text_controls": 14
+}

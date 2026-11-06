@@ -7,8 +7,20 @@ from collections.abc import Iterator
 from lexinform.adapters.computation_history import read_computation_result
 from lexinform.adapters.input_receipts import _object, _parents, _reference, parse_batch_request
 from lexinform.json_storage import canonical_json, read_json
-from lexinform.models.amendment_inputs import AmendmentInputRef, AmendmentInputSnapshot
-from lexinform.models.batch import BatchIntent, DigestItemMeta, LlmBatchItem, batch_item_meta
+from lexinform.models.amendment_inputs import (
+    AmendmentInputRef,
+    AmendmentInputSnapshot,
+    AmendmentScanInputWitness,
+)
+from lexinform.models.batch import (
+    AmendmentsQuestion,
+    BatchIntent,
+    BatchItemMeta,
+    BatchRequest,
+    DigestItemMeta,
+    LlmBatchItem,
+    batch_item_meta,
+)
 from lexinform.models.computation_inputs import ComputationInputBinding
 from lexinform.models.computations import ComputationResult
 from lexinform.models.input_receipts import amendment_context_sha256
@@ -396,6 +408,41 @@ def validate_intent_input(connection: sqlite3.Connection, intent: BatchIntent) -
         intent.request.question.model_dump(mode="json")
     ):
         raise AmendmentInputError()
+
+
+def capture_submitted_amendment_scan_input(
+    request: BatchRequest, item: LlmBatchItem, queued: BatchItemMeta | DigestItemMeta
+) -> AmendmentScanInputWitness | None:
+    question, meta = request.question, item.meta
+    if (
+        not isinstance(question, AmendmentsQuestion)
+        or question.ctx.source_kind != "committee_amendments"
+        or not isinstance(meta, DigestItemMeta)
+        or not isinstance(queued, DigestItemMeta)
+        or meta != queued.model_copy(update={"request_sha256": request.payload_sha256})
+        or meta.amendment_scan_input is not None
+        or meta.source_url is None
+        or request.payload_sha256 is None
+    ):
+        return None
+    scan = question.ctx.scan
+    if scan is None or scan.scan_input is None:
+        return None
+    try:
+        witness = AmendmentScanInputWitness(
+            source_url=meta.source_url,
+            request_sha256=request.payload_sha256,
+            question_sha256=hashlib.sha256(
+                canonical_json(question.model_dump(mode="json")).encode()
+            ).hexdigest(),
+            context_json=canonical_json(question.ctx.model_dump(mode="json", exclude={"scan"})),
+            scan_input=scan.scan_input,
+        )
+        candidate = meta.model_copy(update={"amendment_scan_input": witness})
+        candidate.require_amendment_scan_carrier(item.call_kind, item.term, item.number)
+    except ValueError, TypeError, RecursionError:
+        return None
+    return witness
 
 
 def validate_item_input(connection: sqlite3.Connection, item: LlmBatchItem) -> None:
