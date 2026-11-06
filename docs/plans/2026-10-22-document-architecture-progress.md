@@ -13628,3 +13628,28 @@ prefix while preserving the recorded delivery suffix. Removing the retained
 answer makes it unavailable.
 
 [Qualification](../assets/audits/2026-11-06-secondary-cycle-provider-answer/qualification.json).
+
+<a id="j385"></a>
+
+## J385 — require the frozen scan attachment at provider handoff
+
+Both real batch adapters validate the manifested scan against its frozen
+provider envelope before issuing any SDK call. An unverifiable envelope or a
+substituted PDF produces a definitive pre-submission rejection. The queue
+reader still permits historical opaque envelopes and requests without a scan
+manifest remain outside the new handoff check.
+
+Pinned Sejm prints 24 and 25 exercised whole-file and cover-removal cases
+through both adapters. The four legitimate cases kept identical request
+hashes, SDK input and submitted checkpoint identities. All eight rehashed
+opaque or substituted controls reached the mock SDK on the baseline and were
+rejected before the first SDK call on the candidate. Unit controls also cover
+secondary scans and a mixed batch containing a valid request before the
+invalid one.
+
+The initial full gate caught two changes to the existing checksum-error
+contract. The final implementation preserves that exception and classifies
+only the new attachment validation failures as definitely unsent. The
+unverified local commit was removed from the release queue before push.
+
+[Qualification](../assets/audits/2026-11-06-provider-scan-submit-guard/qualification.json).

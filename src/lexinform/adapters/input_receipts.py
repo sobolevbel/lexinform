@@ -312,22 +312,29 @@ def _scan_payload_slot(shell: Mapping[str, object], model: object, marker: str) 
 
 
 def validate_scan_attachment(intent: BatchIntent) -> None:
-    request = intent.request
-    if intent.recorded_scan_input is None or request.payload_json is None:
-        return
+    if intent.recorded_scan_input is not None:
+        intent.require_scan_binding()
+        validate_provider_scan_attachment(intent.request, intent.provider, allow_opaque=True)
+
+
+def validate_provider_scan_attachment(
+    request: BatchRequest, provider: BatchProvider, *, allow_opaque: bool = False
+) -> None:
     question = request.question
     if (
         not isinstance(question, (AnalysisQuestion, AmendmentsQuestion, SupplementQuestion))
-        or question.ctx.scan is None
+        or (scan := question.ctx.scan) is None
+        or scan.scan_input is None
     ):
-        raise ValueError("Recorded scan is missing from its frozen question")
-    payload = read_json(request.payload_json)
-    if not isinstance(payload, dict) or not ({"method", "url", "body", "params"} & payload.keys()):
         return
-    scan = question.ctx.scan
+    payload = read_json(request.payload_json) if request.payload_json is not None else None
+    if not isinstance(payload, dict) or not ({"method", "url", "body", "params"} & payload.keys()):
+        if allow_opaque:
+            return
+        raise ValueError("Frozen provider request has no verifiable scan attachment")
     if (
         payload.get("custom_id") != request.custom_id
-        or ("params" in payload) != (intent.provider == "anthropic")
+        or ("params" in payload) != (provider == "anthropic")
         or scan.media_type != "application/pdf"
         or not _scan_payload_slot(payload, request.model, scan.data)
     ):

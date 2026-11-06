@@ -15,6 +15,7 @@ from lexinform.adapters.input_receipts import parse_batch_request, serialize_int
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
 from lexinform.adapters.llm_openai import OpenAiAnalyzer
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
+from lexinform.errors import BatchNotSubmittedError
 from lexinform.models import (
     AmendmentsContext,
     AmendmentsQuestion,
@@ -713,6 +714,18 @@ def test_provider_attachment_must_match_the_frozen_scan(
     )
     with pytest.raises(ValueError, match="Frozen provider attachment differs"):
         repo.save_batch_intent(intent.model_copy(update={"request": tampered}))
+    with pytest.raises(BatchNotSubmittedError, match="Frozen provider attachment differs"):
+        factory().submit([request, tampered])
+
+    opaque_payload = json.dumps({"custom_id": request.custom_id})
+    opaque = request.model_copy(
+        update={
+            "payload_json": opaque_payload,
+            "payload_sha256": hashlib.sha256(opaque_payload.encode()).hexdigest(),
+        }
+    )
+    with pytest.raises(BatchNotSubmittedError, match="no verifiable scan attachment"):
+        factory().submit([request, opaque])
 
     forged = saved.replace(
         serialize_intent_request(request).replace("'", "''"),

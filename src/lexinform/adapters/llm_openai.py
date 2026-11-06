@@ -28,6 +28,7 @@ from openai.types.responses.response_input_param import ResponseInputParam
 from openai.types.responses.response_input_text_param import ResponseInputTextParam
 from pydantic import BaseModel, ValidationError
 
+from lexinform.adapters.input_receipts import validate_provider_scan_attachment
 from lexinform.adapters.llm_prompts import (
     PROMPT_VERSION,
     build_amendments_prompt,
@@ -431,7 +432,13 @@ class OpenAiAnalyzer:
         """File one Batches API submission against `/v1/responses` — half of the synchronous
         price, answered within 24h at the most. One JSONL line per request, uploaded as a file
         first: the Batches API takes a file id, never the requests inline."""
-        lines = [self.prepare_request(req).payload_json or "{}" for req in requests]
+        prepared = [self.prepare_request(request) for request in requests]
+        try:
+            for request in prepared:
+                validate_provider_scan_attachment(request, "openai")
+        except ValueError as exc:
+            raise BatchNotSubmittedError(str(exc)) from exc
+        lines = [request.payload_json or "{}" for request in prepared]
         payload = ("\n".join(lines) + "\n").encode("utf-8")
         try:
             uploaded = self._resolved_client.files.create(

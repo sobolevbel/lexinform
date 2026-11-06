@@ -13,6 +13,7 @@ from anthropic.types.json_output_format_param import JSONOutputFormatParam
 from anthropic.types.messages.batch_create_params import Request as AnthropicBatchRequest
 from pydantic import TypeAdapter, ValidationError
 
+from lexinform.adapters.input_receipts import validate_provider_scan_attachment
 from lexinform.adapters.llm_prompts import (
     PROMPT_VERSION,
     amendments_system_prompt,
@@ -384,9 +385,15 @@ class AnthropicAnalyzer:
         a run or two rather than at once. `output_config` is built the way `messages.parse`
         builds it internally: the Batches API takes raw request params, with no `.parse()`
         convenience of its own, but the structured-output feature underneath is the same one."""
+        prepared = [self.prepare_request(request) for request in requests]
+        try:
+            for request in prepared:
+                validate_provider_scan_attachment(request, "anthropic")
+        except ValueError as exc:
+            raise BatchNotSubmittedError(str(exc)) from exc
         batch_requests = [
-            cast(AnthropicBatchRequest, json.loads(self.prepare_request(req).payload_json or "{}"))
-            for req in requests
+            cast(AnthropicBatchRequest, json.loads(request.payload_json or "{}"))
+            for request in prepared
         ]
         try:
             batch = self._client.messages.batches.create(requests=batch_requests)
