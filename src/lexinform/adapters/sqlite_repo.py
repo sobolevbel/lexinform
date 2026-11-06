@@ -37,6 +37,7 @@ from lexinform.adapters.candidate_trace_history import (
 from lexinform.adapters.computation_history import read_result_application
 from lexinform.adapters.content_applications import (
     find_projection_application_ids,
+    find_supplement_content_evidence,
     verify_content_applications,
 )
 from lexinform.adapters.content_history import (
@@ -240,7 +241,11 @@ from lexinform.models import (
 )
 from lexinform.models.amendment_inputs import AmendmentInputSnapshot
 from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
-from lexinform.models.content import CardPrimaryEvidence, editorial_bill_snapshot
+from lexinform.models.content import (
+    CardPrimaryEvidence,
+    SupplementContentEvidence,
+    editorial_bill_snapshot,
+)
 from lexinform.models.legacy_results import canonical_legacy_json, legacy_json
 from lexinform.models.physical_inventory import PhysicalCapture, PhysicalMetadata
 from lexinform.models.senate_inspection import SenateInspectionLink, SenateInspectionRecord
@@ -2185,6 +2190,11 @@ class SqliteBillRepository:
 
     def get_content_snapshot(self, snapshot_id: str) -> ContentSnapshot | None:
         return ContentSourceRows(self._conn).get_content_snapshot(snapshot_id)
+
+    def find_supplement_content_evidence(
+        self, change: StatusChange
+    ) -> tuple[int, SupplementContentEvidence] | None:
+        return find_supplement_content_evidence(self._conn, change)
 
     def find_card_primary_evidence(self, bill: Bill) -> CardPrimaryEvidence | None:
         return card_primary_evidence_candidate(self._conn, bill)

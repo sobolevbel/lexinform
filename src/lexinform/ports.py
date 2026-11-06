@@ -123,7 +123,7 @@ from lexinform.models import (
 )
 from lexinform.models.amendment_inputs import AmendmentInputSnapshot
 from lexinform.models.batch import BatchJob, BatchKind
-from lexinform.models.content import CardPrimaryEvidence
+from lexinform.models.content import CardPrimaryEvidence, SupplementContentEvidence
 from lexinform.models.document_reads import DocumentPhysicalDiagnostics
 from lexinform.models.physical_inventory import PhysicalCapture, PhysicalMetadata
 from lexinform.models.report import CallKind
@@ -873,6 +873,10 @@ class BillRepository(Protocol):
     def save_content_snapshot(self, snapshot: ContentSnapshot) -> None: ...
 
     def get_content_snapshot(self, snapshot_id: str) -> ContentSnapshot | None: ...
+
+    def find_supplement_content_evidence(
+        self, change: StatusChange
+    ) -> tuple[int, SupplementContentEvidence] | None: ...
 
     def find_card_primary_evidence(self, bill: Bill) -> CardPrimaryEvidence | None: ...
 

@@ -11,6 +11,7 @@ from lexinform.adapters.secondary_dependencies import (
     validate_secondary_dependency,
 )
 from lexinform.content_versions import content_delivery_mismatch, content_snapshot_refs
+from lexinform.errors import SupplementContentEvidenceError
 from lexinform.json_storage import read_json
 from lexinform.models import (
     AmendmentsRecord,
@@ -115,7 +116,12 @@ def verify_content_applications(
     try:
         _verify(connection, version, publication_id=publication_id, retained=retained)
     except ValueError, TypeError, RecursionError, sqlite3.Error, KeyError, IndexError:
-        raise ContentApplicationError("content_application_reference_invalid") from None
+        error = (
+            SupplementContentEvidenceError
+            if version.supplement_evidence is not None
+            else ContentApplicationError
+        )
+        raise error("content_application_reference_invalid") from None
 
 
 def _verify(
@@ -277,6 +283,33 @@ def _verify_supplement(
     application: ResultApplication,
     result: ComputationResult,
 ) -> None:
+    selection_id = _supplement_selection(connection, change, application, result)
+    observation = reader.get_source_observation(evidence.source_observation_id)
+    projected = change.supplements[0]
+    if observation is None or (
+        observation.term,
+        observation.number,
+        observation.purpose,
+        observation.selection_id,
+        observation.document.kind,
+        observation.document.url,
+    ) != (
+        change.term,
+        change.number,
+        "analysis",
+        selection_id,
+        projected.source_kind,
+        projected.source_url,
+    ):
+        raise ValueError("supplement_content_observation_invalid")
+
+
+def _supplement_selection(
+    connection: sqlite3.Connection,
+    change: StatusChange,
+    application: ResultApplication,
+    result: ComputationResult,
+) -> str:
     projected = change.supplements[0]
     owner = (change.term, change.number)
     paid = result.record
@@ -331,13 +364,38 @@ def _verify_supplement(
     ):
         raise ValueError("supplement_content_receipt_invalid")
     validate_supplement_receipt_parents(connection, receipt)
-    observation = reader.get_source_observation(evidence.source_observation_id)
-    if observation is None or (
-        observation.term,
-        observation.number,
-        observation.purpose,
-        observation.selection_id,
-        observation.document.kind,
-        observation.document.url,
-    ) != (*owner, "analysis", receipt.source_selection_id, paid.source_kind, paid.source_url):
-        raise ValueError("supplement_content_observation_invalid")
+    return receipt.source_selection_id
+
+
+def find_supplement_content_evidence(
+    connection: sqlite3.Connection, change: StatusChange
+) -> tuple[int, SupplementContentEvidence] | None:
+    if change.id is None or len(change.supplements) != 1:
+        return None
+    projected = change.supplements[0]
+    if projected.computation_id is None:
+        return None
+    target = ResultApplicationTarget(kind="status_change", ref=str(change.id))
+    try:
+        ids = find_projection_application_ids(connection, projected.computation_id, target)
+        if len(ids) != 1:
+            return None
+        (identity,) = ids
+        (row,) = _rows(connection, "SELECT * FROM result_applications WHERE id=?", (identity,))
+        application = _application(row)
+        result = _result(connection, application)
+        selection_id = _supplement_selection(connection, change, application, result)
+        observations = ContentSourceRows(connection).source_observations_for_selection(
+            change.term, change.number, selection_id
+        )
+        if len(observations) != 1:
+            return None
+        (source,) = observations
+        if (source.document.kind, source.document.url) != (
+            projected.source_kind,
+            projected.source_url,
+        ):
+            return None
+        return identity, SupplementContentEvidence(source_observation_id=source.observation_id)
+    except ValueError, TypeError, RecursionError, sqlite3.Error, KeyError, IndexError:
+        return None

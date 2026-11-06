@@ -137,3 +137,7 @@ class DeliveryUncertainError(ServiceUnavailableError):
     """A message may have been accepted; retry requires an audited operator decision."""
 
     system = "message delivery"
+
+
+class SupplementContentEvidenceError(ValueError):
+    pass

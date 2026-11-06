@@ -8,7 +8,7 @@ from lexinform.content_sources import (
     supported_source_context,
 )
 from lexinform.content_versions import card_physical_matches
-from lexinform.errors import CardPrimaryEvidenceError
+from lexinform.errors import CardPrimaryEvidenceError, SupplementContentEvidenceError
 from lexinform.models import (
     AmendmentsRecord,
     Bill,
@@ -23,7 +23,11 @@ from lexinform.models import (
     SupplementRecord,
     amendments_stage,
 )
-from lexinform.models.content import card_bill_snapshot, editorial_bill_snapshot
+from lexinform.models.content import (
+    SupplementContentEvidence,
+    card_bill_snapshot,
+    editorial_bill_snapshot,
+)
 from lexinform.ports import BillRepository, Clock
 
 FORMATTER_VERSION = "telegram-format-v2"
@@ -84,66 +88,67 @@ def record_publication_content(
         formatter_version=formatter_version,
         language=language,
         card_history_parent=card_history_parent,
+        application_origin=application_origin,
     )
     if prepared is None:
         return None
     version, snapshots = prepared
-    with repo.atomic():
-        for snapshot in snapshots:
-            repo.save_content_snapshot(snapshot)
-        if (
-            source_origin is not None
-            and source_origin.id == publication.id
-            and source_origin.status is PublicationStatus.QUEUED
-            and source_origin.attempts == 0
-            and source_origin.delivery is not None
-            and not source_origin.delivery.rendered_text
-            and supported_source_context(source_origin)
-            and supported_source_context(publication)
-        ):
-            audit = inspect_primary_content_sources(
-                repo,
-                bill_snapshot_id=version.bill_snapshot_id,
-                change_snapshot_id=version.change_snapshot_id,
-            )
-            if audit.state == "invalid":
-                raise SourceContextInvalidError("Frozen primary source context is invalid")
-            version = version.model_copy(
-                update={
-                    "source_scope": audit.scope,
-                    "source_observation_ids": audit.source_observation_ids,
-                }
-            )
-        version = capture_content_applications(
-            repo, version, publication, origin=application_origin
-        )
-        if card_history_parent == "original" and publication.delivery is not None:
-            bill = Bill.model_validate_json(publication.delivery.bill_json)
-            reference = repo.find_card_primary_evidence(bill)
-            if reference is not None:
-                marked = version.model_copy(update={"card_primary_evidence": reference})
-                try:
-                    with repo.atomic():
-                        repo.save_content_version(marked)
-                        repo.bind_publication_content(publication.id, marked.content_id)
-                except CardPrimaryEvidenceError:
-                    pass
-                else:
-                    return marked
-        repo.save_content_version(version)
-        repo.bind_publication_content(publication.id, version.content_id)
+    try:
+        with repo.atomic():
+            for snapshot in snapshots:
+                repo.save_content_snapshot(snapshot)
+            if (
+                source_origin is not None
+                and source_origin.id == publication.id
+                and source_origin.status is PublicationStatus.QUEUED
+                and source_origin.attempts == 0
+                and source_origin.delivery is not None
+                and not source_origin.delivery.rendered_text
+                and supported_source_context(source_origin)
+                and supported_source_context(publication)
+            ):
+                audit = inspect_primary_content_sources(
+                    repo,
+                    bill_snapshot_id=version.bill_snapshot_id,
+                    change_snapshot_id=version.change_snapshot_id,
+                )
+                if audit.state == "invalid":
+                    raise SourceContextInvalidError("Frozen primary source context is invalid")
+                version = version.model_copy(
+                    update={
+                        "source_scope": audit.scope,
+                        "source_observation_ids": audit.source_observation_ids,
+                    }
+                )
+            if version.supplement_evidence is None:
+                version = capture_content_applications(
+                    repo, version, publication, origin=application_origin
+                )
+            if card_history_parent == "original" and publication.delivery is not None:
+                bill = Bill.model_validate_json(publication.delivery.bill_json)
+                reference = repo.find_card_primary_evidence(bill)
+                if reference is not None:
+                    marked = version.model_copy(update={"card_primary_evidence": reference})
+                    try:
+                        with repo.atomic():
+                            repo.save_content_version(marked)
+                            repo.bind_publication_content(publication.id, marked.content_id)
+                    except CardPrimaryEvidenceError:
+                        pass
+                    else:
+                        return marked
+            repo.save_content_version(version)
+            repo.bind_publication_content(publication.id, version.content_id)
+    except SupplementContentEvidenceError:
+        return None
     return version
 
 
-def capture_content_applications(
-    repo: BillRepository,
-    version: ContentVersion,
-    publication: Publication,
-    *,
-    origin: Publication | None,
-) -> ContentVersion:
+def _first_direct_application(
+    repo: BillRepository, publication: Publication, origin: Publication | None
+) -> bool:
     plan = publication.delivery
-    if (
+    return not (
         origin is None
         or origin.id != publication.id
         or origin.status is not PublicationStatus.QUEUED
@@ -153,7 +158,6 @@ def capture_content_applications(
         or publication.id is None
         or publication.kind
         not in (PublicationKind.STATUS_UPDATE, PublicationKind.AMENDMENTS_REVISION)
-        or version.change_snapshot_id is None
         or plan is None
         or not plan.rendered_text
         or plan.destination != "direct"
@@ -169,6 +173,21 @@ def capture_content_applications(
         or plan.digest_ref
         or repo.digest_owner(publication.id) is not None
         or repo.get_publication_content(publication.id) is not None
+    )
+
+
+def capture_content_applications(
+    repo: BillRepository,
+    version: ContentVersion,
+    publication: Publication,
+    *,
+    origin: Publication | None,
+) -> ContentVersion:
+    plan = publication.delivery
+    if (
+        plan is None
+        or version.change_snapshot_id is None
+        or not _first_direct_application(repo, publication, origin)
     ):
         return version
     change = StatusChange.model_validate_json(plan.change_json)
@@ -211,6 +230,7 @@ def prepare_publication_content(
     formatter_version: str | None = None,
     language: str | None = None,
     card_history_parent: ContentVersion | Literal["original"] | None = None,
+    application_origin: Publication | None = None,
 ) -> tuple[ContentVersion, tuple[ContentSnapshot, ...]] | None:
     if publication.id is None:
         raise ValueError("Editorial history requires a saved physical publication")
@@ -264,11 +284,31 @@ def prepare_publication_content(
                     return None
                 previous = older
     change = StatusChange.model_validate_json(plan.change_json)
+    supplement: tuple[int, SupplementContentEvidence] | None = None
     if (
         publication.kind is PublicationKind.STATUS_UPDATE
         and amendments_stage(change.new_stages) is None
     ):
-        return None
+        if (
+            change.amendments is not None
+            or len(change.supplements) != 1
+            or change.id != publication.status_change_id
+            or plan.continuation_index != 1
+            or plan.edit_message_id is not None
+            or plan.revision_of is not None
+            or plan.primary_json
+            or language is None
+            or formatter_version is None
+            or application_origin is None
+            or application_origin.kind is not PublicationKind.STATUS_UPDATE
+            or application_origin.delivery is None
+            or application_origin.delivery.destination != "direct"
+            or not _first_direct_application(repo, publication, application_origin)
+        ):
+            return None
+        supplement = repo.find_supplement_content_evidence(change)
+        if supplement is None:
+            return None
     bill = Bill.model_validate_json(plan.bill_json)
     computations = tuple(
         sorted(
@@ -294,6 +334,9 @@ def prepare_publication_content(
         formatter_version=formatter_version if plan.rendered_text else None,
         computation_ids=computations,
         status_change_id=change.id,
+        application_ref_profile="supplement-projection-v1" if supplement else None,
+        application_ids=(supplement[0],) if supplement else (),
+        supplement_evidence=supplement[1] if supplement else None,
         recorded_at=clock.now(),
     )
     return version, (bill_snapshot, change_snapshot, plan_snapshot)

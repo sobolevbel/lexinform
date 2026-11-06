@@ -1,0 +1,45 @@
+{
+  "reader_commit": "4bbfe1c36c389fc66b069175986c0dc4ba5e23df",
+  "natural_profiles": 16,
+  "controlled_profiles": 10,
+  "exclusions": [
+    {
+      "number": "1295-001",
+      "reason": "official_title_not_reader_eligible"
+    },
+    {
+      "number": "346-003",
+      "reason": "official_title_not_reader_eligible"
+    },
+    {
+      "number": "672-011",
+      "reason": "official_title_not_reader_eligible"
+    }
+  ],
+  "pinned_index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "ledger_sha256": {
+    "before": "f9a61affc1dfb6bde21797b887ae166e111f9505950b5026eb8bf75e00e61f91",
+    "root-after": "0cc2bb16d51ca98e75644f026556e0c1ef0c0d6a969aa91e3dbdfe96f39edca0"
+  },
+  "equal": [
+    "input bytes",
+    "prepared request",
+    "input receipt",
+    "source mapping",
+    "rendered message",
+    "SQL outside editorial content rows"
+  ],
+  "post_cleanup_exact_restores_per_case": 2,
+  "isolated_growth_after_cleanup": {
+    "sql_bytes": {
+      "min": 7598,
+      "max": 7630
+    },
+    "gzip_bytes": {
+      "min": 1519,
+      "max": 1539
+    }
+  },
+  "scope": "Native preparation and Poster direct delivery with controlled result application and fake publisher.",
+  "provider_calls": 0
+}

@@ -12519,3 +12519,22 @@ restores on every case. The legacy publication 240 doctor report
 remained byte-identical. Qualification uses controlled answers and
 does not activate an editorial writer.
 [Qualification](../assets/audits/2026-11-06-supplement-lineage-reader/qualification.json).
+
+<a id="j328"></a>
+
+## J328 — freeze supplement source lineage with its first direct delivery
+
+A new standalone direct supplement update records editorial history
+at its first render when the exact applied result, input receipt and
+one unambiguous source observation are available. An absent or
+ambiguous reference leaves the ordinary delivery path in place.
+Existing frozen plans, grouped updates and digest-owned rows remain
+outside this producer.
+
+All 26 paired preparations produced the same request and reader
+message through the normal Poster entry point. The writer's history
+survived cleanup and two restores. SQL outside the new editorial rows
+matched in every case. After cleanup those rows added 1,519–1,539
+gzip bytes per isolated case. Qualification used controlled answers
+and a fake publisher.
+[Qualification](../assets/audits/2026-11-06-supplement-lineage-writer/qualification.json).

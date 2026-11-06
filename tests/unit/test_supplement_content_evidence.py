@@ -7,6 +7,7 @@ import pytest
 from tools.content_history_doctor import audit
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
+from lexinform.errors import SupplementContentEvidenceError
 from lexinform.models import (
     BatchResult,
     BillStatus,
@@ -26,12 +27,16 @@ from lexinform.models import (
     computation_id,
 )
 from lexinform.models.content import SupplementContentEvidence, editorial_bill_snapshot
+from lexinform.services.posting import Poster
 from tests.computations import retained_result
+from tests.fakes import FakePublisher, FakeSejmGateway, FixedClock
 from tests.unit.test_input_receipts import NOW
 from tests.unit.test_supplement_input_receipts import supplement_source
 
 
-def seed(repo: SqliteBillRepository, path: Path) -> tuple[ContentVersion, int]:
+def seed(
+    repo: SqliteBillRepository, path: Path, *, queued: bool = False
+) -> tuple[ContentVersion, int]:
     (intent,) = repo.list_queued_batch_intents()
     receipt = intent.meta.prepared_input_receipt
     assert (
@@ -130,12 +135,12 @@ def seed(repo: SqliteBillRepository, path: Path) -> tuple[ContentVersion, int]:
             number="3039",
             kind=PublicationKind.STATUS_UPDATE,
             channel_id="test",
-            status=PublicationStatus.SENT,
+            status=PublicationStatus.QUEUED if queued else PublicationStatus.SENT,
             status_change_id=change.id,
-            message_id=8,
-            sent_at=NOW,
+            message_id=None if queued else 8,
+            sent_at=None if queued else NOW,
             created_at=NOW,
-            delivery=plan,
+            delivery=plan.model_copy(update={"rendered_text": ""}) if queued else plan,
         )
     )
     snapshots = (
@@ -148,8 +153,9 @@ def seed(repo: SqliteBillRepository, path: Path) -> tuple[ContentVersion, int]:
             ).model_dump_json(),
         ),
     )
-    for snapshot in snapshots:
-        repo.save_content_snapshot(snapshot)
+    if not queued:
+        for snapshot in snapshots:
+            repo.save_content_snapshot(snapshot)
     with closing(sqlite3.connect(path)) as connection:
         (application_id,) = connection.execute("SELECT id FROM result_applications").fetchone()
     return (
@@ -243,3 +249,74 @@ def test_supplement_binding_rejects_missing_and_foreign_parents(
         with pytest.raises(ValueError):
             repo.restore(broken)
         assert repo.dump() == original
+
+
+@pytest.mark.parametrize(
+    "case", ["exact", "ambiguous", "legacy_render", "missing", "digest", "rollback"]
+)
+def test_first_freeze_only_records_exact_standalone_supplement_evidence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: str
+) -> None:
+    path = tmp_path / "supplement.db"
+    with closing(supplement_source(path, parents=True)[0]) as repo:
+        expected, physical = seed(repo, path, queued=True)
+        if case == "ambiguous":
+            (source,) = repo.list_source_observations(10, "3039")
+            selection = repo.get_document_selection(source.selection_id)
+            assert selection is not None, "fixture retains its selection"
+            other = source.model_copy(
+                update={"document": source.document.model_copy(update={"compare_versions": True})}
+            )
+            repo.save_source_observation(selection, other)
+        elif case == "missing":
+            with closing(sqlite3.connect(path)) as db, db:
+                db.execute(
+                    "UPDATE llm_batch_items"
+                    " SET meta_json=json_remove(meta_json, '$.prepared_input_receipt')"
+                )
+        elif case in {"digest", "legacy_render"}:
+            original = repo.publication_by_id(physical)
+            assert original is not None and original.delivery is not None, "seed freezes the plan"
+            changes = (
+                {"destination": "digest_only"}
+                if case == "digest"
+                else {"rendered_text": "Already rendered"}
+            )
+            assert repo.replace_unattempted_delivery(
+                physical, original.delivery.model_copy(update=changes)
+            )
+        elif case == "rollback":
+
+            def reject_evidence(version: ContentVersion) -> None:
+                assert version.supplement_evidence is not None
+                raise SupplementContentEvidenceError("fixture rejects candidate evidence")
+
+            monkeypatch.setattr(repo, "save_content_version", reject_evidence)
+        pub = repo.publication_by_id(physical)
+        assert pub is not None, "seed queues the physical status update"
+        publisher = FakePublisher(publication_by_id=repo.publication_by_id)
+        poster = Poster(
+            repo,
+            publisher,
+            FixedClock(NOW),
+            gateway=FakeSejmGateway(),
+            channel_id="test",
+            max_attempts=3,
+        )
+
+        assert poster.deliver(pub) == (case != "digest")
+
+        version = repo.get_publication_content(physical)
+        if case == "exact":
+            assert version is not None, "the first freeze captures a known input and application"
+            assert version.application_ids == expected.application_ids
+            assert version.supplement_evidence == expected.supplement_evidence
+            assert version.rendered_text == publisher.texts(PublicationKind.STATUS_UPDATE)[0]
+            dump = repo.dump()
+            repo.restore(dump)
+            assert repo.dump() == dump
+            assert repo.get_publication_content(physical) == version
+        else:
+            assert version is None
+            with closing(sqlite3.connect(path)) as db:
+                assert db.execute("SELECT count(*) FROM content_snapshots").fetchone() == (0,)
