@@ -76,6 +76,7 @@ from lexinform.adapters.input_receipts import (
     validate_input_snapshots,
     validate_multipart_intent,
     validate_multipart_item,
+    validate_secondary_scan_attachment,
     validate_word_formula_intent,
 )
 from lexinform.adapters.legacy_history import (
@@ -3629,6 +3630,7 @@ class SqliteBillRepository:
 
     def save_batch_intent(self, intent: BatchIntent) -> None:
         intent.require_secondary_scan_binding()
+        validate_secondary_scan_attachment(intent)
         validate_intent_input(self._conn, intent)
         validate_multipart_intent(self._conn, intent)
         validate_word_formula_intent(self._conn, intent)
@@ -3824,6 +3826,7 @@ class SqliteBillRepository:
         ]
 
         for intent in intents:
+            validate_secondary_scan_attachment(intent)
             validate_intent_input(self._conn, intent)
             validate_word_formula_intent(self._conn, intent)
         return intents

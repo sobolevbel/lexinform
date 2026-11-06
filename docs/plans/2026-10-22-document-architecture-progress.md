@@ -13391,6 +13391,7 @@ holdout originals, the 170-case empty queue and both 177-case excerpt
 generations. This is an integrity check, and adds no human labels.
 
 [Qualification](../assets/audits/2026-11-06-corpus-review-queue-seal/qualification.json).
+Exact release verified for `01f917c8` via [CI](https://github.com/sobolevbel/lexinform/actions/runs/42287761454) and [relay](https://github.com/sobolevbel/lexinform/actions/runs/42288734301).
 
 <a id="j373"></a>
 
@@ -13410,6 +13411,7 @@ identity for these scans. A replayable original context and delivery
 proof remain separate requirements.
 
 [Qualification](../assets/audits/2026-11-06-supplement-scan-retention/qualification.json).
+Exact release verified for `f54b7361` via [CI](https://github.com/sobolevbel/lexinform/actions/runs/42288901512) and [relay](https://github.com/sobolevbel/lexinform/actions/runs/42289846734).
 
 <a id="j374"></a>
 
@@ -13487,3 +13489,21 @@ also restored the actual J376 submitted and cleaned checkpoints twice
 without changing the request or original question identity.
 
 [Qualification](../assets/audits/2026-11-06-secondary-scan-input-binding/qualification.json).
+
+<a id="j378"></a>
+
+## J378 — verify the provider attachment of frozen secondary scans
+
+The queue checks the PDF slot in recognized OpenAI and Anthropic
+envelopes against the manifested scan. It validates the request ID,
+provider and model as part of the envelope check. Save, restore and
+pre-submission reads reject a substituted attachment. Records without the manifest or a frozen payload keep their existing
+path. Valid JSON without provider envelope fields does not establish
+attachment evidence.
+
+Both builders previously accepted a different attachment with a freshly
+computed payload checksum. The new guard rejects those controls and
+preserves state on failed restore. Eight Senate and 12 supplemental
+scan lifecycle reports match J377 byte-for-byte.
+
+[Qualification](../assets/audits/2026-11-06-secondary-scan-provider-binding/qualification.json).

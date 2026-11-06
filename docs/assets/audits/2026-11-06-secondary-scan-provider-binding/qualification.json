@@ -1,0 +1,14 @@
+{
+  "baseline_accepted_rehashed_substitution": [
+    "openai",
+    "anthropic"
+  ],
+  "mismatched_restore_is_atomic": true,
+  "corpus_replay": {
+    "senate_cases": 8,
+    "senate_sha256": "b2f9514d95544bb885fe84345793f35a44b821c4088b754a2f7972ec7437870d",
+    "supplement_cases": 12,
+    "supplement_sha256": "ed05bcbb74476d03266afc534dffd008a3ff874d089645409350b2c81805ac70",
+    "prior_reports_byte_identical": true
+  }
+}

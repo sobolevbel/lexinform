@@ -664,3 +664,48 @@ def test_secondary_scan_manifest_is_bound_on_save_and_restore(
         request=frozen, meta=DigestItemMeta(memo_key="scan"), provider="openai", created_at=NOW
     )
     assert isinstance(legacy.meta, DigestItemMeta) and legacy.meta.scan_input is None
+
+
+@pytest.mark.parametrize(
+    ("provider", "factory"),
+    [("openai", offline_openai_backend), ("anthropic", offline_anthropic_backend)],
+)
+def test_secondary_provider_attachment_must_match_the_frozen_scan(
+    repo: SqliteBillRepository, provider: BatchProvider, factory: Callable[[], BatchBackend]
+) -> None:
+    request = supplement_scan_request(factory, "government_position")
+    question = request.question
+    assert isinstance(question, SupplementQuestion), "The fixture is a supplement"
+    scan = question.ctx.scan
+    assert scan is not None and scan.scan_input is not None, "The fixture has a manifested PDF"
+    assert request.payload_json is not None, "The provider builder froze the request"
+    intent = BatchIntent.from_request(
+        request=request,
+        meta=DigestItemMeta(memo_key="scan", scan_input=scan.scan_input),
+        provider=provider,
+        created_at=NOW,
+    )
+    repo.save_batch_intent(intent)
+    saved = repo.dump()
+    repo.restore(saved)
+    assert repo.dump() == saved
+
+    tampered_payload = request.payload_json.replace(scan.data, "JVBERg==")
+    assert tampered_payload != request.payload_json
+    tampered = request.model_copy(
+        update={
+            "payload_json": tampered_payload,
+            "payload_sha256": hashlib.sha256(tampered_payload.encode()).hexdigest(),
+        }
+    )
+    with pytest.raises(ValueError, match="Frozen provider attachment differs"):
+        repo.save_batch_intent(intent.model_copy(update={"request": tampered}))
+
+    forged = saved.replace(
+        serialize_intent_request(request).replace("'", "''"),
+        tampered.model_dump_json().replace("'", "''"),
+    )
+    assert forged != saved
+    with pytest.raises(ValueError):
+        repo.restore(forged)
+    assert repo.dump() == saved

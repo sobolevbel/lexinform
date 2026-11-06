@@ -311,6 +311,34 @@ def _scan_payload_slot(shell: Mapping[str, object], model: object, marker: str) 
             return False
 
 
+def validate_secondary_scan_attachment(intent: BatchIntent) -> None:
+    request, meta = intent.request, intent.meta
+    if (
+        not isinstance(meta, DigestItemMeta)
+        or meta.scan_input is None
+        or request.payload_json is None
+    ):
+        return
+    question = request.question
+    if (
+        not isinstance(question, (AmendmentsQuestion, SupplementQuestion))
+        or question.ctx.scan is None
+    ):
+        raise ValueError("Secondary scan metadata differs from its frozen question")
+    payload = read_json(request.payload_json)
+    if not isinstance(payload, dict) or not ({"method", "url", "body", "params"} & payload.keys()):
+        return
+    scan = question.ctx.scan
+    if (
+        payload.get("custom_id") != request.custom_id
+        or ("params" in payload) != (intent.provider == "anthropic")
+        or scan.media_type != "application/pdf"
+        or not _scan_payload_slot(payload, request.model, scan.data)
+    ):
+        raise ValueError("Frozen provider attachment differs from the secondary scan")
+    request.verify_payload()
+
+
 def _escaped_question_text(text: str) -> str:
     return json.dumps(text, ensure_ascii=False)[1:-1]
 
@@ -985,6 +1013,8 @@ def _input_snapshot_checks(
                             "created_at": row["created_at"],
                         }
                     )
+                    if has_scan_manifest:
+                        validate_secondary_scan_attachment(intent)
                     if has_word_formula_input(actual):
                         validate_word_formula_intent(connection, intent)
                     elif has_receipt:
