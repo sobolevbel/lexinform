@@ -150,7 +150,9 @@ def read_attempt(connection: sqlite3.Connection, row: sqlite3.Row) -> SourceCata
         ).fetchone()
         if catalog is None:
             raise ValueError("catalog attempt snapshot is missing")
-        read_catalog(catalog)
+        snapshot = read_catalog(catalog)
+        if record.terminal_part_read is not None:
+            record.terminal_part_read.validate_catalog(snapshot)
         if (
             isinstance(record.owner, BillOmissionOwner)
             and connection.execute(

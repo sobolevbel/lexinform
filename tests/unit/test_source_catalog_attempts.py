@@ -12,7 +12,11 @@ from lexinform.adapters.source_catalog_attempts import SourceCatalogRowError
 from lexinform.adapters.sqlite_repo import MIGRATIONS, SqliteBillRepository
 from lexinform.metadata_urls import METADATA_URL_POLICY_VERSION
 from lexinform.models import ArtifactMetadata, ArtifactReadReceipt, ProcessSummary, TextDocument
-from lexinform.models.source_catalog_attempts import SourceCatalogAttempt, SourceCatalogSnapshot
+from lexinform.models.source_catalog_attempts import (
+    SourceCatalogAttempt,
+    SourceCatalogSnapshot,
+    TerminalPartRead,
+)
 from lexinform.models.source_omissions import (
     BillOmissionOwner,
     SourceOmissionParent,
@@ -46,6 +50,69 @@ def populated(repo: SqliteBillRepository) -> tuple[SourceCatalogSnapshot, Source
     )
     repo.save_source_catalog_attempt(attempt, recorded_at=NOW)
     return catalog, attempt
+
+
+def test_terminal_part_attempt_retains_its_exact_catalog_slot(repo: SqliteBillRepository) -> None:
+    required = "https://source.test/required.pdf"
+    amendment = "https://source.test/amendment.pdf"
+    catalog = SourceCatalogSnapshot.of(
+        TextDocument(
+            url="https://source.test/root.pdf",
+            kind="print",
+            required_urls=(required,),
+            alternatives=(
+                TextDocument(
+                    url="https://source.test/alternative.pdf",
+                    kind="print",
+                    amendment_urls=(amendment,),
+                ),
+            ),
+        )
+    )
+    repo.save_source_catalog_snapshot(catalog, recorded_at=NOW)
+    legacy = SourceCatalogAttempt.of(OWNER, catalog.catalog_id, "FileNotFoundError")
+    assert "terminal_part_read" not in legacy.model_dump(mode="json")
+    for part in (
+        TerminalPartRead(
+            address=(),
+            relation="required",
+            position=0,
+            requested_url_sha256=hashlib.sha256(required.encode()).hexdigest(),
+            reason="missing_response",
+        ),
+        TerminalPartRead(
+            address=(0,),
+            relation="amendment",
+            position=0,
+            requested_url_sha256=hashlib.sha256(amendment.encode()).hexdigest(),
+            reason="read_error",
+        ),
+    ):
+        attempt = SourceCatalogAttempt.of(
+            OWNER, catalog.catalog_id, "FileNotFoundError", terminal_part_read=part
+        )
+        assert attempt.attempt_id != legacy.attempt_id
+        repo.save_source_catalog_attempt(attempt, recorded_at=NOW)
+        stored = repo.get_source_catalog_attempt(attempt.attempt_id)
+        assert stored == attempt.model_copy(update={"recorded_at": NOW})
+        for changes in (
+            {"address": (1,)},
+            {"position": 1},
+            {"requested_url_sha256": BODY},
+        ):
+            invalid = SourceCatalogAttempt.of(
+                OWNER,
+                catalog.catalog_id,
+                "FileNotFoundError",
+                terminal_part_read=part.model_copy(update=changes),
+            )
+            before = repo.dump()
+            with pytest.raises(SourceCatalogRowError):
+                repo.save_source_catalog_attempt(invalid, recorded_at=NOW)
+            assert repo.dump() == before
+    before = repo.dump()
+    repo.restore(before)
+    assert repo.dump() == before
 
 
 def test_catalog_retains_complete_ordered_safe_tree_and_quiet_shared_attempts(

@@ -1,11 +1,13 @@
 """Safe pre-return source attempts retain an actual catalog without inventing a selection."""
 
 import datetime as dt
+import hashlib
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from lexinform.metadata_urls import METADATA_URL_POLICY_VERSION, metadata_url_decision
+from lexinform.models.candidate_trace import ReadExclusionReason
 from lexinform.models.sejm import TextDocument
 from lexinform.models.source_omissions import (
     BillOmissionOwner,
@@ -171,6 +173,29 @@ class SourceCatalogSnapshot(_Fact):
         return self
 
 
+class TerminalPartRead(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    address: tuple[Count, ...] = Field(max_length=64)
+    relation: Literal["required", "amendment"]
+    position: Count
+    requested_url_sha256: Sha256
+    reason: Literal[ReadExclusionReason, "source_unavailable"]
+
+    def validate_catalog(self, catalog: SourceCatalogSnapshot) -> None:
+        for descriptor in catalog.descriptors:
+            if descriptor.address == self.address:
+                doc = descriptor.document
+                urls = doc.required_urls if self.relation == "required" else doc.amendment_urls
+                if self.position < len(urls) and (
+                    hashlib.sha256(urls[self.position].encode()).hexdigest()
+                    == self.requested_url_sha256
+                ):
+                    return
+                break
+        raise ValueError("terminal part read must match a retained catalog relation")
+
+
 class SourceCatalogAttempt(_Fact):
     attempt_id: Annotated[str, Field(pattern=r"^source-attempt-v1:[0-9a-f]{64}$")]
     owner: AttemptOwner
@@ -183,6 +208,9 @@ class SourceCatalogAttempt(_Fact):
     parent_coverage: Literal["complete", "partial"]
     parent_count: Count
     parents_sha256: Sha256
+    terminal_part_read: TerminalPartRead | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @classmethod
     def of(
@@ -191,6 +219,8 @@ class SourceCatalogAttempt(_Fact):
         catalog_id: str,
         error_class: str,
         parents: tuple[SourceOmissionParent, ...] = (),
+        *,
+        terminal_part_read: TerminalPartRead | None = None,
     ) -> Self:
         if any(parent.source_relation != "unknown" for parent in parents):
             raise ValueError("pre-return attempts have no selected source observation")
@@ -217,6 +247,8 @@ class SourceCatalogAttempt(_Fact):
                     [item.model_dump(mode="json") for item in full]
                 ),
             }
+            if terminal_part_read is not None:
+                values["terminal_part_read"] = terminal_part_read.model_dump(mode="json")
             values["attempt_id"] = "source-attempt-v1:" + source_omission_sha256(values)
             try:
                 return cls.model_validate(values)

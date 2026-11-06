@@ -11996,3 +11996,26 @@ second target representation, pinning original delivery payloads, or creating
 retrospective handoffs. Modern targets continue to use their separate durable
 work reference. DA6.6 remains open for other retention dependencies.
 [Qualification](../assets/audits/2026-11-06-legacy-revision-retention/qualification.json).
+
+<a id="j305"></a>
+
+## J305 — read terminal part failures in safe catalog attempts
+
+The catalog attempt reader accepts an optional terminal read detail for a
+required part or self-amendment. It binds the catalog descriptor address,
+relation, position and exact URL hash. A missing descriptor, wrong position
+or different URL hash makes the attempt invalid. The detail carries a fixed
+read reason and leaves selection unknown. It is absent from legacy JSON and
+its identity calculation when missing. The SQL schema and read policy stay
+the same.
+
+The reader was qualified with explicit test attempts built from the pinned
+term 8 druk 108 multipart catalog and term 10 druk 2320 self-amendment catalog
+from J299 and J300. Both typed attempts and both legacy forms survived two
+restores with identical SQL. Unit controls rejected invalid addresses,
+positions and hashes without changing the repository. The pinned state dump
+from J303 also restored twice byte-for-byte and had zero catalog attempts.
+
+Runtime capture stays inactive until this reader's deployment is verified.
+Older readers reject the new field once a writer persists it. DA4.1 and
+DA4.4 remain open for the producer and its native failure qualification.
