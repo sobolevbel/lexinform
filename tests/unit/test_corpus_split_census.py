@@ -140,3 +140,39 @@ def test_rejects_started_bytes_changed_after_seal_verification(
         audit([queue], output)
 
     assert not output.exists()
+
+
+def test_overlap_follows_alternating_raw_aliases_and_recorded_groups(tmp_path: Path) -> None:
+    holdout = seal(
+        tmp_path,
+        "holdout",
+        "holdout",
+        {
+            "cases": [
+                holdout_case(),
+                {**holdout_case(), "id": "rpw:bridge", "group": "diagnostic-group"},
+                {
+                    **holdout_case(),
+                    "id": "rpw:separate",
+                    "group": "separate",
+                    "originals": [{"sha256": "c" * 64}],
+                },
+            ]
+        },
+    )
+    annotations = seal(
+        tmp_path,
+        "annotations",
+        "annotations",
+        {
+            "cases": [
+                {"id": "doc:known", "group": "diagnostic-group", "questions": {"role": "unknown"}}
+            ]
+        },
+    )
+
+    result = audit([holdout, annotations], tmp_path / "census.json")
+
+    assert result["reserved_overlap_case_ids"] == ["rpw:bridge", "rpw:unseen"]
+    assert result["exact_case_ids"] == 4
+    assert result["case_components_after_raw_aliases"] == 3

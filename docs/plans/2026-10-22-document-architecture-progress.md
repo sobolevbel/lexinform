@@ -13224,6 +13224,7 @@ The prior reader restored the ordinary dump and rejected the enriched
 dump atomically.
 
 [Qualification](../assets/audits/2026-11-06-word-formula-companion-reader/qualification.json).
+Exact release verified for `b57d31e8` via [CI](https://github.com/sobolevbel/lexinform/actions/runs/42275732868) and [relay](https://github.com/sobolevbel/lexinform/actions/runs/42277033667).
 
 <a id="j364"></a>
 
@@ -13239,6 +13240,7 @@ checkpoints exactly. The single-intent samples saved 408,273–2,285,529 SQL
 bytes and 291,860–1,636,748 gzip bytes.
 
 [Qualification](../assets/audits/2026-11-06-supplement-scan-writer/qualification.json).
+Exact release verified for `aa79cc2f` via [CI](https://github.com/sobolevbel/lexinform/actions/runs/42277290923) and [relay](https://github.com/sobolevbel/lexinform/actions/runs/42278544765).
 
 <a id="j365"></a>
 
@@ -13260,6 +13262,7 @@ Eight refusal controls fell back to the ordinary request. Mock submission
 and restore used the exact frozen requests.
 
 [Qualification](../assets/audits/2026-11-06-word-formula-companion-writer/qualification.json).
+Exact release verified for `d97b8328` via [CI](https://github.com/sobolevbel/lexinform/actions/runs/42278730632) and [relay](https://github.com/sobolevbel/lexinform/actions/runs/42279453151).
 
 <a id="j366"></a>
 
@@ -13296,3 +13299,19 @@ The previous release candidate also restored the actual J365 enabled
 queue twice with the same frozen request and dump bytes.
 
 [Qualification](../assets/audits/2026-11-06-word-nary-source/qualification.json).
+
+<a id="j368"></a>
+
+## J368 — detect indirect corpus split overlap
+
+The census follows known byte aliases and recorded groups through the
+same connected component when looking for holdout leakage. It still
+counts raw-byte components separately. These links are exclusion
+evidence and assign no new initiative identities or human labels.
+
+A sealed regression control found one reserved case the previous census
+missed through a byte alias followed by a recorded group. An unrelated
+reserved case stayed separate. The five real J344 seals returned the
+same report byte-for-byte, including 180 cases and three reserved cases.
+
+[Qualification](../assets/audits/2026-11-06-corpus-split-overlap/qualification.json).

@@ -117,11 +117,21 @@ def audit(runs: list[tuple[Path, str]], output: Path) -> dict[str, Any]:
             identity = parent[identity]
         return identity
 
-    for identities in aliases.values():
+    def connect(identities: set[str]) -> None:
         anchor, *others = sorted(identities)
         for other in others:
             left, right = sorted((representative(anchor), representative(other)))
             parent[right] = left
+
+    for identities in aliases.values():
+        connect(identities)
+    raw_component_count = len({representative(key) for key in case_groups})
+    group_members: dict[str, set[str]] = defaultdict(set)
+    for identity, groups in case_groups.items():
+        for group in groups:
+            group_members[group].add(identity)
+    for identities in group_members.values():
+        connect(identities)
 
     review_records: dict[str, dict[str, Any]] = defaultdict(dict)
     review_targets: dict[str, dict[str, Any]] = {}
@@ -158,11 +168,7 @@ def audit(runs: list[tuple[Path, str]], output: Path) -> dict[str, Any]:
     reserved = {key for key, suites in case_suites.items() if "holdout" in suites}
     diagnostic_components = {representative(key) for key in diagnostics}
     diagnostic_groups = set().union(*(case_groups[key] for key in diagnostics))
-    overlaps = {
-        key
-        for key in reserved
-        if representative(key) in diagnostic_components or case_groups[key] & diagnostic_groups
-    }
+    overlaps = {key for key in reserved if representative(key) in diagnostic_components}
     labels: Counter[str] = Counter()
     independent = set()
     for identity, reviews in review_records.items():
@@ -183,7 +189,7 @@ def audit(runs: list[tuple[Path, str]], output: Path) -> dict[str, Any]:
         "inputs": {pin: suite for pin, (suite, _) in sealed.items()},
         "runs_by_suite": dict(counts),
         "exact_case_ids": len(case_groups),
-        "case_components_after_raw_aliases": len({representative(key) for key in case_groups}),
+        "case_components_after_raw_aliases": raw_component_count,
         "recorded_groups": len(set().union(*case_groups.values())),
         "case_ids_with_conflicting_groups": sorted(
             key for key, groups in case_groups.items() if len(groups) > 1
