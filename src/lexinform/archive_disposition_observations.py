@@ -8,7 +8,10 @@ from typing import Literal
 from lexinform.archive_dispositions import MAX_ARCHIVE_VALIDATION_BYTES, enrich_archive_trace
 from lexinform.archive_policy_capture import ArchivePolicyDecision
 from lexinform.models import ArchiveMemberDisposition, ArtifactIdentity, CandidateDispositionTrace
-from lexinform.models.candidate_trace import ArchiveVersionDecisionEvidence
+from lexinform.models.candidate_trace import (
+    ArchiveVersionConflictEvidence,
+    ArchiveVersionDecisionEvidence,
+)
 from lexinform.models.physical_inventory import (
     PhysicalContainerExecution,
     PhysicalGraph,
@@ -220,12 +223,17 @@ class ArchiveDispositionAccumulator:
         self._bytes = 2
         self._seen = False
         self.version_evidence: ArchiveVersionDecisionEvidence | None = None
+        self.conflict_evidence: ArchiveVersionConflictEvidence | None = None
+        self._conflict_attempts = 0
         self._unavailable = False
         self._failed = False
         self._walk: Literal["finished", "interrupted"] = "finished"
         self._unvisited: Literal["none_known", "known"] = "none_known"
 
     def observe(self, phase: Phase, index: int, root: ArchiveRootObservation) -> None:
+        if phase == "version_comparison" and self._conflict_attempts < 2:
+            with suppress(Exception):
+                self._observe_conflict(index, root)
         if self._unavailable or self._failed:
             return
         try:
@@ -258,6 +266,31 @@ class ArchiveDispositionAccumulator:
             if first_root:
                 with suppress(Exception):
                     self.version_evidence = self._version_evidence(root)
+
+    def _observe_conflict(self, index: int, root: ArchiveRootObservation) -> None:
+        if not root.completed or not root.policy:
+            return
+        slots = sorted(decision.index for decision in root.policy if decision.compared_in_conflict)
+        if len(slots) != 2:
+            return
+        self._conflict_attempts += 1
+        if self._conflict_attempts > 1:
+            self.conflict_evidence = None
+            return
+        packet = _packet(root)
+        if (
+            packet is None
+            or root.physical is None
+            or root.physical.unavailable is not None
+            or root.physical.limitations
+            or packet.capture.extraction_id is None
+        ):
+            return
+        self.conflict_evidence = ArchiveVersionConflictEvidence(
+            capture_id=packet.capture.capture_id,
+            index=index,
+            compared_slots=(slots[0], slots[1]),
+        )
 
     def _version_evidence(
         self, root: ArchiveRootObservation

@@ -162,6 +162,7 @@ def _select_parts(
     annexes: list[tuple[int, DocumentPart]] = []
     decisions: dict[int, tuple[PolicyOutcome, ArchiveMemberPolicyReason]] = {}
     version_choice: ArchiveVersionChoice | None = None
+    conflict_slots: tuple[int, ...] = ()
 
     def note(index: int, outcome: PolicyOutcome, reason: ArchiveMemberPolicyReason) -> None:
         if decision_sink is not None:
@@ -180,6 +181,7 @@ def _select_parts(
                             part.sha256,
                             part.text_sha256,
                             version_choice if reason == "selected_main" else None,
+                            compared_in_conflict=index in conflict_slots,
                         )
                     )
             except Exception:
@@ -247,6 +249,8 @@ def _select_parts(
         comparison = compare_version_decision([p.text for _, p in confirmed])
         indices = comparison.matching_indices
         if not indices:
+            if decision_sink is not None and len(confirmed) == 2:
+                conflict_slots = (confirmed[0][0], confirmed[1][0])
             for index, _ in (*annexes, *supporting):
                 note(index, "policy_excluded", "version_conflict")
             for index, _ in confirmed:

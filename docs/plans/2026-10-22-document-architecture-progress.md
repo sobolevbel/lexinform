@@ -12642,3 +12642,22 @@ The manually attached profile added 142 bytes to the trace and survived
 two exact restores. The legacy doctor output remained byte-identical.
 Automatic capture is inactive.
 [Qualification](../assets/audits/2026-11-06-archive-conflict-reader/qualification.json).
+
+<a id="j334"></a>
+
+## J334 — append the exact nested archive conflict
+
+The chooser marks the two members it actually compared. The deferred
+source writer links one unambiguous two-member archive conflict to
+its physical execution after the normal history write. Multiple
+eligible conflicting roots leave this optional field absent.
+
+The five pinned official ZIPs for RCL 12390551 stage 9 used the same
+download path. The nested 749446 conflict retained slots 1 and 3 with
+its original physical recording time. Cached repeat, two restores
+and the base dump after an injected optional write failure were exact.
+The broad archive pair kept its decisions and physical observations
+after accounting for the updated code fingerprint.
+All 4,276 cached candidate decisions, 7,599 input hashes and 1,383
+missing inputs matched the preceding reader.
+[Qualification](../assets/audits/2026-11-06-archive-conflict-writer/qualification.json).

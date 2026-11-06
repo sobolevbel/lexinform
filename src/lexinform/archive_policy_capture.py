@@ -32,6 +32,7 @@ class ArchivePolicyDecision:
     leaf_sha256: str | None
     text_sha256: str
     version_choice: ArchiveVersionChoice | None = None
+    compared_in_conflict: bool = False
 
 
 _CURRENT: ContextVar[ArchivePolicyCapture | None] = ContextVar(

@@ -78,6 +78,8 @@ from lexinform.models.candidate_trace import (
     MAX_SUPPORTING_EXCLUSIONS,
     MAX_VERSION_DECISION_ROWS,
     AmendmentPartGap,
+    ArchiveVersionConflictEvidence,
+    ArchiveVersionDecisionEvidence,
     CandidateTraceReason,
     CandidateTraceResult,
     NormativeAnnexGap,
@@ -583,13 +585,16 @@ class TextLoader:
                 omission=observation.record if observation is not None else None,
             )
         defer_archive_trace = None
-        if file.archive_version_evidence is not None and file.candidate_trace is not None:
+        evidence = file.archive_version_evidence
+        if evidence is not None and file.candidate_trace is not None:
             with suppress(Exception):
+                proof_field = (
+                    "archive_version_conflict"
+                    if isinstance(evidence, ArchiveVersionConflictEvidence)
+                    else "archive_version_decision"
+                )
                 enriched = CandidateDispositionTrace.model_validate(
-                    {
-                        **file.candidate_trace.model_dump(),
-                        "archive_version_decision": file.archive_version_evidence,
-                    }
+                    {**file.candidate_trace.model_dump(), proof_field: evidence}
                 )
                 defer_archive_trace = partial(
                     self._defer_archive_trace, file.candidate_trace.trace_id, enriched
@@ -968,9 +973,13 @@ class TextLoader:
             and trace.archive_members is None
         ):
             trace = None
-        archive_version_evidence = None
-        if trace is not None and trace.candidate_count == 1 and attempts is not None:
-            archive_version_evidence = attempts.version_evidence
+        archive_version_evidence: (
+            ArchiveVersionConflictEvidence | ArchiveVersionDecisionEvidence | None
+        ) = None
+        if trace is not None and attempts is not None:
+            archive_version_evidence = attempts.conflict_evidence
+            if archive_version_evidence is None and trace.candidate_count == 1:
+                archive_version_evidence = attempts.version_evidence
         return selected, replace(
             loaded,
             archive_version_evidence=archive_version_evidence,

@@ -6,6 +6,7 @@ from typing import Annotated, Literal, Self, get_args
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from lexinform.models.candidate_trace import (
+    ArchiveVersionConflictEvidence,
     ArchiveVersionDecisionEvidence,
     CandidateDispositionTrace,
 )
@@ -167,9 +168,9 @@ class LoadedFile:
     first_pdf_page: PdfPageText | None = field(default=None, compare=False, repr=False)
     complete_pdf_pages: int | None = field(default=None, compare=False, repr=False)
     opaque_failure_prose: bool = field(default=False, compare=False, repr=False)
-    archive_version_evidence: ArchiveVersionDecisionEvidence | None = field(
-        default=None, compare=False, repr=False
-    )
+    archive_version_evidence: (
+        ArchiveVersionDecisionEvidence | ArchiveVersionConflictEvidence | None
+    ) = field(default=None, compare=False, repr=False)
 
     @property
     def is_scan(self) -> bool:
