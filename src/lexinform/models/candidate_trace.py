@@ -349,6 +349,60 @@ class RequiredPartExclusions(BaseModel):
         return self
 
 
+MAX_SUPPORTING_EXCLUSIONS = 8
+SupportingExclusionReason = Literal[
+    "draft_regulation",
+    "returned_no_text",
+    "download_size_limit",
+    "missing_response",
+    "refused_response",
+    "pre_send_rejected",
+    "read_error",
+]
+
+
+class SupportingPartExclusion(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    phase: Literal["version_comparison", "fallback"]
+    index: Position
+    extra_index: Position
+    reason: SupportingExclusionReason
+    file_sha256: Sha256 | None = Field(default=None, exclude_if=lambda value: value is None)
+
+    @model_validator(mode="after")
+    def observed_body(self) -> Self:
+        if (
+            self.reason not in ("draft_regulation", "returned_no_text")
+            and self.file_sha256 is not None
+        ):
+            raise ValueError("A failed supporting read cannot claim a complete body")
+        return self
+
+
+class SupportingPartExclusions(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    rows: tuple[SupportingPartExclusion, ...] = Field(
+        min_length=1, max_length=MAX_SUPPORTING_EXCLUSIONS
+    )
+    omitted: int = Field(default=0, ge=0, strict=True)
+
+    @model_validator(mode="after")
+    def ordered_prefix(self) -> Self:
+        first = self.rows[0]
+        positions = [row.extra_index for row in self.rows]
+        if (
+            any((row.phase, row.index) != (first.phase, first.index) for row in self.rows)
+            or positions != sorted(set(positions))
+            or (self.omitted and len(self.rows) != MAX_SUPPORTING_EXCLUSIONS)
+        ):
+            raise ValueError(
+                "Supporting exclusions require an ordered bounded prefix of one candidate"
+            )
+        return self
+
+
 class RequiredPartGap(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
@@ -630,6 +684,10 @@ class CandidateDispositionTrace(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    supporting_exclusions: SupportingPartExclusions | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     @classmethod
     def from_decisions(
         cls,
@@ -759,6 +817,8 @@ class CandidateDispositionTrace(BaseModel):
             validate_sejm_adopted_text(self, self.sejm_adopted_text)
         if self.sejm_committee_recommendation is not None:
             validate_sejm_committee_recommendation(self, self.sejm_committee_recommendation)
+        if self.supporting_exclusions is not None:
+            validate_supporting_exclusions(self, self.supporting_exclusions)
         if len(self.model_dump_json(exclude_defaults=True).encode()) > MAX_CANDIDATE_TRACE_BYTES:
             raise ValueError("candidate trace exceeds its metadata limit")
         return self
@@ -786,6 +846,7 @@ class CandidateDispositionTrace(BaseModel):
             and self.sejm_print_representation is None
             and self.sejm_adopted_text is None
             and self.sejm_committee_recommendation is None
+            and self.supporting_exclusions is None
         )
 
 
@@ -796,6 +857,35 @@ def _parent_disposition(
         (item for item in trace.dispositions if (item.phase, item.index) == (phase, index)),
         None,
     )
+
+
+def validate_supporting_exclusions(
+    trace: CandidateDispositionTrace, exclusions: SupportingPartExclusions
+) -> None:
+    request = trace.requested_document
+    first = exclusions.rows[0]
+    parent = _parent_disposition(trace, first.phase, first.index)
+    reason = (
+        "version_choice" if first.phase == "version_comparison" else "first_acceptable_candidate"
+    )
+    if (
+        request is None
+        or first.index >= trace.candidate_count
+        or parent is None
+        or parent.outcome != "selected"
+        or parent.reason != reason
+        or trace.result != "selected"
+        or trace.reason != reason
+        or any((trace.required_part_gap, trace.normative_annex_gap, trace.amendment_part_gap))
+    ):
+        raise ValueError("Supporting exclusions require the selected outer candidate")
+    extras = (request, *request.alternatives)[first.index].extra_urls
+    if exclusions.omitted > len(extras) - exclusions.rows[-1].extra_index - 1 or any(
+        row.extra_index >= len(extras)
+        or not metadata_url_decision(extras[row.extra_index]).admitted
+        for row in exclusions.rows
+    ):
+        raise ValueError("Supporting exclusion exceeds its admitted extra URL namespace")
 
 
 def validate_sejm_original_proposal(

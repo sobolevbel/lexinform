@@ -106,7 +106,11 @@ def test_class_only_support_failure_keeps_safe_graph_and_business_strings() -> N
     assert not loaded.opaque_failure_prose
     assert loaded.text == extractor().extract_document(data).text
     assert loaded.selection.rejected == (f"{support}: KeyError",)
-    assert loaded.candidate_trace is None and isinstance(captured, DocumentSourceRead)
+    assert isinstance(captured, DocumentSourceRead)
+    trace = captured.candidate_trace
+    assert trace is not None and trace.supporting_exclusions is not None
+    (exclusion,) = trace.supporting_exclusions.rows
+    assert exclusion.reason == "read_error" and exclusion.file_sha256 is None
     assert captured.artifacts and captured.reads and captured.extractions
     assert loader.read_metadata_url_omissions() is None
 

@@ -352,6 +352,8 @@ def candidate_trace_inventory(
     annex_reasons: Counter[str] = Counter()
     required_reasons: Counter[str] = Counter()
     amendment_reasons: Counter[str] = Counter()
+    supporting_reasons: Counter[str] = Counter()
+    supporting_omitted = 0
     try:
         if "candidate_disposition_traces" not in unavailable:
             report["trace_rows"] = report["valid_trace_rows"] = 0
@@ -375,6 +377,11 @@ def candidate_trace_inventory(
                             required_reasons[trace.required_part_gap.reason] += 1
                         if trace.amendment_part_gap is not None:
                             amendment_reasons[trace.amendment_part_gap.reason] += 1
+                        if trace.supporting_exclusions is not None:
+                            supporting_reasons.update(
+                                row.reason for row in trace.supporting_exclusions.rows
+                            )
+                            supporting_omitted += trace.supporting_exclusions.omitted
         if "source_candidate_traces" not in unavailable:
             report["link_rows"] = report["checked_links"] = report["unknown_links"] = 0
             reader = ContentSourceRows(connection)
@@ -419,6 +426,17 @@ def candidate_trace_inventory(
             **(
                 {"amendment_part": _gap_counts(valid, amendment_reasons)}
                 if amendment_reasons
+                else {}
+            ),
+            **(
+                {
+                    "supporting_exclusions": {
+                        "retained_rows": supporting_reasons.total(),
+                        "omitted_rows": supporting_omitted,
+                        "reasons": dict(sorted(supporting_reasons.items())),
+                    }
+                }
+                if supporting_reasons
                 else {}
             ),
             "scope": (

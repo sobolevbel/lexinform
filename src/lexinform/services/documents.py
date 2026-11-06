@@ -16,7 +16,7 @@ from collections import Counter
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import AbstractContextManager, contextmanager, suppress
 from contextvars import ContextVar, Token
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Literal
 from urllib.parse import urlparse
 
@@ -70,11 +70,15 @@ from lexinform.models import (
     TextDocument,
 )
 from lexinform.models.candidate_trace import (
+    MAX_SUPPORTING_EXCLUSIONS,
     AmendmentPartGap,
     CandidateTraceReason,
     CandidateTraceResult,
     NormativeAnnexGap,
     RequiredPartGap,
+    SupportingExclusionReason,
+    SupportingPartExclusion,
+    SupportingPartExclusions,
 )
 from lexinform.models.document_reads import DocumentPhysicalDiagnostics
 from lexinform.models.document_reads import LoadedFile as LoadedFile
@@ -141,6 +145,25 @@ class _CompositionCapture:
     normative_gap: NormativeAnnexGap | None = None
     required_gap: RequiredPartGap | None = None
     amendment_gap: AmendmentPartGap | None = None
+    supporting: list[SupportingPartExclusion] = field(default_factory=list)
+    supporting_omitted: int = 0
+
+    def exclude_support(
+        self,
+        phase: Phase,
+        index: int,
+        position: int,
+        reason: SupportingExclusionReason,
+        sha256: str | None = None,
+    ) -> None:
+        if len(self.supporting) == MAX_SUPPORTING_EXCLUSIONS:
+            self.supporting_omitted += 1
+            return
+        self.supporting.append(
+            SupportingPartExclusion(
+                phase=phase, index=index, extra_index=position, reason=reason, file_sha256=sha256
+            )
+        )
 
 
 @dataclass(frozen=True)
@@ -776,7 +799,7 @@ class TextLoader:
                             file_sha256=None if file.oversize else file.sha256,
                         )
                 return bundle
-        for url in document.extra_urls:
+        for position, url in enumerate(document.extra_urls):
             try:
                 loaded = self.read(url)
             except ServiceUnavailableError:
@@ -784,8 +807,38 @@ class TextLoader:
             except Exception as exc:
                 log.warning("%s unreadable (%s: %s); skipped", url, type(exc).__name__, exc)
                 bundle = supporting_failure(bundle, url, type(exc).__name__)
+                if attempt is not None:
+                    capture, phase, index = attempt
+                    with suppress(Exception):
+                        outcome, _, _ = download_failure(exc)
+                        capture.exclude_support(
+                            phase,
+                            index,
+                            position,
+                            "missing_response"
+                            if outcome == "missing"
+                            else "refused_response"
+                            if outcome == "refused"
+                            else "pre_send_rejected"
+                            if outcome == "pre_send_rejected"
+                            else "read_error",
+                        )
                 continue
-            bundle = supporting_part(bundle, url, loaded)
+            composed = supporting_part(bundle, url, loaded)
+            if attempt is not None and composed.missing != bundle.missing:
+                capture, phase, index = attempt
+                with suppress(Exception):
+                    reason: SupportingExclusionReason = (
+                        "download_size_limit"
+                        if loaded.oversize
+                        else "returned_no_text"
+                        if loaded.text is None
+                        else "draft_regulation"
+                    )
+                    capture.exclude_support(
+                        phase, index, position, reason, None if loaded.oversize else loaded.sha256
+                    )
+            bundle = composed
         return finish_bundle(bundle, document)
 
     def select_document(
@@ -841,6 +894,17 @@ class TextLoader:
                 with suppress(Exception):
                     trace = CandidateDispositionTrace.model_validate(
                         {**trace.model_dump(), "amendment_part_gap": composition.amendment_gap}
+                    )
+            if composition.supporting:
+                with suppress(Exception):
+                    trace = CandidateDispositionTrace.model_validate(
+                        {
+                            **trace.model_dump(),
+                            "supporting_exclusions": SupportingPartExclusions(
+                                rows=tuple(composition.supporting),
+                                omitted=composition.supporting_omitted,
+                            ),
+                        }
                     )
         if (
             not retain_routine_trace

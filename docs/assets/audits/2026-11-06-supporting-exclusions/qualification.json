@@ -1,0 +1,136 @@
+{
+  "baseline": "900cb6990e03ac4c53049c8bab06a14ad85dc474",
+  "restores_per_case": 2,
+  "rcl_catalog_sha256": "d688d78a6fce24fcc002804898ac1559872c5779b5fb4cec7a930e0639a71ab2",
+  "rcl_body_pins": {
+    "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587729.pdf": "c4568d7582962e62ac39d5d084936424f19edebae58b8925add7422d90360a5e",
+    "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587730.pdf": "d3a2c333b29c0d70e8c2369c7c6dcedf547bbd4d1f86496268df0a1a477d3607"
+  },
+  "cases": {
+    "empty": {
+      "calls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587729.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587730.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587732.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587731.pdf"
+      ],
+      "exclusions": {
+        "rows": [
+          {
+            "extra_index": 0,
+            "file_sha256": "14bcd090baf31edba64e9cbd8cdfc15f943344aa72cb3675ad8e91bfcbce03ad",
+            "index": 0,
+            "phase": "version_comparison",
+            "reason": "returned_no_text"
+          },
+          {
+            "extra_index": 1,
+            "file_sha256": "14bcd090baf31edba64e9cbd8cdfc15f943344aa72cb3675ad8e91bfcbce03ad",
+            "index": 0,
+            "phase": "version_comparison",
+            "reason": "returned_no_text"
+          }
+        ]
+      },
+      "gzip_bytes": 8804,
+      "limit": 8388608,
+      "normalized": "c339a18eeee1a33596ccdb9e49847c0934af91a9bb51268d4074823b7336ddcb",
+      "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587729.pdf",
+      "selection_id": "selection-v1:9e21785f73c3d4b63c36abb262f6711bd1b65bffac85b2b80e000d57e48a01fb",
+      "sql_bytes": 46282,
+      "state": "unverified",
+      "text_sha256": "499cea3cfb7587e1354f857e8e60ca5660157ca780c273a23b7f1a02d79d215e",
+      "trace_id": "candidate-trace-v1:04d9e32e65be3750b45c413a6eb19689876efca6efc3815264e82393e817d65d",
+      "sql_delta_bytes": 1693,
+      "gzip_delta_bytes": 346
+    },
+    "http_missing": {
+      "calls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587729.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587730.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587732.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587731.pdf"
+      ],
+      "exclusions": {
+        "rows": [
+          {
+            "extra_index": 0,
+            "index": 0,
+            "phase": "version_comparison",
+            "reason": "missing_response"
+          },
+          {
+            "extra_index": 1,
+            "index": 0,
+            "phase": "version_comparison",
+            "reason": "missing_response"
+          }
+        ]
+      },
+      "gzip_bytes": 8746,
+      "limit": 8388608,
+      "normalized": "1efbbc04ba144efd033f14e6c1831b529b64d4a06e1014917f35c2ee26dfef88",
+      "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587729.pdf",
+      "selection_id": "selection-v1:6ab345ebd5095afb33b19ecb9dd97ed5686c67a26ee88117b1a451821299206b",
+      "sql_bytes": 46112,
+      "state": "unverified",
+      "text_sha256": "499cea3cfb7587e1354f857e8e60ca5660157ca780c273a23b7f1a02d79d215e",
+      "trace_id": "candidate-trace-v1:5dc9367df58f8bc2a6161a1a5815f64e836a74627cb1e2ec1497f32849442e26",
+      "sql_delta_bytes": 1531,
+      "gzip_delta_bytes": 284
+    },
+    "local_missing": {
+      "calls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587729.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587730.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587732.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587731.pdf"
+      ],
+      "exclusions": {
+        "rows": [
+          {
+            "extra_index": 0,
+            "index": 0,
+            "phase": "version_comparison",
+            "reason": "read_error"
+          },
+          {
+            "extra_index": 1,
+            "index": 0,
+            "phase": "version_comparison",
+            "reason": "read_error"
+          }
+        ]
+      },
+      "gzip_bytes": 8747,
+      "limit": 8388608,
+      "normalized": "2407edbce473dc40b9a6651b003467ae1a6166ccc7b368417688987bd621e599",
+      "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587729.pdf",
+      "selection_id": "selection-v1:f8d8005c2fcc3b7f32247cb356ecb2933e54f2e240799e2cef956aa5693a74fb",
+      "sql_bytes": 46108,
+      "state": "unverified",
+      "text_sha256": "499cea3cfb7587e1354f857e8e60ca5660157ca780c273a23b7f1a02d79d215e",
+      "trace_id": "candidate-trace-v1:651108570ea624ac5d5c2c4122de36055ece0b358b6bd8fafbc43e6fcf7e9b57",
+      "sql_delta_bytes": 1519,
+      "gzip_delta_bytes": 281
+    },
+    "required_block": {
+      "calls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587729.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587730.pdf"
+      ],
+      "exclusions": null,
+      "gzip_bytes": 7666,
+      "limit": 170000,
+      "normalized": "42950c86f9527704c74774ab4a6ab49d990b16a7dfdc0c8653959d573d65f7bb",
+      "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587729.pdf",
+      "selection_id": "selection-v1:159b34efc3bc9520ee673ac2a12b13dfa6e1843df5f307e4ca20454d3a6ca993",
+      "sql_bytes": 38769,
+      "state": "waiting",
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "trace_id": "candidate-trace-v1:f275c01189b3216d0be2f3321fff711615b41806c477d04fb0b259fd0b5aa116",
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    }
+  }
+}

@@ -11901,3 +11901,26 @@ still propagated. No model requests were made.
 and [pinned originals](../assets/audits/2026-11-05-offline-provenance-evidence/case.json).
 
 DA4.1 and DA4.4 remain open for the other decision provenance gaps.
+
+<a id="j301"></a>
+
+## J301 — retain bounded supporting-file exclusion reasons
+
+The trace identifies excluded supporting files by position in the
+actual selected candidate. It distinguishes a draft regulation, a
+returned file without text, size refusal, known missing or refused
+response, pre-send rejection and generic read failure. The existing
+trace cap still applies. Within the field, the first eight exclusions
+are retained in source order with an omitted count. The doctor reports
+only validated retained reasons and the omitted count.
+
+The paired replay used the pinned RCL 12366453 stage and its existing
+body pins. The local inputs lacked two optional source bodies.
+Separate controls used a typed 404, damaged returned PDFs and a
+required-annex size refusal. The selected source, text, read order and
+SQL outside the new trace and link stayed exact. Every checkpoint
+restored twice. The mandatory-annex control never reached optional
+reads and kept the earlier trace unchanged. No model requests were made.
+[Qualification](../assets/audits/2026-11-06-supporting-exclusions/qualification.json).
+
+DA4.1 and DA4.4 remain open for the remaining decision provenance.
