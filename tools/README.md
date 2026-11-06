@@ -300,6 +300,18 @@ legal text. `holdout_pending` becomes a usable holdout only after a human confir
 records actual read scope/evidence; neither a small purpose-selected cohort nor byte independence
 establishes independent legal correctness.
 
+Run a metadata census across explicit sealed queues and their review runs:
+
+```bash
+uv run --offline --frozen python -m tools.corpus_split_census \
+  --run /path/to/queue QUEUE_MANIFEST_SHA --run /path/to/form FORM_MANIFEST_SHA \
+  --output /path/to/new-census.json
+```
+
+Forms contribute no cases. The census separates exact case IDs, recorded initiative groups,
+identical original bytes, and validated human answers. Holdout evaluation use stays unknown
+when the supplied runs contain no authoritative consumption record.
+
 ## Recording human review
 
 ```bash

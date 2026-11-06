@@ -23,4 +23,5 @@ matrix when the change crosses extraction, selection, comparison, or delivery bo
   cached evidence and retained input maps.
 - Preserve reserved holdout cases for independent review. Machine checks do not
   establish legal meaning. Record an unavailable input as unavailable and a missing
-  proof as unknown. Keep this workflow offline.
+  proof as unknown. Use `tools.corpus_split_census` to count cases and verified reviews
+  across pinned runs. Keep this workflow offline.

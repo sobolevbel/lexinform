@@ -12827,6 +12827,9 @@ rejected. The legacy dump and two existing loose profiles matched.
 The runtime writer remains disabled.
 [Qualification](../assets/audits/2026-11-06-rcl-archive-input-reader/qualification.json).
 
+The exact `ee13ecef` release passed CI run 42244750519 and relay
+deployment 42245525231. Restart and timer were verified.
+
 <a id="j343"></a>
 
 ## J343 — save the actual prepared map from one RCL ZIP
@@ -12843,3 +12846,19 @@ and cleanup removed the ordinary payload and kept the map through two
 restores. The retained record added 2,902 SQL bytes and 570 gzip bytes
 after cleanup.
 [Qualification](../assets/audits/2026-11-06-rcl-archive-input-writer/qualification.json).
+
+<a id="j344"></a>
+
+## J344 — count verified corpus splits across sealed runs
+
+The offline census takes explicit manifest pins. It counts exact case
+IDs, recorded groups and byte aliases separately, and checks review
+records against their pinned queues. Review forms do not add cases.
+Evaluation consumption stays unknown without a supported record.
+
+Five real seals yielded 177 diagnostic cases in 105 groups and three
+reserved holdout cases in three groups. The 180 distinct case IDs form
+165 components when known byte aliases are joined. No verified overlap
+or human question labels were present in these runs. Repeated reports
+matched byte-for-byte. Independent human review remains open.
+[Qualification](../assets/audits/2026-11-06-corpus-split-census/qualification.json).
