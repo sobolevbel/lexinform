@@ -264,7 +264,7 @@ def test_compressed_reference_is_verified_before_decompression(tmp_path: Path) -
 
 def test_unexpected_default_metadata_is_not_ignored(monkeypatch: pytest.MonkeyPatch) -> None:
     def missing_expected_notes(
-        baseline: ExtractionResult, linked: DocNotedParts
+        baseline: ExtractionResult, linked: DocNotedParts, *, include_projections: bool
     ) -> ExtractionResult:
         return baseline
 

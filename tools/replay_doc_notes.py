@@ -30,7 +30,7 @@ from lexinform.adapters.doc_text import (
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.document_candidates import select_document_parts
-from lexinform.extraction_records import summarize_doc_notes
+from lexinform.extraction_records import summarize_doc_note_projections, summarize_doc_notes
 from lexinform.models.doc_notes import MAX_DOC_NOTE_SUMMARY_BYTES
 from lexinform.models.extractions import MAX_EXTRACTION_METADATA_BYTES, ExtractionResult
 from tools.corpus_artifacts import digest, read_artifact, write_json
@@ -103,7 +103,7 @@ def _physical_reference(path: Path, sha256: str) -> PhysicalReference:
 def physical_snapshot(data: bytes, *, default_note_writer: bool = False) -> dict[str, Any]:
     reader = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
     baseline = reader.extract_parts(data)
-    linked = reader.extract_parts_with_doc_notes(data)
+    linked = reader.extract_parts_with_doc_notes(data, capture_projection=default_note_writer)
     if linked.legacy != baseline:
         raise ValueError("DOC sidecars changed the legacy physical extraction")
     selected = select_document_parts(linked.legacy, max_part_chars=None)
@@ -116,12 +116,31 @@ def physical_snapshot(data: bytes, *, default_note_writer: bool = False) -> dict
     for part in without_notes["selected_parts"]:
         part.pop("doc_notes", None)
     baseline_result = ExtractionResult.model_validate(without_notes)
-    enriched = summarize_doc_notes(baseline_result, linked)
     if default_note_writer:
+        before_word = baseline_result.model_dump(mode="json")
+        for part in before_word["selected_parts"]:
+            view = part.get("word_view_status")
+            if view is not None:
+                view.pop("observed_textbox_nodes", None)
+                view.pop("observed_inline", None)
+        legacy_notes = summarize_doc_notes(
+            ExtractionResult.model_validate(before_word), linked, include_projections=False
+        )
+        parts = tuple(
+            part.model_copy(update={"doc_notes": before.doc_notes})
+            for part, before in zip(
+                baseline_result.selected_parts, legacy_notes.selected_parts, strict=True
+            )
+        )
+        enriched = summarize_doc_note_projections(
+            baseline_result.model_copy(update={"selected_parts": parts}), linked
+        )
         if observed.result != enriched:
             raise ValueError("Default DOC metadata differs from bounded opt-in capture")
-    elif observed.result != baseline_result:
-        raise ValueError("Default DOC note writer is enabled; expected writer-OFF mode")
+    else:
+        if observed.result != baseline_result:
+            raise ValueError("Default DOC note writer is enabled; expected writer-OFF mode")
+        enriched = summarize_doc_notes(baseline_result, linked)
     without_enrichment = enriched.model_dump(mode="json")
     for part in without_enrichment["selected_parts"]:
         part.pop("doc_notes", None)

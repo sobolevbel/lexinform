@@ -41,6 +41,7 @@ from lexinform.document_candidates import select_document_parts
 from lexinform.extraction_records import (
     component_code,
     extraction_component,
+    summarize_doc_note_projections,
     summarize_doc_notes,
     summarize_extraction,
     summarize_word_observations,
@@ -1478,6 +1479,7 @@ class DocumentTextExtractor:
                 word_view_status=views,
                 odt_notes=odt_notes,
                 doc_notes=doc_notes,
+                capture_doc_note_projection=True,
             )
             physical = self._extract_parts(data, origins)
         else:
@@ -1514,11 +1516,12 @@ class DocumentTextExtractor:
                 xml_bytes=_MAX_XML_BYTES,
             ),
         )
-        if doc_notes:
-            result = summarize_doc_notes(
-                result, DocNotedParts(legacy=physical, doc_notes=tuple(doc_notes))
-            )
+        linked = DocNotedParts(legacy=physical, doc_notes=tuple(doc_notes)) if doc_notes else None
+        if linked is not None:
+            result = summarize_doc_notes(result, linked, include_projections=False)
         result = summarize_word_observations(result, tuple(views))
+        if linked is not None:
+            result = summarize_doc_note_projections(result, linked)
         capture = current_physical_walk_capture()
         if capture is not None:
             _physical_event(capture, lambda: capture.extraction(result))

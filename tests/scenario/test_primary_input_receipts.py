@@ -251,7 +251,7 @@ def test_native_doc_note_metadata_preserves_paid_request_memo_and_same_byte_alia
     )
     baseline, candidate = world(data), world(data)
     with patch.object(
-        document_module, "summarize_doc_notes", side_effect=lambda result, linked: result
+        document_module, "summarize_doc_note_projections", side_effect=lambda result, linked: result
     ):
         baseline.run(track=False)
     candidate.run(track=False)
@@ -281,7 +281,8 @@ def test_native_doc_note_metadata_preserves_paid_request_memo_and_same_byte_alia
         assert receipt.extraction_id is not None, "The native source receipt records its extraction"
         result = current.repo.get_extraction_result(receipt.extraction_id)
         assert result is not None, "The caller commits the extraction before its input receipt"
-        assert sum(part.doc_notes is not None for part in result.selected_parts) == expected
+        (notes,) = [part.doc_notes for part in result.selected_parts if part.doc_notes is not None]
+        assert int(bool(notes.projections)) == expected
         current.batch.resolve()
         current.run(track=False)
         alias = TextDocument(url="https://api.test/alias.pdf", kind="print")

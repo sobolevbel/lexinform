@@ -454,7 +454,9 @@ def _with_odt_note_prefix(baseline: ExtractionResult, linked: OdtNotedParts) -> 
     return result
 
 
-def summarize_doc_notes(baseline: ExtractionResult, linked: DocNotedParts) -> ExtractionResult:
+def summarize_doc_notes(
+    baseline: ExtractionResult, linked: DocNotedParts, *, include_projections: bool = True
+) -> ExtractionResult:
     """Retain a bounded source-CP prefix without changing existing selected summaries."""
     linked = DocNotedParts.model_validate(linked)
     if (baseline.artifact_sha256, baseline.physical_part_count) != (
@@ -508,12 +510,13 @@ def summarize_doc_notes(baseline: ExtractionResult, linked: DocNotedParts) -> Ex
             break
         else:
             break
-    return _with_doc_note_projections(current, linked)
+    return summarize_doc_note_projections(current, linked) if include_projections else current
 
 
-def _with_doc_note_projections(
+def summarize_doc_note_projections(
     baseline: ExtractionResult, linked: DocNotedParts
 ) -> ExtractionResult:
+    """Fit coordinates after existing observations have reserved their space."""
     captures = {item.part_index: item.projections for item in linked.doc_notes if item.projections}
     if not captures:
         return baseline

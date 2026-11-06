@@ -15,7 +15,7 @@ from tools.source_history_doctor import audit
 
 from lexinform import extraction_records
 from lexinform.adapters.doc_text import DocTextExtractor
-from lexinform.adapters.document_text import DocumentTextExtractor
+from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.extraction_records import summarize_doc_notes, summarize_extraction
 from lexinform.models import ArtifactMetadata
@@ -29,6 +29,7 @@ from lexinform.models.extractions import ExtractionComponent, ExtractionOptions,
 from tests.fakes import FakeTextExtractor
 from tests.unit.test_doc_note_extraction import source_notes
 from tests.unit.test_physical_extraction import archive
+from tests.unit.test_word_note_origins import package
 
 
 def ole_document(word: bytes, table: bytes) -> bytes:
@@ -264,6 +265,34 @@ def test_optional_doc_summary_is_retained_by_the_native_provenance_path() -> Non
     assert notes is not None, "The native DOC leaf yields source-checked metadata"
     assert notes.state == "checked" and notes.observed_links == 1
     assert notes.validation == "source_characters_checked_cf_spec_unknown"
+    assert (
+        notes.projections
+        == DocTextExtractor().extract_with_notes(data, capture_projection=True).projections
+    )
+
+
+def test_default_doc_coordinates_leave_space_for_word_observations(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    word_data = package("<w:p><w:ins><w:r><w:t>Added text</w:t></w:r></w:ins></w:p>", {})
+    data = archive({"projekt.doc": ole_document(*source_notes()), "uzasadnienie.docx": word_data})
+    reader = DocumentTextExtractor(FakeTextExtractor(), DocxTextExtractor(), DocTextExtractor())
+    enriched = reader.extract_document_with_provenance(data)
+    payload = enriched.result.model_dump(mode="json")
+    (doc,) = [part for part in payload["selected_parts"] if "doc_notes" in part]
+    assert doc["doc_notes"].pop("projections")
+    (word,) = [part for part in payload["selected_parts"] if "word_view_status" in part]
+    assert word["word_view_status"].get("observed_inline") is not None
+    expected = ExtractionResult.model_validate(payload)
+    monkeypatch.setattr(
+        extraction_records,
+        "MAX_EXTRACTION_METADATA_BYTES",
+        len(expected.model_dump_json().encode()),
+    )
+
+    bounded = reader.extract_document_with_provenance(data)
+
+    assert bounded == enriched.model_copy(update={"result": expected})
 
 
 def test_aggregate_budget_preserves_existing_selected_rows() -> None:

@@ -1,0 +1,55 @@
+{
+  "unique_doc_inputs": 246,
+  "manifest_sha256": "449d893ca8d9b89933a3ac84abd3b757d0f89298d06fc9ae6e5c31ecb38775d5",
+  "exact_document_and_legacy_summary_parity": true,
+  "legacy_links": 377,
+  "retained_projections": 301,
+  "growth_bytes": 50190,
+  "max_growth_bytes": 1970,
+  "cpu_ns": {
+    "before": 1478756000,
+    "after": 2773305000
+  },
+  "replay_sha256": {
+    "replay.py": "9056c32d56f816492c98bdc9a219afd26fdcda4d03fd0c611d0cfca52191380a",
+    "before.json": "70a679e995cbb2e7f6883eaefccf9e759816a77a950250244c2981a8cb89556b",
+    "after.json": "29f13266ac37694e5dea092f1de61d8701a1cc053afb67e405be6d592e507c88"
+  },
+  "baseline": "2c072dac541204e6c05ccb7d1463adc189bf8c02",
+  "default_physical_replay_sha256": "4adb589bd12501cbaf75d6612dd9f69c2aa4c0ebb249c511dd92dfa037d1b5e6",
+  "default_physical_replay": {
+    "changed_inputs": [],
+    "links_by_kind": {
+      "footnote": 377
+    },
+    "note_bearing_unique": 69,
+    "paths": 404,
+    "status_counts": {
+      "source_characters_checked_cf_spec_unknown": 245,
+      "unavailable": 1
+    },
+    "unique_inputs": 246,
+    "verified_input_paths": 405
+  },
+  "fake_provider_handoff": {
+    "scope": "Native CFB actual pipeline over World fakes; no real provider submission",
+    "input_sha256": "f10ada2c1250a0f4319e2dd6bdd64cd1f5e9ff5049b1b40c45e7269c94a1c09f",
+    "batch_requests_equal": true,
+    "fake_payload_sha256": "47663b617dc37fdedbb5d0feddaf799ebadb8aeffaf7f0670da901e93c264849",
+    "real_user_prompt_sha256": "97dfb6bee9bbc7cf5a640eb09c2280cb236c48c6fecc836e446a5a64cae512a7",
+    "all_batch_metadata_except_prepared_receipt_equal": true,
+    "memo_key_equal": true,
+    "custom_id_equal": true,
+    "receipt_extraction_ids_differ": true,
+    "projected_summary_counts": [
+      0,
+      1
+    ],
+    "same_byte_alias_added_requests": 0,
+    "limitations": [
+      "Fake batch backend; real user prompt constructed locally",
+      "No paid API calls or production processing"
+    ]
+  },
+  "fake_provider_handoff_runner_sha256": "cb5218004ec24916de9b136f969445cf1155311464aa80f054e85e7c64be08eb"
+}

@@ -13869,3 +13869,23 @@ largest increments, SQL grew by 5,748 bytes and gzip by 1,664 bytes. Each
 checkpoint survived two byte-identical restores with integrity checks.
 
 [Qualification](../assets/audits/2026-11-07-doc-note-physical-projections/qualification.json).
+
+<a id="j398"></a>
+
+## J398 — retain verified DOC coordinates in default extraction
+
+The native provenance path adds coordinates after all existing extraction
+observations. A mixed DOC and DOCX archive at the metadata limit preserves
+its Word revision observation and DOC source link. Existing compatible
+readers accept the optional fields.
+
+The pinned default-writer replay verified all 404 paths. Across 246 unique
+inputs the selected documents and earlier metadata matched after excluding
+the changed implementation fingerprints and new coordinate fields. All 301
+retained projections matched independently observed offsets and body hashes.
+Serialized records grew by 50,190 bytes in aggregate and at most 1,970 bytes
+per record. One local replay measured 1.48 s before and 2.77 s after in
+process CPU across the cohort. A native DOC through the real pipeline with
+a fake provider preserved the batch request, prompt, memo key and custom ID.
+
+[Qualification](../assets/audits/2026-11-07-doc-note-default-projections/qualification.json).
