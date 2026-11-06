@@ -907,7 +907,17 @@ class SejmCommitteeDraftOrigin:
         )
 
 
-type SejmSourceOrigin = SejmProposalOrigin | SejmAdoptionOrigin | SejmCommitteeDraftOrigin
+@dataclass(frozen=True)
+class SejmRepresentationOrigin:
+    term: int
+    number: str
+    docx_url: str
+    metadata_sha256: str
+
+
+type SejmSourceOrigin = (
+    SejmProposalOrigin | SejmAdoptionOrigin | SejmCommitteeDraftOrigin | SejmRepresentationOrigin
+)
 
 
 def sejm_adopted_text_url(term: int, number: str) -> str:

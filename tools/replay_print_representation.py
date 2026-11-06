@@ -4,7 +4,6 @@ import argparse
 import datetime as dt
 import json
 import os
-import re
 from contextlib import closing
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,7 +22,7 @@ from lexinform.models import DocumentSelectionRecord, SourceObservation, TextDoc
 from lexinform.models.artifacts import ArtifactReadIdentity
 from lexinform.models.candidate_trace import CandidateDispositionTrace, SejmPrintRepresentation
 from lexinform.models.extractions import ExtractionResult
-from lexinform.sections import document_kind, law_body
+from lexinform.print_representation import exact_core as exact_core
 from lexinform.services.document_history import (
     DocumentSourceRead,
     record_artifact_reads,
@@ -37,12 +36,6 @@ from tools.replay_proposal_edition import PinnedInput, official_print
 
 _PRINTS = TypeAdapter(list[dict[str, Any]])
 _MAX_BYTES = 8_388_608
-_ARTICLE_ONE = re.compile(r"\bArt\. 1\.")
-_COMMENCEMENT = re.compile(
-    r"\bArt\. [1-9][0-9]*\. Ustawa wchodzi w życie po upływie [1-9][0-9]* dni od dnia ogłoszenia\.$"
-)
-_ANNEX = re.compile(r"\bzałączni\w*", re.IGNORECASE)
-_ANNEX_HEADING = re.compile(r"(?:^|[\n\f])[^\S\n\f]*załączni", re.IGNORECASE)
 
 
 class RepresentationCase(BaseModel):
@@ -56,27 +49,6 @@ class RepresentationCase(BaseModel):
     docx: PinnedInput
     pdf_text_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     docx_text_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-
-
-def exact_core(text: str, *, pdf: bool) -> str:
-    normalized = " ".join(text.split())
-    core = " ".join((law_body(text, preserve_numbers=True) or "").split())
-    first = _ARTICLE_ONE.search(normalized)
-    if (
-        first is None
-        or not _ARTICLE_ONE.match(core)
-        or not normalized.startswith(core, first.start())
-        or _COMMENCEMENT.search(core) is None
-        or len(core) < 200
-        or _ANNEX.search(core) is not None
-        or _ANNEX_HEADING.search(text) is not None
-        or document_kind(text) != "bill"
-    ):
-        raise ValueError("Expected one literal normative core through final commencement")
-    tail = normalized[first.start() + len(core) :].lstrip()
-    if (pdf and not tail.startswith("UZASADNIENIE ")) or (not pdf and tail):
-        raise ValueError("Expected PDF justification boundary and exact draft-only Word end")
-    return core
 
 
 def official_original(

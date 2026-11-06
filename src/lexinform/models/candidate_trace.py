@@ -418,11 +418,16 @@ class SejmOriginalProposal(BaseModel):
 class SejmPrintRepresentation(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
-    profile: Literal["sejm-print-core-representation-v1"] = "sejm-print-core-representation-v1"
+    profile: Literal["sejm-print-core-representation-v1", "sejm-print-core-live-v1"] = (
+        "sejm-print-core-representation-v1"
+    )
     relation: Literal["representation_of"] = "representation_of"
     term: int = Field(gt=0, le=99, strict=True)
     number: str = Field(pattern=r"^[1-9][0-9]{0,8}$")
-    listing_sha256: Sha256
+    listing_sha256: Sha256 | None = Field(default=None, exclude_if=lambda value: value is None)
+    print_metadata_sha256: Sha256 | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     pdf_sha256: Sha256
     docx_sha256: Sha256
     pdf_text_sha256: Sha256
@@ -445,6 +450,12 @@ class SejmPrintRepresentation(BaseModel):
 
     @model_validator(mode="after")
     def distinct_bodies(self) -> Self:
+        offline = self.profile == "sejm-print-core-representation-v1"
+        if (self.listing_sha256 is not None, self.print_metadata_sha256 is not None) != (
+            offline,
+            not offline,
+        ):
+            raise ValueError("Representation requires its exact profile metadata hash")
         if self.pdf_sha256 == self.docx_sha256:
             raise ValueError("Sejm representation requires distinct PDF and DOCX bodies")
         return self

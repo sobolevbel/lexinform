@@ -141,9 +141,14 @@ from lexinform.models.batch import (
     NameQuestion,
     SupplementQuestion,
 )
+from lexinform.models.candidate_trace import CandidateDispositionTrace
 from lexinform.models.computations import CollectionReason, ComputationRecord
 from lexinform.models.input_receipts import LooseRclInputReceipt
-from lexinform.models.sejm import SejmCommitteeDraftOrigin, SejmSourceOrigin
+from lexinform.models.sejm import (
+    SejmCommitteeDraftOrigin,
+    SejmRepresentationOrigin,
+    SejmSourceOrigin,
+)
 from lexinform.models.source_omissions import SenateOmissionOwner, SourceReferenceOmissionOwner
 from lexinform.ports import (
     AnalysisBackend,
@@ -164,6 +169,13 @@ from lexinform.pricing import (
     format_usd,
     input_cost,
     tiered,
+)
+from lexinform.print_representation import (
+    MAX_REPRESENTATION_CORE_CHARS,
+    MAX_REPRESENTATION_DOCX_BYTES,
+    MAX_REPRESENTATION_PDF_BYTES,
+    MAX_REPRESENTATION_PDF_PAGES,
+    exact_core,
 )
 from lexinform.review_memos import read_review_memo
 from lexinform.sections import (
@@ -187,6 +199,7 @@ from lexinform.services.computation_reuse import (
 from lexinform.services.cost import CostLedger
 from lexinform.services.document_history import (
     DocumentSourceRead,
+    PrintRepresentationRead,
     SourceReadCapture,
     record_committee_recommendation,
     record_source_read,
@@ -406,6 +419,7 @@ class _Loaded:
     projection: TextProjection | None = None
     source_read: SourceReadCapture | None = None
     first_pdf_page: str | None = None
+    representation_probe: tuple[CandidateDispositionTrace, str] | None = None
     rcl_projection: Literal["annexes", "annexes_and_amendments"] | None = None
 
     @property
@@ -3746,12 +3760,52 @@ class AnalysisService:
                 retain_routine_trace=retain_routine_trace,
             )
         with self._loader.source_omission_scope(owner, document):
-            return self._load_source_inner(
+            loaded = self._load_source_inner(
                 document,
                 trim=trim,
                 sejm_origin=sejm_origin,
                 retain_routine_trace=retain_routine_trace,
             )
+        if isinstance(sejm_origin, SejmRepresentationOrigin):
+            return self._read_print_representation(loaded, sejm_origin)
+        return loaded
+
+    def _read_print_representation(
+        self, loaded: _Loaded, origin: SejmRepresentationOrigin
+    ) -> _Loaded:
+        source, probe = loaded.source_read, loaded.representation_probe
+        if not isinstance(source, DocumentSourceRead) or probe is None:
+            return loaded
+        trace, core = probe
+        try:
+            word = self._loader.read_bounded(
+                origin.docx_url, max_bytes=MAX_REPRESENTATION_DOCX_BYTES
+            )
+            _, read, extraction = self._loader.file_origins(origin.docx_url, word)
+            if (
+                word.text is None
+                or read is None
+                or extraction is None
+                or extraction.physical_part_count != 1
+                or len(extraction.selected_parts) != 1
+                or extraction.selected_parts[0].format != "word"
+                or extraction.selected_parts[0].error_count != 0
+                or extraction.output_text_sha256 != hashlib.sha256(word.text.encode()).hexdigest()
+                or exact_core(word.text, pdf=False) != core
+            ):
+                return loaded
+            evidence = PrintRepresentationRead(
+                origin,
+                trace,
+                read,
+                extraction,
+                hashlib.sha256(core.encode()).hexdigest(),
+                len(core),
+            )
+            return replace(loaded, source_read=replace(source, representation=evidence))
+        except Exception as error:
+            log.debug("Optional Sejm Word read did not qualify: %s", type(error).__name__)
+            return loaded
 
     def _load_source_inner(
         self,
@@ -3788,6 +3842,7 @@ class AnalysisService:
                 f"{document.url}: {type(exc).__name__}: {exc}",
             ) from exc
         source = self._loader.capture_source_read(requested, document, file)
+        probe = None
         if isinstance(source, DocumentSourceRead):
             if isinstance(sejm_origin, SejmCommitteeDraftOrigin):
                 with suppress(ValueError):
@@ -3797,12 +3852,36 @@ class AnalysisService:
                         for read in source.reads
                     ):
                         source = replace(source, committee_draft=selection)
+            elif isinstance(sejm_origin, SejmRepresentationOrigin):
+                trace = source.candidate_trace
+                if (
+                    trace is not None
+                    and trace.is_routine_singleton
+                    and trace.archive_members is None
+                ):
+                    source = replace(source, candidate_trace=None)
+                    if (
+                        file.text is not None
+                        and file.complete_pdf_pages is not None
+                        and file.complete_pdf_pages <= MAX_REPRESENTATION_PDF_PAGES
+                        and any(
+                            read.requested_url == document.url
+                            and read.sha256 == file.sha256
+                            and read.byte_size <= MAX_REPRESENTATION_PDF_BYTES
+                            for read in source.reads
+                        )
+                    ):
+                        with suppress(ValueError):
+                            core = exact_core(file.text, pdf=True)
+                            if len(core) <= MAX_REPRESENTATION_CORE_CHARS:
+                                probe = trace, core
             elif sejm_origin is not None:
                 source = replace(source, sejm_origin=sejm_origin)
         try:
             return replace(
                 self._load_selected(document, file, trim=trim),
                 source_read=source,
+                representation_probe=probe,
                 first_pdf_page=file.first_pdf_page.text
                 if file.first_pdf_page is not None
                 else None,

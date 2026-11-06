@@ -134,3 +134,16 @@ def test_a_scan_already_within_the_window_is_not_cut() -> None:
 
     assert loader.first_pages(scan, 8) is None
     assert loader.first_pages(scan, 0) is None
+
+
+def test_small_optional_read_does_not_cache_a_failed_lower_limit() -> None:
+    gateway = FakeSejmGateway(files={URL: b"x" * 128})
+    loader = _loader(gateway, max_bytes=256)
+
+    limited = loader.read_bounded(URL, max_bytes=64)
+    regular = loader.read(URL)
+    cached_limited = loader.read_bounded(URL, max_bytes=64)
+
+    assert limited.oversize and cached_limited.oversize
+    assert regular.text == LONG_TEXT
+    assert loader.read_metrics().hosts[HOST].attempts == 2

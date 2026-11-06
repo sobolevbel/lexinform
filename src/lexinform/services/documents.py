@@ -609,11 +609,25 @@ class TextLoader:
                 sink = scope[3]
         return self._read_entry(url, sink).file
 
+    def read_bounded(self, url: str, *, max_bytes: int) -> LoadedFile:
+        return self._read_entry(url, max_bytes=max_bytes).file
+
     def _read_entry(
-        self, url: str, archive_sink: Callable[[ArchiveRootObservation], None] | None = None
+        self,
+        url: str,
+        archive_sink: Callable[[ArchiveRootObservation], None] | None = None,
+        *,
+        max_bytes: int | None = None,
     ) -> _CachedDocument:
         with self._lock:
             cached = self._cache.get(url)
+            if (
+                cached is not None
+                and max_bytes is not None
+                and cached.file.sha256 is not None
+                and self._known_bodies[cached.file.sha256] > max_bytes
+            ):
+                return _CachedDocument(LoadedFile(None, oversize=True))
             if cached is not None:
                 self._read_cache_hits += 1
                 self._download_diagnostics.cache_hit()
@@ -634,11 +648,13 @@ class TextLoader:
             observe_read_timing(self, "cache_reuse")
             return cached
         try:
-            fetched = self._fetch(url, archive_sink)
+            fetched = self._fetch(url, archive_sink, max_bytes=max_bytes)
         except BaseException as error:
             self._observe_source_failure(error)
             raise
         loaded = fetched.file
+        if max_bytes is not None and loaded.oversize:
+            return fetched
         with self._lock:
             if len(self._cache) >= self._cache_size:
                 self._cache.pop(next(iter(self._cache)))
@@ -1054,15 +1070,12 @@ class TextLoader:
         )
         return (
             candidate,
-            LoadedFile(
-                loaded.text,
-                pages=loaded.pages,
-                oversize=loaded.oversize,
-                sha256=loaded.sha256,
+            replace(
+                loaded,
                 selection=loaded.selection.model_copy(
                     update={"observed_parts": choice.observed_parts}
                 ),
-                opaque_failure_prose=loaded.opaque_failure_prose,
+                candidate_trace=None,
             ),
             "selected",
             "version_choice",
@@ -1146,9 +1159,13 @@ class TextLoader:
         )
 
     def _fetch(
-        self, url: str, archive_sink: Callable[[ArchiveRootObservation], None] | None = None
+        self,
+        url: str,
+        archive_sink: Callable[[ArchiveRootObservation], None] | None = None,
+        *,
+        max_bytes: int | None = None,
     ) -> _CachedDocument:
-        downloaded = self._download(url)
+        downloaded = self._download(url, max_bytes=max_bytes)
         if downloaded is None:
             return _CachedDocument(LoadedFile(None, oversize=True))
         data, artifact = downloaded.data, downloaded.artifact
@@ -1244,7 +1261,7 @@ class TextLoader:
             loaded, invocation.observation if invocation is not None else None, archive
         )
 
-    def _download(self, url: str) -> _DownloadedDocument | None:
+    def _download(self, url: str, *, max_bytes: int | None = None) -> _DownloadedDocument | None:
         with self._lock:
             self._download_diagnostics.started()
         try:
@@ -1262,7 +1279,10 @@ class TextLoader:
         with self._lock:
             self._download_metrics.setdefault(host, Counter())["attempts"] += 1
         try:
-            data = download(url, max_bytes=self._max_bytes)
+            limit = self._max_bytes if max_bytes is None else min(self._max_bytes, max_bytes)
+            data = download(url, max_bytes=limit)
+            if max_bytes is not None and len(data) > limit:
+                raise AttachmentTooLargeError(url, limit)
         except AttachmentTooLargeError as exc:
             with self._lock:
                 self._download_metrics[host]["over_limit"] += 1

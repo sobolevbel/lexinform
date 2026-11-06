@@ -225,7 +225,14 @@ class SejmApiClient:
 
     def get_print(self, term: int, number: str) -> PrintInfo:
         data = self._get_json(f"/sejm/term{term}/prints/{quote(number)}")
-        return parse_print(data, term=term, base_url=self._base_url)
+        info = parse_print(data, term=term, base_url=self._base_url)
+        if (
+            info.official_term_confirmed
+            and info.number == number
+            and data.get("processPrint") == [number]
+        ):
+            return info.model_copy(update={"official_single_process_parent": number})
+        return info
 
     def self_amendments(self, term: int, number: str) -> tuple[PrintInfo, ...]:
         with self._prints_lock:

@@ -6,6 +6,7 @@ RPW entry has no process at all, only its file on orka.sejm.gov.pl, and a regist
 text anywhere yet, so it is the one source the model still reads as metadata alone.
 """
 
+import hashlib
 import logging
 import re
 from datetime import UTC, datetime
@@ -43,6 +44,7 @@ from lexinform.models.sejm import (
     SejmAdoptionOrigin,
     SejmCommitteeDraftOrigin,
     SejmProposalOrigin,
+    SejmRepresentationOrigin,
     print_part_number,
     sejm_adopted_text_url,
 )
@@ -159,6 +161,43 @@ def _original_proposal(
     return SejmProposalOrigin(parent.term, parent.number, proposal.number, proposal.process_prints)
 
 
+def _representation_origin(
+    bill: Bill, info: PrintInfo | None, document: TextDocument | None
+) -> SejmRepresentationOrigin | None:
+    if (
+        info is None
+        or document is None
+        or (bill.term, bill.number) != (info.term, info.number)
+        or not info.official_term_confirmed
+        or info.official_single_process_parent != bill.number
+        or info.process_prints != (bill.number,)
+        or not 1 <= bill.term <= 99
+        or re.fullmatch(r"[1-9][0-9]{0,8}", bill.number) is None
+    ):
+        return None
+    base = f"https://api.sejm.gov.pl/sejm/term{bill.term}/prints/{bill.number}/{bill.number}"
+    docx = base + "-ustawa.docx"
+    if (
+        sorted(item.url for item in info.attachments)
+        != sorted((base + ".pdf", docx, base + "-uzasadnienie.docx"))
+        or document
+        != TextDocument(
+            url=base + ".pdf",
+            kind="print",
+            compare_versions=True,
+            version_basis=(f"sejm/{bill.term}/print/{bill.number}",),
+        )
+        or any(
+            item.title.strip().casefold().startswith("autopoprawka")
+            for item in info.additional_prints
+        )
+    ):
+        return None
+    return SejmRepresentationOrigin(
+        bill.term, bill.number, docx, hashlib.sha256(info.model_dump_json().encode()).hexdigest()
+    )
+
+
 def _adoption_origin(
     bill: Bill, detail: ProcessDetail, document: TextDocument | None
 ) -> SejmAdoptionOrigin | None:
@@ -245,16 +284,20 @@ class SejmTextSource:
         detail = self._gateway.get_process(bill.term, bill.number)
         document = latest_text_document(detail.stages)
         proposal = None
+        representation = None
         if document is None:
             info = fetch_print(self._gateway, bill)
             document = original_document(info)
             if (detail.term, detail.number) == (bill.term, bill.number):
                 proposal = _original_proposal(bill, info, document)
+                if detail.document_type_enum is DocumentType.BILL and proposal is None:
+                    representation = _representation_origin(bill, info, document)
         return LocatedText(
             summary=detail,
             stages=detail.stages,
             document=document,
             sejm_origin=proposal
+            or representation
             or _adoption_origin(bill, detail, document)
             or _committee_draft_origin(bill, detail, document),
         )

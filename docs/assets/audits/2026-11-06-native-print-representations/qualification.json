@@ -1,0 +1,383 @@
+{
+  "baseline": "34c92b19c2fed52a6a7936b68675e523c92e49fe",
+  "listing_sha256": "05e7b4a7105e9a6d8aff1c87293749c5c77c6bfefc6882491c8d2701b39b8938",
+  "process_sha256": "361c92de8a686ae161aa3154c3a30bf29a2a7980e6fb3b13578962cdf01075d9",
+  "eligible_listing_prints": 612,
+  "preflight": {
+    "max_pdf_bytes": 2097152,
+    "max_pdf_pages": 30,
+    "max_core_chars": 2000,
+    "max_docx_bytes": 262144
+  },
+  "restores_per_case": 2,
+  "requests_submitted": 0,
+  "native_cohort": {
+    "1129-nonmatching": {
+      "request_sha256": "119d9b81ab48affd3d22748a1ff3fc9d64091685eabc7e887a7d33ded8094e1e",
+      "normalized_sql_sha256": "ae1632b14477509aeab99374984de577a90fb954564d03a58807db9e2897a63c",
+      "docx_sha256": "31469de537de770c570e40a72abe123c3606ff38dc06068f778753d40491099c",
+      "extra_docx_reads": 1,
+      "representation": null,
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "1240-nonmatching": {
+      "request_sha256": "36b60ac45387a59194d317e80339a5136b9235084d7f8ec2a2e115cf70746523",
+      "normalized_sql_sha256": "814e9903b22e27fcd10ea950ed0ac1e578f53d714b580ee84ae87099ed5c9c4b",
+      "docx_sha256": "e9608442b0c1e5c34d08c0d8a5031f837b3e1bc57217230ea3d3d81a9f27f91c",
+      "extra_docx_reads": 1,
+      "representation": null,
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "1265-nonmatching": {
+      "request_sha256": "3f8e07bb813f1a256fd5cac76d08c32617f7ca1b01d24a98419612e1d0a8b7c5",
+      "normalized_sql_sha256": "cd7e3d02a4cc3b5e146cc6bd7e5e63dc77036dede0f6cea80cfe37ebde22d553",
+      "docx_sha256": "586a4cc23d6b3cf8744e737f5ce7307d3bfb73773503ab1c02167e4694dfd5fa",
+      "extra_docx_reads": 1,
+      "representation": null,
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "1266-nonmatching": {
+      "request_sha256": "476ae38be6c1d6f4cec771a81c65cbd08768cf9e98a261c4f0f801fe03272e59",
+      "normalized_sql_sha256": "4e91e3d4e29cd4f34c93a89c5739b7844d6f8b1a98712ff3ac1f37dc163a939e",
+      "docx_sha256": "a18c9e9cbb7feae253ca898e62edbcb3b397a45edf39f50d46dc7fd0184e9db8",
+      "extra_docx_reads": 1,
+      "representation": null,
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "1267-positive": {
+      "request_sha256": "709554ff212e21b7332dde6e97323bf8b6c369696845b32470139afa6f720882",
+      "normalized_sql_sha256": "6f6f07a96ac0c940fdfb6e9418ee75c6aa5836aa72d1c533901bc5dd2ab07c1a",
+      "docx_sha256": "2f3524eb50d634160c3ae66e960ddd59412612e0f652d26e06cb9e2ed5a29392",
+      "extra_docx_reads": 1,
+      "representation": {
+        "core_chars": 412,
+        "core_sha256": "6d191578030cef0b30dc3655b19067de9c9cf2dcdaf7ad2f62701ca3b1abd901",
+        "docx_extraction_id": "extraction-v1:eeeb4cead0b0d5bc3c9bd3dff3a062138d3023a67fbddad69c25b72abb87f0b7",
+        "docx_sha256": "2f3524eb50d634160c3ae66e960ddd59412612e0f652d26e06cb9e2ed5a29392",
+        "docx_text_sha256": "bcfdd62c224a0ea5fabef8d1de04b307ac6afc4b39e423ff567d381249da6a76",
+        "edition_id": "edition-v1:50ca9a3699b89119f6fb24f9775e8082a9778d37d43a189e01292a168e84beeb",
+        "number": "1267",
+        "pdf_sha256": "6f389884b3accb466f6a9ffb741ad497ddafe7e162f8bf04d9fceb68e7969b80",
+        "pdf_text_sha256": "0df377666ce9be0847f3bf5ebab15e00dfe1a4b8b470350adbab5aa985865d14",
+        "print_metadata_sha256": "ef79ceed013cb7055d02c55b8d4f0c607764ecddc84980779fe70e3a9fe83ce4",
+        "profile": "sejm-print-core-live-v1",
+        "selection_id": "selection-v1:56f8e955963e7f89e89a2df70d763641224ebdd2f7ad0dae80c65dacfc6070ca",
+        "term": 10
+      },
+      "sql_delta_bytes": 5601,
+      "gzip_delta_bytes": 1202
+    },
+    "1269-nonmatching": {
+      "request_sha256": "f7935f98793b8307d4b9b7067efd2ed92a3152765c530eaf183b6a3fb284d21d",
+      "normalized_sql_sha256": "ec2b8d377f1c35f15b069559437acd12cf1db637984eab36d533d0d255b59aa3",
+      "docx_sha256": "f1849d5181934f09fd8582fe2342e83c4cad0db82ff14fea65af8c1e8edbcb51",
+      "extra_docx_reads": 1,
+      "representation": null,
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "1380-nonmatching": {
+      "request_sha256": "ffdbe6d3de6670caf35070f9be5876084f8a2e878a6d2d0ffc4decbb9f9789db",
+      "normalized_sql_sha256": "795a6da3288e7fa893b26ee9a55d53eed85182b40157e300204fa0de1626fb12",
+      "docx_sha256": "3eb5af90888613363f66ec8600d98689fb0c21b9e369bab0a8ef0fece26c0bc4",
+      "extra_docx_reads": 1,
+      "representation": null,
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "1402-nonmatching": {
+      "request_sha256": "1b1d2528ed0e904b35650aa081c200002105cf56589346faf6bcea13a2da66b0",
+      "normalized_sql_sha256": "e6723ea480d4db6c46dddb38a75046991860be8e63b1cabd62124b121d46d68d",
+      "docx_sha256": "67d916a49047cef61f52232929b1c1c61fe08c649635e758552d79303aef9131",
+      "extra_docx_reads": 1,
+      "representation": null,
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "1442-nonmatching": {
+      "request_sha256": "4264102f204ce80e2439aff6808d957db646d8a5ac4b9e7f5994cb02360ac2b9",
+      "normalized_sql_sha256": "3eddddd3fe47698a3d9313a89bdf87c0161bb12d689cf647c4d3391694a5a923",
+      "docx_sha256": "84f4a1bc750339b9c8db1709bd3ae278bc47b3ffa4ca9da97649701cfe311284",
+      "extra_docx_reads": 1,
+      "representation": null,
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "1450-positive": {
+      "request_sha256": "0c88a2e3ef6ea70bf0bac07b70aeddf1d77360c6ec07bf3a52f7ef08a90f5077",
+      "normalized_sql_sha256": "52f803af61da951422d7254d71866f0564c4523c1bd0e13c3a6f43f45931a2b6",
+      "docx_sha256": "3115694cd5f2966aaecec34157ac11bd539e50de997c04ce8244e11974c41d4f",
+      "extra_docx_reads": 1,
+      "representation": {
+        "core_chars": 341,
+        "core_sha256": "196726e0a498cfde86198d961ac64acf27cb736506c5400429aebf156d772607",
+        "docx_extraction_id": "extraction-v1:f2bd891cc597b6068e45becef44b74be7df167a7a4c291a389f908504bada4cd",
+        "docx_sha256": "3115694cd5f2966aaecec34157ac11bd539e50de997c04ce8244e11974c41d4f",
+        "docx_text_sha256": "63380eccde04edfb1adbdfb037f063ba7c00958f7de770c90431bd23571f7d8e",
+        "edition_id": "edition-v1:47ae8396dbab09078e104c5e17699b3960cda6146219b32cb54db2f3f5f335bb",
+        "number": "1450",
+        "pdf_sha256": "7bbf81993899b150a12247193097874af2fd9666db4970c21fecd7ab99499a99",
+        "pdf_text_sha256": "28d84758f82a1ed5b8ed7cc8c8cead5bdfb7625c783c18ab781ec3d862a11dc8",
+        "print_metadata_sha256": "e2f408cc4b268e32006ce7ba76c21269f557d69eb10261276a263f1b1166548a",
+        "profile": "sejm-print-core-live-v1",
+        "selection_id": "selection-v1:88e0698e860f65cb72bb4791f81b80186ff8d4b3941cd8d2ce7c99d723237034",
+        "term": 10
+      },
+      "sql_delta_bytes": 5600,
+      "gzip_delta_bytes": 1083
+    },
+    "1481-nonmatching": {
+      "request_sha256": "e70539f8e1e3cac7e689485f3419c20600587d9053235a4ed304f715c18aa39f",
+      "normalized_sql_sha256": "87a9636266ab5dd3a50e3ed24ccf966853c9299b433871bece8b75a0a7ae1076",
+      "docx_sha256": "8761281b38027623318b8ee6cc5f027e8196f948afce5de1b308cd0742c84353",
+      "extra_docx_reads": 1,
+      "representation": null,
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "1522-positive": {
+      "request_sha256": "fb6c1ad7116967fd15e45c5e2cb975d86fd3958f618ea9dbcb50a9921ca68afe",
+      "normalized_sql_sha256": "81df00d2b70c1db9268b9d7a8b19b38e26e003956ad20810d198ae12bc1534d6",
+      "docx_sha256": "d48de9f5600f4acd8fe578cd65c4fddfd9f12b388aafa7b8f3ae7b2f1e22792c",
+      "extra_docx_reads": 1,
+      "representation": {
+        "core_chars": 230,
+        "core_sha256": "7e00c95348f737b3f0fb58c6a586ea729d2633d95bb82f41d5d8eca56e9b7cdb",
+        "docx_extraction_id": "extraction-v1:2aa8ba83b05047787c545619e65d70e4e1adcadc210ed63fc38102a52632b7be",
+        "docx_sha256": "d48de9f5600f4acd8fe578cd65c4fddfd9f12b388aafa7b8f3ae7b2f1e22792c",
+        "docx_text_sha256": "135d8a1c2f8edf99d84667ab60e8ba3cb3d02f098336dc8d49669bd4b45c2c37",
+        "edition_id": "edition-v1:8e04f297a637a2ace675ae9d7af17c0ed6d4b9cd6510d6202f46328fca098db2",
+        "number": "1522",
+        "pdf_sha256": "f3119f6a195245bd967cf4656457e0608ab01e0bdd73c9c572b28a09880f60e1",
+        "pdf_text_sha256": "1d6571d643abdb3d1ee7135418593663cd4513acf09a31f2cec356ed03c60d70",
+        "print_metadata_sha256": "5c37869e0f2ffc8840696241d09fc3533c5ac251cadade7237b05d0869af8af4",
+        "profile": "sejm-print-core-live-v1",
+        "selection_id": "selection-v1:6d3779825e1237d4b94e36c7e1836e5a3f9026ae9164930bc05977b55b67a99d",
+        "term": 10
+      },
+      "sql_delta_bytes": 5600,
+      "gzip_delta_bytes": 1160
+    },
+    "1607-positive": {
+      "request_sha256": "365eb6eff7d5256fb265d65109cfb94989115a04a02b502485ac8088448b2bb6",
+      "normalized_sql_sha256": "7a697b7fdee219f81087a9298297a7d86d94e546afa1ec33e594b1551bf1f09c",
+      "docx_sha256": "913f43486e5ec08a76ea7b145362e85124c7dfe3d31958cacc1f174584469304",
+      "extra_docx_reads": 1,
+      "representation": {
+        "core_chars": 796,
+        "core_sha256": "059dea3c596aced26de9e9fc6f17a72ff05a825a48222fa059b262b386ea1789",
+        "docx_extraction_id": "extraction-v1:b8ccf99ffc9a1f588702267c42196631251019dd89e86512cc2d2a9fbbbf8738",
+        "docx_sha256": "913f43486e5ec08a76ea7b145362e85124c7dfe3d31958cacc1f174584469304",
+        "docx_text_sha256": "9633c0972b45f0c76ece4d17ddf6ce8148cfa455caed96dc5471c3894c9ba84b",
+        "edition_id": "edition-v1:0ae656f6ac35ee3e09dff49f24cc32789b6f45e406fb1c8d16fc6b4255bd48b5",
+        "number": "1607",
+        "pdf_sha256": "89037e0c9351ab40d755f4497d185609b0f394222c3151d550938a12bb2b170c",
+        "pdf_text_sha256": "bbfb3a593e932a69e3641d4e6a728ebed003077c186ae5a62370c038742a0291",
+        "print_metadata_sha256": "ec50eb9ebb4c08e235ed641dda5f2bc6dfdec3be31390fd19ce3391485897381",
+        "profile": "sejm-print-core-live-v1",
+        "selection_id": "selection-v1:240bb775653281c84cabe3a9bfa4db5f620997a3e7af950d09175642fab78f2d",
+        "term": 10
+      },
+      "sql_delta_bytes": 5601,
+      "gzip_delta_bytes": 1088
+    },
+    "1608-positive": {
+      "request_sha256": "18ca33db3b9c9e0b58abb627791dfa9884bf8bc217c596df2d37cecc842ae3a4",
+      "normalized_sql_sha256": "2c47b2b610ec9ed4013c899586f9c7358d2ec0564ecf9bb61f12b20dc09cee68",
+      "docx_sha256": "f1068afbcfe0a60f8d297d69e57d452448a883875dacb3369f9e754c193433f6",
+      "extra_docx_reads": 1,
+      "representation": {
+        "core_chars": 957,
+        "core_sha256": "5594429d4e7fcf6c047cbfdf7e4e17c3b0acf08608f247a400341c47c3954af4",
+        "docx_extraction_id": "extraction-v1:082787dabb9f66305511352b3f0e7ee423ff77a66a1b40a261d104b6addbfd7c",
+        "docx_sha256": "f1068afbcfe0a60f8d297d69e57d452448a883875dacb3369f9e754c193433f6",
+        "docx_text_sha256": "6597b86b4dd20b0b528b7cd3f3fb072b5f6ace2004d1afca9f8d23edb85bbfe8",
+        "edition_id": "edition-v1:d0676460176b22207475de7a1d89a237ec79611af03891e39d497a4dfc9b1ffb",
+        "number": "1608",
+        "pdf_sha256": "9c2fa70809387001922d85647b25eaf45a81809e6d1237cda4c4f61a05c737e8",
+        "pdf_text_sha256": "de78d9119380f7111db9da4115cae010a4174c1c2c9a54e5de7333efdac87ab7",
+        "print_metadata_sha256": "0616d0c1fb674e8d0575d370eadc4fee4c092b88e06458a418cf3a61db77cffb",
+        "profile": "sejm-print-core-live-v1",
+        "selection_id": "selection-v1:a58e1b1fe41bbd6948c36c2086faa95e9ea0806daf2ce76e78b7ea63e1d57644",
+        "term": 10
+      },
+      "sql_delta_bytes": 5603,
+      "gzip_delta_bytes": 1094
+    },
+    "1728-nonmatching": {
+      "request_sha256": "01fbb751bf694e7e3878dc1d55267d3c2cfd8e37a77c86b6570ee70125e0b1c7",
+      "normalized_sql_sha256": "83a1648ca422ce7c53cd22c94676b5ea54bc7c195ff665cc0785ccfe6c300c95",
+      "docx_sha256": "540e371547c7b198d33e4a760aea5faf774d1d21fd8bd996b0f667a4f98bd706",
+      "extra_docx_reads": 1,
+      "representation": null,
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "227-positive": {
+      "request_sha256": "8cff2d223329e8217991c100e0c651e7d771c9d77e68652c19c358174f9d2e64",
+      "normalized_sql_sha256": "eaa53303c8d57064c91194840fb75dca2e780a69525354a09145353539049973",
+      "docx_sha256": "b0e668bb6485313c4922659ce85e88783c61a057456ff61bd9c110e31cc4911f",
+      "extra_docx_reads": 1,
+      "representation": {
+        "core_chars": 559,
+        "core_sha256": "b7a8f806c20b11b526d45c70ec1254bfed1ccb669e8465e06d027d0c2dcb42ce",
+        "docx_extraction_id": "extraction-v1:d1f828cc9b19eea7087153c8601bcada4097591956a12620513063c2457b0166",
+        "docx_sha256": "b0e668bb6485313c4922659ce85e88783c61a057456ff61bd9c110e31cc4911f",
+        "docx_text_sha256": "04ba08ccf99ea4f44f8ae5752d5938296c11640ad27660f2fdd9d0e5f18161b3",
+        "edition_id": "edition-v1:fc6abdd23199c25930b8aba86c801de71470057866a249f5e448d695c98f2aaa",
+        "number": "227",
+        "pdf_sha256": "340378eabfa87f2887ca86086f3b3ab61c2ee84c735bbfd30ae84bb781fd34f2",
+        "pdf_text_sha256": "af04d622f2648f8fe48b3b90c94dbf426dace3b622df5c57eb63f763d3462953",
+        "print_metadata_sha256": "cdfb5fac73459b988d756da84d9626839d5ead5bef315c2b39604beb069c445c",
+        "profile": "sejm-print-core-live-v1",
+        "selection_id": "selection-v1:3a862fbc58e8e9d686712e6b2bbbe8abbce4724bd77ea571c905f22e9be4be17",
+        "term": 10
+      },
+      "sql_delta_bytes": 5594,
+      "gzip_delta_bytes": 1106
+    },
+    "2273-positive": {
+      "request_sha256": "2912edbbe7b37de614e63dd12772e3c49c8848ea79ab8c73bf67f81e78bc37ac",
+      "normalized_sql_sha256": "2113df4ae71ec92f25fd32af8de7b6405d848dce8bf1e64b9a489ea5f631b05d",
+      "docx_sha256": "28012c055be6d7f95b3d0505c3f516aad427272086426c46aa551b2e0be0043d",
+      "extra_docx_reads": 1,
+      "representation": {
+        "core_chars": 834,
+        "core_sha256": "c3aade35dd1b7d3fc35b97703f81b1919808b635bcf15c28c795249134de6459",
+        "docx_extraction_id": "extraction-v1:5dcda4deff6fcb209fe688149932d45c2da0d01acd99a75d2afc9db214aae6ad",
+        "docx_sha256": "28012c055be6d7f95b3d0505c3f516aad427272086426c46aa551b2e0be0043d",
+        "docx_text_sha256": "6926eaa80476f39670a31cd4ef6a30f2cfecc0a460699a612c469675d92c131c",
+        "edition_id": "edition-v1:e9bc018f4cebdf9a0b7b2104f9961b70d16891ac7754e4e12ffbd7fe65b5cce9",
+        "number": "2273",
+        "pdf_sha256": "e6dd0cd001d0e996845d378aa15e5f04b0b4c8ee65351bb6a6dba631f4552cc0",
+        "pdf_text_sha256": "d2c2d0a0ab2f82f1868f034f97c08be1a311549b29ef3c91eecab7801ecf59a4",
+        "print_metadata_sha256": "6a1f3ad3a9b8331ccf6ba5d8756699be14a6de7dbc50f57b8689fa164b66d28e",
+        "profile": "sejm-print-core-live-v1",
+        "selection_id": "selection-v1:830f611fc3df8832953cddc305c5ec533a9802f3ae2a68a2e118402342329700",
+        "term": 10
+      },
+      "sql_delta_bytes": 5601,
+      "gzip_delta_bytes": 1080
+    },
+    "3142-positive": {
+      "request_sha256": "8138bfec5fdb2f21f1a980ff0cf3e3a61b1baa26c4b7b07c30a52d2da5ea9fa4",
+      "normalized_sql_sha256": "06db9b488f54693ca4df03d52b4533776bd6b214c6948de295cfc6d38b9f57c4",
+      "docx_sha256": "d5e59870b5d3eaf0cb9ac0fdc22c7d219f1bd3bbf2ae6166dec6b8e8f353f71d",
+      "extra_docx_reads": 1,
+      "representation": {
+        "core_chars": 373,
+        "core_sha256": "5600d69d2deb7ce3c635a7d061e7c7156c23f439d53d483439ea1f7391b344d7",
+        "docx_extraction_id": "extraction-v1:30b1a0d825b6434da9203a17a1ce9deedc0c828de19526d70544d74917679c20",
+        "docx_sha256": "d5e59870b5d3eaf0cb9ac0fdc22c7d219f1bd3bbf2ae6166dec6b8e8f353f71d",
+        "docx_text_sha256": "0744620b7dadb19ada14d8b4a110df6d16dcb50d91b123577b60462e6f6dbded",
+        "edition_id": "edition-v1:98360ac59a022619130edc1a7cbf87acd090090f6f68e60e18579fce13686c39",
+        "number": "3142",
+        "pdf_sha256": "ed5becc73af82807105573511a43e3266de6c6bf76f587ba0bd568bb7c46d089",
+        "pdf_text_sha256": "52bfbf96227d5cae14446cddfc280d0c6922c06257669c9281c803fbd936b601",
+        "print_metadata_sha256": "7fd0cf1d4de66f72cc858c01e8d4dc32e6cc177aaa92e7fa41b5fadda03779e4",
+        "profile": "sejm-print-core-live-v1",
+        "selection_id": "selection-v1:aecaae19ba66ded36dac641c3147a4ed4d8028a490a2af36972a4a1498b889bf",
+        "term": 10
+      },
+      "sql_delta_bytes": 5600,
+      "gzip_delta_bytes": 1088
+    },
+    "430-nonmatching": {
+      "request_sha256": "5c7084955c7dfa587c2d6dc5ede69caed258fd32d8d05b7bf9fe258e478a6886",
+      "normalized_sql_sha256": "244afbd010cbaa1243afe64c9d949ca480e9773829569d935d63e001fc5ae02d",
+      "docx_sha256": "bc6359e57d79c0a6d6054fc61ca5e4671d8c6f96818719eed3400c98ec10cc58",
+      "extra_docx_reads": 1,
+      "representation": null,
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    }
+  },
+  "controls_and_pairs": {
+    "1240-nonmatching": {
+      "request_sha256": "36b60ac45387a59194d317e80339a5136b9235084d7f8ec2a2e115cf70746523",
+      "normalized_sql_sha256": "814e9903b22e27fcd10ea950ed0ac1e578f53d714b580ee84ae87099ed5c9c4b",
+      "docx_sha256": "e9608442b0c1e5c34d08c0d8a5031f837b3e1bc57217230ea3d3d81a9f27f91c",
+      "extra_docx_reads": 1,
+      "representation": null,
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "1267-positive": {
+      "request_sha256": "709554ff212e21b7332dde6e97323bf8b6c369696845b32470139afa6f720882",
+      "normalized_sql_sha256": "6f6f07a96ac0c940fdfb6e9418ee75c6aa5836aa72d1c533901bc5dd2ab07c1a",
+      "docx_sha256": "2f3524eb50d634160c3ae66e960ddd59412612e0f652d26e06cb9e2ed5a29392",
+      "extra_docx_reads": 1,
+      "representation": {
+        "core_chars": 412,
+        "core_sha256": "6d191578030cef0b30dc3655b19067de9c9cf2dcdaf7ad2f62701ca3b1abd901",
+        "docx_extraction_id": "extraction-v1:eeeb4cead0b0d5bc3c9bd3dff3a062138d3023a67fbddad69c25b72abb87f0b7",
+        "docx_sha256": "2f3524eb50d634160c3ae66e960ddd59412612e0f652d26e06cb9e2ed5a29392",
+        "docx_text_sha256": "bcfdd62c224a0ea5fabef8d1de04b307ac6afc4b39e423ff567d381249da6a76",
+        "edition_id": "edition-v1:50ca9a3699b89119f6fb24f9775e8082a9778d37d43a189e01292a168e84beeb",
+        "number": "1267",
+        "pdf_sha256": "6f389884b3accb466f6a9ffb741ad497ddafe7e162f8bf04d9fceb68e7969b80",
+        "pdf_text_sha256": "0df377666ce9be0847f3bf5ebab15e00dfe1a4b8b470350adbab5aa985865d14",
+        "print_metadata_sha256": "ef79ceed013cb7055d02c55b8d4f0c607764ecddc84980779fe70e3a9fe83ce4",
+        "profile": "sejm-print-core-live-v1",
+        "selection_id": "selection-v1:56f8e955963e7f89e89a2df70d763641224ebdd2f7ad0dae80c65dacfc6070ca",
+        "term": 10
+      },
+      "sql_delta_bytes": 5601,
+      "gzip_delta_bytes": 1202
+    },
+    "1608-ambiguous_metadata": {
+      "request_sha256": "18ca33db3b9c9e0b58abb627791dfa9884bf8bc217c596df2d37cecc842ae3a4",
+      "normalized_sql_sha256": "2c47b2b610ec9ed4013c899586f9c7358d2ec0564ecf9bb61f12b20dc09cee68",
+      "docx_sha256": "f1068afbcfe0a60f8d297d69e57d452448a883875dacb3369f9e754c193433f6",
+      "extra_docx_reads": 0,
+      "representation": null,
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "1608-outage": {
+      "request_sha256": "18ca33db3b9c9e0b58abb627791dfa9884bf8bc217c596df2d37cecc842ae3a4",
+      "normalized_sql_sha256": "2c47b2b610ec9ed4013c899586f9c7358d2ec0564ecf9bb61f12b20dc09cee68",
+      "docx_sha256": "f1068afbcfe0a60f8d297d69e57d452448a883875dacb3369f9e754c193433f6",
+      "extra_docx_reads": 1,
+      "representation": null,
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "1608-oversize": {
+      "request_sha256": "18ca33db3b9c9e0b58abb627791dfa9884bf8bc217c596df2d37cecc842ae3a4",
+      "normalized_sql_sha256": "2c47b2b610ec9ed4013c899586f9c7358d2ec0564ecf9bb61f12b20dc09cee68",
+      "docx_sha256": "f1068afbcfe0a60f8d297d69e57d452448a883875dacb3369f9e754c193433f6",
+      "extra_docx_reads": 1,
+      "representation": null,
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "1608-positive": {
+      "request_sha256": "18ca33db3b9c9e0b58abb627791dfa9884bf8bc217c596df2d37cecc842ae3a4",
+      "normalized_sql_sha256": "2c47b2b610ec9ed4013c899586f9c7358d2ec0564ecf9bb61f12b20dc09cee68",
+      "docx_sha256": "f1068afbcfe0a60f8d297d69e57d452448a883875dacb3369f9e754c193433f6",
+      "extra_docx_reads": 1,
+      "representation": {
+        "core_chars": 957,
+        "core_sha256": "5594429d4e7fcf6c047cbfdf7e4e17c3b0acf08608f247a400341c47c3954af4",
+        "docx_extraction_id": "extraction-v1:082787dabb9f66305511352b3f0e7ee423ff77a66a1b40a261d104b6addbfd7c",
+        "docx_sha256": "f1068afbcfe0a60f8d297d69e57d452448a883875dacb3369f9e754c193433f6",
+        "docx_text_sha256": "6597b86b4dd20b0b528b7cd3f3fb072b5f6ace2004d1afca9f8d23edb85bbfe8",
+        "edition_id": "edition-v1:d0676460176b22207475de7a1d89a237ec79611af03891e39d497a4dfc9b1ffb",
+        "number": "1608",
+        "pdf_sha256": "9c2fa70809387001922d85647b25eaf45a81809e6d1237cda4c4f61a05c737e8",
+        "pdf_text_sha256": "de78d9119380f7111db9da4115cae010a4174c1c2c9a54e5de7333efdac87ab7",
+        "print_metadata_sha256": "0616d0c1fb674e8d0575d370eadc4fee4c092b88e06458a418cf3a61db77cffb",
+        "profile": "sejm-print-core-live-v1",
+        "selection_id": "selection-v1:a58e1b1fe41bbd6948c36c2086faa95e9ea0806daf2ce76e78b7ea63e1d57644",
+        "term": 10
+      },
+      "sql_delta_bytes": 5603,
+      "gzip_delta_bytes": 1094
+    }
+  }
+}

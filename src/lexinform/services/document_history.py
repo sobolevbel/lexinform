@@ -28,11 +28,12 @@ from lexinform.models.candidate_trace import (
     SejmAdoptedText,
     SejmCommitteeRecommendation,
     SejmOriginalProposal,
+    SejmPrintRepresentation,
     SejmSupersededDraft,
 )
 from lexinform.models.document_editions import DocumentEdition
 from lexinform.models.document_history import SourceObservationIdentity
-from lexinform.models.sejm import SejmAdoptionOrigin, SejmProposalOrigin
+from lexinform.models.sejm import SejmAdoptionOrigin, SejmProposalOrigin, SejmRepresentationOrigin
 from lexinform.models.source_omissions import (
     BillOmissionOwner,
     RclOmissionOwner,
@@ -57,6 +58,16 @@ def persist_source_history(
 
 
 @dataclass(frozen=True)
+class PrintRepresentationRead:
+    origin: SejmRepresentationOrigin
+    trace: CandidateDispositionTrace
+    docx: ArtifactReadIdentity
+    extraction: ExtractionResult
+    core_sha256: str
+    core_chars: int
+
+
+@dataclass(frozen=True)
 class DocumentSourceRead:
     document: TextDocument
     selection: DocumentSelectionRecord
@@ -66,6 +77,7 @@ class DocumentSourceRead:
     candidate_trace: CandidateDispositionTrace | None = None
     sejm_origin: SejmAdoptionOrigin | SejmProposalOrigin | None = None
     committee_draft: DocumentSelectionRecord | None = None
+    representation: PrintRepresentationRead | None = None
 
 
 @dataclass(frozen=True)
@@ -201,6 +213,8 @@ def record_source_read(
         candidate_trace=source.candidate_trace,
         sejm_origin=source.sejm_origin,
     )
+    if source.representation is not None:
+        _record_print_representation(repo, source, observation, source.representation)
     if source.committee_draft is not None:
         record_document_source(
             repo,
@@ -265,6 +279,44 @@ def record_artifact_reads(
                 recorded_at=recorded_at,
             )
         )
+
+
+def _record_print_representation(
+    repo: BillRepository,
+    source: DocumentSourceRead,
+    observation: SourceObservation,
+    evidence: PrintRepresentationRead,
+) -> None:
+    edition = repo.get_selection_edition(source.selection.selection_id)
+    if edition is None or len(source.selection.selection.parts) != 1:
+        return
+    (part,) = source.selection.selection.parts
+    try:
+        proof = SejmPrintRepresentation(
+            profile="sejm-print-core-live-v1",
+            term=evidence.origin.term,
+            number=evidence.origin.number,
+            print_metadata_sha256=evidence.origin.metadata_sha256,
+            pdf_sha256=part.sha256,
+            docx_sha256=evidence.docx.sha256,
+            pdf_text_sha256=part.text_sha256,
+            docx_text_sha256=evidence.extraction.output_text_sha256,
+            core_sha256=evidence.core_sha256,
+            core_chars=evidence.core_chars,
+            selection_id=source.selection.selection_id,
+            edition_id=edition.edition_id,
+            docx_extraction_id=evidence.extraction.result_id,
+        )
+        trace = CandidateDispositionTrace.model_validate(
+            {**evidence.trace.model_dump(), "sejm_print_representation": proof}
+        )
+        with repo.atomic():
+            record_artifacts(repo, (evidence.docx,), recorded_at=observation.recorded_at)
+            record_artifact_reads(repo, (evidence.docx,), recorded_at=observation.recorded_at)
+            repo.save_extraction_result(evidence.extraction, recorded_at=observation.recorded_at)
+            repo.save_candidate_disposition_trace(observation.observation_id, trace)
+    except ValueError:
+        log.debug("Sejm print representation proof failed validation")
 
 
 def record_document_source(

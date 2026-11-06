@@ -11834,3 +11834,29 @@ The two positive fixtures added 446–447 SQL bytes and 60–63 gzip bytes.
 This records whole-text succession in the Sejm process. The runtime
 PDF/DOCX representation writer and other evidence profiles under DA4.7
 remain open.
+
+<a id="j298"></a>
+
+## J298 — persist the native PDF and DOCX representation proof
+
+The original-print analysis can prove that a DOCX represents the same
+literal normative core as the selected PDF. It requires the official
+singleton print and exact attachments. It checks the already-read PDF
+before attempting one optional DOCX read. The bounds are 2 MiB and 30
+readable PDF pages, 2,000 core characters and 256 KiB for the DOCX.
+The proof persists only matching cores and their exact read, extraction
+and edition parents. Earlier listing-based proofs retain their profile.
+The native proof pins the observed print metadata.
+
+The pinned PDF preflight selected 19 of 612 eligible prints. Paired
+native runs covered all 19 and reproduced all eight known positive
+pairs. The other 11 left no relationship. The controls covered a
+DOCX outage, byte-limit refusal, and ambiguous print metadata. The
+request and metadata-call identities matched baseline in every run.
+All checkpoints passed two restores. Removing the new trace and its
+DOCX metadata parents left the same SQL. Positive fixtures added 5,594–5,603
+SQL bytes and 1,080–1,202 gzip bytes. No model request was submitted.
+[Qualification](../assets/audits/2026-11-06-native-print-representations/qualification.json).
+
+DA4.7 is accepted for its proved profiles. Cases outside their contracts
+stay unknown, and the PDF remains the ordinary analysis source.
