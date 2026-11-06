@@ -12766,6 +12766,9 @@ dump and JSON for all 14 retained results matched across revisions. The
 runtime writer and correction consumer remain inactive.
 [Qualification](../assets/audits/2026-11-06-amendment-scan-context-reader/qualification.json).
 
+The exact `f4f3e2f6` release passed CI run 42240448888 and relay
+deployment 42241768429. Restart and timer were verified.
+
 <a id="j340"></a>
 
 ## J340 — retain committee scan context from the submitted request
@@ -12782,3 +12785,21 @@ the evidence. A successful isolated dump grew by 153–242 gzip bytes.
 The submitted copy accounts for 8–23 gzip bytes and remains available for
 cross-checking the paid record. The correction consumer stays separate.
 [Qualification](../assets/audits/2026-11-06-amendment-scan-context-writer/qualification.json).
+
+<a id="j341"></a>
+
+## J341 — correct an amendment from the exact original scan question
+
+The public correction command resolves the root content version and its
+paid result. For a witnessed committee scan it reads the saved URL once
+and reconstructs the original question only on an exact PDF match.
+Changed or missing files stop before preparation, reservation or queue
+writes. Outages and cancellation propagate through the existing path.
+
+On the official 2467-A PDF, the offline command reused the original
+question after cleanup and two restores, then edited the original message
+through the test publisher. A repeated force command while queued made
+no additional read or request. Changed PDF, missing file, outage and
+cancellation made one read attempt each with no new preparation or state
+write. All 24 existing J340 lifecycle paths repeated byte-exact.
+[Qualification](../assets/audits/2026-11-06-original-scan-correction/qualification.json).

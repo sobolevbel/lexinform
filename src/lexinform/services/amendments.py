@@ -168,7 +168,7 @@ class AmendmentsService:
                 raise ValueError("В сообщении нет стадии с поправками")
             retained = original_amendment_input(self._repo, original)
             source: AmendmentsSource | None
-            if retained.snapshot is not None:
+            if retained.snapshot is not None or retained.scan_witness is not None:
                 if change.amendments is None:
                     raise ValueError("invalid_amendment_input")
                 source = AmendmentsSource(
@@ -218,7 +218,7 @@ class AmendmentsService:
                 recommendation=source.recommendation,
                 recommendation_origin=source.recommendation_origin,
                 force_id=force_id,
-                original_input=retained if retained.snapshot is not None else None,
+                original_input=retained if retained.state != "unavailable" else None,
             )
             if isinstance(result, Waiting):
                 return self._waiting_outcome(bill, original.id, result)

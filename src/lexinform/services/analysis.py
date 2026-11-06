@@ -35,6 +35,7 @@ from lexinform.document_versions import draft_version
 from lexinform.errors import (
     BatchNotSubmittedError,
     DocumentSelectionError,
+    DownloadError,
     LlmContextExceededError,
     LlmUnavailableError,
     OrkaUnreachableError,
@@ -1394,6 +1395,28 @@ class AnalysisService:
             context = original_input.snapshot.context
             if context.number != bill.number:
                 raise ValueError("invalid_amendment_input")
+            if self._too_expensive_to_digest(context):
+                raise ValueError("Разбор поправок превышает лимит стоимости документа")
+        elif original_input is not None and original_input.scan_witness is not None:
+            witness = original_input.scan_witness
+            if (
+                document.url != witness.source_url
+                or document.kind != "committee_amendments"
+                or witness.context_without_scan.number != bill.number
+            ):
+                raise ValueError("invalid_amendment_input")
+            message = "Исходный скан поправок изменился или недоступен; исправление не запущено"
+            with optional_read_timing(self._loader, self._clock.now) as capture:
+                try:
+                    scan = self._loader.load_scan(witness.source_url, cover_letter=False)
+                    if scan is None:
+                        raise ValueError(message)
+                    context = witness.restore_context(scan)
+                except ServiceUnavailableError:
+                    raise
+                except (DownloadError, FileNotFoundError, ValueError) as error:
+                    raise ValueError(message) from error
+            local_read = read_timing(capture)
             if self._too_expensive_to_digest(context):
                 raise ValueError("Разбор поправок превышает лимит стоимости документа")
         else:

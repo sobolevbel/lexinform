@@ -1,0 +1,45 @@
+{
+  "cohort_manifest_sha256": "bc94e5d85183747af057b76aea34c32800b22f572d2e6ee92a77e68975fb480e",
+  "correction_controls": {
+    "cancelled": {
+      "downloads": 1,
+      "outcome": null,
+      "prepared": 0,
+      "source_control": "cancelled"
+    },
+    "changed": {
+      "downloads": 1,
+      "outcome": "error",
+      "prepared": 0,
+      "source_control": "changed"
+    },
+    "identical": {
+      "downloads": 1,
+      "outcome": "queued",
+      "prepared": 1,
+      "source_control": "identical"
+    },
+    "missing": {
+      "downloads": 1,
+      "outcome": "error",
+      "prepared": 0,
+      "source_control": "missing"
+    },
+    "outage": {
+      "downloads": 1,
+      "outcome": null,
+      "prepared": 0,
+      "source_control": "outage"
+    }
+  },
+  "native_report_sha256": "d6473a45221e3b504e168c3ace9db65d40a098594322dfaa6906cd2e150ea0d3",
+  "official_attachment": "2467-A.pdf",
+  "original_context_sha256": "d39fbff83db6d9a3ab804c72f27e4e27689877f4e5cc2a18988485595bcd57e0",
+  "owner_print": "2317",
+  "paired_j340_lifecycle_exact": true,
+  "paired_j340_lifecycle_paths": 24,
+  "provider_submissions": 0,
+  "scope": "Official pinned PDF with controlled batch and mock Telegram delivery.",
+  "source_sha256": "79ab9c0745e7939b04aac222276e8001b6a403856f246bf92c6c544b16bb7bdd",
+  "telegram_sends": 0
+}

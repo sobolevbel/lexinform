@@ -41,6 +41,25 @@ def original_amendment_input(
         or not isinstance(result.record, AmendmentsRecord)
     ):
         raise ValueError("invalid_amendment_input")
+    witness = result.amendment_scan_input
+    if witness is not None:
+        owner = (publication.term, publication.number)
+        if (
+            result.result_id not in root.computation_ids
+            or (result.term, result.number) != owner
+            or (change.term, change.number) != owner
+            or record.request_sha256 != witness.request_sha256
+            or record.source_kind != "committee_amendments"
+            or record.source_url != witness.source_url
+            or record.scan_input != witness.scan_input
+        ):
+            raise ValueError("invalid_amendment_input")
+        return AmendmentInputAvailability(
+            state="requires_exact_scan",
+            root_content_id=root.content_id,
+            result_id=result.result_id,
+            scan_witness=witness,
+        )
     if result.amendment_input_ref is None:
         return AmendmentInputAvailability(
             state="unavailable",

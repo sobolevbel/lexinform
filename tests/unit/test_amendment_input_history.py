@@ -37,6 +37,8 @@ from lexinform.services.amendment_input_history import original_amendment_input
 from lexinform.services.content_inspection import inspect_content_page
 from tests.computations import NOW, retained_result
 from tests.fakes import FakePublisher
+from tests.unit.test_amendment_scan_input_reader import original as scan_original
+from tests.unit.test_amendment_scan_input_reader import paid_result as paid_scan_result
 from tests.unit.test_content_sources import Case
 from tests.unit.test_content_sources import case as case
 
@@ -738,3 +740,29 @@ def test_older_unavailable_layout_has_no_new_amendment_finding() -> None:
     with closing(sqlite3.connect(":memory:")) as connection:
         connection.execute("PRAGMA user_version=1")
         assert list(amendment_input_issues(connection)) == []
+
+
+@pytest.mark.parametrize("known", [True, False])
+def test_original_scan_resolution_never_infers_a_witness_from_a_manifest(
+    case: Case, known: bool
+) -> None:
+    witness, _, _ = scan_original()
+    result = paid_scan_result(witness)
+    if not known:
+        result = result.model_copy(update={"amendment_scan_input": None})
+    original = queued(case.repo, case.bill, case.change, result)
+    assert poster(case.repo, FakePublisher()).deliver(original)
+    confirmed = case.repo.publication_by_id(original.id or 0)
+    assert confirmed is not None, "the public poster freezes the root publication"
+
+    retained = original_amendment_input(case.repo, confirmed)
+
+    assert retained.snapshot is None
+    assert retained.result_id == result.result_id
+    if known:
+        assert retained.state == "requires_exact_scan"
+        assert retained.scan_witness == witness
+    else:
+        assert retained.state == "unavailable"
+        assert retained.reason == "legacy_input_unavailable"
+        assert retained.scan_witness is None

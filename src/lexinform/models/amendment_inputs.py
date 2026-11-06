@@ -157,7 +157,7 @@ class AmendmentInputRef(BaseModel):
 class AmendmentInputAvailability(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    state: Literal["available", "unavailable"]
+    state: Literal["available", "requires_exact_scan", "unavailable"]
     reason: (
         Literal[
             "root_history_unavailable", "root_amendment_unavailable", "legacy_input_unavailable"
@@ -168,3 +168,6 @@ class AmendmentInputAvailability(BaseModel):
     result_id: str | None = None
     snapshot: AmendmentInputSnapshot | None = None
     reference: AmendmentInputRef | None = None
+    scan_witness: AmendmentScanInputWitness | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
