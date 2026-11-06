@@ -1,0 +1,60 @@
+{
+  "archive": "778150.zip",
+  "legacy_and_loose_profiles_report_sha256": "90f9be3b1e1d63a35c19cf4763dddc54c7131b13697e4b177c07851a6f270313",
+  "native_report_sha256": "571ce3894dcf0d9ccff06b313d587cb0edb1078761028b5784579554efb35f7d",
+  "official_case": "RCL 12403302/12",
+  "provider_submissions": 0,
+  "raw_pins": {
+    "documents/files/778150.zip": "659ac5e0b08f211d09ba3d6fc9054c972299f9450a2b1ec55db4ca91fce44a03"
+  },
+  "receipt": {
+    "bytes": 2876,
+    "context_sha256": "f21defd6dd627a8eb21bdc4f966d688083abb4f3ab7f67a5648fa749cccd842d",
+    "extraction": "extraction-v1:f8bb360a0d730a2bf47ca2a5631c5e02ceebbd3b535bd73b12bffca48452f8a8",
+    "queued_gzip_delta": 553,
+    "queued_sql_delta": 2902,
+    "request_sha256": "8059b6d8e02c4b092f5eb015d12eda81da57019f57b8f6e2ceb93bf4bca281ee",
+    "root": "659ac5e0b08f211d09ba3d6fc9054c972299f9450a2b1ec55db4ca91fce44a03",
+    "segments": 12,
+    "source_parts": [
+      {
+        "chars": 47034,
+        "physical_index": 7,
+        "role": "bill",
+        "text_sha256": "6d7e8d4520299daff7cfd88da3d0806687e1519840fb4634880ad8fdaec53c61"
+      },
+      {
+        "chars": 14507,
+        "physical_index": 9,
+        "role": "normative_annex",
+        "text_sha256": "f6f063404a4fa849afdf42784cc6b6e41aaa2c88f727ab7db805aa7739e3f807"
+      },
+      {
+        "chars": 904,
+        "physical_index": 10,
+        "role": "normative_annex",
+        "text_sha256": "8936bdb783a8e828599854da97e622abfceffecc43c626720e4ee78fb3fc3114"
+      },
+      {
+        "chars": 1397,
+        "physical_index": 11,
+        "role": "normative_annex",
+        "text_sha256": "2ad474fe81a849c6e1e19ba375243b3b8122edf4530725f6a6da29633a3b2e96"
+      },
+      {
+        "chars": 158334,
+        "physical_index": 8,
+        "role": "justification",
+        "text_sha256": "870fd6745a84505e2dc950e68e934790879cf531e2d4b59a55ab1e3b81acf922"
+      },
+      {
+        "chars": 57631,
+        "physical_index": 1,
+        "role": "osr",
+        "text_sha256": "2d47bdbb66b0fc013d0b22e02af2165b353241645ac19ed743623583957f42cf"
+      }
+    ],
+    "text_chars": 259726
+  },
+  "scope": "Controlled persisted receipt with real RCL bytes; writer disabled, one root only. Coordinates describe prepared legacy part text."
+}

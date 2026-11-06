@@ -247,7 +247,7 @@ class LooseRclInputPart(PreparedTextPart):
     extraction_id: str = Field(pattern=r"^extraction-v1:[0-9a-f]{64}$", max_length=80)
 
 
-class LooseMultipartInputReceipt(BaseModel):
+class MultipartTextInputReceipt(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
     schema_version: Literal[1] = 1
@@ -260,7 +260,7 @@ class LooseMultipartInputReceipt(BaseModel):
     input_completeness: Literal["not_asserted"] = "not_asserted"
     retention: Literal["complete"] = "complete"
     source_selection_id: str = Field(pattern=r"^selection-v1:[0-9a-f]{64}$", max_length=80)
-    source_parts: tuple[LooseRclInputPart, ...] = Field(min_length=2, max_length=6)
+    source_parts: tuple[PreparedTextPart, ...] = Field(min_length=2, max_length=6)
     context_sha256: str = Field(pattern=r"^[0-9a-f]{64}$", max_length=64)
     request_sha256: str = Field(pattern=r"^[0-9a-f]{64}$", max_length=64)
     text_sha256: str = Field(pattern=r"^[0-9a-f]{64}$", max_length=64)
@@ -290,6 +290,37 @@ class LooseMultipartInputReceipt(BaseModel):
             raise ValueError("Multipart input receipt must keep its exact whole map")
         if len(self.model_dump_json().encode()) > MAX_INPUT_RECEIPT_BYTES:
             raise ValueError("Multipart input receipt exceeds its serialized byte limit")
+        return self
+
+
+class LooseMultipartInputReceipt(MultipartTextInputReceipt):
+    source_parts: tuple[LooseRclInputPart, ...] = Field(min_length=2, max_length=6)
+
+
+class ArchiveInputPart(PreparedTextPart):
+    chars: int = Field(gt=0, le=MAX_INPUT_RECEIPT_INTEGER, strict=True)
+    physical_index: int = Field(ge=0, le=MAX_INPUT_RECEIPT_INTEGER, strict=True)
+
+
+class RclArchiveInputReceipt(MultipartTextInputReceipt):
+    source_kind = "rcl"
+    profile: Literal["primary-rcl-archive-package-text-v1"] = "primary-rcl-archive-package-text-v1"
+    source_parts: tuple[ArchiveInputPart, ...] = Field(min_length=2, max_length=6)
+    source_observation_id: str = Field(pattern=r"^source-observation-v1:[0-9a-f]{64}$")
+    extraction_id: str = Field(pattern=r"^extraction-v1:[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def archive_parts(self) -> Self:
+        roles = tuple(part.role for part in self.source_parts)
+        order = {"bill": 0, "normative_annex": 1, "justification": 2, "osr": 3}
+        if (
+            roles[0] != "bill"
+            or any(role not in order for role in roles)
+            or list(roles) != sorted(roles, key=order.__getitem__)
+            or any(roles.count(role) > 1 for role in ("bill", "justification", "osr"))
+            or len({part.physical_index for part in self.source_parts}) != len(self.source_parts)
+        ):
+            raise ValueError("Archive input requires distinct slots in one ordinary package")
         return self
 
 

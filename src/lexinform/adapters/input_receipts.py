@@ -33,9 +33,12 @@ from lexinform.models import (
     SupplementInputReceipt,
 )
 from lexinform.models.batch import FrozenRequestManifest, batch_item_meta, validate_batch_item_meta
+from lexinform.models.extractions import extraction_metadata_sha256
 from lexinform.models.input_receipts import (
     LooseMultipartInputReceipt,
     LooseRclInputReceipt,
+    MultipartTextInputReceipt,
+    RclArchiveInputReceipt,
     SejmSelfAmendmentInputReceipt,
 )
 from lexinform.models.scan_input import MAX_SCAN_BYTES, MAX_SCAN_PAGES
@@ -404,13 +407,83 @@ def _source_selection(connection: sqlite3.Connection, identity: str) -> Document
     return selection
 
 
+def _archive_parents(
+    connection: sqlite3.Connection,
+    receipt: RclArchiveInputReceipt,
+    meta: BatchItemMeta,
+    owner: tuple[int, str] | None,
+    selection: DocumentSelectionRecord,
+) -> None:
+    observation = DocumentSourceRows(connection).get_source_observation(
+        receipt.source_observation_id
+    )
+    binding = meta.input_binding
+    if (
+        observation is None
+        or binding is None
+        or (observation.term, observation.number) != owner
+        or (binding.term, binding.number) != owner
+        or observation.purpose != "analysis"
+        or observation.selection_id != selection.selection_id
+        or (observation.document.kind, observation.document.url) != ("rcl", meta.source_url)
+    ):
+        raise ValueError("input_receipt_archive_observation_mismatch")
+    document = observation.document
+    if (
+        document.official_link_conflict
+        or document.alternatives
+        or document.required_urls
+        or document.normative_urls
+        or document.amendment_urls
+        or document.extra_urls
+    ):
+        raise ValueError("input_receipt_archive_scope_mismatch")
+    row = _one(
+        connection,
+        "SELECT e.* FROM selection_extractions l JOIN extraction_results e USING(extraction_id)"
+        " WHERE l.selection_id=? AND l.extraction_id=?",
+        (selection.selection_id, receipt.extraction_id),
+    )
+    extraction = read_extraction_result(row)
+    root = extraction.artifact_sha256
+    _one(
+        connection,
+        "SELECT 1 FROM artifact_reads WHERE requested_url=? AND artifact_sha256=?",
+        (document.url, root),
+    )
+    summaries = {part.physical_index: part for part in extraction.selected_parts}
+    if (
+        extraction.omitted_selected_parts != 0
+        or extraction.selected_part_count != len(receipt.source_parts)
+        or set(summaries) != {part.physical_index for part in receipt.source_parts}
+    ):
+        raise ValueError("input_receipt_archive_extraction_mismatch")
+    for part, recorded in zip(selection.selection.parts, receipt.source_parts, strict=True):
+        summary = summaries[recorded.physical_index]
+        if (
+            not part.members
+            or (part.url, part.source_sha256) != (document.url, root)
+            or (part.role, part.text_sha256, part.text_start, part.text_end)
+            != (recorded.role, recorded.text_sha256, 0, recorded.chars)
+            or (summary.sha256, summary.text_sha256, summary.text_chars, summary.member_path_sha256)
+            != (
+                part.sha256,
+                recorded.text_sha256,
+                recorded.chars,
+                extraction_metadata_sha256(part.members),
+            )
+        ):
+            raise ValueError("input_receipt_archive_part_mismatch")
+
+
 def _multipart_parents(
     connection: sqlite3.Connection,
-    receipt: LooseMultipartInputReceipt,
+    receipt: MultipartTextInputReceipt,
     meta: BatchItemMeta,
     owner: tuple[int, str] | None,
 ) -> None:
-    selection = _source_selection(connection, receipt.source_selection_id).selection
+    source = _source_selection(connection, receipt.source_selection_id)
+    selection = source.selection
     fitted = meta.selection
     parts = selection.parts
     if (
@@ -419,9 +492,15 @@ def _multipart_parents(
         != (fitted.question, fitted.policy_version)
         or any(span.stage == "analysis" for span in selection.coverage)
         or len(parts) != len(receipt.source_parts)
-        or len({part.url for part in parts}) != len(parts)
         or parts != fitted.without_text().parts
     ):
+        raise ValueError("input_receipt_selection_mismatch")
+    if isinstance(receipt, RclArchiveInputReceipt):
+        _archive_parents(connection, receipt, meta, owner, source)
+        return
+    if not isinstance(receipt, LooseMultipartInputReceipt) or len(
+        {part.url for part in parts}
+    ) != len(parts):
         raise ValueError("input_receipt_selection_mismatch")
     if isinstance(receipt, LooseRclInputReceipt) and receipt.source_observation_id is not None:
         observation = DocumentSourceRows(connection).get_source_observation(
@@ -509,13 +588,14 @@ def _parents(
     receipt: PrimaryInputReceipt
     | LooseRclInputReceipt
     | SejmSelfAmendmentInputReceipt
+    | RclArchiveInputReceipt
     | SupplementInputReceipt
     | AmendmentInputReceipt,
     *,
     primary_meta: BatchItemMeta | None = None,
     owner: tuple[int, str] | None = None,
 ) -> None:
-    if isinstance(receipt, LooseMultipartInputReceipt):
+    if isinstance(receipt, MultipartTextInputReceipt):
         if primary_meta is None:
             raise ValueError("Multipart receipt requires its fitted selection")
         _multipart_parents(connection, receipt, primary_meta, owner)
@@ -598,12 +678,12 @@ def validate_supplement_receipt_parents(
 
 
 def validate_multipart_intent(connection: sqlite3.Connection, intent: BatchIntent) -> None:
-    if not isinstance(intent.meta.prepared_input_receipt, LooseMultipartInputReceipt):
+    if not isinstance(intent.meta.prepared_input_receipt, MultipartTextInputReceipt):
         return
     validated = BatchIntent.model_validate_json(intent.model_dump_json())
     meta = validated.meta
     if not isinstance(meta, BatchItemMeta) or not isinstance(
-        meta.prepared_input_receipt, LooseMultipartInputReceipt
+        meta.prepared_input_receipt, MultipartTextInputReceipt
     ):
         raise ValueError("Multipart receipt requires primary metadata")
     try:
@@ -618,11 +698,11 @@ def validate_multipart_intent(connection: sqlite3.Connection, intent: BatchInten
 
 
 def validate_multipart_item(connection: sqlite3.Connection, item: LlmBatchItem) -> None:
-    if not isinstance(item.meta.prepared_input_receipt, LooseMultipartInputReceipt):
+    if not isinstance(item.meta.prepared_input_receipt, MultipartTextInputReceipt):
         return
     meta = batch_item_meta(item.call_kind, item.meta.model_dump_json())
     if not isinstance(meta, BatchItemMeta) or not isinstance(
-        meta.prepared_input_receipt, LooseMultipartInputReceipt
+        meta.prepared_input_receipt, MultipartTextInputReceipt
     ):
         raise ValueError("Multipart receipt requires primary metadata")
     _multipart_parents(connection, meta.prepared_input_receipt, meta, (item.term, item.number))

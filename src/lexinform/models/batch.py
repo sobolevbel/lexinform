@@ -36,9 +36,10 @@ from lexinform.models.documents import DocumentSelection
 from lexinform.models.enums import SourceKind, TextSource
 from lexinform.models.input_receipts import (
     AmendmentInputReceipt,
-    LooseMultipartInputReceipt,
     LooseRclInputReceipt,
+    MultipartTextInputReceipt,
     PrimaryInputReceipt,
+    RclArchiveInputReceipt,
     SejmSelfAmendmentInputReceipt,
     SupplementInputReceipt,
     amendment_context_sha256,
@@ -387,7 +388,11 @@ class BatchItemMeta(BaseModel):
     )
     queued_at: dt.datetime | None = Field(default=None, exclude_if=lambda value: value is None)
     prepared_input_receipt: (
-        PrimaryInputReceipt | LooseRclInputReceipt | SejmSelfAmendmentInputReceipt | None
+        PrimaryInputReceipt
+        | LooseRclInputReceipt
+        | SejmSelfAmendmentInputReceipt
+        | RclArchiveInputReceipt
+        | None
     ) = Field(default=None, exclude_if=lambda value: value is None)
 
     local_timing_witness: LocalTimingWitness | None = Field(
@@ -415,7 +420,7 @@ class BatchItemMeta(BaseModel):
             and receipt.request_sha256 != self.request_sha256
         ):
             raise ValueError("Input receipt must identify the frozen batch request")
-        if isinstance(receipt, LooseMultipartInputReceipt):
+        if isinstance(receipt, MultipartTextInputReceipt):
             if (
                 self.source_kind != receipt.source_kind
                 or self.input_binding is None
@@ -427,7 +432,7 @@ class BatchItemMeta(BaseModel):
             ):
                 raise ValueError("Multipart text receipt differs from its selected text input")
             for part, recorded in zip(self.selection.parts, receipt.source_parts, strict=True):
-                if part.members or (
+                if bool(part.members) != isinstance(receipt, RclArchiveInputReceipt) or (
                     part.role,
                     part.text_sha256,
                     part.text_start,
@@ -587,7 +592,7 @@ def validate_batch_item_meta(
             raise ValueError("Submitted text receipts require their frozen request checksum")
     if (
         submitted
-        and isinstance(parsed.prepared_input_receipt, LooseMultipartInputReceipt)
+        and isinstance(parsed.prepared_input_receipt, MultipartTextInputReceipt)
         and parsed.request_sha256 is None
     ):
         raise ValueError("Submitted multipart text receipts require their frozen request checksum")
@@ -731,7 +736,7 @@ class BatchIntent(BaseModel):
             ):
                 raise ValueError("Primary receipts require their actual primary question")
             ctx: BillContext | SupplementContext | AmendmentsContext = request.question.ctx
-            if isinstance(receipt, LooseMultipartInputReceipt):
+            if isinstance(receipt, MultipartTextInputReceipt):
                 binding = self.meta.input_binding
                 if (
                     ctx.source_kind != receipt.source_kind

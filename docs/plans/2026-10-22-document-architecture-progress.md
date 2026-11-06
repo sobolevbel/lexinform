@@ -12786,6 +12786,9 @@ The submitted copy accounts for 8–23 gzip bytes and remains available for
 cross-checking the paid record. The correction consumer stays separate.
 [Qualification](../assets/audits/2026-11-06-amendment-scan-context-writer/qualification.json).
 
+The exact `cc30808b` release passed CI run 42241990396 and relay
+deployment 42243207926. Restart and timer were verified.
+
 <a id="j341"></a>
 
 ## J341 — correct an amendment from the exact original scan question
@@ -12803,3 +12806,20 @@ no additional read or request. Changed PDF, missing file, outage and
 cancellation made one read attempt each with no new preparation or state
 write. All 24 existing J340 lifecycle paths repeated byte-exact.
 [Qualification](../assets/audits/2026-11-06-original-scan-correction/qualification.json).
+
+<a id="j342"></a>
+
+## J342 — read prepared input receipts for one RCL archive
+
+The reader verifies the exact RCL source observation and ZIP body read,
+the retained extraction, and each selected part's physical slot, member
+path, leaf hash and text extent. The ordered segments still describe the
+emitted text. Hybrid roots and missing evidence do not qualify.
+
+The pinned 778150.zip preparation produced 259,726 characters, 12
+segments, and six selected parts. The manually attached receipt occupied
+2,876 bytes and added 553 gzip bytes to the queued sample. It survived
+submission, consumption, cleanup and two restores. Swapped slots were
+rejected. The legacy dump and two existing loose profiles matched.
+The runtime writer remains disabled.
+[Qualification](../assets/audits/2026-11-06-rcl-archive-input-reader/qualification.json).
