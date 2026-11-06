@@ -12045,3 +12045,29 @@ normalizing the new detail and its attempt identity. Typed controls added
 or model calls were made. [Qualification](../assets/audits/2026-11-06-terminal-part-read/qualification.json).
 
 DA4.1 and DA4.4 remain open for the remaining catalog and decision coverage.
+
+<a id="j307"></a>
+
+## J307 — read the exact prepared Sejm bill and self-amendment map
+
+A bounded primary text receipt identifies the frozen context, request, emitted
+ranges and both loose extraction parents. It requires an analysis observation
+with its exact retained official proposal trace, selection and edition, all
+owned by the same term and print. Existing single-part and RCL receipts keep
+their serialized fields. The new profile carries neither source text nor a
+storage promise. Citation verification for this profile remains unqualified.
+
+In the pinned native druk 2320/2320-A replay, the offline fixture attached a
+receipt to an otherwise unchanged queued request. Its 51,796 characters map
+to 39,272 from the bill, 155 generated characters and 12,369 from the
+self-amendment. Queue, submitted and collected checkpoints restored twice.
+After removing only the new receipt, SQL matched the paired baseline. The
+serialized request, source IO and outcome matched as well. Gzip deltas were
+561, 594 and 589 bytes. A nonexistent proposal trace rejected the save
+atomically. A submitted item with a foreign binding was rejected before the
+batch was saved. Both existing RCL receipt profiles serialized byte-for-byte
+like the previous code.
+[Qualification](../assets/audits/2026-11-06-sejm-self-amendment-input-reader/qualification.json).
+
+Reader stage only. DA5.1 and DA5.6 stay open for native capture and other
+profiles. The older reader cannot accept the new profile once persisted.

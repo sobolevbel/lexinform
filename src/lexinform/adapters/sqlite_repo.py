@@ -66,8 +66,8 @@ from lexinform.adapters.extraction_history import (
 from lexinform.adapters.input_receipts import (
     parse_batch_request,
     validate_input_snapshots,
-    validate_loose_rcl_intent,
-    validate_loose_rcl_item,
+    validate_multipart_intent,
+    validate_multipart_item,
 )
 from lexinform.adapters.legacy_history import (
     read_legacy_result as _read_legacy_result,
@@ -3603,7 +3603,7 @@ class SqliteBillRepository:
 
     def save_batch_intent(self, intent: BatchIntent) -> None:
         validate_intent_input(self._conn, intent)
-        validate_loose_rcl_intent(self._conn, intent)
+        validate_multipart_intent(self._conn, intent)
         inserted = self._conn.execute(
             "INSERT OR IGNORE INTO llm_batch_intents"
             " (custom_id, provider, request_json, meta_json, state, created_at)"
@@ -3822,7 +3822,7 @@ class SqliteBillRepository:
     def _save_llm_batch_rows(self, batch: LlmBatch, items: Sequence[LlmBatchItem]) -> None:
         for item in items:
             validate_item_input(self._conn, item)
-            validate_loose_rcl_item(self._conn, item)
+            validate_multipart_item(self._conn, item)
         self._conn.execute(
             """
             INSERT INTO llm_batches

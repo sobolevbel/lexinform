@@ -12,6 +12,7 @@ from lexinform.models import (
     BatchIntent,
     BatchItemMeta,
     BatchRequest,
+    ComputationInputBinding,
     DocumentPart,
     DocumentSelection,
     DocumentSelectionRecord,
@@ -26,6 +27,7 @@ from lexinform.models.documents import DocumentRole
 from lexinform.models.input_receipts import (
     LooseRclInputPart,
     LooseRclInputReceipt,
+    SejmSelfAmendmentInputReceipt,
     input_map_sha256,
     input_text_sha256,
     primary_context_sha256,
@@ -219,6 +221,91 @@ def test_loose_rcl_map_rejects_cross_part_escape_even_with_recomputed_hash() -> 
                 "full_map_sha256": input_map_sha256(segments),
             }
         )
+
+
+def test_sejm_input_requires_self_amendment_and_exact_proposal_parent() -> None:
+    with closing(SqliteBillRepository(":memory:")) as repo:
+        intent, rcl = known_inputs(repo)
+        base, annex = rcl.source_parts
+        values = {
+            **rcl.model_dump(exclude={"profile"}),
+            "source_observation_id": "source-observation-v1:" + "a" * 64,
+            "proposal_trace_id": "candidate-trace-v1:" + "b" * 64,
+        }
+        with pytest.raises(ValueError, match="one self-amendment"):
+            SejmSelfAmendmentInputReceipt.model_validate(values)
+        receipt = SejmSelfAmendmentInputReceipt.model_validate(
+            {**values, "source_parts": (base, annex.model_copy(update={"role": "self_amendment"}))}
+        )
+        assert isinstance(intent.meta, BatchItemMeta), "the fixture uses primary metadata"
+        metadata = intent.meta.model_dump()
+        with pytest.raises(ValueError, match="selected text input"):
+            BatchItemMeta.model_validate({**metadata, "prepared_input_receipt": receipt})
+        fitted = intent.meta.selection
+        fitted = fitted.model_copy(
+            update={
+                "parts": (
+                    fitted.parts[0],
+                    fitted.parts[1].model_copy(update={"role": "self_amendment"}),
+                )
+            }
+        )
+        selected = DocumentSelectionRecord.from_selection(fitted)
+        observation = SourceObservation(
+            term=10,
+            number="3039",
+            purpose="analysis",
+            document=TextDocument(
+                url=fitted.parts[0].url, kind="print", amendment_urls=(fitted.parts[1].url,)
+            ),
+            selection_id=selected.selection_id,
+            recorded_at=NOW,
+        )
+        repo.save_source_observation(selected, observation)
+        metadata.update(source_kind="print", selection=fitted)
+        frozen = intent.request
+        assert isinstance(frozen.question, AnalysisQuestion), "the fixture uses primary analysis"
+        request_values = frozen.model_dump()
+        question = frozen.question.model_dump()
+        question["ctx"]["source_kind"] = "print"
+        request_values["question"] = question
+        body = BatchRequest.model_validate(request_values)
+        metadata["request_sha256"] = body.payload_sha256
+        metadata["prepared_input_receipt"] = receipt.model_copy(
+            update={
+                "source_selection_id": selected.selection_id,
+                "source_observation_id": observation.observation_id,
+                "context_sha256": primary_context_sha256(
+                    frozen.question.ctx.model_copy(update={"source_kind": "print"})
+                ),
+            }
+        )
+        candidate = BatchIntent.model_validate(
+            {**intent.model_dump(), "request": body, "meta": metadata}
+        )
+        before = repo.dump()
+        with pytest.raises(ValueError, match="input_receipt_parent_missing"):
+            repo.save_batch_intent(candidate)
+        assert repo.dump() == before
+        assert isinstance(candidate.meta, BatchItemMeta), "the candidate uses primary metadata"
+        binding = candidate.meta.input_binding
+        assert isinstance(binding, ComputationInputBinding), "the candidate binds its paid owner"
+        foreign = candidate.meta.model_copy(
+            update={"input_binding": binding.model_copy(update={"number": "3040"})}
+        )
+        batch = LlmBatch(
+            batch_id="sejm-reader",
+            provider="openai",
+            call_kind="analysis",
+            submitted_at=NOW,
+            status="submitted",
+            request_count=1,
+            estimated_cost_usd=0.01,
+        )
+        item = LlmBatchItem.from_intent(batch.batch_id, candidate)
+        with pytest.raises(ValueError, match="input_receipt_proposal_owner_mismatch"):
+            repo.save_llm_batch(batch, [item.model_copy(update={"meta": foreign})])
+        assert repo.dump() == before
 
 
 @pytest.mark.parametrize("mixed", [False, True])

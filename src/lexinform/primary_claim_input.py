@@ -7,7 +7,11 @@ from typing import Literal
 from lexinform.models.analysis import AnalysisRecord
 from lexinform.models.batch import AnalysisQuestion, BatchIntent, BatchItemMeta
 from lexinform.models.document_history import DocumentSelectionRecord
-from lexinform.models.input_receipts import LooseRclInputReceipt, PrimaryInputReceipt
+from lexinform.models.input_receipts import (
+    LooseRclInputReceipt,
+    PrimaryInputReceipt,
+    SejmSelfAmendmentInputReceipt,
+)
 from lexinform.models.reviews import ReviewDocument
 from lexinform.primary_claims import (
     ClaimEvidenceCheck,
@@ -116,6 +120,8 @@ def validate_key_change_input(
         or record.source_kind != ctx.source_kind
     ):
         return ClaimInputCheck(checked, "unknown", "request_binding_mismatch")
+    if isinstance(receipt, SejmSelfAmendmentInputReceipt):
+        return ClaimInputCheck(checked, "unknown", "source_binding_unavailable")
     document = next(doc for doc in documents if doc.identity == evidence.citation.document_id)
     binding = (
         _loose_rcl_main_binding(document, meta, receipt, record.source_url, source_selection)

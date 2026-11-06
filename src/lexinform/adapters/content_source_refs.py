@@ -5,6 +5,7 @@ from datetime import datetime
 
 from lexinform.adapters.amendment_inputs import checked_computation_result, validate_item_input
 from lexinform.adapters.computation_history import parse_computation_result
+from lexinform.adapters.document_source_rows import DocumentSourceRows
 from lexinform.content_sources import verify_primary_content_source
 from lexinform.models import (
     AnalysisRecord,
@@ -14,10 +15,8 @@ from lexinform.models import (
     ComputationResult,
     ContentSnapshot,
     ContentVersion,
-    DocumentSelectionRecord,
     LlmBatchItem,
     ResultApplication,
-    SourceObservation,
     StatusChange,
     amendments_stage,
 )
@@ -40,15 +39,7 @@ def _row_to_llm_batch_item(row: sqlite3.Row, connection: sqlite3.Connection) -> 
     return item
 
 
-class ContentSourceRows:
-    def __init__(self, connection: sqlite3.Connection) -> None:
-        self._connection = connection
-
-    def _query(self, sql: str, parameters: tuple[object, ...] = ()) -> sqlite3.Cursor:
-        cursor = self._connection.cursor()
-        cursor.row_factory = sqlite3.Row
-        return cursor.execute(sql, parameters)
-
+class ContentSourceRows(DocumentSourceRows):
     def get_content_snapshot(self, snapshot_id: str) -> ContentSnapshot | None:
         row = self._query(
             "SELECT * FROM content_snapshots WHERE snapshot_id=?", (snapshot_id,)
@@ -145,69 +136,6 @@ class ContentSourceRows:
             ):
                 raise ValueError("frozen primary target differs from its projection receipt")
         return _row_to_llm_batch_item(row, self._connection)
-
-    def get_document_selection(self, selection_id: str) -> DocumentSelectionRecord | None:
-        row = self._query(
-            "SELECT * FROM document_selections WHERE selection_id=?", (selection_id,)
-        ).fetchone()
-        if row is None:
-            return None
-        record = DocumentSelectionRecord.model_validate_json(row["record_json"])
-        expected = (
-            record.selection_id,
-            record.selection.question,
-            record.selection.policy_version,
-            record.selection.state,
-        )
-        if expected != tuple(
-            row[key] for key in ("selection_id", "question", "policy_version", "state")
-        ):
-            raise ValueError("document selection columns differ from the recorded identity")
-        return record
-
-    def get_source_observation(self, observation_id: str) -> SourceObservation | None:
-        row = self._query(
-            "SELECT * FROM source_observations WHERE observation_id=?", (observation_id,)
-        ).fetchone()
-        return self._source_observation(row) if row else None
-
-    def source_observations_for_selection(
-        self, term: int, number: str, selection_id: str
-    ) -> list[SourceObservation]:
-        return [
-            self._source_observation(row)
-            for row in self._query(
-                "SELECT * FROM source_observations INDEXED BY ix_source_observations_selection"
-                " WHERE selection_id=? AND term=?"
-                " AND number=? AND purpose='analysis' ORDER BY rowid LIMIT 2",
-                (selection_id, term, number),
-            )
-        ]
-
-    @staticmethod
-    def _source_observation(row: sqlite3.Row) -> SourceObservation:
-        observation = SourceObservation.model_validate_json(row["observation_json"])
-        expected = (
-            observation.observation_id,
-            observation.term,
-            observation.number,
-            observation.purpose,
-            observation.selection_id,
-            observation.document.url,
-            observation.document.kind,
-        )
-        columns = (
-            "observation_id",
-            "term",
-            "number",
-            "purpose",
-            "selection_id",
-            "source_url",
-            "source_kind",
-        )
-        if expected != tuple(row[key] for key in columns):
-            raise ValueError("source observation columns differ from the recorded identity")
-        return observation
 
 
 def verify_content_source(connection: sqlite3.Connection, version: ContentVersion) -> None:

@@ -3,7 +3,7 @@
 import hashlib
 import json
 from collections.abc import Iterable, Iterator
-from typing import Literal, Self
+from typing import ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -247,13 +247,12 @@ class LooseRclInputPart(PreparedTextPart):
     extraction_id: str = Field(pattern=r"^extraction-v1:[0-9a-f]{64}$", max_length=80)
 
 
-class LooseRclInputReceipt(BaseModel):
+class LooseMultipartInputReceipt(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
     schema_version: Literal[1] = 1
-    profile: Literal["primary-loose-rcl-annex-text-v1", "primary-loose-rcl-mixed-text-v1"] = (
-        "primary-loose-rcl-annex-text-v1"
-    )
+    profile: str
+    source_kind: ClassVar[Literal["rcl", "print"]]
     coordinates: Literal["legacy_part_text_v1"] = "legacy_part_text_v1"
     context_encoding: Literal["bill-context-json-v1"] = "bill-context-json-v1"
     map_encoding: Literal["prepared-text-segments-json-v1"] = "prepared-text-segments-json-v1"
@@ -273,6 +272,35 @@ class LooseRclInputReceipt(BaseModel):
 
     @model_validator(mode="after")
     def complete_map(self) -> Self:
+        offset = 0
+        for segment in self.segments:
+            if segment.start != offset or segment.end > self.text_chars:
+                raise ValueError("Multipart input segments must partition the emitted text")
+            if segment.origin == "unknown":
+                raise ValueError("Multipart input segments require known origins")
+            if segment.origin == "source":
+                index, end = segment.part_index, segment.source_end
+                assert index is not None and end is not None, (
+                    "PreparedTextSegment validates its source coordinates"
+                )
+                if index >= len(self.source_parts) or end > self.source_parts[index].chars:
+                    raise ValueError("Multipart input segment escapes its referenced part")
+            offset = segment.end
+        if offset != self.text_chars or self.full_map_sha256 != input_map_sha256(self.segments):
+            raise ValueError("Multipart input receipt must keep its exact whole map")
+        if len(self.model_dump_json().encode()) > MAX_INPUT_RECEIPT_BYTES:
+            raise ValueError("Multipart input receipt exceeds its serialized byte limit")
+        return self
+
+
+class LooseRclInputReceipt(LooseMultipartInputReceipt):
+    source_kind = "rcl"
+    profile: Literal["primary-loose-rcl-annex-text-v1", "primary-loose-rcl-mixed-text-v1"] = (
+        "primary-loose-rcl-annex-text-v1"
+    )
+
+    @model_validator(mode="after")
+    def rcl_roles(self) -> Self:
         mixed = self.profile == "primary-loose-rcl-mixed-text-v1"
         if not mixed and len(self.source_parts) > 5:
             raise ValueError("Loose RCL annex receipt requires at most five source parts")
@@ -291,22 +319,17 @@ class LooseRclInputReceipt(BaseModel):
                 raise ValueError("Loose RCL input requires annexes, then amendments, then support")
         if mixed and not seen_amendment:
             raise ValueError("Mixed loose RCL input requires a self-amendment")
-        offset = 0
-        for segment in self.segments:
-            if segment.start != offset or segment.end > self.text_chars:
-                raise ValueError("Loose RCL segments must partition the emitted text")
-            if segment.origin == "unknown":
-                raise ValueError("Loose RCL segments require known origins")
-            if segment.origin == "source":
-                index, end = segment.part_index, segment.source_end
-                assert index is not None and end is not None, (
-                    "PreparedTextSegment validates its source coordinates"
-                )
-                if index >= len(self.source_parts) or end > self.source_parts[index].chars:
-                    raise ValueError("Loose RCL segment escapes its referenced part")
-            offset = segment.end
-        if offset != self.text_chars or self.full_map_sha256 != input_map_sha256(self.segments):
-            raise ValueError("Loose RCL receipt must keep its exact whole map")
-        if len(self.model_dump_json().encode()) > MAX_INPUT_RECEIPT_BYTES:
-            raise ValueError("Loose RCL receipt exceeds its serialized byte limit")
+        return self
+
+
+class SejmSelfAmendmentInputReceipt(LooseMultipartInputReceipt):
+    source_kind = "print"
+    profile: Literal["primary-sejm-self-amendment-text-v1"] = "primary-sejm-self-amendment-text-v1"
+    source_observation_id: str = Field(pattern=r"^source-observation-v1:[0-9a-f]{64}$")
+    proposal_trace_id: str = Field(pattern=r"^candidate-trace-v1:[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def sejm_roles(self) -> Self:
+        if tuple(part.role for part in self.source_parts) != ("bill", "self_amendment"):
+            raise ValueError("Sejm input requires the original bill and one self-amendment")
         return self

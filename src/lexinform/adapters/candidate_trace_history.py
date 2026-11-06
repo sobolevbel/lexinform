@@ -5,7 +5,7 @@ from contextlib import closing
 from datetime import UTC
 from typing import Literal
 
-from lexinform.adapters.content_source_refs import ContentSourceRows
+from lexinform.adapters.document_source_rows import DocumentSourceRows
 from lexinform.adapters.extraction_history import read_extraction_result
 from lexinform.document_editions import candidate_edition
 from lexinform.json_storage import read_json
@@ -55,7 +55,7 @@ def validate_sejm_proposal_link(
     if proposal is None:
         return
     try:
-        reader = ContentSourceRows(connection)
+        reader = DocumentSourceRows(connection)
         source = reader.get_source_observation(observation_id)
         if source is None or (source.term, source.number, source.document, source.selection_id) != (
             proposal.term,
@@ -123,7 +123,7 @@ def validate_committee_recommendation_link(
     if proof is None:
         return
     try:
-        reader = ContentSourceRows(connection)
+        reader = DocumentSourceRows(connection)
         report = reader.get_source_observation(observation_id)
         resolution = reader.get_source_observation(proof.resolution_observation_id)
         if (
@@ -181,7 +181,7 @@ def validate_committee_recommendation_link(
 
 
 def _validate_superseded_draft(
-    reader: ContentSourceRows, cursor: sqlite3.Cursor, proof: SejmAdoptedText
+    reader: DocumentSourceRows, cursor: sqlite3.Cursor, proof: SejmAdoptedText
 ) -> None:
     prior = proof.supersedes
     if prior is None:
@@ -261,7 +261,7 @@ def validate_candidate_trace_link(
     if proof is None:
         return
     try:
-        reader = ContentSourceRows(connection)
+        reader = DocumentSourceRows(connection)
         source = reader.get_source_observation(observation_id)
         if source is None or (source.term, source.number, source.document, source.selection_id) != (
             proof.term,

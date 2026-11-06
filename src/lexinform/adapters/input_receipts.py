@@ -7,6 +7,10 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime
 
+from lexinform.adapters.candidate_trace_history import (
+    read_candidate_disposition_trace,
+    validate_sejm_proposal_link,
+)
 from lexinform.adapters.computation_history import read_computation_result
 from lexinform.adapters.extraction_history import read_extraction_result
 from lexinform.errors import PreparedInputParentError
@@ -17,7 +21,6 @@ from lexinform.models import (
     BatchIntent,
     BatchItemMeta,
     BatchRequest,
-    DocumentSelection,
     DocumentSelectionRecord,
     ExtractionResult,
     LlmBatchItem,
@@ -25,7 +28,11 @@ from lexinform.models import (
     SupplementInputReceipt,
 )
 from lexinform.models.batch import batch_item_meta
-from lexinform.models.input_receipts import LooseRclInputReceipt
+from lexinform.models.input_receipts import (
+    LooseMultipartInputReceipt,
+    LooseRclInputReceipt,
+    SejmSelfAmendmentInputReceipt,
+)
 
 
 @dataclass(frozen=True)
@@ -96,10 +103,14 @@ def _source_selection(connection: sqlite3.Connection, identity: str) -> Document
     return selection
 
 
-def _loose_rcl_parents(
-    connection: sqlite3.Connection, receipt: LooseRclInputReceipt, fitted: DocumentSelection
+def _multipart_parents(
+    connection: sqlite3.Connection,
+    receipt: LooseMultipartInputReceipt,
+    meta: BatchItemMeta,
+    owner: tuple[int, str] | None,
 ) -> None:
     selection = _source_selection(connection, receipt.source_selection_id).selection
+    fitted = meta.selection
     parts = selection.parts
     if (
         selection.scan_input is not None
@@ -111,6 +122,27 @@ def _loose_rcl_parents(
         or parts != fitted.without_text().parts
     ):
         raise ValueError("input_receipt_selection_mismatch")
+    if isinstance(receipt, SejmSelfAmendmentInputReceipt):
+        binding = meta.input_binding
+        if binding is None or (binding.term, binding.number) != owner:
+            raise ValueError("input_receipt_proposal_owner_mismatch")
+        row = _one(
+            connection,
+            "SELECT t.* FROM source_candidate_traces l"
+            " JOIN candidate_disposition_traces t USING(trace_id)"
+            " JOIN source_observations o USING(observation_id)"
+            " WHERE l.observation_id=? AND l.trace_id=? AND o.purpose='analysis'",
+            (receipt.source_observation_id, receipt.proposal_trace_id),
+        )
+        trace = read_candidate_disposition_trace(row)
+        proposal = trace.sejm_original_proposal
+        if (
+            proposal is None
+            or proposal.selection_id != receipt.source_selection_id
+            or (proposal.term, proposal.parent_print) != owner
+        ):
+            raise ValueError("input_receipt_proposal_mismatch")
+        validate_sejm_proposal_link(connection, trace, receipt.source_observation_id)
     for index, (part, recorded) in enumerate(zip(parts, receipt.source_parts, strict=True)):
         if (
             part.members
@@ -161,15 +193,17 @@ def _parents(
     connection: sqlite3.Connection,
     receipt: PrimaryInputReceipt
     | LooseRclInputReceipt
+    | SejmSelfAmendmentInputReceipt
     | SupplementInputReceipt
     | AmendmentInputReceipt,
     *,
-    fitted: DocumentSelection | None = None,
+    primary_meta: BatchItemMeta | None = None,
+    owner: tuple[int, str] | None = None,
 ) -> None:
-    if isinstance(receipt, LooseRclInputReceipt):
-        if fitted is None:
-            raise ValueError("Loose RCL receipt requires its fitted selection")
-        _loose_rcl_parents(connection, receipt, fitted)
+    if isinstance(receipt, LooseMultipartInputReceipt):
+        if primary_meta is None:
+            raise ValueError("Multipart receipt requires its fitted selection")
+        _multipart_parents(connection, receipt, primary_meta, owner)
         return
     selection = None
     if receipt.source_selection_id is not None:
@@ -242,30 +276,35 @@ def validate_primary_receipt_parents(
     _parents(connection, receipt)
 
 
-def validate_loose_rcl_intent(connection: sqlite3.Connection, intent: BatchIntent) -> None:
-    if not isinstance(intent.meta.prepared_input_receipt, LooseRclInputReceipt):
+def validate_multipart_intent(connection: sqlite3.Connection, intent: BatchIntent) -> None:
+    if not isinstance(intent.meta.prepared_input_receipt, LooseMultipartInputReceipt):
         return
     validated = BatchIntent.model_validate_json(intent.model_dump_json())
     meta = validated.meta
     if not isinstance(meta, BatchItemMeta) or not isinstance(
-        meta.prepared_input_receipt, LooseRclInputReceipt
+        meta.prepared_input_receipt, LooseMultipartInputReceipt
     ):
-        raise ValueError("Loose RCL receipt requires primary metadata")
+        raise ValueError("Multipart receipt requires primary metadata")
     try:
-        _loose_rcl_parents(connection, meta.prepared_input_receipt, meta.selection)
+        _multipart_parents(
+            connection,
+            meta.prepared_input_receipt,
+            meta,
+            (validated.request.term, validated.request.number),
+        )
     except ValueError as exc:
         raise PreparedInputParentError(str(exc)) from None
 
 
-def validate_loose_rcl_item(connection: sqlite3.Connection, item: LlmBatchItem) -> None:
-    if not isinstance(item.meta.prepared_input_receipt, LooseRclInputReceipt):
+def validate_multipart_item(connection: sqlite3.Connection, item: LlmBatchItem) -> None:
+    if not isinstance(item.meta.prepared_input_receipt, LooseMultipartInputReceipt):
         return
     meta = batch_item_meta(item.call_kind, item.meta.model_dump_json())
     if not isinstance(meta, BatchItemMeta) or not isinstance(
-        meta.prepared_input_receipt, LooseRclInputReceipt
+        meta.prepared_input_receipt, LooseMultipartInputReceipt
     ):
-        raise ValueError("Loose RCL receipt requires primary metadata")
-    _loose_rcl_parents(connection, meta.prepared_input_receipt, meta.selection)
+        raise ValueError("Multipart receipt requires primary metadata")
+    _multipart_parents(connection, meta.prepared_input_receipt, meta, (item.term, item.number))
 
 
 def _input_snapshot_checks(
@@ -315,9 +354,10 @@ def _input_snapshot_checks(
                         _parents(
                             connection,
                             intent.meta.prepared_input_receipt,
-                            fitted=intent.meta.selection
+                            primary_meta=intent.meta
                             if isinstance(intent.meta, BatchItemMeta)
                             else None,
+                            owner=(actual.term, actual.number),
                         )
                     if has_timing and intent.meta.local_timing_witness is None:
                         raise ValueError("input_snapshot_timing_metadata")
@@ -358,9 +398,8 @@ def _input_snapshot_checks(
                     _parents(
                         connection,
                         item_meta.prepared_input_receipt,
-                        fitted=item_meta.selection
-                        if isinstance(item_meta, BatchItemMeta)
-                        else None,
+                        primary_meta=item_meta if isinstance(item_meta, BatchItemMeta) else None,
+                        owner=(row["term"], row["number"]),
                     )
                 if has_timing:
                     timing = item_meta.local_timing_witness
