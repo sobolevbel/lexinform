@@ -15,7 +15,16 @@ from lexinform.adapters.input_receipts import parse_batch_request, serialize_int
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
 from lexinform.adapters.llm_openai import OpenAiAnalyzer
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
-from lexinform.models import AnalysisQuestion, BatchIntent, BatchProvider, BatchRequest, BillContext
+from lexinform.models import (
+    AmendmentsContext,
+    AmendmentsQuestion,
+    AnalysisQuestion,
+    BatchIntent,
+    BatchProvider,
+    BatchRequest,
+    BillContext,
+    DigestItemMeta,
+)
 from lexinform.ports import BatchBackend
 from lexinform.services.documents import TextLoader
 from tests.fakes import FakeSejmGateway, FakeTextExtractor
@@ -222,3 +231,101 @@ def test_writer_keeps_unproved_scan_payload_inline(fault: str) -> None:
     )
 
     assert serialize_intent_request(frozen) == frozen.model_dump_json()
+
+
+def committee_scan_request(factory: Callable[[], BatchBackend]) -> BatchRequest:
+    primary = scan_request(offline_openai_backend, "analysis")
+    question = primary.question
+    assert isinstance(question, AnalysisQuestion), "the fixture supplies a primary scan"
+    scan = question.ctx.scan
+    assert scan is not None, "the fixture retains the manifested PDF"
+    context = AmendmentsContext(
+        number=primary.number,
+        title="Committee amendment",
+        source_kind="committee_amendments",
+        text="",
+        truncated=False,
+        previous_summary="Original analysis",
+        scan=scan,
+    )
+    return factory().prepare_request(
+        BatchRequest(
+            custom_id="committee-scan",
+            term=10,
+            number=primary.number,
+            question=AmendmentsQuestion(ctx=context),
+        )
+    )
+
+
+@pytest.mark.parametrize(
+    ("provider", "factory"),
+    [("openai", offline_openai_backend), ("anthropic", offline_anthropic_backend)],
+)
+def test_reader_restores_committee_scan_while_writer_keeps_it_inline(
+    tmp_path: Path, provider: BatchProvider, factory: Callable[[], BatchBackend]
+) -> None:
+    frozen = committee_scan_request(factory)
+    reference = compact(frozen)
+    assert serialize_intent_request(frozen) == frozen.model_dump_json()
+    assert parse_batch_request(reference) == frozen
+
+    path = tmp_path / "committee-intent.db"
+    with closing(SqliteBillRepository(path)) as repo:
+        repo.migrate()
+        question = frozen.question
+        assert isinstance(question, AmendmentsQuestion), "the fixture freezes a committee request"
+        scan = question.ctx.scan
+        assert scan is not None, "the fixture supplies the saved PDF"
+        intent = BatchIntent.from_request(
+            request=frozen,
+            meta=DigestItemMeta(
+                memo_key=frozen.custom_id,
+                source_kind=question.ctx.source_kind,
+                scan_input=scan.scan_input,
+            ),
+            provider=provider,
+            created_at=NOW,
+        )
+        repo.save_batch_intent(intent)
+        with closing(sqlite3.connect(path)) as connection, connection:
+            (actual,) = connection.execute("SELECT request_json FROM llm_batch_intents").fetchone()
+            assert actual == frozen.model_dump_json()
+            connection.execute(
+                "UPDATE llm_batch_intents SET request_json=?", (json.dumps(reference),)
+            )
+        saved = repo.dump()
+        repo.restore(saved)
+        repo.restore(saved)
+        assert repo.dump() == saved
+        assert repo.list_queued_batch_intents() == [intent]
+        repo.mark_batch_intents_submitting([frozen.custom_id])
+        (submitting,) = repo.list_submitting_batch_intents()
+        assert factory().prepare_request(submitting.request) == frozen
+
+
+@pytest.mark.parametrize(
+    "fault", ["kind", "source_kind", "primary_field", "text", "slot", "identity", "manifest"]
+)
+def test_committee_scan_reference_rejects_changed_context_and_attachment(fault: str) -> None:
+    raw = compact(committee_scan_request(offline_openai_backend))
+    context, ref = raw["question"]["ctx"], raw["payload_json"]
+    if fault == "kind":
+        raw["question"]["kind"] = "supplement"
+    elif fault == "source_kind":
+        context["source_kind"] = "senate_amendments"
+    elif fault == "primary_field":
+        context["text_source"] = "scan"
+    elif fault == "text":
+        context["text"] = "Mixed input"
+    elif fault == "slot":
+        ref["prefix"] = ref["prefix"].replace('"file_data"', '"alternate"')
+    elif fault == "identity":
+        raw["custom_id"] = "another-request"
+    elif fault == "manifest":
+        context["scan"]["scan_input"]["input_sha256"] = "0" * 64
+    payload = ref["prefix"] + context["scan"]["data"] + ref["suffix"]
+    raw["payload_sha256"] = hashlib.sha256(payload.encode()).hexdigest()
+
+    with pytest.raises(ValueError, match="invalid_input_request_json"):
+        parse_batch_request(raw)

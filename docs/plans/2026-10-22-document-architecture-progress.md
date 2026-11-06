@@ -12685,3 +12685,21 @@ The paired J334 raw cohort matched all 16 roots and four synthetic
 controls. Cached candidate replay matched 4,276 outcomes and coverage,
 including 1,383 unavailable inputs.
 [Qualification](../assets/audits/2026-11-06-outer-archive-conflict/qualification.json).
+
+<a id="j336"></a>
+
+## J336 — read compact frozen committee amendment scans
+
+The frozen scan reader accepts the existing PDF reference profile for
+committee amendments with an empty text field and a typed scan manifest.
+It verifies the provider attachment slot and the original request hash.
+The text reference remains scoped to primary analysis. The writer still
+stores committee scan requests inline.
+
+The pinned J232 public replay matched all 22 preparation paths, including
+14 text paths and eight scan paths from four official PDFs. Both OpenAI
+and Anthropic request builders round-tripped the manually packed scans.
+The old reader rejected those compact forms. The new reader restored them
+twice through SQLite and kept the submitting request byte-exact in the
+focused tests. No provider batch was submitted.
+[Qualification](../assets/audits/2026-11-06-committee-scan-reader/qualification.json).

@@ -1,0 +1,150 @@
+{
+  "baseline_commit": "c222b43104566a1ba6c94ad00c5f3e4d54b9ff16",
+  "cohort_manifest_sha256": "bc94e5d85183747af057b76aea34c32800b22f572d2e6ee92a77e68975fb480e",
+  "paired_report_sha256": "c63f3ca0f735923ca177ae9686b65a08c985803e5bb0a2a843108c42cc53106e",
+  "provider_submissions": 0,
+  "public_driver_sha256": "58581d5388fdf36be900949ba7e321359a773fd6c21f94b6435b9a0502dbacb1",
+  "public_paths": 22,
+  "scan_paths": 8,
+  "scan_profiles": [
+    {
+      "correction": false,
+      "owner": "2317",
+      "profiles": {
+        "anthropic": {
+          "gzip_bytes_saved": 127462,
+          "payload_sha256": "ee853a214e135fe7861c2287dcc92b0c5f30ffae6dd768e833a57772b2a0e060",
+          "request_bytes_saved": 183981
+        },
+        "openai": {
+          "gzip_bytes_saved": 127450,
+          "payload_sha256": "5fc726e1f409693bb42d853cc79482a6c4b9427e01bb27b016bb97ad13b558ed",
+          "request_bytes_saved": 183981
+        }
+      },
+      "raw_sha256": "79ab9c0745e7939b04aac222276e8001b6a403856f246bf92c6c544b16bb7bdd"
+    },
+    {
+      "correction": true,
+      "owner": "2317",
+      "profiles": {
+        "anthropic": {
+          "gzip_bytes_saved": 127463,
+          "payload_sha256": "67c012bff318322b94dc57d5acc8cf441dd13d3bddaf1e457ae1b3df840ffa61",
+          "request_bytes_saved": 183981
+        },
+        "openai": {
+          "gzip_bytes_saved": 127451,
+          "payload_sha256": "f3d8f4903ce93ae2383ca596751ca818e44d051aa70e295cba91a8ff45fe1f47",
+          "request_bytes_saved": 183981
+        }
+      },
+      "raw_sha256": "79ab9c0745e7939b04aac222276e8001b6a403856f246bf92c6c544b16bb7bdd"
+    },
+    {
+      "correction": false,
+      "owner": "744",
+      "profiles": {
+        "anthropic": {
+          "gzip_bytes_saved": 39348,
+          "payload_sha256": "c7bf3d8e5663040d666c7f22204bf42a6922623148a08caaa5b0cd81b1a16d13",
+          "request_bytes_saved": 67201
+        },
+        "openai": {
+          "gzip_bytes_saved": 39322,
+          "payload_sha256": "ebcbcabf89dae6001cf340bc263c85abe79873b462e25591afcb032d69ad2206",
+          "request_bytes_saved": 67201
+        }
+      },
+      "raw_sha256": "5874b15192a35b7a757682fa1eb0ffede3b01cbcfa2c843418839bd19866a0fc"
+    },
+    {
+      "correction": true,
+      "owner": "744",
+      "profiles": {
+        "anthropic": {
+          "gzip_bytes_saved": 39348,
+          "payload_sha256": "21445c78098ea68bbbb256133b485d7cd35f6db3a84e851f5dd36e1e6ae1245c",
+          "request_bytes_saved": 67201
+        },
+        "openai": {
+          "gzip_bytes_saved": 39323,
+          "payload_sha256": "0f5cebb3453094e17f78489932ebfb8763a3e879a09146561ee2cb99736bec7a",
+          "request_bytes_saved": 67201
+        }
+      },
+      "raw_sha256": "5874b15192a35b7a757682fa1eb0ffede3b01cbcfa2c843418839bd19866a0fc"
+    },
+    {
+      "correction": false,
+      "owner": "664",
+      "profiles": {
+        "anthropic": {
+          "gzip_bytes_saved": 45035,
+          "payload_sha256": "e75047b94c11f26e54e90e94660254a20f16af2982b9293f1394777b69ddc5f3",
+          "request_bytes_saved": 75881
+        },
+        "openai": {
+          "gzip_bytes_saved": 45035,
+          "payload_sha256": "8cf89d19693bd27a184770db87c4dbe1834ae9a1fc8e5727e2182165f4a3b09c",
+          "request_bytes_saved": 75881
+        }
+      },
+      "raw_sha256": "42955998986601078cfe6830ee4b725f958fa549392858bc966a8a28dd97f43a"
+    },
+    {
+      "correction": true,
+      "owner": "664",
+      "profiles": {
+        "anthropic": {
+          "gzip_bytes_saved": 45037,
+          "payload_sha256": "497bfba9da510f1c222c036e370fbb68e0aa5854dba5a9cdc755c1e5119cc5d6",
+          "request_bytes_saved": 75881
+        },
+        "openai": {
+          "gzip_bytes_saved": 45034,
+          "payload_sha256": "9f311411f84e97901c316880e69ebe5c109dbe5938553ef91656b513b537be2b",
+          "request_bytes_saved": 75881
+        }
+      },
+      "raw_sha256": "42955998986601078cfe6830ee4b725f958fa549392858bc966a8a28dd97f43a"
+    },
+    {
+      "correction": false,
+      "owner": "1451",
+      "profiles": {
+        "anthropic": {
+          "gzip_bytes_saved": 34486,
+          "payload_sha256": "1f61b02ace677c3db28947047fe1fa5d8efe11b6998ac8d1d9db2df4c6a067d2",
+          "request_bytes_saved": 56645
+        },
+        "openai": {
+          "gzip_bytes_saved": 34468,
+          "payload_sha256": "e838d737f2c93ac36ed1b22ac7ccf3175366e505172780c9b918d8eeff91a1d7",
+          "request_bytes_saved": 56645
+        }
+      },
+      "raw_sha256": "427d56b6baad47f8340968d280ca69569a55b0f61e62b235ce4dbe4b2d0c2a2c"
+    },
+    {
+      "correction": true,
+      "owner": "1451",
+      "profiles": {
+        "anthropic": {
+          "gzip_bytes_saved": 34486,
+          "payload_sha256": "e360611281e9f14de3f977ebaf76f2aadb12912ad1c8697fd09ed30a703a90c3",
+          "request_bytes_saved": 56645
+        },
+        "openai": {
+          "gzip_bytes_saved": 34466,
+          "payload_sha256": "097e5bdc0c92f1d97ab32d0e18514665a5ffe0b48aac0abcb73a29ea11ea94e3",
+          "request_bytes_saved": 56645
+        }
+      },
+      "raw_sha256": "427d56b6baad47f8340968d280ca69569a55b0f61e62b235ce4dbe4b2d0c2a2c"
+    }
+  ],
+  "scope": "Request byte estimates only; this reader stage does not reduce stored dump size.",
+  "text_paths": 14,
+  "writer_output_unchanged": true
+}

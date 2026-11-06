@@ -101,26 +101,37 @@ def _provider_payload(request: dict[str, object], value: dict[str, object]) -> s
         or not isinstance(prefix, str)
         or not isinstance(suffix, str)
         or not isinstance(question, dict)
-        or question.get("kind") not in ("analysis", "reanalysis")
         or not isinstance(request.get("payload_sha256"), str)
         or not isinstance(context := question.get("ctx"), dict)
     ):
         raise ValueError("invalid_provider_payload_reference")
-    if value["profile"] == _PROVIDER_PAYLOAD_PROFILE:
+    kind = question.get("kind")
+    if value["profile"] == _PROVIDER_PAYLOAD_PROFILE and kind in ("analysis", "reanalysis"):
         if isinstance(text := context.get("text"), str) and text:
             return prefix + _escaped_question_text(text) + suffix
     elif value["profile"] == _SCAN_PAYLOAD_PROFILE:
-        return _scan_provider_payload(request, context, prefix, suffix)
+        return _scan_provider_payload(request, kind, context, prefix, suffix)
     raise ValueError("invalid_provider_payload_reference")
 
 
 def _scan_provider_payload(
-    request: dict[str, object], context: dict[str, object], prefix: str, suffix: str
+    request: dict[str, object],
+    kind: object,
+    context: dict[str, object],
+    prefix: str,
+    suffix: str,
 ) -> str:
     scan = context.get("scan")
+    primary = kind in ("analysis", "reanalysis") and context.get("text_source") == "scan"
+    committee = (
+        kind == "amendments"
+        and context.get("source_kind") == "committee_amendments"
+        and context.get("source_check") is None
+        and "text_source" not in context
+    )
     if (
         context.get("text") != ""
-        or context.get("text_source") != "scan"
+        or not (primary or committee)
         or not isinstance(scan, dict)
         or scan.get("media_type") != "application/pdf"
         or not isinstance(scan.get("scan_input"), dict)
