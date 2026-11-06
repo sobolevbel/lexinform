@@ -416,7 +416,7 @@ def capture_submitted_amendment_scan_input(
     question, meta = request.question, item.meta
     if (
         not isinstance(question, AmendmentsQuestion)
-        or question.ctx.source_kind != "committee_amendments"
+        or question.ctx.source_kind not in ("committee_amendments", "senate_amendments")
         or not isinstance(meta, DigestItemMeta)
         or not isinstance(queued, DigestItemMeta)
         or meta != queued.model_copy(update={"request_sha256": request.payload_sha256})
@@ -430,6 +430,7 @@ def capture_submitted_amendment_scan_input(
         return None
     try:
         witness = AmendmentScanInputWitness(
+            version=2 if question.ctx.source_kind == "senate_amendments" else 1,
             source_url=meta.source_url,
             request_sha256=request.payload_sha256,
             question_sha256=hashlib.sha256(

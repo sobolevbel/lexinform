@@ -13450,3 +13450,21 @@ outage and cancellation each stopped before preparation or a state write.
 The committee v1 replay matched the direct parent byte-for-byte.
 
 [Qualification](../assets/audits/2026-11-06-senate-scan-correction/qualification.json).
+
+<a id="j376"></a>
+
+## J376 — retain the original Senate scan context on confirmed submission
+
+The writer captures the version 2 witness from a qualified frozen
+Senate request when the submission is confirmed. A validated result
+retains the same witness through cleanup. The queued request keeps its
+existing representation and the PDF is not copied into the witness.
+
+Four official PDFs passed both offline builders, mock submission and
+collection, cleanup, restore and correction. The ordinary frozen
+requests and the constructed reader checkpoints matched exactly.
+The witness added 259–267 gzip bytes to an isolated submitted dump.
+After cleanup, the item and result witnesses added 295–303 gzip bytes
+against the same dumps with only those witness fields removed.
+
+[Qualification](../assets/audits/2026-11-06-senate-scan-context-writer/qualification.json).
