@@ -722,6 +722,21 @@ class ArchiveVersionDecisionEvidence(BaseModel):
         return self
 
 
+class ArchiveVersionConflictEvidence(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    capture_id: Sha256
+    index: Position
+    compared_slots: tuple[Position, Position]
+
+    @model_validator(mode="after")
+    def exact_pair(self) -> Self:
+        first, second = self.compared_slots
+        if first >= second:
+            raise ValueError("archive conflict requires two distinct slots in physical order")
+        return self
+
+
 class CandidateDispositionTrace(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -772,6 +787,10 @@ class CandidateDispositionTrace(BaseModel):
     )
 
     archive_version_decision: ArchiveVersionDecisionEvidence | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    archive_version_conflict: ArchiveVersionConflictEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
 
@@ -910,6 +929,8 @@ class CandidateDispositionTrace(BaseModel):
             validate_version_decision(self, self.version_decision)
         if self.archive_version_decision is not None:
             archive_version_main(self, self.archive_version_decision)
+        if self.archive_version_conflict is not None:
+            archive_conflict_attempt(self, self.archive_version_conflict)
         if len(self.model_dump_json(exclude_defaults=True).encode()) > MAX_CANDIDATE_TRACE_BYTES:
             raise ValueError("candidate trace exceeds its metadata limit")
         return self
@@ -940,6 +961,7 @@ class CandidateDispositionTrace(BaseModel):
             and self.supporting_exclusions is None
             and self.version_decision is None
             and self.archive_version_decision is None
+            and self.archive_version_conflict is None
         )
 
 
@@ -1290,3 +1312,36 @@ def archive_version_main(
     ):
         raise ValueError("archive comparison differs from its retained member policy")
     return main
+
+
+def archive_conflict_attempt(
+    trace: CandidateDispositionTrace, evidence: ArchiveVersionConflictEvidence
+) -> CandidateDisposition:
+    parent = _parent_disposition(trace, "version_comparison", evidence.index)
+    if (
+        trace.coverage != "complete"
+        or trace.archive_version_decision is not None
+        or parent is None
+        or (parent.outcome, parent.reason) != ("unclassified", "ambiguous_extraction")
+        or parent.observed_sha256 is None
+        or trace.archive_members is None
+    ):
+        raise ValueError("archive conflict requires the exact ambiguous extraction attempt")
+    rows = tuple(
+        row
+        for row in trace.archive_members.rows
+        if (row.phase, row.index, row.stage) == ("version_comparison", evidence.index, "policy")
+    )
+    if any(
+        row.reason == "selected_main"
+        or (
+            row.physical_part_index in evidence.compared_slots
+            and (row.reason != "version_conflict" or row.association != "known")
+        )
+        for row in rows
+    ) or (
+        trace.archive_members.retention == "complete"
+        and not set(evidence.compared_slots).issubset(row.physical_part_index for row in rows)
+    ):
+        raise ValueError("archive conflict differs from the retained member policy")
+    return parent

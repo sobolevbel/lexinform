@@ -12621,3 +12621,24 @@ matched across the paired archive cohort after separating recorded
 code fingerprints. Conflict and multiple roots are outside this
 successful comparison profile.
 [Qualification](../assets/audits/2026-11-06-archive-version-writer/qualification.json).
+
+Commit `310741f3` passed exact CI 42227216532 and relay deployment
+42228341265.
+
+<a id="j333"></a>
+
+## J333 — read the exact conflicting archive members
+
+The optional profile identifies an attempted outer archive and two
+physical slots. The reader corroborates them against the exact root
+read, retained execution and both extraction summaries. A conflicting
+nested archive remains separate from the final outer selection.
+Legacy rows and the 4 KiB limit stay unchanged.
+
+On RCL 12390551 stage 9, the exact 749446.zip comparison used slots
+1 and 3. The older generic archive reasons included slots 0 and 2
+as well. Substituting a supporting slot was rejected without a write.
+The manually attached profile added 142 bytes to the trace and survived
+two exact restores. The legacy doctor output remained byte-identical.
+Automatic capture is inactive.
+[Qualification](../assets/audits/2026-11-06-archive-conflict-reader/qualification.json).

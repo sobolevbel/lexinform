@@ -16,6 +16,7 @@ from lexinform.models.candidate_trace import (
     CandidateDispositionTrace,
     SejmAdoptedText,
     SejmPrintRepresentation,
+    archive_conflict_attempt,
     archive_version_main,
 )
 from lexinform.models.document_editions import DocumentEdition
@@ -35,6 +36,7 @@ class CandidateTraceRowError(ValueError):
             "candidate_trace_adoption_parent_mismatch",
             "candidate_trace_recommendation_parent_mismatch",
             "candidate_trace_archive_version_parent_mismatch",
+            "candidate_trace_archive_conflict_parent_mismatch",
         ],
     ) -> None:
         self.code = code
@@ -257,11 +259,10 @@ def _validate_superseded_draft(
         raise ValueError("Supersession parents differ from the recorded report edition")
 
 
-def _archive_peer_in_execution(
-    reader: PhysicalInventoryReader, order: PhysicalRootOrder, row: ArchiveMemberDisposition
-) -> None:
-    slot = row.physical_part_index
-    if slot is None or slot >= len(order.physical):
+def _archive_member_in_execution(
+    reader: PhysicalInventoryReader, order: PhysicalRootOrder, slot: int
+) -> tuple[tuple[int, ...], str, str]:
+    if slot >= len(order.physical):
         raise ValueError("archive comparison slot is unavailable")
     owner, text_sha256, _ = order.physical[slot]
     if owner >= len(order.contexts):
@@ -275,8 +276,16 @@ def _archive_peer_in_execution(
             raise ValueError("archive comparison occurrence has no bounded root path")
         path.append(ordinal)
         owner = parent
-    if (physical_slot, tuple(reversed(path)), unit.body_sha256, text_sha256) != (
-        slot,
+    if physical_slot != slot or not path or unit.body_sha256 is None:
+        raise ValueError("archive comparison occurrence differs from its physical slot")
+    return tuple(reversed(path)), unit.body_sha256, text_sha256
+
+
+def _archive_peer_in_execution(
+    reader: PhysicalInventoryReader, order: PhysicalRootOrder, row: ArchiveMemberDisposition
+) -> None:
+    slot = row.physical_part_index
+    if slot is None or _archive_member_in_execution(reader, order, slot) != (
         row.ordinals,
         row.leaf_sha256,
         row.text_sha256,
@@ -347,10 +356,98 @@ def _validate_archive_version_link(
         raise CandidateTraceRowError("candidate_trace_archive_version_parent_mismatch") from None
 
 
+def _validate_archive_conflict_link(
+    connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
+) -> None:
+    evidence = trace.archive_version_conflict
+    if evidence is None:
+        return
+    try:
+        parent = archive_conflict_attempt(trace, evidence)
+        requested = trace.requested_document
+        if requested is None:
+            raise ValueError("archive conflict requires its requested source")
+        candidates = (requested, *requested.alternatives)
+        candidate = candidates[evidence.index]
+        selected = next((row for row in trace.dispositions if row.outcome == "selected"), None)
+        source_reader = DocumentSourceRows(connection)
+        source = source_reader.get_source_observation(observation_id)
+        expected = candidates[selected.index] if selected is not None else requested
+        if source is None or source.document != expected:
+            raise ValueError("archive conflict differs from its exact source observation")
+        selection = source_reader.get_document_selection(source.selection_id)
+        if (
+            selection is None
+            or selection.selection.state != trace.selection_state
+            or any(
+                part.source_sha256 == parent.observed_sha256 or part.url == candidate.url
+                for part in selection.selection.parts
+            )
+        ):
+            raise ValueError("archive conflict cannot certify a selected member of its root")
+
+        old_factory = connection.row_factory
+        connection.row_factory = sqlite3.Row
+        try:
+            saved = connection.execute(
+                "SELECT * FROM physical_captures WHERE capture_id=?", (evidence.capture_id,)
+            ).fetchone()
+            if saved is None:
+                raise ValueError("archive conflict physical capture is unavailable")
+            reader = PhysicalInventoryReader(connection)
+            capture = reader.capture(saved)
+            if capture.artifact_sha256 != parent.observed_sha256 or capture.extraction_id is None:
+                raise ValueError("archive conflict capture differs from its extraction root")
+            extraction_row = connection.execute(
+                "SELECT * FROM extraction_results WHERE extraction_id=?", (capture.extraction_id,)
+            ).fetchone()
+            read = connection.execute(
+                "SELECT 1 FROM artifact_reads WHERE requested_url=? AND artifact_sha256=?",
+                (candidate.url, capture.artifact_sha256),
+            ).fetchone()
+            if extraction_row is None or read is None:
+                raise ValueError("archive conflict requires its exact extraction and body read")
+            extraction = read_extraction_result(extraction_row)
+            selected_parts = {row.physical_index: row for row in extraction.selected_parts}
+            if (
+                extraction.artifact_sha256 != capture.artifact_sha256
+                or extraction.output_chars != 0
+                or extraction.selected_part_count != 2
+                or extraction.omitted_selected_parts
+                or set(evidence.compared_slots) != set(selected_parts)
+            ):
+                raise ValueError(
+                    "archive conflict differs from its exact compared extraction parts"
+                )
+            execution = reader.typed(capture.execution_id, "execution")
+            order = execution.metadata
+            if execution.coverage != "complete" or not isinstance(order, PhysicalRootOrder):
+                raise ValueError("archive conflict requires retained physical execution")
+            for slot in evidence.compared_slots:
+                part = selected_parts[slot]
+                _, leaf_sha, text_sha = _archive_member_in_execution(reader, order, slot)
+                if (leaf_sha, text_sha) != (part.sha256, part.text_sha256):
+                    raise ValueError("archive conflict extraction differs from its physical member")
+            members = trace.archive_members
+            assert members is not None, "archive_conflict_attempt requires an archive profile"
+            for row in members.rows:
+                if (row.phase, row.index, row.stage) == (
+                    "version_comparison",
+                    evidence.index,
+                    "policy",
+                ) and row.physical_part_index in evidence.compared_slots:
+                    _archive_peer_in_execution(reader, order, row)
+        finally:
+            connection.row_factory = old_factory
+    except ValueError, TypeError, RecursionError, IndexError, KeyError, sqlite3.Error:
+        raise CandidateTraceRowError("candidate_trace_archive_conflict_parent_mismatch") from None
+
+
 def validate_candidate_trace_link(
     connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
 ) -> None:
     _validate_archive_version_link(connection, trace, observation_id)
+    _validate_archive_conflict_link(connection, trace, observation_id)
     validate_sejm_proposal_link(connection, trace, observation_id)
     validate_committee_recommendation_link(connection, trace, observation_id)
     proof = trace.sejm_print_representation or trace.sejm_adopted_text
@@ -450,8 +547,11 @@ def validate_candidate_trace_links(
         "candidate_trace_representation_parent_mismatch",
         "candidate_trace_proposal_parent_mismatch",
         "candidate_trace_archive_version_parent_mismatch",
+        "candidate_trace_archive_conflict_parent_mismatch",
     ]
-    if trace.archive_version_decision is not None:
+    if trace.archive_version_conflict is not None:
+        code = "candidate_trace_archive_conflict_parent_mismatch"
+    elif trace.archive_version_decision is not None:
         code = "candidate_trace_archive_version_parent_mismatch"
     elif trace.sejm_committee_recommendation is not None:
         code = "candidate_trace_recommendation_parent_mismatch"
