@@ -11,6 +11,7 @@ from lexinform.models.candidate_trace import (
     CandidateDispositionTrace,
 )
 from lexinform.models.documents import DocumentSelection, PdfPageText
+from lexinform.word_formula_placement import WordFormulaSource
 
 
 class HostDocumentReads(BaseModel):
@@ -167,6 +168,7 @@ class LoadedFile:
     candidate_trace: CandidateDispositionTrace | None = None
     first_pdf_page: PdfPageText | None = field(default=None, compare=False, repr=False)
     complete_pdf_pages: int | None = field(default=None, compare=False, repr=False)
+    word_formula_source: WordFormulaSource | None = field(default=None, compare=False, repr=False)
     opaque_failure_prose: bool = field(default=False, compare=False, repr=False)
     archive_version_evidence: (
         ArchiveVersionDecisionEvidence | ArchiveVersionConflictEvidence | None

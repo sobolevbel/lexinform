@@ -7,6 +7,7 @@ import os
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import timedelta
+from functools import partial
 from typing import cast
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
@@ -40,6 +41,7 @@ from lexinform.adapters.telegram import (
     TelegramRunNotifier,
 )
 from lexinform.adapters.telegram_format import APPROVE_DIGEST, MessageFormatter
+from lexinform.adapters.word_formula_capture import capture_word_formula_source
 from lexinform.adapters.wykaz_csv import WykazClient
 from lexinform.clock import SystemClock
 from lexinform.errors import StateCheckpointError
@@ -191,9 +193,10 @@ class Container:
             if self.rcl is not None:
                 downloaders[_host(self.settings.rcl_base_url)] = self.rcl.download
             max_bytes = self.settings.max_pdf_download_mb * 1024 * 1024
+            docx = DocxTextExtractor()
             extractor = self.extractor or DocumentTextExtractor(
                 PypdfTextExtractor(),
-                DocxTextExtractor(),
+                docx,
                 DocTextExtractor(),
                 max_member_bytes=max_bytes,
                 max_part_chars=self.settings.max_part_chars,
@@ -203,6 +206,11 @@ class Container:
                 extractor,
                 max_bytes=max_bytes,
                 physical_factory=PhysicalObservationCollector,
+                capture_word_formulas=(
+                    partial(capture_word_formula_source, docx)
+                    if self.settings.word_formula_inputs_enabled and self.extractor is None
+                    else None
+                ),
             )
         return self._loader
 

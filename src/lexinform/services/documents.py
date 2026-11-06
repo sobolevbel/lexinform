@@ -92,6 +92,7 @@ from lexinform.models.candidate_trace import (
 )
 from lexinform.models.document_reads import DocumentPhysicalDiagnostics
 from lexinform.models.document_reads import LoadedFile as LoadedFile
+from lexinform.models.extractions import DocumentExtraction
 from lexinform.models.scan_input import MAX_SCAN_BYTES, MAX_SCAN_PAGES
 from lexinform.models.source_omissions import SourceOmissionOwner
 from lexinform.observation_order import ObservationOrder
@@ -122,6 +123,7 @@ from lexinform.services.source_omissions import (
     SourceOmissionScope,
 )
 from lexinform.source_graph_admission import source_graph_admission, source_graph_url_decisions
+from lexinform.word_formula_placement import WordFormulaSource
 
 log = logging.getLogger(__name__)
 
@@ -218,6 +220,8 @@ class TextLoader:
         *,
         max_bytes: int,
         cache_size: int = 32,
+        capture_word_formulas: Callable[[bytes, DocumentExtraction], WordFormulaSource | None]
+        | None = None,
         physical_factory: Callable[[ObservationOrder], PhysicalObservationCollector] | None = None,
     ) -> None:
         self._downloaders = dict(downloaders)
@@ -225,6 +229,7 @@ class TextLoader:
         self._max_bytes = max_bytes
         self._cache: dict[str, _CachedDocument] = {}
         self._cache_size = cache_size
+        self._capture_word_formulas = capture_word_formulas
         self._lock = threading.Lock()
         self._archive_traces: dict[tuple[str, str, str], CandidateDispositionTrace] = {}
         self._read_cache_hits = 0
@@ -1389,8 +1394,14 @@ class TextLoader:
             ):
                 first_pdf_page = None
                 complete_pdf_pages = None
+                word_formula_source = None
                 if isinstance(self._extractor, ProvenanceTextExtractor):
                     observed = self._extractor.extract_document_with_provenance(data)
+                    if self._capture_word_formulas is not None and urlparse(
+                        url
+                    ).path.lower().endswith((".docx", ".docm")):
+                        with suppress(Exception):
+                            word_formula_source = self._capture_word_formulas(data, observed)
                     if capture is not None and capture.native_single_part:
                         with suppress(Exception):
                             native_standalone = complete_standalone_root(observed, artifact.sha256)
@@ -1454,6 +1465,7 @@ class TextLoader:
                     selection=selection,
                     first_pdf_page=first_pdf_page,
                     complete_pdf_pages=complete_pdf_pages,
+                    word_formula_source=word_formula_source,
                 )
                 completed = True
         finally:

@@ -13237,3 +13237,24 @@ checkpoints exactly. The single-intent samples saved 408,273–2,285,529 SQL
 bytes and 291,860–1,636,748 gzip bytes.
 
 [Qualification](../assets/audits/2026-11-06-supplement-scan-writer/qualification.json).
+
+<a id="j365"></a>
+
+## J365 — optionally attach verified Word formula structure to primary analysis
+
+The writer uses the already downloaded Word body and admits the companion
+only for the matching selected source, exact retained placements and bounded
+OpenAI primary context. `LEXINFORM_WORD_FORMULA_INPUTS_ENABLED` defaults to
+false. The disabled native path preserved selection, extraction identities,
+frozen request and SQL dump byte-for-byte against the previous release.
+
+On RCL 12410805/2 the enabled request used 6,044 input tokens instead of
+5,124. The local reservation estimate rose from $0.060342 to $0.062746.
+The queued dump increased by 6,124 SQL bytes and 981 gzip bytes. The
+submitted dumps had the same size and did not retain the companion tree.
+No source was downloaded a second time. Changing the divisor changed the
+enriched request identity while preserving the legacy text and law digest.
+Eight refusal controls fell back to the ordinary request. Mock submission
+and restore used the exact frozen requests.
+
+[Qualification](../assets/audits/2026-11-06-word-formula-companion-writer/qualification.json).

@@ -1,0 +1,113 @@
+{
+  "pins": {
+    "corpus/12387701.json": "c2bca05704a7b59896ca702311670d1d95ba6884555f4f8500f59e4a49977151",
+    "corpus/12410805.json": "754e22ef8d2ce21793d42bc7069ff30d2ac09ec9aee79f068d1235d463d7fc5e",
+    "documents/files/676875.docx": "d4121b6dba77fdc869bce3ee5d938f7f3f49e36e4cf2d0a5ed97ef383914feef",
+    "documents/files/676876.docx": "01ba8a1793c49bdb69548ddda86becd7d050b29b98cb9f1959314cc075aea557",
+    "documents/files/676877.doc": "328a16f1943cda9f9a2dbcf582b3380fb549d4a920c67f0184e215267052f7cc",
+    "documents/files/778990.docm": "9bc086cf4d703efc6447fd00dab30f5e5eed4402a49d5c0c503cc0ee18079572",
+    "documents/text/778990.txt.gz": "5a065ad36e80169940cf53daec550a9a43285ff208c09fe226b60b808a999aef",
+    "documents/text/778991.txt.gz": null,
+    "documents/text/778992.txt.gz": null,
+    "documents/text/779002.txt.gz": null
+  },
+  "tokenizer_sha256": "446a9538cb6c348e3516120d7c08b09f57c36495e2acfffe59a5bf8b0cfb1a2d",
+  "off": {
+    "sql_bytes": 94315,
+    "gzip_bytes": 20062,
+    "sql_sha256": "ddc943b9260cd4119059a73915692a990e568873271d211213a98a77309efc33",
+    "counted": [
+      {
+        "context": "cef8652ea8b1226639511f768f0f9c2e199a38d125364262f043b6f27a654d01",
+        "tokens": 5124
+      }
+    ],
+    "prepared": [
+      {
+        "context": "cef8652ea8b1226639511f768f0f9c2e199a38d125364262f043b6f27a654d01",
+        "context_chars": 8704,
+        "cost": 0.060342,
+        "identity": "103f902eee9f5eadc3b177577cf6642995a8333b6008afc03a48deae5b51398f",
+        "legacy_law_sha256": "law-v2:b84e35a871e2d4622d295b05751c6d2ccc3c6b0d818b0a62daaba3b5668c1548",
+        "memo": "bb388b7d2e4c0bc7d8e61adca4d3d0c68c67eca85f79b933f883136c64a4bb8d",
+        "meta_core": "93b03834e689695bf6520f5da4a0d14ee7735dcabd88dafd4e745e045c230d80",
+        "ordinary_text_sha256": "14db312bdda895cc42aae6fbdff1cff4a46b7b80bdcc074e2f50492ad8991847",
+        "payload": "2851fea0ab7568f425b12d2cd167b971afff2847a8bf1a83fcaacd567129023b",
+        "request": "66e7d29849d67ffc9a3b1e5df67861d5267d5daa7e0b96273922063d32f34145",
+        "word_formula": false
+      }
+    ]
+  },
+  "on": {
+    "sql_bytes": 100439,
+    "gzip_bytes": 21043,
+    "sql_sha256": "24cbb29d77322ab0352141d79dc7e3f2b7935ffb7d282b6ef78f91f233effb1f",
+    "counted": [
+      {
+        "context": "cef8652ea8b1226639511f768f0f9c2e199a38d125364262f043b6f27a654d01",
+        "tokens": 5124
+      },
+      {
+        "context": "f6318632230bf7593b60166bc7fba18e1c13283a56fb45a92d8783373737c9f8",
+        "tokens": 6044
+      }
+    ],
+    "prepared": [
+      {
+        "context": "f6318632230bf7593b60166bc7fba18e1c13283a56fb45a92d8783373737c9f8",
+        "context_chars": 8704,
+        "cost": 0.062746,
+        "identity": "fd63a6e4ba8bbb101544449437c8151ae60c181499c8707c1c91e9594245bcdc",
+        "legacy_law_sha256": "law-v2:b84e35a871e2d4622d295b05751c6d2ccc3c6b0d818b0a62daaba3b5668c1548",
+        "memo": "ca9224fddccf76d947b7853d8ac740967e33e2b0d05108f71b059cb2fa9f6e5b",
+        "meta_core": "89f5f8802edca65beba88f81e17d12c2ac47c37f7dc53e929014e1079dbb2749",
+        "ordinary_text_sha256": "14db312bdda895cc42aae6fbdff1cff4a46b7b80bdcc074e2f50492ad8991847",
+        "payload": "6accb07a3f952ae367c194a6dff819245833ab93ada323c8313c9cf44c0f61d3",
+        "request": "0a4c25e6f0ada249496cf4c93f3a783e2057f1a5ff4bef5ed928a4d134f50960",
+        "word_formula": true
+      }
+    ]
+  },
+  "mutation": {
+    "prepared": [
+      {
+        "context": "a5e2322d44e23d727c9e7d3b11c44e3f5887c1fcfadd8de7c444136d405f66d7",
+        "context_chars": 8704,
+        "cost": 0.062746,
+        "identity": "6aa25a1475d583d99eff66e2ce8051c48a7913dc936790fea07b279ff82db0ff",
+        "legacy_law_sha256": "law-v2:b84e35a871e2d4622d295b05751c6d2ccc3c6b0d818b0a62daaba3b5668c1548",
+        "memo": "03fa2d9a92c16993b5499488c36eff91937694ed8af592014db4869f4ce16592",
+        "meta_core": "d51062afede26435180ffb218f4e0d617fc5d8c564bd7374f31e7cc0ae84028f",
+        "ordinary_text_sha256": "14db312bdda895cc42aae6fbdff1cff4a46b7b80bdcc074e2f50492ad8991847",
+        "payload": "0054c2a0a97c6841ec6c9b6a0212a57a2231eee6905c2ccff62302550b7160f3",
+        "request": "7fecf11bd22367736ae8d2d75116008f8d54e9c1052fe9b92ec63fd000e46b7e",
+        "word_formula": true
+      }
+    ]
+  },
+  "fallback_controls": [
+    "cached",
+    "context",
+    "per_bill",
+    "run",
+    "save",
+    "scanner",
+    "tokenizer",
+    "unsupported"
+  ],
+  "submissions": [
+    {
+      "count": 1,
+      "payload_sha256": "2851fea0ab7568f425b12d2cd167b971afff2847a8bf1a83fcaacd567129023b",
+      "provider": "openai",
+      "submitted_legacy_sql_bytes": 63936
+    },
+    {
+      "count": 1,
+      "payload_sha256": "6accb07a3f952ae367c194a6dff819245833ab93ada323c8313c9cf44c0f61d3",
+      "provider": "openai",
+      "submitted_legacy_sql_bytes": 63936
+    }
+  ],
+  "provider_submissions": 0
+}

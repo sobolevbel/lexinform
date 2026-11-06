@@ -147,6 +147,7 @@ from lexinform.models.computations import CollectionReason, ComputationRecord
 from lexinform.models.documents import SenateAmendmentInputWitness
 from lexinform.models.input_receipts import (
     MultipartTextInputReceipt,
+    primary_context_sha256,
 )
 from lexinform.models.sejm import (
     SejmCommitteeDraftOrigin,
@@ -231,8 +232,10 @@ from lexinform.services.senate_documents import (
 from lexinform.services.senate_history import SenateInspectionCollector
 from lexinform.services.senate_inspection import SenateInspectionCapture
 from lexinform.services.source_omissions import SourceOmissionInput
+from lexinform.services.word_formula_inputs import word_formula_input
 from lexinform.source_graph_admission import source_graph_url_decisions
 from lexinform.text_projection import SourcePiece, TextProjection, project_pieces
+from lexinform.word_formula_placement import WordFormulaSource
 
 log = logging.getLogger(__name__)
 
@@ -431,6 +434,8 @@ class _Loaded:
     representation_probe: tuple[CandidateDispositionTrace, str] | None = None
     rcl_projection: Literal["annexes", "annexes_and_amendments"] | None = None
 
+    word_formula_source: WordFormulaSource | None = None
+
     @property
     def digest(self) -> str | None:
         """What says this is the same document as last time: the normalised text, or the file."""
@@ -524,6 +529,7 @@ class _Prepared:
     source_read: SourceReadCapture | None = None
     input_receipt: PrimaryInputReceipt | MultipartTextInputReceipt | None = None
     local_read: LocalReadTiming | None = None
+    word_formula_fallback: _Prepared | None = field(default=None, repr=False, compare=False)
 
 
 _WHITESPACE = re.compile(r"\s+")
@@ -3124,7 +3130,97 @@ class AnalysisService:
             if loaded.source_read is None:
                 raise
             raise _SourceReadError(loaded.source_read, exc) from exc
+        if loaded.word_formula_source is not None and previous is None:
+            prepared = self._prepare_word_formula_input(
+                prepared, loaded, cost_guard=cost_guard, history=history
+            )
         return replace(prepared, source_read=loaded.source_read)
+
+    def _prepare_word_formula_input(
+        self,
+        prepared: _Prepared,
+        loaded: _Loaded,
+        *,
+        cost_guard: bool,
+        history: tuple[ComputationResult, ...],
+    ) -> _Prepared:
+        request, meta, receipt = prepared.batch_request, prepared.batch_meta, prepared.input_receipt
+        backend, source, word = self._batch, loaded.source_read, loaded.word_formula_source
+        if (
+            request is None
+            or request.call_kind != "analysis"
+            or not isinstance(request.question, AnalysisQuestion)
+            or meta is None
+            or meta.overflow
+            or prepared.batch_provider != "openai"
+            or not isinstance(receipt, PrimaryInputReceipt)
+            or backend is None
+            or not isinstance(source, DocumentSourceRead)
+            or word is None
+        ):
+            return prepared
+        try:
+            companion = word_formula_input(
+                word, source, receipt, request.question.ctx, term=request.term
+            )
+            if companion is None:
+                return prepared
+            ctx = request.question.ctx.model_copy(update={"word_formula_input": companion})
+            tokens = backend.count_input_tokens(ctx)
+            if tokens is None:
+                return prepared
+            ceiling = self._options.batch_max_input_tokens
+            price = self._options.batch_input_price_usd_per_mtok
+            limit = self._options.max_bill_cost_usd if cost_guard else 0.0
+            if (ceiling is not None and tokens > ceiling) or (
+                limit
+                and (
+                    price is None
+                    or tiered(
+                        input_cost(tokens, price * 0.5), tokens, self._options.long_input_tier
+                    )
+                    > limit
+                )
+            ):
+                return prepared
+            key = _memo_key(prepared.bill, "analysis", ctx)
+            custom_id = hashlib.sha256(f"{key}:{meta.generation}".encode()).hexdigest()
+            if (
+                custom_id in self._context_rejections
+                or self._cached_analysis(
+                    prepared.bill, "analysis", key, history, cost_guard=cost_guard
+                )
+                is not None
+            ):
+                return prepared
+            enriched = backend.prepare_request(
+                BatchRequest(
+                    custom_id=custom_id,
+                    term=request.term,
+                    number=request.number,
+                    model=request.model,
+                    question=AnalysisQuestion(kind="analysis", ctx=ctx),
+                )
+            )
+            if enriched.payload_sha256 is None or enriched.model != request.model:
+                return prepared
+            bound = receipt.model_copy(
+                update={
+                    "context_sha256": primary_context_sha256(ctx),
+                    "request_sha256": enriched.payload_sha256,
+                }
+            )
+            return replace(
+                prepared,
+                batch_request=enriched,
+                batch_meta=meta.model_copy(update={"memo_key": key}),
+                memo_key=key,
+                input_receipt=bound,
+                word_formula_fallback=prepared,
+            )
+        except Exception:
+            log.debug("Optional Word formula input omitted during preparation")
+            return prepared
 
     def _prepare_loaded(
         self,
@@ -3726,21 +3822,53 @@ class AnalysisService:
         )
         if len((prepared.batch_request.payload_json or "").encode()) > 100_000_000:
             raise ValueError("one batch request exceeds the 100 MB payload limit")
-        if not self._ledger.reserve(prepared.batch_request.estimated_cost_usd):
+        amount = prepared.batch_request.estimated_cost_usd
+        if not self._ledger.reserve(amount):
+            if prepared.word_formula_fallback is not None:
+                return self._enqueue(
+                    bill, replace(prepared.word_formula_fallback, local_read=prepared.local_read)
+                )
             self._ledger.stop("the batch analysis waits for the next run")
             return False
         if prepared.triage_memo_key is not None and prepared.triage is not None:
             self._remember_analysis(bill, prepared.triage_memo_key, prepared.triage)
+        try:
+            self._save_analysis_intent(bill, prepared)
+        except ValueError:
+            if prepared.word_formula_fallback is None:
+                raise
+            self._ledger.release(amount)
+            log.debug("Optional Word formula input omitted during queueing")
+            return self._enqueue(
+                bill,
+                replace(
+                    prepared.word_formula_fallback,
+                    local_read=prepared.local_read,
+                    triage_memo_key=None,
+                ),
+            )
+        return True
+
+    def _save_analysis_intent(self, bill: Bill, prepared: _Prepared) -> None:
+        request, meta = prepared.batch_request, prepared.batch_meta
+        assert request is not None and meta is not None, "Enqueue requires a prepared batch request"
         with self._repo.atomic():
             intent = BatchIntent.from_request(
-                request=prepared.batch_request,
-                meta=prepared.batch_meta.model_copy(
-                    update={"prompt_version": prepared.batch_request.prompt_version}
+                request=request,
+                meta=meta.model_copy(
+                    update={
+                        "prompt_version": request.prompt_version,
+                        **(
+                            {"prepared_input_receipt": prepared.input_receipt}
+                            if prepared.word_formula_fallback is not None
+                            else {}
+                        ),
+                    }
                 ),
                 provider=prepared.batch_provider or self._options.batch_provider or "anthropic",
                 created_at=self._clock.now(),
             )
-            if prepared.input_receipt is not None:
+            if prepared.input_receipt is not None and prepared.word_formula_fallback is None:
                 try:
                     intent = enrich_primary_input_intent(intent, prepared.input_receipt)
                 except Exception:
@@ -3765,7 +3893,6 @@ class AnalysisService:
                     )
                 )
             self._repo.set_status(bill.term, bill.number, BillStatus.BATCH_PENDING)
-        return True
 
     def _persist(self, prepared: _Prepared) -> AnalysisRecord:
         """Write one prepared analysis down (stages, authors, the record). Calling thread only."""
@@ -3976,6 +4103,7 @@ class AnalysisService:
                 self._load_selected(document, file, trim=trim),
                 source_read=source,
                 representation_probe=probe,
+                word_formula_source=file.word_formula_source,
                 first_pdf_page=file.first_pdf_page.text
                 if file.first_pdf_page is not None
                 else None,

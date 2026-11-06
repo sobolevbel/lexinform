@@ -165,6 +165,10 @@ class Settings(BaseSettings):
         default=True,
         description="Ask a batch for the short name of a carded bill whose analysis gave none.",
     )
+    word_formula_inputs_enabled: bool = Field(
+        default=False, description="Include proven Word formulas in first OpenAI batch analyses."
+    )
+
     consultation_reviews_enabled: bool = Field(
         default=False,
         description="Enable analysis and delivery of consultation document reviews; disabled"
