@@ -13906,3 +13906,19 @@ existing collection-application status and the census preserved all prior
 fields and delivery observations.
 
 [Qualification](../assets/audits/2026-11-07-secondary-collection-checkpoint/qualification.json).
+
+<a id="j400"></a>
+
+## J400 — bound the working memory of binary DOC coordinate cleanup
+
+The cleanup pass tracks source offsets in a compact integer array and
+compacts page-break adjustments in place. It keeps the previous text and
+coordinates, including which automatic references are visible inside fields.
+
+The 246 unique pinned DOC inputs and all 377 native projections matched.
+A deterministic 10,000-string probe also matched exact text, offsets and
+visible references. On the same one-million-character synthetic input,
+traced peak allocations fell from 138,848,193 to 17,540,741 bytes.
+This measures the cleanup helper on that input.
+
+[Qualification](../assets/audits/2026-11-07-doc-note-compact-origins/qualification.json).

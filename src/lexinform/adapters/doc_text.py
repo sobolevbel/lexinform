@@ -14,6 +14,7 @@ import hashlib
 import io
 import logging
 import struct
+from array import array
 from bisect import bisect_left, bisect_right
 from collections.abc import Iterator
 
@@ -389,10 +390,11 @@ def _capture_notes(
 
 def _cleanup_positions(
     raw: str, *, visible_references: set[int] | None = None
-) -> tuple[str, list[int]]:
+) -> tuple[str, array[int]]:
     fields: list[bool] = []
-    output: list[tuple[str, int]] = []
-    line: list[tuple[str, int]] = []
+    output: list[str] = []
+    origins = array("I")
+    line_start = 0
     for index, char in enumerate(raw):
         if char == _FIELD_BEGIN:
             fields.append(True)
@@ -407,31 +409,38 @@ def _cleanup_positions(
                 visible_references.add(index)
             for emitted in _CONTROL.get(char, char):
                 if emitted == "\n":
-                    while line and line[-1][0].isspace():
-                        line.pop()
-                    output.extend(line)
-                    line.clear()
-                    if [pair[0] for pair in output[-2:]] != ["\n", "\n"]:
-                        output.append((emitted, index))
+                    while len(output) > line_start and output[-1].isspace():
+                        output.pop()
+                        origins.pop()
+                    if output[-2:] != ["\n", "\n"]:
+                        output.append(emitted)
+                        origins.append(index)
+                    line_start = len(output)
                 else:
-                    line.append((emitted, index))
-    while line and line[-1][0].isspace():
-        line.pop()
-    output.extend(line)
-    without_left = [
-        pair
-        for index, pair in enumerate(output)
-        if pair[0] != "\n" or index == len(output) - 1 or output[index + 1][0] != PAGE_BREAK
-    ]
-    cleaned = [
-        pair
-        for index, pair in enumerate(without_left)
-        if pair[0] != "\n" or index == 0 or without_left[index - 1][0] != PAGE_BREAK
-    ]
-    text = "".join(char for char, _ in cleaned)
+                    output.append(emitted)
+                    origins.append(index)
+    while len(output) > line_start and output[-1].isspace():
+        output.pop()
+        origins.pop()
+    kept = 0
+    previous = ""
+    for index, char in enumerate(output):
+        drop = char == "\n" and (
+            previous == PAGE_BREAK or (index + 1 < len(output) and output[index + 1] == PAGE_BREAK)
+        )
+        previous = char
+        if drop:
+            continue
+        if kept != index:
+            output[kept] = char
+            origins[kept] = origins[index]
+        kept += 1
+    del output[kept:]
+    del origins[kept:]
+    text = "".join(output)
     left = len(text) - len(text.lstrip())
     right = len(text.rstrip())
-    return text.strip(), [index for _, index in cleaned[left:right]]
+    return text.strip(), origins[left:right]
 
 
 def _decoded_targets(

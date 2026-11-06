@@ -1,0 +1,30 @@
+{
+  "manifest_sha256": "449d893ca8d9b89933a3ac84abd3b757d0f89298d06fc9ae6e5c31ecb38775d5",
+  "unique_doc_inputs": 246,
+  "retained_native_projections": 377,
+  "varied_inputs": 10000,
+  "exact_varied_output_sha256": "cbd5b18ee19998ddde04cccbc2233581fe34259081971b83624b3c8710e04552",
+  "exact_native_replay": true,
+  "stress": {
+    "before": {
+      "origins_sha256": "65db4b79a05eceec93229de2cfa36bb56d6b441e15776c8564ec670a8dbbbd7d",
+      "output_sha256": "b0a48f18c64e59026e2fc12f612b2eaedac185b483bbc1e3e891c9258b435f24",
+      "peak_bytes": 138848193,
+      "raw_chars": 1000000,
+      "traced_seconds": 2.497205917024985
+    },
+    "after": {
+      "origins_sha256": "65db4b79a05eceec93229de2cfa36bb56d6b441e15776c8564ec670a8dbbbd7d",
+      "output_sha256": "b0a48f18c64e59026e2fc12f612b2eaedac185b483bbc1e3e891c9258b435f24",
+      "peak_bytes": 17540741,
+      "raw_chars": 1000000,
+      "traced_seconds": 0.7262931249570101
+    }
+  },
+  "artifact_sha256": {
+    "probe.py": "af0ac7633322c27b183d6a03e405b206131ee6c13e338aa691202ac69e2fdd23",
+    "before.json": "cdd3a56843389a39b8f7ac3b228e6961f35f9c8d59b9e39b38efa014a07fc4f7",
+    "after.json": "2614f49bd89cb3d7c46a67ba1fb7b8e7e7d9693727ba5dfc76db5dd9789c1dc6"
+  },
+  "baseline": "4ac60bc677df3d359a8d65e30092b753b9786e1b"
+}

@@ -6,7 +6,7 @@ import io
 import json
 from bisect import bisect_left, bisect_right
 from collections import Counter
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Literal
@@ -219,7 +219,7 @@ def _raw_unit_position(
 
 
 def _project_note_body(
-    link: DocNoteLink, locate: Callable[[int], int | None], origins: list[int], baseline: str
+    link: DocNoteLink, locate: Callable[[int], int | None], origins: Sequence[int], baseline: str
 ) -> dict[str, int | str]:
     start = link.story_start_cp + link.note_start_cp
     last = link.story_start_cp + link.note_end_cp - 1
