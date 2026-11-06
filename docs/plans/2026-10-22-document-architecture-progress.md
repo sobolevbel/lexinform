@@ -13852,3 +13852,20 @@ path default physical replay matched every existing observation. The
 new capture remains in memory pending physical retention qualification.
 
 [Qualification](../assets/audits/2026-11-06-doc-note-native-projection/qualification.json).
+
+<a id="j397"></a>
+
+## J397 — qualify bounded physical retention of DOC note coordinates
+
+The explicit physical-part capture can carry note coordinates with their text
+hash. Existing DOC observations take priority within the per-summary and
+aggregate byte caps. Default extraction leaves coordinate capture off.
+
+A replay of 246 distinct pinned DOC inputs retained all 377 previous source
+links and 301 verified projections across 69 files. Prior observations and
+extracted text matched exactly. Record growth totalled 50,190 bytes, with
+a maximum of 1,970 bytes per record. On a scratch checkpoint with the three
+largest increments, SQL grew by 5,748 bytes and gzip by 1,664 bytes. Each
+checkpoint survived two byte-identical restores with integrity checks.
+
+[Qualification](../assets/audits/2026-11-07-doc-note-physical-projections/qualification.json).

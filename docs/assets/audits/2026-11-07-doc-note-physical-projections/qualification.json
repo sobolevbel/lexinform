@@ -1,0 +1,37 @@
+{
+  "checkpoint": {
+    "baseline": {
+      "exact_restores": 2,
+      "gzip_bytes": 5221570,
+      "sha256": "09e69c6343f43f3fbbb2e4cad178eda139cc5e9a7a9a8f5050c0d7c68c3cbd22",
+      "sql_bytes": 25803392
+    },
+    "projected": {
+      "exact_restores": 2,
+      "gzip_bytes": 5223234,
+      "sha256": "5caf58b667178445fe64ad8df4ba4e1dabac7926f98368df8d529deb1c3e781d",
+      "sql_bytes": 25809140
+    }
+  },
+  "counts": {
+    "captured": 377,
+    "retained": 301,
+    "source_links_retained": 377
+  },
+  "files_with_retained_projections": 69,
+  "input_checkpoint_sha256": "29dfe8566f02ceb810a1a43e8ea9a7b0fd0d9f6fc54ffa7212c4dda23945cd6d",
+  "manifest_sha256": "449d893ca8d9b89933a3ac84abd3b757d0f89298d06fc9ae6e5c31ecb38775d5",
+  "max_record_bytes_added": 1970,
+  "prior_sha256": "de6adda4930a672d1b2b0d097aa8476586015e57b04e85a16818765e9004bc5f",
+  "sample_input_sha256": [
+    "5d2cc96932bcd3d684fd0e9a1a543e3892fa1ec05eba1c19d7d5d65aa14ad8e1",
+    "64c952b7b4826e43a4faa3ccb7514c23796fbeff3c579662b85a96d2e462fb9d",
+    "ed703b01d09100b04c6675996d7c86a476ed60944263f014ed20e28cc4deff1a"
+  ],
+  "total_record_bytes_added": 50190,
+  "unique_inputs": 246,
+  "baseline": "aa7bd83649c2b82437f51bb2da937a28d2d1372b",
+  "corpus_paths": 404,
+  "report_sha256": "512f1e546d8a78dd4a1b4a37bd000451ed96f93e50918e400a77477dd6a68a83",
+  "runner_sha256": "9dfa9224d30356017dd51cc63989f0232f3e0663ea63ce50e6ae5990fa727a78"
+}

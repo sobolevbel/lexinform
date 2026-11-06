@@ -13,6 +13,7 @@ import pytest
 from pydantic import ValidationError
 from tools.source_history_doctor import audit
 
+from lexinform import extraction_records
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
@@ -467,3 +468,50 @@ def test_native_doc_projection_tracks_decoded_characters_and_visible_references(
     assert body is not None, "the complete synthetic note projects into the cleaned text"
     assert observed.result.legacy_text[body.start : body.end] == "😀note"
     assert body.text_sha256 == hashlib.sha256("😀note".encode()).hexdigest()
+
+
+@pytest.mark.parametrize("limit", ["none", "doc", "result"])
+def test_doc_physical_projection_preserves_existing_note_metadata_under_caps(
+    monkeypatch: pytest.MonkeyPatch, limit: str
+) -> None:
+    data = ole_document(*source_notes())
+    reader = extractor()
+    legacy = reader.extract_parts_with_doc_notes(data)
+    captured = reader.extract_parts_with_doc_notes(data, capture_projection=True)
+    baseline = summarize_doc_notes(summary(legacy), legacy)
+    legacy_notes = baseline.selected_parts[0].doc_notes
+    assert legacy_notes is not None, "the fixture captures a DOC link"
+    assert captured.legacy == legacy.legacy
+    assert not legacy.doc_notes[0].projections and captured.doc_notes[0].projections
+    if limit == "doc":
+        monkeypatch.setattr(
+            extraction_records,
+            "MAX_DOC_NOTE_SUMMARY_BYTES",
+            len(legacy_notes.model_dump_json().encode()),
+        )
+    elif limit == "result":
+        monkeypatch.setattr(
+            extraction_records,
+            "MAX_EXTRACTION_METADATA_BYTES",
+            len(baseline.model_dump_json().encode()),
+        )
+
+    enriched = summarize_doc_notes(summary(captured), captured)
+
+    if limit == "none":
+        notes = enriched.selected_parts[0].doc_notes
+        assert notes is not None, "the projected part retains its original note metadata"
+        assert notes.projections == captured.doc_notes[0].projections
+        assert notes.model_copy(update={"projections": None}) == legacy_notes
+    else:
+        assert enriched == baseline
+
+
+def test_doc_physical_projection_rejects_wrong_note_body_hash() -> None:
+    data = ole_document(*source_notes())
+    captured = extractor().extract_parts_with_doc_notes(data, capture_projection=True)
+    payload = captured.model_dump(mode="json")
+    payload["doc_notes"][0]["projections"][0]["body"]["text_sha256"] = "a" * 64
+
+    with pytest.raises(ValidationError, match="DOC note body differs"):
+        DocNotedParts.model_validate(payload)

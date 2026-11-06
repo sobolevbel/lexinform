@@ -1299,6 +1299,7 @@ class _PhysicalOrigins:
     word_view_status: list[WordPartViewStatus] | None = None
     odt_notes: list[OdtPartNoteOrigins] | None = None
     doc_notes: list[DocPartNoteCapture] | None = None
+    capture_doc_note_projection: bool = False
 
 
 class DocumentTextExtractor:
@@ -1369,7 +1370,7 @@ class DocumentTextExtractor:
             return empty
 
     def extract_parts_with_doc_notes(
-        self, data: bytes, *, include_pdf_pages: bool = True
+        self, data: bytes, *, include_pdf_pages: bool = True, capture_projection: bool = False
     ) -> DocNotedParts:
         if (
             type(self) is not DocumentTextExtractor
@@ -1385,6 +1386,7 @@ class DocumentTextExtractor:
             odt_blocks=[],
             unlocated_text=[],
             doc_notes=[],
+            capture_doc_note_projection=capture_projection,
         )
         legacy = self._extract_parts(data, origins)
         return DocNotedParts(legacy=legacy, doc_notes=tuple(origins.doc_notes or ()))
@@ -1787,7 +1789,13 @@ class DocumentTextExtractor:
             and _native_doc_notes(self._doc)
             and isinstance(self._doc, DocTextExtractor)
         ):
-            doc_notes = _physical_format(partial(self._doc.extract_with_notes, data))
+            doc_notes = _physical_format(
+                partial(
+                    self._doc.extract_with_notes,
+                    data,
+                    capture_projection=origins.capture_doc_note_projection,
+                )
+            )
             text = doc_notes.result.legacy_text
         else:
             text, pdf_result = self._extract(
@@ -1863,7 +1871,9 @@ class DocumentTextExtractor:
         if origins.doc_notes is not None and doc_notes is not None:
             origins.doc_notes.append(
                 DocPartNoteCapture(
-                    part_index=len(parts) - 1, extraction=_doc_note_capture(doc_notes)
+                    part_index=len(parts) - 1,
+                    extraction=_doc_note_capture(doc_notes),
+                    projections=doc_notes.projections or None,
                 )
             )
         if origins.unlocated_text is not None:

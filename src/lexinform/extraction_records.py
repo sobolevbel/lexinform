@@ -508,4 +508,42 @@ def summarize_doc_notes(baseline: ExtractionResult, linked: DocNotedParts) -> Ex
             break
         else:
             break
+    return _with_doc_note_projections(current, linked)
+
+
+def _with_doc_note_projections(
+    baseline: ExtractionResult, linked: DocNotedParts
+) -> ExtractionResult:
+    captures = {item.part_index: item.projections for item in linked.doc_notes if item.projections}
+    if not captures:
+        return baseline
+    parts = list(baseline.selected_parts)
+    current = baseline
+    for slot, summary in sorted(enumerate(parts), key=lambda item: item[1].physical_index):
+        source = captures.get(summary.physical_index)
+        notes = summary.doc_notes
+        if source is None or notes is None:
+            continue
+        retained_refs = {link.reference_cp for link in notes.links}
+        projections = tuple(item for item in source if item.reference_cp in retained_refs)
+        for count in range(len(projections), 0, -1):
+            enriched = notes.model_copy(update={"projections": projections[:count]})
+            if len(enriched.model_dump_json().encode()) > MAX_DOC_NOTE_SUMMARY_BYTES:
+                continue
+            offered = parts.copy()
+            offered[slot] = summary.model_copy(update={"doc_notes": enriched})
+            candidate = current.model_copy(update={"selected_parts": tuple(offered)})
+            if (
+                len(candidate.model_dump_json().encode()) > MAX_EXTRACTION_METADATA_BYTES
+                or sum(
+                    len(item.doc_notes.model_dump_json().encode())
+                    for item in offered
+                    if item.doc_notes is not None
+                )
+                > MAX_DOC_NOTE_SUMMARY_BYTES
+            ):
+                continue
+            current = ExtractionResult.model_validate(candidate)
+            parts = offered
+            break
     return current

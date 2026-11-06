@@ -136,13 +136,7 @@ class DocNoteSummary(_Source):
             raise ValueError("Retained DOC notes exceed their observed link inventory")
         complete = observed == len(self.links) or self.state == "unavailable"
         _validate_links(self, self.links, complete=complete)
-        if self.projections is not None:
-            positions = {link.reference_cp: index for index, link in enumerate(self.links)}
-            indices = [positions.get(item.reference_cp, -1) for item in self.projections]
-            if -1 in indices or indices != sorted(set(indices)):
-                raise ValueError(
-                    "DOC note projections require unique retained links in source order"
-                )
+        _validate_projections(self.links, self.projections)
         retained = _capture_digest(self, self.links)
         if self.retained_manifest_sha256 != retained:
             raise ValueError("Retained DOC links differ from their stored prefix hash")
@@ -225,10 +219,32 @@ def _validate_links(
             raise ValueError("Complete DOC note declarations must reach the last note boundary")
 
 
+def _validate_projections(
+    links: tuple[DocSourceNoteLink, ...], projections: tuple[DocNoteProjection, ...] | None
+) -> None:
+    if projections is None:
+        return
+    positions = {link.reference_cp: index for index, link in enumerate(links)}
+    indices = [positions.get(item.reference_cp, -1) for item in projections]
+    if -1 in indices or indices != sorted(set(indices)):
+        raise ValueError("DOC note projections require unique retained links in source order")
+
+
 class DocPartNoteCapture(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
     part_index: Count
     extraction: DocNoteCapture
+    projections: tuple[DocNoteProjection, ...] | None = Field(
+        default=None,
+        min_length=1,
+        max_length=MAX_DOC_NOTE_LINKS,
+        exclude_if=lambda value: value is None,
+    )
+
+    @model_validator(mode="after")
+    def binds_to_source_links(self) -> Self:
+        _validate_projections(self.extraction.links, self.projections)
+        return self
 
 
 class DocNotedParts(BaseModel):
@@ -252,4 +268,16 @@ class DocNotedParts(BaseModel):
                 part.text_sha256,
             ):
                 raise ValueError("DOC notes differ from their physical input and legacy text")
+            for projection in value.projections or ():
+                if projection.reference_offset is not None and projection.reference_offset > len(
+                    part.text
+                ):
+                    raise ValueError("DOC reference exceeds its physical text")
+                note = projection.body
+                if note is not None and (
+                    note.end > len(part.text)
+                    or hashlib.sha256(part.text[note.start : note.end].encode()).hexdigest()
+                    != note.text_sha256
+                ):
+                    raise ValueError("DOC note body differs from its physical text")
         return self
