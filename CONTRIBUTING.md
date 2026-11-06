@@ -44,15 +44,16 @@ make test ARGS="tests/scenario/test_tracking.py -k closure -vv"
 make coverage                 # tests with coverage
 make lint                     # Ruff, including tools/
 make typecheck                # strict mypy
+make check-static             # Ruff, formatting and mypy without pytest
 make test-integration         # live external services; requires network
 make test-local-http          # optional CLI tests with a local HTTP server
 make docs                     # documentation preview on port 8001
 make docs-check               # strict build + link and content checks
 ```
 
-`make check` covers the bot and tools; docs and web have separate checks. The web
-shortcuts (`make web-sync`, `make web-check`, `make web-serve`) are described in
-[`web/README.md`](web/README.md). `ARGS` passes shell arguments to test and development
+`make check` runs the static checks first, followed by the offline bot tests. Docs and web
+have separate checks. See [`web/README.md`](web/README.md) for `make web-sync`,
+`make web-check` and `make web-serve`. `ARGS` passes shell arguments to test and development
 server commands; quote expressions inside it, for example `ARGS="-k 'closure or hearing'"`.
 Override the uv command with `make check UV="uv --offline"` after dependencies are installed.
 

@@ -17,7 +17,7 @@ DOCS = $(RUN) --group docs
 BOT_PATHS = src tests tools
 WEB_PATHS = web/src web/tests web/stubs
 
-.PHONY: help sync test test-unit test-scenario test-local-http test-integration coverage corpus-check release-check lint typecheck format format-check check docs docs-build docs-check web-sync web-test web-lint web-typecheck web-format web-check web-serve
+.PHONY: help sync test test-unit test-scenario test-local-http test-integration coverage corpus-check release-check lint typecheck format format-check check-static check docs docs-build docs-check web-sync web-test web-lint web-typecheck web-format web-check web-serve
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  make %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -64,11 +64,14 @@ format: ## Format bot, tests and tools in place
 format-check: ## Check formatting without changing files
 	$(RUN) ruff format --check $(BOT_PATHS)
 
-check: ## Check tests, types, lint and formatting (no source edits)
-	$(MAKE) test
-	$(MAKE) typecheck
+check-static: ## Check lint, formatting and types without running tests
 	$(MAKE) lint
 	$(MAKE) format-check
+	$(MAKE) typecheck
+
+check: ## Check lint, formatting and types, then run offline tests
+	$(MAKE) check-static
+	$(MAKE) test
 
 docs: ## Serve documentation at http://127.0.0.1:8001
 	$(DOCS) zensical serve $(ARGS)
