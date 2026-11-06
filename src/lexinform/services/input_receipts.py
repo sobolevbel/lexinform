@@ -1,5 +1,8 @@
 """Join prospective text receipts to parents from the actual captured read only."""
 
+from datetime import datetime
+
+from lexinform.document_editions import candidate_edition
 from lexinform.input_receipts import (
     amendment_input_receipt,
     primary_input_receipt,
@@ -18,6 +21,7 @@ from lexinform.models import (
     DocumentSelection,
     ExtractionResult,
     PrimaryInputReceipt,
+    SourceObservation,
     SupplementInputReceipt,
     SupplementQuestion,
 )
@@ -25,11 +29,17 @@ from lexinform.models.input_receipts import (
     MAX_INPUT_RECEIPT_SEGMENTS,
     LooseRclInputPart,
     LooseRclInputReceipt,
+    SejmSelfAmendmentInputReceipt,
     input_map_sha256,
     primary_context_sha256,
 )
+from lexinform.models.sejm import SejmProposalOrigin
 from lexinform.prepared_input import prepared_text_input
-from lexinform.services.document_history import DocumentSourceRead, SourceReadCapture
+from lexinform.services.document_history import (
+    DocumentSourceRead,
+    SourceReadCapture,
+    prove_sejm_proposal,
+)
 from lexinform.text_projection import TextProjection
 
 
@@ -134,6 +144,36 @@ def capture_loose_rcl_input_receipt(
     ctx = request.question.ctx
     if projection.text != ctx.text:
         return None
+    parts = _loose_parts(selection, source)
+    if parts is None:
+        return None
+    request.verify_payload()
+    prepared = prepared_text_input(selection, ctx.text, projection=projection)
+    if (
+        prepared.source_selection_id != source.selection.selection_id
+        or len(prepared.segments) > MAX_INPUT_RECEIPT_SEGMENTS
+    ):
+        return None
+    return LooseRclInputReceipt(
+        profile=(
+            "primary-loose-rcl-mixed-text-v1"
+            if with_amendments
+            else "primary-loose-rcl-annex-text-v1"
+        ),
+        source_selection_id=prepared.source_selection_id,
+        source_parts=parts,
+        context_sha256=primary_context_sha256(ctx),
+        request_sha256=request.payload_sha256,
+        text_sha256=prepared.text_sha256,
+        text_chars=prepared.text_chars,
+        full_map_sha256=input_map_sha256(prepared.segments),
+        segments=prepared.segments,
+    )
+
+
+def _loose_parts(
+    selection: DocumentSelection, source: DocumentSourceRead
+) -> tuple[LooseRclInputPart, ...] | None:
     parts: list[LooseRclInputPart] = []
     for part in selection.parts:
         if (
@@ -155,21 +195,65 @@ def capture_loose_rcl_input_receipt(
                 extraction_id=extraction.result_id,
             )
         )
+    return tuple(parts)
+
+
+def capture_sejm_self_amendment_input_receipt(
+    request: BatchRequest,
+    selection: DocumentSelection,
+    projection: TextProjection | None,
+    source: DocumentSourceRead,
+    *,
+    recorded_at: datetime,
+) -> SejmSelfAmendmentInputReceipt | None:
+    origin = source.sejm_origin
+    trace = source.candidate_trace
+    if (
+        not isinstance(origin, SejmProposalOrigin)
+        or trace is None
+        or not trace.is_routine_singleton
+        or trace.archive_members is not None
+        or not isinstance(request.question, AnalysisQuestion)
+        or request.call_kind not in ("analysis", "reanalysis")
+        or request.payload_sha256 is None
+        or projection is None
+        or selection.scan_input is not None
+        or any(span.stage == "analysis" for span in selection.coverage)
+        or tuple(part.role for part in selection.parts) != ("bill", "self_amendment")
+    ):
+        return None
+    ctx = request.question.ctx
+    if ctx.source_kind != "print" or ctx.scan is not None or projection.text != ctx.text:
+        return None
+    edition = candidate_edition(source.selection, recorded_at=recorded_at)
+    if edition is None:
+        return None
+    observation = SourceObservation(
+        term=request.term,
+        number=request.number,
+        purpose="analysis",
+        document=source.document,
+        selection_id=source.selection.selection_id,
+        recorded_at=recorded_at,
+    )
+    proof = prove_sejm_proposal(trace, origin, source.selection, observation, edition, source.reads)
+    if proof is None:
+        return None
+    parts = _loose_parts(selection, source)
+    if parts is None:
+        return None
     request.verify_payload()
     prepared = prepared_text_input(selection, ctx.text, projection=projection)
     if (
-        prepared.source_selection_id != source.selection.selection_id
+        prepared.source_selection_id != observation.selection_id
         or len(prepared.segments) > MAX_INPUT_RECEIPT_SEGMENTS
     ):
         return None
-    return LooseRclInputReceipt(
-        profile=(
-            "primary-loose-rcl-mixed-text-v1"
-            if with_amendments
-            else "primary-loose-rcl-annex-text-v1"
-        ),
+    return SejmSelfAmendmentInputReceipt(
         source_selection_id=prepared.source_selection_id,
-        source_parts=tuple(parts),
+        source_observation_id=observation.observation_id,
+        proposal_trace_id=proof.trace_id,
+        source_parts=parts,
         context_sha256=primary_context_sha256(ctx),
         request_sha256=request.payload_sha256,
         text_sha256=prepared.text_sha256,
@@ -180,7 +264,8 @@ def capture_loose_rcl_input_receipt(
 
 
 def enrich_primary_input_intent(
-    original: BatchIntent, receipt: PrimaryInputReceipt | LooseRclInputReceipt
+    original: BatchIntent,
+    receipt: PrimaryInputReceipt | LooseRclInputReceipt | SejmSelfAmendmentInputReceipt,
 ) -> BatchIntent:
     if not isinstance(original.meta, BatchItemMeta):
         raise ValueError("Primary receipt enrichment requires primary metadata")
@@ -191,6 +276,7 @@ def _enrich_input_intent(
     original: BatchIntent,
     receipt: PrimaryInputReceipt
     | LooseRclInputReceipt
+    | SejmSelfAmendmentInputReceipt
     | SupplementInputReceipt
     | AmendmentInputReceipt,
 ) -> BatchIntent:

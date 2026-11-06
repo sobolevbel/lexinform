@@ -12069,5 +12069,31 @@ batch was saved. Both existing RCL receipt profiles serialized byte-for-byte
 like the previous code.
 [Qualification](../assets/audits/2026-11-06-sejm-self-amendment-input-reader/qualification.json).
 
-Reader stage only. DA5.1 and DA5.6 stay open for native capture and other
-profiles. The older reader cannot accept the new profile once persisted.
+Reader stage only. Commit `d39112a9` passed CI 42190382539 and relay
+deployment 42191323318 before activation. Older readers cannot accept the
+new profile once persisted.
+
+<a id="j308"></a>
+
+## J308 — record the exact native Sejm bill and self-amendment input
+
+Primary preparation writes the J307 map when the fitted request, both
+current loose extractions and the same official proposal proof agree.
+Proof construction is shared with the source history writer. Persistence
+checks the exact observation and trace before saving the queue item. If that
+optional evidence is absent, the unchanged frozen request still queues.
+
+The paired offline lifecycle replay used the pinned druk 2320/2320-A
+catalog and bodies. The native receipt stayed exact through queue, simulated
+submission, accounting and collection for success and a controlled provider
+failure. Six controls without sufficient official evidence or a retained
+parent queued without this receipt. All 24 checkpoints restored twice and
+matched baseline SQL after removing only the new receipt. The request,
+source calls and results matched in all eight profiles. The positive cases
+added 561 gzip bytes at queue, 594 at submission and 563–589 at collection.
+The controls added zero. No model requests were sent.
+[Qualification](../assets/audits/2026-11-06-sejm-self-amendment-input-writer/qualification.json).
+
+The native replay covers first analysis. DA5.1 and DA5.6 remain open for
+reanalysis without a current proposal witness, other assemblies, exact
+physical spans and the request-payload retention boundary.

@@ -384,7 +384,7 @@ def record_document_source(
                     ):
                         return
             else:
-                proved = _prove_sejm_proposal(
+                proved = prove_sejm_proposal(
                     origin_trace, sejm_origin, selection, observation, edition, reads
                 )
             if proved is not None:
@@ -509,7 +509,7 @@ def _prove_sejm_adoption(
     )
 
 
-def _prove_sejm_proposal(
+def prove_sejm_proposal(
     trace: CandidateDispositionTrace,
     origin: SejmProposalOrigin,
     selection: DocumentSelectionRecord,

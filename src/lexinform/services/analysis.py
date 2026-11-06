@@ -143,9 +143,14 @@ from lexinform.models.batch import (
 )
 from lexinform.models.candidate_trace import CandidateDispositionTrace
 from lexinform.models.computations import CollectionReason, ComputationRecord
-from lexinform.models.input_receipts import LooseRclInputReceipt
+from lexinform.models.input_receipts import (
+    LooseMultipartInputReceipt,
+    LooseRclInputReceipt,
+    SejmSelfAmendmentInputReceipt,
+)
 from lexinform.models.sejm import (
     SejmCommitteeDraftOrigin,
+    SejmProposalOrigin,
     SejmRepresentationOrigin,
     SejmSourceOrigin,
 )
@@ -209,6 +214,7 @@ from lexinform.services.input_receipts import (
     capture_loose_rcl_input_receipt,
     capture_primary_input_receipt,
     capture_secondary_input_receipt,
+    capture_sejm_self_amendment_input_receipt,
     enrich_primary_input_intent,
     enrich_secondary_input_intent,
 )
@@ -513,7 +519,9 @@ class _Prepared:
     triage_memo_key: str | None = None
     from_batch: bool = False
     source_read: SourceReadCapture | None = None
-    input_receipt: PrimaryInputReceipt | LooseRclInputReceipt | None = None
+    input_receipt: (
+        PrimaryInputReceipt | LooseRclInputReceipt | SejmSelfAmendmentInputReceipt | None
+    ) = None
     local_read: LocalReadTiming | None = None
 
 
@@ -3208,12 +3216,25 @@ class AnalysisService:
                     model=self._options.overflow_model if overflow else "",
                 )
             )
-            receipt: PrimaryInputReceipt | LooseRclInputReceipt | None = None
+            receipt: (
+                PrimaryInputReceipt | LooseRclInputReceipt | SejmSelfAmendmentInputReceipt | None
+            ) = None
             try:
                 if loaded.rcl_projection is None:
-                    receipt = capture_primary_input_receipt(
-                        request, loaded.selection, fitted.projection, loaded.source_read
-                    )
+                    if isinstance(loaded.source_read, DocumentSourceRead) and isinstance(
+                        loaded.source_read.sejm_origin, SejmProposalOrigin
+                    ):
+                        receipt = capture_sejm_self_amendment_input_receipt(
+                            request,
+                            loaded.selection,
+                            fitted.projection,
+                            loaded.source_read,
+                            recorded_at=self._clock.now(),
+                        )
+                    if receipt is None:
+                        receipt = capture_primary_input_receipt(
+                            request, loaded.selection, fitted.projection, loaded.source_read
+                        )
                 else:
                     receipt = capture_loose_rcl_input_receipt(
                         request,
@@ -3660,7 +3681,7 @@ class AnalysisService:
             try:
                 self._repo.save_batch_intent(intent)
             except PreparedInputParentError:
-                if not isinstance(intent.meta.prepared_input_receipt, LooseRclInputReceipt):
+                if not isinstance(intent.meta.prepared_input_receipt, LooseMultipartInputReceipt):
                     raise
                 log.warning("Prepared input receipt omitted (parents_unavailable)")
                 self._repo.save_batch_intent(
