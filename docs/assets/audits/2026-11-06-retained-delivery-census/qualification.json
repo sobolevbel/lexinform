@@ -1,0 +1,56 @@
+{
+  "database_sha256": "66b7378b853472046b9f0e146e9b316c164374b48bc1c7f9565c834d8501a7a3",
+  "database_unchanged": true,
+  "primary_census": {
+    "consumed_projection_unavailable": 4,
+    "exact_retained_cycle": 1,
+    "frozen_paid_reference_unavailable": 3,
+    "frozen_plan_unavailable": 27,
+    "frozen_render_context_unavailable": 13,
+    "prepared_receipt_unavailable": 1,
+    "publication_outside_direct_original_scope": 1,
+    "recorded_send_unavailable": 1
+  },
+  "secondary_census": [
+    {
+      "application_id": 11,
+      "prefix": {
+        "original_collection_application": "not_retained",
+        "original_request_payload": "not_verified",
+        "prepared_input_receipt": "not_retained",
+        "reason": "exact_submitted_secondary_request_identity",
+        "source_selection_binding": "not_verified",
+        "status": "recorded"
+      },
+      "publication_id": 231,
+      "reason": "exact_retained_secondary_suffix",
+      "status": "recorded"
+    },
+    {
+      "application_id": 16,
+      "prefix": {
+        "original_collection_application": "not_retained",
+        "original_request_payload": "not_verified",
+        "prepared_input_receipt": "not_retained",
+        "reason": "exact_submitted_secondary_request_identity",
+        "source_selection_binding": "not_verified",
+        "status": "recorded"
+      },
+      "publication_id": 240,
+      "reason": "exact_retained_secondary_suffix",
+      "status": "recorded"
+    }
+  ],
+  "sql_sha256": "c61e90a0181f7051844fedaac9e50dfaee374c9b0600d7a97717ab8e97afca53",
+  "state_git_sha": "533529bf5316b95c2f0a69a23e7c6aaf50577ba7",
+  "comparison_state_git_sha": "ff49a74a8d5e5b846a8f11d98ca71c2f421930b8",
+  "schema": 68,
+  "newest_primary_row": {
+    "publication_id": 282,
+    "owner": "RCL/12416550",
+    "shared_physical_root_with_publication": 38,
+    "root_owner": "WPL/UD338",
+    "frozen_plan": "not_retained"
+  },
+  "scope": "Sent new-bill rows and sent status changes with a retained projection application."
+}

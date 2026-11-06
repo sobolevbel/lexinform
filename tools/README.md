@@ -692,3 +692,18 @@ uv run --offline --frozen python -m tools.replay_word_formulas \
   --manifest-sha256 05e2aba8554ae9c77e086a3af6999d51290ec386a3fdc62f98a5286df46bfcc2 \
   --output out/corpus/word-formulas.json
 ```
+
+### Retained delivery census
+
+Run the same retained-cycle readers across a checkpointed SQLite copy.
+
+```sh
+uv run --offline --frozen python -m tools.primary_delivery_cycle --census \
+  --database /path/to/state.db --output out/corpus/retained-delivery-census.json
+```
+
+The report counts reasons for all sent new-bill rows, including linked aliases,
+and lists sent status changes with a retained projection application. Secondary
+request identity, projection and send are reported separately from unavailable
+prepared input or collection evidence. The database checksum pins the inspected
+snapshot. A recorded census does not establish live or source-family acceptance.

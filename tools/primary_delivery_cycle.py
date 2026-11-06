@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import sqlite3
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
@@ -444,6 +445,34 @@ def _inspect_card(
         raise
 
 
+def _observe(
+    db: sqlite3.Connection,
+    publication_id: int,
+    *,
+    secondary_application_id: int | None = None,
+    include_compact: bool = False,
+    include_request_prefix: bool = False,
+) -> tuple[str, str, dict[str, object] | None]:
+    cycle: dict[str, object] | None = None
+    status, reason = "recorded", "exact_retained_cycle"
+    try:
+        if secondary_application_id is None:
+            reason, cycle = _inspect_card(db, publication_id, include_compact=include_compact)
+        else:
+            reason = "exact_retained_secondary_suffix"
+            cycle = _secondary_suffix(
+                db,
+                publication_id,
+                secondary_application_id,
+                include_request_prefix=include_request_prefix,
+            )
+    except CycleNotObservedError as exc:
+        status, reason = "not_observed", str(exc)
+    except ValueError, TypeError, RecursionError, KeyError, IndexError, sqlite3.Error:
+        status, reason = "invalid", "invalid_snapshot_evidence"
+    return status, reason, cycle
+
+
 def audit(
     database: Path,
     publication_id: int,
@@ -461,24 +490,13 @@ def audit(
     if include_compact and secondary_application_id is not None:
         raise ValueError("Compact and secondary evidence modes are mutually exclusive")
     with open_snapshot(database) as snapshot:
-        status, reason, cycle = "recorded", "exact_retained_cycle", None
-        try:
-            if secondary_application_id is None:
-                reason, cycle = _inspect_card(
-                    snapshot.connection, publication_id, include_compact=include_compact
-                )
-            else:
-                reason = "exact_retained_secondary_suffix"
-                cycle = _secondary_suffix(
-                    snapshot.connection,
-                    publication_id,
-                    secondary_application_id,
-                    include_request_prefix=include_request_prefix,
-                )
-        except CycleNotObservedError as exc:
-            status, reason = "not_observed", str(exc)
-        except ValueError, TypeError, RecursionError, KeyError, IndexError, sqlite3.Error:
-            status, reason = "invalid", "invalid_snapshot_evidence"
+        status, reason, cycle = _observe(
+            snapshot.connection,
+            publication_id,
+            secondary_application_id=secondary_application_id,
+            include_compact=include_compact,
+            include_request_prefix=include_request_prefix,
+        )
         if not snapshot.unchanged():
             status, reason, cycle = "invalid", "database_changed_during_audit", None
     if secondary_application_id is not None:
@@ -510,10 +528,70 @@ def audit(
     }
 
 
+def census(database: Path) -> dict[str, object]:
+    primary: Counter[str] = Counter()
+    secondary = []
+    with open_snapshot(database) as snapshot:
+        db = snapshot.connection
+        for (publication_id,) in db.execute(
+            "SELECT id FROM publications WHERE kind='new_bill' AND status='sent'"
+        ):
+            _, reason, _ = _observe(db, publication_id, include_compact=True)
+            primary[reason] += 1
+        for publication_id, application_id in db.execute(
+            "SELECT p.id, a.id FROM result_applications a JOIN publications p"
+            " ON CAST(p.status_change_id AS TEXT)=json_extract(a.application_json,'$.target.ref')"
+            " WHERE p.status='sent' AND a.phase='projection'"
+            " AND json_extract(a.application_json,'$.target.kind')='status_change'"
+            " ORDER BY p.id,a.id"
+        ):
+            status, reason, suffix = _observe(
+                db,
+                publication_id,
+                secondary_application_id=application_id,
+                include_request_prefix=True,
+            )
+            prefix = suffix.get("request_prefix") if suffix is not None else None
+            secondary.append(
+                {
+                    "publication_id": publication_id,
+                    "application_id": application_id,
+                    "status": status,
+                    "reason": reason,
+                    "prefix": {
+                        key: prefix[key]
+                        for key in (
+                            "status",
+                            "reason",
+                            "original_collection_application",
+                            "prepared_input_receipt",
+                            "original_request_payload",
+                            "source_selection_binding",
+                        )
+                        if key in prefix
+                    }
+                    if isinstance(prefix, dict)
+                    else {},
+                }
+            )
+        if not snapshot.unchanged():
+            raise ValueError("Database changed during delivery census")
+    return {
+        "version": 1,
+        "status": "recorded",
+        "scope": "Sent new-bill rows and sent status changes with retained projections.",
+        "database_sha256": snapshot.sha256,
+        "primary_census": dict(primary),
+        "secondary_census": secondary,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--database", type=Path, required=True)
-    parser.add_argument("--publication-id", type=int, required=True)
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument("--publication-id", type=int)
+    target.add_argument("--census", action="store_true", help="survey a checkpointed snapshot")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--secondary-application-id", type=int)
     mode.add_argument(
@@ -531,21 +609,31 @@ def main() -> None:
     try:
         database = args.database.resolve()
         protected = {database}
-        if args.include_request_prefix:
+        if args.census and (
+            args.include_request_prefix
+            or args.include_compact
+            or args.secondary_application_id is not None
+        ):
+            raise ValueError("Census uses its own primary and secondary evidence modes")
+        if args.include_request_prefix or args.census:
             protected.update(
                 Path(str(database) + suffix) for suffix in ("-wal", "-shm", "-journal")
             )
         if args.output.resolve() in protected:
             raise ValueError("Report must be separate from the input database")
-        report = audit(
-            args.database,
-            args.publication_id,
-            secondary_application_id=args.secondary_application_id,
-            include_compact=args.include_compact,
-            include_request_prefix=args.include_request_prefix,
+        report = (
+            census(args.database)
+            if args.census
+            else audit(
+                args.database,
+                args.publication_id,
+                secondary_application_id=args.secondary_application_id,
+                include_compact=args.include_compact,
+                include_request_prefix=args.include_request_prefix,
+            )
         )
         write_json(args.output, report)
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError, sqlite3.Error) as exc:
         parser.error(str(exc))
     status = report["status"]
     suffix = report.get("suffix")

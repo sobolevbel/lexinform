@@ -4,7 +4,7 @@ from contextlib import closing
 from pathlib import Path
 
 import pytest
-from tools.primary_delivery_cycle import audit, main
+from tools.primary_delivery_cycle import audit, census, main
 
 from lexinform.models import (
     AmendmentsRecord,
@@ -439,3 +439,34 @@ def test_prefix_cli_cannot_write_database_sidecar(
 
     assert error.value.code == 2
     assert not sidecar.exists()
+
+
+def test_census_reuses_retained_secondary_evidence_without_writing(
+    secondary_snapshot: tuple[Path, int, int],
+) -> None:
+    target, publication, application = secondary_snapshot
+    before = target.read_bytes()
+
+    report = census(target)
+    individual = audit(
+        target, publication, secondary_application_id=application, include_request_prefix=True
+    )
+
+    suffix = individual["suffix"]
+    assert isinstance(suffix, dict), "The fixture has a retained secondary suffix"
+    prefix = suffix["request_prefix"]
+    assert prefix == {
+        "status": "not_observed",
+        "reason": "original_consumed_secondary_item_unavailable",
+    }
+    assert report["status"] == "recorded"
+    assert report["secondary_census"] == [
+        {
+            "publication_id": publication,
+            "application_id": application,
+            "status": individual["status"],
+            "reason": individual["reason"],
+            "prefix": prefix,
+        }
+    ]
+    assert target.read_bytes() == before

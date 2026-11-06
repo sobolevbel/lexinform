@@ -13188,6 +13188,7 @@ and without the placement observer. The positive control counted 5,124
 input tokens. The replay uses pinned local source files and tokenizer data.
 
 [Qualification](../assets/audits/2026-11-06-word-formula-placement/qualification.json).
+Exact release verified for `0a447de7` via [CI](https://github.com/sobolevbel/lexinform/actions/runs/42273399049) and [relay](https://github.com/sobolevbel/lexinform/actions/runs/42274168418).
 
 <a id="j362"></a>
 
@@ -13204,6 +13205,7 @@ compact requests, restored both checkpoints twice and produced identical
 request and submitted-state hashes through mock submission.
 
 [Qualification](../assets/audits/2026-11-06-supplement-scan-reader/qualification.json).
+Exact release verified for `b97152ff` via [CI](https://github.com/sobolevbel/lexinform/actions/runs/42274392891) and [relay](https://github.com/sobolevbel/lexinform/actions/runs/42275506826).
 
 <a id="j363"></a>
 
@@ -13258,3 +13260,17 @@ Eight refusal controls fell back to the ordinary request. Mock submission
 and restore used the exact frozen requests.
 
 [Qualification](../assets/audits/2026-11-06-word-formula-companion-writer/qualification.json).
+
+<a id="j366"></a>
+
+## J366 — repeat the retained delivery census on a newer state snapshot
+
+A read-only audit of state `533529bf` found one exact retained primary
+cycle among 51 sent new-bill rows. The one additional row since J346
+shares the physical root of an older government-plan publication and
+has no frozen original plan. It adds no direct-original proof.
+Both secondary chains still have a verified submitted identity and
+send suffix. The original prepared input and collection receipt remain
+unavailable. DA10.7 remains open.
+
+[Qualification](../assets/audits/2026-11-06-retained-delivery-census/qualification.json).
