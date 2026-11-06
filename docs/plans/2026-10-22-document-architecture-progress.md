@@ -11880,3 +11880,24 @@ Each snapshot restored twice. No provider request was sent.
 and [Sejm attachment pins](../assets/audits/2026-11-06-retained-delivery-and-required-part/source-pins.json).
 
 DA4.1 and DA4.4 remain open for the remaining decision provenance.
+
+<a id="j300"></a>
+
+## J300 — retain terminal self-amendment gaps on the actual candidate
+
+The native trace records the selected candidate, amendment position
+and observed failure when composition returns waiting at a self-amendment.
+It distinguishes a returned unreadable body from a download size refusal.
+The candidate doctor counts the new reason when a validated trace carries
+it. Existing doctor output keeps the prior shape when no such trace exists.
+
+The pinned 2320 and 2320-A originals replayed unchanged against
+`afeebc4d`. A damaged derivative and a controlled size refusal added
+only the new gap and trace identity. The selected source, read order,
+waiting state, selection ID and normalized SQL stayed exact. Both
+snapshots passed two restores. An injected missing-file exception
+still propagated. No model requests were made.
+[Qualification](../assets/audits/2026-11-06-amendment-gap/qualification.json)
+and [pinned originals](../assets/audits/2026-11-05-offline-provenance-evidence/case.json).
+
+DA4.1 and DA4.4 remain open for the other decision provenance gaps.

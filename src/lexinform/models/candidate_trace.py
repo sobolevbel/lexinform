@@ -365,6 +365,22 @@ class RequiredPartGap(BaseModel):
         return self
 
 
+class AmendmentPartGap(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    phase: Literal["version_comparison", "fallback"]
+    index: Position
+    amendment_index: Position
+    reason: Literal["returned_no_text", "download_size_limit"]
+    file_sha256: Sha256 | None = Field(default=None, exclude_if=lambda value: value is None)
+
+    @model_validator(mode="after")
+    def size_refusal_has_no_completed_body(self) -> Self:
+        if self.reason == "download_size_limit" and self.file_sha256 is not None:
+            raise ValueError("A size refusal cannot claim a complete body")
+        return self
+
+
 class NormativeAnnexGap(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
@@ -610,6 +626,9 @@ class CandidateDispositionTrace(BaseModel):
     required_part_gap: RequiredPartGap | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    amendment_part_gap: AmendmentPartGap | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @classmethod
     def from_decisions(
@@ -730,6 +749,8 @@ class CandidateDispositionTrace(BaseModel):
             validate_normative_annex_parent(self, self.normative_annex_gap)
         if self.required_part_gap is not None:
             validate_required_part_gap_parent(self, self.required_part_gap)
+        if self.amendment_part_gap is not None:
+            validate_amendment_part_gap_parent(self, self.amendment_part_gap)
         if self.sejm_original_proposal is not None:
             validate_sejm_original_proposal(self, self.sejm_original_proposal)
         if self.sejm_print_representation is not None:
@@ -896,12 +917,12 @@ def validate_sejm_committee_recommendation(
         raise ValueError("Recommendation requires its exact selected committee report")
 
 
-def validate_required_part_gap_parent(
-    trace: CandidateDispositionTrace, gap: RequiredPartGap
-) -> None:
+def _terminal_wait_candidate(
+    trace: CandidateDispositionTrace, gap: RequiredPartGap | AmendmentPartGap
+) -> TextDocument:
     request = trace.requested_document
     if request is None or gap.index >= trace.candidate_count:
-        raise ValueError("a required part gap requires its retained outer request")
+        raise ValueError("a terminal part gap requires its retained outer request")
     parent = _parent_disposition(trace, gap.phase, gap.index)
     expected_reason = (
         "version_choice" if gap.phase == "version_comparison" else "first_acceptable_candidate"
@@ -913,10 +934,30 @@ def validate_required_part_gap_parent(
         or parent.reason != expected_reason
         or trace.reason != expected_reason
     ):
-        raise ValueError("a required part gap requires the selected outer disposition")
-    if trace.selection_state != "waiting" or trace.normative_annex_gap is not None:
-        raise ValueError("a required part gap requires its own terminal waiting state")
-    candidate = (request, *request.alternatives)[gap.index]
+        raise ValueError("a terminal part gap requires the selected outer disposition")
+    if (
+        trace.selection_state != "waiting"
+        or trace.normative_annex_gap is not None
+        or (trace.required_part_gap is not None and trace.amendment_part_gap is not None)
+    ):
+        raise ValueError("a terminal part gap requires its own terminal waiting state")
+    return (request, *request.alternatives)[gap.index]
+
+
+def validate_amendment_part_gap_parent(
+    trace: CandidateDispositionTrace, gap: AmendmentPartGap
+) -> None:
+    candidate = _terminal_wait_candidate(trace, gap)
+    if gap.amendment_index >= len(candidate.amendment_urls):
+        raise ValueError("amendment gap exceeds the actual amendment URL namespace")
+    if not metadata_url_decision(candidate.amendment_urls[gap.amendment_index]).admitted:
+        raise ValueError("amendment gap parent URL is outside metadata admission")
+
+
+def validate_required_part_gap_parent(
+    trace: CandidateDispositionTrace, gap: RequiredPartGap
+) -> None:
+    candidate = _terminal_wait_candidate(trace, gap)
     if gap.required_index >= len(candidate.required_urls):
         raise ValueError("required part gap exceeds the actual required URL namespace")
     if not metadata_url_decision(candidate.required_urls[gap.required_index]).admitted:

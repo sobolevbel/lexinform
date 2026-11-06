@@ -70,6 +70,7 @@ from lexinform.models import (
     TextDocument,
 )
 from lexinform.models.candidate_trace import (
+    AmendmentPartGap,
     CandidateTraceReason,
     CandidateTraceResult,
     NormativeAnnexGap,
@@ -139,6 +140,7 @@ class _CompositionCapture:
     required: RequiredPartCapture
     normative_gap: NormativeAnnexGap | None = None
     required_gap: RequiredPartGap | None = None
+    amendment_gap: AmendmentPartGap | None = None
 
 
 @dataclass(frozen=True)
@@ -759,9 +761,20 @@ class TextLoader:
                 return composed.blocked
             bundle = composed
         bundle = finish_normative(bundle)
-        for url in document.amendment_urls:
-            bundle = amendment_part(bundle, url, self.read(url))
+        for position, url in enumerate(document.amendment_urls):
+            file = self.read(url)
+            bundle = amendment_part(bundle, url, file)
             if isinstance(bundle, LoadedFile):
+                if attempt is not None:
+                    gap_capture, gap_phase, gap_index = attempt
+                    with suppress(Exception):
+                        gap_capture.amendment_gap = AmendmentPartGap(
+                            phase=gap_phase,
+                            index=gap_index,
+                            amendment_index=position,
+                            reason="download_size_limit" if file.oversize else "returned_no_text",
+                            file_sha256=None if file.oversize else file.sha256,
+                        )
                 return bundle
         for url in document.extra_urls:
             try:
@@ -823,6 +836,11 @@ class TextLoader:
                 with suppress(Exception):
                     trace = CandidateDispositionTrace.model_validate(
                         {**trace.model_dump(), "required_part_gap": composition.required_gap}
+                    )
+            if composition.amendment_gap is not None:
+                with suppress(Exception):
+                    trace = CandidateDispositionTrace.model_validate(
+                        {**trace.model_dump(), "amendment_part_gap": composition.amendment_gap}
                     )
         if (
             not retain_routine_trace

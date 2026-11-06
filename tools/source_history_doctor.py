@@ -351,6 +351,7 @@ def candidate_trace_inventory(
     traces: dict[str, bool] = {}
     annex_reasons: Counter[str] = Counter()
     required_reasons: Counter[str] = Counter()
+    amendment_reasons: Counter[str] = Counter()
     try:
         if "candidate_disposition_traces" not in unavailable:
             report["trace_rows"] = report["valid_trace_rows"] = 0
@@ -372,6 +373,8 @@ def candidate_trace_inventory(
                             annex_reasons[trace.normative_annex_gap.reason] += 1
                         if trace.required_part_gap is not None:
                             required_reasons[trace.required_part_gap.reason] += 1
+                        if trace.amendment_part_gap is not None:
+                            amendment_reasons[trace.amendment_part_gap.reason] += 1
         if "source_candidate_traces" not in unavailable:
             report["link_rows"] = report["checked_links"] = report["unknown_links"] = 0
             reader = ContentSourceRows(connection)
@@ -413,6 +416,11 @@ def candidate_trace_inventory(
             "invalid_trace_rows": total - valid if total is not None else None,
             "normative_annex": _gap_counts(valid, annex_reasons),
             "required_part": _gap_counts(valid, required_reasons),
+            **(
+                {"amendment_part": _gap_counts(valid, amendment_reasons)}
+                if amendment_reasons
+                else {}
+            ),
             "scope": (
                 "Typed fields on validated saved traces; shared traces count once. "
                 "Unrecorded reasons remain unknown. No raw or current blocker inference."

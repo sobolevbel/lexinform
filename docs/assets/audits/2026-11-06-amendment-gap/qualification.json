@@ -1,0 +1,143 @@
+{
+  "baseline": "afeebc4d6180fb585087e561f08fd90278bdec0e",
+  "restores_per_checkpoint": 2,
+  "cases": {
+    "missing": {
+      "calls": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320/2320.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320-A/2320-A.pdf"
+      ],
+      "raised": "FileNotFoundError"
+    },
+    "readable": {
+      "calls": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320/2320.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320-A/2320-A.pdf"
+      ],
+      "doctor": {
+        "denominator": "retained_candidate_trace_rows",
+        "denominator_rows": 0,
+        "invalid_trace_rows": 0,
+        "normative_annex": {
+          "reasons": {},
+          "recorded_rows": 0,
+          "unknown_valid_rows": 0
+        },
+        "required_part": {
+          "reasons": {},
+          "recorded_rows": 0,
+          "unknown_valid_rows": 0
+        },
+        "scope": "Typed fields on validated saved traces; shared traces count once. Unrecorded reasons remain unknown. No raw or current blocker inference.",
+        "status": "available",
+        "valid_trace_rows": 0
+      },
+      "gap": null,
+      "gzip_bytes": 8971,
+      "normalized": "ba4c8be50588491e97adc99a593573628905bae1ca0500f88f5aa214098ad5e7",
+      "selected_url": "https://api.sejm.gov.pl/sejm/term10/prints/2320/2320.pdf",
+      "selection_id": "selection-v1:5be58199fc39b70e8f62397d24ca0d3f23f03e3ee7fd9527e8695c4accc04997",
+      "sql_bytes": 44634,
+      "state": "unverified",
+      "text_sha256": "87f96cfc689357a34c77b1b5600a162c5fd1fb93c285dfce6a506ae0c5a26af6",
+      "trace_id": null
+    },
+    "size_refusal": {
+      "calls": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320/2320.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320-A/2320-A.pdf"
+      ],
+      "doctor": {
+        "amendment_part": {
+          "reasons": {
+            "download_size_limit": 1
+          },
+          "recorded_rows": 1,
+          "unknown_valid_rows": 0
+        },
+        "denominator": "retained_candidate_trace_rows",
+        "denominator_rows": 1,
+        "invalid_trace_rows": 0,
+        "normative_annex": {
+          "reasons": {},
+          "recorded_rows": 0,
+          "unknown_valid_rows": 1
+        },
+        "required_part": {
+          "reasons": {},
+          "recorded_rows": 0,
+          "unknown_valid_rows": 1
+        },
+        "scope": "Typed fields on validated saved traces; shared traces count once. Unrecorded reasons remain unknown. No raw or current blocker inference.",
+        "status": "available",
+        "valid_trace_rows": 1
+      },
+      "gap": {
+        "amendment_index": 0,
+        "index": 0,
+        "phase": "version_comparison",
+        "reason": "download_size_limit"
+      },
+      "gzip_bytes": 7646,
+      "normalized": "be30a568f6adbc3cefd6f59eb162bbe89e4990b202796ec87ea883022bb83f47",
+      "selected_url": "https://api.sejm.gov.pl/sejm/term10/prints/2320/2320.pdf",
+      "selection_id": "selection-v1:7c6d49d3431d059b61be6d27ddacaf6b022ffa962089713770e0900eb3c638fa",
+      "sql_bytes": 38104,
+      "state": "waiting",
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "trace_id": "candidate-trace-v1:bdde819190848e9781f83c8b6bdfe2fdb6abe06fdeccf785966d748a80dd3647",
+      "baseline_trace_id": "candidate-trace-v1:119459809c272649bf528eb67cffc12b4581a5d1a28ddd5b2ed714370126dbc8",
+      "sql_delta_bytes": 113,
+      "gzip_delta_bytes": 27
+    },
+    "unreadable": {
+      "calls": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320/2320.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320-A/2320-A.pdf"
+      ],
+      "doctor": {
+        "amendment_part": {
+          "reasons": {
+            "returned_no_text": 1
+          },
+          "recorded_rows": 1,
+          "unknown_valid_rows": 0
+        },
+        "denominator": "retained_candidate_trace_rows",
+        "denominator_rows": 1,
+        "invalid_trace_rows": 0,
+        "normative_annex": {
+          "reasons": {},
+          "recorded_rows": 0,
+          "unknown_valid_rows": 1
+        },
+        "required_part": {
+          "reasons": {},
+          "recorded_rows": 0,
+          "unknown_valid_rows": 1
+        },
+        "scope": "Typed fields on validated saved traces; shared traces count once. Unrecorded reasons remain unknown. No raw or current blocker inference.",
+        "status": "available",
+        "valid_trace_rows": 1
+      },
+      "gap": {
+        "amendment_index": 0,
+        "file_sha256": "14bcd090baf31edba64e9cbd8cdfc15f943344aa72cb3675ad8e91bfcbce03ad",
+        "index": 0,
+        "phase": "version_comparison",
+        "reason": "returned_no_text"
+      },
+      "gzip_bytes": 7696,
+      "normalized": "be30a568f6adbc3cefd6f59eb162bbe89e4990b202796ec87ea883022bb83f47",
+      "selected_url": "https://api.sejm.gov.pl/sejm/term10/prints/2320/2320.pdf",
+      "selection_id": "selection-v1:7c6d49d3431d059b61be6d27ddacaf6b022ffa962089713770e0900eb3c638fa",
+      "sql_bytes": 38182,
+      "state": "waiting",
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "trace_id": "candidate-trace-v1:fa79f038137b7be5163fd84dc8d2e0c86cbe7df7806ad0a898d6409ef35ae7ef",
+      "baseline_trace_id": "candidate-trace-v1:119459809c272649bf528eb67cffc12b4581a5d1a28ddd5b2ed714370126dbc8",
+      "sql_delta_bytes": 191,
+      "gzip_delta_bytes": 77
+    }
+  }
+}

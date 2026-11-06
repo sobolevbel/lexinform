@@ -128,3 +128,41 @@ def test_required_body_size_refusal_waits_without_claiming_a_returned_file() -> 
     gap = file.candidate_trace.required_part_gap
     assert gap is not None and gap.reason == "download_size_limit"
     assert gap.file_sha256 is None
+
+
+@pytest.mark.parametrize("compare", [False, True])
+@pytest.mark.parametrize("oversize", [False, True])
+def test_terminal_amendment_gap_keeps_the_actual_blocked_position(
+    compare: bool, oversize: bool
+) -> None:
+    requests: list[str] = []
+
+    def download(url: str, *, max_bytes: int | None = None) -> bytes:
+        requests.append(url)
+        if url == SECOND:
+            if oversize:
+                raise AttachmentTooLargeError(url, 100000)
+            return EMPTY
+        return BODY.encode()
+
+    loader = TextLoader(
+        {"source.test": download},
+        FakeTextExtractor(by_content={BODY.encode(): BODY, EMPTY: ""}, page_count=0),
+        max_bytes=100000,
+    )
+    document = TextDocument(
+        url=MAIN, kind="print", amendment_urls=(FIRST, SECOND, LATER), compare_versions=compare
+    )
+
+    _, file = loader.select_document(document)
+
+    assert requests == [MAIN, FIRST, SECOND]
+    assert file.selection.state == "waiting"
+    trace = file.candidate_trace
+    assert trace is not None and trace.amendment_part_gap is not None
+    gap = trace.amendment_part_gap
+    assert gap.phase == ("version_comparison" if compare else "fallback")
+    assert gap.amendment_index == 1
+    assert gap.reason == ("download_size_limit" if oversize else "returned_no_text")
+    assert gap.file_sha256 == (None if oversize else hashlib.sha256(EMPTY).hexdigest())
+    assert trace.required_part_gap is None and trace.normative_annex_gap is None
