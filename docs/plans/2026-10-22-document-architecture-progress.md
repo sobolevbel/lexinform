@@ -11785,3 +11785,28 @@ Use the J294 replay with `--snapshot-output` and a timezone-aware
 `--recorded-at` to reproduce the separate snapshot. The normal analysis
 selector and runtime writer keep their existing behavior. Native capture
 of the report range and native supersession remain open under DA4.7.
+
+<a id="j296"></a>
+
+## J296 — capture a committee draft edition during normal analysis
+
+When the current official committee report is read for analysis, a
+separate observation records the exact attached draft range. The proof
+requires a same-owner official stage, a cover naming the attached bill,
+a readable direct PDF, consecutive printed page numbers and a final
+commencement article. The ordinary source selection and request continue
+to use their existing input. The additional observation stores the range
+and hashes, with the existing artifact read and extraction as parents.
+
+The paired native run used pinned process metadata and four official
+reports. It produced an edition for 2594 (pages 5–324, the J295 identity)
+and 3107 (pages 2–23). It refused the conflicting term stamp in 583, the
+unreadable 1703 and a duplicated 2594 stage. All five cases matched their
+baseline request hashes and download sequence, and each passed two
+restores. SQL matched after removing the new draft graph and normalizing
+the extractor code fingerprints and their derived extraction IDs.
+[Qualification and body pins](../assets/audits/2026-11-06-native-committee-drafts/qualification.json).
+
+This covers a printed-page profile. It leaves unqualified reports
+unknown. The normal writer still needs to bind the captured predecessor
+when it observes the later third-reading adoption.

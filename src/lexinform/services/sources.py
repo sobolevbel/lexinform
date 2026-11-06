@@ -40,6 +40,7 @@ from lexinform.models import (
 from lexinform.models.rcl import text_rank, text_role
 from lexinform.models.sejm import (
     SejmAdoptionOrigin,
+    SejmCommitteeDraftOrigin,
     SejmProposalOrigin,
     print_part_number,
     sejm_adopted_text_url,
@@ -186,6 +187,35 @@ def _adoption_origin(
     return SejmAdoptionOrigin(detail.term, detail.number, stage)
 
 
+def _committee_draft_origin(
+    bill: Bill, detail: ProcessDetail, document: TextDocument | None
+) -> SejmCommitteeDraftOrigin | None:
+    if (
+        document is None
+        or document.kind != "committee_report"
+        or (detail.term, detail.number) != (bill.term, bill.number)
+        or detail.term != 10
+        or detail.document_type_enum is not DocumentType.BILL
+        or re.fullmatch(r"[1-9][0-9]{0,8}", detail.number) is None
+    ):
+        return None
+    stages = [stage for stage in flatten_stages(detail.stages) if stage.report_file == document.url]
+    if len(stages) != 1:
+        return None
+    (stage,) = stages
+    if (
+        not stage.carries_bill_text
+        or stage.proposal != "załączony projekt ustawy"
+        or stage.date is None
+        or stage.print_number is None
+        or stage.print_number == detail.number
+        or re.fullmatch(r"[1-9][0-9]{0,8}", stage.print_number) is None
+    ):
+        return None
+    origin = SejmCommitteeDraftOrigin(detail.term, detail.number, stage.print_number, stage.date)
+    return origin if origin.url == document.url else None
+
+
 class SejmTextSource:
     """Numbered prints: the process (metadata, stages) and the print's main PDF."""
 
@@ -208,7 +238,9 @@ class SejmTextSource:
             summary=detail,
             stages=detail.stages,
             document=document,
-            sejm_origin=proposal or _adoption_origin(bill, detail, document),
+            sejm_origin=proposal
+            or _adoption_origin(bill, detail, document)
+            or _committee_draft_origin(bill, detail, document),
         )
 
     def supporting_documents(self, bill: Bill, purpose: ReviewPurpose) -> tuple[ReviewSource, ...]:

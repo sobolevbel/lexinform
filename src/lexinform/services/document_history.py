@@ -30,7 +30,7 @@ from lexinform.models.candidate_trace import (
 )
 from lexinform.models.document_editions import DocumentEdition
 from lexinform.models.document_history import SourceObservationIdentity
-from lexinform.models.sejm import SejmAdoptionOrigin, SejmProposalOrigin, SejmSourceOrigin
+from lexinform.models.sejm import SejmAdoptionOrigin, SejmProposalOrigin
 from lexinform.models.source_omissions import (
     BillOmissionOwner,
     RclOmissionOwner,
@@ -62,7 +62,8 @@ class DocumentSourceRead:
     reads: tuple[ArtifactReadIdentity, ...] = ()
     extractions: tuple[ExtractionResult, ...] = ()
     candidate_trace: CandidateDispositionTrace | None = None
-    sejm_origin: SejmSourceOrigin | None = None
+    sejm_origin: SejmAdoptionOrigin | SejmProposalOrigin | None = None
+    committee_draft: DocumentSelectionRecord | None = None
 
 
 @dataclass(frozen=True)
@@ -198,6 +199,15 @@ def record_source_read(
         candidate_trace=source.candidate_trace,
         sejm_origin=source.sejm_origin,
     )
+    if source.committee_draft is not None:
+        record_document_source(
+            repo,
+            source.committee_draft,
+            observation.model_copy(update={"selection_id": source.committee_draft.selection_id}),
+            source.artifacts,
+            reads=source.reads,
+            extractions=source.extractions,
+        )
 
 
 def record_source_omission(
@@ -264,7 +274,7 @@ def record_document_source(
     reads: tuple[ArtifactReadIdentity, ...] = (),
     extractions: tuple[ExtractionResult, ...] = (),
     candidate_trace: CandidateDispositionTrace | None = None,
-    sejm_origin: SejmSourceOrigin | None = None,
+    sejm_origin: SejmAdoptionOrigin | SejmProposalOrigin | None = None,
 ) -> None:
     """Write the source and known outer-body links inside the caller's transaction."""
     record_artifacts(repo, artifacts, recorded_at=observation.recorded_at)

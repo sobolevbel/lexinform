@@ -1,0 +1,223 @@
+{
+  "baseline": "d982bd5d50d7fec70feee0704d46d115a5577be6",
+  "process_sha256": "361c92de8a686ae161aa3154c3a30bf29a2a7980e6fb3b13578962cdf01075d9",
+  "restores_per_case": 2,
+  "requests_submitted": 0,
+  "sql_after_normalization": "identical",
+  "normalization": [
+    "new draft observation, selection, edition and links",
+    "extractor source-code hashes and derived extraction IDs"
+  ],
+  "cases": {
+    "1427": {
+      "requests": [
+        "633e4539bb474a52d4be0016d74ce11da000aac6c058c43926b0147a4a7218f6"
+      ],
+      "body_reads": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/1703/1703.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/prints/1703/1703.pdf"
+      ],
+      "metadata_reads": [
+        "/sejm/term10/processes/1427"
+      ],
+      "ranges": [],
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 8
+    },
+    "2111": {
+      "requests": [
+        "a0ac50fc65b2bcf2e82bae882c4c438495fded8030c64e2adf5860d602f52638"
+      ],
+      "body_reads": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/2594/2594.pdf"
+      ],
+      "metadata_reads": [
+        "/sejm/term10/processes/2111"
+      ],
+      "ranges": [
+        {
+          "edition_id": "edition-v1:f025151ad4c81494144feadf07ae2f91aa76691b9326a94145748d103340d33c",
+          "first": 5,
+          "last": 324,
+          "observation_id": "source-observation-v1:6dc9dd5cc838064d79911d238f1cee56d9ef3917b41b4bfe2343a888f20ab7d2",
+          "selection_id": "selection-v1:cb33a480d7913584fe700a88192b7b770d1572fb6dcda93182f7aaf560e44a98",
+          "sha": "cdb71705c3dc81e9a96f9767db732b8455860a8ee664352bbbb334a60ec27cc4"
+        }
+      ],
+      "sql_delta_bytes": 2614,
+      "gzip_delta_bytes": 497
+    },
+    "30": {
+      "requests": [
+        "a4285b8ab9ab3ca5091f774a85b574f03b8e2aae1116c9ce670e17c8dd8df948"
+      ],
+      "body_reads": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/583/583.pdf"
+      ],
+      "metadata_reads": [
+        "/sejm/term10/processes/30"
+      ],
+      "ranges": [],
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": -7
+    },
+    "3102": {
+      "requests": [
+        "aa0638c8f17b51b09b4d2fb54c677021547fc6de0c5022e3a7d170dd993fe715"
+      ],
+      "body_reads": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/3107/3107.pdf"
+      ],
+      "metadata_reads": [
+        "/sejm/term10/processes/3102"
+      ],
+      "ranges": [
+        {
+          "edition_id": "edition-v1:43ddeb9cd8bfd1b412499ad26fb279416f4f280a112194f9b9defba6a532f452",
+          "first": 2,
+          "last": 23,
+          "observation_id": "source-observation-v1:5cb77bb14cbb8f990ea5a93f9d134ffa9855843d85191eae469ebc385d4e33c8",
+          "selection_id": "selection-v1:dab094cee631bee6f7b4b8d196db5767215ce272f052874e51e0895524ffdb48",
+          "sha": "e41086e443b2d9d1b4a2481e3cfc5e7d1c3ed78d5aa98cc7d3e580ee85cb9eca"
+        }
+      ],
+      "sql_delta_bytes": 2611,
+      "gzip_delta_bytes": 464
+    },
+    "ambiguous_2111": {
+      "requests": [
+        "a0ac50fc65b2bcf2e82bae882c4c438495fded8030c64e2adf5860d602f52638"
+      ],
+      "body_reads": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/2594/2594.pdf"
+      ],
+      "metadata_reads": [
+        "/sejm/term10/processes/2111"
+      ],
+      "ranges": [],
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 2
+    }
+  },
+  "cohort": {
+    "cases": [
+      {
+        "adopted_url": "https://api.sejm.gov.pl/sejm/term10/processes/30/attachment/30_u3.pdf",
+        "adoption_stage_index": 6,
+        "owner": "30",
+        "report": "583",
+        "report_url": "https://api.sejm.gov.pl/sejm/term10/prints/583/583.pdf"
+      },
+      {
+        "adopted_url": "https://api.sejm.gov.pl/sejm/term10/processes/1427/attachment/1427_u3.pdf",
+        "adoption_stage_index": 6,
+        "owner": "1427",
+        "report": "1703",
+        "report_url": "https://api.sejm.gov.pl/sejm/term10/prints/1703/1703.pdf"
+      },
+      {
+        "adopted_url": "https://api.sejm.gov.pl/sejm/term10/processes/3102/attachment/3102_u3.pdf",
+        "adoption_stage_index": 5,
+        "owner": "3102",
+        "report": "3107",
+        "report_url": "https://api.sejm.gov.pl/sejm/term10/prints/3107/3107.pdf"
+      }
+    ],
+    "measurements": {
+      "1427": {
+        "adopted": {
+          "bytes": 340737,
+          "last_page_mentions_commencement": false,
+          "pages": 32,
+          "printed_count_openings": [],
+          "project_headings": [],
+          "readable_pages": 32,
+          "sha256": "7d11166f106bee62ff6e351d153f354d0add89ad06489caa64e2837a46ad8ffe"
+        },
+        "report": {
+          "bytes": 1663454,
+          "last_page_mentions_commencement": false,
+          "pages": 32,
+          "printed_count_openings": [],
+          "project_headings": [],
+          "readable_pages": 0,
+          "sha256": "4700867a087534e64a520b769b72ae38933ba527094ab9766d665c46a99a21db"
+        }
+      },
+      "30": {
+        "adopted": {
+          "bytes": 91730,
+          "last_page_mentions_commencement": true,
+          "pages": 10,
+          "printed_count_openings": [],
+          "project_headings": [],
+          "readable_pages": 10,
+          "sha256": "f4e5ac2a4b9a52010ec5ecf63775476e560f00b9c3da3ee8c62def71ef8f171e"
+        },
+        "report": {
+          "bytes": 329294,
+          "last_page_mentions_commencement": true,
+          "pages": 7,
+          "printed_count_openings": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "project_headings": [
+            2
+          ],
+          "readable_pages": 7,
+          "sha256": "7d8c680b6111f7a548d4d9538e4c4ccb638780f3912e836534a439ffedb67992"
+        }
+      },
+      "3102": {
+        "adopted": {
+          "bytes": 218876,
+          "last_page_mentions_commencement": true,
+          "pages": 22,
+          "printed_count_openings": [],
+          "project_headings": [],
+          "readable_pages": 22,
+          "sha256": "241025314ed51b42c62078812b245f08f0d74380445c17fbe98651e5658a99f0"
+        },
+        "report": {
+          "bytes": 421256,
+          "last_page_mentions_commencement": true,
+          "pages": 23,
+          "printed_count_openings": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "project_headings": [
+            2
+          ],
+          "readable_pages": 23,
+          "sha256": "e41086e443b2d9d1b4a2481e3cfc5e7d1c3ed78d5aa98cc7d3e580ee85cb9eca"
+        }
+      }
+    }
+  }
+}

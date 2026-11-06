@@ -892,7 +892,21 @@ class SejmAdoptionOrigin:
     stage: Stage
 
 
-type SejmSourceOrigin = SejmProposalOrigin | SejmAdoptionOrigin
+@dataclass(frozen=True)
+class SejmCommitteeDraftOrigin:
+    term: int
+    number: str
+    report: str
+    report_date: dt.date
+
+    @property
+    def url(self) -> str:
+        return (
+            f"https://api.sejm.gov.pl/sejm/term{self.term}/prints/{self.report}/{self.report}.pdf"
+        )
+
+
+type SejmSourceOrigin = SejmProposalOrigin | SejmAdoptionOrigin | SejmCommitteeDraftOrigin
 
 
 def sejm_adopted_text_url(term: int, number: str) -> str:

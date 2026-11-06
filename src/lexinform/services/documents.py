@@ -1163,9 +1163,11 @@ class TextLoader:
                 self._physical_invocation(artifact) as invocation,
             ):
                 first_pdf_page = None
+                complete_pdf_pages = None
                 if isinstance(self._extractor, ProvenanceTextExtractor):
                     observed = self._extractor.extract_document_with_provenance(data)
                     first_pdf_page = observed.first_pdf_page
+                    complete_pdf_pages = observed.complete_pdf_pages
                     text = observed.document.text
                     selection = observed.document.selection
                     with self._lock:
@@ -1223,6 +1225,7 @@ class TextLoader:
                     sha256=digest,
                     selection=selection,
                     first_pdf_page=first_pdf_page,
+                    complete_pdf_pages=complete_pdf_pages,
                 )
                 completed = True
         finally:

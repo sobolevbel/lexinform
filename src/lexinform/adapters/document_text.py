@@ -70,7 +70,12 @@ from lexinform.models.documents import (
     WordTextBlock,
     WordTextExtraction,
 )
-from lexinform.models.extractions import DocumentExtraction, ExtractionOptions, root_pdf_first_page
+from lexinform.models.extractions import (
+    DocumentExtraction,
+    ExtractionOptions,
+    root_pdf_extraction,
+    root_pdf_first_page,
+)
 from lexinform.models.odt_notes import OdtNotedParts, OdtNoteOrigins, OdtPartNoteOrigins
 from lexinform.models.physical_inventory import (
     DecodedPath,
@@ -1337,8 +1342,22 @@ class DocumentTextExtractor:
         capture = current_physical_walk_capture()
         if capture is not None:
             _physical_event(capture, lambda: capture.extraction(result))
+        pdf = root_pdf_extraction(physical)
+        complete_pages = (
+            len(pdf.pages)
+            if pdf is not None
+            and 1 <= len(pdf.pages) <= 600
+            and all(
+                page.error_type is None and page.text.strip() and PAGE_BREAK not in page.text
+                for page in pdf.pages
+            )
+            else None
+        )
         return DocumentExtraction(
-            document=selected, result=result, first_pdf_page=root_pdf_first_page(physical)
+            document=selected,
+            result=result,
+            first_pdf_page=root_pdf_first_page(pdf),
+            complete_pdf_pages=complete_pages,
         )
 
     def _physical_recipe(self, origins: _PhysicalOrigins) -> PhysicalMetadata:

@@ -20,6 +20,7 @@ from pydantic import BaseModel
 
 from lexinform.analysis_records import RecordFactory, UsageFields
 from lexinform.commission_reviews import COMMISSION_ROLES
+from lexinform.committee_draft import committee_draft_selection
 from lexinform.committee_recommendation import CommitteeRecommendationOrigin
 from lexinform.concurrency import fan_out
 from lexinform.document_admissibility import analysis_admission, review_admission
@@ -142,7 +143,7 @@ from lexinform.models.batch import (
 )
 from lexinform.models.computations import CollectionReason, ComputationRecord
 from lexinform.models.input_receipts import LooseRclInputReceipt
-from lexinform.models.sejm import SejmSourceOrigin
+from lexinform.models.sejm import SejmCommitteeDraftOrigin, SejmSourceOrigin
 from lexinform.models.source_omissions import SenateOmissionOwner, SourceReferenceOmissionOwner
 from lexinform.ports import (
     AnalysisBackend,
@@ -3767,7 +3768,11 @@ class AnalysisService:
         try:
             document, file = (
                 self._loader.select_document(document, retain_routine_trace=True)
-                if sejm_origin is not None or retain_routine_trace
+                if (
+                    sejm_origin is not None
+                    and not isinstance(sejm_origin, SejmCommitteeDraftOrigin)
+                )
+                or retain_routine_trace
                 else self._loader.select_document(document)
             )
         except ServiceUnavailableError:
@@ -3783,8 +3788,17 @@ class AnalysisService:
                 f"{document.url}: {type(exc).__name__}: {exc}",
             ) from exc
         source = self._loader.capture_source_read(requested, document, file)
-        if sejm_origin is not None and isinstance(source, DocumentSourceRead):
-            source = replace(source, sejm_origin=sejm_origin)
+        if isinstance(source, DocumentSourceRead):
+            if isinstance(sejm_origin, SejmCommitteeDraftOrigin):
+                with suppress(ValueError):
+                    selection = committee_draft_selection(sejm_origin, document, file)
+                    if selection is not None and any(
+                        (read.requested_url, read.sha256) == (document.url, file.sha256)
+                        for read in source.reads
+                    ):
+                        source = replace(source, committee_draft=selection)
+            elif sejm_origin is not None:
+                source = replace(source, sejm_origin=sejm_origin)
         try:
             return replace(
                 self._load_selected(document, file, trim=trim),
