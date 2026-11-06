@@ -12384,3 +12384,30 @@ Removing the new receipt and its lineage copy reproduced baseline
 SQL in each pair. No provider call, historical reconstruction or
 storage change occurred.
 [Qualification](../assets/audits/2026-11-06-senate-prefix-input/qualification.json).
+
+Commit `f809021d` passed exact CI 42213916930 and relay deployment
+42214763362.
+
+<a id="j322"></a>
+
+## J322 — read a bounded source witness on frozen Senate continuation work
+
+An optional work field binds the frozen text and context to the exact
+source observation, extraction and suffix start. The reader validates
+the historical change owner, source document, physical parent and
+bounds on save and restore. Once recorded, the witness cannot be
+replaced by a later work update. Legacy rows keep their original bytes.
+No schema migration or duplicate document body is required.
+
+The 701 pinned text preparations kept the existing requests, receipts
+and observations. A controlled work row with a fixture witness passed
+two exact restores in each case. Removing the witness reproduced the
+legacy checkpoint. Two separate corpus cases exercised the same
+validation before request preparation.
+[Corpus and checkpoint qualification](../assets/audits/2026-11-06-senate-work-reader/qualification.json),
+[pre-request cases](../assets/audits/2026-11-06-senate-work-reader/pre-request-pins.json).
+
+The runtime capture and resumed-request projection remain a separate
+release stage. The reader checks bounds and hashes of retained parents.
+For a nonzero suffix, the writer must verify the original slice while
+the extracted text is still available.

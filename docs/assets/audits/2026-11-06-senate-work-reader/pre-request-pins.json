@@ -1,0 +1,40 @@
+[
+  {
+    "key": "8/31",
+    "identity": true,
+    "raw_sha256": "1c0542be39ac91c4812efb0a9775ccc53dc5a136e300c24cd613bf0da32dc685",
+    "full_chars": 6129,
+    "emitted_chars": 6129,
+    "source_start": 0,
+    "sql_delta": 463,
+    "gzip_delta": 109,
+    "exact_restores": 2,
+    "witness": {
+      "profile": "senate-amendment-input-witness-v1",
+      "source_observation_id": "source-observation-v1:fd3dde4a5367e27e06073774fb402200a38d7045cc848adbff980e10b922b9fd",
+      "extraction_id": "extraction-v1:3c1bf3c9fc507d98b5832466d1f23f98f3312f4f9c47cc2782f7803fb31116ee",
+      "context_sha256": "092bc1f847ce60817eac5a86325a2c5492fd50fde7caa75819111eb2b3b394e3",
+      "text_sha256": "fe0d9efb5a3a51979adb1896efb919a0206b007da6d79d1492876eb723473163",
+      "source_start": 0
+    }
+  },
+  {
+    "key": "8/2255",
+    "identity": false,
+    "raw_sha256": "55e27329fd4dce851ce039f0ea421bedf57f07eef437e905c4aadfe2161d14db",
+    "full_chars": 9219,
+    "emitted_chars": 7764,
+    "source_start": 1455,
+    "sql_delta": 466,
+    "gzip_delta": 160,
+    "exact_restores": 2,
+    "witness": {
+      "profile": "senate-amendment-input-witness-v1",
+      "source_observation_id": "source-observation-v1:b2d8dd363d34ef298837103297017f99b082996ef3c7a7a3df3e711f3ab02686",
+      "extraction_id": "extraction-v1:35bb16d35178c4127ba67f362d35fa85e365d45faac41454d7e7669983c080c8",
+      "context_sha256": "a6a4363630d49a85ea654faed99023663b55646b5ff1a644a027631dba35bb40",
+      "text_sha256": "a034c230f1d3799cb394a39d423e695a46886d0fc2ad86256177a65ebbb27f1c",
+      "source_start": 1455
+    }
+  }
+]

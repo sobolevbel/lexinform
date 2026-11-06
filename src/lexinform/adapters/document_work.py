@@ -6,8 +6,13 @@ import sqlite3
 from collections.abc import Iterator
 from datetime import datetime
 
+from lexinform.adapters.document_source_rows import DocumentSourceRows
+from lexinform.adapters.extraction_history import read_extraction_result
+from lexinform.json_storage import read_json
 from lexinform.models import (
+    AmendmentsContext,
     AmendmentsRecord,
+    ArtifactMetadata,
     Bill,
     ComputationResult,
     ContentSnapshot,
@@ -18,8 +23,11 @@ from lexinform.models import (
     ResultApplication,
     ResultApplicationTarget,
     StatusChange,
+    TextDocument,
 )
 from lexinform.models.content import editorial_bill_snapshot
+from lexinform.models.documents import SenateAmendmentInputWitness
+from lexinform.models.input_receipts import amendment_context_sha256, input_text_sha256
 from lexinform.models.revision_work import AmendmentRevisionApplicationWork, decode_document_work
 
 
@@ -245,6 +253,107 @@ def validate_revision_application_work(
             raise DocumentWorkRowError("revision_application_receipt_mismatch")
 
 
+def validate_senate_input_witness(connection: sqlite3.Connection, work: DocumentWork) -> None:
+    if work.senate_input_witness is None:
+        return
+    try:
+        witness = SenateAmendmentInputWitness.model_validate(work.senate_input_witness)
+        if work.context_json is None or work.document_json is None:
+            raise ValueError("a Senate input witness requires frozen context and document")
+        context = AmendmentsContext.model_validate(read_json(work.context_json))
+        document = TextDocument.model_validate(read_json(work.document_json))
+        if (
+            context.number != work.number
+            or context.source_kind != "senate_amendments"
+            or context.scan is not None
+            or context.source_check is not None
+            or context.truncated
+            or not context.text.strip()
+            or document.kind != "senate_amendments"
+            or document.senate is None
+            or document.senate.scan
+            or witness.context_sha256 != amendment_context_sha256(context)
+            or witness.text_sha256 != input_text_sha256(context.text)
+        ):
+            raise ValueError("the witness differs from its frozen Senate question")
+        change = _one(
+            connection,
+            "SELECT term,number FROM status_changes WHERE id=?",
+            (work.change_id,),
+            "senate_input_change_missing",
+        )
+        if work.key != f"amendments/{work.change_id}" or (change["term"], change["number"]) != (
+            work.term,
+            work.number,
+        ):
+            raise ValueError("the witness differs from its historical event owner")
+        reader = DocumentSourceRows(connection)
+        observation = reader.get_source_observation(witness.source_observation_id)
+        if observation is None or (
+            observation.term,
+            observation.number,
+            observation.purpose,
+            observation.document,
+        ) != (work.term, work.number, "analysis", document):
+            raise ValueError("the witness differs from its observed Senate owner")
+        selected = reader.get_document_selection(observation.selection_id)
+        if selected is None or (
+            selected.selection.question,
+            selected.selection.policy_version,
+            selected.selection.scan_input,
+            len(selected.selection.parts),
+        ) != ("senate_resolution_source", "senate-source-observation-v1", None, 1):
+            raise ValueError("the witness requires its full single-part Senate selection")
+        (part,) = selected.selection.parts
+        link = _one(
+            connection,
+            "SELECT a.* FROM selection_artifacts l JOIN artifacts a ON a.sha256=l.artifact_sha256"
+            " WHERE l.selection_id=? AND l.part_scope='parts' AND l.part_index=0",
+            (selected.selection_id,),
+            "senate_input_artifact_missing",
+        )
+        artifact = ArtifactMetadata(
+            sha256=link["sha256"], byte_size=link["byte_size"], recorded_at=link["recorded_at"]
+        )
+        row = _one(
+            connection,
+            "SELECT e.* FROM selection_extractions l JOIN extraction_results e USING(extraction_id)"
+            " WHERE l.selection_id=? AND l.extraction_id=? AND e.artifact_sha256=?",
+            (selected.selection_id, witness.extraction_id, artifact.sha256),
+            "senate_input_extraction_missing",
+        )
+        extraction = read_extraction_result(row)
+        if (
+            (part.url, part.role) != (document.url, "unknown")
+            or part.members
+            or part.text_start != 0
+            or part.text_end not in (None, extraction.output_chars)
+            or not artifact.sha256 == document.senate.sha256 == part.sha256
+            or extraction.artifact_sha256 != artifact.sha256
+            or extraction.output_text_sha256 != part.text_sha256
+            or extraction.physical_part_count != 1
+            or extraction.selected_part_count != 1
+            or extraction.omitted_selected_parts != 0
+            or len(extraction.selected_parts) != 1
+            or witness.source_start + len(context.text) != extraction.output_chars
+            or witness.source_start == 0
+            and witness.text_sha256 != part.text_sha256
+        ):
+            raise ValueError("the witness requires an exact suffix of its full extracted parent")
+        (leaf,) = extraction.selected_parts
+        if (leaf.physical_index, leaf.sha256, leaf.text_sha256, leaf.text_chars) != (
+            0,
+            artifact.sha256,
+            part.text_sha256,
+            extraction.output_chars,
+        ):
+            raise ValueError("the witness differs from its physical extraction leaf")
+    except DocumentWorkRowError:
+        raise
+    except (ValueError, TypeError, RecursionError, sqlite3.Error) as exc:
+        raise DocumentWorkRowError("invalid_senate_input_witness") from exc
+
+
 def read_document_work(
     connection: sqlite3.Connection, row: sqlite3.Row
 ) -> DocumentWork | AmendmentRevisionApplicationWork:
@@ -269,6 +378,8 @@ def read_document_work(
             raise
         except ValueError as exc:
             raise DocumentWorkRowError("invalid_revision_application_parent") from exc
+    else:
+        validate_senate_input_witness(connection, work)
     return work
 
 

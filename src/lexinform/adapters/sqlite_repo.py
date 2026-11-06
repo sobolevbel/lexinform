@@ -57,6 +57,7 @@ from lexinform.adapters.document_work import (
     read_document_work,
     validate_document_work,
     validate_revision_application_work,
+    validate_senate_input_witness,
 )
 from lexinform.adapters.extraction_history import (
     ExtractionResultRowError,
@@ -5639,10 +5640,19 @@ class SqliteBillRepository:
         existing = self._conn.execute(
             "SELECT * FROM document_work WHERE key=?", (work.key,)
         ).fetchone()
-        if existing is not None and not isinstance(
-            read_document_work(self._conn, existing), DocumentWork
-        ):
-            raise ValueError("a Senate continuation cannot replace revision application work")
+        if existing is not None:
+            previous = read_document_work(self._conn, existing)
+            if not isinstance(previous, DocumentWork):
+                raise ValueError("a Senate continuation cannot replace revision application work")
+            if (
+                previous.senate_input_witness is not None
+                and previous.senate_input_witness != work.senate_input_witness
+                or work.senate_input_witness is not None
+                and (previous.term, previous.number, previous.change_id)
+                != (work.term, work.number, work.change_id)
+            ):
+                raise ValueError("a Senate continuation cannot replace its frozen input witness")
+        validate_senate_input_witness(self._conn, work)
         self._conn.execute(
             "INSERT INTO document_work(key, term, number, state, next_at, work_json) "
             "VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET "

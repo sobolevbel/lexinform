@@ -1,0 +1,49 @@
+{
+  "baseline_commit": "f809021db9ea31750d4d7450541ca515a21b1aa5",
+  "population": {
+    "selected_text": 701,
+    "scan_pending": 23,
+    "no_unique_date": 2,
+    "not_amendments": 90
+  },
+  "counts": {
+    "mapped_identity": 636,
+    "independent_parents_checked": 701,
+    "retained": 701,
+    "stored_identity": 636,
+    "waiting": 701,
+    "mapped_prefix": 65,
+    "stored_prefix": 65
+  },
+  "native_preparation_and_receipts_match_j321": true,
+  "j321_ledger_sha256": "415c36e1cdfca511149bdf0cf1a54b49093cb777e10f9acf6847acad072bed42",
+  "witnessed_ledger_sha256": "0cadc460c78b933a63a2e629c523a0d0795f092a05bcca5177c85758d2e2b2b5",
+  "isolated_checkpoints": {
+    "pairs": 701,
+    "legacy_restores_per_pair": 1,
+    "witness_restores_per_pair": 2,
+    "normalized_sql_equal": true,
+    "integrity_check": "ok",
+    "foreign_key_errors": 0,
+    "growth": {
+      "sql_bytes": {
+        "min": 463,
+        "max": 466,
+        "total": 324623
+      },
+      "gzip_bytes": {
+        "min": 2,
+        "max": 4984,
+        "total": 78128
+      },
+      "witness_bytes": {
+        "min": 439,
+        "max": 442,
+        "total": 307799
+      }
+    }
+  },
+  "fixture": "Witness attached manually to a controlled historical work row with actual native source parents.",
+  "native_witness_writer_active": false,
+  "provider_calls": 0
+}

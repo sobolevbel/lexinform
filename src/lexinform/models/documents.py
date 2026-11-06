@@ -603,6 +603,19 @@ DocumentDeferReason = Literal[
 ]
 
 
+class SenateAmendmentInputWitness(BaseModel):
+    """Bind a saved Senate text question to its exact full source and suffix start."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    profile: Literal["senate-amendment-input-witness-v1"] = "senate-amendment-input-witness-v1"
+    source_observation_id: str = Field(pattern=r"^source-observation-v1:[0-9a-f]{64}$")
+    extraction_id: str = Field(pattern=r"^extraction-v1:[0-9a-f]{64}$")
+    context_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    text_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    source_start: int = Field(strict=True, ge=0, le=2**63 - 1)
+
+
 class DocumentWork(BaseModel):
     """Saved Senate amendment continuation; generalise only for a second consumer."""
 
@@ -620,6 +633,9 @@ class DocumentWork(BaseModel):
     problem: str = ""
     document_json: str | None = None
     context_json: str | None = None
+    senate_input_witness: SenateAmendmentInputWitness | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     last_defer_reason: DocumentDeferReason | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
