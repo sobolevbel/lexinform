@@ -1,0 +1,30 @@
+{
+  "additional_offsets": [
+    {
+      "input_sha256": "0f7fb6e879f1bf9f9633e1538a1199b781ac0e6cc9d5594f9b03a687e55a83f9",
+      "kind": "footnote",
+      "output_offset": 71176,
+      "reference_cp": 71853,
+      "status": "anchored_by_cleanup_map"
+    },
+    {
+      "input_sha256": "da69e08b2e7b3ae453c41c2a9e73962d1ce6697cf158f42ef41393ae7ba7a4c9",
+      "kind": "footnote",
+      "output_offset": 73103,
+      "reference_cp": 73754,
+      "status": "anchored_by_cleanup_map"
+    }
+  ],
+  "baseline": "e2da7278e5b1430a24c395993637297963ecc52f",
+  "baseline_text_reference_sha256": "03c2d9639ef4e5ecfcbdce4c8df21a08ca70ccdefb30cb868edc3bbf5d43cca1",
+  "counts": {
+    "anchored": 375,
+    "anchored_by_cleanup_map": 2
+  },
+  "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "manifest_sha256": "449d893ca8d9b89933a3ac84abd3b757d0f89298d06fc9ae6e5c31ecb38775d5",
+  "marker_report_sha256": "af4986a588b1619708276a5073ed25f32e0e10c5501fc0c5e5b99eedd0ed7b06",
+  "previous_observations_identical": true,
+  "scope": "Output insertion boundaries for automatic references; no note-body offsets or CFSpec.",
+  "tracked_report_sha256": "e36cf3f7d387c94e9f2463bb0c3e8c60d3d722e897b68bc785810daa6984e864"
+}

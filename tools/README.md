@@ -720,6 +720,10 @@ legacy text. Only a unique marker whose removal restores the exact text
 produces an offset. The report separates cleanup changes and unsupported
 references from observed positions. The probe retains no modified DOC bytes.
 
+Add `--track-cleanup` to verify reference offsets against source-character
+origins in the cleaned text. The replay requires exact equality with the
+legacy projection and limits the origin map to one million raw characters.
+
 ### Word revision projection
 
 `python -m tools.replay_word_revisions` accepts a corpus path, a pinned external

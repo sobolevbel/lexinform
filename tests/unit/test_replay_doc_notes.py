@@ -288,3 +288,20 @@ def test_reference_projection_requires_exact_legacy_text_after_marker_removal(
     (row,) = report["reference_projection"]
     assert row["status"] == status and row["reference_cp"] == reference_cp
     assert row.get("output_offset") == offset
+
+
+def test_tracked_doc_cleanup_keeps_the_exact_projection_at_a_trimmed_boundary() -> None:
+    data = ole_document(*source_notes(main="A \x02\rB\r", reference_cp=2))
+
+    report = inspect(
+        data, max_notes=256, source_characters=True, reference_projection=True, track_cleanup=True
+    )
+
+    assert report["reference_projection"] == [
+        {
+            "kind": "footnote",
+            "reference_cp": 2,
+            "status": "anchored_by_cleanup_map",
+            "output_offset": 1,
+        }
+    ]

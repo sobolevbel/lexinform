@@ -13777,3 +13777,20 @@ recorded for them. Existing report observations are unchanged. The probe
 does not validate CFSpec or note body offsets.
 
 [Qualification](../assets/audits/2026-11-06-doc-note-reference-projection/qualification.json).
+
+<a id="j393"></a>
+
+## J393 — track DOC reference coordinates through text cleanup
+
+The opt-in replay reconstructs the cleaned text with source-character origins.
+It requires exact equality with the legacy text before using the map. A
+width-preserving mutation locates each reference in the raw decoded stream.
+The original marker-only report stays available.
+
+All 375 earlier offsets matched the tracked projection. Two references
+that disturbed whitespace cleanup in the marker-only report gained exact
+insertion boundaries in the tracked report. All 246 original legacy text
+hashes and unrelated observations stayed identical. This check does not
+validate CFSpec or infer note-body spans.
+
+[Qualification](../assets/audits/2026-11-06-doc-note-cleanup-projection/qualification.json).

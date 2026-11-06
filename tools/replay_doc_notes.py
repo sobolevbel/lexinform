@@ -4,6 +4,7 @@ import argparse
 import gzip
 import io
 import json
+from bisect import bisect_left
 from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
@@ -15,7 +16,15 @@ from pydantic import BaseModel, Field
 
 from lexinform.adapters.doc_notes import DocNoteLinks, read_doc_note_links
 from lexinform.adapters.doc_text import (
+    _CONTROL,
+    _FIELD_BEGIN,
+    _FIELD_END,
+    _FIELD_SEPARATOR,
+    PAGE_BREAK,
     DocTextExtractor,
+    _read_pieces,
+    _row_end_marks,
+    _spans,
     _streams,
     _word_text,
     table_stream_name,
@@ -146,14 +155,67 @@ def physical_snapshot(data: bytes, *, default_note_writer: bool = False) -> dict
     }
 
 
+_MAX_TRACKED_DOC_CHARS = 1_000_000
+
+
+def _cleanup_positions(raw: str) -> tuple[str, list[int]]:
+    fields: list[bool] = []
+    output: list[tuple[str, int]] = []
+    line: list[tuple[str, int]] = []
+    for index, char in enumerate(raw):
+        if char == _FIELD_BEGIN:
+            fields.append(True)
+        elif char == _FIELD_SEPARATOR:
+            if fields:
+                fields[-1] = False
+        elif char == _FIELD_END:
+            if fields:
+                fields.pop()
+        elif not any(fields):
+            for emitted in _CONTROL.get(char, char):
+                if emitted == "\n":
+                    while line and line[-1][0].isspace():
+                        line.pop()
+                    output.extend(line)
+                    line.clear()
+                    if [pair[0] for pair in output[-2:]] != ["\n", "\n"]:
+                        output.append((emitted, index))
+                else:
+                    line.append((emitted, index))
+    while line and line[-1][0].isspace():
+        line.pop()
+    output.extend(line)
+    without_left = [
+        pair
+        for index, pair in enumerate(output)
+        if pair[0] != "\n" or index == len(output) - 1 or output[index + 1][0] != PAGE_BREAK
+    ]
+    cleaned = [
+        pair
+        for index, pair in enumerate(without_left)
+        if pair[0] != "\n" or index == 0 or without_left[index - 1][0] != PAGE_BREAK
+    ]
+    text = "".join(char for char, _ in cleaned)
+    left = len(text) - len(text.lstrip())
+    right = len(text.rstrip())
+    return text.strip(), [index for _, index in cleaned[left:right]]
+
+
 def _reference_projection(
-    data: bytes, links: DocNoteLinks, expected: str
+    data: bytes, links: DocNoteLinks, expected: str, *, track_cleanup: bool = False
 ) -> list[dict[str, int | str]]:
     word, table, extra = _streams(data)
     baseline, pieces, _ = _word_text(word, table, extra)
     if baseline != expected:
         raise ValueError("DOC reference probe changed the baseline text")
     marker = "¦"
+    spans = _spans(word) if track_cleanup else []
+    row_ends = _row_end_marks(word, table, extra) if track_cleanup else frozenset()
+    raw = _read_pieces(word, pieces, spans=spans, row_ends=row_ends) if track_cleanup else ""
+    tracked = track_cleanup and len(raw) <= _MAX_TRACKED_DOC_CHARS
+    cleaned, origins = _cleanup_positions(raw) if tracked else ("", [])
+    if tracked and cleaned != baseline:
+        raise ValueError("Tracked DOC cleanup differs from the legacy projection")
     observations = []
     for link in links.links:
         cp = link.reference_cp
@@ -190,6 +252,20 @@ def _reference_projection(
             row["status"] = "cleanup_changed"
         else:
             row.update(status="anchored", output_offset=projected.index(marker))
+        if track_cleanup and not tracked:
+            row["cleanup_tracking"] = "input_limit"
+        if tracked and row["status"] in ("anchored", "cleanup_changed"):
+            marked = _read_pieces(altered, pieces, spans=spans, row_ends=row_ends)
+            if marker in raw or marked.count(marker) != 1 or marked.replace(marker, "\x02") != raw:
+                if row["status"] == "anchored":
+                    raise ValueError("Tracked DOC reference does not match the exact marker")
+                continue
+            position = bisect_left(origins, marked.index(marker))
+            if row["status"] == "anchored":
+                if position != row["output_offset"]:
+                    raise ValueError("Tracked DOC offset differs from the independent marker")
+            else:
+                row.update(status="anchored_by_cleanup_map", output_offset=position)
     return observations
 
 
@@ -199,6 +275,7 @@ def inspect(
     max_notes: int,
     source_characters: bool = False,
     reference_projection: bool = False,
+    track_cleanup: bool = False,
 ) -> dict[str, Any]:
     if source_characters:
         if max_notes != 256:
@@ -219,7 +296,11 @@ def inspect(
             "legacy_text_sha256": digest(text.legacy_text.encode()),
             "unavailable_reason": text.unavailable_reason,
             **(
-                {"reference_projection": _reference_projection(data, text.links, text.legacy_text)}
+                {
+                    "reference_projection": _reference_projection(
+                        data, text.links, text.legacy_text, track_cleanup=track_cleanup
+                    )
+                }
                 if reference_projection and text.links is not None and text.links.links
                 else {}
             ),
@@ -244,6 +325,7 @@ def run(
     max_notes: int = 256,
     source_characters: bool = False,
     reference_projection: bool = False,
+    track_cleanup: bool = False,
     physical_binding: bool = False,
     reference: Path | None = None,
     reference_sha256: str | None = None,
@@ -257,6 +339,8 @@ def run(
         raise ValueError("Replay output must be outside the read-only corpus")
     if max_notes < 0 or max_notes > 256:
         raise ValueError("Replay max_notes must be between 0 and 256")
+    if track_cleanup and not reference_projection:
+        raise ValueError("Tracked DOC cleanup requires reference projection")
     if reference_projection and not source_characters:
         raise ValueError("DOC reference projection requires source-character qualification")
     if physical_binding and not source_characters:
@@ -308,6 +392,7 @@ def run(
                     max_notes=max_notes,
                     source_characters=source_characters,
                     reference_projection=reference_projection,
+                    track_cleanup=track_cleanup,
                 )
                 if physical_binding:
                     results[item.sha256]["physical_binding"] = physical_snapshot(
@@ -356,6 +441,7 @@ def run(
         )
     report = {
         "version": 1,
+        **({"cleanup_tracking": "legacy-text-positions-v1"} if track_cleanup else {}),
         "scope": (
             "Source characters and automatic reference insertion offsets checked where supported"
             if reference_projection
@@ -405,6 +491,7 @@ def main() -> None:
     parser.add_argument("--max-notes", type=int, default=256)
     parser.add_argument("--source-characters", action="store_true")
     parser.add_argument("--reference-projection", action="store_true")
+    parser.add_argument("--track-cleanup", action="store_true")
     parser.add_argument("--physical-binding", action="store_true")
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--reference-sha256")
@@ -421,6 +508,7 @@ def main() -> None:
                 max_notes=args.max_notes,
                 source_characters=args.source_characters,
                 reference_projection=args.reference_projection,
+                track_cleanup=args.track_cleanup,
                 physical_binding=args.physical_binding,
                 reference=args.reference,
                 reference_sha256=args.reference_sha256,
