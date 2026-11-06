@@ -20,13 +20,14 @@ from collections.abc import Iterator
 
 import olefile
 
+from lexinform.adapters.doc_cfspec import read_doc_cfspec
 from lexinform.adapters.doc_notes import (
     DocNoteExtraction,
     DocNoteFormatError,
     DocNoteText,
     read_doc_note_links,
 )
-from lexinform.models.doc_notes import DocNoteOutputRange, DocNoteProjection
+from lexinform.models.doc_notes import DocNoteCfSpec, DocNoteOutputRange, DocNoteProjection
 from lexinform.sections import PAGE_BREAK
 
 log = logging.getLogger(__name__)
@@ -94,10 +95,11 @@ class DocTextExtractor:
             return ""
 
     def extract_with_notes(
-        self, data: bytes, *, capture_projection: bool = False
+        self, data: bytes, *, capture_projection: bool = False, capture_cfspec: bool = False
     ) -> DocNoteExtraction:
         """Capture optional source-CP note links while preserving the legacy extracted text."""
         projections: tuple[DocNoteProjection, ...] = ()
+        cfspec: tuple[DocNoteCfSpec, ...] = ()
         try:
             word, table, extra = _streams(data)
             legacy, pieces, clx = _word_text(word, table, extra)
@@ -111,7 +113,16 @@ class DocTextExtractor:
                     projections = _output_projections(word, table, extra, result, pieces)
                 except DocFormatError, struct.error, ValueError:
                     projections = ()
-        return DocNoteExtraction(hashlib.sha256(data).hexdigest(), result, projections)
+            if capture_cfspec and result.links is not None:
+                references = tuple(
+                    link.reference_cp for link in result.links.links if link.numbering_flag
+                )
+                cfspec = tuple(
+                    DocNoteCfSpec(item.cp, item.state == "on", item.source)
+                    for item in read_doc_cfspec(word, table, references)
+                    if item.state in ("on", "off") and item.source is not None
+                )
+        return DocNoteExtraction(hashlib.sha256(data).hexdigest(), result, projections, cfspec)
 
 
 def _extract(data: bytes) -> str:

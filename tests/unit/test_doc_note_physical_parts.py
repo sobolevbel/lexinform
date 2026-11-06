@@ -27,6 +27,7 @@ from lexinform.models.doc_notes import (
 from lexinform.models.documents import DocumentSelection, ExtractedDocument
 from lexinform.models.extractions import ExtractionComponent, ExtractionOptions, ExtractionResult
 from tests.fakes import FakeTextExtractor
+from tests.unit.test_doc_cfspec import OFF, ON, streams
 from tests.unit.test_doc_note_extraction import source_notes
 from tests.unit.test_physical_extraction import archive
 from tests.unit.test_word_note_origins import package
@@ -572,3 +573,29 @@ def test_doc_cfspec_reader_binds_explicit_properties_to_retained_automatic_links
     else:
         with pytest.raises(ValidationError):
             DocNoteSummary.model_validate(payload)
+
+
+@pytest.mark.parametrize(
+    ("property_bytes", "expected"), [(ON, True), (OFF, False), (ON[:-1], None)]
+)
+def test_default_doc_cfspec_keeps_previous_coordinates_under_cap(
+    monkeypatch: pytest.MonkeyPatch, property_bytes: bytes, expected: bool | None
+) -> None:
+    word, table = streams(property_bytes)
+    data = ole_document(bytes(word), bytes(table))
+    reader = extractor()
+    observed = reader.extract_document_with_provenance(data)
+    payload = observed.result.model_dump(mode="json")
+    (part,) = payload["selected_parts"]
+    notes = part["doc_notes"]
+    assert notes["projections"]
+    evidence = notes.pop("cfspec", None)
+    assert evidence == ([[1, expected, "chpx"]] if expected is not None else None)
+    legacy = ExtractionResult.model_validate(payload)
+    monkeypatch.setattr(
+        extraction_records, "MAX_EXTRACTION_METADATA_BYTES", len(legacy.model_dump_json().encode())
+    )
+
+    capped = reader.extract_document_with_provenance(data)
+
+    assert capped == observed.model_copy(update={"result": legacy})

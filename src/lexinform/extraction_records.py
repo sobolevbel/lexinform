@@ -517,7 +517,24 @@ def summarize_doc_note_projections(
     baseline: ExtractionResult, linked: DocNotedParts
 ) -> ExtractionResult:
     """Fit coordinates after existing observations have reserved their space."""
-    captures = {item.part_index: item.projections for item in linked.doc_notes if item.projections}
+    return _summarize_doc_note_evidence(baseline, linked, "projections")
+
+
+def summarize_doc_note_cfspec(
+    baseline: ExtractionResult, linked: DocNotedParts
+) -> ExtractionResult:
+    """Fit explicit formatting evidence after retained note coordinates."""
+    return _summarize_doc_note_evidence(baseline, linked, "cfspec")
+
+
+def _summarize_doc_note_evidence(
+    baseline: ExtractionResult, linked: DocNotedParts, field: Literal["projections", "cfspec"]
+) -> ExtractionResult:
+    captures = {
+        item.part_index: evidence
+        for item in linked.doc_notes
+        if (evidence := item.projections if field == "projections" else item.cfspec)
+    }
     if not captures:
         return baseline
     parts = list(baseline.selected_parts)
@@ -525,12 +542,12 @@ def summarize_doc_note_projections(
     for slot, summary in sorted(enumerate(parts), key=lambda item: item[1].physical_index):
         source = captures.get(summary.physical_index)
         notes = summary.doc_notes
-        if source is None or notes is None:
+        if not source or notes is None:
             continue
         retained_refs = {link.reference_cp for link in notes.links}
-        projections = tuple(item for item in source if item.reference_cp in retained_refs)
-        for count in range(len(projections), 0, -1):
-            enriched = notes.model_copy(update={"projections": projections[:count]})
+        retained_evidence = tuple(item for item in source if item.reference_cp in retained_refs)
+        for count in range(len(retained_evidence), 0, -1):
+            enriched = notes.model_copy(update={field: retained_evidence[:count]})
             if len(enriched.model_dump_json().encode()) > MAX_DOC_NOTE_SUMMARY_BYTES:
                 continue
             offered = parts.copy()

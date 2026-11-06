@@ -41,6 +41,7 @@ from lexinform.document_candidates import select_document_parts
 from lexinform.extraction_records import (
     component_code,
     extraction_component,
+    summarize_doc_note_cfspec,
     summarize_doc_note_projections,
     summarize_doc_notes,
     summarize_extraction,
@@ -1301,6 +1302,7 @@ class _PhysicalOrigins:
     odt_notes: list[OdtPartNoteOrigins] | None = None
     doc_notes: list[DocPartNoteCapture] | None = None
     capture_doc_note_projection: bool = False
+    capture_doc_note_cfspec: bool = False
 
 
 class DocumentTextExtractor:
@@ -1371,7 +1373,12 @@ class DocumentTextExtractor:
             return empty
 
     def extract_parts_with_doc_notes(
-        self, data: bytes, *, include_pdf_pages: bool = True, capture_projection: bool = False
+        self,
+        data: bytes,
+        *,
+        include_pdf_pages: bool = True,
+        capture_projection: bool = False,
+        capture_cfspec: bool = False,
     ) -> DocNotedParts:
         if (
             type(self) is not DocumentTextExtractor
@@ -1388,6 +1395,7 @@ class DocumentTextExtractor:
             unlocated_text=[],
             doc_notes=[],
             capture_doc_note_projection=capture_projection,
+            capture_doc_note_cfspec=capture_cfspec,
         )
         legacy = self._extract_parts(data, origins)
         return DocNotedParts(legacy=legacy, doc_notes=tuple(origins.doc_notes or ()))
@@ -1480,6 +1488,7 @@ class DocumentTextExtractor:
                 odt_notes=odt_notes,
                 doc_notes=doc_notes,
                 capture_doc_note_projection=True,
+                capture_doc_note_cfspec=True,
             )
             physical = self._extract_parts(data, origins)
         else:
@@ -1522,6 +1531,7 @@ class DocumentTextExtractor:
         result = summarize_word_observations(result, tuple(views))
         if linked is not None:
             result = summarize_doc_note_projections(result, linked)
+            result = summarize_doc_note_cfspec(result, linked)
         capture = current_physical_walk_capture()
         if capture is not None:
             _physical_event(capture, lambda: capture.extraction(result))
@@ -1797,6 +1807,7 @@ class DocumentTextExtractor:
                     self._doc.extract_with_notes,
                     data,
                     capture_projection=origins.capture_doc_note_projection,
+                    capture_cfspec=origins.capture_doc_note_cfspec,
                 )
             )
             text = doc_notes.result.legacy_text
@@ -1877,6 +1888,7 @@ class DocumentTextExtractor:
                     part_index=len(parts) - 1,
                     extraction=_doc_note_capture(doc_notes),
                     projections=doc_notes.projections or None,
+                    cfspec=doc_notes.cfspec or None,
                 )
             )
         if origins.unlocated_text is not None:

@@ -4,7 +4,7 @@ import struct
 from dataclasses import dataclass
 from typing import Literal
 
-from lexinform.models.doc_notes import DocNoteProjection
+from lexinform.models.doc_notes import DocNoteCfSpec, DocNoteProjection
 
 _MAX_CP = 0x7FFFFFFF
 
@@ -170,3 +170,4 @@ class DocNoteExtraction:
     input_sha256: str
     result: DocNoteText
     projections: tuple[DocNoteProjection, ...] = ()
+    cfspec: tuple[DocNoteCfSpec, ...] = ()

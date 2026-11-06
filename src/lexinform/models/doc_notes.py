@@ -150,17 +150,7 @@ class DocNoteSummary(_Source):
         complete = observed == len(self.links) or self.state == "unavailable"
         _validate_links(self, self.links, complete=complete)
         _validate_projections(self.links, self.projections)
-        if self.cfspec is not None:
-            automatic = {
-                link.reference_cp: index
-                for index, link in enumerate(self.links)
-                if link.numbering_flag
-            }
-            indices = [automatic.get(item.reference_cp, -1) for item in self.cfspec]
-            if -1 in indices or indices != sorted(set(indices)):
-                raise ValueError(
-                    "DOC CFSpec requires unique retained automatic links in source order"
-                )
+        _validate_cfspec(self.links, self.cfspec)
         retained = _capture_digest(self, self.links)
         if self.retained_manifest_sha256 != retained:
             raise ValueError("Retained DOC links differ from their stored prefix hash")
@@ -254,6 +244,19 @@ def _validate_projections(
         raise ValueError("DOC note projections require unique retained links in source order")
 
 
+def _validate_cfspec(
+    links: tuple[DocSourceNoteLink, ...], evidence: tuple[DocNoteCfSpec, ...] | None
+) -> None:
+    if evidence is None:
+        return
+    automatic = {
+        link.reference_cp: index for index, link in enumerate(links) if link.numbering_flag
+    }
+    indices = [automatic.get(item.reference_cp, -1) for item in evidence]
+    if -1 in indices or indices != sorted(set(indices)):
+        raise ValueError("DOC CFSpec requires unique automatic links in source order")
+
+
 class DocPartNoteCapture(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
     part_index: Count
@@ -265,9 +268,17 @@ class DocPartNoteCapture(BaseModel):
         exclude_if=lambda value: value is None,
     )
 
+    cfspec: tuple[DocNoteCfSpec, ...] | None = Field(
+        default=None,
+        min_length=1,
+        max_length=MAX_DOC_NOTE_LINKS,
+        exclude_if=lambda value: value is None,
+    )
+
     @model_validator(mode="after")
     def binds_to_source_links(self) -> Self:
         _validate_projections(self.extraction.links, self.projections)
+        _validate_cfspec(self.extraction.links, self.cfspec)
         return self
 
 

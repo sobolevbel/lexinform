@@ -1,0 +1,77 @@
+{
+  "unique_inputs": 246,
+  "retained_cfspec": 229,
+  "legacy_outputs_exact": true,
+  "growth_bytes": 5195,
+  "max_growth_bytes": 190,
+  "reference_sha256": "7871841ca89126f6e6ac215db225de06d29e773cef95125f328f888bbd00a804",
+  "cpu_ns": {
+    "before": 3252280000,
+    "after": 3226750000
+  },
+  "artifact_sha256": {
+    "replay.py": "2aa432c63862e37ddb4a5cf8f52702f664865ab633319f4e0bd61552bafe4f68",
+    "before.json": "1e5e2f1933c491181f15627217f392412e16dc8ff103850fe93b425dd7b4615f",
+    "after.json": "c603124cc9ee4929fe1e4f351f3d191eb863c0faa5d7c547fbaa37dd14c7366c"
+  },
+  "fake_provider_handoff": {
+    "scope": "Native CFB actual pipeline over World fakes; no real provider submission",
+    "input_sha256": "d579363f5978be3ab78b5e32a04f399b4accd6bf588133ca0af574a89533673d",
+    "batch_requests_equal": true,
+    "fake_payload_sha256": "47663b617dc37fdedbb5d0feddaf799ebadb8aeffaf7f0670da901e93c264849",
+    "real_user_prompt_sha256": "97dfb6bee9bbc7cf5a640eb09c2280cb236c48c6fecc836e446a5a64cae512a7",
+    "all_batch_metadata_except_prepared_receipt_equal": true,
+    "memo_key_equal": true,
+    "custom_id_equal": true,
+    "receipt_extraction_ids_differ": true,
+    "cfspec_summary_counts": [
+      0,
+      1
+    ],
+    "same_byte_alias_added_requests": 0,
+    "limitations": [
+      "Fake batch backend; real user prompt constructed locally",
+      "No paid API calls or production processing"
+    ]
+  },
+  "fake_provider_handoff_runner_sha256": "b37e9840b4e7ae0e6e479005922933cfeeb9bb67f8d7b0eeb4a759fd0979dfde",
+  "compatible_reader_restore": {
+    "writer_sql_sha256": "7e63c399334bf8abc4c386b3b53fe3dd143b97b8a3af0b8eb25f87d9c5afb5d5",
+    "byte_exact_restores": 2,
+    "invalid_extraction_findings": 0
+  },
+  "baseline": "5573b102c9e0930093bef75c89d1cc4b0cb594dc",
+  "earliest_compatible_reader": "5573b102c9e0930093bef75c89d1cc4b0cb594dc",
+  "checkpoint": {
+    "manifest_sha256": "449d893ca8d9b89933a3ac84abd3b757d0f89298d06fc9ae6e5c31ecb38775d5",
+    "observations_sha256": "7871841ca89126f6e6ac215db225de06d29e773cef95125f328f888bbd00a804",
+    "input_sql_sha256": "29dfe8566f02ceb810a1a43e8ea9a7b0fd0d9f6fc54ffa7212c4dda23945cd6d",
+    "counts": {
+      "unique_inputs": 246,
+      "explicit": 377,
+      "retained": 229,
+      "record_growth_bytes": 5195
+    },
+    "files_with_retained": 68,
+    "max_record_growth_bytes": 190,
+    "sample_sha256": [
+      "4c6857b5d2b93232d5674f2ad9112a0692178ad9eb3e67c33b491056ef8dcf61",
+      "f0aa2283f2aa4fe997ba101adf1be3a933242069583736a25169d8cf54d8e1fe",
+      "fea15d8e3bd49bf1ba622f11605371cf402d8b8dd908f4d3bb8b45f813d76e2c"
+    ],
+    "checkpoints": {
+      "before": {
+        "sql_bytes": 25806631,
+        "gzip_bytes": 5223012,
+        "sha256": "9761c5490a3d020ade79a8cbf0b6741fc0c86aa61b39ae0f5fb40f47773c7e30",
+        "exact_restores": 2
+      },
+      "after": {
+        "sql_bytes": 25807198,
+        "gzip_bytes": 5223139,
+        "sha256": "7e63c399334bf8abc4c386b3b53fe3dd143b97b8a3af0b8eb25f87d9c5afb5d5",
+        "exact_restores": 2
+      }
+    }
+  }
+}

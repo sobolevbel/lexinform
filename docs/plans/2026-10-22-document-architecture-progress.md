@@ -13961,3 +13961,24 @@ and integrity checks. The previous reader rejected the new checkpoint
 without changing its legacy state.
 
 [Qualification](../assets/audits/2026-11-07-doc-note-cfspec-reader/qualification.json).
+
+<a id="j403"></a>
+
+## J403 — retain explicit CFSpec in default DOC extraction
+
+Default native DOC extraction reads explicit CFSpec for already validated
+automatic note calls from the same OLE streams. The retained prefix uses
+space remaining after earlier DOC, Word and ODT observations and existing
+DOC output coordinates. Absent or unresolved properties do not emit evidence.
+
+On 246 pinned unique DOC inputs, 229 observations matched the independently
+checked source properties. Selected documents and previous metadata were
+identical apart from changed implementation fingerprints. Records grew by
+5,195 bytes in total and at most 190 bytes individually. SQL grew by 567 bytes
+and gzip by 127 bytes in a scratch checkpoint containing the three largest
+increments. Both forms survived two exact restores and integrity checks.
+The native DOC handoff through a fake provider preserved the request, prompt,
+memo key, custom ID and same-byte deduplication. The J402 reader restored
+the writer checkpoint byte-for-byte twice.
+
+[Qualification](../assets/audits/2026-11-07-doc-note-cfspec-writer/qualification.json).
