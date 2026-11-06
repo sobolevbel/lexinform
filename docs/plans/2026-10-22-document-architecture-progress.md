@@ -12463,6 +12463,9 @@ and received two confirmed 401 responses. That probe and intermediate
 runs using the same SDK helper are excluded. Qualification used a
 mock token-count transport, fake SDK handoff and blocked sockets.
 
+Commit `c5f0aaf4` passed exact CI 42217155413 and relay deployment
+42218217502.
+
 <a id="j325"></a>
 
 ## J325 — store one inline PDF in a qualified frozen primary queue item
@@ -12478,3 +12481,19 @@ removal. The isolated queued gzip dumps were smaller by 1.42 MB for
 the full scan and 3.07 MB for the cover-trimmed scan. Submission was
 simulated at the SDK boundary with sockets blocked.
 [Qualification](../assets/audits/2026-11-06-scan-payload-writer/qualification.json).
+
+<a id="j326"></a>
+
+## J326 — omit full source text from new consultation review deliveries
+
+New consultation review delivery copies retain findings, citations,
+links and source identities with empty document text. The stored
+review remains complete. Existing delivery plans keep their original
+representation.
+
+Both pinned plans produced the same Russian and English previews
+and weekly digest output. The paired scratch dumps restored twice.
+Omitting five copied document texts saved 470,637 SQL bytes and
+121,142 gzip bytes in the paired checkpoint comparison. The focused retry control preserves
+the same rendered message after failure and restore.
+[Qualification](../assets/audits/2026-11-06-consultation-delivery/qualification.json).

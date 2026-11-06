@@ -10,8 +10,10 @@ from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import (
     AnalysisRecord,
     Bill,
+    ConsultationFinding,
     DeliveryPlan,
     DocumentReviewRecord,
+    EvidenceCitation,
     LocatedText,
     Phase,
     ProcessDetail,
@@ -19,6 +21,7 @@ from lexinform.models import (
     PublicationKind,
     PublicationStatus,
     ReadyAnalysis,
+    ReviewDocument,
     ReviewWork,
     Stage,
     StatusChange,
@@ -228,6 +231,79 @@ def test_new_status_snapshot_omits_review_data_reserved_for_its_own_message(
     assert review_publication.delivery is not None, "the dedicated review freezes its own context"
     review_bill = Bill.model_validate_json(review_publication.delivery.bill_json)
     assert review_bill == original.model_copy(update={"review_work": ()})
+
+
+def test_new_consultation_review_keeps_citations_but_not_source_text_in_delivery(
+    repo: SqliteBillRepository, process_3039: ProcessDetail
+) -> None:
+    case = contract(repo, process_3039, "off")
+    record = result_record("consultation_review")
+    assert isinstance(record, DocumentReviewRecord), "fixture creates the full review"
+    document = ReviewDocument(
+        identity="response-document",
+        url="https://example.test/official-response",
+        role="response",
+        text="Private-to-input source paragraph containing the exact quote.",
+        sha256="a" * 64,
+        normalized_sha256="b" * 64,
+    )
+    finding = ConsultationFinding(
+        proposal="Zmiana terminu",
+        respondent="Urząd",
+        outcome="accepted",
+        reason="Wyjaśnienie",
+        affected_groups=(),
+        evidence=EvidenceCitation(
+            document_id=document.identity, locator="p. 4", quote="the exact quote"
+        ),
+        text_change="Termin wydłużono.",
+        text_evidence=None,
+    )
+    review = record.model_copy(
+        update={
+            "context": record.context.model_copy(update={"documents": (document,)}),
+            "review": record.review.model_copy(update={"consultation_findings": (finding,)}),
+        }
+    )
+    repo.save_document_review(10, "3039", review)
+    original = case.bill()
+    publication = case.poster.prepare_message(
+        original,
+        PublicationKind.CONSULTATION_REVIEW,
+        ref="native-review",
+        today=case.clock.now().date(),
+    )
+    assert publication.id is not None and publication.delivery is not None, "prepare freezes a plan"
+    frozen = Bill.model_validate_json(publication.delivery.bill_json)
+    frozen_review = frozen.consultation_review
+    assert frozen_review is not None, "the frozen plan keeps review findings and citations"
+    assert frozen_review.review == review.review
+    assert frozen_review.context.documents == (document.model_copy(update={"text": ""}),)
+    assert case.bill() == original
+
+    legacy = publication.model_copy(
+        update={
+            "delivery": publication.delivery.model_copy(
+                update={"bill_json": original.model_dump_json()}
+            )
+        }
+    )
+    preview = case.publisher.render_delivery(legacy)
+    assert case.publisher.render_delivery(publication) == preview
+
+    case.publisher.fail_on.add(original.number)
+    assert not case.poster.deliver(publication)
+    assert row(repo, publication.id).status is PublicationStatus.FAILED
+    assert plan(repo, publication.id).rendered_text == preview
+    dump = repo.dump()
+    repo.restore(dump)
+    case.publisher.fail_on.clear()
+    case.poster.start_run()
+    retry = row(repo, publication.id)
+    assert case.poster.deliver(retry)
+    assert case.publisher.texts(PublicationKind.CONSULTATION_REVIEW) == [preview]
+    assert case.bill() == original
+    assert repo.get_publication_content(publication.id) is None
 
 
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])

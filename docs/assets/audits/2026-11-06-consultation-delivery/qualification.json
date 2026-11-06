@@ -1,0 +1,60 @@
+{
+  "baseline_commit": "e3ad489f07b8f51224e5a6ada773f58c71117357",
+  "scope": "Prospective review delivery, two saved plans from an immutable SQLite copy.",
+  "source_checkpoint_sha256": "bc4e56d74dc6b477d28662c7e21fcf9d10dba3ee773f2cdb945e6fa7cbe4c6e3",
+  "exact_previews_and_digest": [
+    "ru",
+    "en"
+  ],
+  "source_text_bytes_omitted": 464851,
+  "delta_sql_bytes": 470637,
+  "delta_gzip_bytes": 121142,
+  "exact_round_trips": 2,
+  "preserved": [
+    "live review records",
+    "historical plans during preparation",
+    "route",
+    "reply target",
+    "non-Bill plan fields"
+  ],
+  "offline": true,
+  "profiles": {
+    "131": {
+      "editorial_binding": false,
+      "frozen_source_text_bytes": 0,
+      "plan_without_bill_sha256": "aa9c86bd7a7d007f93fb5f991d9596ce27eae227f0330605e268b59c47679d33",
+      "preview": {
+        "en": "2bb6e2ff31233178c1628c33ecefcf5377e69596569f62cd6624948292089769",
+        "ru": "8de6a9663019daa7ecc487a737c6bba7c123c38547c145e54f0507ff05e64842"
+      },
+      "route": "digest_only",
+      "source_docs": 3
+    },
+    "132": {
+      "editorial_binding": false,
+      "frozen_source_text_bytes": 0,
+      "plan_without_bill_sha256": "bffdd548a3062c971dc655c9f1da7b9c44b7db7c1c7bfd704464a21aafca5183",
+      "preview": {
+        "en": "0dd6743b6bf95b37b6d7fcb11f0cdaeb8f5f213495b86718cb35f1c4b5d0bf79",
+        "ru": "bac18552c8722f51ae102cf1197cbd521b5658be6b88f09d1f70d21bce71c4cc"
+      },
+      "route": "digest_only",
+      "source_docs": 2
+    }
+  },
+  "digest": {
+    "model": "363d33f8fe0519e24aa7cb2b049fff6ab07d7c750949d24f0034f0b238004926",
+    "parts": {
+      "en": [
+        "a630cdb7f4a9053dc7bea1793a9d012dd23fe23dee415652b033d012d83ca040"
+      ],
+      "ru": [
+        "78ed0c57087568d80206d36c8d37076ce04d37608d968bb7079d2f52a76088ff"
+      ]
+    }
+  },
+  "paired_ledger_sha256": {
+    "before": "1e9ac1aac91081bfa052174d3125b516a08465968caaff6d48018bba4fa3ec25",
+    "after": "1f8e7f7894926c08f2d75fe191533fbad2f75c6a2a97d93d7cbd010ee497fadc"
+  }
+}

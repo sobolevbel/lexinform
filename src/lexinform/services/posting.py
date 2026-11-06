@@ -107,8 +107,20 @@ FROZEN_REPLIES = frozenset(
 
 def _delivery_bill_json(bill: Bill, kind: PublicationKind) -> str:
     excluded = {"review_work"} if bill.review_work else set()
-    if kind is PublicationKind.STATUS_UPDATE and bill.consultation_review is not None:
+    review = bill.consultation_review
+    if kind is PublicationKind.STATUS_UPDATE and review is not None:
         excluded.add("consultation_review")
+    if kind is PublicationKind.CONSULTATION_REVIEW and review is not None:
+        documents = review.context.documents
+        if any(document.text for document in documents):
+            context = review.context.model_copy(
+                update={
+                    "documents": tuple(doc.model_copy(update={"text": ""}) for doc in documents)
+                }
+            )
+            bill = bill.model_copy(
+                update={"consultation_review": review.model_copy(update={"context": context})}
+            )
     return bill.model_dump_json(exclude=excluded)
 
 
