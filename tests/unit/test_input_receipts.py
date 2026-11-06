@@ -137,6 +137,36 @@ def test_intent_text_reference_restores_frozen_input_and_rejects_a_wrong_hash(
         assert repo.dump() == inline and repo.list_queued_batch_intents() == [intent]
 
 
+@pytest.mark.parametrize("profile", ["exact", "different", "short", "unfrozen"])
+def test_only_large_exact_frozen_question_text_is_shared(tmp_path: Path, profile: str) -> None:
+    path = tmp_path / "intent.db"
+    text = SOURCE if profile == "short" else SOURCE * 1000
+    frozen = request(text)
+    if profile == "unfrozen":
+        frozen = frozen.model_copy(update={"payload_json": None, "payload_sha256": None})
+    metadata = meta().model_copy(update={"text": text + "!" if profile == "different" else text})
+    intent = BatchIntent.from_request(
+        request=frozen, meta=metadata, provider="openai", created_at=NOW
+    )
+    with closing(SqliteBillRepository(path)) as repo:
+        repo.migrate()
+        repo.save_batch_intent(intent)
+        repo.save_batch_intent(intent)
+        with closing(sqlite3.connect(path)) as sql:
+            raw_request, raw_meta = sql.execute(
+                "SELECT request_json, meta_json FROM llm_batch_intents"
+            ).fetchone()
+        assert raw_request == frozen.model_dump_json()
+        if profile == "exact":
+            assert json.loads(raw_meta)["text"] == {
+                "profile": "question-text-v1",
+                "sha256": hashlib.sha256(text.encode()).hexdigest(),
+            }
+        else:
+            assert raw_meta == intent.meta.model_dump_json()
+        assert repo.list_queued_batch_intents() == [intent]
+
+
 def test_receipt_matches_existing_j125_order_roles_and_actual_frozen_bytes() -> None:
     source = selection()
     projection = project_pieces(

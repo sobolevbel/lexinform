@@ -1,0 +1,374 @@
+{
+  "baseline_git_sha": "a4c5e3ae58ce26b4fd38c103a9a21dcb659318f8",
+  "minimum_utf8_bytes": 32768,
+  "profiles": {
+    "duplicate-proposal": {
+      "case_sha256": "09c1d04aed9bb1ebe1d3d6eb6be49bb0ecbc959bb886233985c4b53f993d3dfc",
+      "inputs": {
+        "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+        "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+      },
+      "request": "cd45a6c3e3b1b12d40165ed37a3c617803e1a1ce7b6b00929131a2738b9c25e9",
+      "validation": "validated",
+      "metadata_calls": [
+        "/sejm/term10/processes/2320",
+        "/sejm/term10/prints/2320",
+        "/sejm/term10/prints"
+      ],
+      "body_calls": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320/2320.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320-A/2320-A.pdf"
+      ],
+      "checkpoints": {
+        "collected": {
+          "normalized_sql_sha256": "d4555d75c77f2a0e678f20685a446d643fb846d1e69225159e767c60cc099389",
+          "baseline_sql_bytes": 181275,
+          "writer_sql_bytes": 181275,
+          "baseline_gzip_bytes": 43824,
+          "writer_gzip_bytes": 43824,
+          "marker_count": 0
+        },
+        "queue": {
+          "normalized_sql_sha256": "88f6f3fd1906a149b1aca7df37776258364293acf025d0e08bdd5b0d7ef844e4",
+          "baseline_sql_bytes": 234387,
+          "writer_sql_bytes": 179310,
+          "baseline_gzip_bytes": 59113,
+          "writer_gzip_bytes": 45559,
+          "marker_count": 1
+        },
+        "submitted": {
+          "normalized_sql_sha256": "7ad7a20fce6488cb62b97c0f887b39a8c7761ef8ad9446440859ae620531b08f",
+          "baseline_sql_bytes": 109662,
+          "writer_sql_bytes": 109662,
+          "baseline_gzip_bytes": 25491,
+          "writer_gzip_bytes": 25491,
+          "marker_count": 0
+        }
+      }
+    },
+    "missing-term": {
+      "case_sha256": "09c1d04aed9bb1ebe1d3d6eb6be49bb0ecbc959bb886233985c4b53f993d3dfc",
+      "inputs": {
+        "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+        "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+      },
+      "request": "cd45a6c3e3b1b12d40165ed37a3c617803e1a1ce7b6b00929131a2738b9c25e9",
+      "validation": "validated",
+      "metadata_calls": [
+        "/sejm/term10/processes/2320",
+        "/sejm/term10/prints/2320",
+        "/sejm/term10/prints"
+      ],
+      "body_calls": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320/2320.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320-A/2320-A.pdf"
+      ],
+      "checkpoints": {
+        "collected": {
+          "normalized_sql_sha256": "d4555d75c77f2a0e678f20685a446d643fb846d1e69225159e767c60cc099389",
+          "baseline_sql_bytes": 181275,
+          "writer_sql_bytes": 181275,
+          "baseline_gzip_bytes": 43824,
+          "writer_gzip_bytes": 43824,
+          "marker_count": 0
+        },
+        "queue": {
+          "normalized_sql_sha256": "88f6f3fd1906a149b1aca7df37776258364293acf025d0e08bdd5b0d7ef844e4",
+          "baseline_sql_bytes": 234387,
+          "writer_sql_bytes": 179310,
+          "baseline_gzip_bytes": 59113,
+          "writer_gzip_bytes": 45559,
+          "marker_count": 1
+        },
+        "submitted": {
+          "normalized_sql_sha256": "7ad7a20fce6488cb62b97c0f887b39a8c7761ef8ad9446440859ae620531b08f",
+          "baseline_sql_bytes": 109662,
+          "writer_sql_bytes": 109662,
+          "baseline_gzip_bytes": 25491,
+          "writer_gzip_bytes": 25491,
+          "marker_count": 0
+        }
+      }
+    },
+    "no-edition": {
+      "case_sha256": "85eb221ef8de63764e5277c708b4ee823439cb8d4b5265d91b159e9b72de626e",
+      "inputs": {
+        "sejm/term10/autopoprawki/files/2082-A__2082-A.pdf": "867d63a7c087e3a6bf74f9d72b7c9a1a3df8cb967134bc2089faed5725e3dd6a",
+        "sejm/term10/files/2082__2082.pdf": "85194508ed837bbaedd56d646573c06c1737d29cc0fed645717f82a2108e7928",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+      },
+      "request": "a4a55950685995cbe7ef5b604542dd043a77dc0f90c6ffd95304c859ca934b5d",
+      "validation": "validated",
+      "metadata_calls": [
+        "/sejm/term10/processes/2082",
+        "/sejm/term10/prints/2082",
+        "/sejm/term10/prints"
+      ],
+      "body_calls": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/2082/2082.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/prints/2082-A/2082-A.pdf"
+      ],
+      "checkpoints": {
+        "collected": {
+          "normalized_sql_sha256": "4a46ceebc888ef2d951bb7f3c106412d7cf5a0368c759d550fe19bb74c254f24",
+          "baseline_sql_bytes": 447096,
+          "writer_sql_bytes": 447096,
+          "baseline_gzip_bytes": 145282,
+          "writer_gzip_bytes": 145282,
+          "marker_count": 0
+        },
+        "queue": {
+          "normalized_sql_sha256": "1541a3d9a550e302ff02d763c5d894eae18fac60be3093ade0c05f99ad15e0ff",
+          "baseline_sql_bytes": 637729,
+          "writer_sql_bytes": 448455,
+          "baseline_gzip_bytes": 211125,
+          "writer_gzip_bytes": 146653,
+          "marker_count": 1
+        },
+        "submitted": {
+          "normalized_sql_sha256": "9e13f0e526112f107817dc259388cfa275b0ebce5d53dbe09a7f2a3bb8f5fa2e",
+          "baseline_sql_bytes": 243325,
+          "writer_sql_bytes": 243325,
+          "baseline_gzip_bytes": 76256,
+          "writer_gzip_bytes": 76256,
+          "marker_count": 0
+        }
+      }
+    },
+    "non-list-parent": {
+      "case_sha256": "09c1d04aed9bb1ebe1d3d6eb6be49bb0ecbc959bb886233985c4b53f993d3dfc",
+      "inputs": {
+        "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+        "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+      },
+      "request": "cd45a6c3e3b1b12d40165ed37a3c617803e1a1ce7b6b00929131a2738b9c25e9",
+      "validation": "validated",
+      "metadata_calls": [
+        "/sejm/term10/processes/2320",
+        "/sejm/term10/prints/2320",
+        "/sejm/term10/prints"
+      ],
+      "body_calls": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320/2320.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320-A/2320-A.pdf"
+      ],
+      "checkpoints": {
+        "collected": {
+          "normalized_sql_sha256": "d4555d75c77f2a0e678f20685a446d643fb846d1e69225159e767c60cc099389",
+          "baseline_sql_bytes": 181275,
+          "writer_sql_bytes": 181275,
+          "baseline_gzip_bytes": 43824,
+          "writer_gzip_bytes": 43824,
+          "marker_count": 0
+        },
+        "queue": {
+          "normalized_sql_sha256": "88f6f3fd1906a149b1aca7df37776258364293acf025d0e08bdd5b0d7ef844e4",
+          "baseline_sql_bytes": 234387,
+          "writer_sql_bytes": 179310,
+          "baseline_gzip_bytes": 59113,
+          "writer_gzip_bytes": 45559,
+          "marker_count": 1
+        },
+        "submitted": {
+          "normalized_sql_sha256": "7ad7a20fce6488cb62b97c0f887b39a8c7761ef8ad9446440859ae620531b08f",
+          "baseline_sql_bytes": 109662,
+          "writer_sql_bytes": 109662,
+          "baseline_gzip_bytes": 25491,
+          "writer_gzip_bytes": 25491,
+          "marker_count": 0
+        }
+      }
+    },
+    "parent-refused": {
+      "case_sha256": "09c1d04aed9bb1ebe1d3d6eb6be49bb0ecbc959bb886233985c4b53f993d3dfc",
+      "inputs": {
+        "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+        "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+      },
+      "request": "cd45a6c3e3b1b12d40165ed37a3c617803e1a1ce7b6b00929131a2738b9c25e9",
+      "validation": "validated",
+      "metadata_calls": [
+        "/sejm/term10/processes/2320",
+        "/sejm/term10/prints/2320",
+        "/sejm/term10/prints"
+      ],
+      "body_calls": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320/2320.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320-A/2320-A.pdf"
+      ],
+      "checkpoints": {
+        "collected": {
+          "normalized_sql_sha256": "d4555d75c77f2a0e678f20685a446d643fb846d1e69225159e767c60cc099389",
+          "baseline_sql_bytes": 181275,
+          "writer_sql_bytes": 181275,
+          "baseline_gzip_bytes": 43824,
+          "writer_gzip_bytes": 43824,
+          "marker_count": 0
+        },
+        "queue": {
+          "normalized_sql_sha256": "88f6f3fd1906a149b1aca7df37776258364293acf025d0e08bdd5b0d7ef844e4",
+          "baseline_sql_bytes": 234387,
+          "writer_sql_bytes": 179310,
+          "baseline_gzip_bytes": 59113,
+          "writer_gzip_bytes": 45559,
+          "marker_count": 1
+        },
+        "submitted": {
+          "normalized_sql_sha256": "7ad7a20fce6488cb62b97c0f887b39a8c7761ef8ad9446440859ae620531b08f",
+          "baseline_sql_bytes": 109662,
+          "writer_sql_bytes": 109662,
+          "baseline_gzip_bytes": 25491,
+          "writer_gzip_bytes": 25491,
+          "marker_count": 0
+        }
+      }
+    },
+    "positive-error": {
+      "case_sha256": "09c1d04aed9bb1ebe1d3d6eb6be49bb0ecbc959bb886233985c4b53f993d3dfc",
+      "inputs": {
+        "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+        "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+      },
+      "request": "cd45a6c3e3b1b12d40165ed37a3c617803e1a1ce7b6b00929131a2738b9c25e9",
+      "validation": "error",
+      "metadata_calls": [
+        "/sejm/term10/processes/2320",
+        "/sejm/term10/prints/2320",
+        "/sejm/term10/prints"
+      ],
+      "body_calls": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320/2320.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320-A/2320-A.pdf"
+      ],
+      "checkpoints": {
+        "collected": {
+          "normalized_sql_sha256": "c834cffe26df8ef3d438f1ca646623ca17c9b783d5886d62164f5dccaae23c76",
+          "baseline_sql_bytes": 115139,
+          "writer_sql_bytes": 115139,
+          "baseline_gzip_bytes": 27040,
+          "writer_gzip_bytes": 27040,
+          "marker_count": 0
+        },
+        "queue": {
+          "normalized_sql_sha256": "88f6f3fd1906a149b1aca7df37776258364293acf025d0e08bdd5b0d7ef844e4",
+          "baseline_sql_bytes": 237615,
+          "writer_sql_bytes": 182538,
+          "baseline_gzip_bytes": 60051,
+          "writer_gzip_bytes": 46338,
+          "marker_count": 1
+        },
+        "submitted": {
+          "normalized_sql_sha256": "7ad7a20fce6488cb62b97c0f887b39a8c7761ef8ad9446440859ae620531b08f",
+          "baseline_sql_bytes": 112890,
+          "writer_sql_bytes": 112890,
+          "baseline_gzip_bytes": 26447,
+          "writer_gzip_bytes": 26447,
+          "marker_count": 0
+        }
+      }
+    },
+    "positive-success": {
+      "case_sha256": "09c1d04aed9bb1ebe1d3d6eb6be49bb0ecbc959bb886233985c4b53f993d3dfc",
+      "inputs": {
+        "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+        "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+      },
+      "request": "cd45a6c3e3b1b12d40165ed37a3c617803e1a1ce7b6b00929131a2738b9c25e9",
+      "validation": "validated",
+      "metadata_calls": [
+        "/sejm/term10/processes/2320",
+        "/sejm/term10/prints/2320",
+        "/sejm/term10/prints"
+      ],
+      "body_calls": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320/2320.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320-A/2320-A.pdf"
+      ],
+      "checkpoints": {
+        "collected": {
+          "normalized_sql_sha256": "d4555d75c77f2a0e678f20685a446d643fb846d1e69225159e767c60cc099389",
+          "baseline_sql_bytes": 184503,
+          "writer_sql_bytes": 184503,
+          "baseline_gzip_bytes": 44784,
+          "writer_gzip_bytes": 44784,
+          "marker_count": 0
+        },
+        "queue": {
+          "normalized_sql_sha256": "88f6f3fd1906a149b1aca7df37776258364293acf025d0e08bdd5b0d7ef844e4",
+          "baseline_sql_bytes": 237615,
+          "writer_sql_bytes": 182538,
+          "baseline_gzip_bytes": 60051,
+          "writer_gzip_bytes": 46338,
+          "marker_count": 1
+        },
+        "submitted": {
+          "normalized_sql_sha256": "7ad7a20fce6488cb62b97c0f887b39a8c7761ef8ad9446440859ae620531b08f",
+          "baseline_sql_bytes": 112890,
+          "writer_sql_bytes": 112890,
+          "baseline_gzip_bytes": 26447,
+          "writer_gzip_bytes": 26447,
+          "marker_count": 0
+        }
+      }
+    },
+    "wrong-base-term": {
+      "case_sha256": "09c1d04aed9bb1ebe1d3d6eb6be49bb0ecbc959bb886233985c4b53f993d3dfc",
+      "inputs": {
+        "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+        "sejm/term10/files/2320__2320.pdf": "4bb074013ffcd456f57352641fd753edc3a34666e37591c517f0d2e353bb67e5",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+      },
+      "request": "cd45a6c3e3b1b12d40165ed37a3c617803e1a1ce7b6b00929131a2738b9c25e9",
+      "validation": "validated",
+      "metadata_calls": [
+        "/sejm/term10/processes/2320",
+        "/sejm/term10/prints/2320",
+        "/sejm/term10/prints"
+      ],
+      "body_calls": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320/2320.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/prints/2320-A/2320-A.pdf"
+      ],
+      "checkpoints": {
+        "collected": {
+          "normalized_sql_sha256": "d4555d75c77f2a0e678f20685a446d643fb846d1e69225159e767c60cc099389",
+          "baseline_sql_bytes": 181275,
+          "writer_sql_bytes": 181275,
+          "baseline_gzip_bytes": 43824,
+          "writer_gzip_bytes": 43824,
+          "marker_count": 0
+        },
+        "queue": {
+          "normalized_sql_sha256": "88f6f3fd1906a149b1aca7df37776258364293acf025d0e08bdd5b0d7ef844e4",
+          "baseline_sql_bytes": 234387,
+          "writer_sql_bytes": 179310,
+          "baseline_gzip_bytes": 59113,
+          "writer_gzip_bytes": 45559,
+          "marker_count": 1
+        },
+        "submitted": {
+          "normalized_sql_sha256": "7ad7a20fce6488cb62b97c0f887b39a8c7761ef8ad9446440859ae620531b08f",
+          "baseline_sql_bytes": 109662,
+          "writer_sql_bytes": 109662,
+          "baseline_gzip_bytes": 25491,
+          "writer_gzip_bytes": 25491,
+          "marker_count": 0
+        }
+      }
+    }
+  }
+}

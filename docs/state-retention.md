@@ -5,6 +5,13 @@ version and the IDs/providers of batches with unconsumed items. `db dump` writes
 batch checkpoints commit both before reporting persistence. A missing or invalid manifest stops
 the poller without dispatch; the next scheduled workflow creates the manifest when it dumps.
 
+A primary queue intent can store a `question-text-v1` marker in its metadata text slot.
+New writes use it only when the UTF-8 text is at least 32 KiB, matches the saved question
+exactly and the provider payload is frozen. Reading verifies both hashes and restores the
+full metadata before submission. Submitted items retain inline text because the queue row
+is then deleted. The marker is local to the SQL representation and does not change the
+provider request. Rollback after activation requires a marker-aware queue reader.
+
 Bill summaries, Sejm stages, RCL snapshots and observed processes use compact JSON. Only fields
 whose explicit default is `None` omit their null value. Required nulls, unknown fields, false,
 zero and empty collections survive. Restoring an older SQL dump compacts these snapshots too;

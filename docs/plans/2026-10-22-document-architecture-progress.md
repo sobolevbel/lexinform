@@ -12118,5 +12118,28 @@ same SQL and intent as the previous code. The J303 copy had no active batch
 intents or unconsumed items, so this evidence does not estimate production
 prevalence. [Qualification](../assets/audits/2026-11-06-pending-question-text-reader/qualification.json).
 
-Reader only. The prior runtime rejects the marker in a primary text slot.
-The writer can be enabled after a verified reader release.
+Reader only. Commit `a4c5e3ae` passed CI 42193881546 and relay deployment
+42194626444 before activation. The prior runtime rejects the marker in a
+primary text slot.
+
+<a id="j310"></a>
+
+## J310 — share identical large question text while an intent is queued
+
+New primary queue rows use the J309 text marker when their frozen question
+and metadata contain the same UTF-8 string of at least 32 KiB. Smaller,
+different and unfrozen inputs retain their inline representation. Reading a
+queued or submitting intent restores the exact original metadata before
+building the submitted item. Submitted items keep their self-contained text.
+
+The native paired replay covered eight offline queue, submission and
+collection lifecycles from the two pinned Sejm source bundles. All 24
+checkpoints restored twice. The queue-to-submitting-to-queue transition kept
+the dump exact. Request identity, source reads, outcomes, retained receipts
+and normalized SQL matched baseline. The native writer saved 13,554–64,472
+bytes of gzip in these isolated queue snapshots. Submitted and collected
+checkpoint sizes matched. Unit controls cover the ineligible inputs and
+repeat saves. [Qualification](../assets/audits/2026-11-06-pending-question-text-writer/qualification.json).
+
+DA5.1 remains open for other payload copies and source profiles. This stage
+covers only one duplicate while its immutable question is present.

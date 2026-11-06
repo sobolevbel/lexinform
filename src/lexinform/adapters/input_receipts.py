@@ -36,6 +36,9 @@ from lexinform.models.input_receipts import (
     SejmSelfAmendmentInputReceipt,
 )
 
+_QUESTION_TEXT_PROFILE = "question-text-v1"
+_MIN_SHARED_QUESTION_BYTES = 32 * 1024
+
 
 @dataclass(frozen=True)
 class InputSnapshotCheck:
@@ -93,7 +96,7 @@ def intent_metadata(
             or not question.ctx.text
             or reference
             != {
-                "profile": "question-text-v1",
+                "profile": _QUESTION_TEXT_PROFILE,
                 "sha256": hashlib.sha256(question.ctx.text.encode()).hexdigest(),
             }
         ):
@@ -101,6 +104,28 @@ def intent_metadata(
         request.verify_payload()
         decoded = {**decoded, "text": question.ctx.text}
     return validate_batch_item_meta(request.call_kind, decoded, submitted=False)
+
+
+def serialize_intent_metadata(intent: BatchIntent) -> str:
+    meta, request = intent.meta, intent.request
+    question = request.question
+    if (
+        isinstance(meta, BatchItemMeta)
+        and isinstance(question, AnalysisQuestion)
+        and request.call_kind in ("analysis", "reanalysis")
+        and request.payload_sha256 is not None
+        and meta.text == question.ctx.text
+    ):
+        text = meta.text.encode()
+        if len(text) >= _MIN_SHARED_QUESTION_BYTES:
+            request.verify_payload()
+            values = meta.model_dump(mode="json")
+            values["text"] = {
+                "profile": _QUESTION_TEXT_PROFILE,
+                "sha256": hashlib.sha256(text).hexdigest(),
+            }
+            return json.dumps(values, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+    return meta.model_dump_json()
 
 
 def _reference(table: str, key: object) -> str:
