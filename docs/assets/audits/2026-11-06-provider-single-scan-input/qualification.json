@@ -1,0 +1,59 @@
+{
+  "baseline": "5237d8c2c12e87dbd2d5a4a34735746a265978d9",
+  "cases": {
+    "24/anthropic": {
+      "negative_controls_after": {
+        "extra_document": "rejected_before_sdk",
+        "system_document": "rejected_before_sdk"
+      },
+      "negative_controls_before": {
+        "extra_document": "reached_sdk",
+        "system_document": "reached_sdk"
+      },
+      "request_sha256": "613febf0afd06ab176d4e54fd8e6d04b50faa38615b387dd458ea6fa70ecad39",
+      "source_sha256": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+      "submitted_checkpoint_sha256": "470c90b045e6c8b58410d307ffd296cac60365bc5d469a44dbd7f2aa22a3fbb6"
+    },
+    "24/openai": {
+      "negative_controls_after": {
+        "extra_document": "rejected_before_sdk",
+        "system_document": "rejected_before_sdk"
+      },
+      "negative_controls_before": {
+        "extra_document": "reached_sdk",
+        "system_document": "reached_sdk"
+      },
+      "request_sha256": "f06858b54afb551652100f45aa3f34deb6d1edfd782e45eff64638300e86180b",
+      "source_sha256": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+      "submitted_checkpoint_sha256": "fa06e071c0206ecd06eb401f92ef57184510e8c6839a7386fd393304ad74ecc8"
+    },
+    "25/anthropic": {
+      "negative_controls_after": {
+        "extra_document": "rejected_before_sdk",
+        "system_document": "rejected_before_sdk"
+      },
+      "negative_controls_before": {
+        "extra_document": "reached_sdk",
+        "system_document": "reached_sdk"
+      },
+      "request_sha256": "985c6fab51f4a5ccbcc4ed53d4cd469a164f1147d5aa90c8a170979e9047c308",
+      "source_sha256": "11c7c5bed9e2df7b13671052b16981d015a7471db8c3d81a4e53100b9c3ad97b",
+      "submitted_checkpoint_sha256": "f307cdd9beb289b15ab8acc7d73ed026b601f9d41941bb534ab900c49b2b5a30"
+    },
+    "25/openai": {
+      "negative_controls_after": {
+        "extra_document": "rejected_before_sdk",
+        "system_document": "rejected_before_sdk"
+      },
+      "negative_controls_before": {
+        "extra_document": "reached_sdk",
+        "system_document": "reached_sdk"
+      },
+      "request_sha256": "2fc019bfd26f22517924d2a64ca6d3c319897313bd2be00e92588bc0be33428e",
+      "source_sha256": "11c7c5bed9e2df7b13671052b16981d015a7471db8c3d81a4e53100b9c3ad97b",
+      "submitted_checkpoint_sha256": "93920602ca4412ab4ee6db2ac2477c7c08421daf8a056928abc9f002ce7ba003"
+    }
+  },
+  "replay_sha256": "138c2a2103c9f870c8bf87eb3af91d8cf3d00dde10140e677bdb57ec7167b123",
+  "scope": "Pinned Sejm prints 24 and 25 through both mock provider SDKs, with whole and cover-removal PDF inputs."
+}

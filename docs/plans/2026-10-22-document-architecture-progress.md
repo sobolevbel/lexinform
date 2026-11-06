@@ -13653,3 +13653,19 @@ only the new attachment validation failures as definitely unsent. The
 unverified local commit was removed from the release queue before push.
 
 [Qualification](../assets/audits/2026-11-06-provider-scan-submit-guard/qualification.json).
+
+<a id="j386"></a>
+
+## J386 — enforce the single scan input at provider handoff
+
+After matching the first attachment, the real adapters require all remaining
+message blocks to be text. A second document in a user or system message
+makes the request definitively unsent. The historical queue reader preserves
+its existing envelope rules.
+
+Pinned prints 24 and 25 exercised both providers. The four valid requests
+kept their original hashes, mock SDK input and submitted checkpoints. All
+eight controls reached the baseline mock SDK and were rejected before the
+first call on the candidate. Unit controls also cover secondary scan requests.
+
+[Qualification](../assets/audits/2026-11-06-provider-single-scan-input/qualification.json).

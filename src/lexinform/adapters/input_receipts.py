@@ -311,6 +311,36 @@ def _scan_payload_slot(shell: Mapping[str, object], model: object, marker: str) 
             return False
 
 
+def _text_only_blocks(blocks: object, block_type: str) -> bool:
+    return isinstance(blocks, list) and all(
+        isinstance(block, dict)
+        and block.get("type") == block_type
+        and isinstance(block.get("text"), str)
+        for block in blocks
+    )
+
+
+def _has_only_one_document(payload: Mapping[str, object]) -> bool:
+    match payload:
+        case {
+            "body": {
+                "input": [
+                    {"role": "system", "content": system},
+                    {"content": [_, *prompt]},
+                ]
+            }
+        }:
+            return (
+                isinstance(system, str) or _text_only_blocks(system, "input_text")
+            ) and _text_only_blocks(prompt, "input_text")
+        case {"params": {"system": system, "messages": [{"content": [_, *prompt]}]}}:
+            return (
+                isinstance(system, str) or _text_only_blocks(system, "text")
+            ) and _text_only_blocks(prompt, "text")
+        case _:
+            return False
+
+
 def validate_scan_attachment(intent: BatchIntent) -> None:
     if intent.recorded_scan_input is not None:
         intent.require_scan_binding()
@@ -339,6 +369,8 @@ def validate_provider_scan_attachment(
         or not _scan_payload_slot(payload, request.model, scan.data)
     ):
         raise ValueError("Frozen provider attachment differs from the recorded scan")
+    if not allow_opaque and not _has_only_one_document(payload):
+        raise ValueError("Frozen provider scan request contains unsupported input blocks")
     request.verify_payload()
 
 

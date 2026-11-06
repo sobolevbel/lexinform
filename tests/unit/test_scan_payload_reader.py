@@ -727,6 +727,32 @@ def test_provider_attachment_must_match_the_frozen_scan(
     with pytest.raises(BatchNotSubmittedError, match="no verifiable scan attachment"):
         factory().submit([request, opaque])
 
+    for target in ("user", "system"):
+        payload = json.loads(request.payload_json)
+        if provider == "openai":
+            messages = payload["body"]["input"]
+            document = messages[1]["content"][0]
+            if target == "user":
+                messages[1]["content"].append(document)
+            else:
+                messages[0]["content"] = [document]
+        else:
+            params = payload["params"]
+            blocks = params["messages"][0]["content"]
+            if target == "user":
+                blocks.append(blocks[0])
+            else:
+                params["system"] = [blocks[0]]
+        expanded_payload = json.dumps(payload)
+        expanded = request.model_copy(
+            update={
+                "payload_json": expanded_payload,
+                "payload_sha256": hashlib.sha256(expanded_payload.encode()).hexdigest(),
+            }
+        )
+        with pytest.raises(BatchNotSubmittedError, match="unsupported input blocks"):
+            factory().submit([expanded])
+
     forged = saved.replace(
         serialize_intent_request(request).replace("'", "''"),
         tampered.model_dump_json().replace("'", "''"),
