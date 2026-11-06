@@ -890,6 +890,7 @@ class SejmAdoptionOrigin:
     term: int
     number: str
     stage: Stage
+    predecessor: SejmCommitteeDraftOrigin | None = None
 
 
 @dataclass(frozen=True)

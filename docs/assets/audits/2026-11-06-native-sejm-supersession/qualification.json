@@ -1,0 +1,174 @@
+{
+  "baseline": "dafd19270322b90b9d2b1498da1c821028f72ac7",
+  "process_sha256": "361c92de8a686ae161aa3154c3a30bf29a2a7980e6fb3b13578962cdf01075d9",
+  "restores_per_case": 2,
+  "requests_submitted": 0,
+  "normalized": "SQL after replacing each enriched trace and link identity with its adoption-only counterpart",
+  "cases": {
+    "2111-no_prior": {
+      "requests": [
+        "f29d9eb782d4cd3f53666df3b9076526fe192e0307e547e59da371301f7fac28"
+      ],
+      "body_reads": [
+        "https://api.sejm.gov.pl/sejm/term10/processes/2111/attachment/2111_u3.pdf"
+      ],
+      "metadata_reads": [
+        "/sejm/term10/processes/2111"
+      ],
+      "normalized": "3268e67324bc9754eb667cb4a2cb9278d884a4b08ffe6a1f472811734543babb",
+      "trace_id": "candidate-trace-v1:6f819a56bf69c5ac95ce80641d54e1808e09a51689fa38596bac219db08a9c26",
+      "proof": {
+        "decision": "uchwalono",
+        "edition_id": "edition-v1:37d83994a51fba9d9a1283bbc2e3b2a7db6813ee4015d6b05f61cfdf47596885",
+        "number": "2111",
+        "pdf_sha256": "4929d334700b4ec7a61dd1c99b5e8c8f878dd67698669d1a770b3ae06256f2aa",
+        "pdf_text_sha256": "651b459f75de64e9c2b84722b4c0f262a24995d7cc015189e66e300b6bebacd8",
+        "selection_id": "selection-v1:49232be48f74c5f0504be58551a37a5a28daa1163cd7d02fea95e7f9bb40b74c",
+        "stage_date": "2026-05-29",
+        "stage_name": "III czytanie na posiedzeniu Sejmu",
+        "term": 10
+      },
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "2111-positive": {
+      "requests": [
+        "a0ac50fc65b2bcf2e82bae882c4c438495fded8030c64e2adf5860d602f52638",
+        "f29d9eb782d4cd3f53666df3b9076526fe192e0307e547e59da371301f7fac28"
+      ],
+      "body_reads": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/2594/2594.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/processes/2111/attachment/2111_u3.pdf"
+      ],
+      "metadata_reads": [
+        "/sejm/term10/processes/2111",
+        "/sejm/term10/processes/2111"
+      ],
+      "normalized": "44957f0310d0cee2d620b199582fc3d3001cbe688516484cec1a00cbe0f0b902",
+      "trace_id": "candidate-trace-v1:6826b77a647150a8fc4bfbf8cf57133d496d740becaa0309bf595373500fa057",
+      "proof": {
+        "decision": "uchwalono",
+        "edition_id": "edition-v1:37d83994a51fba9d9a1283bbc2e3b2a7db6813ee4015d6b05f61cfdf47596885",
+        "number": "2111",
+        "pdf_sha256": "4929d334700b4ec7a61dd1c99b5e8c8f878dd67698669d1a770b3ae06256f2aa",
+        "pdf_text_sha256": "651b459f75de64e9c2b84722b4c0f262a24995d7cc015189e66e300b6bebacd8",
+        "selection_id": "selection-v1:49232be48f74c5f0504be58551a37a5a28daa1163cd7d02fea95e7f9bb40b74c",
+        "stage_date": "2026-05-29",
+        "stage_name": "III czytanie na posiedzeniu Sejmu",
+        "supersedes": {
+          "edition_id": "edition-v1:f025151ad4c81494144feadf07ae2f91aa76691b9326a94145748d103340d33c",
+          "first_page": 5,
+          "last_page": 324,
+          "observation_id": "source-observation-v1:6dc9dd5cc838064d79911d238f1cee56d9ef3917b41b4bfe2343a888f20ab7d2",
+          "pdf_sha256": "cdb71705c3dc81e9a96f9767db732b8455860a8ee664352bbbb334a60ec27cc4",
+          "report": "2594",
+          "report_date": "2026-05-26",
+          "text_sha256": "2aba0c3aea6413c8ec2ab2c90f2b1554c64654bc2053270667a3ad18255cfd5a"
+        },
+        "term": 10
+      },
+      "sql_delta_bytes": 447,
+      "gzip_delta_bytes": 63
+    },
+    "3102-conflicting_prior": {
+      "requests": [
+        "aa0638c8f17b51b09b4d2fb54c677021547fc6de0c5022e3a7d170dd993fe715",
+        "aa0638c8f17b51b09b4d2fb54c677021547fc6de0c5022e3a7d170dd993fe715",
+        "c0492ea60dca18419c2c75f24952319f335b736d15b2e1151655f31f4abbe95d"
+      ],
+      "body_reads": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/3107/3107.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/prints/3107/3107.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/processes/3102/attachment/3102_u3.pdf"
+      ],
+      "metadata_reads": [
+        "/sejm/term10/processes/3102",
+        "/sejm/term10/processes/3102",
+        "/sejm/term10/processes/3102"
+      ],
+      "normalized": "8ceb8ff2ac0f5af30b588b590d2f36517a29fe3638e29d834c5bdd5de730db99",
+      "trace_id": "candidate-trace-v1:21ba971b90d4480b7ebc0a9d67020095f2cfcdb30778f8b28aa0357a6ec929ae",
+      "proof": {
+        "decision": "uchwalono",
+        "edition_id": "edition-v1:31e5e85959f8eca4195ca6913212deb39cef3f4e50f23ac95f39cf9c6b27ed1d",
+        "number": "3102",
+        "pdf_sha256": "241025314ed51b42c62078812b245f08f0d74380445c17fbe98651e5658a99f0",
+        "pdf_text_sha256": "5aed94d21b4185bf68000dadadd440fc45be54df94032d20beeebe72352cb6e0",
+        "selection_id": "selection-v1:179b478f0f39aeb9318318994d0a9ced8335fec093a1c334b6c86d9bb6fc06a5",
+        "stage_date": "2026-09-18",
+        "stage_name": "III czytanie na posiedzeniu Sejmu",
+        "term": 10
+      },
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "3102-missing_edition_link": {
+      "requests": [
+        "aa0638c8f17b51b09b4d2fb54c677021547fc6de0c5022e3a7d170dd993fe715",
+        "c0492ea60dca18419c2c75f24952319f335b736d15b2e1151655f31f4abbe95d"
+      ],
+      "body_reads": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/3107/3107.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/processes/3102/attachment/3102_u3.pdf"
+      ],
+      "metadata_reads": [
+        "/sejm/term10/processes/3102",
+        "/sejm/term10/processes/3102"
+      ],
+      "normalized": "9d630403ed325637d328191149914fae61edae701bdba7bd774cf1d2da0e784c",
+      "trace_id": "candidate-trace-v1:21ba971b90d4480b7ebc0a9d67020095f2cfcdb30778f8b28aa0357a6ec929ae",
+      "proof": {
+        "decision": "uchwalono",
+        "edition_id": "edition-v1:31e5e85959f8eca4195ca6913212deb39cef3f4e50f23ac95f39cf9c6b27ed1d",
+        "number": "3102",
+        "pdf_sha256": "241025314ed51b42c62078812b245f08f0d74380445c17fbe98651e5658a99f0",
+        "pdf_text_sha256": "5aed94d21b4185bf68000dadadd440fc45be54df94032d20beeebe72352cb6e0",
+        "selection_id": "selection-v1:179b478f0f39aeb9318318994d0a9ced8335fec093a1c334b6c86d9bb6fc06a5",
+        "stage_date": "2026-09-18",
+        "stage_name": "III czytanie na posiedzeniu Sejmu",
+        "term": 10
+      },
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "3102-positive": {
+      "requests": [
+        "aa0638c8f17b51b09b4d2fb54c677021547fc6de0c5022e3a7d170dd993fe715",
+        "c0492ea60dca18419c2c75f24952319f335b736d15b2e1151655f31f4abbe95d"
+      ],
+      "body_reads": [
+        "https://api.sejm.gov.pl/sejm/term10/prints/3107/3107.pdf",
+        "https://api.sejm.gov.pl/sejm/term10/processes/3102/attachment/3102_u3.pdf"
+      ],
+      "metadata_reads": [
+        "/sejm/term10/processes/3102",
+        "/sejm/term10/processes/3102"
+      ],
+      "normalized": "54809320995270bb549de9ccf86b8d2c923b227777b63fd3f316323a0b6e903f",
+      "trace_id": "candidate-trace-v1:776573d3e6c2b05022d39f7a7ed54d01b307ebdd6df8d0e215e0b6dea774de4d",
+      "proof": {
+        "decision": "uchwalono",
+        "edition_id": "edition-v1:31e5e85959f8eca4195ca6913212deb39cef3f4e50f23ac95f39cf9c6b27ed1d",
+        "number": "3102",
+        "pdf_sha256": "241025314ed51b42c62078812b245f08f0d74380445c17fbe98651e5658a99f0",
+        "pdf_text_sha256": "5aed94d21b4185bf68000dadadd440fc45be54df94032d20beeebe72352cb6e0",
+        "selection_id": "selection-v1:179b478f0f39aeb9318318994d0a9ced8335fec093a1c334b6c86d9bb6fc06a5",
+        "stage_date": "2026-09-18",
+        "stage_name": "III czytanie na posiedzeniu Sejmu",
+        "supersedes": {
+          "edition_id": "edition-v1:43ddeb9cd8bfd1b412499ad26fb279416f4f280a112194f9b9defba6a532f452",
+          "first_page": 2,
+          "last_page": 23,
+          "observation_id": "source-observation-v1:5cb77bb14cbb8f990ea5a93f9d134ffa9855843d85191eae469ebc385d4e33c8",
+          "pdf_sha256": "e41086e443b2d9d1b4a2481e3cfc5e7d1c3ed78d5aa98cc7d3e580ee85cb9eca",
+          "report": "3107",
+          "report_date": "2026-09-16",
+          "text_sha256": "8da26870585d56886fa513c9935e86ae0fb2aa8130b0dc91a3ac1bd1dc67ef4f"
+        },
+        "term": 10
+      },
+      "sql_delta_bytes": 446,
+      "gzip_delta_bytes": 60
+    }
+  }
+}

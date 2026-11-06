@@ -30,6 +30,7 @@ from lexinform.models import (
     ReadingOutcome,
     ReviewPurpose,
     ReviewSource,
+    Stage,
     TextDocument,
     flatten_stages,
     latest_text_document,
@@ -184,11 +185,22 @@ def _adoption_origin(
         or evidence.reading is not ReadingOutcome.PASSED
     ):
         return None
-    return SejmAdoptionOrigin(detail.term, detail.number, stage)
+    predecessor = None
+    index = next((i for i, item in enumerate(detail.stages) if item is stage), None)
+    if index is not None:
+        before = detail.stages[:index]
+        prior = _committee_draft_origin(bill, detail, latest_text_document(before), stages=before)
+        if prior is not None and prior.report_date < stage.date:
+            predecessor = prior
+    return SejmAdoptionOrigin(detail.term, detail.number, stage, predecessor)
 
 
 def _committee_draft_origin(
-    bill: Bill, detail: ProcessDetail, document: TextDocument | None
+    bill: Bill,
+    detail: ProcessDetail,
+    document: TextDocument | None,
+    *,
+    stages: tuple[Stage, ...] | None = None,
 ) -> SejmCommitteeDraftOrigin | None:
     if (
         document is None
@@ -199,10 +211,14 @@ def _committee_draft_origin(
         or re.fullmatch(r"[1-9][0-9]{0,8}", detail.number) is None
     ):
         return None
-    stages = [stage for stage in flatten_stages(detail.stages) if stage.report_file == document.url]
-    if len(stages) != 1:
+    matches = [
+        stage
+        for stage in flatten_stages(detail.stages if stages is None else stages)
+        if stage.report_file == document.url
+    ]
+    if len(matches) != 1:
         return None
-    (stage,) = stages
+    (stage,) = matches
     if (
         not stage.carries_bill_text
         or stage.proposal != "załączony projekt ustawy"

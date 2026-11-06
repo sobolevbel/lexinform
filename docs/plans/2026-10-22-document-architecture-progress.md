@@ -11810,3 +11810,27 @@ the extractor code fingerprints and their derived extraction IDs.
 This covers a printed-page profile. It leaves unqualified reports
 unknown. The normal writer still needs to bind the captured predecessor
 when it observes the later third-reading adoption.
+
+<a id="j297"></a>
+
+## J297 — link a previously captured committee edition at third reading
+
+The fresh Sejm stage tree identifies the predecessor before adoption.
+The writer links it only when the same report URL has one known body
+identity and a unique qualified draft observed before the adopted
+edition. The existing lookup validates both edition and body parents.
+An unavailable or ambiguous predecessor leaves the adoption-only trace.
+
+The paired offline analysis retained drafts from reports 2594 and 3107,
+then observed adopted texts 2111 and 3102. Both cases persisted their
+supersession trace, and 2111 matched the J295 trace identity. No prior
+read, two report bodies at one URL and a missing prior edition link
+kept the ordinary adoption-only trace. Each case survived two restores.
+All requests and read sequences matched the baseline. SQL matched after
+replacing the enriched trace and link with the adoption-only identity.
+The two positive fixtures added 446–447 SQL bytes and 60–63 gzip bytes.
+[Qualification](../assets/audits/2026-11-06-native-sejm-supersession/qualification.json).
+
+This records whole-text succession in the Sejm process. The runtime
+PDF/DOCX representation writer and other evidence profiles under DA4.7
+remain open.

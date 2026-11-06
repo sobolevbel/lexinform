@@ -2,6 +2,7 @@
 
 import datetime as dt
 import logging
+from contextlib import suppress
 from dataclasses import dataclass
 from typing import Literal
 
@@ -27,6 +28,7 @@ from lexinform.models.candidate_trace import (
     SejmAdoptedText,
     SejmCommitteeRecommendation,
     SejmOriginalProposal,
+    SejmSupersededDraft,
 )
 from lexinform.models.document_editions import DocumentEdition
 from lexinform.models.document_history import SourceObservationIdentity
@@ -324,6 +326,11 @@ def record_document_source(
                 proved = _prove_sejm_adoption(
                     origin_trace, sejm_origin, selection, observation, edition, reads
                 )
+                with suppress(ValueError):
+                    if proved is not None and _record_native_supersession(
+                        repo, proved, sejm_origin, observation
+                    ):
+                        return
             else:
                 proved = _prove_sejm_proposal(
                     origin_trace, sejm_origin, selection, observation, edition, reads
@@ -332,6 +339,75 @@ def record_document_source(
                 repo.save_candidate_disposition_trace(observation.observation_id, proved)
         except ValueError:
             log.debug("Sejm source proof failed validation")
+
+
+def _record_native_supersession(
+    repo: BillRepository,
+    trace: CandidateDispositionTrace,
+    origin: SejmAdoptionOrigin,
+    current: SourceObservation,
+) -> bool:
+    proof, report = trace.sejm_adopted_text, origin.predecessor
+    if proof is None or report is None:
+        return False
+    adopted = repo.get_source_observation(current.observation_id)
+    if adopted is None:
+        return False
+    candidate: SejmSupersededDraft | None = None
+    body_hashes: set[str] = set()
+    for prior in repo.list_source_observations(current.term, current.number):
+        if (
+            prior.purpose != "analysis"
+            or prior.document.kind != "committee_report"
+            or prior.document.url != report.url
+        ):
+            continue
+        record = repo.get_document_selection(prior.selection_id)
+        if record is None:
+            return False
+        selection = record.selection
+        body_hashes.update(
+            part.source_sha256
+            for part in (*selection.parts, *selection.observed_parts)
+            if part.source_sha256
+        )
+        if (
+            selection.question != "sejm_committee_draft"
+            or selection.policy_version != "sejm-committee-draft-pages-v1"
+            or prior.recorded_at >= adopted.recorded_at
+        ):
+            continue
+        if candidate is not None or len(selection.parts) != 1:
+            return False
+        (part,) = selection.parts
+        edition = repo.get_selection_edition(prior.selection_id)
+        if (
+            edition is None
+            or part.page_start is None
+            or part.page_end is None
+            or not repo.list_selection_extractions(prior.selection_id)
+        ):
+            return False
+        candidate = SejmSupersededDraft(
+            report=report.report,
+            report_date=report.report_date,
+            observation_id=prior.observation_id,
+            edition_id=edition.edition_id,
+            pdf_sha256=part.sha256,
+            text_sha256=part.text_sha256,
+            first_page=part.page_start,
+            last_page=part.page_end,
+        )
+    if candidate is None or body_hashes != {candidate.pdf_sha256}:
+        return False
+    linked = CandidateDispositionTrace.model_validate(
+        {
+            **trace.model_dump(),
+            "sejm_adopted_text": {**proof.model_dump(), "supersedes": candidate},
+        }
+    )
+    repo.save_candidate_disposition_trace(current.observation_id, linked)
+    return True
 
 
 def _prove_sejm_adoption(
