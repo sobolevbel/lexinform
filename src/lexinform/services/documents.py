@@ -86,6 +86,7 @@ from lexinform.models.candidate_trace import (
 )
 from lexinform.models.document_reads import DocumentPhysicalDiagnostics
 from lexinform.models.document_reads import LoadedFile as LoadedFile
+from lexinform.models.scan_input import MAX_SCAN_BYTES, MAX_SCAN_PAGES
 from lexinform.models.source_omissions import SourceOmissionOwner
 from lexinform.observation_order import ObservationOrder
 from lexinform.physical_observations import (
@@ -119,10 +120,6 @@ from lexinform.source_graph_admission import source_graph_admission, source_grap
 log = logging.getLogger(__name__)
 
 MIN_TEXT_CHARS = 200
-MAX_SCAN_PAGES = 600
-MAX_SCAN_BYTES = 24_000_000
-"""What the Messages API takes as one document: 600 pages, and 32 MB of request — which is
-base64, a third larger than the file (druk 2865 is 40 MB and does not fit)."""
 
 
 @dataclass(frozen=True)

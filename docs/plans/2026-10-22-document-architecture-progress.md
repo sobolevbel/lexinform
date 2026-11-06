@@ -12438,3 +12438,27 @@ retains the request and exact range. Optional controls reject changed
 contexts and missing observation parents without changing the queued
 request. Scans remain outside this text witness profile.
 [Corpus and checkpoint qualification](../assets/audits/2026-11-06-senate-work-writer/qualification.json).
+
+<a id="j324"></a>
+
+## J324 — read frozen scan payloads without a second inline PDF copy
+
+The queued request reader accepts an optional scan reference for
+analysis and reanalysis with a native PDF manifest. It checks the
+attachment slot using bounded JSON probes, then reconstructs the exact
+original payload and validates its SHA-256. Existing inline and
+compact-text forms remain supported. The runtime writer is unchanged.
+
+Two pinned PDFs exercised whole-file and cover-letter page windows
+through both provider builders. Each compact fixture restored twice
+and produced the identical handoff at the fake SDK boundary. After
+normalizing the stored request representation, SQLite dumps matched.
+The paired isolated gzip dumps differed by 1.42 MB and 3.07 MB per
+request on these two files. This is a fixture measurement for the
+later writer, which remains inactive.
+[Qualification](../assets/audits/2026-11-06-scan-payload-reader/qualification.json).
+
+An initial probe hit Anthropic's token-count endpoint with a dummy key
+and received two confirmed 401 responses. That probe and intermediate
+runs using the same SDK helper are excluded. Qualification used a
+mock token-count transport, fake SDK handoff and blocked sockets.

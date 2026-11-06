@@ -3,7 +3,7 @@
 import hashlib
 import json
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -37,9 +37,13 @@ from lexinform.models.input_receipts import (
     LooseRclInputReceipt,
     SejmSelfAmendmentInputReceipt,
 )
+from lexinform.models.scan_input import MAX_SCAN_BYTES, MAX_SCAN_PAGES
 
 _QUESTION_TEXT_PROFILE = "question-text-v1"
 _PROVIDER_PAYLOAD_PROFILE = "question-text-json-v1"
+_SCAN_PAYLOAD_PROFILE = "question-scan-base64-v1"
+_SCAN_PLACEHOLDERS = ("lexinform:scan-data-a", "lexinform:scan-data-b")
+_MAX_SCAN_PAYLOAD_SHELL_CHARS = 1024 * 1024
 _MIN_SHARED_QUESTION_BYTES = 32 * 1024
 
 
@@ -91,22 +95,94 @@ def parse_batch_request(raw: object) -> BatchRequest:
 
 def _provider_payload(request: dict[str, object], value: dict[str, object]) -> str:
     question = request.get("question")
-    context = question.get("ctx") if isinstance(question, dict) else None
     prefix, suffix = value.get("prefix"), value.get("suffix")
-    text = context.get("text") if isinstance(context, dict) else None
     if (
         set(value) != {"profile", "prefix", "suffix"}
-        or value["profile"] != _PROVIDER_PAYLOAD_PROFILE
         or not isinstance(prefix, str)
         or not isinstance(suffix, str)
-        or not isinstance(text, str)
-        or not text
         or not isinstance(question, dict)
         or question.get("kind") not in ("analysis", "reanalysis")
         or not isinstance(request.get("payload_sha256"), str)
+        or not isinstance(context := question.get("ctx"), dict)
     ):
         raise ValueError("invalid_provider_payload_reference")
-    return prefix + _escaped_question_text(text) + suffix
+    if value["profile"] == _PROVIDER_PAYLOAD_PROFILE:
+        if isinstance(text := context.get("text"), str) and text:
+            return prefix + _escaped_question_text(text) + suffix
+    elif value["profile"] == _SCAN_PAYLOAD_PROFILE:
+        return _scan_provider_payload(request, context, prefix, suffix)
+    raise ValueError("invalid_provider_payload_reference")
+
+
+def _scan_provider_payload(
+    request: dict[str, object], context: dict[str, object], prefix: str, suffix: str
+) -> str:
+    scan = context.get("scan")
+    if (
+        context.get("text") != ""
+        or context.get("text_source") != "scan"
+        or not isinstance(scan, dict)
+        or scan.get("media_type") != "application/pdf"
+        or not isinstance(scan.get("scan_input"), dict)
+        or not isinstance(data := scan.get("data"), str)
+        or not 0 < len(data) <= 4 * ((MAX_SCAN_BYTES + 2) // 3)
+        or type(pages := scan.get("pages")) is not int
+        or not 0 < pages <= MAX_SCAN_PAGES
+        or len(prefix) + len(suffix) > _MAX_SCAN_PAYLOAD_SHELL_CHARS
+    ):
+        raise ValueError("invalid_scan_provider_payload_reference")
+    # Two markers distinguish the reconstructed slot from pre-existing JSON strings.
+    for marker in _SCAN_PLACEHOLDERS:
+        shell = read_json(prefix + marker + suffix)
+        if (
+            not isinstance(shell, dict)
+            or shell.get("custom_id") != request.get("custom_id")
+            or not _scan_payload_slot(shell, request.get("model"), marker)
+        ):
+            raise ValueError("invalid_scan_provider_payload_slot")
+    return prefix + data + suffix
+
+
+def _scan_payload_slot(shell: Mapping[str, object], model: object, marker: str) -> bool:
+    if not isinstance(model, str) or not model:
+        return False
+    match shell:
+        case {
+            "method": "POST",
+            "url": "/v1/responses",
+            "body": {
+                "model": saved_model,
+                "input": [
+                    _,
+                    {"role": "user", "content": [{"type": "input_file", "file_data": slot}, *_]},
+                ],
+            },
+        } if set(shell) == {"custom_id", "method", "url", "body"}:
+            return bool(saved_model == model and slot == f"data:application/pdf;base64,{marker}")
+        case {
+            "params": {
+                "model": saved_model,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "document",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": "application/pdf",
+                                    "data": slot,
+                                },
+                            },
+                            *_,
+                        ],
+                    }
+                ],
+            }
+        } if set(shell) == {"custom_id", "params"}:
+            return bool(saved_model == model and slot == marker)
+        case _:
+            return False
 
 
 def _escaped_question_text(text: str) -> str:

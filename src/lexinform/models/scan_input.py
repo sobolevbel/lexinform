@@ -5,6 +5,10 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+# Messages accepts up to 600 pages and 32 MB after base64 encoding.
+MAX_SCAN_PAGES = 600
+MAX_SCAN_BYTES = 24_000_000
+
 ScanTransform = Literal["cover_letter", "triage"]
 
 
