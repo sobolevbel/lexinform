@@ -48,6 +48,27 @@ def ordinary_rcl_archive_document(document: TextDocument) -> bool:
     )
 
 
+def rcl_archive_self_amendment_url(document: TextDocument) -> str | None:
+    if (
+        document.kind != "rcl"
+        or document.official_link_conflict
+        or document.required_urls
+        or document.normative_urls
+        or document.extra_urls
+        or len(document.amendment_urls) != 1
+        or len(document.alternatives) > 1
+    ):
+        return None
+    (amendment,) = document.amendment_urls
+    if amendment == document.url:
+        return None
+    if document.alternatives:
+        (alternate,) = document.alternatives
+        if alternate.url != amendment or not ordinary_rcl_archive_document(alternate):
+            return None
+    return amendment
+
+
 def archive_member_matches(
     part: DocumentPart, summary: ExtractedPartSummary, *, chars: int
 ) -> bool:

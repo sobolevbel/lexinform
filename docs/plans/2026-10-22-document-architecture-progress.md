@@ -13017,6 +13017,9 @@ Both restores were exact. Wrong event or anchor and unknown delivery
 were rejected. The ordinary writer remains disabled.
 [Qualification](../assets/audits/2026-11-06-direct-stage-content-reader/qualification.json).
 
+The exact `1c1aedca` release passed CI run 42258643248 and relay
+deployment 42259736188. Restart and timer were verified.
+
 <a id="j353"></a>
 
 ## J353 — save compact content for qualified direct stage updates
@@ -13032,3 +13035,19 @@ historical render. Legacy frozen, ambiguous anchor, budget and changed
 event controls wrote no version. After expiry the four records added
 30,231 SQL bytes and 6,978 gzip bytes. Both readers restored the dumps twice.
 [Qualification](../assets/audits/2026-11-06-direct-stage-content-writer/qualification.json).
+
+<a id="j354"></a>
+
+## J354 — read a prepared map from one ZIP and one self-amendment
+
+The reader checks the exact archive and standalone extraction parents
+for a saved RCL observation. It requires the recorded self-amendment
+URL and complete terminal PDF span. Missing parents, partial spans and
+unrelated alternatives remain outside this profile.
+
+In the native 785848.zip and 787193.pdf case, the nine segments covered
+90,271 prepared characters. The manually attached receipt added 2,574
+SQL bytes and 518 gzip bytes in the queue. The mocked submitted and
+consumed item kept the map after cleanup and two restores. The previous
+reader rejected the new profile atomically. Automatic capture stays off.
+[Qualification](../assets/audits/2026-11-06-hybrid-input-reader/qualification.json).

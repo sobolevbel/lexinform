@@ -311,16 +311,70 @@ class RclArchiveInputReceipt(MultipartTextInputReceipt):
 
     @model_validator(mode="after")
     def archive_parts(self) -> Self:
-        roles = tuple(part.role for part in self.source_parts)
-        order = {"bill": 0, "normative_annex": 1, "justification": 2, "osr": 3}
+        _require_archive_parts(self.source_parts)
+        return self
+
+
+def _require_archive_parts(parts: tuple[ArchiveInputPart, ...]) -> None:
+    roles = tuple(part.role for part in parts)
+    order = {"bill": 0, "normative_annex": 1, "justification": 2, "osr": 3}
+    if (
+        not roles
+        or roles[0] != "bill"
+        or any(role not in order for role in roles)
+        or list(roles) != sorted(roles, key=lambda role: order[role])
+        or any(roles.count(role) > 1 for role in ("bill", "justification", "osr"))
+        or len({part.physical_index for part in parts}) != len(parts)
+    ):
+        raise ValueError("Archive input requires distinct slots in one ordinary package")
+
+
+class RclArchiveSelfAmendmentInputReceipt(MultipartTextInputReceipt):
+    source_kind = "rcl"
+    profile: Literal["primary-rcl-archive-self-amendment-text-v1"] = (
+        "primary-rcl-archive-self-amendment-text-v1"
+    )
+    source_parts: tuple[ArchiveInputPart | LooseRclInputPart, ...] = Field(
+        min_length=3, max_length=6
+    )
+    source_observation_id: str = Field(pattern=r"^source-observation-v1:[0-9a-f]{64}$")
+    extraction_id: str = Field(pattern=r"^extraction-v1:[0-9a-f]{64}$")
+
+    @property
+    def archive_parts(self) -> tuple[ArchiveInputPart, ...]:
+        return tuple(part for part in self.source_parts if isinstance(part, ArchiveInputPart))
+
+    @property
+    def amendment_part(self) -> LooseRclInputPart:
+        part = self.source_parts[-1]
+        assert isinstance(part, LooseRclInputPart), "the validated hybrid ends with the loose part"
+        return part
+
+    @model_validator(mode="after")
+    def archive_and_amendment(self) -> Self:
+        amendment = self.source_parts[-1]
+        archive = self.archive_parts
         if (
-            roles[0] != "bill"
-            or any(role not in order for role in roles)
-            or list(roles) != sorted(roles, key=order.__getitem__)
-            or any(roles.count(role) > 1 for role in ("bill", "justification", "osr"))
-            or len({part.physical_index for part in self.source_parts}) != len(self.source_parts)
+            not isinstance(amendment, LooseRclInputPart)
+            or amendment.role != "self_amendment"
+            or amendment.extraction_id == self.extraction_id
+            or len(archive) != len(self.source_parts) - 1
         ):
-            raise ValueError("Archive input requires distinct slots in one ordinary package")
+            raise ValueError(
+                "Hybrid archive input requires one distinct final loose self-amendment"
+            )
+        _require_archive_parts(archive)
+        final = self.segments[-1]
+        if (
+            len(self.segments) < 2
+            or self.segments[-2].origin != "generated"
+            or self.segments[-2].system_origin != "input_transform"
+            or final.origin != "source"
+            or (final.part_index, final.source_start, final.source_end)
+            != (len(archive), 0, amendment.chars)
+            or any(segment.part_index == len(archive) for segment in self.segments[:-1])
+        ):
+            raise ValueError("Hybrid archive input requires the complete final amendment span")
         return self
 
 

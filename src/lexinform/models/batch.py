@@ -36,10 +36,12 @@ from lexinform.models.documents import DocumentSelection
 from lexinform.models.enums import SourceKind, TextSource
 from lexinform.models.input_receipts import (
     AmendmentInputReceipt,
+    ArchiveInputPart,
     LooseRclInputReceipt,
     MultipartTextInputReceipt,
     PrimaryInputReceipt,
     RclArchiveInputReceipt,
+    RclArchiveSelfAmendmentInputReceipt,
     SejmSelfAmendmentInputReceipt,
     SupplementInputReceipt,
     amendment_context_sha256,
@@ -392,6 +394,7 @@ class BatchItemMeta(BaseModel):
         | LooseRclInputReceipt
         | SejmSelfAmendmentInputReceipt
         | RclArchiveInputReceipt
+        | RclArchiveSelfAmendmentInputReceipt
         | None
     ) = Field(default=None, exclude_if=lambda value: value is None)
 
@@ -432,7 +435,7 @@ class BatchItemMeta(BaseModel):
             ):
                 raise ValueError("Multipart text receipt differs from its selected text input")
             for part, recorded in zip(self.selection.parts, receipt.source_parts, strict=True):
-                if bool(part.members) != isinstance(receipt, RclArchiveInputReceipt) or (
+                if bool(part.members) != isinstance(recorded, ArchiveInputPart) or (
                     part.role,
                     part.text_sha256,
                     part.text_start,
@@ -746,6 +749,12 @@ class BatchIntent(BaseModel):
                     or (binding.term, binding.number) != (request.term, request.number)
                 ):
                     raise ValueError("Multipart text receipt requires its actual source question")
+            if isinstance(receipt, RclArchiveSelfAmendmentInputReceipt):
+                final = receipt.segments[-1]
+                if input_text_sha256(ctx.text[final.start : final.end]) != (
+                    receipt.amendment_part.text_sha256
+                ):
+                    raise ValueError("Hybrid receipt differs from its frozen amendment text")
             context_sha256 = primary_context_sha256(request.question.ctx)
         elif isinstance(receipt, AmendmentInputReceipt):
             if not isinstance(request.question, AmendmentsQuestion):

@@ -15,7 +15,11 @@ from lexinform.adapters.computation_history import read_computation_result
 from lexinform.adapters.document_source_rows import DocumentSourceRows
 from lexinform.adapters.extraction_history import read_extraction_result
 from lexinform.errors import PreparedInputParentError
-from lexinform.input_receipts import archive_member_matches, ordinary_rcl_archive_document
+from lexinform.input_receipts import (
+    archive_member_matches,
+    ordinary_rcl_archive_document,
+    rcl_archive_self_amendment_url,
+)
 from lexinform.json_storage import canonical_json, read_json
 from lexinform.models import (
     AmendmentInputReceipt,
@@ -27,6 +31,7 @@ from lexinform.models import (
     BatchProvider,
     BatchRequest,
     DigestItemMeta,
+    DocumentPart,
     DocumentSelectionRecord,
     ExtractionResult,
     LlmBatchItem,
@@ -35,10 +40,13 @@ from lexinform.models import (
 )
 from lexinform.models.batch import FrozenRequestManifest, batch_item_meta, validate_batch_item_meta
 from lexinform.models.input_receipts import (
+    ArchiveInputPart,
     LooseMultipartInputReceipt,
+    LooseRclInputPart,
     LooseRclInputReceipt,
     MultipartTextInputReceipt,
     RclArchiveInputReceipt,
+    RclArchiveSelfAmendmentInputReceipt,
     SejmSelfAmendmentInputReceipt,
 )
 from lexinform.models.scan_input import MAX_SCAN_BYTES, MAX_SCAN_PAGES
@@ -409,7 +417,7 @@ def _source_selection(connection: sqlite3.Connection, identity: str) -> Document
 
 def _archive_parents(
     connection: sqlite3.Connection,
-    receipt: RclArchiveInputReceipt,
+    receipt: RclArchiveInputReceipt | RclArchiveSelfAmendmentInputReceipt,
     meta: BatchItemMeta,
     owner: tuple[int, str] | None,
     selection: DocumentSelectionRecord,
@@ -429,38 +437,88 @@ def _archive_parents(
     ):
         raise ValueError("input_receipt_archive_observation_mismatch")
     document = observation.document
-    if not ordinary_rcl_archive_document(document):
-        raise ValueError("input_receipt_archive_scope_mismatch")
+    parts = selection.selection.parts
+    if isinstance(receipt, RclArchiveInputReceipt):
+        if not ordinary_rcl_archive_document(document):
+            raise ValueError("input_receipt_archive_scope_mismatch")
+        _archive_parts_parent(
+            connection,
+            selection.selection_id,
+            receipt.extraction_id,
+            document.url,
+            parts,
+            receipt.source_parts,
+        )
+        return
+    amendment = rcl_archive_self_amendment_url(document)
+    if amendment is None or parts[-1].url != amendment:
+        raise ValueError("input_receipt_archive_amendment_scope_mismatch")
+    root = _archive_parts_parent(
+        connection,
+        selection.selection_id,
+        receipt.extraction_id,
+        document.url,
+        parts[:-1],
+        receipt.archive_parts,
+    )
+    for index in range(len(parts) - 1):
+        _one(
+            connection,
+            "SELECT 1 FROM selection_artifacts"
+            " WHERE selection_id=? AND part_scope='parts' AND part_index=? AND artifact_sha256=?",
+            (selection.selection_id, index, root),
+        )
+    _loose_part_parent(
+        connection, selection.selection_id, len(parts) - 1, parts[-1], receipt.amendment_part
+    )
+    if parts[-1].sha256 == root:
+        raise ValueError("input_receipt_archive_amendment_root_mismatch")
+    _one(
+        connection,
+        "SELECT 1 FROM artifact_reads WHERE requested_url=? AND artifact_sha256=?",
+        (amendment, parts[-1].sha256),
+    )
+
+
+def _archive_parts_parent(
+    connection: sqlite3.Connection,
+    selection_id: str,
+    extraction_id: str,
+    url: str,
+    parts: tuple[DocumentPart, ...],
+    source_parts: tuple[ArchiveInputPart, ...],
+) -> str:
     row = _one(
         connection,
         "SELECT e.* FROM selection_extractions l JOIN extraction_results e USING(extraction_id)"
         " WHERE l.selection_id=? AND l.extraction_id=?",
-        (selection.selection_id, receipt.extraction_id),
+        (selection_id, extraction_id),
     )
     extraction = read_extraction_result(row)
     root = extraction.artifact_sha256
     _one(
         connection,
         "SELECT 1 FROM artifact_reads WHERE requested_url=? AND artifact_sha256=?",
-        (document.url, root),
+        (url, root),
     )
     summaries = {part.physical_index: part for part in extraction.selected_parts}
     if (
         extraction.omitted_selected_parts != 0
-        or extraction.selected_part_count != len(receipt.source_parts)
-        or set(summaries) != {part.physical_index for part in receipt.source_parts}
+        or extraction.selected_part_count != len(source_parts)
+        or set(summaries) != {part.physical_index for part in source_parts}
     ):
         raise ValueError("input_receipt_archive_extraction_mismatch")
-    for part, recorded in zip(selection.selection.parts, receipt.source_parts, strict=True):
+    for part, recorded in zip(parts, source_parts, strict=True):
         summary = summaries[recorded.physical_index]
         if (
             not part.members
-            or (part.url, part.source_sha256) != (document.url, root)
+            or (part.url, part.source_sha256) != (url, root)
             or (part.role, part.text_sha256, part.text_start, part.text_end)
             != (recorded.role, recorded.text_sha256, 0, recorded.chars)
             or not archive_member_matches(part, summary, chars=recorded.chars)
         ):
             raise ValueError("input_receipt_archive_part_mismatch")
+    return root
 
 
 def _multipart_parents(
@@ -482,7 +540,7 @@ def _multipart_parents(
         or parts != fitted.without_text().parts
     ):
         raise ValueError("input_receipt_selection_mismatch")
-    if isinstance(receipt, RclArchiveInputReceipt):
+    if isinstance(receipt, (RclArchiveInputReceipt, RclArchiveSelfAmendmentInputReceipt)):
         _archive_parents(connection, receipt, meta, owner, source)
         return
     if not isinstance(receipt, LooseMultipartInputReceipt) or len(
@@ -525,49 +583,59 @@ def _multipart_parents(
             raise ValueError("input_receipt_proposal_mismatch")
         validate_sejm_proposal_link(connection, trace, receipt.source_observation_id)
     for index, (part, recorded) in enumerate(zip(parts, receipt.source_parts, strict=True)):
-        if (
-            part.members
-            or not part.url
-            or (part.role, part.text_sha256, part.text_start, part.text_end)
-            != (recorded.role, recorded.text_sha256, 0, recorded.chars)
-        ):
-            raise ValueError("input_receipt_selection_mismatch")
-        link = _one(
-            connection,
-            "SELECT a.* FROM selection_artifacts l JOIN artifacts a ON a.sha256=l.artifact_sha256"
-            " WHERE l.selection_id=? AND l.part_scope='parts' AND l.part_index=?",
-            (receipt.source_selection_id, index),
-        )
-        artifact = ArtifactMetadata(
-            sha256=link["sha256"], byte_size=link["byte_size"], recorded_at=link["recorded_at"]
-        )
-        if artifact.sha256 != part.sha256:
-            raise ValueError("input_receipt_body_mismatch")
-        row = _one(
-            connection,
-            "SELECT e.* FROM selection_extractions l JOIN extraction_results e USING(extraction_id)"
-            " WHERE l.selection_id=? AND l.extraction_id=?",
-            (receipt.source_selection_id, recorded.extraction_id),
-        )
-        extraction = read_extraction_result(row)
-        if (
-            extraction.artifact_sha256 != artifact.sha256
-            or extraction.output_text_sha256 != recorded.text_sha256
-            or extraction.output_chars != recorded.chars
-            or extraction.physical_part_count != 1
-            or extraction.selected_part_count != 1
-            or extraction.omitted_selected_parts != 0
-            or len(extraction.selected_parts) != 1
-        ):
-            raise ValueError("input_receipt_extraction_mismatch")
-        summary = extraction.selected_parts[0]
-        if (
-            summary.physical_index != 0
-            or summary.sha256 != artifact.sha256
-            or summary.text_sha256 != recorded.text_sha256
-            or summary.text_chars != recorded.chars
-        ):
-            raise ValueError("input_receipt_extraction_mismatch")
+        _loose_part_parent(connection, receipt.source_selection_id, index, part, recorded)
+
+
+def _loose_part_parent(
+    connection: sqlite3.Connection,
+    selection_id: str,
+    index: int,
+    part: DocumentPart,
+    recorded: LooseRclInputPart,
+) -> None:
+    if (
+        part.members
+        or not part.url
+        or (part.role, part.text_sha256, part.text_start, part.text_end)
+        != (recorded.role, recorded.text_sha256, 0, recorded.chars)
+    ):
+        raise ValueError("input_receipt_selection_mismatch")
+    link = _one(
+        connection,
+        "SELECT a.* FROM selection_artifacts l JOIN artifacts a ON a.sha256=l.artifact_sha256"
+        " WHERE l.selection_id=? AND l.part_scope='parts' AND l.part_index=?",
+        (selection_id, index),
+    )
+    artifact = ArtifactMetadata(
+        sha256=link["sha256"], byte_size=link["byte_size"], recorded_at=link["recorded_at"]
+    )
+    if artifact.sha256 != part.sha256:
+        raise ValueError("input_receipt_body_mismatch")
+    row = _one(
+        connection,
+        "SELECT e.* FROM selection_extractions l JOIN extraction_results e USING(extraction_id)"
+        " WHERE l.selection_id=? AND l.extraction_id=?",
+        (selection_id, recorded.extraction_id),
+    )
+    extraction = read_extraction_result(row)
+    if (
+        extraction.artifact_sha256 != artifact.sha256
+        or extraction.output_text_sha256 != recorded.text_sha256
+        or extraction.output_chars != recorded.chars
+        or extraction.physical_part_count != 1
+        or extraction.selected_part_count != 1
+        or extraction.omitted_selected_parts != 0
+        or len(extraction.selected_parts) != 1
+    ):
+        raise ValueError("input_receipt_extraction_mismatch")
+    summary = extraction.selected_parts[0]
+    if (
+        summary.physical_index != 0
+        or summary.sha256 != artifact.sha256
+        or summary.text_sha256 != recorded.text_sha256
+        or summary.text_chars != recorded.chars
+    ):
+        raise ValueError("input_receipt_extraction_mismatch")
 
 
 def _parents(
@@ -576,6 +644,7 @@ def _parents(
     | LooseRclInputReceipt
     | SejmSelfAmendmentInputReceipt
     | RclArchiveInputReceipt
+    | RclArchiveSelfAmendmentInputReceipt
     | SupplementInputReceipt
     | AmendmentInputReceipt,
     *,

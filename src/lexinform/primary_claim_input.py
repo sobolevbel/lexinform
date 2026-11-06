@@ -144,8 +144,10 @@ def _validate_key_change_input(
         binding = _loose_rcl_main_binding(
             document, meta, receipt, record.source_url, source_selection
         )
-    else:
+    elif isinstance(receipt, PrimaryInputReceipt):
         binding = _source_binding(document, meta, receipt, record.source_url)
+    else:
+        return ClaimInputCheck(checked, "unknown", "source_binding_unavailable")
     if binding is not None:
         return ClaimInputCheck(checked, "unknown", binding)
     runs: list[tuple[int, int, int, int]] = []
