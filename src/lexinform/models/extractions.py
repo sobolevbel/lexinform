@@ -64,6 +64,15 @@ class WordInlineMarkers(BaseModel):
 
     fields: int = Field(strict=True, ge=0, le=2**32 - 1)
     revisions: int = Field(strict=True, ge=0, le=2**32 - 1)
+    removal_text_nodes: int | None = Field(
+        default=None, strict=True, gt=0, le=2**32 - 1, exclude_if=lambda value: value is None
+    )
+
+    @model_validator(mode="after")
+    def observed_wrapper(self) -> Self:
+        if self.removal_text_nodes is not None and self.revisions == 0:
+            raise ValueError("Removal text requires an observed revision wrapper")
+        return self
 
 
 class WordViewStatus(BaseModel):

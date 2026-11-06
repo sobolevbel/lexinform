@@ -13708,3 +13708,20 @@ wrappers. The profiled natural inputs contained no such nodes. The scope is
 `word/document.xml`. Complete Word revision semantics remain unresolved.
 
 [Qualification](../assets/audits/2026-11-06-word-revision-view/qualification.json).
+
+<a id="j389"></a>
+
+## J389 — read the optional Word removal text observation
+
+The compatible reader accepts a bounded positive count of ordinary text nodes
+emitted inside removal wrappers. A count requires an observed revision wrapper.
+Existing records omit the field and retain their exact serialization. The
+reader stage leaves the native producer unchanged.
+
+All 3,055 pinned Word files produced byte-identical replay ledgers. One pinned
+extraction with existing revision counters also qualified the new reader on
+a synthetic count. Its old and new records each survived two exact SQL
+restores and SQLite integrity and foreign-key checks. The synthetic field
+added 23 bytes to that extraction record.
+
+[Qualification](../assets/audits/2026-11-06-word-removal-text-reader/qualification.json).

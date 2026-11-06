@@ -372,3 +372,28 @@ def test_inline_marker_count_yields_to_textboxes_at_the_byte_cap(
 
     assert capped.document == actual.document
     assert capped.result == baseline
+
+
+def test_word_removal_text_count_is_optional_and_round_trips() -> None:
+    legacy = WordInlineMarkers(fields=0, revisions=1)
+    assert legacy.model_dump() == {"fields": 0, "revisions": 1}
+    observed = WordViewStatus.model_validate(
+        {
+            **status().model_dump(),
+            "observed_inline": {"fields": 0, "revisions": 1, "removal_text_nodes": 2},
+        }
+    )
+    assert WordViewStatus.model_validate_json(observed.model_dump_json()) == observed
+    assert observed.observed_inline == WordInlineMarkers(
+        fields=0, revisions=1, removal_text_nodes=2
+    )
+
+
+@pytest.mark.parametrize(("revisions", "count"), [(1, 0), (1, True), (0, 1)])
+def test_word_removal_text_count_requires_positive_count_and_visited_wrapper(
+    revisions: int, count: object
+) -> None:
+    with pytest.raises(ValidationError):
+        WordInlineMarkers.model_validate(
+            {"fields": 0, "revisions": revisions, "removal_text_nodes": count}
+        )
