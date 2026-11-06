@@ -11539,3 +11539,19 @@ enabled recorded only publication 258. The other 49 had missing or out-of-scope
 evidence. The same snapshot contained 117 nonblank claims in 12 validated
 primary results. Their semantic support remains unassessed. DA9.4 and DA10.7
 stay open.
+
+<a id="j285"></a>
+
+## J285 — make representation qualification repeatable
+
+The cohort command enumerates the pinned official listing, records missing
+and excluded pairs, and reuses the strict single-print proof. It supports
+explicit subsets and reports progress independently of the JSON. The pinned
+1608 positive and 1759 boundary control reproduced their prior outcomes.
+DA4.7 remains open for persisted relations and other relation types.
+
+The full offline cohort found 612 eligible prints among 3,051 numbered prints.
+Eight matched. The strict proof left 552 unproven, 51 exceeded its byte bound
+and one lacked a local pair. The final command reproduced all eight positives
+and the strict boundary control.
+[Counts and replay pins](../assets/audits/2026-11-06-print-representation-cohort/evidence.json).

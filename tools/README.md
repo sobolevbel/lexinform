@@ -576,3 +576,19 @@ freezes12 official report URLs before collection. Then `--corpus CORPUS collect 
 a new external generation. It preserves failures, originals and INDEX; it does not use the
 RPW/supplement installer or assign legal labels. See the
 [pinned acquisition report](../docs/assets/audits/2026-11-05-committee-report-cohort/report.md).
+
+### Sejm PDF/DOCX representation cohort
+
+```bash
+uv run --offline --frozen python -m tools.audit_print_representation_cohort \
+  --corpus /path/to/lexinform-corpus --term 10 \
+  --listing sejm/snapshots/2026-10-03/term10/prints.json \
+  --listing-sha256 05e7b4a7105e9a6d8aff1c87293749c5c77c6bfefc6882491c8d2701b39b8938 \
+  --output out/corpus/representation-cohort.json
+```
+
+Add repeated `--print` options for targeted probes. The denominator records the
+requested subset. Progress goes to stderr every 25 prints by default. Use
+`--progress-every 1` to identify the current print or `0` for quiet operation.
+The JSON reports the bounded normative-core proof, refusals and missing pairs.
+A refusal leaves the relationship unknown.
