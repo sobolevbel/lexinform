@@ -948,6 +948,7 @@ def _input_snapshot_checks(
             question = request.get("question")
             ctx = question.get("ctx") if isinstance(question, dict) else None
             has_formula = isinstance(ctx, dict) and ctx.get("word_formula_input") is not None
+            has_scan_manifest = meta.get("scan_input") is not None
             if not (
                 has_receipt
                 or has_timing
@@ -956,6 +957,7 @@ def _input_snapshot_checks(
                 or has_provider_reference
                 or has_manifest
                 or has_formula
+                or has_scan_manifest
             ):
                 continue
             ref = _reference("llm_batch_intents", row["custom_id"])
@@ -972,6 +974,7 @@ def _input_snapshot_checks(
                     or has_text_reference
                     or has_manifest
                     or has_word_formula_input(actual)
+                    or has_scan_manifest
                 ):
                     intent = BatchIntent.model_validate(
                         {

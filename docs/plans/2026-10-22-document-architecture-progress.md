@@ -13468,3 +13468,22 @@ After cleanup, the item and result witnesses added 295–303 gzip bytes
 against the same dumps with only those witness fields removed.
 
 [Qualification](../assets/audits/2026-11-06-senate-scan-context-writer/qualification.json).
+
+<a id="j377"></a>
+
+## J377 — bind secondary scan metadata to the queued question
+
+A queued amendment or supplement with a recorded scan manifest must
+carry the same manifest in its frozen question. Save and restore
+refuse a mismatch before submission. Legacy queues without the
+optional manifest remain readable.
+
+The previous revision accepted the mismatched Senate and government
+position controls. The new reader refused them and preserved existing
+state on failed restore. Eight Senate and 12 supplement corpus reports
+matched their previous versions byte-for-byte. The pinned state copy
+restored with both existing queued intents. The J375 rollback reader
+also restored the actual J376 submitted and cleaned checkpoints twice
+without changing the request or original question identity.
+
+[Qualification](../assets/audits/2026-11-06-secondary-scan-input-binding/qualification.json).

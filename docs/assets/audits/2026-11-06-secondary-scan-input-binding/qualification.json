@@ -1,0 +1,35 @@
+{
+  "baseline_accepted_mismatches": [
+    "senate_amendments",
+    "government_position"
+  ],
+  "mismatched_restore_is_atomic": true,
+  "legacy_without_manifest_readable": true,
+  "pinned_state_restore": {
+    "commit": "72ce85b9460d7ff0d7d49bec16e82b9e4800be17",
+    "queued_intents": 2,
+    "submitting_intents": 0,
+    "exact_roundtrip": true
+  },
+  "corpus_replay": {
+    "senate_cases": 8,
+    "senate_sha256": "b2f9514d95544bb885fe84345793f35a44b821c4088b754a2f7972ec7437870d",
+    "supplement_cases": 12,
+    "supplement_sha256": "ed05bcbb74476d03266afc534dffd008a3ff874d089645409350b2c81805ac70",
+    "prior_reports_byte_identical": true
+  },
+  "senate_writer_rollback": {
+    "case": "377-openai",
+    "cleaned": {
+      "exact_restores": 2,
+      "sql_sha256": "58793c99aa9884c36bcfde78a948a907bd837407982eb0e161897c54ef1d425d"
+    },
+    "question_sha256": "4a7ce91f34085a0476403fdd6e08f69744b6c6ec2b745d5a117e08e4b340d561",
+    "rollback": "b77fab69",
+    "submitted": {
+      "exact_restores": 2,
+      "sql_sha256": "8b91f34a0bf09b3fec57cf39d195f4a53d1ee7f4ba2142cfa07def08660c5248"
+    },
+    "writer": "3fbd113c"
+  }
+}

@@ -621,3 +621,46 @@ def test_supplement_writer_keeps_non_attachment_slot_inline() -> None:
     raw["payload_sha256"] = hashlib.sha256(payload.encode()).hexdigest()
     changed = BatchRequest.model_validate(raw)
     assert serialize_intent_request(changed) == changed.model_dump_json()
+
+
+@pytest.mark.parametrize("purpose", ["supplement", "senate"])
+def test_secondary_scan_manifest_is_bound_on_save_and_restore(
+    repo: SqliteBillRepository, purpose: str
+) -> None:
+    frozen = (
+        supplement_scan_request(offline_openai_backend, "government_position")
+        if purpose == "supplement"
+        else senate_scan_request(offline_openai_backend)
+    )
+    question = frozen.question
+    assert isinstance(question, (SupplementQuestion, AmendmentsQuestion)), (
+        "The fixtures produce secondary scan questions"
+    )
+    scan = question.ctx.scan
+    assert scan is not None and scan.scan_input is not None, "The fixtures include a scan manifest"
+    meta = DigestItemMeta(memo_key="scan", scan_input=scan.scan_input)
+    intent = BatchIntent.from_request(request=frozen, meta=meta, provider="openai", created_at=NOW)
+    repo.save_batch_intent(intent)
+    saved = repo.dump()
+    repo.restore(saved)
+    assert repo.dump() == saved
+    assert repo.list_queued_batch_intents() == [intent]
+
+    other = scan.scan_input.model_copy(update={"input_sha256": "f" * 64})
+    invalid_meta = intent.meta.model_copy(update={"scan_input": other})
+    invalid = intent.model_copy(update={"meta": invalid_meta})
+    with pytest.raises(ValueError, match="Secondary scan metadata differs"):
+        repo.save_batch_intent(invalid)
+    forged = saved.replace(
+        intent.meta.model_dump_json().replace("'", "''"),
+        invalid_meta.model_dump_json().replace("'", "''"),
+    )
+    assert forged != saved
+    with pytest.raises(ValueError):
+        repo.restore(forged)
+    assert repo.dump() == saved
+
+    legacy = BatchIntent.from_request(
+        request=frozen, meta=DigestItemMeta(memo_key="scan"), provider="openai", created_at=NOW
+    )
+    assert isinstance(legacy.meta, DigestItemMeta) and legacy.meta.scan_input is None

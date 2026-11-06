@@ -721,8 +721,20 @@ class BatchIntent(BaseModel):
                     BatchItemMeta.model_validate(meta)
         return value
 
+    def require_secondary_scan_binding(self) -> None:
+        if not isinstance(self.meta, DigestItemMeta) or self.meta.scan_input is None:
+            return
+        question = self.request.question
+        if (
+            not isinstance(question, (AmendmentsQuestion, SupplementQuestion))
+            or question.ctx.scan is None
+            or question.ctx.scan.scan_input != self.meta.scan_input
+        ):
+            raise ValueError("Secondary scan metadata differs from its frozen question")
+
     @model_validator(mode="after")
     def actual_input_receipt(self) -> Self:
+        self.require_secondary_scan_binding()
         if isinstance(self.meta, DigestItemMeta) and self.meta.amendment_scan_input is not None:
             raise ValueError("invalid_amendment_scan_input")
         if self.meta.frozen_request_manifest is not None:

@@ -3628,6 +3628,7 @@ class SqliteBillRepository:
             self.save_batch_intent(intent)
 
     def save_batch_intent(self, intent: BatchIntent) -> None:
+        intent.require_secondary_scan_binding()
         validate_intent_input(self._conn, intent)
         validate_multipart_intent(self._conn, intent)
         validate_word_formula_intent(self._conn, intent)
