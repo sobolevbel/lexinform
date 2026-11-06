@@ -1,0 +1,54 @@
+{
+  "baseline_commit": "8ec713ea0ca28f747c806855c8a1bcb4643a67b8",
+  "inputs": {
+    "INDEX.json": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "corpus/12389851.json": "400dc033d2c1f637375e80825c6acf3c26ed6458d548108afe6475ad1f9ed98c",
+    "documents/files/447874.doc": "4cb3144a8e3c47d3e2a4e527d724ffec7646a754e84e1f231eb6530f1fd5133e",
+    "documents/files/447875.pdf": "5d649fccde8dddcc9e64a31573db782277259b736eebc83311a3912bb63ce99d",
+    "documents/files/705897.zip": "0e207b5316ef30a270d13163ae0f27a0750cb0c2d52587c18f2dc9ea71f77c8a",
+    "documents/files/720752.pdf": "cf215804800a82bef541545e83b6068c8ce7816d53d85dcd9db6af3011fdd3e0",
+    "documents/files/720753.docm": "277b96faf17bc53293128d4afaa3272268d76130bfbd81a4521c0369fca67a5e",
+    "documents/files/739326.docx": "ba828f5fbcb7e6f95575a0fd1c7998528bb71976926b9457a391b39c74e1d566",
+    "documents/files/779125.docx": "f2f326a5cb5e15671414ff9d7795cf110869500e1857ab43eeaa64ea166eaa8d"
+  },
+  "control_hashes": {
+    "conflict": "5dbd6dc0311c296d079b31c791aae4f048b531318e5d8f005491ac8f16453828",
+    "date": "806107019b72739db30042a3825ab1cebeccd9360463ba6bbacabc05709c1e70",
+    "equivalence": "aaf4b210ab2e1beec7c88452dadccd8381b7d038a79bd9d9802fceb66b7a1210"
+  },
+  "native_and_control_reader_observations_exact": true,
+  "raw_cases": 4,
+  "cold_and_cached_observations": 8,
+  "manual_witness": {
+    "gzip_delta": 86,
+    "normalization_sha256": "9f1a1b11ffdf1ea8b1cbf0a896cd6b067e36c533c3f0e93db8639b6c6ba50c59",
+    "restores": 2,
+    "root_sha256": "0e207b5316ef30a270d13163ae0f27a0750cb0c2d52587c18f2dc9ea71f77c8a",
+    "sql_delta": 557,
+    "witness": {
+      "capture_id": "4bb4decd27301899b7dc2e3a8795520315a27ab4e15f15030bedd3a7a432bb2e",
+      "order": "selected_first",
+      "peer": {
+        "index": 0,
+        "leaf_sha256": "c532b4327d2e00a37c5b55e2d290854c2abb7055546f4ee446825371853092ef",
+        "ordinals": [
+          7
+        ],
+        "outcome": "policy_excluded",
+        "phase": "version_comparison",
+        "physical_part_index": 5,
+        "reason": "version_preference",
+        "root_sha256": "0e207b5316ef30a270d13163ae0f27a0750cb0c2d52587c18f2dc9ea71f77c8a",
+        "stage": "policy",
+        "text_sha256": "64470b3438da3f6b487a2ecf0eceb0bf2ee4a2593287a36ebd731591e8176fcd"
+      },
+      "selected_slot": 1
+    }
+  },
+  "legacy_doctor_exact": true,
+  "legacy_doctor_sha256": "fb3c98c8f2cf8f990b651cec04f55d345258f952b0cd7847fa10539a18b01cea",
+  "qualification_ledger_sha256": "5c03d7ae72ca4efa26bb290c968ce4a9fb57e67609e7820da51bee0818cfa2f5",
+  "scope": "One native exact archive witness; three controlled ZIPs for unchanged selection behavior.",
+  "writer_active": false,
+  "provider_calls": 0
+}

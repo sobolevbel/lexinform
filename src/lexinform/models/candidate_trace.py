@@ -648,6 +648,7 @@ class SejmCommitteeRecommendation(BaseModel):
 
 
 MAX_VERSION_DECISION_ROWS = 8
+VersionDate = Annotated[str, Field(strict=True, pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")]
 
 
 class VersionDecisionEvidence(BaseModel):
@@ -660,10 +661,7 @@ class VersionDecisionEvidence(BaseModel):
         min_length=1, max_length=MAX_VERSION_DECISION_ROWS
     )
     outcome: Literal["single_survivor", "matching_policy_identity", "distinct_policy_identity"]
-    date_filter: (
-        tuple[Annotated[str, Field(strict=True, pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")], ...]
-        | None
-    ) = Field(
+    date_filter: tuple[VersionDate, ...] | None = Field(
         default=None, max_length=MAX_VERSION_DECISION_ROWS, exclude_if=lambda value: value is None
     )
 
@@ -687,6 +685,40 @@ class VersionDecisionEvidence(BaseModel):
             raise ValueError("retained comparison positions differ from the applied date filter")
         if (len(expected) == 1) != (self.outcome == "single_survivor"):
             raise ValueError("version outcome differs from the number of retained candidates")
+        return self
+
+
+class ArchiveVersionDecisionEvidence(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    capture_id: Sha256
+    selected_slot: Position
+    peer: ArchiveMemberDisposition
+    order: Literal["selected_first", "peer_first"]
+    date_filter: tuple[VersionDate, VersionDate] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    @model_validator(mode="after")
+    def successful_peer(self) -> Self:
+        if (
+            self.peer.stage != "policy"
+            or self.peer.outcome != "policy_excluded"
+            or self.peer.reason != "version_preference"
+            or self.peer.association != "known"
+            or self.peer.physical_part_index is None
+            or self.peer.physical_part_index == self.selected_slot
+            or self.peer.leaf_sha256 is None
+            or self.peer.text_sha256 is None
+        ):
+            raise ValueError("archive comparison requires an exact excluded policy peer")
+        if self.date_filter is None:
+            if self.order != "selected_first":
+                raise ValueError("an equal archive comparison chooses the first ranked peer")
+        else:
+            first, second = map(dt.date.fromisoformat, self.date_filter)
+            if first == second or (first > second) != (self.order == "selected_first"):
+                raise ValueError("archive comparison must retain the actually newer textual date")
         return self
 
 
@@ -736,6 +768,10 @@ class CandidateDispositionTrace(BaseModel):
     )
 
     version_decision: VersionDecisionEvidence | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    archive_version_decision: ArchiveVersionDecisionEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
 
@@ -872,6 +908,8 @@ class CandidateDispositionTrace(BaseModel):
             validate_supporting_exclusions(self, self.supporting_exclusions)
         if self.version_decision is not None:
             validate_version_decision(self, self.version_decision)
+        if self.archive_version_decision is not None:
+            archive_version_main(self, self.archive_version_decision)
         if len(self.model_dump_json(exclude_defaults=True).encode()) > MAX_CANDIDATE_TRACE_BYTES:
             raise ValueError("candidate trace exceeds its metadata limit")
         return self
@@ -901,6 +939,7 @@ class CandidateDispositionTrace(BaseModel):
             and self.sejm_committee_recommendation is None
             and self.supporting_exclusions is None
             and self.version_decision is None
+            and self.archive_version_decision is None
         )
 
 
@@ -1205,3 +1244,49 @@ def validate_archive_member_parent(
             and parent.observed_sha256 != member.root_sha256
         ):
             raise ValueError("archive root differs from its known outer complete body")
+
+
+def archive_version_main(
+    trace: CandidateDispositionTrace, evidence: ArchiveVersionDecisionEvidence
+) -> ArchiveMemberDisposition:
+    peer = evidence.peer
+    members = trace.archive_members
+    parent = _parent_disposition(trace, peer.phase, peer.index)
+    if (
+        trace.coverage != "complete"
+        or trace.result != "selected"
+        or trace.version_decision is not None
+        or members is None
+        or parent is None
+        or parent.outcome != "selected"
+        or parent.observed_sha256 != peer.root_sha256
+    ):
+        raise ValueError("archive comparison requires an exact selected root disposition")
+    validate_archive_member_parent(trace, peer)
+    root_rows = tuple(
+        row
+        for row in members.rows
+        if (row.phase, row.index, row.root_sha256) == (peer.phase, peer.index, peer.root_sha256)
+        and row.stage == "policy"
+    )
+    mains = tuple(row for row in root_rows if row.reason == "selected_main")
+    if len(mains) != 1:
+        raise ValueError("archive comparison requires one retained selected main")
+    (main,) = mains
+    if (
+        main.physical_part_index != evidence.selected_slot
+        or main.association != "known"
+        or main.ordinals == peer.ordinals
+        or main.leaf_sha256 is None
+        or main.text_sha256 is None
+        or (members.retention == "complete" and peer not in root_rows)
+        or any(
+            row != peer
+            for row in root_rows
+            if row.reason == "version_preference"
+            or row.physical_part_index == peer.physical_part_index
+            or row.ordinals == peer.ordinals
+        )
+    ):
+        raise ValueError("archive comparison differs from its retained member policy")
+    return main

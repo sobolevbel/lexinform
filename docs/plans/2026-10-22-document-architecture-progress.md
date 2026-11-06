@@ -12576,3 +12576,25 @@ updated 20 extraction IDs and their linked capture IDs. Both current
 revisions diverged from the older J222 archive baseline, so that
 historical comparison is outside this parity proof.
 [Qualification](../assets/audits/2026-11-06-version-decision-writer/qualification.json).
+
+Commit `8ec713ea` passed exact CI 42224064296 and relay deployment
+42225065657.
+
+<a id="j331"></a>
+
+## J331 — read the exact peer of a successful archive version comparison
+
+The optional reader checks a two-member archive comparison against
+the retained selected policy row, physical capture and source
+extraction. Slot, ordinal path, body hash and physical text hash
+must match the saved execution. The comparison records the peer
+that may be absent from a retained prefix, within the existing
+whole-trace budget. It does not re-evaluate absent source text.
+
+The real RCL 705897 archive retained one selected main and one
+supporting row out of sixteen. An independently derived peer witness
+survived two exact restores. Normalizing trace records reproduced
+baseline SQL. The isolated witness added 557 SQL bytes and 86 gzip
+bytes. Original ZIP and three controlled ZIP observations and the
+legacy doctor remained exact. Automatic capture remains inactive.
+[Qualification](../assets/audits/2026-11-06-archive-version-reader/qualification.json).

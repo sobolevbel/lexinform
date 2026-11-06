@@ -7,15 +7,19 @@ from typing import Literal
 
 from lexinform.adapters.document_source_rows import DocumentSourceRows
 from lexinform.adapters.extraction_history import read_extraction_result
+from lexinform.adapters.physical_history import PhysicalInventoryReader
 from lexinform.document_editions import candidate_edition
 from lexinform.json_storage import read_json
 from lexinform.models.artifacts import ArtifactMetadata, ArtifactReadReceipt
 from lexinform.models.candidate_trace import (
+    ArchiveMemberDisposition,
     CandidateDispositionTrace,
     SejmAdoptedText,
     SejmPrintRepresentation,
+    archive_version_main,
 )
 from lexinform.models.document_editions import DocumentEdition
+from lexinform.models.physical_inventory import PhysicalRootOrder
 
 CANDIDATE_TRACE_SCHEMA_VERSION = 59
 
@@ -30,6 +34,7 @@ class CandidateTraceRowError(ValueError):
             "candidate_trace_representation_parent_mismatch",
             "candidate_trace_adoption_parent_mismatch",
             "candidate_trace_recommendation_parent_mismatch",
+            "candidate_trace_archive_version_parent_mismatch",
         ],
     ) -> None:
         self.code = code
@@ -252,9 +257,100 @@ def _validate_superseded_draft(
         raise ValueError("Supersession parents differ from the recorded report edition")
 
 
+def _archive_peer_in_execution(
+    reader: PhysicalInventoryReader, order: PhysicalRootOrder, row: ArchiveMemberDisposition
+) -> None:
+    slot = row.physical_part_index
+    if slot is None or slot >= len(order.physical):
+        raise ValueError("archive comparison slot is unavailable")
+    owner, text_sha256, _ = order.physical[slot]
+    if owner >= len(order.contexts):
+        raise ValueError("archive comparison slot has no retained occurrence")
+    _, _, physical_slot, unit_id = order.contexts[owner]
+    unit = reader.typed(unit_id, "unit")
+    path: list[int] = []
+    while owner:
+        parent, ordinal, _, _ = order.contexts[owner]
+        if parent is None or ordinal is None or len(path) == 4:
+            raise ValueError("archive comparison occurrence has no bounded root path")
+        path.append(ordinal)
+        owner = parent
+    if (physical_slot, tuple(reversed(path)), unit.body_sha256, text_sha256) != (
+        slot,
+        row.ordinals,
+        row.leaf_sha256,
+        row.text_sha256,
+    ):
+        raise ValueError("archive comparison differs from its physical member")
+
+
+def _validate_archive_version_link(
+    connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
+) -> None:
+    evidence = trace.archive_version_decision
+    if evidence is None:
+        return
+    try:
+        main = archive_version_main(trace, evidence)
+        requested = trace.requested_document
+        if requested is None:
+            raise ValueError("archive comparison requires its requested source")
+        candidate = (requested, *requested.alternatives)[main.index]
+        source_reader = DocumentSourceRows(connection)
+        source = source_reader.get_source_observation(observation_id)
+        if source is None or source.document.url != candidate.url:
+            raise ValueError("archive comparison source differs from its selected root")
+        selection = source_reader.get_document_selection(source.selection_id)
+        if selection is None or selection.selection.state != trace.selection_state:
+            raise ValueError("archive comparison selection is unavailable")
+        selected = [
+            part
+            for part in selection.selection.parts
+            if part.members
+            and (part.source_sha256, part.sha256, part.text_sha256)
+            == (main.root_sha256, main.leaf_sha256, main.text_sha256)
+        ]
+        if len(selected) != 1:
+            raise ValueError("archive comparison main differs from its selected member")
+
+        old_factory = connection.row_factory
+        connection.row_factory = sqlite3.Row
+        try:
+            saved = connection.execute(
+                "SELECT * FROM physical_captures WHERE capture_id=?", (evidence.capture_id,)
+            ).fetchone()
+            if saved is None:
+                raise ValueError("archive comparison physical capture is unavailable")
+            reader = PhysicalInventoryReader(connection)
+            capture = reader.capture(saved)
+            if capture.artifact_sha256 != main.root_sha256 or capture.extraction_id is None:
+                raise ValueError("archive comparison capture differs from its extraction root")
+            linked = connection.execute(
+                "SELECT 1 FROM selection_extractions WHERE selection_id=? AND extraction_id=?",
+                (source.selection_id, capture.extraction_id),
+            ).fetchone()
+            read = connection.execute(
+                "SELECT 1 FROM artifact_reads WHERE requested_url=? AND artifact_sha256=?",
+                (candidate.url, capture.artifact_sha256),
+            ).fetchone()
+            if linked is None or read is None:
+                raise ValueError("archive comparison is missing the source extraction or body read")
+            execution = reader.typed(capture.execution_id, "execution")
+            order = execution.metadata
+            if execution.coverage != "complete" or not isinstance(order, PhysicalRootOrder):
+                raise ValueError("archive comparison requires retained physical execution")
+            _archive_peer_in_execution(reader, order, main)
+            _archive_peer_in_execution(reader, order, evidence.peer)
+        finally:
+            connection.row_factory = old_factory
+    except ValueError, TypeError, RecursionError, IndexError, KeyError, sqlite3.Error:
+        raise CandidateTraceRowError("candidate_trace_archive_version_parent_mismatch") from None
+
+
 def validate_candidate_trace_link(
     connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
 ) -> None:
+    _validate_archive_version_link(connection, trace, observation_id)
     validate_sejm_proposal_link(connection, trace, observation_id)
     validate_committee_recommendation_link(connection, trace, observation_id)
     proof = trace.sejm_print_representation or trace.sejm_adopted_text
@@ -353,8 +449,11 @@ def validate_candidate_trace_links(
         "candidate_trace_recommendation_parent_mismatch",
         "candidate_trace_representation_parent_mismatch",
         "candidate_trace_proposal_parent_mismatch",
+        "candidate_trace_archive_version_parent_mismatch",
     ]
-    if trace.sejm_committee_recommendation is not None:
+    if trace.archive_version_decision is not None:
+        code = "candidate_trace_archive_version_parent_mismatch"
+    elif trace.sejm_committee_recommendation is not None:
         code = "candidate_trace_recommendation_parent_mismatch"
     elif trace.sejm_adopted_text is not None:
         code = "candidate_trace_adoption_parent_mismatch"
