@@ -12905,6 +12905,9 @@ request payload and source selection remain unverified. The census of
 database and repeated reports matched byte-for-byte.
 [Qualification](../assets/audits/2026-11-06-secondary-request-prefix/qualification.json).
 
+The exact `cccfeb39` release passed CI run 42250172227 and relay
+deployment 42251493855. Restart and timer were verified.
+
 <a id="j347"></a>
 
 ## J347 — retain a successful outer ZIP version choice
@@ -12920,3 +12923,19 @@ dump added 139 SQL bytes and 55 gzip bytes. Old and new readers restored
 the new trace twice. The raw pair matched 16 roots and four controls.
 The broad cached pair matched all 4,276 outcomes and 1,383 missing inputs.
 [Qualification](../assets/audits/2026-11-06-outer-archive-choice/qualification.json).
+
+<a id="j348"></a>
+
+## J348 — validate a literal citation on one physical PDF page
+
+The offline command `tools.replay_pdf_page_citation` checks an explicit
+case pin against the original PDF, page extraction and legacy text.
+It requires a unique literal quote entirely inside one normalized page.
+Collapsed boundaries, embedded page separators and mismatched pins fail.
+
+The controlled quote in official RCL PDF 587739 matched page 1 at
+`[204, 331)`. The proof matched across checkouts; code fingerprints
+differed as expected. Geometry, semantics and paid-input retention
+are outside the check.
+[Case](../assets/audits/2026-11-06-pdf-page-citation/case.json) and
+[qualification](../assets/audits/2026-11-06-pdf-page-citation/qualification.json).

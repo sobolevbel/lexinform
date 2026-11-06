@@ -1,0 +1,15 @@
+{
+  "claim": "Controlled claim, no provider call.",
+  "document_id": "rcl-document:587739",
+  "extraction_sha256": "7efc24e212af27c2d061b2a66642551f88c0be1eb43d52e648653a28658449bb",
+  "locator": "Art. 1",
+  "page": 1,
+  "pdf": {
+    "path": "documents/files/587739.pdf",
+    "sha256": "c4568d7582962e62ac39d5d084936424f19edebae58b8925add7422d90360a5e"
+  },
+  "quote_end": 331,
+  "quote_sha256": "e2847c736055a9a3b081f377a370f22605cb65df3fd4ad8bd7ac1d6d5d40089d",
+  "quote_start": 204,
+  "source_text_sha256": "368e0fea8034fee29af37345061b13321a49a3e53799631ca045bb51e4a07101"
+}
