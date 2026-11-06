@@ -333,11 +333,26 @@ def main() -> int:
     parser.add_argument("target_sha", type=full_sha)
     parser.add_argument("--previous-verified-sha", type=full_sha)
     parser.add_argument("--output", type=Path, help="Create a new JSON artifact; never overwrite.")
-    parser.add_argument("--wait-seconds", type=int, choices=range(61), default=0, metavar="0..60")
+    waiting = parser.add_mutually_exclusive_group()
+    waiting.add_argument("--wait-seconds", type=int, choices=range(61), default=0, metavar="0..60")
+    waiting.add_argument(
+        "--wait-timeout",
+        type=int,
+        choices=range(1, 3601),
+        metavar="1..3600",
+        help="Poll pending releases every 30 seconds for up to this many seconds.",
+    )
     args = parser.parse_args()
+    deadline = time.monotonic() + args.wait_timeout if args.wait_timeout is not None else None
     report = verify(args.target_sha, previous=args.previous_verified_sha)
     if report["status"] == "pending" and args.wait_seconds:
         time.sleep(args.wait_seconds)
+        report = verify(args.target_sha, previous=args.previous_verified_sha)
+    while report["status"] == "pending" and deadline is not None:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(30, remaining))
         report = verify(args.target_sha, previous=args.previous_verified_sha)
     payload = json.dumps(report, indent=2) + "\n"
     if args.output is None:

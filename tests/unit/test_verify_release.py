@@ -4,7 +4,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from tools.verify_release import EvidenceError, full_sha, gh_read, main, relay_proof, verify
+from tools.verify_release import EvidenceError, Status, full_sha, gh_read, main, relay_proof, verify
 
 TARGET = "563b3e805db04301ae18f5d5e9555d51a9639b19"
 PREVIOUS = "7287059ab139" + "a" * 28
@@ -321,6 +321,55 @@ def test_cli_waits_at_most_once_for_pending_and_default_never_sleeps(
     assert main() == 1
     assert waits == [60] and calls == [TARGET, TARGET]
     assert json.loads(capsys.readouterr().out)["status"] == "pending"
+
+
+@pytest.mark.parametrize(
+    ("statuses", "expected_waits"),
+    [
+        (("pending", "pending", "verified"), [30, 5]),
+        (("pending", "pending", "pending"), [30, 5]),
+        (("pending", "superseded"), [30]),
+        (("failed",), []),
+        (("unproven",), []),
+    ],
+)
+def test_cli_polls_until_terminal_status_or_deadline(
+    statuses: tuple[Status, ...],
+    expected_waits: list[int],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    report = verify(TARGET, read=GitHub().read)
+    observations = iter(statuses)
+    waits: list[float] = []
+    artifact = tmp_path / "release.json"
+
+    def snapshot(target: str, *, previous: str | None) -> dict[str, object]:
+        assert (target, previous) == (TARGET, PREVIOUS)
+        assert not artifact.exists()
+        return dict(report, status=next(observations))
+
+    monkeypatch.setattr("tools.verify_release.verify", snapshot)
+    monkeypatch.setattr("tools.verify_release.time.sleep", waits.append)
+    monkeypatch.setattr("tools.verify_release.time.monotonic", lambda: 100 + sum(waits))
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "verify_release.py",
+            TARGET,
+            "--previous-verified-sha",
+            PREVIOUS,
+            "--wait-timeout",
+            "35",
+            "--output",
+            str(artifact),
+        ],
+    )
+
+    assert main() == (0 if statuses[-1] == "verified" else 1)
+    assert waits == expected_waits
+    assert json.loads(artifact.read_text())["status"] == statuses[-1]
+    assert next(observations, None) is None
 
 
 @pytest.mark.parametrize("body", ["[]", '{"object": null}', '{"object": {"sha": true}}'])
