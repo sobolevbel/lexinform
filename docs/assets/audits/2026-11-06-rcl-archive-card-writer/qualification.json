@@ -1,0 +1,16 @@
+{
+  "case": "RCL 12403302/12, 778150.zip",
+  "cleaned_gzip_delta": 91,
+  "cleaned_sql_delta": 206,
+  "idempotent_repeat": true,
+  "no_lineage_when_collection_missing": true,
+  "provider_submissions": 0,
+  "render_delivery_and_message_exact": true,
+  "reports_sha256": {
+    "baseline": "2d109cf4f40e8f720e2436e52f2f096f267b0a88762964778cd826d40c23b414",
+    "failed": "298e02be983ce06b637513d44249786451370db01f6e9058ce2aeed23f650bcc",
+    "writer": "1c78a8ef6aa486d90bf8620e1b93921ad69ee9e66d1724f7a7da3edf0bd1c0f5"
+  },
+  "telegram_sends": 0,
+  "two_exact_restores_on_reader_and_writer": true
+}

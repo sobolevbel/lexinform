@@ -12961,6 +12961,9 @@ Reports matched across checkouts apart from the code pins. The claims
 are controlled; semantic support and provider submission are unassessed.
 [Qualification](../assets/audits/2026-11-06-multipart-citation/qualification.json).
 
+The exact `898fd6c1` release passed CI run 42254588640 and relay
+deployment 42255754292. Restart and timer were verified.
+
 <a id="j350"></a>
 
 ## J350 — read original card lineage for one RCL archive
@@ -12976,3 +12979,18 @@ source parts after the mock send. Queued and unknown sends remained
 unconfirmed. A wrong observation was rejected without a state write.
 The legacy audit matched byte-for-byte.
 [Qualification](../assets/audits/2026-11-06-rcl-archive-card-reader/qualification.json).
+
+<a id="j351"></a>
+
+## J351 — attach qualified archive lineage to the original card
+
+The ordinary card writer includes the one-root RCL archive profile in
+its existing candidate query. The same reader validates the exact source,
+prepared request and paid/application parents before saving the link.
+
+The native 778150.zip case kept the same render, delivery plan and test
+message identity. Repeated publishing was idempotent. A missing collection
+parent preserved ordinary delivery with no lineage. After cleanup the
+sample added 206 SQL bytes and 91 gzip bytes, and both versions of the
+reader restored the saved dump twice.
+[Qualification](../assets/audits/2026-11-06-rcl-archive-card-writer/qualification.json).
