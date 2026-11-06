@@ -13315,3 +13315,20 @@ reserved case stayed separate. The five real J344 seals returned the
 same report byte-for-byte, including 180 cases and three reserved cases.
 
 [Qualification](../assets/audits/2026-11-06-corpus-split-overlap/qualification.json).
+
+<a id="j369"></a>
+
+## J369 — enforce reviewer uniqueness across sealed corpus runs
+
+The census deduplicates exact pinned answer rows. It refuses different
+answer pins from the same declared reviewer for one case, matching the
+single-run recorder's uniqueness rule. It preserves the input seals and
+leaves choosing the authoritative submission to the operator.
+
+A sealed control reproduced the historical acceptance of two submissions
+from one reviewer. The corrected census refused them before writing a
+report. Two copies of the exact same answer still contributed one review.
+The five real J344 seals returned the same report byte-for-byte.
+No independent human judgments were added.
+
+[Qualification](../assets/audits/2026-11-06-corpus-review-identity/qualification.json).

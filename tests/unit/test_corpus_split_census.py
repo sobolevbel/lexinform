@@ -176,3 +176,46 @@ def test_overlap_follows_alternating_raw_aliases_and_recorded_groups(tmp_path: P
     assert result["reserved_overlap_case_ids"] == ["rpw:bridge", "rpw:unseen"]
     assert result["exact_case_ids"] == 4
     assert result["case_components_after_raw_aliases"] == 3
+
+
+@pytest.mark.parametrize("repeat_pin", [True, False])
+def test_census_deduplicates_exact_reviews_and_rejects_distinct_answers_by_same_reviewer(
+    tmp_path: Path, repeat_pin: bool
+) -> None:
+    case = holdout_case()
+    queue = seal(tmp_path, "holdout", "holdout", {"cases": [case]})
+    target = {
+        "title": case["title"],
+        "group": case["group"],
+        "questions": list(case["questions"]),
+        "holdout_eligible": True,
+    }
+    reviews = []
+    for index, pin in enumerate(("b" * 64, ("b" if repeat_pin else "c") * 64)):
+        submission = {
+            "reviewer": "Fixture",
+            "reviewer_kind": "human",
+            "answers_sha256": pin,
+            "answers": {"independent_initiative": "yes", "role": "unknown"},
+        }
+        reviews.append(
+            seal(
+                tmp_path,
+                f"review-{index}",
+                "review",
+                {
+                    "queue": {"suite": "holdout", "manifest_sha256": queue[1]},
+                    "cases": [settle(case["id"], target, [submission])],
+                    "answers": {f"answers-{index}.json": pin},
+                },
+            )
+        )
+    output = tmp_path / "census.json"
+    if repeat_pin:
+        report = audit([queue, *reviews], output)
+        assert report["independence_confirmed_case_ids"] == [case["id"]]
+        assert report["human_review_question_counts"] == {"known": 1, "unknown": 1, "conflict": 0}
+    else:
+        with pytest.raises(ValueError, match="Multiple pinned answers by one reviewer"):
+            audit([queue, *reviews], output)
+        assert not output.exists()

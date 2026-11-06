@@ -1,0 +1,39 @@
+{
+  "case_components_after_raw_aliases": 165,
+  "case_ids_with_conflicting_groups": [],
+  "diagnostic_case_ids": 177,
+  "diagnostic_recorded_groups": 105,
+  "exact_case_ids": 180,
+  "holdout_evaluation_use": "unknown",
+  "human_review_question_counts": {
+    "conflict": 0,
+    "known": 0,
+    "unknown": 0
+  },
+  "independence_confirmed_case_ids": [],
+  "inputs": {
+    "3b8846cd6f625a19d1da4033d88b0ed8e4764d4f7b2c013d0a2c8a23f208c820": "holdout",
+    "62be5a0aeb1cf115a2b7a737f799983dcdce70d0d4f6d95605509baca3ade0b1": "review-form",
+    "a70c86f3714e6753dd82b00aef4d5294ad24b491c740a8b1b260e8365ca2c0ef": "empty-review",
+    "c22d7f71d1dff8392dc3ac4aa481017fbcb9b3ea383d1d832ed44cc8a17bbe6b": "annotations",
+    "c77fdc48db0a85eb74a94e2f2a1bc6c85012acd737ecae458ddd354b2d699b5c": "review-form"
+  },
+  "recorded_groups": 108,
+  "reserved_holdout_case_ids": 3,
+  "reserved_overlap_case_ids": [],
+  "reserved_recorded_groups": 3,
+  "runs_by_suite": {
+    "annotations": 1,
+    "empty-review": 1,
+    "holdout": 1,
+    "review-form": 2
+  },
+  "scope": "Supplied sealed runs only; raw aliases record identical bytes.",
+  "version": 1,
+  "baseline_and_candidate_report_sha256": "a26b21e0384f4601f393ebb04ae86260905115a54d68eaabefb711c46e439263",
+  "controls": {
+    "exact_pinned_answer_reuse": "deduplicated",
+    "different_answer_pins_for_same_declared_reviewer": "rejected",
+    "historical_ambiguous_report": "accepted"
+  }
+}

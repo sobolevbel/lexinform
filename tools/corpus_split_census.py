@@ -172,6 +172,8 @@ def audit(runs: list[tuple[Path, str]], output: Path) -> dict[str, Any]:
     labels: Counter[str] = Counter()
     independent = set()
     for identity, reviews in review_records.items():
+        if len({review["reviewer"] for review in reviews.values()}) != len(reviews):
+            raise ValueError(f"Multiple pinned answers by one reviewer for case: {identity}")
         row = settle(identity, review_targets[identity], list(reviews.values()))
         if row["oracle"] == "human_review":
             labels.update(
