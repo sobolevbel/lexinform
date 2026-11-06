@@ -59,6 +59,7 @@ def test_terminal_gap_round_trips_for_each_selected_phase(compare: bool) -> None
         {"required_index": 1},
         {"required_index": "0"},
         {"reason": "no_returned_file"},
+        {"reason": "download_size_limit", "file_sha256": SHA},
         {"file_sha256": "unknown"},
         {"text": "body"},
     ],

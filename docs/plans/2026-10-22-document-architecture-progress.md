@@ -11860,3 +11860,23 @@ SQL bytes and 1,080–1,202 gzip bytes. No model request was submitted.
 
 DA4.7 is accepted for its proved profiles. Cases outside their contracts
 stay unknown, and the PDF remains the ordinary analysis source.
+
+<a id="j299"></a>
+
+## J299 — distinguish size refusals from returned files without text
+
+Terminal required-part and normative-annex traces identify a download
+size refusal at the actual selected candidate and relation position.
+A refusal cannot carry a completed-body hash. Loader exceptions still
+follow the existing waiting and outage paths.
+
+The paired offline replay used both original PDFs of term 8 print 108
+and the pinned loose annex for RCL 12366453. The ordinary byte limit
+preserved the readable cases exactly. Lower test limits exercised the
+refusal paths using the same bytes. Text hashes, read order, waiting
+state and SQL apart from the gap and trace identity matched baseline.
+Each snapshot restored twice. No provider request was sent.
+[Size refusal evidence](../assets/audits/2026-11-06-size-refusal-traces/qualification.json)
+and [Sejm attachment pins](../assets/audits/2026-11-06-retained-delivery-and-required-part/source-pins.json).
+
+DA4.1 and DA4.4 remain open for the remaining decision provenance.

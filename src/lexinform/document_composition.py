@@ -94,7 +94,8 @@ def normative_part(
         )
     if file.text is None:
         return NormativeAnnexFailure(
-            _blocked("waiting", f"{url}: normative annex unreadable"), "returned_no_text"
+            _blocked("waiting", f"{url}: normative annex unreadable"),
+            "download_size_limit" if file.oversize else "returned_no_text",
         )
     kind = document_kind(file.text)
     if kind in APPENDIX_KINDS - {"annex"}:

@@ -724,15 +724,15 @@ class TextLoader:
             file = self.read(url)
             continuation = required_part(bundle, url, file)
             if isinstance(continuation, RequiredPartFailure):
-                if attempt is not None and not file.oversize:
+                if attempt is not None:
                     gap_capture, gap_phase, gap_index = attempt
                     with suppress(Exception):
                         gap_capture.required_gap = RequiredPartGap(
                             phase=gap_phase,
                             index=gap_index,
                             required_index=position,
-                            reason="returned_no_text",
-                            file_sha256=file.sha256,
+                            reason="download_size_limit" if file.oversize else "returned_no_text",
+                            file_sha256=None if file.oversize else file.sha256,
                         )
                 return continuation.blocked
             bundle = continuation

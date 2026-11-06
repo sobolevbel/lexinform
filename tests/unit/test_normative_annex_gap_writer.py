@@ -16,11 +16,12 @@ ANNEX_BYTES = b"annex"
 
 @pytest.mark.parametrize("compare", [False, True])
 @pytest.mark.parametrize(
-    ("annex", "reason", "state", "kind"),
+    ("annex", "reason", "state", "kind", "oversize"),
     [
-        (None, "no_returned_file", "waiting", None),
-        ("", "returned_no_text", "waiting", None),
-        (APPENDIX, "non_annex_appendix", "ambiguous", "regulation"),
+        (None, "no_returned_file", "waiting", None, False),
+        ("", "download_size_limit", "waiting", None, True),
+        ("", "returned_no_text", "waiting", None, False),
+        (APPENDIX, "non_annex_appendix", "ambiguous", "regulation", False),
     ],
 )
 def test_native_annex_block_retains_actual_gap_without_changing_the_selection(
@@ -29,10 +30,11 @@ def test_native_annex_block_retains_actual_gap_without_changing_the_selection(
     reason: str,
     state: Literal["waiting", "ambiguous"],
     kind: str | None,
+    oversize: bool,
 ) -> None:
     inputs = {MAIN: BODY.encode()}
     if annex is not None:
-        inputs[ANNEX] = ANNEX_BYTES
+        inputs[ANNEX] = ANNEX_BYTES * 100000 if oversize else ANNEX_BYTES
     gateway = FakeSejmGateway(files=inputs)
     extractor = FakeTextExtractor(
         by_content={BODY.encode(): BODY, ANNEX_BYTES: annex or ""}, page_count=0
@@ -54,7 +56,7 @@ def test_native_annex_block_retains_actual_gap_without_changing_the_selection(
     )
     assert (gap.reason, gap.kind, selected.selection.state) == (reason, kind, state)
     assert gap.file_sha256 == (
-        hashlib.sha256(ANNEX_BYTES).hexdigest() if annex is not None else None
+        hashlib.sha256(ANNEX_BYTES).hexdigest() if annex is not None and not oversize else None
     )
     direct = loader.read_document(document)
     assert direct.candidate_trace is None

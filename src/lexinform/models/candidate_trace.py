@@ -18,7 +18,9 @@ from lexinform.sections import APPENDIX_KINDS, Kind
 
 MAX_CANDIDATE_TRACE_BYTES = 4_096
 CandidateTraceResult = Literal["selected", "ambiguous", "fallback"]
-NormativeAnnexGapReason = Literal["no_returned_file", "returned_no_text", "non_annex_appendix"]
+NormativeAnnexGapReason = Literal[
+    "no_returned_file", "returned_no_text", "non_annex_appendix", "download_size_limit"
+]
 CandidateTraceReason = Literal[
     "version_choice",
     "version_conflict",
@@ -353,8 +355,14 @@ class RequiredPartGap(BaseModel):
     phase: Literal["version_comparison", "fallback"]
     index: Position
     required_index: Position
-    reason: Literal["returned_no_text"]
+    reason: Literal["returned_no_text", "download_size_limit"]
     file_sha256: Sha256 | None = Field(default=None, exclude_if=lambda value: value is None)
+
+    @model_validator(mode="after")
+    def size_refusal_has_no_completed_body(self) -> Self:
+        if self.reason == "download_size_limit" and self.file_sha256 is not None:
+            raise ValueError("A size refusal cannot claim a complete body")
+        return self
 
 
 class NormativeAnnexGap(BaseModel):
@@ -369,7 +377,10 @@ class NormativeAnnexGap(BaseModel):
 
     @model_validator(mode="after")
     def observed_return(self) -> Self:
-        if self.reason == "no_returned_file" and self.file_sha256 is not None:
+        if (
+            self.reason in ("no_returned_file", "download_size_limit")
+            and self.file_sha256 is not None
+        ):
             raise ValueError("a known file hash requires a returned file")
         if self.reason == "non_annex_appendix":
             if self.kind not in APPENDIX_KINDS - {"annex"}:

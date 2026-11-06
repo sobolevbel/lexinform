@@ -125,4 +125,6 @@ def test_required_body_size_refusal_waits_without_claiming_a_returned_file() -> 
 
     assert file.selection.state == "waiting"
     assert file.candidate_trace is not None, "the prior waiting decision is still recorded"
-    assert file.candidate_trace.required_part_gap is None
+    gap = file.candidate_trace.required_part_gap
+    assert gap is not None and gap.reason == "download_size_limit"
+    assert gap.file_sha256 is None

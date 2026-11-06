@@ -116,6 +116,7 @@ def test_terminal_gap_round_trips_under_both_composition_phases(
         {"file_sha256": FILE_SHA},
         {"reason": "returned_no_text", "file_sha256": "invalid"},
         {"reason": "returned_no_text", "kind": "regulation"},
+        {"reason": "download_size_limit", "file_sha256": FILE_SHA},
         {"reason": "non_annex_appendix"},
         {"reason": "non_annex_appendix", "kind": "annex"},
         {"reason": "non_annex_appendix", "kind": "regulation"},

@@ -1,0 +1,104 @@
+{
+  "baseline": "7987294b8646f39be1461b58d61d59681d042a9f",
+  "restores_per_case": 2,
+  "rcl_catalog_sha256": "d688d78a6fce24fcc002804898ac1559872c5779b5fb4cec7a930e0639a71ab2",
+  "rcl_body_pins": {
+    "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587729.pdf": "c4568d7582962e62ac39d5d084936424f19edebae58b8925add7422d90360a5e",
+    "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587730.pdf": "d3a2c333b29c0d70e8c2369c7c6dcedf547bbd4d1f86496268df0a1a477d3607"
+  },
+  "cases": {
+    "rcl_readable": {
+      "calls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587729.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587730.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587732.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587731.pdf"
+      ],
+      "gap": null,
+      "gzip_bytes": 8466,
+      "limit": 8388608,
+      "normalized": "2407edbce473dc40b9a6651b003467ae1a6166ccc7b368417688987bd621e599",
+      "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587729.pdf",
+      "sql_bytes": 44589,
+      "state": "unverified",
+      "text_sha256": "499cea3cfb7587e1354f857e8e60ca5660157ca780c273a23b7f1a02d79d215e",
+      "trace_id": null,
+      "previous_gap": null,
+      "previous_trace_id": null,
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "rcl_size_refusal": {
+      "calls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587729.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587730.pdf"
+      ],
+      "gap": {
+        "index": 0,
+        "normative_index": 0,
+        "phase": "version_comparison",
+        "reason": "download_size_limit"
+      },
+      "gzip_bytes": 7666,
+      "limit": 170000,
+      "normalized": "c49aa992dba3cd825ac0c08d397ddd1036e51a431ed889735a832199e64b16f3",
+      "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12366453/12930405/12930410/dokument587729.pdf",
+      "sql_bytes": 38769,
+      "state": "waiting",
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "trace_id": "candidate-trace-v1:f275c01189b3216d0be2f3321fff711615b41806c477d04fb0b259fd0b5aa116",
+      "previous_gap": {
+        "index": 0,
+        "normative_index": 0,
+        "phase": "version_comparison",
+        "reason": "returned_no_text"
+      },
+      "previous_trace_id": "candidate-trace-v1:ae3b73d05d1982555e664a5d1f262abf7d704e9a1f3c8b13a8235b0880cd3aed",
+      "sql_delta_bytes": 3,
+      "gzip_delta_bytes": 0
+    },
+    "sejm_readable": {
+      "calls": [
+        "https://api.sejm.gov.pl/sejm/term8/prints/108/108-cz%C4%99%C5%9B%C4%87%201.pdf",
+        "https://api.sejm.gov.pl/sejm/term8/prints/108/108-cz%C4%99%C5%9B%C4%87%202.pdf"
+      ],
+      "gap": null,
+      "gzip_bytes": 8984,
+      "limit": 8388608,
+      "normalized": "29275e700beddeaa5b09e4221565824cfdc341e0336df19b52a19d51f6b494dc",
+      "selected_url": "https://api.sejm.gov.pl/sejm/term8/prints/108/108-cz%C4%99%C5%9B%C4%87%201.pdf",
+      "sql_bytes": 42903,
+      "state": "unverified",
+      "text_sha256": "e86f8d93bb887a736ac3c2eb4195521b9f8b271798692e961b0773531c696653",
+      "trace_id": "candidate-trace-v1:06022799b75675f29e94379bd7b8c419d9d6e5118131bc86c66e34b0262d8aea",
+      "previous_gap": null,
+      "previous_trace_id": "candidate-trace-v1:06022799b75675f29e94379bd7b8c419d9d6e5118131bc86c66e34b0262d8aea",
+      "sql_delta_bytes": 0,
+      "gzip_delta_bytes": 0
+    },
+    "sejm_size_refusal": {
+      "calls": [
+        "https://api.sejm.gov.pl/sejm/term8/prints/108/108-cz%C4%99%C5%9B%C4%87%201.pdf",
+        "https://api.sejm.gov.pl/sejm/term8/prints/108/108-cz%C4%99%C5%9B%C4%87%202.pdf"
+      ],
+      "gap": {
+        "index": 0,
+        "phase": "version_comparison",
+        "reason": "download_size_limit",
+        "required_index": 0
+      },
+      "gzip_bytes": 7710,
+      "limit": 4000000,
+      "normalized": "7a3b34c6e70bdebdbef6b365a98827785e7901ce134e6e2a5a4c53ecdc94c4ca",
+      "selected_url": "https://api.sejm.gov.pl/sejm/term8/prints/108/108-cz%C4%99%C5%9B%C4%87%201.pdf",
+      "sql_bytes": 39022,
+      "state": "waiting",
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "trace_id": "candidate-trace-v1:19fddfd2c4257a480ae29228e5bead9a797e752e73bd2fce0839482f43e38ac7",
+      "previous_gap": null,
+      "previous_trace_id": "candidate-trace-v1:18665ba1213e98fe6893c7c99b1ed57384156f7579b333346d952ef3248d4e30",
+      "sql_delta_bytes": 111,
+      "gzip_delta_bytes": 12
+    }
+  }
+}
