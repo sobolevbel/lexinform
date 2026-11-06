@@ -1,8 +1,11 @@
 """Physical observations commit with caller-owned artifact parents and recording time."""
 
 import datetime as dt
+from collections.abc import Callable
+from contextlib import suppress
 from dataclasses import dataclass
 
+from lexinform.models import CandidateDispositionTrace
 from lexinform.physical_root_assembly import PhysicalAssemblyPacket
 from lexinform.ports import BillRepository, DocumentPhysicalObserver
 from lexinform.services.document_history import record_artifacts
@@ -11,6 +14,7 @@ from lexinform.services.document_history import record_artifacts
 @dataclass(frozen=True)
 class PhysicalHistoryPersistence:
     observer: DocumentPhysicalObserver
+    archive_traces: Callable[[], tuple[tuple[str, str, CandidateDispositionTrace], ...]] = tuple
 
     def persist_source_history(self, repo: BillRepository, *, recorded_at: dt.datetime) -> None:
         with repo.atomic():
@@ -43,3 +47,11 @@ class PhysicalHistoryPersistence:
                     repo.save_physical_inventory(
                         packet.metadata, (packet.capture,), recorded_at=recorded_at
                     )
+        with suppress(Exception):
+            for observation_id, base_id, trace in self.archive_traces():
+                with suppress(Exception), repo.atomic():
+                    if any(
+                        item.trace_id == base_id
+                        for item in repo.list_candidate_disposition_traces(observation_id)
+                    ):
+                        repo.save_candidate_disposition_trace(observation_id, trace)

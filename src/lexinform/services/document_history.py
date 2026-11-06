@@ -2,8 +2,9 @@
 
 import datetime as dt
 import logging
+from collections.abc import Callable
 from contextlib import suppress
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 from lexinform.committee_recommendation import CommitteeRecommendationOrigin, report_evidence
@@ -78,6 +79,9 @@ class DocumentSourceRead:
     sejm_origin: SejmAdoptionOrigin | SejmProposalOrigin | None = None
     committee_draft: DocumentSelectionRecord | None = None
     representation: PrintRepresentationRead | None = None
+    defer_archive_trace: Callable[[str], None] | None = field(
+        default=None, repr=False, compare=False
+    )
 
 
 @dataclass(frozen=True)
@@ -224,6 +228,10 @@ def record_source_read(
             reads=source.reads,
             extractions=source.extractions,
         )
+
+    if source.defer_archive_trace is not None:
+        with suppress(Exception):
+            source.defer_archive_trace(observation.observation_id)
 
 
 def record_source_omission(

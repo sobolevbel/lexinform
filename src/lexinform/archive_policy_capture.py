@@ -1,5 +1,6 @@
 """Invocation-local policy facts never enter extraction-cache or public document payloads."""
 
+import datetime as dt
 import json
 import threading
 from collections.abc import Callable, Iterator
@@ -17,12 +18,20 @@ PolicyOutcome = Literal["selected", "policy_excluded", "non_bill", "unclassified
 
 
 @dataclass(frozen=True)
+class ArchiveVersionChoice:
+    peer_index: int
+    selected_first: bool
+    date_filter: tuple[dt.date, dt.date] | None
+
+
+@dataclass(frozen=True)
 class ArchivePolicyDecision:
     index: int
     outcome: PolicyOutcome
     reason: ArchiveMemberPolicyReason
     leaf_sha256: str | None
     text_sha256: str
+    version_choice: ArchiveVersionChoice | None = None
 
 
 _CURRENT: ContextVar[ArchivePolicyCapture | None] = ContextVar(

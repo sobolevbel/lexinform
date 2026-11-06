@@ -1,12 +1,14 @@
 """Canonical priority v1 retains selected main/annex/support, other policy, then walk."""
 
 from collections.abc import Iterator
+from contextlib import suppress
 from dataclasses import dataclass
 from typing import Literal
 
 from lexinform.archive_dispositions import MAX_ARCHIVE_VALIDATION_BYTES, enrich_archive_trace
 from lexinform.archive_policy_capture import ArchivePolicyDecision
 from lexinform.models import ArchiveMemberDisposition, ArtifactIdentity, CandidateDispositionTrace
+from lexinform.models.candidate_trace import ArchiveVersionDecisionEvidence
 from lexinform.models.physical_inventory import (
     PhysicalContainerExecution,
     PhysicalGraph,
@@ -217,6 +219,7 @@ class ArchiveDispositionAccumulator:
         self._rows: list[ArchiveMemberDisposition] = []
         self._bytes = 2
         self._seen = False
+        self.version_evidence: ArchiveVersionDecisionEvidence | None = None
         self._unavailable = False
         self._failed = False
         self._walk: Literal["finished", "interrupted"] = "finished"
@@ -228,7 +231,9 @@ class ArchiveDispositionAccumulator:
         try:
             if not _is_archive(root):
                 return
+            first_root = not self._seen
             self._seen = True
+            self.version_evidence = None
             if not root.completed:
                 self._walk = "interrupted"
             for row in _rows(root, phase, index):
@@ -249,6 +254,41 @@ class ArchiveDispositionAccumulator:
         except Exception:
             self._failed = True
             self._rows.clear()
+        else:
+            if first_root:
+                with suppress(Exception):
+                    self.version_evidence = self._version_evidence(root)
+
+    def _version_evidence(
+        self, root: ArchiveRootObservation
+    ) -> ArchiveVersionDecisionEvidence | None:
+        if not root.policy:
+            return None
+        choices = tuple(decision for decision in root.policy if decision.version_choice is not None)
+        packet = _packet(root)
+        if len(choices) != 1 or packet is None:
+            return None
+        (selected,) = choices
+        choice = selected.version_choice
+        assert choice is not None, "choices contains only native comparison facts"
+        peer = next(
+            (
+                row
+                for row in self._rows
+                if row.stage == "policy" and row.physical_part_index == choice.peer_index
+            ),
+            None,
+        )
+        if peer is None:
+            return None
+        dates = choice.date_filter
+        return ArchiveVersionDecisionEvidence(
+            capture_id=packet.capture.capture_id,
+            selected_slot=selected.index,
+            peer=peer,
+            order="selected_first" if choice.selected_first else "peer_first",
+            date_filter=(dates[0].isoformat(), dates[1].isoformat()) if dates else None,
+        )
 
     def enrich(self, trace: CandidateDispositionTrace) -> CandidateDispositionTrace:
         if not self._seen or self._failed:

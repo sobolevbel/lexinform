@@ -269,6 +269,7 @@ class Container:
         return self._once("source_history", self._source_history)
 
     def _source_history(self) -> SourceHistoryPersistence:
+        loader = self.text_loader()
         senate = SourceHistoryPair(
             SenateInspectionPersistence(self.senate_inspections()),
             SourceHistoryPair(
@@ -276,7 +277,7 @@ class Container:
                     self.text_loader().read_source_omissions,
                     self.text_loader().read_source_catalog_attempts,
                 ),
-                PhysicalHistoryPersistence(self.text_loader()),
+                PhysicalHistoryPersistence(loader, loader.deferred_archive_traces),
             ),
         )
         if self.rcl is None:

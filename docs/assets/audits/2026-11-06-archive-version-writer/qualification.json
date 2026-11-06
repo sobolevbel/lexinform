@@ -1,0 +1,67 @@
+{
+  "reader_commit": "463f15a7d73ab301a027da1e80e3d02e3278134a",
+  "native": {
+    "archive_rows": 16,
+    "archive_sha256": "0e207b5316ef30a270d13163ae0f27a0750cb0c2d52587c18f2dc9ea71f77c8a",
+    "catalog_sha256": "400dc033d2c1f637375e80825c6acf3c26ed6458d548108afe6475ad1f9ed98c",
+    "evidence": {
+      "capture_id": "bdc8dfa45c145f86e8a34c7b9860e9a982f05495ae047bfe0319800fd0bcbabb",
+      "order": "selected_first",
+      "peer": {
+        "index": 0,
+        "leaf_sha256": "c532b4327d2e00a37c5b55e2d290854c2abb7055546f4ee446825371853092ef",
+        "ordinals": [
+          7
+        ],
+        "outcome": "policy_excluded",
+        "phase": "version_comparison",
+        "physical_part_index": 5,
+        "reason": "version_preference",
+        "root_sha256": "0e207b5316ef30a270d13163ae0f27a0750cb0c2d52587c18f2dc9ea71f77c8a",
+        "stage": "policy",
+        "text_sha256": "64470b3438da3f6b487a2ecf0eceb0bf2ee4a2593287a36ebd731591e8176fcd"
+      },
+      "selected_slot": 1
+    },
+    "gzip_delta": 207,
+    "legacy_trace_id": "candidate-trace-v1:98288b7f04b1398455b2df053e23534d383d28a0ded8328befa4bbf103decf6b",
+    "physical_recorded_at": "2026-10-17T00:17:00+00:00",
+    "retained_prefix": [
+      1,
+      7
+    ],
+    "selection_id": "selection-v1:0c1801a11834564448ee0e87877f54996000c85657000fc2266596d84cd29b38",
+    "sql_delta": 2619,
+    "trace_bytes": 2243,
+    "trace_id": "candidate-trace-v1:32c5f97c7fa00ab70f84e12ee2460e756ea06bf90933192115a765ff5a5ccba4"
+  },
+  "native_ledger_sha256": "754047d9973f1c467465349c743d1e756e083009c63bd1d3f77f1c92ca32635b",
+  "repeat_exact": true,
+  "native_checks": [
+    "no enriched link before normal physical persistence",
+    "post-insert failure rolls back the optional rows only",
+    "successful retry keeps original physical recorded_at",
+    "repeat flush and cached source produce one enriched link",
+    "two exact restores",
+    "normalized SQL equals native base trace"
+  ],
+  "archives": {
+    "roots": 16,
+    "natural_requests": 17,
+    "synthetic_requests": 4,
+    "cohort_sha256": "f788bb15d668827d5fc6130df92084fca3099da90ef093bb98cd5a2b360d4859",
+    "core_and_archive_members_exact": true,
+    "policy_fingerprint_only_extractions": 20,
+    "reader_policy_sha256": "6bbc22a84fef91a474432265df9b987158db116cecd98087f6d57bb5db771b4f",
+    "writer_policy_sha256": "99e6e65b3f3ace3101a0eed0b45c3e83f9cb3e794bb838174eecd9f70429f82c"
+  },
+  "provider_calls": 0,
+  "broad_cached": {
+    "cases": 4276,
+    "inputs": 7599,
+    "missing_inputs": 1383,
+    "observations_exact": true,
+    "reader_ledger_sha256": "6ca5952c1c57dafaeff736b0b3c90de2e6c5f115c2854f4fcc0b00bd7f7283f2",
+    "writer_ledger_sha256": "18022751e2bdb2f6054bad1f9d12b063bf932040ddd85279b4427b34951fcf26"
+  }
+}

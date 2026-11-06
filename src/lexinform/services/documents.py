@@ -17,6 +17,7 @@ from collections.abc import Callable, Iterator, Mapping
 from contextlib import AbstractContextManager, contextmanager, suppress
 from contextvars import ContextVar, Token
 from dataclasses import dataclass, field, replace
+from functools import partial
 from typing import Literal
 from urllib.parse import urlparse
 
@@ -121,6 +122,8 @@ from lexinform.source_graph_admission import source_graph_admission, source_grap
 
 log = logging.getLogger(__name__)
 
+MAX_DEFERRED_ARCHIVE_TRACES = 256
+
 MIN_TEXT_CHARS = 200
 
 
@@ -208,6 +211,7 @@ class TextLoader:
         self._cache: dict[str, _CachedDocument] = {}
         self._cache_size = cache_size
         self._lock = threading.Lock()
+        self._archive_traces: dict[tuple[str, str, str], CandidateDispositionTrace] = {}
         self._read_cache_hits = 0
         self._download_metrics: dict[str, Counter[str]] = {}
         self._seen_bodies: dict[str, int] = {}
@@ -578,6 +582,18 @@ class TextLoader:
                 tuple(extractions[key] for key in sorted(extractions)),
                 omission=observation.record if observation is not None else None,
             )
+        defer_archive_trace = None
+        if file.archive_version_evidence is not None and file.candidate_trace is not None:
+            with suppress(Exception):
+                enriched = CandidateDispositionTrace.model_validate(
+                    {
+                        **file.candidate_trace.model_dump(),
+                        "archive_version_decision": file.archive_version_evidence,
+                    }
+                )
+                defer_archive_trace = partial(
+                    self._defer_archive_trace, file.candidate_trace.trace_id, enriched
+                )
         return DocumentSourceRead(
             requested if record_requested_document else resolved,
             DocumentSelectionRecord.from_selection(file.selection),
@@ -585,12 +601,30 @@ class TextLoader:
             reads=physical.reads,
             extractions=physical.extractions,
             candidate_trace=file.candidate_trace,
+            defer_archive_trace=defer_archive_trace,
         )
+
+    def _defer_archive_trace(
+        self, base_id: str, enriched: CandidateDispositionTrace, observation_id: str
+    ) -> None:
+        with self._lock:
+            if len(self._archive_traces) < MAX_DEFERRED_ARCHIVE_TRACES:
+                self._archive_traces.setdefault(
+                    (observation_id, base_id, enriched.trace_id), enriched
+                )
+
+    def deferred_archive_traces(self) -> tuple[tuple[str, str, CandidateDispositionTrace], ...]:
+        with self._lock:
+            return tuple(
+                (observation_id, base_id, trace)
+                for (observation_id, base_id, _), trace in self._archive_traces.items()
+            )
 
     def reset_read_metrics(self) -> None:
         """The caller resets observation before starting run work without clearing cached files."""
         with self._lock:
             self._read_cache_hits = 0
+            self._archive_traces.clear()
             self._download_metrics.clear()
             self._seen_bodies.clear()
             self._download_diagnostics.reset()
@@ -934,8 +968,12 @@ class TextLoader:
             and trace.archive_members is None
         ):
             trace = None
+        archive_version_evidence = None
+        if trace is not None and trace.candidate_count == 1 and attempts is not None:
+            archive_version_evidence = attempts.version_evidence
         return selected, replace(
             loaded,
+            archive_version_evidence=archive_version_evidence,
             selection=loaded.selection.model_copy(
                 update={"policy_version": DOCUMENT_SELECTION_POLICY_VERSION}
             ),

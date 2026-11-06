@@ -5,10 +5,13 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Self
 
-from lexinform.archive_policy_capture import ArchivePolicyDecision, PolicyOutcome
+from lexinform.archive_policy_capture import (
+    ArchivePolicyDecision,
+    ArchiveVersionChoice,
+    PolicyOutcome,
+)
 from lexinform.document_versions import (
     VersionComparison,
-    comparable_versions,
     compare_version_decision,
     normative_annex_key,
     regulation_support,
@@ -158,6 +161,7 @@ def _select_parts(
     supporting: list[tuple[int, DocumentPart]] = []
     annexes: list[tuple[int, DocumentPart]] = []
     decisions: dict[int, tuple[PolicyOutcome, ArchiveMemberPolicyReason]] = {}
+    version_choice: ArchiveVersionChoice | None = None
 
     def note(index: int, outcome: PolicyOutcome, reason: ArchiveMemberPolicyReason) -> None:
         if decision_sink is not None:
@@ -169,7 +173,14 @@ def _select_parts(
                 for index, part in enumerate(parts):
                     outcome, reason = decisions[index]
                     decision_sink(
-                        ArchivePolicyDecision(index, outcome, reason, part.sha256, part.text_sha256)
+                        ArchivePolicyDecision(
+                            index,
+                            outcome,
+                            reason,
+                            part.sha256,
+                            part.text_sha256,
+                            version_choice if reason == "selected_main" else None,
+                        )
                     )
             except Exception:
                 pass
@@ -233,7 +244,8 @@ def _select_parts(
     peer_set = CandidateSet.from_parts([p for _, p in peers])
     confirmed = [peers[index] for index in peer_set.bill_indices()]
     if len(confirmed) > 1:
-        indices = comparable_versions([p.text for _, p in confirmed])
+        comparison = compare_version_decision([p.text for _, p in confirmed])
+        indices = comparison.matching_indices
         if not indices:
             for index, _ in (*annexes, *supporting):
                 note(index, "policy_excluded", "version_conflict")
@@ -251,7 +263,15 @@ def _select_parts(
             )
         for index, _ in confirmed:
             note(index, "policy_excluded", "version_preference")
-        main_index, main = confirmed[indices[0]]
+        winner = indices[0]
+        main_index, main = confirmed[winner]
+        if decision_sink is not None and len(confirmed) == 2:
+            dates = comparison.date_filter
+            version_choice = ArchiveVersionChoice(
+                peer_index=confirmed[1 - winner][0],
+                selected_first=winner == 0,
+                date_filter=(dates[0], dates[1]) if dates is not None else None,
+            )
     family = main.members[:-1]
     for index, _ in (*annexes, *supporting):
         note(index, "policy_excluded", "family_exclusion")

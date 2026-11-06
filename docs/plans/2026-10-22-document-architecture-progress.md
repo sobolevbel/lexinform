@@ -12598,3 +12598,26 @@ baseline SQL. The isolated witness added 557 SQL bytes and 86 gzip
 bytes. Original ZIP and three controlled ZIP observations and the
 legacy doctor remained exact. Automatic capture remains inactive.
 [Qualification](../assets/audits/2026-11-06-archive-version-reader/qualification.json).
+
+Commit `463f15a7` passed exact CI 42225871346 and relay deployment
+42226565157.
+
+<a id="j332"></a>
+
+## J332 — append the proven archive comparison after physical persistence
+
+Successful two-member comparisons capture the peer from the existing
+policy decision and exact physical execution. The normal source write
+keeps its original trace. The deferred writer adds the optional trace
+only after standard physical persistence and requires the original
+observation link. A failed optional save rolls back independently.
+
+Native RCL 705897 kept the original physical recording time, archive
+prefix and selection. A controlled failure after insert preserved the
+baseline dump. Repeat and cached reads added one enriched link in
+total. Two restores were exact. The isolated append added 2,619 SQL
+bytes and 207 gzip bytes. Archive decisions and physical observations
+matched across the paired archive cohort after separating recorded
+code fingerprints. Conflict and multiple roots are outside this
+successful comparison profile.
+[Qualification](../assets/audits/2026-11-06-archive-version-writer/qualification.json).
