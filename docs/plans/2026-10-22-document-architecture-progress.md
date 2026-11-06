@@ -12686,6 +12686,9 @@ controls. Cached candidate replay matched 4,276 outcomes and coverage,
 including 1,383 unavailable inputs.
 [Qualification](../assets/audits/2026-11-06-outer-archive-conflict/qualification.json).
 
+The exact `c222b431` release passed CI run 42235158196 and relay
+deployment 42236442549. Restart and timer were verified.
+
 <a id="j336"></a>
 
 ## J336 — read compact frozen committee amendment scans
@@ -12703,3 +12706,18 @@ The old reader rejected those compact forms. The new reader restored them
 twice through SQLite and kept the submitting request byte-exact in the
 focused tests. No provider batch was submitted.
 [Qualification](../assets/audits/2026-11-06-committee-scan-reader/qualification.json).
+
+<a id="j337"></a>
+
+## J337 — store one inline PDF for qualified committee amendments
+
+Frozen committee scan requests store one copy of the PDF and an exact
+provider attachment reference. Ambiguous payload slots and requests
+without a matching scan manifest stay inline.
+
+The J232 cohort produced eight scan and 14 text paths. All text records
+matched, as did the scan context, selection, and request hashes. A full
+public OpenAI dump saved 56,645–183,981 SQL bytes and 34,345–127,830 gzip
+bytes per scan. Controlled queues for both providers restored twice and
+submitted the same request to mock transports.
+[Qualification](../assets/audits/2026-11-06-committee-scan-writer/qualification.json).

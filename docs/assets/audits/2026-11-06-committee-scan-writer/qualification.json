@@ -1,0 +1,163 @@
+{
+  "baseline_commit": "e2993cfe03bac4ef17e2fd1e42605149d7042ba4",
+  "cohort_manifest_sha256": "bc94e5d85183747af057b76aea34c32800b22f572d2e6ee92a77e68975fb480e",
+  "controlled_frozen_queue": {
+    "anthropic": [
+      {
+        "correction": false,
+        "gzip_saved": 127474,
+        "owner": "2317",
+        "sql_saved": 183981
+      },
+      {
+        "correction": true,
+        "gzip_saved": 127437,
+        "owner": "2317",
+        "sql_saved": 183981
+      },
+      {
+        "correction": false,
+        "gzip_saved": 39672,
+        "owner": "744",
+        "sql_saved": 67201
+      },
+      {
+        "correction": true,
+        "gzip_saved": 39839,
+        "owner": "744",
+        "sql_saved": 67201
+      },
+      {
+        "correction": false,
+        "gzip_saved": 45242,
+        "owner": "664",
+        "sql_saved": 75881
+      },
+      {
+        "correction": true,
+        "gzip_saved": 45262,
+        "owner": "664",
+        "sql_saved": 75881
+      },
+      {
+        "correction": false,
+        "gzip_saved": 34839,
+        "owner": "1451",
+        "sql_saved": 56645
+      },
+      {
+        "correction": true,
+        "gzip_saved": 34711,
+        "owner": "1451",
+        "sql_saved": 56645
+      }
+    ],
+    "openai": [
+      {
+        "correction": false,
+        "gzip_saved": 127513,
+        "owner": "2317",
+        "sql_saved": 183981
+      },
+      {
+        "correction": true,
+        "gzip_saved": 127486,
+        "owner": "2317",
+        "sql_saved": 183981
+      },
+      {
+        "correction": false,
+        "gzip_saved": 39710,
+        "owner": "744",
+        "sql_saved": 67201
+      },
+      {
+        "correction": true,
+        "gzip_saved": 39884,
+        "owner": "744",
+        "sql_saved": 67201
+      },
+      {
+        "correction": false,
+        "gzip_saved": 45269,
+        "owner": "664",
+        "sql_saved": 75881
+      },
+      {
+        "correction": true,
+        "gzip_saved": 45292,
+        "owner": "664",
+        "sql_saved": 75881
+      },
+      {
+        "correction": false,
+        "gzip_saved": 34819,
+        "owner": "1451",
+        "sql_saved": 56645
+      },
+      {
+        "correction": true,
+        "gzip_saved": 34678,
+        "owner": "1451",
+        "sql_saved": 56645
+      }
+    ]
+  },
+  "exact_text_controls": 14,
+  "provider_submissions": 0,
+  "public_openai": [
+    {
+      "correction": false,
+      "gzip_saved": 127569,
+      "owner": "2317",
+      "sql_saved": 183981
+    },
+    {
+      "correction": true,
+      "gzip_saved": 127830,
+      "owner": "2317",
+      "sql_saved": 183981
+    },
+    {
+      "correction": false,
+      "gzip_saved": 40012,
+      "owner": "744",
+      "sql_saved": 67201
+    },
+    {
+      "correction": true,
+      "gzip_saved": 40337,
+      "owner": "744",
+      "sql_saved": 67201
+    },
+    {
+      "correction": false,
+      "gzip_saved": 45257,
+      "owner": "664",
+      "sql_saved": 75881
+    },
+    {
+      "correction": true,
+      "gzip_saved": 45267,
+      "owner": "664",
+      "sql_saved": 75881
+    },
+    {
+      "correction": false,
+      "gzip_saved": 34464,
+      "owner": "1451",
+      "sql_saved": 56645
+    },
+    {
+      "correction": true,
+      "gzip_saved": 34345,
+      "owner": "1451",
+      "sql_saved": 56645
+    }
+  ],
+  "report_sha256": {
+    "reader": "9d7957fcc8d613ed24ebfc82fbe4ffaf274c28db0067b5065437903d20b6b483",
+    "writer": "5cc8250b1e3b20874f8ba27e19b186d6e3cebf6903250c30dc4565327a0d4b79"
+  },
+  "source_paths": 22
+}

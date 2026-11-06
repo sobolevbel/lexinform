@@ -262,12 +262,13 @@ def committee_scan_request(factory: Callable[[], BatchBackend]) -> BatchRequest:
     ("provider", "factory"),
     [("openai", offline_openai_backend), ("anthropic", offline_anthropic_backend)],
 )
-def test_reader_restores_committee_scan_while_writer_keeps_it_inline(
+def test_writer_compacts_committee_scan_and_reader_restores_exact_request(
     tmp_path: Path, provider: BatchProvider, factory: Callable[[], BatchBackend]
 ) -> None:
     frozen = committee_scan_request(factory)
     reference = compact(frozen)
-    assert serialize_intent_request(frozen) == frozen.model_dump_json()
+    encoded = serialize_intent_request(frozen)
+    assert json.loads(encoded) == reference
     assert parse_batch_request(reference) == frozen
 
     path = tmp_path / "committee-intent.db"
@@ -290,10 +291,8 @@ def test_reader_restores_committee_scan_while_writer_keeps_it_inline(
         repo.save_batch_intent(intent)
         with closing(sqlite3.connect(path)) as connection, connection:
             (actual,) = connection.execute("SELECT request_json FROM llm_batch_intents").fetchone()
-            assert actual == frozen.model_dump_json()
-            connection.execute(
-                "UPDATE llm_batch_intents SET request_json=?", (json.dumps(reference),)
-            )
+            assert actual == encoded
+            assert len(actual) < len(frozen.model_dump_json())
         saved = repo.dump()
         repo.restore(saved)
         repo.restore(saved)
@@ -329,3 +328,32 @@ def test_committee_scan_reference_rejects_changed_context_and_attachment(fault: 
 
     with pytest.raises(ValueError, match="invalid_input_request_json"):
         parse_batch_request(raw)
+
+
+@pytest.mark.parametrize("fault", ["source_kind", "text", "missing_manifest", "duplicate"])
+def test_writer_keeps_unproved_committee_scan_inline(fault: str) -> None:
+    frozen = committee_scan_request(offline_openai_backend)
+    question, payload = frozen.question, frozen.payload_json
+    assert isinstance(question, AmendmentsQuestion) and payload is not None, (
+        "the fixture freezes a committee amendment"
+    )
+    context = question.ctx
+    scan = context.scan
+    assert scan is not None, "the fixture provides an exact scan"
+    if fault == "source_kind":
+        context = context.model_copy(update={"source_kind": "senate_amendments"})
+    elif fault == "text":
+        context = context.model_copy(update={"text": "Mixed input"})
+    elif fault == "missing_manifest":
+        context = context.model_copy(update={"scan": scan.model_copy(update={"scan_input": None})})
+    elif fault == "duplicate":
+        payload = payload[:-1] + f', "second_copy": "{scan.data}"' + "}"
+    changed = frozen.model_copy(
+        update={
+            "question": question.model_copy(update={"ctx": context}),
+            "payload_json": payload,
+            "payload_sha256": hashlib.sha256(payload.encode()).hexdigest(),
+        }
+    )
+
+    assert serialize_intent_request(changed) == changed.model_dump_json()

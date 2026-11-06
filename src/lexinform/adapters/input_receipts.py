@@ -18,6 +18,7 @@ from lexinform.errors import PreparedInputParentError
 from lexinform.json_storage import canonical_json, read_json
 from lexinform.models import (
     AmendmentInputReceipt,
+    AmendmentsQuestion,
     AnalysisQuestion,
     ArtifactMetadata,
     BatchIntent,
@@ -214,13 +215,19 @@ def _escaped_question_text(text: str) -> str:
 
 
 def _shared_scan_payload(
-    request: BatchRequest, question: AnalysisQuestion, payload: str
+    request: BatchRequest, question: AnalysisQuestion | AmendmentsQuestion, payload: str
 ) -> dict[str, str] | None:
+    if isinstance(question, AnalysisQuestion):
+        if question.kind not in ("analysis", "reanalysis") or question.ctx.text_source != "scan":
+            return None
+    elif (
+        question.ctx.source_kind != "committee_amendments" or question.ctx.source_check is not None
+    ):
+        return None
     context = question.ctx
     scan = context.scan
     if (
         context.text
-        or context.text_source != "scan"
         or scan is None
         or scan.media_type != "application/pdf"
         or scan.scan_input is None
@@ -246,13 +253,12 @@ def _shared_scan_payload(
 def serialize_intent_request(request: BatchRequest) -> str:
     question = request.question
     payload = request.payload_json
-    if (
-        isinstance(question, AnalysisQuestion)
-        and question.kind in ("analysis", "reanalysis")
-        and request.payload_sha256 is not None
-        and payload is not None
-    ):
-        if len(question.ctx.text.encode()) >= _MIN_SHARED_QUESTION_BYTES:
+    if request.payload_sha256 is not None and payload is not None:
+        if (
+            isinstance(question, AnalysisQuestion)
+            and question.kind in ("analysis", "reanalysis")
+            and len(question.ctx.text.encode()) >= _MIN_SHARED_QUESTION_BYTES
+        ):
             escaped = _escaped_question_text(question.ctx.text)
             start = payload.find(escaped)
             if start >= 0 and payload.find(escaped, start + 1) < 0:
@@ -266,7 +272,9 @@ def serialize_intent_request(request: BatchRequest) -> str:
                 return json.dumps(
                     values, ensure_ascii=False, separators=(",", ":"), allow_nan=False
                 )
-        elif reference := _shared_scan_payload(request, question, payload):
+        elif isinstance(question, (AnalysisQuestion, AmendmentsQuestion)) and (
+            reference := _shared_scan_payload(request, question, payload)
+        ):
             values = request.model_dump(mode="json", exclude={"payload_json"})
             values["payload_json"] = reference
             return json.dumps(values, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
