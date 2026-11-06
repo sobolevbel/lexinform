@@ -143,16 +143,68 @@ def _scan_provider_payload(
     )
     if (
         context.get("text") != ""
-        or not (primary or committee)
         or not isinstance(scan, dict)
         or scan.get("media_type") != "application/pdf"
-        or not isinstance(scan.get("scan_input"), dict)
+        or not isinstance(manifest := scan.get("scan_input"), dict)
         or not isinstance(data := scan.get("data"), str)
         or not _scan_data_fits(data, scan.get("pages"))
     ):
         raise ValueError("invalid_scan_provider_payload_reference")
+    if not (primary or committee or _senate_scan_payload_matches(kind, context, scan, manifest)):
+        raise ValueError("invalid_scan_provider_payload_reference")
     _validate_scan_payload_shell(request.get("custom_id"), request.get("model"), prefix, suffix)
     return prefix + data + suffix
+
+
+def _senate_scan_payload_matches(
+    kind: object,
+    context: dict[str, object],
+    scan: dict[str, object],
+    manifest: dict[str, object],
+) -> bool:
+    source = context.get("source_check")
+    if (
+        kind != "amendments"
+        or context.get("source_kind") != "senate_amendments"
+        or context.get("truncated") is not False
+        or "text_source" in context
+        or not isinstance(source, dict)
+        or source.get("scan") is not True
+        or source.get("word_eof", False) is not False
+    ):
+        return False
+    subjects = source.get("expected_subjects")
+    pages = scan.get("pages")
+    size = manifest.get("input_bytes")
+    return (
+        isinstance(subjects, (list, tuple))
+        and bool(subjects)
+        and all(isinstance(subject, str) and subject.strip() for subject in subjects)
+        and source.get("subject") == subjects[0]
+        and type(pages) is int
+        and all(
+            type(value) is int and value == pages
+            for value in (
+                source.get("pages"),
+                scan.get("of_pages"),
+                manifest.get("source_pages"),
+                manifest.get("page_count"),
+            )
+        )
+        and type(scan.get("cover_letter_pages", 0)) is int
+        and scan.get("cover_letter_pages", 0) == 0
+        and type(manifest.get("first_page")) is int
+        and manifest.get("first_page") == 1
+        and manifest.get("transformations", ()) in ((), [])
+        and type(size) is int
+        and 0 < size <= MAX_SCAN_BYTES
+        and type(manifest.get("source_bytes")) is int
+        and manifest.get("source_bytes") == size
+        and source.get("sha256")
+        == scan.get("sha256")
+        == manifest.get("source_sha256")
+        == manifest.get("input_sha256")
+    )
 
 
 def _scan_data_fits(data: str, pages: object) -> bool:

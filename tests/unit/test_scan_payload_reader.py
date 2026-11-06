@@ -24,6 +24,7 @@ from lexinform.models import (
     BatchRequest,
     BillContext,
     DigestItemMeta,
+    SenateResolutionIdentity,
 )
 from lexinform.ports import BatchBackend
 from lexinform.services.documents import TextLoader
@@ -357,3 +358,130 @@ def test_writer_keeps_unproved_committee_scan_inline(fault: str) -> None:
     )
 
     assert serialize_intent_request(changed) == changed.model_dump_json()
+
+
+def senate_scan_request(factory: Callable[[], BatchBackend]) -> BatchRequest:
+    frozen = committee_scan_request(offline_openai_backend)
+    question = frozen.question
+    assert isinstance(question, AmendmentsQuestion), "the fixture supplies an amendment question"
+    scan = question.ctx.scan
+    assert scan is not None, "the fixture has the original full PDF"
+    source = SenateResolutionIdentity(
+        sha256=scan.sha256,
+        subject="o cudzoziemcach",
+        adopted_on=NOW.date(),
+        scan=True,
+        expected_subjects=("o cudzoziemcach",),
+        pages=scan.pages,
+    )
+    context = question.ctx.model_copy(
+        update={"source_kind": "senate_amendments", "source_check": source}
+    )
+    return factory().prepare_request(
+        BatchRequest(
+            custom_id="senate-scan",
+            term=10,
+            number=frozen.number,
+            question=AmendmentsQuestion(ctx=context),
+        )
+    )
+
+
+@pytest.mark.parametrize(
+    ("provider", "factory"),
+    [("openai", offline_openai_backend), ("anthropic", offline_anthropic_backend)],
+)
+def test_reader_restores_full_senate_scan_before_writer_activation(
+    tmp_path: Path, provider: BatchProvider, factory: Callable[[], BatchBackend]
+) -> None:
+    request = senate_scan_request(factory)
+    assert serialize_intent_request(request) == request.model_dump_json()
+    reference = compact(request)
+    assert parse_batch_request(reference) == request
+    question = request.question
+    assert isinstance(question, AmendmentsQuestion), "the fixture keeps the Senate source"
+    scan = question.ctx.scan
+    assert scan is not None, "the frozen context retains the original PDF"
+    intent = BatchIntent.from_request(
+        request=request,
+        meta=DigestItemMeta(
+            memo_key="senate",
+            source_kind="senate_amendments",
+            amendment_source=question.ctx.source_check,
+            scan_input=scan.scan_input,
+        ),
+        provider=provider,
+        created_at=NOW,
+    )
+    path = tmp_path / "senate.db"
+    with closing(SqliteBillRepository(path)) as repo:
+        repo.migrate()
+        repo.save_batch_intent(intent)
+        inline = repo.dump()
+        repo.restore(inline)
+        assert repo.dump() == inline
+        with closing(sqlite3.connect(path)) as connection, connection:
+            connection.execute(
+                "UPDATE llm_batch_intents SET request_json=?", (json.dumps(reference),)
+            )
+        compact_dump = repo.dump()
+        for _ in range(2):
+            repo.restore(compact_dump)
+            assert repo.dump() == compact_dump
+            assert repo.list_queued_batch_intents() == [intent]
+        repo.mark_batch_intents_submitting([request.custom_id])
+        (submitting,) = repo.list_submitting_batch_intents()
+        assert factory().prepare_request(submitting.request) == request
+
+
+@pytest.mark.parametrize(
+    "fault",
+    [
+        "house",
+        "source_hash",
+        "source_pages",
+        "source_kind",
+        "subject",
+        "cover",
+        "window",
+        "source_bytes",
+        "transform",
+        "slot",
+        "payload_hash",
+    ],
+)
+def test_senate_compact_reference_refuses_mismatched_source_and_attachment(fault: str) -> None:
+    raw = compact(senate_scan_request(offline_openai_backend))
+    context = raw["question"]["ctx"]
+    scan = context["scan"]
+    source = context["source_check"]
+    manifest = scan["scan_input"]
+    ref = raw["payload_json"]
+    if fault == "house":
+        context["source_kind"] = "committee_amendments"
+    elif fault == "source_hash":
+        source["sha256"] = "0" * 64
+    elif fault == "source_pages":
+        source["pages"] += 1
+    elif fault == "source_kind":
+        source["scan"] = False
+    elif fault == "subject":
+        source["subject"] = "different"
+    elif fault == "cover":
+        scan["cover_letter_pages"] = 1
+    elif fault == "window":
+        manifest["first_page"] = 2
+    elif fault == "source_bytes":
+        manifest["source_bytes"] += 1
+    elif fault == "transform":
+        manifest["transformations"] = ["triage"]
+    elif fault == "slot":
+        ref["prefix"] = ref["prefix"].replace('"file_data"', '"unrelated_data"')
+        raw["payload_sha256"] = hashlib.sha256(
+            (ref["prefix"] + scan["data"] + ref["suffix"]).encode()
+        ).hexdigest()
+    else:
+        raw["payload_sha256"] = "0" * 64
+
+    with pytest.raises(ValueError, match="invalid_input_request_json"):
+        parse_batch_request(raw)

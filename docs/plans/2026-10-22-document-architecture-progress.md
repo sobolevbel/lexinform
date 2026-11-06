@@ -13092,6 +13092,9 @@ The eight-slot template, prior HTML and repeated report matched.
 No saved answer, reader card or provider request was changed.
 [Qualification](../assets/audits/2026-11-06-primary-review-intake/qualification.json).
 
+The exact `ede23bbc` release passed CI run 42264350238 and relay
+deployment 42265191231. Restart and timer were verified.
+
 <a id="j357"></a>
 
 ## J357 — retain the exact mixed outer version comparison
@@ -13109,3 +13112,17 @@ roots and four controls, and all 4,276 cached decisions matched.
 The unit control with equal ZIP and DOCX text now checks both compared
 positions and the matching-policy-identity outcome.
 [Qualification](../assets/audits/2026-11-06-mixed-outer-choice/qualification.json).
+
+<a id="j358"></a>
+
+## J358 — read compact frozen Senate scan requests
+
+The compatible reader verifies the Senate source check, full PDF window,
+exact scan manifest and provider attachment slot. The ordinary writer
+continues to store Senate scan requests inline.
+
+Four pinned term-10 resolutions each passed both provider request
+builders and two exact compact restores. The restored frozen requests
+matched the original. The preceding reader accepted inline controls and
+rejected compact ones without changing state. No provider was called.
+[Qualification](../assets/audits/2026-11-06-senate-scan-reader/qualification.json).

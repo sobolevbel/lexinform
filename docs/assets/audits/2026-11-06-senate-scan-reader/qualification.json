@@ -1,0 +1,80 @@
+{
+  "both_provider_shells": true,
+  "native_report": {
+    "2103-anthropic": {
+      "file_sha256": "cf7aafa2484185903a2fe6c525747865353dd73f5a897fcbceb4802f72eae1cb",
+      "frozen_sha256": "a589fbc729c1c5207ae0e37b87419f374f3af39867e7786cc48883ccbfb251ab",
+      "pages": 12,
+      "raw_bytes": 827709,
+      "saved_gzip": 810942,
+      "saved_sql": 1103553
+    },
+    "2103-openai": {
+      "file_sha256": "cf7aafa2484185903a2fe6c525747865353dd73f5a897fcbceb4802f72eae1cb",
+      "frozen_sha256": "2adc023270f7f0af88922ca9a7b1db7256e12e368157b9df582a7377ef914454",
+      "pages": 12,
+      "raw_bytes": 827709,
+      "saved_gzip": 811019,
+      "saved_sql": 1103553
+    },
+    "377-anthropic": {
+      "file_sha256": "d562dcf64770bd36810c7dff14d4de63a65e430d25e2f4f2e3e25b4c68c3cabb",
+      "frozen_sha256": "7327213043f4b368725fd1b67c6bd0c0da9b31f43feed9a61f19fbe0d7fd69c3",
+      "pages": 5,
+      "raw_bytes": 307661,
+      "saved_gzip": 297066,
+      "saved_sql": 410157
+    },
+    "377-openai": {
+      "file_sha256": "d562dcf64770bd36810c7dff14d4de63a65e430d25e2f4f2e3e25b4c68c3cabb",
+      "frozen_sha256": "e2fce13b1fffd505e54807ae49c6e8905032313e42d43b03e66e1616f41d8629",
+      "pages": 5,
+      "raw_bytes": 307661,
+      "saved_gzip": 297047,
+      "saved_sql": 410157
+    },
+    "378-anthropic": {
+      "file_sha256": "97e801a1633cb25f50b5c23e304e489851b905978979ed3bf706e69df123d57f",
+      "frozen_sha256": "b9b4cac3e3926cc4607457a86fb8131c4b7a2922f0bf717abdb72dd2a98af18a",
+      "pages": 13,
+      "raw_bytes": 704800,
+      "saved_gzip": 681666,
+      "saved_sql": 939677
+    },
+    "378-openai": {
+      "file_sha256": "97e801a1633cb25f50b5c23e304e489851b905978979ed3bf706e69df123d57f",
+      "frozen_sha256": "f6882dc7d3266bdae223e7f879419cfec1d4f8b1fb4ffdff190e4a35f48443de",
+      "pages": 13,
+      "raw_bytes": 704800,
+      "saved_gzip": 681696,
+      "saved_sql": 939677
+    },
+    "919-anthropic": {
+      "file_sha256": "e1f1cec15cad115fc989dd4f59b6f1ddffc95935c0e2e95dc436f38d7f9dcf03",
+      "frozen_sha256": "4aab8d6fe8087bd8832cd9e6f01d93771c57e04ed781734978771da4d629f9a6",
+      "pages": 28,
+      "raw_bytes": 1387007,
+      "saved_gzip": 1345966,
+      "saved_sql": 1849285
+    },
+    "919-openai": {
+      "file_sha256": "e1f1cec15cad115fc989dd4f59b6f1ddffc95935c0e2e95dc436f38d7f9dcf03",
+      "frozen_sha256": "ac31070564dc5d93fb8faacd49e7ed3f222d124e57408660f24bd3dac4b48f63",
+      "pages": 28,
+      "raw_bytes": 1387007,
+      "saved_gzip": 1345957,
+      "saved_sql": 1849285
+    }
+  },
+  "official_cases": [
+    "377",
+    "378",
+    "919",
+    "2103"
+  ],
+  "previous_reader_rejects_new_compact_atomically": true,
+  "provider_submissions": 0,
+  "report_sha256": "0a37b509fa4ff45f46258517d466d6e174eab067d661aded666fd65b40d12b4a",
+  "two_exact_restores": true,
+  "writer_enabled": false
+}
