@@ -592,3 +592,11 @@ requested subset. Progress goes to stderr every 25 prints by default. Use
 `--progress-every 1` to identify the current print or `0` for quiet operation.
 The JSON reports the bounded normative-core proof, refusals and missing pairs.
 A refusal leaves the relationship unknown.
+
+For one pinned positive case, `tools.replay_print_representation` can write a
+standalone SQLite SQL dump instead of the usual JSON proof. Pass
+`--snapshot-output PATH.sql` in place of `--output`, with the same
+`--corpus`, `--case` and `--case-sha256` inputs. The output path must be new
+and outside the corpus. The dump contains a fresh offline source observation
+and the validated metadata chain, without bodies. It is an isolated audit
+artifact. The command has no input-state or production write mode.

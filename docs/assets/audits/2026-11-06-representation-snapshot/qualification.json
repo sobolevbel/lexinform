@@ -1,0 +1,48 @@
+{
+  "boundary_refused_without_output": "1759",
+  "cases": [
+    {
+      "print": "227",
+      "sql_sha256": "d0173d3abe5398b14c695108c642814ad9abea1bbf32e041d97324438c0a3668",
+      "trace_id": "candidate-trace-v1:e354754d327baa69d78aed1e76b92c1dae6613c4c71b09cee2798ff267907066"
+    },
+    {
+      "print": "1267",
+      "sql_sha256": "a56d7e21ff0f531e6fdb4fb60eeaf6feecb23e9b87bb925fa7594a070198dd72",
+      "trace_id": "candidate-trace-v1:1896d0e47a96c7479daf58b3a4a48e2e0091f56a453ae7cf379ffb491afe6595"
+    },
+    {
+      "print": "1450",
+      "sql_sha256": "ae9cf6266cf26cf4b149144895af3e40bcd0fd3b275475cd79440c10cf9faeeb",
+      "trace_id": "candidate-trace-v1:ac483f6370d876f35a0bdb9f97aae514d9c6627490dfebb63073d206a05bb033"
+    },
+    {
+      "print": "1522",
+      "sql_sha256": "bec6cc53e1bf77a1775f1acef0ac6501b5569248a409e6b19a8040415d053816",
+      "trace_id": "candidate-trace-v1:d39fc0a661e171162a5cd82225f0e6a834279db8090bdbe768df4c7835071df6"
+    },
+    {
+      "print": "1607",
+      "sql_sha256": "5beb90815d32f069397eee808cd6347eeb05f1f591af96cb54d7ba77fbd8de78",
+      "trace_id": "candidate-trace-v1:d35953f2fd72b9d449eb1a6005593abf2a082914fafa4b994ca38d67b904e217"
+    },
+    {
+      "print": "1608",
+      "sql_sha256": "7ce7d39c4b16c2587db4b8caca21afd3e808ad81b91a6a250835fc6c975da362",
+      "trace_id": "candidate-trace-v1:e3ce8a8ac1cda0739afa8575ba2710292074a01ab8af93f4bf21f43401e711e3"
+    },
+    {
+      "print": "2273",
+      "sql_sha256": "3f5592f275e096af9e95183091f7df56e31f22baaf050f3869ed059d923be8f0",
+      "trace_id": "candidate-trace-v1:27495ca4670029f07237b87d2873e15d49fe501b65d396fa958c4a7f9f2bc6fc"
+    },
+    {
+      "print": "3142",
+      "sql_sha256": "029982eb1baa57d68176bd9c42cbe533e83f24473899a1b7d1fd9f78a99b6320",
+      "trace_id": "candidate-trace-v1:ceeb588557a315047b9485994f58741e055a4279ddb0b7dce86cc6b8feb0d503"
+    }
+  ],
+  "existing_output_refused": "1608",
+  "json_proofs_equal": true,
+  "restores_per_case": 2
+}

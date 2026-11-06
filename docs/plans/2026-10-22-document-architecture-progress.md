@@ -11576,3 +11576,19 @@ The existing state snapshot `ff49a74a` produced byte-identical trace and gap
 doctor reports before and after the reader change. The largest measured
 increment with all parents already present was 1,820 SQL bytes and 435 gzip
 bytes for one trace and its observation link.
+
+<a id="j287"></a>
+
+## J287 — materialize proven representation links in isolated snapshots
+
+The exact single-print replay can export a new standalone SQL snapshot.
+It retains the original selection, edition, both read receipts, the DOCX
+extraction and the bounded relation from the same verified capture. The
+ordinary JSON proof remains identical. No live analysis reads or state
+updates were added.
+
+All eight corpus positives produced their previous trace IDs and survived
+two restores. The negative 1759 case produced no SQL file, and an existing
+output was preserved. DA4.7 remains open for production capture and the
+other relation types.
+[Snapshot qualification](../assets/audits/2026-11-06-representation-snapshot/qualification.json).

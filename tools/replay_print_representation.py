@@ -3,8 +3,12 @@
 import argparse
 import datetime as dt
 import json
+import os
 import re
+from contextlib import closing
+from dataclasses import dataclass
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
@@ -13,9 +17,18 @@ from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.sejm_api import parse_print
+from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.document_editions import candidate_edition
-from lexinform.models import DocumentSelectionRecord, TextDocument
+from lexinform.models import DocumentSelectionRecord, SourceObservation, TextDocument
+from lexinform.models.artifacts import ArtifactReadIdentity
+from lexinform.models.candidate_trace import CandidateDispositionTrace, SejmPrintRepresentation
+from lexinform.models.extractions import ExtractionResult
 from lexinform.sections import document_kind, law_body
+from lexinform.services.document_history import (
+    DocumentSourceRead,
+    record_artifact_reads,
+    record_document_source,
+)
 from lexinform.services.documents import TextLoader
 from lexinform.services.sources import original_document
 from tools.corpus_artifacts import digest, read_artifact, write_json
@@ -100,9 +113,29 @@ def official_original(
     return document, next(item.url for item in info.attachments if item.name == docx_name)
 
 
+@dataclass(frozen=True)
+class RepresentationCapture:
+    source: DocumentSourceRead
+    trace: CandidateDispositionTrace
+    word_read: ArtifactReadIdentity
+    word_extraction: ExtractionResult
+
+
 def prove(
     case: RepresentationCase, listing: list[dict[str, Any]], pdf: bytes, docx: bytes
 ) -> dict[str, object]:
+    result, _ = _prove(case, listing, pdf, docx, capture=False)
+    return result
+
+
+def _prove(
+    case: RepresentationCase,
+    listing: list[dict[str, Any]],
+    pdf: bytes,
+    docx: bytes,
+    *,
+    capture: bool,
+) -> tuple[dict[str, object], RepresentationCapture | None]:
     document, word_url = official_original(listing, term=case.term, number=case.number)
     if (
         not pdf.startswith(b"%PDF-")
@@ -141,7 +174,7 @@ def prove(
         DocumentTextExtractor(pdf_reader, word_reader, DocTextExtractor()),
         max_bytes=_MAX_BYTES,
     )
-    selected, loaded = loader.select_document(document)
+    selected, loaded = loader.select_document(document, retain_routine_trace=capture)
     record = DocumentSelectionRecord.from_selection(loaded.selection)
     edition = candidate_edition(record, recorded_at=dt.datetime(1970, 1, 1, tzinfo=dt.UTC))
     parts = loaded.selection.parts
@@ -153,10 +186,12 @@ def prove(
         or (part := parts[0]).members
         or (part.role, part.url, part.source_sha256, part.text_sha256)
         != ("bill", document.url, case.pdf.sha256, case.pdf_text_sha256)
-        or loader.read(word_url).text != word.legacy_text
     ):
         raise ValueError("Exact official PDF does not bind the native single-member edition")
-    return {
+    word_loaded = loader.read(word_url)
+    if word_loaded.text != word.legacy_text:
+        raise ValueError("Exact official PDF does not bind the native single-member edition")
+    proof = {
         "relation": "representation_of",
         "scope": "native_normative_core_only",
         "term": case.term,
@@ -175,16 +210,50 @@ def prove(
         "adoption_outcome": "not_asserted",
     }
 
+    if not capture:
+        return proof, None
 
-def replay(corpus: Path, case: RepresentationCase) -> dict[str, object]:
+    source = loader.capture_source_read(document, selected, loaded)
+    _, word_read, word_extraction = loader.file_origins(word_url, word_loaded)
+    if (
+        not isinstance(source, DocumentSourceRead)
+        or source.candidate_trace is None
+        or word_read is None
+        or word_extraction is None
+    ):
+        raise ValueError("Exact representation capture is unavailable")
+    metadata = SejmPrintRepresentation(
+        term=case.term,
+        number=case.number,
+        listing_sha256=case.official_prints.sha256,
+        pdf_sha256=case.pdf.sha256,
+        pdf_text_sha256=case.pdf_text_sha256,
+        docx_sha256=case.docx.sha256,
+        docx_text_sha256=case.docx_text_sha256,
+        core_sha256=digest(source_core.encode()),
+        core_chars=len(source_core),
+        selection_id=record.selection_id,
+        edition_id=edition.edition_id,
+        docx_extraction_id=word_extraction.result_id,
+    )
+    trace = CandidateDispositionTrace.model_validate(
+        {**source.candidate_trace.model_dump(), "sejm_print_representation": metadata}
+    )
+    return proof, RepresentationCapture(source, trace, word_read, word_extraction)
+
+
+def _replay(
+    corpus: Path, case: RepresentationCase, *, capture: bool
+) -> tuple[dict[str, object], RepresentationCapture | None]:
     root = corpus.resolve(strict=True)
     reads, before = CorpusReads(root), source_fingerprints()
     with reads.guard():
-        result = prove(
+        result, captured = _prove(
             case,
             _PRINTS.validate_json(case.official_prints.read(root)),
             case.pdf.read(root),
             case.docx.read(root),
+            capture=capture,
         )
     if reads.changed_inputs() or before != source_fingerprints():
         raise ValueError("Replay inputs or code changed")
@@ -195,7 +264,46 @@ def replay(corpus: Path, case: RepresentationCase) -> dict[str, object]:
         "read_inputs": reads.initial_sha256,
         "code_version": code_version(),
         "source_pins_sha256": digest(json.dumps(before, sort_keys=True).encode()),
-    }
+    }, captured
+
+
+def replay(corpus: Path, case: RepresentationCase) -> dict[str, object]:
+    report, _ = _replay(corpus, case, capture=False)
+    return report
+
+
+def representation_snapshot(corpus: Path, case: RepresentationCase) -> str:
+    _, captured = _replay(corpus, case, capture=True)
+    assert captured is not None, "successful capture returns the exact source and proof"
+    source = captured.source
+    now = dt.datetime.now(dt.UTC)
+    observation = SourceObservation(
+        term=case.term,
+        number=case.number,
+        purpose="analysis",
+        document=source.document,
+        selection_id=source.selection.selection_id,
+        recorded_at=now,
+    )
+    with closing(SqliteBillRepository(":memory:")) as repo:
+        repo.migrate()
+        with repo.atomic():
+            record_document_source(
+                repo,
+                source.selection,
+                observation,
+                source.artifacts,
+                reads=source.reads,
+                extractions=source.extractions,
+            )
+            record_artifact_reads(repo, (captured.word_read,), recorded_at=now)
+            repo.save_extraction_result(captured.word_extraction, recorded_at=now)
+            repo.save_candidate_disposition_trace(observation.observation_id, captured.trace)
+        checkpoint = repo.dump()
+        repo.restore(checkpoint)
+        if repo.get_candidate_disposition_trace(captured.trace.trace_id) != captured.trace:
+            raise ValueError("Representation changed during snapshot restore")
+        return checkpoint
 
 
 def main() -> None:
@@ -203,16 +311,29 @@ def main() -> None:
     parser.add_argument("--corpus", type=Path, required=True)
     parser.add_argument("--case", type=Path, required=True)
     parser.add_argument("--case-sha256", required=True)
-    parser.add_argument("--output", type=Path, required=True)
+    output = parser.add_mutually_exclusive_group(required=True)
+    output.add_argument("--output", type=Path, help="write the JSON proof")
+    output.add_argument("--snapshot-output", type=Path, help="write a new standalone SQL snapshot")
     args = parser.parse_args()
     try:
-        if args.output.resolve().is_relative_to(args.corpus.resolve()):
+        target = args.output or args.snapshot_output
+        if target.resolve().is_relative_to(args.corpus.resolve()):
             raise ValueError("Replay output must be outside the corpus")
         raw = read_artifact(args.case)
         if digest(raw) != args.case_sha256:
             raise ValueError("Replay case SHA-256 differs")
-        result = replay(args.corpus, RepresentationCase.model_validate_json(raw))
-        write_json(args.output, {**result, "case_sha256": args.case_sha256})
+        case = RepresentationCase.model_validate_json(raw)
+        if args.snapshot_output is None:
+            result = replay(args.corpus, case)
+            write_json(target, {**result, "case_sha256": args.case_sha256})
+        else:
+            if target.suffix != ".sql" or target.exists() or target.is_symlink():
+                raise ValueError("Snapshot output must be a new .sql file")
+            checkpoint = representation_snapshot(args.corpus, case)
+            with TemporaryDirectory(dir=target.parent, prefix=".representation-") as directory:
+                staged = Path(directory) / "snapshot.sql"
+                staged.write_text(checkpoint, encoding="utf-8")
+                os.link(staged, target)
     except (OSError, ValueError, KeyError, TypeError) as exc:
         parser.error(str(exc))
 
