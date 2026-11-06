@@ -5,7 +5,15 @@ import pytest
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
-from lexinform.models import Attachment, BillStatus, PrintInfo, PublicationKind
+from lexinform.errors import LlmUnavailableError
+from lexinform.models import (
+    AmendmentInputReceipt,
+    Attachment,
+    BatchRequest,
+    BillStatus,
+    PrintInfo,
+    PublicationKind,
+)
 from tests.fakes import FakeTextExtractor
 from tests.harness import CHANNEL, REFERRED, World, rcl_document, rcl_folder, rcl_project, rcl_stage
 from tests.scenario.test_senate_document_selection import (
@@ -14,6 +22,7 @@ from tests.scenario.test_senate_document_selection import (
     SUBJECT,
     world_with_sources,
 )
+from tests.unit.test_physical_extraction import docx
 
 DOCUMENT_FIXTURES = FIXTURES.parent / "document_selection"
 
@@ -108,14 +117,23 @@ def test_late_senate_attachment_is_revisited_without_another_stage_change(restor
     assert revisions[0].kind is PublicationKind.AMENDMENTS_REVISION
 
 
-def test_late_batch_keeps_its_context_when_the_source_disappears_after_submission() -> None:
+def test_late_batch_preserves_exact_input_when_the_source_disappears_before_queue(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     resolution = (FIXTURES / "senate_3213_resolution.txt").read_text()
+    cover = (
+        "Warszawa, dnia 14 października 2026 r.\nMarszałek Senatu\n"
+        "Mam zaszczyt przekazać uchwałę Senatu.\n"
+    )
+    source = docx((cover + resolution).replace("\f", "\n"))
     url = "https://api.test/3213.docx"
     world = World(
         batch=True,
         batch_kinds=frozenset({"amendments"}),
         text_budget_chars=60_000,
-        extractor=FakeTextExtractor(by_content={b"resolution": resolution}),
+        extractor=DocumentTextExtractor(
+            FakeTextExtractor(), DocxTextExtractor(), DocTextExtractor()
+        ),
     )
     world.add_bill("1929", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
     world.run()
@@ -135,15 +153,28 @@ def test_late_batch_keeps_its_context_when_the_source_disappears_after_submissio
     assert deferred[0].last_defer_reason == "amendments_source_unconfirmed"
     assert deferred[0].next_at == world.clock.now() + dt.timedelta(days=2)
     assert not world.batch.submitted
-    world.gateway.files[url] = b"resolution"
+    world.gateway.files[url] = source
     world.clock.advance(days=2)
-    world.run()
-    assert len(world.batch.submitted) == 1
-    work = world.repo.list_document_work(due=world.clock.now())
-    assert len(work) == 1 and work[0].context_json is not None
-    assert work[0].last_defer_reason == deferred[0].last_defer_reason
+
+    def refuse(request: BatchRequest) -> BatchRequest:
+        raise LlmUnavailableError("controlled pre-queue failure")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(world.batch, "prepare_request", refuse)
+        world.run()
+    (work,) = world.repo.list_document_work(due=world.clock.now())
+    witness = work.senate_input_witness
+    assert witness is not None, "the actual read records its frozen continuation witness"
+    assert witness.source_start > 0 and work.context_json is not None
+    assert work.last_defer_reason == deferred[0].last_defer_reason
+    assert not world.batch.submitted and not world.repo.list_queued_batch_intents()
+
     world.repo.restore(world.repo.dump())
     del world.gateway.files[url]
+    previous_downloads = world.gateway.calls.count(f"download:{url}")
+    world.run()
+    assert len(world.batch.submitted) == 1
+    assert world.gateway.calls.count(f"download:{url}") == previous_downloads
     world.batch.resolve()
 
     world.run()
@@ -162,3 +193,12 @@ def test_late_batch_keeps_its_context_when_the_source_disappears_after_submissio
     assert len(receipts) == 1 and receipts[0].result_id == change.amendments.computation_id
     assert receipts[0].target is not None and receipts[0].target.kind == "status_change"
     assert receipts[0].target.ref == str(change.id)
+    paid = world.repo.get_computation_result(change.amendments.computation_id)
+    assert paid is not None and paid.amendment_input_ref is not None
+    receipt = paid.amendment_input_ref.lineage_receipt
+    assert isinstance(receipt, AmendmentInputReceipt)
+    assert receipt.extraction_id == witness.extraction_id
+    assert receipt.request_sha256 == world.batch.submitted[0].payload_sha256
+    assert receipt.context_sha256 == witness.context_sha256
+    assert receipt.segments[0].source_start == witness.source_start
+    world.repo.restore(world.repo.dump())

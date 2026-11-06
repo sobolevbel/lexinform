@@ -1,0 +1,69 @@
+{
+  "baseline_commit": "d24ffd4c7f981da5b893417ca689900500ec02b5",
+  "corpus": {
+    "text_cases": 701,
+    "identity": 636,
+    "cover_suffix": 65,
+    "excluded": {
+      "scan_pending": 23,
+      "no_unique_date": 2,
+      "not_amendments": 90
+    },
+    "native_downloads_per_case": 1,
+    "resume_source_calls": 0,
+    "provider_calls": 0,
+    "unchanged": [
+      "key",
+      "raw_sha256",
+      "source_start",
+      "full_chars",
+      "emitted_chars",
+      "request_sha256",
+      "context_sha256",
+      "normalized_sql_sha256"
+    ],
+    "before_ledger_sha256": "835426e8ebc5c464834ebb52a98d27b2ad29de228f287672e2af0a525125f525",
+    "after_ledger_sha256": "2556bad84ccdd375962dbf1cbb8881b26dfdd5e97fcdafc18c723d16f7c09817"
+  },
+  "checkpoint": {
+    "exact_restores_per_checkpoint": 2,
+    "checkpoints": [
+      "before_queue",
+      "queued"
+    ],
+    "normalized_fields": [
+      "document_work.senate_input_witness",
+      "llm_batch_intents.prepared_input_receipt",
+      "llm_batch_intents.amendment_input_ref.lineage_receipt"
+    ],
+    "integrity_check": "ok",
+    "foreign_key_errors": 0,
+    "isolated_growth": {
+      "prequeue_sql_bytes": {
+        "min": 463,
+        "median": 463,
+        "max": 466,
+        "total": 324623
+      },
+      "queued_sql_bytes": {
+        "min": 2936,
+        "median": 2944,
+        "max": 2961,
+        "total": 2064892
+      },
+      "prequeue_gzip_bytes": {
+        "min": 38,
+        "median": 108,
+        "max": 246,
+        "total": 79993
+      },
+      "queued_gzip_bytes": {
+        "min": 357,
+        "median": 438,
+        "max": 5519,
+        "total": 335550
+      }
+    }
+  },
+  "scope": "Pinned native preparation, controlled historical events and prior analyses, actual offline provider serialization."
+}

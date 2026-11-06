@@ -10,6 +10,7 @@ from lexinform.input_receipts import (
 )
 from lexinform.models import (
     AmendmentInputReceipt,
+    AmendmentsContext,
     AmendmentsQuestion,
     AnalysisQuestion,
     ArtifactIdentity,
@@ -19,22 +20,29 @@ from lexinform.models import (
     DigestItemMeta,
     DocumentPart,
     DocumentSelection,
+    DocumentSelectionRecord,
     ExtractionResult,
     PrimaryInputReceipt,
     SourceObservation,
     SourceObservationIdentity,
     SupplementInputReceipt,
     SupplementQuestion,
+    TextDocument,
 )
+from lexinform.models.documents import SenateAmendmentInputWitness
 from lexinform.models.input_receipts import (
     MAX_INPUT_RECEIPT_SEGMENTS,
     LooseRclInputPart,
     LooseRclInputReceipt,
     SejmSelfAmendmentInputReceipt,
+    amendment_context_sha256,
     input_map_sha256,
+    input_text_sha256,
     primary_context_sha256,
 )
+from lexinform.models.prepared_input import PreparedTextPart, PreparedTextSegment
 from lexinform.models.sejm import SejmProposalOrigin
+from lexinform.ports import BillRepository
 from lexinform.prepared_input import prepared_text_input
 from lexinform.services.document_history import (
     DocumentSourceRead,
@@ -333,6 +341,172 @@ def capture_secondary_input_receipt(
         known_selection=source.selection,
         body=body,
         extraction=extraction,
+    )
+
+
+def _senate_work_parents(
+    repo: BillRepository,
+    witness: SenateAmendmentInputWitness,
+    context: AmendmentsContext,
+    document: TextDocument,
+    *,
+    term: int,
+) -> tuple[SourceObservation, DocumentPart, ExtractionResult] | None:
+    if (
+        context.source_kind != "senate_amendments"
+        or context.scan is not None
+        or context.source_check is not None
+        or context.truncated
+        or not context.text.strip()
+        or document.kind != "senate_amendments"
+        or document.senate is None
+        or document.senate.scan
+        or witness.context_sha256 != amendment_context_sha256(context)
+        or witness.text_sha256 != input_text_sha256(context.text)
+    ):
+        return None
+    observation = repo.get_source_observation(witness.source_observation_id)
+    if observation is None or (
+        observation.observation_id,
+        observation.term,
+        observation.number,
+        observation.purpose,
+        observation.document,
+    ) != (witness.source_observation_id, term, context.number, "analysis", document):
+        return None
+    selection = repo.get_document_selection(observation.selection_id)
+    extraction = repo.get_extraction_result(witness.extraction_id)
+    if (
+        selection is None
+        or selection.selection_id != observation.selection_id
+        or extraction is None
+        or extraction.result_id != witness.extraction_id
+        or (selection.selection.question, selection.selection.policy_version)
+        != ("senate_resolution_source", "senate-source-observation-v1")
+        or selection.selection.scan_input is not None
+        or len(selection.selection.parts) != 1
+        or extraction.artifact_sha256 != document.senate.sha256
+        or witness.source_start + len(context.text) != extraction.output_chars
+    ):
+        return None
+    (part,) = selection.selection.parts
+    if (
+        (part.url, part.role, part.sha256, part.text_sha256)
+        != (document.url, "unknown", extraction.artifact_sha256, extraction.output_text_sha256)
+        or part.members
+        or part.text_start != 0
+        or part.text_end not in (None, extraction.output_chars)
+        or witness.source_start == 0
+        and witness.text_sha256 != extraction.output_text_sha256
+        or repo.get_artifact_metadata(extraction.artifact_sha256) is None
+        or not any(
+            link.part_scope == "parts"
+            and link.part_index == 0
+            and link.artifact_sha256 == extraction.artifact_sha256
+            for link in repo.list_selection_artifacts(observation.selection_id)
+        )
+        or not any(
+            link.extraction_id == witness.extraction_id
+            and link.artifact_sha256 == extraction.artifact_sha256
+            for link in repo.list_selection_extractions(observation.selection_id)
+        )
+    ):
+        return None
+    return observation, part, extraction
+
+
+def capture_senate_work_input_witness(
+    repo: BillRepository,
+    context: AmendmentsContext,
+    document: TextDocument,
+    selection: DocumentSelection,
+    projection: TextProjection | None,
+    source: SourceReadCapture | None,
+    *,
+    term: int,
+) -> SenateAmendmentInputWitness | None:
+    if (
+        not isinstance(source, DocumentSourceRead)
+        or source.document != document
+        or projection is None
+        or projection.text != context.text
+        or len(projection.segments) != 1
+        or len(selection.parts) != 1
+        or DocumentSelectionRecord.from_selection(selection) != source.selection
+    ):
+        return None
+    (part,) = selection.parts
+    start = projection.segments[0].source_start
+    if (
+        start is None
+        or projection.source_sha256 != part.text_sha256
+        or projection.source_length != len(part.text)
+        or part.text[start:] != context.text
+    ):
+        return None
+    extraction = _extraction(part, _body(part, source), source)
+    if extraction is None:
+        return None
+    identity = SourceObservationIdentity(
+        term=term,
+        number=context.number,
+        purpose="analysis",
+        document=source.document,
+        selection_id=source.selection.selection_id,
+    )
+    witness = SenateAmendmentInputWitness(
+        source_observation_id=identity.observation_id,
+        extraction_id=extraction.result_id,
+        context_sha256=amendment_context_sha256(context),
+        text_sha256=input_text_sha256(context.text),
+        source_start=start,
+    )
+    return witness if _senate_work_parents(repo, witness, context, document, term=term) else None
+
+
+def senate_work_input_receipt(
+    repo: BillRepository,
+    request: BatchRequest,
+    document: TextDocument,
+    witness: SenateAmendmentInputWitness,
+) -> AmendmentInputReceipt | None:
+    if (
+        not isinstance(request.question, AmendmentsQuestion)
+        or request.payload_sha256 is None
+        or request.question.ctx.number != request.number
+    ):
+        return None
+    request.verify_payload()
+    context = request.question.ctx
+    parents = _senate_work_parents(repo, witness, context, document, term=request.term)
+    if parents is None:
+        return None
+    observation, part, extraction = parents
+    segments = (
+        PreparedTextSegment(
+            start=0,
+            end=len(context.text),
+            origin="source",
+            part_index=0,
+            source_start=witness.source_start,
+            source_end=extraction.output_chars,
+        ),
+    )
+    return AmendmentInputReceipt(
+        context_sha256=witness.context_sha256,
+        request_sha256=request.payload_sha256,
+        text_sha256=witness.text_sha256,
+        text_chars=len(context.text),
+        source_part=PreparedTextPart(
+            role=part.role, text_sha256=part.text_sha256, chars=extraction.output_chars
+        ),
+        source_selection_id=observation.selection_id,
+        artifact_sha256=extraction.artifact_sha256,
+        extraction_id=extraction.result_id,
+        retention="complete",
+        segment_count=1,
+        full_map_sha256=input_map_sha256(segments),
+        segments=segments,
     )
 
 

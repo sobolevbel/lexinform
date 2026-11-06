@@ -143,6 +143,7 @@ from lexinform.models.batch import (
 )
 from lexinform.models.candidate_trace import CandidateDispositionTrace
 from lexinform.models.computations import CollectionReason, ComputationRecord
+from lexinform.models.documents import SenateAmendmentInputWitness
 from lexinform.models.input_receipts import (
     LooseMultipartInputReceipt,
     LooseRclInputReceipt,
@@ -215,8 +216,10 @@ from lexinform.services.input_receipts import (
     capture_primary_input_receipt,
     capture_secondary_input_receipt,
     capture_sejm_self_amendment_input_receipt,
+    capture_senate_work_input_witness,
     enrich_primary_input_intent,
     enrich_secondary_input_intent,
+    senate_work_input_receipt,
 )
 from lexinform.services.joint import primary_of, revive_prefilter_skips
 from lexinform.services.revision_applications import AmendmentRevisionApplications
@@ -1827,13 +1830,18 @@ class AnalysisService:
             return intent
 
     @staticmethod
-    def _secondary_input_intent(intent: BatchIntent, source: _Loaded | None) -> BatchIntent:
-        if source is None:
-            return intent
+    def _secondary_input_intent(
+        intent: BatchIntent,
+        source: _Loaded | None,
+        receipt_for: Callable[[BatchRequest], AmendmentInputReceipt | None] | None = None,
+    ) -> BatchIntent:
         try:
-            receipt = capture_secondary_input_receipt(
-                intent.request, source.selection, source.projection, source.source_read
-            )
+            if source is not None:
+                receipt = capture_secondary_input_receipt(
+                    intent.request, source.selection, source.projection, source.source_read
+                )
+            else:
+                receipt = receipt_for(intent.request) if receipt_for is not None else None
             if receipt is not None:
                 return enrich_secondary_input_intent(intent, receipt)
         except Exception:
@@ -1890,6 +1898,7 @@ class AnalysisService:
         *,
         may_wait: bool,
         receipt_source: _Loaded | None = None,
+        receipt_for: Callable[[BatchRequest], AmendmentInputReceipt | None] | None = None,
         local_read: LocalReadTiming | None = None,
     ) -> Record | Waiting:
         require_batch = self._options.require_batch or (
@@ -1954,7 +1963,7 @@ class AnalysisService:
                             provider=provider,
                             created_at=now,
                         )
-                        intent = self._secondary_input_intent(intent, receipt_source)
+                        intent = self._secondary_input_intent(intent, receipt_source, receipt_for)
                         intent = self._timed_intent(intent, local_read)
                         self._save_secondary_intent(intent)
                     except Exception:
@@ -2595,6 +2604,34 @@ class AnalysisService:
         )
         return prepared[0] if prepared is not None else None
 
+    def amendment_work_input(
+        self,
+        bill: Bill,
+        document: TextDocument,
+        *,
+        proposal: str | None = None,
+        recommendation: TextDocument | None = None,
+        recommendation_origin: CommitteeRecommendationOrigin | None = None,
+    ) -> tuple[AmendmentsContext, SenateAmendmentInputWitness | None] | None:
+        prepared = self._prepare_amendments(
+            bill, document, proposal, recommendation, recommendation_origin
+        )
+        if prepared is None:
+            return None
+        context, loaded = prepared
+        witness = None
+        with suppress(Exception):
+            witness = capture_senate_work_input_witness(
+                self._repo,
+                context,
+                document,
+                loaded.selection,
+                loaded.projection,
+                loaded.source_read,
+                term=bill.term,
+            )
+        return context, witness
+
     def _prepare_amendments(
         self,
         bill: Bill,
@@ -2670,6 +2707,7 @@ class AnalysisService:
         recommendation_origin: CommitteeRecommendationOrigin | None = None,
         may_wait: bool = False,
         context: AmendmentsContext | None = None,
+        input_witness: SenateAmendmentInputWitness | None = None,
     ) -> AmendmentsRecord | Waiting | None:
         """Scanned Senate resolutions require a batch answer with verified source evidence."""
         assert bill.analysis is not None, (
@@ -2703,6 +2741,13 @@ class AnalysisService:
             lambda: self._llm.summarize_amendments(ctx),
             may_wait=may_wait,
             receipt_source=loaded,
+            receipt_for=(
+                lambda request: senate_work_input_receipt(
+                    self._repo, request, document, input_witness
+                )
+            )
+            if input_witness is not None and context is not None
+            else None,
             local_read=local_read,
         )
         if not isinstance(record, Waiting):

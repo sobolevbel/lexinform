@@ -12411,3 +12411,30 @@ The runtime capture and resumed-request projection remain a separate
 release stage. The reader checks bounds and hashes of retained parents.
 For a nonzero suffix, the writer must verify the original slice while
 the extracted text is still available.
+
+Commit `d24ffd4c` passed exact CI 42214937144 and relay deployment
+42215831398.
+
+<a id="j323"></a>
+
+## J323 — preserve the exact Senate source when late amendments resume
+
+The continuation saves the witness with the original frozen text
+before preparing a batch request. On resume, the existing amendment
+receipt binds the exact frozen request to the retained parent and the
+verified text range. There is no reread of the source. Legacy context
+without a witness keeps its existing behavior.
+
+All 701 native preparations restored twice before queuing and again
+after queuing with the downloader disabled on resume. The requests
+and contexts matched the baseline. All 636 identity and 65 cover
+suffix ranges matched independent extraction. Removing the witness
+and the two receipt fields reproduced baseline SQL in every pair.
+
+The existing late revision scenario now fails before queuing,
+restores the saved continuation, removes the original file and
+completes the existing revision path. The simulated paid application
+retains the request and exact range. Optional controls reject changed
+contexts and missing observation parents without changing the queued
+request. Scans remain outside this text witness profile.
+[Corpus and checkpoint qualification](../assets/audits/2026-11-06-senate-work-writer/qualification.json).

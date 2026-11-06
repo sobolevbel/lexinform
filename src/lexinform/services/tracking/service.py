@@ -917,22 +917,24 @@ class StatusTrackingService:
                 )
                 return
             assert self._analysis is not None
-            context = self._analysis.amendments_context(
+            prepared = self._analysis.amendment_work_input(
                 historical,
                 found.document,
                 proposal=found.proposal,
                 recommendation=found.recommendation,
                 recommendation_origin=found.recommendation_origin,
             )
-            if context is None:
+            if prepared is None:
                 self._defer_document(
                     work, "amendments document unreadable", reason="amendments_context_unavailable"
                 )
                 return
+            context, witness = prepared
             work = work.model_copy(
                 update={
                     "document_json": found.document.model_dump_json(),
                     "context_json": context.model_dump_json(),
+                    "senate_input_witness": witness,
                 }
             )
             self._repo.save_document_work(work)
@@ -946,6 +948,7 @@ class StatusTrackingService:
             proposal=context.proposal,
             may_wait=may_wait,
             context=context,
+            input_witness=work.senate_input_witness,
         )
         if isinstance(record, Waiting):
             return

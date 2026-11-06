@@ -9,6 +9,7 @@ from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import DocumentWork, ProcessDetail, Stage, StatusChange
 from lexinform.models.documents import SenateAmendmentInputWitness
 from lexinform.models.input_receipts import amendment_context_sha256, input_text_sha256
+from lexinform.services.analysis import Waiting
 from tests.unit.test_input_receipts import NOW
 from tests.unit.test_senate_input_capture import URL, senate_case
 
@@ -172,3 +173,31 @@ def test_senate_witness_requires_canonical_key_and_actual_change_owner(
         with pytest.raises(DocumentWorkRowError, match="invalid_senate_input_witness"):
             repo.save_document_work(invalid)
         assert repo.dump() == before
+
+
+@pytest.mark.parametrize("problem", ["missing_parent", "changed_context"])
+def test_invalid_resume_witness_keeps_plain_frozen_intent_without_rereading(
+    repo: SqliteBillRepository,
+    process_3039: ProcessDetail,
+    monkeypatch: pytest.MonkeyPatch,
+    problem: str,
+) -> None:
+    case, _, calls, _ = senate_case(repo, process_3039, prefix=True)
+    prepared = case.service.amendment_work_input(case.bill, case.document)
+    assert prepared is not None, "the native source produces a context"
+    context, witness = prepared
+    assert witness is not None, "the source witness has exact persisted parents"
+    if problem == "missing_parent":
+        monkeypatch.setattr(repo, "get_source_observation", lambda _identity: None)
+    else:
+        context = context.model_copy(update={"previous_summary": "Different frozen context."})
+
+    result = case.service.summarize_amendments(
+        case.bill, case.document, may_wait=True, context=context, input_witness=witness
+    )
+
+    assert isinstance(result, Waiting)
+    (intent,) = repo.list_queued_batch_intents()
+    assert intent.request.ctx == context
+    assert intent.meta.prepared_input_receipt is None
+    assert calls == [URL]
