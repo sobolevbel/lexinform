@@ -600,3 +600,14 @@ standalone SQLite SQL dump instead of the usual JSON proof. Pass
 and outside the corpus. The dump contains a fresh offline source observation
 and the validated metadata chain, without bodies. It is an isolated audit
 artifact. The command has no input-state or production write mode.
+
+### Independent review of a saved primary analysis
+
+The saved-claim census can create a local review sheet for one explicit paid
+result. Pass `--review-result RESULT_ID --database-sha256 SNAPSHOT_SHA` with
+`--database CHECKPOINTED_COPY.db --output out/corpus/claim-review.html`.
+The sheet is available only when the retained submitted text matches the
+request receipt and the paid result matches the batch item. It contains the
+claim text and retained input, so keep it with local review artifacts.
+The default census remains body-free. Reviewers assess support and record
+evidence separately. The sheet contains no adjudication or legal-force verdict.

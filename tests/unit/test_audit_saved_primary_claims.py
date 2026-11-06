@@ -2,7 +2,8 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
-from tools.audit_saved_primary_claims import audit, run
+import pytest
+from tools.audit_saved_primary_claims import audit, review_page, run
 from tools.corpus_artifacts import digest
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
@@ -118,3 +119,16 @@ def test_legacy_missing_ledger_and_invalid_rows_have_distinct_outcomes(tmp_path:
     assert report["result_rows"] == 2
     assert report["answers"] == []
     assert "private malformed payload" not in output.read_text()
+
+
+def test_review_does_not_use_paid_result_without_its_exact_input(tmp_path: Path) -> None:
+    database = tmp_path / "state.db"
+    result = retained_result("analysis")
+    with closing(SqliteBillRepository(database)) as repo:
+        repo.migrate()
+        repo.save_computation_result(result)
+
+    with pytest.raises(ValueError, match="exact saved batch item"):
+        review_page(
+            database, database_sha256=digest(database.read_bytes()), result_id=result.result_id
+        )

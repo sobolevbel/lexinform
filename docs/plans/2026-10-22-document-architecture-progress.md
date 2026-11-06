@@ -11592,3 +11592,18 @@ two restores. The negative 1759 case produced no SQL file, and an existing
 output was preserved. DA4.7 remains open for production capture and the
 other relation types.
 [Snapshot qualification](../assets/audits/2026-11-06-representation-snapshot/qualification.json).
+
+<a id="j288"></a>
+
+## J288 — prepare independent review from an exact retained submission
+
+The claim census can export one local review sheet when the paid result,
+batch item and receipt identify the same request and the retained submitted
+text matches its hash and length. It displays saved claim slots and the input
+for independent review, with no labels or reconstructed comparison text.
+
+The state `ff49a74a` copy provides eight claims for the reanalysis of print
+3231. The default inventory remains byte-identical. Changed and expired
+text controls are refused. Only body-free qualification is tracked in Git.
+DA9.4 remains open pending the independent judgment.
+[Qualification](../assets/audits/2026-11-06-saved-primary-claim-review/qualification.json).

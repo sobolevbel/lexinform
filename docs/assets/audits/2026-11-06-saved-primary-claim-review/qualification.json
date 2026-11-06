@@ -1,0 +1,55 @@
+{
+  "claims": [
+    {
+      "claim_text_sha256": "ec3b11048b38011b75f2a8a80416c4e278bbf8cacce541f91636c9aac26875dc",
+      "field": "key_changes",
+      "index": 0
+    },
+    {
+      "claim_text_sha256": "dbbd64d12627b52f8f9b306582cfddde5c2636253e44ecbecfa11d35d86ac5fd",
+      "field": "key_changes",
+      "index": 1
+    },
+    {
+      "claim_text_sha256": "b42512f5f64b34586fb6375214d56dc05a2bd16b31961c2496c5a31ea5f852a6",
+      "field": "key_changes",
+      "index": 2
+    },
+    {
+      "claim_text_sha256": "1735ca41a38c5108392404f0c3ac1099dd4818a5f8393c2816918b16f499b36b",
+      "field": "key_changes",
+      "index": 3
+    },
+    {
+      "claim_text_sha256": "e2d1db73547d9f277662401404cef17f802b57fd512dd382edc36284039702d4",
+      "field": "affected_groups",
+      "index": 0
+    },
+    {
+      "claim_text_sha256": "2f9bfe5668d603fd658c95ce7dbe861a4718e857227fcc271d08dbaeb4e06da9",
+      "field": "affected_groups",
+      "index": 1
+    },
+    {
+      "claim_text_sha256": "9a64bc47d2ea57d108941471d9d34ed0e98f23e8225dba99b9c38945070ff9ff",
+      "field": "affected_groups",
+      "index": 2
+    },
+    {
+      "claim_text_sha256": "302263758345a4109fbdaaaba59e7d2b9faaa96c6516eb1a9a003b234347ca27",
+      "field": "effective_date",
+      "index": null
+    }
+  ],
+  "controls_refused": [
+    "changed",
+    "expired"
+  ],
+  "database_sha256": "f15cc42ef9bae61a88aa0d1030934e07d5396d640ee26db23e9e3aa6b2cdc0cd",
+  "inventory_bytes_unchanged": true,
+  "local_sheet_sha256": "ac9d3e46cb4150283cc73be84692c0614db3383308416ea55645c3061a8b69c4",
+  "print": "3231",
+  "result_id": "result-v1:c70ea61d48af19826e0a9909ef21fb44b5dc0ac082e9386348a75c730870200f",
+  "semantic": "semantic_not_assessed",
+  "state_sha": "ff49a74a8d5e5b846a8f11d98ca71c2f421930b8"
+}
