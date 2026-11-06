@@ -103,6 +103,16 @@ output path for each report.
 | How a saved result was applied | [Computation graph](#computation-graph-doctor) |
 | Saved document selection or artifact links | [Source history](#source-history-doctor) |
 
+For a single check, use the same profiles through Make:
+
+```bash
+make state-doctor DOCTOR=request DATABASE=/path/to/copy.db REPORT=out/doctor/request.json
+```
+
+Run `make state-doctor` to list the profile names. Use `ARGS` for optional flags from the
+corresponding section below. Invoke the Python module directly when you need to distinguish
+its exit codes (Make returns 2 for a failed recipe).
+
 ## Request provenance doctor
 
 ```bash

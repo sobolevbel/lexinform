@@ -2,6 +2,7 @@
 
 UV ?= uv
 ARGS ?=
+STATE_DOCTORS = request|batch_integrity|retained_integrity|work|computation|source_history
 CORPUS ?=
 CORPUS_OUTPUT ?=
 CORPUS_PROFILES ?= extraction,selection,comparison,delivery
@@ -17,7 +18,7 @@ DOCS = $(RUN) --group docs
 BOT_PATHS = src tests tools
 WEB_PATHS = web/src web/tests web/stubs
 
-.PHONY: help sync test test-unit test-scenario test-local-http test-integration coverage corpus-check release-check lint typecheck format format-check check-static check docs docs-build docs-check web-sync web-test web-lint web-typecheck web-format web-check web-serve
+.PHONY: help sync test test-unit test-scenario test-local-http test-integration coverage corpus-check release-check state-doctor lint typecheck format format-check check-static check docs docs-build docs-check web-sync web-test web-lint web-typecheck web-format web-check web-serve
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  make %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -51,6 +52,11 @@ corpus-check: ## Replay explicit offline corpus/output paths (CORPUS=... CORPUS_
 release-check: ## Verify CI and relay deployment for RELEASE_SHA (optional flags in ARGS)
 	@test -n "$(RELEASE_SHA)" || { echo "Set RELEASE_SHA to the full target commit SHA"; exit 2; }
 	$(RUN) python -m tools.verify_release "$(RELEASE_SHA)" $(ARGS)
+
+state-doctor: ## Inspect a SQLite copy (DOCTOR=... DATABASE=... REPORT=...)
+	@case "$(DOCTOR)" in $(STATE_DOCTORS)) ;; *) echo "Set DOCTOR to one of: $(subst |, ,$(STATE_DOCTORS))" >&2; exit 2 ;; esac
+	@test -n "$(DATABASE)" -a -n "$(REPORT)" || { echo "Set DATABASE to a checkpointed copy and REPORT to a fresh path" >&2; exit 2; }
+	UV_OFFLINE=1 $(RUN) python -m tools.$(DOCTOR)_doctor --database "$(DATABASE)" --output "$(REPORT)" $(ARGS)
 
 lint: ## Check bot and tools with Ruff
 	$(RUN) ruff check $(BOT_PATHS)
