@@ -1,0 +1,120 @@
+{
+  "reader_commit": "c5f0aaf431d1bd41244e0ba3138025138feffd24",
+  "pinned_inventory_sha256": "d5266122ca0be893d88cb57856d0ebb093b3f9112bae008ad7582d7358b49e2f",
+  "ledger_sha256": "ad4a8fc2a2b81157d6db98b7c98348c9b3ff8dea9d41e6811a87833c3652f1ed",
+  "profiles": {
+    "24/anthropic": {
+      "exact_checkpoint_restores": 2,
+      "fake_sdk_handoff_exact": true,
+      "gzip_delta": 1422748,
+      "manifest": {
+        "first_page": 1,
+        "input_bytes": 1498776,
+        "input_sha256": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+        "page_count": 28,
+        "source_bytes": 1498776,
+        "source_pages": 28,
+        "source_sha256": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+        "transformations": [],
+        "version": 1
+      },
+      "median_ms": [
+        13.45,
+        9.85
+      ],
+      "normalized_sql_sha256": "6d2785e3a72ab21219201ac6ac30948c8fcf41ea091a7ff404300fb6a158c580",
+      "request_sha256": "613febf0afd06ab176d4e54fd8e6d04b50faa38615b387dd458ea6fa70ecad39",
+      "source_sha256": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+      "sql_delta": 1998309,
+      "submitted_sha256": "57208f9e2cdf69bc20618658fd3c585366f82aefface4cbaa7e9536ed55e5f81"
+    },
+    "24/openai": {
+      "exact_checkpoint_restores": 2,
+      "fake_sdk_handoff_exact": true,
+      "gzip_delta": 1422525,
+      "manifest": {
+        "first_page": 1,
+        "input_bytes": 1498776,
+        "input_sha256": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+        "page_count": 28,
+        "source_bytes": 1498776,
+        "source_pages": 28,
+        "source_sha256": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+        "transformations": [],
+        "version": 1
+      },
+      "median_ms": [
+        13.51,
+        9.75
+      ],
+      "normalized_sql_sha256": "a19d3b17b7aba42851bda00280b650655f41d6ea07c046dd3663a45976e99d7f",
+      "request_sha256": "f06858b54afb551652100f45aa3f34deb6d1edfd782e45eff64638300e86180b",
+      "source_sha256": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+      "sql_delta": 1998309,
+      "submitted_sha256": "737680a54e1542e6a6a091254974e5880983815916520f2f13520dc180951561"
+    },
+    "25/anthropic": {
+      "exact_checkpoint_restores": 2,
+      "fake_sdk_handoff_exact": true,
+      "gzip_delta": 3069607,
+      "manifest": {
+        "first_page": 2,
+        "input_bytes": 3296617,
+        "input_sha256": "4b9c420ccd0dcd8dd8ff806062870901f4cf5d1f832b5c8cc7f4bfe2e8f8deb6",
+        "page_count": 46,
+        "source_bytes": 3296038,
+        "source_pages": 47,
+        "source_sha256": "11c7c5bed9e2df7b13671052b16981d015a7471db8c3d81a4e53100b9c3ad97b",
+        "transformations": [
+          "cover_letter"
+        ],
+        "version": 1
+      },
+      "median_ms": [
+        30.69,
+        23.28
+      ],
+      "normalized_sql_sha256": "a82a68cc469f5f5c6fe91925f867fa7c44a96b76565a3ad85015af39c0b6d1ac",
+      "request_sha256": "985c6fab51f4a5ccbcc4ed53d4cd469a164f1147d5aa90c8a170979e9047c308",
+      "source_sha256": "11c7c5bed9e2df7b13671052b16981d015a7471db8c3d81a4e53100b9c3ad97b",
+      "sql_delta": 4395433,
+      "submitted_sha256": "17f39371bdd3a94234e3bf5226bbe0d937da2bce7bc55091d1dd16546a13d44c"
+    },
+    "25/openai": {
+      "exact_checkpoint_restores": 2,
+      "fake_sdk_handoff_exact": true,
+      "gzip_delta": 3069404,
+      "manifest": {
+        "first_page": 2,
+        "input_bytes": 3296617,
+        "input_sha256": "4b9c420ccd0dcd8dd8ff806062870901f4cf5d1f832b5c8cc7f4bfe2e8f8deb6",
+        "page_count": 46,
+        "source_bytes": 3296038,
+        "source_pages": 47,
+        "source_sha256": "11c7c5bed9e2df7b13671052b16981d015a7471db8c3d81a4e53100b9c3ad97b",
+        "transformations": [
+          "cover_letter"
+        ],
+        "version": 1
+      },
+      "median_ms": [
+        29.86,
+        22.23
+      ],
+      "normalized_sql_sha256": "7cc4dbfd96ce5841d99fa8e160b05c9048268cc78636ce8d75af2d3db3d0f4f7",
+      "request_sha256": "2fc019bfd26f22517924d2a64ca6d3c319897313bd2be00e92588bc0be33428e",
+      "source_sha256": "11c7c5bed9e2df7b13671052b16981d015a7471db8c3d81a4e53100b9c3ad97b",
+      "sql_delta": 4395433,
+      "submitted_sha256": "4fb2fafe88d6a500a2d53e4572a2dbcda7dd995d34e09ddd5389f81fad846e32"
+    }
+  },
+  "scope": "Native queue writer, two pinned PDFs and both providers, isolated SQL checkpoints.",
+  "provider_calls": 0,
+  "guards": [
+    "socket connection blocked",
+    "mock Anthropic token-count transport",
+    "OpenAI preparation client refused",
+    "fake SDK submission"
+  ],
+  "submitted_exact_after_queue_removal": true
+}

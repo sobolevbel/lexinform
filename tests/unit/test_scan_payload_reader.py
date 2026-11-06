@@ -9,6 +9,7 @@ from typing import Any, Literal
 import httpx2 as httpx
 import pytest
 from anthropic import Anthropic
+from openai import OpenAI
 
 from lexinform.adapters.input_receipts import parse_batch_request, serialize_intent_request
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
@@ -16,12 +17,10 @@ from lexinform.adapters.llm_openai import OpenAiAnalyzer
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import AnalysisQuestion, BatchIntent, BatchProvider, BatchRequest, BillContext
 from lexinform.ports import BatchBackend
+from lexinform.services.documents import TextLoader
+from tests.fakes import FakeSejmGateway, FakeTextExtractor
 from tests.unit.test_input_receipts import NOW, meta, request
 from tests.unit.test_scan_input import loaded_scan
-
-
-def openai_backend() -> BatchBackend:
-    return OpenAiAnalyzer(lambda: pytest.fail("Preparation must not use the OpenAI client"))
 
 
 def offline_anthropic_backend() -> BatchBackend:
@@ -36,10 +35,33 @@ def offline_anthropic_backend() -> BatchBackend:
     )
 
 
+def offline_openai_backend() -> BatchBackend:
+    def reject(request: httpx.Request) -> httpx.Response:
+        raise AssertionError(f"Unexpected OpenAI test request to {request.url.path}")
+
+    transport = httpx.MockTransport(reject)
+    return OpenAiAnalyzer(
+        lambda: OpenAI(api_key="test", http_client=httpx.Client(transport=transport))
+    )
+
+
 def scan_request(
-    factory: Callable[[], BatchBackend], purpose: Literal["analysis", "reanalysis"]
+    factory: Callable[[], BatchBackend],
+    purpose: Literal["analysis", "reanalysis"],
+    *,
+    small: bool = False,
 ) -> BatchRequest:
-    _, scan = loaded_scan()
+    if small:
+        _, scan = loaded_scan()
+    else:
+        url = "https://api.test/large.pdf"
+        gateway = FakeSejmGateway(files={url: b"%PDF-" + b"x" * 40_000})
+        loader = TextLoader(
+            {"api.test": gateway.download}, FakeTextExtractor("", page_count=4), max_bytes=50_000
+        )
+        loaded = loader.load_scan(url, cover_letter=False)
+        assert loaded is not None, "the test PDF fits the size and page limits"
+        scan = loaded
     ctx = request().ctx.model_copy(update={"text": "", "text_source": "scan", "scan": scan})
     assert isinstance(ctx, BillContext), "the test request supplies a BillContext"
     return factory().prepare_request(
@@ -65,10 +87,11 @@ def compact(request: BatchRequest) -> dict[str, Any]:
 
 
 @pytest.mark.parametrize(
-    ("provider", "factory"), [("openai", openai_backend), ("anthropic", offline_anthropic_backend)]
+    ("provider", "factory"),
+    [("openai", offline_openai_backend), ("anthropic", offline_anthropic_backend)],
 )
 @pytest.mark.parametrize("purpose", ["analysis", "reanalysis"])
-def test_scan_reference_round_trips_without_activating_writer(
+def test_native_writer_round_trips_exact_frozen_scan_request(
     tmp_path: Path,
     provider: BatchProvider,
     factory: Callable[[], BatchBackend],
@@ -76,7 +99,8 @@ def test_scan_reference_round_trips_without_activating_writer(
 ) -> None:
     frozen = scan_request(factory, purpose)
     raw = compact(frozen)
-    assert serialize_intent_request(frozen) == frozen.model_dump_json()
+    encoded = serialize_intent_request(frozen)
+    assert json.loads(encoded) == raw
     assert parse_batch_request(raw) == frozen
 
     path = tmp_path / "scan-intent.db"
@@ -86,10 +110,14 @@ def test_scan_reference_round_trips_without_activating_writer(
             request=frozen, meta=meta(), provider=provider, created_at=NOW
         )
         repo.save_batch_intent(intent)
-        inline = repo.dump()
-        with closing(sqlite3.connect(path)) as connection, connection:
-            connection.execute("UPDATE llm_batch_intents SET request_json=?", (json.dumps(raw),))
         saved = repo.dump()
+        with closing(sqlite3.connect(path)) as connection, connection:
+            (actual,) = connection.execute("SELECT request_json FROM llm_batch_intents").fetchone()
+            assert actual == encoded
+            connection.execute(
+                "UPDATE llm_batch_intents SET request_json=?", (frozen.model_dump_json(),)
+            )
+        inline = repo.dump()
         repo.restore(saved)
         repo.restore(saved)
         assert repo.dump() == saved
@@ -128,7 +156,7 @@ def test_scan_reference_round_trips_without_activating_writer(
     ],
 )
 def test_scan_reference_rejects_unproved_slots_and_native_context(fault: str) -> None:
-    raw = compact(scan_request(openai_backend, "analysis"))
+    raw = compact(scan_request(offline_openai_backend, "analysis"))
     context, ref = raw["question"]["ctx"], raw["payload_json"]
     if fault == "base64":
         context["scan"]["data"] = "invalid@"
@@ -158,3 +186,39 @@ def test_scan_reference_rejects_unproved_slots_and_native_context(fault: str) ->
 
     with pytest.raises(ValueError, match="invalid_input_request_json"):
         parse_batch_request(raw)
+
+
+@pytest.mark.parametrize(
+    "fault", ["small", "missing", "duplicate", "wrong_slot", "legacy", "mixed", "bad_manifest"]
+)
+def test_writer_keeps_unproved_scan_payload_inline(fault: str) -> None:
+    frozen = scan_request(offline_openai_backend, "analysis", small=fault == "small")
+    question, payload = frozen.question, frozen.payload_json
+    assert isinstance(question, AnalysisQuestion) and payload is not None, "test freezes primary"
+    context = question.ctx
+    scan = context.scan
+    assert scan is not None and scan.scan_input is not None, "test supplies a native scan"
+    if fault == "missing":
+        payload = payload.replace(scan.data, "inline")
+    elif fault == "duplicate":
+        payload = payload[:-1] + f', "second_copy": "{scan.data}"' + "}"
+    elif fault == "wrong_slot":
+        payload = payload.replace('"file_data"', '"other_field"')
+    elif fault == "legacy":
+        context = context.model_copy(update={"scan": scan.model_copy(update={"scan_input": None})})
+    elif fault == "mixed":
+        context = context.model_copy(update={"text": "Partial context"})
+    elif fault == "bad_manifest":
+        invalid = scan.scan_input.model_copy(update={"input_sha256": "0" * 64})
+        context = context.model_copy(
+            update={"scan": scan.model_copy(update={"scan_input": invalid})}
+        )
+    frozen = frozen.model_copy(
+        update={
+            "question": question.model_copy(update={"ctx": context}),
+            "payload_json": payload,
+            "payload_sha256": hashlib.sha256(payload.encode()).hexdigest(),
+        }
+    )
+
+    assert serialize_intent_request(frozen) == frozen.model_dump_json()

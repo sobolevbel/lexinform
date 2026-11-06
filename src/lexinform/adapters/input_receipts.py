@@ -125,22 +125,35 @@ def _scan_provider_payload(
         or scan.get("media_type") != "application/pdf"
         or not isinstance(scan.get("scan_input"), dict)
         or not isinstance(data := scan.get("data"), str)
-        or not 0 < len(data) <= 4 * ((MAX_SCAN_BYTES + 2) // 3)
-        or type(pages := scan.get("pages")) is not int
-        or not 0 < pages <= MAX_SCAN_PAGES
-        or len(prefix) + len(suffix) > _MAX_SCAN_PAYLOAD_SHELL_CHARS
+        or not _scan_data_fits(data, scan.get("pages"))
     ):
+        raise ValueError("invalid_scan_provider_payload_reference")
+    _validate_scan_payload_shell(request.get("custom_id"), request.get("model"), prefix, suffix)
+    return prefix + data + suffix
+
+
+def _scan_data_fits(data: str, pages: object) -> bool:
+    return (
+        type(pages) is int
+        and 0 < pages <= MAX_SCAN_PAGES
+        and 0 < len(data) <= 4 * ((MAX_SCAN_BYTES + 2) // 3)
+    )
+
+
+def _validate_scan_payload_shell(
+    custom_id: object, model: object, prefix: str, suffix: str
+) -> None:
+    if len(prefix) + len(suffix) > _MAX_SCAN_PAYLOAD_SHELL_CHARS:
         raise ValueError("invalid_scan_provider_payload_reference")
     # Two markers distinguish the reconstructed slot from pre-existing JSON strings.
     for marker in _SCAN_PLACEHOLDERS:
         shell = read_json(prefix + marker + suffix)
         if (
             not isinstance(shell, dict)
-            or shell.get("custom_id") != request.get("custom_id")
-            or not _scan_payload_slot(shell, request.get("model"), marker)
+            or shell.get("custom_id") != custom_id
+            or not _scan_payload_slot(shell, model, marker)
         ):
             raise ValueError("invalid_scan_provider_payload_slot")
-    return prefix + data + suffix
 
 
 def _scan_payload_slot(shell: Mapping[str, object], model: object, marker: str) -> bool:
@@ -189,6 +202,36 @@ def _escaped_question_text(text: str) -> str:
     return json.dumps(text, ensure_ascii=False)[1:-1]
 
 
+def _shared_scan_payload(
+    request: BatchRequest, question: AnalysisQuestion, payload: str
+) -> dict[str, str] | None:
+    context = question.ctx
+    scan = context.scan
+    if (
+        context.text
+        or context.text_source != "scan"
+        or scan is None
+        or scan.media_type != "application/pdf"
+        or scan.scan_input is None
+        or not isinstance(scan.data, str)
+        or len(scan.data) < _MIN_SHARED_QUESTION_BYTES
+        or not _scan_data_fits(scan.data, scan.pages)
+        or len(payload) - len(scan.data) > _MAX_SCAN_PAYLOAD_SHELL_CHARS
+    ):
+        return None
+    start = payload.find(scan.data)
+    if start < 0 or payload.find(scan.data, start + 1) >= 0:
+        return None
+    prefix, suffix = payload[:start], payload[start + len(scan.data) :]
+    try:
+        _validate_scan_payload_shell(request.custom_id, request.model, prefix, suffix)
+        scan.verify_exact_input()
+    except ValueError, TypeError, RecursionError:
+        return None
+    request.verify_payload()
+    return {"profile": _SCAN_PAYLOAD_PROFILE, "prefix": prefix, "suffix": suffix}
+
+
 def serialize_intent_request(request: BatchRequest) -> str:
     question = request.question
     payload = request.payload_json
@@ -197,18 +240,24 @@ def serialize_intent_request(request: BatchRequest) -> str:
         and question.kind in ("analysis", "reanalysis")
         and request.payload_sha256 is not None
         and payload is not None
-        and len(question.ctx.text.encode()) >= _MIN_SHARED_QUESTION_BYTES
     ):
-        escaped = _escaped_question_text(question.ctx.text)
-        start = payload.find(escaped)
-        if start >= 0 and payload.find(escaped, start + 1) < 0:
-            request.verify_payload()
-            values = request.model_dump(mode="json")
-            values["payload_json"] = {
-                "profile": _PROVIDER_PAYLOAD_PROFILE,
-                "prefix": payload[:start],
-                "suffix": payload[start + len(escaped) :],
-            }
+        if len(question.ctx.text.encode()) >= _MIN_SHARED_QUESTION_BYTES:
+            escaped = _escaped_question_text(question.ctx.text)
+            start = payload.find(escaped)
+            if start >= 0 and payload.find(escaped, start + 1) < 0:
+                request.verify_payload()
+                values = request.model_dump(mode="json")
+                values["payload_json"] = {
+                    "profile": _PROVIDER_PAYLOAD_PROFILE,
+                    "prefix": payload[:start],
+                    "suffix": payload[start + len(escaped) :],
+                }
+                return json.dumps(
+                    values, ensure_ascii=False, separators=(",", ":"), allow_nan=False
+                )
+        elif reference := _shared_scan_payload(request, question, payload):
+            values = request.model_dump(mode="json", exclude={"payload_json"})
+            values["payload_json"] = reference
             return json.dumps(values, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
     return request.model_dump_json()
 

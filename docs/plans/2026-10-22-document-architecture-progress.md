@@ -12462,3 +12462,19 @@ An initial probe hit Anthropic's token-count endpoint with a dummy key
 and received two confirmed 401 responses. That probe and intermediate
 runs using the same SDK helper are excluded. Qualification used a
 mock token-count transport, fake SDK handoff and blocked sockets.
+
+<a id="j325"></a>
+
+## J325 — store one inline PDF in a qualified frozen primary queue item
+
+The queue writer shares the saved PDF when its native manifest agrees
+and its base64 occupies exactly one validated provider attachment slot.
+It keeps the original payload checksum and uses the existing inline
+format for unqualified requests. The compact text profile is unchanged.
+
+Both provider paths on two pinned scans reproduced the exact request,
+two checkpoint restores and identical SQL after submission and queue
+removal. The isolated queued gzip dumps were smaller by 1.42 MB for
+the full scan and 3.07 MB for the cover-trimmed scan. Submission was
+simulated at the SDK boundary with sockets blocked.
+[Qualification](../assets/audits/2026-11-06-scan-payload-writer/qualification.json).

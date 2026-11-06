@@ -354,6 +354,9 @@ class ScannedDocument(BaseModel):
 
     @model_validator(mode="after")
     def exact_input(self) -> Self:
+        return self.verify_exact_input()
+
+    def verify_exact_input(self) -> Self:
         if self.scan_input is not None:
             data = base64.b64decode(self.data, validate=True)
             manifest = self.scan_input
