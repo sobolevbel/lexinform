@@ -1,0 +1,35 @@
+{
+  "baseline": "e9e9d69eeb8f72883227e0b614332b256bd99d4d",
+  "baseline_text_reference_sha256": "03c2d9639ef4e5ecfcbdce4c8df21a08ca70ccdefb30cb868edc3bbf5d43cca1",
+  "counts": {
+    "anchored": 375,
+    "cleanup_changed": 2
+  },
+  "default_report_sha256": "4f963c03b1bda44cfd85156d3f02db6656b122f82c1c1ec65313710b504c0843",
+  "exclusions": [
+    "CFSpec",
+    "Note body offsets",
+    "Exact positions for cleanup-changing controls",
+    "Legal labels"
+  ],
+  "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "manifest_sha256": "449d893ca8d9b89933a3ac84abd3b757d0f89298d06fc9ae6e5c31ecb38775d5",
+  "projection_report_sha256": "0d5cbb7ce85bc5ce24ee85b3af6e5e544c183834f542d51107dde0e271a5a8ef",
+  "source_paths": 404,
+  "unchanged_existing_observations": 246,
+  "unique_inputs": 246,
+  "unverified_references": [
+    {
+      "input_sha256": "0f7fb6e879f1bf9f9633e1538a1199b781ac0e6cc9d5594f9b03a687e55a83f9",
+      "kind": "footnote",
+      "reference_cp": 71853,
+      "status": "cleanup_changed"
+    },
+    {
+      "input_sha256": "da69e08b2e7b3ae453c41c2a9e73962d1ce6697cf158f42ef41393ae7ba7a4c9",
+      "kind": "footnote",
+      "reference_cp": 73754,
+      "status": "cleanup_changed"
+    }
+  ]
+}

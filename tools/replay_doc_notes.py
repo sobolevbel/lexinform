@@ -13,8 +13,14 @@ from unittest.mock import patch
 import olefile
 from pydantic import BaseModel, Field
 
-from lexinform.adapters.doc_notes import read_doc_note_links
-from lexinform.adapters.doc_text import DocTextExtractor, table_stream_name
+from lexinform.adapters.doc_notes import DocNoteLinks, read_doc_note_links
+from lexinform.adapters.doc_text import (
+    DocTextExtractor,
+    _streams,
+    _word_text,
+    table_stream_name,
+    word_text,
+)
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.document_candidates import select_document_parts
@@ -140,7 +146,60 @@ def physical_snapshot(data: bytes, *, default_note_writer: bool = False) -> dict
     }
 
 
-def inspect(data: bytes, *, max_notes: int, source_characters: bool = False) -> dict[str, Any]:
+def _reference_projection(
+    data: bytes, links: DocNoteLinks, expected: str
+) -> list[dict[str, int | str]]:
+    word, table, extra = _streams(data)
+    baseline, pieces, _ = _word_text(word, table, extra)
+    if baseline != expected:
+        raise ValueError("DOC reference probe changed the baseline text")
+    marker = "¦"
+    observations = []
+    for link in links.links:
+        cp = link.reference_cp
+        row: dict[str, int | str] = {"kind": link.kind, "reference_cp": cp}
+        observations.append(row)
+        matches = [
+            (index, piece) for index, piece in enumerate(pieces) if piece[0] <= cp < piece[1]
+        ]
+        if not link.numbering_flag or len(matches) != 1:
+            row["status"] = "unsupported_reference"
+            continue
+        if marker in baseline:
+            row["status"] = "marker_already_present"
+            continue
+        index, (first, _, start, compressed) = matches[0]
+        width = 1 if compressed else 2
+        offset = start + width * (cp - first)
+        if any(
+            other != index
+            and fc < offset + width
+            and offset < fc + (end - begin) * (1 if packed else 2)
+            for other, (begin, end, fc, packed) in enumerate(pieces)
+        ):
+            row["status"] = "shared_physical_bytes"
+            continue
+        encoding = "cp1252" if compressed else "utf-16-le"
+        if word[offset : offset + width] != "\x02".encode(encoding):
+            raise ValueError("DOC reference probe differs from the qualified source unit")
+        altered = word[:offset] + marker.encode(encoding) + word[offset + width :]
+        projected = word_text(altered, table, extra)
+        if projected.count(marker) != 1:
+            row["status"] = "marker_not_unique"
+        elif projected.replace(marker, "") != baseline:
+            row["status"] = "cleanup_changed"
+        else:
+            row.update(status="anchored", output_offset=projected.index(marker))
+    return observations
+
+
+def inspect(
+    data: bytes,
+    *,
+    max_notes: int,
+    source_characters: bool = False,
+    reference_projection: bool = False,
+) -> dict[str, Any]:
     if source_characters:
         if max_notes != 256:
             raise ValueError("Source qualification uses the producer's fixed 256-note limit")
@@ -159,6 +218,11 @@ def inspect(data: bytes, *, max_notes: int, source_characters: bool = False) -> 
             "ole_opens": opened.call_count,
             "legacy_text_sha256": digest(text.legacy_text.encode()),
             "unavailable_reason": text.unavailable_reason,
+            **(
+                {"reference_projection": _reference_projection(data, text.links, text.legacy_text)}
+                if reference_projection and text.links is not None and text.links.links
+                else {}
+            ),
         }
     if not olefile.isOleFile(io.BytesIO(data)):
         return {"status": "unavailable", "reason": "not_ole"}
@@ -179,6 +243,7 @@ def run(
     *,
     max_notes: int = 256,
     source_characters: bool = False,
+    reference_projection: bool = False,
     physical_binding: bool = False,
     reference: Path | None = None,
     reference_sha256: str | None = None,
@@ -192,6 +257,8 @@ def run(
         raise ValueError("Replay output must be outside the read-only corpus")
     if max_notes < 0 or max_notes > 256:
         raise ValueError("Replay max_notes must be between 0 and 256")
+    if reference_projection and not source_characters:
+        raise ValueError("DOC reference projection requires source-character qualification")
     if physical_binding and not source_characters:
         raise ValueError("Physical DOC binding requires source-character qualification")
     if default_note_writer and (not physical_binding or physical_reference is None):
@@ -237,7 +304,10 @@ def run(
                 raise ValueError(f"Raw input SHA differs: {item.path}")
             if item.sha256 not in results:
                 results[item.sha256] = inspect(
-                    data, max_notes=max_notes, source_characters=source_characters
+                    data,
+                    max_notes=max_notes,
+                    source_characters=source_characters,
+                    reference_projection=reference_projection,
                 )
                 if physical_binding:
                     results[item.sha256]["physical_binding"] = physical_snapshot(
@@ -276,10 +346,20 @@ def run(
         "changed_inputs": changed,
         "verified_input_paths": len(reads.paths),
     }
+    if reference_projection:
+        summary["reference_projection"] = dict(
+            Counter(
+                item["status"]
+                for record in results.values()
+                for item in record.get("reference_projection", [])
+            )
+        )
     report = {
         "version": 1,
         "scope": (
-            "Source characters checked; CFSpec/emitted offsets unknown"
+            "Source characters and automatic reference insertion offsets checked where supported"
+            if reference_projection
+            else "Source characters checked; CFSpec/emitted offsets unknown"
             if source_characters
             else "table-declared CP links only; no text/CFSpec validation"
         ),
@@ -301,7 +381,11 @@ def run(
         "exclusions": [
             "Non-DOC inputs",
             "Nested archive leaves absent from the manifest",
-            "CFSpec/emitted offset checks" if source_characters else "Character/CFSpec checks",
+            "CFSpec and note-body offsets"
+            if reference_projection
+            else "CFSpec/emitted offset checks"
+            if source_characters
+            else "Character/CFSpec checks",
             "Independent legal labels",
             *([] if default_note_writer else ["Default runtime capture"]),
             "Full old component/version/extraction JSON identity",
@@ -320,6 +404,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--max-notes", type=int, default=256)
     parser.add_argument("--source-characters", action="store_true")
+    parser.add_argument("--reference-projection", action="store_true")
     parser.add_argument("--physical-binding", action="store_true")
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--reference-sha256")
@@ -335,6 +420,7 @@ def main() -> None:
                 args.output,
                 max_notes=args.max_notes,
                 source_characters=args.source_characters,
+                reference_projection=args.reference_projection,
                 physical_binding=args.physical_binding,
                 reference=args.reference,
                 reference_sha256=args.reference_sha256,

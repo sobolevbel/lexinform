@@ -13760,3 +13760,20 @@ showed that such ordinary text is emitted by the current extractor. The
 probe measures lexical projection and does not evaluate Word fields.
 
 [Qualification](../assets/audits/2026-11-06-word-field-view/qualification.json).
+
+<a id="j392"></a>
+
+## J392 — replay automatic binary DOC reference offsets
+
+The offline DOC probe replaces a qualified automatic note reference code unit
+with a width-preserving marker. It records an output character offset only
+when the marker appears once and removing it reproduces the exact unmodified
+legacy text. Shared physical bytes and cleanup changes remain unverified.
+
+The pinned 404 paths and 246 distinct inputs reproduced the legacy text
+reference. The opt-in report established 375 reference offsets. Two other
+references changed whitespace cleanup under the probe, so no offset is
+recorded for them. Existing report observations are unchanged. The probe
+does not validate CFSpec or note body offsets.
+
+[Qualification](../assets/audits/2026-11-06-doc-note-reference-projection/qualification.json).

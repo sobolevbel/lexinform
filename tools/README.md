@@ -712,6 +712,14 @@ uv run --offline --frozen python -m tools.replay_word_formulas \
   --output out/corpus/word-formulas.json
 ```
 
+### Binary DOC note reference projection
+
+Add `--reference-projection` to `python -m tools.replay_doc_notes` with
+`--source-characters` to probe automatic reference positions in cleaned
+legacy text. Only a unique marker whose removal restores the exact text
+produces an offset. The report separates cleanup changes and unsupported
+references from observed positions. The probe retains no modified DOC bytes.
+
 ### Word revision projection
 
 `python -m tools.replay_word_revisions` accepts a corpus path, a pinned external

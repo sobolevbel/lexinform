@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 import pytest
-from tools.replay_doc_notes import physical_snapshot, run
+from tools.replay_doc_notes import inspect, physical_snapshot, run
 
 from lexinform.models.doc_notes import DocNotedParts
 from lexinform.models.extractions import ExtractionResult
@@ -272,3 +272,19 @@ def test_unexpected_default_metadata_is_not_ignored(monkeypatch: pytest.MonkeyPa
 
     with pytest.raises(ValueError, match="differs from bounded opt-in"):
         physical_snapshot(ole_document(*source_notes()), default_note_writer=True)
+
+
+@pytest.mark.parametrize(
+    ("main", "reference_cp", "status", "offset"),
+    [("A\x02B\r", 1, "anchored", 1), ("A \x02\rB\r", 2, "cleanup_changed", None)],
+)
+def test_reference_projection_requires_exact_legacy_text_after_marker_removal(
+    main: str, reference_cp: int, status: str, offset: int | None
+) -> None:
+    from_fixture = ole_document(*source_notes(main=main, reference_cp=reference_cp))
+
+    report = inspect(from_fixture, max_notes=256, source_characters=True, reference_projection=True)
+
+    (row,) = report["reference_projection"]
+    assert row["status"] == status and row["reference_cp"] == reference_cp
+    assert row.get("output_offset") == offset
