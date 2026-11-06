@@ -13889,3 +13889,20 @@ process CPU across the cohort. A native DOC through the real pipeline with
 a fake provider preserved the batch request, prompt, memo key and custom ID.
 
 [Qualification](../assets/audits/2026-11-07-doc-note-default-projections/qualification.json).
+
+<a id="j399"></a>
+
+## J399 — distinguish matching secondary collection checkpoints from applications
+
+The offline delivery census checks whether the exact retained provider
+answer and paid computation agree with the bound consumed batch item and
+its timestamp. A matching checkpoint records consistency between the
+saved rows. The separate collection application and atomicity of the
+original writes require their own evidence.
+
+On the same pinned snapshot as J384, applications 33–35 had matching
+checkpoints. Rows 11 and 16 remained unverified. All five retained their
+existing collection-application status and the census preserved all prior
+fields and delivery observations.
+
+[Qualification](../assets/audits/2026-11-07-secondary-collection-checkpoint/qualification.json).

@@ -1,0 +1,33 @@
+{
+  "database_sha256": "c53f468cea246f6a8f2b74eaef46dbf5ea46fc72efa5a3af28741fbe919c974a",
+  "report_sha256": "345e97006e3ff0d57e0aa783dc05eaf94977f7f343690ed50ded96e6d7bc5fe7",
+  "baseline_report_sha256": "c40aa290f8c6d29bd47c7de228df63ecbd8e9ee834b99451e27132794abd3a92",
+  "prior_fields_unchanged": true,
+  "secondary": [
+    {
+      "application_id": 11,
+      "checkpoint": "not_verified",
+      "application": "not_retained"
+    },
+    {
+      "application_id": 16,
+      "checkpoint": "not_verified",
+      "application": "not_retained"
+    },
+    {
+      "application_id": 33,
+      "checkpoint": "matching_retained_checkpoint",
+      "application": "not_retained"
+    },
+    {
+      "application_id": 34,
+      "checkpoint": "matching_retained_checkpoint",
+      "application": "not_retained"
+    },
+    {
+      "application_id": 35,
+      "checkpoint": "matching_retained_checkpoint",
+      "application": "not_retained"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import json
 import sqlite3
 from contextlib import closing
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
@@ -423,6 +424,7 @@ def test_secondary_request_prefix_keeps_exact_suffix_and_rejects_prefix_conflict
     if control in ("exact", "receipt"):
         assert prefix["request_sha256"] == "a" * 64
         assert prefix["original_collection_application"] == "not_retained"
+        assert prefix["retained_collection_checkpoint"] == "not_verified"
         assert prefix["prepared_input_receipt"] == (
             "validated_retained_receipt" if control == "receipt" else "not_retained"
         )
@@ -527,7 +529,7 @@ def test_secondary_question_requires_agreement_with_the_paid_result(
     }
 
 
-@pytest.mark.parametrize("control", ["exact", "provider", "usage"])
+@pytest.mark.parametrize("control", ["exact", "later_consumption", "provider", "usage"])
 def test_secondary_exchange_checks_manifest_and_parsed_answer(
     secondary_snapshot: tuple[Path, int, int], control: str
 ) -> None:
@@ -572,6 +574,19 @@ def test_secondary_exchange_checks_manifest_and_parsed_answer(
             ),
         )
 
+        if control == "later_consumption":
+            earlier = (NOW - timedelta(seconds=1)).isoformat()
+            db.execute("UPDATE llm_batches SET submitted_at=?", (earlier,))
+            db.execute(
+                "UPDATE llm_batch_items SET meta_json=json_set(meta_json,'$.queued_at',?)",
+                (earlier,),
+            )
+            db.execute(
+                "UPDATE computation_results SET result_json=json_set(result_json,'$.collected_at',?)"
+                " WHERE result_id=?",
+                (earlier, paid.result_id),
+            )
+
     report = audit(
         target, publication, secondary_application_id=application, include_request_prefix=True
     )
@@ -580,7 +595,11 @@ def test_secondary_exchange_checks_manifest_and_parsed_answer(
     assert isinstance(suffix, dict)
     assert report["reason"] == "exact_retained_secondary_suffix"
     prefix = suffix["request_prefix"]
-    if control == "exact":
+    if control in ("exact", "later_consumption"):
+        assert prefix["retained_collection_checkpoint"] == (
+            "matching_retained_checkpoint" if control == "exact" else "not_verified"
+        )
+        assert prefix["original_collection_application"] == "not_retained"
         assert prefix["retained_provider_request_manifest"] == "verified_retained_manifest"
         assert prefix["retained_provider_answer"] == "exact_retained_answer"
         assert prefix["original_request_payload"] == "not_verified"

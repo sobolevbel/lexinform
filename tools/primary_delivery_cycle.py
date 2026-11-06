@@ -403,6 +403,7 @@ def _secondary_request_prefix(
     manifest = meta.frozen_request_manifest
     if manifest is not None and manifest.provider != paid.provider:
         raise ValueError("Frozen request manifest differs from the paid provider")
+    answer = _retained_provider_answer(paid, row["result_json"])
     return {
         "status": "recorded",
         "reason": "exact_submitted_secondary_request_identity",
@@ -421,7 +422,12 @@ def _secondary_request_prefix(
         "retained_provider_request_manifest": (
             "verified_retained_manifest" if manifest is not None else "not_retained"
         ),
-        "retained_provider_answer": _retained_provider_answer(paid, row["result_json"]),
+        "retained_provider_answer": answer,
+        "retained_collection_checkpoint": (
+            "matching_retained_checkpoint"
+            if paid.collected_at == consumed and answer == "exact_retained_answer"
+            else "not_verified"
+        ),
     }
 
 
@@ -661,6 +667,7 @@ def census(database: Path) -> dict[str, object]:
                             "original_amendment_question",
                             "retained_provider_request_manifest",
                             "retained_provider_answer",
+                            "retained_collection_checkpoint",
                         )
                         if key in prefix
                     }
