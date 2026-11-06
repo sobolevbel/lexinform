@@ -984,7 +984,10 @@ class TextLoader:
             trace is not None
             and composition is not None
             and composition.version_decision is not None
-            and (trace.archive_members is not None) == composition.version_decision_includes_archive
+            and (
+                (trace.archive_members is not None) == composition.version_decision_includes_archive
+                or (trace.result == "selected" and composition.version_decision_includes_archive)
+            )
         ):
             with suppress(Exception):
                 enriched = CandidateDispositionTrace.model_validate(
@@ -1215,7 +1218,17 @@ class TextLoader:
             composition is not None
             and 2 <= len(prepared) <= MAX_VERSION_DECISION_ROWS
             and all(item.parts for item in prepared)
-            and (not includes_archive or isinstance(choice, AmbiguousCandidates))
+            and (
+                not includes_archive
+                or isinstance(choice, AmbiguousCandidates)
+                or (
+                    attempts is not None
+                    and all(
+                        attempts.has_native_comparison_root(index, file.sha256)
+                        for index, (_, file) in zip(candidate_indices, candidates, strict=True)
+                    )
+                )
+            )
         ):
             comparison = choice.comparison
             with suppress(Exception):

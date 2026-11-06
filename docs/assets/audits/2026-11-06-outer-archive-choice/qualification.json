@@ -1,0 +1,168 @@
+{
+  "cached_replay": {
+    "missing_inputs": 1383,
+    "read_inputs": 7599,
+    "results": 4276
+  },
+  "cached_report_sha256": "0f396631d6f3ed681266122b9a5de6d97210ea1b1177a7ae098d96b1bacb12a1",
+  "case": "RCL 12337613/12",
+  "native": {
+    "catalogue_sha256": "e5638cff382dd933f79f656115ab5d4e29b0446b47b122af518c5755320fb613",
+    "downloads": [
+      "468921.zip",
+      "469054.pdf",
+      "469056.zip"
+    ],
+    "extraction_ids": [
+      "extraction-v1:378c4fc03cd8506a1619c082d0bbe1fb4be2934ce0b64a85477b684a282d9352",
+      "extraction-v1:3b7992ca1282b79f873d3ddffa8507e348602a543170c3b0869ed789499d875e",
+      "extraction-v1:a6516d6c36bdb3fbffbbd3364ca265e9701438992a566399e8ca79bc136e5863"
+    ],
+    "gzip_bytes": 20358,
+    "observation_id": "source-observation-v1:93d3743fbc7cbc0d4c4f6f55b55a0506f7d4a9467d17208ff85f45a178210f68",
+    "pins": {
+      "468921.zip": "d0e32f2d94810b0e9e4d7f1f96346328644c3c159b8f00556133dc4005fa3cf7",
+      "469054.pdf": "5e79d8b69bc2d8801c1ef0964f7fc8b5ea326da248214423bbe01e29a0535e96",
+      "469056.zip": "b09cd7b5fef178df667fe109cd0c2435e17f6e29afbcaf458ff476c6d18404a7"
+    },
+    "selection_id": "selection-v1:afa4dba25a884eb998c768e0cf3ed619ee227d6838cc9d626b7441e94ac137f6",
+    "sql_bytes": 110650,
+    "text_sha256": "55f7cc823accdb29dadbfeacd86c26f84450891a286661a9e7ec3486301f05cb",
+    "trace": {
+      "archive_members": {
+        "observed_rows": 14,
+        "omitted_rows": 12,
+        "retention": "prefix",
+        "rows": [
+          {
+            "index": 0,
+            "leaf_sha256": "a310a915f35a08c3c380e6b35ed02083946dc2ceeba2f0d097bcd20a23f6598d",
+            "ordinals": [
+              0
+            ],
+            "outcome": "selected",
+            "phase": "version_comparison",
+            "physical_part_index": 0,
+            "reason": "selected_main",
+            "root_sha256": "d0e32f2d94810b0e9e4d7f1f96346328644c3c159b8f00556133dc4005fa3cf7",
+            "stage": "policy",
+            "text_sha256": "ca14c1a5a8f8f1a0811c6f87e1fa83b3e266d63e6e55886c3051f196495dc595"
+          },
+          {
+            "index": 0,
+            "leaf_sha256": "f325f1d5b6d0d283c3cd894dee92f81301939122d03905563e68c374f8a39fc0",
+            "ordinals": [
+              1
+            ],
+            "outcome": "selected",
+            "phase": "version_comparison",
+            "physical_part_index": 1,
+            "reason": "selected_support",
+            "root_sha256": "d0e32f2d94810b0e9e4d7f1f96346328644c3c159b8f00556133dc4005fa3cf7",
+            "stage": "policy",
+            "text_sha256": "0e839d6dfcb356523bb5ab60c3dda470d1abacd8f7c2a2555dcbb36a971d468f"
+          }
+        ],
+        "rows_sha256": "09d692ac15b8f9ebbb93c8b83e91786723e7108816fbcf51b4c1f2d93053e9e4",
+        "unvisited": "none_known",
+        "walk": "finished"
+      },
+      "candidate_count": 3,
+      "coverage": "complete",
+      "dispositions": [
+        {
+          "index": 0,
+          "observed_sha256": "d0e32f2d94810b0e9e4d7f1f96346328644c3c159b8f00556133dc4005fa3cf7",
+          "outcome": "policy_excluded",
+          "phase": "version_comparison",
+          "reason": "version_preference"
+        },
+        {
+          "index": 1,
+          "observed_sha256": "5e79d8b69bc2d8801c1ef0964f7fc8b5ea326da248214423bbe01e29a0535e96",
+          "outcome": "non_bill",
+          "phase": "version_comparison",
+          "reason": "non_bill_body"
+        },
+        {
+          "index": 2,
+          "observed_sha256": "b09cd7b5fef178df667fe109cd0c2435e17f6e29afbcaf458ff476c6d18404a7",
+          "outcome": "selected",
+          "phase": "version_comparison",
+          "reason": "version_choice"
+        }
+      ],
+      "omitted_dispositions": 0,
+      "reason": "version_choice",
+      "requested_document": {
+        "alternatives": [
+          {
+            "compare_versions": true,
+            "kind": "rcl",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12337613/12713891/12713892/dokument469054.pdf",
+            "version_basis": [
+              "rcl/12337613/stage/12713891",
+              "autopoprawka do projektu ustawy o szczeg\u00f3lnych rozwi\u0105zaniach s\u0142u\u017c\u0105cych realizacji ustawy bud\u017cetowej na rok 2021 (UD73), RM-10-73-20.pdf"
+            ]
+          },
+          {
+            "amendment_urls": [
+              "https://legislacja.rcl.gov.pl/docs//2/12337613/12713891/12713892/dokument469054.pdf"
+            ],
+            "compare_versions": true,
+            "kind": "rcl",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12337613/12713891/12713892/dokument469056.zip",
+            "version_basis": [
+              "rcl/12337613/stage/12713891",
+              "tekst ostateczny projektu ustawy o szczeg\u00f3lnych rozwi\u0105zaniach s\u0142u\u017c\u0105cych realizacji ustawy bud\u017cetowej na rok 2021. (UD73), RM-10-73-20.zip"
+            ]
+          }
+        ],
+        "amendment_urls": [
+          "https://legislacja.rcl.gov.pl/docs//2/12337613/12713891/12713892/dokument469054.pdf"
+        ],
+        "compare_versions": true,
+        "kind": "rcl",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12337613/12713891/12713892/dokument468921.zip",
+        "version_basis": [
+          "rcl/12337613/stage/12713891",
+          "Projekt ustawy o szczeg\u00f3lnych rozwi\u0105zaniach s\u0142u\u017c\u0105cych realizacji ustawy bud\u017cetowej na rok 2021 (UD73) RM-10-73-20, RM 28-09-2020.zip"
+        ]
+      },
+      "result": "selected",
+      "selection_state": "selected",
+      "universe_sha256": "eea7e73bf53c2d546268159809dde1d3b093b94404d832b82405e4796fb3eb46",
+      "version_decision": {
+        "compared_indices": [
+          0,
+          2
+        ],
+        "date_filter": [
+          "2020-09-25",
+          "2020-09-29"
+        ],
+        "outcome": "single_survivor",
+        "retained_indices": [
+          2
+        ]
+      }
+    },
+    "trace_bytes": 3115,
+    "trace_id": "candidate-trace-v1:9a95b7f308dd92514052ef3cbc90ffd7491e2ac2eff4c8dffa462ae67d410749"
+  },
+  "native_report_sha256": "ea1da10248be0e16035bb7f55a1b6c6025a65acb99816ea291a7122243c50ea1",
+  "normalized_sql_exact": true,
+  "provider_submissions": 0,
+  "raw_cohort": {
+    "cohort_sha256": "f788bb15d668827d5fc6130df92084fca3099da90ef093bb98cd5a2b360d4859",
+    "natural_requests": 17,
+    "natural_roots": 16,
+    "synthetic_requests": 4
+  },
+  "reader_compatibility_two_restores": true,
+  "same_interpreter_deltas": {
+    "gzip_bytes": 55,
+    "sql_bytes": 139,
+    "trace_bytes": 139
+  }
+}

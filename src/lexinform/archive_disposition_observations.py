@@ -9,6 +9,7 @@ from lexinform.archive_dispositions import MAX_ARCHIVE_VALIDATION_BYTES, enrich_
 from lexinform.archive_policy_capture import ArchivePolicyDecision
 from lexinform.models import ArchiveMemberDisposition, ArtifactIdentity, CandidateDispositionTrace
 from lexinform.models.candidate_trace import (
+    MAX_VERSION_DECISION_ROWS,
     ArchiveVersionConflictEvidence,
     ArchiveVersionDecisionEvidence,
 )
@@ -225,15 +226,24 @@ class ArchiveDispositionAccumulator:
         self.version_evidence: ArchiveVersionDecisionEvidence | None = None
         self.conflict_evidence: ArchiveVersionConflictEvidence | None = None
         self._conflict_attempts = 0
+        self._native_comparison_roots: dict[int, str] = {}
         self._unavailable = False
         self._failed = False
         self._walk: Literal["finished", "interrupted"] = "finished"
         self._unvisited: Literal["none_known", "known"] = "none_known"
 
     def observe(self, phase: Phase, index: int, root: ArchiveRootObservation) -> None:
-        if phase == "version_comparison" and self._conflict_attempts < 2:
-            with suppress(Exception):
-                self._observe_conflict(index, root)
+        if phase == "version_comparison":
+            if (
+                len(self._native_comparison_roots) < MAX_VERSION_DECISION_ROWS
+                and root.completed
+                and root.policy
+                and any(decision.reason == "selected_main" for decision in root.policy)
+            ):
+                self._native_comparison_roots[index] = root.artifact.sha256
+            if self._conflict_attempts < 2:
+                with suppress(Exception):
+                    self._observe_conflict(index, root)
         if self._unavailable or self._failed:
             return
         try:
@@ -266,6 +276,9 @@ class ArchiveDispositionAccumulator:
             if first_root:
                 with suppress(Exception):
                     self.version_evidence = self._version_evidence(root)
+
+    def has_native_comparison_root(self, index: int, sha256: str | None) -> bool:
+        return sha256 is not None and self._native_comparison_roots.get(index) == sha256
 
     def _observe_conflict(self, index: int, root: ArchiveRootObservation) -> None:
         if not root.completed or not root.policy:

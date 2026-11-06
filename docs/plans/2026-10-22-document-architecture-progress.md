@@ -12885,6 +12885,9 @@ documents, law fingerprints and physical extraction metadata. The
 production route and dump do not carry the proof.
 [Qualification](../assets/audits/2026-11-06-flat-opc-notes/qualification.json).
 
+The exact `19fa8779` release passed CI run 42248577611 and relay
+deployment 42249445140. Restart and timer were verified.
+
 <a id="j346"></a>
 
 ## J346 — verify the submitted request identity of secondary sends
@@ -12901,3 +12904,19 @@ request payload and source selection remain unverified. The census of
 50 original sends still proves only the full cycle for druk 3281. The
 database and repeated reports matched byte-for-byte.
 [Qualification](../assets/audits/2026-11-06-secondary-request-prefix/qualification.json).
+
+<a id="j347"></a>
+
+## J347 — retain a successful outer ZIP version choice
+
+The outer decision records only the archives the comparator actually
+compared when their completed native reads establish the root hashes.
+The existing size guard preserves the base trace and nested evidence.
+
+On RCL 12337613 stage 12, positions 0 and 2 were compared and position 2
+survived the date filter. The adjacent PDF was outside the comparison.
+Selection, text, downloads and physical identities matched. The sample
+dump added 139 SQL bytes and 55 gzip bytes. Old and new readers restored
+the new trace twice. The raw pair matched 16 roots and four controls.
+The broad cached pair matched all 4,276 outcomes and 1,383 missing inputs.
+[Qualification](../assets/audits/2026-11-06-outer-archive-choice/qualification.json).
