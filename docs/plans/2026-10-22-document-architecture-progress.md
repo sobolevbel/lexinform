@@ -13982,3 +13982,21 @@ memo key, custom ID and same-byte deduplication. The J402 reader restored
 the writer checkpoint byte-for-byte twice.
 
 [Qualification](../assets/audits/2026-11-07-doc-note-cfspec-writer/qualification.json).
+
+<a id="j404"></a>
+
+## J404 — capture exact Word field text ranges inside legacy paragraphs
+
+The optional Word observer binds actual emitted field text to its XML node
+and the exact legacy paragraph. It leaves unbalanced or incomplete complex
+field walks unknown and distinguishes unobserved simple-field candidates.
+Coordinates apply within the paragraph, including for table cells.
+
+Two independent marker perturbations reproduced unchanged legacy text on
+all 20 pinned paths. The native observer matched 69 emitted nodes by path,
+group and text hash and bound every range to the actual paragraph slice.
+Forty-three nodes were in table paragraphs and 26 were in directly
+projected paragraphs. The independent probe confirmed 62 instruction
+omissions. Default extraction and persisted formats remain unchanged.
+
+[Qualification](../assets/audits/2026-11-07-word-field-ranges/qualification.json).

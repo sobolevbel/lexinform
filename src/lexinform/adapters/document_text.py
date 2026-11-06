@@ -36,6 +36,7 @@ import lexinform.physical_root_assembly as physical_root_assembly
 import lexinform.physical_walk_capture as physical_walk_capture
 from lexinform.adapters.doc_notes import DocNoteExtraction
 from lexinform.adapters.doc_text import DocTextExtractor
+from lexinform.adapters.word_field_ranges import WordFieldExtraction, WordFieldRanges
 from lexinform.archive_policy_capture import native_archive_policy_sink
 from lexinform.document_candidates import select_document_parts
 from lexinform.extraction_records import (
@@ -259,6 +260,10 @@ class DocxTextExtractor:
     def extract_blocks(self, data: bytes) -> WordTextExtraction:
         return self._blocks(data)
 
+    def extract_with_field_ranges(self, data: bytes) -> WordFieldExtraction:
+        fields = WordFieldRanges()
+        return fields.finish(self._blocks(data, fields=fields))
+
     def extract_with_notes(self, data: bytes) -> WordDetailedExtraction:
         notes = _WordNoteOrigins()
         body = self._blocks(data, notes=notes)
@@ -319,11 +324,17 @@ class DocxTextExtractor:
             ),
         )
 
-    def _blocks(self, data: bytes, *, notes: _WordNoteOrigins | None = None) -> WordTextExtraction:
+    def _blocks(
+        self,
+        data: bytes,
+        *,
+        notes: _WordNoteOrigins | None = None,
+        fields: WordFieldRanges | None = None,
+    ) -> WordTextExtraction:
         blocks: list[WordTextBlock] = []
         projection: list[str] = []
         text, xml_sha256, state = self._read(
-            data, blocks=blocks, projection=projection, origins=notes
+            data, blocks=blocks, projection=projection, origins=notes, fields=fields
         )
         result = WordTextExtraction(
             input_sha256=hashlib.sha256(data).hexdigest(),
@@ -344,6 +355,7 @@ class DocxTextExtractor:
         blocks: list[WordTextBlock] | None = None,
         projection: list[str] | None = None,
         origins: _WordNoteOrigins | None = None,
+        fields: WordFieldRanges | None = None,
     ) -> tuple[str, str, WordBodyState]:
         structure = current_word_structure()
         with _physical_zip(data) as archive:
@@ -414,7 +426,14 @@ class DocxTextExtractor:
                 (), root.tag, len(root), "part_root", recognized=state != "unsupported"
             )
         return (
-            _wordml_text(root, notes=notes, blocks=blocks, projection=projection, origins=origins),
+            _wordml_text(
+                root,
+                notes=notes,
+                blocks=blocks,
+                projection=projection,
+                origins=origins,
+                fields=fields,
+            ),
             hashlib.sha256(xml).hexdigest(),
             state,
         )
@@ -427,17 +446,22 @@ def _wordml_text(
     blocks: list[WordTextBlock] | None = None,
     projection: list[str] | None = None,
     origins: _WordNoteObserver | None = None,
+    fields: WordFieldRanges | None = None,
 ) -> str:
     """The legacy body view of a supported WordprocessingML document element."""
     namespace, local = _split_tag(root.tag)
     if local not in _WORDML_ROOTS or namespace not in WORDML_NAMESPACES:
         log.warning("not a WordprocessingML document (root %s); no text", root.tag)
         return ""
-    reader = _WordMl(namespace, notes=notes, blocks=blocks, projection=projection, origins=origins)
+    reader = _WordMl(
+        namespace, notes=notes, blocks=blocks, projection=projection, origins=origins, fields=fields
+    )
     body = root.find(reader.tag("body"))
     if body is None:
         log.warning("Word document without a body; no text")
         return ""
+    if fields is not None:
+        fields.classify(body, f"{{{namespace}}}")
     path = (
         (next(index for index, child in enumerate(root) if child is body),)
         if blocks is not None or origins is not None
@@ -678,7 +702,9 @@ class _WordMl:
         blocks: list[WordTextBlock] | None = None,
         projection: list[str] | None = None,
         origins: _WordNoteObserver | None = None,
+        fields: WordFieldRanges | None = None,
     ) -> None:
+        self._fields = fields
         self._origins = origins
         self._ns = f"{{{namespace}}}"
         self._notes = notes or {}
@@ -886,7 +912,10 @@ class _WordMl:
             structure_path=structure_path,
             structure_paragraph=structure_path,
         )
-        return "".join(parts)
+        text = "".join(parts)
+        if self._fields is not None and path is not None:
+            self._fields.paragraph(path, parts, text)
+        return text
 
     def _inline(
         self,
@@ -913,7 +942,11 @@ class _WordMl:
                 self._support_inline(el, located or ())
             if el.tag == _MC_FALLBACK:
                 continue
+            if self._fields is not None and child_path is not None:
+                self._fields.visit_marker(el)
             if el.tag == self.tag("t"):
+                if self._fields is not None and child_path is not None and paragraph is not None:
+                    self._fields.fragment(el, child_path, paragraph, len(parts))
                 parts.append(el.text or "")
                 if in_removal and el.text and self._structure is not None:
                     self._structure.report_removal_text()

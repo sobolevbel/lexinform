@@ -1,0 +1,16 @@
+{
+  "independent_reference_sha256": "47af1a1bdc22a7a147e0b6655ed82564328f1adaf63709bf6bbd18ff5284f483",
+  "counts": {
+    "table_paragraph": 43,
+    "paths": 20,
+    "direct_paragraph": 26
+  },
+  "baseline": "8cffdf1fe0e16ff88c0005f71a6ec0692fcf954b",
+  "probe_sha256": "337dbf0c3a0dac1453440451adf66b1a78c29ceb5dd5f857fecb6c0f7c859a5d",
+  "native_runner_sha256": "e7ce64e7395279224d0fb8e6a998c6356b26a9bc259d9a883aec51ac55dc5857",
+  "independent_counts": {
+    "after_separator:exact": 43,
+    "instruction:omitted": 62,
+    "simple_body_text:exact": 26
+  }
+}
