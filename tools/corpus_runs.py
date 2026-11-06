@@ -362,6 +362,8 @@ def compare(before: Path, after: Path, output: Path) -> dict[str, Any]:
             "requested_profiles",
             "scope",
             "exclusions",
+            "missing_inputs",
+            "complete_population",
             "case_manifest_sha256",
             "catalog_sha256",
             "index_sha256",

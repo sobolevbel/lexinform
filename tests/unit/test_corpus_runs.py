@@ -98,6 +98,33 @@ def test_diff_separates_changed_observations_and_changed_input_identity(tmp_path
         compare(root / "before", root / "after", root / "after/diff.json")
 
 
+@pytest.mark.parametrize(
+    ("field", "before", "after"),
+    [
+        ("missing_inputs", ["stage-a"], ["stage-b"]),
+        ("missing_inputs", None, []),
+        ("complete_population", False, True),
+    ],
+)
+def test_candidate_diff_detects_coverage_only_changes(
+    tmp_path: Path, field: str, before: object, after: object
+) -> None:
+    runs = tmp_path / "runs"
+    for name, coverage in (("before", before), ("after", after)):
+        source = report_at(tmp_path / f"{name}.json")
+        if coverage is not None:
+            report = json.loads(source.read_text())
+            report[field] = coverage
+            source.write_text(json.dumps(report))
+        register(runs, name, "candidates", source)
+
+    result = compare(runs / "before", runs / "after", tmp_path / "diff.json")
+
+    assert result["status"] == "changed"
+    assert result["changes"] == result["changed_inputs"] == []
+    assert result["summary_changes"] == {field: {"before": before, "after": after}}
+
+
 def test_real_offline_ci_suite_runs_inside_an_immutable_directory(tmp_path: Path) -> None:
     root = tmp_path / "runs"
     corpus = Path(__file__).parents[1] / "fixtures/corpus_check"

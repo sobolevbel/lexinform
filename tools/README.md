@@ -30,6 +30,8 @@ changed artifacts. Registration preserves an old report's producer provenance; i
 that current code generated it. Diffs separate observations, input identities and coverage.
 `recorded` means completed observation, `passed` means declared assertions passed, and `not_run`
 means an incomplete requested check. An empty population never becomes a completed run.
+The diff includes changes to recorded missing-input lists and population completeness. Two
+equally incomplete runs can still compare as `same` for their available evidence.
 
 Discover runnable suites and their child modules with
 `uv run --offline --frozen python -m tools.corpus_runs list`. The listing includes options the

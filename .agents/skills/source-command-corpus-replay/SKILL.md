@@ -14,8 +14,10 @@ matrix when the change crosses extraction, selection, comparison, or delivery bo
   separate. Use a new output path, even when repeating an identical run.
 - Use `python -m tools.corpus_runs list` to find the registered suite, its child module and
   preset options. Use `run` for a registered suite, then `verify` and `diff`
-  for sealed runs. Use the existing standalone replay when it owns the exact proof.
-  Check denominators, missing inputs and exclusions alongside the changed decisions.
+  for sealed runs. Register existing standalone reports when the registry supports their
+  suite, keeping their original producer provenance. Inspect changed observations, input
+  identities, and coverage separately. A `same` result with missing inputs only applies
+  to the available evidence.
 - For extraction or selection changes, replay old matches, inspect every changed decision,
   and run meaningful changes from the project's corpus rules. Separate raw reads,
   cached evidence and retained input maps.
