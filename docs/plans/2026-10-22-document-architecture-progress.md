@@ -11523,3 +11523,19 @@ A separate pinned replay confirms the same literal normative core in the PDF and
 of print 1608. The strict control stays unknown. The plan accepts DA5.4, DA7.5 and DA10.3
 in their tested profiles, with unavailable evidence and additional source families
 listed separately. [Evidence and accepted scope](../assets/audits/2026-11-06-retained-evidence-census/report.md).
+
+<a id="j284"></a>
+
+## J284 — refresh the human handoff and acceptance census
+
+The sealed C006b queue was replayed with the current code. The new form
+`current-holdout-form` verified three original PDFs in three initiative groups.
+Its manifest SHA-256 is `9ad57597374503d0f74bce5a1fb083c760587957fc7fdea8d924ba4cf638cb6b`. The inspected corpus run store contained no
+recorded review submissions. DA0.6 still awaits independent review.
+
+The read-only restore of state `ff49a74a8d5e5b846a8f11d98ca71c2f421930b8`
+covered 50 sent original cards. The direct-cycle audit with compact history
+enabled recorded only publication 258. The other 49 had missing or out-of-scope
+evidence. The same snapshot contained 117 nonblank claims in 12 validated
+primary results. Their semantic support remains unassessed. DA9.4 and DA10.7
+stay open.
