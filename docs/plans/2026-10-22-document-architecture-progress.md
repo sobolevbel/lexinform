@@ -12362,3 +12362,25 @@ Two scratch checkpoints compared six distinct native results, with
 identical non-extraction row changes. Both passed two exact SQL round
 trips, integrity and foreign-key checks.
 [Corpus and checkpoint qualification](../assets/audits/2026-11-06-word-inline-writer/qualification.json).
+
+<a id="j321"></a>
+
+## J321 — preserve the exact Senate resolution suffix after a cover letter
+
+The native amendment preparation binds the verified resolution text to
+the same captured full extraction. The existing projection checks exact
+suffix equality at the computed offset. The receipt retains the full
+source hash and character count, the exact emitted range, and the frozen
+request hash. No additional runtime read or receipt format is needed.
+
+All 701 pinned Senate text preparations reproduced the same requests,
+contexts, observations, downloads and outcomes. The 636 identity
+receipts are exact. Independent re-extraction corroborated the complete
+source and emitted spans for 65 new suffix receipts. Scans and resumed
+contexts are outside this proof.
+
+All 65 paired queued scratch snapshots passed two exact restores.
+Removing the new receipt and its lineage copy reproduced baseline
+SQL in each pair. No provider call, historical reconstruction or
+storage change occurred.
+[Qualification](../assets/audits/2026-11-06-senate-prefix-input/qualification.json).

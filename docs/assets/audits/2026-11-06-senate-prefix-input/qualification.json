@@ -1,0 +1,76 @@
+{
+  "baseline_commit": "97d38360f66b687b2eaed4660ae8fb1df7f46a71",
+  "population": {
+    "selected_text": 701,
+    "scan_pending": 23,
+    "no_unique_date": 2,
+    "not_amendments": 90
+  },
+  "raw_bytes": 39243213,
+  "baseline_counts": {
+    "mapped_identity": 636,
+    "independent_parents_checked": 636,
+    "retained": 636,
+    "stored_identity": 636,
+    "waiting": 701,
+    "unstamped": 65,
+    "stored_prefix": 65
+  },
+  "candidate_counts": {
+    "mapped_identity": 636,
+    "independent_parents_checked": 701,
+    "retained": 701,
+    "stored_identity": 636,
+    "waiting": 701,
+    "mapped_prefix": 65,
+    "stored_prefix": 65
+  },
+  "exact_core": [
+    "frozen_request_sha256",
+    "context_sha256",
+    "input_chars",
+    "observation_ids",
+    "download_order",
+    "prepare_calls",
+    "outcomes"
+  ],
+  "identity_receipts_exact": 636,
+  "new_suffix_receipts_checked": 65,
+  "replay_sha256": {
+    "before.json": "e6fecaa16cf8c32d50aa3801cd117fedb26aa3cfa8e3bebcd758e510918e4cd2",
+    "after.json": "415c36e1cdfca511149bdf0cf1a54b49093cb777e10f9acf6847acad072bed42",
+    "before-checkpoint.json": "d072696c5605d6c146436e6d3e536cef5d34438171037189364538930b6f0035",
+    "after-checkpoint.json": "27957a8b174b6d734a4782a82defc765b0354d2103b5ee870b5e5a1fb8f60874",
+    "out/qualification/verified-selected.json": "a32f0fc7384ab829df815f74b1994652f5fd025a56d3318ba11144b8948ba66b",
+    "out/qualification/senate-baseline.json": "16a8c1cfce919ddd17bdd08ad04102a1f2e9c830263c906e5f43320fe63cd128"
+  },
+  "source_diff": {
+    "src/lexinform/services/analysis.py": "81e0a88c3eb90b5f95fcc7f881b23911547e163e0f3545c45774ccddedbfcf9e",
+    "tests/unit/test_senate_input_capture.py": "eeac740a2469f58b3ee00d603e3210160fcd5da02cb016bc69dd5341bd7008d0"
+  },
+  "checkpoint": {
+    "paired_isolated_queued_snapshots": 65,
+    "exact_round_trips_per_snapshot": 2,
+    "normalized_sql_equal": true,
+    "normalized_fields": [
+      "prepared_input_receipt",
+      "amendment_input_ref.lineage_receipt"
+    ],
+    "integrity_check": "ok",
+    "foreign_key_errors": 0,
+    "growth": {
+      "sql_bytes": {
+        "min": 2473,
+        "max": 2495,
+        "total": 161481
+      },
+      "gzip_bytes": {
+        "min": 291,
+        "max": 524,
+        "total": 25739
+      }
+    }
+  },
+  "provider_submissions": 0,
+  "historical_reconstruction": false
+}

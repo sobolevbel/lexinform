@@ -2551,8 +2551,9 @@ class AnalysisService:
         with suppress(Exception):
             if captured is not None:
                 file, source = captured
+                full_text = file.text
                 if (
-                    file.text == text
+                    full_text is not None
                     and isinstance(source, DocumentSourceRead)
                     and len(source.selection.selection.parts) == 1
                 ):
@@ -2563,17 +2564,19 @@ class AnalysisService:
                         and part.url == document.url
                         and not part.members
                         and part.text_start == 0
-                        and part.text_end in (None, len(text))
-                        and part.text_sha256 == hashlib.sha256(text.encode()).hexdigest()
+                        and part.text_end in (None, len(full_text))
+                        and part.text_sha256 == hashlib.sha256(full_text.encode()).hexdigest()
                     ):
                         selection = original.model_copy(
-                            update={"parts": (part.model_copy(update={"text": text}),)}
+                            update={"parts": (part.model_copy(update={"text": full_text}),)}
                         )
                         if DocumentSelectionRecord.from_selection(selection) == source.selection:
                             loaded = replace(
                                 loaded,
                                 selection=selection,
-                                projection=project_pieces(text, (SourcePiece(text, 0),)),
+                                projection=project_pieces(
+                                    full_text, (SourcePiece(text, len(full_text) - len(text)),)
+                                ),
                                 source_read=source,
                             )
         return loaded

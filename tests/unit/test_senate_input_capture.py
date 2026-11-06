@@ -116,16 +116,28 @@ def test_senate_identity_receipt_uses_actual_read_even_when_recommendation_is_la
     repo.restore(repo.dump())
 
 
-def test_senate_cover_prefix_keeps_original_request_without_a_receipt(
+def test_senate_cover_prefix_maps_the_exact_suffix_of_the_original_source(
     repo: SqliteBillRepository, process_3039: ProcessDetail
 ) -> None:
     case, _, calls, raw = senate_case(repo, process_3039, prefix=True)
     result = case.service.summarize_amendments(case.bill, case.document, may_wait=True)
     assert isinstance(result, Waiting)
     (intent,) = repo.list_queued_batch_intents()
-    assert intent.meta.prepared_input_receipt is None
-    assert intent.request.ctx.model_dump()["text"] != raw
+    receipt = intent.meta.prepared_input_receipt
+    assert isinstance(receipt, AmendmentInputReceipt)
+    text = intent.request.ctx.model_dump()["text"]
+    start = len(raw) - len(text)
+    assert start > 0 and raw[start:] == text
+    assert receipt.source_part.text_sha256 == hashlib.sha256(raw.encode()).hexdigest()
+    assert receipt.source_part.chars == len(raw)
+    assert receipt.text_sha256 == hashlib.sha256(text.encode()).hexdigest()
+    assert receipt.request_sha256 == intent.request.payload_sha256
+    assert receipt.source_selection_id is not None and receipt.extraction_id is not None
+    (segment,) = receipt.segments
+    assert (segment.source_start, segment.source_end) == (start, len(raw))
+    assert (segment.start, segment.end) == (0, len(text))
     assert calls == [URL]
+    repo.restore(repo.dump())
 
 
 @pytest.mark.parametrize("cancel", [False, True])
