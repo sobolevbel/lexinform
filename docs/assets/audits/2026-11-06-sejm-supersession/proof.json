@@ -1,0 +1,34 @@
+{
+  "adopted_url": "https://api.sejm.gov.pl/sejm/term10/processes/2111/attachment/2111_u3.pdf",
+  "adoption_date": "2026-05-29",
+  "adoption_stage_sha256": "c74a53ca3d6a04cbcfcb973d80838e874d12551e19b983e4ef434031d50d261e",
+  "case_sha256": "cf2b4a385661898252cf83e77a45e0976d361087705bd7eed70c9a6ba0181d8c",
+  "evidence": {
+    "prior": {
+      "artifact_sha256": "cdb71705c3dc81e9a96f9767db732b8455860a8ee664352bbbb334a60ec27cc4",
+      "commencement_sha256": "5c9261dfc455b7600dbf279afd07ae374065ab1466de3e5c741e3a61d6771e05",
+      "first_page": 5,
+      "first_page_sha256": "fd8d1ab0d50f521d07f2f94a12a72e0705a9e4d1ba022ee337ea0735eabd1ab5",
+      "last_article": 254,
+      "last_page": 324,
+      "last_page_sha256": "d3a514f4e4bfe296a1eb828bbfffd3e995857fd5d7ac23fbc494affdf4e953a9"
+    },
+    "report_cover_sha256": "5c3290bd5361493edd1d97bcd8893fd2ea61c6951bc124cda875f5290b405ff2",
+    "successor": {
+      "artifact_sha256": "4929d334700b4ec7a61dd1c99b5e8c8f878dd67698669d1a770b3ae06256f2aa",
+      "commencement_sha256": "c71d0147ed167deeceb0291669cbc31e7337e28957625287fa1f87f239b4905d",
+      "first_page": 1,
+      "first_page_sha256": "d4213ca68689438f4bbea4fac89d3505f56537ec8fbf4b8ef56f3513eefb83cb",
+      "last_article": 257,
+      "last_page": 312,
+      "last_page_sha256": "a68d3a9c90b9df7ca979f866dd00cc6d93bf63a9a4012cc39dd2cc5892d5ad2b"
+    },
+    "title_sha256": "0021d73168e5e4c1a12d9afb6b45ac6da0e3d7f654c5fcf93dc7090873005755"
+  },
+  "owner": "2111",
+  "relation": "supersedes",
+  "report_date": "2026-05-26",
+  "report_url": "https://api.sejm.gov.pl/sejm/term10/prints/2594/2594.pdf",
+  "scope": "Sejm process text at third reading",
+  "term": 10
+}

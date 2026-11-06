@@ -1,0 +1,8 @@
+{
+  "foreign_owner": "Report cover must name its owner and attached draft",
+  "missing_page_body": "Expected a complete readable PDF page sequence",
+  "same_commencement": "Expected the same titled bill with distinct literal commencement clauses",
+  "wrong_printed_date": "PDF dates differ from the official report and adoption stages",
+  "wrong_printed_page_count": "Report draft page count differs from its printed count",
+  "wrong_start_page": "Expected exact opening and final commencement boundaries"
+}

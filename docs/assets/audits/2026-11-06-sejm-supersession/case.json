@@ -1,0 +1,23 @@
+{
+  "term": 10,
+  "owner": "2111",
+  "report": "2594",
+  "adoption_index": 6,
+  "report_draft_page": 5,
+  "processes": {
+    "path": "sejm/snapshots/2026-10-03/term10/process_details.json.gz",
+    "sha256": "361c92de8a686ae161aa3154c3a30bf29a2a7980e6fb3b13578962cdf01075d9"
+  },
+  "prints": {
+    "path": "sejm/snapshots/2026-10-03/term10/prints.json",
+    "sha256": "05e7b4a7105e9a6d8aff1c87293749c5c77c6bfefc6882491c8d2701b39b8938"
+  },
+  "report_pdf": {
+    "path": "next-sejm-supersession/2594.pdf",
+    "sha256": "cdb71705c3dc81e9a96f9767db732b8455860a8ee664352bbbb334a60ec27cc4"
+  },
+  "adopted_pdf": {
+    "path": "j289-adoption-reader/2111_u3.pdf",
+    "sha256": "4929d334700b4ec7a61dd1c99b5e8c8f878dd67698669d1a770b3ae06256f2aa"
+  }
+}

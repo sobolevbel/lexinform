@@ -1,0 +1,20 @@
+{
+  "body_started": true,
+  "bytes_read": 1859156,
+  "complete": true,
+  "elapsed_seconds": 7.645146,
+  "fetched_at": "2026-11-06T04:40:10.758203+00:00",
+  "final_url": "https://api.sejm.gov.pl/sejm/term10/prints/2594/2594.pdf",
+  "headers": {
+    "content-type": "application/pdf"
+  },
+  "redirects": [
+    {
+      "status_code": 200,
+      "url": "https://api.sejm.gov.pl/sejm/term10/prints/2594/2594.pdf"
+    }
+  ],
+  "requested_url": "https://api.sejm.gov.pl/sejm/term10/prints/2594/2594.pdf",
+  "sha256": "cdb71705c3dc81e9a96f9767db732b8455860a8ee664352bbbb334a60ec27cc4",
+  "status_code": 200
+}

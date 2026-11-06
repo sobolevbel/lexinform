@@ -11732,3 +11732,32 @@ and changed the gzip size by 2,495 bytes. The control added zero bytes.
 This covers the verified mixed-recommendation text profile. Other
 recommendation forms, representation and supersession still require
 their own qualification under DA4.7.
+
+<a id="j294"></a>
+
+## J294 — qualify supersession of an exact committee draft at third reading
+
+The pinned official process and print metadata identify 2594 as the
+last full committee draft before the known third-reading adoption in
+process 2111. The report cover names its owner and the attached draft.
+Its normative text starts on physical page 5 and runs through page 324,
+matching the printed count of 320 pages. The adopted text starts on
+page 1 and ends on page 312. Both texts have the same title and their
+printed dates match the official stages. Their final commencement clauses
+differ literally. The proof concerns the whole text within the Sejm
+process at third reading.
+
+A repeated pinned run produced the same hashes. Six mutations of the
+extracted inputs refused wrong ownership, a shifted boundary, a missing
+page body, a changed printed date, a changed page count and an identical
+commencement clause. The original PDF bodies remain in local audit inputs.
+[Input pins](../assets/audits/2026-11-06-sejm-supersession/case.json),
+[acquisition receipt](../assets/audits/2026-11-06-sejm-supersession/report-receipt.json),
+[proof](../assets/audits/2026-11-06-sejm-supersession/proof.json) and
+[negative controls](../assets/audits/2026-11-06-sejm-supersession/negative-controls.json).
+
+Run `python -m tools.replay_sejm_supersession` with the pinned corpus
+checkout, the local body root, case path and SHA-256, and a new output
+path outside both source roots. The ordinary selector still classifies
+2594 as unknown. Native edition capture and the durable supersession link
+remain open, as do provision-level lineage and later legislative events.
