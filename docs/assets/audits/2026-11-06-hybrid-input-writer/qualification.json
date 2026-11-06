@@ -1,0 +1,142 @@
+{
+  "baseline_commit": "998a2de3cbde2a3365726226e9ec55141b3a056e",
+  "deltas": {
+    "cleaned": {
+      "gzip_delta": 524,
+      "sql_delta": 2574
+    },
+    "collected": {
+      "gzip_delta": 825,
+      "sql_delta": 2574
+    },
+    "queued": {
+      "gzip_delta": 518,
+      "sql_delta": 2574
+    },
+    "submitted": {
+      "gzip_delta": 846,
+      "sql_delta": 2574
+    }
+  },
+  "fault_payload": "dab9f701a852887984b37e2567ccaa6d53e411689c8cfca98f691bea698bd7ef",
+  "normalized_storage_exact": true,
+  "positive_profile": "12405004/9/raw/normal",
+  "profiles": 17,
+  "receipt": {
+    "context_encoding": "bill-context-json-v1",
+    "context_sha256": "1d8578ab66c266178c636362184bf1ae813801ab9bb5673e1eba1b3485c238fb",
+    "coordinates": "legacy_part_text_v1",
+    "extraction_id": "extraction-v1:630d2369ae7e53622e732226244a66ead20ff2eb38ef05668b368585ffd6141d",
+    "full_map_sha256": "a90c56650950d0f168138142ad83b825e8d27b0a042ef4478183be11041c60d8",
+    "input_completeness": "not_asserted",
+    "map_encoding": "prepared-text-segments-json-v1",
+    "physical_origins": "unmapped",
+    "profile": "primary-rcl-archive-self-amendment-text-v1",
+    "request_sha256": "dab9f701a852887984b37e2567ccaa6d53e411689c8cfca98f691bea698bd7ef",
+    "retention": "complete",
+    "schema_version": 1,
+    "segments": [
+      {
+        "end": 33993,
+        "origin": "source",
+        "part_index": 0,
+        "source_end": 33993,
+        "source_start": 0,
+        "start": 0
+      },
+      {
+        "end": 33994,
+        "origin": "generated",
+        "start": 33993,
+        "system_origin": "part_separator"
+      },
+      {
+        "end": 38451,
+        "origin": "source",
+        "part_index": 1,
+        "source_end": 4457,
+        "source_start": 0,
+        "start": 33994
+      },
+      {
+        "end": 38452,
+        "origin": "generated",
+        "start": 38451,
+        "system_origin": "part_separator"
+      },
+      {
+        "end": 60344,
+        "origin": "source",
+        "part_index": 2,
+        "source_end": 21892,
+        "source_start": 0,
+        "start": 38452
+      },
+      {
+        "end": 60345,
+        "origin": "generated",
+        "start": 60344,
+        "system_origin": "part_separator"
+      },
+      {
+        "end": 84366,
+        "origin": "source",
+        "part_index": 3,
+        "source_end": 24021,
+        "source_start": 0,
+        "start": 60345
+      },
+      {
+        "end": 84634,
+        "origin": "generated",
+        "start": 84366,
+        "system_origin": "input_transform"
+      },
+      {
+        "end": 90271,
+        "origin": "source",
+        "part_index": 4,
+        "source_end": 5637,
+        "source_start": 0,
+        "start": 84634
+      }
+    ],
+    "source_observation_id": "source-observation-v1:dc3199a51ef325aad7be27d6536814caef70912aa3c9e153ee19cb8455451062",
+    "source_parts": [
+      {
+        "chars": 33993,
+        "physical_index": 3,
+        "role": "bill",
+        "text_sha256": "cb2163c4e0e6479e2b18e54900d241b5ea207b3093189682313a7c00966fb216"
+      },
+      {
+        "chars": 4457,
+        "physical_index": 9,
+        "role": "normative_annex",
+        "text_sha256": "715072e1925604287ab1577f13944c36fd6ef3fb6af94c910b7b3e21c42ee1f1"
+      },
+      {
+        "chars": 21892,
+        "physical_index": 8,
+        "role": "justification",
+        "text_sha256": "3913401aa8ffb0687eeb4a9b05dfbe790c41a01bfe5e16fc2f19599ef6791b62"
+      },
+      {
+        "chars": 34753,
+        "physical_index": 1,
+        "role": "osr",
+        "text_sha256": "208124da3c623f7e3960afb9ff97c19df075b525ea6dfbac0e6841725ba19670"
+      },
+      {
+        "chars": 5637,
+        "extraction_id": "extraction-v1:1fa277af4f9dfc48293bc6d6e105924a4c162d0b9234ca0e6524402ee97adc5a",
+        "role": "self_amendment",
+        "text_sha256": "38ed93a16b6f3c769c5ebd47923207d5daeb18ab2b1cb7d747ec096bb6da6086"
+      }
+    ],
+    "source_selection_id": "selection-v1:d9c427b8dd7e168bb3e909354f6ad7dc34b9d8a48249888a0e9d41e512d308a6",
+    "text_chars": 90271,
+    "text_sha256": "50bffdd4f8e750c6ef6f4b68e19417003943fdf16e288f3248e117dcae2c837a"
+  },
+  "root_env_quick_sha256": "8e472dabbbdfb89ac49a06c0a2a6e0bc0937babbb44460b8ca40daa535641079"
+}

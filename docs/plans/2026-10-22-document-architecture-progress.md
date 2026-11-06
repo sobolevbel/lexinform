@@ -13036,6 +13036,9 @@ event controls wrote no version. After expiry the four records added
 30,231 SQL bytes and 6,978 gzip bytes. Both readers restored the dumps twice.
 [Qualification](../assets/audits/2026-11-06-direct-stage-content-writer/qualification.json).
 
+The exact `67689f9e` release passed CI run 42259940058 and relay
+deployment 42261263234. Restart and timer were verified.
+
 <a id="j354"></a>
 
 ## J354 — read a prepared map from one ZIP and one self-amendment
@@ -13051,3 +13054,18 @@ SQL bytes and 518 gzip bytes in the queue. The mocked submitted and
 consumed item kept the map after cleanup and two restores. The previous
 reader rejected the new profile atomically. Automatic capture stays off.
 [Qualification](../assets/audits/2026-11-06-hybrid-input-reader/qualification.json).
+
+<a id="j355"></a>
+
+## J355 — retain the actual prepared map for ZIP and self-amendment
+
+The writer attaches the already fitted map when the archive and the
+separate self-amendment have exact retained parents. The ordinary queue
+remains available when a parent is missing or validation fails.
+
+All 17 pinned paths preserved requests, selection, downloads, cost and
+fallbacks. In the native 785848.zip and 787193.pdf case the nine-segment
+map survived mocked submission, collection, application and cleanup.
+The cleaned dump added 2,574 SQL bytes and 524 gzip bytes. The prior
+compatible reader restored all four lifecycle checkpoints twice.
+[Qualification](../assets/audits/2026-11-06-hybrid-input-writer/qualification.json).

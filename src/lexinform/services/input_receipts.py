@@ -8,6 +8,7 @@ from lexinform.input_receipts import (
     archive_member_matches,
     ordinary_rcl_archive_document,
     primary_input_receipt,
+    rcl_archive_self_amendment_url,
     supplement_input_receipt,
 )
 from lexinform.models import (
@@ -39,6 +40,7 @@ from lexinform.models.input_receipts import (
     LooseRclInputReceipt,
     MultipartTextInputReceipt,
     RclArchiveInputReceipt,
+    RclArchiveSelfAmendmentInputReceipt,
     SejmSelfAmendmentInputReceipt,
     amendment_context_sha256,
     input_map_sha256,
@@ -135,7 +137,7 @@ def capture_rcl_archive_input_receipt(
     selection: DocumentSelection,
     projection: TextProjection | None,
     source: SourceReadCapture | None,
-) -> RclArchiveInputReceipt | None:
+) -> RclArchiveInputReceipt | RclArchiveSelfAmendmentInputReceipt | None:
     if (
         not isinstance(request.question, AnalysisQuestion)
         or request.call_kind not in ("analysis", "reanalysis")
@@ -146,7 +148,6 @@ def capture_rcl_archive_input_receipt(
         or projection is None
         or len(projection.segments) > MAX_INPUT_RECEIPT_SEGMENTS
         or not isinstance(source, DocumentSourceRead)
-        or not ordinary_rcl_archive_document(source.document)
         or not 2 <= len(selection.parts) <= 6
         or not selection.parts[0].members
         or selection.scan_input is not None
@@ -156,7 +157,44 @@ def capture_rcl_archive_input_receipt(
     ctx = request.question.ctx
     if projection.text != ctx.text:
         return None
-    root = selection.parts[0].source_sha256
+    archive = selection.parts
+    amendment = None
+    if not ordinary_rcl_archive_document(source.document):
+        amendment_url = rcl_archive_self_amendment_url(source.document)
+        if amendment_url is None or len(archive) < 3:
+            return None
+        loose = archive[-1]
+        if (
+            loose.url != amendment_url
+            or loose.role != "self_amendment"
+            or loose.members
+            or loose.text_start != 0
+            or loose.text_end != len(loose.text)
+            or loose.sha256 == archive[0].source_sha256
+        ):
+            return None
+        body = _body(loose, source)
+        extraction = _extraction(loose, body, source)
+        if (
+            body is None
+            or extraction is None
+            or extraction.selected_parts[0].format != "pdf"
+            or {
+                (read.sha256, read.byte_size)
+                for read in source.reads
+                if read.requested_url == amendment_url
+            }
+            != {(body.sha256, body.byte_size)}
+        ):
+            return None
+        amendment = LooseRclInputPart(
+            role=loose.role,
+            chars=len(loose.text),
+            text_sha256=loose.text_sha256,
+            extraction_id=extraction.result_id,
+        )
+        archive = archive[:-1]
+    root = archive[0].source_sha256
     reads = {
         (read.sha256, read.byte_size)
         for read in source.reads
@@ -173,14 +211,14 @@ def capture_rcl_archive_input_receipt(
         item
         for item in source.extractions
         if item.artifact_sha256 == root
-        and item.selected_part_count == len(selection.parts)
+        and item.selected_part_count == len(archive)
         and item.omitted_selected_parts == 0
     )
     if len(extractions) != 1:
         return None
     (extraction,) = extractions
     parts: list[ArchiveInputPart] = []
-    for part in selection.parts:
+    for part in archive:
         chars = len(part.text)
         if (
             not part.members
@@ -207,23 +245,34 @@ def capture_rcl_archive_input_receipt(
     prepared = prepared_text_input(selection, ctx.text, projection=projection)
     if prepared.source_selection_id != source.selection.selection_id:
         return None
-    return RclArchiveInputReceipt(
-        source_selection_id=prepared.source_selection_id,
-        source_observation_id=SourceObservationIdentity(
+    fields = {
+        "source_selection_id": prepared.source_selection_id,
+        "source_observation_id": SourceObservationIdentity(
             term=request.term,
             number=request.number,
             purpose="analysis",
             document=source.document,
             selection_id=prepared.source_selection_id,
         ).observation_id,
-        extraction_id=extraction.result_id,
-        source_parts=tuple(parts),
-        context_sha256=primary_context_sha256(ctx),
-        request_sha256=request.payload_sha256,
-        text_sha256=prepared.text_sha256,
-        text_chars=prepared.text_chars,
-        full_map_sha256=input_map_sha256(prepared.segments),
-        segments=prepared.segments,
+        "extraction_id": extraction.result_id,
+        "context_sha256": primary_context_sha256(ctx),
+        "request_sha256": request.payload_sha256,
+        "text_sha256": prepared.text_sha256,
+        "text_chars": prepared.text_chars,
+        "full_map_sha256": input_map_sha256(prepared.segments),
+        "segments": prepared.segments,
+    }
+    if amendment is None:
+        return RclArchiveInputReceipt.model_validate({**fields, "source_parts": tuple(parts)})
+    final = prepared.segments[-1]
+    if (final.part_index, final.source_start, final.source_end) != (
+        len(archive),
+        0,
+        amendment.chars,
+    ) or input_text_sha256(ctx.text[final.start : final.end]) != amendment.text_sha256:
+        return None
+    return RclArchiveSelfAmendmentInputReceipt.model_validate(
+        {**fields, "source_parts": (*parts, amendment)}
     )
 
 
