@@ -1,3 +1,4 @@
+import datetime as dt
 import hashlib
 
 import pytest
@@ -7,17 +8,32 @@ from lexinform.json_storage import canonical_json
 from lexinform.models import AmendmentsContext, AmendmentsRecord, ComputationResult, ScannedDocument
 from lexinform.models.amendment_inputs import AmendmentScanInputWitness
 from lexinform.models.computation_inputs import ComputationInputBinding
+from lexinform.models.senate import AmendmentSourceEvidence, SenateResolutionIdentity
 from tests.computations import SHA, retained_result
 from tests.unit.test_scan_input import URL, loaded_scan
 
 
-def original() -> tuple[AmendmentScanInputWitness, AmendmentsContext, ScannedDocument]:
+def original(
+    *, senate: bool = False
+) -> tuple[AmendmentScanInputWitness, AmendmentsContext, ScannedDocument]:
     _, scan = loaded_scan(cover_letter=False)
     assert scan.scan_input is not None, "the loader supplies the full PDF manifest"
+    source = (
+        SenateResolutionIdentity(
+            sha256=scan.sha256,
+            subject="Frozen subject",
+            expected_subjects=("Frozen subject",),
+            adopted_on=dt.date(2026, 11, 6),
+            scan=True,
+            pages=scan.pages,
+        )
+        if senate
+        else None
+    )
     context = AmendmentsContext(
         number="3039",
         title="Frozen title",
-        source_kind="committee_amendments",
+        source_kind="senate_amendments" if senate else "committee_amendments",
         text="",
         truncated=False,
         previous_summary="Prior comparison",
@@ -25,8 +41,10 @@ def original() -> tuple[AmendmentScanInputWitness, AmendmentsContext, ScannedDoc
         proposal="Original proposal",
         recommendation="Original recommendation",
         scan=scan,
+        source_check=source,
     )
     witness = AmendmentScanInputWitness(
+        version=2 if senate else 1,
         source_url=URL,
         request_sha256=SHA,
         question_sha256=hashlib.sha256(
@@ -42,13 +60,31 @@ def paid_result(witness: AmendmentScanInputWitness) -> ComputationResult:
     result = retained_result("amendments")
     record = result.record
     assert isinstance(record, AmendmentsRecord), "the fixture has a validated amendment answer"
+    context = witness.context_without_scan
+    source = context.source_check
+    evidence = (
+        AmendmentSourceEvidence(
+            subject=source.subject,
+            adopted_on=source.adopted_on,
+            decision="amendments",
+            complete=True,
+            resolution_page=1,
+            amendment_pages=[1],
+            amendment_quote="w art. 1 skreśla się wyrazy",
+        )
+        if source is not None
+        else None
+    )
     return ComputationResult.model_validate(
         {
             **result.model_dump(),
             "record": record.model_copy(
                 update={
                     "source_url": witness.source_url,
-                    "source_kind": "committee_amendments",
+                    "source_kind": context.source_kind,
+                    "amendments": record.amendments.model_copy(
+                        update={"source_evidence": evidence}
+                    ),
                     "scan_input": witness.scan_input,
                 }
             ),
@@ -60,10 +96,11 @@ def paid_result(witness: AmendmentScanInputWitness) -> ComputationResult:
     )
 
 
+@pytest.mark.parametrize("senate", [False, True])
 def test_witness_is_body_free_and_reconstitutes_only_matching_full_scan(
-    repo: SqliteBillRepository,
+    repo: SqliteBillRepository, senate: bool
 ) -> None:
-    witness, context, scan = original()
+    witness, context, scan = original(senate=senate)
     result = paid_result(witness)
     assert result.result_id == retained_result("amendments").result_id
     assert scan.data not in result.model_dump_json()
@@ -166,3 +203,16 @@ def test_legacy_scan_manifest_does_not_become_a_question_witness() -> None:
     loaded = ComputationResult.model_validate(old)
     assert loaded.amendment_scan_input is None and loaded.result_id == current.result_id
     assert loaded.model_dump(mode="json") == old
+
+
+def test_senate_witness_requires_the_matching_source_check_and_version() -> None:
+    witness, context, _ = original(senate=True)
+    source = context.source_check
+    assert source is not None, "The Senate fixture has a corroborated source check"
+    altered = context.model_copy(update={"source_check": source.model_copy(update={"pages": 1})})
+    raw = witness.model_dump()
+    raw["context_json"] = canonical_json(altered.model_dump(mode="json", exclude={"scan"}))
+    with pytest.raises(ValueError, match="invalid_amendment_scan_input"):
+        AmendmentScanInputWitness.model_validate(raw)
+    with pytest.raises(ValueError, match="invalid_amendment_scan_input"):
+        AmendmentScanInputWitness.model_validate({**witness.model_dump(), "version": 1})

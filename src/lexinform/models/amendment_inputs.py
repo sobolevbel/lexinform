@@ -66,7 +66,7 @@ class AmendmentScanInputWitness(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
-    version: Literal[1] = 1
+    version: Literal[1, 2] = 1
     source_url: str = Field(max_length=MAX_AMENDMENT_SCAN_WITNESS_BYTES)
     request_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     question_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
@@ -80,15 +80,30 @@ class AmendmentScanInputWitness(BaseModel):
             raise ValueError("invalid_amendment_scan_input")
         context = AmendmentsContext.model_validate(value)
         if (
-            context.source_kind != "committee_amendments"
-            or context.text != ""
+            context.text != ""
             or context.truncated
-            or context.source_check is not None
+            or not self._matches_source(context)
             or canonical_json(context.model_dump(mode="json", exclude={"scan"}))
             != self.context_json
         ):
             raise ValueError("invalid_amendment_scan_input")
         return context
+
+    def _matches_source(self, context: AmendmentsContext) -> bool:
+        source = context.source_check
+        if self.version == 1:
+            return context.source_kind == "committee_amendments" and source is None
+        return (
+            context.source_kind == "senate_amendments"
+            and source is not None
+            and source.scan
+            and not source.word_eof
+            and bool(source.expected_subjects)
+            and all(subject.strip() for subject in source.expected_subjects)
+            and source.subject == source.expected_subjects[0]
+            and source.pages == self.scan_input.source_pages
+            and source.sha256 == self.scan_input.source_sha256
+        )
 
     @model_validator(mode="after")
     def full_original_pdf(self) -> Self:

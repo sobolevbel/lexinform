@@ -510,20 +510,23 @@ class DigestItemMeta(BaseModel):
 
     def require_amendment_scan_carrier(self, purpose: str, term: int, number: str) -> None:
         witness, binding = self.amendment_scan_input, self.input_binding
-        if witness is not None and (
+        if witness is None:
+            return
+        context = witness.context_without_scan
+        if (
             purpose != "amendments"
             or binding is None
             or (binding.term, binding.number) != (term, number)
-            or witness.context_without_scan.number != number
+            or context.number != number
             or witness.request_sha256 != self.request_sha256
-            or self.source_kind != "committee_amendments"
+            or self.source_kind != context.source_kind
             or witness.source_url != self.source_url
             or (
                 self.amendment_revision is not None
                 and self.amendment_revision.source_url != witness.source_url
             )
             or witness.scan_input != self.scan_input
-            or self.amendment_source is not None
+            or self.amendment_source != context.source_check
             or self.amendment_input_ref is not None
             or self.prepared_input_receipt is not None
         ):

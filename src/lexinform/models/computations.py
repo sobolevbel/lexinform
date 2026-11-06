@@ -27,6 +27,7 @@ from lexinform.models.reviews import (
     ReviewForum,
     ReviewPurpose,
 )
+from lexinform.senate_documents import validate_senate_scan
 
 
 class ReviewSourceReference(BaseModel):
@@ -204,19 +205,23 @@ class ComputationResult(BaseModel):
                 self.purpose, self.request_sha256, self.input_binding
             )
         witness = self.amendment_scan_input
-        if witness is not None and (
-            self.amendment_input_ref is not None
-            or self.purpose != "amendments"
-            or not isinstance(self.record, AmendmentsRecord)
-            or self.input_binding is None
-            or (self.input_binding.term, self.input_binding.number) != (self.term, self.number)
-            or witness.context_without_scan.number != self.number
-            or witness.request_sha256 != self.request_sha256
-            or witness.source_url != self.record.source_url
-            or self.record.source_kind != "committee_amendments"
-            or witness.scan_input != self.record.scan_input
-        ):
-            raise ValueError("invalid_amendment_scan_input")
+        if witness is not None:
+            context = witness.context_without_scan
+            if (
+                self.amendment_input_ref is not None
+                or self.purpose != "amendments"
+                or not isinstance(self.record, AmendmentsRecord)
+                or self.input_binding is None
+                or (self.input_binding.term, self.input_binding.number) != (self.term, self.number)
+                or context.number != self.number
+                or witness.request_sha256 != self.request_sha256
+                or witness.source_url != self.record.source_url
+                or self.record.source_kind != context.source_kind
+                or witness.scan_input != self.record.scan_input
+            ):
+                raise ValueError("invalid_amendment_scan_input")
+            if context.source_check is not None:
+                validate_senate_scan(self.record.amendments.source_evidence, context.source_check)
         timing = self.local_timing_witness
         if timing is not None:
             timing.require_scope(self.input_binding)

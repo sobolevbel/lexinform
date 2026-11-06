@@ -13408,3 +13408,24 @@ identity for these scans. A replayable original context and delivery
 proof remain separate requirements.
 
 [Qualification](../assets/audits/2026-11-06-supplement-scan-retention/qualification.json).
+
+<a id="j374"></a>
+
+## J374 — read the original full Senate scan question without PDF bytes
+
+The amendment witness reader accepts version 2 for a full Senate scan.
+It requires the original resolution check to match the manifest and the
+submitted item's owner and source. A validated paid result must also
+carry corroborating Senate answer evidence. The version 1 committee
+profile remains available. Ordinary writes still omit the Senate witness.
+
+Four pinned official PDFs passed both provider request builders.
+Each reconstructed question matched the original hash after an exact
+PDF reread. The witnesses occupy 1,346–1,546 bytes. Submitted metadata
+with the constructed witness survived two exact restores in all eight
+cases. The ordinary requests and dumps matched the earlier replay.
+The preceding reader refused a version 2 checkpoint and preserved its
+legacy state. The correction consumer and automatic witness writer
+remain open.
+
+[Qualification](../assets/audits/2026-11-06-senate-scan-context-reader/qualification.json).
