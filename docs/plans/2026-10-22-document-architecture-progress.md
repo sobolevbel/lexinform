@@ -13204,3 +13204,21 @@ compact requests, restored both checkpoints twice and produced identical
 request and submitted-state hashes through mock submission.
 
 [Qualification](../assets/audits/2026-11-06-supplement-scan-reader/qualification.json).
+
+<a id="j363"></a>
+
+## J363 — read a bounded Word formula companion in queued requests
+
+The compatible reader accepts an optional Word formula companion in a frozen
+OpenAI primary request. It validates the source observation, selected Word
+artifact, extraction receipt, text anchors and exact provider input. The
+ordinary producer still omits the companion.
+
+The pinned RCL 12410805/2 request stayed byte-identical on the ordinary path.
+A constructed companion using its two verified formula positions survived
+queue restore. The reader refused a different source owner and a changed
+formula in the frozen provider input even with a recomputed payload hash.
+The prior reader restored the ordinary dump and rejected the enriched
+dump atomically.
+
+[Qualification](../assets/audits/2026-11-06-word-formula-companion-reader/qualification.json).

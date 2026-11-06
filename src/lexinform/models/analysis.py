@@ -13,6 +13,7 @@ from lexinform.models.documents import DocumentSelection
 from lexinform.models.enums import ApplicantType, Category, SourceKind, TextSource
 from lexinform.models.scan_input import ScanInputManifest
 from lexinform.models.senate import AmendmentSourceEvidence, SenateResolutionIdentity
+from lexinform.models.word_formula_input import WordFormulaInputV1
 
 
 class Analysis(BaseModel):
@@ -569,3 +570,6 @@ class BillContext(BaseModel):
     source_kind: SourceKind = "print"
     previous_summary: str | None = None
     previous_key_changes: list[str] = Field(default_factory=list)
+    word_formula_input: WordFormulaInputV1 | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )

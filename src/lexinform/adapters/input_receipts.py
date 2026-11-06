@@ -833,6 +833,49 @@ def validate_supplement_receipt_parents(
     _parents(connection, receipt)
 
 
+def has_word_formula_input(request: BatchRequest) -> bool:
+    question = request.question
+    return isinstance(question, AnalysisQuestion) and question.ctx.word_formula_input is not None
+
+
+def validate_word_formula_intent(connection: sqlite3.Connection, intent: BatchIntent) -> None:
+    if not has_word_formula_input(intent.request):
+        return
+    checked = BatchIntent.model_validate_json(intent.model_dump_json())
+    request, meta = checked.request, checked.meta
+    receipt = meta.prepared_input_receipt
+    if (
+        not isinstance(request.question, AnalysisQuestion)
+        or (companion := request.question.ctx.word_formula_input) is None
+        or not isinstance(meta, BatchItemMeta)
+        or not isinstance(receipt, PrimaryInputReceipt)
+        or receipt.extraction_id is None
+    ):
+        raise ValueError("Word formula input requires exact durable parents")
+    _parents(connection, receipt)
+    observation = DocumentSourceRows(connection).get_source_observation(
+        companion.source_observation_id
+    )
+    selection = _source_selection(connection, companion.selection_id).selection
+    row = _one(
+        connection,
+        "SELECT result_json FROM extraction_results WHERE extraction_id=?",
+        (receipt.extraction_id,),
+    )
+    extraction = ExtractionResult.model_validate_json(row["result_json"])
+    if (
+        observation is None
+        or (observation.term, observation.number) != (request.term, request.number)
+        or observation.purpose != "analysis"
+        or observation.selection_id != companion.selection_id
+        or (observation.document.kind, observation.document.url) != ("rcl", meta.source_url)
+        or selection.state != "selected"
+        or selection.parts[0].url != meta.source_url
+        or not any(item.role == "word" for item in extraction.components)
+    ):
+        raise ValueError("Word formula input requires its selected native Word source")
+
+
 def validate_multipart_intent(connection: sqlite3.Connection, intent: BatchIntent) -> None:
     if not isinstance(intent.meta.prepared_input_receipt, MultipartTextInputReceipt):
         return
@@ -888,6 +931,9 @@ def _input_snapshot_checks(
             has_text_reference = isinstance(meta.get("text"), dict)
             has_provider_reference = isinstance(request.get("payload_json"), dict)
             has_manifest = meta.get("frozen_request_manifest") is not None
+            question = request.get("question")
+            ctx = question.get("ctx") if isinstance(question, dict) else None
+            has_formula = isinstance(ctx, dict) and ctx.get("word_formula_input") is not None
             if not (
                 has_receipt
                 or has_timing
@@ -895,6 +941,7 @@ def _input_snapshot_checks(
                 or has_text_reference
                 or has_provider_reference
                 or has_manifest
+                or has_formula
             ):
                 continue
             ref = _reference("llm_batch_intents", row["custom_id"])
@@ -905,7 +952,13 @@ def _input_snapshot_checks(
                     "openai",
                 ):
                     raise ValueError("input_snapshot_request_columns")
-                if has_receipt or has_timing or has_text_reference or has_manifest:
+                if (
+                    has_receipt
+                    or has_timing
+                    or has_text_reference
+                    or has_manifest
+                    or has_word_formula_input(actual)
+                ):
                     intent = BatchIntent.model_validate(
                         {
                             "request": actual,
@@ -915,7 +968,9 @@ def _input_snapshot_checks(
                             "created_at": row["created_at"],
                         }
                     )
-                    if has_receipt:
+                    if has_word_formula_input(actual):
+                        validate_word_formula_intent(connection, intent)
+                    elif has_receipt:
                         if intent.meta.prepared_input_receipt is None:
                             raise ValueError("input_snapshot_receipt_metadata")
                         _parents(

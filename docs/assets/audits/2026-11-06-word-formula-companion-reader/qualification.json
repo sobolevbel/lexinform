@@ -1,0 +1,147 @@
+{
+  "replay": {
+    "generated_placement": "control supplied identical anchor bytes without source copy",
+    "input_pins": {
+      "corpus/12387701.json": "c2bca05704a7b59896ca702311670d1d95ba6884555f4f8500f59e4a49977151",
+      "corpus/12410805.json": "754e22ef8d2ce21793d42bc7069ff30d2ac09ec9aee79f068d1235d463d7fc5e",
+      "documents/files/676875.docx": "d4121b6dba77fdc869bce3ee5d938f7f3f49e36e4cf2d0a5ed97ef383914feef",
+      "documents/files/676876.docx": "01ba8a1793c49bdb69548ddda86becd7d050b29b98cb9f1959314cc075aea557",
+      "documents/files/676877.doc": "328a16f1943cda9f9a2dbcf582b3380fb549d4a920c67f0184e215267052f7cc",
+      "documents/files/778990.docm": "9bc086cf4d703efc6447fd00dab30f5e5eed4402a49d5c0c503cc0ee18079572"
+    },
+    "missing_placement": "control removed the first ordinary neighbor span",
+    "qualified": {
+      "counted": [
+        {
+          "context": "cef8652ea8b1226639511f768f0f9c2e199a38d125364262f043b6f27a654d01",
+          "tokens": 5124
+        }
+      ],
+      "document_xml_sha256": "ef33e97f34447f1871b152a52f2010deb741a83b2de13e3f813193fb5e5c90f9",
+      "formula_placement": [
+        {
+          "emitted_insert_at": 4324,
+          "emitted_span": [
+            4232,
+            4331
+          ],
+          "formula_path": [
+            0,
+            25,
+            0,
+            0
+          ],
+          "formula_sha256": "0ffb02f319ac952b6302707db48f58eb29faed9a6ed8fabb9b408b2325c0020b",
+          "paragraph_path": [
+            0,
+            25
+          ],
+          "source_insert_at": 4324,
+          "source_span": [
+            4232,
+            4331
+          ]
+        },
+        {
+          "emitted_insert_at": 4929,
+          "emitted_span": [
+            4862,
+            4936
+          ],
+          "formula_path": [
+            0,
+            30,
+            0,
+            0
+          ],
+          "formula_sha256": "342bebd462497294c9d908b6a2c466406b1fc6a32a1fa554fbd78f85d0a4bdd9",
+          "paragraph_path": [
+            0,
+            30
+          ],
+          "source_insert_at": 4929,
+          "source_span": [
+            4862,
+            4936
+          ]
+        }
+      ],
+      "formula_statuses": [
+        null,
+        null
+      ],
+      "legacy_sha256": "6e5e0d507caeeac706f9f8bb62675074a531a1241128b100deb1162c41d59f87",
+      "parts": [
+        "bill"
+      ],
+      "prepared": [
+        {
+          "context": "cef8652ea8b1226639511f768f0f9c2e199a38d125364262f043b6f27a654d01",
+          "context_chars": 8704,
+          "cost": 0.060342,
+          "meta_core": "93b03834e689695bf6520f5da4a0d14ee7735dcabd88dafd4e745e045c230d80",
+          "payload": "2851fea0ab7568f425b12d2cd167b971afff2847a8bf1a83fcaacd567129023b",
+          "request": "66e7d29849d67ffc9a3b1e5df67861d5267d5daa7e0b96273922063d32f34145"
+        }
+      ],
+      "raw_sha256": "9bc086cf4d703efc6447fd00dab30f5e5eed4402a49d5c0c503cc0ee18079572",
+      "selection_state": "selected"
+    },
+    "reader_parity": {
+      "base_identity": "103f902eee9f5eadc3b177577cf6642995a8333b6008afc03a48deae5b51398f",
+      "enriched_estimated_reservation_usd": 0.062746,
+      "enriched_identity": "fd63a6e4ba8bbb101544449437c8151ae60c181499c8707c1c91e9594245bcdc",
+      "enriched_intent_gzip_bytes": 915,
+      "enriched_intent_sql_bytes": 5702,
+      "enriched_request_sha256": "6accb07a3f952ae367c194a6dff819245833ab93ada323c8313c9cf44c0f61d3",
+      "enriched_tokens": 6044,
+      "legacy_sql_bytes": 94315,
+      "legacy_sql_sha256": "ddc943b9260cd4119059a73915692a990e568873271d211213a98a77309efc33",
+      "prompt_suffix_bytes": 2410,
+      "retained_companion_bytes": 3320,
+      "tampered_frozen_formula_even_with_new_payload_hash_rejected": true,
+      "wrong_owner_observation_rejected": true
+    },
+    "request_parity": "exact native off/on, no companion transmitted",
+    "tokenizer_sha256": "446a9538cb6c348e3516120d7c08b09f57c36495e2acfffe59a5bf8b0cfb1a2d",
+    "unsupported": {
+      "counted": [
+        {
+          "context": "98f05f09f27fd74e5032c8c46f8cea8bfffa1c8b87a5dc16e832a1b588d85033",
+          "tokens": 72188
+        }
+      ],
+      "document_xml_sha256": "9670911d0d038c4719bdc2499fd68b589dfece8f6e2c50cc1837419685d2cfe2",
+      "formula_placement": [],
+      "formula_statuses": [
+        null,
+        "unsupported_structure"
+      ],
+      "legacy_sha256": "2bf7048d1ac1c89e15d7e83fe47e962e440fe30c7bd5694187307764a23f2618",
+      "parts": [
+        "bill",
+        "justification",
+        "osr"
+      ],
+      "prepared": [
+        {
+          "context": "98f05f09f27fd74e5032c8c46f8cea8bfffa1c8b87a5dc16e832a1b588d85033",
+          "context_chars": 223071,
+          "cost": 0.274845,
+          "meta_core": "f790a5b08594b05cf3e719b26a739ec7830892afe3b55448f6cc16403af813b9",
+          "payload": "0747b7d6e233f1b6ad80e2483c28cc91fe13c5dbaa0d0566f197b883fb34e376",
+          "request": "8c2f6c19f853a524b3471b58b758d718db6c8aa12bc67b3425f610551d0a0237"
+        }
+      ],
+      "raw_sha256": "d4121b6dba77fdc869bce3ee5d938f7f3f49e36e4cf2d0a5ed97ef383914feef",
+      "selection_state": "selected"
+    }
+  },
+  "rollback": {
+    "old_native_baseline_dump_sha256": "ddc943b9260cd4119059a73915692a990e568873271d211213a98a77309efc33",
+    "old_reader_enriched_rejected": "invalid_input_intent_snapshot",
+    "old_reader_failed_restore_is_atomic": true,
+    "old_reader_legacy_roundtrip": true
+  },
+  "provider_submissions": 0
+}

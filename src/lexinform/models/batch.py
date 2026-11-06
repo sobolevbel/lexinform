@@ -729,6 +729,10 @@ class BatchIntent(BaseModel):
                 self.request.call_kind, self.request.payload_sha256, self.meta.input_binding
             )
         receipt = self.meta.prepared_input_receipt
+        if isinstance(self.request.question, AnalysisQuestion):
+            word_ctx = self.request.question.ctx
+            if word_ctx.word_formula_input is not None:
+                self._validate_word_formula_input(word_ctx, receipt)
         if receipt is None:
             return self
         request = self.request
@@ -776,6 +780,85 @@ class BatchIntent(BaseModel):
         ):
             raise ValueError("Input receipt differs from the frozen request and context")
         return self
+
+    def _validate_word_formula_input(
+        self,
+        ctx: BillContext,
+        receipt: PrimaryInputReceipt
+        | MultipartTextInputReceipt
+        | SupplementInputReceipt
+        | AmendmentInputReceipt
+        | None,
+    ) -> None:
+        companion = ctx.word_formula_input
+        if companion is None:
+            return
+        request, meta = self.request, self.meta
+        if (
+            request.call_kind != "analysis"
+            or self.provider != "openai"
+            or ctx.source_kind != "rcl"
+            or ctx.text_source != "documents"
+            or ctx.scan is not None
+            or ctx.truncated
+            or ctx.number != request.number
+            or not isinstance(meta, BatchItemMeta)
+            or meta.source_kind != ctx.source_kind
+            or meta.text_source != ctx.text_source
+            or meta.input_chars != len(ctx.text)
+            or len(meta.selection.parts) != 1
+            or meta.selection.parts[0].role != "bill"
+            or meta.selection.parts[0].sha256 != companion.artifact_sha256
+            or meta.input_binding is None
+            or (meta.input_binding.term, meta.input_binding.number)
+            != (request.term, request.number)
+            or not isinstance(receipt, PrimaryInputReceipt)
+            or receipt.retention != "complete"
+            or receipt.source_part.role != "bill"
+            or receipt.extraction_id is None
+            or receipt.source_selection_id != companion.selection_id
+            or receipt.artifact_sha256 != companion.artifact_sha256
+            or request.payload_json is None
+        ):
+            raise ValueError("Word formula input requires its exact primary RCL source and request")
+        for item in companion.formulas:
+            start, end = item.emitted_anchor
+            copied = any(
+                segment.source_start is not None
+                and segment.origin == "source"
+                and segment.start <= start < end <= segment.end
+                and segment.source_start + start - segment.start == item.source_anchor[0]
+                for segment in receipt.segments
+            )
+            if not copied or ctx.text[item.emitted_gap - 1 : item.emitted_gap + 1] != "\n\n":
+                raise ValueError("Word formula anchor differs from the frozen primary copy")
+        envelope = read_json(request.payload_json)
+        body = envelope.get("body") if isinstance(envelope, dict) else None
+        if (
+            not isinstance(envelope, dict)
+            or envelope.get("custom_id") != request.custom_id
+            or envelope.get("method") != "POST"
+            or envelope.get("url") != "/v1/responses"
+            or not isinstance(body, dict)
+            or body.get("model") != request.model
+        ):
+            raise ValueError("Word formula input requires its frozen OpenAI request")
+        messages = body.get("input")
+        user = messages[-1] if isinstance(messages, list) and len(messages) == 2 else None
+        content = (
+            user.get("content") if isinstance(user, dict) and user.get("role") == "user" else None
+        )
+        blocks = content if isinstance(content, list) else []
+        block = blocks[0] if len(blocks) == 1 else None
+        prompt = (
+            block.get("text")
+            if isinstance(block, dict) and block.get("type") == "input_text"
+            else None
+        )
+        if not isinstance(prompt, str) or not prompt.endswith(
+            "\n=== TEKST DRUKU ===\n" + ctx.text + companion.prompt_suffix()
+        ):
+            raise ValueError("Word formula data differs from the frozen provider input")
 
     @model_validator(mode="after")
     def actual_local_timing(self) -> Self:

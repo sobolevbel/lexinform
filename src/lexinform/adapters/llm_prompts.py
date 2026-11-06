@@ -666,4 +666,6 @@ def build_user_prompt(ctx: BillContext) -> str:
         if ctx.truncated:
             lines.append("")
             lines.append("[TEKST OBCIĘTY: pokazano tylko część dokumentu]")
-    return "\n".join(lines)
+    prompt = "\n".join(lines)
+    companion = ctx.word_formula_input
+    return prompt if companion is None else prompt + companion.prompt_suffix()
