@@ -12206,4 +12206,27 @@ profiles, reject review observations and restore a transferred submitted
 item with its original binding.
 [Qualification](../assets/audits/2026-11-06-rcl-receipt-observation-reader/qualification.json).
 
-DA7.1 remains open. Activate the RCL producer only after deploying this reader.
+Commit `f03081d7` passed CI 42200261955 and relay deployment 42200900179
+before activation.
+
+<a id="j314"></a>
+
+## J314 — record original card lineage for multipart RCL inputs
+
+Preparation records the exact observation identity from the same captured
+source as the multipart receipt. The first-card lookup uses this explicit
+reference for either RCL profile. Earlier receipts without an observation ID
+do not participate in automatic capture.
+
+The paired native replay covered three six-part profiles of RCL 12294859,
+the two-part annex profile of RCL 12366453 and the no-request archive
+control of RCL 12365005. The writer bound the exact observation before
+the fake send. Both parts or all six parts stayed visible in compact
+history after batch and delivery cleanup and two byte-exact restores.
+Requests, source calls, rendered cards and publication identities matched.
+Queue and final SQL matched after normalizing the new receipt and card
+references and the derived content ID. The four positive profiles added
+38–99 bytes to the compressed post-cleanup dump.
+[Qualification](../assets/audits/2026-11-06-rcl-card-lineage-writer/qualification.json).
+
+DA7.1 remains open for other editorial histories.

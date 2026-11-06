@@ -125,8 +125,11 @@ def card_primary_evidence_candidate(
           AND (
             json_extract(item.meta,'$.prepared_input_receipt.profile')='primary-single-part-text-v1'
             OR (
-              json_extract(item.meta,'$.prepared_input_receipt.profile')
-                  ='primary-sejm-self-amendment-text-v1'
+              json_extract(item.meta,'$.prepared_input_receipt.profile') IN (
+                'primary-sejm-self-amendment-text-v1',
+                'primary-loose-rcl-annex-text-v1',
+                'primary-loose-rcl-mixed-text-v1'
+              )
               AND o.observation_id=json_extract(
                 item.meta,'$.prepared_input_receipt.source_observation_id'
               )

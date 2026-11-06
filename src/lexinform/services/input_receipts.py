@@ -22,6 +22,7 @@ from lexinform.models import (
     ExtractionResult,
     PrimaryInputReceipt,
     SourceObservation,
+    SourceObservationIdentity,
     SupplementInputReceipt,
     SupplementQuestion,
 )
@@ -161,6 +162,13 @@ def capture_loose_rcl_input_receipt(
             else "primary-loose-rcl-annex-text-v1"
         ),
         source_selection_id=prepared.source_selection_id,
+        source_observation_id=SourceObservationIdentity(
+            term=request.term,
+            number=request.number,
+            purpose="analysis",
+            document=source.document,
+            selection_id=source.selection.selection_id,
+        ).observation_id,
         source_parts=parts,
         context_sha256=primary_context_sha256(ctx),
         request_sha256=request.payload_sha256,
