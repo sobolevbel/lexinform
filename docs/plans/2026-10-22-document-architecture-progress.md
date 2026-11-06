@@ -13168,3 +13168,23 @@ and law digest.
 
 [Input manifest](../assets/audits/2026-11-06-word-formulas/manifest.json) ·
 [Qualification](../assets/audits/2026-11-06-word-formulas/qualification.json).
+Exact release verified for `97fa2167` via [CI](https://github.com/sobolevbel/lexinform/actions/runs/42271621589) and [relay](https://github.com/sobolevbel/lexinform/actions/runs/42272638342).
+
+<a id="j361"></a>
+
+## J361 — verify Word formula positions in prepared text
+
+The offline placement check requires one exact retained source span covering
+the formula gap and its two neighboring paragraphs. It rejects a changed XML
+identity, unsupported formulas, absent anchors, duplicate copies and generated
+text that happens to contain the same bytes.
+
+In the selected RCL 12410805/2 source 778990.docm the two formula gaps map
+to character offsets 4324 and 4929 in the prepared text. An unsupported
+formula in RCL 12387701/4 prevents placement for that input. Removing an
+anchor or replacing it with generated text also prevents placement.
+The native offline request bytes and estimated cost stayed identical with
+and without the placement observer. The positive control counted 5,124
+input tokens. The replay uses pinned local source files and tokenizer data.
+
+[Qualification](../assets/audits/2026-11-06-word-formula-placement/qualification.json).
