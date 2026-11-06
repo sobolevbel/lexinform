@@ -13743,3 +13743,20 @@ added one observation and 23 bytes to the extraction record. Both SQLite
 checkpoints passed two exact restores and integrity checks.
 
 [Qualification](../assets/audits/2026-11-06-word-removal-text-writer/qualification.json).
+
+<a id="j391"></a>
+
+## J391 — replay Word field text against the existing projection
+
+The offline Word probe can now classify text by the physical XML sequence
+of simple and complex fields. An unbalanced sequence is reported separately
+without classifying its text. The revision probe retains its previous output.
+
+All 20 selected Word files passed the no-op control. The legacy projection
+emitted all 43 post-separator and 26 simple-field body markers. It emitted
+none of the 62 instruction markers. The 553 pinned field-positive bodies
+contained no ordinary text before a separator. A separate synthetic control
+showed that such ordinary text is emitted by the current extractor. The
+probe measures lexical projection and does not evaluate Word fields.
+
+[Qualification](../assets/audits/2026-11-06-word-field-view/qualification.json).

@@ -721,6 +721,10 @@ no-op repackage and marker substitutions in OOXML body revision wrappers using
 the normal extractor. Reports contain counts and hashes. A wrapper with zero
 mutated nodes supplies no projection evidence for its class.
 
+Use `--profile fields` to compare ordinary text before and after complex-field
+separators, instruction text and simple-field body text. The report preserves
+unbalanced field sequences as a separate case without text classification.
+
 ### Retained delivery census
 
 Run the same retained-cycle readers across a checkpointed SQLite copy.

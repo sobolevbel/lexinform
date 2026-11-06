@@ -1,0 +1,524 @@
+{
+  "baseline": "ce1f04abef228398696bd0c40e1c13a0ccd6e3ea",
+  "catalog_sha256": "7bfa79ac7ee2a6981d8106880cad2bde6bc86df0b5da9a966530fcaebbf057f5",
+  "exclusions": [
+    "Word field evaluation",
+    "Legal meaning",
+    "Parts outside word/document.xml"
+  ],
+  "field_report_sha256": "bab129f9a64848d39539ebc64d108497d9a3b7b8cb0004b6341b0dcf08539a5c",
+  "physical_inventory": {
+    "bodies": 553,
+    "ordinary_text_before_separator": 0,
+    "scope": "J320 positives for visited field markers, top-level OOXML body only",
+    "unbalanced": 0
+  },
+  "physical_inventory_sha256": "5516d17255c7ce5636201ad76c47dd02d253f674b1625780ee2fb333374fa4f2",
+  "profiled_corpus_observations": {
+    "documents/files/339908.docx": {
+      "body_xml_sha256": "ca354c94be34cf845651bd3173a4a9efa4ff024682f8de6eb64f658f8217030c",
+      "input_sha256": "1261fb9112731c1eaeb28750c1a54b4317ee845cbd3eff69f8da210c7da7c450",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 15,
+          "mutated": 15
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 25
+        },
+        "simple_body_text": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "fe08cda0237c8170965079396e8fa3574669ec95b08f274b1e38b32a01d1e731"
+    },
+    "documents/files/345750.docx": {
+      "body_xml_sha256": "ee65c02964698ad7c4e54befb0d629592b8cd0b7f87729ee6f8b3f98a162e8fb",
+      "input_sha256": "3d3defbde8771cd42113d94223d16a86d8b2ffc689d9012abbf497754ea1bb1c",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 4,
+          "mutated": 4
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 4
+        },
+        "simple_body_text": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "c07b35aef30b84d30ada935bd8d847d6538b92eb10ce9336e47dfa36a3f26c36"
+    },
+    "documents/files/375208.docx": {
+      "body_xml_sha256": "9106b033db5f9cdcb9dd40615526c7b6987c2261c3a64770f0dd091537851798",
+      "input_sha256": "23c2c274ca1bd6e7ca25c357fe623431b07c7831c605c5f2496f6fa6673c6d6d",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 24,
+          "mutated": 24
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 30
+        },
+        "simple_body_text": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "c7eb8238e239b0405133d1df071b5204db6aa717d11d6ee85664cc5ecd007540"
+    },
+    "documents/files/659882.docx": {
+      "body_xml_sha256": "1a8458429d8b9b1401d0be625259c2abc26ac79956d50e47bae68509d4190342",
+      "input_sha256": "e576ae24046149dcfa001e555dd6818cd251a1a2db3e4f76e45f3478dae4dc96",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "simple_body_text": {
+          "emitted": 1,
+          "mutated": 1
+        }
+      },
+      "text_sha256": "b9bf1a937936fb7eaec9934e4e25d44318103911bc5786dd33c1f8c038b4c212"
+    },
+    "documents/files/659886.docx": {
+      "body_xml_sha256": "1a8458429d8b9b1401d0be625259c2abc26ac79956d50e47bae68509d4190342",
+      "input_sha256": "e576ae24046149dcfa001e555dd6818cd251a1a2db3e4f76e45f3478dae4dc96",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "simple_body_text": {
+          "emitted": 1,
+          "mutated": 1
+        }
+      },
+      "text_sha256": "b9bf1a937936fb7eaec9934e4e25d44318103911bc5786dd33c1f8c038b4c212"
+    },
+    "documents/files/663502.docx": {
+      "body_xml_sha256": "cf199e6658acf210603fa0232092c6742be1d377ca7239c20beaba6a1b02cdb4",
+      "input_sha256": "c3f0792b147c963130a2bc44cc5ac057a825b4de364ce20812411fa47819e9af",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 1
+        },
+        "simple_body_text": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "918da4efd02ac764be1f465f81a22fa7a01c026b235b7d3493a871cef74a05a3"
+    },
+    "documents/files/675879.docx": {
+      "body_xml_sha256": "09a7e6ae80bd4dc98516ec4eb25f26b8e5ec095ec770d970c435be38bcf063a1",
+      "input_sha256": "80fbc09700bc91101947151533e2e1ceb67d20d6de915e1c423de56ccf331764",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 1
+        },
+        "simple_body_text": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "82cc5df1beda96bad4e88183e289e3afaed47792c5270ec6b12d180a5b1a6715"
+    },
+    "documents/files/676212.docx": {
+      "body_xml_sha256": "c1a6040fde5757ef2b4839976542266781ba29fa34c8adfbefff38e3f8116806",
+      "input_sha256": "00eda034d5c04723abc14a9d1a3a1976f902eb1cb2891399bf37cac93c4ffef5",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 1
+        },
+        "simple_body_text": {
+          "emitted": 0,
+          "mutated": 0
+        }
+      },
+      "text_sha256": "1da3e6dbb719d0976fcc6b85aaaaca0f44b9a34dc2e938638524fe3490617543"
+    },
+    "documents/files/703822.docx": {
+      "body_xml_sha256": "5e460b70ac4712711ce57565b5481a11dbfdb71421c7b37ff980cdff66fe9448",
+      "input_sha256": "86e9a5d35594100aa80b4f6b494ebc3531c3f8fc309436ed7e95767535f1c15b",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "simple_body_text": {
+          "emitted": 1,
+          "mutated": 1
+        }
+      },
+      "text_sha256": "20ef4c71c304e66d7497d3eb37a372effd3e0300b8c5fb7c144cc898a43e37e0"
+    },
+    "documents/files/705133.docx": {
+      "body_xml_sha256": "5e460b70ac4712711ce57565b5481a11dbfdb71421c7b37ff980cdff66fe9448",
+      "input_sha256": "418c80d2b1941ad185fcab2d43d96d3ffa72496b83588476c4602fa83b05b98b",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "simple_body_text": {
+          "emitted": 1,
+          "mutated": 1
+        }
+      },
+      "text_sha256": "20ef4c71c304e66d7497d3eb37a372effd3e0300b8c5fb7c144cc898a43e37e0"
+    },
+    "documents/files/731616.docx": {
+      "body_xml_sha256": "8072a14e23836fc29b8dcdb4a799938ad358451b484cf86e7546546dad4403f6",
+      "input_sha256": "68e440f4c77040f1981484e9167932116f990ce96314ec76792fa653c2c9b5cd",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "simple_body_text": {
+          "emitted": 7,
+          "mutated": 7
+        }
+      },
+      "text_sha256": "cc3e6914c55313a8ba3fb55da44f110e319dd7b06c66cf679a7d282e160a0910"
+    },
+    "documents/files/731631.docx": {
+      "body_xml_sha256": "8072a14e23836fc29b8dcdb4a799938ad358451b484cf86e7546546dad4403f6",
+      "input_sha256": "79f472a072db20dd17fe7686fe9629addd98c425c9041d591471ca65e0350f39",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "simple_body_text": {
+          "emitted": 7,
+          "mutated": 7
+        }
+      },
+      "text_sha256": "cc3e6914c55313a8ba3fb55da44f110e319dd7b06c66cf679a7d282e160a0910"
+    },
+    "documents/files/762710.docx": {
+      "body_xml_sha256": "5993f405c58a9fb7910eba8c7e69063f7c85b718430b49670a944f2197a38771",
+      "input_sha256": "7d0bbb7ce243bee6fc414c4c03cf057f560cb0d0068f103b339333ec7fd74cc1",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "simple_body_text": {
+          "emitted": 1,
+          "mutated": 1
+        }
+      },
+      "text_sha256": "243842fc5282023f7e0d9743196d8274b76437d9ef8125f1f30da1068b29744d"
+    },
+    "documents/files/762714.docx": {
+      "body_xml_sha256": "5993f405c58a9fb7910eba8c7e69063f7c85b718430b49670a944f2197a38771",
+      "input_sha256": "7d0bbb7ce243bee6fc414c4c03cf057f560cb0d0068f103b339333ec7fd74cc1",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "simple_body_text": {
+          "emitted": 1,
+          "mutated": 1
+        }
+      },
+      "text_sha256": "243842fc5282023f7e0d9743196d8274b76437d9ef8125f1f30da1068b29744d"
+    },
+    "documents/files/762718.docx": {
+      "body_xml_sha256": "5993f405c58a9fb7910eba8c7e69063f7c85b718430b49670a944f2197a38771",
+      "input_sha256": "7d0bbb7ce243bee6fc414c4c03cf057f560cb0d0068f103b339333ec7fd74cc1",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "simple_body_text": {
+          "emitted": 1,
+          "mutated": 1
+        }
+      },
+      "text_sha256": "243842fc5282023f7e0d9743196d8274b76437d9ef8125f1f30da1068b29744d"
+    },
+    "documents/files/764162.docx": {
+      "body_xml_sha256": "64c0b10fc38118c1101df1135df1adcae8efec3ed10872adfbb60c2802b714eb",
+      "input_sha256": "84d1909e82a951fbfa8d7a04f8b96b1a5b1bde11bdf1a34e94059608dbd0d81e",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "simple_body_text": {
+          "emitted": 1,
+          "mutated": 1
+        }
+      },
+      "text_sha256": "d0237bef6cb8ec1f67fa0ca0e46e37a1b33a72b8fb3524d154dd32475757725c"
+    },
+    "documents/files/764166.docx": {
+      "body_xml_sha256": "64c0b10fc38118c1101df1135df1adcae8efec3ed10872adfbb60c2802b714eb",
+      "input_sha256": "84d1909e82a951fbfa8d7a04f8b96b1a5b1bde11bdf1a34e94059608dbd0d81e",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "simple_body_text": {
+          "emitted": 1,
+          "mutated": 1
+        }
+      },
+      "text_sha256": "d0237bef6cb8ec1f67fa0ca0e46e37a1b33a72b8fb3524d154dd32475757725c"
+    },
+    "documents/files/772870.docx": {
+      "body_xml_sha256": "a1dcc4bb25fb5a2ed9ed543bac65e99f0ff1f6caea2b729e0b041cc4cda1adfc",
+      "input_sha256": "7deaed00d9670b8f9e607dfaf798b45e2db1984be2be00e5c704441e86108a98",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "simple_body_text": {
+          "emitted": 1,
+          "mutated": 1
+        }
+      },
+      "text_sha256": "a7a1a6d116c1227583f25e0486323e65fc83e6aa0ab1cbcbb39109aa0d7c766f"
+    },
+    "documents/files/787179.docx": {
+      "body_xml_sha256": "dd9739aedc69ca9acd1277fee5037eea1551e6f1a6803254208f33d7f153abb8",
+      "input_sha256": "13bbafc51d17adda7837f2125eeea4faac627e4a74f2898535fae7dc89a2ed20",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "simple_body_text": {
+          "emitted": 1,
+          "mutated": 1
+        }
+      },
+      "text_sha256": "fc26ddacf429857ee35fe2f777bac0c4c81e87de17bcd1e199e490aff5300176"
+    },
+    "documents/files/787237.docx": {
+      "body_xml_sha256": "dd9739aedc69ca9acd1277fee5037eea1551e6f1a6803254208f33d7f153abb8",
+      "input_sha256": "13bbafc51d17adda7837f2125eeea4faac627e4a74f2898535fae7dc89a2ed20",
+      "noop_text_identical": true,
+      "observations": {
+        "after_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "before_separator": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "instruction": {
+          "emitted": 0,
+          "mutated": 0
+        },
+        "simple_body_text": {
+          "emitted": 1,
+          "mutated": 1
+        }
+      },
+      "text_sha256": "fc26ddacf429857ee35fe2f777bac0c4c81e87de17bcd1e199e490aff5300176"
+    }
+  },
+  "revision_observations_unchanged": 18,
+  "revision_report_sha256": "ffb975a3e35a9769e83cbf51ce6318327a305a152528296d629feb73759d5d77",
+  "sequence_inventory_sha256": "5debba683cd6cde66d8fa056d0f621ae7248c466f0907f113e0ec4ed4f0bb515",
+  "synthetic_controls": [
+    "ordinary text before separator is emitted",
+    "an unbalanced sequence is reported without text classification"
+  ],
+  "totals": {
+    "after_separator": {
+      "emitted": 43,
+      "mutated": 43
+    },
+    "before_separator": {
+      "emitted": 0,
+      "mutated": 0
+    },
+    "instruction": {
+      "emitted": 0,
+      "mutated": 62
+    },
+    "simple_body_text": {
+      "emitted": 26,
+      "mutated": 26
+    }
+  }
+}
