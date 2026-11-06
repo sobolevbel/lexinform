@@ -1,0 +1,43 @@
+{
+  "baseline": {
+    "atomic_refusal": "primary projection has no known consumer owner",
+    "bills": 516,
+    "changes": 206,
+    "input_sha256": "73d98a076454e84108c6f8cb809fbf6170c65918314c43345161f61c0d8c8add",
+    "memo": 165,
+    "modern_current_refs": 12,
+    "plan_occurrences": 438,
+    "plan_replacements": 283,
+    "plan_values": 334,
+    "surveyed_columns": 772
+  },
+  "candidate": {
+    "bills": 516,
+    "changes": 206,
+    "input_sha256": "73d98a076454e84108c6f8cb809fbf6170c65918314c43345161f61c0d8c8add",
+    "measured": {
+      "applied": true,
+      "baseline_gzip_bytes": 5276203,
+      "baseline_sql_bytes": 26283211,
+      "compact_gzip_bytes": 5409701,
+      "compact_sql_bytes": 26876253,
+      "manifest_sha256": "9c813f658d23319fe07e5294b78830cb4dcea5bc3573d508d6af53893b4a7112"
+    },
+    "memo": 165,
+    "modern_current_refs": 12,
+    "plan_occurrences": 438,
+    "plan_replacements": 283,
+    "plan_values": 334,
+    "surveyed_columns": 772
+  },
+  "candidate_report_sha256": "59fd4dc9fd97457ef75bbad23c98364da584e305ab4d31da2f4e55a24f3b343a",
+  "checks": [
+    "baseline failed apply rolled back byte-exact",
+    "typed public views and modern raw references unchanged",
+    "doctor findings and nonlegacy sections unchanged",
+    "second apply no-op",
+    "two byte-exact restores"
+  ],
+  "production_import": false,
+  "snapshot_ref": "ff49a74a8d5e5b846a8f11d98ca71c2f421930b8"
+}

@@ -1,6 +1,7 @@
 """Read and validate the existing immutable legacy archive without new historical inference."""
 
 import sqlite3
+from contextlib import closing
 
 from lexinform.legacy_results import (
     LEGACY_PROJECTION_COLUMNS,
@@ -91,20 +92,22 @@ def validate_legacy_projections(connection: sqlite3.Connection) -> None:
         return read_legacy_result(connection, value_id)
 
     validate_legacy_import(connection)
-    for table in (
-        "bills",
-        "status_changes",
-        "publications",
-        "analysis_memo",
-        "document_work",
-        "llm_batch_items",
-        "llm_batch_intents",
-    ):
-        columns = {
-            row[1] for row in connection.execute(f"PRAGMA table_info({table})")
-        } & LEGACY_PROJECTION_COLUMNS
-        for column in columns:
-            for (raw,) in connection.execute(
-                f"SELECT {column} FROM {table} WHERE {column} IS NOT NULL"
-            ):
-                read_legacy_json(raw, read)
+    with closing(connection.cursor()) as cursor:
+        cursor.row_factory = None
+        for table in (
+            "bills",
+            "status_changes",
+            "publications",
+            "analysis_memo",
+            "document_work",
+            "llm_batch_items",
+            "llm_batch_intents",
+        ):
+            columns = {
+                row[1] for row in cursor.execute(f"PRAGMA table_info({table})")
+            } & LEGACY_PROJECTION_COLUMNS
+            for column in columns:
+                for (raw,) in cursor.execute(
+                    f"SELECT {column} FROM {table} WHERE {column} IS NOT NULL"
+                ):
+                    read_legacy_json(raw, read)

@@ -1,6 +1,7 @@
 import hashlib
 import json
 import sqlite3
+from contextlib import closing
 from dataclasses import FrozenInstanceError, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -18,6 +19,8 @@ from lexinform.legacy_maintenance import (
 )
 from lexinform.models import AnalysisRecord, ProcessDetail
 from lexinform.models.legacy_results import canonical_legacy_json, legacy_json
+from lexinform.services.analysis_applications import apply_analysis
+from tests.computations import retained_result
 from tests.fakes import make_analysis
 
 NOW = datetime(2026, 10, 28, 19, tzinfo=UTC)
@@ -450,3 +453,43 @@ def test_analysis_quiet_refresh_preserves_original_import_counts(tmp_path: Path)
     assert "legacy_result_ref" in saved
     assert counts(path) == (1, 2, 2, 1)
     repo.close()
+
+
+def test_legacy_apply_preserves_compact_modern_bill_and_memo(tmp_path: Path) -> None:
+    path = tmp_path / "mixed.db"
+    with closing(seed_repository(path)) as repo:
+        result = retained_result("analysis")
+        assert isinstance(result.record, AnalysisRecord), "the fixture retains a primary record"
+        repo.save_computation_result(result)
+        apply_analysis(repo, 10, "3039", result.record, now=NOW)
+        repo.save_analysis_memo(
+            "modern", result.record.model_dump_json(), term=10, number="3039", used_at=NOW
+        )
+        with closing(sqlite3.connect(path)) as raw:
+            (current,) = raw.execute("SELECT analysis_json FROM bills").fetchone()
+            (memo,) = raw.execute(
+                "SELECT record_json FROM analysis_memo WHERE key='modern'"
+            ).fetchone()
+        assert "modern_primary_ref" in current and "modern_primary_ref" in memo
+        before = repo.get(10, "3039")
+        memo_before = repo.load_analysis_memo()
+        plan = repo.plan_legacy_maintenance(imported_at=NOW)
+        assert plan.imported is not None, "the fixture also retains an older inline memo"
+        assert [row.source_key_json for row in plan.imported.occurrences] == ['["memo"]']
+
+        assert repo.apply_legacy_maintenance(plan).applied
+
+        assert repo.get(10, "3039") == before
+        assert {key: legacy_json(raw) for key, raw in repo.load_analysis_memo().items()} == {
+            key: legacy_json(raw) for key, raw in memo_before.items()
+        }
+        with closing(sqlite3.connect(path)) as raw:
+            assert raw.execute("SELECT analysis_json FROM bills").fetchone() == (current,)
+            assert raw.execute(
+                "SELECT record_json FROM analysis_memo WHERE key='modern'"
+            ).fetchone() == (memo,)
+        compact = repo.dump()
+        assert not repo.apply_legacy_maintenance(plan).applied
+        repo.restore(compact)
+        repo.restore(compact)
+        assert repo.dump() == compact

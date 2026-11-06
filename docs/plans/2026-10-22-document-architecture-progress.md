@@ -12721,3 +12721,20 @@ public OpenAI dump saved 56,645–183,981 SQL bytes and 34,345–127,830 gzip
 bytes per scan. Controlled queues for both providers restored twice and
 submitted the same request to mock transports.
 [Qualification](../assets/audits/2026-11-06-committee-scan-writer/qualification.json).
+
+<a id="j338"></a>
+
+## J338 — validate legacy projections without hydrating modern references
+
+The legacy validator reads raw stored JSON through its own SQLite cursor.
+The normal repository reader still checks modern projection ownership
+and generation. The previous validator tried to hydrate a modern reference
+from a single selected column without the owner fields and rolled back.
+
+On the pinned state copy, the old failure left the dump byte-exact. The
+fixed import retained 334 legacy values across 438 occurrences, with 283
+replacements. Public views of 516 bills, 206 changes, and 165 memos matched,
+as did 12 raw modern references. The second import was a no-op and two
+restores were exact. The sample dump grew by 593,042 SQL bytes and 133,498
+gzip bytes (2.53%). Production import remains a separate manual operation.
+[Qualification](../assets/audits/2026-11-06-legacy-raw-validation/qualification.json).
