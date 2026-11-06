@@ -326,17 +326,26 @@ def _has_only_one_document(payload: Mapping[str, object]) -> bool:
             "body": {
                 "input": [
                     {"role": "system", "content": system},
-                    {"content": [_, *prompt]},
+                    {"content": [dict() as attachment, *prompt]},
                 ]
             }
         }:
             return (
-                isinstance(system, str) or _text_only_blocks(system, "input_text")
-            ) and _text_only_blocks(prompt, "input_text")
-        case {"params": {"system": system, "messages": [{"content": [_, *prompt]}]}}:
+                set(attachment) <= {"type", "filename", "file_data"}
+                and (isinstance(system, str) or _text_only_blocks(system, "input_text"))
+                and _text_only_blocks(prompt, "input_text")
+            )
+        case {
+            "params": {
+                "system": system,
+                "messages": [{"content": [{"source": dict() as source}, *prompt]}],
+            }
+        }:
             return (
-                isinstance(system, str) or _text_only_blocks(system, "text")
-            ) and _text_only_blocks(prompt, "text")
+                set(source) == {"type", "media_type", "data"}
+                and (isinstance(system, str) or _text_only_blocks(system, "text"))
+                and _text_only_blocks(prompt, "text")
+            )
         case _:
             return False
 
@@ -369,8 +378,10 @@ def validate_provider_scan_attachment(
         or not _scan_payload_slot(payload, request.model, scan.data)
     ):
         raise ValueError("Frozen provider attachment differs from the recorded scan")
-    if not allow_opaque and not _has_only_one_document(payload):
-        raise ValueError("Frozen provider scan request contains unsupported input blocks")
+    if not allow_opaque:
+        if not _has_only_one_document(payload):
+            raise ValueError("Frozen provider scan request contains unsupported input blocks")
+        scan.verify_exact_input()
     request.verify_payload()
 
 

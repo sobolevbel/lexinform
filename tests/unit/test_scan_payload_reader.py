@@ -753,6 +753,29 @@ def test_provider_attachment_must_match_the_frozen_scan(
         with pytest.raises(BatchNotSubmittedError, match="unsupported input blocks"):
             factory().submit([expanded])
 
+    wrong_scan = scan.model_copy(update={"data": "JVBERg=="})
+    wrong_question = question.model_copy(
+        update={"ctx": question.ctx.model_copy(update={"scan": wrong_scan})}
+    )
+    with pytest.raises(BatchNotSubmittedError, match="Scan input manifest differs"):
+        factory().submit([tampered.model_copy(update={"question": wrong_question})])
+
+    payload = json.loads(request.payload_json)
+    if provider == "openai":
+        attachment = payload["body"]["input"][1]["content"][0]
+    else:
+        attachment = payload["params"]["messages"][0]["content"][0]["source"]
+    attachment["file_id"] = "unexpected-second-source"
+    ambiguous_payload = json.dumps(payload)
+    ambiguous = request.model_copy(
+        update={
+            "payload_json": ambiguous_payload,
+            "payload_sha256": hashlib.sha256(ambiguous_payload.encode()).hexdigest(),
+        }
+    )
+    with pytest.raises(BatchNotSubmittedError, match="unsupported input blocks"):
+        factory().submit([ambiguous])
+
     forged = saved.replace(
         serialize_intent_request(request).replace("'", "''"),
         tampered.model_dump_json().replace("'", "''"),

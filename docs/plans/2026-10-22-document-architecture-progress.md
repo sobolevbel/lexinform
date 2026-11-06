@@ -13669,3 +13669,22 @@ eight controls reached the baseline mock SDK and were rejected before the
 first call on the candidate. Unit controls also cover secondary scan requests.
 
 [Qualification](../assets/audits/2026-11-06-provider-single-scan-input/qualification.json).
+
+<a id="j387"></a>
+
+## J387 — verify the scan bytes and attachment source at provider handoff
+
+Before submission, both adapters check the PDF bytes against their scan
+manifest and require the provider attachment to use the inline PDF source.
+Matching substitutions in the question and envelope fail the manifest check.
+An alternate file identifier fails attachment validation. The historical queue
+reader keeps its previous behavior.
+
+The four pinned primary corpus cases kept their request hashes, mock SDK input
+and submitted checkpoints. All eight rehashed substitution and alternate-source
+controls were stopped before the SDK. Eight Senate amendment cases also kept
+their complete lifecycle reports byte-identical after passing the real adapter
+handoff into a mock SDK. Exact correction and missing or changed PDF controls
+retained their prior outcomes.
+
+[Qualification](../assets/audits/2026-11-06-provider-scan-manifest-bytes/qualification.json).

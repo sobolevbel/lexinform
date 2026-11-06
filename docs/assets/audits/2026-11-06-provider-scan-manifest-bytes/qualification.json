@@ -1,0 +1,62 @@
+{
+  "baseline": "62a45d419b179bfaa0028398184c9c6c89e9ad23",
+  "primary_cases": {
+    "24/anthropic": {
+      "negative_controls_after": {
+        "alternate_file_id": "rejected_before_sdk",
+        "both_scan_copies": "rejected_before_sdk"
+      },
+      "negative_controls_before": {
+        "alternate_file_id": "reached_sdk",
+        "both_scan_copies": "reached_sdk"
+      },
+      "request_sha256": "613febf0afd06ab176d4e54fd8e6d04b50faa38615b387dd458ea6fa70ecad39",
+      "source_sha256": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+      "submitted_checkpoint_sha256": "470c90b045e6c8b58410d307ffd296cac60365bc5d469a44dbd7f2aa22a3fbb6"
+    },
+    "24/openai": {
+      "negative_controls_after": {
+        "alternate_file_id": "rejected_before_sdk",
+        "both_scan_copies": "rejected_before_sdk"
+      },
+      "negative_controls_before": {
+        "alternate_file_id": "reached_sdk",
+        "both_scan_copies": "reached_sdk"
+      },
+      "request_sha256": "f06858b54afb551652100f45aa3f34deb6d1edfd782e45eff64638300e86180b",
+      "source_sha256": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+      "submitted_checkpoint_sha256": "fa06e071c0206ecd06eb401f92ef57184510e8c6839a7386fd393304ad74ecc8"
+    },
+    "25/anthropic": {
+      "negative_controls_after": {
+        "alternate_file_id": "rejected_before_sdk",
+        "both_scan_copies": "rejected_before_sdk"
+      },
+      "negative_controls_before": {
+        "alternate_file_id": "reached_sdk",
+        "both_scan_copies": "reached_sdk"
+      },
+      "request_sha256": "985c6fab51f4a5ccbcc4ed53d4cd469a164f1147d5aa90c8a170979e9047c308",
+      "source_sha256": "11c7c5bed9e2df7b13671052b16981d015a7471db8c3d81a4e53100b9c3ad97b",
+      "submitted_checkpoint_sha256": "f307cdd9beb289b15ab8acc7d73ed026b601f9d41941bb534ab900c49b2b5a30"
+    },
+    "25/openai": {
+      "negative_controls_after": {
+        "alternate_file_id": "rejected_before_sdk",
+        "both_scan_copies": "rejected_before_sdk"
+      },
+      "negative_controls_before": {
+        "alternate_file_id": "reached_sdk",
+        "both_scan_copies": "reached_sdk"
+      },
+      "request_sha256": "2fc019bfd26f22517924d2a64ca6d3c319897313bd2be00e92588bc0be33428e",
+      "source_sha256": "11c7c5bed9e2df7b13671052b16981d015a7471db8c3d81a4e53100b9c3ad97b",
+      "submitted_checkpoint_sha256": "93920602ca4412ab4ee6db2ac2477c7c08421daf8a056928abc9f002ce7ba003"
+    }
+  },
+  "primary_replay_sha256": "2e21ea382bcc4234bb307261bad894e08b74047a386c07d522444376f214ccfb",
+  "primary_scope": "Pinned Sejm prints 24 and 25 through both mock provider SDKs.",
+  "senate_exact_cases": 8,
+  "senate_replay_sha256": "22c54153a3226e4dfb52fa5c44e7a9c9a4ab250e46b81f28ab0c635882305398",
+  "senate_report_sha256": "cbea138727acdae7f5d075d97be6ca274efd2940a23f4321c78b0af0dc5ef495"
+}
