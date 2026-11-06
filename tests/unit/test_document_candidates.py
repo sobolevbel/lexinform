@@ -10,8 +10,18 @@ from lexinform.document_candidates import (
     select_candidate_versions,
     select_document_parts,
 )
-from lexinform.models import DocumentPart, DocumentSelection, ExtractedDocument, ExtractedParts
+from lexinform.document_versions import comparable_versions, compare_version_decision
+from lexinform.models import (
+    DocumentPart,
+    DocumentSelection,
+    ExtractedDocument,
+    ExtractedParts,
+    TextDocument,
+)
 from lexinform.sections import PAGE_BREAK
+from lexinform.services.documents import TextLoader
+from tests.fakes import FakeSejmGateway
+from tests.unit.test_physical_extraction import archive, docx, extractor
 
 BILL = (
     "USTAWA\nz dnia 1 stycznia 2026 r.\no cudzoziemcach\nArt. 1. Cudzoziemiec otrzymuje 200 zł.\n"
@@ -206,3 +216,42 @@ def test_package_coverage_projection_preserves_legacy_completeness_and_observed_
     selected = select_document_parts(physical, max_part_chars=400000)
     assert selected.model_dump_json() == expected.model_dump_json()
     assert physical.model_dump_json() == before
+
+
+def test_version_comparison_reports_date_filter_without_changing_existing_api() -> None:
+    texts = [
+        "Projekt z dnia 1 marca 2026 r.\n" + BILL,
+        "Projekt z dnia 2 marca 2026 r.\n" + BILL.replace("200 zł", "300 zł"),
+    ]
+
+    comparison = compare_version_decision(texts)
+
+    assert comparison.matching_indices == comparable_versions(texts) == (1,)
+    assert comparison.retained_indices == (1,)
+    assert comparison.date_filter is not None, "the dates excluded the first candidate"
+    assert tuple(date.isoformat() for date in comparison.date_filter) == (
+        "2026-03-01",
+        "2026-03-02",
+    )
+
+
+def test_outer_comparison_with_archive_does_not_claim_a_loose_version_decision() -> None:
+    packed_url, loose_url = "https://api.test/a.zip", "https://api.test/b.docx"
+    body = docx(BILL + "Art. 2. Przepis stosuje się w postępowaniu. " * 12)
+    gateway = FakeSejmGateway(files={packed_url: archive({"projekt.docx": body}), loose_url: body})
+    loader = TextLoader({"api.test": gateway.download}, extractor(), max_bytes=100_000)
+    document = TextDocument(
+        url=packed_url,
+        kind="rcl",
+        compare_versions=True,
+        alternatives=(TextDocument(url=loose_url, kind="rcl"),),
+    )
+
+    selected, file = loader.select_document(document)
+
+    assert selected.url == packed_url
+    trace = file.candidate_trace
+    assert trace is not None, "the bounded outer trace remains available"
+    assert trace.reason == "version_choice"
+    assert file.selection.parts[0].members == ("projekt.docx",)
+    assert trace.version_decision is None

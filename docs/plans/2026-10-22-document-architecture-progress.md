@@ -12558,3 +12558,21 @@ restores. Two overflowed the existing 4 KiB bound and kept the old
 trace and SQL. The paired cached corpus and legacy doctor kept their
 previous observations. The runtime writer is inactive.
 [Qualification](../assets/audits/2026-11-06-version-decision-reader/qualification.json).
+
+<a id="j330"></a>
+
+## J330 — retain the reason from the actual loose-file comparison
+
+The native chooser returns the existing selection together with the
+already computed date filter and normative identity outcome. Eligible
+loose-file traces retain the explanation within the existing 4 KiB
+budget. Six pinned raw/cache cases saved it and restored twice. The
+two overflow cases kept their exact earlier traces.
+
+All 4,276 cached observations matched. The current paired archive
+replay kept core and archive decisions across 16 roots and four
+controlled inputs. The changed candidate-policy source fingerprint
+updated 20 extraction IDs and their linked capture IDs. Both current
+revisions diverged from the older J222 archive baseline, so that
+historical comparison is outside this parity proof.
+[Qualification](../assets/audits/2026-11-06-version-decision-writer/qualification.json).

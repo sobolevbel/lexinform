@@ -75,6 +75,7 @@ from lexinform.models import (
 )
 from lexinform.models.candidate_trace import (
     MAX_SUPPORTING_EXCLUSIONS,
+    MAX_VERSION_DECISION_ROWS,
     AmendmentPartGap,
     CandidateTraceReason,
     CandidateTraceResult,
@@ -83,6 +84,7 @@ from lexinform.models.candidate_trace import (
     SupportingExclusionReason,
     SupportingPartExclusion,
     SupportingPartExclusions,
+    VersionDecisionEvidence,
 )
 from lexinform.models.document_reads import DocumentPhysicalDiagnostics
 from lexinform.models.document_reads import LoadedFile as LoadedFile
@@ -148,6 +150,7 @@ class _CompositionCapture:
     amendment_gap: AmendmentPartGap | None = None
     supporting: list[SupportingPartExclusion] = field(default_factory=list)
     supporting_omitted: int = 0
+    version_decision: VersionDecisionEvidence | None = None
 
     def exclude_support(
         self,
@@ -863,7 +866,7 @@ class TextLoader:
             attempts = ArchiveDispositionAccumulator()
         with self._composition_capture_scope() as composition:
             selected, loaded, result, reason = self._select_document(
-                document, dispositions, attempts
+                document, dispositions, attempts, composition
             )
         try:
             trace = (
@@ -918,6 +921,11 @@ class TextLoader:
                                 omitted=composition.supporting_omitted,
                             ),
                         }
+                    )
+            if composition.version_decision is not None and trace.archive_members is None:
+                with suppress(Exception):
+                    trace = CandidateDispositionTrace.model_validate(
+                        {**trace.model_dump(), "version_decision": composition.version_decision}
                     )
         if (
             not retain_routine_trace
@@ -974,9 +982,10 @@ class TextLoader:
         document: TextDocument,
         dispositions: list[CandidateDisposition],
         attempts: ArchiveDispositionAccumulator | None,
+        composition: _CompositionCapture | None,
     ) -> tuple[TextDocument, LoadedFile, CandidateTraceResult, CandidateTraceReason]:
         if document.compare_versions:
-            resolved = self._compare_versions(document, dispositions, attempts)
+            resolved = self._compare_versions(document, dispositions, attempts, composition)
             if resolved is not None:
                 return resolved
         fallback = CandidateFallback()
@@ -1068,6 +1077,7 @@ class TextLoader:
         document: TextDocument,
         dispositions: list[CandidateDisposition],
         attempts: ArchiveDispositionAccumulator | None,
+        composition: _CompositionCapture | None,
     ) -> tuple[TextDocument, LoadedFile, CandidateTraceResult, CandidateTraceReason] | None:
         candidates: list[tuple[TextDocument, LoadedFile]] = []
         prepared: list[DocumentCandidate] = []
@@ -1138,6 +1148,32 @@ class TextLoader:
         if choice is None:
             dispositions.extend(decisions)
             return None
+        if (
+            composition is not None
+            and 2 <= len(prepared) <= MAX_VERSION_DECISION_ROWS
+            and all(
+                item.parts and not any(part.members for part in (*item.parts, *item.observed_parts))
+                for item in prepared
+            )
+        ):
+            comparison = choice.comparison
+            with suppress(Exception):
+                composition.version_decision = VersionDecisionEvidence(
+                    compared_indices=tuple(candidate_indices),
+                    retained_indices=tuple(
+                        candidate_indices[index] for index in comparison.retained_indices
+                    ),
+                    outcome=(
+                        "distinct_policy_identity"
+                        if isinstance(choice, AmbiguousCandidates)
+                        else "single_survivor"
+                        if len(comparison.retained_indices) == 1
+                        else "matching_policy_identity"
+                    ),
+                    date_filter=tuple(date.isoformat() for date in comparison.date_filter)
+                    if comparison.date_filter is not None
+                    else None,
+                )
         if isinstance(choice, AmbiguousCandidates):
             dispositions.extend(
                 item.model_copy(update={"reason": "version_conflict"})

@@ -2,6 +2,7 @@ import datetime as dt
 import hashlib
 import re
 from collections.abc import Iterable
+from dataclasses import dataclass
 
 from lexinform.law_digest import law_digest
 from lexinform.sections import trim_print
@@ -159,16 +160,31 @@ MIN_NOTE_CHARS = 30
 """A shorter Word note may be ordinary wording, so it is not cut out of the other files."""
 
 
+@dataclass(frozen=True)
+class VersionComparison:
+    retained_indices: tuple[int, ...]
+    matching_indices: tuple[int, ...]
+    date_filter: tuple[dt.date, ...] | None = None
+
+
 def comparable_versions(texts: list[str]) -> tuple[int, ...]:
+    return compare_version_decision(texts).matching_indices
+
+
+def compare_version_decision(texts: list[str]) -> VersionComparison:
     if not texts:
-        return ()
+        return VersionComparison((), ())
     subjects = {bill_subject(text) for text in texts}
     dates = [draft_version(text) for text in texts]
     same_subject = len(subjects) == 1 and "" not in subjects
     indices = tuple(range(len(texts)))
+    date_filter = None
     if (same_subject or shared_amended_act(texts)) and all(dates):
-        newest = max(date for date in dates if date is not None)
-        indices = tuple(index for index in indices if dates[index] == newest)
+        known_dates = tuple(date for date in dates if date is not None)
+        newest = max(known_dates)
+        indices = tuple(index for index in indices if known_dates[index] == newest)
+        if len(indices) < len(texts):
+            date_filter = known_dates
     notes = {
         chars: re.compile(r"[\W_]*".join(map(re.escape, chars)), re.I)
         for i in indices
@@ -179,7 +195,7 @@ def comparable_versions(texts: list[str]) -> tuple[int, ...]:
         law_digest(trim_print(cut := _without_notes(texts[i], notes.values())).text) or cut
         for i in indices
     }
-    return indices if len(identities) == 1 else ()
+    return VersionComparison(indices, indices if len(identities) == 1 else (), date_filter)
 
 
 def _without_notes(text: str, notes: Iterable[re.Pattern[str]]) -> str:

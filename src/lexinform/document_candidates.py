@@ -6,7 +6,13 @@ from dataclasses import dataclass
 from typing import Self
 
 from lexinform.archive_policy_capture import ArchivePolicyDecision, PolicyOutcome
-from lexinform.document_versions import comparable_versions, normative_annex_key, regulation_support
+from lexinform.document_versions import (
+    VersionComparison,
+    comparable_versions,
+    compare_version_decision,
+    normative_annex_key,
+    regulation_support,
+)
 from lexinform.models.candidate_trace import ArchiveMemberPolicyReason
 from lexinform.models.documents import (
     DocumentPart,
@@ -64,11 +70,13 @@ class CandidateSet:
 class SelectedCandidate:
     index: int
     observed_parts: tuple[DocumentPart, ...]
+    comparison: VersionComparison
 
 
 @dataclass(frozen=True)
 class AmbiguousCandidates:
     selection: DocumentSelection
+    comparison: VersionComparison
 
 
 def select_candidate_versions(
@@ -77,8 +85,10 @@ def select_candidate_versions(
     bill_indices = candidates.bill_indices()
     if not bill_indices:
         return None
-    versions = comparable_versions([candidates.entries[index].text or "" for index in bill_indices])
-    if not versions:
+    comparison = compare_version_decision(
+        [candidates.entries[index].text or "" for index in bill_indices]
+    )
+    if not comparison.matching_indices:
         return AmbiguousCandidates(
             DocumentSelection(
                 state="ambiguous",
@@ -89,14 +99,15 @@ def select_candidate_versions(
                     f"{candidates.entries[index].source}: conflicting bill version"
                     for index in bill_indices
                 ),
-            )
+            ),
+            comparison,
         )
     observed = tuple(
         part
         for index in bill_indices
         for part in (candidates.entries[index].observed_parts or candidates.entries[index].parts)
     )
-    return SelectedCandidate(bill_indices[versions[0]], observed)
+    return SelectedCandidate(bill_indices[comparison.matching_indices[0]], observed, comparison)
 
 
 def select_document_parts(
