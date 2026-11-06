@@ -12272,3 +12272,24 @@ queue dumps saved 14,103 and 14,049 gzip bytes respectively.
 
 DA5.6 remains open for the remaining input profiles and post-submission
 request-manifest coverage.
+
+<a id="j317"></a>
+
+## J317 — read a frozen provider request manifest after submission
+
+Submitted item metadata can retain the exact payload checksum and byte
+length, model, prompt version and canonical JSON hashes of the message
+bundle, output format and request options. The reader binds the manifest
+to the item's purpose and request SHA and to the batch provider. Existing
+rows omit the optional field. Restore and the request doctor validate
+the retained binding without claiming access to expired bodies.
+
+The pinned 2320/2320-A replay used the real OpenAI and Anthropic builders
+and fake SDK boundaries. The reader fixture inserted one manifest per
+submitted item and restored twice. Cleanup removed the transient text and
+retained the manifest with byte-exact restore. The fixtures added 325 and
+327 gzip bytes respectively to submitted state. The foreign-provider
+control rejected save and restore before changing the target repository.
+[Qualification](../assets/audits/2026-11-06-frozen-request-manifest-reader/qualification.json).
+
+Reader only. Deploy before enabling native manifest capture.

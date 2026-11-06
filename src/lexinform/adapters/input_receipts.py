@@ -447,8 +447,14 @@ def _input_snapshot_checks(
             frozen = request is not None and request.get("payload_sha256") is not None
             has_text_reference = isinstance(meta.get("text"), dict)
             has_provider_reference = isinstance(request.get("payload_json"), dict)
+            has_manifest = meta.get("frozen_request_manifest") is not None
             if not (
-                has_receipt or has_timing or frozen or has_text_reference or has_provider_reference
+                has_receipt
+                or has_timing
+                or frozen
+                or has_text_reference
+                or has_provider_reference
+                or has_manifest
             ):
                 continue
             ref = _reference("llm_batch_intents", row["custom_id"])
@@ -459,7 +465,7 @@ def _input_snapshot_checks(
                     "openai",
                 ):
                     raise ValueError("input_snapshot_request_columns")
-                if has_receipt or has_timing or has_text_reference:
+                if has_receipt or has_timing or has_text_reference or has_manifest:
                     intent = BatchIntent.model_validate(
                         {
                             "request": actual,
@@ -499,7 +505,8 @@ def _input_snapshot_checks(
                 continue
             has_receipt = raw is not None and raw.get("prepared_input_receipt") is not None
             has_timing = raw is not None and raw.get("local_timing_witness") is not None
-            if not has_receipt and not has_timing:
+            has_manifest = raw.get("frozen_request_manifest") is not None
+            if not (has_receipt or has_timing or has_manifest):
                 continue
             ref = _reference("llm_batch_items", (row["batch_id"], row["custom_id"]))
             try:
@@ -515,6 +522,11 @@ def _input_snapshot_checks(
                 )
                 if parent["provider"] not in ("anthropic", "openai"):
                     raise ValueError("input_snapshot_provider")
+                if (
+                    item_meta.frozen_request_manifest is not None
+                    and item_meta.frozen_request_manifest.provider != parent["provider"]
+                ):
+                    raise ValueError("input_snapshot_manifest_provider")
                 if item_meta.prepared_input_receipt is not None:
                     _parents(
                         connection,

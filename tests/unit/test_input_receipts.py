@@ -2,7 +2,7 @@ import hashlib
 import json
 import sqlite3
 from contextlib import closing
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -19,12 +19,16 @@ from lexinform.models import (
     BatchItemMeta,
     BatchRequest,
     BillContext,
+    BillStatus,
     DocumentPart,
     DocumentSelection,
     DocumentSelectionRecord,
+    LlmBatch,
     LlmBatchItem,
     PrimaryInputReceipt,
+    ProcessSummary,
 )
+from lexinform.models.batch import FrozenRequestManifest
 from lexinform.models.input_receipts import MAX_INPUT_RECEIPT_BYTES, primary_context_sha256
 from lexinform.prepared_input import prepared_text_input
 from lexinform.text_projection import SourcePiece, TextProjection, TextSegment, project_pieces
@@ -135,6 +139,85 @@ def test_intent_text_reference_restores_frozen_input_and_rejects_a_wrong_hash(
         with pytest.raises(ValueError, match="invalid_input_intent_snapshot"):
             repo.restore(invalid)
         assert repo.dump() == inline and repo.list_queued_batch_intents() == [intent]
+
+
+def test_submitted_request_manifest_survives_cleanup_and_rejects_foreign_provider(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "manifest.db"
+    frozen = request()
+    assert frozen.payload_sha256 is not None and frozen.payload_json is not None, (
+        "the fixture freezes its request"
+    )
+    manifest = FrozenRequestManifest(
+        provider="openai",
+        purpose="analysis",
+        request_sha256=frozen.payload_sha256,
+        model=frozen.model,
+        prompt_version=frozen.prompt_version,
+        payload_bytes=len(frozen.payload_json.encode()),
+        messages_sha256="a" * 64,
+        output_format_sha256="b" * 64,
+        options_sha256="c" * 64,
+    )
+    intent = BatchIntent.from_request(
+        request=frozen, meta=meta(), provider="openai", created_at=NOW
+    )
+    batch = LlmBatch(
+        batch_id="manifest",
+        provider="openai",
+        call_kind="analysis",
+        submitted_at=NOW,
+        status="submitted",
+        request_count=1,
+        estimated_cost_usd=0.01,
+    )
+    item = LlmBatchItem.from_intent(batch.batch_id, intent)
+    item = item.model_copy(
+        update={
+            "meta": item.meta.model_copy(
+                update={
+                    "text": SOURCE,
+                    "frozen_request_manifest": manifest,
+                }
+            )
+        }
+    )
+    with closing(SqliteBillRepository(path)) as repo:
+        repo.migrate()
+        before = repo.dump()
+        with pytest.raises(ValueError, match="batch provider"):
+            repo.save_llm_batch(batch.model_copy(update={"provider": "anthropic"}), [item])
+        assert repo.dump() == before
+        repo.save_llm_batch(batch, [item])
+        stored = repo.dump()
+        repo.restore(stored)
+        assert repo.dump() == stored and repo.list_llm_batch_items(batch.batch_id) == [item]
+        with closing(sqlite3.connect(path)) as sql, sql:
+            sql.execute(
+                "UPDATE llm_batch_items SET meta_json=json_set(meta_json,'$.frozen_request_manifest.provider','anthropic')"
+            )
+        invalid = repo.dump()
+        repo.restore(stored)
+        with pytest.raises(ValueError, match="invalid_input_item_snapshot"):
+            repo.restore(invalid)
+        assert repo.dump() == stored
+        repo.upsert_summary(
+            ProcessSummary(
+                term=10, number="3039", title="Project", document_type="projekt", change_date=NOW
+            ),
+            now=NOW,
+        )
+        repo.set_status(10, "3039", BillStatus.ANALYZED)
+        repo.mark_llm_batch_item_consumed(batch.batch_id, item.custom_id, consumed_at=NOW)
+        repo.mark_batch_item_accounted(batch.batch_id, item.custom_id, at=NOW)
+        repo.mark_llm_batch_forgotten(batch.batch_id, forgotten_at=NOW)
+        future = NOW + timedelta(days=181)
+        assert repo.prune_history(before=future, memo_before=future)["batch_payloads"] == 1
+        retained = repo.dump()
+        assert '"frozen_request_manifest"' in retained and SOURCE not in retained
+        repo.restore(retained)
+        assert repo.dump() == retained
 
 
 def test_provider_payload_reference_reconstructs_the_exact_frozen_bytes(tmp_path: Path) -> None:

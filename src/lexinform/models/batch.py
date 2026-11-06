@@ -47,6 +47,7 @@ from lexinform.models.input_receipts import (
     supplement_context_sha256,
 )
 from lexinform.models.observations import DeliveryPlan
+from lexinform.models.physical_inventory import Sha256
 from lexinform.models.report import CallKind
 from lexinform.models.reviews import DocumentReview, ReviewContext
 from lexinform.models.scan_input import ScanInputManifest
@@ -55,6 +56,25 @@ from lexinform.saved_clock import saved_clock_age
 
 BatchProvider = Literal["anthropic", "openai"]
 BatchStatus = Literal["submitted", "ended", "failed"]
+
+
+class FrozenRequestManifest(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    profile: Literal["frozen-provider-request-v1"] = "frozen-provider-request-v1"
+    provider: BatchProvider
+    purpose: CallKind
+    request_sha256: Sha256
+    model: str = Field(min_length=1, max_length=160)
+    prompt_version: str = Field(min_length=1, max_length=160)
+    payload_bytes: int = Field(gt=0, le=2**63 - 1, strict=True)
+    messages_sha256: Sha256
+    output_format_sha256: Sha256
+    options_sha256: Sha256
+
+    def require_request(self, purpose: str, request_sha256: str | None) -> None:
+        if (self.purpose, self.request_sha256) != (purpose, request_sha256):
+            raise ValueError("Frozen request manifest differs from its submitted request")
 
 
 def provider_of(model: str) -> BatchProvider:
@@ -373,6 +393,9 @@ class BatchItemMeta(BaseModel):
     local_timing_witness: LocalTimingWitness | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    frozen_request_manifest: FrozenRequestManifest | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @model_validator(mode="after")
     def frozen_binding(self) -> Self:
@@ -466,6 +489,9 @@ class DigestItemMeta(BaseModel):
     local_timing_witness: LocalTimingWitness | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    frozen_request_manifest: FrozenRequestManifest | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     amendment_input_ref: AmendmentInputRef | None = Field(
         default=None, exclude_if=lambda value: value is None
@@ -510,6 +536,11 @@ def validate_batch_item_meta(
 ) -> BatchItemMeta | DigestItemMeta:
     model = BatchItemMeta if kind in ("analysis", "reanalysis") else DigestItemMeta
     parsed = model.model_validate(decoded)
+    manifest = parsed.frozen_request_manifest
+    if manifest is not None:
+        if not submitted:
+            raise ValueError("Frozen request manifests belong to submitted items")
+        manifest.require_request(kind, parsed.request_sha256)
     if isinstance(parsed, DigestItemMeta) and parsed.amendment_input_ref is not None:
         parsed.amendment_input_ref.require_carrier(
             kind, parsed.request_sha256, parsed.input_binding
@@ -566,6 +597,9 @@ class LlmBatchItem(BaseModel):
 
     @model_validator(mode="after")
     def actual_local_timing(self) -> Self:
+        manifest = self.meta.frozen_request_manifest
+        if manifest is not None:
+            manifest.require_request(self.call_kind, self.meta.request_sha256)
         if isinstance(self.meta, DigestItemMeta) and self.meta.amendment_input_ref is not None:
             self.meta.amendment_input_ref.require_carrier(
                 self.call_kind, self.meta.request_sha256, self.meta.input_binding
@@ -646,6 +680,8 @@ class BatchIntent(BaseModel):
 
     @model_validator(mode="after")
     def actual_input_receipt(self) -> Self:
+        if self.meta.frozen_request_manifest is not None:
+            raise ValueError("Frozen request manifests belong to submitted items")
         if isinstance(self.meta, DigestItemMeta) and self.meta.amendment_input_ref is not None:
             self.meta.amendment_input_ref.require_carrier(
                 self.request.call_kind, self.request.payload_sha256, self.meta.input_binding

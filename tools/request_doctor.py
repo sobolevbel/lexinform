@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from lexinform.adapters.input_receipts import parse_batch_request
+from lexinform.models.batch import FrozenRequestManifest
 from tools.corpus_artifacts import write_json
 from tools.saved_records import SavedRecordIssue, is_saved_answer, saved_columns, saved_records
 from tools.sqlite_snapshot import open_snapshot
@@ -132,8 +133,9 @@ def _rows(connection: sqlite3.Connection, audit: RequestAudit, tables: set[str])
     ):
         audit.intent(row["custom_id"], row["request_json"])
     for row in connection.execute(
-        "SELECT i.batch_id, i.custom_id, i.meta_json, b.provider FROM llm_batch_items i "
-        "LEFT JOIN llm_batches b ON b.batch_id=i.batch_id ORDER BY i.batch_id, i.custom_id"
+        "SELECT i.batch_id, i.custom_id, i.call_kind, i.meta_json, b.provider "
+        "FROM llm_batch_items i LEFT JOIN llm_batches b ON b.batch_id=i.batch_id "
+        "ORDER BY i.batch_id, i.custom_id"
     ):
         ref = f"llm_batch_items/{row['batch_id']}/{row['custom_id']}"
         audit.counts["items"] += 1
@@ -143,7 +145,17 @@ def _rows(connection: sqlite3.Connection, audit: RequestAudit, tables: set[str])
         if not isinstance(meta, dict):
             audit.issue("invalid_item_metadata", ref)
         else:
-            audit.identity(meta.get("request_sha256"), ref, "items")
+            request_sha256 = audit.identity(meta.get("request_sha256"), ref, "items")
+            if (value := meta.get("frozen_request_manifest")) is not None:
+                try:
+                    manifest = FrozenRequestManifest.model_validate(value)
+                    manifest.require_request(row["call_kind"], request_sha256)
+                    if manifest.provider != row["provider"]:
+                        raise ValueError("Frozen manifest provider mismatch")
+                except ValueError:
+                    audit.issue("invalid_frozen_request_manifest", ref)
+                else:
+                    audit.counts["bound_frozen_request_manifests"] += 1
     for column in saved_columns(connection, tables):
         audit.result(audit.load(column.raw, column.ref), column.ref)
 

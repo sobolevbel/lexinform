@@ -3824,6 +3824,11 @@ class SqliteBillRepository:
 
     def _save_llm_batch_rows(self, batch: LlmBatch, items: Sequence[LlmBatchItem]) -> None:
         for item in items:
+            manifest = item.meta.frozen_request_manifest
+            if manifest is not None:
+                manifest.require_request(item.call_kind, item.meta.request_sha256)
+                if manifest.provider != batch.provider:
+                    raise ValueError("Frozen request manifest differs from its batch provider")
             validate_item_input(self._conn, item)
             validate_multipart_item(self._conn, item)
         self._conn.execute(
