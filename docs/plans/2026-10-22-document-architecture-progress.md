@@ -13922,3 +13922,21 @@ traced peak allocations fell from 138,848,193 to 17,540,741 bytes.
 This measures the cleanup helper on that input.
 
 [Qualification](../assets/audits/2026-11-07-doc-note-compact-origins/qualification.json).
+
+<a id="j401"></a>
+
+## J401 — audit analysis-derived mnemonics on retained direct cards
+
+The offline audit binds a direct recorded card's frozen mnemonic to the
+validated paid result, exact submitted item and retained editorial
+projection. It checks scope, request identity, chronology and matching
+provider fields. The report distinguishes a compacted answer from a retained
+answer and records SQLite delivery evidence.
+
+On the J384 snapshot the audit linked applications 18 and 23 to publications
+258 and 264. The results were analysis and reanalysis respectively. Both
+provider answers were compacted. This snapshot has no standalone name result.
+Source and prepared-input evidence and live Telegram verification remain
+outside this check.
+
+[Qualification](../assets/audits/2026-11-07-mnemonic-delivery-cycle/qualification.json).

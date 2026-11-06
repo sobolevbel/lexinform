@@ -1,0 +1,20 @@
+{
+  "database_sha256": "c53f468cea246f6a8f2b74eaef46dbf5ea46fc72efa5a3af28741fbe919c974a",
+  "recorded": [
+    {
+      "publication_id": 258,
+      "application_id": 18,
+      "purpose": "analysis",
+      "retained_provider_answer": "not_retained",
+      "report_sha256": "7f01acdfcff402cb81ade3bf5ae1511bb6379a7dee55fd478b967565381c27eb"
+    },
+    {
+      "publication_id": 264,
+      "application_id": 23,
+      "purpose": "reanalysis",
+      "retained_provider_answer": "not_retained",
+      "report_sha256": "0aac6e0243ac309e1850b324aef32e6b6f0c9c40774dd7d521faeb6fec2a2b5c"
+    }
+  ],
+  "scope": "Saved analysis-derived mnemonic on direct recorded cards. No standalone name result on the snapshot."
+}
