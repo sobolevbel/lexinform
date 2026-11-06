@@ -13527,3 +13527,28 @@ rejects both provider controls and rejects a mismatched selection. Eight Senate 
 supplement scan lifecycle reports matched the direct parent byte-for-byte.
 
 [Qualification](../assets/audits/2026-11-06-primary-scan-provider-binding/qualification.json).
+
+<a id="j380"></a>
+
+## J380 — audit retained scan manifests against consumed batch items
+
+The computation doctor compares retained primary, amendment and supplement scan
+manifests with the consumed item's metadata and frozen request receipt. Known
+conflicts are errors. Missing evidence remains unverified. The doctor reads
+the checkpoint without adding state or restoring removed bytes.
+
+The pinned J376 mock OpenAI run for Senate amendments to print 377 records one
+bound scan after cleanup. Changing the item's scan hash fails the check and
+removing the item yields one unverified result. The saved state checkpoint has
+14 computation rows with no eligible retained scan manifest and gives a
+byte-identical report against the parent. Focused unit controls also cover
+primary and supplement records and a changed request SHA.
+
+A newer state checkpoint at `9a802a55` also gives byte-identical computation
+reports across 19 results. The delivery census still records one complete
+direct primary cycle. It now records five secondary suffixes, including three
+additional amendment applications with exact submitted request identity. Their
+source selection, original request body and collection application remain
+unverified or unavailable, so DA10.7 stays open.
+
+[Qualification](../assets/audits/2026-11-06-retained-scan-binding/qualification.json).

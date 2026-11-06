@@ -1,0 +1,196 @@
+{
+  "baseline": "8a327f31206c34be3ff09db5f76fd6400fb81473",
+  "controls": {
+    "changed-scan": "Replace submitted input_sha256 with zeros",
+    "missing-item": "Remove the submitted item"
+  },
+  "fresh_state_read_only_census": {
+    "computation_report_identical_to_parent": true,
+    "computations": 19,
+    "database_sha256": "c53f468cea246f6a8f2b74eaef46dbf5ea46fc72efa5a3af28741fbe919c974a",
+    "input_sql_sha256": "10589976a6acc64c2f1391848a28be2779cb10843e784d9fccc894fd1d083b2d",
+    "primary": {
+      "consumed_projection_unavailable": 4,
+      "exact_retained_cycle": 1,
+      "frozen_paid_reference_unavailable": 3,
+      "frozen_plan_unavailable": 27,
+      "frozen_render_context_unavailable": 13,
+      "prepared_receipt_unavailable": 1,
+      "publication_outside_direct_original_scope": 1,
+      "recorded_send_unavailable": 1
+    },
+    "secondary": [
+      {
+        "application_id": 11,
+        "prefix": {
+          "original_collection_application": "not_retained",
+          "original_request_payload": "not_verified",
+          "prepared_input_receipt": "not_retained",
+          "reason": "exact_submitted_secondary_request_identity",
+          "source_selection_binding": "not_verified",
+          "status": "recorded"
+        },
+        "publication_id": 231,
+        "reason": "exact_retained_secondary_suffix",
+        "status": "recorded"
+      },
+      {
+        "application_id": 16,
+        "prefix": {
+          "original_collection_application": "not_retained",
+          "original_request_payload": "not_verified",
+          "prepared_input_receipt": "not_retained",
+          "reason": "exact_submitted_secondary_request_identity",
+          "source_selection_binding": "not_verified",
+          "status": "recorded"
+        },
+        "publication_id": 240,
+        "reason": "exact_retained_secondary_suffix",
+        "status": "recorded"
+      },
+      {
+        "application_id": 33,
+        "prefix": {
+          "original_collection_application": "not_retained",
+          "original_request_payload": "not_verified",
+          "prepared_input_receipt": "outside_scope",
+          "reason": "exact_submitted_secondary_request_identity",
+          "source_selection_binding": "not_verified",
+          "status": "recorded"
+        },
+        "publication_id": 293,
+        "reason": "exact_retained_secondary_suffix",
+        "status": "recorded"
+      },
+      {
+        "application_id": 34,
+        "prefix": {
+          "original_collection_application": "not_retained",
+          "original_request_payload": "not_verified",
+          "prepared_input_receipt": "outside_scope",
+          "reason": "exact_submitted_secondary_request_identity",
+          "source_selection_binding": "not_verified",
+          "status": "recorded"
+        },
+        "publication_id": 294,
+        "reason": "exact_retained_secondary_suffix",
+        "status": "recorded"
+      },
+      {
+        "application_id": 35,
+        "prefix": {
+          "original_collection_application": "not_retained",
+          "original_request_payload": "not_verified",
+          "prepared_input_receipt": "outside_scope",
+          "reason": "exact_submitted_secondary_request_identity",
+          "source_selection_binding": "not_verified",
+          "status": "recorded"
+        },
+        "publication_id": 295,
+        "reason": "exact_retained_secondary_suffix",
+        "status": "recorded"
+      }
+    ],
+    "state_commit": "9a802a5514d3333de72c76454d115a7d91538e0d"
+  },
+  "public_source": {
+    "frozen_request_sha256": "e2fce13b1fffd505e54807ae49c6e8905032313e42d43b03e66e1616f41d8629",
+    "official_pdf_sha256": "d562dcf64770bd36810c7dff14d4de63a65e430d25e2f4f2e3e25b4c68c3cabb",
+    "profile": "J376 mock OpenAI Senate amendment, term 10, print 377",
+    "restored_sql_sha256": "58793c99aa9884c36bcfde78a948a907bd837407982eb0e161897c54ef1d425d"
+  },
+  "runs": {
+    "changed-scan": {
+      "after": {
+        "database_sha256": "b7ed3d79ba008c422891cdddf87fe314107824429410f3a6cbec13bfe4ee8e5b",
+        "errors": 2,
+        "report_sha256": "fdaa52b56573793a3dc28c92e384adc3e3ad241daf6e9e27ec7ad493ab324e3f",
+        "result_rows": 1,
+        "retained_scan_bound": 0,
+        "retained_scan_findings": [
+          "retained_scan_manifest_mismatch"
+        ],
+        "retained_scan_unverified": 0,
+        "status": "failed"
+      },
+      "before": {
+        "database_sha256": "b7ed3d79ba008c422891cdddf87fe314107824429410f3a6cbec13bfe4ee8e5b",
+        "errors": 1,
+        "report_sha256": "aa4bfbb5a715c3fd81b2af5c8b137a1cabdb02ca5e00f769064d4db5a2b30742",
+        "result_rows": 1,
+        "retained_scan_bound": 0,
+        "retained_scan_findings": [],
+        "retained_scan_unverified": 0,
+        "status": "failed"
+      }
+    },
+    "missing-item": {
+      "after": {
+        "database_sha256": "bd5671a9e3b250d7d385b48a7df8af0d7c99b71f3983a4a11f8608848162ee91",
+        "errors": 0,
+        "report_sha256": "d4fb86009a1610d4b242c1cf08d144cb09a33d9f8bf0011b9276cf504577d36b",
+        "result_rows": 1,
+        "retained_scan_bound": 0,
+        "retained_scan_findings": [],
+        "retained_scan_unverified": 1,
+        "status": "recorded"
+      },
+      "before": {
+        "database_sha256": "bd5671a9e3b250d7d385b48a7df8af0d7c99b71f3983a4a11f8608848162ee91",
+        "errors": 0,
+        "report_sha256": "3b6621d737c327f462327ffa21f3d078597bcc13329f512ff4cd06273c7c2e1a",
+        "result_rows": 1,
+        "retained_scan_bound": 0,
+        "retained_scan_findings": [],
+        "retained_scan_unverified": 0,
+        "status": "recorded"
+      }
+    },
+    "senate-cleaned": {
+      "after": {
+        "database_sha256": "96ba9aaa432d8aca400f63922d5cb54e760f3958eaafc848a9168e5150b2e54a",
+        "errors": 0,
+        "report_sha256": "57a6a0d854fff6533efa691029598f3a03650256e15bb468529fbdc1a53fd02c",
+        "result_rows": 1,
+        "retained_scan_bound": 1,
+        "retained_scan_findings": [],
+        "retained_scan_unverified": 0,
+        "status": "recorded"
+      },
+      "before": {
+        "database_sha256": "96ba9aaa432d8aca400f63922d5cb54e760f3958eaafc848a9168e5150b2e54a",
+        "errors": 0,
+        "report_sha256": "e367b6a77abfb11ac47e7e1a11b0c11c5ce0bdd3675027a3dbf0ffdc66d9f033",
+        "result_rows": 1,
+        "retained_scan_bound": 0,
+        "retained_scan_findings": [],
+        "retained_scan_unverified": 0,
+        "status": "recorded"
+      }
+    },
+    "state": {
+      "after": {
+        "database_sha256": "516c1dff26b5deee604278154d8790123ebcf0ff4e6cea4ad19ae3fa29ca602e",
+        "errors": 0,
+        "report_sha256": "5d451372245edaa0b99c45f00e04363b983aaba7713d4b35e5c8623e5dd11fad",
+        "result_rows": 14,
+        "retained_scan_bound": 0,
+        "retained_scan_findings": [],
+        "retained_scan_unverified": 0,
+        "status": "recorded"
+      },
+      "before": {
+        "database_sha256": "516c1dff26b5deee604278154d8790123ebcf0ff4e6cea4ad19ae3fa29ca602e",
+        "errors": 0,
+        "report_sha256": "5d451372245edaa0b99c45f00e04363b983aaba7713d4b35e5c8623e5dd11fad",
+        "result_rows": 14,
+        "retained_scan_bound": 0,
+        "retained_scan_findings": [],
+        "retained_scan_unverified": 0,
+        "status": "recorded"
+      }
+    }
+  },
+  "scope": "Retained result and consumed item metadata after cleanup; no independent attachment bytes, live provider, Telegram or legal review.",
+  "state_commit": "72ce85b9460d7ff0d7d49bec16e82b9e4800be17"
+}

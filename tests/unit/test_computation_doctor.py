@@ -2,14 +2,29 @@ import json
 import sqlite3
 from contextlib import closing
 from pathlib import Path
+from typing import Literal
 
 import pytest
 from tools.computation_doctor import audit, run
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
-from lexinform.models import ComputationInputBinding, ResultApplication
+from lexinform.models import (
+    AnalysisRecord,
+    ComputationInputBinding,
+    DocumentSelection,
+    ResultApplication,
+    SupplementRecord,
+)
+from lexinform.models.batch import (
+    BatchItemMeta,
+    DigestItemMeta,
+    FrozenRequestManifest,
+    LlmBatch,
+    LlmBatchItem,
+)
 from lexinform.models.computations import ProjectionReason
-from tests.computations import retained_result
+from tests.computations import NOW, SHA, retained_result
+from tests.unit.test_scan_input import loaded_scan
 
 
 def test_projection_census_classifies_saved_receipts_without_changing_default(
@@ -108,3 +123,96 @@ def test_projection_census_distinguishes_missing_schema_from_empty_population(
         assert census["counts"] is None
     else:
         assert census["counts"]["application_rows"] == 0
+
+
+@pytest.mark.parametrize("kind", ["analysis", "supplement"])
+@pytest.mark.parametrize(
+    "variant", ["bound", "missing_receipt", "different_scan", "different_request"]
+)
+def test_retained_scan_requires_the_exact_consumed_request(
+    tmp_path: Path,
+    kind: Literal["analysis", "supplement"],
+    variant: str,
+) -> None:
+    path = tmp_path / "state.db"
+    _, document = loaded_scan(cover_letter=False)
+    scan = document.scan_input
+    assert scan is not None, "the scan loader supplies an input manifest"
+    submitted = (
+        scan.model_copy(update={"input_sha256": "f" * 64}) if variant == "different_scan" else scan
+    )
+    request_sha = "b" * 64 if variant == "different_request" else SHA
+    manifest = FrozenRequestManifest(
+        provider="openai",
+        purpose=kind,
+        request_sha256=request_sha,
+        model="gpt-5.1",
+        prompt_version="test",
+        payload_bytes=1,
+        messages_sha256=SHA,
+        output_format_sha256=SHA,
+        options_sha256=SHA,
+    )
+    result = retained_result(kind)
+    record = result.record
+    meta: BatchItemMeta | DigestItemMeta
+    if isinstance(record, AnalysisRecord):
+        record = record.model_copy(update={"selection": DocumentSelection(scan_input=scan)})
+        meta = BatchItemMeta(
+            input_chars=0,
+            truncated=False,
+            text_source="pdf",
+            source_kind="print",
+            source_url=None,
+            revision=0,
+            text_sha256=None,
+            selection=DocumentSelection(scan_input=submitted),
+            request_sha256=request_sha,
+            frozen_request_manifest=manifest,
+        )
+    else:
+        assert isinstance(record, SupplementRecord), "the other fixture is a supplement"
+        record = record.model_copy(update={"scan_input": scan})
+        meta = DigestItemMeta(
+            memo_key="scan",
+            scan_input=submitted,
+            request_sha256=request_sha,
+            frozen_request_manifest=manifest,
+        )
+    batch = LlmBatch(
+        batch_id=result.batch_id,
+        provider=result.provider,
+        call_kind=kind,
+        submitted_at=NOW,
+        status="ended",
+        request_count=1,
+        estimated_cost_usd=0,
+    )
+    item = LlmBatchItem(
+        batch_id=batch.batch_id,
+        custom_id=result.custom_id,
+        call_kind=kind,
+        term=result.term,
+        number=result.number,
+        meta=meta,
+    )
+    with closing(SqliteBillRepository(path)) as repo:
+        repo.migrate()
+        if variant != "missing_receipt":
+            repo.save_llm_batch(batch, [item])
+            repo.mark_llm_batch_item_consumed(batch.batch_id, item.custom_id, consumed_at=NOW)
+        repo.save_computation_result(result.model_copy(update={"record": record}))
+
+    report = audit(path)
+
+    if variant == "bound":
+        assert report["summary"]["retained_scan_bound"] == 1
+    elif variant == "missing_receipt":
+        assert report["summary"]["retained_scan_unverified"] == 1
+    else:
+        code = f"retained_scan_{'manifest' if variant == 'different_scan' else 'request'}_mismatch"
+        assert {
+            "code": code,
+            "level": "error",
+            "ref": f"computation_results/{result.result_id}",
+        } in report["findings"]

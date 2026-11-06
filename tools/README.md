@@ -227,6 +227,13 @@ document work and batch metadata. Missing results, inconsistent recorded request
 a failed result are errors. It preserves the distinction between original input, collection owner
 and application target, including term/generation changes and free reuse.
 
+When a validated primary, amendment or supplement result retains a scan manifest, the
+doctor compares it with the item for the same batch and custom ID. A bound result requires
+matching owner, purpose, provider, scan manifest and request SHA, plus the frozen request
+receipt and recorded consumption. Missing evidence is counted as unverified. Conflicting
+recorded evidence is an error. The check uses retained metadata and cannot reread a cleaned
+PDF attachment.
+
 Add `--supplement-deliveries` for an optional read-only link inventory: applied supplement
 receipts, exact status-change target IDs, matching references in saved single-message
 `DeliveryPlan.change_json`, and recorded publication status/message IDs. `recorded_sent`

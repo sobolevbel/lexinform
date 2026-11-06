@@ -18,7 +18,15 @@ from lexinform.adapters.review_memos import review_memo_issues
 from lexinform.adapters.secondary_dependencies import secondary_dependency_issues
 from lexinform.adapters.supplement_deliveries import supplement_delivery_links
 from lexinform.adapters.supplement_dependencies import supplement_dependency_issues
-from lexinform.models import ResultApplicabilityObservation, ResultApplication
+from lexinform.models import (
+    AmendmentsRecord,
+    AnalysisRecord,
+    ComputationResult,
+    ResultApplicabilityObservation,
+    ResultApplication,
+    SupplementRecord,
+)
+from lexinform.models.batch import BatchItemMeta, batch_item_meta
 from lexinform.models.computations import ApplicationReason
 from tools.application_targets import application_target
 from tools.corpus_artifacts import write_json
@@ -34,7 +42,7 @@ from tools.saved_records import (
 from tools.sqlite_snapshot import open_snapshot
 
 _RESULT_ID = re.compile(r"result-v1:[0-9a-f]{64}")
-_REQUIRED = {*RESULT_TABLES, "computation_results", "result_applications"}
+_REQUIRED = {*RESULT_TABLES, "llm_batches", "computation_results", "result_applications"}
 
 
 @dataclass(frozen=True)
@@ -109,6 +117,8 @@ class ComputationAudit:
                 result.input_binding is not None,
                 columns_match,
             )
+            if columns_match and result.validation == "validated":
+                self.retained_scan(connection, result, ref)
             self.counts[f"result_{result.validation}"] += 1
             self.counts[f"purpose_{result.purpose}"] += 1
             self.counts[
@@ -117,6 +127,66 @@ class ComputationAudit:
             self.counts[
                 "request_sha_known" if result.request_sha256 else "request_sha_unknown"
             ] += 1
+
+    def retained_scan(
+        self, connection: sqlite3.Connection, result: ComputationResult, ref: str
+    ) -> None:
+        record = result.record
+        if isinstance(record, AnalysisRecord):
+            scan = record.selection.scan_input
+        elif isinstance(record, (AmendmentsRecord, SupplementRecord)):
+            scan = record.scan_input
+        else:
+            return
+        if scan is None:
+            return
+
+        item = connection.execute(
+            """SELECT i.call_kind, i.term, i.number, i.meta_json, i.consumed_at, b.provider
+               FROM llm_batch_items i LEFT JOIN llm_batches b ON b.batch_id = i.batch_id
+               WHERE i.batch_id = ? AND i.custom_id = ?""",
+            (result.batch_id, result.custom_id),
+        ).fetchone()
+        if item is None or item["provider"] is None:
+            self.counts["retained_scan_unverified"] += 1
+            return
+        if tuple(item[key] for key in ("provider", "call_kind", "term", "number")) != (
+            result.provider,
+            result.purpose,
+            result.term,
+            result.number,
+        ):
+            self.issue("retained_scan_item_identity_mismatch", ref)
+            return
+        try:
+            meta = batch_item_meta(item["call_kind"], item["meta_json"])
+        except ValueError:
+            self.issue("invalid_retained_scan_item_metadata", ref)
+            return
+        if (
+            meta.request_sha256 is not None
+            and result.request_sha256 is not None
+            and meta.request_sha256 != result.request_sha256
+        ):
+            self.issue("retained_scan_request_mismatch", ref)
+            return
+        submitted = (
+            meta.selection.scan_input if isinstance(meta, BatchItemMeta) else meta.scan_input
+        )
+        manifest = meta.frozen_request_manifest
+        if manifest is not None and manifest.provider != result.provider:
+            self.issue("retained_scan_provider_mismatch", ref)
+        elif submitted is not None and submitted != scan:
+            self.issue("retained_scan_manifest_mismatch", ref)
+        elif (
+            submitted is None
+            or manifest is None
+            or not result.request_sha256
+            or not item["consumed_at"]
+        ):
+            self.counts["retained_scan_unverified"] += 1
+        else:
+            self.counts["retained_scan_bound"] += 1
 
     def applications(self, connection: sqlite3.Connection, tables: set[str]) -> None:
         census = self.receipt_census
