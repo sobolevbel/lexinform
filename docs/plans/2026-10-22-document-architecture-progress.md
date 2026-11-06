@@ -11946,3 +11946,31 @@ outage controls were unchanged. The checkpoints restored twice.
 
 The controlled response statuses do not establish the live availability
 of this attachment. DA4.1 and DA4.4 remain open for other profiles.
+
+<a id="j303"></a>
+
+## J303 — expire isolated explanation location payloads
+
+Batch cleanup already removed `explanation.located` on eligible rows, but
+the row predicate missed a location object when it was the only heavy field.
+The predicate now includes that object. Consumption, accounting, provider
+cleanup and settled-owner guards still apply. Deferred review and document
+work read their own contexts. Consumed primary readers use request bindings,
+selection metadata and prepared-input receipts, which cleanup preserves.
+
+The unit regression failed on baseline and covers the three batch lifecycle
+guards, usage preservation, a second cleanup and a dump/restore. The offline
+comparison restored saved state `13440124b6f38f1124beb9b99f35a7c8a227c08b`
+from SQL SHA-256 `baee693eefec358f018cf8265096d9d5acca1eaba2d5f9bfa4afd363166c4bec`.
+The saved copy had zero nested location objects. Baseline and candidate native
+post-cleanup dumps were byte-identical at 5,270,886 gzip bytes. Adding only a
+location object to the copy's one eligible explanation item left the baseline
+at 5,270,896 bytes. The candidate removed one additional payload and reproduced
+the native dump byte-for-byte. The four post-cleanup dumps restored without
+changes and a second cleanup removed zero rows. The control shows reachability
+on a compatible saved row. It establishes no natural incidence or production savings.
+
+The same copy retained 85,453 characters of amendment revision delivery plans
+in three of nine forgotten and accounted amendments items. The three had no
+matching paid result or revision work key. DA6.6 remains open for qualifying
+legacy revision retention and other dependency boundaries.

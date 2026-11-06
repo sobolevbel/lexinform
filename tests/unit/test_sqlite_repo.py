@@ -2,6 +2,7 @@
 
 import json
 import sqlite3
+from contextlib import closing
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -16,13 +17,19 @@ from lexinform.models import (
     AmendmentsRecord,
     AnalysisRecord,
     ApplicantType,
+    BatchItemMeta,
+    BatchResult,
     BillContext,
     BillStatus,
     BillSubmission,
     CheckAspect,
     DeliveryAlert,
+    DigestItemMeta,
     Freshness,
     IncomingCommand,
+    LlmBatch,
+    LlmBatchItem,
+    LocatedText,
     ObservationBasis,
     ObservationMode,
     ProcessDetail,
@@ -44,6 +51,78 @@ from tests.harness import RCL, RCL_CONSULTATION, RCL_ID, act, rcl_project, wykaz
 from tests.state_snapshots import dump_at_version
 
 CHANNEL = "chan"
+
+
+@pytest.mark.parametrize("pending", ["consumption", "accounting", "provider", None])
+def test_prune_batch_payload_when_only_nested_location_remains(
+    tmp_path: Path, pending: str | None
+) -> None:
+    now = datetime(2026, 11, 6, tzinfo=UTC)
+    with closing(SqliteBillRepository(tmp_path / "retention.db")) as repo:
+        repo.migrate()
+        summary = ProcessSummary(
+            term=10, number="3039", title="Frozen project", document_type="projekt", change_date=now
+        )
+        repo.upsert_summary(summary, now=now)
+        repo.set_status(10, "3039", BillStatus.ANALYZED)
+        batch = LlmBatch(
+            batch_id="retention",
+            provider="openai",
+            call_kind="explanation",
+            submitted_at=now,
+            status="ended",
+            request_count=1,
+            estimated_cost_usd=0,
+        )
+        meta = DigestItemMeta(
+            memo_key="explain",
+            explanation=BatchItemMeta(
+                input_chars=10,
+                truncated=False,
+                text_source="documents",
+                source_kind="print",
+                source_url=None,
+                revision=1,
+                text_sha256=None,
+                located=LocatedText(summary=summary),
+            ),
+        )
+        item = LlmBatchItem(
+            batch_id=batch.batch_id,
+            custom_id="explain",
+            call_kind="explanation",
+            term=10,
+            number="3039",
+            meta=meta,
+        )
+        repo.save_llm_batch(batch, [item])
+        if pending != "consumption":
+            repo.mark_llm_batch_item_consumed(
+                batch.batch_id,
+                item.custom_id,
+                consumed_at=now,
+                result=BatchResult(custom_id=item.custom_id, input_tokens=123),
+            )
+            repo.mark_llm_batch_collected(batch.batch_id, completed_at=now)
+            if pending != "accounting":
+                repo.mark_batch_item_accounted(batch.batch_id, item.custom_id, at=now)
+            if pending != "provider":
+                repo.mark_llm_batch_forgotten(batch.batch_id, forgotten_at=now)
+
+        before = repo.dump()
+        counts = repo.prune_history(before=now, memo_before=now)
+        after = repo.dump()
+
+        if pending is not None:
+            assert counts["batch_payloads"] == 0
+            assert after == before
+        else:
+            assert counts["batch_payloads"] == 1
+            assert '"located":{' in before and '"located":{' not in after
+            assert '"input_tokens":123' in after
+            assert repo.prune_history(before=now, memo_before=now)["batch_payloads"] == 0
+            repo.restore(after)
+            assert repo.dump() == after
 
 
 def _tracked(repo: SqliteBillRepository, now: datetime) -> list[str]:

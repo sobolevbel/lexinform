@@ -5884,6 +5884,7 @@ class SqliteBillRepository:
                     OR json_type(meta_json, '$.located') = 'object'
                     OR json_type(meta_json, '$.review_context') = 'object'
                     OR length(json_extract(meta_json, '$.explanation.text')) > 0
+                    OR json_type(meta_json, '$.explanation.located') = 'object'
                     OR json_type(result_json, '$.answer') = 'object'
                     OR json_type(result_json, '$.analysis') = 'object')
                 """
