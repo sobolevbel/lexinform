@@ -5,7 +5,7 @@ from datetime import datetime
 
 from lexinform.adapters.computation_history import read_computation_result, read_result_application
 from lexinform.adapters.content_source_refs import ContentSourceRows
-from lexinform.adapters.input_receipts import validate_supplement_receipt_parents
+from lexinform.adapters.input_receipts import validate_secondary_receipt_parents
 from lexinform.adapters.secondary_dependencies import (
     SecondaryPurpose,
     validate_secondary_dependency,
@@ -363,7 +363,7 @@ def _supplement_selection(
         != (paid.number, paid.source_kind, paid.source_url)
     ):
         raise ValueError("supplement_content_receipt_invalid")
-    validate_supplement_receipt_parents(connection, receipt)
+    validate_secondary_receipt_parents(connection, receipt)
     return receipt.source_selection_id
 
 

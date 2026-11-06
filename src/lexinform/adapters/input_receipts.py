@@ -865,8 +865,8 @@ def validate_primary_receipt_parents(
     _parents(connection, receipt)
 
 
-def validate_supplement_receipt_parents(
-    connection: sqlite3.Connection, receipt: SupplementInputReceipt
+def validate_secondary_receipt_parents(
+    connection: sqlite3.Connection, receipt: SupplementInputReceipt | AmendmentInputReceipt
 ) -> None:
     _parents(connection, receipt)
 

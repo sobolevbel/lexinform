@@ -11,6 +11,7 @@ from lexinform.models import (
     ComputationInputBinding,
     ComputationResult,
     DeliveryPlan,
+    PreparedTextPart,
     Publication,
     PublicationKind,
     PublicationStatus,
@@ -20,6 +21,10 @@ from lexinform.models import (
     SupplementRecord,
     TokenUsage,
     computation_id,
+)
+from lexinform.models.input_receipts import (
+    AmendmentInputReceipt,
+    SupplementInputReceipt,
 )
 from tests.fakes import make_amendments, make_digest
 from tests.unit.test_content_sources import Case
@@ -327,7 +332,7 @@ def test_secondary_suffix_rejects_missing_or_conflicting_parents(
     assert report["suffix"] is None
 
 
-def add_secondary_batch(target: Path) -> None:
+def add_secondary_batch(target: Path, *, include_receipt: bool = False) -> None:
     with closing(sqlite3.connect(target)) as db, db:
         paid = ComputationResult.model_validate_json(
             db.execute(
@@ -338,6 +343,25 @@ def add_secondary_batch(target: Path) -> None:
         assert binding is not None, "secondary fixture retains the original binding"
         request_sha = paid.request_sha256
         assert request_sha is not None, "secondary fixture retains the request digest"
+        metadata: dict[str, object] = {
+            "input_binding": binding.model_dump(),
+            "memo_key": binding.reuse_key,
+            "request_sha256": request_sha,
+            "queued_at": NOW.isoformat(),
+        }
+        if include_receipt:
+            receipt_type = (
+                AmendmentInputReceipt if paid.purpose == "amendments" else SupplementInputReceipt
+            )
+            metadata["prepared_input_receipt"] = receipt_type(
+                context_sha256=request_sha,
+                request_sha256=request_sha,
+                text_sha256=request_sha,
+                text_chars=1,
+                source_part=PreparedTextPart(text_sha256=request_sha, chars=1, role="bill"),
+                retention="unknown",
+                reason="projection_unavailable",
+            ).model_dump(mode="json")
         db.execute(
             "INSERT INTO llm_batches (batch_id, provider, call_kind, submitted_at, status,"
             " request_count, estimated_cost_usd) VALUES (?,?,?,?,?,?,?)",
@@ -352,26 +376,21 @@ def add_secondary_batch(target: Path) -> None:
                 paid.purpose,
                 paid.term,
                 paid.number,
-                json.dumps(
-                    {
-                        "input_binding": binding.model_dump(),
-                        "memo_key": binding.reuse_key,
-                        "request_sha256": request_sha,
-                        "queued_at": NOW.isoformat(),
-                    }
-                ),
+                json.dumps(metadata),
                 NOW.isoformat(),
             ),
         )
 
 
-@pytest.mark.parametrize("control", ["exact", "missing", "request", "owner", "timestamp"])
+@pytest.mark.parametrize(
+    "control", ["exact", "receipt", "missing", "request", "owner", "timestamp"]
+)
 def test_secondary_request_prefix_keeps_exact_suffix_and_rejects_prefix_conflicts(
     secondary_snapshot: tuple[Path, int, int], control: str
 ) -> None:
     target, publication, application = secondary_snapshot
     if control != "missing":
-        add_secondary_batch(target)
+        add_secondary_batch(target, include_receipt=control == "receipt")
     mutations = {
         "request": "UPDATE llm_batch_items SET meta_json=json_set(meta_json,'$.request_sha256',?)"
         " WHERE batch_id='secondary-batch'",
@@ -395,15 +414,16 @@ def test_secondary_request_prefix_keeps_exact_suffix_and_rejects_prefix_conflict
     assert isinstance(suffix, dict)
     prefix = suffix.pop("request_prefix")
     assert report == ordinary and report["reason"] == "exact_retained_secondary_suffix"
-    assert prefix["status"] == {"exact": "recorded", "missing": "not_observed"}.get(
-        control, "invalid"
-    )
-    if control == "exact":
+    assert prefix["status"] == {
+        "exact": "recorded",
+        "receipt": "recorded",
+        "missing": "not_observed",
+    }.get(control, "invalid")
+    if control in ("exact", "receipt"):
         assert prefix["request_sha256"] == "a" * 64
-        assert (
-            prefix["original_collection_application"]
-            == prefix["prepared_input_receipt"]
-            == "not_retained"
+        assert prefix["original_collection_application"] == "not_retained"
+        assert prefix["prepared_input_receipt"] == (
+            "validated_retained_receipt" if control == "receipt" else "not_retained"
         )
         assert (
             prefix["original_request_payload"]

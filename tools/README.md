@@ -723,6 +723,8 @@ uv run --offline --frozen python -m tools.primary_delivery_cycle --census \
 
 The report counts reasons for all sent new-bill rows, including linked aliases,
 and lists sent status changes with a retained projection application. Secondary
-request identity, projection and send are reported separately from unavailable
-prepared input or collection evidence. The database checksum pins the inspected
+request identity, prepared-input receipt, source selection, projection and send
+are reported separately. Exact retained source selection requires a unique scoped
+observation and verified selection, artifact and extraction parents. Original
+provider payload bytes and collection remain separate evidence. The database checksum pins the inspected
 snapshot. A recorded census does not establish live or source-family acceptance.

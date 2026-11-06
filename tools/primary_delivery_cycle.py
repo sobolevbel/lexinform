@@ -13,7 +13,11 @@ from pydantic import TypeAdapter
 from lexinform.adapters.computation_history import read_result_application
 from lexinform.adapters.content_history import read_expired_card_primary_cycle
 from lexinform.adapters.content_source_refs import ContentSourceRows, validate_projected_application
-from lexinform.adapters.input_receipts import validate_input_snapshots
+from lexinform.adapters.document_source_rows import DocumentSourceRows
+from lexinform.adapters.input_receipts import (
+    validate_input_snapshots,
+    validate_secondary_receipt_parents,
+)
 from lexinform.models import (
     AmendmentsRecord,
     BatchItemMeta,
@@ -393,6 +397,7 @@ def _secondary_request_prefix(
         "SELECT 1 FROM result_applications WHERE result_id=? AND phase='collection'",
         (paid.result_id,),
     ).fetchone()
+    receipt, source = _secondary_prepared_source(db, paid, meta, submitted)
     return {
         "status": "recorded",
         "reason": "exact_submitted_secondary_request_identity",
@@ -404,12 +409,40 @@ def _secondary_request_prefix(
         "original_collection_application": "not_retained"
         if collection is None
         else "outside_scope",
-        "prepared_input_receipt": "not_retained"
-        if meta.prepared_input_receipt is None
-        else "outside_scope",
+        "prepared_input_receipt": receipt,
         "original_request_payload": "not_verified",
-        "source_selection_binding": "not_verified",
+        "source_selection_binding": source,
     }
+
+
+def _secondary_prepared_source(
+    db: sqlite3.Connection, paid: ComputationResult, meta: DigestItemMeta, submitted: datetime
+) -> tuple[str, str]:
+    receipt = meta.prepared_input_receipt
+    if receipt is None:
+        return "not_retained", "not_verified"
+    validate_secondary_receipt_parents(db, receipt)
+    if (
+        receipt.source_selection_id is None
+        or receipt.artifact_sha256 is None
+        or receipt.extraction_id is None
+    ):
+        return "validated_retained_receipt", "not_verified"
+    observations = DocumentSourceRows(db).source_observations_for_selection(
+        paid.term, paid.number, receipt.source_selection_id
+    )
+    if len(observations) != 1:
+        return "validated_retained_receipt", "not_verified"
+    observation = observations[0]
+    if (
+        not isinstance(paid.record, (AmendmentsRecord, SupplementRecord))
+        or (observation.document.url, observation.document.kind)
+        != (meta.source_url, meta.source_kind)
+        or (paid.record.source_url, paid.record.source_kind) != (meta.source_url, meta.source_kind)
+        or observation.recorded_at > submitted
+    ):
+        raise ValueError("Prepared secondary source differs from its retained observation")
+    return "validated_retained_receipt", "exact_retained_source_selection"
 
 
 def _secondary_records(

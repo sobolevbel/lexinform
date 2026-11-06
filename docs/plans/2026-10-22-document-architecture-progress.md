@@ -13569,3 +13569,22 @@ Unit controls exercise the missing result manifest for primary and supplement
 records. The audit does not reconstruct legacy manifests.
 
 [Qualification](../assets/audits/2026-11-06-retained-scan-missing-result/qualification.json).
+
+<a id="j382"></a>
+
+## J382 — verify retained source selection in secondary delivery chains
+
+The request prefix validates retained amendment and supplement input receipts
+and their available selection, artifact and extraction parents. Exact source
+selection also requires a unique scoped observation agreeing with the paid
+record, submitted item and chronology. Missing evidence remains unverified.
+The existing suffix and ordinary audit retain their scope.
+
+On state `9a802a55`, three amendment chains now have verified prepared-input
+receipts and exact retained source selections. The primary census and the two
+older secondary chains are unchanged. Removing the observation makes source
+selection unverified. A changed observation URL invalidates the prefix. Removing
+the extraction parent remains a snapshot error. Original request bytes and
+collection applications remain outside the evidence of these three chains.
+
+[Qualification](../assets/audits/2026-11-06-secondary-cycle-source-binding/qualification.json).

@@ -1,0 +1,108 @@
+{
+  "after_report_sha256": "aa81e3ffd8e9e9dc770a0532d5c92a0ca818ec422a0958735ecb590a7ec48e97",
+  "baseline": "21bd38d9a6307d625df2781d4b4dccd54ff9d155",
+  "before_report_sha256": "a207423d95a43765543e2991aab5450e21d262797acf4917349306891f71b37a",
+  "changed_secondary_rows": [
+    {
+      "application_id": 33,
+      "prefix": {
+        "original_collection_application": "not_retained",
+        "original_request_payload": "not_verified",
+        "prepared_input_receipt": "validated_retained_receipt",
+        "reason": "exact_submitted_secondary_request_identity",
+        "source_selection_binding": "exact_retained_source_selection",
+        "status": "recorded"
+      },
+      "publication_id": 293,
+      "reason": "exact_retained_secondary_suffix",
+      "status": "recorded"
+    },
+    {
+      "application_id": 34,
+      "prefix": {
+        "original_collection_application": "not_retained",
+        "original_request_payload": "not_verified",
+        "prepared_input_receipt": "validated_retained_receipt",
+        "reason": "exact_submitted_secondary_request_identity",
+        "source_selection_binding": "exact_retained_source_selection",
+        "status": "recorded"
+      },
+      "publication_id": 294,
+      "reason": "exact_retained_secondary_suffix",
+      "status": "recorded"
+    },
+    {
+      "application_id": 35,
+      "prefix": {
+        "original_collection_application": "not_retained",
+        "original_request_payload": "not_verified",
+        "prepared_input_receipt": "validated_retained_receipt",
+        "reason": "exact_submitted_secondary_request_identity",
+        "source_selection_binding": "exact_retained_source_selection",
+        "status": "recorded"
+      },
+      "publication_id": 295,
+      "reason": "exact_retained_secondary_suffix",
+      "status": "recorded"
+    }
+  ],
+  "controls": {
+    "broken-extraction": {
+      "database_sha256": "b4e2efd5df3ae35a7c11394904aff2bc29f7a8e9e2b55b601d84e5254aa0047c",
+      "report_sha256": "b995e72202491171cbe5b8604365bdbf08034e5113eda15b3a3b8ace70431104",
+      "result": {
+        "application_id": 33,
+        "prefix": {},
+        "publication_id": 293,
+        "reason": "invalid_snapshot_evidence",
+        "status": "invalid"
+      }
+    },
+    "changed-source": {
+      "database_sha256": "6399a9994241a28bf11f33b8d2dd45a1ec1a19a43c4a6ce42471c1768b7cc7a3",
+      "report_sha256": "73891d051a7bf1c014157e85f36abfffc6a3db017a3be5d05ad057b9b537d4ff",
+      "result": {
+        "application_id": 33,
+        "prefix": {
+          "reason": "invalid_snapshot_evidence",
+          "status": "invalid"
+        },
+        "publication_id": 293,
+        "reason": "exact_retained_secondary_suffix",
+        "status": "recorded"
+      }
+    },
+    "missing-observation": {
+      "database_sha256": "1db8612087b51626d9c6d82ffc6c4943a55db9764d383fc27dbba5eb1ff6f4c8",
+      "report_sha256": "5d28df2bdebf64757de9400d6137a1fc7e55f8896fafdd1de33a171b03b8139f",
+      "result": {
+        "application_id": 33,
+        "prefix": {
+          "original_collection_application": "not_retained",
+          "original_request_payload": "not_verified",
+          "prepared_input_receipt": "validated_retained_receipt",
+          "reason": "exact_submitted_secondary_request_identity",
+          "source_selection_binding": "not_verified",
+          "status": "recorded"
+        },
+        "publication_id": 293,
+        "reason": "exact_retained_secondary_suffix",
+        "status": "recorded"
+      }
+    }
+  },
+  "database_sha256": "c53f468cea246f6a8f2b74eaef46dbf5ea46fc72efa5a3af28741fbe919c974a",
+  "input_sql_sha256": "10589976a6acc64c2f1391848a28be2779cb10843e784d9fccc894fd1d083b2d",
+  "state_commit": "9a802a5514d3333de72c76454d115a7d91538e0d",
+  "unchanged_primary_census": {
+    "consumed_projection_unavailable": 4,
+    "exact_retained_cycle": 1,
+    "frozen_paid_reference_unavailable": 3,
+    "frozen_plan_unavailable": 27,
+    "frozen_render_context_unavailable": 13,
+    "prepared_receipt_unavailable": 1,
+    "publication_outside_direct_original_scope": 1,
+    "recorded_send_unavailable": 1
+  },
+  "unchanged_secondary_rows": 2
+}
