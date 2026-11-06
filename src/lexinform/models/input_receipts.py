@@ -298,6 +298,11 @@ class LooseRclInputReceipt(LooseMultipartInputReceipt):
     profile: Literal["primary-loose-rcl-annex-text-v1", "primary-loose-rcl-mixed-text-v1"] = (
         "primary-loose-rcl-annex-text-v1"
     )
+    source_observation_id: str | None = Field(
+        default=None,
+        pattern=r"^source-observation-v1:[0-9a-f]{64}$",
+        exclude_if=lambda value: value is None,
+    )
 
     @model_validator(mode="after")
     def rcl_roles(self) -> Self:

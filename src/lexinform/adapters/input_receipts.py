@@ -12,6 +12,7 @@ from lexinform.adapters.candidate_trace_history import (
     validate_sejm_proposal_link,
 )
 from lexinform.adapters.computation_history import read_computation_result
+from lexinform.adapters.document_source_rows import DocumentSourceRows
 from lexinform.adapters.extraction_history import read_extraction_result
 from lexinform.errors import PreparedInputParentError
 from lexinform.json_storage import read_json
@@ -172,6 +173,20 @@ def _multipart_parents(
         or parts != fitted.without_text().parts
     ):
         raise ValueError("input_receipt_selection_mismatch")
+    if isinstance(receipt, LooseRclInputReceipt) and receipt.source_observation_id is not None:
+        observation = DocumentSourceRows(connection).get_source_observation(
+            receipt.source_observation_id
+        )
+        binding = meta.input_binding
+        if (
+            observation is None
+            or binding is None
+            or (observation.term, observation.number) != (binding.term, binding.number)
+            or observation.purpose != "analysis"
+            or observation.selection_id != receipt.source_selection_id
+            or (observation.document.kind, observation.document.url) != ("rcl", meta.source_url)
+        ):
+            raise ValueError("input_receipt_observation_mismatch")
     if isinstance(receipt, SejmSelfAmendmentInputReceipt):
         binding = meta.input_binding
         if binding is None or (binding.term, binding.number) != owner:

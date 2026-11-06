@@ -223,6 +223,55 @@ def test_loose_rcl_map_rejects_cross_part_escape_even_with_recomputed_hash() -> 
         )
 
 
+@pytest.mark.parametrize("mixed", [False, True])
+def test_rcl_receipt_validates_its_explicit_analysis_observation(mixed: bool) -> None:
+    with closing(SqliteBillRepository(":memory:")) as repo:
+        intent, receipt = known_inputs(repo, mixed=mixed)
+        (source,) = repo.list_source_observations(10, "3039")
+        selected = repo.get_document_selection(source.selection_id)
+        assert selected is not None, "the fixture retains its exact selection"
+        review = source.model_copy(update={"purpose": "review"})
+        repo.save_source_observation(selected, review)
+        assert "source_observation_id" not in receipt.model_dump(mode="json")
+        before = repo.dump()
+        bad_receipt = receipt.model_copy(update={"source_observation_id": review.observation_id})
+        bad = intent.model_copy(
+            update={"meta": intent.meta.model_copy(update={"prepared_input_receipt": bad_receipt})}
+        )
+        with pytest.raises(ValueError, match="input_receipt_observation_mismatch"):
+            repo.save_batch_intent(bad)
+        assert repo.dump() == before
+        bound = receipt.model_copy(update={"source_observation_id": source.observation_id})
+        valid = intent.model_copy(
+            update={"meta": intent.meta.model_copy(update={"prepared_input_receipt": bound})}
+        )
+        repo.save_batch_intent(valid)
+        saved = repo.dump()
+        repo.restore(saved)
+        repo.restore(repo.dump())
+        assert repo.dump() == saved and repo.list_queued_batch_intents() == [valid]
+        batch = LlmBatch(
+            batch_id="rcl-observation",
+            provider="openai",
+            call_kind="analysis",
+            submitted_at=NOW,
+            status="submitted",
+            request_count=1,
+            estimated_cost_usd=0.01,
+        )
+        item = LlmBatchItem.from_intent(batch.batch_id, valid)
+        repo.save_llm_batch(batch, [item])
+        repo.delete_batch_intents([valid.request.custom_id])
+        repo.upsert_summary(summary("3040", "Linked print"), now=NOW)
+        repo.move_primary_analysis_work(10, "3039", "3040")
+        submitted = repo.dump()
+        repo.restore(submitted)
+        assert repo.dump() == submitted
+        assert repo.list_llm_batch_items(batch.batch_id) == [
+            item.model_copy(update={"number": "3040"})
+        ]
+
+
 def test_sejm_input_requires_self_amendment_and_exact_proposal_parent() -> None:
     with closing(SqliteBillRepository(":memory:")) as repo:
         intent, rcl = known_inputs(repo)

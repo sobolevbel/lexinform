@@ -35,7 +35,7 @@ from lexinform.models import (
     PublicationStatus,
 )
 from lexinform.models.content import CardPrimaryEvidence, card_bill_snapshot
-from lexinform.models.input_receipts import SejmSelfAmendmentInputReceipt
+from lexinform.models.input_receipts import LooseRclInputReceipt, SejmSelfAmendmentInputReceipt
 from lexinform.models.primary_projections import PRIMARY_USAGE_FIELDS
 from lexinform.primary_projections import primary_record_matches
 
@@ -215,7 +215,9 @@ def _verify_card_primary_evidence(
         or meta.input_binding != paid.input_binding
         or meta.generation != paid.generation
         or meta.queued_at is None
-        or not isinstance(receipt, (PrimaryInputReceipt, SejmSelfAmendmentInputReceipt))
+        or not isinstance(
+            receipt, (PrimaryInputReceipt, LooseRclInputReceipt, SejmSelfAmendmentInputReceipt)
+        )
         or receipt.source_selection_id is None
         or not meta.source_url
         or receipt.request_sha256 != paid.request_sha256
@@ -253,7 +255,6 @@ def _verify_card_primary_evidence(
             raise CardPrimaryEvidenceError("card_primary_source_scope")
         validate_multipart_item(connection, item)
         physical = {
-            "proposal_trace_id": receipt.proposal_trace_id,
             "source_parts": [
                 {
                     "role": part.role,
@@ -265,6 +266,8 @@ def _verify_card_primary_evidence(
                 )
             ],
         }
+        if isinstance(receipt, SejmSelfAmendmentInputReceipt):
+            physical["proposal_trace_id"] = receipt.proposal_trace_id
     collections = _query(
         connection,
         "SELECT * FROM result_applications WHERE result_id=? AND term=? AND number=?"

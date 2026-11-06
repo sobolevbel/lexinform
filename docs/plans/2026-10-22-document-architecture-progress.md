@@ -12185,3 +12185,25 @@ after normalizing only the new reference and derived content ID.
 [Qualification](../assets/audits/2026-11-06-sejm-card-lineage-writer/qualification.json).
 
 DA7.1 remains open for other editorial profiles.
+
+<a id="j313"></a>
+
+## J313 — read explicit observations in multipart RCL input receipts
+
+Both existing loose RCL profiles can carry an optional exact source
+observation. The reader checks the original paid owner, analysis purpose,
+selection and source URL before resolving the physical parts. For a
+submitted item transferred to a new owner, the observation still belongs
+to the original binding. An absent field preserves the previous JSON.
+The compact card reader requires an explicit matching observation for RCL.
+The runtime producer and automatic card lookup stay inactive.
+
+Three pinned raw queue profiles for RCL 12294859 accepted an explicit
+fixture reference, preserved the frozen request and restored twice.
+Removing only the field reproduced the original SQL. The archive control
+for RCL 12365005 prepared no request. Unit controls cover both RCL receipt
+profiles, reject review observations and restore a transferred submitted
+item with its original binding.
+[Qualification](../assets/audits/2026-11-06-rcl-receipt-observation-reader/qualification.json).
+
+DA7.1 remains open. Activate the RCL producer only after deploying this reader.
