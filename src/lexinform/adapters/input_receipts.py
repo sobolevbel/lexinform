@@ -22,6 +22,7 @@ from lexinform.input_receipts import (
 )
 from lexinform.json_storage import canonical_json, read_json
 from lexinform.models import (
+    SUPPLEMENT_SOURCES,
     AmendmentInputReceipt,
     AmendmentsQuestion,
     AnalysisQuestion,
@@ -150,7 +151,15 @@ def _scan_provider_payload(
         or not _scan_data_fits(data, scan.get("pages"))
     ):
         raise ValueError("invalid_scan_provider_payload_reference")
-    if not (primary or committee or _senate_scan_payload_matches(kind, context, scan, manifest)):
+    supplement = kind == "supplement" and _supplement_scan_payload_matches(
+        context, request.get("number"), scan, manifest
+    )
+    if not (
+        primary
+        or committee
+        or supplement
+        or _senate_scan_payload_matches(kind, context, scan, manifest)
+    ):
         raise ValueError("invalid_scan_provider_payload_reference")
     _validate_scan_payload_shell(request.get("custom_id"), request.get("model"), prefix, suffix)
     return prefix + data + suffix
@@ -174,18 +183,49 @@ def _senate_scan_payload_matches(
     ):
         return False
     subjects = source.get("expected_subjects")
-    pages = scan.get("pages")
-    size = manifest.get("input_bytes")
     return (
         isinstance(subjects, (list, tuple))
         and bool(subjects)
         and all(isinstance(subject, str) and subject.strip() for subject in subjects)
         and source.get("subject") == subjects[0]
-        and type(pages) is int
+        and type(source.get("pages")) is int
+        and source.get("pages") == scan.get("pages")
+        and source.get("sha256") == scan.get("sha256")
+        and _full_scan_payload_matches(scan, manifest)
+    )
+
+
+def _supplement_scan_payload_matches(
+    context: dict[str, object],
+    number: object,
+    scan: dict[str, object],
+    manifest: dict[str, object],
+) -> bool:
+    source_kind = context.get("source_kind")
+    title = context.get("document_title")
+    return (
+        isinstance(source_kind, str)
+        and source_kind in SUPPLEMENT_SOURCES
+        and isinstance(number, str)
+        and bool(number)
+        and context.get("number") == number
+        and isinstance(title, str)
+        and bool(title.strip())
+        and context.get("truncated") is False
+        and "text_source" not in context
+        and "source_check" not in context
+        and _full_scan_payload_matches(scan, manifest)
+    )
+
+
+def _full_scan_payload_matches(scan: dict[str, object], manifest: dict[str, object]) -> bool:
+    pages = scan.get("pages")
+    size = manifest.get("input_bytes")
+    return (
+        type(pages) is int
         and all(
             type(value) is int and value == pages
             for value in (
-                source.get("pages"),
                 scan.get("of_pages"),
                 manifest.get("source_pages"),
                 manifest.get("page_count"),
@@ -200,10 +240,7 @@ def _senate_scan_payload_matches(
         and 0 < size <= MAX_SCAN_BYTES
         and type(manifest.get("source_bytes")) is int
         and manifest.get("source_bytes") == size
-        and source.get("sha256")
-        == scan.get("sha256")
-        == manifest.get("source_sha256")
-        == manifest.get("input_sha256")
+        and scan.get("sha256") == manifest.get("source_sha256") == manifest.get("input_sha256")
     )
 
 

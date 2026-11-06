@@ -25,6 +25,9 @@ from lexinform.models import (
     BillContext,
     DigestItemMeta,
     SenateResolutionIdentity,
+    SourceKind,
+    SupplementContext,
+    SupplementQuestion,
 )
 from lexinform.ports import BatchBackend
 from lexinform.services.documents import TextLoader
@@ -509,3 +512,79 @@ def test_senate_writer_keeps_unsupported_source_checks_inline(fault: str) -> Non
     request = request.model_copy(update={"question": changed})
 
     assert serialize_intent_request(request) == request.model_dump_json()
+
+
+def supplement_scan_request(factory: Callable[[], BatchBackend], kind: SourceKind) -> BatchRequest:
+    frozen = scan_request(offline_openai_backend, "analysis")
+    question = frozen.question
+    assert isinstance(question, AnalysisQuestion), "the fixture supplies a full manifested PDF"
+    return factory().prepare_request(
+        BatchRequest(
+            custom_id="supplement-scan",
+            term=10,
+            number=frozen.number,
+            question=SupplementQuestion(
+                ctx=SupplementContext(
+                    number=frozen.number,
+                    title="Projekt ustawy",
+                    document_title="Dokument dodatkowy",
+                    source_kind=kind,
+                    text="",
+                    truncated=False,
+                    scan=question.ctx.scan,
+                    previous_summary="Описание",
+                )
+            ),
+        )
+    )
+
+
+@pytest.mark.parametrize("factory", [offline_openai_backend, offline_anthropic_backend])
+@pytest.mark.parametrize("kind", ["government_position", "impact_assessment"])
+def test_supplement_reference_recovers_exact_request_without_enabling_writer(
+    factory: Callable[[], BatchBackend], kind: SourceKind
+) -> None:
+    frozen = supplement_scan_request(factory, kind)
+    assert serialize_intent_request(frozen) == frozen.model_dump_json()
+    recovered = parse_batch_request(compact(frozen))
+    assert recovered == frozen
+    assert factory().prepare_request(recovered) == frozen
+
+
+@pytest.mark.parametrize(
+    ("owner", "key", "value"),
+    [
+        ("context", "source_kind", "print"),
+        ("context", "number", "3038"),
+        ("context", "document_title", ""),
+        ("context", "text", "unexpected text"),
+        ("context", "truncated", True),
+        ("context", "source_check", {"scan": True}),
+        ("scan", "cover_letter_pages", 1),
+        ("manifest", "first_page", 2),
+        ("manifest", "source_sha256", "0" * 64),
+        ("manifest", "source_bytes", 1),
+        ("manifest", "transformations", ["triage"]),
+        ("request", "payload_sha256", "0" * 64),
+    ],
+)
+def test_supplement_reference_refuses_inexact_context(owner: str, key: str, value: object) -> None:
+    raw = compact(supplement_scan_request(offline_openai_backend, "government_position"))
+    context = raw["question"]["ctx"]
+    scan = context["scan"]
+    owners = {"request": raw, "context": context, "scan": scan, "manifest": scan["scan_input"]}
+    owners[owner][key] = value
+    with pytest.raises(ValueError, match="invalid_input_request_json"):
+        parse_batch_request(raw)
+
+
+def test_supplement_reference_refuses_hash_valid_non_attachment_slot() -> None:
+    raw = compact(supplement_scan_request(offline_openai_backend, "impact_assessment"))
+    scan = raw["question"]["ctx"]["scan"]
+    ref = raw["payload_json"]
+    ref["prefix"] = ref["prefix"].replace('"file_data"', '"unrelated_data"')
+    raw["payload_sha256"] = hashlib.sha256(
+        (ref["prefix"] + scan["data"] + ref["suffix"]).encode()
+    ).hexdigest()
+    with pytest.raises(ValueError, match="invalid_input_request_json"):
+        parse_batch_request(raw)

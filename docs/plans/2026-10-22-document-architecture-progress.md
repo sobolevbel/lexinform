@@ -13188,3 +13188,19 @@ and without the placement observer. The positive control counted 5,124
 input tokens. The replay uses pinned local source files and tokenizer data.
 
 [Qualification](../assets/audits/2026-11-06-word-formula-placement/qualification.json).
+
+<a id="j362"></a>
+
+## J362 — read compact frozen supplemental scan requests
+
+The compatible reader recognizes a complete scanned government position or
+impact assessment only when the supplemental context, full scan receipt and
+exact provider attachment agree. The writer continues to
+store supplemental scan requests inline.
+
+Six pinned term-10 supplements passed both provider builders offline. The old
+reader rejected all 12 compact requests. The new reader accepted inline and
+compact requests, restored both checkpoints twice and produced identical
+request and submitted-state hashes through mock submission.
+
+[Qualification](../assets/audits/2026-11-06-supplement-scan-reader/qualification.json).
