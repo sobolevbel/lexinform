@@ -12339,3 +12339,26 @@ round trip used explicitly synthetic marker counts on one pinned Word
 extraction. Both the legacy and new records survived two restores with
 identical SQL, successful integrity checks and no foreign-key errors.
 [Qualification](../assets/audits/2026-11-06-word-inline-reader/qualification.json).
+
+<a id="j320"></a>
+
+## J320 — record field and revision nodes visited by the Word walk
+
+The legacy traversal counts exact WordML field markers (`fldChar`,
+`instrText`, `delInstrText`, `fldSimple`) and revision wrappers (`ins`,
+`del`, `moveFrom`, `moveTo`) reported by the existing walk. The count
+is by XML node. Both semantic views remain unresolved. Other revision
+types, ignored fallback descendants and foreign namespace lookalikes
+are outside the marker scope.
+
+The optional bundle is written when either count is positive and the
+metadata fits after existing textbox evidence. Absence remains unknown.
+Text, selection and prior metadata matched on 3,055 pinned files after
+separating the recorded code fingerprints. The bundle appeared on
+562 files, including 18 with observed revision wrappers. Across the
+cohort it added 26,077 bytes to serialized extraction results.
+
+Two scratch checkpoints compared six distinct native results, with
+identical non-extraction row changes. Both passed two exact SQL round
+trips, integrity and foreign-key checks.
+[Corpus and checkpoint qualification](../assets/audits/2026-11-06-word-inline-writer/qualification.json).

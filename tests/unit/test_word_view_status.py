@@ -299,3 +299,76 @@ def test_textbox_count_yields_to_the_legacy_status_at_the_byte_cap(
     capped = reader.extract_document_with_provenance(data).result
 
     assert capped == legacy
+
+
+_INLINE_MARKERS = (
+    '<w:p><w:r><w:fldChar w:fldCharType="begin"/><w:instrText>DATE</w:instrText>'
+    '<w:fldChar w:fldCharType="end"/></w:r>'
+    '<w:fldSimple w:instr="DATE"><w:r><w:t>cached</w:t></w:r></w:fldSimple>'
+    "<w:ins><w:r><w:t>added</w:t></w:r></w:ins>"
+    "<w:del><w:r><w:delInstrText>old code</w:delInstrText><w:delText>old</w:delText></w:r></w:del>"
+    "<w:moveFrom><w:r><w:delText>from</w:delText></w:r></w:moveFrom>"
+    "<w:moveTo><w:r><w:t>to</w:t></w:r></w:moveTo>"
+    '<x:fldSimple xmlns:x="urn:foreign"/><x:ins xmlns:x="urn:foreign"/>'
+    "<mc:AlternateContent><mc:Choice><w:txbxContent><w:p><w:r><w:t>Choice</w:t></w:r></w:p>"
+    "</w:txbxContent></mc:Choice>"
+    '<mc:Fallback><w:fldSimple w:instr="DATE"/><w:ins><w:r><w:t>fallback</w:t></w:r></w:ins>'
+    "</mc:Fallback></mc:AlternateContent></w:p>"
+)
+
+
+@pytest.mark.parametrize(
+    "namespace",
+    [
+        "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+        "http://purl.oclc.org/ooxml/wordprocessingml/main",
+    ],
+)
+def test_native_inline_markers_count_only_visited_word_nodes(namespace: str) -> None:
+    data = word(_INLINE_MARKERS, namespace=namespace)
+    reader = extractor()
+
+    actual = reader.extract_document_with_provenance(data)
+
+    assert actual.document == reader.extract_document(data)
+    assert actual.document.text == "cachedaddedtoChoice"
+    (part,) = actual.result.selected_parts
+    view = part.word_view_status
+    assert view is not None, "native Word extraction records its visited walk"
+    assert view.observed_inline == WordInlineMarkers(fields=5, revisions=4)
+    assert view.observed_textbox_nodes == 1
+
+
+def test_native_zero_inline_marker_counts_stay_sparse() -> None:
+    actual = extractor().extract_document_with_provenance(docx("USTAWA Art. 1. Cudzoziemiec."))
+    (part,) = actual.result.selected_parts
+    view = part.word_view_status
+    assert view is not None, "native Word extraction records its visited walk"
+    assert view.observed_inline is None
+    assert "observed_inline" not in view.model_dump()
+
+
+def test_inline_marker_count_yields_to_textboxes_at_the_byte_cap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    data = word(_INLINE_MARKERS)
+    reader = extractor()
+    actual = reader.extract_document_with_provenance(data)
+    (part,) = actual.result.selected_parts
+    view = part.word_view_status
+    assert view is not None, "native Word extraction records its visited walk"
+    assert view.observed_inline is not None and view.observed_textbox_nodes == 1
+    baseline_part = part.model_copy(
+        update={"word_view_status": view.model_copy(update={"observed_inline": None})}
+    )
+    baseline = actual.result.model_copy(update={"selected_parts": (baseline_part,)})
+    monkeypatch.setattr(
+        extraction_records,
+        "MAX_EXTRACTION_METADATA_BYTES",
+        len(baseline.model_dump_json().encode()),
+    )
+
+    capped = reader.extract_document_with_provenance(data)
+
+    assert capped.document == actual.document
+    assert capped.result == baseline

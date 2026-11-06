@@ -43,7 +43,7 @@ from lexinform.extraction_records import (
     extraction_component,
     summarize_doc_notes,
     summarize_extraction,
-    summarize_word_textboxes,
+    summarize_word_observations,
 )
 from lexinform.models.doc_notes import (
     MAX_DOC_NOTE_PARTS,
@@ -1338,7 +1338,7 @@ class DocumentTextExtractor:
             result = summarize_doc_notes(
                 result, DocNotedParts(legacy=physical, doc_notes=tuple(doc_notes))
             )
-        result = summarize_word_textboxes(result, tuple(views))
+        result = summarize_word_observations(result, tuple(views))
         capture = current_physical_walk_capture()
         if capture is not None:
             _physical_event(capture, lambda: capture.extraction(result))

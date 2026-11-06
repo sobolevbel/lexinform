@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from lexinform.models.documents import WordDetailedExtraction
-from lexinform.models.extractions import WordViewStatus
+from lexinform.models.extractions import WordInlineMarkers, WordViewStatus
 from lexinform.models.word_notes import WordNoteCall
 from lexinform.models.word_structure import (
     SEMANTIC_BYTE_QUOTAS,
@@ -38,6 +38,16 @@ WORDML_NAMESPACES = (
     "http://schemas.microsoft.com/office/word/2003/wordml",
 )
 _TEXTBOX_TAGS = frozenset(f"{{{namespace}}}txbxContent" for namespace in WORDML_NAMESPACES)
+_FIELD_TAGS = frozenset(
+    f"{{{namespace}}}{name}"
+    for namespace in WORDML_NAMESPACES
+    for name in ("fldChar", "instrText", "delInstrText", "fldSimple")
+)
+_REVISION_TAGS = frozenset(
+    f"{{{namespace}}}{name}"
+    for namespace in WORDML_NAMESPACES
+    for name in ("ins", "del", "moveFrom", "moveTo")
+)
 
 _CURRENT: ContextVar[WordStructureCollector | None] = ContextVar("word_structure", default=None)
 
@@ -80,6 +90,8 @@ class WordStructureCollector:
             "legacy_recursion": 0,
             "ignored_fallbacks": 0,
             "textbox_nodes": 0,
+            "fields": 0,
+            "revisions": 0,
         }
         self.retention = retention
         self._orders: list[int] = []
@@ -119,6 +131,8 @@ class WordStructureCollector:
         finished = legacy.body.body_state == "read" and all(
             part.state == "read" for part in legacy.notes.parts
         )
+        fields = self._view_counts["fields"]
+        revisions = self._view_counts["revisions"]
         return WordViewStatus(
             known_walk="finished" if finished else "interrupted",
             observed_skipped_blocks=self._view_counts["skipped_blocks"],
@@ -126,6 +140,11 @@ class WordStructureCollector:
             observed_legacy_recursion=self._view_counts["legacy_recursion"],
             observed_ignored_fallbacks=self._view_counts["ignored_fallbacks"],
             observed_textbox_nodes=self._view_counts["textbox_nodes"],
+            observed_inline=(
+                WordInlineMarkers(fields=fields, revisions=revisions)
+                if fields or revisions
+                else None
+            ),
         )
 
     @contextmanager
@@ -334,6 +353,10 @@ class WordStructureCollector:
         if self._view_status_only:
             if tag in _TEXTBOX_TAGS:
                 self._view_counts["textbox_nodes"] += 1
+            elif tag in _FIELD_TAGS:
+                self._view_counts["fields"] += 1
+            elif tag in _REVISION_TAGS:
+                self._view_counts["revisions"] += 1
             if view == "skipped_block":
                 self._view_counts["skipped_blocks"] += 1
             if view == "ignored_fallback":

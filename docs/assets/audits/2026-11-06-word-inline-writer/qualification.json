@@ -1,0 +1,71 @@
+{
+  "reader_commit": "e19598931b62eaffdbf01db05931b16c87dfec99",
+  "corpus": {
+    "catalog": "docs/assets/audits/2026-10-30-word-structure/catalog.json",
+    "catalog_sha256": "7bfa79ac7ee2a6981d8106880cad2bde6bc86df0b5da9a966530fcaebbf057f5",
+    "files": 3055,
+    "before_ledger_sha256": "d44b500bcf0e9d36755702215053486cbd709b6d6f9d3cdb426a9a06c292300f",
+    "after_ledger_sha256": "b2ed4fb5362e6ba7acee434033f76ebdc88281573d154238337caff2a8790241",
+    "equal": [
+      "text_sha256",
+      "selection_sha256",
+      "prior_metadata_sha256",
+      "textbox_counts"
+    ],
+    "declared_component_fingerprint_changes": {
+      "odt": 3055,
+      "package": 3055,
+      "word": 3055
+    },
+    "positive_files": 562,
+    "files_with_fields": 553,
+    "fields_nodes": 44542,
+    "files_with_revisions": 18,
+    "revisions_nodes": 87,
+    "serialized_result_delta_bytes": 26077,
+    "maximum_result_delta_bytes": 47
+  },
+  "checkpoints": {
+    "before": {
+      "checkpoint_sha256": "29dfe8566f02ceb810a1a43e8ea9a7b0fd0d9f6fc54ffa7212c4dda23945cd6d",
+      "inputs": {
+        "word/339908.docx": "1261fb9112731c1eaeb28750c1a54b4317ee845cbd3eff69f8da210c7da7c450",
+        "word/649928.docx": "d8e10f343ba1c6340b48a52dbafc6fbc922ff6286e6fd1bc5d2be1495effd100",
+        "word/663502.docx": "c3f0792b147c963130a2bc44cc5ac057a825b4de364ce20812411fa47819e9af",
+        "word/708892.docx": "0f046d601b5fee43afa43a7f7230691ed53f973531f9ff32cd484fd96b11196c",
+        "word/715337.docx": "5a8d8e29c20373bab8ba70df3d5161a2ea4ddb2c57e0874c8eeb04d4be6e2b1e",
+        "word/715806.docx": "b0aacbb1c8937ab41647427a523c913016192d0eb0eb44b2c3130122b259171d"
+      },
+      "sql_bytes": 25808271,
+      "gzip_bytes": 5221568,
+      "sqlite_allocated_bytes": 27885568,
+      "other_row_delta_sha256": "94f5aa4952dc8087f4b0f351130e9610920ef7e3f049d9df633dc9e7f5931c0b",
+      "checkpoint_round_trips": 2,
+      "integrity_check": "ok",
+      "foreign_key_errors": 0
+    },
+    "after": {
+      "checkpoint_sha256": "29dfe8566f02ceb810a1a43e8ea9a7b0fd0d9f6fc54ffa7212c4dda23945cd6d",
+      "inputs": {
+        "word/339908.docx": "1261fb9112731c1eaeb28750c1a54b4317ee845cbd3eff69f8da210c7da7c450",
+        "word/649928.docx": "d8e10f343ba1c6340b48a52dbafc6fbc922ff6286e6fd1bc5d2be1495effd100",
+        "word/663502.docx": "c3f0792b147c963130a2bc44cc5ac057a825b4de364ce20812411fa47819e9af",
+        "word/708892.docx": "0f046d601b5fee43afa43a7f7230691ed53f973531f9ff32cd484fd96b11196c",
+        "word/715337.docx": "5a8d8e29c20373bab8ba70df3d5161a2ea4ddb2c57e0874c8eeb04d4be6e2b1e",
+        "word/715806.docx": "b0aacbb1c8937ab41647427a523c913016192d0eb0eb44b2c3130122b259171d"
+      },
+      "sql_bytes": 25808549,
+      "gzip_bytes": 5221617,
+      "sqlite_allocated_bytes": 27885568,
+      "other_row_delta_sha256": "94f5aa4952dc8087f4b0f351130e9610920ef7e3f049d9df633dc9e7f5931c0b",
+      "checkpoint_round_trips": 2,
+      "integrity_check": "ok",
+      "foreign_key_errors": 0
+    }
+  },
+  "checkpoint_growth": {
+    "sql_bytes": 278,
+    "gzip_bytes": 49,
+    "sqlite_allocated_bytes": 0
+  }
+}

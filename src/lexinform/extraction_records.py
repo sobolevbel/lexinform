@@ -31,6 +31,7 @@ from lexinform.models.extractions import (
     OdtNoteBlockBound,
     OdtNotePrefix,
     OdtNoteStatus,
+    WordInlineMarkers,
     _odt_prefix_bytes,
     extraction_metadata_sha256,
 )
@@ -128,7 +129,9 @@ def summarize_extraction(
         WordViewExtraction(
             legacy=WordDetailedExtraction(body=body, notes=note), status=linked.status
         )
-        views[index] = linked.status.model_copy(update={"observed_textbox_nodes": None})
+        views[index] = linked.status.model_copy(
+            update={"observed_textbox_nodes": None, "observed_inline": None}
+        )
     identities: list[str] = []
     selected_summaries: list[ExtractedPartSummary] = []
     selected_keys = Counter((part.sha256, part.members) for part in selected.selection.parts)
@@ -268,25 +271,45 @@ def summarize_extraction(
         return status_result
 
 
-def summarize_word_textboxes(
+def summarize_word_observations(
     baseline: ExtractionResult, linked: tuple[WordPartViewStatus, ...]
 ) -> ExtractionResult:
-    counts = {
-        item.part_index: item.status.observed_textbox_nodes
-        for item in linked
-        if item.status.observed_textbox_nodes is not None
-    }
-    if not counts:
+    with_textboxes = _with_word_view_observations(
+        baseline,
+        "observed_textbox_nodes",
+        {
+            item.part_index: item.status.observed_textbox_nodes
+            for item in linked
+            if item.status.observed_textbox_nodes is not None
+        },
+    )
+    return _with_word_view_observations(
+        with_textboxes,
+        "observed_inline",
+        {
+            item.part_index: item.status.observed_inline
+            for item in linked
+            if item.status.observed_inline is not None
+        },
+    )
+
+
+def _with_word_view_observations(
+    baseline: ExtractionResult,
+    field: Literal["observed_textbox_nodes", "observed_inline"],
+    observations: dict[int, int | WordInlineMarkers],
+) -> ExtractionResult:
+    if not observations:
         return baseline
     parts = tuple(
         part.model_copy(
             update={
                 "word_view_status": part.word_view_status.model_copy(
-                    update={"observed_textbox_nodes": counts[part.physical_index]}
+                    update={field: observations[part.physical_index]}
                 )
             }
         )
-        if part.word_view_status is not None and part.physical_index in counts
+        if part.word_view_status is not None and part.physical_index in observations
         else part
         for part in baseline.selected_parts
     )
