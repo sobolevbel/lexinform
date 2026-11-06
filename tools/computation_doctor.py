@@ -138,8 +138,6 @@ class ComputationAudit:
             scan = record.scan_input
         else:
             return
-        if scan is None:
-            return
 
         item = connection.execute(
             """SELECT i.call_kind, i.term, i.number, i.meta_json, i.consumed_at, b.provider
@@ -148,7 +146,19 @@ class ComputationAudit:
             (result.batch_id, result.custom_id),
         ).fetchone()
         if item is None or item["provider"] is None:
-            self.counts["retained_scan_unverified"] += 1
+            if scan is not None:
+                self.counts["retained_scan_unverified"] += 1
+            return
+        try:
+            meta = batch_item_meta(item["call_kind"], item["meta_json"])
+        except ValueError:
+            if scan is not None:
+                self.issue("invalid_retained_scan_item_metadata", ref)
+            return
+        submitted = (
+            meta.selection.scan_input if isinstance(meta, BatchItemMeta) else meta.scan_input
+        )
+        if scan is None and submitted is None:
             return
         if tuple(item[key] for key in ("provider", "call_kind", "term", "number")) != (
             result.provider,
@@ -158,11 +168,6 @@ class ComputationAudit:
         ):
             self.issue("retained_scan_item_identity_mismatch", ref)
             return
-        try:
-            meta = batch_item_meta(item["call_kind"], item["meta_json"])
-        except ValueError:
-            self.issue("invalid_retained_scan_item_metadata", ref)
-            return
         if (
             meta.request_sha256 is not None
             and result.request_sha256 is not None
@@ -170,21 +175,22 @@ class ComputationAudit:
         ):
             self.issue("retained_scan_request_mismatch", ref)
             return
-        submitted = (
-            meta.selection.scan_input if isinstance(meta, BatchItemMeta) else meta.scan_input
-        )
         manifest = meta.frozen_request_manifest
         if manifest is not None and manifest.provider != result.provider:
             self.issue("retained_scan_provider_mismatch", ref)
-        elif submitted is not None and submitted != scan:
+        elif scan is not None and submitted is not None and submitted != scan:
             self.issue("retained_scan_manifest_mismatch", ref)
         elif (
-            submitted is None
+            scan is None
+            or submitted is None
             or manifest is None
             or not result.request_sha256
             or not item["consumed_at"]
         ):
             self.counts["retained_scan_unverified"] += 1
+            if scan is None:
+                self.counts["retained_scan_result_manifest_unavailable"] += 1
+                self.issue("retained_scan_result_manifest_unavailable", ref, level="warning")
         else:
             self.counts["retained_scan_bound"] += 1
 

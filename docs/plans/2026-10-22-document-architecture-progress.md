@@ -13552,3 +13552,20 @@ source selection, original request body and collection application remain
 unverified or unavailable, so DA10.7 stays open.
 
 [Qualification](../assets/audits/2026-11-06-retained-scan-binding/qualification.json).
+
+<a id="j381"></a>
+
+## J381 — detect scan manifests missing from retained results
+
+The computation doctor checks both sides of the retained scan link. A manifest
+on the submitted item with no counterpart in the result now produces a warning
+and an unverified count. Records without a manifest on either side remain
+outside this census.
+
+The Senate print 377 OpenAI mock checkpoint now reports a warning when the
+retained scan and its dependent result witness are removed. The intact
+checkpoint and the state snapshot at `9a802a55` produce byte-identical reports.
+Unit controls exercise the missing result manifest for primary and supplement
+records. The audit does not reconstruct legacy manifests.
+
+[Qualification](../assets/audits/2026-11-06-retained-scan-missing-result/qualification.json).

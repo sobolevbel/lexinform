@@ -127,7 +127,8 @@ def test_projection_census_distinguishes_missing_schema_from_empty_population(
 
 @pytest.mark.parametrize("kind", ["analysis", "supplement"])
 @pytest.mark.parametrize(
-    "variant", ["bound", "missing_receipt", "different_scan", "different_request"]
+    "variant",
+    ["bound", "missing_receipt", "missing_result_scan", "different_scan", "different_request"],
 )
 def test_retained_scan_requires_the_exact_consumed_request(
     tmp_path: Path,
@@ -155,9 +156,12 @@ def test_retained_scan_requires_the_exact_consumed_request(
     )
     result = retained_result(kind)
     record = result.record
+    retained_scan = None if variant == "missing_result_scan" else scan
     meta: BatchItemMeta | DigestItemMeta
     if isinstance(record, AnalysisRecord):
-        record = record.model_copy(update={"selection": DocumentSelection(scan_input=scan)})
+        record = record.model_copy(
+            update={"selection": DocumentSelection(scan_input=retained_scan)}
+        )
         meta = BatchItemMeta(
             input_chars=0,
             truncated=False,
@@ -172,7 +176,7 @@ def test_retained_scan_requires_the_exact_consumed_request(
         )
     else:
         assert isinstance(record, SupplementRecord), "the other fixture is a supplement"
-        record = record.model_copy(update={"scan_input": scan})
+        record = record.model_copy(update={"scan_input": retained_scan})
         meta = DigestItemMeta(
             memo_key="scan",
             scan_input=submitted,
@@ -207,8 +211,15 @@ def test_retained_scan_requires_the_exact_consumed_request(
 
     if variant == "bound":
         assert report["summary"]["retained_scan_bound"] == 1
-    elif variant == "missing_receipt":
+    elif variant in ("missing_receipt", "missing_result_scan"):
         assert report["summary"]["retained_scan_unverified"] == 1
+        if variant == "missing_result_scan":
+            assert report["summary"]["retained_scan_result_manifest_unavailable"] == 1
+            assert {
+                "code": "retained_scan_result_manifest_unavailable",
+                "level": "warning",
+                "ref": f"computation_results/{result.result_id}",
+            } in report["findings"]
     else:
         code = f"retained_scan_{'manifest' if variant == 'different_scan' else 'request'}_mismatch"
         assert {

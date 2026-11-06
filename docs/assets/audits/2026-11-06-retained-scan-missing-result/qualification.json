@@ -1,0 +1,77 @@
+{
+  "baseline": "8ae2ba22a436d47550649490abf1aefe291f10be",
+  "cases": {
+    "intact": {
+      "after": {
+        "database_sha256": "96ba9aaa432d8aca400f63922d5cb54e760f3958eaafc848a9168e5150b2e54a",
+        "report_sha256": "57a6a0d854fff6533efa691029598f3a03650256e15bb468529fbdc1a53fd02c",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "result_rows": 1,
+          "retained_scan_bound": 1,
+          "warnings": 0
+        }
+      },
+      "before": {
+        "database_sha256": "96ba9aaa432d8aca400f63922d5cb54e760f3958eaafc848a9168e5150b2e54a",
+        "report_sha256": "57a6a0d854fff6533efa691029598f3a03650256e15bb468529fbdc1a53fd02c",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "result_rows": 1,
+          "retained_scan_bound": 1,
+          "warnings": 0
+        }
+      }
+    },
+    "omitted": {
+      "after": {
+        "database_sha256": "95986f56c4e0f85f20e880c63130b4d380991c97d9fe7d67bc6686782244bde9",
+        "report_sha256": "88772e1fb7c88f380dbabbb1cd0596a5ba77b92c0b198d23d12d794053ccf1c8",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "result_rows": 1,
+          "retained_scan_result_manifest_unavailable": 1,
+          "retained_scan_unverified": 1,
+          "warnings": 1
+        }
+      },
+      "before": {
+        "database_sha256": "95986f56c4e0f85f20e880c63130b4d380991c97d9fe7d67bc6686782244bde9",
+        "report_sha256": "a38186b306d3151b33bced5e3c59c32a0d0406f7f9150ba7dfb9e6d83d831e96",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "result_rows": 1,
+          "warnings": 0
+        }
+      }
+    },
+    "state": {
+      "after": {
+        "database_sha256": "c53f468cea246f6a8f2b74eaef46dbf5ea46fc72efa5a3af28741fbe919c974a",
+        "report_sha256": "16af9e338308b856aefce456f188e46ee2b4d485517fb2a85e83a6afeaa7ef69",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "result_rows": 19,
+          "warnings": 0
+        }
+      },
+      "before": {
+        "database_sha256": "c53f468cea246f6a8f2b74eaef46dbf5ea46fc72efa5a3af28741fbe919c974a",
+        "report_sha256": "16af9e338308b856aefce456f188e46ee2b4d485517fb2a85e83a6afeaa7ef69",
+        "status": "recorded",
+        "summary": {
+          "errors": 0,
+          "result_rows": 19,
+          "warnings": 0
+        }
+      }
+    }
+  },
+  "control": "Remove $.record.scan_input and its dependent $.amendment_scan_input witness from the retained result in J380's Senate print 377 OpenAI mock checkpoint. Keep submitted item unchanged.",
+  "state_commit": "9a802a5514d3333de72c76454d115a7d91538e0d"
+}

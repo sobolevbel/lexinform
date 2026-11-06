@@ -227,10 +227,11 @@ document work and batch metadata. Missing results, inconsistent recorded request
 a failed result are errors. It preserves the distinction between original input, collection owner
 and application target, including term/generation changes and free reuse.
 
-When a validated primary, amendment or supplement result retains a scan manifest, the
-doctor compares it with the item for the same batch and custom ID. A bound result requires
+For validated primary, amendment and supplement results, the doctor checks scan manifests
+on the retained result and the item for the same batch and custom ID. A bound result requires
 matching owner, purpose, provider, scan manifest and request SHA, plus the frozen request
-receipt and recorded consumption. Missing evidence is counted as unverified. Conflicting
+receipt and recorded consumption. Missing evidence is counted as unverified when at least
+one side has a manifest. A missing manifest on the result side also produces a warning. Conflicting
 recorded evidence is an error. The check uses retained metadata and cannot reread a cleaned
 PDF attachment.
 
