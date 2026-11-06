@@ -12807,6 +12807,9 @@ cancellation made one read attempt each with no new preparation or state
 write. All 24 existing J340 lifecycle paths repeated byte-exact.
 [Qualification](../assets/audits/2026-11-06-original-scan-correction/qualification.json).
 
+The exact `5ff1d67d` release passed CI run 42243444846 and relay
+deployment 42244530663. Restart and timer were verified.
+
 <a id="j342"></a>
 
 ## J342 — read prepared input receipts for one RCL archive
@@ -12823,3 +12826,20 @@ submission, consumption, cleanup and two restores. Swapped slots were
 rejected. The legacy dump and two existing loose profiles matched.
 The runtime writer remains disabled.
 [Qualification](../assets/audits/2026-11-06-rcl-archive-input-reader/qualification.json).
+
+<a id="j343"></a>
+
+## J343 — save the actual prepared map from one RCL ZIP
+
+The runtime attaches the one-root receipt to the actual prepared request
+when the retained observation, full member texts and extraction slots
+match. Cached inputs with missing parents, hybrid roots and failed
+receipt validation preserve the ordinary queue.
+
+The 17 paired paths matched request bytes, selection, cost and reads.
+Only the raw 778150.zip case retained the receipt. A forced parent
+validation failure preserved the plain request. The real offline apply
+and cleanup removed the ordinary payload and kept the map through two
+restores. The retained record added 2,902 SQL bytes and 570 gzip bytes
+after cleanup.
+[Qualification](../assets/audits/2026-11-06-rcl-archive-input-writer/qualification.json).

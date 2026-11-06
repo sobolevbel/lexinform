@@ -10,6 +10,7 @@ from lexinform.models import (
     BatchIntent,
     BatchRequest,
     BillContext,
+    DocumentSelection,
     DocumentSelectionRecord,
     TextDocument,
 )
@@ -21,8 +22,11 @@ from lexinform.models.input_receipts import (
     primary_context_sha256,
 )
 from lexinform.models.prepared_input import PreparedTextSegment
+from lexinform.sections import PAGE_BREAK
 from lexinform.services.document_history import DocumentSourceRead, record_source_read
 from lexinform.services.documents import TextLoader
+from lexinform.services.input_receipts import capture_rcl_archive_input_receipt
+from lexinform.text_projection import SourcePiece, project_pieces
 from tests.fakes import FakeSejmGateway
 from tests.unit.test_document_candidates import BILL
 from tests.unit.test_input_receipts import NOW, meta, request
@@ -31,7 +35,7 @@ from tests.unit.test_physical_extraction import archive, docx, extractor
 URL = "https://api.test/package.zip"
 
 
-def captured_source() -> tuple[DocumentSourceRead, str]:
+def captured_source() -> tuple[DocumentSourceRead, DocumentSelection]:
     body = archive(
         {
             "bill.docx": docx(BILL + "Art. 2. Wchodzi w życie po upływie 21 dni." * 15),
@@ -44,13 +48,14 @@ def captured_source() -> tuple[DocumentSourceRead, str]:
     selected, file = loader.select_document(document)
     source = loader.capture_source_read(document, selected, file)
     assert isinstance(source, DocumentSourceRead), "the fixture has an admitted root"
-    return source, file.selection.parts[0].text
+    return source, file.selection
 
 
 def offered(
     repo: SqliteBillRepository, fault: str | None = None
 ) -> tuple[BatchIntent, RclArchiveInputReceipt]:
-    source, text = captured_source()
+    source, live = captured_source()
+    text = live.parts[0].text
     (extraction,) = source.extractions
     selection = source.selection.selection
     assert len(selection.parts) == 2, "the fixture selects a bill and its justification"
@@ -195,3 +200,42 @@ def test_archive_receipt_rejects_unproved_coverage(repo: SqliteBillRepository, f
         RclArchiveInputReceipt.model_validate(
             {**receipt.model_dump(), "segments": segments, "full_map_sha256": checksum}
         )
+
+
+@pytest.mark.parametrize("fault", [None, "text_only_cache", "hybrid", "body_mismatch"])
+def test_writer_uses_the_actual_projection_and_exact_archive_parent(fault: str | None) -> None:
+    source, selection = captured_source()
+    text = PAGE_BREAK.join(part.text for part in selection.parts)
+    projection = project_pieces(text, (SourcePiece(text, 0),))
+    template = request().ctx
+    assert isinstance(template, BillContext), "the fixture uses a primary bill context"
+    context = template.model_copy(update={"source_kind": "rcl", "text": text})
+    frozen = BatchRequest(
+        custom_id="archive",
+        term=10,
+        number=context.number,
+        question=AnalysisQuestion(kind="analysis", ctx=context),
+    ).freeze(
+        payload_json=context.model_dump_json(),
+        model="gpt-6.1-sol",
+        prompt_version="fixture",
+        estimated_cost_usd=0,
+    )
+    if fault == "text_only_cache":
+        source = replace(source, extractions=())
+    elif fault == "hybrid":
+        document = source.document.model_copy(update={"amendment_urls": (URL + "?amendment",)})
+        source = replace(source, document=document)
+    elif fault == "body_mismatch":
+        source = replace(source, reads=())
+
+    captured = capture_rcl_archive_input_receipt(frozen, selection, projection, source)
+
+    if fault is not None:
+        assert captured is None
+    else:
+        assert captured is not None, "the ordinary ZIP has its precise recorded source and map"
+        assert captured.request_sha256 == frozen.payload_sha256
+        assert captured.text_chars == len(text)
+        assert tuple(part.role for part in captured.source_parts) == ("bill", "justification")
+        assert any(segment.origin == "generated" for segment in captured.segments)

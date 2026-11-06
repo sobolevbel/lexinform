@@ -5,6 +5,8 @@ from datetime import datetime
 from lexinform.document_editions import candidate_edition
 from lexinform.input_receipts import (
     amendment_input_receipt,
+    archive_member_matches,
+    ordinary_rcl_archive_document,
     primary_input_receipt,
     supplement_input_receipt,
 )
@@ -32,8 +34,11 @@ from lexinform.models import (
 from lexinform.models.documents import SenateAmendmentInputWitness
 from lexinform.models.input_receipts import (
     MAX_INPUT_RECEIPT_SEGMENTS,
+    ArchiveInputPart,
     LooseRclInputPart,
     LooseRclInputReceipt,
+    MultipartTextInputReceipt,
+    RclArchiveInputReceipt,
     SejmSelfAmendmentInputReceipt,
     amendment_context_sha256,
     input_map_sha256,
@@ -122,6 +127,103 @@ def capture_primary_input_receipt(
         known_selection=source.selection if isinstance(source, DocumentSourceRead) else None,
         body=body,
         extraction=_extraction(part, body, source),
+    )
+
+
+def capture_rcl_archive_input_receipt(
+    request: BatchRequest,
+    selection: DocumentSelection,
+    projection: TextProjection | None,
+    source: SourceReadCapture | None,
+) -> RclArchiveInputReceipt | None:
+    if (
+        not isinstance(request.question, AnalysisQuestion)
+        or request.call_kind not in ("analysis", "reanalysis")
+        or request.question.ctx.source_kind != "rcl"
+        or request.question.ctx.scan is not None
+        or request.question.ctx.text_source == "scan"
+        or request.payload_sha256 is None
+        or projection is None
+        or len(projection.segments) > MAX_INPUT_RECEIPT_SEGMENTS
+        or not isinstance(source, DocumentSourceRead)
+        or not ordinary_rcl_archive_document(source.document)
+        or not 2 <= len(selection.parts) <= 6
+        or not selection.parts[0].members
+        or selection.scan_input is not None
+        or any(span.stage == "analysis" for span in selection.coverage)
+    ):
+        return None
+    ctx = request.question.ctx
+    if projection.text != ctx.text:
+        return None
+    root = selection.parts[0].source_sha256
+    reads = {
+        (read.sha256, read.byte_size)
+        for read in source.reads
+        if read.requested_url == source.document.url
+    }
+    if len(reads) != 1:
+        return None
+    ((read_sha, size),) = reads
+    if read_sha != root or not any(
+        (body.sha256, body.byte_size) == (root, size) for body in source.artifacts
+    ):
+        return None
+    extractions = tuple(
+        item
+        for item in source.extractions
+        if item.artifact_sha256 == root
+        and item.selected_part_count == len(selection.parts)
+        and item.omitted_selected_parts == 0
+    )
+    if len(extractions) != 1:
+        return None
+    (extraction,) = extractions
+    parts: list[ArchiveInputPart] = []
+    for part in selection.parts:
+        chars = len(part.text)
+        if (
+            not part.members
+            or (part.url, part.source_sha256) != (source.document.url, root)
+            or (part.text_start, part.text_end) != (0, chars)
+        ):
+            return None
+        matched = tuple(
+            summary
+            for summary in extraction.selected_parts
+            if archive_member_matches(part, summary, chars=chars)
+        )
+        if len(matched) != 1:
+            return None
+        parts.append(
+            ArchiveInputPart(
+                role=part.role,
+                chars=chars,
+                text_sha256=part.text_sha256,
+                physical_index=matched[0].physical_index,
+            )
+        )
+    request.verify_payload()
+    prepared = prepared_text_input(selection, ctx.text, projection=projection)
+    if prepared.source_selection_id != source.selection.selection_id:
+        return None
+    return RclArchiveInputReceipt(
+        source_selection_id=prepared.source_selection_id,
+        source_observation_id=SourceObservationIdentity(
+            term=request.term,
+            number=request.number,
+            purpose="analysis",
+            document=source.document,
+            selection_id=prepared.source_selection_id,
+        ).observation_id,
+        extraction_id=extraction.result_id,
+        source_parts=tuple(parts),
+        context_sha256=primary_context_sha256(ctx),
+        request_sha256=request.payload_sha256,
+        text_sha256=prepared.text_sha256,
+        text_chars=prepared.text_chars,
+        full_map_sha256=input_map_sha256(prepared.segments),
+        segments=prepared.segments,
     )
 
 
@@ -281,7 +383,7 @@ def capture_sejm_self_amendment_input_receipt(
 
 def enrich_primary_input_intent(
     original: BatchIntent,
-    receipt: PrimaryInputReceipt | LooseRclInputReceipt | SejmSelfAmendmentInputReceipt,
+    receipt: PrimaryInputReceipt | MultipartTextInputReceipt,
 ) -> BatchIntent:
     if not isinstance(original.meta, BatchItemMeta):
         raise ValueError("Primary receipt enrichment requires primary metadata")
@@ -291,8 +393,7 @@ def enrich_primary_input_intent(
 def _enrich_input_intent(
     original: BatchIntent,
     receipt: PrimaryInputReceipt
-    | LooseRclInputReceipt
-    | SejmSelfAmendmentInputReceipt
+    | MultipartTextInputReceipt
     | SupplementInputReceipt
     | AmendmentInputReceipt,
 ) -> BatchIntent:

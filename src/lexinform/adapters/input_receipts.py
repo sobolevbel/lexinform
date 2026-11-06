@@ -15,6 +15,7 @@ from lexinform.adapters.computation_history import read_computation_result
 from lexinform.adapters.document_source_rows import DocumentSourceRows
 from lexinform.adapters.extraction_history import read_extraction_result
 from lexinform.errors import PreparedInputParentError
+from lexinform.input_receipts import archive_member_matches, ordinary_rcl_archive_document
 from lexinform.json_storage import canonical_json, read_json
 from lexinform.models import (
     AmendmentInputReceipt,
@@ -33,7 +34,6 @@ from lexinform.models import (
     SupplementInputReceipt,
 )
 from lexinform.models.batch import FrozenRequestManifest, batch_item_meta, validate_batch_item_meta
-from lexinform.models.extractions import extraction_metadata_sha256
 from lexinform.models.input_receipts import (
     LooseMultipartInputReceipt,
     LooseRclInputReceipt,
@@ -429,14 +429,7 @@ def _archive_parents(
     ):
         raise ValueError("input_receipt_archive_observation_mismatch")
     document = observation.document
-    if (
-        document.official_link_conflict
-        or document.alternatives
-        or document.required_urls
-        or document.normative_urls
-        or document.amendment_urls
-        or document.extra_urls
-    ):
+    if not ordinary_rcl_archive_document(document):
         raise ValueError("input_receipt_archive_scope_mismatch")
     row = _one(
         connection,
@@ -465,13 +458,7 @@ def _archive_parents(
             or (part.url, part.source_sha256) != (document.url, root)
             or (part.role, part.text_sha256, part.text_start, part.text_end)
             != (recorded.role, recorded.text_sha256, 0, recorded.chars)
-            or (summary.sha256, summary.text_sha256, summary.text_chars, summary.member_path_sha256)
-            != (
-                part.sha256,
-                recorded.text_sha256,
-                recorded.chars,
-                extraction_metadata_sha256(part.members),
-            )
+            or not archive_member_matches(part, summary, chars=recorded.chars)
         ):
             raise ValueError("input_receipt_archive_part_mismatch")
 

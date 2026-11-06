@@ -12,8 +12,12 @@ from lexinform.models.batch import (
     SupplementQuestion,
 )
 from lexinform.models.document_history import DocumentSelectionRecord
-from lexinform.models.documents import DocumentSelection
-from lexinform.models.extractions import ExtractionResult
+from lexinform.models.documents import DocumentPart, DocumentSelection
+from lexinform.models.extractions import (
+    ExtractedPartSummary,
+    ExtractionResult,
+    extraction_metadata_sha256,
+)
 from lexinform.models.input_receipts import (
     MAX_INPUT_RECEIPT_BYTES,
     MAX_INPUT_RECEIPT_INTEGER,
@@ -29,7 +33,35 @@ from lexinform.models.input_receipts import (
     supplement_context_sha256,
 )
 from lexinform.models.prepared_input import PreparedTextPart, PreparedTextSegment
+from lexinform.models.sejm import TextDocument
 from lexinform.text_projection import TextProjection, TextSegment
+
+
+def ordinary_rcl_archive_document(document: TextDocument) -> bool:
+    return document.kind == "rcl" and not (
+        document.official_link_conflict
+        or document.alternatives
+        or document.required_urls
+        or document.normative_urls
+        or document.amendment_urls
+        or document.extra_urls
+    )
+
+
+def archive_member_matches(
+    part: DocumentPart, summary: ExtractedPartSummary, *, chars: int
+) -> bool:
+    return (
+        summary.sha256,
+        summary.text_sha256,
+        summary.text_chars,
+        summary.member_path_sha256,
+    ) == (
+        part.sha256,
+        part.text_sha256,
+        chars,
+        extraction_metadata_sha256(part.members),
+    )
 
 
 def _selection_id(

@@ -146,9 +146,7 @@ from lexinform.models.candidate_trace import CandidateDispositionTrace
 from lexinform.models.computations import CollectionReason, ComputationRecord
 from lexinform.models.documents import SenateAmendmentInputWitness
 from lexinform.models.input_receipts import (
-    LooseMultipartInputReceipt,
-    LooseRclInputReceipt,
-    SejmSelfAmendmentInputReceipt,
+    MultipartTextInputReceipt,
 )
 from lexinform.models.sejm import (
     SejmCommitteeDraftOrigin,
@@ -215,6 +213,7 @@ from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
 from lexinform.services.input_receipts import (
     capture_loose_rcl_input_receipt,
     capture_primary_input_receipt,
+    capture_rcl_archive_input_receipt,
     capture_secondary_input_receipt,
     capture_sejm_self_amendment_input_receipt,
     capture_senate_work_input_witness,
@@ -523,9 +522,7 @@ class _Prepared:
     triage_memo_key: str | None = None
     from_batch: bool = False
     source_read: SourceReadCapture | None = None
-    input_receipt: (
-        PrimaryInputReceipt | LooseRclInputReceipt | SejmSelfAmendmentInputReceipt | None
-    ) = None
+    input_receipt: PrimaryInputReceipt | MultipartTextInputReceipt | None = None
     local_read: LocalReadTiming | None = None
 
 
@@ -3290,9 +3287,7 @@ class AnalysisService:
                     model=self._options.overflow_model if overflow else "",
                 )
             )
-            receipt: (
-                PrimaryInputReceipt | LooseRclInputReceipt | SejmSelfAmendmentInputReceipt | None
-            ) = None
+            receipt: PrimaryInputReceipt | MultipartTextInputReceipt | None = None
             try:
                 if loaded.rcl_projection is None:
                     if isinstance(loaded.source_read, DocumentSourceRead) and isinstance(
@@ -3304,6 +3299,10 @@ class AnalysisService:
                             fitted.projection,
                             loaded.source_read,
                             recorded_at=self._clock.now(),
+                        )
+                    if receipt is None and len(loaded.selection.parts) > 1:
+                        receipt = capture_rcl_archive_input_receipt(
+                            request, loaded.selection, fitted.projection, loaded.source_read
                         )
                     if receipt is None:
                         receipt = capture_primary_input_receipt(
@@ -3755,7 +3754,7 @@ class AnalysisService:
             try:
                 self._repo.save_batch_intent(intent)
             except PreparedInputParentError:
-                if not isinstance(intent.meta.prepared_input_receipt, LooseMultipartInputReceipt):
+                if not isinstance(intent.meta.prepared_input_receipt, MultipartTextInputReceipt):
                     raise
                 log.warning("Prepared input receipt omitted (parents_unavailable)")
                 self._repo.save_batch_intent(
