@@ -442,3 +442,28 @@ def test_doc_projection_reader_binds_offsets_to_retained_links_and_text(control:
     else:
         with pytest.raises(ValidationError):
             ExtractionResult.model_validate(payload)
+
+
+@pytest.mark.parametrize(
+    ("main", "reference_cp", "reference_offset"),
+    [("😀\x02B\r", 2, 1), ("A\x13\x02\x15B\r", 2, None)],
+)
+def test_native_doc_projection_tracks_decoded_characters_and_visible_references(
+    main: str, reference_cp: int, reference_offset: int | None
+) -> None:
+    data = ole_document(*source_notes(main=main, reference_cp=reference_cp, note="\x02😀note\r\r"))
+    reader = DocTextExtractor()
+    baseline = reader.extract_with_notes(data)
+
+    observed = reader.extract_with_notes(data, capture_projection=True)
+
+    assert observed.result == baseline.result
+    assert observed.input_sha256 == baseline.input_sha256
+    assert not baseline.projections
+    (projection,) = observed.projections
+    assert projection.reference_cp == reference_cp
+    assert projection.reference_offset == reference_offset
+    body = projection.body
+    assert body is not None, "the complete synthetic note projects into the cleaned text"
+    assert observed.result.legacy_text[body.start : body.end] == "😀note"
+    assert body.text_sha256 == hashlib.sha256("😀note".encode()).hexdigest()

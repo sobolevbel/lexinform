@@ -13834,3 +13834,21 @@ and foreign-key checks. The prior reader rejected the new checkpoint
 without changing its state.
 
 [Qualification](../assets/audits/2026-11-06-doc-note-projection-reader/qualification.json).
+
+<a id="j396"></a>
+
+## J396 — capture DOC note output coordinates in the native adapter
+
+The optional native DOC capture maps requested source CPs through the actual
+piece decoding and matches the entire legacy text before offering output
+positions. Automatic references hidden by field codes are excluded. The
+capture reuses the OLE streams already read for text and note declarations.
+The existing extraction path leaves output coordinates off.
+
+The 246 distinct pinned inputs retained their legacy text. Native capture
+matched all 377 independent reference offsets, 376 nonempty body ranges
+and one empty range, with one OLE open for each valid container. The 404
+path default physical replay matched every existing observation. The
+new capture remains in memory pending physical retention qualification.
+
+[Qualification](../assets/audits/2026-11-06-doc-note-native-projection/qualification.json).

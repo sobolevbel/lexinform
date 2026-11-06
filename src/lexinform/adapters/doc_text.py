@@ -14,7 +14,7 @@ import hashlib
 import io
 import logging
 import struct
-from bisect import bisect_right
+from bisect import bisect_left, bisect_right
 from collections.abc import Iterator
 
 import olefile
@@ -25,6 +25,7 @@ from lexinform.adapters.doc_notes import (
     DocNoteText,
     read_doc_note_links,
 )
+from lexinform.models.doc_notes import DocNoteOutputRange, DocNoteProjection
 from lexinform.sections import PAGE_BREAK
 
 log = logging.getLogger(__name__)
@@ -91,8 +92,11 @@ class DocTextExtractor:
             log.warning(".doc not read (%s: %s); no text", type(exc).__name__, exc)
             return ""
 
-    def extract_with_notes(self, data: bytes) -> DocNoteExtraction:
+    def extract_with_notes(
+        self, data: bytes, *, capture_projection: bool = False
+    ) -> DocNoteExtraction:
         """Capture optional source-CP note links while preserving the legacy extracted text."""
+        projections: tuple[DocNoteProjection, ...] = ()
         try:
             word, table, extra = _streams(data)
             legacy, pieces, clx = _word_text(word, table, extra)
@@ -101,7 +105,12 @@ class DocTextExtractor:
             result = DocNoteText("", None, "legacy_extraction_unavailable", None)
         else:
             result = _capture_notes(word, table, legacy, pieces, clx)
-        return DocNoteExtraction(hashlib.sha256(data).hexdigest(), result)
+            if capture_projection and result.links is not None and result.links.links:
+                try:
+                    projections = _output_projections(word, table, extra, result, pieces)
+                except DocFormatError, struct.error, ValueError:
+                    projections = ()
+        return DocNoteExtraction(hashlib.sha256(data).hexdigest(), result, projections)
 
 
 def _extract(data: bytes) -> str:
@@ -376,6 +385,144 @@ def _capture_notes(
     except (DocNoteFormatError, struct.error) as exc:
         return DocNoteText(legacy, None, str(exc), None)
     return DocNoteText(legacy, links, None, "source_characters_checked_cf_spec_unknown")
+
+
+def _cleanup_positions(
+    raw: str, *, visible_references: set[int] | None = None
+) -> tuple[str, list[int]]:
+    fields: list[bool] = []
+    output: list[tuple[str, int]] = []
+    line: list[tuple[str, int]] = []
+    for index, char in enumerate(raw):
+        if char == _FIELD_BEGIN:
+            fields.append(True)
+        elif char == _FIELD_SEPARATOR:
+            if fields:
+                fields[-1] = False
+        elif char == _FIELD_END:
+            if fields:
+                fields.pop()
+        elif not any(fields):
+            if visible_references is not None and char == "\x02":
+                visible_references.add(index)
+            for emitted in _CONTROL.get(char, char):
+                if emitted == "\n":
+                    while line and line[-1][0].isspace():
+                        line.pop()
+                    output.extend(line)
+                    line.clear()
+                    if [pair[0] for pair in output[-2:]] != ["\n", "\n"]:
+                        output.append((emitted, index))
+                else:
+                    line.append((emitted, index))
+    while line and line[-1][0].isspace():
+        line.pop()
+    output.extend(line)
+    without_left = [
+        pair
+        for index, pair in enumerate(output)
+        if pair[0] != "\n" or index == len(output) - 1 or output[index + 1][0] != PAGE_BREAK
+    ]
+    cleaned = [
+        pair
+        for index, pair in enumerate(without_left)
+        if pair[0] != "\n" or index == 0 or without_left[index - 1][0] != PAGE_BREAK
+    ]
+    text = "".join(char for char, _ in cleaned)
+    left = len(text) - len(text.lstrip())
+    right = len(text.rstrip())
+    return text.strip(), [index for _, index in cleaned[left:right]]
+
+
+def _decoded_targets(
+    word: bytes,
+    pieces: list[tuple[int, int, int, bool]],
+    spans: list[tuple[int, int]],
+    targets: set[int],
+) -> dict[int, int]:
+    positions: dict[int, int] = {}
+    raw_offset = 0
+    sorted_targets = sorted(targets)
+    for start, end, offset, compressed in pieces:
+        width = 1 if compressed else 2
+        for span_start, span_end in spans:
+            first, last = max(start, span_start), min(end, span_end)
+            if first >= last:
+                continue
+            fc = offset + width * (first - start)
+            chunk = word[fc : fc + width * (last - first)]
+            encoding = "cp1252" if compressed else "utf-16-le"
+            target_start = bisect_left(sorted_targets, first)
+            target_end = bisect_left(sorted_targets, last, target_start)
+            previous = 0
+            decoded = 0
+            for cp in sorted_targets[target_start:target_end]:
+                relative = width * (cp - first)
+                if not compressed and relative:
+                    code_unit = int.from_bytes(chunk[relative : relative + 2], "little")
+                    previous_unit = int.from_bytes(chunk[relative - 2 : relative], "little")
+                    if 0xDC00 <= code_unit <= 0xDFFF and 0xD800 <= previous_unit <= 0xDBFF:
+                        continue
+                decoded += len(chunk[previous:relative].decode(encoding, errors="replace"))
+                previous = relative
+                if cp in positions:
+                    raise ValueError("Duplicate decoded DOC position")
+                positions[cp] = raw_offset + decoded
+            raw_offset += len(chunk.decode(encoding, errors="replace"))
+    return positions
+
+
+def _output_projections(
+    word: bytes,
+    table: bytes,
+    data: bytes,
+    result: DocNoteText,
+    pieces: list[tuple[int, int, int, bool]],
+) -> tuple[DocNoteProjection, ...]:
+    links = result.links
+    if links is None:
+        return ()
+    spans = _spans(word)
+    if sum(end - start for start, end in spans) > 1_000_000:
+        return ()
+    raw = _read_pieces(word, pieces, spans=spans, row_ends=_row_end_marks(word, table, data))
+    visible_references: set[int] = set()
+    text, origins = _cleanup_positions(raw, visible_references=visible_references)
+    if text != result.legacy_text:
+        return ()
+    targets = {
+        cp
+        for link in links.links
+        for cp in (
+            link.reference_cp,
+            link.story_start_cp + link.note_start_cp,
+            link.story_start_cp + link.note_end_cp - 1,
+        )
+    }
+    located = _decoded_targets(word, pieces, spans, targets)
+    output = []
+    for link in links.links:
+        ref = located.get(link.reference_cp)
+        reference_offset = (
+            bisect_left(origins, ref)
+            if link.numbering_flag and ref is not None and ref in visible_references
+            else None
+        )
+        first = located.get(link.story_start_cp + link.note_start_cp)
+        last = located.get(link.story_start_cp + link.note_end_cp - 1)
+        body = None
+        if first is not None and last is not None and first <= last:
+            lo, hi = bisect_left(origins, first), bisect_right(origins, last)
+            body = DocNoteOutputRange(
+                start=lo, end=hi, text_sha256=hashlib.sha256(text[lo:hi].encode()).hexdigest()
+            )
+        if reference_offset is not None or body is not None:
+            output.append(
+                DocNoteProjection(
+                    reference_cp=link.reference_cp, reference_offset=reference_offset, body=body
+                )
+            )
+    return tuple(output)
 
 
 def _validate_note_pieces(

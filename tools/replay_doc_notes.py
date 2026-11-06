@@ -17,11 +17,8 @@ from pydantic import BaseModel, Field
 
 from lexinform.adapters.doc_notes import DocNoteLink, DocNoteLinks, read_doc_note_links
 from lexinform.adapters.doc_text import (
-    _CONTROL,
-    _FIELD_BEGIN,
-    _FIELD_END,
-    _FIELD_SEPARATOR,
     DocTextExtractor,
+    _cleanup_positions,
     _read_pieces,
     _row_end_marks,
     _spans,
@@ -36,7 +33,6 @@ from lexinform.document_candidates import select_document_parts
 from lexinform.extraction_records import summarize_doc_notes
 from lexinform.models.doc_notes import MAX_DOC_NOTE_SUMMARY_BYTES
 from lexinform.models.extractions import MAX_EXTRACTION_METADATA_BYTES, ExtractionResult
-from lexinform.sections import PAGE_BREAK
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 
@@ -157,49 +153,6 @@ def physical_snapshot(data: bytes, *, default_note_writer: bool = False) -> dict
 
 
 _MAX_TRACKED_DOC_CHARS = 1_000_000
-
-
-def _cleanup_positions(raw: str) -> tuple[str, list[int]]:
-    fields: list[bool] = []
-    output: list[tuple[str, int]] = []
-    line: list[tuple[str, int]] = []
-    for index, char in enumerate(raw):
-        if char == _FIELD_BEGIN:
-            fields.append(True)
-        elif char == _FIELD_SEPARATOR:
-            if fields:
-                fields[-1] = False
-        elif char == _FIELD_END:
-            if fields:
-                fields.pop()
-        elif not any(fields):
-            for emitted in _CONTROL.get(char, char):
-                if emitted == "\n":
-                    while line and line[-1][0].isspace():
-                        line.pop()
-                    output.extend(line)
-                    line.clear()
-                    if [pair[0] for pair in output[-2:]] != ["\n", "\n"]:
-                        output.append((emitted, index))
-                else:
-                    line.append((emitted, index))
-    while line and line[-1][0].isspace():
-        line.pop()
-    output.extend(line)
-    without_left = [
-        pair
-        for index, pair in enumerate(output)
-        if pair[0] != "\n" or index == len(output) - 1 or output[index + 1][0] != PAGE_BREAK
-    ]
-    cleaned = [
-        pair
-        for index, pair in enumerate(without_left)
-        if pair[0] != "\n" or index == 0 or without_left[index - 1][0] != PAGE_BREAK
-    ]
-    text = "".join(char for char, _ in cleaned)
-    left = len(text) - len(text.lstrip())
-    right = len(text.rstrip())
-    return text.strip(), [index for _, index in cleaned[left:right]]
 
 
 def _unit_location(

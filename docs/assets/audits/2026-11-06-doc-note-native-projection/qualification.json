@@ -1,0 +1,19 @@
+{
+  "baseline": "4ab3b5ec12521567213c744b8eadd50093e43be3",
+  "corpus_paths": 404,
+  "default_after_report_sha256": "86ed67b84fe07804f914e0a19a8e89c17e6177fbce407bce276b4dd4b8b9b946",
+  "default_before_report_sha256": "5d1b926c0e678bb2744e61ad4104f6bdb571414209af16bb4420eae6cea2b8a8",
+  "default_observations_unchanged": true,
+  "native": {
+    "counts": {
+      "empty_output": 1,
+      "mapped": 376,
+      "references": 377
+    },
+    "exact_ole_open_count": true,
+    "input_report_sha256": "de6adda4930a672d1b2b0d097aa8476586015e57b04e85a16818765e9004bc5f",
+    "legacy_parity_unique_inputs": 246,
+    "manifest_sha256": "449d893ca8d9b89933a3ac84abd3b757d0f89298d06fc9ae6e5c31ecb38775d5"
+  },
+  "native_replay_sha256": "e24da83bb52adf2edb40cd607152c2193b4451329467ef306de924af5efdb420"
+}
