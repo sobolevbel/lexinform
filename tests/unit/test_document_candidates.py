@@ -18,6 +18,7 @@ from lexinform.models import (
     ExtractedParts,
     TextDocument,
 )
+from lexinform.models.candidate_trace import VersionDecisionEvidence
 from lexinform.sections import PAGE_BREAK
 from lexinform.services.documents import TextLoader
 from tests.fakes import FakeSejmGateway
@@ -235,7 +236,7 @@ def test_version_comparison_reports_date_filter_without_changing_existing_api() 
     )
 
 
-def test_outer_comparison_with_archive_does_not_claim_a_loose_version_decision() -> None:
+def test_outer_comparison_records_matching_archive_and_standalone_versions() -> None:
     packed_url, loose_url = "https://api.test/a.zip", "https://api.test/b.docx"
     body = docx(BILL + "Art. 2. Przepis stosuje się w postępowaniu. " * 12)
     gateway = FakeSejmGateway(files={packed_url: archive({"projekt.docx": body}), loose_url: body})
@@ -254,4 +255,8 @@ def test_outer_comparison_with_archive_does_not_claim_a_loose_version_decision()
     assert trace is not None, "the bounded outer trace remains available"
     assert trace.reason == "version_choice"
     assert file.selection.parts[0].members == ("projekt.docx",)
-    assert trace.version_decision is None
+    assert trace.version_decision == VersionDecisionEvidence(
+        compared_indices=(0, 1),
+        retained_indices=(0, 1),
+        outcome="matching_policy_identity",
+    )

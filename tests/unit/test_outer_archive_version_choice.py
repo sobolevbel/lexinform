@@ -2,11 +2,12 @@ from unittest.mock import Mock
 
 import pytest
 
+from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.models import TextDocument
 from lexinform.models import candidate_trace as trace_model
 from lexinform.models.candidate_trace import VersionDecisionEvidence
 from lexinform.services.documents import TextLoader
-from tests.fakes import FakeSejmGateway
+from tests.fakes import FakeSejmGateway, FakeTextExtractor
 from tests.unit.test_archive_version_decision_writer import CONTENT
 from tests.unit.test_physical_extraction import archive, docx, extractor
 
@@ -58,3 +59,39 @@ def test_outer_archive_choice_requires_exact_native_roots(
     assert capped_selected == selected and capped.selection == file.selection
     assert capped_trace.version_decision is None
     assert capped_trace.dispositions == trace.dispositions
+
+
+@pytest.mark.parametrize("native_standalone", [True, False])
+def test_mixed_choice_requires_the_standalone_extraction(native_standalone: bool) -> None:
+    newer = CONTENT.replace("1 stycznia", "2 stycznia", 1)
+    first = archive({"ustawa.docx": docx(CONTENT)})
+    standalone = docx(newer) if native_standalone else b"%PDF-1.7 opaque fixture"
+    gateway = FakeSejmGateway(files={FIRST: first, SECOND: standalone})
+    reader = DocumentTextExtractor(
+        FakeTextExtractor(newer, page_count=1), DocxTextExtractor(), FakeTextExtractor()
+    )
+    loader = TextLoader({"api.test": gateway.download}, reader, max_bytes=100_000)
+    request = TextDocument(
+        url=FIRST,
+        kind="rcl",
+        compare_versions=True,
+        alternatives=(TextDocument(url=SECOND, kind="rcl"),),
+    )
+
+    selected, file = loader.select_document(request)
+    cached_selected, cached = loader.select_document(request)
+
+    assert selected.url == SECOND and cached_selected == selected and cached == file
+    trace = file.candidate_trace
+    assert trace is not None, "the exact comparison ran even when a receipt cannot be kept"
+    assert trace.dispositions[0].reason == "version_preference"
+    assert trace.version_decision == (
+        VersionDecisionEvidence(
+            compared_indices=(0, 1),
+            retained_indices=(1,),
+            outcome="single_survivor",
+            date_filter=("2026-01-01", "2026-01-02"),
+        )
+        if native_standalone
+        else None
+    )

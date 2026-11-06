@@ -87,6 +87,10 @@ class ArchivePolicyCapture:
         self._decisions.append(decision)
 
     @property
+    def native_single_part(self) -> bool:
+        return self._expected == 1 and not self._failed
+
+    @property
     def decisions(self) -> tuple[ArchivePolicyDecision, ...] | None:
         return (
             tuple(self._decisions)

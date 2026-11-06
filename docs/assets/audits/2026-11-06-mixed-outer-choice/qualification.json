@@ -1,0 +1,144 @@
+{
+  "cached_replay": {
+    "missing_inputs": 1383,
+    "read_inputs": 7599,
+    "results": 4276
+  },
+  "cached_report_sha256": "28b7e550df6d3c4352aa2fa355ecafacd7c97740dec015486fa34de88242bc4a",
+  "case": "RCL 12388203/4",
+  "deltas": {
+    "gzip_bytes": 62,
+    "sql_bytes": 139,
+    "trace_bytes": 139
+  },
+  "native": {
+    "catalogue_sha256": "a6d639c3393e7b5f89702ccf4dc9534c7977a485686225827d837aa7ef0c700f",
+    "downloads": [
+      "720220.zip",
+      "678498.docx"
+    ],
+    "extraction_ids": [
+      "extraction-v1:994477a5b11148be3dbb7c732628800d6283b33c1036c315e51f6dbf523ff4c5",
+      "extraction-v1:e8161c87e6131f4be15425e6c743735deaf7c384f66f5c6cfd68035552acf3fe"
+    ],
+    "gzip_bytes": 18398,
+    "observation_id": "source-observation-v1:78127bbca7394d90e251fbb0fcd1f2127557badcaa25bd9aea8a48ddc35723c9",
+    "pins": {
+      "678498.docx": "8b67bae28cf004b9c8786f12413e451c9422d94f1af82ea810fd84a5094f3946",
+      "720220.zip": "a0568587567b4923f58d406114d1b9ae567c2234291c892cf9dcc9e79dbf7301"
+    },
+    "selection_id": "selection-v1:b9346ef5bc0cb08789ca541fd2329f6cd56b9df6bda2f1f27debcd237c05366e",
+    "sql_bytes": 95552,
+    "text_sha256": "ee3f079a806b99db97f783a54dc9ef66ad423aff89cae27d751ebc59c96ffc74",
+    "trace": {
+      "archive_members": {
+        "observed_rows": 11,
+        "omitted_rows": 9,
+        "retention": "prefix",
+        "rows": [
+          {
+            "index": 0,
+            "leaf_sha256": "b925076a94d95b6b321acb4f529fad58ca8b9c068aba5caa942a11ed9bcab6a2",
+            "ordinals": [
+              2
+            ],
+            "outcome": "selected",
+            "phase": "version_comparison",
+            "physical_part_index": 1,
+            "reason": "selected_main",
+            "root_sha256": "a0568587567b4923f58d406114d1b9ae567c2234291c892cf9dcc9e79dbf7301",
+            "stage": "policy",
+            "text_sha256": "9d3a838142cf78586dc023936dc29da385cf95cbf5789936dd191fbb4017d210"
+          },
+          {
+            "index": 0,
+            "leaf_sha256": "093ce069ec6870756cddd2a13f5a5514b4c41c839bab72dcc0e50a227c28a1d8",
+            "ordinals": [
+              1
+            ],
+            "outcome": "selected",
+            "phase": "version_comparison",
+            "physical_part_index": 0,
+            "reason": "selected_support",
+            "root_sha256": "a0568587567b4923f58d406114d1b9ae567c2234291c892cf9dcc9e79dbf7301",
+            "stage": "policy",
+            "text_sha256": "bf88799579a460059dfa5f477770e6fb359267133642a936717433565c2634dd"
+          }
+        ],
+        "rows_sha256": "78fd90a07a697e766b9cc91a062a26eee18335fa5d717a2cb1fcd9365dfb927b",
+        "unvisited": "none_known",
+        "walk": "finished"
+      },
+      "candidate_count": 2,
+      "coverage": "complete",
+      "dispositions": [
+        {
+          "index": 0,
+          "observed_sha256": "a0568587567b4923f58d406114d1b9ae567c2234291c892cf9dcc9e79dbf7301",
+          "outcome": "selected",
+          "phase": "version_comparison",
+          "reason": "version_choice"
+        },
+        {
+          "index": 1,
+          "observed_sha256": "8b67bae28cf004b9c8786f12413e451c9422d94f1af82ea810fd84a5094f3946",
+          "outcome": "policy_excluded",
+          "phase": "version_comparison",
+          "reason": "version_preference"
+        }
+      ],
+      "omitted_dispositions": 0,
+      "reason": "version_choice",
+      "requested_document": {
+        "alternatives": [
+          {
+            "compare_versions": true,
+            "extra_urls": [
+              "https://legislacja.rcl.gov.pl/docs//2/12388203/13074725/13074726/dokument678499.docx",
+              "https://legislacja.rcl.gov.pl/docs//2/12388203/13074725/13074726/dokument678500.docx"
+            ],
+            "kind": "rcl",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12388203/13074725/13074726/dokument678498.docx",
+            "version_basis": [
+              "rcl/12388203/stage/13074725",
+              "[UKO][UD61] ustawa zm. ustawy o lasach.docx"
+            ]
+          }
+        ],
+        "compare_versions": true,
+        "kind": "rcl",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12388203/13074725/13074726/dokument720220.zip",
+        "version_basis": [
+          "rcl/12388203/stage/13074725",
+          "[UD61][ponowne UKO] opiniowanie projekt.zip"
+        ]
+      },
+      "result": "selected",
+      "selection_state": "unverified",
+      "universe_sha256": "bff055f3f03a6f45f79b01bc50cdf5f9f0095cbd2779f8e181745634c1910677",
+      "version_decision": {
+        "compared_indices": [
+          0,
+          1
+        ],
+        "date_filter": [
+          "2025-05-30",
+          "2024-08-08"
+        ],
+        "outcome": "single_survivor",
+        "retained_indices": [
+          0
+        ]
+      }
+    },
+    "trace_bytes": 2406,
+    "trace_id": "candidate-trace-v1:7d0d6936289750423bfcc8b2efd6df38c39234b0c107e753731b103327d46ffb"
+  },
+  "paired_raw_cohort": {
+    "cohort_sha256": "f788bb15d668827d5fc6130df92084fca3099da90ef093bb98cd5a2b360d4859",
+    "natural_requests": 17,
+    "natural_roots": 16,
+    "synthetic_requests": 4
+  },
+  "prior_reader_two_restores_exact": true
+}

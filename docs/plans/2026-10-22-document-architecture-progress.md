@@ -13073,6 +13073,9 @@ The cleaned dump added 2,574 SQL bytes and 524 gzip bytes. The prior
 compatible reader restored all four lifecycle checkpoints twice.
 [Qualification](../assets/audits/2026-11-06-hybrid-input-writer/qualification.json).
 
+The exact `bff4f8c2` release passed CI run 42262951045 and relay
+deployment 42264131387. Restart and timer were verified.
+
 <a id="j356"></a>
 
 ## J356 — record declared judgments over a pinned saved answer
@@ -13088,3 +13091,21 @@ literal citation and contributed zero independent semantic labels.
 The eight-slot template, prior HTML and repeated report matched.
 No saved answer, reader card or provider request was changed.
 [Qualification](../assets/audits/2026-11-06-primary-review-intake/qualification.json).
+
+<a id="j357"></a>
+
+## J357 — retain the exact mixed outer version comparison
+
+A successful outer comparison can include a standalone file whose
+native complete extraction proves the exact bytes and text. Archive
+participants keep the existing native root requirement. Unknown and
+custom extraction paths preserve the earlier behavior.
+
+On RCL 12388203 stage 4 the ZIP and DOCX were compared, and the ZIP
+survived the existing date filter. Both downloads, selected text and
+physical identities matched. The trace added 139 SQL and 62 gzip bytes.
+The previous reader restored it twice. The current raw pair matched 16
+roots and four controls, and all 4,276 cached decisions matched.
+The unit control with equal ZIP and DOCX text now checks both compared
+positions and the matching-policy-identity outcome.
+[Qualification](../assets/audits/2026-11-06-mixed-outer-choice/qualification.json).

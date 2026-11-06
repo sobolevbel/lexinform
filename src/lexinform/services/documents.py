@@ -25,6 +25,7 @@ from lexinform.archive_disposition_observations import (
     ArchiveDispositionAccumulator,
     ArchiveRootObservation,
     Phase,
+    complete_standalone_root,
 )
 from lexinform.archive_policy_capture import optional_archive_policy_capture
 from lexinform.document_candidates import (
@@ -1380,6 +1381,7 @@ class TextLoader:
         invocation: PhysicalInvocation | None = None
         archive: ArchiveRootObservation | None = None
         completed = False
+        native_standalone = False
         try:
             with (
                 optional_archive_policy_capture() as capture,
@@ -1389,6 +1391,9 @@ class TextLoader:
                 complete_pdf_pages = None
                 if isinstance(self._extractor, ProvenanceTextExtractor):
                     observed = self._extractor.extract_document_with_provenance(data)
+                    if capture is not None and capture.native_single_part:
+                        with suppress(Exception):
+                            native_standalone = complete_standalone_root(observed, artifact.sha256)
                     first_pdf_page = observed.first_pdf_page
                     complete_pdf_pages = observed.complete_pdf_pages
                     text = observed.document.text
@@ -1458,6 +1463,7 @@ class TextLoader:
                     invocation.observation if invocation is not None else None,
                     capture.decisions if capture is not None and completed else None,
                     completed,
+                    native_standalone=native_standalone,
                 )
                 if archive_sink is not None:
                     archive_sink(archive)

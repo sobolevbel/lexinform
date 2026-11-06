@@ -13,6 +13,7 @@ from lexinform.models.candidate_trace import (
     ArchiveVersionConflictEvidence,
     ArchiveVersionDecisionEvidence,
 )
+from lexinform.models.extractions import DocumentExtraction, extraction_metadata_sha256
 from lexinform.models.physical_inventory import (
     PhysicalContainerExecution,
     PhysicalGraph,
@@ -33,6 +34,36 @@ class ArchiveRootObservation:
     physical: PhysicalWalkObservation | None
     policy: tuple[ArchivePolicyDecision, ...] | None
     completed: bool
+    native_standalone: bool = False
+
+
+def complete_standalone_root(extraction: DocumentExtraction, sha256: str) -> bool:
+    result, document = extraction.result, extraction.document
+    if (
+        result.artifact_sha256 != sha256
+        or result.physical_part_count != 1
+        or result.selected_part_count != 1
+        or result.omitted_selected_parts
+        or result.rejected_count
+        or len(result.selected_parts) != 1
+        or len(document.selection.parts) != 1
+    ):
+        return False
+    (summary,) = result.selected_parts
+    (part,) = document.selection.parts
+    return (
+        not part.members
+        and not part.losses
+        and summary.physical_index == 0
+        and summary.member_path_sha256 == extraction_metadata_sha256(())
+        and summary.coordinates != "unknown"
+        and summary.error_count == 0
+        and sha256 == summary.sha256 == part.sha256 == part.source_sha256
+        and summary.text_sha256 == result.output_text_sha256 == part.text_sha256
+        and part.text_start == 0
+        and part.text_end == summary.text_chars == result.output_chars == len(document.text)
+        and part.text == document.text
+    )
 
 
 class _UnavailableError(Exception):
@@ -237,8 +268,13 @@ class ArchiveDispositionAccumulator:
             if (
                 len(self._native_comparison_roots) < MAX_VERSION_DECISION_ROWS
                 and root.completed
-                and root.policy
-                and any(decision.reason == "selected_main" for decision in root.policy)
+                and (
+                    root.native_standalone
+                    or (
+                        root.policy
+                        and any(decision.reason == "selected_main" for decision in root.policy)
+                    )
+                )
             ):
                 self._native_comparison_roots[index] = root.artifact.sha256
             if self._conflict_attempts < 2:
