@@ -13815,3 +13815,22 @@ identical. Synthetic controls cover nonempty and empty note output. CFSpec
 and runtime retention remain separate.
 
 [Qualification](../assets/audits/2026-11-06-doc-note-body-projection/qualification.json).
+
+<a id="j395"></a>
+
+## J395 — read bounded DOC note output positions
+
+The compatible reader accepts optional reference insertion positions and
+note body ranges on retained DOC links. It verifies link membership, source
+order, extracted-text bounds and the empty text hash. Historical source
+manifest hashes and existing serialized rows stay intact. The native
+producer still writes the previous format.
+
+The 404 pinned DOC paths reproduced all existing observations. A scratch
+checkpoint used verified coordinates and body hashes from one real corpus
+input. The legacy record and SQL were byte-identical across readers. The
+new record added 338 bytes and survived two exact restores with integrity
+and foreign-key checks. The prior reader rejected the new checkpoint
+without changing its state.
+
+[Qualification](../assets/audits/2026-11-06-doc-note-projection-reader/qualification.json).

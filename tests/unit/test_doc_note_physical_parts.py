@@ -409,3 +409,36 @@ def test_future_doc_summary_survives_sql_restore_and_corruption_is_atomic(
             "level": "error",
         }
     ]
+
+
+@pytest.mark.parametrize("control", ["exact", "unknown_ref", "duplicate", "too_far", "empty_hash"])
+def test_doc_projection_reader_binds_offsets_to_retained_links_and_text(control: str) -> None:
+    physical = extractor().extract_parts_with_doc_notes(ole_document(*source_notes()))
+    baseline = summarize_doc_notes(summary(physical), physical)
+    payload = baseline.model_dump(mode="json")
+    part = payload["selected_parts"][0]
+    notes = part["doc_notes"]
+    link = notes["links"][0]
+    body = {"start": 3, "end": 7, "text_sha256": hashlib.sha256(b"note").hexdigest()}
+    position = {"reference_cp": link["reference_cp"], "reference_offset": 1, "body": body}
+    notes["projections"] = [position]
+    if control == "unknown_ref":
+        position["reference_cp"] = link["reference_cp"] + 1
+    elif control == "duplicate":
+        notes["projections"].append(position.copy())
+    elif control == "too_far":
+        position["reference_offset"] = part["text_chars"] + 1
+    elif control == "empty_hash":
+        body["end"] = body["start"]
+
+    if control == "exact":
+        result = ExtractionResult.model_validate(payload)
+        assert ExtractionResult.model_validate_json(result.model_dump_json()) == result
+        assert "projections" not in baseline.model_dump_json()
+        result_notes = result.selected_parts[0].doc_notes
+        baseline_notes = baseline.selected_parts[0].doc_notes
+        assert result_notes is not None and baseline_notes is not None, "the fixture retains notes"
+        assert result_notes.retained_manifest_sha256 == baseline_notes.retained_manifest_sha256
+    else:
+        with pytest.raises(ValidationError):
+            ExtractionResult.model_validate(payload)

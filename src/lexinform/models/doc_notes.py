@@ -1,4 +1,4 @@
-"""Input-bound binary DOC note coordinates without emitted offsets or retained note text."""
+"""Input-bound binary DOC note coordinates without retained note text."""
 
 import hashlib
 import json
@@ -84,11 +84,47 @@ class DocNoteCapture(_Source):
         return _capture_digest(self, self.links)
 
 
+class DocNoteOutputRange(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    start: Count
+    end: Count
+    text_sha256: Sha256
+
+    @model_validator(mode="after")
+    def ordered_bounds(self) -> Self:
+        if self.start > self.end:
+            raise ValueError("DOC note output range ends before its start")
+        if self.start == self.end and self.text_sha256 != hashlib.sha256(b"").hexdigest():
+            raise ValueError("An empty DOC note output range requires the empty text hash")
+        return self
+
+
+class DocNoteProjection(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    reference_cp: Count
+    reference_offset: Count | None = Field(default=None, exclude_if=lambda value: value is None)
+    body: DocNoteOutputRange | None = Field(default=None, exclude_if=lambda value: value is None)
+
+    @model_validator(mode="after")
+    def known_position(self) -> Self:
+        if self.reference_offset is None and self.body is None:
+            raise ValueError("DOC note projection requires a known reference or body position")
+        return self
+
+
 class DocNoteSummary(_Source):
     observed_links: Count | None
     links: tuple[DocSourceNoteLink, ...] = Field(max_length=MAX_DOC_RETAINED_LINKS)
     captured_manifest_sha256: Sha256
     retained_manifest_sha256: Sha256
+    projections: tuple[DocNoteProjection, ...] | None = Field(
+        default=None,
+        min_length=1,
+        max_length=MAX_DOC_RETAINED_LINKS,
+        exclude_if=lambda value: value is None,
+    )
 
     @model_validator(mode="after")
     def stored_prefix_matches_its_witness(self) -> Self:
@@ -100,6 +136,13 @@ class DocNoteSummary(_Source):
             raise ValueError("Retained DOC notes exceed their observed link inventory")
         complete = observed == len(self.links) or self.state == "unavailable"
         _validate_links(self, self.links, complete=complete)
+        if self.projections is not None:
+            positions = {link.reference_cp: index for index, link in enumerate(self.links)}
+            indices = [positions.get(item.reference_cp, -1) for item in self.projections]
+            if -1 in indices or indices != sorted(set(indices)):
+                raise ValueError(
+                    "DOC note projections require unique retained links in source order"
+                )
         retained = _capture_digest(self, self.links)
         if self.retained_manifest_sha256 != retained:
             raise ValueError("Retained DOC links differ from their stored prefix hash")

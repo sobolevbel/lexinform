@@ -287,6 +287,14 @@ class ExtractedPartSummary(BaseModel):
                 "unlocated",
             ) or (notes.input_sha256, notes.text_sha256) != (self.sha256, self.text_sha256):
                 raise ValueError("DOC note summary differs from its actual source projection")
+            if notes.projections is not None and any(
+                item.reference_offset is not None
+                and item.reference_offset > self.text_chars
+                or item.body is not None
+                and item.body.end > self.text_chars
+                for item in notes.projections
+            ):
+                raise ValueError("DOC note output coordinates exceed the extracted part")
         if self.word_view_status is not None:
             if not isinstance(self.word_view_status, WordViewStatus):
                 raise ValueError("Constructed Word summary requires its typed view status")
