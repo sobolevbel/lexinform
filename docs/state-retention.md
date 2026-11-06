@@ -583,6 +583,12 @@ source URL before retaining the paid record, then commits result/memo/usage/cons
 application work together. Its consumed metadata replaces the full revision target with a work-key
 reference checked by restore and doctor. Unsupported legacy targets keep their paid result and
 original metadata with an explicit application problem; they do not acquire transferable work.
+
+Older consumed amendment targets without a durable handoff keep their captured plans.
+A matching sent revision identifies the delivery, but its plan can differ from the
+queued target. The original status-update payload can also expire independently.
+[J304](plans/2026-10-22-document-architecture-progress.md#j304) qualifies this
+exception on three retained legacy rows.
 Local application drains before polling and after collection, including without an open batch or
 provider. Its separate transaction creates QUEUED publication, target receipt and completion;
 delivery remains later. Changed physical targets block without rebasing, and primary skip/reset

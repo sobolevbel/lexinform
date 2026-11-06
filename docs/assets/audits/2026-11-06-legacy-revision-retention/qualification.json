@@ -1,0 +1,88 @@
+{
+  "code_git_sha": "6d4524136c6997fdfb1d638ed718140a78e2da21",
+  "baseline_cleanup_at": "2026-11-06T00:00:00+00:00",
+  "delivery_days": 90,
+  "memo_days": 180,
+  "state_git_sha": "13440124b6f38f1124beb9b99f35a7c8a227c08b",
+  "source_sql_sha256": "baee693eefec358f018cf8265096d9d5acca1eaba2d5f9bfa4afd363166c4bec",
+  "baseline_sql_sha256": "14884604bcdadb769304bc174b8a34ffa1694c876c7a133f3b78f0620dd33e2f",
+  "candidates": [
+    {
+      "root": 136,
+      "revision": 142,
+      "paid_results": 0,
+      "editorial_bindings": 0,
+      "target_plan_utf8_bytes": 27036,
+      "duplicate_bill_utf8_bytes": 21080,
+      "different_from_sent": [
+        "change_json",
+        "rendered_text"
+      ],
+      "different_from_original": [
+        "amendment_key",
+        "edit_message_id",
+        "rendered_text",
+        "revision_of"
+      ]
+    },
+    {
+      "root": 172,
+      "revision": 177,
+      "paid_results": 0,
+      "editorial_bindings": 0,
+      "target_plan_utf8_bytes": 32499,
+      "duplicate_bill_utf8_bytes": 25401,
+      "different_from_sent": [
+        "change_json",
+        "rendered_text"
+      ],
+      "different_from_original": [
+        "amendment_key",
+        "edit_message_id",
+        "rendered_text",
+        "revision_of"
+      ]
+    },
+    {
+      "root": 172,
+      "revision": 178,
+      "paid_results": 0,
+      "editorial_bindings": 0,
+      "target_plan_utf8_bytes": 32499,
+      "duplicate_bill_utf8_bytes": 25401,
+      "different_from_sent": [
+        "change_json",
+        "rendered_text"
+      ],
+      "different_from_original": [
+        "amendment_key",
+        "edit_message_id",
+        "rendered_text",
+        "revision_of"
+      ]
+    }
+  ],
+  "hypothetical_remove_only_duplicate_bill": {
+    "baseline_sql_bytes": 26261470,
+    "hypothetical_sql_bytes": 26183277,
+    "baseline_gzip_bytes": 5270886,
+    "hypothetical_gzip_bytes": 5256541,
+    "deployable": false,
+    "rejected_by_target_reader": 3
+  },
+  "future_cleanup": {
+    "cutoff": "2027-08-08T00:00:00+00:00",
+    "counts": {
+      "delivery_payloads": 164,
+      "analysis_memos": 126,
+      "batch_payloads": 0
+    },
+    "retained_delivery_by_publication_id": {
+      "136": 0,
+      "142": 1,
+      "172": 0,
+      "177": 1,
+      "178": 1
+    }
+  }
+}

@@ -11974,3 +11974,25 @@ The same copy retained 85,453 characters of amendment revision delivery plans
 in three of nine forgotten and accounted amendments items. The three had no
 matching paid result or revision work key. DA6.6 remains open for qualifying
 legacy revision retention and other dependency boundaries.
+
+<a id="j304"></a>
+
+## J304 — qualify retention of legacy amendment targets
+
+The three captured plans identified in J303 each match a SENT revision by
+the exact `amendments/<original-publication-id>/<batch-custom-id>` ref,
+bill owner, channel, message and amendment key. None has a modern paid
+result or editorial binding. Each queued plan has the same serialized Bill
+as both the original publication and sent revision. The sent revision has a
+different frozen change and rendered text. A future cleanup on the saved copy
+clears both original publication payloads and keeps the three revision payloads.
+
+On that pinned copy, removing only the three duplicated Bill strings would
+save 78,193 bytes of SQL and 14,345 bytes of gzip, about 0.27% of the compressed
+dump. All three modified targets fail the existing reader on the required
+`bill_json`. This measurement describes an invalid counterfactual. Retain the
+legacy targets as recorded. The measured scope does not justify adding a
+second target representation, pinning original delivery payloads, or creating
+retrospective handoffs. Modern targets continue to use their separate durable
+work reference. DA6.6 remains open for other retention dependencies.
+[Qualification](../assets/audits/2026-11-06-legacy-revision-retention/qualification.json).
