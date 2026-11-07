@@ -1,0 +1,260 @@
+{
+  "reader": "a3419045",
+  "state": {
+    "previous": "ca2353d112dedb6a47962976a4bd29e6f19836a9",
+    "current": "175b03b53e3d17a2cb87fd361325749d758e16dd"
+  },
+  "schema": 72,
+  "primary": {
+    "consumed_projection_unavailable": 4,
+    "exact_retained_cycle": 1,
+    "frozen_paid_reference_unavailable": 3,
+    "frozen_plan_unavailable": 27,
+    "frozen_render_context_unavailable": 13,
+    "prepared_receipt_unavailable": 1,
+    "publication_outside_direct_original_scope": 1,
+    "recorded_send_unavailable": 1
+  },
+  "secondary_count": 5,
+  "changed_tables_added_removed": {
+    "artifact_reads": [
+      5,
+      0
+    ],
+    "artifacts": [
+      8,
+      0
+    ],
+    "bills": [
+      64,
+      63
+    ],
+    "candidate_disposition_traces": [
+      1,
+      0
+    ],
+    "document_editions": [
+      1,
+      0
+    ],
+    "document_selections": [
+      1,
+      0
+    ],
+    "extraction_results": [
+      5,
+      0
+    ],
+    "llm_batch_items": [
+      5,
+      5
+    ],
+    "physical_captures": [
+      5,
+      0
+    ],
+    "physical_metadata": [
+      17,
+      0
+    ],
+    "runs": [
+      1,
+      0
+    ],
+    "selection_artifacts": [
+      6,
+      0
+    ],
+    "selection_editions": [
+      1,
+      0
+    ],
+    "selection_extractions": [
+      5,
+      0
+    ],
+    "source_candidate_traces": [
+      1,
+      0
+    ],
+    "source_checks": [
+      51,
+      51
+    ],
+    "source_observations": [
+      1,
+      0
+    ]
+  },
+  "expiry_rows": [
+    {
+      "purpose": "analysis",
+      "result_ids": [
+        "result-v1:ef9d048e4a113196bb189a106eb5452ec8642fa5046f16244b83ebedefd3b290"
+      ],
+      "removed": {
+        "meta_json": [
+          "located",
+          "text"
+        ],
+        "result_json": [
+          "answer"
+        ]
+      },
+      "consumed_accounted_forgotten": true
+    },
+    {
+      "purpose": "reanalysis",
+      "result_ids": [
+        "result-v1:bf80920f0fc77b10afca4b5b97dc480fb3f161b0f9ac23f7d33983da0503b694"
+      ],
+      "removed": {
+        "meta_json": [
+          "located",
+          "text"
+        ],
+        "result_json": [
+          "answer"
+        ]
+      },
+      "consumed_accounted_forgotten": true
+    },
+    {
+      "purpose": "amendments",
+      "result_ids": [
+        "result-v1:2bd1d96a1e3d2c7f01fd07c754d31f23070a472e1b670783854528ce96365da5"
+      ],
+      "removed": {
+        "meta_json": [
+          "review_context"
+        ],
+        "result_json": [
+          "answer"
+        ]
+      },
+      "consumed_accounted_forgotten": true
+    },
+    {
+      "purpose": "amendments",
+      "result_ids": [
+        "result-v1:36de4274dc2a92771d2addec4015b064323ff2a826ceca11b2e2a3350ad7d80c"
+      ],
+      "removed": {
+        "meta_json": [
+          "review_context"
+        ],
+        "result_json": [
+          "answer"
+        ]
+      },
+      "consumed_accounted_forgotten": true
+    },
+    {
+      "purpose": "amendments",
+      "result_ids": [
+        "result-v1:3f8a78358bfc349737f1559bb453934e67c0aa7b5a9ffa5755cc5b738272025e"
+      ],
+      "removed": {
+        "meta_json": [
+          "review_context"
+        ],
+        "result_json": [
+          "answer"
+        ]
+      },
+      "consumed_accounted_forgotten": true
+    }
+  ],
+  "secondary_changed": [
+    {
+      "application_id": 33,
+      "publication_id": 293,
+      "previous": {
+        "original_amendment_question": "exact_retained_question",
+        "original_collection_application": "not_retained",
+        "original_request_payload": "not_verified",
+        "prepared_input_receipt": "validated_retained_receipt",
+        "reason": "exact_submitted_secondary_request_identity",
+        "retained_collection_checkpoint": "matching_retained_checkpoint",
+        "retained_provider_answer": "exact_retained_answer",
+        "retained_provider_request_manifest": "verified_retained_manifest",
+        "source_selection_binding": "exact_retained_source_selection",
+        "status": "recorded"
+      },
+      "current": {
+        "original_amendment_question": "exact_retained_question",
+        "original_collection_application": "not_retained",
+        "original_request_payload": "not_verified",
+        "prepared_input_receipt": "validated_retained_receipt",
+        "reason": "exact_submitted_secondary_request_identity",
+        "retained_collection_checkpoint": "not_verified",
+        "retained_provider_answer": "not_retained",
+        "retained_provider_request_manifest": "verified_retained_manifest",
+        "source_selection_binding": "exact_retained_source_selection",
+        "status": "recorded"
+      }
+    },
+    {
+      "application_id": 34,
+      "publication_id": 294,
+      "previous": {
+        "original_amendment_question": "exact_retained_question",
+        "original_collection_application": "not_retained",
+        "original_request_payload": "not_verified",
+        "prepared_input_receipt": "validated_retained_receipt",
+        "reason": "exact_submitted_secondary_request_identity",
+        "retained_collection_checkpoint": "matching_retained_checkpoint",
+        "retained_provider_answer": "exact_retained_answer",
+        "retained_provider_request_manifest": "verified_retained_manifest",
+        "source_selection_binding": "exact_retained_source_selection",
+        "status": "recorded"
+      },
+      "current": {
+        "original_amendment_question": "exact_retained_question",
+        "original_collection_application": "not_retained",
+        "original_request_payload": "not_verified",
+        "prepared_input_receipt": "validated_retained_receipt",
+        "reason": "exact_submitted_secondary_request_identity",
+        "retained_collection_checkpoint": "not_verified",
+        "retained_provider_answer": "not_retained",
+        "retained_provider_request_manifest": "verified_retained_manifest",
+        "source_selection_binding": "exact_retained_source_selection",
+        "status": "recorded"
+      }
+    },
+    {
+      "application_id": 35,
+      "publication_id": 295,
+      "previous": {
+        "original_amendment_question": "exact_retained_question",
+        "original_collection_application": "not_retained",
+        "original_request_payload": "not_verified",
+        "prepared_input_receipt": "validated_retained_receipt",
+        "reason": "exact_submitted_secondary_request_identity",
+        "retained_collection_checkpoint": "matching_retained_checkpoint",
+        "retained_provider_answer": "exact_retained_answer",
+        "retained_provider_request_manifest": "verified_retained_manifest",
+        "source_selection_binding": "exact_retained_source_selection",
+        "status": "recorded"
+      },
+      "current": {
+        "original_amendment_question": "exact_retained_question",
+        "original_collection_application": "not_retained",
+        "original_request_payload": "not_verified",
+        "prepared_input_receipt": "validated_retained_receipt",
+        "reason": "exact_submitted_secondary_request_identity",
+        "retained_collection_checkpoint": "not_verified",
+        "retained_provider_answer": "not_retained",
+        "retained_provider_request_manifest": "verified_retained_manifest",
+        "source_selection_binding": "exact_retained_source_selection",
+        "status": "recorded"
+      }
+    }
+  ],
+  "hashes": {
+    "current.sql": "86631b80b725d7581a9da3000449c54dbbddec364841b219bfb99ad934372023",
+    "previous.sql": "7b78e09bd146db7ce66233e05e8d54f64037c34aa83fbfbdb0748b6c35de15db",
+    "current.json": "e231087a5599e0a33a2a8bc2648651a35d891c4a32ef2dbdb6ab861aea7110c2",
+    "previous.json": "1f64bfc98ad6bbfa3965ff6c2ebafb02396485a73a093373a745159bfaaf3af9"
+  }
+}
