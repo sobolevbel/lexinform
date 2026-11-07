@@ -547,3 +547,40 @@ def test_completed_workflow_without_conclusion_is_pending_metadata(phase: str) -
     assert report["status"] == "pending"
     assert report["reason"] == "metadata_pending"
     assert not report["proof"]["complete"]
+
+
+@pytest.mark.parametrize(
+    "control", ["verified", "missing_previous", "wrong_previous", "wrong_target", "skip", "third"]
+)
+def test_retry_requires_prior_failed_transition_and_exact_successful_restart(control: str) -> None:
+    github = GitHub()
+    github.deploy[0]["run_attempt"] = 3 if control == "third" else 2
+    github.log = PROOF.replace(PREVIOUS[:12], TARGET[:12])
+    if control == "skip":
+        github.log += "already at 563b3e805db0, lexinform-listen running\n"
+    first = run(DEPLOY, "deploy-relay.yml", "workflow_run")
+    first["conclusion"] = "failure"
+    if control == "wrong_target":
+        first["head_sha"] = PREVIOUS
+    first_job = job(JOB + 1, "deploy")
+    first_job["conclusion"] = "failure"
+
+    def read(endpoint: str) -> str:
+        if endpoint == f"actions/runs/{DEPLOY}/attempts/1":
+            return json.dumps(first)
+        if endpoint == f"actions/runs/{DEPLOY}/attempts/1/jobs?per_page=100":
+            return json.dumps({"total_count": 1, "jobs": [first_job]})
+        if endpoint == f"actions/jobs/{JOB + 1}/logs":
+            return "\n".join(PROOF.splitlines()[:2])
+        return github.read(endpoint)
+
+    previous = {"missing_previous": None, "wrong_previous": "a" * 40}.get(control, PREVIOUS)
+    report = verify(TARGET, previous=previous, read=read)
+
+    if control == "verified":
+        assert report["status"] == "verified"
+        assert report["reason"] == "exact_release_retry_confirmed"
+        assert report["proof"]["transition_from"] == PREVIOUS[:12]
+    else:
+        assert report["status"] == "unproven"
+        assert not report["proof"]["complete"]

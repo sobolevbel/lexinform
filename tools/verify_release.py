@@ -212,7 +212,13 @@ def run_state(run: dict[str, Any], *, deploy: bool) -> Status:
     )
 
 
-def relay_proof(log: str, target: str, previous: str | None) -> Proof:
+def relay_proof(
+    log: str,
+    target: str,
+    previous: str | None,
+    *,
+    mode: Literal["normal", "interrupted", "retry"] = "normal",
+) -> Proof:
     lines = [TIMESTAMP.sub("", line).strip() for line in log.splitlines()]
     commits = [
         (i, line[8:]) for i, line in enumerate(lines) if re.fullmatch(r"COMMIT: [0-9a-f]{40}", line)
@@ -234,17 +240,69 @@ def relay_proof(log: str, target: str, previous: str | None) -> Proof:
         "skip_observed": skipped,
         "complete": False,
     }
-    if len(commits) == len(transitions) == len(health) == len(timers) == 1:
+    if len(commits) == len(transitions) == 1:
         old, new = transitions[0][1]
-        proof["complete"] = (
+        expected_checkout = old == new if mode == "retry" else old != new
+        transition_valid = (
             commits[0][1] == target
             and new == target[:12]
-            and old != new
+            and expected_checkout
             and (previous is None or old == previous[:12])
-            and commits[0][0] < transitions[0][0] < health[0] < timers[0]
+            and commits[0][0] < transitions[0][0]
             and not skipped
         )
+        if mode == "interrupted":
+            proof["complete"] = transition_valid and not health and not timers
+        else:
+            proof["complete"] = (
+                transition_valid
+                and len(health) == len(timers) == 1
+                and transitions[0][0] < health[0] < timers[0]
+            )
     return proof
+
+
+def relay_retry_proof(
+    read: Read, deploy: dict[str, Any], log: str, target: str, previous: str | None
+) -> Proof | None:
+    if deploy["run_attempt"] != 2 or previous is None:
+        return None
+    current = relay_proof(log, target, target, mode="retry")
+    if not current["complete"]:
+        return None
+    run_id = deploy["id"]
+    first = object_at(read, f"actions/runs/{run_id}/attempts/1")
+    expected = {
+        "id": run_id,
+        "run_attempt": 1,
+        "head_sha": target,
+        "head_branch": "main",
+        "event": "workflow_run",
+        "path": ".github/workflows/deploy-relay.yml",
+        "created_at": deploy["created_at"],
+        "status": "completed",
+        "conclusion": "failure",
+    }
+    if any(first.get(key) != value for key, value in expected.items()):
+        return None
+    prior = run_summary(read, first)
+    jobs = prior["jobs"]
+    if len(jobs) != 1 or (jobs[0]["name"], jobs[0]["status"], jobs[0]["conclusion"]) != (
+        "deploy",
+        "completed",
+        "failure",
+    ):
+        return None
+    first_job = jobs[0]["id"]
+    if first_job == deploy["jobs"][0]["id"]:
+        return None
+    transition = relay_proof(
+        read(f"actions/jobs/{first_job}/logs"), target, previous, mode="interrupted"
+    )
+    if not transition["complete"]:
+        return None
+    current["transition_from"] = transition["transition_from"]
+    return current
 
 
 def verify(target: str, *, previous: str | None = None, read: Read = gh_read) -> Report:
@@ -307,7 +365,14 @@ def verify(target: str, *, previous: str | None = None, read: Read = gh_read) ->
         identity = deploy["jobs"][0]["id"]
         if type(identity) is not int or identity <= 0:
             raise EvidenceError("invalid_job_identity")
-        report["proof"] = relay_proof(read(f"actions/jobs/{identity}/logs"), target, previous)
+        log = read(f"actions/jobs/{identity}/logs")
+        report["proof"] = relay_proof(log, target, previous)
+        recovered = False
+        if not report["proof"]["complete"]:
+            retry = relay_retry_proof(read, deploy, log, target, previous)
+            if retry is not None:
+                report["proof"] = retry
+                recovered = True
         if not report["proof"]["complete"]:
             raise EvidenceError("relay_transition_health_timer_unproven")
         main_object = object_at(read, "git/ref/heads/main").get("object")
@@ -318,7 +383,9 @@ def verify(target: str, *, previous: str | None = None, read: Read = gh_read) ->
         report.update(
             {
                 "status": "verified" if final_main == target else "superseded",
-                "reason": "exact_release_confirmed"
+                "reason": (
+                    "exact_release_retry_confirmed" if recovered else "exact_release_confirmed"
+                )
                 if final_main == target
                 else "main_changed_during_observation",
             }
