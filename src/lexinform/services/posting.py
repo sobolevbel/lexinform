@@ -22,6 +22,7 @@ from lexinform.content_sources import (
     inspect_primary_content_sources,
     supported_source_context,
 )
+from lexinform.content_versions import is_grouped_stage_revision_slot
 from lexinform.delivery_schedule import daily_schedule, sitting_is_close
 from lexinform.direct_delivery import DIRECT_ROOTS, direct_root_plan, validate_reader_contract
 from lexinform.grouped_update_preview import capture_grouped_update_render
@@ -1315,6 +1316,8 @@ class Poster:
         )
 
     def deliver(self, pub: Publication) -> bool:
+        if is_grouped_stage_revision_slot(pub):
+            return False
         if pub.status is PublicationStatus.SENT:
             return True
         if pub.status not in (PublicationStatus.QUEUED, PublicationStatus.FAILED):

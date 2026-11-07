@@ -1,0 +1,27 @@
+{
+  "scope": "J419 controlled confirmed grouped histories before and after first render witness",
+  "legacy": {
+    "sql_sha256": "14989975bf32199daddb2eb7cf633958917f72f2c71a679a8a664a2b6323be55",
+    "summary": {
+      "binding_rows": 3,
+      "errors": 0,
+      "snapshot_rows": 9,
+      "version_rows": 3,
+      "warnings": 0
+    },
+    "doctor_exact": true,
+    "dump_exact_across_readers": true
+  },
+  "grouped": {
+    "sql_sha256": "eecbab235ea5bc396af54e05ddec02eb6567cc9ff988b0b07ed3cc8298001f5d",
+    "summary": {
+      "binding_rows": 3,
+      "errors": 0,
+      "snapshot_rows": 9,
+      "version_rows": 3,
+      "warnings": 0
+    },
+    "doctor_exact": true,
+    "dump_exact_across_readers": true
+  }
+}

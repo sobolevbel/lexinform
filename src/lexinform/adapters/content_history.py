@@ -22,8 +22,11 @@ from lexinform.content_versions import (
     content_snapshot_refs,
     direct_stage_plan_matches,
     grouped_stage_context,
+    grouped_stage_revision_plan,
+    grouped_stage_revision_ref,
 )
 from lexinform.errors import CardPrimaryEvidenceError
+from lexinform.grouped_update_preview import preview_grouped_update
 from lexinform.json_storage import read_json
 from lexinform.models import (
     AnalysisRecord,
@@ -587,10 +590,14 @@ def verify_direct_stage_content(connection: sqlite3.Connection, version: Content
         raise ValueError("direct_stage_expired_delivery_scope")
 
 
-def verify_grouped_stage_content(connection: sqlite3.Connection, version: ContentVersion) -> None:
+def verify_grouped_stage_content(
+    connection: sqlite3.Connection, version: ContentVersion, *, require_bound: bool = False
+) -> int | None:
     evidence = version.grouped_stage_evidence
     if evidence is None:
-        return
+        return None
+    if evidence.revision is not None:
+        return _verify_grouped_stage_revision(connection, version, require_bound=require_bound)
     ref = f"updates/{version.root_publication_id}"
     selected = _query(
         connection,
@@ -752,6 +759,149 @@ def verify_grouped_stage_content(connection: sqlite3.Connection, version: Conten
             ):
                 raise ValueError("grouped_stage_frozen_member")
 
+    return root.id
+
+
+def _verify_grouped_stage_revision(
+    connection: sqlite3.Connection, version: ContentVersion, *, require_bound: bool
+) -> int | None:
+    evidence = version.grouped_stage_evidence
+    if evidence is None or evidence.revision is None or evidence.render_witness is None:
+        raise ValueError("grouped_revision_profile")
+    original_row = _query(
+        connection,
+        "SELECT v.* FROM publication_content p JOIN content_versions v ON p.content_id=v.content_id"
+        " WHERE p.publication_id=?",
+        (version.root_publication_id,),
+    ).fetchone()
+    parent_row = _query(
+        connection,
+        "SELECT * FROM content_versions WHERE content_id=?",
+        (version.previous_version_id,),
+    ).fetchone()
+    root_row = _query(
+        connection, "SELECT * FROM publications WHERE id=?", (version.root_publication_id,)
+    ).fetchone()
+    if original_row is None or parent_row is None or root_row is None:
+        raise ValueError("grouped_revision_missing_parent")
+    original, previous = read_content_version(original_row), read_content_version(parent_row)
+    root = read_content_publication(root_row)
+    if (
+        original.reason != "original"
+        or original.root_publication_id != version.root_publication_id
+        or original.grouped_stage_evidence is None
+        or original.grouped_stage_evidence.members != evidence.members
+        or root.status is not PublicationStatus.SENT
+        or root.message_id != evidence.revision.target_message_id
+        or previous.root_publication_id != version.root_publication_id
+        or previous.grouped_stage_evidence is None
+        or previous.grouped_stage_evidence.members != evidence.members
+        or previous.grouped_stage_evidence.render_witness is None
+        or previous.rendered_text is None
+        or version.rendered_text is None
+        or previous.language is None
+        or version.language is None
+        or version.language != previous.language
+        or version.formatter_version != previous.formatter_version
+        or content_snapshot_refs(version) != content_snapshot_refs(original)
+    ):
+        raise ValueError("grouped_revision_parent_scope")
+    verify_grouped_stage_content(connection, original)
+    reader = ContentSourceRows(connection)
+    snapshots = {
+        identity: reader.get_content_snapshot(identity)
+        for _, identity in content_snapshot_refs(version)
+    }
+    bill = snapshots[version.bill_snapshot_id]
+    if bill is None or (
+        sum(
+            len(snapshot.payload_json.encode())
+            for snapshot in snapshots.values()
+            if snapshot is not None
+        )
+        + len(version.rendered_text.encode())
+        > MAX_GROUPED_STAGE_CONTENT_BYTES
+    ):
+        raise ValueError("grouped_revision_content_bound")
+    if previous.reason == "original":
+        if previous.content_id != original.content_id:
+            raise ValueError("grouped_revision_stale_parent")
+    else:
+        prior_slot = _grouped_revision_slot(connection, previous, root, bill, require_bound=True)
+        if prior_slot.status is not PublicationStatus.SENT:
+            raise ValueError("grouped_revision_stale_parent")
+    baseline = previous.grouped_stage_evidence.render_witness.bind(
+        previous.rendered_text, previous.language
+    )
+    candidate = evidence.render_witness.bind(version.rendered_text, version.language)
+    index = (
+        0 if evidence.revision.member_publication_id == evidence.members[0].publication_id else 1
+    )
+    if (
+        preview_grouped_update(
+            baseline, candidate, owner=baseline.members[index], expected_sha256=baseline.sha256
+        )
+        != version.rendered_text
+    ):
+        raise ValueError("grouped_revision_member_patch")
+    return _grouped_revision_slot(connection, version, root, bill, require_bound=require_bound).id
+
+
+def _grouped_revision_slot(
+    connection: sqlite3.Connection,
+    version: ContentVersion,
+    root: Publication,
+    bill: ContentSnapshot,
+    *,
+    require_bound: bool,
+) -> Publication:
+    ref = grouped_stage_revision_ref(version)
+    plan = grouped_stage_revision_plan(version, bill)
+    row = _query(
+        connection,
+        "SELECT * FROM publications WHERE channel_id=? AND kind='message_part' AND ref=?",
+        (root.channel_id, ref),
+    ).fetchone()
+    if ref is None or plan is None or row is None:
+        raise ValueError("grouped_revision_slot_missing")
+    slot = read_content_publication(row)
+    if (
+        (slot.term, slot.number) != (root.term, root.number)
+        or slot.status_change_id is not None
+        or slot.document_message_ids
+        or plan.edit_message_id != root.message_id
+    ):
+        raise ValueError("grouped_revision_slot_owner")
+    bindings = _query(
+        connection,
+        "SELECT publication_id FROM publication_content WHERE content_id=? LIMIT 2",
+        (version.content_id,),
+    ).fetchall()
+    if (bindings or require_bound) and [binding[0] for binding in bindings] != [slot.id]:
+        raise ValueError("grouped_revision_slot_binding")
+    if slot.delivery is None:
+        if not bindings or slot.status is not PublicationStatus.SENT:
+            raise ValueError("grouped_revision_expired_slot")
+    elif slot.delivery != plan:
+        raise ValueError("grouped_revision_frozen_slot")
+    if slot.status is PublicationStatus.SENT:
+        if slot.message_id != root.message_id or slot.sent_at is None:
+            raise ValueError("grouped_revision_receipt")
+    elif (
+        slot.status
+        not in (
+            PublicationStatus.QUEUED,
+            PublicationStatus.FAILED,
+            PublicationStatus.PENDING,
+            PublicationStatus.UNKNOWN,
+            PublicationStatus.DISMISSED,
+        )
+        or slot.message_id is not None
+        or slot.sent_at is not None
+    ):
+        raise ValueError("grouped_revision_receipt")
+    return slot
+
 
 def validate_content_history(connection: sqlite3.Connection) -> None:
     try:
@@ -783,7 +933,7 @@ def validate_content_history(connection: sqlite3.Connection) -> None:
                     raise ValueError("content_predecessor_unavailable")
             verify_content_applications(connection, value)
             verify_direct_stage_content(connection, value)
-            verify_grouped_stage_content(connection, value)
+            verify_grouped_stage_content(connection, value, require_bound=True)
             physical_identity = verify_card_content(connection, value, retained=True)
             if value.change_snapshot_id is None:
                 bindings = _query(

@@ -1,0 +1,15 @@
+{
+  "scope": "Pinned natural retained state, compared J421 and J424 readers",
+  "state_commit": "9a802a5514d3333de72c76454d115a7d91538e0d",
+  "report_status": "recorded",
+  "doctor_exact": true,
+  "dump_exact_across_readers": true,
+  "restored_sql_sha256": "76cc7419b321503a91554f8f8ecbf112b3c6f2ab69e3c4d3e8db0636a409ecea",
+  "doctor_summary": {
+    "binding_rows": 4,
+    "errors": 0,
+    "snapshot_rows": 12,
+    "version_rows": 4,
+    "warnings": 0
+  }
+}

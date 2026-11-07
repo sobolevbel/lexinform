@@ -5,6 +5,7 @@ from lexinform.content_versions import (
     confirmed_content_version,
     content_delivery_mismatch,
     content_snapshot_refs,
+    grouped_revision_obscures_current,
 )
 from lexinform.models import (
     ContentHistoryView,
@@ -74,6 +75,7 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
     confirmed: set[str] = set()
     inventory = repo.list_content_publications(root_id)
     bound_by_publication: dict[int, ContentVersion] = {}
+    grouped_uncertain = False
     for physical in inventory:
         if physical.id is None:
             continue
@@ -91,7 +93,7 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
             return base.model_copy(update={"integrity": "unavailable"})
         if physical.id != root_id and physical.kind is not (
             PublicationKind.MESSAGE_PART
-            if bound.change_snapshot_id is None
+            if bound.change_snapshot_id is None or bound.reason == "grouped_stage_revision"
             else PublicationKind.AMENDMENTS_REVISION
         ):
             return base.model_copy(update={"integrity": "unavailable"})
@@ -104,19 +106,27 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
             and (plan.revision_of != root_id or plan.edit_message_id != root.message_id)
         ):
             return base.model_copy(update={"integrity": "unavailable"})
+        if bound.reason == "grouped_stage_revision" and grouped_revision_obscures_current(
+            physical.status,
+            retried=any(item.action == "retry" for item in repo.delivery_resolutions(physical.id)),
+        ):
+            grouped_uncertain = True
         if physical.status is PublicationStatus.SENT and physical.message_id is not None:
             if physical.id != root_id and physical.message_id != root.message_id:
                 return base.model_copy(update={"integrity": "unavailable"})
             confirmed.add(bound.content_id)
+    bound_ids = {bound.content_id for bound in bound_by_publication.values()}
+    if any(
+        version.reason == "grouped_stage_revision" and version.content_id not in bound_ids
+        for version in versions
+    ):
+        return base.model_copy(update={"integrity": "unavailable"})
     confirmation = confirmed_content_version(
         {version.content_id: version.previous_version_id for version in versions}, confirmed
     )
-    current_id = confirmation.current_id
+    current_id = None if grouped_uncertain else confirmation.current_id
     if original.change_snapshot_id is None and (
-        any(
-            version.content_id not in {bound.content_id for bound in bound_by_publication.values()}
-            for version in versions
-        )
+        any(version.content_id not in bound_ids for version in versions)
         or any(item.id not in bound_by_publication for item in inventory)
         or not card_confirmation_matches(
             root,

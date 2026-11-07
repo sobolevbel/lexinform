@@ -95,6 +95,13 @@ class GroupedStageMember(BaseModel):
     original_bill_sha256: Sha256
 
 
+class GroupedStageRevisionEvidence(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    member_publication_id: GroupSqlId
+    target_message_id: GroupSqlId
+
+
 class GroupedStageContentEvidence(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -104,6 +111,15 @@ class GroupedStageContentEvidence(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    revision: GroupedStageRevisionEvidence | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+
+type ContentReason = Literal[
+    "original", "amendments_revision", "card_revision", "grouped_stage_revision"
+]
+
 
 class ContentVersion(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -111,7 +127,7 @@ class ContentVersion(BaseModel):
     schema_version: Literal[1] = 1
     root_publication_id: int = Field(gt=0)
     previous_version_id: str | None = Field(default=None, pattern=r"^content-v1:[0-9a-f]{64}$")
-    reason: Literal["original", "amendments_revision", "card_revision"]
+    reason: ContentReason
     language: str | None = Field(default=None, min_length=1)
     bill_snapshot_id: str = Field(pattern=r"^content-snapshot-v1:[0-9a-f]{64}$")
     change_snapshot_id: str | None = Field(
@@ -229,10 +245,14 @@ class ContentVersion(BaseModel):
                 "Direct stage evidence requires a bounded original without result claims"
             )
         group = self.grouped_stage_evidence
+        if (self.reason == "grouped_stage_revision") != (
+            group is not None and group.revision is not None
+        ):
+            raise ValueError("Grouped stage revisions require explicit physical revision evidence")
         if group is not None:
             first, second = group.members
             if (
-                self.reason != "original"
+                self.reason not in ("original", "grouped_stage_revision")
                 or self.language not in ("ru", "en")
                 or not self.formatter_version
                 or len(self.formatter_version) > 128
@@ -262,6 +282,12 @@ class ContentVersion(BaseModel):
                 or first.status_change_id == second.status_change_id
             ):
                 raise ValueError("Grouped stage history requires two distinct ordered originals")
+            if group.revision is not None and (
+                group.render_witness is None
+                or group.revision.member_publication_id
+                not in (first.publication_id, second.publication_id)
+            ):
+                raise ValueError("Grouped stage revisions require a witnessed member of the group")
             witness = group.render_witness
             if witness is not None:
                 if tuple(
@@ -290,7 +316,7 @@ class ContentVersionSummary(BaseModel):
     content_id: str
     root_publication_id: int
     previous_version_id: str | None
-    reason: Literal["original", "amendments_revision", "card_revision"]
+    reason: ContentReason
     language: str | None
     bill_snapshot_id: str
     change_snapshot_id: str | None

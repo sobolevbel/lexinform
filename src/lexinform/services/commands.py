@@ -13,6 +13,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from zoneinfo import ZoneInfo
 
+from lexinform.content_versions import is_grouped_stage_revision_slot
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError, StateCheckpointError
 from lexinform.intent_ages import intent_ages
 from lexinform.log_context import log_context
@@ -1170,6 +1171,12 @@ class CommandService:
                 note=f"resolve physical digest part {owner_id}; this row is an included event",
             )
         action = command.delivery_action
+        if action != "show" and is_grouped_stage_revision_slot(publication):
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR,
+                delivery=publication,
+                note="grouped edit is inspectable; delivery resolution is disabled",
+            )
         if action != "show" and source_context_blocked(self._repo, publication):
             if action == "retry" and publish and self._source_context_retry is not None:
                 resolution = DeliveryResolution(

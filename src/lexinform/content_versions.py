@@ -53,6 +53,14 @@ def content_delivery_mismatch(
     snapshots: Mapping[str, ContentSnapshot],
     plan: DeliveryPlan,
 ) -> ContentMismatch | None:
+    if version.reason == "grouped_stage_revision":
+        bill = snapshots.get(version.bill_snapshot_id)
+        if bill is None or bill.kind != "bill":
+            return "snapshot"
+        expected_plan = grouped_stage_revision_plan(version, bill)
+        if expected_plan is None or expected_plan != plan:
+            return "context"
+        return None
     if version.grouped_stage_evidence is not None:
         if plan.group_text != version.rendered_text:
             return "text"
@@ -123,6 +131,56 @@ def grouped_stage_context(plan: DeliveryPlan) -> DeliveryPlan:
             "update_group": (),
         }
     )
+
+
+GROUPED_STAGE_REVISION_REF_PREFIX = "group-edit/"
+
+
+def is_grouped_stage_revision_slot(publication: Publication) -> bool:
+    return publication.kind is PublicationKind.MESSAGE_PART and (publication.ref or "").startswith(
+        GROUPED_STAGE_REVISION_REF_PREFIX
+    )
+
+
+def grouped_stage_revision_ref(version: ContentVersion) -> str | None:
+    if version.reason != "grouped_stage_revision" or version.previous_version_id is None:
+        return None
+    predecessor = version.previous_version_id.removeprefix("content-v1:")
+    return f"{GROUPED_STAGE_REVISION_REF_PREFIX}{version.root_publication_id}/{predecessor}/1"
+
+
+def grouped_stage_revision_plan(
+    version: ContentVersion, bill: ContentSnapshot
+) -> DeliveryPlan | None:
+    evidence = version.grouped_stage_evidence
+    if (
+        version.reason != "grouped_stage_revision"
+        or evidence is None
+        or evidence.revision is None
+        or evidence.render_witness is None
+        or version.rendered_text is None
+        or bill.kind != "bill"
+        or bill.snapshot_id != version.bill_snapshot_id
+    ):
+        return None
+    target = evidence.revision.target_message_id
+    return DeliveryPlan(
+        bill_json=bill.payload_json,
+        rendered_text=version.rendered_text,
+        today=evidence.render_witness.today,
+        reply_to=target,
+        edit_message_id=target,
+        revision_of=version.root_publication_id,
+        continuation_parent=version.root_publication_id,
+    )
+
+
+def grouped_revision_obscures_current(status: PublicationStatus, *, retried: bool) -> bool:
+    return status in (
+        PublicationStatus.PENDING,
+        PublicationStatus.UNKNOWN,
+        PublicationStatus.DISMISSED,
+    ) or (retried and status in (PublicationStatus.QUEUED, PublicationStatus.FAILED))
 
 
 def direct_stage_plan_matches(plan: DeliveryPlan) -> bool:

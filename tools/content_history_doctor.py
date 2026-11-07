@@ -21,6 +21,7 @@ from lexinform.content_versions import (
     confirmed_content_version,
     content_delivery_mismatch,
     content_snapshot_refs,
+    grouped_revision_obscures_current,
 )
 from lexinform.models import (
     ContentSnapshot,
@@ -28,6 +29,7 @@ from lexinform.models import (
     ContentVersionSummary,
     DeliveryPlan,
     DeliveryResolution,
+    PublicationStatus,
 )
 from tools.corpus_artifacts import write_json
 from tools.sqlite_snapshot import open_snapshot
@@ -120,7 +122,7 @@ def _read_history(
         except ValueError:
             findings.add("invalid_direct_stage_content_history", version.content_id)
         try:
-            verify_grouped_stage_content(db, version)
+            verify_grouped_stage_content(db, version, require_bound=True)
         except ValueError:
             findings.add("invalid_grouped_stage_content_history", version.content_id)
         try:
@@ -193,7 +195,9 @@ def _publication_bindings(
                 if (identity == bound.root_publication_id) != (bound.previous_version_id is None):
                     findings.add("content_binding_role_mismatch", str(identity))
                 if identity != bound.root_publication_id and publication["kind"] != (
-                    "message_part" if bound.change_snapshot_id is None else "amendments_revision"
+                    "message_part"
+                    if bound.change_snapshot_id is None or bound.reason == "grouped_stage_revision"
+                    else "amendments_revision"
                 ):
                     findings.add("content_binding_kind_mismatch", str(identity))
                 if (
@@ -282,6 +286,18 @@ def _history_rows(
         confirmation = confirmed_content_version(
             {version.content_id: version.previous_version_id for version in members}, confirmed
         )
+        grouped_uncertain = any(
+            grouped_revision_obscures_current(
+                PublicationStatus(physical["status"]),
+                retried=any(
+                    decision["action"] == "retry" for decision in physical["operator_decisions"]
+                ),
+            )
+            for version in members
+            if version.reason == "grouped_stage_revision"
+            for physical in bindings.get(version.content_id, [])
+            if physical.get("status") in set(PublicationStatus)
+        )
         if confirmation.ambiguous:
             findings.add("content_confirmed_branch", str(root))
         histories.append(
@@ -290,7 +306,9 @@ def _history_rows(
                 "original_content_ids": [
                     version.content_id for version in members if version.previous_version_id is None
                 ],
-                "current_content_id": cards.get(root, confirmation.current_id),
+                "current_content_id": None
+                if grouped_uncertain
+                else cards.get(root, confirmation.current_id),
                 "confirmation_scope": "DB sent/message-ID evidence; no independent Telegram read.",
                 "versions": [
                     {

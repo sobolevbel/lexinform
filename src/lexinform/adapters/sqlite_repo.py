@@ -145,7 +145,12 @@ from lexinform.content_sources import (
     source_context_blocked,
     supported_source_context,
 )
-from lexinform.content_versions import content_delivery_mismatch, content_snapshot_refs
+from lexinform.content_versions import (
+    GROUPED_STAGE_REVISION_REF_PREFIX,
+    content_delivery_mismatch,
+    content_snapshot_refs,
+    is_grouped_stage_revision_slot,
+)
 from lexinform.direct_delivery import direct_root_plan
 from lexinform.document_editions import candidate_edition
 from lexinform.json_storage import compact_json, storage_json
@@ -2290,6 +2295,10 @@ class SqliteBillRepository:
             self._conn, version, publication_id=publication_id, retained=False
         )
         plan = publication.delivery
+        if version.reason == "grouped_stage_revision":
+            if verify_grouped_stage_content(self._conn, version) != publication_id:
+                raise ValueError("grouped_revision_slot_binding")
+            return version
         if (
             plan is None
             or (
@@ -2362,7 +2371,8 @@ class SqliteBillRepository:
         if version is None:
             raise ValueError("a publication content binding has lost its version")
         if (
-            version.direct_stage_evidence is not None or version.grouped_stage_evidence is not None
+            version.direct_stage_evidence is not None
+            or (version.grouped_stage_evidence is not None and version.reason == "original")
         ) and version.root_publication_id != publication_id:
             raise ValueError("direct_stage_binding_scope")
         if version.change_snapshot_id is None:
@@ -5108,8 +5118,9 @@ class SqliteBillRepository:
         rows = self._conn.execute(
             "SELECT * FROM publications WHERE channel_id = ? AND delivery_json IS NOT NULL"
             " AND kind != 'status_update'"
+            " AND (kind != 'message_part' OR ref IS NULL OR ref NOT GLOB ?)"
             " AND (status = 'queued' OR (status = 'failed' AND attempts < ?)) ORDER BY id",
-            (channel_id, max_attempts),
+            (channel_id, f"{GROUPED_STAGE_REVISION_REF_PREFIX}*", max_attempts),
         ).fetchall()
         return [self._row_to_publication(row) for row in rows]
 
@@ -5130,7 +5141,11 @@ class SqliteBillRepository:
             if self.digest_owner(resolution.publication_id) is not None:
                 return False
             original = self.publication_by_id(resolution.publication_id)
-            if original is None or source_context_blocked(self, original):
+            if (
+                original is None
+                or is_grouped_stage_revision_slot(original)
+                or source_context_blocked(self, original)
+            ):
                 return False
             plan = original.delivery
             identities = (
@@ -5142,7 +5157,9 @@ class SqliteBillRepository:
                 return False
             for identity in identities:
                 member = self.publication_by_id(identity)
-                if member is not None and source_context_blocked(self, member):
+                if member is not None and (
+                    is_grouped_stage_revision_slot(member) or source_context_blocked(self, member)
+                ):
                     return False
                 if (
                     member is None
