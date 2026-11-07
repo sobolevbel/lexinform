@@ -1,4 +1,7 @@
 import datetime as dt
+import json
+import sqlite3
+from contextlib import closing
 from typing import Literal
 
 import pytest
@@ -302,3 +305,55 @@ def test_legacy_request_key_keeps_the_original_rcl_name_work(
         row for row in world.repo.list_computation_results(10, RCL) if row.purpose == "name"
     )
     assert result.custom_id == request.custom_id and result.request_sha256 == request.payload_sha256
+
+
+def test_name_payload_expires_after_its_original_owner_rolls_over() -> None:
+    world = waiting_world()
+    next_term(world)
+    assert world.run(term=None).rehomed == 1
+    world.batch.resolve()
+    world.run(term=None)
+    paid = next(
+        row for row in world.repo.list_computation_results(10, RCL) if row.purpose == "name"
+    )
+    applications = world.repo.list_result_applications(11, RCL)
+    assert any(row.result_id == paid.result_id for row in applications)
+
+    def retained_item() -> sqlite3.Row:
+        with closing(sqlite3.connect(":memory:")) as db:
+            db.row_factory = sqlite3.Row
+            db.executescript(world.repo.dump())
+            row = db.execute(
+                "SELECT * FROM llm_batch_items WHERE batch_id=? AND custom_id=?",
+                (paid.batch_id, paid.custom_id),
+            ).fetchone()
+            assert isinstance(row, sqlite3.Row)
+            return row
+
+    now = world.clock.now()
+    world.batch.forget(paid.batch_id)
+    world.repo.mark_llm_batch_forgotten(paid.batch_id, forgotten_at=now)
+    before = dict(retained_item())
+    assert before["consumed_at"] and before["accounted_at"] and before["term"] == 10
+    assert "answer" in json.loads(before["result_json"])
+    world.repo.set_awaiting_batch(11, RCL, now)
+    assert world.repo.prune_history(before=now, memo_before=now)["batch_payloads"] == 0
+    assert dict(retained_item()) == before
+    world.repo.set_awaiting_batch(11, RCL, None)
+    assert world.repo.prune_history(before=now, memo_before=now)["batch_payloads"] == 1
+    after = dict(retained_item())
+    expected_answer = json.loads(before["result_json"])
+    del expected_answer["answer"]
+    assert json.loads(after.pop("result_json")) == expected_answer
+    del before["result_json"]
+    expected_meta = json.loads(before.pop("meta_json"))
+    expected_meta.pop("review_context", None)
+    assert json.loads(after.pop("meta_json")) == expected_meta
+    assert after == before
+    assert world.repo.get_computation_result(paid.result_id) == paid
+    assert world.repo.list_result_applications(11, RCL) == applications
+    assert world.repo.prune_history(before=now, memo_before=now)["batch_payloads"] == 0
+    frozen = world.repo.dump()
+    for _ in range(2):
+        world.repo.restore(frozen)
+        assert world.repo.dump() == frozen

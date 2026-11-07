@@ -39,7 +39,7 @@ LEFT JOIN bills b ON (b.term,b.number)=(t.term,t.number)
 """
 
 
-def memo_retention_cte(*, owner_moves: bool) -> str:
+def _owner_chain_cte(seed: str, *, owner_moves: bool) -> str:
     edges = _OWNER_EDGES if owner_moves else ""
     terminal = (
         "AND NOT EXISTS (SELECT 1 FROM government_owner_moves g"
@@ -48,12 +48,29 @@ def memo_retention_cte(*, owner_moves: bool) -> str:
         else ""
     )
     return f"""
-    WITH RECURSIVE owners(number, origin, term) AS ({_OWNER_SEED}{edges}),
+    WITH RECURSIVE owners(number, origin, term) AS ({seed}{edges}),
     terminal AS (
       SELECT o.* FROM owners o JOIN bills b ON (b.term,b.number)=(o.term,o.number)
       WHERE NOT EXISTS (SELECT 1 FROM owners other JOIN bills live
           ON (live.term,live.number)=(other.term,other.number)
           WHERE (other.origin,other.number)=(o.origin,o.number) AND other.term!=o.term)
       {terminal}
-    ), memo_retention AS ({_MEMO_ROWS})
+    )
     """
+
+
+def memo_retention_cte(*, owner_moves: bool) -> str:
+    return _owner_chain_cte(_OWNER_SEED, owner_moves=owner_moves) + (
+        f", memo_retention AS ({_MEMO_ROWS})"
+    )
+
+
+def batch_retention_cte() -> str:
+    return _owner_chain_cte(
+        """
+        SELECT DISTINCT i.number, i.term, i.term FROM llm_batch_items i
+        WHERE i.call_kind='name' AND i.consumed_at IS NOT NULL AND i.accounted_at IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM bills b WHERE (b.term,b.number)=(i.term,i.number))
+        """,
+        owner_moves=True,
+    )

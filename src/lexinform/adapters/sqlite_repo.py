@@ -99,7 +99,7 @@ from lexinform.adapters.legacy_history import (
 from lexinform.adapters.legacy_history import (
     validate_legacy_projections as _validate_legacy_projections,
 )
-from lexinform.adapters.memo_retention import memo_retention_cte
+from lexinform.adapters.memo_retention import batch_retention_cte, memo_retention_cte
 from lexinform.adapters.physical_history import (
     PHYSICAL_INVENTORY_MIGRATION,
     PhysicalInventoryReader,
@@ -6858,8 +6858,9 @@ class SqliteBillRepository:
                 {"cutoff": _iso(memo_before)},
             )
             memos = self._conn.execute("SELECT changes()").fetchone()[0]
-            items = self._conn.execute(
-                """
+            self._conn.execute(
+                batch_retention_cte()
+                + """
                 UPDATE llm_batch_items
                 SET meta_json = json_remove(
                     meta_json, '$.text', '$.located', '$.review_context',
@@ -6868,7 +6869,13 @@ class SqliteBillRepository:
                 WHERE consumed_at IS NOT NULL AND accounted_at IS NOT NULL
                   AND batch_id IN (SELECT batch_id FROM llm_batches WHERE forgotten_at IS NOT NULL)
                   AND EXISTS (SELECT 1 FROM bills b
-                    WHERE b.term = llm_batch_items.term AND b.number = llm_batch_items.number
+                    WHERE b.number = llm_batch_items.number
+                      AND (b.term = llm_batch_items.term OR (
+                        llm_batch_items.call_kind='name'
+                        AND EXISTS (SELECT 1 FROM terminal t
+                          WHERE (t.origin,t.number,t.term) =
+                            (llm_batch_items.term,llm_batch_items.number,b.term)
+                          AND t.term>t.origin)))
                       AND b.status IN ('analyzed', 'linked', 'skipped_prefilter',
                                        'skipped_text_prefilter', 'skipped_closed')
                       AND b.awaiting_batch_since IS NULL AND b.ready_analysis_json IS NULL)
@@ -6880,7 +6887,8 @@ class SqliteBillRepository:
                     OR json_type(result_json, '$.answer') = 'object'
                     OR json_type(result_json, '$.analysis') = 'object')
                 """
-            ).rowcount
+            )
+            items = self._conn.execute("SELECT changes()").fetchone()[0]
             inputs = prune_amendment_inputs(self._conn)
         return {
             "delivery_payloads": publications,
