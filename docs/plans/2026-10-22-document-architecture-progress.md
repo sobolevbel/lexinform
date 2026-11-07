@@ -14000,3 +14000,20 @@ projected paragraphs. The independent probe confirmed 62 instruction
 omissions. Default extraction and persisted formats remain unchanged.
 
 [Qualification](../assets/audits/2026-11-07-word-field-ranges/qualification.json).
+
+<a id="j405"></a>
+
+## J405 — measure memo retention exclusions on saved SQLite state
+
+The offline census separates cleanup blockers from exact references in
+pending intent and item keys and memo computation IDs. The focused tests
+compare the reported eligibility with the actual repository cleanup on a
+scratch database and exercise a known pending reference without an owner.
+
+At the pinned cutoff, the saved snapshot had 13 memo records with neither
+a recorded bill owner nor a last-used date. No exact references appeared
+in the checked scopes. A counterfactual in-memory comparison measured
+40,270 bytes of canonical SQL and 10,176 bytes of compressed SQL attributable
+to those rows. The production cleanup policy remains unchanged.
+
+[Qualification](../assets/audits/2026-11-07-memo-retention-census/qualification.json).

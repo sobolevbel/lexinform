@@ -1,0 +1,31 @@
+{
+  "database_sha256": "c53f468cea246f6a8f2b74eaef46dbf5ea46fc72efa5a3af28741fbe919c974a",
+  "eligible_rows": 0,
+  "exclusions": {
+    "bill_work": 19,
+    "last_used_at_missing": 13,
+    "owner_unrecorded": 13,
+    "publication": 12,
+    "within_retention": 157
+  },
+  "memo_before": "2026-05-11T00:00:00+00:00",
+  "ownerless_exclusions": {
+    "last_used_at_missing": 13,
+    "owner_unrecorded": 13
+  },
+  "ownerless_record_utf8_bytes": 38680,
+  "ownerless_recorded_refs": {
+    "batch_item_key_ref": 0,
+    "intent_key_ref": 0,
+    "paid_id_ref": 0
+  },
+  "ownerless_rows": 13,
+  "version": 1,
+  "footprint": {
+    "state_commit": "9a802a5514d3333de72c76454d115a7d91538e0d",
+    "method": "Canonical SQLite dumps, counterfactual removal in memory for size only.",
+    "ownerless_rows": 13,
+    "ownerless_sql_bytes": 40270,
+    "marginal_gzip_bytes": 10176
+  }
+}
