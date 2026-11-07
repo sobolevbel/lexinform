@@ -28,6 +28,7 @@ from lexinform.adapters.amendment_inputs import (
     validate_intent_input,
     validate_item_input,
     validate_result_input,
+    write_amendment_scan_context,
     write_shared_amendment_input,
 )
 from lexinform.adapters.candidate_trace_history import (
@@ -4442,12 +4443,16 @@ class SqliteBillRepository:
             if supplement_witness is not None or meta.supplement_scan_input is not None:
                 meta = meta.model_copy(update={"supplement_scan_input": supplement_witness})
         elif isinstance(meta, DigestItemMeta) and meta.scan_input is not None:
+            captured = None
             with suppress(ValueError, TypeError, RecursionError):
-                witness = capture_submitted_amendment_scan_input(
+                captured = capture_submitted_amendment_scan_input(
                     request, item, intent_metadata(request, row["meta_json"])
                 )
-                if witness is not None:
-                    meta = meta.model_copy(update={"amendment_scan_input": witness})
+            if captured is not None:
+                witness, context_json = captured
+                if context_json is not None:
+                    write_amendment_scan_context(self._conn, witness, context_json)
+                meta = meta.model_copy(update={"amendment_scan_input": witness})
         return meta.model_copy(update={"frozen_request_manifest": manifest}).model_dump_json()
 
     def list_open_llm_batches(self) -> list[LlmBatch]:

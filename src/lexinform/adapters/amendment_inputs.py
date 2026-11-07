@@ -63,6 +63,19 @@ def read_amendment_scan_context(
     return _load_amendment_scan_context(connection, witness)[0]
 
 
+def write_amendment_scan_context(
+    connection: sqlite3.Connection, witness: AmendmentScanInputWitness, context_json: str
+) -> None:
+    if not connection.in_transaction or witness.version != 3 or witness.context_sha256 is None:
+        raise AmendmentInputError()
+    connection.execute(
+        "INSERT INTO amendment_input_texts VALUES (?,?) ON CONFLICT DO NOTHING",
+        (witness.context_sha256, context_json),
+    )
+    if read_amendment_scan_context(connection, witness) != context_json:
+        raise AmendmentInputError()
+
+
 def _validate_scan_context(
     connection: sqlite3.Connection, meta: DigestItemMeta, number: str
 ) -> None:
@@ -370,7 +383,10 @@ def prune_amendment_inputs(connection: sqlite3.Connection) -> dict[str, int]:
         JOIN bills b ON b.term=i.term AND b.number=i.number
         WHERE i.call_kind='amendments' AND i.consumed_at IS NOT NULL
           AND i.accounted_at IS NOT NULL AND batch.forgotten_at IS NOT NULL
-          AND json_type(i.meta_json, '$.amendment_input_ref')='object'
+          AND (
+            json_type(i.meta_json, '$.amendment_input_ref')='object'
+            OR json_extract(i.meta_json, '$.amendment_scan_input.version')=3
+          )
           AND json_extract(r.result_json, '$.validation')='error'
           AND b.status IN ('analyzed', 'linked', 'skipped_prefilter',
                            'skipped_text_prefilter', 'skipped_closed')
@@ -390,13 +406,15 @@ def prune_amendment_inputs(connection: sqlite3.Connection) -> dict[str, int]:
             result.purpose != "amendments"
             or result.validation != "error"
             or result.amendment_input_ref is not None
+            or result.amendment_scan_input is not None
             or not isinstance(meta, DigestItemMeta)
             or result.input_binding != meta.input_binding
             or result.request_sha256 != meta.request_sha256
         ):
             continue
         retired += connection.execute(
-            "UPDATE llm_batch_items SET meta_json=json_remove(meta_json,'$.amendment_input_ref')"
+            "UPDATE llm_batch_items SET meta_json=json_remove("
+            "meta_json,'$.amendment_input_ref','$.amendment_scan_input')"
             " WHERE batch_id=? AND custom_id=?",
             (result.batch_id, result.custom_id),
         ).rowcount
@@ -462,7 +480,7 @@ def validate_intent_input(connection: sqlite3.Connection, intent: BatchIntent) -
 
 def capture_submitted_amendment_scan_input(
     request: BatchRequest, item: LlmBatchItem, queued: BatchItemMeta | DigestItemMeta
-) -> AmendmentScanInputWitness | None:
+) -> tuple[AmendmentScanInputWitness, str | None] | None:
     question, meta = request.question, item.meta
     if (
         not isinstance(question, AmendmentsQuestion)
@@ -479,21 +497,44 @@ def capture_submitted_amendment_scan_input(
     if scan is None or scan.scan_input is None:
         return None
     try:
-        witness = AmendmentScanInputWitness(
-            version=2 if question.ctx.source_kind == "senate_amendments" else 1,
-            source_url=meta.source_url,
-            request_sha256=request.payload_sha256,
-            question_sha256=hashlib.sha256(
-                canonical_json(question.model_dump(mode="json")).encode()
-            ).hexdigest(),
-            context_json=canonical_json(question.ctx.model_dump(mode="json", exclude={"scan"})),
-            scan_input=scan.scan_input,
-        )
+        context_json = canonical_json(question.ctx.model_dump(mode="json", exclude={"scan"}))
+        question_sha256 = hashlib.sha256(
+            canonical_json(question.model_dump(mode="json")).encode()
+        ).hexdigest()
+        version = 2 if question.ctx.source_kind == "senate_amendments" else 1
+        retained_json = None
+        try:
+            witness = AmendmentScanInputWitness(
+                version=version,
+                source_url=meta.source_url,
+                request_sha256=request.payload_sha256,
+                question_sha256=question_sha256,
+                context_json=context_json,
+                scan_input=scan.scan_input,
+            )
+        except ValueError:
+            if (
+                version != 2
+                or question.ctx.number != item.number
+                or question.ctx.source_check != meta.amendment_source
+            ):
+                return None
+            witness = AmendmentScanInputWitness(
+                version=3,
+                source_url=meta.source_url,
+                request_sha256=request.payload_sha256,
+                question_sha256=question_sha256,
+                context_sha256=hashlib.sha256(context_json.encode()).hexdigest(),
+                scan_input=scan.scan_input,
+            )
+            if witness.restore_context(scan, retained_json=context_json) != question.ctx:
+                return None
+            retained_json = context_json
         candidate = meta.model_copy(update={"amendment_scan_input": witness})
         candidate.require_amendment_scan_carrier(item.call_kind, item.term, item.number)
     except ValueError, TypeError, RecursionError:
         return None
-    return witness
+    return witness, retained_json
 
 
 def validate_item_input(connection: sqlite3.Connection, item: LlmBatchItem) -> None:

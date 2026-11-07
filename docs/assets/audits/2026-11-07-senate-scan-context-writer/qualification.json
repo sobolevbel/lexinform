@@ -1,0 +1,44 @@
+{
+  "focused_tests": 75,
+  "legacy": "v2 exact report parity for both provider builders; v1 focused controls passed.",
+  "mypy": "passed",
+  "pins": {
+    "anthropic.json": "987ba80a0cfcc45d8f2df4e6f82a334d5a33d64c144dede0901faeaa3859d236",
+    "anthropic.pruned.sql": "f11842bada7521751b20c15341ba3f35cedc61a00c70a8de8c758d3aba261849",
+    "baseline-anthropic.json": "cf77e39e18034e0d29df11b1a71535197f3325330bfd4c2512d6f4c93ae8e3e3",
+    "baseline-openai.json": "ec300ddc3be1a7c3b98e9a5cbba2cdd10914f8461732d126bff40b0eb1b72060",
+    "candidate.patch": "80a395338bcbd8f3703d3e6d8da6cee157f4c24a865c365e2c5031e41c317d59",
+    "failure.json": "4d83a186c144db0693e30efc9142f1e0d042eac53bb7c6232961702ef6bcd882",
+    "legacy/writer-correction-writer.json": "5f368f7b57579f2542bf068da2b56ea4461babe7e2f58ec38c979303331371d3",
+    "openai.json": "0b5c1604c8214a0b364917e6adfa3b00acef24b9d1e8c708a12c3ad93bc55ce2",
+    "openai.pruned.sql": "5464543a25c0369364b44a756cecac3889290cc0f8667d73294ef0a863d40b5b",
+    "prune.json": "41db02f4a477c05d48bf0349c292ebad0572826ced567e65561b0b5969b7bbad",
+    "qualify.py": "08a3a2e8929d545b79fc6dc662d702f62e9e0d359360eb231d36fa22030a3694",
+    "rollback.json": "e23c6472b387da82310f598aae4c0d6ac3298934b1f36a798c575f0b4b2ed5a1"
+  },
+  "qualification": "Pinned native 10/377 PDF and synthetic native DOCX committee recommendation; offline adapters, fake effects.",
+  "ruff": "passed",
+  "size_delta": {
+    "anthropic": {
+      "cleaned_size": {
+        "gzip_bytes": 378,
+        "sql_bytes": 9417
+      },
+      "submitted_size": {
+        "gzip_bytes": 382,
+        "sql_bytes": 8754
+      }
+    },
+    "openai": {
+      "cleaned_size": {
+        "gzip_bytes": 380,
+        "sql_bytes": 9417
+      },
+      "submitted_size": {
+        "gzip_bytes": 383,
+        "sql_bytes": 8754
+      }
+    }
+  },
+  "storage": "One exact non-PDF context value shared by SHA. Compact witness carried through submission and validated result. Failed unreferenced context pruned only after consumed/accounted/forgotten and stable owner."
+}
