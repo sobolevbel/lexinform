@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from lexinform.adapters.input_receipts import parse_batch_request
-from lexinform.models.batch import FrozenRequestManifest
+from lexinform.models.batch import DigestItemMeta, FrozenRequestManifest, batch_item_meta
 from tools.corpus_artifacts import write_json
 from tools.saved_records import SavedRecordIssue, is_saved_answer, saved_columns, saved_records
 from tools.sqlite_snapshot import open_snapshot
@@ -104,6 +104,8 @@ class RequestAudit:
             "verified_intent_payloads",
             "legacy_retained_payloads",
             "repeated_inputs",
+            "consultation_review_witness_known",
+            "consultation_review_witness_unknown",
         ):
             self.counts[key] += 0
         for group in self.inputs.values():
@@ -133,7 +135,8 @@ def _rows(connection: sqlite3.Connection, audit: RequestAudit, tables: set[str])
     ):
         audit.intent(row["custom_id"], row["request_json"])
     for row in connection.execute(
-        "SELECT i.batch_id, i.custom_id, i.call_kind, i.meta_json, b.provider "
+        "SELECT i.batch_id, i.custom_id, i.call_kind, i.term, i.number, i.consumed_at, "
+        "i.meta_json, b.provider "
         "FROM llm_batch_items i LEFT JOIN llm_batches b ON b.batch_id=i.batch_id "
         "ORDER BY i.batch_id, i.custom_id"
     ):
@@ -156,6 +159,28 @@ def _rows(connection: sqlite3.Connection, audit: RequestAudit, tables: set[str])
                     audit.issue("invalid_frozen_request_manifest", ref)
                 else:
                     audit.counts["bound_frozen_request_manifests"] += 1
+            if "review_input_witness" in meta:
+                try:
+                    item = batch_item_meta(row["call_kind"], row["meta_json"])
+                    if (
+                        not isinstance(item, DigestItemMeta)
+                        or item.review_input_witness is None
+                        or item.frozen_request_manifest is None
+                        or item.frozen_request_manifest.provider != row["provider"]
+                    ):
+                        raise ValueError("Review witness carrier mismatch")
+                    item.require_review_input_carrier(
+                        row["call_kind"],
+                        row["term"],
+                        row["number"],
+                        consumed=row["consumed_at"] is not None,
+                    )
+                except ValueError, RecursionError:
+                    audit.issue("invalid_consultation_review_witness", ref)
+                else:
+                    audit.counts["consultation_review_witness_known"] += 1
+            elif row["call_kind"] == "consultation_review":
+                audit.counts["consultation_review_witness_unknown"] += 1
     for column in saved_columns(connection, tables):
         audit.result(audit.load(column.raw, column.ref), column.ref)
 

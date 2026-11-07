@@ -9,6 +9,7 @@ from pydantic import JsonValue
 from lexinform.adapters.input_receipts import capture_frozen_request_manifest, parse_batch_request
 from lexinform.json_storage import canonical_json, read_json
 from lexinform.models.batch import BatchRequest, DocumentReviewQuestion
+from lexinform.models.review_prepared_input import ReviewPreparedDocument, review_context_sha256
 from tools.corpus_artifacts import digest, read_artifact, write_json
 
 Provider = Literal["openai", "anthropic"]
@@ -72,23 +73,19 @@ def verify_review_input(request: BatchRequest, provider: Provider) -> dict[str, 
         raise ValueError("Frozen provider review context differs from its question")
     documents = []
     for index, document in enumerate(context.documents):
-        checksum = digest(document.text.encode())
-        if document.sha256 != checksum and (document.text or document.sha256 or document.complete):
-            raise ValueError("Frozen review document text differs from its recorded hash")
+        verified = ReviewPreparedDocument.from_document(document)
         documents.append(
             {
                 "pointer": f"/documents/{index}/text",
-                "identity_sha256": digest(document.identity.encode()),
-                "role": document.role,
-                "source_text_sha256": checksum,
-                "span": [0, len(document.text)],
+                **verified.model_dump(exclude={"chars"}),
+                "span": [0, verified.chars],
             }
         )
     return {
         "version": "review-provider-text-v1",
         "coordinates": "decoded-review-json-field-python-string",
         "request_manifest": manifest.model_dump(mode="json"),
-        "context_sha256": digest(canonical_context.encode()),
+        "context_sha256": review_context_sha256(context),
         "provider_prompt_pointer": pointer,
         "documents": documents,
     }
