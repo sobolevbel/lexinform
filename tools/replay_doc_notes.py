@@ -20,7 +20,6 @@ from lexinform.adapters.doc_text import (
     _FIELD_BEGIN,
     _FIELD_END,
     _FIELD_SEPARATOR,
-    PAGE_BREAK,
     DocTextExtractor,
     _read_pieces,
     _row_end_marks,
@@ -36,6 +35,7 @@ from lexinform.document_candidates import select_document_parts
 from lexinform.extraction_records import summarize_doc_notes
 from lexinform.models.doc_notes import MAX_DOC_NOTE_SUMMARY_BYTES
 from lexinform.models.extractions import MAX_EXTRACTION_METADATA_BYTES, ExtractionResult
+from lexinform.sections import PAGE_BREAK
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 

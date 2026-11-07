@@ -13782,6 +13782,10 @@ does not validate CFSpec or note body offsets.
 
 ## J393 — track DOC reference coordinates through text cleanup
 
+Clean CI found that the offline replay imported `PAGE_BREAK` through the
+DOC adapter rather than its defining module. The replay now imports it
+directly. Runtime extraction is unchanged.
+
 The opt-in replay reconstructs the cleaned text with source-character origins.
 It requires exact equality with the legacy text before using the map. A
 width-preserving mutation locates each reference in the raw decoded stream.
