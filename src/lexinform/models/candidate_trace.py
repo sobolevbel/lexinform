@@ -407,6 +407,36 @@ class SupportingPartExclusions(BaseModel):
         return self
 
 
+MAX_ADMITTED_SUPPORT = 8
+
+
+class AdmittedSupportPart(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    extra_index: Position
+    role: Literal["justification", "osr"]
+    file_sha256: Sha256
+    text_sha256: Sha256
+
+
+class AdmittedSupport(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    phase: Literal["version_comparison", "fallback"]
+    index: Position
+    rows: tuple[AdmittedSupportPart, ...] = Field(min_length=1, max_length=MAX_ADMITTED_SUPPORT)
+    omitted: int = Field(default=0, ge=0, strict=True)
+
+    @model_validator(mode="after")
+    def ordered_prefix(self) -> Self:
+        positions = [row.extra_index for row in self.rows]
+        if positions != sorted(set(positions)) or (
+            self.omitted and len(self.rows) != MAX_ADMITTED_SUPPORT
+        ):
+            raise ValueError("Admitted support requires an ordered bounded prefix")
+        return self
+
+
 class RequiredPartGap(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
@@ -782,6 +812,10 @@ class CandidateDispositionTrace(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    admitted_support: AdmittedSupport | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     version_decision: VersionDecisionEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -925,6 +959,8 @@ class CandidateDispositionTrace(BaseModel):
             validate_sejm_committee_recommendation(self, self.sejm_committee_recommendation)
         if self.supporting_exclusions is not None:
             validate_supporting_exclusions(self, self.supporting_exclusions)
+        if self.admitted_support is not None:
+            validate_admitted_support(self, self.admitted_support)
         if self.version_decision is not None:
             validate_version_decision(self, self.version_decision)
         if self.archive_version_decision is not None:
@@ -959,6 +995,7 @@ class CandidateDispositionTrace(BaseModel):
             and self.sejm_adopted_text is None
             and self.sejm_committee_recommendation is None
             and self.supporting_exclusions is None
+            and self.admitted_support is None
             and self.version_decision is None
             and self.archive_version_decision is None
             and self.archive_version_conflict is None
@@ -1030,6 +1067,35 @@ def validate_supporting_exclusions(
         for row in exclusions.rows
     ):
         raise ValueError("Supporting exclusion exceeds its admitted extra URL namespace")
+
+
+def validate_admitted_support(trace: CandidateDispositionTrace, evidence: AdmittedSupport) -> None:
+    request = trace.requested_document
+    parent = _parent_disposition(trace, evidence.phase, evidence.index)
+    reason = (
+        "version_choice" if evidence.phase == "version_comparison" else "first_acceptable_candidate"
+    )
+    if (
+        request is None
+        or evidence.index >= trace.candidate_count
+        or parent is None
+        or parent.outcome != "selected"
+        or parent.reason != reason
+        or trace.result != "selected"
+        or trace.reason != reason
+        or any((trace.required_part_gap, trace.normative_annex_gap, trace.amendment_part_gap))
+    ):
+        raise ValueError("Admitted support requires the selected outer candidate")
+    extras = (request, *request.alternatives)[evidence.index].extra_urls
+    exclusions = trace.supporting_exclusions
+    excluded = {row.extra_index for row in exclusions.rows} if exclusions is not None else set()
+    if evidence.omitted > len(extras) - evidence.rows[-1].extra_index - 1 or any(
+        row.extra_index >= len(extras)
+        or row.extra_index in excluded
+        or not metadata_url_decision(extras[row.extra_index]).admitted
+        for row in evidence.rows
+    ):
+        raise ValueError("Admitted support exceeds its available extra URL namespace")
 
 
 def validate_sejm_original_proposal(

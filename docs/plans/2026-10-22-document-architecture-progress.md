@@ -14085,3 +14085,20 @@ replay CLI checks whole-body coordinates separately from paragraph slices.
 Default text and stored range coordinates remain unchanged.
 
 [Qualification](../assets/audits/2026-11-07-word-field-global-projection/qualification.json).
+
+<a id="j410"></a>
+
+## J410 — read exact inclusion evidence for loose support documents
+
+A compatible candidate trace reader accepts a bounded prefix of included
+loose justification and OSR files. Each position belongs to the selected
+outer candidate and binds a unique retained selection part by URL, role,
+file SHA and text SHA. Existing traces keep their bytes and identities.
+
+The pinned RCL 12366453 stage 3 replay corroborated both included supports
+with unchanged reads and assembly. The staged trace and link added
+1,791 bytes of SQL and 239 bytes of gzip alongside the old trace. Two
+restores were byte-identical. The previous reader rejected the enriched
+checkpoint atomically. The default writer still emits the previous format.
+
+[Qualification](../assets/audits/2026-11-07-admitted-support-reader/qualification.json).

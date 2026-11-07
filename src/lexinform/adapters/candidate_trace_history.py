@@ -37,6 +37,7 @@ class CandidateTraceRowError(ValueError):
             "candidate_trace_recommendation_parent_mismatch",
             "candidate_trace_archive_version_parent_mismatch",
             "candidate_trace_archive_conflict_parent_mismatch",
+            "candidate_trace_admitted_support_parent_mismatch",
         ],
     ) -> None:
         self.code = code
@@ -443,9 +444,40 @@ def _validate_archive_conflict_link(
         raise CandidateTraceRowError("candidate_trace_archive_conflict_parent_mismatch") from None
 
 
+def _validate_admitted_support_link(
+    connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
+) -> None:
+    evidence = trace.admitted_support
+    requested = trace.requested_document
+    if evidence is None or requested is None:
+        return
+    candidate = (requested, *requested.alternatives)[evidence.index]
+    reader = DocumentSourceRows(connection)
+    source = reader.get_source_observation(observation_id)
+    code: Literal["candidate_trace_admitted_support_parent_mismatch"] = (
+        "candidate_trace_admitted_support_parent_mismatch"
+    )
+    if source is None or source.document != candidate:
+        raise CandidateTraceRowError(code)
+    record = reader.get_document_selection(source.selection_id)
+    if record is None or record.selection.state != trace.selection_state:
+        raise CandidateTraceRowError(code)
+    for row in evidence.rows:
+        url = candidate.extra_urls[row.extra_index]
+        parts = [part for part in record.selection.parts if part.url == url]
+        if (
+            len(parts) != 1
+            or parts[0].members
+            or (parts[0].role, parts[0].sha256, parts[0].text_sha256)
+            != (row.role, row.file_sha256, row.text_sha256)
+        ):
+            raise CandidateTraceRowError(code)
+
+
 def validate_candidate_trace_link(
     connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
 ) -> None:
+    _validate_admitted_support_link(connection, trace, observation_id)
     _validate_archive_version_link(connection, trace, observation_id)
     _validate_archive_conflict_link(connection, trace, observation_id)
     validate_sejm_proposal_link(connection, trace, observation_id)
@@ -548,8 +580,11 @@ def validate_candidate_trace_links(
         "candidate_trace_proposal_parent_mismatch",
         "candidate_trace_archive_version_parent_mismatch",
         "candidate_trace_archive_conflict_parent_mismatch",
+        "candidate_trace_admitted_support_parent_mismatch",
     ]
-    if trace.archive_version_conflict is not None:
+    if trace.admitted_support is not None:
+        code = "candidate_trace_admitted_support_parent_mismatch"
+    elif trace.archive_version_conflict is not None:
         code = "candidate_trace_archive_conflict_parent_mismatch"
     elif trace.archive_version_decision is not None:
         code = "candidate_trace_archive_version_parent_mismatch"
