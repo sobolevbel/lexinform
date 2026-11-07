@@ -103,7 +103,7 @@ class DirectStageContentEvidence(BaseModel):
     profile: Literal["direct-stage-content-v1"] = "direct-stage-content-v1"
     anchor_publication_id: int = Field(gt=0, lt=2**63, strict=True)
     original_bill_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    multipart: Literal["direct-stage-parts-v1"] | None = Field(
+    multipart: Literal["direct-stage-parts-v1", "direct-stage-application-parts-v1"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
 
@@ -333,13 +333,17 @@ class ContentVersion(BaseModel):
             or any(value >= 2**63 for value in self.application_ids)
         ):
             raise ValueError("profiled amendment references require bounded canonical SQL IDs")
+        direct = self.direct_stage_evidence
+        direct_application = (
+            direct is not None and direct.multipart == "direct-stage-application-parts-v1"
+        )
         supplement_profile = self.application_ref_profile == "supplement-projection-v1"
         if supplement_profile != (self.supplement_evidence is not None) or (
             supplement_profile
             and (
                 self.reason != "original"
                 or len(self.application_ids) != 1
-                or not self.rendered_text
+                or (not self.rendered_text and not direct_application)
                 or self.language is None
                 or self.formatter_version is None
                 or self.source_scope is not None
@@ -360,9 +364,15 @@ class ContentVersion(BaseModel):
             or len((self.rendered_text or "").encode()) > MAX_DIRECT_STAGE_CONTENT_BYTES
             or self.source_scope is not None
             or self.source_observation_ids
-            or self.computation_ids
-            or self.application_ref_profile is not None
-            or self.application_ids
+            or (
+                self.application_ref_profile is None
+                or len(self.computation_ids) != 1
+                or len(self.application_ids) != 1
+                if direct_application
+                else bool(
+                    self.computation_ids or self.application_ref_profile or self.application_ids
+                )
+            )
         ):
             raise ValueError(
                 "Direct stage evidence requires a bounded original without result claims"

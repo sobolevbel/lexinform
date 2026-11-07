@@ -29,6 +29,7 @@ from lexinform.models import (
 )
 from lexinform.models.batch import batch_item_meta
 from lexinform.models.content import SupplementContentEvidence
+from lexinform.models.original_delivery_content import OriginalDeliveryPlan
 
 
 class ContentApplicationError(ValueError):
@@ -167,12 +168,21 @@ def _verify(
     saved_plan = snapshots.get(version.plan_snapshot_id)
     if saved_plan is None or saved_plan.kind != "plan":
         raise ValueError("content_application_plan_unavailable")
-    semantic = DeliveryPlan.model_validate(read_json(saved_plan.payload_json))
+    direct = version.direct_stage_evidence
+    multipart = direct is not None and direct.multipart == "direct-stage-application-parts-v1"
+    physical_plan = (
+        OriginalDeliveryPlan.model_validate_json(saved_plan.payload_json) if multipart else None
+    )
+    semantic = (
+        physical_plan.root
+        if physical_plan is not None
+        else DeliveryPlan.model_validate(read_json(saved_plan.payload_json))
+    )
     if (
         semantic.destination != "direct"
         or semantic.update_group
         or semantic.sitting_group
-        or semantic.continuation_ids
+        or (semantic.continuation_ids and not multipart)
         or semantic.continuation_parent is not None
         or semantic.absorbed_by is not None
         or semantic.digest_event_ids
@@ -240,7 +250,8 @@ def _verify(
         "SELECT publication_id FROM publication_content WHERE content_id=?",
         (version.content_id,),
     )
-    if any(row["publication_id"] != physical_id for row in bindings):
+    allowed = set(physical_plan.bindings) if physical_plan is not None else {physical_id}
+    if any(row["publication_id"] not in allowed for row in bindings):
         raise ValueError("content_application_binding_mismatch")
     rows = _rows(connection, "SELECT * FROM publications WHERE id=?", (physical_id,))
     if not rows:
@@ -262,7 +273,7 @@ def _verify(
         )
     ):
         raise ValueError("supplement_content_publication_owner_invalid")
-    if physical["delivery_json"]:
+    if physical["delivery_json"] and not multipart:
         plan = DeliveryPlan.model_validate(read_json(physical["delivery_json"]))
         if (
             version.reason == "amendments_revision"
@@ -271,7 +282,7 @@ def _verify(
             version, {key: value for key, value in snapshots.items() if value is not None}, plan
         ):
             raise ValueError("content_application_frozen_target_mismatch")
-    elif not retained:
+    elif not physical["delivery_json"] and not retained:
         raise ValueError("content_application_physical_unavailable")
 
 

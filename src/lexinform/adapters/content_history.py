@@ -609,13 +609,28 @@ def verify_direct_stage_content(
     if version.change_snapshot_id is None:
         raise ValueError("direct_stage_snapshot_missing")
     change = StatusChange.model_validate_json(snapshots[version.change_snapshot_id].payload_json)
-    # Amendments and supplements can be appended after the original status text is frozen.
-    current = read_status_change(event).model_copy(update={"amendments": None, "supplements": []})
+    suffix: dict[str, object] = {"amendments": None, "supplements": []}
+    current = read_status_change(event).model_copy(update=suffix)
+    application = evidence.multipart == "direct-stage-application-parts-v1"
+    amendment = amendments_stage(change.new_stages) is not None
+    if application:
+        scope = (
+            change.amendments is None
+            and len(change.supplements) == 1
+            and not amendment
+            and len(change.new_stages) <= 1
+            if version.supplement_evidence is not None
+            else change.amendments is not None
+            and not change.supplements
+            and amendment
+            and len(change.new_stages) == 1
+        )
+    else:
+        scope = len(change.new_stages) == 1 and not amendment
     if (
-        change != current
+        (change.model_copy(update=suffix) if application else change) != current
         or (change.term, change.number) != (root.term, root.number)
-        or len(change.new_stages) != 1
-        or amendments_stage(change.new_stages) is not None
+        or not scope
     ):
         raise ValueError("direct_stage_event_scope")
     if evidence.multipart is not None:

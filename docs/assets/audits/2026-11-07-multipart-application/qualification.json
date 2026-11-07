@@ -1,0 +1,32 @@
+{
+  "base_tree": "294886c475b306ceb62880ae30291330226a9873",
+  "reader_tree": "52b22c62416285d9c500d9a8c259ad9fa93d51a8",
+  "writer_scratch": "/tmp/lexinform-direct-multipart-app",
+  "reader_scratch": "/tmp/lexinform-direct-multipart-app-reader",
+  "checks": "69 focused tests; strict mypy 7; Ruff and diff checks. Both candidate and baseline dumps restore twice on separate reader-only tree.",
+  "scope": "Synthetic schema-valid long ordinary amendment and one supplement answers via actual formatter and Poster.deliver, original application and source receipt machinery. Sejm-owned first ordinary direct freeze only; one existing exact application ref, excludes mixed/revision/group/digest/unknown input parents. No formatter or threshold changes.",
+  "proof": "Exact HTML and ordered physical bindings; reader and writer sends identical with history disabled by budget control. Late second result appends to current status event while historical version stays exact. Cleanup and double restore, missing application ref rejected atomically. Existing J480 controls cover wrong anchor, foreign part, missing binding and uncertain delivery.",
+  "controlled_delta": {
+    "amendments": {
+      "sql": 22419,
+      "gzip": 1429
+    },
+    "supplement": {
+      "sql": 22083,
+      "gzip": 2441
+    }
+  },
+  "hashes": {
+    "reader-tree": "080aa5561ff9677ec8503df249848f6326ef85d5730e5e9321c8a29b420e0651",
+    "supplement-candidate.sql.gz": "e7b4cc845053bb7f2d20f21aa7de3dd257a704eabd18da08cd3d82bf162ae8d0",
+    "amendments-candidate.sql.gz": "53a1c8927aa1318ce3941d8cb35884fa307897f50025e01704a7aea1048d692c",
+    "reader.patch": "483dd37efdd9a5c98a996bd78c46dfd45fa4ea4d733eb2b2b2bd66b3ceeb0464",
+    "amendments-baseline.sql": "28401b71396fae44d092fcf0ddeca0739e0de22ffd3f5fb444e138403f8d424d",
+    "supplement-baseline.sql.gz": "11417f1e8359f933f0748d60ca294041d0d119988fc2e4171acfbc4d0c5faa2b",
+    "supplement-baseline.sql": "e5552a7e5650dc438b0fdce623993390d8091d8f82136ab84069e0cc0875bc38",
+    "amendments-candidate.sql": "98c64b5d6f401caf204de33f0addadc5442b9947b052a76406e6f7c1f332ff02",
+    "writer.patch": "56d8117ca210bb5fcb2c9f28b4d7a3d10da3b7e4f9aa318a376bc214c71479c5",
+    "supplement-candidate.sql": "0b7518e20efb621e13a77be3a58f0b59e61e05082798bee446009e55bee7e315",
+    "amendments-baseline.sql.gz": "c8e0083ab293a01d0e7cc6d5debb49efc0543768c440566a7210251ceb9aedc6"
+  }
+}

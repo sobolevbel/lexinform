@@ -120,7 +120,7 @@ def _read_history(
         except ValueError:
             findings.add("content_source_reference_invalid", version.content_id)
         try:
-            verify_direct_stage_content(db, version)
+            verify_direct_stage_content(db, version, require_bound=True)
         except ValueError:
             findings.add("invalid_direct_stage_content_history", version.content_id)
         try:
