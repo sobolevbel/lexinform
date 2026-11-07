@@ -1,0 +1,20 @@
+{
+  "baseline": {
+    "sql_sha256": "28f753a7b66450f5cdba39d00b910e4adefd8eae7cff8c5d99bb28200f290713",
+    "sql_bytes": 175935,
+    "gzip_bytes": 20395,
+    "exact_reader_restores": 2
+  },
+  "queued": {
+    "sql_sha256": "0bda5ae3581abd27d903b055bb64d7232b6472e589441a644c0470de5cb82a97",
+    "sql_bytes": 184119,
+    "gzip_bytes": 21015,
+    "exact_reader_restores": 2
+  },
+  "unknown": {
+    "sql_sha256": "332f2352b3c23178646e1ae2accc57b27a0ab46d28a3f712bbe4bc8cd3b3de41",
+    "sql_bytes": 184120,
+    "gzip_bytes": 21013,
+    "exact_reader_restores": 2
+  }
+}

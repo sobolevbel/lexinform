@@ -147,8 +147,11 @@ from lexinform.content_sources import (
 )
 from lexinform.content_versions import (
     GROUPED_STAGE_REVISION_REF_PREFIX,
+    confirmed_content_version,
     content_delivery_mismatch,
     content_snapshot_refs,
+    grouped_stage_revision_plan,
+    grouped_stage_revision_ref,
     is_grouped_stage_revision_slot,
 )
 from lexinform.direct_delivery import direct_root_plan
@@ -2360,6 +2363,131 @@ class SqliteBillRepository:
                 publication_id=publication_id,
             ),
         )
+
+    def reserve_grouped_stage_revision(
+        self,
+        version: ContentVersion,
+        *,
+        expected_content_id: str,
+        expected_base_sha256: str,
+        approved_sha256: str,
+    ) -> int | None:
+        """Reserve one approved inert edit against the confirmed shared target."""
+        version = ContentVersion.model_validate_json(version.model_dump_json())
+        evidence = version.grouped_stage_evidence
+        ref = grouped_stage_revision_ref(version)
+        if (
+            ref is None
+            or evidence is None
+            or evidence.revision is None
+            or version.previous_version_id != expected_content_id
+            or version.rendered_text is None
+            or hashlib.sha256(version.rendered_text.encode()).hexdigest() != approved_sha256
+        ):
+            return None
+        with self.atomic():
+            # Acquire SQLite write ownership before reading the confirmed base or target slots.
+            lock = self._conn.execute("UPDATE publication_sequence SET last_id=last_id WHERE id=1")
+            if lock.rowcount != 1:
+                raise ValueError("grouped revision reservation requires its publication sequence")
+            root = self.publication_by_id(version.root_publication_id)
+            if (
+                root is None
+                or root.kind is not PublicationKind.STATUS_UPDATE
+                or root.status is not PublicationStatus.SENT
+                or root.message_id != evidence.revision.target_message_id
+            ):
+                return None
+            conflict = self._conn.execute(
+                "SELECT 1 FROM publications WHERE channel_id=? AND ("
+                " (kind='message_part' AND ref=?) OR ("
+                " status IN ('queued','failed','pending','unknown') AND ("
+                " (kind='message_part' AND ref GLOB ?) OR (delivery_json IS NOT NULL AND CASE"
+                " WHEN NOT json_valid(delivery_json) THEN 1"
+                " WHEN json_type(delivery_json) != 'object' THEN 1"
+                " ELSE CAST(json_extract(delivery_json, '$.edit_message_id') AS INTEGER)=?"
+                " END))))"
+                " LIMIT 1",
+                (
+                    root.channel_id,
+                    ref,
+                    f"{GROUPED_STAGE_REVISION_REF_PREFIX}{version.root_publication_id}/*",
+                    root.message_id,
+                ),
+            ).fetchone()
+            if conflict is not None:
+                return None
+            current = self._confirmed_grouped_stage_base(root)
+            if (
+                current is None
+                or current.content_id != expected_content_id
+                or current.rendered_text is None
+                or hashlib.sha256(current.rendered_text.encode()).hexdigest()
+                != expected_base_sha256
+            ):
+                return None
+            bill = self.get_content_snapshot(version.bill_snapshot_id)
+            plan = grouped_stage_revision_plan(version, bill) if bill is not None else None
+            if plan is None:
+                return None
+            publication_id = self._allocate_publication_id()
+            self._conn.execute(
+                "INSERT INTO publications"
+                " (id, term, number, kind, status, channel_id, ref, created_at, delivery_json)"
+                " VALUES (?, ?, ?, 'message_part', 'queued', ?, ?, ?, ?)",
+                (
+                    publication_id,
+                    root.term,
+                    root.number,
+                    root.channel_id,
+                    ref,
+                    _iso(version.recorded_at),
+                    plan.model_dump_json(),
+                ),
+            )
+            self.save_content_version(version)
+            self.bind_publication_content(publication_id, version.content_id)
+            return publication_id
+
+    def _confirmed_grouped_stage_base(self, root: Publication) -> ContentVersion | None:
+        if root.id is None or root.message_id is None:
+            return None
+        versions = {version.content_id: version for version in self.list_content_versions(root.id)}
+        if not versions or any(
+            version.grouped_stage_evidence is None
+            or version.grouped_stage_evidence.render_witness is None
+            for version in versions.values()
+        ):
+            return None
+        bindings = self._conn.execute(
+            "SELECT b.content_id, p.id, p.status FROM publication_content b"
+            " JOIN content_versions v ON v.content_id=b.content_id"
+            " JOIN publications p ON p.id=b.publication_id"
+            " WHERE v.root_publication_id=?",
+            (root.id,),
+        ).fetchall()
+        if len(bindings) != len(versions) or any(row["status"] != "sent" for row in bindings):
+            return None
+        confirmed = {row["content_id"] for row in bindings}
+        if confirmed != versions.keys():
+            return None
+        current = confirmed_content_version(
+            {identity: version.previous_version_id for identity, version in versions.items()},
+            confirmed,
+        ).current_id
+        if current is None:
+            return None
+        base = versions[current]
+        evidence = base.grouped_stage_evidence
+        assert evidence is not None, "the supported history has exact grouped evidence"
+        known_receipts = {row["id"] for row in bindings} | {
+            member.publication_id for member in evidence.members
+        }
+        receipts = self._conn.execute(
+            "SELECT id FROM publications WHERE channel_id=? AND status='sent' AND message_id=?",
+            (root.channel_id, root.message_id),
+        ).fetchall()
+        return base if {row["id"] for row in receipts} == known_receipts else None
 
     def get_publication_content(self, publication_id: int) -> ContentVersion | None:
         row = self._conn.execute(
@@ -4788,6 +4916,14 @@ class SqliteBillRepository:
             (term, from_number),
         )
 
+    def _allocate_publication_id(self) -> int:
+        # Operator commands must never address a different message after its row was deleted.
+        identity = self._conn.execute(
+            "UPDATE publication_sequence SET last_id = last_id + 1 WHERE id = 1 RETURNING last_id"
+        ).fetchone()
+        assert identity is not None, "the migrated repository provides its publication sequence"
+        return int(identity[0])
+
     def create_publication(self, publication: Publication) -> int:
         """Insert the row or, when its unique key exists, reset that row to the given status.
 
@@ -4817,11 +4953,7 @@ class SqliteBillRepository:
         attention = publication.attention or (
             publication.delivery.attention if publication.delivery else None
         )
-        # Operator commands must never address a different message after its row was deleted.
-        identity = self._conn.execute(
-            "UPDATE publication_sequence SET last_id = last_id + 1 WHERE id = 1 RETURNING last_id"
-        ).fetchone()
-        assert identity is not None
+        identity = self._allocate_publication_id()
         self._conn.execute(
             """
             INSERT INTO publications (id, term, number, kind, status, channel_id, ref, message_id,
@@ -4836,7 +4968,7 @@ class SqliteBillRepository:
                                           publications.attention_json, excluded.attention_json)
             """,
             (
-                identity[0],
+                identity,
                 publication.term,
                 publication.number,
                 publication.kind.value,

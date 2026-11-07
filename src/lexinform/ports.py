@@ -888,6 +888,15 @@ class BillRepository(Protocol):
 
     def bind_publication_content(self, publication_id: int, content_id: str) -> None: ...
 
+    def reserve_grouped_stage_revision(
+        self,
+        version: ContentVersion,
+        *,
+        expected_content_id: str,
+        expected_base_sha256: str,
+        approved_sha256: str,
+    ) -> int | None: ...
+
     def get_publication_content(self, publication_id: int) -> ContentVersion | None: ...
 
     def list_content_publications(self, root_publication_id: int) -> list[Publication]: ...
