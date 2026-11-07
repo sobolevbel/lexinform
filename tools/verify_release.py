@@ -279,13 +279,14 @@ def relay_retry_proof(
         "head_branch": "main",
         "event": "workflow_run",
         "path": ".github/workflows/deploy-relay.yml",
-        "created_at": deploy["created_at"],
         "status": "completed",
         "conclusion": "failure",
     }
     if any(first.get(key) != value for key, value in expected.items()):
         return None
     prior = run_summary(read, first)
+    if not prior["created_at"] <= prior["updated_at"] <= deploy["updated_at"]:
+        return None
     jobs = prior["jobs"]
     if len(jobs) != 1 or (jobs[0]["name"], jobs[0]["status"], jobs[0]["conclusion"]) != (
         "deploy",

@@ -560,6 +560,7 @@ def test_retry_requires_prior_failed_transition_and_exact_successful_restart(con
         github.log += "already at 563b3e805db0, lexinform-listen running\n"
     first = run(DEPLOY, "deploy-relay.yml", "workflow_run")
     first["conclusion"] = "failure"
+    first["created_at"] = "2026-10-28T12:05:55Z"
     if control == "wrong_target":
         first["head_sha"] = PREVIOUS
     first_job = job(JOB + 1, "deploy")
