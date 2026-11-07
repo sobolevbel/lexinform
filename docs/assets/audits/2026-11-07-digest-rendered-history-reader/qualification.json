@@ -1,0 +1,53 @@
+{
+  "artifacts_sha256": {
+    "candidate.patch": "c8af6b7db206e57524f76bbbc600dd3e7fd7948ca18d7ddeb609c5a68e8c43cf",
+    "compat-candidate.json": "e792ab1b18d723f36bc388c05567c81f71c05d67fe80bfba842f3eaec4532f2b",
+    "compat-previous.json": "f0fd52ab543b6cd4beb6bda77d6f58366bfaef4ce0a166db597fc22b859e491d",
+    "compat.py": "a21049fa9cf279c8fb9328d08bc3ad4f750719409716267fe6e4629b90757156",
+    "native-before-proof.patch": "214286e66db6db877f94a4c427315583fd55c7494a3352affaade0b5977c8a1e",
+    "native-pruned.db": "0f03c9a8c6f7850e4f965faee5f7b0247ed6595414654050717f7ec925583867"
+  },
+  "controls": [
+    "Exact pruned restore twice",
+    "Doctor verifies one rendered part and explicit semantic gap",
+    "Exact digest event link survives cleanup",
+    "Missing part parent and changed event owner reject atomically",
+    "Bill correction unavailable",
+    "Raw HTML unit bound includes tags"
+  ],
+  "fixture": "Existing pending_event world with title x repeated 70000 times; native formatter, fake transport.",
+  "new_reader": {
+    "event_ids": [
+      2
+    ],
+    "html_sha256": "1f7dde2823eeb8b1673c2a7f503bbabe9aa5374b9a554ecc74897501a63f0f6c",
+    "html_utf16_units": 275,
+    "html_utf8_bytes": 437,
+    "legacy_sha256": "80a0d183a400424f0bcd24af0ce60052dca74e6634d6f2c1ec23e7b48d38c309",
+    "legacy_version_ids": [
+      "content-v1:6a7893fdc775ac57200c1e7fe36f2982493ad75255e66a6537a4c84ef8fe76a4"
+    ],
+    "new_profile_restores": true
+  },
+  "old_reader": {
+    "event_ids": [
+      2
+    ],
+    "html_sha256": "1f7dde2823eeb8b1673c2a7f503bbabe9aa5374b9a554ecc74897501a63f0f6c",
+    "html_utf16_units": 275,
+    "html_utf8_bytes": 437,
+    "legacy_sha256": "80a0d183a400424f0bcd24af0ce60052dca74e6634d6f2c1ec23e7b48d38c309",
+    "legacy_version_ids": [
+      "content-v1:6a7893fdc775ac57200c1e7fe36f2982493ad75255e66a6537a4c84ef8fe76a4"
+    ],
+    "new_profile_restores": false
+  },
+  "prior_writer": "Sent one ordinary reader part; exact HTML and content version unavailable after cleanup.",
+  "reader_fixture": "Synthesized bounded profile rows from the frozen native output; no runtime writer.",
+  "tests": {
+    "final_typed_change_focused": 2,
+    "focused": 50,
+    "mypy": "passed",
+    "ruff": "passed"
+  }
+}

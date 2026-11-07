@@ -153,7 +153,7 @@ class ContentVersion(BaseModel):
     grouped_stage_evidence: GroupedStageContentEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
-    digest_profile: Literal["digest-content-v1"] | None = Field(
+    digest_profile: Literal["digest-content-v1", "digest-rendered-v1"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
@@ -369,7 +369,13 @@ class ContentVersionSummary(BaseModel):
     grouped_stage_evidence: GroupedStageContentEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
-    digest_profile: Literal["digest-content-v1"] | None = Field(
+    digest_profile: Literal["digest-content-v1", "digest-rendered-v1"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    digest_exact_parts_available: Literal[True] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    digest_upstream_semantics: Literal["not_retained"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
@@ -401,7 +407,9 @@ class ContentVersionSummary(BaseModel):
     def full_context_available(self) -> bool | None:
         return (
             False
-            if self.card_context_profile is not None or self.grouped_stage_evidence is not None
+            if self.card_context_profile is not None
+            or self.grouped_stage_evidence is not None
+            or self.digest_upstream_semantics == "not_retained"
             else None
         )
 
@@ -440,6 +448,12 @@ class ContentVersionSummary(BaseModel):
             source_scope=version.source_scope,
             card_context_profile=version.card_context_profile,
             digest_profile=version.digest_profile,
+            digest_exact_parts_available=True
+            if version.digest_profile == "digest-rendered-v1"
+            else None,
+            digest_upstream_semantics="not_retained"
+            if version.digest_profile == "digest-rendered-v1"
+            else None,
             grouped_stage_evidence=version.grouped_stage_evidence,
             computation_ids=result_ids,
             application_ids=version.application_ids,

@@ -1,10 +1,14 @@
 """Bounded immutable digest input and exact ordered physical parts."""
 
+import datetime as dt
+import hashlib
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
-from lexinform.models.digest import Digest
+from lexinform.json_storage import canonical_json
+from lexinform.models.digest import Digest, week_bounds
+from lexinform.models.physical_inventory import Sha256
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 
 MAX_DIGEST_CONTENT_BYTES = 65_536
@@ -56,4 +60,64 @@ class DigestContentPlan(BaseModel):
             raise ValueError("digest events require their exact frozen semantic entries")
         if len(self.model_dump_json().encode()) > MAX_DIGEST_CONTENT_BYTES:
             raise DigestContentBudgetError("digest immutable content exceeds its aggregate bound")
+        return self
+
+
+def digest_event_owner_sha256(owners: list[tuple[int, int, str, str]]) -> str:
+    facts: list[JsonValue] = [
+        [identity, term, number, kind] for identity, term, number, kind in owners
+    ]
+    return hashlib.sha256(canonical_json(facts).encode()).hexdigest()
+
+
+class DigestRenderedPart(DigestContentPart):
+    profile: Literal["digest-rendered-part-v1"] = "digest-rendered-part-v1"
+    event_owner_sha256: Sha256
+
+    @model_validator(mode="after")
+    def serialized_bound(self) -> Self:
+        if len(self.model_dump_json().encode()) > 32_768:
+            raise ValueError("digest rendered part exceeds its serialized byte bound")
+        return self
+
+
+class DigestRenderedPartRef(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    publication_id: DigestSqlId
+    snapshot_id: str = Field(pattern=r"^content-snapshot-v1:[0-9a-f]{64}$")
+
+
+class DigestRenderedPlan(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    profile: Literal["digest-rendered-v1"] = "digest-rendered-v1"
+    channel_id: str = Field(min_length=1, max_length=256)
+    delivery_ref: str = Field(min_length=1, max_length=128)
+    week_ref: str = Field(pattern=r"^[0-9]{4}-W[0-9]{2}$")
+    since: dt.date
+    until: dt.date
+    upstream_semantics: Literal["not_retained"] = "not_retained"
+    upstream_semantic_reason: Literal["aggregate_budget"] = "aggregate_budget"
+    upstream_digest_sha256: Sha256
+    parts: tuple[DigestRenderedPartRef, ...] = Field(min_length=1, max_length=16)
+
+    @model_validator(mode="after")
+    def week_and_parts_agree(self) -> Self:
+        draft_of = self.delivery_ref.removeprefix(self.week_ref + ":draft:")
+        if (self.since, self.until) != week_bounds(self.week_ref) or (
+            self.delivery_ref != self.week_ref
+            and (
+                draft_of == self.delivery_ref
+                or not draft_of.isascii()
+                or not draft_of.isdecimal()
+                or draft_of.startswith("0")
+                or int(draft_of) >= 2**63
+            )
+        ):
+            raise ValueError("digest rendered history requires its exact week and delivery ref")
+        if len({part.publication_id for part in self.parts}) != len(self.parts) or len(
+            {part.snapshot_id for part in self.parts}
+        ) != len(self.parts):
+            raise ValueError("digest rendered history requires distinct ordered parts")
         return self

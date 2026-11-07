@@ -18,7 +18,7 @@ from lexinform.adapters.content_history import (
     verify_grouped_stage_content,
 )
 from lexinform.adapters.content_source_refs import verify_content_source
-from lexinform.adapters.digest_content import verify_digest_content
+from lexinform.adapters.digest_content import ResolvedDigestRenderedContent, verify_digest_content
 from lexinform.content_versions import (
     confirmed_content_version,
     content_delivery_mismatch,
@@ -133,7 +133,10 @@ def _read_history(
         except ValueError:
             findings.add("invalid_grouped_stage_content_history", version.content_id)
         try:
-            verify_digest_content(db, version, require_bound=True)
+            digest = verify_digest_content(db, version, require_bound=True)
+            if isinstance(digest, ResolvedDigestRenderedContent):
+                counts["digest_exact_rendered_parts"] += len(digest.parts)
+                counts["digest_upstream_semantics_not_retained"] += 1
         except ValueError:
             findings.add("invalid_digest_content_history", version.content_id)
         try:
