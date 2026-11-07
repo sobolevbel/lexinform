@@ -907,6 +907,12 @@ class BatchIntent(BaseModel):
             or receipt.text_chars != len(ctx.text)
         ):
             raise ValueError("Input receipt differs from the frozen request and context")
+        if receipt.block_companion is not None and any(
+            input_text_sha256(ctx.text[row.start : row.end]) != row.text_sha256
+            for row in receipt.block_companion.rows
+        ):
+            raise ValueError("block companion differs from actual emitted request text")
+
         return self
 
     def _validate_word_formula_input(

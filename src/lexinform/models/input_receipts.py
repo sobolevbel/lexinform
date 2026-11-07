@@ -8,6 +8,7 @@ from typing import ClassVar, Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from lexinform.models.analysis import AmendmentsContext, BillContext, SupplementContext
+from lexinform.models.block_input import PreparedBlockCompanion
 from lexinform.models.prepared_input import PreparedTextPart, PreparedTextSegment
 
 MAX_INPUT_RECEIPT_BYTES = 8192
@@ -107,6 +108,21 @@ def input_map_sha256(segments: Iterable[PreparedTextSegment]) -> str:
     return digest.hexdigest()
 
 
+def validate_block_companion(
+    companion: PreparedBlockCompanion | None, segments: tuple[PreparedTextSegment, ...]
+) -> None:
+    if companion is None:
+        return
+    for row in companion.rows:
+        if not any(
+            segment.origin == "source"
+            and segment.part_index == row.part_index
+            and segment.start <= row.start < row.end <= segment.end
+            for segment in segments
+        ):
+            raise ValueError("prepared block copy must lie inside one retained source segment")
+
+
 class _TextInputReceipt(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
@@ -122,6 +138,9 @@ class _TextInputReceipt(BaseModel):
     ] = "bill-context-json-v1"
     map_encoding: Literal["prepared-text-segments-json-v1"] = "prepared-text-segments-json-v1"
     physical_origins: Literal["unmapped"] = "unmapped"
+    block_companion: PreparedBlockCompanion | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     block_origins: Literal["unmapped"] = "unmapped"
     exclusions: Literal["unknown"] = "unknown"
     input_completeness: Literal["not_asserted"] = "not_asserted"
@@ -222,6 +241,7 @@ class _TextInputReceipt(BaseModel):
                 self.segments
             ):
                 raise ValueError("A retained prefix requires honest omitted segments")
+        validate_block_companion(self.block_companion, self.segments)
         if len(self.model_dump_json().encode()) > MAX_INPUT_RECEIPT_BYTES:
             raise ValueError("Input receipt exceeds its serialized byte limit")
         return self
@@ -257,6 +277,9 @@ class MultipartTextInputReceipt(BaseModel):
     context_encoding: Literal["bill-context-json-v1"] = "bill-context-json-v1"
     map_encoding: Literal["prepared-text-segments-json-v1"] = "prepared-text-segments-json-v1"
     physical_origins: Literal["unmapped"] = "unmapped"
+    block_companion: PreparedBlockCompanion | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     input_completeness: Literal["not_asserted"] = "not_asserted"
     retention: Literal["complete"] = "complete"
     source_selection_id: str = Field(pattern=r"^selection-v1:[0-9a-f]{64}$", max_length=80)
@@ -288,6 +311,7 @@ class MultipartTextInputReceipt(BaseModel):
             offset = segment.end
         if offset != self.text_chars or self.full_map_sha256 != input_map_sha256(self.segments):
             raise ValueError("Multipart input receipt must keep its exact whole map")
+        validate_block_companion(self.block_companion, self.segments)
         if len(self.model_dump_json().encode()) > MAX_INPUT_RECEIPT_BYTES:
             raise ValueError("Multipart input receipt exceeds its serialized byte limit")
         return self

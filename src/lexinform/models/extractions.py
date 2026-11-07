@@ -6,6 +6,7 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from lexinform.models.block_input import BlockCopyWitness
 from lexinform.models.doc_notes import MAX_DOC_NOTE_SUMMARY_BYTES, DocNoteSummary
 from lexinform.models.documents import (
     ExtractedDocument,
@@ -262,6 +263,10 @@ class ExtractedPartSummary(BaseModel):
     ] = Field(max_length=8)
     loss_count: int = Field(ge=0)
     losses_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    block_copy_witness: BlockCopyWitness | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     word_view_status: WordViewStatus | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -282,6 +287,51 @@ class ExtractedPartSummary(BaseModel):
 
     @model_validator(mode="after")
     def status_requires_known_manifest(self) -> Self:
+        witness = self.block_copy_witness
+        if witness is not None:
+            BlockCopyWitness.model_validate(witness)
+        if witness is not None:
+            if (
+                witness.part_sha256,
+                witness.manifest_sha256,
+                witness.text_sha256,
+                witness.text_chars,
+            ) != (self.sha256, self.manifest_sha256, self.text_sha256, self.text_chars):
+                raise ValueError("block copy witness differs from its native extracted part")
+            if (
+                self.block_count is None
+                or len({row.block_id for row in witness.runs}) > self.block_count
+            ):
+                raise ValueError("block copy witness requires known native block coverage")
+            coordinates = (
+                "word-blocks-v1"
+                if witness.profile == "word-plain-xml-copies-v1"
+                else witness.coordinates
+            )
+            view = (
+                "legacy-word-body-v1"
+                if witness.profile == "word-plain-xml-copies-v1"
+                else witness.text_view
+            )
+            formats = {"word-blocks-v1": "word", "pdf-pages-v1": "pdf", "odt-blocks-v1": "odt"}
+            if (self.format, self.coordinates, self.text_view) != (
+                formats.get(coordinates),
+                coordinates,
+                view,
+            ):
+                raise ValueError("block copy witness requires the matching known native extraction")
+            if (
+                self.format == "word"
+                and extraction_metadata_sha256(
+                    (witness.body_manifest_sha256, witness.notes_manifest_sha256)
+                )
+                != self.manifest_sha256
+            ):
+                raise ValueError("Word block copy witness differs from its body and note manifests")
+            if self.format == "pdf" and any(
+                int(row.block_id.split(":")[1]) > self.block_count for row in witness.runs
+            ):
+                raise ValueError("PDF block copy page is outside the retained native page count")
         if self.doc_notes is not None:
             if not isinstance(self.doc_notes, DocNoteSummary):
                 raise ValueError("Constructed DOC summary requires its typed note source")
@@ -442,6 +492,18 @@ class ExtractionResult(BaseModel):
         if len(self.selected_parts) > MAX_EXTRACTION_PART_SUMMARIES:
             raise ValueError("extraction summaries exceed their existing part limit")
         _odt_prefix_budget(self.selected_parts)
+        for part in self.selected_parts:
+            if part.block_copy_witness is not None:
+                ExtractedPartSummary.model_validate(part.model_dump())
+        if (
+            sum(
+                len(part.block_copy_witness.model_dump_json().encode())
+                for part in self.selected_parts
+                if part.block_copy_witness is not None
+            )
+            > 4096
+        ):
+            raise ValueError("Stored block copy witnesses exceed their aggregate byte limit")
         word_field_bytes = 0
         for part in self.selected_parts:
             if part.word_field_prefix is not None:

@@ -750,12 +750,77 @@ def _archive_parts_parent(
     return root
 
 
+def _block_parents(
+    connection: sqlite3.Connection,
+    receipt: PrimaryInputReceipt
+    | SupplementInputReceipt
+    | AmendmentInputReceipt
+    | MultipartTextInputReceipt,
+) -> None:
+    companion = receipt.block_companion
+    if companion is None:
+        return
+    if receipt.source_selection_id is None:
+        raise ValueError("block companion requires its saved source selection")
+    selection = _source_selection(connection, receipt.source_selection_id).selection
+    for row in companion.rows:
+        if row.part_index >= len(selection.parts):
+            raise ValueError("block companion part is absent")
+        if isinstance(receipt, MultipartTextInputReceipt):
+            recorded = receipt.source_parts[row.part_index]
+            expected = (
+                receipt.extraction_id
+                if isinstance(
+                    receipt, (RclArchiveInputReceipt, RclArchiveSelfAmendmentInputReceipt)
+                )
+                and isinstance(recorded, ArchiveInputPart)
+                else recorded.extraction_id
+                if isinstance(recorded, LooseRclInputPart)
+                else None
+            )
+        else:
+            expected = receipt.extraction_id
+        if expected != row.extraction_id:
+            raise ValueError("block companion differs from its receipt extraction")
+        part = selection.parts[row.part_index]
+        saved = _one(
+            connection,
+            "SELECT e.* FROM selection_extractions l JOIN extraction_results e USING(extraction_id)"
+            " WHERE l.selection_id=? AND l.extraction_id=?",
+            (receipt.source_selection_id, row.extraction_id),
+        )
+        extraction = read_extraction_result(saved)
+        matches = [p for p in extraction.selected_parts if p.physical_index == row.physical_index]
+        if len(matches) != 1:
+            raise ValueError("block companion physical part is absent")
+        summary = matches[0]
+        witness = summary.block_copy_witness
+        if (
+            witness is None
+            or witness.witness_id != row.witness_id
+            or row.run_index >= len(witness.runs)
+            or extraction.artifact_sha256 != part.source_sha256
+            or not archive_member_matches(part, summary, chars=summary.text_chars)
+        ):
+            raise ValueError("block companion extraction parent mismatch")
+        run = witness.runs[row.run_index]
+        if row.text_sha256 != run.text_sha256:
+            raise ValueError("block companion copy hash mismatch")
+        segment = next(s for s in receipt.segments if s.start <= row.start < row.end <= s.end)
+        if segment.source_start is None or (run.source_start, run.source_end) != (
+            segment.source_start + row.start - segment.start,
+            segment.source_start + row.end - segment.start,
+        ):
+            raise ValueError("block companion source range mismatch")
+
+
 def _multipart_parents(
     connection: sqlite3.Connection,
     receipt: MultipartTextInputReceipt,
     meta: BatchItemMeta,
     owner: tuple[int, str] | None,
 ) -> None:
+    _block_parents(connection, receipt)
     source = _source_selection(connection, receipt.source_selection_id)
     selection = source.selection
     fitted = meta.selection
@@ -885,6 +950,7 @@ def _parents(
             raise ValueError("Multipart receipt requires its fitted selection")
         _multipart_parents(connection, receipt, primary_meta, owner)
         return
+    _block_parents(connection, receipt)
     selection = None
     if receipt.source_selection_id is not None:
         selection = _source_selection(connection, receipt.source_selection_id)

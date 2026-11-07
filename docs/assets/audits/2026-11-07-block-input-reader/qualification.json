@@ -1,0 +1,105 @@
+{
+  "checks": {
+    "diff_check": "passed",
+    "mypy": "strict success, 7 files",
+    "pytest": "98 passed: test_native_block_input_reader, test_block_input_reader, test_rcl_archive_input_receipt, test_input_receipts (-q -n0)",
+    "ruff": "check success; format applied"
+  },
+  "companion": {
+    "observed_rows": 1,
+    "profile": "prepared-block-copies-v1",
+    "retention": "complete",
+    "rows": [
+      {
+        "end": 305,
+        "extraction_id": "extraction-v1:9f6c9d092d4823e640eb11e7d1fcd695686da55042136b730918ec8b43b3edd4",
+        "part_index": 0,
+        "physical_index": 0,
+        "run_index": 0,
+        "start": 204,
+        "text_sha256": "10c8908efc9a52d5d9ad8184bc512a94100bf044ae85cb73ad659166b690d6e2",
+        "witness_id": "block-copy-v1:a9ec88a766f3d401ad71b5b0690b118c4df52681cc1fb8f516da663a4c1d3a33"
+      }
+    ],
+    "rows_sha256": "4591cccc90c1601ed1508b11b5cc3ce9a57cf55fdfb272d60f5085945d493ef3"
+  },
+  "compatibility": "Existing plain Word profile bytes/ID exact; legacy absent optional fields retain serialization/IDs; no writer emission.",
+  "doctor_checks": true,
+  "exact_source_run": [
+    204,
+    305
+  ],
+  "extension_base_tree": "49e36bfea2f516c8cafb694b267babf0bd9525a7",
+  "gzip_companion_delta": 228,
+  "hashes": {
+    "baseline.sql": "2afd60d8729dc4f04f4bdca0864aaffca86439ab3431dc3a8b88b9000bb87f62",
+    "qualify.py": "39745cd2558e88cc443d65beaa27f56146cd4cfedba722e83dc0d121bb2815a5",
+    "reader-extension.patch": "6114614c636c722c4b15a46f49d17bb0db2a815f36a8c65d53c11c156a453883",
+    "stage.patch": "f09908be5e76098f09e344033f28b2f58452349d2d906cc34a487886935f161a",
+    "staged.sql": "76d6fa037c8cafbfedc9bb54e9625d61c0ab41dc46cf2468cc8883cfc6bd614a"
+  },
+  "invalid_parent_restore_atomic": true,
+  "limits": {
+    "companion_bytes": 4096,
+    "existing_extraction_metadata_bytes": 16384,
+    "witness_bytes": 4096,
+    "witness_rows": 32
+  },
+  "native_page_manifest_sha256": "7efc24e212af27c2d061b2a66642551f88c0be1eb43d52e648653a28658449bb",
+  "normalized_quote_span": [
+    204,
+    331
+  ],
+  "old_word_witness_id_exact": "block-copy-v1:93d3a2c98d5695cb9245acf5498627fdcb272ed613296b2ba65876b34c786090",
+  "page_count": 14,
+  "raw_page_run": [
+    206,
+    307
+  ],
+  "reader_tree_base": "b19663e04f0cfc98a57f41fec6a4e64aa3d37aa1",
+  "request_unchanged": true,
+  "restores": 2,
+  "runtime_emission": false,
+  "scope": "Controlled opt-in reader trial, real pinned PDF bytes; synthetic reader-probe owner/URL; no historical association or writer emission.",
+  "source_pin": {
+    "claim": "Controlled claim, no provider call.",
+    "document_id": "rcl-document:587739",
+    "extraction_sha256": "7efc24e212af27c2d061b2a66642551f88c0be1eb43d52e648653a28658449bb",
+    "locator": "Art. 1",
+    "page": 1,
+    "pdf": {
+      "path": "documents/files/587739.pdf",
+      "sha256": "c4568d7582962e62ac39d5d084936424f19edebae58b8925add7422d90360a5e"
+    },
+    "quote_end": 331,
+    "quote_sha256": "e2847c736055a9a3b081f377a370f22605cb65df3fd4ad8bd7ac1d6d5d40089d",
+    "quote_start": 204,
+    "source_text_sha256": "368e0fea8034fee29af37345061b13321a49a3e53799631ca045bb51e4a07101"
+  },
+  "sql_companion_delta": 532,
+  "supersedes": "Unreleased Word-only J455 prototype at out/corpus/block-input-reader; old immutable artifacts retained unchanged.",
+  "unlocated_DOC": "unsupported/unmapped",
+  "whole_normalized_quote_copy_rejected": true,
+  "witness": {
+    "coordinates": "pdf-pages-v1",
+    "manifest_sha256": "7efc24e212af27c2d061b2a66642551f88c0be1eb43d52e648653a28658449bb",
+    "notes_manifest_sha256": null,
+    "part_sha256": "c4568d7582962e62ac39d5d084936424f19edebae58b8925add7422d90360a5e",
+    "profile": "native-block-copies-v1",
+    "runs": [
+      {
+        "block_chars": 1552,
+        "block_end": 307,
+        "block_id": "pdf-page:1:0",
+        "block_start": 206,
+        "block_text_sha256": "d235550ba69574ab9feb6cbbaf4611e13f81509b609053c3437bba07713ba477",
+        "source_end": 305,
+        "source_start": 204,
+        "text_sha256": "10c8908efc9a52d5d9ad8184bc512a94100bf044ae85cb73ad659166b690d6e2"
+      }
+    ],
+    "text_chars": 26182,
+    "text_sha256": "368e0fea8034fee29af37345061b13321a49a3e53799631ca045bb51e4a07101",
+    "text_view": "pdf-whitespace-v1"
+  }
+}
