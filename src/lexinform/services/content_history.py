@@ -44,6 +44,7 @@ from lexinform.models.content import (
     editorial_bill_snapshot,
     grouped_stage_content_budget,
 )
+from lexinform.models.events import has_single_amendments_stage
 from lexinform.models.grouped_update_witness import GroupedRenderWitness
 from lexinform.models.original_delivery_content import (
     MAX_ORIGINAL_DELIVERY_BYTES,
@@ -718,7 +719,7 @@ def _prepare_direct_stage_content(
     if has_application:
         amendment_stage = amendments_stage(change.new_stages) is not None
         if change.amendments is not None:
-            if change.supplements or not amendment_stage or len(change.new_stages) != 1:
+            if change.supplements or not has_single_amendments_stage(change.new_stages):
                 return None
             computation_id = change.amendments.computation_id
             if computation_id is None:
