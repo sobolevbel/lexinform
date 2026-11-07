@@ -1,0 +1,31 @@
+{
+  "compact_sha256": "2d3383cbf26a3a5ccfc87a1cde10f87e616e2ada8507f956f7b352e287361824",
+  "exact_restores": 2,
+  "gzip_sizes": [
+    5416262,
+    5550136
+  ],
+  "input_sql_sha256": "86631b80b725d7581a9da3000449c54dbbddec364841b219bfb99ad934372023",
+  "legacy_occurrences": {
+    "act_application": 1,
+    "amendments": 6,
+    "analysis": 167,
+    "consultation_review": 2,
+    "joint": 2,
+    "supplement": 12,
+    "unknown": 255
+  },
+  "legacy_values": 336,
+  "manifest_sha256": "8db49fb627ae70ce8de86a2419576e8f55e83a5e5ceca6238066fc33873a7978",
+  "plan_sha256": "b0740d1a05d57739d1561fa5733a7f725eaaa6239ec0b83926310cb55c5cac31",
+  "planning_and_dry_run_no_mutation": true,
+  "schema": 73,
+  "second_apply_noop": true,
+  "snapshot_sha256": "ca5aef32279176b4b0852f1ff533ae18167772ca991d1eef5d8494985020402a",
+  "source_commit": "6d482bcfbf6859d64defdbe78a8e80430db395b1",
+  "sql_sizes": [
+    27165718,
+    27764849
+  ],
+  "state_commit": "175b03b53e3d17a2cb87fd361325749d758e16dd"
+}
