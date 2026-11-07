@@ -518,13 +518,12 @@ def capture_submitted_amendment_scan_input(
             )
         except ValueError:
             if (
-                version != 2
-                or question.ctx.number != item.number
+                question.ctx.number != item.number
                 or question.ctx.source_check != meta.amendment_source
             ):
                 return None
             witness = AmendmentScanInputWitness(
-                version=3,
+                version=4 if version == 1 else 3,
                 source_url=meta.source_url,
                 request_sha256=request.payload_sha256,
                 question_sha256=question_sha256,
