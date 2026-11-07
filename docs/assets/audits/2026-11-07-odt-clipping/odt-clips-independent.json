@@ -1,0 +1,38 @@
+{
+  "source_sha256": "072d8e6cc811fbe7094369ed8ee40e36f05f363bc432318da272f35debf95722",
+  "xml_sha256": "f744f398b5f1de37655dd270786bb5dd473bf467ad7b2d83384f94a03e3b74f3",
+  "verified": [
+    {
+      "block_id": "odt-xml:content.xml:body:10",
+      "block": [
+        0,
+        300
+      ],
+      "source": [
+        458,
+        758
+      ],
+      "emitted": [
+        456,
+        756
+      ],
+      "sha256": "7cd218c82ba55d9a2ef459e2f14fcddb7f0756f51b2a070536c8b7e2e278f903"
+    },
+    {
+      "block_id": "odt-xml:content.xml:body:11",
+      "block": [
+        300,
+        561
+      ],
+      "source": [
+        1897,
+        2158
+      ],
+      "emitted": [
+        763,
+        1024
+      ],
+      "sha256": "7cdec9fb31903cef4f65db9b60ea1a19c9502a2e3ef9d7eb428866594ab3cde3"
+    }
+  ]
+}

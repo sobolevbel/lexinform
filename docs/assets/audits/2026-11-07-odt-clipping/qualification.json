@@ -1,0 +1,20 @@
+{
+  "writer_head": "d7b1167e",
+  "reader_head": "18b5b7c4 plus J462 stage.patch",
+  "cap": 1024,
+  "scope": "Natural ODT 1614 bytes, synthetic Sejm print owner in normal offline World. Actual queue, fake submit, collect/account, fake forget checkpoint and prune. Independent XML recheck offline.",
+  "loss": "Generated emitted [756,763) has no physical mapping; omitted source stays omitted.",
+  "parity": "Exact request SHA, base receipt and whole rows both caps. Default byte-exact SQL.",
+  "restores": "J462-only exact twice per writer dump after cleanup",
+  "controlled_delta": {
+    "sql": 745,
+    "gzip": 292
+  },
+  "hashes": {
+    "odt-clips-independent.json": "787ac6ae7900234ac780c2af012918f08358f2cc4de07d0d2fc95a4de3720d84",
+    "verify-odt-clips.py": "ed33192c41217a89b0a15625d9e1d87c7c010255c05df57606727eac431cba4f",
+    "reader.json": "73953c8d9814b49a95f4cf4af2286b883bf6a4ce38cba9271b1611ba38ac57f1",
+    "writer.json": "f8d666566e0f85ee1f33bb5e98919883259052844f673854802a40086a0a1a9c",
+    "qualify.py": "2d19ee03d9f06ded899b65e71ea396a9ce951f811cfbe8bfb994b57f4d9df8f8"
+  }
+}
