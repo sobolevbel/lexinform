@@ -1,0 +1,50 @@
+{
+  "case_sha256": "b2ab7c0607bad9a4fc7b7b8bafe336767a5148b9e1c417dbc55a83ccee1f8644",
+  "code_version": "27eef55661cf5724016274f9a071cde543da13f1",
+  "database_sha256": "279cfe182e9319cdcc3a1f0953fae9491d9631a7d1e2d678364ef667f53aa317",
+  "proof": {
+    "artifact_sha256": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+    "check": {
+      "block_origins": "unmapped",
+      "evidence": {
+        "block_origins": "unmapped",
+        "observed_text_span": [
+          2100,
+          2204
+        ],
+        "paid_origins": "unmapped",
+        "quote_occurrences": 1,
+        "semantic": "semantic_not_assessed",
+        "source_complete": false,
+        "status": "quote_present"
+      },
+      "input_span": [
+        41527,
+        41631
+      ],
+      "physical_origins": "unmapped",
+      "reason": "retained_source_span",
+      "semantic": "semantic_not_assessed",
+      "status": "retained"
+    },
+    "claim_text_sha256": "1b32d3e306b9959e85050cf68beaf75da05cc5f24d20b4fb03e29c5671ff8970",
+    "member_sha256": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45",
+    "profile": "primary-sejm-self-amendment-text-v1",
+    "quote_sha256": "919d1ece3e8e7682fccd4a687ffe9eee1182bc4aa7ce71c75ea51185db57153a",
+    "request_sha256": "c4b69c31ca1591a9af621c73688bd798bfb45a13e16701364bb34edb6cde8ada",
+    "source_observation_id": "source-observation-v1:a637d889f043d97bab4854f317676a43b5ae1c75cbd650474dd0fa33854d8292",
+    "source_part_index": 1,
+    "source_selection_id": "selection-v1:5be58199fc39b70e8f62397d24ca0d3f23f03e3ee7fd9527e8695c4accc04997",
+    "source_text_sha256": "f0455de268e05c93e689c78c6043fefaa231aadca52bd8146758b802da3c3878"
+  },
+  "read_inputs": {
+    "sejm/term10/autopoprawki/files/2320-A__2320-A.pdf": "b30ef9eb351b355597dd031d312ffe30716c8cdadf822d83c166fd0e000edc45"
+  },
+  "scope": "Literal text in a durable offline prepared context.",
+  "source_pins_sha256": "80647cfdbb4f8bccd4b067e8aad5bac526dbb1b73eec6898fce706ecb774b0b4",
+  "status": "recorded",
+  "version": "primary-multipart-citation-v1",
+  "baseline": "27eef55661cf5724016274f9a071cde543da13f1",
+  "wrong_body_rejected": true,
+  "missing_parent_rejected": true
+}

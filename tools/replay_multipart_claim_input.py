@@ -41,6 +41,7 @@ class MultipartCitationCase(BaseModel):
     custom_id: str = Field(min_length=1, max_length=256)
     request_sha256: Sha256
     original: PinnedInput
+    source_part_index: int = Field(default=0, ge=0, le=1, strict=True)
     claim: str = Field(min_length=1, max_length=256)
     locator: str = Field(min_length=1, max_length=128)
     quote_start: int = Field(ge=0, strict=True)
@@ -83,14 +84,18 @@ def _verify(
     selected = ContentSourceRows(db).get_document_selection(receipt.source_selection_id)
     if selected is None:
         raise ValueError("The verified original selection is unavailable")
-    part = selected.selection.parts[0]
+    part_index = case.source_part_index
+    if part_index == 1 and not isinstance(receipt, SejmSelfAmendmentInputReceipt):
+        raise ValueError("Only the verified Sejm self-amendment has a non-main citation profile")
+    part = selected.selection.parts[part_index]
+    role = "self_amendment" if part_index == 1 else "bill"
     if (
-        part.role != "bill"
+        part.role != role
         or part.source_sha256 != case.original.sha256
         or digest(data) != part.source_sha256
         or len(data) > _MAX_BYTES
     ):
-        raise ValueError("Pinned original body differs from the selected artifact")
+        raise ValueError("Pinned source body differs from the selected artifact")
     reader = DocumentTextExtractor(
         PypdfTextExtractor(),
         DocxTextExtractor(),
@@ -106,7 +111,7 @@ def _verify(
         == (part.members, part.sha256, part.text_sha256)
     ]
     if len(candidates) != 1:
-        raise ValueError("The original body does not yield the exact selected main text")
+        raise ValueError("The original body does not yield the exact selected source text")
     text = candidates[0].text
     quote = text[case.quote_start : case.quote_end]
     if (
@@ -142,10 +147,16 @@ def _verify(
         EvidenceCitation(document_id=part.url, locator=case.locator, quote=quote),
     )
     checked = _validate_key_change_input(
-        record, evidence, (document,), intent=intent, verified_multipart_selection=selected
+        record,
+        evidence,
+        (document,),
+        intent=intent,
+        verified_multipart_selection=selected,
+        multipart_part_index=part_index,
     )
     return {
         "profile": receipt.profile,
+        **({"source_part_index": part_index} if part_index else {}),
         "request_sha256": case.request_sha256,
         "source_selection_id": receipt.source_selection_id,
         "source_observation_id": receipt.source_observation_id,

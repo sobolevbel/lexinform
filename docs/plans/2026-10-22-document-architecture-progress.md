@@ -14223,3 +14223,20 @@ restores after delivery cleanup. The prior reader rejected the extended
 checkpoint atomically.
 
 [Qualification](../assets/audits/2026-11-07-group-fragment-reader/qualification.json).
+
+<a id="j418"></a>
+
+## J418 — verify literal evidence from the exact self-amendment segment
+
+The offline citation replay accepts a bounded second source part only for
+a verified Sejm self-amendment receipt. It binds the pinned file and
+selected text to the actual saved relationship and maps only that part's
+source segments. Main-part behavior remains unchanged.
+
+On pinned 2320/2320-A the exact quote at source offsets 2100–2204 maps
+to request offsets 41527–41631. Wrong source, missing relation and
+generated-boundary controls do not produce an exact result. This is a
+literal and coordinate check. The controlled claim has no semantic review.
+
+[Case](../assets/audits/2026-11-07-sejm-amendment-citation/case.json)
+[Qualification](../assets/audits/2026-11-07-sejm-amendment-citation/qualification.json).
