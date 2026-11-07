@@ -1091,6 +1091,15 @@ MIGRATIONS: tuple[str, ...] = (
         sent_at TEXT NOT NULL
     ) STRICT;
     """,
+    """
+    CREATE TABLE government_owner_moves (
+        number TEXT NOT NULL CHECK (number GLOB 'RCL/?*' OR number GLOB 'WPL/?*'),
+        from_term INTEGER NOT NULL CHECK (from_term > 0),
+        to_term INTEGER NOT NULL CHECK (to_term > from_term),
+        PRIMARY KEY (number, from_term),
+        UNIQUE (number, to_term)
+    ) STRICT;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)

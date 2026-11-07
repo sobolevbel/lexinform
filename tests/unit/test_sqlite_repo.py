@@ -1034,6 +1034,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         assert bill_column[3] == 0
         assert not schema.execute("SELECT 1 FROM retired_stage_anchors").fetchall()
         assert not schema.execute("SELECT 1 FROM retired_card_roots").fetchall()
+        assert not schema.execute("SELECT 1 FROM government_owner_moves").fetchall()
         assert not schema.execute("PRAGMA foreign_key_check").fetchall()
     revived = repo.get(10, "RPW/1/2026")
     assert revived is not None and revived.status is BillStatus.TEXT_PREFILTER_PENDING

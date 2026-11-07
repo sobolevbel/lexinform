@@ -20,6 +20,7 @@ HTML содержит снимок v34, включая SQL ограничени�
 
 | Таблица | Ключ | Что хранит |
 | --- | --- | --- |
+| `government_owner_moves` (v73) | `(number, from_term)`, уникальный `(number, to_term)` | Место для подтверждённых переносов RCL и wykaz между созывами. Миграция создаёт пустую таблицу. |
 | `artifacts` (v53) | `sha256`; индекс recorded_at | Известная идентичность полного body: SHA, размер, первое время записи; без bytes, locator или retention promise. |
 | `selection_artifacts` (v53) | `(selection_id, part_scope, part_index)`; индекс artifact SHA | Проверенный outer-body ref выбранной/наблюдённой части; FK к immutable selection и artifact metadata. |
 | `document_selections` (v52) | `selection_id` | Неизменяемые метаданные решения: question, policy version, state, parts/facts/coverage; без extracted bodies и provider scan input. |
@@ -742,3 +743,10 @@ Content versions allow a missing Bill snapshot only for the digest profile.
 Existing content IDs, snapshots and publication bindings survive the table
 rebuild. The digest plan retains ordered physical parts and event references,
 with one bounded copy of each rendered body.
+
+### v73 — Перенос владельца RCL и wykaz
+
+`government_owner_moves` хранит переходы для определения владельца при очистке кэша.
+Каждый исходный и целевой созыв встречается не более одного раза для номера.
+Миграция оставляет таблицу пустой. Исторические переносы по одному совпадению номера
+не восстанавливаются.
