@@ -1,0 +1,116 @@
+{
+  "census": {
+    "primary_census": {
+      "consumed_projection_unavailable": 4,
+      "exact_retained_cycle": 1,
+      "frozen_paid_reference_unavailable": 3,
+      "frozen_plan_unavailable": 27,
+      "frozen_render_context_unavailable": 13,
+      "prepared_receipt_unavailable": 1,
+      "publication_outside_direct_original_scope": 1,
+      "recorded_send_unavailable": 1
+    },
+    "scope": "Sent new-bill rows and sent status changes with retained projections.",
+    "secondary_census": [
+      {
+        "application_id": 11,
+        "prefix": {
+          "original_amendment_question": "not_retained",
+          "original_collection_application": "not_retained",
+          "original_request_payload": "not_verified",
+          "prepared_input_receipt": "not_retained",
+          "reason": "exact_submitted_secondary_request_identity",
+          "retained_collection_checkpoint": "not_verified",
+          "retained_provider_answer": "not_retained",
+          "retained_provider_request_manifest": "not_retained",
+          "source_selection_binding": "not_verified",
+          "status": "recorded"
+        },
+        "publication_id": 231,
+        "reason": "exact_retained_secondary_suffix",
+        "status": "recorded"
+      },
+      {
+        "application_id": 16,
+        "prefix": {
+          "original_amendment_question": "outside_scope",
+          "original_collection_application": "not_retained",
+          "original_request_payload": "not_verified",
+          "prepared_input_receipt": "not_retained",
+          "reason": "exact_submitted_secondary_request_identity",
+          "retained_collection_checkpoint": "not_verified",
+          "retained_provider_answer": "not_retained",
+          "retained_provider_request_manifest": "not_retained",
+          "source_selection_binding": "not_verified",
+          "status": "recorded"
+        },
+        "publication_id": 240,
+        "reason": "exact_retained_secondary_suffix",
+        "status": "recorded"
+      },
+      {
+        "application_id": 33,
+        "prefix": {
+          "original_amendment_question": "exact_retained_question",
+          "original_collection_application": "not_retained",
+          "original_request_payload": "not_verified",
+          "prepared_input_receipt": "validated_retained_receipt",
+          "reason": "exact_submitted_secondary_request_identity",
+          "retained_collection_checkpoint": "matching_retained_checkpoint",
+          "retained_provider_answer": "exact_retained_answer",
+          "retained_provider_request_manifest": "verified_retained_manifest",
+          "source_selection_binding": "exact_retained_source_selection",
+          "status": "recorded"
+        },
+        "publication_id": 293,
+        "reason": "exact_retained_secondary_suffix",
+        "status": "recorded"
+      },
+      {
+        "application_id": 34,
+        "prefix": {
+          "original_amendment_question": "exact_retained_question",
+          "original_collection_application": "not_retained",
+          "original_request_payload": "not_verified",
+          "prepared_input_receipt": "validated_retained_receipt",
+          "reason": "exact_submitted_secondary_request_identity",
+          "retained_collection_checkpoint": "matching_retained_checkpoint",
+          "retained_provider_answer": "exact_retained_answer",
+          "retained_provider_request_manifest": "verified_retained_manifest",
+          "source_selection_binding": "exact_retained_source_selection",
+          "status": "recorded"
+        },
+        "publication_id": 294,
+        "reason": "exact_retained_secondary_suffix",
+        "status": "recorded"
+      },
+      {
+        "application_id": 35,
+        "prefix": {
+          "original_amendment_question": "exact_retained_question",
+          "original_collection_application": "not_retained",
+          "original_request_payload": "not_verified",
+          "prepared_input_receipt": "validated_retained_receipt",
+          "reason": "exact_submitted_secondary_request_identity",
+          "retained_collection_checkpoint": "matching_retained_checkpoint",
+          "retained_provider_answer": "exact_retained_answer",
+          "retained_provider_request_manifest": "verified_retained_manifest",
+          "source_selection_binding": "exact_retained_source_selection",
+          "status": "recorded"
+        },
+        "publication_id": 295,
+        "reason": "exact_retained_secondary_suffix",
+        "status": "recorded"
+      }
+    ],
+    "status": "recorded",
+    "version": 1
+  },
+  "code_sha": "f8010d330690c72814486d9204ce4c714657539f",
+  "current_database_sha256": "2e0984ce23c4c0fa87cd21073cacf385728fe63cc884ac02d223af42c4b8c2aa",
+  "current_sql_sha256": "973e70b8a567a5f332b78fa1b44260495bea6524e54e270ee71c4cd486c876e4",
+  "current_state_commit": "4764779e91d9d8fe5609aba45de02f4a792479be",
+  "previous_database_sha256": "c53f468cea246f6a8f2b74eaef46dbf5ea46fc72efa5a3af28741fbe919c974a",
+  "previous_state_commit": "9a802a5514d3333de72c76454d115a7d91538e0d",
+  "same_census_excluding_database_sha256": true
+}

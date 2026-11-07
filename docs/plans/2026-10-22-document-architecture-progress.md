@@ -14796,3 +14796,13 @@ Unknown delivery stayed unconfirmed without a resend.
   отказ для обоих форматов и сохраняют отдельный случай 68 наблюдений
   с явным prefix. Production validator не менялся; 150 целевых тестов прошли.
   [Разбор](../assets/audits/2026-11-07-packed-archive-writer/gate-test-fixtures.json).
+
+<a id="j452"></a>
+
+### J452. Сравнение сохранённых цепочек на двух снимках состояния
+
+- Read-only census на f8010d33 сравнил изолированные копии
+  state 9a802a55 и 4764779e. Результаты совпали, кроме SHA базы.
+- Подтверждён один полный сохранённый первичный цикл и пять
+  частичных вторичных цепочек. Новый полный цикл не наблюдался.
+  [Квалификация](../assets/audits/2026-11-07-da10-fresh-census/qualification.json).
