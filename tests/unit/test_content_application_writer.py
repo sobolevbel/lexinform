@@ -244,11 +244,14 @@ class MultipartPublisher(FakePublisher):
         return "Controlled multipart message " * 400
 
 
-def test_multipart_physical_operation_cannot_capture_single_message_refs(case: Case) -> None:
+def test_multipart_physical_operation_uses_distinct_profile_for_known_refs(case: Case) -> None:
     original = queued(case.repo, case.bill, case.change, correction())
     before = rows(case.repo.dump())["result_applications"]
     poster(case.repo, MultipartPublisher()).deliver(original)
-    assert not case.repo.list_content_versions(original.id or 0)
+    (version,) = case.repo.list_content_versions(original.id or 0)
+    assert version.direct_stage_evidence is not None
+    assert version.direct_stage_evidence.multipart == "direct-stage-application-parts-v1"
+    assert version.application_ref_profile == "amendment-projections-v1"
     assert rows(case.repo.dump())["result_applications"] == before
 
 

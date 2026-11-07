@@ -344,6 +344,17 @@ def prepare_publication_content(
                     return None
                 previous = older
     change = StatusChange.model_validate_json(plan.change_json)
+    if plan.continuation_ids and (change.amendments is not None or change.supplements):
+        return _prepare_direct_stage_content(
+            repo,
+            clock,
+            publication,
+            change,
+            origin=application_origin,
+            formatter_version=formatter_version,
+            language=language,
+        )
+
     supplement: tuple[int, SupplementContentEvidence] | None = None
     if (
         publication.kind is PublicationKind.STATUS_UPDATE
@@ -652,6 +663,7 @@ def _prepare_direct_stage_content(
 ) -> tuple[ContentVersion, tuple[ContentSnapshot, ...]] | None:
     plan = publication.delivery
     multipart = bool(plan and plan.continuation_ids)
+    has_application = multipart and (change.amendments is not None or bool(change.supplements))
     shape = plan.model_copy(update={"continuation_ids": ()}) if multipart and plan else plan
     ungrouped = publication.model_copy(update={"delivery": shape}) if multipart else publication
     if (
@@ -670,7 +682,7 @@ def _prepare_direct_stage_content(
         or change.id is None
         or change.id != publication.status_change_id
         or (change.term, change.number) != (publication.term, publication.number)
-        or len(change.new_stages) != 1
+        or (not has_application and len(change.new_stages) != 1)
         or origin is None
         or origin.kind is not PublicationKind.STATUS_UPDATE
         or origin.delivery is None
@@ -697,6 +709,36 @@ def _prepare_direct_stage_content(
     bill = Bill.model_validate_json(plan.bill_json)
     if (bill.term, bill.number) != (publication.term, publication.number):
         return None
+    computation_ids: tuple[str, ...] = ()
+    application_ids: tuple[int, ...] = ()
+    application_profile: Literal["amendment-projections-v1", "supplement-projection-v1"] | None = (
+        None
+    )
+    supplement: SupplementContentEvidence | None = None
+    if has_application:
+        amendment_stage = amendments_stage(change.new_stages) is not None
+        if change.amendments is not None:
+            if change.supplements or not amendment_stage or len(change.new_stages) != 1:
+                return None
+            computation_id = change.amendments.computation_id
+            if computation_id is None:
+                return None
+            target = ResultApplicationTarget(kind="status_change", ref=str(change.id))
+            application_ids = tuple(repo.find_projection_application_ids(computation_id, target))
+            application_profile = "amendment-projections-v1"
+        else:
+            if len(change.supplements) != 1 or amendment_stage or len(change.new_stages) > 1:
+                return None
+            computation_id = change.supplements[0].computation_id
+            found = repo.find_supplement_content_evidence(change)
+            if computation_id is None or found is None:
+                return None
+            identity, supplement = found
+            application_ids = (identity,)
+            application_profile = "supplement-projection-v1"
+        if len(application_ids) != 1:
+            return None
+        computation_ids = (computation_id,)
     bill_snapshot = card_bill_snapshot(plan.bill_json)
     change_snapshot = ContentSnapshot(kind="change", payload_json=plan.change_json)
     if multipart:
@@ -745,9 +787,19 @@ def _prepare_direct_stage_content(
             status_change_id=change.id,
             direct_stage_evidence=DirectStageContentEvidence(
                 anchor_publication_id=anchor.id,
-                multipart="direct-stage-parts-v1" if multipart else None,
+                multipart=(
+                    "direct-stage-application-parts-v1"
+                    if has_application
+                    else "direct-stage-parts-v1"
+                    if multipart
+                    else None
+                ),
                 original_bill_sha256=hashlib.sha256(plan.bill_json.encode()).hexdigest(),
             ),
+            computation_ids=computation_ids,
+            application_ref_profile=application_profile,
+            application_ids=application_ids,
+            supplement_evidence=supplement,
             recorded_at=clock.now(),
         ),
         snapshots,

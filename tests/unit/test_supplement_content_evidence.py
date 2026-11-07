@@ -14,6 +14,7 @@ from lexinform.models import (
     ContentSnapshot,
     ContentVersion,
     DeliveryPlan,
+    DocumentDigest,
     LlmBatch,
     LlmBatchItem,
     Publication,
@@ -35,7 +36,11 @@ from tests.unit.test_supplement_input_receipts import supplement_source
 
 
 def seed(
-    repo: SqliteBillRepository, path: Path, *, queued: bool = False
+    repo: SqliteBillRepository,
+    path: Path,
+    *,
+    queued: bool = False,
+    digest: DocumentDigest | None = None,
 ) -> tuple[ContentVersion, int]:
     (intent,) = repo.list_queued_batch_intents()
     receipt = intent.meta.prepared_input_receipt
@@ -50,6 +55,7 @@ def seed(
     custom_id = intent.request.custom_id
     record = prior.record.model_copy(
         update={
+            **({"digest": digest} if digest is not None else {}),
             "source_url": source.document.url,
             "source_kind": source.document.kind,
             "number": "3039-005",
