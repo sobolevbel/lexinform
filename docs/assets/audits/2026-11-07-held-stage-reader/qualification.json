@@ -1,0 +1,32 @@
+{
+  "state": "175b03b53e3d17a2cb87fd361325749d758e16dd",
+  "input_sha256": "86631b80b725d7581a9da3000449c54dbbddec364841b219bfb99ad934372023",
+  "scope": "Controlled read trial on real pinned records with existing frozen HTML and release receipts. Synthetic formatter label; no runtime writer or backfill.",
+  "cases": {
+    "161": {
+      "held_ids": [
+        109
+      ],
+      "content_id": "content-v1:d6c16db0b96f4946afa3c93d8944d026d1a60fcff47730d03f5c132f4a33a37b",
+      "anchor_id": 77,
+      "same_message_aliases": 1,
+      "budget_bytes": 6581
+    },
+    "192": {
+      "held_ids": [
+        115,
+        138
+      ],
+      "content_id": "content-v1:0936dc0ec57dd41cb281f96105be53a018e34afa7e07007b7bb0850d188565b8",
+      "anchor_id": 64,
+      "same_message_aliases": 2,
+      "budget_bytes": 9159
+    }
+  },
+  "restores_exact": 2,
+  "negative_controls": [
+    "wrong message receipt",
+    "foreign channel",
+    "changed held stages"
+  ]
+}

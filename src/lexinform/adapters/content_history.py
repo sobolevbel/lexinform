@@ -52,6 +52,7 @@ from lexinform.models.commands import (
 )
 from lexinform.models.content import (
     MAX_ACT_PUBLISHED_CONTENT_BYTES,
+    MAX_DIRECT_HELD_STAGE_CONTENT_BYTES,
     MAX_DIRECT_STAGE_CONTENT_BYTES,
     MAX_GROUPED_STAGE_CONTENT_BYTES,
     CardPrimaryEvidence,
@@ -635,6 +636,8 @@ def verify_direct_stage_content(
     ) > (
         MAX_ORIGINAL_DELIVERY_BYTES
         if evidence.multipart is not None
+        else MAX_DIRECT_HELD_STAGE_CONTENT_BYTES
+        if evidence.held is not None
         else MAX_DIRECT_STAGE_CONTENT_BYTES
     ):
         raise ValueError("direct_stage_content_bound")
@@ -653,6 +656,12 @@ def verify_direct_stage_content(
     change = StatusChange.model_validate_json(snapshots[version.change_snapshot_id].payload_json)
     suffix: dict[str, object] = {"amendments": None, "supplements": []}
     current = read_status_change(event).model_copy(update=suffix)
+    if evidence.held is not None:
+        held_plan = DeliveryPlan.model_validate_json(
+            snapshots[version.plan_snapshot_id].payload_json
+        )
+        current = _direct_held_stage_change(connection, root, current, held_plan)
+
     application = evidence.multipart == "direct-stage-application-parts-v1"
     amendment = amendments_stage(change.new_stages) is not None
     if application:
@@ -713,6 +722,70 @@ def verify_direct_stage_content(
     ):
         raise ValueError("direct_stage_expired_delivery_scope")
     return None
+
+
+def _direct_held_stage_change(
+    connection: sqlite3.Connection, root: Publication, current: StatusChange, plan: DeliveryPlan
+) -> StatusChange:
+    ids = plan.held_change_ids
+    if (
+        not 1 <= len(ids) <= 16
+        or len(set(ids)) != len(ids)
+        or current.id in ids
+        or not current.new_stages
+        or plan.with_act
+        or plan.render_origin is not None
+        or not direct_stage_plan_matches(plan)
+    ):
+        raise ValueError("direct_held_stage_plan_scope")
+    if root.status is PublicationStatus.SENT and (
+        root.message_id is None or root.message_id <= 0 or root.sent_at is None
+    ):
+        raise ValueError("direct_held_stage_root_receipt")
+    stages = []
+    for identity in ids:
+        event = _query(
+            connection, "SELECT * FROM status_changes WHERE id=?", (identity,)
+        ).fetchone()
+        matches = _query(
+            connection,
+            "SELECT * FROM publications WHERE status_change_id=? AND channel_id=?"
+            " AND kind='status_update' LIMIT 2",
+            (identity, root.channel_id),
+        ).fetchall()
+        if event is None or len(matches) != 1:
+            raise ValueError("direct_held_stage_parent_missing")
+        held = read_status_change(event)
+        physical = read_content_publication(matches[0])
+        if (
+            (held.term, held.number) != (root.term, root.number)
+            or (physical.term, physical.number) != (root.term, root.number)
+            or held.detected_at > current.detected_at
+            or physical.created_at > root.created_at
+            or physical.attempts
+            or not held.new_stages
+            or _query(
+                connection,
+                "SELECT 1 FROM digest_event_links WHERE source_publication_id=?",
+                (physical.id,),
+            ).fetchone()
+            is not None
+        ):
+            raise ValueError("direct_held_stage_parent_scope")
+        if root.status is PublicationStatus.SENT:
+            if physical.status is not PublicationStatus.SENT or (
+                physical.message_id,
+                physical.sent_at,
+            ) != (root.message_id, root.sent_at):
+                raise ValueError("direct_held_stage_release_receipt")
+        elif (
+            physical.status is not PublicationStatus.SKIPPED
+            or physical.message_id is not None
+            or physical.sent_at is not None
+        ):
+            raise ValueError("direct_held_stage_unreleased_scope")
+        stages.extend(held.new_stages)
+    return current.model_copy(update={"new_stages": stages + current.new_stages})
 
 
 def _verify_direct_stage_parts(
