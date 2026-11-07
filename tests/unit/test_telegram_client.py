@@ -17,6 +17,7 @@ from lexinform.adapters.telegram import (
     TelegramError,
     TelegramOperatorReplier,
     TelegramPublisher,
+    TelegramPublishResult,
     TelegramRunNotifier,
 )
 from lexinform.adapters.telegram_format import MessageFormatter
@@ -231,6 +232,70 @@ def test_edit_message_replaces_the_text_and_tolerates_an_unchanged_one() -> None
 
     assert bodies[0]["message_id"] == 12 and bodies[0]["text"] == "<b>x</b> #tag"
     assert bodies[0]["parse_mode"] == "HTML" and len(bodies) == 2
+
+
+@pytest.mark.parametrize(
+    ("channel", "returned_chat", "expected"),
+    [
+        ("@reader", {"id": -100123, "username": "reader"}, -100123),
+        ("@reader", {"id": -100123}, -100123),
+        ("-100123", {"id": -100123}, -100123),
+        ("-100123", {"id": -100999}, None),
+        ("@reader", None, None),
+        ("@reader", "malformed", None),
+        ("@reader", {"username": "reader"}, None),
+        ("@reader", {"id": "-100123"}, None),
+        ("@reader", {"id": True}, None),
+        ("@reader", {"id": 0}, None),
+        ("@reader", {"id": 2**52}, None),
+    ],
+)
+def test_original_publish_exposes_optional_chat_from_the_same_send_response(
+    channel: str,
+    returned_chat: object,
+    expected: int | None,
+) -> None:
+    calls: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/botTOKEN/sendMessage"
+        calls.append(json.loads(request.content))
+        result: dict[str, object] = {"message_id": 12}
+        if returned_chat is not None:
+            result["chat"] = returned_chat
+        return httpx.Response(200, json={"ok": True, "result": result})
+
+    publisher = TelegramPublisher(_client(handler), MessageFormatter("ru"), channel_id=channel)
+
+    sent = publisher.publish_updates("<b>Сводка</b>")
+
+    assert isinstance(sent, TelegramPublishResult)
+    assert sent.message_id == 12 and sent.telegram_chat_id == expected
+    assert sent.document_message_ids == []
+    assert calls == [
+        {
+            "chat_id": channel,
+            "text": "<b>Сводка</b>",
+            "parse_mode": "HTML",
+            "link_preview_options": {"is_disabled": True},
+        }
+    ]
+
+
+def test_send_message_still_returns_an_integer_with_an_available_chat_receipt() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/botTOKEN/sendMessage"
+        return httpx.Response(
+            200,
+            json={
+                "ok": True,
+                "result": {"message_id": 12, "chat": {"id": -100123}},
+            },
+        )
+
+    result = _client(handler).send_message("@reader", "text")
+
+    assert type(result) is int and result == 12
 
 
 def test_verified_edit_matches_returned_message_and_pinned_chat() -> None:

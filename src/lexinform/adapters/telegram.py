@@ -35,10 +35,31 @@ class TelegramError(RuntimeError):
         self.description = description
 
 
+@dataclass
+class TelegramPublishResult:
+    message_id: int
+    document_message_ids: list[int] = field(default_factory=list)  # none: the PDF is linked
+    telegram_chat_id: int | None = None
+
+
 @dataclass(frozen=True)
 class TelegramEditReceipt:
     chat_id: int
     message_id: int
+
+
+def _send_receipt_chat_id(address: str, result: dict[str, Any]) -> int | None:
+    chat = result.get("chat")
+    identity = chat.get("id") if isinstance(chat, dict) else None
+    if type(identity) is not int or not 0 < abs(identity) < 2**52:
+        return None
+    target = str(address)
+    if target.startswith("@"):
+        return identity
+    try:
+        return identity if int(target) == identity else None
+    except ValueError:
+        return None
 
 
 def _edit_payload(chat_id: str | int, message_id: int, html: str) -> dict[str, object]:
@@ -102,6 +123,19 @@ class TelegramBotClient:
     ) -> int:
         """`button` is (label, callback data): one inline button under the message, which comes
         back as a `callback_query` when it is pressed."""
+        return self.send_message_with_receipt(
+            chat_id, html, reply_to=reply_to, button=button
+        ).message_id
+
+    def send_message_with_receipt(
+        self,
+        chat_id: str,
+        html: str,
+        *,
+        reply_to: int | None = None,
+        button: tuple[str, str] | None = None,
+    ) -> TelegramPublishResult:
+        """Send once through the normal path and retain an optional same-response chat ID."""
         payload: dict[str, Any] = {
             "chat_id": chat_id,
             "text": html,
@@ -121,7 +155,9 @@ class TelegramBotClient:
         message_id = result.get("message_id")
         if not isinstance(message_id, int) or isinstance(message_id, bool) or message_id <= 0:
             raise DeliveryUncertainError("sendMessage: response has no valid message id")
-        return message_id
+        return TelegramPublishResult(
+            message_id=message_id, telegram_chat_id=_send_receipt_chat_id(chat_id, result)
+        )
 
     def edit_message(self, chat_id: str, message_id: int, html: str) -> None:
         """Replace the text of a message the bot posted; an identical text is not an error."""
@@ -337,12 +373,6 @@ class TelegramBotClient:
             raise TelegramError(code, description)
 
 
-@dataclass
-class TelegramPublishResult:
-    message_id: int
-    document_message_ids: list[int] = field(default_factory=list)  # none: the PDF is linked
-
-
 class TelegramPublisher(RenderingPublisher):
     """The messages the base class renders go to the channel as Telegram posts."""
 
@@ -358,10 +388,9 @@ class TelegramPublisher(RenderingPublisher):
         self._channel_id = channel_id
 
     def _deliver(self, message: Outgoing) -> TelegramPublishResult:
-        message_id = self._client.send_message(
+        return self._client.send_message_with_receipt(
             self._channel_id, message.text, reply_to=message.reply_to, button=message.action
         )
-        return TelegramPublishResult(message_id=message_id)
 
     def _edit(self, message: Outgoing, *, message_id: int) -> None:
         self._client.edit_message(self._channel_id, message_id, message.text)
