@@ -53,6 +53,7 @@ from lexinform.adapters.content_history import (
     verify_card_content,
     verify_direct_stage_content,
     verify_grouped_stage_content,
+    verify_sitting_content,
 )
 from lexinform.adapters.content_source_refs import (
     ContentSourceRows,
@@ -2319,6 +2320,7 @@ class SqliteBillRepository:
         verify_direct_stage_content(self._conn, version)
         verify_grouped_stage_content(self._conn, version)
         verify_digest_content(self._conn, version)
+        verify_sitting_content(self._conn, version)
         for kind, identity in content_snapshot_refs(version):
             snapshot = self.get_content_snapshot(identity)
             if snapshot is None or snapshot.kind != kind:
@@ -2366,6 +2368,7 @@ class SqliteBillRepository:
         verify_direct_stage_content(self._conn, version)
         verify_grouped_stage_content(self._conn, version)
         verify_digest_content(self._conn, version)
+        verify_sitting_content(self._conn, version)
         return version
 
     def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]:
@@ -2396,8 +2399,8 @@ class SqliteBillRepository:
         verify_content_applications(
             self._conn, version, publication_id=publication_id, retained=False
         )
-        if version.digest_profile is not None:
-            raise ValueError("digest history requires atomic complete physical binding")
+        if version.digest_profile is not None or version.sitting_profile is not None:
+            raise ValueError("history requires atomic complete physical binding")
         plan = publication.delivery
         if version.reason == "grouped_stage_revision":
             if verify_grouped_stage_content(self._conn, version) != publication_id:
@@ -2824,6 +2827,11 @@ class SqliteBillRepository:
             raise ValueError("direct_stage_binding_scope")
         if version.digest_profile is not None:
             verify_digest_content(self._conn, version, require_bound=True)
+            return version
+        if version.sitting_profile is not None:
+            plan = verify_sitting_content(self._conn, version, require_bound=True)
+            if plan is None or publication_id not in plan.bindings:
+                raise ValueError("sitting_history_binding_scope")
             return version
         if version.change_snapshot_id is None:
             physical_id = verify_card_content(self._conn, version, retained=True)

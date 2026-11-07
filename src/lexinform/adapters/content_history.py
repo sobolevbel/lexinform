@@ -30,6 +30,7 @@ from lexinform.errors import CardPrimaryEvidenceError
 from lexinform.grouped_update_preview import preview_grouped_update
 from lexinform.json_storage import read_json
 from lexinform.models import (
+    AgendaItem,
     AnalysisRecord,
     BatchItemMeta,
     Bill,
@@ -60,7 +61,13 @@ from lexinform.models.input_receipts import (
     SejmSelfAmendmentInputReceipt,
 )
 from lexinform.models.primary_projections import PRIMARY_USAGE_FIELDS
+from lexinform.models.sitting_content import (
+    MAX_SITTING_HISTORY_BYTES,
+    SittingContentPlan,
+    sitting_content_context,
+)
 from lexinform.primary_projections import primary_record_matches
+from lexinform.sitting_delivery import sitting_root_plan
 
 
 def _query(
@@ -365,7 +372,11 @@ def _verify_card_primary_evidence(
 def _verify_card_content(
     connection: sqlite3.Connection, value: ContentVersion, *, retained: bool
 ) -> tuple[int | None, dict[str, object] | None]:
-    if value.change_snapshot_id is not None or value.digest_profile is not None:
+    if (
+        value.change_snapshot_id is not None
+        or value.digest_profile is not None
+        or value.sitting_profile is not None
+    ):
         return None, None
     root_row = _query(
         connection, "SELECT * FROM publications WHERE id=?", (value.root_publication_id,)
@@ -988,6 +999,142 @@ def recorded_command_matches(connection: sqlite3.Connection, command: IncomingCo
     )
 
 
+def verify_sitting_content(
+    connection: sqlite3.Connection, version: ContentVersion, *, require_bound: bool = False
+) -> SittingContentPlan | None:
+    if version.sitting_profile is None:
+        return None
+    reader = ContentSourceRows(connection)
+    snapshot = reader.get_content_snapshot(version.plan_snapshot_id)
+    if (
+        snapshot is None
+        or snapshot.kind != "plan"
+        or len(snapshot.payload_json.encode()) > MAX_SITTING_HISTORY_BYTES
+    ):
+        raise ValueError("sitting_history_plan_unavailable")
+    plan = SittingContentPlan.model_validate(read_json(snapshot.payload_json))
+    if plan.parts[0].id != version.root_publication_id:
+        raise ValueError("sitting_history_root_mismatch")
+    if require_bound:
+        bindings = _query(
+            connection,
+            "SELECT publication_id FROM publication_content WHERE content_id=?",
+            (version.content_id,),
+        ).fetchall()
+        if {binding[0] for binding in bindings} != set(plan.bindings):
+            raise ValueError("sitting_history_binding_mismatch")
+    publications = {}
+    for identity in plan.bindings:
+        row = _query(connection, "SELECT * FROM publications WHERE id=?", (identity,)).fetchone()
+        if row is None:
+            raise ValueError("sitting_history_publication_missing")
+        publication = read_content_publication(row)
+        if publication.channel_id != plan.channel_id:
+            raise ValueError("sitting_history_channel_mismatch")
+        if publication.status is PublicationStatus.SENT and (
+            publication.message_id is None or publication.message_id <= 0
+        ):
+            raise ValueError("sitting_history_receipt_missing")
+        if publication.delivery is None and publication.status is not PublicationStatus.SENT:
+            raise ValueError("sitting_history_active_plan_missing")
+        publications[identity] = publication
+    if publications[version.root_publication_id].created_at != version.recorded_at:
+        raise ValueError("sitting_history_recorded_at_mismatch")
+    bill_sizes: dict[str, int] = {}
+    for member in plan.members:
+        publication = publications[member.id]
+        if (publication.term, publication.number, publication.kind.value, publication.ref) != (
+            member.term,
+            member.number,
+            member.kind,
+            member.ref,
+        ):
+            raise ValueError("sitting_history_member_mismatch")
+        bill = reader.get_content_snapshot(member.bill_snapshot_id)
+        if bill is None or bill.kind != "bill":
+            raise ValueError("sitting_history_bill_missing")
+        bill_sizes[bill.snapshot_id] = len(bill.payload_json.encode())
+        if (
+            len(snapshot.payload_json.encode()) + sum(bill_sizes.values())
+            > MAX_SITTING_HISTORY_BYTES
+        ):
+            raise ValueError("sitting_history_snapshot_budget")
+        semantic = Bill.model_validate(read_json(bill.payload_json))
+        if (semantic.term, semantic.number) != (member.term, member.number):
+            raise ValueError("sitting_history_bill_mismatch")
+        context = member.plan.model_copy(
+            update={
+                "bill_json": bill.payload_json,
+                "sitting_group": (),
+                "continuation_ids": (),
+            }
+        )
+        sitting_root_plan(
+            publication.model_copy(
+                update={
+                    "status": PublicationStatus.QUEUED,
+                    "delivery": context,
+                }
+            )
+        )
+        if (
+            context.item_json is None
+            or AgendaItem.model_validate_json(context.item_json).ref != member.ref
+        ):
+            raise ValueError("sitting_history_agenda_ref_mismatch")
+        retained = publication.delivery
+        if retained is not None and (
+            retained.bill_json != bill.payload_json
+            or sitting_content_context(retained) != member.plan
+            or (retained.group_text if member.plan.sitting_group else retained.rendered_text)
+            != plan.parts[0].html
+        ):
+            raise ValueError("sitting_history_member_plan_mismatch")
+    root = publications[version.root_publication_id]
+    if plan.parts[0].disable_notification != plan.members[0].plan.disable_notification:
+        raise ValueError("sitting_history_root_notification_mismatch")
+    if len(plan.members) > 1:
+        sent = [
+            publications[member.id]
+            for member in plan.members
+            if publications[member.id].status is PublicationStatus.SENT
+        ]
+        if sent and (
+            len(sent) != len(plan.members)
+            or root.message_id is None
+            or any(member.message_id != root.message_id for member in sent)
+        ):
+            raise ValueError("sitting_history_group_receipt_mismatch")
+    parent = root
+    for index, part in enumerate(plan.parts[1:], 2):
+        child = publications[part.id]
+        retained = child.delivery
+        if (
+            child.kind is not PublicationKind.MESSAGE_PART
+            or (child.term, child.number) != (root.term, root.number)
+            or child.ref != f"message/{version.root_publication_id}/{index}"
+            or (
+                child.status is PublicationStatus.SENT
+                and (parent.status is not PublicationStatus.SENT or parent.message_id is None)
+            )
+            or (
+                retained is not None
+                and (
+                    retained.continuation_root != root.id
+                    or retained.continuation_parent != parent.id
+                    or retained.continuation_index != index
+                    or retained.rendered_text != part.html
+                    or retained.disable_notification != part.disable_notification
+                    or retained.reply_to not in (None, parent.message_id)
+                    or retained.edit_message_id is not None
+                )
+            )
+        ):
+            raise ValueError("sitting_history_part_mismatch")
+        parent = child
+    return plan
+
+
 def validate_content_history(connection: sqlite3.Connection) -> None:
     try:
         tables = {
@@ -1020,6 +1167,7 @@ def validate_content_history(connection: sqlite3.Connection) -> None:
             verify_direct_stage_content(connection, value)
             verify_grouped_stage_content(connection, value, require_bound=True)
             verify_digest_content(connection, value, require_bound=True)
+            verify_sitting_content(connection, value, require_bound=True)
             physical_identity = verify_card_content(connection, value, retained=True)
             if value.change_snapshot_id is None and value.digest_profile is None:
                 bindings = _query(

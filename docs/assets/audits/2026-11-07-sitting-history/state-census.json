@@ -1,0 +1,15 @@
+{
+  "state_commit": "4764779e91d9d8fe5609aba45de02f4a792479be",
+  "database_sha256": "2e0984ce23c4c0fa87cd21073cacf385728fe63cc884ac02d223af42c4b8c2aa",
+  "sent_agenda_or_cancellation_rows": 31,
+  "logical_rows_with_group_html": 17,
+  "distinct_ordered_groups_with_html": 13,
+  "maximum_group_members": 3,
+  "legacy_plan_rows_without_html": 10,
+  "rows_without_delivery_plan": 4,
+  "linked_physical_continuations": 0,
+  "measurable_groups_over_byte_cap": 0,
+  "maximum_measurable_history_bytes": 57442,
+  "byte_method": "UTF-8 SittingContentPlan JSON plus UTF-8 Bill JSON once per distinct bill snapshot ID, using retained exact group HTML and the ordered member vector.",
+  "exclusion": "The 14 rows without retained HTML cannot establish prospective history size."
+}

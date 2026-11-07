@@ -156,6 +156,9 @@ class ContentVersion(BaseModel):
     digest_profile: Literal["digest-content-v1", "digest-rendered-v1"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    sitting_profile: Literal["sitting-content-v1"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -181,9 +184,10 @@ class ContentVersion(BaseModel):
 
     @model_validator(mode="after")
     def predecessor(self) -> Self:
-        if self.digest_profile is not None:
+        if self.digest_profile is not None or self.sitting_profile is not None:
             if (
-                self.reason != "original"
+                (self.digest_profile is not None and self.sitting_profile is not None)
+                or self.reason != "original"
                 or self.previous_version_id is not None
                 or self.bill_snapshot_id is not None
                 or self.change_snapshot_id is not None
@@ -203,10 +207,10 @@ class ContentVersion(BaseModel):
                 or self.application_ids
                 or self.supplement_evidence is not None
             ):
-                raise ValueError("digest content requires its own bounded original profile")
+                raise ValueError("independent content requires a bounded original profile")
             return self
         if self.bill_snapshot_id is None:
-            raise ValueError("non-digest content requires a frozen Bill")
+            raise ValueError("this content profile requires a frozen Bill")
         if (self.reason == "original") != (self.previous_version_id is None):
             raise ValueError("an original has no predecessor; a revision requires one")
         if self.change_snapshot_id is None and (
@@ -378,6 +382,9 @@ class ContentVersionSummary(BaseModel):
     digest_upstream_semantics: Literal["not_retained"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    sitting_profile: Literal["sitting-content-v1"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -448,6 +455,7 @@ class ContentVersionSummary(BaseModel):
             source_scope=version.source_scope,
             card_context_profile=version.card_context_profile,
             digest_profile=version.digest_profile,
+            sitting_profile=version.sitting_profile,
             digest_exact_parts_available=True
             if version.digest_profile == "digest-rendered-v1"
             else None,
