@@ -437,6 +437,44 @@ class AdmittedSupport(BaseModel):
         return self
 
 
+MAX_ADMITTED_NORMATIVE_ANNEXES = 8
+
+
+class AdmittedNormativeAnnex(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    normative_index: Position
+    observed_kind: Kind
+    file_sha256: Sha256
+    text_sha256: Sha256
+
+    @model_validator(mode="after")
+    def admitted_kind(self) -> Self:
+        if self.observed_kind in APPENDIX_KINDS - {"annex"}:
+            raise ValueError("Observed kind was excluded by the normative annex policy")
+        return self
+
+
+class AdmittedNormativeAnnexes(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    phase: Literal["version_comparison", "fallback"]
+    index: Position
+    rows: tuple[AdmittedNormativeAnnex, ...] = Field(
+        min_length=1, max_length=MAX_ADMITTED_NORMATIVE_ANNEXES
+    )
+    omitted: int = Field(default=0, ge=0, strict=True)
+
+    @model_validator(mode="after")
+    def ordered_prefix(self) -> Self:
+        positions = [row.normative_index for row in self.rows]
+        if positions != sorted(set(positions)) or (
+            self.omitted and len(self.rows) != MAX_ADMITTED_NORMATIVE_ANNEXES
+        ):
+            raise ValueError("Admitted normative annexes require an ordered bounded prefix")
+        return self
+
+
 class RequiredPartGap(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
@@ -816,6 +854,10 @@ class CandidateDispositionTrace(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    admitted_normative_annexes: AdmittedNormativeAnnexes | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     version_decision: VersionDecisionEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -961,6 +1003,8 @@ class CandidateDispositionTrace(BaseModel):
             validate_supporting_exclusions(self, self.supporting_exclusions)
         if self.admitted_support is not None:
             validate_admitted_support(self, self.admitted_support)
+        if self.admitted_normative_annexes is not None:
+            validate_admitted_normative_annexes(self, self.admitted_normative_annexes)
         if self.version_decision is not None:
             validate_version_decision(self, self.version_decision)
         if self.archive_version_decision is not None:
@@ -996,6 +1040,7 @@ class CandidateDispositionTrace(BaseModel):
             and self.sejm_committee_recommendation is None
             and self.supporting_exclusions is None
             and self.admitted_support is None
+            and self.admitted_normative_annexes is None
             and self.version_decision is None
             and self.archive_version_decision is None
             and self.archive_version_conflict is None
@@ -1069,15 +1114,15 @@ def validate_supporting_exclusions(
         raise ValueError("Supporting exclusion exceeds its admitted extra URL namespace")
 
 
-def validate_admitted_support(trace: CandidateDispositionTrace, evidence: AdmittedSupport) -> None:
+def _selected_admission_candidate(
+    trace: CandidateDispositionTrace, phase: str, index: int, label: str
+) -> TextDocument:
     request = trace.requested_document
-    parent = _parent_disposition(trace, evidence.phase, evidence.index)
-    reason = (
-        "version_choice" if evidence.phase == "version_comparison" else "first_acceptable_candidate"
-    )
+    parent = _parent_disposition(trace, phase, index)
+    reason = "version_choice" if phase == "version_comparison" else "first_acceptable_candidate"
     if (
         request is None
-        or evidence.index >= trace.candidate_count
+        or index >= trace.candidate_count
         or parent is None
         or parent.outcome != "selected"
         or parent.reason != reason
@@ -1085,8 +1130,14 @@ def validate_admitted_support(trace: CandidateDispositionTrace, evidence: Admitt
         or trace.reason != reason
         or any((trace.required_part_gap, trace.normative_annex_gap, trace.amendment_part_gap))
     ):
-        raise ValueError("Admitted support requires the selected outer candidate")
-    extras = (request, *request.alternatives)[evidence.index].extra_urls
+        raise ValueError(f"{label} requires the selected outer candidate")
+    return (request, *request.alternatives)[index]
+
+
+def validate_admitted_support(trace: CandidateDispositionTrace, evidence: AdmittedSupport) -> None:
+    extras = _selected_admission_candidate(
+        trace, evidence.phase, evidence.index, "Admitted support"
+    ).extra_urls
     exclusions = trace.supporting_exclusions
     excluded = {row.extra_index for row in exclusions.rows} if exclusions is not None else set()
     if evidence.omitted > len(extras) - evidence.rows[-1].extra_index - 1 or any(
@@ -1096,6 +1147,24 @@ def validate_admitted_support(trace: CandidateDispositionTrace, evidence: Admitt
         for row in evidence.rows
     ):
         raise ValueError("Admitted support exceeds its available extra URL namespace")
+
+
+def validate_admitted_normative_annexes(
+    trace: CandidateDispositionTrace, evidence: AdmittedNormativeAnnexes
+) -> None:
+    candidate = _selected_admission_candidate(
+        trace, evidence.phase, evidence.index, "Admitted normative annex evidence"
+    )
+    if candidate.kind != "rcl" or trace.selection_state not in ("selected", "unverified"):
+        raise ValueError("Admitted normative annexes require a composed RCL candidate")
+    urls = candidate.normative_urls
+    if evidence.omitted > len(urls) - evidence.rows[-1].normative_index - 1 or any(
+        row.normative_index >= len(urls)
+        or urls.count(urls[row.normative_index]) != 1
+        or not metadata_url_decision(urls[row.normative_index]).admitted
+        for row in evidence.rows
+    ):
+        raise ValueError("Admitted normative annex exceeds its exact URL namespace")
 
 
 def validate_sejm_original_proposal(

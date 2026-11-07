@@ -20,7 +20,9 @@ from lexinform.models.candidate_trace import (
     archive_version_main,
 )
 from lexinform.models.document_editions import DocumentEdition
+from lexinform.models.documents import DocumentPart
 from lexinform.models.physical_inventory import PhysicalRootOrder
+from lexinform.models.sejm import TextDocument
 
 CANDIDATE_TRACE_SCHEMA_VERSION = 59
 
@@ -38,6 +40,7 @@ class CandidateTraceRowError(ValueError):
             "candidate_trace_archive_version_parent_mismatch",
             "candidate_trace_archive_conflict_parent_mismatch",
             "candidate_trace_admitted_support_parent_mismatch",
+            "candidate_trace_admitted_normative_parent_mismatch",
         ],
     ) -> None:
         self.code = code
@@ -444,27 +447,45 @@ def _validate_archive_conflict_link(
         raise CandidateTraceRowError("candidate_trace_archive_conflict_parent_mismatch") from None
 
 
-def _validate_admitted_support_link(
-    connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
-) -> None:
-    evidence = trace.admitted_support
+def _admitted_selection(
+    connection: sqlite3.Connection,
+    trace: CandidateDispositionTrace,
+    observation_id: str,
+    index: int,
+    code: Literal[
+        "candidate_trace_admitted_support_parent_mismatch",
+        "candidate_trace_admitted_normative_parent_mismatch",
+    ],
+) -> tuple[TextDocument, tuple[DocumentPart, ...]]:
     requested = trace.requested_document
-    if evidence is None or requested is None:
-        return
-    candidate = (requested, *requested.alternatives)[evidence.index]
+    if requested is None:
+        raise CandidateTraceRowError(code)
+    candidate = (requested, *requested.alternatives)[index]
     reader = DocumentSourceRows(connection)
     source = reader.get_source_observation(observation_id)
-    code: Literal["candidate_trace_admitted_support_parent_mismatch"] = (
-        "candidate_trace_admitted_support_parent_mismatch"
-    )
     if source is None or source.document != candidate:
         raise CandidateTraceRowError(code)
     record = reader.get_document_selection(source.selection_id)
     if record is None or record.selection.state != trace.selection_state:
         raise CandidateTraceRowError(code)
+    return candidate, record.selection.parts
+
+
+def _validate_admitted_support_link(
+    connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
+) -> None:
+    evidence = trace.admitted_support
+    if evidence is None:
+        return
+    code: Literal["candidate_trace_admitted_support_parent_mismatch"] = (
+        "candidate_trace_admitted_support_parent_mismatch"
+    )
+    candidate, selected_parts = _admitted_selection(
+        connection, trace, observation_id, evidence.index, code
+    )
     for row in evidence.rows:
         url = candidate.extra_urls[row.extra_index]
-        parts = [part for part in record.selection.parts if part.url == url]
+        parts = [part for part in selected_parts if part.url == url]
         if (
             len(parts) != 1
             or parts[0].members
@@ -474,10 +495,41 @@ def _validate_admitted_support_link(
             raise CandidateTraceRowError(code)
 
 
+def _validate_admitted_normative_link(
+    connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
+) -> None:
+    evidence = trace.admitted_normative_annexes
+    if evidence is None:
+        return
+    code: Literal["candidate_trace_admitted_normative_parent_mismatch"] = (
+        "candidate_trace_admitted_normative_parent_mismatch"
+    )
+    candidate, selected_parts = _admitted_selection(
+        connection, trace, observation_id, evidence.index, code
+    )
+    for row in evidence.rows:
+        url = candidate.normative_urls[row.normative_index]
+        parts = [part for part in selected_parts if part.url == url]
+        if len(parts) != 1:
+            raise CandidateTraceRowError(code)
+        (part,) = parts
+        if (
+            part.members
+            or part.losses
+            or part.text_start != 0
+            or part.text_end is None
+            or part.text_end <= 0
+            or (part.role, part.sha256, part.text_sha256)
+            != ("normative_annex", row.file_sha256, row.text_sha256)
+        ):
+            raise CandidateTraceRowError(code)
+
+
 def validate_candidate_trace_link(
     connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
 ) -> None:
     _validate_admitted_support_link(connection, trace, observation_id)
+    _validate_admitted_normative_link(connection, trace, observation_id)
     _validate_archive_version_link(connection, trace, observation_id)
     _validate_archive_conflict_link(connection, trace, observation_id)
     validate_sejm_proposal_link(connection, trace, observation_id)
@@ -581,8 +633,11 @@ def validate_candidate_trace_links(
         "candidate_trace_archive_version_parent_mismatch",
         "candidate_trace_archive_conflict_parent_mismatch",
         "candidate_trace_admitted_support_parent_mismatch",
+        "candidate_trace_admitted_normative_parent_mismatch",
     ]
-    if trace.admitted_support is not None:
+    if trace.admitted_normative_annexes is not None:
+        code = "candidate_trace_admitted_normative_parent_mismatch"
+    elif trace.admitted_support is not None:
         code = "candidate_trace_admitted_support_parent_mismatch"
     elif trace.archive_version_conflict is not None:
         code = "candidate_trace_archive_conflict_parent_mismatch"
