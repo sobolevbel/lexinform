@@ -7,7 +7,7 @@ import re
 from collections.abc import Iterable
 from typing import Annotated, Literal, Self, get_args
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from lexinform.metadata_urls import metadata_url_decision
 from lexinform.models.documents import DocumentPart, SelectionState
@@ -81,6 +81,8 @@ class CandidateDisposition(BaseModel):
 
 MAX_ARCHIVE_MEMBER_BYTES = 1024
 MAX_ARCHIVE_MEMBER_ROWS = 8
+MAX_PACKED_ARCHIVE_MEMBER_BYTES = 1_152
+MAX_PACKED_ARCHIVE_MEMBER_ROWS = 32
 ArchiveMemberPolicyReason = Literal[
     "selected_main",
     "selected_annex",
@@ -273,6 +275,123 @@ class ArchiveMemberDispositions(BaseModel):
             checker.add(row)
         if len(self.model_dump_json().encode()) > MAX_ARCHIVE_MEMBER_BYTES:
             raise ValueError("archive member section exceeds its metadata limit")
+        return self
+
+
+_PACKED_STAGES = ("walk", "policy")
+_PACKED_PHASES = ("version_comparison", "fallback")
+_PACKED_OUTCOMES = ("observed", "selected", "policy_excluded", "non_bill", "unclassified")
+_PACKED_REASONS = (
+    "selected_main",
+    "selected_annex",
+    "selected_support",
+    "rank_preference",
+    "version_preference",
+    "version_conflict",
+    "family_exclusion",
+    "no_bill_candidate",
+    "non_bill_body",
+    "unknown_role",
+    "regulation_support",
+    "empty_text",
+    "long_unknown_text",
+    "uninspected_format_part",
+    "readability_rejected",
+    "member_complete",
+    "member_failed",
+    "member_returned_length_differs",
+    "unpacking_limit_source_pinned_inference",
+    "not_visited_depth_limit",
+    "format_complete",
+    "format_failed",
+    "format_returned_length_differs",
+)
+type _PackedArchiveRow = tuple[
+    Position,
+    Position,
+    Position,
+    Position | None,
+    Annotated[tuple[Position, ...], Field(min_length=1, max_length=4)] | None,
+    Position | None,
+    Position,
+    Position,
+    Position | None,
+    Position | None,
+]
+
+
+class PackedArchiveMemberDispositions(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    schema_version: Literal[2]
+    walk: Literal["finished", "interrupted", "unknown"]
+    retention: Literal["complete"]
+    observed_rows: Position
+    rows_sha256: Sha256
+    omitted_rows: Literal[0]
+    unvisited: Literal["none_known", "known", "unknown"]
+    packed_rows: tuple[_PackedArchiveRow, ...] = Field(
+        min_length=1, max_length=MAX_PACKED_ARCHIVE_MEMBER_ROWS
+    )
+    hashes: tuple[Sha256, ...] = Field(max_length=MAX_PACKED_ARCHIVE_MEMBER_ROWS * 3)
+
+    @field_validator("schema_version", "omitted_rows", mode="before")
+    @classmethod
+    def strict_integer(cls, value: object) -> object:
+        if type(value) is not int:
+            raise ValueError("packed archive versions and counts require integers")
+        return value
+
+    @property
+    def rows(self) -> tuple[ArchiveMemberDisposition, ...]:
+        try:
+            return tuple(self._decode(row) for row in self.packed_rows)
+        except IndexError:
+            raise ValueError("packed archive row contains an out-of-range code") from None
+
+    def _decode(self, row: _PackedArchiveRow) -> ArchiveMemberDisposition:
+        stage, phase, index, root, path, slot, outcome, reason, leaf, text = row
+
+        def lookup(position: int | None) -> str | None:
+            return self.hashes[position] if position is not None else None
+
+        return ArchiveMemberDisposition.model_validate(
+            {
+                "stage": _PACKED_STAGES[stage],
+                "phase": _PACKED_PHASES[phase],
+                "index": index,
+                "root_sha256": lookup(root),
+                "ordinals": path,
+                "physical_part_index": slot,
+                "outcome": _PACKED_OUTCOMES[outcome],
+                "reason": _PACKED_REASONS[reason],
+                "leaf_sha256": lookup(leaf),
+                "text_sha256": lookup(text),
+            }
+        )
+
+    @model_validator(mode="after")
+    def bounded_observations(self) -> Self:
+        if len(self.model_dump_json().encode()) > MAX_PACKED_ARCHIVE_MEMBER_BYTES:
+            raise ValueError("packed archive member section exceeds its metadata limit")
+        positions = tuple(
+            dict.fromkeys(
+                index
+                for row in self.packed_rows
+                for index in (row[3], row[8], row[9])
+                if index is not None
+            )
+        )
+        if positions != tuple(range(len(self.hashes))) or len(set(self.hashes)) != len(self.hashes):
+            raise ValueError(
+                "packed archive hashes must be unique and used in first-occurrence order"
+            )
+        rows = self.rows
+        if self.observed_rows != len(rows) or self.rows_sha256 != archive_member_rows_sha256(rows):
+            raise ValueError("complete archive retention requires the canonical whole row hash")
+        checker = ArchiveMemberRowChecker()
+        for row in rows:
+            checker.add(row)
         return self
 
 
@@ -818,7 +937,7 @@ class CandidateDispositionTrace(BaseModel):
     result: CandidateTraceResult
     reason: CandidateTraceReason
     selection_state: SelectionState
-    archive_members: ArchiveMemberDispositions | None = Field(
+    archive_members: ArchiveMemberDispositions | PackedArchiveMemberDispositions | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     required_exclusions: RequiredPartExclusions | None = Field(

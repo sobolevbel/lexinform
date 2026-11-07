@@ -1,0 +1,26 @@
+{
+  "bad_digest_restore_atomic": true,
+  "case": "RCL 12388203/4",
+  "exact_restores": 2,
+  "exact_rows": 11,
+  "gzip_delta": 70,
+  "legacy_prefix": 2,
+  "legacy_prefix_restore_exact": true,
+  "legacy_section_bytes": 966,
+  "new_trace_id": "candidate-trace-v1:4139f15e9de4709ca18b0ef5f98330788363477239762d914e140200d61d0586",
+  "observation_id": "source-observation-v1:78127bbca7394d90e251fbb0fcd1f2127557badcaa25bd9aea8a48ddc35723c9",
+  "old_reader_legacy_trace_unchanged": true,
+  "old_reader_rejected_atomically": "candidate trace: invalid_candidate_trace",
+  "old_trace_id": "candidate-trace-v1:7d0d6936289750423bfcc8b2efd6df38c39234b0c107e753731b103327d46ffb",
+  "other_sql_exact": true,
+  "packed_section_bytes": 1131,
+  "pin_sql_sha256": "eac498ee1bdf933808ce6e10ffa00096b8d2a2de8b26883abd6438a7b791c442",
+  "pins": {
+    "678498.docx": "8b67bae28cf004b9c8786f12413e451c9422d94f1af82ea810fd84a5094f3946",
+    "720220.zip": "a0568587567b4923f58d406114d1b9ae567c2234291c892cf9dcc9e79dbf7301"
+  },
+  "row_sha256": "78fd90a07a697e766b9cc91a062a26eee18335fa5d717a2cb1fcd9365dfb927b",
+  "sql_delta": 165,
+  "trace_bytes": 2571,
+  "unchanged_current_writer": true
+}

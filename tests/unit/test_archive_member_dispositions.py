@@ -21,6 +21,7 @@ from lexinform.models import (
 from lexinform.models.candidate_trace import (
     ArchiveMemberDisposition,
     ArchiveMemberDispositions,
+    PackedArchiveMemberDispositions,
     archive_member_rows_sha256,
 )
 from tests.unit.test_candidate_disposition_trace import NOW
@@ -483,3 +484,87 @@ def test_no_bill_candidate_exclusion_round_trips_without_claiming_a_normative_fa
     assert members.rows == (excluded,)
     assert members.rows[0].outcome == "policy_excluded"
     assert members.rows[0].reason == "no_bill_candidate"
+
+
+def packed_payload() -> dict[str, Any]:
+    return {
+        **section().model_dump(mode="json", exclude={"rows"}),
+        "schema_version": 2,
+        "packed_rows": [
+            [0, 1, 0, 0, [0], 0, 0, 15, None, None],
+            [1, 1, 0, 0, [0], 0, 1, 0, None, None],
+        ],
+        "hashes": [ROOT],
+    }
+
+
+def test_packed_section_round_trips_exact_rows_and_identity() -> None:
+    packed = PackedArchiveMemberDispositions.model_validate(packed_payload())
+    trace = CandidateDispositionTrace.model_validate(
+        {**legacy().model_dump(), "archive_members": packed}
+    )
+    encoded = trace.model_dump_json(exclude_defaults=True)
+    loaded = CandidateDispositionTrace.model_validate_json(encoded)
+    assert loaded == trace and loaded.trace_id == trace.trace_id
+    assert loaded.archive_members is not None, "the packed wire section survived validation"
+    assert loaded.archive_members.rows == section().rows
+    assert json.loads(encoded)["archive_members"] == packed_payload()
+
+
+@pytest.mark.parametrize(
+    "fault",
+    ["duplicate", "unused", "noncanonical", "bad_code", "coercion", "digest", "prefix", "arity"],
+)
+def test_packed_section_rejects_invalid_wire_data(fault: str) -> None:
+    values = packed_payload()
+    if fault == "duplicate":
+        values["hashes"].append(ROOT)
+        values["packed_rows"][1][3] = 1
+    elif fault == "unused":
+        values["hashes"].append("b" * 64)
+    elif fault == "noncanonical":
+        values["hashes"].insert(0, "b" * 64)
+        values["packed_rows"][0][3] = 1
+        values["packed_rows"][1][3] = 0
+    elif fault == "bad_code":
+        values["packed_rows"][0][7] = 30
+    elif fault == "coercion":
+        values["packed_rows"][0][0] = False
+    elif fault == "digest":
+        values["rows_sha256"] = "b" * 64
+    elif fault == "prefix":
+        values["retention"] = "prefix"
+    elif fault == "arity":
+        values["packed_rows"][0].pop()
+    with pytest.raises(ValidationError):
+        CandidateDispositionTrace.model_validate(
+            {**legacy().model_dump(), "archive_members": values}
+        )
+
+
+def test_packed_section_enforces_byte_budget_before_decode() -> None:
+    values = packed_payload()
+    hashes = [ROOT, *(f"{position:064x}" for position in range(1, 19))]
+    values.update(
+        hashes=hashes,
+        observed_rows=18,
+        packed_rows=[
+            [0, 1, 0, 0, [position], position, 0, 15, position + 1, None] for position in range(18)
+        ],
+    )
+    with pytest.raises(ValidationError, match="packed archive member section exceeds"):
+        PackedArchiveMemberDispositions.model_validate(values)
+
+
+def test_decoded_packed_rows_require_the_same_outer_parent() -> None:
+    wrong_root = "b" * 64
+    values = packed_payload()
+    values["hashes"] = [wrong_root]
+    values["rows_sha256"] = archive_member_rows_sha256(
+        r.model_copy(update={"root_sha256": wrong_root}) for r in section().rows
+    )
+    packed = PackedArchiveMemberDispositions.model_validate(values)
+    with pytest.raises(ValidationError, match="root"):
+        CandidateDispositionTrace.model_validate(
+            {**legacy().model_dump(), "archive_members": packed}
+        )
