@@ -324,18 +324,21 @@ def test_cli_waits_at_most_once_for_pending_and_default_never_sleeps(
 
 
 @pytest.mark.parametrize(
-    ("statuses", "expected_waits"),
+    ("statuses", "expected_waits", "reason"),
     [
-        (("pending", "pending", "verified"), [30, 5]),
-        (("pending", "pending", "pending"), [30, 5]),
-        (("pending", "superseded"), [30]),
-        (("failed",), []),
-        (("unproven",), []),
+        (("pending", "pending", "verified"), [30, 5], "exact_release_confirmed"),
+        (("pending", "pending", "pending"), [30, 5], "ci_pending"),
+        (("pending", "superseded"), [30], "main_changed_during_observation"),
+        (("failed",), [], "ci_failed"),
+        (("unproven",), [], "invalid_main_identity"),
+        (("pending", "unproven", "verified"), [30, 5], "github_read_failed"),
+        (("unproven", "unproven", "unproven"), [30, 5], "github_read_failed"),
     ],
 )
 def test_cli_polls_until_terminal_status_or_deadline(
     statuses: tuple[Status, ...],
     expected_waits: list[int],
+    reason: str,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -347,7 +350,7 @@ def test_cli_polls_until_terminal_status_or_deadline(
     def snapshot(target: str, *, previous: str | None) -> dict[str, object]:
         assert (target, previous) == (TARGET, PREVIOUS)
         assert not artifact.exists()
-        return dict(report, status=next(observations))
+        return dict(report, status=next(observations), reason=reason)
 
     monkeypatch.setattr("tools.verify_release.verify", snapshot)
     monkeypatch.setattr("tools.verify_release.time.sleep", waits.append)

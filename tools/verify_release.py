@@ -340,7 +340,7 @@ def main() -> int:
         type=int,
         choices=range(1, 3601),
         metavar="1..3600",
-        help="Poll pending releases every 30 seconds for up to this many seconds.",
+        help="Poll pending releases and failed GitHub reads for up to this many seconds.",
     )
     args = parser.parse_args()
     deadline = time.monotonic() + args.wait_timeout if args.wait_timeout is not None else None
@@ -348,7 +348,10 @@ def main() -> int:
     if report["status"] == "pending" and args.wait_seconds:
         time.sleep(args.wait_seconds)
         report = verify(args.target_sha, previous=args.previous_verified_sha)
-    while report["status"] == "pending" and deadline is not None:
+    while deadline is not None and (
+        report["status"] == "pending"
+        or (report["status"], report["reason"]) == ("unproven", "github_read_failed")
+    ):
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             break
