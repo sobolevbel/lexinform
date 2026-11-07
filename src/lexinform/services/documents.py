@@ -76,9 +76,12 @@ from lexinform.models import (
     TextDocument,
 )
 from lexinform.models.candidate_trace import (
+    MAX_ADMITTED_NORMATIVE_ANNEXES,
     MAX_ADMITTED_SUPPORT,
     MAX_SUPPORTING_EXCLUSIONS,
     MAX_VERSION_DECISION_ROWS,
+    AdmittedNormativeAnnex,
+    AdmittedNormativeAnnexes,
     AdmittedSupport,
     AdmittedSupportPart,
     AmendmentPartGap,
@@ -168,6 +171,9 @@ _ARCHIVE_READ_SINK: ContextVar[
 class _CompositionCapture:
     required: RequiredPartCapture
     normative_gap: NormativeAnnexGap | None = None
+    admitted_annexes: dict[tuple[Phase, int, int], AdmittedNormativeAnnex] = field(
+        default_factory=dict
+    )
     required_gap: RequiredPartGap | None = None
     amendment_gap: AmendmentPartGap | None = None
     supporting: list[SupportingPartExclusion] = field(default_factory=list)
@@ -235,6 +241,44 @@ def _selected_admitted_support(
         return None
     return AdmittedSupport(
         phase=parent.phase, index=parent.index, rows=tuple(rows), omitted=omitted
+    )
+
+
+def _selected_admitted_annexes(
+    trace: CandidateDispositionTrace,
+    selected: TextDocument,
+    loaded: LoadedFile,
+    capture: _CompositionCapture,
+) -> AdmittedNormativeAnnexes | None:
+    parent = next((row for row in trace.dispositions if row.outcome == "selected"), None)
+    if parent is None:
+        return None
+    rows: list[AdmittedNormativeAnnex] = []
+    occurrences = Counter(selected.normative_urls)
+    for position, url in enumerate(selected.normative_urls):
+        row = capture.admitted_annexes.get((parent.phase, parent.index, position))
+        if row is None or occurrences[url] != 1:
+            continue
+        parts = [part for part in loaded.selection.parts if part.url == url]
+        if len(parts) == 1:
+            part = parts[0]
+            if (
+                part.role == "normative_annex"
+                and not part.members
+                and not part.losses
+                and part.text_start == 0
+                and part.text_end is not None
+                and part.text_end > 0
+                and (part.sha256, part.text_sha256) == (row.file_sha256, row.text_sha256)
+            ):
+                rows.append(row)
+    if not rows:
+        return None
+    return AdmittedNormativeAnnexes(
+        phase=parent.phase,
+        index=parent.index,
+        rows=tuple(rows[:MAX_ADMITTED_NORMATIVE_ANNEXES]),
+        omitted=max(0, len(rows) - MAX_ADMITTED_NORMATIVE_ANNEXES),
     )
 
 
@@ -655,9 +699,11 @@ class TextLoader:
             record_requested_document
             and requested != resolved
             and trace is not None
-            and trace.admitted_support is not None
+            and (trace.admitted_support is not None or trace.admitted_normative_annexes is not None)
         ):
-            trace = trace.model_copy(update={"admitted_support": None})
+            trace = trace.model_copy(
+                update={"admitted_support": None, "admitted_normative_annexes": None}
+            )
         defer_archive_trace = None
         evidence = file.archive_version_evidence
         if evidence is not None and trace is not None:
@@ -882,8 +928,8 @@ class TextLoader:
                 if attempt is not None:
                     with suppress(Exception):
                         failure_reason = read_exclusion_reason(exc)
-            composed = normative_part(bundle, url, annex)
-            if isinstance(composed, NormativeAnnexFailure):
+            admission = normative_part(bundle, url, annex)
+            if isinstance(admission, NormativeAnnexFailure):
                 if attempt is not None:
                     gap_capture, gap_phase, gap_index = attempt
                     with suppress(Exception):
@@ -891,12 +937,22 @@ class TextLoader:
                             phase=gap_phase,
                             index=gap_index,
                             normative_index=position,
-                            reason=failure_reason or composed.reason,
+                            reason=failure_reason or admission.reason,
                             file_sha256=annex.sha256 if annex is not None else None,
-                            kind=composed.kind,
+                            kind=admission.kind,
                         )
-                return composed.blocked
-            bundle = composed
+                return admission.blocked
+            if attempt is not None and annex is not None and annex.native_complete_standalone:
+                capture, phase, index = attempt
+                with suppress(Exception):
+                    (part,) = annex.selection.parts
+                    capture.admitted_annexes[phase, index, position] = AdmittedNormativeAnnex(
+                        normative_index=position,
+                        observed_kind=admission.kind,
+                        file_sha256=part.sha256,
+                        text_sha256=part.text_sha256,
+                    )
+            bundle = admission.bundle
         bundle = finish_normative(bundle)
         for position, url in enumerate(document.amendment_urls):
             file = self._read_composed_part(document, address, "amendment", position, url)
@@ -1073,6 +1129,17 @@ class TextLoader:
                 if evidence is not None:
                     enriched = CandidateDispositionTrace.model_validate(
                         {**base_trace.model_dump(), "admitted_support": evidence}
+                    )
+                    if archive_version_evidence is not None:
+                        _trace_with_archive_evidence(enriched, archive_version_evidence)
+                    trace = enriched
+        base_trace = trace or routine_trace
+        if base_trace is not None and composition is not None and composition.admitted_annexes:
+            with suppress(Exception):
+                annexes = _selected_admitted_annexes(base_trace, selected, loaded, composition)
+                if annexes is not None:
+                    enriched = CandidateDispositionTrace.model_validate(
+                        {**base_trace.model_dump(), "admitted_normative_annexes": annexes}
                     )
                     if archive_version_evidence is not None:
                         _trace_with_archive_evidence(enriched, archive_version_evidence)

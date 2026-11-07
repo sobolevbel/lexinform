@@ -85,9 +85,15 @@ class NormativeAnnexFailure:
     kind: Kind | None = None
 
 
+@dataclass(frozen=True)
+class NormativeAnnexAdmission:
+    bundle: BundleAssembly
+    kind: Kind
+
+
 def normative_part(
     bundle: BundleAssembly, url: str, file: LoadedFile | None
-) -> BundleAssembly | NormativeAnnexFailure:
+) -> NormativeAnnexAdmission | NormativeAnnexFailure:
     if file is None:
         return NormativeAnnexFailure(
             _blocked("waiting", f"{url}: normative annex unavailable"), "no_returned_file"
@@ -104,13 +110,16 @@ def normative_part(
             "non_annex_appendix",
             kind,
         )
-    return replace(
-        bundle,
-        normative=(*bundle.normative, file.text),
-        annex_parts=(
-            *bundle.annex_parts,
-            *(p.model_copy(update={"role": "normative_annex"}) for p in file.selection.parts),
+    return NormativeAnnexAdmission(
+        replace(
+            bundle,
+            normative=(*bundle.normative, file.text),
+            annex_parts=(
+                *bundle.annex_parts,
+                *(p.model_copy(update={"role": "normative_annex"}) for p in file.selection.parts),
+            ),
         ),
+        kind,
     )
 
 

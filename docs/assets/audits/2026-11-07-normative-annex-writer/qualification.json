@@ -1,0 +1,89 @@
+{
+  "cases": {
+    "12394200/2": {
+      "assembly_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "baseline_sql_sha256": "2c27c2956a0552859ed53473ad963c8ff9a35a1a5645c5616e517720373379de",
+      "catalogue_sha256": "d9a86f6575030b8c875457d57076624c6901ed467fa1e70175613d017700c878",
+      "exact_restores": 2,
+      "gap": {
+        "index": 0,
+        "normative_index": 0,
+        "phase": "version_comparison",
+        "reason": "read_error"
+      },
+      "gzip_bytes": 7654,
+      "gzip_delta": 0,
+      "legacy_trace_id": "candidate-trace-v1:515b6145024a4e185427bd6a3fc7e1d5b5ef902602028327c46dcf8a7f69af2e",
+      "read_pins": {
+        "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703529.pdf": "cea344fa0b25170c12d151274877d2f9c8185e6412ab6727767370c61ab896dc"
+      },
+      "reads": [
+        "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703529.pdf",
+        "https://legislacja.rcl.gov.pl/docs//2/12394200/13109452/13109453/dokument703531.pdf"
+      ],
+      "selection_and_reads_exact": true,
+      "selection_id": "selection-v1:26fd1741f98b256c8b273b9d705ffda74b35350eeab640e01290ab10f29522f3",
+      "selection_state": "waiting",
+      "sql_bytes": 38739,
+      "sql_delta": 0,
+      "sql_exact": true,
+      "sql_sha256": "2c27c2956a0552859ed53473ad963c8ff9a35a1a5645c5616e517720373379de",
+      "trace_id": "candidate-trace-v1:515b6145024a4e185427bd6a3fc7e1d5b5ef902602028327c46dcf8a7f69af2e",
+      "witness": null
+    },
+    "12403302/4": {
+      "assembly_sha256": "dc888749d7770f343703a1c95041e6ba61aef78916a12fe605699537d9252868",
+      "baseline_sql_sha256": "e6d1601a8b102b8928eb9c6a3c8fe3e0bf8cec4bb6c52d2bd331c53192d61e49",
+      "catalogue_sha256": "5bcaecc716474d208d764771e6bd8f7def6162ef32972e9415579ae4a893135c",
+      "exact_restores": 2,
+      "gap": null,
+      "gzip_bytes": 11760,
+      "gzip_delta": 41,
+      "legacy_trace_id": "candidate-trace-v1:ed6c08c3d3aba2cbeec21ab25c5697ea740bc73896c5d788744ac488d1a521e5",
+      "other_sql_exact": true,
+      "read_pins": {
+        "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743326.docm": "6f778ea244115859f4ad7c39876f7890af942fc9c10983b1ab2f625199f2a3a4",
+        "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743327.docx": "7f2c67d29024257b2e30d757f8b0952162f6fb18be3c9a7f3df3cfd8bb5d96d5",
+        "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743328.docx": "4dfba36d15a9ce155328e37bfc4bb7215964c8ed0f65be278ae503034079a965",
+        "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743329.docm": "c009ff5cf12d8820a9b66375b20d03969ba849cb44bd6095e3704675c035fd13",
+        "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743330.doc": "006d5f09a49eab3f07becb77d27ad75738a6ef936c3ed662343ea99543a11029"
+      },
+      "reads": [
+        "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743326.docm",
+        "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743327.docx",
+        "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743328.docx",
+        "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743329.docm",
+        "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743330.doc"
+      ],
+      "selection_and_reads_exact": true,
+      "selection_id": "selection-v1:f7d21e4c5ff826189f8fa5ebd451bb19a4131d40018bab42eabf086b3e569254",
+      "selection_state": "unverified",
+      "sql_bytes": 64767,
+      "sql_delta": 499,
+      "sql_sha256": "ff6c2d4e0c2cac993df79ba716bdf8057cbb34bdde4266ded05148456f673e77",
+      "trace_id": "candidate-trace-v1:93f548361d1a325fddf80a052d9f9b076f751323bc9dd01ca7105af11f031730",
+      "witness": {
+        "index": 0,
+        "omitted": 0,
+        "phase": "version_comparison",
+        "rows": [
+          {
+            "file_sha256": "7f2c67d29024257b2e30d757f8b0952162f6fb18be3c9a7f3df3cfd8bb5d96d5",
+            "normative_index": 0,
+            "observed_kind": "unknown",
+            "text_sha256": "80413adec2c90dae25bcbd981261a34055c88801cfa6641251eaf0ed133abd93"
+          },
+          {
+            "file_sha256": "4dfba36d15a9ce155328e37bfc4bb7215964c8ed0f65be278ae503034079a965",
+            "normative_index": 1,
+            "observed_kind": "unknown",
+            "text_sha256": "84ffc5e947cff0f8f7d2a29cc00b2bd8e7fe92ec294c3dc52cf9005f19eeb792"
+          }
+        ]
+      }
+    }
+  },
+  "full_report_sha256": "8755125d0e22fdb66061d700e65a1b29fceee49b08df303b94deaa8a7ecfc824",
+  "pin_path": "/Users/sobaleu/.codex/worktrees/doc-note-links/lexinform/out/corpus/da5-annex-off/on.json",
+  "pin_sha256": "359e6d1c71b9681a1aca63ca826c81eee9dd14d64f1f5a037f9313b6d6598c19"
+}
