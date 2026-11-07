@@ -14,6 +14,7 @@ from lexinform.adapters.input_receipts import (
     validate_primary_receipt_parents,
 )
 from lexinform.adapters.status_changes import read_status_change
+from lexinform.bill_context import continuation_snapshot
 from lexinform.content_versions import (
     act_published_plan_matches,
     card_confirmation_matches,
@@ -55,6 +56,7 @@ from lexinform.models.content import (
     MAX_GROUPED_STAGE_CONTENT_BYTES,
     CardPrimaryEvidence,
     card_bill_snapshot,
+    original_delivery_bill_snapshot,
 )
 from lexinform.models.events import amendments_stage
 from lexinform.models.input_receipts import (
@@ -62,12 +64,20 @@ from lexinform.models.input_receipts import (
     RclArchiveInputReceipt,
     SejmSelfAmendmentInputReceipt,
 )
+from lexinform.models.original_delivery_content import (
+    MAX_ORIGINAL_DELIVERY_BYTES,
+    OriginalDeliveryPart,
+    OriginalDeliveryPlan,
+    original_delivery_context,
+)
 from lexinform.models.primary_projections import PRIMARY_USAGE_FIELDS
+from lexinform.models.rcl import RclProject, rcl_number
 from lexinform.models.sitting_content import (
     MAX_SITTING_HISTORY_BYTES,
     SittingContentPlan,
     sitting_content_context,
 )
+from lexinform.models.wykaz import WykazEntry, wykaz_number
 from lexinform.primary_projections import primary_record_matches
 from lexinform.sitting_delivery import sitting_root_plan
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
@@ -380,6 +390,7 @@ def _verify_card_content(
         or value.digest_profile is not None
         or value.sitting_profile is not None
         or value.act_published_evidence is not None
+        or value.original_delivery_evidence is not None
     ):
         return None, None
     root_row = _query(
@@ -1202,6 +1213,161 @@ def verify_act_published_content(
         raise ValueError("act_history_frozen_plan")
 
 
+def _original_delivery_owner_matches(
+    connection: sqlite3.Connection, bill: Bill, publication: Publication
+) -> bool:
+    if publication.number != bill.number or publication.term < bill.term:
+        return False
+    if publication.term == bill.term:
+        return True
+    row = _query(
+        connection,
+        "SELECT rcl_json, wykaz_json FROM bills WHERE term=? AND number=?",
+        (publication.term, publication.number),
+    ).fetchone()
+    if row is None:
+        return False
+    if bill.rcl is not None and bill.rcl.print_number is None and row["rcl_json"] is not None:
+        current_rcl = RclProject.model_validate_json(row["rcl_json"])
+        return (
+            bill.rcl.id > 0
+            and current_rcl.id == bill.rcl.id
+            and rcl_number(bill.rcl.id) == bill.number
+        )
+    if bill.wykaz is not None and row["wykaz_json"] is not None:
+        current_wykaz = WykazEntry.model_validate_json(row["wykaz_json"])
+        return (
+            current_wykaz.number == bill.wykaz.number
+            and wykaz_number(bill.wykaz.number) == bill.number
+        )
+    return False
+
+
+def verify_original_delivery_content(
+    connection: sqlite3.Connection, version: ContentVersion, *, require_bound: bool = False
+) -> OriginalDeliveryPlan | None:
+    evidence = version.original_delivery_evidence
+    if evidence is None:
+        return None
+    reader = ContentSourceRows(connection)
+    bill_snapshot = reader.get_content_snapshot(version.bill_context_id)
+    snapshot = reader.get_content_snapshot(version.plan_snapshot_id)
+    if (
+        bill_snapshot is None
+        or bill_snapshot.kind != "bill"
+        or snapshot is None
+        or snapshot.kind != "plan"
+        or len(bill_snapshot.payload_json.encode()) + len(snapshot.payload_json.encode())
+        > MAX_ORIGINAL_DELIVERY_BYTES
+    ):
+        raise ValueError("original_delivery_snapshot_scope")
+    plan = OriginalDeliveryPlan.model_validate(read_json(snapshot.payload_json))
+    plan.validate_notice(evidence.kind)
+    if plan.bindings[0] != version.root_publication_id:
+        raise ValueError("original_delivery_root_scope")
+    if require_bound:
+        bindings = _query(
+            connection,
+            "SELECT publication_id FROM publication_content WHERE content_id=?",
+            (version.content_id,),
+        ).fetchall()
+        if {binding[0] for binding in bindings} != set(plan.bindings):
+            raise ValueError("original_delivery_binding_scope")
+    if original_delivery_bill_snapshot(bill_snapshot.payload_json) != bill_snapshot:
+        raise ValueError("original_delivery_bill_profile")
+    bill = Bill.model_validate(read_json(bill_snapshot.payload_json))
+    if evidence.kind is PublicationKind.ACT_PUBLISHED and bill.act is None:
+        raise ValueError("original_delivery_act_missing")
+    parent: Publication | None = None
+    for index, part in enumerate(plan.parts, 1):
+        row = _query(connection, "SELECT * FROM publications WHERE id=?", (part.id,)).fetchone()
+        if row is None:
+            raise ValueError("original_delivery_part_missing")
+        publication = read_content_publication(row)
+        retained = publication.delivery
+        if (
+            publication.channel_id != evidence.channel_id
+            or (
+                not _original_delivery_owner_matches(connection, bill, publication)
+                if parent is None
+                else (publication.term, publication.number) != (parent.term, parent.number)
+            )
+            or publication.status_change_id is not None
+            or (
+                publication.status is PublicationStatus.SENT
+                and (publication.message_id is None or publication.message_id <= 0)
+            )
+            or (retained is None and publication.status is not PublicationStatus.SENT)
+        ):
+            raise ValueError("original_delivery_part_scope")
+        if parent is None:
+            if (
+                publication.kind != evidence.kind
+                or publication.ref != evidence.ref
+                or publication.created_at != version.recorded_at
+                or (
+                    retained is not None
+                    and (
+                        original_delivery_bill_snapshot(retained.bill_json) != bill_snapshot
+                        or retained.rendered_text != part.html
+                        or original_delivery_context(retained) != plan.root
+                    )
+                )
+            ):
+                raise ValueError("original_delivery_frozen_root")
+        else:
+            _verify_original_delivery_child(version, part, index, publication, parent, bill)
+        parent = publication
+    return plan
+
+
+def _verify_original_delivery_child(
+    version: ContentVersion,
+    part: OriginalDeliveryPart,
+    index: int,
+    publication: Publication,
+    parent: Publication,
+    bill: Bill,
+) -> None:
+    retained = publication.delivery
+    attempted = publication.status in (
+        PublicationStatus.SENT,
+        PublicationStatus.PENDING,
+        PublicationStatus.UNKNOWN,
+        PublicationStatus.FAILED,
+    )
+    if (
+        publication.kind is not PublicationKind.MESSAGE_PART
+        or publication.ref != f"message/{version.root_publication_id}/{index}"
+        or (
+            attempted and (parent.status is not PublicationStatus.SENT or parent.message_id is None)
+        )
+    ):
+        raise ValueError("original_delivery_child_scope")
+    if retained is None:
+        return
+    saved_bill = Bill.model_validate(read_json(retained.bill_json))
+    expected_bill = Bill.model_validate_json(continuation_snapshot(bill))
+    if (
+        ((attempted or retained.reply_to is not None) and retained.reply_to != parent.message_id)
+        or saved_bill.model_copy(update={"ready_analysis": None, "review_work": ()})
+        != expected_bill
+        or retained
+        != DeliveryPlan(
+            bill_json=retained.bill_json,
+            rendered_text=part.html,
+            continuation_parent=parent.id,
+            continuation_root=version.root_publication_id,
+            continuation_index=index,
+            policy_version="attention-v1",
+            held_change_ids=part.held_change_ids,
+            disable_notification=part.disable_notification,
+            reply_to=retained.reply_to,
+        )
+    ):
+        raise ValueError("original_delivery_parent_receipt")
+
+
 def validate_content_history(connection: sqlite3.Connection) -> None:
     try:
         tables = {
@@ -1236,6 +1402,7 @@ def validate_content_history(connection: sqlite3.Connection) -> None:
             verify_digest_content(connection, value, require_bound=True)
             verify_sitting_content(connection, value, require_bound=True)
             verify_act_published_content(connection, value, require_bound=True)
+            verify_original_delivery_content(connection, value, require_bound=True)
             physical_identity = verify_card_content(connection, value, retained=True)
             if value.change_snapshot_id is None and value.digest_profile is None:
                 bindings = _query(

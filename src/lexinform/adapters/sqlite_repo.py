@@ -54,6 +54,7 @@ from lexinform.adapters.content_history import (
     verify_card_content,
     verify_direct_stage_content,
     verify_grouped_stage_content,
+    verify_original_delivery_content,
     verify_sitting_content,
 )
 from lexinform.adapters.content_source_refs import (
@@ -2331,6 +2332,7 @@ class SqliteBillRepository:
         verify_digest_content(self._conn, version)
         verify_sitting_content(self._conn, version)
         verify_act_published_content(self._conn, version)
+        verify_original_delivery_content(self._conn, version)
         for kind, identity in content_snapshot_refs(version):
             snapshot = self.get_content_snapshot(identity)
             if snapshot is None or snapshot.kind != kind:
@@ -2380,6 +2382,7 @@ class SqliteBillRepository:
         verify_digest_content(self._conn, version)
         verify_sitting_content(self._conn, version)
         verify_act_published_content(self._conn, version)
+        verify_original_delivery_content(self._conn, version)
         return version
 
     def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]:
@@ -2410,7 +2413,11 @@ class SqliteBillRepository:
         verify_content_applications(
             self._conn, version, publication_id=publication_id, retained=False
         )
-        if version.digest_profile is not None or version.sitting_profile is not None:
+        if (
+            version.digest_profile is not None
+            or version.sitting_profile is not None
+            or version.original_delivery_evidence is not None
+        ):
             raise ValueError("history requires atomic complete physical binding")
         plan = publication.delivery
         if version.act_published_evidence is not None:
@@ -2851,6 +2858,11 @@ class SqliteBillRepository:
         if version.act_published_evidence is not None:
             verify_act_published_content(self._conn, version, require_bound=True)
             return version
+        if version.original_delivery_evidence is not None:
+            original = verify_original_delivery_content(self._conn, version, require_bound=True)
+            if original is None or publication_id not in original.bindings:
+                raise ValueError("original_delivery_binding_scope")
+            return version
         if version.change_snapshot_id is None:
             physical_id = verify_card_content(self._conn, version, retained=True)
             if physical_id is not None and physical_id != publication_id:
@@ -2861,7 +2873,8 @@ class SqliteBillRepository:
         if self._conn.execute(
             "SELECT 1 FROM content_versions WHERE root_publication_id=? "
             "AND change_snapshot_id IS NULL AND bill_snapshot_id IS NOT NULL "
-            "AND json_type(version_json, '$.act_published_evidence') IS NULL",
+            "AND json_type(version_json, '$.act_published_evidence') IS NULL "
+            "AND json_type(version_json, '$.original_delivery_evidence') IS NULL",
             (root_publication_id,),
         ).fetchone():
             return [

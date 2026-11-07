@@ -1,0 +1,162 @@
+{
+  "status": "qualified-offline",
+  "base": "J467 3de02133 plus exact J468 source and J469/J470 reader/writer patches",
+  "base_patch_sha256": {
+    "j468": "24419fe064afb4a103aa809788aac9d4cbec1356945a484f7e097ea3e4246a38",
+    "j469": "b098438f87792f15bb8c00b4c71a6ddaa7c1071cfb14622b51993c2ebe600a20",
+    "j470": "86870ed58f742226e258e14768c2b36d1de68dd3b5c08c0c112a1f24f3c96ac4"
+  },
+  "worktrees": {
+    "writer": "/tmp/lexinform-original-history",
+    "reader": "/tmp/lexinform-original-reader",
+    "pre_reader": "/tmp/lexinform-original-old"
+  },
+  "patch_sha256": {
+    "reader.patch": "ba4b2f9c99163913116d697cbda01e2b6405a0faf5bd608f7b7e35bc7429ca5b",
+    "writer.patch": "2edd05f1773473cc9f28cb53b76f55594d13c5ab955e55bf2189abc2b286bc60"
+  },
+  "profile": "Shared optional original_delivery_evidence, with explicit supported kind, channel/ref and mandatory editorial-notice-v1 Bill context. Existing snapshot and binding tables. Ordered HTML, original direct semantic plan and current physical receipt bindings retained.",
+  "enabled_kinds": [
+    "consultation_results",
+    "in_force",
+    "consultation_deadline",
+    "decision_deadline",
+    "hearing_deadline",
+    "act_published multipart"
+  ],
+  "preserved": [
+    "J470 single-part ACT_PUBLISHED capture",
+    "existing card, sitting, grouped-stage and digest schemas and writers",
+    "all ordinary delivery and retry actions"
+  ],
+  "scope": "Fresh direct original notices at their existing atomic first freeze. Later proven original shapes can extend the allowed topology without a separate per-kind wire format. Cards, grouped statuses, edit/revision, digest-owned and legacy shapes not activated by this writer.",
+  "bill_projection": {
+    "profile": "editorial-notice-v1",
+    "full_context_available": false,
+    "operational_ready_analysis_and_review_work_removed": true,
+    "embedded_review_text_and_body_removed": true,
+    "review_metadata_retained": true,
+    "exact_html_separate_from_bill": true,
+    "embedded_source_restore_control": true
+  },
+  "cases": {
+    "short": {
+      "kind": "in_force",
+      "source": "Ordinary watcher, native short render",
+      "exact_physical_ids": [
+        6
+      ],
+      "exact_message_ids": [
+        104
+      ],
+      "exact_reply_targets": [
+        101
+      ],
+      "exact_html_sha256": [
+        "08fd17e759e0daf6b47fbb5b138592dc8a6548e476b65b2e17ca7752c3d364c0"
+      ],
+      "after_cleanup": {
+        "baseline_history_absent": true,
+        "writer_history_exact": true,
+        "exact_restores_each_lane": 2
+      },
+      "sql_bytes": {
+        "before": 89243,
+        "after": 97592,
+        "delta": 8349
+      },
+      "gzip_bytes": {
+        "before": 15682,
+        "after": 16121,
+        "delta": 439
+      },
+      "dump_sha256": {
+        "before": "25696ff470965f423d080d4861c83f44db2f0faddf975fe6c7eaa0a084d08f33",
+        "after": "d9b2cd9820b5a4f66f5e901cb53bed2521431346f57a611a51fba611afdd0e73"
+      },
+      "added_rows": {
+        "content_snapshots": 2,
+        "content_versions": 1,
+        "publication_content": 1
+      },
+      "other_sql_row_differences": false
+    },
+    "multipart": {
+      "kind": "act_published",
+      "source": "Ordinary watcher, test renderer extends the native act HTML to three parts",
+      "exact_physical_ids": [
+        3,
+        4,
+        5
+      ],
+      "exact_message_ids": [
+        102,
+        103,
+        104
+      ],
+      "exact_reply_targets": [
+        101,
+        102,
+        103
+      ],
+      "exact_html_sha256": [
+        "690386557f16a44950e7c0dd0a00c4bd0c8a58af68f6590443defd76366ddf77",
+        "758675063baabc63b3c751482066b9e7d25f557e524b378ba367b39291506f53",
+        "bfab03a221095d0bba3576c57a146e4f249de81c958a1881f1bc948e6e4e786e"
+      ],
+      "after_cleanup": {
+        "baseline_history_absent": true,
+        "writer_history_exact": true,
+        "exact_restores_each_lane": 2
+      },
+      "sql_bytes": {
+        "before": 72744,
+        "after": 97439,
+        "delta": 24695
+      },
+      "gzip_bytes": {
+        "before": 13988,
+        "after": 15766,
+        "delta": 1778
+      },
+      "dump_sha256": {
+        "before": "24b83831675c032797b9e07195af287e807163b253a748fce82169cd0104e469",
+        "after": "76abf00e06133e2a2b59c36d6c3167db08bc0975785055214571b0e756d3cac6"
+      },
+      "added_rows": {
+        "content_snapshots": 2,
+        "content_versions": 1,
+        "publication_content": 3
+      },
+      "other_sql_row_differences": false
+    }
+  },
+  "working_limits": {
+    "snapshot_budget_bytes": 131072,
+    "max_physical_parts": 32,
+    "over_cap_control": "Same valid short delivery after forcing writer-only byte cap to one. Identical publication and outgoing messages, no new history. Natural cap incidence not measured."
+  },
+  "reader_controls": {
+    "old_profiles_exact_restore_sha256": {
+      "/tmp/act-after-final.sql": "efc382e862504a074d14bda74ef31ec547ef8f337a00acfcc08bc74061352815",
+      "/tmp/sitting-history-evidence/qualified/writer-group.sql": "bf86de21bcfce83f106b51ab4d31c410094a534f37b8a90f0309e6cba2a78483"
+    },
+    "new_reader_two_exact_restores_each": true,
+    "wrong_parent_receipt_rejected_atomically_on_confirmed_retained_child": true,
+    "J470_pre_reader_rejects_new_state_atomically": true,
+    "after_prune_receipt_scope": "Canonical ordered continuation identities and retained positive physical receipts. Wrong-parent control uses retained child plan, before cleanup removes its operational reply field."
+  },
+  "unknown_retry": "Existing remote checkpoint scenarios retain shared version before effect. UNKNOWN has no current version and no automatic send. Audited retry/confirm preserve the same version. Multipart checkpoint faults preserve existing recovery behavior.",
+  "checks": {
+    "focused_tests": 49,
+    "mypy_files": 13,
+    "ruff": true,
+    "diff_checks": true,
+    "forward_patch_checks": true
+  },
+  "evidence": {
+    "paired_driver": "/tmp/original-history-evidence/qualify.py",
+    "reader_driver": "/tmp/original-history-evidence/check_reader.py",
+    "tests_log_sha256": "5d6c3b5a88054e981b8ba300edea2bb346e3e29d0dbfbcc78456dac997162e4a"
+  }
+}

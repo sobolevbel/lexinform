@@ -46,6 +46,7 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
         selected.digest_profile is not None
         or selected.sitting_profile is not None
         or selected.act_published_evidence is not None
+        or selected.original_delivery_evidence is not None
     ):
         versions = repo.list_content_versions(selected.root_publication_id)
         digest_parts = repo.list_content_publications(selected.root_publication_id)

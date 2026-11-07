@@ -1,0 +1,11 @@
+{
+  "base": "5b50f852",
+  "scratch": "/tmp/lexinform-j471-rehome-fix",
+  "reader_patch_sha256": "133ce984d7f721ced63b3fff068bf21e19e6c3fe2dbed5cdcc21f25f4e9a62db",
+  "writer_prerequisite_for_qualification": "out/corpus/original-delivery-history/writer.patch",
+  "pytest": "40 passed, tests/scenario/test_selected_name_binding.py tests/scenario/test_rcl_name_rollover.py tests/scenario/test_original_delivery_history.py",
+  "static": "Strict mypy, Ruff and git diff --check passed",
+  "qualification": "Actual RCL term 10 to 11 and 10 to 11 to 12 rollover. Exact retained original content identity and two exact restores. Backward term, foreign bill number and forged current RCL project ID reject atomically.",
+  "scope": "Same canonical typed RCL/Wykaz stable identity, current owner and all parts. There is no generic handoff record in move_government_rows, so this does not authenticate an individual transition beyond stable government-source identity and forward term.",
+  "adjacent_profiles": "J467 sitting and J469 ACT normal watcher entry points require has_process. RCL/Wykaz owner numbers lack a Sejm process and are not in those paths."
+}
