@@ -23,6 +23,7 @@ from lexinform.models import (
     RunReport,
     command_for_callback,
 )
+from lexinform.ports import VerifiedEditRejection
 
 log = logging.getLogger(__name__)
 _EPOCH = datetime.fromtimestamp(0, tz=UTC)
@@ -233,6 +234,17 @@ class TelegramBotClient:
             str(chat_id), returned_chat, username if isinstance(username, str) else None
         )
         return TelegramEditReceipt(chat_id=returned_chat, message_id=returned_message)
+
+    def attempt_verified_edit(
+        self, chat_id: int, message_id: int, html: str
+    ) -> TelegramEditReceipt | VerifiedEditRejection:
+        """Expose definite strict-edit rejection as a typed result for explicit dispatch."""
+        try:
+            return self.edit_message_verified(chat_id, message_id, html)
+        except TelegramError as exc:
+            return VerifiedEditRejection(code=exc.code)
+        except TelegramUnavailableError:
+            return VerifiedEditRejection()
 
     def delete_message(self, chat_id: str, message_id: int) -> None:
         """Remove a message the bot posted; one already gone is not an error."""

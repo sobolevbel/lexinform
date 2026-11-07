@@ -45,6 +45,7 @@ from lexinform.adapters.content_history import (
     card_primary_evidence_candidate,
     card_publication_rows,
     read_content_version,
+    read_grouped_stage_telegram_target,
     validate_content_history,
     verify_card_content,
     verify_direct_stage_content,
@@ -268,6 +269,7 @@ from lexinform.models.senate_inspection import SenateInspectionLink, SenateInspe
 from lexinform.models.source_catalog_attempts import SourceCatalogAttempt, SourceCatalogSnapshot
 from lexinform.models.source_omissions import SourceMetadataOmission
 from lexinform.name_binding import bind_mnemonic
+from lexinform.ports import GroupedEditClaim, VerifiedEditOutcome, VerifiedEditRejection
 from lexinform.primary_projections import ProjectionOwner
 from lexinform.saved_records import CONTEXT_RESULT_TABLES
 from lexinform.sitting_delivery import sitting_root_plan
@@ -2397,10 +2399,7 @@ class SqliteBillRepository:
         ):
             return None
         with self.atomic():
-            # Acquire SQLite write ownership before reading the confirmed base or target slots.
-            lock = self._conn.execute("UPDATE publication_sequence SET last_id=last_id WHERE id=1")
-            if lock.rowcount != 1:
-                raise ValueError("grouped revision reservation requires its publication sequence")
+            self._lock_grouped_stage_edit()
             root = self.publication_by_id(version.root_publication_id)
             if (
                 root is None
@@ -2409,24 +2408,7 @@ class SqliteBillRepository:
                 or root.message_id != evidence.revision.target_message_id
             ):
                 return None
-            conflict = self._conn.execute(
-                "SELECT 1 FROM publications WHERE channel_id=? AND ("
-                " (kind='message_part' AND ref=?) OR ("
-                " status IN ('queued','failed','pending','unknown') AND ("
-                " (kind='message_part' AND ref GLOB ?) OR (delivery_json IS NOT NULL AND CASE"
-                " WHEN NOT json_valid(delivery_json) THEN 1"
-                " WHEN json_type(delivery_json) != 'object' THEN 1"
-                " ELSE CAST(json_extract(delivery_json, '$.edit_message_id') AS INTEGER)=?"
-                " END))))"
-                " LIMIT 1",
-                (
-                    root.channel_id,
-                    ref,
-                    f"{GROUPED_STAGE_REVISION_REF_PREFIX}{version.root_publication_id}/*",
-                    root.message_id,
-                ),
-            ).fetchone()
-            if conflict is not None:
+            if self._grouped_stage_edit_conflict(root, ref):
                 return None
             current = self._confirmed_grouped_stage_base(root)
             if (
@@ -2460,10 +2442,178 @@ class SqliteBillRepository:
             self.bind_publication_content(publication_id, version.content_id)
             return publication_id
 
-    def _confirmed_grouped_stage_base(self, root: Publication) -> ContentVersion | None:
+    def _lock_grouped_stage_edit(self) -> None:
+        # Acquire SQLite write ownership before reading the confirmed base or target slots.
+        lock = self._conn.execute("UPDATE publication_sequence SET last_id=last_id WHERE id=1")
+        if lock.rowcount != 1:
+            raise ValueError("grouped edit requires its publication sequence")
+
+    def _grouped_stage_edit_conflict(
+        self, root: Publication, ref: str, *, excluding_slot: int | None = None
+    ) -> bool:
+        return (
+            self._conn.execute(
+                "SELECT 1 FROM publications WHERE channel_id=? AND (? IS NULL OR id!=?) AND ("
+                " (kind='message_part' AND ref=?) OR ("
+                " status IN ('queued','failed','pending','unknown') AND ("
+                " (kind='message_part' AND ref GLOB ?) OR (delivery_json IS NOT NULL AND CASE"
+                " WHEN NOT json_valid(delivery_json) THEN 1"
+                " WHEN json_type(delivery_json) != 'object' THEN 1"
+                " ELSE CAST(json_extract(delivery_json, '$.edit_message_id') AS INTEGER)=?"
+                " END)))) LIMIT 1",
+                (
+                    root.channel_id,
+                    excluding_slot,
+                    excluding_slot,
+                    ref,
+                    f"{GROUPED_STAGE_REVISION_REF_PREFIX}{root.id}/*",
+                    root.message_id,
+                ),
+            ).fetchone()
+            is not None
+        )
+
+    def claim_grouped_stage_edit(
+        self,
+        publication_id: int,
+        *,
+        content_id: str,
+        base_content_id: str,
+        approved_sha256: str,
+        chat_id: int,
+    ) -> GroupedEditClaim | None:
+        """Claim one untouched slot only when its approval and pinned target still match."""
+        if self._conn.in_transaction or type(chat_id) is not int or not -(2**52) < chat_id < 0:
+            return None
+        with self.atomic():
+            self._lock_grouped_stage_edit()
+            slot = self.publication_by_id(publication_id)
+            if (
+                slot is None
+                or not is_grouped_stage_revision_slot(slot)
+                or slot.status is not PublicationStatus.QUEUED
+                or slot.attempts
+                or slot.delivery is None
+                or (target := slot.delivery.edit_message_id) is None
+                or self.delivery_resolutions(publication_id)
+                or hashlib.sha256(slot.delivery.rendered_text.encode()).hexdigest()
+                != approved_sha256
+            ):
+                return None
+            claim = GroupedEditClaim(
+                publication_id,
+                content_id,
+                base_content_id,
+                chat_id,
+                target,
+                slot.delivery.rendered_text,
+            )
+            if not self._grouped_stage_edit_matches(claim, slot):
+                return None
+            self.mark_publication(publication_id, PublicationStatus.PENDING, count_attempt=False)
+            return claim
+
+    def grouped_stage_edit_matches(self, claim: GroupedEditClaim) -> bool:
+        if self._conn.in_transaction:
+            return False
+        with self.atomic():
+            slot = self.publication_by_id(claim.publication_id)
+            return (
+                slot is not None
+                and slot.status is PublicationStatus.PENDING
+                and self._grouped_stage_edit_matches(claim, slot)
+            )
+
+    def _grouped_stage_edit_matches(self, claim: GroupedEditClaim, slot: Publication) -> bool:
+        if (
+            not is_grouped_stage_revision_slot(slot)
+            or slot.attempts
+            or slot.delivery is None
+            or slot.delivery.edit_message_id != claim.message_id
+            or slot.delivery.rendered_text != claim.html
+        ):
+            return False
+        try:
+            version = self.get_publication_content(claim.publication_id)
+            if (
+                version is None
+                or version.reason != "grouped_stage_revision"
+                or version.content_id != claim.content_id
+                or version.previous_version_id != claim.base_content_id
+            ):
+                return False
+            root = self.publication_by_id(version.root_publication_id)
+            original = self.get_publication_content(version.root_publication_id)
+            ref = grouped_stage_revision_ref(version)
+            if (
+                root is None
+                or original is None
+                or ref is None
+                or read_grouped_stage_telegram_target(self._conn, original)
+                != (claim.chat_id, claim.message_id)
+                or self._grouped_stage_edit_conflict(root, ref, excluding_slot=claim.publication_id)
+            ):
+                return False
+            base = self._confirmed_grouped_stage_base(root, excluding_content_id=claim.content_id)
+            return base is not None and base.content_id == claim.base_content_id
+        except ValueError:
+            return False
+
+    def finish_grouped_stage_edit(
+        self, claim: GroupedEditClaim, outcome: VerifiedEditOutcome | None, *, at: datetime
+    ) -> PublicationStatus | None:
+        """Commit a matching receipt, a definite rejection, or uncertainty on the claimed slot."""
+        if self._conn.in_transaction:
+            raise StateCheckpointError("Grouped edit completion requires its own transaction")
+        with self.atomic():
+            self._lock_grouped_stage_edit()
+            owner = self._conn.execute(
+                "SELECT 1 FROM publications p JOIN publication_content c ON c.publication_id=p.id"
+                " WHERE p.id=? AND p.kind='message_part' AND p.ref GLOB ?"
+                " AND p.status='pending' AND c.content_id=?",
+                (claim.publication_id, f"{GROUPED_STAGE_REVISION_REF_PREFIX}*", claim.content_id),
+            ).fetchone()
+            if owner is None:
+                return None
+            slot = self.publication_by_id(claim.publication_id)
+            if slot is not None and self._grouped_stage_edit_matches(claim, slot):
+                if isinstance(outcome, VerifiedEditRejection):
+                    self.mark_publication(
+                        claim.publication_id,
+                        PublicationStatus.FAILED,
+                        error="Telegram rejected the verified edit",
+                    )
+                    return PublicationStatus.FAILED
+                if outcome is not None and (
+                    type(outcome.chat_id) is int
+                    and type(outcome.message_id) is int
+                    and (outcome.chat_id, outcome.message_id) == (claim.chat_id, claim.message_id)
+                ):
+                    self.mark_publication(
+                        claim.publication_id,
+                        PublicationStatus.SENT,
+                        message_id=claim.message_id,
+                        sent_at=at,
+                    )
+                    return PublicationStatus.SENT
+            self.mark_publication(
+                claim.publication_id,
+                PublicationStatus.UNKNOWN,
+                error="The grouped edit outcome could not be verified",
+                count_attempt=False,
+            )
+            return PublicationStatus.UNKNOWN
+
+    def _confirmed_grouped_stage_base(
+        self, root: Publication, *, excluding_content_id: str | None = None
+    ) -> ContentVersion | None:
         if root.id is None or root.message_id is None:
             return None
-        versions = {version.content_id: version for version in self.list_content_versions(root.id)}
+        versions = {
+            version.content_id: version
+            for version in self.list_content_versions(root.id)
+            if version.content_id != excluding_content_id
+        }
         if not versions or any(
             version.grouped_stage_evidence is None
             or version.grouped_stage_evidence.render_witness is None
@@ -2474,8 +2624,8 @@ class SqliteBillRepository:
             "SELECT b.content_id, p.id, p.status FROM publication_content b"
             " JOIN content_versions v ON v.content_id=b.content_id"
             " JOIN publications p ON p.id=b.publication_id"
-            " WHERE v.root_publication_id=?",
-            (root.id,),
+            " WHERE v.root_publication_id=? AND (? IS NULL OR b.content_id!=?)",
+            (root.id, excluding_content_id, excluding_content_id),
         ).fetchall()
         if len(bindings) != len(versions) or any(row["status"] != "sent" for row in bindings):
             return None

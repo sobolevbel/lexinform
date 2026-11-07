@@ -1,0 +1,23 @@
+{
+  "sent": {
+    "before_sha256": "afce864e72f47fc42bd4fd4ca9d5900950b7289ec7d36adb6f7c53b59c85a2f8",
+    "after_sha256": "ea7fa4e09f2577d16275219377480ae550a954783d85ef959288c1f2831afe3f",
+    "sql_bytes_delta": 19,
+    "gzip_bytes_delta": -5,
+    "only_slot_fields_changed": [
+      "status",
+      "message_id",
+      "sent_at"
+    ]
+  },
+  "unknown": {
+    "before_sha256": "afce864e72f47fc42bd4fd4ca9d5900950b7289ec7d36adb6f7c53b59c85a2f8",
+    "after_sha256": "2e5336d22c3213b9fcadeda1b9941123480568c04d768a76471e7aa9cffdb011",
+    "sql_bytes_delta": 44,
+    "gzip_bytes_delta": 36,
+    "only_slot_fields_changed": [
+      "status",
+      "error"
+    ]
+  }
+}

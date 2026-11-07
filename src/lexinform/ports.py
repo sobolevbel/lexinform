@@ -2,6 +2,7 @@
 
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager
+from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Protocol, runtime_checkable
 
@@ -528,6 +529,32 @@ class TelegramReceiptResult(PublishResult, Protocol):
     def telegram_chat_id(self) -> int | None: ...
 
 
+class VerifiedEditReceipt(Protocol):
+    @property
+    def chat_id(self) -> int: ...
+
+    @property
+    def message_id(self) -> int: ...
+
+
+@dataclass(frozen=True)
+class VerifiedEditRejection:
+    code: int | None = None
+
+
+type VerifiedEditOutcome = VerifiedEditReceipt | VerifiedEditRejection
+
+
+@dataclass(frozen=True)
+class GroupedEditClaim:
+    publication_id: int
+    content_id: str
+    base_content_id: str
+    chat_id: int
+    message_id: int
+    html: str
+
+
 class Publisher(Protocol):
     """Where the messages go: Telegram in production, stdout in a dry run."""
 
@@ -902,6 +929,22 @@ class BillRepository(Protocol):
         expected_base_sha256: str,
         approved_sha256: str,
     ) -> int | None: ...
+
+    def claim_grouped_stage_edit(
+        self,
+        publication_id: int,
+        *,
+        content_id: str,
+        base_content_id: str,
+        approved_sha256: str,
+        chat_id: int,
+    ) -> GroupedEditClaim | None: ...
+
+    def grouped_stage_edit_matches(self, claim: GroupedEditClaim) -> bool: ...
+
+    def finish_grouped_stage_edit(
+        self, claim: GroupedEditClaim, outcome: VerifiedEditOutcome | None, *, at: datetime
+    ) -> PublicationStatus | None: ...
 
     def get_publication_content(self, publication_id: int) -> ContentVersion | None: ...
 
