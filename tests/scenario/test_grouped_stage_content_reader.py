@@ -1,9 +1,15 @@
 import hashlib
+import sqlite3
+from contextlib import closing
 from datetime import timedelta
+from pathlib import Path
 from typing import Literal
 
 import pytest
+from tools.content_history_doctor import audit
 
+from lexinform.adapters.content_history import read_grouped_stage_telegram_target
+from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.content_versions import grouped_stage_context
 from lexinform.errors import DeliveryUncertainError
 from lexinform.models import ContentSnapshot, ContentVersion, PublicationStatus
@@ -196,3 +202,75 @@ def test_grouped_reader_survives_one_member_expiring_before_the_other() -> None:
         assert root.delivery is None and second.delivery is not None
         history = inspect_content(restored.repo, root)
         assert history is not None and history.current_id == version.content_id
+
+
+@pytest.mark.parametrize("control", ["exact", "partial", "conflict"])
+def test_grouped_numeric_receipt_requires_both_original_rows(tmp_path: Path, control: str) -> None:
+    world, identities = queued_world("updates")
+    flush(world, "updates", identities)
+    version, snapshots = version_fixture(world, identities)
+    attach(world, version, snapshots)
+    before = world.clock.now() + timedelta(days=1)
+    world.repo.prune_history(before=before, memo_before=before)
+    path = tmp_path / "grouped-receipt.db"
+    chat_id = -1001234567890
+    with closing(SqliteBillRepository(path)) as repo:
+        repo.restore(world.repo.dump())
+        legacy = repo.dump()
+        with closing(sqlite3.connect(path)) as db, db:
+            assert read_grouped_stage_telegram_target(db, version) is None
+            db.execute(
+                "UPDATE publications SET telegram_chat_id=? WHERE id=?", (chat_id, identities[0])
+            )
+            if control != "partial":
+                second_chat_id = chat_id - int(control == "conflict")
+                db.execute(
+                    "UPDATE publications SET telegram_chat_id=? WHERE id=?",
+                    (second_chat_id, identities[1]),
+                )
+        prospective = repo.dump()
+        audit_path = tmp_path / "checkpoint.db"
+        with (
+            closing(sqlite3.connect(path)) as source,
+            closing(sqlite3.connect(audit_path)) as checkpoint,
+        ):
+            source.backup(checkpoint)
+        report = audit(audit_path)
+        assert str(chat_id) not in str(report)
+        if control != "exact":
+            assert report["status"] == "failed"
+            assert "grouped_numeric_telegram_receipts" not in report["summary"]
+            with (
+                closing(sqlite3.connect(audit_path)) as db,
+                pytest.raises(ValueError, match="grouped_stage_receipt"),
+            ):
+                read_grouped_stage_telegram_target(db, version)
+            repo.restore(legacy)
+            with pytest.raises(ValueError, match="invalid_content_history"):
+                repo.restore(prospective)
+            assert repo.dump() == legacy
+            return
+        assert report["summary"]["grouped_numeric_telegram_receipts"] == 1
+        for _ in range(2):
+            repo.restore(prospective)
+            assert repo.dump() == prospective
+        root = repo.publication_by_id(identities[0])
+        assert root is not None and root.telegram_chat_id == chat_id
+        assert root.delivery is None and root.channel_id == rows(world, identities)[0].channel_id
+        reset = root.model_copy(
+            update={"status": PublicationStatus.QUEUED, "telegram_chat_id": None}
+        )
+        with pytest.raises(sqlite3.IntegrityError, match="CHECK constraint"), repo.atomic():
+            repo.create_publication(reset)
+        assert repo.dump() == prospective
+        with closing(sqlite3.connect(path)) as db, db:
+            assert read_grouped_stage_telegram_target(db, version) == (chat_id, root.message_id)
+            for statement in (
+                "UPDATE publications SET telegram_chat_id=1 WHERE id=?",
+                "UPDATE publications SET telegram_chat_id=-4503599627370496 WHERE id=?",
+                "UPDATE publications SET status='unknown' WHERE id=?",
+                "UPDATE publications SET kind='new_bill' WHERE id=?",
+                "UPDATE publications SET message_id=NULL WHERE id=?",
+            ):
+                with pytest.raises(sqlite3.IntegrityError, match="CHECK constraint"):
+                    db.execute(statement, (root.id,))

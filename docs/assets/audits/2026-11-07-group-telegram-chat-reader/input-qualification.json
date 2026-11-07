@@ -1,0 +1,10 @@
+{
+  "publications": 250,
+  "sent_status_updates": 70,
+  "sent_status_updates_with_alias": 70,
+  "state_commit": "607e9f30b4c01c0a06987e40d573f6c26d2e5fae",
+  "input_sql_sha256": "8603f3b5e785f696cf49a026af692f84d9d1f1283de5ce93ddcd24fcd28a3f72",
+  "schema_version": 68,
+  "integrity_check": "ok",
+  "foreign_key_violations": 0
+}

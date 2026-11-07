@@ -1,0 +1,17 @@
+{
+  "all_previous_columns_row_exact": true,
+  "content_history_audit_exact_excluding_snapshot_identity": true,
+  "exact_restores": 2,
+  "foreign_key_violations": 0,
+  "gzip_delta": 153,
+  "input_schema": 68,
+  "input_sql_sha256": "8603f3b5e785f696cf49a026af692f84d9d1f1283de5ce93ddcd24fcd28a3f72",
+  "integrity": "ok",
+  "known_bill_readable": true,
+  "known_numeric_receipts": 0,
+  "publication_rows": 250,
+  "reader_schema": 69,
+  "sent_status_updates": 70,
+  "sql_delta": 1606,
+  "state_commit": "607e9f30b4c01c0a06987e40d573f6c26d2e5fae"
+}

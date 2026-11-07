@@ -1006,6 +1006,16 @@ MIGRATIONS: tuple[str, ...] = (
     ALTER TABLE amendment_input_snapshots ADD COLUMN text_sha256 TEXT
         REFERENCES amendment_input_texts(text_sha256);
     """,
+    """
+    ALTER TABLE publications ADD COLUMN telegram_chat_id INTEGER
+        CHECK(telegram_chat_id IS NULL OR (
+            typeof(telegram_chat_id) = 'integer'
+            AND telegram_chat_id BETWEEN -4503599627370495 AND -1
+            AND kind = 'status_update' AND status = 'sent'
+            AND typeof(message_id) = 'integer' AND message_id > 0
+            AND sent_at IS NOT NULL AND sent_at != ''
+        ));
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -6425,6 +6435,7 @@ class SqliteBillRepository:
             channel_id=row["channel_id"],
             ref=row["ref"],
             message_id=row["message_id"],
+            telegram_chat_id=row["telegram_chat_id"],
             document_message_ids=json.loads(row["document_message_ids"] or "[]"),
             status_change_id=row["status_change_id"],
             created_at=datetime.fromisoformat(row["created_at"]),

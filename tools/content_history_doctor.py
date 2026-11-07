@@ -12,6 +12,7 @@ from lexinform.adapters.content_history import (
     ContentVersionRowError,
     card_current_content,
     read_content_version,
+    read_grouped_stage_telegram_target,
     verify_card_content,
     verify_direct_stage_content,
     verify_grouped_stage_content,
@@ -122,7 +123,12 @@ def _read_history(
         except ValueError:
             findings.add("invalid_direct_stage_content_history", version.content_id)
         try:
-            verify_grouped_stage_content(db, version, require_bound=True)
+            grouped = version.grouped_stage_evidence
+            if grouped is not None and grouped.revision is None:
+                if read_grouped_stage_telegram_target(db, version) is not None:
+                    counts["grouped_numeric_telegram_receipts"] += 1
+            else:
+                verify_grouped_stage_content(db, version, require_bound=True)
         except ValueError:
             findings.add("invalid_grouped_stage_content_history", version.content_id)
         try:

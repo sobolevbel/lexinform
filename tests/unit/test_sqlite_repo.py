@@ -1010,6 +1010,12 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
             reason,
         ),
     )
+    legacy.execute(
+        "INSERT INTO publications"
+        " (id, term, number, kind, status, channel_id, message_id, created_at, sent_at)"
+        " VALUES (1, 10, 'RPW/1/2026', 'status_update', 'sent', '@legacy', 7,"
+        " '2026-09-01T05:00:00+00:00', '2026-09-01T05:00:01+00:00')"
+    )
     legacy_dump = "\n".join(legacy.iterdump()) + "\n"  # the v1 release wrote no version line
     legacy.close()
     repo = SqliteBillRepository(tmp_path / "current.db")
@@ -1021,6 +1027,10 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     assert repo.schema_version == SCHEMA_VERSION
     revived = repo.get(10, "RPW/1/2026")
     assert revived is not None and revived.status is BillStatus.TEXT_PREFILTER_PENDING
+    publication = repo.publication_by_id(1)
+    assert publication is not None and publication.telegram_chat_id is None
+    assert publication.channel_id == "@legacy" and publication.message_id == 7
+    assert "telegram_chat_id" not in publication.model_dump_json()
     assert revived.last_error == reason
     assert repo.last_discovery_started_at() is not None  # v2 backfill: ok -> discovery_ok
     assert list(repo.iter_physical_captures()) == []
@@ -1050,7 +1060,14 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     assert {"inspection_id", "owner_term", "owner_number", "record_json"} <= senate
     assert "ix_senate_inspections_owner" in indexes
     assert "decision_changed" in changes
-    assert {"attempts", "ref", "rendered_sha256", "delivery_json", "attention_json"} <= publications
+    assert {
+        "attempts",
+        "ref",
+        "rendered_sha256",
+        "delivery_json",
+        "attention_json",
+        "telegram_chat_id",
+    } <= publications
     assert {
         "submission_json",
         "linked_number",

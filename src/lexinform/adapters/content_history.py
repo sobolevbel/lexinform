@@ -612,7 +612,8 @@ def verify_grouped_stage_content(
     if (
         root.channel_id != second.channel_id
         or (root.term, root.number) == (second.term, second.number)
-        or (root.status, root.message_id) != (second.status, second.message_id)
+        or (root.status, root.message_id, root.telegram_chat_id)
+        != (second.status, second.message_id, second.telegram_chat_id)
         or root.document_message_ids
         or second.document_message_ids
     ):
@@ -760,6 +761,27 @@ def verify_grouped_stage_content(
                 raise ValueError("grouped_stage_frozen_member")
 
     return root.id
+
+
+def read_grouped_stage_telegram_target(
+    connection: sqlite3.Connection, version: ContentVersion
+) -> tuple[int, int] | None:
+    evidence = version.grouped_stage_evidence
+    if evidence is None or evidence.revision is not None:
+        return None
+    root_id = verify_grouped_stage_content(connection, version, require_bound=True)
+    row = _query(
+        connection,
+        "SELECT p.* FROM publications p JOIN publication_content c ON c.publication_id=p.id"
+        " WHERE p.id=? AND c.content_id=?",
+        (root_id, version.content_id),
+    ).fetchone()
+    if row is None:
+        return None
+    root = read_content_publication(row)
+    if root.telegram_chat_id is None or root.message_id is None:
+        return None
+    return root.telegram_chat_id, root.message_id
 
 
 def _verify_grouped_stage_revision(

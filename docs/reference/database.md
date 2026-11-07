@@ -721,3 +721,17 @@ writer требует отдельного operational storage budget и public 
 question JSON и проверяет text digest, question digest и snapshot ID. Manifest сохраняет все
 остальные поля оригинального вопроса. Миграция оставляет прежние записи inline. Pipeline capture
 и выбор shared encoding при записи требуют следующего этапа.
+
+
+### v69: numeric Telegram delivery receipt reader
+
+`publications.telegram_chat_id` may retain the observed numeric channel for an original sent status
+update. The routing key stays in `channel_id`. Historical rows remain NULL, and grouped history
+requires both members to agree before reporting one numeric target. The send writer is staged
+separately.
+
+Before enabling receipt capture, guard repeated preparation of a sent status update whose
+delivery payload has expired. The existing publication upsert can otherwise try to reset that
+row to queued, and the new constraint rejects that transition. Capture must pin the chat and
+message IDs on the first confirmed send and refuse later changes to the pair. Delivery payload
+cleanup clears only the plan.

@@ -7,8 +7,9 @@ is *going* is `models/phases.py`, which reads this module and is read by nothing
 """
 
 import datetime as dt
+from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from lexinform.models.analysis import (
     AmendmentsRecord,
@@ -269,6 +270,9 @@ class Publication(BaseModel):
     ref: str | None = None
     """Distinguishes posts of one kind that recur per bill (agenda: the sitting)."""
     message_id: int | None = None
+    telegram_chat_id: int | None = Field(
+        default=None, ge=-(2**52 - 1), lt=0, strict=True, exclude_if=lambda value: value is None
+    )
     document_message_ids: list[int] = Field(default_factory=list)
     status_change_id: int | None = None
     created_at: dt.datetime
@@ -276,6 +280,19 @@ class Publication(BaseModel):
     error: str | None = None
     rendered_sha256: str | None = None
     """Digest of the card text as last sent (`new_bill`)."""
+
+    @model_validator(mode="after")
+    def original_telegram_receipt(self) -> Self:
+        if self.telegram_chat_id is not None and (
+            self.kind is not PublicationKind.STATUS_UPDATE
+            or self.status is not PublicationStatus.SENT
+            or self.message_id is None
+            or self.message_id <= 0
+            or self.sent_at is None
+            or self.sent_at.utcoffset() is None
+        ):
+            raise ValueError("A numeric Telegram channel requires an original sent status update")
+        return self
 
 
 class SittingNews(BaseModel):
