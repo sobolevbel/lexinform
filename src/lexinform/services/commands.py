@@ -49,7 +49,11 @@ from lexinform.models import (
     parse_command,
     valid_mnemonic,
 )
-from lexinform.models.grouped_stage_date import GroupedStageDateCommand
+from lexinform.models.commands import GroupedEditDeliveryResolution
+from lexinform.models.grouped_stage_date import (
+    GroupedStageDateCommand,
+    GroupedStageResolutionCommand,
+)
 from lexinform.models.source_checks import observation_label, operator_observation
 from lexinform.ports import (
     BillRepository,
@@ -188,6 +192,7 @@ class CommandService:
         source_context_retry: Callable[[DeliveryResolution], bool] | None = None,
         grouped_stage_formatter: GroupedStageBulletRenderer | None = None,
         grouped_stage_editor: Callable[[int, int, str], VerifiedEditOutcome] | None = None,
+        grouped_stage_resolution_enabled: bool = False,
     ) -> None:
         self._repo = repo
         self._inbox = inbox
@@ -208,6 +213,7 @@ class CommandService:
         self._source_context_retry = source_context_retry
         self._grouped_stage_formatter = grouped_stage_formatter
         self._grouped_stage_editor = grouped_stage_editor
+        self._grouped_stage_resolution_enabled = grouped_stage_resolution_enabled
 
     def handle_pending(
         self,
@@ -411,6 +417,10 @@ class CommandService:
         if command.name is CommandName.STATUS:
             return self._status()
         if command.name is CommandName.GROUPEDIT:
+            if command.grouped_stage_resolution is not None:
+                return self._resolve_groupedit(
+                    command.grouped_stage_resolution, incoming, publish=publish, dry_run=dry_run
+                )
             assert command.grouped_stage_date is not None, "the parser provides typed group input"
             return self._groupedit(command.grouped_stage_date, publish=publish, dry_run=dry_run)
         if command.name is CommandName.DELIVERY:
@@ -1228,6 +1238,69 @@ class CommandService:
         return CommandOutcome(
             status=OutcomeStatus.ERROR,
             note=f"grouped stage edit slot {result.publication_id} is {status}",
+        )
+
+    def _resolve_groupedit(
+        self,
+        command: GroupedStageResolutionCommand,
+        incoming: IncomingCommand,
+        *,
+        publish: bool,
+        dry_run: bool,
+    ) -> CommandOutcome:
+        if (
+            not self._grouped_stage_resolution_enabled
+            or not publish
+            or dry_run
+            or self._checkpoint is None
+        ):
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR,
+                note=(
+                    "grouped edit resolution requires an enabled publishing run"
+                    " and durable checkpoint"
+                ),
+            )
+        slot = self._repo.publication_by_id(command.slot_id)
+        if (
+            slot is None
+            or slot.channel_id != self._publishing.channel_id
+            or not is_grouped_stage_revision_slot(slot)
+        ):
+            return CommandOutcome(
+                status=OutcomeStatus.NOT_FOUND, note="grouped edit slot not found in this channel"
+            )
+        try:
+            audit = GroupedEditDeliveryResolution(
+                publication_id=command.slot_id,
+                publication_ids=(command.slot_id,),
+                term=slot.term,
+                number=slot.number,
+                kind=slot.kind,
+                channel_id=slot.channel_id,
+                action=command.action,
+                command=incoming,
+                resolved_at=self._clock.now(),
+                message_id=command.message_id if command.action == "confirm" else None,
+                reason=command.reason,
+                content_id=command.content_id,
+                base_content_id=command.base_content_id,
+                rendered_sha256=command.rendered_sha256,
+                telegram_chat_id=command.chat_id,
+                target_message_id=command.message_id,
+                observed_at=command.observed_at,
+            )
+        except ValueError:
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR, note="invalid grouped edit attestation"
+            )
+        if not self._repo.resolve_grouped_stage_edit(audit):
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR, note="grouped edit resolution refused"
+            )
+        return CommandOutcome(
+            status=OutcomeStatus.DELIVERY,
+            note=f"grouped stage edit slot {command.slot_id} is {audit.status.value}",
         )
 
     def _delivery(

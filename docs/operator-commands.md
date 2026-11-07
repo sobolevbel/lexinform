@@ -105,8 +105,20 @@ by default.
 Use full content IDs and SHA-256 hashes, with dates in `YYYY-MM-DD` format. The reply shows the
 exact changed bullet and a complete `/groupedit approve` command with the candidate hash and
 pinned numeric Telegram target. Approval needs a publishing run and the durable Git checkpoint.
-An uncertain edit or a reserved slot that could not be claimed stays inert. Operator confirmation
-and dismissal of grouped edits are pending a separate release.
+An uncertain edit stays inert until a dedicated operator resolution. Use the exact frozen
+content and numeric target from the grouped edit and supply a reason. Use
+`/delivery SLOT history PAGE` to read the full content ID, previous ID, and rendered checksum.
+The approve command carries the numeric target.
+
+```text
+/groupedit confirm SLOT CONTENT_ID BASE_ID HTML_SHA CHAT_ID MESSAGE_ID OBSERVED_ISO8601 | REASON
+/groupedit dismiss SLOT CONTENT_ID BASE_ID HTML_SHA CHAT_ID MESSAGE_ID | REASON
+```
+
+Confirmation records the time the operator observed the exact edit, with a UTC offset or `Z`.
+Dismissal closes the slot without confirming the edited content. Both require the enabled flag,
+a publishing run and the durable Git checkpoint. A reserved slot that could not be claimed
+stays inert.
 
 `/delivery ID history [PAGE]` reads one retained version per page, in its stored history order.
 The response names the original and confirmed current version, predecessor, frozen snapshot

@@ -657,20 +657,24 @@ class Container:
                 if self.settings.grouped_stage_date_edits_enabled
                 else None,
                 grouped_stage_editor=self._grouped_stage_editor(dry_run=dry_run),
+                grouped_stage_resolution_enabled=self._grouped_stage_checkpoint(dry_run=dry_run),
             ),
+        )
+
+    def _grouped_stage_checkpoint(self, *, dry_run: bool) -> bool:
+        return (
+            not dry_run
+            and self.settings.grouped_stage_date_edits_enabled
+            and bool(self.settings.telegram_channel_id)
+            and isinstance(self.state_checkpoint(dry_run=False), GitBatchCheckpoint)
         )
 
     def _grouped_stage_editor(
         self, *, dry_run: bool
     ) -> Callable[[int, int, str], VerifiedEditOutcome] | None:
-        if (
-            dry_run
-            or not self.settings.grouped_stage_date_edits_enabled
-            or not self.settings.telegram_bot_token
-            or not self.settings.telegram_channel_id
+        if not self.settings.telegram_bot_token or not self._grouped_stage_checkpoint(
+            dry_run=dry_run
         ):
-            return None
-        if not isinstance(self.state_checkpoint(dry_run=False), GitBatchCheckpoint):
             return None
         return self.telegram_client().attempt_verified_edit
 

@@ -1,8 +1,9 @@
 """Typed operator input for a bounded grouped stage date correction."""
 
 from datetime import date
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 
 class GroupedStageDateCorrection(BaseModel):
@@ -30,3 +31,17 @@ class GroupedStageDateCommand(BaseModel):
 
     correction: GroupedStageDateCorrection
     approval: GroupedStageDateApproval | None = None
+
+
+class GroupedStageResolutionCommand(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", strict=True)
+
+    action: Literal["confirm", "dismiss"]
+    slot_id: int = Field(gt=0, lt=2**63)
+    content_id: str = Field(pattern=r"^content-v1:[0-9a-f]{64}$")
+    base_content_id: str = Field(pattern=r"^content-v1:[0-9a-f]{64}$")
+    rendered_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    chat_id: int = Field(gt=-(2**52), lt=0)
+    message_id: int = Field(gt=0, lt=2**63)
+    observed_at: AwareDatetime | None
+    reason: str = Field(min_length=1, max_length=500)

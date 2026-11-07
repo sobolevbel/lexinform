@@ -34,6 +34,7 @@ from lexinform.models.grouped_stage_date import (
     GroupedStageDateApproval,
     GroupedStageDateCommand,
     GroupedStageDateCorrection,
+    GroupedStageResolutionCommand,
 )
 from lexinform.models.rcl import normalize_wykaz_number
 from lexinform.models.report import RunReport
@@ -511,6 +512,9 @@ class Command(BaseModel):
     grouped_stage_date: GroupedStageDateCommand | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    grouped_stage_resolution: GroupedStageResolutionCommand | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     delivery_id: int | None = None
     delivery_action: Literal["show", "history", "confirm", "retry", "dismiss"] = "show"
     delivery_history_page: int = Field(default=1, exclude_if=lambda value: value == 1)
@@ -922,6 +926,8 @@ def parse_command(text: str) -> Command | None:
 
 
 def _parse_groupedit(words: list[str]) -> Command:
+    if words and words[0] in ("confirm", "dismiss"):
+        return _parse_groupedit_resolution(words)
     usage = (
         "use /groupedit preview ROOT MEMBER EVENT CONTENT_ID BASE_SHA OLD_DATE NEW_DATE"
         " or /groupedit approve ROOT MEMBER EVENT CONTENT_ID BASE_SHA OLD_DATE NEW_DATE"
@@ -962,6 +968,52 @@ def _parse_groupedit(words: list[str]) -> Command:
         name=CommandName.GROUPEDIT,
         grouped_stage_date=GroupedStageDateCommand(correction=correction, approval=accepted),
     )
+
+
+def _parse_groupedit_resolution(words: list[str]) -> Command:
+    invalid = Command(
+        name=CommandName.GROUPEDIT,
+        error=(
+            "use /groupedit confirm SLOT CONTENT_ID BASE_ID HTML_SHA CHAT_ID MESSAGE_ID"
+            " OBSERVED_ISO8601 | REASON or /groupedit dismiss SLOT CONTENT_ID BASE_ID"
+            " HTML_SHA CHAT_ID MESSAGE_ID | REASON"
+        ),
+    )
+    action: Literal["confirm", "dismiss"] = "confirm" if words[0] == "confirm" else "dismiss"
+    delimiter = 8 if action == "confirm" else 7
+    if len(words) <= delimiter + 1 or words[delimiter] != "|":
+        return invalid
+    _, slot, content, base, sha, chat, message = words[:7]
+    if (
+        any(re.fullmatch(r"[1-9][0-9]{0,18}", value) is None for value in (slot, message))
+        or re.fullmatch(r"-[1-9][0-9]{0,15}", chat) is None
+    ):
+        return invalid
+    try:
+        observed = None
+        if action == "confirm":
+            raw = words[7]
+            if re.fullmatch(
+                r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"
+                r"(?:\.[0-9]{1,6})?(?:Z|[+-][0-9]{2}:[0-5][0-9])",
+                raw,
+            ) is None or raw.endswith("-00:00"):
+                return invalid
+            observed = dt.datetime.fromisoformat(raw)
+        resolution = GroupedStageResolutionCommand(
+            action=action,
+            slot_id=int(slot),
+            content_id=content,
+            base_content_id=base,
+            rendered_sha256=sha,
+            chat_id=int(chat),
+            message_id=int(message),
+            observed_at=observed,
+            reason=" ".join(words[delimiter + 1 :]),
+        )
+    except ValueError:
+        return invalid
+    return Command(name=CommandName.GROUPEDIT, grouped_stage_resolution=resolution)
 
 
 def _parse_editorial(name: CommandName, words: list[str]) -> Command:

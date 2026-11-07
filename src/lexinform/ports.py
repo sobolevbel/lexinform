@@ -124,6 +124,7 @@ from lexinform.models import (
 )
 from lexinform.models.amendment_inputs import AmendmentInputSnapshot
 from lexinform.models.batch import BatchJob, BatchKind
+from lexinform.models.commands import GroupedEditDeliveryResolution
 from lexinform.models.content import CardPrimaryEvidence, SupplementContentEvidence
 from lexinform.models.document_reads import DocumentPhysicalDiagnostics
 from lexinform.models.physical_inventory import PhysicalCapture, PhysicalMetadata
@@ -1277,6 +1278,8 @@ class BillRepository(Protocol):
     def publication_by_id(self, publication_id: int) -> Publication | None: ...
 
     def resolve_delivery(self, resolution: DeliveryResolution) -> bool: ...
+
+    def resolve_grouped_stage_edit(self, resolution: GroupedEditDeliveryResolution) -> bool: ...
 
     def recover_source_context_retry(
         self,
