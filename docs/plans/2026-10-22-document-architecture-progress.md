@@ -14187,3 +14187,22 @@ unknown delivery has no current version. A different publication ID
 cannot claim the group's history.
 
 [Qualification](../assets/audits/2026-11-07-group-content-inspection/qualification.json).
+
+<a id="j416"></a>
+
+## J416 — preview a single owned fragment of a shared stage update
+
+An opt-in formatter witness records exact UTF-8 offsets and ownership
+when rendering a two-member stage update. The pure preview verifies the
+original render hash and unchanged topology, then replaces only the
+member's entry. Shared blocks, the sibling and separators remain exact.
+Regrouping, an unknown owner and a stale original hash are rejected.
+
+The fake Telegram lifecycle confirmed the same rendered output and
+preservation of shared bytes on a date mutation. A 112-case render matrix
+and four configurations of the saved group matched the previous
+formatter. The saved group's historical HTML could not be reproduced
+with those configurations, so it supplies parity evidence only. No
+historical witness was reconstructed.
+
+[Qualification](../assets/audits/2026-11-07-group-update-preview/qualification.json).

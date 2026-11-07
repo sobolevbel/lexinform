@@ -1,0 +1,26 @@
+{
+  "database_sha256": "c53f468cea246f6a8f2b74eaef46dbf5ea46fc72efa5a3af28741fbe919c974a",
+  "physical_group": "updates/166",
+  "observations": {
+    "ru/False": {
+      "render_sha256": "55a9dee195d0d36401028d238ea48a84e7d5e4685e942ccbf8cd0bd49cd39595",
+      "matches_historical_frozen_render": false
+    },
+    "ru/True": {
+      "render_sha256": "3f6d4f4ea0ffc24e343da489eed68321094470d1cecea98ff8184fea9308ef82",
+      "matches_historical_frozen_render": false
+    },
+    "en/False": {
+      "render_sha256": "ebb1940ac5a3cbbbc158a1c30cce02f4ff734ad2c2cb2986aa88f72eda396ded",
+      "matches_historical_frozen_render": false
+    },
+    "en/True": {
+      "render_sha256": "adc29726fc29989efa12ebab1ede426c77822d2d2bb796fcf8fe99e77af712fc",
+      "matches_historical_frozen_render": false
+    }
+  },
+  "baseline": "b23469aacd103d7d0dc6fbce1c560429c6878ae9",
+  "render_matrix_cases": 112,
+  "render_matrix_sha256": "a1b8f501966c25844bb42df5493a1f097bec6731dfc8b099de8b5409cf202c7a",
+  "paired_render_replays_exact": true
+}

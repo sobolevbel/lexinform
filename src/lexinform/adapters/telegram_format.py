@@ -13,6 +13,13 @@ from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 from lexinform.attention import assess_attention
+from lexinform.grouped_update_preview import (
+    GroupedUpdateRender,
+    UpdateFragment,
+    UpdateOwner,
+    grouped_update_render,
+    update_text,
+)
 from lexinform.i18n import Labels, labels_for
 from lexinform.models import (
     COMMITTEE_PHASES,
@@ -64,6 +71,7 @@ from lexinform.models import (
     VotingSummary,
     WykazEntry,
     about_ukraine,
+    amendments_stage,
     committee_letter_url,
     committee_web_url,
     consultation_open,
@@ -1287,8 +1295,49 @@ class MessageFormatter:
         return RenderedMessage(text=text)
 
     def updates(self, news: Sequence[UpdateNews], *, today: dt.date) -> str:
+        return update_text(self._update_fragments(news, today=today))
+
+    def updates_with_witness(
+        self, news: Sequence[UpdateNews], *, today: dt.date
+    ) -> GroupedUpdateRender | None:
+        language = self.language
+        if (
+            len(news) != 2
+            or language is None
+            or any(
+                item.card_message_id is None
+                or item.card_message_id <= 0
+                or item.change.id is None
+                or item.change.id <= 0
+                or (item.change.term, item.change.number) != (item.bill.term, item.bill.number)
+                or not item.change.new_stages
+                or item.change.amendments is not None
+                or item.change.supplements
+                or amendments_stage(item.change.new_stages) is not None
+                for item in news
+            )
+        ):
+            return None
+        first, second = news
+        if first.card_message_id == second.card_message_id or first.change.id == second.change.id:
+            return None
+        return grouped_update_render(
+            self._update_fragments(news, today=today),
+            (self._update_owner(first), self._update_owner(second)),
+            today=today,
+            language=language,
+            attention=self._attention_enabled,
+        )
+
+    @staticmethod
+    def _update_owner(item: UpdateNews) -> UpdateOwner:
+        return item.bill.term, item.bill.number, item.card_message_id, item.change.id
+
+    def _update_fragments(
+        self, news: Sequence[UpdateNews], *, today: dt.date
+    ) -> list[UpdateFragment]:
         if self._attention_enabled:
-            return self._attention_updates(news, today=today)
+            return self._attention_update_fragments(news, today=today)
         groups: dict[str, list[UpdateNews]] = {}
         for item in news:
             steps = "\n".join(
@@ -1298,36 +1347,47 @@ class MessageFormatter:
                 ]
             )
             groups.setdefault(steps, []).append(item)
-        label = (
-            self._labels.attention_roundup
-            if self._attention_enabled
-            else self._labels.updates_header
-        )
-        blocks = [f"{ICON['update']} <b>{esc(label)}</b>"]
+        label = self._labels.updates_header
+        blocks = [UpdateFragment("header", (), f"{ICON['update']} <b>{esc(label)}</b>")]
         for steps, items in groups.items():
+            owners = tuple(self._update_owner(item) for item in items)
             actions = [self._roundup_action(item.bill, today) for item in items]
             shared_action = len(set(actions)) == 1
-            for item, action in zip(items, actions, strict=True):
-                entry = self._update_entry(item, today)
-                blocks.append(entry if shared_action else f"{entry}\n{action}")
-            blocks.append(steps)
+            for item, owner, action in zip(items, owners, actions, strict=True):
+                blocks.append(UpdateFragment("member", (owner,), self._update_entry(item, today)))
+                if not shared_action:
+                    blocks.append(UpdateFragment("member_action", (owner,), f"\n{action}", ""))
+            blocks.append(UpdateFragment("road", owners, steps))
             if shared_action:
-                blocks.append(actions[0])
-        return "\n\n".join(block for block in blocks if block)
+                blocks.append(UpdateFragment("action", owners, actions[0]))
+        return blocks
 
-    def _attention_updates(self, news: Sequence[UpdateNews], *, today: dt.date) -> str:
+    def _attention_update_fragments(
+        self, news: Sequence[UpdateNews], *, today: dt.date
+    ) -> list[UpdateFragment]:
         groups: dict[tuple[str, str], list[UpdateNews]] = {}
         for item in news:
             next_step = self._next_step_line(item.bill, today)
             action = self._roundup_action(item.bill, today)
             groups.setdefault((next_step, action), []).append(item)
-        blocks = [f"{ICON['update']} <b>{esc(self._labels.attention_roundup)}</b>"]
+        label = self._labels.attention_roundup
+        blocks = [UpdateFragment("header", (), f"{ICON['update']} <b>{esc(label)}</b>")]
         for (next_step, action), items in groups.items():
-            blocks.extend(self._update_entry(item, today, compact=True) for item in items)
-            blocks.append("\n".join(line for line in (next_step, action) if line))
+            owners = tuple(self._update_owner(item) for item in items)
+            blocks.extend(
+                UpdateFragment("member", (owner,), self._update_entry(item, today, compact=True))
+                for item, owner in zip(items, owners, strict=True)
+            )
+            blocks.append(
+                UpdateFragment(
+                    "road", owners, "\n".join(line for line in (next_step, action) if line)
+                )
+            )
         tags = dict.fromkeys(tag for item in news for tag in self._tags(item.bill).split())
-        blocks.append(" ".join(tags))
-        return "\n\n".join(block for block in blocks if block)
+        blocks.append(
+            UpdateFragment("tags", tuple(self._update_owner(item) for item in news), " ".join(tags))
+        )
+        return blocks
 
     def _roundup_action(self, bill: Bill, today: dt.date) -> str:
         project = bill.rcl
