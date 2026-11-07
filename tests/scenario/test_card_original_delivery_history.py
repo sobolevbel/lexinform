@@ -77,3 +77,46 @@ def test_unversioned_card_edit_obscures_original_current_html(
     assert after is not None and after.original_id == before.original_id
     assert after.current_id is None
     assert after.version_count == 1
+
+
+@pytest.mark.parametrize("kind", [PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL])
+def test_republish_retires_the_exact_original_card_root(kind: PublicationKind) -> None:
+    world = ready_world("off", kind=kind, long=kind is PublicationKind.NEW_BILL, repetitions=125)
+    world.run(track=False)
+    root = world.publication("3039", kind)
+    assert root is not None and root.id is not None
+    original = world.repo.get_publication_content(root.id)
+    assert original is not None and original.original_delivery_evidence is not None
+    initial = world.repo.dump()
+    with pytest.raises(ValueError, match="invalid_content_history"):
+        world.repo.restore(initial + f"\nDELETE FROM publications WHERE id={root.id};\n")
+    assert world.repo.dump() == initial
+
+    world.command("/republish 3039")
+    world.run(track=False)
+    replacement = world.publication("3039", kind)
+    assert replacement is not None and replacement.id != root.id
+    assert world.repo.publication_by_id(root.id) is None
+    assert world.repo.get_publication_content(root.id) == original
+
+    cutoff = world.clock.now() + timedelta(days=999)
+    world.repo.prune_history(before=cutoff, memo_before=cutoff)
+    dump = world.repo.dump()
+    for _ in range(2):
+        world.repo.restore(dump)
+        assert world.repo.dump() == dump
+        assert world.repo.get_publication_content(root.id) == original
+    if root.delivery is not None:
+        for identity in root.delivery.continuation_ids:
+            child = world.repo.publication_by_id(identity)
+            assert child is not None
+            view = inspect_content(world.repo, child)
+            assert view is not None and view.original_id == original.content_id
+            assert view.current_id is None
+    for operation in (
+        f"DELETE FROM retired_card_roots WHERE id={root.id}",
+        f"UPDATE retired_card_roots SET ref='foreign' WHERE id={root.id}",
+    ):
+        with pytest.raises(ValueError, match="invalid_content_history"):
+            world.repo.restore(dump + f"\n{operation};\n")
+        assert world.repo.dump() == dump

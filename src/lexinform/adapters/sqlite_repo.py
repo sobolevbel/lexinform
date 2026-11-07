@@ -6372,6 +6372,24 @@ class SqliteBillRepository:
                     " WHERE json_extract(member.value, '$.anchor_publication_id')=p.id))",
                     (term, number, channel_id),
                 )
+            if kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
+                self._conn.execute(
+                    "INSERT INTO retired_card_roots"
+                    "(id,content_id,term,number,channel_id,kind,ref,created_at,message_id,sent_at)"
+                    " SELECT p.id,v.content_id,p.term,p.number,p.channel_id,p.kind,p.ref,"
+                    " p.created_at,p.message_id,p.sent_at FROM publications p"
+                    " JOIN publication_content c ON c.publication_id=p.id"
+                    " JOIN content_versions v ON v.content_id=c.content_id"
+                    " WHERE p.term=? AND p.number=? AND p.kind=? AND p.channel_id=?"
+                    " AND p.status='sent' AND p.message_id>0 AND p.sent_at IS NOT NULL"
+                    " AND v.root_publication_id=p.id"
+                    " AND (json_extract(v.version_json,'$.original_delivery_evidence.kind')=p.kind"
+                    " OR (p.kind='new_bill' AND json_type(v.version_json,'$.card_context_profile')"
+                    " IS NOT NULL AND EXISTS (SELECT 1 FROM content_versions edition"
+                    " WHERE edition.root_publication_id=p.id AND json_type(edition.version_json,"
+                    " '$.multipart_card_revision') IS NOT NULL)))",
+                    (term, number, kind.value, channel_id),
+                )
             cur = self._conn.execute(
                 "DELETE FROM publications"
                 " WHERE term = ? AND number = ? AND kind = ? AND channel_id = ?",

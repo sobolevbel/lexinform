@@ -98,6 +98,14 @@ def test_government_multipart_revision_retains_frozen_term_after_rollover() -> N
         assert inspect_content(durable.repo, owner) == before
         assert durable.repo.dump() == sql
 
+    versions = world.repo.list_content_versions(original.id)
+    assert world.repo.delete_publication(TERM + 1, RCL, PublicationKind.NEW_BILL, CHANNEL) == 1
+    assert world.repo.move_government_rows(TERM + 1, TERM + 2) == 1
+    retired = world.repo.dump()
+    world.repo.restore(retired)
+    assert world.repo.dump() == retired
+    assert world.repo.list_content_versions(original.id) == versions
+
 
 def test_multipart_revision_over_budget_preserves_normal_physical_edits() -> None:
     case = prepare("off", "many_grow")
@@ -113,3 +121,37 @@ def test_multipart_revision_over_budget_preserves_normal_physical_edits() -> Non
     )
     view = inspect_content(case.world.repo, case.baseline)
     assert view is not None and view.current_id is None
+
+
+@pytest.mark.parametrize("shape", ["single_many", "many_same"])
+def test_republish_retains_the_multipart_revision_predecessor(
+    shape: Literal["single_many", "many_same"],
+) -> None:
+    case = prepare("off", shape)
+    world = case.world
+    owner = case.baseline
+    assert owner.id is not None
+    refresh(world)
+    first = edition(world)[0]
+    assert first.id is not None
+    version = world.repo.get_publication_content(first.id)
+    assert version is not None and version.multipart_card_revision is not None
+    before = world.repo.list_content_versions(owner.id)
+    world.command("/republish 3039")
+    world.run(track=False)
+    replacement = world.publication("3039")
+    assert replacement is not None and replacement.id != owner.id
+    assert world.repo.publication_by_id(owner.id) is None
+    cutoff = world.clock.now() + timedelta(days=999)
+    world.repo.prune_history(before=cutoff, memo_before=cutoff)
+    dump = world.repo.dump()
+    for _ in range(2):
+        world.repo.restore(dump)
+        assert world.repo.dump() == dump
+        assert world.repo.list_content_versions(owner.id) == before
+        assert world.repo.get_publication_content(first.id) == version
+    with pytest.raises(ValueError, match="invalid_content_history"):
+        world.repo.restore(
+            dump + f"\nUPDATE retired_card_roots SET message_id=999999 WHERE id={owner.id};\n"
+        )
+    assert world.repo.dump() == dump
