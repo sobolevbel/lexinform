@@ -41,7 +41,11 @@ from lexinform.models import (
     PublicationStatus,
     StatusChange,
 )
-from lexinform.models.commands import GroupedEditDeliveryResolution, read_delivery_resolution
+from lexinform.models.commands import (
+    GroupedEditDeliveryResolution,
+    IncomingCommand,
+    read_delivery_resolution,
+)
 from lexinform.models.content import (
     MAX_DIRECT_STAGE_CONTENT_BYTES,
     MAX_GROUPED_STAGE_CONTENT_BYTES,
@@ -963,19 +967,24 @@ def _verify_grouped_resolution_audit(
         or (audit.observed_at or audit.resolved_at) < slot.created_at
     ):
         raise ValueError("grouped_resolution_attestation")
-    command = audit.command
-    durable = _query(
-        connection,
-        "SELECT chat_id, message_id, text, received_at FROM commands WHERE update_id=?",
-        (row["command_update_id"],),
-    ).fetchone()
-    if (
-        row["command_update_id"] != command.update_id
-        or durable is None
-        or tuple(durable)
-        != (command.chat_id, command.message_id, command.text, command.received_at.isoformat())
+    if row["command_update_id"] != audit.command.update_id or not recorded_command_matches(
+        connection, audit.command
     ):
         raise ValueError("grouped_resolution_command")
+
+
+def recorded_command_matches(connection: sqlite3.Connection, command: IncomingCommand) -> bool:
+    row = _query(
+        connection,
+        "SELECT chat_id, message_id, text, received_at FROM commands WHERE update_id=?",
+        (command.update_id,),
+    ).fetchone()
+    return row is not None and tuple(row) == (
+        command.chat_id,
+        command.message_id,
+        command.text,
+        command.received_at.isoformat(),
+    )
 
 
 def validate_content_history(connection: sqlite3.Connection) -> None:

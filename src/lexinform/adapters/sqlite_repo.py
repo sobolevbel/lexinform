@@ -46,6 +46,7 @@ from lexinform.adapters.content_history import (
     card_publication_rows,
     read_content_version,
     read_grouped_stage_telegram_target,
+    recorded_command_matches,
     validate_content_history,
     verify_card_content,
     verify_direct_stage_content,
@@ -258,7 +259,11 @@ from lexinform.models import (
 )
 from lexinform.models.amendment_inputs import AmendmentInputSnapshot
 from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
-from lexinform.models.commands import GroupedEditDeliveryResolution, read_delivery_resolution
+from lexinform.models.commands import (
+    GroupedEditDeliveryResolution,
+    GroupedEditResolutionEnvelope,
+    read_delivery_resolution,
+)
 from lexinform.models.content import (
     CardPrimaryEvidence,
     SupplementContentEvidence,
@@ -2604,6 +2609,62 @@ class SqliteBillRepository:
                 count_attempt=False,
             )
             return PublicationStatus.UNKNOWN
+
+    def resolve_grouped_stage_edit(self, resolution: GroupedEditDeliveryResolution) -> bool:
+        """Settle one uncertain group edit with an exact recorded operator attestation."""
+        if self._conn.in_transaction:
+            return False
+        raw = GroupedEditResolutionEnvelope(
+            profile="grouped-edit-resolution-v1", resolution=resolution
+        ).model_dump_json()
+        audit = GroupedEditResolutionEnvelope.model_validate_json(raw).resolution
+        with self.atomic():
+            self._lock_grouped_stage_edit()
+            slot = self.publication_by_id(audit.publication_id)
+            if (
+                slot is None
+                or not is_grouped_stage_revision_slot(slot)
+                or slot.status is not PublicationStatus.UNKNOWN
+                or slot.delivery is None
+                or (audit.term, audit.number, audit.kind, audit.channel_id)
+                != (slot.term, slot.number, slot.kind, slot.channel_id)
+                or (audit.observed_at or audit.resolved_at) < slot.created_at
+                or hashlib.sha256(slot.delivery.rendered_text.encode()).hexdigest()
+                != audit.rendered_sha256
+                or not recorded_command_matches(self._conn, audit.command)
+                or self._conn.execute(
+                    "SELECT 1 FROM delivery_resolutions WHERE command_update_id=?",
+                    (audit.command.update_id,),
+                ).fetchone()
+                is not None
+            ):
+                return False
+            claim = GroupedEditClaim(
+                audit.publication_id,
+                audit.content_id,
+                audit.base_content_id,
+                audit.telegram_chat_id,
+                audit.target_message_id,
+                slot.delivery.rendered_text,
+            )
+            if not self._grouped_stage_edit_matches(claim, slot):
+                return False
+            self.mark_publication(
+                audit.publication_id,
+                audit.status,
+                message_id=audit.message_id,
+                sent_at=audit.resolved_at if audit.action == "confirm" else None,
+                count_attempt=False,
+            )
+            self._conn.execute(
+                "INSERT INTO delivery_resolutions"
+                " (publication_id, command_update_id, resolution_json)"
+                " VALUES (?, ?, ?)",
+                (audit.publication_id, audit.command.update_id, raw),
+            )
+            if self.get_publication_content(audit.publication_id) is None:
+                raise StateCheckpointError("Grouped edit resolution lost its content binding")
+            return True
 
     def _confirmed_grouped_stage_base(
         self, root: Publication, *, excluding_content_id: str | None = None

@@ -1,0 +1,16 @@
+{
+  "confirm": {
+    "after_sha256": "77d4922cdba85dcd07bcedbbdccb56033cec446d6297bbf168002fb835b80d9e",
+    "before_sha256": "f6766c26bee078e2de8465dd6fae58bf2e259e454c648390a0fff0f72857e829",
+    "gzip_bytes_delta": 213,
+    "rollback_reader_exact_restores": 2,
+    "sql_bytes_delta": 859
+  },
+  "dismiss": {
+    "after_sha256": "4d292e126adcc6819e36fa58a66db2bde2ac3fc86482b2e8e821e8ef056cdb99",
+    "before_sha256": "f6766c26bee078e2de8465dd6fae58bf2e259e454c648390a0fff0f72857e829",
+    "gzip_bytes_delta": 219,
+    "rollback_reader_exact_restores": 2,
+    "sql_bytes_delta": 825
+  }
+}
