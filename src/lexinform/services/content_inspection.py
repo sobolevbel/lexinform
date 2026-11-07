@@ -22,6 +22,8 @@ from lexinform.models.content import (
     ContentHistoryPage,
     OriginalAmendmentInputStatus,
 )
+from lexinform.models.multipart_card_history import MultipartCardPlan
+from lexinform.models.original_delivery_content import OriginalDeliveryPlan
 from lexinform.ports import BillRepository
 from lexinform.services.amendment_input_history import original_amendment_input
 
@@ -35,6 +37,54 @@ def inspect_content(repo: BillRepository, publication: Publication) -> ContentHi
         return ContentHistoryView(integrity="unavailable")
 
 
+def _inspect_multipart_card(
+    repo: BillRepository, selected: ContentVersion, versions: list[ContentVersion]
+) -> ContentHistoryView:
+    root_id = selected.root_publication_id
+    root = repo.publication_by_id(root_id)
+    original = repo.get_publication_content(root_id)
+    if root is None or original is None:
+        return ContentHistoryView(integrity="unavailable")
+    latest = repo.card_refresh_parts(root_id)
+    current = None
+    if (
+        latest
+        and root.message_id is not None
+        and len(repo.card_aliases(root.channel_id, root.message_id)) == 1
+        and all(row.status is PublicationStatus.SENT and row.message_id for row in latest)
+        and latest[0].message_id == root.message_id
+        and latest[0].id is not None
+    ):
+        candidate = repo.get_publication_content(latest[0].id)
+        if candidate is not None:
+            snapshot = repo.get_content_snapshot(candidate.plan_snapshot_id)
+            if snapshot is None:
+                return ContentHistoryView(integrity="unavailable")
+            if candidate.multipart_card_revision is not None:
+                expected = MultipartCardPlan.model_validate_json(snapshot.payload_json).bindings
+            elif candidate.original_delivery_evidence is not None:
+                expected = OriginalDeliveryPlan.model_validate_json(snapshot.payload_json).bindings
+            else:
+                expected = (latest[0].id,)
+            if tuple(row.id for row in latest) == expected and all(
+                repo.get_publication_content(identity) == candidate for identity in expected
+            ):
+                current = candidate
+    versions_by_id = {item.content_id: item for item in (selected, original)}
+    if current is not None:
+        versions_by_id[current.content_id] = current
+    return ContentHistoryView(
+        root_publication_id=root_id,
+        version_count=len(versions),
+        inspected_id=selected.content_id,
+        original_id=original.content_id,
+        current_id=current.content_id if current else None,
+        summaries=tuple(
+            ContentVersionSummary.from_version(item) for item in versions_by_id.values()
+        ),
+    )
+
+
 def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryView | None:
     assert publication.id is not None, "inspect_content requires a persisted publication identity"
     selected = repo.get_publication_content(publication.id)
@@ -42,6 +92,17 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
         selected = _grouped_member_content(repo, publication)
     if selected is None:
         return None
+    original_evidence = selected.original_delivery_evidence
+    if (
+        selected.multipart_card_revision is not None
+        or (original_evidence is not None and original_evidence.kind is PublicationKind.NEW_BILL)
+        or selected.card_context_profile is not None
+    ):
+        versions = repo.list_content_versions(selected.root_publication_id)
+        if original_evidence is not None or any(
+            version.multipart_card_revision is not None for version in versions
+        ):
+            return _inspect_multipart_card(repo, selected, versions)
     if (
         selected.digest_profile is not None
         or selected.sitting_profile is not None

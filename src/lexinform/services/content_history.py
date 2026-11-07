@@ -50,7 +50,10 @@ FORMATTER_VERSION = "telegram-format-v2"
 
 
 def restore_content_delivery(repo: BillRepository, content: ContentVersion) -> DeliveryPlan:
-    if content.original_delivery_evidence is not None:
+    if (
+        content.original_delivery_evidence is not None
+        or content.multipart_card_revision is not None
+    ):
         raise ValueError("Original physical delivery history is not a correction input")
     if content.digest_profile is not None:
         raise ValueError("Digest history cannot restore a Bill delivery")

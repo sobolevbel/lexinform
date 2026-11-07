@@ -203,6 +203,9 @@ class ContentVersion(BaseModel):
     original_delivery_evidence: OriginalDeliveryEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    multipart_card_revision: Literal["card-multipart-revision-v1"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -230,15 +233,22 @@ class ContentVersion(BaseModel):
     def predecessor(self) -> Self:
         notice = self.act_published_evidence is not None
         original = self.original_delivery_evidence is not None
+        multipart = self.multipart_card_revision is not None
         profiles = sum(
-            (self.digest_profile is not None, self.sitting_profile is not None, notice, original)
+            (
+                self.digest_profile is not None,
+                self.sitting_profile is not None,
+                notice,
+                original,
+                multipart,
+            )
         )
         if profiles:
             if (
                 profiles != 1
-                or self.reason != "original"
-                or self.previous_version_id is not None
-                or (self.bill_snapshot_id is not None) != (notice or original)
+                or self.reason != ("card_revision" if multipart else "original")
+                or (self.previous_version_id is not None) != multipart
+                or (self.bill_snapshot_id is not None) != (notice or original or multipart)
                 or self.change_snapshot_id is not None
                 or (self.rendered_text is not None) != notice
                 or self.language not in ("ru", "en")
@@ -440,6 +450,9 @@ class ContentVersionSummary(BaseModel):
     original_delivery_evidence: OriginalDeliveryEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    multipart_card_revision: Literal["card-multipart-revision-v1"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -473,6 +486,7 @@ class ContentVersionSummary(BaseModel):
             or self.grouped_stage_evidence is not None
             or self.digest_upstream_semantics == "not_retained"
             or self.original_delivery_evidence is not None
+            or self.multipart_card_revision is not None
             else None
         )
 
@@ -514,6 +528,7 @@ class ContentVersionSummary(BaseModel):
             sitting_profile=version.sitting_profile,
             act_published_evidence=version.act_published_evidence,
             original_delivery_evidence=version.original_delivery_evidence,
+            multipart_card_revision=version.multipart_card_revision,
             digest_exact_parts_available=True
             if version.digest_profile == "digest-rendered-v1"
             else None,

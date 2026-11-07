@@ -54,6 +54,7 @@ from lexinform.adapters.content_history import (
     verify_card_content,
     verify_direct_stage_content,
     verify_grouped_stage_content,
+    verify_multipart_card_revision,
     verify_original_delivery_content,
     verify_sitting_content,
 )
@@ -2378,6 +2379,7 @@ class SqliteBillRepository:
         verify_sitting_content(self._conn, version)
         verify_act_published_content(self._conn, version)
         verify_original_delivery_content(self._conn, version)
+        verify_multipart_card_revision(self._conn, version)
         for kind, identity in content_snapshot_refs(version):
             snapshot = self.get_content_snapshot(identity)
             if snapshot is None or snapshot.kind != kind:
@@ -2428,6 +2430,7 @@ class SqliteBillRepository:
         verify_sitting_content(self._conn, version)
         verify_act_published_content(self._conn, version)
         verify_original_delivery_content(self._conn, version)
+        verify_multipart_card_revision(self._conn, version)
         return version
 
     def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]:
@@ -2462,6 +2465,7 @@ class SqliteBillRepository:
             version.digest_profile is not None
             or version.sitting_profile is not None
             or version.original_delivery_evidence is not None
+            or version.multipart_card_revision is not None
         ):
             raise ValueError("history requires atomic complete physical binding")
         plan = publication.delivery
@@ -2907,6 +2911,11 @@ class SqliteBillRepository:
             original = verify_original_delivery_content(self._conn, version, require_bound=True)
             if original is None or publication_id not in original.bindings:
                 raise ValueError("original_delivery_binding_scope")
+            return version
+        if version.multipart_card_revision is not None:
+            edition = verify_multipart_card_revision(self._conn, version, require_bound=True)
+            if edition is None or publication_id not in edition.bindings:
+                raise ValueError("multipart_card_binding_scope")
             return version
         if version.change_snapshot_id is None:
             physical_id = verify_card_content(self._conn, version, retained=True)

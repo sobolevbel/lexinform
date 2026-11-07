@@ -64,6 +64,7 @@ from lexinform.models.input_receipts import (
     RclArchiveInputReceipt,
     SejmSelfAmendmentInputReceipt,
 )
+from lexinform.models.multipart_card_history import MAX_MULTIPART_CARD_BYTES, MultipartCardPlan
 from lexinform.models.original_delivery_content import (
     MAX_ORIGINAL_DELIVERY_BYTES,
     OriginalDeliveryPart,
@@ -391,6 +392,7 @@ def _verify_card_content(
         or value.sitting_profile is not None
         or value.act_published_evidence is not None
         or value.original_delivery_evidence is not None
+        or value.multipart_card_revision is not None
     ):
         return None, None
     root_row = _query(
@@ -1407,6 +1409,166 @@ def _verify_original_delivery_child(
         raise ValueError("original_delivery_parent_receipt")
 
 
+def _multipart_card_plan(
+    connection: sqlite3.Connection, version: ContentVersion
+) -> MultipartCardPlan:
+    snapshot = ContentSourceRows(connection).get_content_snapshot(version.plan_snapshot_id)
+    if snapshot is None or snapshot.kind != "plan":
+        raise ValueError("multipart_card_plan_missing")
+    if len(snapshot.payload_json.encode()) > MAX_MULTIPART_CARD_BYTES:
+        raise ValueError("multipart_card_budget")
+    return MultipartCardPlan.model_validate(read_json(snapshot.payload_json))
+
+
+def _edition_bindings(connection: sqlite3.Connection, content_id: str) -> set[int]:
+    return {
+        row[0]
+        for row in _query(
+            connection,
+            "SELECT publication_id FROM publication_content WHERE content_id=?",
+            (content_id,),
+        ).fetchall()
+    }
+
+
+def _edition_publication(connection: sqlite3.Connection, identity: int) -> Publication:
+    row = _query(connection, "SELECT * FROM publications WHERE id=?", (identity,)).fetchone()
+    if row is None:
+        raise ValueError("multipart_card_publication_missing")
+    return read_content_publication(row)
+
+
+def verify_multipart_card_revision(
+    connection: sqlite3.Connection, version: ContentVersion, *, require_bound: bool = False
+) -> MultipartCardPlan | None:
+    if version.multipart_card_revision is None:
+        return None
+    plan = _multipart_card_plan(connection, version)
+    owner = _edition_publication(connection, version.root_publication_id)
+    if (
+        owner.kind is not PublicationKind.NEW_BILL
+        or owner.status is not PublicationStatus.SENT
+        or owner.message_id is None
+        or owner.message_id <= 0
+        or owner.channel_id != plan.channel_id
+        or not plan.ref_prefix.startswith(f"card/{owner.id}/")
+        or not plan.ref_prefix.endswith(f"-{plan.predecessor_slots[0]}")
+    ):
+        raise ValueError("multipart_card_owner_scope")
+    previous_row = _query(
+        connection,
+        "SELECT * FROM content_versions WHERE content_id=?",
+        (version.previous_version_id,),
+    ).fetchone()
+    if previous_row is None:
+        raise ValueError("multipart_card_predecessor_missing")
+    previous = read_content_version(previous_row)
+    if previous.root_publication_id != version.root_publication_id:
+        raise ValueError("multipart_card_predecessor_owner")
+    if previous.multipart_card_revision is not None:
+        expected = _multipart_card_plan(connection, previous).bindings
+    elif previous.original_delivery_evidence is not None:
+        original = verify_original_delivery_content(connection, previous, require_bound=True)
+        if (
+            original is None
+            or previous.original_delivery_evidence.kind is not PublicationKind.NEW_BILL
+        ):
+            raise ValueError("multipart_card_predecessor_profile")
+        expected = original.bindings
+    else:
+        identity = verify_card_content(connection, previous, retained=True)
+        if identity is None:
+            raise ValueError("multipart_card_predecessor_profile")
+        expected = (identity,)
+    if expected != plan.predecessor_slots or _edition_bindings(
+        connection, previous.content_id
+    ) != set(expected):
+        raise ValueError("multipart_card_predecessor_binding")
+    predecessors = [_edition_publication(connection, identity) for identity in expected]
+    targets = tuple(row.message_id for row in predecessors)
+    if (
+        any(row.status is not PublicationStatus.SENT for row in predecessors)
+        or targets[0] != owner.message_id
+        or None in targets
+        or len(set(targets)) != len(targets)
+        or targets != tuple(slot.edit_message_id for slot in plan.slots[: len(targets)])
+    ):
+        raise ValueError("multipart_card_predecessor_receipts")
+    reader = ContentSourceRows(connection)
+    bill = reader.get_content_snapshot(version.bill_context_id)
+    snapshot = reader.get_content_snapshot(version.plan_snapshot_id)
+    if (
+        bill is None
+        or bill.kind != "bill"
+        or original_delivery_bill_snapshot(bill.payload_json) != bill
+        or snapshot is None
+        or len(bill.payload_json.encode()) + len(snapshot.payload_json.encode())
+        > MAX_MULTIPART_CARD_BYTES
+    ):
+        raise ValueError("multipart_card_semantic_scope")
+    semantic = Bill.model_validate(read_json(bill.payload_json))
+    if not _original_delivery_owner_matches(connection, semantic, owner):
+        raise ValueError("multipart_card_semantic_owner")
+    if require_bound and _edition_bindings(connection, version.content_id) != set(plan.bindings):
+        raise ValueError("multipart_card_binding_scope")
+    compact = card_bill_snapshot(bill.payload_json)
+    parent = owner
+    for index, slot in enumerate(plan.slots, 1):
+        row = _edition_publication(connection, slot.id)
+        attempted = row.status in (
+            PublicationStatus.SENT,
+            PublicationStatus.PENDING,
+            PublicationStatus.UNKNOWN,
+            PublicationStatus.FAILED,
+        )
+        retained = row.delivery
+        if (
+            row.kind is not PublicationKind.MESSAGE_PART
+            or row.status_change_id is not None
+            or (row.term, row.number, row.channel_id)
+            != (owner.term, owner.number, owner.channel_id)
+            or row.ref != f"{plan.ref_prefix}/{index}"
+            or (index == 1 and row.created_at != version.recorded_at)
+            or (
+                attempted and (parent.status is not PublicationStatus.SENT or not parent.message_id)
+            )
+            or (
+                row.status is PublicationStatus.SENT
+                and (
+                    row.message_id is None
+                    or row.message_id <= 0
+                    or (slot.edit_message_id is not None and row.message_id != slot.edit_message_id)
+                )
+            )
+            or (retained is None and row.status is not PublicationStatus.SENT)
+        ):
+            raise ValueError("multipart_card_slot_scope")
+        if retained is not None and (
+            card_bill_snapshot(retained.bill_json) != compact
+            or (
+                (index == 1 or attempted or retained.reply_to is not None)
+                and retained.reply_to != parent.message_id
+            )
+            or retained
+            != DeliveryPlan(
+                bill_json=retained.bill_json,
+                rendered_text=slot.html,
+                edit_message_id=slot.edit_message_id,
+                today=plan.today,
+                revision_of=owner.id if index == 1 else None,
+                continuation_parent=parent.id,
+                continuation_root=plan.bindings[0] if index > 1 else None,
+                continuation_index=index,
+                continuation_ids=plan.bindings[1:] if index == 1 else (),
+                reply_to=retained.reply_to,
+                disable_notification=slot.disable_notification,
+            )
+        ):
+            raise ValueError("multipart_card_frozen_target")
+        parent = row
+    return plan
+
+
 def validate_content_history(connection: sqlite3.Connection) -> None:
     try:
         tables = {
@@ -1442,6 +1604,7 @@ def validate_content_history(connection: sqlite3.Connection) -> None:
             verify_sitting_content(connection, value, require_bound=True)
             verify_act_published_content(connection, value, require_bound=True)
             verify_original_delivery_content(connection, value, require_bound=True)
+            verify_multipart_card_revision(connection, value, require_bound=True)
             physical_identity = verify_card_content(connection, value, retained=True)
             if value.change_snapshot_id is None and value.digest_profile is None:
                 bindings = _query(

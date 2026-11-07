@@ -1,0 +1,166 @@
+{
+  "status": "qualified-offline",
+  "base": "J470 b840a57c plus J471 through J474 source/test plan patches and canonical J471 original-delivery rehome fix adapted at the J474 content_history.py seam",
+  "base_patch_sha256": {
+    "j471": "ba4b2f9c99163913116d697cbda01e2b6405a0faf5bd608f7b7e35bc7429ca5b",
+    "j472": "2edd05f1773473cc9f28cb53b76f55594d13c5ab955e55bf2189abc2b286bc60",
+    "j473": "43eea94f0f5d699b8ff98a2dd1c648e56f610ffdf45f8121952167ecccd3925e",
+    "j474": "c6055c36c6dc22064501d31179413e7257e93a9d2844aecd77bab7f4efb5366c"
+  },
+  "rehome_prerequisite": {
+    "sha256": "133ce984d7f721ced63b3fff068bf21e19e6c3fe2dbed5cdcc21f25f4e9a62db",
+    "local_adapter": "/tmp/multipart_rehome_adapter.py",
+    "adapted_base_content_history_sha256": "4dc8b7ecd3471f4a095571ba6edd5a54f5bb2c06734adb5114ed6e0a9b657d26"
+  },
+  "worktrees": {
+    "writer": "/tmp/lexinform-card-multipart-revision",
+    "reader": "/tmp/lexinform-multipart-revision-reader",
+    "pre_reader": "/tmp/lexinform-multipart-revision-old"
+  },
+  "patch_sha256": {
+    "reader.patch": "29ab5293f50038984dc4f673d4ab20a17aa64d5acea504b45e4308b5fe35f159",
+    "writer.patch": "633420f437e9cd7a280bfd1999a50367f3d4d429b1edf8c0cf783fa75d80d8ab"
+  },
+  "profile": "Optional card-multipart-revision-v1. Existing tables, exact ordered HTML and per-slot edit targets, immutable predecessor content ID and ordered confirmed receipt vector, canonical reply-parent topology, projected Bill and formatter/language. Known reply targets are verified against parent receipts; appended slots wait for a parent receipt.",
+  "owner_boundary": "Reuses exact shared _original_delivery_owner_matches. Same term for regular print; forward government rehome only with canonical typed RCL/WYKAZ source evidence. Actual owner and slots share current row term/number/channel; frozen semantic Bill term and source stay immutable. Real move_government_rows control qualified compact original \u2192 multipart revision \u2192 forward rollover.",
+  "scope": "Prospective multipart card revision only, with confirmed immutable predecessor. Existing compact single-part revisions preserved. No legacy backfill, no grouped status changes, no new delivery operations.",
+  "cases": {
+    "many_same": {
+      "exact_slot_ids": [
+        4,
+        5,
+        6
+      ],
+      "exact_receipts": [
+        101,
+        102,
+        103
+      ],
+      "exact_edit_targets": [
+        101,
+        102,
+        103
+      ],
+      "exact_reply_targets": [
+        101,
+        101,
+        102
+      ],
+      "exact_html_sha256": [
+        "180724adc663c914a03d20484ff3b709c165f67889053e5a67bb5b8c65d23964",
+        "4acfd6eec7068f5ba482230ed935274e8119f54b83b481cabc8705eab8a11eeb",
+        "f6fc39251d66a0a2700cc4c49c25b3ef2d405f4c152af1f501f27c2991e3ba02"
+      ],
+      "exact_predecessor": "content-v1:c46672b5170163621a8e5368466bac02b5bb1b75b85cd9e5980abb5e2d6d9593",
+      "after_cleanup": {
+        "pre_writer_current_unavailable": true,
+        "current_exact_after_writer": true,
+        "exact_restores_each": 2
+      },
+      "sql_bytes": {
+        "before": 133566,
+        "after": 176148,
+        "delta": 42582
+      },
+      "gzip_bytes": {
+        "before": 13712,
+        "after": 16783,
+        "delta": 3071
+      },
+      "dump_sha256": {
+        "before": "f5cde6e5a2f2a195ed0019b974af8eb5f091f3929019ad7df42becb567e16deb",
+        "after": "92e5135c457613c6db185487f5835d2392268cf2988546f83c65e172e8bc6890"
+      },
+      "added_rows": {
+        "content_snapshots": 2,
+        "content_versions": 1,
+        "publication_content": 3
+      },
+      "other_sql_row_differences": false
+    },
+    "single_many": {
+      "exact_slot_ids": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "exact_receipts": [
+        101,
+        103,
+        104,
+        105
+      ],
+      "exact_edit_targets": [
+        101,
+        null,
+        null,
+        null
+      ],
+      "exact_reply_targets": [
+        101,
+        101,
+        103,
+        104
+      ],
+      "exact_html_sha256": [
+        "158025133a5a3e7c3a9a01e488c9dcbe5fda2e8dfa8d244a0913527c249b7b66",
+        "81505c1ae4ca848b5607457dba1f3ab89889b428ce35b1d94bcc1968eb582907",
+        "8464932f122f5d5cb20c4e2c57b33111f9891b16a5aa04ab1484d5ded8d1f793",
+        "a809399175668f35f81ec641bddbf666eebe1598111d100d6d041a0a679b1bb7"
+      ],
+      "exact_predecessor": "content-v1:1fd18bacaa1eb85c59fefaa24a7060638a64df8289eab774d836fe0e70c0c313",
+      "after_cleanup": {
+        "pre_writer_current_unavailable": true,
+        "current_exact_after_writer": true,
+        "exact_restores_each": 2
+      },
+      "sql_bytes": {
+        "before": 83993,
+        "after": 138388,
+        "delta": 54395
+      },
+      "gzip_bytes": {
+        "before": 12242,
+        "after": 14426,
+        "delta": 2184
+      },
+      "dump_sha256": {
+        "before": "cda2caacd391140fd6dbd689a98af8f0d52a28a9bd89dff352b4d38c0150bd1b",
+        "after": "8186cb40ae2d2c2849f98353ba349ebd5f68cb7b38bcd5f92bc26bfcaedb6f94"
+      },
+      "added_rows": {
+        "content_snapshots": 2,
+        "content_versions": 1,
+        "publication_content": 4
+      },
+      "other_sql_row_differences": false
+    }
+  },
+  "sequence_control": "Second normal multipart edit chains from the first confirmed multipart revision after cleanup. Unversioned predecessor and a valid synthetic over-budget many-grow case preserve ordinary sends and leave current history unavailable.",
+  "unknown_retry": "Remote lost final response retains exact same version with current unavailable and no automatic replay. Audited retry/confirm keep same version; only all confirmed latest slots make it current.",
+  "reader_controls": {
+    "previous_shared_original_card_state_exact_restore": true,
+    "two_exact_restores_each": true,
+    "wrong_edit_target_restore_rejected_atomically": true,
+    "pre_reader_rejects_future_atomically": true
+  },
+  "working_limits": {
+    "projected_snapshot_bytes": 131072,
+    "physical_slots": 32,
+    "over_budget_valid_synthetic_control": true,
+    "natural_incidence_measured": false
+  },
+  "checks": {
+    "focused_tests": 109,
+    "mypy_files": 12,
+    "ruff": true,
+    "git_diff_checks": true,
+    "forward_patch_checks": true
+  },
+  "evidence": {
+    "paired_driver": "/tmp/multipart-card-history-evidence/qualify.py",
+    "reader_driver": "/tmp/multipart-card-history-evidence/check_reader.py",
+    "focused_log_sha256": "e3ec31702e60041ba5209fa53408f91837c03d99a5b74fb7ee0efa55a240b08a"
+  }
+}
