@@ -15465,3 +15465,13 @@ Unknown delivery stayed unconfirmed without a resend.
   версию после переноса и двух восстановлений. Чужой ID и
   несовпадающий созыв события отклоняются атомарно.
   [Квалификация](../assets/audits/2026-11-07-direct-stage-rollover/qualification.json).
+
+<a id="j495"></a>
+
+### J495. Чтение многочастных поправок с несколькими стадиями
+
+- Reader принимает упорядоченный список стадий, если стадия поправок
+  однозначна и подтверждена сохранённой связью с результатом.
+- Закреплённые сообщения 293, 294 и 295 подтверждают 5, 3 и 8 стадий
+  и application refs 33, 34 и 35. Штатная запись выключена.
+  [Квалификация](../assets/audits/2026-11-07-multipart-multistage-amendment/qualification.json) · [Сверка state](../assets/audits/2026-11-07-multipart-multistage-amendment/pinned-semantic.json).

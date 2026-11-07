@@ -1,0 +1,23 @@
+{
+  "base": "a3419045",
+  "writer_scratch": "/tmp/lexinform-j494-multi-amend",
+  "reader_scratch": "/tmp/lexinform-j494-multi-amend-reader",
+  "reader_tree": "fa8fb9d0e2acc0a9991026bbc9cc2271101bd4e5",
+  "scope": "Existing direct-stage-application-parts-v1 and exact amendment-projections-v1. One eligible amendment stage within original ordered event; mixed or ambiguous multiple amendment stages remain unsupported. Supplement scope unchanged.",
+  "proof": "Pinned ca2353 publications 293/294/295 validated with exact application IDs and order. Offline valid long answer with five-stage topology through actual formatter and Poster, exact outgoing parts with and without history, original version after late supplemental result, prune and two reader-only exact restores. Missing application ref rejects atomically; ambiguous event still sends without new history.",
+  "checks": "73 focused tests, strict mypy 4, Ruff, diff checks.",
+  "size_delta": {
+    "sql": 23810,
+    "gzip": 2114
+  },
+  "hashes": {
+    "reader-tree": "a7d37fbdec614be8480bfca4521026f178c78910a4f2ea50abcd6bfe27764a15",
+    "reader.patch": "08e37dfbd2ea2428cc34eff616f0b5175d70591b32ab2a9fcb1c03a3037b269f",
+    "amendments_multistage-candidate.sql": "fdbaee9636e9b633595fa5884e685b9a79cd73544175f83c5c22a396003e1aa3",
+    "amendments_multistage-baseline.sql": "aefe906d503a329d2c32f05ad2eb81d22585970ff9978696d7edc5b0179f8015",
+    "amendments_multistage-baseline.sql.gz": "07e7e4543d5dfb9dea835eaf8e79ec9a6cd0e3f1a73a9bea7d25d7f9ce0f6783",
+    "writer.patch": "7698f144ab953dc3c4631ed9344b4dbaa614ae1ea8ef000900808166cfcc6a70",
+    "pinned-semantic.json": "e36f2f1c47327fb192991ee58d9d9e56a521495fe471ce0cd6e8f6d6d275ca37",
+    "amendments_multistage-candidate.sql.gz": "8a2d48108a91de2a3d335b40c502726b7e7e99fa3aad63cd1b33582469396840"
+  }
+}

@@ -392,6 +392,10 @@ _PRESIDENT_STAGES = frozenset({"ToPresident", "PresidentSignature"})
 FRAME_STAGE_TYPES = frozenset({"ReadingReferral", "CommitteeWork"})
 
 
+def has_single_amendments_stage(stages: list[Stage]) -> bool:
+    return sum(amendments_stage([stage]) is not None for stage in stages) == 1
+
+
 def event_keys(change: StatusChange, event: str) -> list[str]:
     """Which searchable events a status update carries, in display order (the tags). `event` is
     what the post is named after, so that a reader can find every bill the Sejm passed or

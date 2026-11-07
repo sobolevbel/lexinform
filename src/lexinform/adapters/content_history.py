@@ -59,7 +59,7 @@ from lexinform.models.content import (
     grouped_stage_content_budget,
     original_delivery_bill_snapshot,
 )
-from lexinform.models.events import amendments_stage
+from lexinform.models.events import amendments_stage, has_single_amendments_stage
 from lexinform.models.input_receipts import (
     LooseRclInputReceipt,
     RclArchiveInputReceipt,
@@ -664,8 +664,7 @@ def verify_direct_stage_content(
             if version.supplement_evidence is not None
             else change.amendments is not None
             and not change.supplements
-            and amendment
-            and len(change.new_stages) == 1
+            and has_single_amendments_stage(change.new_stages)
         )
     else:
         scope = bool(change.new_stages) and not amendment

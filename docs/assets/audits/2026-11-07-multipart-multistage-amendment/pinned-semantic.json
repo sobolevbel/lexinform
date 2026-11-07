@@ -1,0 +1,46 @@
+{
+  "state": "ca2353d112dedb6a47962976a4bd29e6f19836a9",
+  "sql_sha256": "7b78e09bd146db7ce66233e05e8d54f64037c34aa83fbfbdb0748b6c35de15db",
+  "controls": {
+    "293": {
+      "content_id": "content-v1:398305b905812ebf7b2ffec1c8e02104509902d6f9a2556505319c7624d0080f",
+      "application_id": 33,
+      "amendment_result_id": "result-v1:2bd1d96a1e3d2c7f01fd07c754d31f23070a472e1b670783854528ce96365da5",
+      "stage_types": [
+        "CommitteeWork",
+        "CommitteeReport",
+        "SejmReading",
+        "Voting",
+        "End"
+      ],
+      "amendment_stage_index": 1
+    },
+    "294": {
+      "content_id": "content-v1:e344e5dd14fceb1e60093ec1853463dcb32a7ed6e28a287f253ef2d867e73b38",
+      "application_id": 34,
+      "amendment_result_id": "result-v1:36de4274dc2a92771d2addec4015b064323ff2a826ceca11b2e2a3350ad7d80c",
+      "stage_types": [
+        "CommitteeWork",
+        "CommitteeReport",
+        "SenatePositionConsideration"
+      ],
+      "amendment_stage_index": 1
+    },
+    "295": {
+      "content_id": "content-v1:e6134465ef8724f01d3d1db3d861694a780e4fb727a66a5026b89e7b5fbc9f0b",
+      "application_id": 35,
+      "amendment_result_id": "result-v1:3f8a78358bfc349737f1559bb453934e67c0aa7b5a9ffa5755cc5b738272025e",
+      "stage_types": [
+        "SejmReading",
+        "Referral",
+        "Referral",
+        "CommitteeWork",
+        "CommitteeReport",
+        "SejmReading",
+        "Voting",
+        "End"
+      ],
+      "amendment_stage_index": 4
+    }
+  }
+}
