@@ -14240,3 +14240,20 @@ literal and coordinate check. The controlled claim has no semantic review.
 
 [Case](../assets/audits/2026-11-07-sejm-amendment-citation/case.json)
 [Qualification](../assets/audits/2026-11-07-sejm-amendment-citation/qualification.json).
+
+<a id="j419"></a>
+
+## J419 — retain shared fragment ownership from the original render
+
+The existing publisher render call supplies an optional exact ownership
+witness in the first atomic freeze. Changed HTML, an opaque or repeated
+render and insufficient space preserve base group history. No correction
+or delivery retry behavior changes.
+
+The paired fake Telegram checkpoints retained the same physical rows and
+text. The witness was present in the pending checkpoint before the send.
+Its addition measured 350 SQL bytes and 153 gzip bytes. Both forms survived
+two exact restores, and the compatible reader restored the writer output.
+Unknown delivery stayed unconfirmed without a resend.
+
+[Qualification](../assets/audits/2026-11-07-group-fragment-writer/qualification.json).

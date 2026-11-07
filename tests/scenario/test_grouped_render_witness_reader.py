@@ -23,6 +23,11 @@ from tests.scenario.test_group_remote_checkpoints import flush, queued_world, ro
 from tests.scenario.test_grouped_stage_content_reader import attach, version_fixture
 
 
+@pytest.fixture(autouse=True)
+def isolate_manual_reader(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(posting, "record_grouped_stage_content", lambda *args, **kwargs: None)
+
+
 def witnessed_fixture(
     monkeypatch: pytest.MonkeyPatch, *, unknown: bool = False
 ) -> tuple[

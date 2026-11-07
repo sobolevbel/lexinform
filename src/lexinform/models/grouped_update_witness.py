@@ -42,6 +42,30 @@ class GroupedRenderWitness(BaseModel):
     today: date
     attention: bool = Field(strict=True)
 
+    @classmethod
+    def from_render(cls, render: GroupedUpdateRender) -> GroupedRenderWitness | None:
+        owners = []
+        for term, number, card, event in render.members:
+            if card is None or event is None:
+                return None
+            owners.append(GroupedRenderOwner(term, number, card, event))
+        first, second = owners
+        return cls(
+            text_sha256=render.sha256,
+            members=(first, second),
+            today=render.today,
+            attention=render.attention,
+            ranges=tuple(
+                GroupedRenderRange(
+                    span.kind,
+                    tuple(render.members.index(owner) for owner in span.owners),
+                    span.start,
+                    span.end,
+                )
+                for span in render.ranges
+            ),
+        )
+
     def bind(self, text: str, language: str) -> GroupedUpdateRender:
         render = GroupedUpdateRender(
             text=text,

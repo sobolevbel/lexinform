@@ -1,6 +1,9 @@
 """Typed render ownership and an offline preview for a fixed two-member update."""
 
 import hashlib
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import date
 from itertools import product
@@ -40,6 +43,35 @@ class GroupedUpdateRender:
     @property
     def sha256(self) -> str:
         return hashlib.sha256(self.text.encode()).hexdigest()
+
+
+@dataclass
+class GroupedUpdateRenderCapture:
+    calls: int = 0
+    render: GroupedUpdateRender | None = None
+
+    def record(self, render: GroupedUpdateRender | None) -> None:
+        self.calls += 1
+        self.render = render if self.calls == 1 else None
+
+
+_GROUP_RENDER: ContextVar[GroupedUpdateRenderCapture | None] = ContextVar(
+    "grouped_update_render", default=None
+)
+
+
+@contextmanager
+def capture_grouped_update_render(*, enabled: bool) -> Iterator[GroupedUpdateRenderCapture]:
+    capture = GroupedUpdateRenderCapture()
+    token = _GROUP_RENDER.set(capture if enabled else None)
+    try:
+        yield capture
+    finally:
+        _GROUP_RENDER.reset(token)
+
+
+def current_grouped_update_render_capture() -> GroupedUpdateRenderCapture | None:
+    return _GROUP_RENDER.get()
 
 
 def update_text(fragments: list[UpdateFragment]) -> str:

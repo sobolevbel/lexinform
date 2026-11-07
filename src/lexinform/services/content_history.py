@@ -14,6 +14,7 @@ from lexinform.content_versions import (
     grouped_stage_context,
 )
 from lexinform.errors import CardPrimaryEvidenceError, SupplementContentEvidenceError
+from lexinform.grouped_update_preview import GroupedUpdateRender
 from lexinform.models import (
     AmendmentsRecord,
     Bill,
@@ -38,6 +39,7 @@ from lexinform.models.content import (
     card_bill_snapshot,
     editorial_bill_snapshot,
 )
+from lexinform.models.grouped_update_witness import GroupedRenderWitness
 from lexinform.ports import BillRepository, Clock
 
 FORMATTER_VERSION = "telegram-format-v2"
@@ -372,6 +374,7 @@ def record_grouped_stage_content(
     origins: list[Publication],
     *,
     language: str,
+    render: GroupedUpdateRender | None = None,
 ) -> None:
     """Record a qualified two-member first freeze within the caller's atomic group write."""
     if len(origins) != 2 or language not in ("ru", "en"):
@@ -472,12 +475,33 @@ def record_grouped_stage_content(
         kind="plan", payload_json=grouped_stage_context(common).model_dump_json()
     )
     snapshots.append(compact)
-    if (
-        sum(len(snapshot.payload_json.encode()) for snapshot in snapshots)
-        + len(common.group_text.encode())
-        > MAX_GROUPED_STAGE_CONTENT_BYTES
-    ):
+    size = sum(len(snapshot.payload_json.encode()) for snapshot in snapshots) + len(
+        common.group_text.encode()
+    )
+    if size > MAX_GROUPED_STAGE_CONTENT_BYTES:
         return
+    render_witness = None
+    expected_members = tuple(
+        (origin.term, origin.number, member.anchor_message_id, member.status_change_id)
+        for origin, member in zip(origins, witnesses, strict=True)
+    )
+    if render is not None and (render.text, render.members, render.today, render.language) == (
+        common.group_text,
+        expected_members,
+        common.today,
+        language,
+    ):
+        try:
+            candidate = GroupedRenderWitness.from_render(render)
+            if candidate is not None:
+                candidate.bind(common.group_text, language)
+                if (
+                    size + len(candidate.model_dump_json().encode())
+                    <= MAX_GROUPED_STAGE_CONTENT_BYTES
+                ):
+                    render_witness = candidate
+        except ValueError:
+            pass
     version = ContentVersion(
         root_publication_id=first.publication_id,
         reason="original",
@@ -488,7 +512,9 @@ def record_grouped_stage_content(
         plan_snapshot_id=compact.snapshot_id,
         rendered_text=common.group_text,
         status_change_id=first.status_change_id,
-        grouped_stage_evidence=GroupedStageContentEvidence(members=(first, second)),
+        grouped_stage_evidence=GroupedStageContentEvidence(
+            members=(first, second), render_witness=render_witness
+        ),
         recorded_at=clock.now(),
     )
     for snapshot in snapshots:

@@ -24,6 +24,7 @@ from lexinform.content_sources import (
 )
 from lexinform.delivery_schedule import daily_schedule, sitting_is_close
 from lexinform.direct_delivery import DIRECT_ROOTS, direct_root_plan, validate_reader_contract
+from lexinform.grouped_update_preview import capture_grouped_update_render
 from lexinform.legacy_delivery import legacy_status_reply
 from lexinform.models import (
     AgendaItem,
@@ -353,7 +354,8 @@ class Poster:
             for pub in pubs
             if pub.id is not None and pub.delivery is not None
         )
-        text = self._publisher.render_updates(news, today=today)
+        with capture_grouped_update_render(enabled=len(pubs) == 2) as capture:
+            text = self._publisher.render_updates(news, today=today)
         with self._repo.atomic():
             self._repo.tag_update_group(
                 tuple(item.publication_id for item in members),
@@ -372,7 +374,9 @@ class Poster:
                 assert self._repo.replace_unsent_update_delivery(
                     pub.status_change_id, self._channel_id, plan
                 )
-            record_grouped_stage_content(self._repo, self._clock, pubs, language=self._language)
+            record_grouped_stage_content(
+                self._repo, self._clock, pubs, language=self._language, render=capture.render
+            )
         stored = self._repo.publication_by_id(members[0].publication_id)
         assert stored is not None
         self.retry_update_group(stored, result)

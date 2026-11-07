@@ -17,6 +17,7 @@ from lexinform.grouped_update_preview import (
     GroupedUpdateRender,
     UpdateFragment,
     UpdateOwner,
+    current_grouped_update_render_capture,
     grouped_update_render,
     update_text,
 )
@@ -1295,10 +1296,27 @@ class MessageFormatter:
         return RenderedMessage(text=text)
 
     def updates(self, news: Sequence[UpdateNews], *, today: dt.date) -> str:
-        return update_text(self._update_fragments(news, today=today))
+        fragments = self._update_fragments(news, today=today)
+        capture = current_grouped_update_render_capture()
+        if capture is not None:
+            try:
+                witnessed = self._grouped_update_witness(news, fragments, today=today)
+            except UnicodeError:
+                witnessed = None
+            capture.record(witnessed)
+            if witnessed is not None:
+                return witnessed.text
+        return update_text(fragments)
 
     def updates_with_witness(
         self, news: Sequence[UpdateNews], *, today: dt.date
+    ) -> GroupedUpdateRender | None:
+        return self._grouped_update_witness(
+            news, self._update_fragments(news, today=today), today=today
+        )
+
+    def _grouped_update_witness(
+        self, news: Sequence[UpdateNews], fragments: list[UpdateFragment], *, today: dt.date
     ) -> GroupedUpdateRender | None:
         language = self.language
         if (
@@ -1322,7 +1340,7 @@ class MessageFormatter:
         if first.card_message_id == second.card_message_id or first.change.id == second.change.id:
             return None
         return grouped_update_render(
-            self._update_fragments(news, today=today),
+            fragments,
             (self._update_owner(first), self._update_owner(second)),
             today=today,
             language=language,
