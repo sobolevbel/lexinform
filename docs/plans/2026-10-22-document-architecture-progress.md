@@ -14053,3 +14053,19 @@ Both forms survived two byte-identical restores. The fake-provider
 handoff preserved the request and same-byte deduplication.
 
 [Qualification](../assets/audits/2026-11-07-word-field-ranges-writer/qualification.json).
+
+<a id="j408"></a>
+
+## J408 — verify preattached manifests against the submitting request
+
+When the submitting intent is still available, batch confirmation compares
+all fields of a preattached manifest with the exact frozen request. A
+contradiction aborts the transaction and preserves the intent for recovery.
+The existing path for a batch without a matching intent remains compatible.
+
+The pinned J318 fake-SDK replay matched the baseline for both providers.
+A schema-hash mutation under the same request SHA was rejected by both
+providers' confirmation paths, with a byte-identical SQLite dump after the
+rollback. Matching preattached manifests were accepted.
+
+[Qualification](../assets/audits/2026-11-07-frozen-manifest-submission/qualification.json).

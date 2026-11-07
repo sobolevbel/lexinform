@@ -1,0 +1,10 @@
+{
+  "dual_provider_fake_sdk_replay_sha256": "a886af30f79882e1d40bc69137b87621ff4f864b9e3332b8d8fed1ccf4c92f91",
+  "negative_control_runner_sha256": "7f0841f82b932766ceef4cf812198b33bbd7b569fff469d3fe0861cd29398522",
+  "baseline_native_and_control_reports_equal": true,
+  "mutated_schema_rejected_and_dump_unchanged": true,
+  "final_replay_sha256": "a886af30f79882e1d40bc69137b87621ff4f864b9e3332b8d8fed1ccf4c92f91",
+  "focused_tests": 59,
+  "invalid_or_conflicting_intent_rollback": true,
+  "baseline": "1ce8676a52477f8aa3f9df0f919ea922fa9971d0"
+}

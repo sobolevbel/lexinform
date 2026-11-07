@@ -3906,7 +3906,7 @@ class SqliteBillRepository:
 
     def _submitted_item_metadata(self, provider: BatchProvider, item: LlmBatchItem) -> str:
         meta = item.meta
-        if meta.request_sha256 is None or meta.frozen_request_manifest is not None:
+        if meta.request_sha256 is None:
             return meta.model_dump_json()
         row = self._conn.execute(
             "SELECT request_json, meta_json FROM llm_batch_intents"
@@ -3917,16 +3917,33 @@ class SqliteBillRepository:
             return meta.model_dump_json()
         try:
             request = parse_batch_request(row["request_json"])
-            if (
-                request.custom_id,
-                request.term,
-                request.number,
-                request.call_kind,
-                request.payload_sha256,
-            ) != (item.custom_id, item.term, item.number, item.call_kind, meta.request_sha256):
-                return meta.model_dump_json()
+        except (ValueError, RecursionError, KeyError) as exc:
+            if meta.frozen_request_manifest is not None:
+                raise ValueError(
+                    "Frozen request manifest has an invalid submitting intent"
+                ) from None
+            if isinstance(exc, KeyError):
+                raise
+            return meta.model_dump_json()
+        if (
+            request.custom_id,
+            request.term,
+            request.number,
+            request.call_kind,
+            request.payload_sha256,
+        ) != (item.custom_id, item.term, item.number, item.call_kind, meta.request_sha256):
+            if meta.frozen_request_manifest is not None:
+                raise ValueError("Frozen request manifest differs from its submitting intent")
+            return meta.model_dump_json()
+        try:
             manifest = capture_frozen_request_manifest(request, provider)
         except ValueError, RecursionError:
+            if meta.frozen_request_manifest is not None:
+                raise
+            return meta.model_dump_json()
+        if meta.frozen_request_manifest is not None:
+            if meta.frozen_request_manifest != manifest:
+                raise ValueError("Frozen request manifest differs from its submitting intent")
             return meta.model_dump_json()
         if manifest is None:
             return meta.model_dump_json()

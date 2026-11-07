@@ -9,6 +9,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
+from lexinform.adapters.input_receipts import capture_frozen_request_manifest
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.input_receipts import primary_input_receipt
 from lexinform.models import (
@@ -220,8 +221,32 @@ def test_submitted_request_manifest_survives_cleanup_and_rejects_foreign_provide
         assert repo.dump() == retained
 
 
-@pytest.mark.parametrize("intent_state", ["submitting", "queued", "missing", "wrong_owner"])
-def test_manifest_capture_requires_matching_submitting_intent(intent_state: str) -> None:
+@pytest.mark.parametrize(
+    ("intent_state", "manifest_field"),
+    [
+        ("submitting", None),
+        ("queued", None),
+        ("missing", None),
+        ("wrong_owner", None),
+        ("wrong_request", None),
+        ("invalid_json", None),
+        ("invalid_json", "matching"),
+        ("wrong_owner", "matching"),
+        ("wrong_request", "matching"),
+        ("invalid_request", "matching"),
+        ("submitting", "matching"),
+        ("missing", "messages_sha256"),
+        ("submitting", "messages_sha256"),
+        ("submitting", "output_format_sha256"),
+        ("submitting", "options_sha256"),
+        ("submitting", "payload_bytes"),
+        ("submitting", "prompt_version"),
+        ("submitting", "model"),
+    ],
+)
+def test_manifest_capture_requires_matching_submitting_intent(
+    intent_state: str, manifest_field: str | None, tmp_path: Path
+) -> None:
     draft = request().model_copy(update={"payload_json": None, "payload_sha256": None})
     payload = json.dumps(
         {
@@ -251,17 +276,50 @@ def test_manifest_capture_requires_matching_submitting_intent(intent_state: str)
         estimated_cost_usd=0.01,
     )
     item = LlmBatchItem.from_intent(batch.batch_id, intent)
-    with closing(SqliteBillRepository(":memory:")) as repo:
+    database = tmp_path / "manifest.db"
+    with closing(SqliteBillRepository(database)) as repo:
         repo.migrate()
         if intent_state != "missing":
             repo.save_batch_intent(intent)
-        if intent_state in ("submitting", "wrong_owner"):
+        if intent_state not in ("missing", "queued"):
             repo.mark_batch_intents_submitting([item.custom_id])
+        if intent_state in ("invalid_json", "invalid_request"):
+            raw = "not-json" if intent_state == "invalid_json" else "{}"
+            with closing(sqlite3.connect(database)) as db, db:
+                db.execute("UPDATE llm_batch_intents SET request_json=?", (raw,))
+        if intent_state == "wrong_request":
+            item = item.model_copy(
+                update={"meta": item.meta.model_copy(update={"request_sha256": "b" * 64})}
+            )
         if intent_state == "wrong_owner":
             item = item.model_copy(update={"number": "3040"})
+        if manifest_field is not None:
+            original = capture_frozen_request_manifest(frozen, "openai")
+            assert original is not None, "the fixture has a valid frozen OpenAI payload"
+            attached = original.model_copy(update={"request_sha256": item.meta.request_sha256})
+            if manifest_field != "matching":
+                value = {"payload_bytes": 1, "prompt_version": "other", "model": "other"}.get(
+                    manifest_field, "a" * 64
+                )
+                attached = attached.model_copy(update={manifest_field: value})
+            item = item.model_copy(
+                update={"meta": item.meta.model_copy(update={"frozen_request_manifest": attached})}
+            )
+            if intent_state.startswith(("wrong_", "invalid_")) or (
+                intent_state == "submitting" and manifest_field != "matching"
+            ):
+                before = repo.dump()
+                with pytest.raises(ValueError, match="submitting intent"), repo.atomic():
+                    repo.save_llm_batch(batch, [item])
+                    repo.delete_batch_intents([item.custom_id])
+                assert repo.dump() == before
+                return
         repo.save_llm_batch(batch, [item])
         (stored,) = repo.list_llm_batch_items(batch.batch_id)
         manifest = stored.meta.frozen_request_manifest
+        if manifest_field is not None:
+            assert manifest == item.meta.frozen_request_manifest
+            return
         assert (manifest is not None) == (intent_state == "submitting")
         if manifest is not None:
             assert manifest.request_sha256 == frozen.payload_sha256
