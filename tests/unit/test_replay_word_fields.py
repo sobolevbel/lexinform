@@ -9,8 +9,9 @@ from tests.unit.test_word_note_origins import package
 
 
 @pytest.mark.parametrize("balanced", [True, False])
+@pytest.mark.parametrize("verify_field_ranges", [False, True])
 def test_field_replay_distinguishes_physical_text_and_unbalanced_markers(
-    tmp_path: Path, balanced: bool
+    tmp_path: Path, balanced: bool, verify_field_ranges: bool
 ) -> None:
     source = package(
         '<w:p><w:r><w:fldChar w:fldCharType="begin"/></w:r>'
@@ -35,7 +36,15 @@ def test_field_replay_distinguishes_physical_text_and_unbalanced_markers(
     catalog.write_bytes(raw)
     output = tmp_path / "report.json"
 
-    run(corpus, catalog, digest(raw), ("field.docx",), output, profile="fields")
+    run(
+        corpus,
+        catalog,
+        digest(raw),
+        ("field.docx",),
+        output,
+        profile="fields",
+        verify_field_ranges=verify_field_ranges,
+    )
 
     report = json.loads(output.read_text())
     observed = report["observations"]["documents/files/field.docx"]
@@ -51,4 +60,11 @@ def test_field_replay_distinguishes_physical_text_and_unbalanced_markers(
     else:
         assert observed["field_sequence"] == "unbalanced"
         assert "observations" not in observed
+    if verify_field_ranges:
+        assert observed["native_field_ranges"] == {
+            "state": "checked" if balanced else "unknown",
+            "verified_ranges": 3 if balanced else 0,
+        }
+    else:
+        assert "native_field_ranges" not in observed
     assert (files / "field.docx").read_bytes() == source

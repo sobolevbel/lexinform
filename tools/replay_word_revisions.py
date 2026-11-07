@@ -4,6 +4,7 @@ import argparse
 import io
 import json
 import zipfile
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Literal
 from xml.etree import ElementTree as ET
@@ -35,7 +36,11 @@ Profile = Literal["revisions", "fields"]
 
 
 def _probe(
-    data: bytes, adapter: DocumentTextExtractor, profile: Profile = "revisions"
+    data: bytes,
+    adapter: DocumentTextExtractor,
+    profile: Profile = "revisions",
+    *,
+    verify_field_ranges: bool = False,
 ) -> dict[str, object]:
     if len(data) > _MAX_ARCHIVE_BYTES:
         raise ValueError("Word archive exceeds the projection replay bound")
@@ -70,6 +75,8 @@ def _probe(
         adapter.extract_document_with_provenance(_pack(package, root)).document.text == original
     )
     if not report["noop_text_identical"]:
+        if verify_field_ranges:
+            raise ValueError("Word field range verification requires a stable XML round trip")
         return report
 
     groups = (
@@ -77,13 +84,19 @@ def _probe(
         if profile == "revisions"
         else _field_text_groups(body, namespace)
     )
+    native = DocxTextExtractor().extract_with_field_ranges(data) if verify_field_ranges else None
     if groups is None:
+        if native is not None:
+            if native.state != "unknown" or native.ranges:
+                raise ValueError("Native Word ranges claimed an unbalanced field sequence")
+            report["native_field_ranges"] = {"state": "unknown", "verified_ranges": 0}
         report["field_sequence"] = "unbalanced"
         return report
 
     marker_prefix = "ZLEXREVISION" if profile == "revisions" else "ZLEXFIELD"
     markers: dict[str, list[str]] = {}
     changed: set[ET.Element] = set()
+    original_nodes: dict[str, tuple[ET.Element, str, str]] = {}
     for group, nodes in groups.items():
         markers[group] = []
         for index, node in enumerate(nodes):
@@ -93,6 +106,8 @@ def _probe(
             marker = f"{marker_prefix}{label}{index:06d}ZZ"
             if marker in original:
                 raise ValueError("Probe marker already appears in the legacy text")
+            if native is not None:
+                original_nodes[marker] = (node, group, node.text or "")
             node.text = marker
             markers[group].append(marker)
             changed.add(node)
@@ -102,7 +117,41 @@ def _probe(
         key: {"mutated": len(values), "emitted": sum(marker in mutated for marker in values)}
         for key, values in markers.items()
     }
+    if native is not None:
+        paths = dict(_element_paths(root))
+        expected = []
+        restored = mutated
+        for marker, (node, group, text) in original_nodes.items():
+            if mutated.count(marker) > 1:
+                raise ValueError("Word field marker has ambiguous output")
+            if marker in mutated:
+                if text:
+                    expected.append((paths[node], group, digest(text.encode())))
+                restored = restored.replace(marker, text, 1)
+        if restored != original:
+            raise ValueError("Restoring the Word field markers changed the original text")
+        observed = [(item.path, item.group, item.text_sha256) for item in native.ranges]
+        if native.legacy.legacy_text != original or sorted(observed) != sorted(expected):
+            raise ValueError("Native Word ranges differ from independently emitted markers")
+        paragraphs = {item.path: item for item in native.legacy.blocks if item.kind == "paragraph"}
+        for item in native.ranges:
+            paragraph = paragraphs[item.paragraph_path]
+            if (
+                paragraph.text_sha256 != item.paragraph_sha256
+                or not 0 <= item.start < item.end <= len(paragraph.text)
+                or digest(paragraph.text[item.start : item.end].encode()) != item.text_sha256
+            ):
+                raise ValueError("Word field range differs from its legacy paragraph")
+        report["native_field_ranges"] = {"state": native.state, "verified_ranges": len(observed)}
     return report
+
+
+def _element_paths(
+    node: ET.Element, path: tuple[int, ...] = ()
+) -> Iterator[tuple[ET.Element, tuple[int, ...]]]:
+    yield node, path
+    for index, child in enumerate(node):
+        yield from _element_paths(child, (*path, index))
 
 
 def _revision_text_groups(body: ET.Element, namespace: str) -> dict[str, list[ET.Element]]:
@@ -169,7 +218,10 @@ def run(
     output: Path,
     *,
     profile: Profile = "revisions",
+    verify_field_ranges: bool = False,
 ) -> None:
+    if verify_field_ranges and profile != "fields":
+        raise ValueError("Native range verification requires the fields profile")
     root, target = corpus.resolve(strict=True), output.resolve()
     if output.is_symlink() or target.exists() or target.is_relative_to(root):
         raise ValueError("Output must be a new file outside the corpus")
@@ -199,7 +251,7 @@ def run(
                 data = stream.read(_MAX_ARCHIVE_BYTES + 1)
             if digest(data) != pinned["actual"]["sha256"]:
                 raise ValueError("Raw Word input SHA mismatch")
-            rows[relative] = _probe(data, adapter, profile)
+            rows[relative] = _probe(data, adapter, profile, verify_field_ranges=verify_field_ranges)
     if reads.changed_inputs() or before != source_fingerprints():
         raise ValueError("Word revision replay input or code changed during the run")
     write_json(
@@ -229,6 +281,7 @@ def main() -> None:
     parser.add_argument("--case", action="append", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--profile", choices=("revisions", "fields"), default="revisions")
+    parser.add_argument("--verify-field-ranges", action="store_true")
     args = parser.parse_args()
     run(
         args.corpus,
@@ -237,6 +290,7 @@ def main() -> None:
         tuple(args.case),
         args.output,
         profile=args.profile,
+        verify_field_ranges=args.verify_field_ranges,
     )
 
 

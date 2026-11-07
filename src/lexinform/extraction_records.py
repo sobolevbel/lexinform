@@ -43,6 +43,7 @@ from lexinform.models.odt_notes import (
     OdtPartNoteOrigins,
     odt_note_association,
 )
+from lexinform.models.word_field_ranges import MAX_WORD_FIELD_BYTES, WordFieldPrefix
 from lexinform.models.word_view_capture import WordPartViewStatus, WordViewExtraction
 
 
@@ -269,6 +270,43 @@ def summarize_extraction(
         return _with_odt_note_prefix(status_result, captured_parts)
     except Exception:
         return status_result
+
+
+def summarize_word_field_prefixes(
+    baseline: ExtractionResult, captured: dict[int, WordFieldPrefix]
+) -> ExtractionResult:
+    if not captured:
+        return baseline
+    parts = list(baseline.selected_parts)
+    remaining = MAX_WORD_FIELD_BYTES
+    current = baseline
+    for index, part in sorted(enumerate(parts), key=lambda item: item[1].physical_index):
+        prefix = captured.get(part.physical_index)
+        if prefix is None or (prefix.input_sha256, prefix.manifest_sha256) != (
+            part.sha256,
+            part.manifest_sha256,
+        ):
+            continue
+        paragraphs = list(prefix.paragraphs)
+        while paragraphs:
+            bounded = prefix.model_copy(update={"paragraphs": tuple(paragraphs)})
+            size = len(bounded.model_dump_json().encode())
+            updated = part.model_copy(update={"word_field_prefix": bounded})
+            offered = parts.copy()
+            offered[index] = updated
+            candidate = current.model_copy(update={"selected_parts": tuple(offered)})
+            if (
+                size <= remaining
+                and len(candidate.model_dump_json().encode()) <= MAX_EXTRACTION_METADATA_BYTES
+            ):
+                current = ExtractionResult.model_validate(candidate)
+                parts = offered
+                remaining -= size
+                break
+            tail = paragraphs.pop()
+            if len(tail.ranges) > 1:
+                paragraphs.append(tail.model_copy(update={"ranges": tail.ranges[:-1]}))
+    return current
 
 
 def summarize_word_observations(

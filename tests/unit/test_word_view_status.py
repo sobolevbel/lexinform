@@ -360,7 +360,10 @@ def test_inline_marker_count_yields_to_textboxes_at_the_byte_cap(
     assert view is not None, "native Word extraction records its visited walk"
     assert view.observed_inline is not None and view.observed_textbox_nodes == 1
     baseline_part = part.model_copy(
-        update={"word_view_status": view.model_copy(update={"observed_inline": None})}
+        update={
+            "word_view_status": view.model_copy(update={"observed_inline": None}),
+            "word_field_prefix": None,
+        }
     )
     baseline = actual.result.model_copy(update={"selected_parts": (baseline_part,)})
     monkeypatch.setattr(

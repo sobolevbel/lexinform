@@ -14035,3 +14035,21 @@ Both forms survived two exact restores. The previous reader restored the
 legacy checkpoint and rejected the enriched checkpoint atomically.
 
 [Qualification](../assets/audits/2026-11-07-word-field-ranges-reader/qualification.json).
+
+<a id="j407"></a>
+
+## J407 — retain Word field paragraph witnesses in default extraction
+
+The native Word path records field coordinates during its existing parse
+and fits the prefix after earlier observations. Validation failures in the
+optional evidence leave the legacy extraction intact. The offline replay
+can verify emitted markers against native paragraph slices.
+
+On 20 pinned paths the writer retained all 69 independently verified
+ranges. The 15 distinct inputs account for 64 ranges. The selected text
+and prior metadata matched with the writer off. In the scratch checkpoint
+containing three records, SQL grew by 6,936 bytes and gzip by 192 bytes.
+Both forms survived two byte-identical restores. The fake-provider
+handoff preserved the request and same-byte deduplication.
+
+[Qualification](../assets/audits/2026-11-07-word-field-ranges-writer/qualification.json).

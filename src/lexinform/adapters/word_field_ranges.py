@@ -7,7 +7,16 @@ from itertools import accumulate
 from typing import Literal
 from xml.etree import ElementTree as ET
 
-from lexinform.models.documents import WordTextExtraction
+from pydantic import ValidationError
+
+from lexinform.models.documents import WordDetailedExtraction, WordTextExtraction
+from lexinform.models.extractions import extraction_metadata_sha256
+from lexinform.models.word_field_ranges import (
+    MAX_WORD_FIELD_RANGES,
+    WordFieldParagraph,
+    WordFieldPrefix,
+    WordFieldSlice,
+)
 
 type FieldGroup = Literal["simple_body_text", "before_separator", "after_separator"]
 type FieldState = Literal["checked", "partial", "unknown"]
@@ -120,6 +129,43 @@ class WordFieldRanges:
                     text_sha256=hashlib.sha256(fragments[index].encode()).hexdigest(),
                 )
             )
+
+    def prefix(self, detailed: WordDetailedExtraction) -> WordFieldPrefix | None:
+        legacy = detailed.body
+        observed = self.finish(legacy)
+        if observed.state != "checked" or not observed.ranges:
+            return None
+        blocks = {block.path: block for block in legacy.blocks if block.kind == "paragraph"}
+        slices: dict[XmlPath, list[WordFieldSlice]] = {}
+        for event in observed.ranges[:MAX_WORD_FIELD_RANGES]:
+            relative = event.path[len(event.paragraph_path) :]
+            slices.setdefault(event.paragraph_path, []).append(
+                WordFieldSlice(relative, event.group, event.start, event.end, event.text_sha256)
+            )
+        paragraphs = [
+            WordFieldParagraph(
+                path=path,
+                text_sha256=blocks[path].text_sha256,
+                text_chars=len(blocks[path].text),
+                ranges=tuple(ranges),
+            )
+            for path, ranges in slices.items()
+        ]
+        manifest = extraction_metadata_sha256(
+            (legacy.manifest_sha256, detailed.notes.manifest_sha256)
+        )
+        while paragraphs:
+            try:
+                return WordFieldPrefix(
+                    input_sha256=legacy.input_sha256,
+                    manifest_sha256=manifest,
+                    paragraphs=tuple(paragraphs),
+                )
+            except ValidationError:
+                tail = paragraphs.pop()
+                if len(tail.ranges) > 1:
+                    paragraphs.append(tail.model_copy(update={"ranges": tail.ranges[:-1]}))
+        return None
 
     def finish(self, legacy: WordTextExtraction) -> WordFieldExtraction:
         if (

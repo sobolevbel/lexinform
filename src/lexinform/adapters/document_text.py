@@ -46,6 +46,7 @@ from lexinform.extraction_records import (
     summarize_doc_note_projections,
     summarize_doc_notes,
     summarize_extraction,
+    summarize_word_field_prefixes,
     summarize_word_observations,
 )
 from lexinform.models.doc_notes import (
@@ -94,6 +95,7 @@ from lexinform.models.physical_inventory import (
     PhysicalOmittedCount,
 )
 from lexinform.models.rcl import READABLE_EXTENSIONS, text_rank
+from lexinform.models.word_field_ranges import WordFieldPrefix
 from lexinform.models.word_notes import (
     NotePartName,
     WordNote,
@@ -270,6 +272,11 @@ class DocxTextExtractor:
         return self._detailed(body, notes)
 
     def extract_with_view_status(self, data: bytes) -> WordViewExtraction:
+        return self._view_status(data)
+
+    def _view_status(
+        self, data: bytes, *, fields: WordFieldRanges | None = None
+    ) -> WordViewExtraction:
         try:
             collector = WordStructureCollector.for_view_status()
         except Exception:
@@ -278,7 +285,11 @@ class DocxTextExtractor:
             return WordViewExtraction(legacy=legacy, status=None)
         notes = _WordNoteOrigins()
         with collector.view_scope():
-            body = self._blocks(data, notes=notes)
+            body = (
+                self._blocks(data, notes=notes)
+                if fields is None
+                else self._blocks(data, notes=notes, fields=fields)
+            )
         legacy = self._detailed(body, notes)
         try:
             status = collector.finish_view_status(legacy)
@@ -333,8 +344,12 @@ class DocxTextExtractor:
     ) -> WordTextExtraction:
         blocks: list[WordTextBlock] = []
         projection: list[str] = []
-        text, xml_sha256, state = self._read(
-            data, blocks=blocks, projection=projection, origins=notes, fields=fields
+        text, xml_sha256, state = (
+            self._read(data, blocks=blocks, projection=projection, origins=notes)
+            if fields is None
+            else self._read(
+                data, blocks=blocks, projection=projection, origins=notes, fields=fields
+            )
         )
         result = WordTextExtraction(
             input_sha256=hashlib.sha256(data).hexdigest(),
@@ -1332,6 +1347,7 @@ class _PhysicalOrigins:
     word_structure: list[WordPartStructureExtraction] | None = None
     semantic_word_structure: bool = False
     word_view_status: list[WordPartViewStatus] | None = None
+    word_field_prefixes: dict[int, WordFieldPrefix] | None = None
     odt_notes: list[OdtPartNoteOrigins] | None = None
     doc_notes: list[DocPartNoteCapture] | None = None
     capture_doc_note_projection: bool = False
@@ -1505,6 +1521,7 @@ class DocumentTextExtractor:
 
     def extract_document_with_provenance(self, data: bytes) -> DocumentExtraction:
         views: list[WordPartViewStatus] = []
+        word_fields: dict[int, WordFieldPrefix] = {}
         odt_notes: list[OdtPartNoteOrigins] = []
         doc_notes: list[DocPartNoteCapture] = []
         if (
@@ -1518,6 +1535,7 @@ class DocumentTextExtractor:
                 odt_blocks=[],
                 unlocated_text=[],
                 word_view_status=views,
+                word_field_prefixes=word_fields,
                 odt_notes=odt_notes,
                 doc_notes=doc_notes,
                 capture_doc_note_projection=True,
@@ -1565,6 +1583,7 @@ class DocumentTextExtractor:
         if linked is not None:
             result = summarize_doc_note_projections(result, linked)
             result = summarize_doc_note_cfspec(result, linked)
+        result = summarize_word_field_prefixes(result, word_fields)
         capture = current_physical_walk_capture()
         if capture is not None:
             _physical_event(capture, lambda: capture.extraction(result))
@@ -1686,6 +1705,7 @@ class DocumentTextExtractor:
         note_result: WordNoteExtraction | None = None
         structure_result: WordStructureExtraction | WordSemanticStructureExtraction | None = None
         view_result: WordViewExtraction | None = None
+        word_fields: WordFieldRanges | None = None
         odt_result: OdtTextExtraction | None = None
         odt_notes: OdtNoteOrigins | None = None
         doc_notes: DocNoteExtraction | None = None
@@ -1712,9 +1732,19 @@ class DocumentTextExtractor:
                             )
                             and isinstance(self._docx, WordViewTextExtractor)
                         ):
-                            view_result = _physical_format(
-                                partial(self._docx.extract_with_view_status, data)
-                            )
+                            if (
+                                origins.word_field_prefixes is not None
+                                and isinstance(self._docx, DocxTextExtractor)
+                                and _native_word_fields(self._docx)
+                            ):
+                                word_fields = WordFieldRanges()
+                                view_result = _physical_format(
+                                    partial(self._docx._view_status, data, fields=word_fields)
+                                )
+                            else:
+                                view_result = _physical_format(
+                                    partial(self._docx.extract_with_view_status, data)
+                                )
                             word_result, note_result = (
                                 view_result.legacy.body,
                                 view_result.legacy.notes,
@@ -1902,6 +1932,15 @@ class DocumentTextExtractor:
                     status=view_result.status,
                 )
             )
+        if (
+            word_fields is not None
+            and view_result is not None
+            and origins.word_field_prefixes is not None
+        ):
+            with suppress(ValueError):
+                prefix = word_fields.prefix(view_result.legacy)
+                if prefix is not None:
+                    origins.word_field_prefixes[len(parts) - 1] = prefix
         if origins.word_structure is not None and structure_result is not None:
             origins.word_structure.append(
                 WordPartStructureExtraction(part_index=len(parts) - 1, extraction=structure_result)
@@ -2361,6 +2400,22 @@ def _physical_recipe(
             dependencies=tuple(dependencies),
             options=options,
         )
+    )
+
+
+_NATIVE_WORD_FIELD_METHODS = (
+    ("extract_with_notes", DocxTextExtractor.extract_with_notes),
+    ("extract_with_view_status", DocxTextExtractor.extract_with_view_status),
+    ("_view_status", DocxTextExtractor._view_status),
+    ("_blocks", DocxTextExtractor._blocks),
+    ("_read", DocxTextExtractor._read),
+)
+
+
+def _native_word_fields(value: DocxTextExtractor) -> bool:
+    return type(value) is DocxTextExtractor and all(
+        getattr(getattr(value, name, None), "__func__", None) is method
+        for name, method in _NATIVE_WORD_FIELD_METHODS
     )
 
 
