@@ -1,0 +1,24 @@
+{
+  "reads": [
+    "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743326.docm",
+    "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743327.docx",
+    "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743328.docx",
+    "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743329.docm",
+    "https://legislacja.rcl.gov.pl/docs//2/12403302/13164550/13164551/dokument743330.doc"
+  ],
+  "assembly_sha256": "dc888749d7770f343703a1c95041e6ba61aef78916a12fe605699537d9252868",
+  "selection_id": "selection-v1:f7d21e4c5ff826189f8fa5ebd451bb19a4131d40018bab42eabf086b3e569254",
+  "roles": [
+    "justification"
+  ],
+  "doc": {
+    "file_sha256": "006d5f09a49eab3f07becb77d27ad75738a6ef936c3ed662343ea99543a11029",
+    "text_sha256": "29cb1a3690657193e93a58dc45122c507c16a8de65c81bceef3a34d087f9bf51",
+    "coordinates": "unknown",
+    "chars": 61158
+  },
+  "sql": 81970,
+  "gzip": 16259,
+  "sql_sha256": "556fbbd148906ac8ee619624185a6acdc7e969499b623e2dadb5b6bdf79a3fec",
+  "exact_restores": 2
+}

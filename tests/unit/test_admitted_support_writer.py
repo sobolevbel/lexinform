@@ -3,10 +3,15 @@ from hashlib import sha256
 
 import pytest
 
+from lexinform.adapters.doc_text import DocTextExtractor
+from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
+from lexinform.archive_disposition_observations import complete_standalone_root
 from lexinform.models import TextDocument
 from lexinform.services.document_history import DocumentSourceRead
 from lexinform.services.documents import TextLoader
 from tests.fakes import FakeTextExtractor
+from tests.unit.test_doc_note_extraction import source_notes
+from tests.unit.test_doc_note_physical_parts import ole_document
 from tests.unit.test_physical_extraction import docx, extractor
 from tests.unit.test_required_part_writer import BODY, MAIN, REQUIRED
 
@@ -83,3 +88,30 @@ def test_alternative_support_is_retained_only_for_the_resolved_source() -> None:
     assert prefilter.candidate_trace == analysis.candidate_trace.model_copy(
         update={"admitted_support": None}
     )
+
+
+def test_unlocated_doc_support_requires_the_complete_exact_extraction() -> None:
+    prefix = "UZASADNIENIE\r" + "Opis skutków przepisu. " * 20
+    body = ole_document(*source_notes(main=prefix + "\x02\r", reference_cp=len(prefix)))
+    digest = sha256(body).hexdigest()
+    reader = DocumentTextExtractor(FakeTextExtractor(), DocxTextExtractor(), DocTextExtractor())
+    observed = reader.extract_document_with_provenance(body)
+    (summary,) = observed.result.selected_parts
+    assert summary.format == "doc" and summary.coordinates == "unknown"
+    assert not complete_standalone_root(observed, digest)
+    assert complete_standalone_root(observed, digest, allow_unlocated_doc=True)
+    (part,) = observed.document.selection.parts
+    damaged = observed.model_copy(
+        update={
+            "document": observed.document.model_copy(
+                update={
+                    "selection": observed.document.selection.model_copy(
+                        update={
+                            "parts": (part.model_copy(update={"text_end": len(part.text) - 1}),)
+                        }
+                    )
+                }
+            )
+        }
+    )
+    assert not complete_standalone_root(damaged, digest, allow_unlocated_doc=True)

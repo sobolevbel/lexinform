@@ -998,7 +998,7 @@ class TextLoader:
                     )
             if (
                 attempt is not None
-                and loaded.native_complete_standalone
+                and (loaded.native_complete_standalone or loaded.complete_unlocated_doc_support)
                 and (len(composed.evidence) == len(bundle.evidence) + 1)
             ):
                 capture, phase, index = attempt
@@ -1535,6 +1535,7 @@ class TextLoader:
         archive: ArchiveRootObservation | None = None
         completed = False
         native_standalone = False
+        complete_unlocated_doc = False
         try:
             with (
                 optional_archive_policy_capture() as capture,
@@ -1553,6 +1554,10 @@ class TextLoader:
                     if capture is not None and capture.native_single_part:
                         with suppress(Exception):
                             native_standalone = complete_standalone_root(observed, artifact.sha256)
+                            if not native_standalone:
+                                complete_unlocated_doc = complete_standalone_root(
+                                    observed, artifact.sha256, allow_unlocated_doc=True
+                                )
                     first_pdf_page = observed.first_pdf_page
                     complete_pdf_pages = observed.complete_pdf_pages
                     text = observed.document.text
@@ -1615,6 +1620,7 @@ class TextLoader:
                     complete_pdf_pages=complete_pdf_pages,
                     word_formula_source=word_formula_source,
                     native_complete_standalone=native_standalone,
+                    complete_unlocated_doc_support=complete_unlocated_doc,
                 )
                 completed = True
         finally:

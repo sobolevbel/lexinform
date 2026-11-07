@@ -41,7 +41,9 @@ class ArchiveRootObservation:
     native_standalone: bool = False
 
 
-def complete_standalone_root(extraction: DocumentExtraction, sha256: str) -> bool:
+def complete_standalone_root(
+    extraction: DocumentExtraction, sha256: str, *, allow_unlocated_doc: bool = False
+) -> bool:
     result, document = extraction.result, extraction.document
     if (
         result.artifact_sha256 != sha256
@@ -60,7 +62,15 @@ def complete_standalone_root(extraction: DocumentExtraction, sha256: str) -> boo
         and not part.losses
         and summary.physical_index == 0
         and summary.member_path_sha256 == extraction_metadata_sha256(())
-        and summary.coordinates != "unknown"
+        and (
+            summary.coordinates != "unknown"
+            or (
+                allow_unlocated_doc
+                and summary.format == "doc"
+                and summary.text_view == "unlocated"
+                and summary.manifest_sha256 is not None
+            )
+        )
         and summary.error_count == 0
         and sha256 == summary.sha256 == part.sha256 == part.source_sha256
         and summary.text_sha256 == result.output_text_sha256 == part.text_sha256
