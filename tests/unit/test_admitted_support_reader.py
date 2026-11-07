@@ -1,6 +1,8 @@
+import sqlite3
 from contextlib import closing
 
 import pytest
+from tools.source_history_doctor import candidate_trace_inventory
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import (
@@ -98,3 +100,17 @@ def test_admitted_support_reader_preserves_legacy_and_binds_selection(control: s
             assert repo.dump() == updated
             assert repo.get_candidate_disposition_trace(old_id) == old
             assert repo.get_candidate_disposition_trace(trace.trace_id) == trace
+
+    with closing(sqlite3.connect(":memory:")) as snapshot:
+        snapshot.executescript(baseline)
+        assert "admitted_support" not in candidate_trace_inventory(snapshot)
+    with closing(sqlite3.connect(":memory:")) as snapshot:
+        snapshot.executescript(updated)
+        report = candidate_trace_inventory(snapshot)
+
+    assert report["findings"] == []
+    assert report["admitted_support"] == {
+        "trace_rows_with_evidence": 1,
+        "retained_parts_by_role": {"justification": 1},
+        "omitted_parts": 0,
+    }

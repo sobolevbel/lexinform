@@ -76,8 +76,11 @@ from lexinform.models import (
     TextDocument,
 )
 from lexinform.models.candidate_trace import (
+    MAX_ADMITTED_SUPPORT,
     MAX_SUPPORTING_EXCLUSIONS,
     MAX_VERSION_DECISION_ROWS,
+    AdmittedSupport,
+    AdmittedSupportPart,
     AmendmentPartGap,
     ArchiveVersionConflictEvidence,
     ArchiveVersionDecisionEvidence,
@@ -169,6 +172,7 @@ class _CompositionCapture:
     amendment_gap: AmendmentPartGap | None = None
     supporting: list[SupportingPartExclusion] = field(default_factory=list)
     supporting_omitted: int = 0
+    admitted_support: dict[tuple[Phase, int, int], tuple[str, str]] = field(default_factory=dict)
     version_decision: VersionDecisionEvidence | None = None
     version_decision_includes_archive: bool = False
 
@@ -188,6 +192,50 @@ class _CompositionCapture:
                 phase=phase, index=index, extra_index=position, reason=reason, file_sha256=sha256
             )
         )
+
+
+def _selected_admitted_support(
+    trace: CandidateDispositionTrace,
+    selected: TextDocument,
+    loaded: LoadedFile,
+    capture: _CompositionCapture,
+) -> AdmittedSupport | None:
+    parent = next((row for row in trace.dispositions if row.outcome == "selected"), None)
+    if parent is None:
+        return None
+    rows: list[AdmittedSupportPart] = []
+    omitted = 0
+    occurrences = Counter(selected.extra_urls)
+    for position, url in enumerate(selected.extra_urls):
+        hashes = capture.admitted_support.get((parent.phase, parent.index, position))
+        if hashes is None or occurrences[url] != 1:
+            continue
+        parts = [part for part in loaded.selection.parts if part.url == url]
+        if len(parts) != 1:
+            continue
+        part = parts[0]
+        if (
+            part.role not in ("justification", "osr")
+            or part.members
+            or (part.sha256, part.text_sha256) != hashes
+        ):
+            continue
+        if len(rows) == MAX_ADMITTED_SUPPORT:
+            omitted += 1
+            continue
+        rows.append(
+            AdmittedSupportPart(
+                extra_index=position,
+                role=part.role,
+                file_sha256=part.sha256,
+                text_sha256=part.text_sha256,
+            )
+        )
+    if not rows:
+        return None
+    return AdmittedSupport(
+        phase=parent.phase, index=parent.index, rows=tuple(rows), omitted=omitted
+    )
 
 
 @dataclass(frozen=True)
@@ -886,6 +934,15 @@ class TextLoader:
                     capture.exclude_support(
                         phase, index, position, reason, None if loaded.oversize else loaded.sha256
                     )
+            if (
+                attempt is not None
+                and loaded.native_complete_standalone
+                and (len(composed.evidence) == len(bundle.evidence) + 1)
+            ):
+                capture, phase, index = attempt
+                part = composed.evidence[-1]
+                with suppress(Exception):
+                    capture.admitted_support[phase, index, position] = part.sha256, part.text_sha256
             bundle = composed
         return finish_bundle(bundle, document)
 
@@ -972,13 +1029,14 @@ class TextLoader:
                             ),
                         }
                     )
+        routine_trace = None
         if (
             not retain_routine_trace
             and trace is not None
             and trace.is_routine_singleton
             and trace.archive_members is None
         ):
-            trace = None
+            routine_trace, trace = trace, None
         archive_version_evidence: (
             ArchiveVersionConflictEvidence | ArchiveVersionDecisionEvidence | None
         ) = None
@@ -1002,6 +1060,23 @@ class TextLoader:
                 if archive_version_evidence is not None:
                     _trace_with_archive_evidence(enriched, archive_version_evidence)
                 trace = enriched
+        base_trace = trace or routine_trace
+        # Prefilter records the requested source even when an alternative wins.
+        if (
+            base_trace is not None
+            and composition is not None
+            and composition.admitted_support
+            and selected == document
+        ):
+            with suppress(Exception):
+                evidence = _selected_admitted_support(base_trace, selected, loaded, composition)
+                if evidence is not None:
+                    enriched = CandidateDispositionTrace.model_validate(
+                        {**base_trace.model_dump(), "admitted_support": evidence}
+                    )
+                    if archive_version_evidence is not None:
+                        _trace_with_archive_evidence(enriched, archive_version_evidence)
+                    trace = enriched
         return selected, replace(
             loaded,
             archive_version_evidence=archive_version_evidence,
@@ -1466,6 +1541,7 @@ class TextLoader:
                     first_pdf_page=first_pdf_page,
                     complete_pdf_pages=complete_pdf_pages,
                     word_formula_source=word_formula_source,
+                    native_complete_standalone=native_standalone,
                 )
                 completed = True
         finally:

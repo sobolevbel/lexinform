@@ -354,6 +354,8 @@ def candidate_trace_inventory(
     amendment_reasons: Counter[str] = Counter()
     supporting_reasons: Counter[str] = Counter()
     supporting_omitted = 0
+    admitted_roles: Counter[str] = Counter()
+    admitted_traces = admitted_omitted = 0
     try:
         if "candidate_disposition_traces" not in unavailable:
             report["trace_rows"] = report["valid_trace_rows"] = 0
@@ -370,6 +372,10 @@ def candidate_trace_inventory(
                 else:
                     traces[row["trace_id"]] = True
                     report["valid_trace_rows"] += 1
+                    if trace.admitted_support is not None:
+                        admitted_traces += 1
+                        admitted_roles.update(item.role for item in trace.admitted_support.rows)
+                        admitted_omitted += trace.admitted_support.omitted
                     if include_gaps:
                         if trace.normative_annex_gap is not None:
                             annex_reasons[trace.normative_annex_gap.reason] += 1
@@ -412,6 +418,12 @@ def candidate_trace_inventory(
                 report["checked_links"] += 1
     finally:
         cursor.close()
+    if admitted_traces:
+        report["admitted_support"] = {
+            "trace_rows_with_evidence": admitted_traces,
+            "retained_parts_by_role": dict(sorted(admitted_roles.items())),
+            "omitted_parts": admitted_omitted,
+        }
     if include_gaps:
         total = report["trace_rows"]
         valid = report["valid_trace_rows"]

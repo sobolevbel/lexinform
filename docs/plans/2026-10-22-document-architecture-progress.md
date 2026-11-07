@@ -14102,3 +14102,20 @@ restores were byte-identical. The previous reader rejected the enriched
 checkpoint atomically. The default writer still emits the previous format.
 
 [Qualification](../assets/audits/2026-11-07-admitted-support-reader/qualification.json).
+
+<a id="j411"></a>
+
+## J411 — record exact inclusion of loose supporting documents
+
+The default trace records complete loose justification and OSR positions
+from the actual composition and final selection. It preserves earlier trace
+evidence and existing limits. The source-history inventory counts retained
+admissions by role. The writer skips alternative winners where the caller
+persists the original requested source instead of the selected source.
+
+On pinned RCL 12366453 stage 3 it retained two positions with unchanged
+four reads, selected source and assembly. The checkpoint survived two
+byte-identical restores. Four J301 exclusion controls matched the previous
+output. The reader release is the rollback floor for the new records.
+
+[Qualification](../assets/audits/2026-11-07-admitted-support-writer/qualification.json).
