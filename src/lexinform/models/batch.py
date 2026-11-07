@@ -56,6 +56,7 @@ from lexinform.models.review_prepared_input import ReviewPreparedInputWitness
 from lexinform.models.reviews import DocumentReview, ReviewContext
 from lexinform.models.scan_input import ScanInputManifest
 from lexinform.models.senate import SenateResolutionIdentity
+from lexinform.models.supplement_inputs import SupplementScanInputWitness
 from lexinform.saved_clock import saved_clock_age
 
 BatchProvider = Literal["anthropic", "openai"]
@@ -518,6 +519,34 @@ class DigestItemMeta(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    supplement_scan_input: SupplementScanInputWitness | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    def require_supplement_scan_carrier(self, purpose: str, term: int, number: str) -> None:
+        witness = self.supplement_scan_input
+        if witness is None:
+            return
+        context = witness.context_without_scan
+        binding, manifest = self.input_binding, self.frozen_request_manifest
+        if (
+            purpose != "supplement"
+            or binding is None
+            or (binding.term, binding.number) != (term, number)
+            or (witness.term, context.number) != (term, number)
+            or witness.document_number != self.document_number
+            or witness.source_url != self.source_url
+            or context.document_title != self.title
+            or context.source_kind != self.source_kind
+            or witness.scan_input != self.scan_input
+            or witness.request_sha256 != self.request_sha256
+            or manifest is None
+            or manifest.purpose != "supplement"
+            or witness.request_sha256 != manifest.request_sha256
+            or witness.manifest_sha256 != manifest.manifest_sha256
+        ):
+            raise ValueError("invalid_supplement_scan_input")
+
     def require_review_input_carrier(
         self, purpose: str, term: int, number: str, *, consumed: bool
     ) -> None:
@@ -566,6 +595,12 @@ class DigestItemMeta(BaseModel):
         )
         if self.input_binding is not None and self.input_binding.reuse_key != self.memo_key:
             raise ValueError("input binding must keep its frozen memo key")
+        if self.supplement_scan_input is not None:
+            self.require_supplement_scan_carrier(
+                "supplement",
+                self.supplement_scan_input.term,
+                self.supplement_scan_input.context_without_scan.number,
+            )
         witness = self.review_input_witness
         if witness is not None:
             manifest, binding = self.frozen_request_manifest, self.input_binding
@@ -619,6 +654,12 @@ def validate_batch_item_meta(
         and (not submitted or kind != "consultation_review")
     ):
         raise ValueError("Review prepared input belongs to submitted consultation reviews")
+    if (
+        isinstance(decoded, dict)
+        and "supplement_scan_input" in decoded
+        and (not submitted or kind != "supplement")
+    ):
+        raise ValueError("Supplement scan input belongs to submitted supplements")
     model = BatchItemMeta if kind in ("analysis", "reanalysis") else DigestItemMeta
     parsed = model.model_validate(decoded)
     manifest = parsed.frozen_request_manifest
@@ -662,6 +703,7 @@ def _typed_secondary_input_metadata(value: object) -> object:
             meta.get("amendment_input_ref") is not None
             or "amendment_scan_input" in meta
             or "review_input_witness" in meta
+            or "supplement_scan_input" in meta
         ):
             return {**value, "meta": DigestItemMeta.model_validate(meta)}
     return value
@@ -695,6 +737,7 @@ class LlmBatchItem(BaseModel):
             )
         if isinstance(self.meta, DigestItemMeta):
             self.meta.require_amendment_scan_carrier(self.call_kind, self.term, self.number)
+            self.meta.require_supplement_scan_carrier(self.call_kind, self.term, self.number)
             self.meta.require_review_input_carrier(
                 self.call_kind, self.term, self.number, consumed=self.consumed_at is not None
             )
@@ -805,6 +848,8 @@ class BatchIntent(BaseModel):
             raise ValueError("invalid_amendment_scan_input")
         if isinstance(self.meta, DigestItemMeta) and self.meta.review_input_witness is not None:
             raise ValueError("Review prepared input belongs to submitted consultation reviews")
+        if isinstance(self.meta, DigestItemMeta) and self.meta.supplement_scan_input is not None:
+            raise ValueError("Supplement scan input belongs to submitted supplements")
         if self.meta.frozen_request_manifest is not None:
             raise ValueError("Frozen request manifests belong to submitted items")
         if isinstance(self.meta, DigestItemMeta) and self.meta.amendment_input_ref is not None:

@@ -31,6 +31,7 @@ from lexinform.models import (
     BatchItemMeta,
     BatchProvider,
     BatchRequest,
+    ComputationResult,
     DigestItemMeta,
     DocumentPart,
     DocumentSelectionRecord,
@@ -39,6 +40,7 @@ from lexinform.models import (
     PrimaryInputReceipt,
     SupplementInputReceipt,
     SupplementQuestion,
+    SupplementRecord,
 )
 from lexinform.models.batch import FrozenRequestManifest, batch_item_meta, validate_batch_item_meta
 from lexinform.models.input_receipts import (
@@ -52,6 +54,7 @@ from lexinform.models.input_receipts import (
     SejmSelfAmendmentInputReceipt,
 )
 from lexinform.models.scan_input import MAX_SCAN_BYTES, MAX_SCAN_PAGES
+from lexinform.models.supplement_inputs import SupplementScanInputWitness
 
 _QUESTION_TEXT_PROFILE = "question-text-v1"
 _PROVIDER_PAYLOAD_PROFILE = "question-text-json-v1"
@@ -964,6 +967,45 @@ def validate_word_formula_intent(connection: sqlite3.Connection, intent: BatchIn
         raise ValueError("Word formula input requires its selected native Word source")
 
 
+def read_retained_supplement_scan_input(
+    connection: sqlite3.Connection, result: ComputationResult
+) -> SupplementScanInputWitness | None:
+    record = result.record
+    if result.purpose != "supplement" or not isinstance(record, SupplementRecord):
+        return None
+    row = next(
+        _rows(
+            connection,
+            "SELECT i.*, b.provider, b.call_kind AS batch_kind FROM llm_batch_items i"
+            " JOIN llm_batches b USING (batch_id) WHERE i.batch_id=? AND i.custom_id=?",
+            (result.batch_id, result.custom_id),
+        ),
+        None,
+    )
+    if row is None:
+        return None
+    meta = batch_item_meta(row["call_kind"], row["meta_json"])
+    if not isinstance(meta, DigestItemMeta) or meta.supplement_scan_input is None:
+        return None
+    witness = meta.supplement_scan_input
+    meta.require_supplement_scan_carrier(row["call_kind"], row["term"], row["number"])
+    manifest = meta.frozen_request_manifest
+    if (
+        row["consumed_at"] is None
+        or row["batch_kind"] != "supplement"
+        or (row["provider"], row["term"], row["number"])
+        != (result.provider, result.term, result.number)
+        or manifest is None
+        or manifest.provider != result.provider
+        or meta.input_binding != result.input_binding
+        or witness.request_sha256 != result.request_sha256
+        or (record.number, record.title, record.source_kind, record.source_url, record.scan_input)
+        != (meta.document_number, meta.title, meta.source_kind, meta.source_url, meta.scan_input)
+    ):
+        raise ValueError("invalid_supplement_scan_input")
+    return witness
+
+
 def validate_multipart_intent(connection: sqlite3.Connection, intent: BatchIntent) -> None:
     if not isinstance(intent.meta.prepared_input_receipt, MultipartTextInputReceipt):
         return
@@ -1019,7 +1061,9 @@ def _input_snapshot_checks(
             has_text_reference = isinstance(meta.get("text"), dict)
             has_provider_reference = isinstance(request.get("payload_json"), dict)
             has_manifest = meta.get("frozen_request_manifest") is not None
-            has_review_witness = "review_input_witness" in meta
+            has_submitted_witness = (
+                "review_input_witness" in meta or "supplement_scan_input" in meta
+            )
             question = request.get("question")
             ctx = question.get("ctx") if isinstance(question, dict) else None
             has_formula = isinstance(ctx, dict) and ctx.get("word_formula_input") is not None
@@ -1034,13 +1078,15 @@ def _input_snapshot_checks(
                 or has_text_reference
                 or has_provider_reference
                 or has_manifest
-                or has_review_witness
+                or has_submitted_witness
                 or has_formula
                 or has_scan_manifest
             ):
                 continue
             ref = _reference("llm_batch_intents", row["custom_id"])
             try:
+                if "supplement_scan_input" in meta:
+                    raise ValueError("Supplement scan input belongs to submitted supplements")
                 actual = parse_batch_request(request)
                 if actual.custom_id != row["custom_id"] or row["provider"] not in (
                     "anthropic",
@@ -1052,7 +1098,7 @@ def _input_snapshot_checks(
                     or has_timing
                     or has_text_reference
                     or has_manifest
-                    or has_review_witness
+                    or has_submitted_witness
                     or has_word_formula_input(actual)
                     or has_scan_manifest
                 ):
@@ -1100,12 +1146,21 @@ def _input_snapshot_checks(
             has_receipt = raw is not None and raw.get("prepared_input_receipt") is not None
             has_timing = raw is not None and raw.get("local_timing_witness") is not None
             has_manifest = raw.get("frozen_request_manifest") is not None
-            if not (has_receipt or has_timing or has_manifest or "review_input_witness" in raw):
+            if not (
+                has_receipt
+                or has_timing
+                or has_manifest
+                or "review_input_witness" in raw
+                or "supplement_scan_input" in raw
+            ):
                 continue
             ref = _reference("llm_batch_items", (row["batch_id"], row["custom_id"]))
             try:
                 item_meta = batch_item_meta(row["call_kind"], row["meta_json"])
                 if isinstance(item_meta, DigestItemMeta):
+                    item_meta.require_supplement_scan_carrier(
+                        row["call_kind"], row["term"], row["number"]
+                    )
                     item_meta.require_review_input_carrier(
                         row["call_kind"],
                         row["term"],

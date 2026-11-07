@@ -1,0 +1,30 @@
+{
+  "anthropic": {
+    "exact_restores": 2,
+    "gzip_delta": 244,
+    "legacy_unknown": true,
+    "other_sql_exact": true,
+    "pages": 19,
+    "pdf_sha256": "47567ca94ad3175a1332b48089e28ca79b93e241d72575eb4f7945e39e658ce4",
+    "question_sha256": "64d78748017099e093fd342e9c877c62ceae85e69f3660bb0ac715de7c0d11bf",
+    "queue_sha256": "cf14fd866d7f379d9ae537a5be9d65073c11dba2900bd682f77ec27fd396deb2",
+    "request_sha256": "a6bc5fa84dfbabeeee289861dfbb07bf8ff0c5e9f775b646e8f30a6755ee77b4",
+    "sql_delta": 1147,
+    "witness_bytes": 1122,
+    "wrong_paid_source_rejected": true
+  },
+  "openai": {
+    "exact_restores": 2,
+    "gzip_delta": 243,
+    "legacy_unknown": true,
+    "other_sql_exact": true,
+    "pages": 19,
+    "pdf_sha256": "47567ca94ad3175a1332b48089e28ca79b93e241d72575eb4f7945e39e658ce4",
+    "question_sha256": "64d78748017099e093fd342e9c877c62ceae85e69f3660bb0ac715de7c0d11bf",
+    "queue_sha256": "5fe067102c35356b52465d2e5815aa2dbcc4239e8cb9d1d76580376cf7ab0d39",
+    "request_sha256": "f32ea24a57005d722a8d672f66f2802e83cc3cd1f264f0caa985f762588e6988",
+    "sql_delta": 1147,
+    "witness_bytes": 1122,
+    "wrong_paid_source_rejected": true
+  }
+}
