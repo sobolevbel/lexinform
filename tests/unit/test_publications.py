@@ -416,3 +416,22 @@ def test_a_final_part_confirms_the_act_with_its_roots_receipt_and_completion_tim
     if notice_id is not None:
         assert notice.id == notice_id
         assert notice.created_at == now - timedelta(days=1)
+
+
+def test_send_reuses_one_timestamp_across_root_and_held_receipt(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    case, identities, held = pending_case(repo, process_3039, now)
+
+    class SteppingClock:
+        def __init__(self) -> None:
+            self.current = now
+
+        def now(self) -> datetime:
+            current = self.current
+            self.current += timedelta(seconds=1)
+            return current
+
+    assert send_publication(case.repo, SteppingClock(), identities[0], lambda: 777) == 777
+    (root, parent) = stored(case, (*identities, *held))
+    assert (root.message_id, root.sent_at) == (parent.message_id, parent.sent_at) == (777, now)

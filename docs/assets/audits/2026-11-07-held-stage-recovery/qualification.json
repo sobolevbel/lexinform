@@ -1,0 +1,8 @@
+{
+  "base": "d05450b9",
+  "scratch": "/tmp/lexinform-j501a-held",
+  "patch_sha256": "833fb11f00595c89f445cc78ec9ba649306682a96e8d7f235e0c6b2cdcd059fe",
+  "checks": "22 focused tests, strict mypy 4 files and Ruff. Final reader-only scenario rerun after explicit writer suppression. Existing J502 writer patch forward-applies.",
+  "proof": "Normal held tracking reaches pending fake delivery; test fixture stages reader-only content, then actual UNKNOWN and operator confirm/dismiss. Pending and UNKNOWN dumps restore exactly, resolved dump twice. Missing dismissal audit rejects atomically. Stepping clock crosses second per read; root and held release now share exact timestamp.",
+  "scope": "No held writer or persisted format changes. Existing command receipt is required for dismissal."
+}

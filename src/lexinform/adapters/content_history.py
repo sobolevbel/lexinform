@@ -742,6 +742,9 @@ def _direct_held_stage_change(
         root.message_id is None or root.message_id <= 0 or root.sent_at is None
     ):
         raise ValueError("direct_held_stage_root_receipt")
+    dismissed = root.status is PublicationStatus.DISMISSED
+    if dismissed:
+        _verify_direct_held_dismissal(connection, root)
     stages = []
     for identity in ids:
         event = _query(
@@ -779,13 +782,40 @@ def _direct_held_stage_change(
             ) != (root.message_id, root.sent_at):
                 raise ValueError("direct_held_stage_release_receipt")
         elif (
-            physical.status is not PublicationStatus.SKIPPED
+            physical.status
+            is not (PublicationStatus.DISMISSED if dismissed else PublicationStatus.SKIPPED)
             or physical.message_id is not None
             or physical.sent_at is not None
         ):
             raise ValueError("direct_held_stage_unreleased_scope")
         stages.extend(held.new_stages)
     return current.model_copy(update={"new_stages": stages + current.new_stages})
+
+
+def _verify_direct_held_dismissal(connection: sqlite3.Connection, root: Publication) -> None:
+    rows = _query(
+        connection,
+        "SELECT command_update_id, resolution_json FROM delivery_resolutions"
+        " WHERE publication_id=? AND json_extract(resolution_json,'$.action')='dismiss' LIMIT 2",
+        (root.id,),
+    ).fetchall()
+    if len(rows) != 1 or root.message_id is not None or root.sent_at is not None:
+        raise ValueError("direct_held_stage_dismissal")
+    row = rows[0]
+    audit = read_delivery_resolution(row["resolution_json"])
+    if (
+        isinstance(audit, GroupedEditDeliveryResolution)
+        or (audit.publication_id, audit.term, audit.number, audit.kind, audit.channel_id)
+        != (root.id, root.term, root.number, root.kind, root.channel_id)
+        or audit.publication_ids != (root.id,)
+        or audit.action != "dismiss"
+        or audit.message_id is not None
+        or audit.resolved_at.utcoffset() is None
+        or audit.resolved_at < root.created_at
+        or row["command_update_id"] != audit.command.update_id
+        or not recorded_command_matches(connection, audit.command)
+    ):
+        raise ValueError("direct_held_stage_dismissal")
 
 
 def _verify_direct_stage_parts(

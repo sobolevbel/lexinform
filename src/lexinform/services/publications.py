@@ -124,14 +124,14 @@ def send_publications(
                 or repo.get_publication_content(group.ids[0]) != group.version
             ):
                 raise StateCheckpointError("Grouped delivery ownership changed after send")
-            group_sent_at = clock.now() if group is not None else None
+            sent_at = clock.now()
             for pub_id in pub_ids:
                 repo.mark_publication(
                     pub_id,
                     PublicationStatus.SENT,
                     message_id=message_id,
                     document_message_ids=documents,
-                    sent_at=group_sent_at if group_sent_at is not None else clock.now(),
+                    sent_at=sent_at,
                 )
                 publication = repo.publication_by_id(pub_id)
                 assert publication is not None, "pending work is persisted before send"
@@ -139,20 +139,15 @@ def send_publications(
                     repo,
                     publication,
                     message_id=message_id,
-                    sent_at=group_sent_at if group_sent_at is not None else clock.now(),
+                    sent_at=sent_at,
                 )
-            if (
-                group is not None
-                and group_sent_at is not None
-                and type(chat_id) is int
-                and -(2**52) < chat_id < 0
-            ):
+            if group is not None and type(chat_id) is int and -(2**52) < chat_id < 0:
                 repo.pin_grouped_telegram_receipt(
                     group.ids,
                     content_id=group.version.content_id,
                     chat_id=chat_id,
                     message_id=message_id,
-                    sent_at=group_sent_at,
+                    sent_at=sent_at,
                 )
     except StateCheckpointError:
         raise
