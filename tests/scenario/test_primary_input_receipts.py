@@ -91,6 +91,10 @@ def test_primary_receipts_follow_actual_parent_checkpoint_and_prepare_once(
         assert isinstance(receipt, PrimaryInputReceipt), (
             "native loose Word input has a corroborated single-part receipt"
         )
+        companion = receipt.block_companion
+        assert companion is not None, "the same-pass Word run intersects the budget prefix"
+        (copy,) = companion.rows
+        assert (copy.start, copy.end, copy.intersection) == (0, 1000, "clipped-v1")
         assert receipt.text_chars < receipt.source_part.chars
         assert receipt.request_sha256 == item.meta.request_sha256
         assert (

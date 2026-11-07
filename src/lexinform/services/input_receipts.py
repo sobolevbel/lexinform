@@ -513,7 +513,11 @@ def capture_secondary_input_receipt(
         body=body,
         extraction=extraction,
     )
-    return with_block_companion(captured, source, request.question.ctx.text) if captured else None
+    return (
+        with_block_companion(captured, source, request.question.ctx.text, selection=selection)
+        if captured
+        else None
+    )
 
 
 def _senate_work_parents(
@@ -715,9 +719,15 @@ def with_block_companion[
     | MultipartTextInputReceipt
     | SupplementInputReceipt
     | AmendmentInputReceipt
-](receipt: T, source: SourceReadCapture | None, text: str) -> T:
+](
+    receipt: T,
+    source: SourceReadCapture | None,
+    text: str,
+    *,
+    selection: DocumentSelection | None = None,
+) -> T:
     try:
-        return _with_block_companion(receipt, source, text)
+        return _with_block_companion(receipt, source, text, selection)
     except Exception:
         return receipt
 
@@ -727,7 +737,9 @@ def _with_block_companion[
     | MultipartTextInputReceipt
     | SupplementInputReceipt
     | AmendmentInputReceipt
-](receipt: T, source: SourceReadCapture | None, text: str) -> T:
+](
+    receipt: T, source: SourceReadCapture | None, text: str, selection: DocumentSelection | None
+) -> T:
     if not isinstance(source, DocumentSourceRead) or receipt.block_companion is not None:
         return receipt
     rows: list[PreparedBlockCopy] = []
@@ -764,11 +776,31 @@ def _with_block_companion[
         witness = summary.block_copy_witness
         assert witness is not None, "matches contains only retained block witnesses"
         for run_index, run in enumerate(witness.runs):
-            start = segment.start + run.source_start - segment.source_start
-            end = start + run.source_end - run.source_start
-            if not segment.start <= start < end <= segment.end or (
-                input_text_sha256(text[start:end]) != run.text_sha256
-            ):
+            source_end = segment.source_start + segment.end - segment.start
+            left = max(segment.source_start, run.source_start)
+            right = min(source_end, run.source_end)
+            if left >= right:
+                continue
+            start = segment.start + left - segment.source_start
+            end = segment.start + right - segment.source_start
+            emitted = text[start:end]
+            digest = input_text_sha256(emitted)
+            clipped = (left, right) != (run.source_start, run.source_end)
+            if clipped:
+                if selection is None or index >= len(selection.parts):
+                    continue
+                live_part = selection.parts[index]
+                if live_part.model_copy(update={"text": ""}) != part:
+                    continue
+                original = live_part.text
+                if (
+                    len(original) != witness.text_chars
+                    or input_text_sha256(original[run.source_start : run.source_end])
+                    != run.text_sha256
+                    or original[left:right] != emitted
+                ):
+                    continue
+            elif digest != run.text_sha256:
                 continue
             rows.append(
                 PreparedBlockCopy(
@@ -779,14 +811,32 @@ def _with_block_companion[
                     physical_index=summary.physical_index,
                     witness_id=witness.witness_id,
                     run_index=run_index,
-                    text_sha256=run.text_sha256,
+                    text_sha256=digest,
+                    intersection="clipped-v1" if clipped else None,
                 )
             )
+    if any(row.intersection is not None for row in rows):
+        mixed = _receipt_with_block_rows(receipt, rows, complete_only=True)
+        if mixed is not receipt:
+            return mixed
+        whole = [row for row in rows if row.intersection is None]
+        if whole:
+            return _receipt_with_block_rows(receipt, whole)
+    return _receipt_with_block_rows(receipt, rows)
+
+
+def _receipt_with_block_rows[
+    T: PrimaryInputReceipt
+    | MultipartTextInputReceipt
+    | SupplementInputReceipt
+    | AmendmentInputReceipt
+](receipt: T, rows: list[PreparedBlockCopy], *, complete_only: bool = False) -> T:
     if not rows:
         return receipt
     encoded = "[" + ",".join(row.model_dump_json() for row in rows) + "]"
     rows_hash = input_text_sha256(encoded)
-    for length in range(min(32, len(rows)), 0, -1):
+    lengths = (len(rows),) if complete_only else range(min(32, len(rows)), 0, -1)
+    for length in lengths:
         try:
             companion = PreparedBlockCompanion(
                 retention="complete" if length == len(rows) else "prefix",

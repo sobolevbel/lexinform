@@ -1,0 +1,56 @@
+{
+  "base": "18b5b7c43c806e157995a3bfd8b6f4fa76ac11ab",
+  "budget": "Existing row/byte caps. If a mixed set cannot be retained completely, keep existing whole rows first; clipped-only sets use existing explicit prefix behavior.",
+  "checks": {
+    "git_diff_check": "passed",
+    "mypy": "3 files passed",
+    "pytest": "130 passed: block_input_reader, block_input_writer, native_block_input_reader, native_block_writer, input_receipts, primary_input_receipts",
+    "ruff": "passed"
+  },
+  "controlled": {
+    "cap": 1024,
+    "emitted": [
+      418,
+      488
+    ],
+    "excluded_parent_tail": [
+      488,
+      492
+    ],
+    "gzip_delta": 78,
+    "raw_pdf_page_1": [
+      423,
+      493
+    ],
+    "request_and_base_receipt_and_whole_rows_exact": true,
+    "source": [
+      418,
+      488
+    ],
+    "source_pin": "587739.pdf c4568d7582962e62ac39d5d084936424f19edebae58b8925add7422d90360a5e",
+    "sql_delta": 372
+  },
+  "default": {
+    "cap": 1500000,
+    "complete_dump_byte_exact": true,
+    "gzip_delta": 0,
+    "sql_delta": 0
+  },
+  "format_scope": "Same generic validated geometry and live selection comparison for Word, PDF and ODT. Clipped queue control real pinned PDF and synthetic Word (1/4 workers); existing generic ODT coverage verifies native parent and whole maps, with no separate natural clipped ODT queue witness.",
+  "hashes": {
+    "path": "8a01ea2785560f69a5c24e58ad81c96a7f5bd02e947200ef925b27af2a4b48f2",
+    "qualify.py": "65d0497b81f7a4aebca3e6bb82817f6aae261f793c8af6088561af3329e75bf3",
+    "reader-controlled.sql": "611649f5c8dfc07235ae01bd2a80ea3d5a8c398e6b49be1012704c74447d34f1",
+    "reader-default.sql": "d4745069e8b75e74ee517978ad2aadd9e7702546c022f971d9afa0d2c9ba5c94",
+    "reader-tree": "62381dd8019e2996656e8c7bba57da501be9692c86bbd08fadc69e006c57eec4",
+    "reader.json": "b73a9b5764a530791861bb1a3180599b81da8d2651b380fafafa1c814131ad4c",
+    "stage.patch": "eb1a9070ac23f1aeb86be43debe36deafc7f478cf42fad26a9df4f039337a6cb",
+    "writer-controlled.sql": "e44a62ee0c6d67c1838ebad654a67a14870263fcce1fd1eab98c2aa97c47907b",
+    "writer-default.sql": "d4745069e8b75e74ee517978ad2aadd9e7702546c022f971d9afa0d2c9ba5c94",
+    "writer.json": "921210e230e2ac210367f06d16e39a54412bc24bbf1ffbd17b2123e6a565da89"
+  },
+  "lifecycle": "Normal fake World primary queue, submit, collect and account. Fake provider forget and corresponding local checkpoint explicitly completed in the harness, then real prune. Two J462-only exact restores per writer dump.",
+  "negative_controls": "Existing J462 qualification rejects generated, escaping, underclaimed, foreign, unmarked and bad hash through restore. Existing writer test still excludes missing witness and clipping without live selection.",
+  "reader_prerequisite_sha256": "b89f1a961880469e00e271aa92e2c4220e9dd2fbfa24c4ad28c7c24bdd3f96fe",
+  "reader_tree": "f79e481b227fdd6a6e7afd1a203542d4806d168e"
+}

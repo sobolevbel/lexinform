@@ -3417,7 +3417,9 @@ class AnalysisService:
                         with_amendments=loaded.rcl_projection == "annexes_and_amendments",
                     )
                 if receipt is not None:
-                    receipt = with_block_companion(receipt, loaded.source_read, ctx.text)
+                    receipt = with_block_companion(
+                        receipt, loaded.source_read, ctx.text, selection=loaded.selection
+                    )
             except Exception:
                 with suppress(Exception):
                     log.warning("Prepared input receipt omitted (capture_failed)")
