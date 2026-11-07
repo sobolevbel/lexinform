@@ -33,6 +33,7 @@ from lexinform.models import (
 from lexinform.models.content import (
     MAX_ACT_PUBLISHED_CONTENT_BYTES,
     MAX_DIRECT_STAGE_CONTENT_BYTES,
+    MAX_EXTENDED_GROUPED_STAGE_MEMBERS,
     MAX_GROUPED_STAGE_CONTENT_BYTES,
     ActPublishedContentEvidence,
     DirectStageContentEvidence,
@@ -41,8 +42,10 @@ from lexinform.models.content import (
     SupplementContentEvidence,
     card_bill_snapshot,
     editorial_bill_snapshot,
+    grouped_stage_content_budget,
 )
 from lexinform.models.grouped_update_witness import GroupedRenderWitness
+from lexinform.models.sejm import has_process
 from lexinform.ports import BillRepository, Clock
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 
@@ -454,8 +457,13 @@ def record_grouped_stage_content(
     language: str,
     render: GroupedUpdateRender | None = None,
 ) -> None:
-    """Record a qualified two-member first freeze within the caller's atomic group write."""
-    if len(origins) != 2 or language not in ("ru", "en"):
+    """Record qualified stage history inside the caller's first group freeze."""
+    count = len(origins)
+    if (
+        not 2 <= count <= MAX_EXTENDED_GROUPED_STAGE_MEMBERS
+        or language not in ("ru", "en")
+        or (count > 2 and any(not has_process(origin.number) for origin in origins))
+    ):
         return
     snapshots: list[ContentSnapshot] = []
     witnesses: list[GroupedStageMember] = []
@@ -491,7 +499,7 @@ def record_grouped_stage_content(
             plan.reply_to is None
             or not direct_stage_plan_matches(grouped_stage_context(plan))
             or (plan.bill_json, plan.change_json) != (before.bill_json, before.change_json)
-            or len(plan.update_group) != 2
+            or len(plan.update_group) != count
             or not plan.group_text
         ):
             return
@@ -544,10 +552,14 @@ def record_grouped_stage_content(
             )
         )
     assert common is not None, "both qualified members provide frozen group plans"
-    first, second = witnesses
-    if (origins[0].term, origins[0].number) == (origins[1].term, origins[1].number) or tuple(
+    if count > 2 and (
+        not common.group_text.strip() or utf16_length(common.group_text) > MESSAGE_LIMIT
+    ):
+        return
+    first = witnesses[0]
+    if len({(origin.term, origin.number) for origin in origins}) != count or tuple(
         item.publication_id for item in common.update_group
-    ) != (first.publication_id, second.publication_id):
+    ) != tuple(member.publication_id for member in witnesses):
         return
     compact = ContentSnapshot(
         kind="plan", payload_json=grouped_stage_context(common).model_dump_json()
@@ -556,27 +568,30 @@ def record_grouped_stage_content(
     size = sum(len(snapshot.payload_json.encode()) for snapshot in snapshots) + len(
         common.group_text.encode()
     )
-    if size > MAX_GROUPED_STAGE_CONTENT_BYTES:
+    budget = MAX_GROUPED_STAGE_CONTENT_BYTES if count == 2 else grouped_stage_content_budget(count)
+    if size > budget:
         return
     render_witness = None
     expected_members = tuple(
         (origin.term, origin.number, member.anchor_message_id, member.status_change_id)
         for origin, member in zip(origins, witnesses, strict=True)
     )
-    if render is not None and (render.text, render.members, render.today, render.language) == (
-        common.group_text,
-        expected_members,
-        common.today,
-        language,
+    if (
+        count == 2
+        and render is not None
+        and (render.text, render.members, render.today, render.language)
+        == (
+            common.group_text,
+            expected_members,
+            common.today,
+            language,
+        )
     ):
         try:
             candidate = GroupedRenderWitness.from_render(render)
             if candidate is not None:
                 candidate.bind(common.group_text, language)
-                if (
-                    size + len(candidate.model_dump_json().encode())
-                    <= MAX_GROUPED_STAGE_CONTENT_BYTES
-                ):
+                if size + len(candidate.model_dump_json().encode()) <= budget:
                     render_witness = candidate
         except ValueError:
             pass
@@ -591,7 +606,7 @@ def record_grouped_stage_content(
         rendered_text=common.group_text,
         status_change_id=first.status_change_id,
         grouped_stage_evidence=GroupedStageContentEvidence(
-            members=(first, second), render_witness=render_witness
+            members=tuple(witnesses), render_witness=render_witness
         ),
         recorded_at=clock.now(),
     )

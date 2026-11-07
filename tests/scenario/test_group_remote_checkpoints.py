@@ -19,16 +19,19 @@ Group = Literal["updates", "sittings"]
 TITLE = "Projekt ustawy o cudzoziemcach"
 
 
-def queued_world(group: Group, mode: Mode = "on") -> tuple[World, tuple[int, ...]]:
+def queued_world(
+    group: Group, mode: Mode = "on", *, size: int = 2
+) -> tuple[World, tuple[int, ...]]:
     world = World(profile="production", reader_attention=mode, attention_roundup="daily")
-    for number in ("3039", "3040"):
+    numbers = tuple(str(number) for number in range(3039, 3039 + size))
+    for number in numbers:
         world.add_bill(number, TITLE, stages=COMMITTEE_STAGES if group == "sittings" else START)
     world.gateway.committees["ASW"] = ASW
     world.run()
     world.batch.resolve()
     world.run()
     if group == "updates":
-        for number in ("3039", "3040"):
+        for number in numbers:
             world.set_stages(number, COMMITTEE_STAGES)
     else:
         world.gateway.committee_sittings["ASW"] = (
@@ -42,7 +45,7 @@ def queued_world(group: Group, mode: Mode = "on") -> tuple[World, tuple[int, ...
         for row in world.repo.list_open_deliveries(CHANNEL)
         if row.kind is kind and row.id is not None
     )
-    assert len(identities) == 2, "the unpublished run queues both source events"
+    assert len(identities) == size, "the unpublished run queues every source event"
     assert not world.llm.contexts
     return world, identities
 
