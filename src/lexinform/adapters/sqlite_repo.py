@@ -3383,7 +3383,8 @@ class SqliteBillRepository:
             "UPDATE publications SET delivery_json = ?, attention_json = ?"
             " WHERE status_change_id = ?"
             " AND error IS NOT 'source_context_invalid'"
-            " AND channel_id = ? AND kind = 'status_update' AND delivery_json IS NULL",
+            " AND channel_id = ? AND kind = 'status_update' AND delivery_json IS NULL"
+            " AND status != 'sent'",
             (
                 delivery.model_dump_json(),
                 delivery.attention.model_dump_json() if delivery.attention else None,
@@ -4947,7 +4948,9 @@ class SqliteBillRepository:
                 (publication.status_change_id, publication.channel_id),
             ).fetchone()
             previous = self.publication_by_id(int(blocked[0])) if blocked is not None else None
-            if previous is not None and source_context_blocked(self, previous):
+            if previous is not None and (
+                previous.status is PublicationStatus.SENT or source_context_blocked(self, previous)
+            ):
                 return int(blocked[0])
         else:
             previous = self.get_publication(
@@ -4976,6 +4979,7 @@ class SqliteBillRepository:
                                           publications.delivery_json, excluded.delivery_json),
                                       attention_json = COALESCE(
                                           publications.attention_json, excluded.attention_json)
+            WHERE publications.kind != 'status_update' OR publications.status != 'sent'
             """,
             (
                 identity,

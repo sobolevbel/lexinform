@@ -14409,3 +14409,32 @@ Unknown delivery stayed unconfirmed without a resend.
   `send_message` продолжают возвращать только ID сообщения.
 - Проверены alias, числовая цель и отрицательные контроли на fake
   Telegram. Запись ID в SQLite остаётся отдельным этапом.
+
+<a id="j429"></a>
+
+### J429. Сохранение подтверждённого обновления после очистки
+
+- Повторная подготовка подтверждённого обновления после удаления
+  временного payload сохраняет исходную запись и её квитанцию.
+  Новый план доставки для неё не создаётся.
+- Шесть целевых проверок покрывают одиночное и групповое обновление,
+  отсутствие и наличие числового ID, а также повторную подготовку
+  при сохранённом или очищенном payload.
+- Этап предшествует записи числовой цели из ответа Telegram.
+
+### Подтверждённые выпуски после исправления DOC replay
+
+Для каждого SHA проверены CI, переход реле, перезапуск через 45 секунд и включённый таймер.
+
+| SHA | CI | Выкладка реле |
+| --- | --- | --- |
+| `bdd2adffeb6e3e2a2158522403314154f7a6eac8` | [CI 42316528259](https://github.com/sobolevbel/lexinform/actions/runs/42316528259) | [Deploy 42317389413](https://github.com/sobolevbel/lexinform/actions/runs/42317389413) |
+| `71c416671d03cb248613b6a74e8fa85eeb41d517` | [CI 42317523093](https://github.com/sobolevbel/lexinform/actions/runs/42317523093) | [Deploy 42318366065](https://github.com/sobolevbel/lexinform/actions/runs/42318366065) |
+| `2b7ab9cee2f500a9f805b15262e8ea9f237ce7b2` | [CI 42318499505](https://github.com/sobolevbel/lexinform/actions/runs/42318499505) | [Deploy 42319363396](https://github.com/sobolevbel/lexinform/actions/runs/42319363396) |
+| `01cbee2db54132e36567ef91318fc1d52c715175` | [CI 42319485139](https://github.com/sobolevbel/lexinform/actions/runs/42319485139) | [Deploy 42320292760](https://github.com/sobolevbel/lexinform/actions/runs/42320292760) |
+| `a84b1697cf8d2cadbedb183d46805515783628f4` | [CI 42320403390](https://github.com/sobolevbel/lexinform/actions/runs/42320403390) | [Deploy 42320916877](https://github.com/sobolevbel/lexinform/actions/runs/42320916877) |
+| `76707e018590382b60f04015c1d35799df7738f4` | [CI 42321026661](https://github.com/sobolevbel/lexinform/actions/runs/42321026661) | [Deploy 42321547122](https://github.com/sobolevbel/lexinform/actions/runs/42321547122) |
+| `2710d9c3dc4ba2eed8bc1b45527e9c039fcdb999` | [CI 42321691692](https://github.com/sobolevbel/lexinform/actions/runs/42321691692) | [Deploy 42322497476](https://github.com/sobolevbel/lexinform/actions/runs/42322497476) |
+| `25351cab6e03e282376d7459b92e9c593beb130d` | [CI 42322628870](https://github.com/sobolevbel/lexinform/actions/runs/42322628870) | [Deploy 42323345863](https://github.com/sobolevbel/lexinform/actions/runs/42323345863) |
+| `bfe4a71df6b0ee54aaf7f184be1e77b77d48f387` | [CI 42323485815](https://github.com/sobolevbel/lexinform/actions/runs/42323485815) | [Deploy 42323983761](https://github.com/sobolevbel/lexinform/actions/runs/42323983761) |
+| `dea043eb3e6cd931fb57f6f2148a0554d8187fc7` | [CI 42324075745](https://github.com/sobolevbel/lexinform/actions/runs/42324075745) | [Deploy 42324753283](https://github.com/sobolevbel/lexinform/actions/runs/42324753283) |

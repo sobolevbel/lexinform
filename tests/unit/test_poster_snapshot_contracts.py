@@ -213,6 +213,7 @@ def test_new_status_snapshot_omits_review_data_reserved_for_its_own_message(
     change = case.change("compact-status", content_changed=True)
 
     delivery = case.poster.prepare(original, change)
+    assert delivery is not None, "a new update is prepared with its original plan"
 
     assert {"review_work", "consultation_review"}.isdisjoint(json.loads(delivery.bill_json))
     frozen = Bill.model_validate_json(delivery.bill_json)

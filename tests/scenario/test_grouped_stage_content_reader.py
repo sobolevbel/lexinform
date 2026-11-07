@@ -260,8 +260,7 @@ def test_grouped_numeric_receipt_requires_both_original_rows(tmp_path: Path, con
         reset = root.model_copy(
             update={"status": PublicationStatus.QUEUED, "telegram_chat_id": None}
         )
-        with pytest.raises(sqlite3.IntegrityError, match="CHECK constraint"), repo.atomic():
-            repo.create_publication(reset)
+        assert repo.create_publication(reset) == root.id
         assert repo.dump() == prospective
         with closing(sqlite3.connect(path)) as db, db:
             assert read_grouped_stage_telegram_target(db, version) == (chat_id, root.message_id)

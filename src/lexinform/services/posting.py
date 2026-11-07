@@ -9,7 +9,7 @@ stages before its own and releases them (their rows become `sent` with its messa
 """
 
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import date, timedelta
 from enum import StrEnum
 from functools import partial
@@ -761,30 +761,32 @@ class Poster:
     ) -> Told:
         """A recorded substantive event must have durable delivery work even with publishing off;
         `with_act` tells the act out in the same run in this update, not in a notice of its own."""
-        if not publish:
-            self.prepare(bill, change, with_act=with_act)
-            return Told.QUEUED
         plan = self.prepare(bill, change, with_act=with_act)
-        if plan.destination == "digest_only":
+        if plan is None:
+            return Told.SENT
+        assert change.id is not None, "prepare only accepts a saved status change"
+        pub = self._repo.get_update_publication(change.id, self._channel_id)
+        assert pub is not None, "prepare stores the update or returns its existing plan"
+        if pub.status is PublicationStatus.SENT:
+            return Told.SENT
+        if not publish or plan.destination == "digest_only":
             return Told.QUEUED
         if plan.update_group:
-            assert change.id is not None
-            pub = self._repo.get_update_publication(change.id, self._channel_id)
-            assert pub is not None
             sent = self.retry_update_group(pub, result)
             return Told.SENT if sent else Told.FAILED
         routine = routine_update(bill, change, plan)
         if plan.policy_version == "attention-v1" and plan.attention is not None:
             routine = not plan.attention.protected and plan.edit_message_id is None
-        if routine and not window_closes_within(
-            bill, self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date(), 3
+        if (
+            routine
+            and pub.status is PublicationStatus.QUEUED
+            and pub.attempts == 0
+            and not window_closes_within(
+                bill, self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date(), 3
+            )
         ):
-            assert change.id is not None
-            pub = self._repo.get_update_publication(change.id, self._channel_id)
-            assert pub is not None
-            if pub.status is PublicationStatus.QUEUED and pub.attempts == 0:
-                self.queue_update(pub)
-                return Told.QUEUED
+            self.queue_update(pub)
+            return Told.QUEUED
         sent = self.status_update(bill, change, with_act=with_act)
         result.count_post(sent)
         if sent and self.carries_act(change):
@@ -805,6 +807,9 @@ class Poster:
     def hold(self, bill: Bill, change: StatusChange) -> None:
         """Keep a service-stage change for the next post instead of sending it now."""
         assert change.id is not None, "only a change record_change stored reaches the poster"
+        stored = self._repo.get_update_publication(change.id, self._channel_id)
+        if stored is not None and stored.status is PublicationStatus.SENT:
+            return
         row = self._update_row(bill, change.id, PublicationStatus.SKIPPED)
         if self._attention_mode != "off":
             row.attention = assess_attention(
@@ -848,6 +853,8 @@ class Poster:
             ):
                 return False
         delivery = self.prepare(bill, change, with_act=with_act)
+        if delivery is None:
+            return True
         if existing is not None and not self.ready(
             existing.model_copy(update={"delivery": delivery})
         ):
@@ -857,9 +864,18 @@ class Poster:
         if delivery.wait_until is not None:
             # Attempted or uncertain sends can never be absorbed into a later analysis update.
             delivery = delivery.model_copy(update={"wait_until": None})
-            assert self._repo.replace_unsent_update_delivery(change.id, self._channel_id, delivery)
+            replaced = self._repo.replace_unsent_update_delivery(
+                change.id, self._channel_id, delivery
+            )
+            if not replaced:
+                latest = self._repo.get_update_publication(change.id, self._channel_id)
+                if latest is not None and latest.status is PublicationStatus.SENT:
+                    return True
+                raise AssertionError("only unattempted updates can clear a saved wait")
         pub = self._repo.get_update_publication(change.id, self._channel_id)
         assert pub is not None and pub.id is not None, "prepare stores the update and its plan"
+        if pub.status is PublicationStatus.SENT:
+            return True
         pub_id = pub.id
         snapshot = Bill.model_validate_json(delivery.bill_json)
         StatusChange.model_validate_json(delivery.change_json)
@@ -873,9 +889,14 @@ class Poster:
         message_id = self._send(pub_id, snapshot, use_card_parent=True)
         return message_id is not None
 
-    def prepare(self, bill: Bill, change: StatusChange, *, with_act: bool = False) -> DeliveryPlan:
+    def prepare(
+        self, bill: Bill, change: StatusChange, *, with_act: bool = False
+    ) -> DeliveryPlan | None:
+        """Return the saved plan, or None for an expired confirmed update."""
         assert change.id is not None, "only a change record_change stored reaches the poster"
         stored = self._repo.get_update_publication(change.id, self._channel_id)
+        if stored is not None and stored.status is PublicationStatus.SENT:
+            return stored.delivery
         if stored is not None and stored.delivery is not None:
             if source_context_blocked(self._repo, stored):
                 return stored.delivery
@@ -942,12 +963,7 @@ class Poster:
                         }
                     )
         if completion is not None:
-            with self._repo.atomic():
-                self._repo.create_publication(
-                    self._update_row(bill, change.id, PublicationStatus.QUEUED)
-                )
-                self._repo.save_update_delivery(change.id, self._channel_id, completion)
-            return completion
+            return self._store_update_plan(bill, change.id, completion)
         held = self._repo.list_held_status_changes(bill.term, bill.number, self._channel_id)
         deferred = [
             pub
@@ -1036,11 +1052,25 @@ class Poster:
             schedules.append(delivery.schedule)
             earliest = min(schedules, key=lambda schedule: schedule.detected_at)
             delivery = delivery.model_copy(update={"schedule": earliest})
+        return self._store_update_plan(bill, change.id, delivery, deferred=deferred)
+
+    def _store_update_plan(
+        self,
+        bill: Bill,
+        change_id: int,
+        delivery: DeliveryPlan,
+        *,
+        deferred: Sequence[Publication] = (),
+    ) -> DeliveryPlan | None:
         with self._repo.atomic():
             identity = self._repo.create_publication(
-                self._update_row(bill, change.id, PublicationStatus.QUEUED)
+                self._update_row(bill, change_id, PublicationStatus.QUEUED)
             )
-            self._repo.save_update_delivery(change.id, self._channel_id, delivery)
+            stored = self._repo.publication_by_id(identity)
+            assert stored is not None, "create_publication returns the saved status update"
+            if stored.status is PublicationStatus.SENT:
+                return stored.delivery
+            self._repo.save_update_delivery(change_id, self._channel_id, delivery)
             for pub in deferred:
                 assert pub.status_change_id is not None and pub.delivery is not None
                 assert self._repo.replace_unsent_update_delivery(

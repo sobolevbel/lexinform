@@ -148,6 +148,7 @@ def test_dismissed_continuation_finishes_its_absorbed_change(last_part: bool) ->
     recorded = poster.record_change(change)
     assert recorded is not None and recorded.id is not None
     plan = poster.prepare(w.bill("3039"), recorded)
+    assert plan is not None, "a new update retains its frozen plan"
     assert absorbed.status_change_id in plan.held_change_ids
     queued = w.repo.get_update_publication(recorded.id, CHANNEL)
     assert queued is not None
