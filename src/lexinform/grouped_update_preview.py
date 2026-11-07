@@ -3,6 +3,7 @@
 import hashlib
 from dataclasses import dataclass
 from datetime import date
+from itertools import product
 from typing import Literal
 
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
@@ -70,7 +71,7 @@ def grouped_update_render(
             end = start + len(fragment.text.encode())
             ranges.append(UpdateFragmentRange(fragment.kind, fragment.owners, start, end))
     result = GroupedUpdateRender(text, members, tuple(ranges), today, language, attention)
-    return result if _render_chunks(result) is not None else None
+    return result if valid_grouped_update_render(result) else None
 
 
 def preview_grouped_update(
@@ -91,7 +92,12 @@ def preview_grouped_update(
         return None
     original = _render_chunks(baseline)
     replacement = _render_chunks(candidate)
-    if original is None or replacement is None:
+    if (
+        original is None
+        or replacement is None
+        or not _canonical_topology(baseline)
+        or not _canonical_topology(candidate)
+    ):
         return None
     edit: tuple[int, int, bytes] | None = None
     for left, right, original_chunk, new_chunk in zip(
@@ -112,6 +118,38 @@ def preview_grouped_update(
     start, end, entry = edit
     source = baseline.text.encode()
     return (source[:start] + entry + source[end:]).decode()
+
+
+def valid_grouped_update_render(render: GroupedUpdateRender) -> bool:
+    return _render_chunks(render) is not None and _canonical_topology(render)
+
+
+def _canonical_topology(render: GroupedUpdateRender) -> bool:
+    actual = tuple((span.kind, span.owners) for span in render.ranges)
+    first, second = render.members
+    for partition in ((render.members,), ((first,), (second,))):
+        for omitted in product((False, True), repeat=len(partition)):
+            if render.attention and len(partition) > 1 and all(omitted):
+                continue
+            expected: list[tuple[FragmentKind, tuple[UpdateOwner, ...]]] = [("header", ())]
+            for group, omit in zip(partition, omitted, strict=True):
+                expected.extend(("member", (owner,)) for owner in group)
+                if not render.attention or not omit:
+                    expected.append(("road", group))
+                if not render.attention and not omit:
+                    expected.append(("action", group))
+            if actual == tuple(expected):
+                return True
+            if render.attention and actual == (*expected, ("tags", render.members)):
+                return True
+    return not render.attention and actual == (
+        ("header", ()),
+        ("member", (first,)),
+        ("member_action", (first,)),
+        ("member", (second,)),
+        ("member_action", (second,)),
+        ("road", render.members),
+    )
 
 
 def _render_chunks(render: GroupedUpdateRender) -> tuple[tuple[bytes, bytes], ...] | None:
@@ -153,6 +191,8 @@ def _render_chunks(render: GroupedUpdateRender) -> tuple[tuple[bytes, bytes], ..
                 return None
             member_entries.extend(span.owners)
         fragment = data[span.start : span.end]
+        if span.kind == "member_action" and not fragment.startswith(b"\n"):
+            return None
         try:
             fragment.decode()
         except UnicodeDecodeError:

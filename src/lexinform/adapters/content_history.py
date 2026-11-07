@@ -659,6 +659,13 @@ def verify_grouped_stage_content(connection: sqlite3.Connection, version: Conten
         or not direct_stage_plan_matches(compact)
     ):
         raise ValueError("grouped_stage_plan_scope")
+    witness = evidence.render_witness
+    if witness is not None and (
+        witness.today != compact.today
+        or tuple((owner.term, owner.number) for owner in witness.members)
+        != ((root.term, root.number), (second.term, second.number))
+    ):
+        raise ValueError("grouped_stage_render_witness_scope")
     plans = (root.delivery, second.delivery)
     first_plan, second_plan = plans
     if None in plans and (root.status is not PublicationStatus.SENT or not bindings):

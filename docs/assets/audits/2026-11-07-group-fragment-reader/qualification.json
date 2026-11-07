@@ -1,0 +1,28 @@
+{
+  "scope": "paired two-member stage update over fake Telegram",
+  "render_sha256": "3f357c28e8ed12edeaeefaf1ccf65e95b28c00a46f9e3cf05f1a54585aeb9e5c",
+  "fragment_count": 5,
+  "witness_bytes": 332,
+  "checkpoints": {
+    "legacy": {
+      "id": "content-v1:a6db3a30f8e608af9254997b910575ad24caf3b8039227c114ccc8062eaa71bf",
+      "sql_bytes": 96233,
+      "gzip_bytes": 16042,
+      "sha256": "14989975bf32199daddb2eb7cf633958917f72f2c71a679a8a664a2b6323be55",
+      "exact_restores": 2
+    },
+    "modern": {
+      "id": "content-v1:73fc743fbf7405205d2c626fa0b3ab4cdd13f92213aa1f64331d554aedb51d27",
+      "sql_bytes": 96583,
+      "gzip_bytes": 16195,
+      "sha256": "eecbab235ea5bc396af54e05ddec02eb6567cc9ff988b0b07ed3cc8298001f5d",
+      "exact_restores": 2
+    }
+  },
+  "baseline": "1facc5ba068b05c24cfedf5e7a9f7444efb8ca4d",
+  "prior_reader": {
+    "legacy_restore_exact": true,
+    "witness_checkpoint_rejected_atomically": true
+  },
+  "measurement_runner_sha256": "4c05765ed259e6bd365aaaf9f39b51e8314592cf6c17f22b6ef2e252b96a6a34"
+}

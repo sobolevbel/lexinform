@@ -11,6 +11,7 @@ from lexinform.bill_context import continuation_snapshot
 from lexinform.json_storage import read_json
 from lexinform.models.bill import Bill
 from lexinform.models.enums import PublicationStatus
+from lexinform.models.grouped_update_witness import GroupedRenderWitness
 
 
 class ContentSnapshot(BaseModel):
@@ -99,6 +100,9 @@ class GroupedStageContentEvidence(BaseModel):
 
     profile: Literal["grouped-stage-content-v1"] = "grouped-stage-content-v1"
     members: tuple[GroupedStageMember, GroupedStageMember]
+    render_witness: GroupedRenderWitness | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class ContentVersion(BaseModel):
@@ -258,6 +262,18 @@ class ContentVersion(BaseModel):
                 or first.status_change_id == second.status_change_id
             ):
                 raise ValueError("Grouped stage history requires two distinct ordered originals")
+            witness = group.render_witness
+            if witness is not None:
+                if tuple(
+                    (owner.card_message_id, owner.status_change_id) for owner in witness.members
+                ) != tuple(
+                    (member.anchor_message_id, member.status_change_id) for member in group.members
+                ):
+                    raise ValueError(
+                        "Grouped render witness does not match ordered card and event identities"
+                    )
+                witness.bind(self.rendered_text, self.language)
+
         return self
 
     @property

@@ -14206,3 +14206,20 @@ with those configurations, so it supplies parity evidence only. No
 historical witness was reconstructed.
 
 [Qualification](../assets/audits/2026-11-07-group-update-preview/qualification.json).
+
+<a id="j417"></a>
+
+## J417 — read bounded exact ownership of shared stage fragments
+
+The compatible reader binds optional fragment ranges to the immutable
+render hash, UTF-8 boundaries, canonical topology, ordered member/card/event
+identities and the frozen rendering day. Older versions preserve their
+serialized form and identity. No production writer emits the field.
+
+The staged fake Telegram checkpoint retained five fragments without
+duplicating rendered text. The 332-byte witness added 350 SQL bytes and
+153 gzip bytes in the paired checkpoint. Both forms survived two exact
+restores after delivery cleanup. The prior reader rejected the extended
+checkpoint atomically.
+
+[Qualification](../assets/audits/2026-11-07-group-fragment-reader/qualification.json).
