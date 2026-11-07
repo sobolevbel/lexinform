@@ -14119,3 +14119,18 @@ byte-identical restores. Four J301 exclusion controls matched the previous
 output. The reader release is the rollback floor for the new records.
 
 [Qualification](../assets/audits/2026-11-07-admitted-support-writer/qualification.json).
+
+<a id="j412"></a>
+
+## J412 — retain loose support on a resolved alternative observation
+
+The selected alternative's exact support positions remain attached to the
+resolved analysis observation. Prefilter records the requested document and
+keeps its previous trace. The chosen source, text and reads remain unchanged.
+
+In pinned RCL 12396606 stage 4, file 712346 won over requested file 719425 and
+included the complete OSR 712347. Both paths retained the same selection,
+the prefilter observation matched exactly, and two checkpoint restores
+preserved the complete saved state.
+
+[Qualification](../assets/audits/2026-11-07-admitted-support-alternative/qualification.json).

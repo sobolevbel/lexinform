@@ -1,0 +1,44 @@
+{
+  "admitted_support": {
+    "index": 1,
+    "omitted": 0,
+    "phase": "version_comparison",
+    "rows": [
+      {
+        "extra_index": 0,
+        "file_sha256": "5be77bfc23a41f07d63ec4ad1828d943045d1ccca24141d7b6b399f0e3fa9194",
+        "role": "osr",
+        "text_sha256": "72b430e6f9c478206b090c831cfae3aff996f78b084ef2a0fed213bd3b4cbeac"
+      }
+    ]
+  },
+  "assembly_sha256": "29dea602b139e0e27ed2f90a6c719dcab907c8276d0f1d189cfecf2c8be709e6",
+  "checkpoints": {
+    "legacy": {
+      "gzip_bytes": 9433,
+      "restores": 2,
+      "sha256": "6c05145da99cdb7ca92d6d8e9c52ca621ddd97378e89180ce8f63dd25caffe18",
+      "sql_bytes": 49566
+    },
+    "new": {
+      "gzip_bytes": 9542,
+      "restores": 2,
+      "sha256": "b4becaed59a5bf9974bb0046d882ec0748846d75974502f1d39436e62189285f",
+      "sql_bytes": 51147
+    }
+  },
+  "inputs": {
+    "712346": "f9781ffa68e6b80fa129da3743a61c54dab58ebd8a9a024a79e62252d76ee465",
+    "712347": "5be77bfc23a41f07d63ec4ad1828d943045d1ccca24141d7b6b399f0e3fa9194",
+    "719425": "412497cb62456a8daaeb8bab63953eed93c4991ee8e92872ca4a51f5332032db"
+  },
+  "prefilter_exact": true,
+  "project_sha256": "9633b24c703ef806dc2b7bcaf13d2aaecc215a82aa2ca2b7a8d16e170450788d",
+  "reads": [
+    "719425",
+    "712346",
+    "712347"
+  ],
+  "baseline": "8fb526e687bf1ac5bb447b2f55519442d33c2c2b",
+  "replay_runner_sha256": "45947584f9cc61ef190a8a5018fe2f1d0fc01bf879387913ae01d5c57da1db72"
+}

@@ -650,21 +650,27 @@ class TextLoader:
                 tuple(extractions[key] for key in sorted(extractions)),
                 omission=observation.record if observation is not None else None,
             )
+        trace = file.candidate_trace
+        if (
+            record_requested_document
+            and requested != resolved
+            and trace is not None
+            and trace.admitted_support is not None
+        ):
+            trace = trace.model_copy(update={"admitted_support": None})
         defer_archive_trace = None
         evidence = file.archive_version_evidence
-        if evidence is not None and file.candidate_trace is not None:
+        if evidence is not None and trace is not None:
             with suppress(Exception):
-                enriched = _trace_with_archive_evidence(file.candidate_trace, evidence)
-                defer_archive_trace = partial(
-                    self._defer_archive_trace, file.candidate_trace.trace_id, enriched
-                )
+                enriched = _trace_with_archive_evidence(trace, evidence)
+                defer_archive_trace = partial(self._defer_archive_trace, trace.trace_id, enriched)
         return DocumentSourceRead(
             requested if record_requested_document else resolved,
             DocumentSelectionRecord.from_selection(file.selection),
             physical.artifacts,
             reads=physical.reads,
             extractions=physical.extractions,
-            candidate_trace=file.candidate_trace,
+            candidate_trace=trace,
             defer_archive_trace=defer_archive_trace,
         )
 
@@ -1061,13 +1067,7 @@ class TextLoader:
                     _trace_with_archive_evidence(enriched, archive_version_evidence)
                 trace = enriched
         base_trace = trace or routine_trace
-        # Prefilter records the requested source even when an alternative wins.
-        if (
-            base_trace is not None
-            and composition is not None
-            and composition.admitted_support
-            and selected == document
-        ):
+        if base_trace is not None and composition is not None and composition.admitted_support:
             with suppress(Exception):
                 evidence = _selected_admitted_support(base_trace, selected, loaded, composition)
                 if evidence is not None:

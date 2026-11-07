@@ -4,6 +4,7 @@ from hashlib import sha256
 import pytest
 
 from lexinform.models import TextDocument
+from lexinform.services.document_history import DocumentSourceRead
 from lexinform.services.documents import TextLoader
 from tests.fakes import FakeTextExtractor
 from tests.unit.test_physical_extraction import docx, extractor
@@ -47,3 +48,38 @@ def test_only_native_support_still_in_final_selection_is_recorded(native: bool) 
     assert row.extra_index == 0 and row.role == "justification"
     assert row.file_sha256 == sha256(bodies[REQUIRED]).hexdigest()
     assert [part.url for part in loaded.selection.parts] == [MAIN, REQUIRED]
+
+
+def test_alternative_support_is_retained_only_for_the_resolved_source() -> None:
+    alternative = MAIN + "-alternate"
+    bodies = {MAIN: b"", alternative: docx(BODY), REQUIRED: docx(SUPPORT)}
+    calls: Counter[str] = Counter()
+
+    def download(url: str, *, max_bytes: int | None = None) -> bytes:
+        calls[url] += 1
+        return bodies[url]
+
+    loader = TextLoader({"source.test": download}, extractor(), max_bytes=100_000)
+    alternate = TextDocument(url=alternative, kind="print", extra_urls=(REQUIRED,))
+    requested = TextDocument(url=MAIN, kind="print", alternatives=(alternate,))
+    chosen, loaded = loader.select_document(requested, retain_routine_trace=True)
+
+    analysis = loader.capture_source_read(requested, chosen, loaded)
+    prefilter = loader.capture_source_read(
+        requested, chosen, loaded, record_requested_document=True
+    )
+
+    assert chosen == alternate
+    assert calls == {MAIN: 1, alternative: 1, REQUIRED: 1}
+    assert isinstance(analysis, DocumentSourceRead)
+    assert isinstance(prefilter, DocumentSourceRead)
+    assert (analysis.document, prefilter.document) == (alternate, requested)
+    assert analysis.selection == prefilter.selection
+    assert (
+        analysis.candidate_trace is not None
+        and analysis.candidate_trace.admitted_support is not None
+    )
+    assert analysis.candidate_trace.admitted_support.index == 1
+    assert prefilter.candidate_trace == analysis.candidate_trace.model_copy(
+        update={"admitted_support": None}
+    )
