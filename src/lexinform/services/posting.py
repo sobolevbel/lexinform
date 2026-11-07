@@ -573,7 +573,7 @@ class Poster:
                 pub.model_copy(update={"delivery": plan}),
                 text,
                 persist=lambda identity, prepared: self._repo.freeze_sitting_delivery(
-                    pubs, (prepared,)
+                    pubs, (prepared,), content_format=(self._language, FORMATTER_VERSION)
                 ),
             )
         identities = tuple(pub.id for pub in pubs)
@@ -589,7 +589,9 @@ class Poster:
             )
             for pub, plan in zip(pubs, plans, strict=True)
         )
-        if not self._repo.freeze_sitting_delivery(pubs, prepared):
+        if not self._repo.freeze_sitting_delivery(
+            pubs, prepared, content_format=(self._language, FORMATTER_VERSION)
+        ):
             raise ValueError("Cannot freeze the sitting delivery")
         assert pubs[0].id is not None, "sitting_root_plan requires stored identities"
         stored = self._repo.publication_by_id(pubs[0].id)

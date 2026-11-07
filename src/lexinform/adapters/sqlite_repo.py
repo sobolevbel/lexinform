@@ -277,6 +277,14 @@ from lexinform.models.content import (
 from lexinform.models.legacy_results import canonical_legacy_json, legacy_json
 from lexinform.models.physical_inventory import PhysicalCapture, PhysicalMetadata
 from lexinform.models.senate_inspection import SenateInspectionLink, SenateInspectionRecord
+from lexinform.models.sitting_content import (
+    MAX_SITTING_HISTORY_BYTES,
+    MAX_SITTING_HISTORY_ROWS,
+    SittingContentMember,
+    SittingContentPart,
+    SittingContentPlan,
+    sitting_content_context,
+)
 from lexinform.models.source_catalog_attempts import SourceCatalogAttempt, SourceCatalogSnapshot
 from lexinform.models.source_omissions import SourceMetadataOmission
 from lexinform.name_binding import bind_mnemonic
@@ -3879,7 +3887,11 @@ class SqliteBillRepository:
         return True
 
     def freeze_sitting_delivery(
-        self, members: tuple[Publication, ...], plans: tuple[DeliveryPlan, ...]
+        self,
+        members: tuple[Publication, ...],
+        plans: tuple[DeliveryPlan, ...],
+        *,
+        content_format: tuple[str, str] | None = None,
     ) -> bool:
         identities = tuple(member.id for member in members)
         if not members or len(members) != len(plans) or len(set(identities)) != len(identities):
@@ -3959,7 +3971,101 @@ class SqliteBillRepository:
                 )
                 if changed.rowcount != 1:
                     raise ValueError("Cannot freeze a changed sitting delivery")
+            if content_format is not None:
+                self._record_sitting_content(members, plans, content_format)
         return True
+
+    def _record_sitting_content(
+        self,
+        members: tuple[Publication, ...],
+        plans: tuple[DeliveryPlan, ...],
+        content_format: tuple[str, str],
+    ) -> None:
+        if any(
+            member.status is not PublicationStatus.QUEUED or member.attempts for member in members
+        ):
+            return
+        root = members[0]
+        assert root.id is not None, "the sitting freeze requires stored identities"
+        language, formatter_version = content_format
+        if (
+            len(members) > MAX_SITTING_HISTORY_ROWS
+            or len(plans[0].continuation_ids) >= MAX_SITTING_HISTORY_ROWS
+        ):
+            log.warning("sitting content history omitted: publication=%s reason=rows", root.id)
+            return
+        try:
+            bills = {
+                delivery.bill_json: ContentSnapshot(kind="bill", payload_json=delivery.bill_json)
+                for delivery in plans
+            }
+            logical = tuple(
+                SittingContentMember.model_validate(
+                    {
+                        "id": member.id,
+                        "term": member.term,
+                        "number": member.number,
+                        "kind": member.kind.value,
+                        "ref": member.ref,
+                        "bill_snapshot_id": bills[delivery.bill_json].snapshot_id,
+                        "plan": sitting_content_context(delivery),
+                    }
+                )
+                for member, delivery in zip(members, plans, strict=True)
+            )
+            root_plan = plans[0]
+            physical = [
+                SittingContentPart(
+                    id=root.id,
+                    html=root_plan.group_text or root_plan.rendered_text,
+                    disable_notification=root_plan.disable_notification,
+                )
+            ]
+            for identity in root_plan.continuation_ids:
+                child = self.publication_by_id(identity)
+                assert child is not None and child.delivery is not None, (
+                    "the sitting freeze validated the full continuation chain"
+                )
+                physical.append(
+                    SittingContentPart(
+                        id=identity,
+                        html=child.delivery.rendered_text,
+                        disable_notification=child.delivery.disable_notification,
+                    )
+                )
+            offered = SittingContentPlan.model_construct(
+                channel_id=root.channel_id, members=logical, parts=tuple(physical)
+            )
+            snapshot = ContentSnapshot(kind="plan", payload_json=offered.model_dump_json())
+            if (
+                len(snapshot.payload_json.encode())
+                + sum(len(bill.payload_json.encode()) for bill in bills.values())
+                > MAX_SITTING_HISTORY_BYTES
+            ):
+                log.warning("sitting content history omitted: publication=%s reason=bytes", root.id)
+                return
+            plan = SittingContentPlan.model_validate_json(snapshot.payload_json)
+            version = ContentVersion(
+                root_publication_id=root.id,
+                reason="original",
+                language=language,
+                formatter_version=formatter_version,
+                sitting_profile="sitting-content-v1",
+                plan_snapshot_id=snapshot.snapshot_id,
+                recorded_at=root.created_at,
+            )
+        except ValueError:
+            log.warning("sitting content history omitted: publication=%s reason=profile", root.id)
+            return
+        for bill in bills.values():
+            self.save_content_snapshot(bill)
+        self.save_content_snapshot(snapshot)
+        self.save_content_version(version)
+        self._conn.executemany(
+            "INSERT INTO publication_content(publication_id,content_id) VALUES(?,?)",
+            [(identity, version.content_id) for identity in plan.bindings],
+        )
+        verify_sitting_content(self._conn, version, require_bound=True)
 
     def get_update_publication(self, change_id: int, channel_id: str) -> Publication | None:
         row = self._conn.execute(

@@ -195,7 +195,12 @@ def test_refused_legacy_group_freeze_stops_before_any_api_or_pending_write(
     before = world.repo.dump()
     posts = len(world.publisher.sent)
 
-    def refuse(members: tuple[Publication, ...], plans: tuple[DeliveryPlan, ...]) -> bool:
+    def refuse(
+        members: tuple[Publication, ...],
+        plans: tuple[DeliveryPlan, ...],
+        *,
+        content_format: tuple[str, str] | None = None,
+    ) -> bool:
         return False
 
     monkeypatch.setattr(world.repo, "freeze_sitting_delivery", refuse)

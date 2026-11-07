@@ -1257,7 +1257,11 @@ class BillRepository(Protocol):
     def freeze_direct_delivery(self, original: Publication, delivery: DeliveryPlan) -> bool: ...
 
     def freeze_sitting_delivery(
-        self, members: tuple[Publication, ...], plans: tuple[DeliveryPlan, ...]
+        self,
+        members: tuple[Publication, ...],
+        plans: tuple[DeliveryPlan, ...],
+        *,
+        content_format: tuple[str, str] | None = None,
     ) -> bool: ...
 
     def list_joint_reply_candidates(
