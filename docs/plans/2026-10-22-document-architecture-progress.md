@@ -14152,3 +14152,22 @@ added 10,981 SQL bytes and 1,774 gzip bytes to the scratch checkpoint.
 The previous reader rejected that checkpoint without changing legacy state.
 
 [Qualification](../assets/audits/2026-11-07-group-content-reader/qualification.json).
+
+<a id="j414"></a>
+
+## J414 — freeze shared content history before the grouped stage send
+
+The first freeze of two qualified stage-only members writes their immutable
+shared version in the same transaction as their frozen delivery plans.
+A history write failure rolls back that freeze. Unsupported groups follow
+the existing delivery path. Recovery and correction routing are unchanged.
+
+The fake Telegram boundary observed one send and a restored pending
+checkpoint containing the exact shared text. Sent and unknown cases kept
+their physical evidence, and unknown delivery was not resent. After
+cleanup the two SQLite checkpoints matched their respective dumps across
+two restores. The content history added 10,981 SQL bytes and 1,774 gzip
+bytes in the scratch fixture. The compatible reader also restored the new
+checkpoint exactly.
+
+[Qualification](../assets/audits/2026-11-07-group-content-writer/qualification.json).

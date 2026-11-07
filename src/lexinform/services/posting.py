@@ -57,6 +57,7 @@ from lexinform.services.content_history import (
     FORMATTER_VERSION,
     capture_content_applications,
     prepare_publication_content,
+    record_grouped_stage_content,
     record_publication_content,
 )
 from lexinform.services.direct_delivery import freeze_direct_root
@@ -371,6 +372,7 @@ class Poster:
                 assert self._repo.replace_unsent_update_delivery(
                     pub.status_change_id, self._channel_id, plan
                 )
+            record_grouped_stage_content(self._repo, self._clock, pubs, language=self._language)
         stored = self._repo.publication_by_id(members[0].publication_id)
         assert stored is not None
         self.retry_update_group(stored, result)

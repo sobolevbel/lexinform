@@ -1,0 +1,25 @@
+{
+  "scope": "native two-member grouped update with fake Telegram and scratch SQLite",
+  "physical_rows_and_text_exact": true,
+  "frozen_before_send": true,
+  "checkpoints": {
+    "legacy": {
+      "sql_bytes": 85252,
+      "gzip_bytes": 14268,
+      "sha256": "84b13107a88c198855f8276abdb3a8afe80efc442f4f7967ed2099c78de94d57",
+      "exact_restores": 2
+    },
+    "grouped": {
+      "sql_bytes": 96233,
+      "gzip_bytes": 16042,
+      "sha256": "14989975bf32199daddb2eb7cf633958917f72f2c71a679a8a664a2b6323be55",
+      "exact_restores": 2
+    }
+  },
+  "compatible_reader": "c8a7c5231788a5e05d33945cba00585bb537341b",
+  "reader_restore": {
+    "exact_restores": 2,
+    "retained_group_is_current": true
+  },
+  "measurement_runner_sha256": "797d701103ea234d35203c8d6b3ec8a4e72699cffd1be252092015fe8bac28fa"
+}

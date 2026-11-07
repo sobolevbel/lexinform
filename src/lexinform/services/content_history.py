@@ -8,7 +8,11 @@ from lexinform.content_sources import (
     inspect_primary_content_sources,
     supported_source_context,
 )
-from lexinform.content_versions import card_physical_matches, direct_stage_plan_matches
+from lexinform.content_versions import (
+    card_physical_matches,
+    direct_stage_plan_matches,
+    grouped_stage_context,
+)
 from lexinform.errors import CardPrimaryEvidenceError, SupplementContentEvidenceError
 from lexinform.models import (
     AmendmentsRecord,
@@ -26,7 +30,10 @@ from lexinform.models import (
 )
 from lexinform.models.content import (
     MAX_DIRECT_STAGE_CONTENT_BYTES,
+    MAX_GROUPED_STAGE_CONTENT_BYTES,
     DirectStageContentEvidence,
+    GroupedStageContentEvidence,
+    GroupedStageMember,
     SupplementContentEvidence,
     card_bill_snapshot,
     editorial_bill_snapshot,
@@ -357,6 +364,137 @@ def prepare_publication_content(
         recorded_at=clock.now(),
     )
     return version, (bill_snapshot, change_snapshot, plan_snapshot)
+
+
+def record_grouped_stage_content(
+    repo: BillRepository,
+    clock: Clock,
+    origins: list[Publication],
+    *,
+    language: str,
+) -> None:
+    """Record a qualified two-member first freeze within the caller's atomic group write."""
+    if len(origins) != 2 or language not in ("ru", "en"):
+        return
+    snapshots: list[ContentSnapshot] = []
+    witnesses: list[GroupedStageMember] = []
+    common: DeliveryPlan | None = None
+    for original in origins:
+        identity = original.id
+        before = original.delivery
+        if (
+            identity is None
+            or original.kind is not PublicationKind.STATUS_UPDATE
+            or original.status is not PublicationStatus.QUEUED
+            or original.attempts
+            or before is None
+            or before.update_group
+            or before.group_text
+            or before.rendered_text
+            or before.render_origin is not None
+            or before.held_change_ids
+            or before.with_act
+            or repo.get_publication_content(identity) is not None
+            or repo.digest_owner(identity) is not None
+        ):
+            return
+        frozen = repo.publication_by_id(identity)
+        if (
+            frozen is None
+            or frozen.delivery is None
+            or frozen.status is not PublicationStatus.QUEUED
+        ):
+            return
+        plan = frozen.delivery
+        if (
+            plan.reply_to is None
+            or not direct_stage_plan_matches(grouped_stage_context(plan))
+            or (plan.bill_json, plan.change_json) != (before.bill_json, before.change_json)
+            or len(plan.update_group) != 2
+            or not plan.group_text
+        ):
+            return
+        if common is None:
+            common = plan
+        elif (plan.update_group, plan.group_text, plan.today) != (
+            common.update_group,
+            common.group_text,
+            common.today,
+        ):
+            return
+        change = StatusChange.model_validate_json(plan.change_json)
+        bill = Bill.model_validate_json(plan.bill_json)
+        if (
+            change.id is None
+            or change.id != original.status_change_id
+            or (change.term, change.number) != (original.term, original.number)
+            or (bill.term, bill.number) != (original.term, original.number)
+            or not change.new_stages
+            or amendments_stage(change.new_stages) is not None
+            or change.amendments is not None
+            or change.supplements
+            or repo.get_status_change(change.id) != change
+        ):
+            return
+        aliases = repo.card_aliases(original.channel_id, plan.reply_to)
+        if len(aliases) != 1:
+            return
+        (anchor,) = aliases
+        if (
+            anchor.id is None
+            or anchor.message_id != plan.reply_to
+            or anchor.sent_at is None
+            or anchor.sent_at > original.created_at
+            or (anchor.term, anchor.number) != (original.term, original.number)
+        ):
+            return
+        bill_snapshot = card_bill_snapshot(plan.bill_json)
+        change_snapshot = ContentSnapshot(kind="change", payload_json=plan.change_json)
+        snapshots.extend((bill_snapshot, change_snapshot))
+        witnesses.append(
+            GroupedStageMember(
+                publication_id=identity,
+                anchor_publication_id=anchor.id,
+                anchor_message_id=plan.reply_to,
+                status_change_id=change.id,
+                bill_snapshot_id=bill_snapshot.snapshot_id,
+                change_snapshot_id=change_snapshot.snapshot_id,
+                original_bill_sha256=hashlib.sha256(plan.bill_json.encode()).hexdigest(),
+            )
+        )
+    assert common is not None, "both qualified members provide frozen group plans"
+    first, second = witnesses
+    if (origins[0].term, origins[0].number) == (origins[1].term, origins[1].number) or tuple(
+        item.publication_id for item in common.update_group
+    ) != (first.publication_id, second.publication_id):
+        return
+    compact = ContentSnapshot(
+        kind="plan", payload_json=grouped_stage_context(common).model_dump_json()
+    )
+    snapshots.append(compact)
+    if (
+        sum(len(snapshot.payload_json.encode()) for snapshot in snapshots)
+        + len(common.group_text.encode())
+        > MAX_GROUPED_STAGE_CONTENT_BYTES
+    ):
+        return
+    version = ContentVersion(
+        root_publication_id=first.publication_id,
+        reason="original",
+        language=language,
+        formatter_version=FORMATTER_VERSION,
+        bill_snapshot_id=first.bill_snapshot_id,
+        change_snapshot_id=first.change_snapshot_id,
+        plan_snapshot_id=compact.snapshot_id,
+        rendered_text=common.group_text,
+        status_change_id=first.status_change_id,
+        grouped_stage_evidence=GroupedStageContentEvidence(members=(first, second)),
+        recorded_at=clock.now(),
+    )
+    for snapshot in snapshots:
+        repo.save_content_snapshot(snapshot)
+    repo.save_content_version(version)
+    repo.bind_publication_content(first.publication_id, version.content_id)
 
 
 def _prepare_direct_stage_content(

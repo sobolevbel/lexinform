@@ -12,11 +12,17 @@ from lexinform.models.content import (
     GroupedStageMember,
     card_bill_snapshot,
 )
+from lexinform.services import posting
 from lexinform.services.content_history import restore_content_delivery
 from lexinform.services.content_inspection import inspect_content
 from tests.checkpoint_state import saved_state
 from tests.harness import World
 from tests.scenario.test_group_remote_checkpoints import flush, queued_world, rows
+
+
+@pytest.fixture(autouse=True)
+def isolate_manual_reader(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(posting, "record_grouped_stage_content", lambda *args, **kwargs: None)
 
 
 def version_fixture(
