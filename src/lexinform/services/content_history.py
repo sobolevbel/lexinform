@@ -32,6 +32,7 @@ from lexinform.models import (
 )
 from lexinform.models.content import (
     MAX_ACT_PUBLISHED_CONTENT_BYTES,
+    MAX_DIRECT_HELD_STAGE_CONTENT_BYTES,
     MAX_DIRECT_STAGE_CONTENT_BYTES,
     MAX_EXTENDED_GROUPED_STAGE_MEMBERS,
     MAX_GROUPED_STAGE_CONTENT_BYTES,
@@ -144,6 +145,16 @@ def record_publication_content(
         repo.save_original_delivery_content(
             bill_snapshot, plan_snapshot, version, change=change_snapshot
         )
+        return version
+    if version.direct_stage_evidence is not None and version.direct_stage_evidence.held is not None:
+        try:
+            with repo.atomic():
+                for snapshot in snapshots:
+                    repo.save_content_snapshot(snapshot)
+                repo.save_content_version(version)
+                repo.bind_publication_content(publication.id, version.content_id)
+        except ValueError:
+            return None
         return version
     try:
         with repo.atomic():
@@ -664,6 +675,7 @@ def _prepare_direct_stage_content(
 ) -> tuple[ContentVersion, tuple[ContentSnapshot, ...]] | None:
     plan = publication.delivery
     multipart = bool(plan and plan.continuation_ids)
+    held = bool(plan and plan.held_change_ids)
     has_application = multipart and (change.amendments is not None or bool(change.supplements))
     shape = plan.model_copy(update={"continuation_ids": ()}) if multipart and plan else plan
     ungrouped = publication.model_copy(update={"delivery": shape}) if multipart else publication
@@ -673,7 +685,7 @@ def _prepare_direct_stage_content(
         or plan.reply_to is None
         or shape is None
         or not direct_stage_plan_matches(shape)
-        or plan.held_change_ids
+        or (held and (multipart or change.amendments is not None or change.supplements))
         or plan.with_act
         or plan.render_origin is not None
         or publication.status is not PublicationStatus.QUEUED
@@ -691,10 +703,20 @@ def _prepare_direct_stage_content(
         or (origin.delivery.bill_json, origin.delivery.change_json)
         != (plan.bill_json, plan.change_json)
         or not _first_direct_application(repo, ungrouped, origin)
-        or repo.get_status_change(change.id) != change
+        or (
+            origin.delivery.held_change_ids != plan.held_change_ids
+            if held
+            else repo.get_status_change(change.id) != change
+        )
     ):
         return None
     aliases = repo.card_aliases(publication.channel_id, plan.reply_to)
+    if held:
+        aliases = [
+            item
+            for item in aliases
+            if (item.term, item.number) == (publication.term, publication.number)
+        ]
     if len(aliases) != 1:
         return None
     (anchor,) = aliases
@@ -708,7 +730,9 @@ def _prepare_direct_stage_content(
     ):
         return None
     bill = Bill.model_validate_json(plan.bill_json)
-    if (bill.term, bill.number) != (publication.term, publication.number):
+    if (bill.term, bill.number) != (publication.term, publication.number) or (
+        held and not bill.has_process
+    ):
         return None
     computation_ids: tuple[str, ...] = ()
     application_ids: tuple[int, ...] = ()
@@ -773,7 +797,13 @@ def _prepare_direct_stage_content(
     snapshots = (bill_snapshot, change_snapshot, plan_snapshot)
     if sum(len(snapshot.payload_json.encode()) for snapshot in snapshots) + (
         0 if multipart else len(plan.rendered_text.encode())
-    ) > (MAX_ORIGINAL_DELIVERY_BYTES if multipart else MAX_DIRECT_STAGE_CONTENT_BYTES):
+    ) > (
+        MAX_ORIGINAL_DELIVERY_BYTES
+        if multipart
+        else MAX_DIRECT_HELD_STAGE_CONTENT_BYTES
+        if held
+        else MAX_DIRECT_STAGE_CONTENT_BYTES
+    ):
         return None
     return (
         ContentVersion(
@@ -788,6 +818,7 @@ def _prepare_direct_stage_content(
             status_change_id=change.id,
             direct_stage_evidence=DirectStageContentEvidence(
                 anchor_publication_id=anchor.id,
+                held="held-stage-prefix-v1" if held else None,
                 multipart=(
                     "direct-stage-application-parts-v1"
                     if has_application

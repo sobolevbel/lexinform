@@ -11,6 +11,7 @@ from lexinform.models import (
     Attachment,
     BillStatus,
     Committee,
+    ContentVersion,
     PrintInfo,
     Publication,
     PublicationKind,
@@ -20,6 +21,7 @@ from lexinform.models import (
     VotingSummary,
     flatten_stages,
 )
+from lexinform.ports import PublishResult
 from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import COMMITTEE_STAGES, ELI, REFERRED, START, TERM, World, act, print_url
 
@@ -51,7 +53,10 @@ def test_new_stage_is_posted_exactly_once_as_a_reply_to_the_card() -> None:
     assert again.updates == 0 and len(w.publisher.updates) == 1
 
 
-def test_service_stages_are_held_and_told_with_the_next_substantive_one() -> None:
+@pytest.mark.parametrize("history_valid", [True, False])
+def test_service_stages_are_held_and_told_with_the_next_substantive_one(
+    history_valid: bool, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
     w.run()
@@ -64,6 +69,30 @@ def test_service_stages_are_held_and_told_with_the_next_substantive_one() -> Non
     w.set_stages("3039", REFERRED + (reading,) + WITH_REPORT[len(REFERRED) :])
     w.clock.advance(days=1)
 
+    if not history_valid:
+        save = w.repo.save_content_version
+
+        def reject_held(version: ContentVersion) -> None:
+            if version.direct_stage_evidence is not None and version.direct_stage_evidence.held:
+                raise ValueError("direct_held_stage_event_scope")
+            save(version)
+
+        monkeypatch.setattr(w.repo, "save_content_version", reject_held)
+    send = w.publisher.publish_prepared
+
+    def inspect_before_send(publication: Publication) -> PublishResult:
+        if publication.delivery is not None and publication.delivery.held_change_ids:
+            assert publication.id is not None
+            saved = w.repo.get_publication_content(publication.id)
+            if history_valid:
+                assert saved is not None and saved.direct_stage_evidence is not None
+                assert saved.direct_stage_evidence.held == "held-stage-prefix-v1"
+                assert saved.rendered_text == publication.delivery.rendered_text
+            else:
+                assert saved is None
+        return send(publication)
+
+    monkeypatch.setattr(w.publisher, "publish_prepared", inspect_before_send)
     report = w.run()
 
     assert (held.updates, held.held) == (0, 1)
@@ -75,6 +104,26 @@ def test_service_stages_are_held_and_told_with_the_next_substantive_one() -> Non
         "Sprawozdanie komisji",
     ]
     assert w.repo.list_held_status_changes(10, "3039", "@test") == []  # released with the post
+    now = w.clock.now()
+    rows = w.repo.list_publications_between(
+        "@test", since=now - dt.timedelta(days=2), until=now + dt.timedelta(days=1)
+    )
+    (root,) = (row for row in rows if row.delivery is not None and row.delivery.held_change_ids)
+    assert root.id is not None and root.delivery is not None
+    (held_id,) = root.delivery.held_change_ids
+    released = w.repo.get_update_publication(held_id, root.channel_id)
+    assert released is not None and released.status is PublicationStatus.SENT
+    assert (released.message_id, released.sent_at) == (root.message_id, root.sent_at)
+    version = w.repo.get_publication_content(root.id)
+    assert (version is not None) == history_valid
+    cutoff = now + dt.timedelta(days=365)
+    w.repo.prune_history(before=cutoff, memo_before=cutoff)
+    dump = w.repo.dump()
+    (tmp_path / ("candidate.sql" if history_valid else "baseline.sql")).write_text(dump)
+    for _ in range(2):
+        w.repo.restore(dump)
+        assert w.repo.dump() == dump
+        assert w.repo.get_publication_content(root.id) == version
 
 
 def test_closure_that_arrives_with_the_act_is_told_by_the_publication_notice_only() -> None:

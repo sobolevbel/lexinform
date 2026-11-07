@@ -1,0 +1,25 @@
+{
+  "state": "175b03b53e3d17a2cb87fd361325749d758e16dd",
+  "state_sql_sha256": "86631b80b725d7581a9da3000449c54dbbddec364841b219bfb99ad934372023",
+  "scope": "Controlled pinned first-freeze writer trial. Reset only operational statuses in an offline copy; exact existing plan HTML, original release receipts and owner links.",
+  "cases": {
+    "161": {
+      "held_ids": [
+        109
+      ],
+      "content_id": "content-v1:84e1dd65893e53738c777efe56d9f2047694d67da94baa3030f3e1bc8df712ed",
+      "anchor_id": 77
+    },
+    "192": {
+      "held_ids": [
+        115,
+        138
+      ],
+      "content_id": "content-v1:b25da4c11fd1d494aceaba58ae035d9b077baa276838f85c6a2f27314b2c1b39",
+      "anchor_id": 64
+    }
+  },
+  "exact_restores": 2,
+  "sql_delta": 19330,
+  "gzip_delta": 3344
+}
