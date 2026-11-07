@@ -1,0 +1,13 @@
+{
+  "scope": "Test fixture correction only; production validator unchanged.",
+  "failed_gate_sha256": "dcaa8660daf562bc7bb7127d1c4f3e51e53afa7b0d0f9524f1fa5a173fe4a5f3",
+  "agent_patch_sha256": "2f21c8eba90591933985aaa9dcbe0e224832027049a75e0d8e2ca0007b03160c",
+  "findings": [
+    "Normal uncertain delivery records no confirmed message ID or sent time.",
+    "Previous fixture turned a confirmed delivery into a contradictory non-SENT row.",
+    "Both draft and reader paths now exercise actual uncertainty before restore and prove one send attempt.",
+    "Malformed retained receipt still fails atomic restore."
+  ],
+  "focused_passed": 148,
+  "final_controls_passed": 13
+}

@@ -2261,6 +2261,35 @@ class SqliteBillRepository:
     def find_card_primary_evidence(self, bill: Bill) -> CardPrimaryEvidence | None:
         return card_primary_evidence_candidate(self._conn, bill)
 
+    def save_digest_content(self, snapshot: ContentSnapshot, version: ContentVersion) -> None:
+        if not self._conn.in_transaction or version.digest_profile != "digest-content-v1":
+            raise ValueError("digest capture requires its original atomic freeze")
+        if snapshot.snapshot_id != version.plan_snapshot_id:
+            raise ValueError("digest capture snapshot differs from its version")
+        with self.atomic():
+            self.save_content_snapshot(snapshot)
+            plan = verify_digest_content(self._conn, version)
+            if plan is None:
+                raise ValueError("digest capture requires a known plan")
+            for part in plan.parts:
+                row = self.publication_by_id(part.publication_id)
+                if (
+                    row is None
+                    or row.status is not PublicationStatus.QUEUED
+                    or row.attempts
+                    or row.message_id is not None
+                    or self.get_publication_content(part.publication_id) is not None
+                ):
+                    raise ValueError("digest capture is restricted to untouched original parts")
+            if self.list_content_versions(version.root_publication_id):
+                raise ValueError("digest capture cannot backfill existing history")
+            self.save_content_version(version)
+            self._conn.executemany(
+                "INSERT INTO publication_content(publication_id,content_id) VALUES(?,?)",
+                [(part.publication_id, version.content_id) for part in plan.parts],
+            )
+            verify_digest_content(self._conn, version, require_bound=True)
+
     def save_content_version(self, version: ContentVersion) -> None:
         version = ContentVersion.model_validate_json(version.model_dump_json())
         verify_content_source(self._conn, version)

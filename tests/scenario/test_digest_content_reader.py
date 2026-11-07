@@ -16,6 +16,7 @@ from lexinform.models import (
 )
 from lexinform.models.digest_content import DigestContentPart, DigestContentPlan
 from lexinform.ports import PublishResult
+from lexinform.services import digest as digest_module
 from lexinform.services.content_inspection import inspect_content, inspect_content_page
 from tests.checkpoint_state import saved_state
 from tests.scenario.test_digest_remote_checkpoints import (
@@ -32,6 +33,7 @@ def future_digest(
     advancing_clock: bool = False,
     repeated_draft: bool = False,
 ) -> tuple[str, Publication, ContentVersion, DigestContentPlan]:
+    monkeypatch.setattr(digest_module, "record_digest_content", lambda *args, **kwargs: None)
     world, source = pending_event()
     assert source.id is not None, "normal tracking retains the digest event owner"
     service = service_for(world)
@@ -172,7 +174,9 @@ def test_digest_history_restores_after_operational_cleanup(
                 assert history is not None and history.current_id == version.content_id
 
 
-@pytest.mark.parametrize("mutation", ["order", "events", "binding", "owner", "text", "receipt"])
+@pytest.mark.parametrize(
+    "mutation", ["order", "events", "binding", "owner", "text", "receipt", "uncertain_receipt"]
+)
 def test_digest_history_rejects_tampered_profile_atomically(
     mutation: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -202,6 +206,11 @@ def test_digest_history_rejects_tampered_profile_atomically(
             db.execute(
                 "UPDATE publications SET delivery_json=json_set(delivery_json,'$.rendered_text','bad')"
                 " WHERE id=?",
+                (plan.parts[1].publication_id,),
+            )
+        elif mutation == "uncertain_receipt":
+            db.execute(
+                "UPDATE publications SET status='unknown' WHERE id=?",
                 (plan.parts[1].publication_id,),
             )
         else:

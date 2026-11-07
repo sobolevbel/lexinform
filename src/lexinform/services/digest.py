@@ -45,6 +45,7 @@ from lexinform.models import (
     week_bounds,
 )
 from lexinform.ports import BillRepository, Clock, Publisher, StateCheckpoint
+from lexinform.services.digest_content import record_digest_content
 from lexinform.services.publications import send_publication
 from lexinform.telegram_text import split_html
 
@@ -786,6 +787,9 @@ class DigestService:
                 assert root is not None and root.delivery is not None and root.id is not None
                 assert self._repo.replace_unattempted_delivery(
                     root.id, root.delivery.model_copy(update={"digest_parts": tuple(identities)})
+                )
+                record_digest_content(
+                    self._repo, week, tuple(identities), language=publisher.language
                 )
             existing = self._repo.publication_by_id(identities[0])
         assert existing is not None and existing.delivery is not None

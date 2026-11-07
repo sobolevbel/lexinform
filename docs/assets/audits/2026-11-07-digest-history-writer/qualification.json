@@ -1,0 +1,98 @@
+{
+  "status": "passed",
+  "cases": [
+    {
+      "label": "off",
+      "content_versions": 1,
+      "physical_parts": 3,
+      "api_calls": 3,
+      "plan_bytes": [
+        1692
+      ],
+      "delivery_refs": [
+        "2026-W37"
+      ],
+      "double_restore_exact": true,
+      "post_cleanup": true,
+      "sql_delta": 2899,
+      "gzip_delta": 511
+    },
+    {
+      "label": "shadow",
+      "content_versions": 1,
+      "physical_parts": 3,
+      "api_calls": 3,
+      "plan_bytes": [
+        3347
+      ],
+      "delivery_refs": [
+        "2026-W37"
+      ],
+      "double_restore_exact": true,
+      "post_cleanup": true,
+      "sql_delta": 4554,
+      "gzip_delta": 531
+    },
+    {
+      "label": "on",
+      "content_versions": 1,
+      "physical_parts": 3,
+      "api_calls": 3,
+      "plan_bytes": [
+        3348
+      ],
+      "delivery_refs": [
+        "2026-W37"
+      ],
+      "double_restore_exact": true,
+      "post_cleanup": true,
+      "sql_delta": 4555,
+      "gzip_delta": 520
+    },
+    {
+      "label": "on-draft-repeat",
+      "content_versions": 2,
+      "physical_parts": 6,
+      "api_calls": 6,
+      "plan_bytes": [
+        3376,
+        3384
+      ],
+      "delivery_refs": [
+        "2026-W37",
+        "2026-W37:draft:3"
+      ],
+      "double_restore_exact": true,
+      "post_cleanup": true,
+      "sql_delta": 9173,
+      "gzip_delta": 1161
+    },
+    {
+      "label": "on-unknown",
+      "content_versions": 1,
+      "physical_parts": 3,
+      "api_calls": 2,
+      "plan_bytes": [
+        3348
+      ],
+      "delivery_refs": [
+        "2026-W37"
+      ],
+      "double_restore_exact": true,
+      "post_cleanup": false,
+      "sql_delta": 4555,
+      "gzip_delta": 545
+    }
+  ],
+  "scope": "Prospective same-freeze digest history; coded omissions are log diagnostics, absent history has no durable omission reason.",
+  "J453_rollback_exact_two_restores": true,
+  "writer_patch_sha256": "5b0ed35827bb1bb2d325118f70c710459a64f9f7e18c803f2b776dc5af0a8f99",
+  "focused_digest_suite_tests": 69,
+  "latest_writer_tests": 9,
+  "omission_diagnostics": {
+    "budget": "tested",
+    "invalid": "tested",
+    "language": "tested",
+    "durability": "Existing logging only; unavailable DB history retains no omission cause after operational cleanup."
+  }
+}

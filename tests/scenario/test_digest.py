@@ -6,6 +6,7 @@ from typing import Any
 import pytest
 
 from lexinform.container import Container
+from lexinform.errors import DeliveryUncertainError
 from lexinform.keywords import KeywordPrefilter
 from lexinform.models import (
     DIGEST_NUMBER,
@@ -52,7 +53,9 @@ def test_digest_never_resends_uncertain_or_dismissed_delivery(
     assert service is not None
     send = service.draft if draft else service.publish
     ref = "2026-W36"
-    send(ref)
+    w.publisher.unknown_digest_attempt = 1
+    with pytest.raises(DeliveryUncertainError):
+        send(ref)
     channel = w.container.drafts_channel_id() if draft else CHANNEL
     publication = w.repo.get_publication(
         DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, channel, ref=ref
@@ -60,11 +63,14 @@ def test_digest_never_resends_uncertain_or_dismissed_delivery(
     assert publication is not None and publication.id is not None
     w.repo.mark_publication(publication.id, status, count_attempt=False)
     before = w.repo.publication_by_id(publication.id)
+    assert before is not None, "the digest reserves its row before attempting delivery"
+    assert before.message_id is None and before.sent_at is None
     messages = list(w.publisher.texts(PublicationKind.DIGEST))
     w.repo.restore(w.repo.dump())
 
     result = send(ref)
 
+    assert w.publisher.digest_send_attempts == 1
     assert not result.published and not result.drafted
     assert w.publisher.texts(PublicationKind.DIGEST) == messages
     assert w.repo.publication_by_id(publication.id) == before
