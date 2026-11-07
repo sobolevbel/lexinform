@@ -1,0 +1,28 @@
+{
+  "reader": "d499080983b8e51f260e848be7be514614efc6e3",
+  "schema": 73,
+  "snapshots": [
+    {
+      "commit": "175b03b53e3d17a2cb87fd361325749d758e16dd",
+      "sql_sha256": "86631b80b725d7581a9da3000449c54dbbddec364841b219bfb99ad934372023",
+      "database_sha256": "de8d9bd1ebf1e16cf84cb318e38d96c07a411786985d3733744fcbdae6d28f60"
+    },
+    {
+      "commit": "22f9aed85f3eba7a45db8459f915c9e27cd52e18",
+      "sql_sha256": "3afdaf8be419cd6cd42fa751a7ffc4182ccdbb61eb40faf2192901af6fa107ed",
+      "database_sha256": "eadc7a3063c612a3b76b0c544769a3952f68b8c7603aa596b5bba399012287c7"
+    }
+  ],
+  "retained_census_identical": true,
+  "primary_census": {
+    "consumed_projection_unavailable": 4,
+    "exact_retained_cycle": 1,
+    "frozen_paid_reference_unavailable": 3,
+    "frozen_plan_unavailable": 27,
+    "frozen_render_context_unavailable": 13,
+    "prepared_receipt_unavailable": 1,
+    "publication_outside_direct_original_scope": 1,
+    "recorded_send_unavailable": 1
+  },
+  "secondary_candidates": 5
+}
