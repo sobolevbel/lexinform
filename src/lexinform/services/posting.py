@@ -64,6 +64,7 @@ from lexinform.services.content_history import (
 )
 from lexinform.services.direct_delivery import freeze_direct_root
 from lexinform.services.message_parts import continuation_ready, freeze_parts, send_continuations
+from lexinform.services.original_delivery_content import record_original_delivery_content
 from lexinform.services.publications import (
     card_revision_owner,
     open_card_edit_ids,
@@ -1531,6 +1532,13 @@ class Poster:
                     language=self._language,
                     source_origin=pub if capture else None,
                     application_origin=pub,
+                )
+                record_original_delivery_content(
+                    self._repo,
+                    pub,
+                    frozen,
+                    language=self._language,
+                    formatter_version=FORMATTER_VERSION,
                 )
         except SourceContextInvalidError:
             self._repo.mark_publication(
