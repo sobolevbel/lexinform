@@ -2278,6 +2278,39 @@ class SqliteBillRepository:
     def find_card_primary_evidence(self, bill: Bill) -> CardPrimaryEvidence | None:
         return card_primary_evidence_candidate(self._conn, bill)
 
+    def save_multipart_card_revision(
+        self, bill: ContentSnapshot, snapshot: ContentSnapshot, version: ContentVersion
+    ) -> None:
+        if (
+            not self._conn.in_transaction
+            or version.multipart_card_revision is None
+            or version.bill_snapshot_id != bill.snapshot_id
+            or version.plan_snapshot_id != snapshot.snapshot_id
+        ):
+            raise ValueError("multipart card history requires its atomic freeze")
+        with self.atomic():
+            self.save_content_snapshot(bill)
+            self.save_content_snapshot(snapshot)
+            edition = verify_multipart_card_revision(self._conn, version)
+            if edition is None:
+                raise ValueError("multipart card history requires physical slots")
+            for identity in edition.bindings:
+                publication = self.publication_by_id(identity)
+                if (
+                    publication is None
+                    or publication.status is not PublicationStatus.QUEUED
+                    or publication.attempts
+                    or publication.message_id is not None
+                    or self.get_publication_content(identity) is not None
+                ):
+                    raise ValueError("multipart card history requires untouched slots")
+            self.save_content_version(version)
+            self._conn.executemany(
+                "INSERT INTO publication_content(publication_id,content_id) VALUES(?,?)",
+                [(identity, version.content_id) for identity in edition.bindings],
+            )
+            verify_multipart_card_revision(self._conn, version, require_bound=True)
+
     def save_original_delivery_content(
         self,
         bill: ContentSnapshot,

@@ -18,6 +18,7 @@ from lexinform.ports import BillRepository, Clock, Publisher, StateCheckpoint
 from lexinform.services.content_history import FORMATTER_VERSION, record_publication_content
 from lexinform.services.content_inspection import inspect_content
 from lexinform.services.message_parts import continuation_snapshot, send_continuations
+from lexinform.services.multipart_card_history import record_multipart_card_revision
 from lexinform.services.publications import (
     card_revision_owner,
     open_card_edit_ids,
@@ -291,14 +292,27 @@ def edit_card(
         if parent is not None:
             frozen = repo.publication_by_id(identities[0])
             assert frozen is not None, "the new physical edition was saved in this transaction"
-            record_publication_content(
-                repo,
-                clock,
-                frozen,
-                formatter_version=FORMATTER_VERSION,
-                language=getattr(publisher, "language", None),
-                card_history_parent=parent,
-            )
+            language = getattr(publisher, "language", None)
+            if len(identities) > 1:
+                record_multipart_card_revision(
+                    repo,
+                    frozen,
+                    tuple(identities),
+                    parent,
+                    tuple(current),
+                    bill,
+                    ref=ref,
+                    language=language,
+                )
+            else:
+                record_publication_content(
+                    repo,
+                    clock,
+                    frozen,
+                    formatter_version=FORMATTER_VERSION,
+                    language=language,
+                    card_history_parent=parent,
+                )
         repo.mark_publication(identities[0], PublicationStatus.PENDING, count_attempt=False)
         root = repo.publication_by_id(identities[0])
         assert root is not None, "the immutable root is saved before its edit"

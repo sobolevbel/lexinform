@@ -4,6 +4,7 @@ import pytest
 
 from lexinform.models import Bill, PublicationKind
 from lexinform.models.original_delivery_content import OriginalDeliveryPlan
+from lexinform.services import multipart_card_history
 from lexinform.services.content_inspection import inspect_content
 from tests.checkpoint_state import saved_state
 from tests.scenario.test_card_edit_multipart import prepare, refresh
@@ -59,7 +60,10 @@ def test_card_original_slots_and_targets_survive_cleanup(kind: PublicationKind) 
                     assert Bill.model_validate_json(snapshot.payload_json).number == "3038"
 
 
-def test_unversioned_card_edit_obscures_original_current_html() -> None:
+def test_unversioned_card_edit_obscures_original_current_html(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(multipart_card_history, "MAX_MULTIPART_CARD_BYTES", 1)
     case = prepare("off", "many_same")
     root = case.baseline
     assert root.id is not None, "normal publication assigns the root identity"

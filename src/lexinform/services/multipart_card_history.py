@@ -1,0 +1,79 @@
+"""Capture multipart revisions only from a confirmed immutable predecessor."""
+
+import logging
+
+from lexinform.models import Bill, ContentSnapshot, ContentVersion, Publication
+from lexinform.models.content import original_delivery_bill_snapshot
+from lexinform.models.multipart_card_history import (
+    MAX_MULTIPART_CARD_BYTES,
+    MAX_MULTIPART_CARD_PARTS,
+    MultipartCardPlan,
+    MultipartCardSlot,
+)
+from lexinform.ports import BillRepository
+from lexinform.services.content_history import FORMATTER_VERSION
+
+log = logging.getLogger(__name__)
+
+
+def record_multipart_card_revision(
+    repo: BillRepository,
+    root: Publication,
+    identities: tuple[int, ...],
+    previous: ContentVersion,
+    predecessor: tuple[Publication, ...],
+    bill: Bill,
+    *,
+    ref: str,
+    language: str | None,
+) -> None:
+    assert root.delivery is not None, "the original freeze retains every slot"
+    if len(identities) > MAX_MULTIPART_CARD_PARTS:
+        log.warning("multipart card history omitted: publication=%s reason=parts", root.id)
+        return
+    try:
+        slots = []
+        for identity in identities:
+            row = repo.publication_by_id(identity)
+            if row is None or row.delivery is None:
+                raise ValueError("missing card slot")
+            slots.append(
+                MultipartCardSlot(
+                    id=identity,
+                    html=row.delivery.rendered_text,
+                    disable_notification=row.delivery.disable_notification,
+                    edit_message_id=row.delivery.edit_message_id,
+                )
+            )
+        plan = MultipartCardPlan.model_validate(
+            {
+                "channel_id": root.channel_id,
+                "ref_prefix": ref,
+                "today": root.delivery.today,
+                "predecessor_slots": tuple(row.id for row in predecessor),
+                "slots": tuple(slots),
+            }
+        )
+        context = original_delivery_bill_snapshot(bill.model_dump_json())
+        snapshot = ContentSnapshot(kind="plan", payload_json=plan.model_dump_json())
+        if (
+            len(context.payload_json.encode()) + len(snapshot.payload_json.encode())
+            > MAX_MULTIPART_CARD_BYTES
+        ):
+            log.warning("multipart card history omitted: publication=%s reason=bytes", root.id)
+            return
+        version = ContentVersion(
+            root_publication_id=previous.root_publication_id,
+            previous_version_id=previous.content_id,
+            reason="card_revision",
+            bill_snapshot_id=context.snapshot_id,
+            plan_snapshot_id=snapshot.snapshot_id,
+            multipart_card_revision="card-multipart-revision-v1",
+            formatter_version=FORMATTER_VERSION,
+            language=language,
+            recorded_at=root.created_at,
+        )
+    except ValueError:
+        log.warning("multipart card history omitted: publication=%s reason=profile", root.id)
+        return
+    repo.save_multipart_card_revision(context, snapshot, version)

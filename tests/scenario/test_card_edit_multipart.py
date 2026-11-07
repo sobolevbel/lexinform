@@ -8,6 +8,7 @@ import pytest
 from lexinform.errors import DeliveryUncertainError, StateCheckpointError, TelegramUnavailableError
 from lexinform.models import Bill, Publication, PublicationStatus, SejmTerm
 from lexinform.ports import PublishResult
+from lexinform.services.content_inspection import inspect_content
 from lexinform.services.publishing import PublishingResult
 from tests.checkpoint_state import StoredState, saved_state
 from tests.harness import CHANNEL, TERM, World
@@ -197,6 +198,10 @@ def test_unknown_final_part_requires_audited_resolution_and_retries_exact_frozen
     saved = edition(fresh)[-1]
     assert saved.id is not None and saved.delivery is not None, "the unknown part remains frozen"
     assert saved.status is PublicationStatus.UNKNOWN
+    version = fresh.repo.get_publication_content(saved.id)
+    assert version is not None and version.multipart_card_revision is not None
+    view = inspect_content(fresh.repo, card(fresh))
+    assert view is not None and view.current_id is None
     before = len(world.publisher.edited) + len(world.publisher.sent)
     assert fresh.container.delivery_service(dry_run=False).run().cards_refreshed == 0
     assert len(world.publisher.edited) + len(world.publisher.sent) == before
@@ -227,6 +232,9 @@ def test_unknown_final_part_requires_audited_resolution_and_retries_exact_frozen
     assert seen == ([saved.id] if action == "retry" else [])
     assert card(fresh).rendered_sha256 == edition(fresh)[0].rendered_sha256
     assert all(part.status is PublicationStatus.SENT for part in edition(fresh))
+    assert fresh.repo.get_publication_content(saved.id) == version
+    view = inspect_content(fresh.repo, card(fresh))
+    assert view is not None and view.current_id == version.content_id
     assert fresh.container.delivery_service(dry_run=False).run().cards_refreshed == 0
 
 
@@ -343,6 +351,11 @@ def test_new_multipart_revision_preserves_completed_legacy_rows_and_projection()
     assert current[0].delivery is not None and current[0].delivery.revision_of == baseline.id
     assert [world.repo.publication_by_id(part.id or 0) for part in previous] == previous
     assert card(world).rendered_sha256 == current[0].rendered_sha256
+    assert all(
+        world.repo.get_publication_content(part.id) is None
+        for part in current
+        if part.id is not None
+    )
 
 
 @pytest.mark.parametrize("shape", ["single_many", "many_shrink"])
