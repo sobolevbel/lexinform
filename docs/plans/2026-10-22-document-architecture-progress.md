@@ -14929,3 +14929,36 @@ Unknown delivery stayed unconfirmed without a resend.
   Повтор после подтверждённого сбоя доставки использует
   сохранённый снимок и пропускает уже отправленные части.
   [Квалификация](../assets/audits/2026-11-07-digest-rendered-history-writer/qualification.json).
+
+
+<a id="j459"></a>
+
+### J459. Проверка выпуска и границы приёмки J453–J458
+
+| Этапы | SHA выпуска | CI | Выкладка |
+| --- | --- | --- | --- |
+| J453 | `715a3fc4` | [CI 42344737313](https://github.com/sobolevbel/lexinform/actions/runs/42344737313) | [deploy 42345207644](https://github.com/sobolevbel/lexinform/actions/runs/42345207644) |
+| J454–J455 | `8c383e8e` | [CI 42345307627](https://github.com/sobolevbel/lexinform/actions/runs/42345307627) | [deploy 42345970585](https://github.com/sobolevbel/lexinform/actions/runs/42345970585) |
+| J456–J457 | `1a83f49f` | [CI 42346059220](https://github.com/sobolevbel/lexinform/actions/runs/42346059220) | [deploy 42346501766](https://github.com/sobolevbel/lexinform/actions/runs/42346501766) |
+| J458 | `fbbef5e9` | [CI 42346594468](https://github.com/sobolevbel/lexinform/actions/runs/42346594468) | [deploy 42347202510](https://github.com/sobolevbel/lexinform/actions/runs/42347202510) |
+
+- Квитанции фиксируют проверенный SHA, переход реле, перезапуск и
+  активный таймер. Пакет J456–J457 дождался reader J455, а J458
+  дождался reader J457.
+  [Квитанции](../assets/audits/2026-11-07-document-architecture-release/digest-rendered-history-writer.json).
+- DA5.1 сохраняет проверенные диапазоны Word, PDF и ODT в пределах
+  бюджета. Пробелы нормализации и неподдержанные узлы остаются
+  без привязки. DA7.1 сохраняет точный HTML частей дайджеста при
+  переполнении бюджета контекста. Полный контекст таких записей
+  недоступен для исправлений.
+- Наблюдавшийся tip ветки state — `4764779e91d9d8fe5609aba45de02f4a792479be`.
+  Перепись J452 для этого снимка подтверждает один полный первичный
+  цикл и пять частичных вторичных цепочек. Эти данные предшествуют
+  J453–J458 и не подтверждают новые рабочие циклы.
+  [Перепись](../assets/audits/2026-11-07-da10-fresh-census/qualification.json).
+- Для DA0.6 требуется независимая разметка с обоснованиями и границами
+  групп инициатив. Для DA3.3 и DA4.1/4.4 сохраняются открытые вопросы
+  приёмки естественных ODT-профилей, полноты и нормативных связей.
+  Фактический legacy import, естественное истечение современных
+  записей и недостающие циклы DA10.7 требуют отдельных наблюдений.
+  Выкладка сама по себе их не подтверждает.
