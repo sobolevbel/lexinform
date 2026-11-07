@@ -348,9 +348,9 @@ def test_government_rehome_preserves_frozen_owner_and_restorable_history(
         repo.upsert_summary(government, now=NOW)
         root = physical(repo, government)
         original = retain(repo, root)
-        old = repo.get_content_snapshot(original.bill_snapshot_id)
+        old = repo.get_content_snapshot(original.bill_context_id)
         assert repo.move_government_rows(10, 11) == 1
-        assert repo.get_content_snapshot(original.bill_snapshot_id) == old
+        assert repo.get_content_snapshot(original.bill_context_id) == old
         saved = repo.dump()
         repo.restore(saved)
         assert repo.dump() == saved
@@ -402,7 +402,7 @@ def test_exact_compact_outbox_context_is_supported_without_full_bill_copy(
         operation = repo.publication_by_id(identity)
         assert operation is not None, "the fixture saved its compact physical edition"
         edition = retain(repo, operation, previous=original)
-        snapshot = repo.get_content_snapshot(edition.bill_snapshot_id)
+        snapshot = repo.get_content_snapshot(edition.bill_context_id)
         assert snapshot is not None and snapshot.payload_json == compact
         assert "analysis" not in json.loads(compact) and "rcl" not in json.loads(compact)
         before = repo.dump()
@@ -580,7 +580,7 @@ def test_card_profile_uses_exact_continuation_projection_and_rejects_full_body(
         pub = physical(repo, process_3039)
         value = retain(repo, pub)
         assert pub.delivery is not None, "the fixture stores the actual frozen physical plan"
-        compact = repo.get_content_snapshot(value.bill_snapshot_id)
+        compact = repo.get_content_snapshot(value.bill_context_id)
         assert compact is not None, "the fixture retains its compact context"
         payload = json.loads(compact.payload_json)
         assert "commission_review" in payload and "analysis" not in payload and "rcl" not in payload

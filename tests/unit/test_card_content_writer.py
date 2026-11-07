@@ -71,7 +71,7 @@ def test_fresh_public_card_and_single_edit_retain_actual_language_and_compact_co
         assert first is not None and first.language == language
         assert first.reason == "original" and first.card_context_profile == "continuation-v1"
         assert root.delivery is not None, "public publishing froze its source and render"
-        snapshot = repo.get_content_snapshot(first.bill_snapshot_id)
+        snapshot = repo.get_content_snapshot(first.bill_context_id)
         assert snapshot is not None and '"analysis"' not in snapshot.payload_json
         assert first.rendered_text == root.delivery.rendered_text
         edit_card(

@@ -46,6 +46,8 @@ FORMATTER_VERSION = "telegram-format-v2"
 
 
 def restore_content_delivery(repo: BillRepository, content: ContentVersion) -> DeliveryPlan:
+    if content.digest_profile is not None:
+        raise ValueError("Digest history cannot restore a Bill delivery")
     if content.card_context_profile is not None:
         raise ValueError("Compact card history does not retain the full original context")
     if content.grouped_stage_evidence is not None:
@@ -125,7 +127,7 @@ def record_publication_content(
             ):
                 audit = inspect_primary_content_sources(
                     repo,
-                    bill_snapshot_id=version.bill_snapshot_id,
+                    bill_snapshot_id=version.bill_context_id,
                     change_snapshot_id=version.change_snapshot_id,
                 )
                 if audit.state == "invalid":

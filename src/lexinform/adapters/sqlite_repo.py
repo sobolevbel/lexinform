@@ -59,6 +59,7 @@ from lexinform.adapters.content_source_refs import (
     validate_projected_applications,
     verify_content_source,
 )
+from lexinform.adapters.digest_content import verify_digest_content
 from lexinform.adapters.document_work import (
     read_document_work,
     validate_document_work,
@@ -1025,6 +1026,32 @@ MIGRATIONS: tuple[str, ...] = (
             AND typeof(message_id) = 'integer' AND message_id > 0
             AND sent_at IS NOT NULL AND sent_at != ''
         ));
+    """,
+    """
+    CREATE TEMP TABLE saved_content_bindings AS SELECT * FROM publication_content;
+    DROP TABLE publication_content;
+    CREATE TABLE content_versions_next (
+        content_id TEXT PRIMARY KEY NOT NULL,
+        root_publication_id INTEGER NOT NULL,
+        previous_version_id TEXT REFERENCES content_versions_next(content_id),
+        bill_snapshot_id TEXT REFERENCES content_snapshots(snapshot_id),
+        change_snapshot_id TEXT REFERENCES content_snapshots(snapshot_id),
+        plan_snapshot_id TEXT NOT NULL REFERENCES content_snapshots(snapshot_id),
+        version_json TEXT NOT NULL
+    );
+    INSERT INTO content_versions_next(rowid,content_id,root_publication_id,previous_version_id,
+        bill_snapshot_id,change_snapshot_id,plan_snapshot_id,version_json)
+        SELECT rowid,* FROM content_versions ORDER BY rowid;
+    DROP TABLE content_versions;
+    ALTER TABLE content_versions_next RENAME TO content_versions;
+    CREATE INDEX ix_content_versions_root ON content_versions(root_publication_id);
+    CREATE TABLE publication_content (
+        publication_id INTEGER PRIMARY KEY NOT NULL,
+        content_id TEXT NOT NULL REFERENCES content_versions(content_id)
+    );
+    INSERT INTO publication_content SELECT * FROM saved_content_bindings;
+    DROP TABLE saved_content_bindings;
+    CREATE INDEX ix_publication_content_version ON publication_content(content_id);
     """,
 )
 
@@ -2241,6 +2268,7 @@ class SqliteBillRepository:
         verify_card_content(self._conn, version)
         verify_direct_stage_content(self._conn, version)
         verify_grouped_stage_content(self._conn, version)
+        verify_digest_content(self._conn, version)
         for kind, identity in content_snapshot_refs(version):
             snapshot = self.get_content_snapshot(identity)
             if snapshot is None or snapshot.kind != kind:
@@ -2287,6 +2315,7 @@ class SqliteBillRepository:
         verify_card_content(self._conn, version, retained=True)
         verify_direct_stage_content(self._conn, version)
         verify_grouped_stage_content(self._conn, version)
+        verify_digest_content(self._conn, version)
         return version
 
     def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]:
@@ -2317,6 +2346,8 @@ class SqliteBillRepository:
         verify_content_applications(
             self._conn, version, publication_id=publication_id, retained=False
         )
+        if version.digest_profile is not None:
+            raise ValueError("digest history requires atomic complete physical binding")
         plan = publication.delivery
         if version.reason == "grouped_stage_revision":
             if verify_grouped_stage_content(self._conn, version) != publication_id:
@@ -2440,7 +2471,7 @@ class SqliteBillRepository:
                 != expected_base_sha256
             ):
                 return None
-            bill = self.get_content_snapshot(version.bill_snapshot_id)
+            bill = self.get_content_snapshot(version.bill_context_id)
             plan = grouped_stage_revision_plan(version, bill) if bill is not None else None
             if plan is None:
                 return None
@@ -2741,6 +2772,9 @@ class SqliteBillRepository:
             or (version.grouped_stage_evidence is not None and version.reason == "original")
         ) and version.root_publication_id != publication_id:
             raise ValueError("direct_stage_binding_scope")
+        if version.digest_profile is not None:
+            verify_digest_content(self._conn, version, require_bound=True)
+            return version
         if version.change_snapshot_id is None:
             physical_id = verify_card_content(self._conn, version, retained=True)
             if physical_id is not None and physical_id != publication_id:
@@ -2750,7 +2784,7 @@ class SqliteBillRepository:
     def list_content_publications(self, root_publication_id: int) -> list[Publication]:
         if self._conn.execute(
             "SELECT 1 FROM content_versions WHERE root_publication_id=? "
-            "AND change_snapshot_id IS NULL",
+            "AND change_snapshot_id IS NULL AND bill_snapshot_id IS NOT NULL",
             (root_publication_id,),
         ).fetchone():
             return [
@@ -5765,7 +5799,7 @@ class SqliteBillRepository:
                 self.save_content_snapshot(snapshot)
             known = inspect_primary_content_sources(
                 ContentSourceRows(self._conn),
-                bill_snapshot_id=version.bill_snapshot_id,
+                bill_snapshot_id=version.bill_context_id,
                 change_snapshot_id=version.change_snapshot_id,
             )
             if (

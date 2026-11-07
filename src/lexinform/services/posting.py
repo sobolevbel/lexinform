@@ -1591,7 +1591,7 @@ class Poster:
                     self._repo.save_content_snapshot(snapshot)
                 audit = inspect_primary_content_sources(
                     self._repo,
-                    bill_snapshot_id=version.bill_snapshot_id,
+                    bill_snapshot_id=version.bill_context_id,
                     change_snapshot_id=version.change_snapshot_id,
                 )
                 if audit.state != "known":

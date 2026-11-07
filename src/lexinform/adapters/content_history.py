@@ -8,6 +8,7 @@ from typing import Literal
 from lexinform.adapters.computation_history import read_result_application
 from lexinform.adapters.content_applications import verify_content_applications
 from lexinform.adapters.content_source_refs import ContentSourceRows
+from lexinform.adapters.digest_content import verify_digest_content
 from lexinform.adapters.input_receipts import (
     validate_multipart_item,
     validate_primary_receipt_parents,
@@ -364,7 +365,7 @@ def _verify_card_primary_evidence(
 def _verify_card_content(
     connection: sqlite3.Connection, value: ContentVersion, *, retained: bool
 ) -> tuple[int | None, dict[str, object] | None]:
-    if value.change_snapshot_id is not None:
+    if value.change_snapshot_id is not None or value.digest_profile is not None:
         return None, None
     root_row = _query(
         connection, "SELECT * FROM publications WHERE id=?", (value.root_publication_id,)
@@ -377,7 +378,7 @@ def _verify_card_content(
         if snapshot is None or snapshot.kind != kind:
             raise ValueError("card_content_snapshot_missing")
         snapshots[identity] = snapshot
-    context = snapshots[value.bill_snapshot_id]
+    context = snapshots[value.bill_context_id]
     bill = Bill.model_validate(read_json(context.payload_json))
     if card_bill_snapshot(context.payload_json) != context:
         raise ValueError("card_content_context_profile")
@@ -560,7 +561,7 @@ def verify_direct_stage_content(connection: sqlite3.Connection, version: Content
         > MAX_DIRECT_STAGE_CONTENT_BYTES
     ):
         raise ValueError("direct_stage_content_bound")
-    bill = snapshots[version.bill_snapshot_id]
+    bill = snapshots[version.bill_context_id]
     owner = Bill.model_validate_json(bill.payload_json)
     if card_bill_snapshot(bill.payload_json) != bill or (owner.term, owner.number) != (
         root.term,
@@ -839,7 +840,7 @@ def _verify_grouped_stage_revision(
         identity: reader.get_content_snapshot(identity)
         for _, identity in content_snapshot_refs(version)
     }
-    bill = snapshots[version.bill_snapshot_id]
+    bill = snapshots[version.bill_context_id]
     if bill is None or (
         sum(
             len(snapshot.payload_json.encode())
@@ -1018,8 +1019,9 @@ def validate_content_history(connection: sqlite3.Connection) -> None:
             verify_content_applications(connection, value)
             verify_direct_stage_content(connection, value)
             verify_grouped_stage_content(connection, value, require_bound=True)
+            verify_digest_content(connection, value, require_bound=True)
             physical_identity = verify_card_content(connection, value, retained=True)
-            if value.change_snapshot_id is None:
+            if value.change_snapshot_id is None and value.digest_profile is None:
                 bindings = _query(
                     connection,
                     "SELECT publication_id FROM publication_content WHERE content_id=?",

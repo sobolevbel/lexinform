@@ -99,7 +99,7 @@ def revision_fixture(
 def save_slot(
     world: World, root: Publication, version: ContentVersion, *, wrong_owner: bool = False
 ) -> int:
-    bill = world.repo.get_content_snapshot(version.bill_snapshot_id)
+    bill = world.repo.get_content_snapshot(version.bill_context_id)
     assert bill is not None, "the root compact bill is retained"
     plan = grouped_stage_revision_plan(version, bill)
     assert plan is not None, "the fixed one-slot format has its exact delivery plan"

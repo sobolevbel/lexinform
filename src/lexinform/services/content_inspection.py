@@ -42,6 +42,21 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
         selected = _grouped_member_content(repo, publication)
     if selected is None:
         return None
+    if selected.digest_profile is not None:
+        versions = repo.list_content_versions(selected.root_publication_id)
+        digest_parts = repo.list_content_publications(selected.root_publication_id)
+        if versions != [selected] or not digest_parts:
+            return ContentHistoryView(integrity="unavailable")
+        return ContentHistoryView(
+            root_publication_id=selected.root_publication_id,
+            version_count=1,
+            summaries=(ContentVersionSummary.from_version(selected),),
+            inspected_id=selected.content_id,
+            original_id=selected.content_id,
+            current_id=selected.content_id
+            if all(row.status is PublicationStatus.SENT for row in digest_parts)
+            else None,
+        )
     root_id = selected.root_publication_id
     versions = repo.list_content_versions(root_id)
     root = repo.publication_by_id(root_id)

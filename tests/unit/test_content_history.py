@@ -209,7 +209,7 @@ def test_content_and_binding_survive_restore_retention_and_explicit_publication_
     assert repo.list_content_versions(root) == [first, revision]
     assert repo.delete_publication(10, "1", PublicationKind.NEW_BILL, "chan") == 1
     assert repo.get_publication_content(root) == first
-    assert repo.get_content_snapshot(first.bill_snapshot_id) is not None
+    assert repo.get_content_snapshot(first.bill_context_id) is not None
 
 
 def test_binding_requires_the_frozen_publication_and_never_replaces_an_edition(

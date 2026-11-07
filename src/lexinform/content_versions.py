@@ -54,7 +54,7 @@ def content_delivery_mismatch(
     plan: DeliveryPlan,
 ) -> ContentMismatch | None:
     if version.reason == "grouped_stage_revision":
-        bill = snapshots.get(version.bill_snapshot_id)
+        bill = snapshots.get(version.bill_context_id)
         if bill is None or bill.kind != "bill":
             return "snapshot"
         expected_plan = grouped_stage_revision_plan(version, bill)

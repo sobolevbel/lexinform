@@ -289,7 +289,7 @@ class TimingDeliveryLinks:
                     ):
                         continue
                     snapshot = ContentSourceRows(self.connection).get_content_snapshot(
-                        version.bill_snapshot_id
+                        version.bill_context_id
                     )
                     if snapshot is None:
                         continue

@@ -1,0 +1,154 @@
+{
+  "budget_diagnostic_exception": "Typed runtime exception only; serialized profile preserved",
+  "fixture": {
+    "controls": [
+      {
+        "content_id": "content-v1:6a7893fdc775ac57200c1e7fe36f2982493ad75255e66a6537a4c84ef8fe76a4",
+        "delivery_ref": "2026-W37",
+        "doctor_errors": 0,
+        "double_restore_exact": true,
+        "events": [
+          [],
+          [
+            2
+          ],
+          []
+        ],
+        "gzip_delta": 547,
+        "label": "reader",
+        "parts": [
+          3,
+          4,
+          5
+        ],
+        "plan_bytes": 3354,
+        "root": 3,
+        "sql_delta": 4554,
+        "week_ref": "2026-W37"
+      },
+      {
+        "content_id": "content-v1:6a7893fdc775ac57200c1e7fe36f2982493ad75255e66a6537a4c84ef8fe76a4",
+        "delivery_ref": "2026-W37",
+        "doctor_errors": 0,
+        "double_restore_exact": true,
+        "events": [
+          [],
+          [
+            2
+          ],
+          []
+        ],
+        "gzip_delta": 548,
+        "label": "reader-advancing",
+        "parts": [
+          3,
+          4,
+          5
+        ],
+        "plan_bytes": 3354,
+        "root": 3,
+        "sql_delta": 4561,
+        "week_ref": "2026-W37"
+      },
+      {
+        "content_id": "content-v1:08b43a58bbd69971e1b88a1a529ffece78aa8094ef086dd1be2e3c361eba2986",
+        "delivery_ref": "2026-W37:draft:3",
+        "doctor_errors": 0,
+        "double_restore_exact": true,
+        "events": [
+          [],
+          [],
+          []
+        ],
+        "gzip_delta": 581,
+        "label": "draft-advancing",
+        "parts": [
+          6,
+          7,
+          8
+        ],
+        "plan_bytes": 3390,
+        "root": 6,
+        "sql_delta": 4597,
+        "week_ref": "2026-W37"
+      }
+    ],
+    "status": "passed"
+  },
+  "legacy": {
+    "all_table_rows_preserved": true,
+    "digest_sent_rows": 15,
+    "double_restore_exact": true,
+    "input_database_sha256": "c53f468cea246f6a8f2b74eaef46dbf5ea46fc72efa5a3af28741fbe919c974a",
+    "input_schema": 68,
+    "legacy_digest_unknown": [
+      57,
+      249,
+      250
+    ],
+    "prior_content_ids_and_json_preserved": true,
+    "reader_schema": 70,
+    "status": "passed",
+    "table_counts": {
+      "amendment_input_snapshots": 3,
+      "amendment_input_texts": 3,
+      "analysis_memo": 170,
+      "artifact_reads": 110,
+      "artifacts": 481,
+      "bills": 527,
+      "candidate_disposition_traces": 13,
+      "commands": 140,
+      "computation_results": 19,
+      "content_snapshots": 12,
+      "content_versions": 4,
+      "delivery_alerts": 1,
+      "delivery_resolutions": 0,
+      "digest_event_links": 7,
+      "document_editions": 57,
+      "document_selections": 73,
+      "document_work": 6,
+      "effective_rule_links": 0,
+      "extraction_results": 111,
+      "legacy_analysis_bodies": 0,
+      "legacy_result_imports": 0,
+      "legacy_result_occurrences": 0,
+      "legacy_result_values": 0,
+      "llm_batch_intents": 0,
+      "llm_batch_items": 128,
+      "llm_batches": 61,
+      "physical_captures": 77,
+      "physical_metadata": 626,
+      "publication_content": 4,
+      "publication_sequence": 1,
+      "publications": 250,
+      "rcl_letter_uses": 3,
+      "rcl_wykaz_numbers": 920,
+      "result_applicability": 12,
+      "result_applications": 35,
+      "runs": 450,
+      "selection_artifacts": 362,
+      "selection_editions": 57,
+      "selection_extractions": 107,
+      "senate_inspection_sources": 2,
+      "senate_inspections": 2,
+      "source_candidate_traces": 14,
+      "source_catalog_attempt_parents": 0,
+      "source_catalog_attempts": 2,
+      "source_catalog_snapshots": 2,
+      "source_checks": 212,
+      "source_metadata_omissions": 0,
+      "source_observations": 81,
+      "source_omission_parents": 0,
+      "status_changes": 218
+    }
+  },
+  "patch_sha256": "7bba580e34216194257e7ee93f585a75ed9b3a0c42f5dbea8a999d4067464c5c",
+  "receipt_chronology": "Aware receipt timestamps preserved; no newly inferred created/sent ordering",
+  "rollback": {
+    "atomic_rejection": true,
+    "cases": 3,
+    "old_reader": "87fd1ecb",
+    "status": "passed"
+  },
+  "status": "passed"
+}

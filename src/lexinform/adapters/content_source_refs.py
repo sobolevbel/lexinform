@@ -142,7 +142,7 @@ def verify_content_source(connection: sqlite3.Connection, version: ContentVersio
     if version.source_scope is None:
         return
     reader = ContentSourceRows(connection)
-    snapshot = reader.get_content_snapshot(version.bill_snapshot_id)
+    snapshot = reader.get_content_snapshot(version.bill_context_id)
     if snapshot is None or snapshot.kind != "bill":
         raise ValueError("scoped content has no frozen bill")
     bill = Bill.model_validate_json(snapshot.payload_json)
@@ -173,7 +173,7 @@ def verify_content_source(connection: sqlite3.Connection, version: ContentVersio
     if version.source_observation_ids:
         result = verify_primary_content_source(
             reader,
-            bill_snapshot_id=version.bill_snapshot_id,
+            bill_snapshot_id=version.bill_context_id,
             change_snapshot_id=version.change_snapshot_id,
             observation_id=version.source_observation_ids[0],
         )

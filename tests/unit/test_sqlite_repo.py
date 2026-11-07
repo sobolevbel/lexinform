@@ -1025,6 +1025,14 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
 
     assert "user_version" not in legacy_dump
     assert repo.schema_version == SCHEMA_VERSION
+    with sqlite3.connect(tmp_path / "current.db") as schema:
+        bill_column = next(
+            row
+            for row in schema.execute("PRAGMA table_info(content_versions)")
+            if row[1] == "bill_snapshot_id"
+        )
+        assert bill_column[3] == 0
+        assert not schema.execute("PRAGMA foreign_key_check").fetchall()
     revived = repo.get(10, "RPW/1/2026")
     assert revived is not None and revived.status is BillStatus.TEXT_PREFILTER_PENDING
     publication = repo.publication_by_id(1)

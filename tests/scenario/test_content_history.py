@@ -43,7 +43,7 @@ def test_legacy_unfinished_input_is_not_duplicated_in_editorial_history() -> Non
 
     content = world.repo.get_publication_content(original.id)
     assert content is not None, "the caller records the original content before its effect"
-    snapshot = world.repo.get_content_snapshot(content.bill_snapshot_id)
+    snapshot = world.repo.get_content_snapshot(content.bill_context_id)
     assert snapshot is not None and marker not in snapshot.payload_json, (
         "content history retains its semantic view without unfinished input"
     )
@@ -103,7 +103,7 @@ def test_single_update_captures_original_and_can_be_revised_after_retention(work
     assert revised.delivery.today == original.delivery.today
     assert revised.delivery.bill_json == original.delivery.bill_json
     assert world.repo.get_publication_content(original.id) == content
-    assert world.repo.get_content_snapshot(content.bill_snapshot_id) == ContentSnapshot(
+    assert world.repo.get_content_snapshot(content.bill_context_id) == ContentSnapshot(
         kind="bill", payload_json=original.delivery.bill_json
     )
     saved = world.repo.dump()
@@ -151,7 +151,7 @@ def test_successive_revisions_link_confirmed_editions_and_reuse_the_original_bil
     assert versions[1].previous_version_id == versions[0].content_id
     assert versions[2].previous_version_id == versions[1].content_id
     assert len({version.bill_snapshot_id for version in versions}) == 1
-    snapshot = world.repo.get_content_snapshot(versions[0].bill_snapshot_id)
+    snapshot = world.repo.get_content_snapshot(versions[0].bill_context_id)
     assert snapshot is not None, "content versions require their immutable semantic snapshots"
     assert Bill.model_validate_json(snapshot.payload_json) == Bill.model_validate_json(
         original.delivery.bill_json

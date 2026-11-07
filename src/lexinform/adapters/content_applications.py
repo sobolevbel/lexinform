@@ -153,7 +153,7 @@ def _verify(
     ):
         raise ValueError("content_application_change_mismatch")
     if supplement is not None:
-        bill_snapshot = snapshots.get(version.bill_snapshot_id)
+        bill_snapshot = snapshots.get(version.bill_context_id)
         if bill_snapshot is None or bill_snapshot.kind != "bill":
             raise ValueError("supplement_content_bill_unavailable")
         bill = Bill.model_validate(read_json(bill_snapshot.payload_json))

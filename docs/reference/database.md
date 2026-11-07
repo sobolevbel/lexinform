@@ -735,3 +735,10 @@ delivery payload has expired. The existing publication upsert can otherwise try 
 row to queued, and the new constraint rejects that transition. Capture must pin the chat and
 message IDs on the first confirmed send and refuse later changes to the pair. Delivery payload
 cleanup clears only the plan.
+
+### v70 — Immutable digest reader
+
+Content versions allow a missing Bill snapshot only for the digest profile.
+Existing content IDs, snapshots and publication bindings survive the table
+rebuild. The digest plan retains ordered physical parts and event references,
+with one bounded copy of each rendered body.

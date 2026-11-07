@@ -129,7 +129,9 @@ class ContentVersion(BaseModel):
     previous_version_id: str | None = Field(default=None, pattern=r"^content-v1:[0-9a-f]{64}$")
     reason: ContentReason
     language: str | None = Field(default=None, min_length=1)
-    bill_snapshot_id: str = Field(pattern=r"^content-snapshot-v1:[0-9a-f]{64}$")
+    bill_snapshot_id: str | None = Field(
+        default=None, pattern=r"^content-snapshot-v1:[0-9a-f]{64}$"
+    )
     change_snapshot_id: str | None = Field(
         default=None,
         pattern=r"^content-snapshot-v1:[0-9a-f]{64}$",
@@ -149,6 +151,9 @@ class ContentVersion(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     grouped_stage_evidence: GroupedStageContentEvidence | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    digest_profile: Literal["digest-content-v1"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
@@ -176,6 +181,32 @@ class ContentVersion(BaseModel):
 
     @model_validator(mode="after")
     def predecessor(self) -> Self:
+        if self.digest_profile is not None:
+            if (
+                self.reason != "original"
+                or self.previous_version_id is not None
+                or self.bill_snapshot_id is not None
+                or self.change_snapshot_id is not None
+                or self.rendered_text is not None
+                or self.language not in ("ru", "en")
+                or not self.formatter_version
+                or len(self.formatter_version) > 128
+                or self.status_change_id is not None
+                or self.card_context_profile is not None
+                or self.card_primary_evidence is not None
+                or self.direct_stage_evidence is not None
+                or self.grouped_stage_evidence is not None
+                or self.source_scope is not None
+                or self.source_observation_ids
+                or self.computation_ids
+                or self.application_ref_profile is not None
+                or self.application_ids
+                or self.supplement_evidence is not None
+            ):
+                raise ValueError("digest content requires its own bounded original profile")
+            return self
+        if self.bill_snapshot_id is None:
+            raise ValueError("non-digest content requires a frozen Bill")
         if (self.reason == "original") != (self.previous_version_id is None):
             raise ValueError("an original has no predecessor; a revision requires one")
         if self.change_snapshot_id is None and (
@@ -303,6 +334,12 @@ class ContentVersion(BaseModel):
         return self
 
     @property
+    def bill_context_id(self) -> str:
+        if self.bill_snapshot_id is None:
+            raise ValueError("digest content has no Bill snapshot")
+        return self.bill_snapshot_id
+
+    @property
     def content_id(self) -> str:
         payload = self.model_dump(mode="json", exclude={"recorded_at"})
         encoded = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
@@ -318,7 +355,7 @@ class ContentVersionSummary(BaseModel):
     previous_version_id: str | None
     reason: ContentReason
     language: str | None
-    bill_snapshot_id: str
+    bill_snapshot_id: str | None
     change_snapshot_id: str | None
     plan_snapshot_id: str
     formatter_version: str | None
@@ -330,6 +367,9 @@ class ContentVersionSummary(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     grouped_stage_evidence: GroupedStageContentEvidence | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    digest_profile: Literal["digest-content-v1"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
@@ -399,6 +439,7 @@ class ContentVersionSummary(BaseModel):
             source_observation_ids=source_ids,
             source_scope=version.source_scope,
             card_context_profile=version.card_context_profile,
+            digest_profile=version.digest_profile,
             grouped_stage_evidence=version.grouped_stage_evidence,
             computation_ids=result_ids,
             application_ids=version.application_ids,

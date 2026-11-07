@@ -2237,7 +2237,7 @@ class MessageFormatter:
             shown.add(version.content_id)
             if version.full_context_available is False:
                 lines.append("Card metadata: continuation-v1; full original context unavailable.")
-            lines.append(f"bill snapshot: {esc(version.bill_snapshot_id)}")
+            lines.append(f"bill snapshot: {esc(version.bill_snapshot_id or 'unavailable')}")
             lines.append(f"event snapshot: {esc(version.change_snapshot_id or 'none')}")
             lines.append(
                 (
@@ -2277,7 +2277,7 @@ class MessageFormatter:
                 f"content: {esc(version.content_id)} · {version.reason}",
                 f"recorded: {version.recorded_at.isoformat()}",
                 f"previous: {esc(version.previous_version_id or 'none')}",
-                f"bill snapshot: {esc(version.bill_snapshot_id)}",
+                f"bill snapshot: {esc(version.bill_snapshot_id or 'unavailable')}",
                 f"event snapshot: {esc(version.change_snapshot_id or 'none')}",
                 f"plan snapshot: {esc(version.plan_snapshot_id)}",
                 f"rendered checksum: {version.rendered_sha256 or 'unavailable'}",

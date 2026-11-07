@@ -18,6 +18,7 @@ from lexinform.adapters.content_history import (
     verify_grouped_stage_content,
 )
 from lexinform.adapters.content_source_refs import verify_content_source
+from lexinform.adapters.digest_content import verify_digest_content
 from lexinform.content_versions import (
     confirmed_content_version,
     content_delivery_mismatch,
@@ -132,8 +133,16 @@ def _read_history(
         except ValueError:
             findings.add("invalid_grouped_stage_content_history", version.content_id)
         try:
+            verify_digest_content(db, version, require_bound=True)
+        except ValueError:
+            findings.add("invalid_digest_content_history", version.content_id)
+        try:
             physical_id = verify_card_content(db, version, retained=True)
-            if version.change_snapshot_id is None and physical_id is None:
+            if (
+                version.change_snapshot_id is None
+                and version.digest_profile is None
+                and physical_id is None
+            ):
                 findings.add("card_content_physical_unavailable", version.content_id, warning=True)
             if (
                 version.card_primary_evidence is not None
@@ -184,7 +193,7 @@ def _publication_bindings(
             if publication is None:
                 findings.add("content_publication_unavailable", str(identity), warning=True)
             else:
-                if publication["delivery_json"] is not None:
+                if publication["delivery_json"] is not None and bound.digest_profile is None:
                     code = _frozen_content_issue(publication["delivery_json"], bound, snapshots)
                     if code is not None:
                         findings.add(code, str(identity))
@@ -198,22 +207,31 @@ def _publication_bindings(
                     publication[key] for key in ("term", "number", "channel_id")
                 ) != tuple(root[key] for key in ("term", "number", "channel_id")):
                     findings.add("content_owner_mismatch", str(identity))
-                if (identity == bound.root_publication_id) != (bound.previous_version_id is None):
+                if bound.digest_profile is None and (identity == bound.root_publication_id) != (
+                    bound.previous_version_id is None
+                ):
                     findings.add("content_binding_role_mismatch", str(identity))
-                if identity != bound.root_publication_id and publication["kind"] != (
-                    "message_part"
-                    if bound.change_snapshot_id is None or bound.reason == "grouped_stage_revision"
-                    else "amendments_revision"
+                if (
+                    bound.digest_profile is None
+                    and identity != bound.root_publication_id
+                    and publication["kind"]
+                    != (
+                        "message_part"
+                        if bound.change_snapshot_id is None
+                        or bound.reason == "grouped_stage_revision"
+                        else "amendments_revision"
+                    )
                 ):
                     findings.add("content_binding_kind_mismatch", str(identity))
                 if (
-                    root is not None
+                    bound.digest_profile is None
+                    and root is not None
                     and identity != bound.root_publication_id
                     and publication["status"] == "sent"
                     and publication["message_id"] != root["message_id"]
                 ):
                     findings.add("content_message_target_mismatch", str(identity))
-            if bound.change_snapshot_id is None:
+            if bound.change_snapshot_id is None and bound.digest_profile is None:
                 try:
                     physical_id = verify_card_content(db, bound, retained=True)
                     if physical_id is not None and physical_id != identity:
@@ -282,9 +300,17 @@ def _history_rows(
         confirmed = {
             version.content_id
             for version in members
-            if any(
-                physical.get("status") == "sent" and physical.get("message_id") is not None
-                for physical in bindings.get(version.content_id, [])
+            if bindings.get(version.content_id)
+            and (
+                all(
+                    physical.get("status") == "sent" and physical.get("message_id") is not None
+                    for physical in bindings[version.content_id]
+                )
+                if version.digest_profile is not None
+                else any(
+                    physical.get("status") == "sent" and physical.get("message_id") is not None
+                    for physical in bindings[version.content_id]
+                )
             )
         }
         confirmation = confirmed_content_version(
@@ -354,7 +380,7 @@ def audit(database: Path, *, publication_id: int | None = None) -> dict[str, Any
             bindings = {}
         cards: dict[int, str | None] = {}
         for value in versions.values():
-            if value.change_snapshot_id is None:
+            if value.change_snapshot_id is None and value.digest_profile is None:
                 try:
                     cards[value.root_publication_id] = card_current_content(
                         db, value.root_publication_id
