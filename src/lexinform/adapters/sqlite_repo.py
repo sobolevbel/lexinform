@@ -2278,7 +2278,12 @@ class SqliteBillRepository:
         return card_primary_evidence_candidate(self._conn, bill)
 
     def save_original_delivery_content(
-        self, bill: ContentSnapshot, snapshot: ContentSnapshot, version: ContentVersion
+        self,
+        bill: ContentSnapshot,
+        snapshot: ContentSnapshot,
+        version: ContentVersion,
+        *,
+        primary: ContentSnapshot | None = None,
     ) -> None:
         if (
             not self._conn.in_transaction
@@ -2287,9 +2292,16 @@ class SqliteBillRepository:
             or version.plan_snapshot_id != snapshot.snapshot_id
         ):
             raise ValueError("original delivery history requires its atomic freeze")
+        joint = version.original_delivery_evidence.joint_primary
+        if (primary.snapshot_id if primary else None) != (
+            joint.bill_snapshot_id if joint else None
+        ):
+            raise ValueError("original delivery history primary differs from its freeze")
         with self.atomic():
             self.save_content_snapshot(bill)
             self.save_content_snapshot(snapshot)
+            if primary is not None:
+                self.save_content_snapshot(primary)
             plan = verify_original_delivery_content(self._conn, version)
             if plan is None:
                 raise ValueError("original delivery history requires physical parts")

@@ -44,6 +44,7 @@ from lexinform.services.content_history import FORMATTER_VERSION, record_publica
 from lexinform.services.direct_delivery import freeze_direct_root
 from lexinform.services.joint import group_of, primary_of
 from lexinform.services.message_parts import freeze_parts, send_continuations
+from lexinform.services.original_delivery_content import record_original_delivery_content
 from lexinform.services.predecessors import rcl_predecessor
 from lexinform.services.publications import inherit_card, open_card_edit_ids, send_publication
 from lexinform.services.result_applications import record_secondary_application
@@ -637,13 +638,23 @@ class PublishingService:
         if not pub.delivery.rendered_text:
             saved = direct_root_plan(pub)
             if pub.status is PublicationStatus.QUEUED and not pub.attempts:
-                pub = freeze_parts(
-                    self._repo,
-                    self._clock,
-                    self._publisher,
-                    pub,
-                    self._publisher.render_delivery(pub),
-                )
+                origin = pub
+                with self._repo.atomic():
+                    pub = freeze_parts(
+                        self._repo,
+                        self._clock,
+                        self._publisher,
+                        origin,
+                        self._publisher.render_delivery(origin),
+                    )
+                    if capture_card or origin.kind is PublicationKind.JOINT_BILL:
+                        record_original_delivery_content(
+                            self._repo,
+                            origin,
+                            pub,
+                            language=getattr(self._publisher, "language", None),
+                            formatter_version=FORMATTER_VERSION,
+                        )
             else:
                 pub = freeze_direct_root(
                     self._repo,

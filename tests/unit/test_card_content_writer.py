@@ -157,14 +157,14 @@ class MultipartPublisher(FakePublisher):
         return text, "Explicit synthetic continuation"
 
 
-def test_multipart_original_is_delivered_without_orphan_metadata() -> None:
+def test_multipart_original_binds_history_to_both_sent_parts() -> None:
     with closing(SqliteBillRepository(Path(":memory:"))) as repo:
         repo.migrate()
         repo.restore(state())
         publisher = MultipartPublisher(publication_by_id=repo.publication_by_id)
         original(repo, publisher)
         assert len(publisher.sent) == 2
-        assert metadata_counts(repo) == (0, 0, 0)
+        assert metadata_counts(repo) == (2, 1, 2)
 
 
 class InterruptibleRepository(SqliteBillRepository):

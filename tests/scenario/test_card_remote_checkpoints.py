@@ -10,6 +10,7 @@ from lexinform.errors import DeliveryUncertainError, StateCheckpointError
 from lexinform.models import Publication, PublicationKind, PublicationStatus
 from lexinform.ports import PublishResult
 from lexinform.services.analysis import AnalysisService
+from lexinform.services.content_inspection import inspect_content
 from tests.checkpoint_state import saved_state
 from tests.fakes import make_analysis, make_comparison
 from tests.harness import CHANNEL, TERM, World
@@ -35,10 +36,11 @@ def ready_world(
     *,
     long: bool = False,
     second: bool = False,
+    repetitions: int = 220,
 ) -> World:
     analysis = make_analysis()
     if long:
-        analysis.practical_impact = "Старые заявления не подавать заново; 200 PLN. " * 220
+        analysis.practical_impact = "Старые заявления не подавать заново; 200 PLN. " * repetitions
     world = World(profile="production", reader_attention=mode, batch_script={"3039": analysis})
     world.batch.secondary_script[("3039", "joint")] = make_comparison(
         differences=["Новый срок для подачи заявления. " * 220] if long else None
@@ -271,6 +273,11 @@ def test_multipart_receipt_failure_blocks_all_later_physical_effects(
     first = fresh.repo.publication_by_id(root.delivery.continuation_ids[0])
     assert first is not None and first.delivery is not None
     assert first.status is (PublicationStatus.QUEUED if at == 2 else PublicationStatus.UNKNOWN)
+    assert root.id is not None and first.id is not None
+    version = fresh.repo.get_publication_content(root.id)
+    assert version is not None and fresh.repo.get_publication_content(first.id) == version
+    view = inspect_content(fresh.repo, root)
+    assert view is not None and view.current_id is None
     before = len(world.publisher.sent)
 
     fresh.container.delivery_service(dry_run=False).run()
@@ -310,7 +317,11 @@ def test_saved_parent_receipt_allows_only_unstarted_parts_after_restore(
     fresh = restored(remote, world, tmp_path)
     root = fresh.publication("3039")
     assert root is not None and root.delivery is not None and root.message_id is not None
-    assert root.status is PublicationStatus.SENT
+    assert root.status is PublicationStatus.SENT and root.id is not None
+    version = fresh.repo.get_publication_content(root.id)
+    assert version is not None, "the first freeze retained every continuation"
+    incomplete = inspect_content(fresh.repo, root)
+    assert incomplete is not None and incomplete.current_id is None
     before = len(world.publisher.sent)
 
     fresh.container.delivery_service(dry_run=False).run()
@@ -320,6 +331,9 @@ def test_saved_parent_receipt_allows_only_unstarted_parts_after_restore(
     first = fresh.repo.publication_by_id(root.delivery.continuation_ids[0])
     assert first is not None and first.delivery is not None
     assert first.status is PublicationStatus.SENT and first.delivery.reply_to == root.message_id
+    assert first.id is not None and fresh.repo.get_publication_content(first.id) == version
+    confirmed = inspect_content(fresh.repo, root)
+    assert confirmed is not None and confirmed.current_id == version.content_id
 
 
 @pytest.mark.parametrize("kind", [PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL])
@@ -341,6 +355,10 @@ def test_operator_retry_is_checkpointed_with_its_audit_before_the_card_api(
     row = fresh.publication("3039", kind)
     assert row is not None and row.id is not None and row.delivery is not None
     plan = row.delivery
+    version = fresh.repo.get_publication_content(row.id)
+    assert version is not None, "original history survives remote restore before the retry"
+    unknown = inspect_content(fresh.repo, row)
+    assert unknown is not None and unknown.current_id is None
     incoming = fresh.command(f"/delivery {row.id} retry")
     observed: list[int] = []
 
@@ -365,6 +383,9 @@ def test_operator_retry_is_checkpointed_with_its_audit_before_the_card_api(
     with saved_state(git(remote, "show", "state:state.sql")) as durable:
         receipt = durable.repo.publication_by_id(row.id)
         assert receipt is not None and receipt.status is PublicationStatus.SENT
+        assert durable.repo.get_publication_content(row.id) == version
+        current = inspect_content(durable.repo, receipt)
+        assert current is not None and current.current_id == version.content_id
 
 
 @pytest.mark.parametrize("dry_run", [False, True])
