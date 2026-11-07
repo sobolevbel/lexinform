@@ -199,3 +199,33 @@ def test_unfiled_draft_cannot_displace_a_newer_internal_version(
     record = w.bill(RCL).analysis
     assert record is not None
     assert record.source_url == (loose.url if loose_day > filed_day else filed.url)
+
+
+@pytest.mark.parametrize("retire_anchor", [False, True])
+def test_direct_rcl_stage_history_survives_government_rollover(retire_anchor: bool) -> None:
+    world = World(reader_attention="off")
+    start_legal_review(world)
+    world.run()
+    root = world.publication(RCL, PublicationKind.STATUS_UPDATE)
+    assert root is not None and root.id is not None and root.status_change_id is not None
+    version = world.repo.get_publication_content(root.id)
+    assert version is not None and version.direct_stage_evidence is not None
+    assert root.status is PublicationStatus.SENT
+    if retire_anchor:
+        assert (
+            world.repo.delete_publication(root.term, RCL, PublicationKind.NEW_BILL, root.channel_id)
+            == 1
+        )
+    assert world.repo.move_government_rows(root.term, root.term + 1) == 1
+    dump = world.repo.dump()
+    for _ in range(2):
+        world.repo.restore(dump)
+        assert world.repo.dump() == dump
+        assert world.repo.get_publication_content(root.id) == version
+    for change in (
+        f"UPDATE status_changes SET term={root.term} WHERE id={root.status_change_id}",
+        f"UPDATE bills SET rcl_json=json_set(rcl_json,'$.id',1) WHERE term={root.term + 1} AND number='{RCL}'",
+    ):
+        with pytest.raises(ValueError, match="invalid_content_history"):
+            world.repo.restore(dump + f"\n{change};\n")
+        assert world.repo.dump() == dump

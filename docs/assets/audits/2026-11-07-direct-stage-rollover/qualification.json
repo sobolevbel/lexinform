@@ -1,0 +1,9 @@
+{
+  "base": "415d12e6e69818150ce663c70f5eaf274c20fe50",
+  "patch_sha256": "db6817212291a2574a54b6ed9f807a151cdc582829900853a4032c2f542fd858",
+  "scope": "Offline normal direct RCL legal-review stage, followed by government rollover. Active and retired card anchors were both exercised.",
+  "baseline_failure": "direct_stage_bill_scope during restore after forward rollover",
+  "proof": "The frozen content version survived two exact restores. A foreign typed source ID and a split event term were rejected atomically.",
+  "checks": "37 focused tests, a final affected subset of 23, mypy and Ruff",
+  "wire_change": false
+}

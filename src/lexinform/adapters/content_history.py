@@ -542,6 +542,7 @@ class StageAnchorReceipt(NamedTuple):
     channel_id: str
     message_id: int
     sent_at: datetime
+    retired: bool = False
 
 
 def _stage_anchor(
@@ -577,6 +578,7 @@ def _stage_anchor(
         archived["channel_id"],
         archived["message_id"],
         sent_at,
+        retired=True,
     )
 
 
@@ -600,8 +602,8 @@ def verify_direct_stage_content(
         root.kind is not PublicationKind.STATUS_UPDATE
         or root.status_change_id != version.status_change_id
         or anchor.sent_at > root.created_at
-        or (anchor.term, anchor.number, anchor.channel_id)
-        != (root.term, root.number, root.channel_id)
+        or (anchor.number, anchor.channel_id) != (root.number, root.channel_id)
+        or (anchor.term != root.term and not anchor.retired)
         or _query(
             connection,
             "SELECT 1 FROM digest_event_links WHERE source_publication_id=?",
@@ -638,9 +640,12 @@ def verify_direct_stage_content(
         raise ValueError("direct_stage_content_bound")
     bill = snapshots[version.bill_context_id]
     owner = Bill.model_validate_json(bill.payload_json)
-    if card_bill_snapshot(bill.payload_json) != bill or (owner.term, owner.number) != (
-        root.term,
-        root.number,
+    if (
+        card_bill_snapshot(bill.payload_json) != bill
+        or not _original_delivery_owner_matches(
+            connection, owner, root, compact=evidence.multipart is None
+        )
+        or not owner.term <= anchor.term <= root.term
     ):
         raise ValueError("direct_stage_bill_scope")
     if version.change_snapshot_id is None:
@@ -665,8 +670,10 @@ def verify_direct_stage_content(
     else:
         scope = bool(change.new_stages) and not amendment
     if (
-        (change.model_copy(update=suffix) if application else change) != current
-        or (change.term, change.number) != (root.term, root.number)
+        (current.term, current.number) != (root.term, root.number)
+        or (change.term, change.number) != (owner.term, owner.number)
+        or (change.model_copy(update=suffix) if application else change)
+        != current.model_copy(update={"term": owner.term})
         or not scope
     ):
         raise ValueError("direct_stage_event_scope")
@@ -1359,7 +1366,12 @@ def verify_act_published_content(
 
 
 def _original_delivery_owner_matches(
-    connection: sqlite3.Connection, bill: Bill, publication: Publication, *, retired: bool = False
+    connection: sqlite3.Connection,
+    bill: Bill,
+    publication: Publication,
+    *,
+    retired: bool = False,
+    compact: bool = False,
 ) -> bool:
     if publication.number != bill.number or publication.term < bill.term:
         return False
@@ -1379,18 +1391,21 @@ def _original_delivery_owner_matches(
     ).fetchone()
     if row is None:
         return False
-    if bill.rcl is not None and bill.rcl.print_number is None and row["rcl_json"] is not None:
+    if row["rcl_json"] is not None and (bill.rcl is not None or (compact and bill.is_rcl)):
         current_rcl = RclProject.model_validate_json(row["rcl_json"])
         return (
-            bill.rcl.id > 0
-            and current_rcl.id == bill.rcl.id
-            and rcl_number(bill.rcl.id) == bill.number
+            current_rcl.id > 0
+            and rcl_number(current_rcl.id) == bill.number
+            and (
+                compact
+                if bill.rcl is None
+                else bill.rcl.id == current_rcl.id and bill.rcl.print_number is None
+            )
         )
-    if bill.wykaz is not None and row["wykaz_json"] is not None:
+    if row["wykaz_json"] is not None and (bill.wykaz is not None or (compact and bill.is_wykaz)):
         current_wykaz = WykazEntry.model_validate_json(row["wykaz_json"])
-        return (
-            current_wykaz.number == bill.wykaz.number
-            and wykaz_number(bill.wykaz.number) == bill.number
+        return wykaz_number(current_wykaz.number) == bill.number and (
+            compact if bill.wykaz is None else current_wykaz.number == bill.wykaz.number
         )
     return False
 
