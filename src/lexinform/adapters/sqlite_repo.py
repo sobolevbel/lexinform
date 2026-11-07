@@ -156,6 +156,7 @@ from lexinform.content_versions import (
 )
 from lexinform.direct_delivery import direct_root_plan
 from lexinform.document_editions import candidate_edition
+from lexinform.errors import StateCheckpointError
 from lexinform.json_storage import compact_json, storage_json
 from lexinform.legacy_delivery import legacy_digest_root
 from lexinform.legacy_maintenance import (
@@ -5605,6 +5606,37 @@ class SqliteBillRepository:
             (publication_id, publication_id),
         ).fetchall()
         return [DeliveryResolution.model_validate_json(row[0]) for row in rows]
+
+    def pin_grouped_telegram_receipt(
+        self,
+        publication_ids: tuple[int, int],
+        *,
+        content_id: str,
+        chat_id: int,
+        message_id: int,
+        sent_at: datetime,
+    ) -> None:
+        with self.atomic():
+            root_id, second_id = publication_ids
+            changed = self._conn.execute(
+                "UPDATE publications SET telegram_chat_id=?"
+                " WHERE id IN (?,?) AND ref=? AND kind='status_update' AND status='sent'"
+                " AND message_id=? AND sent_at=? AND telegram_chat_id IS NULL"
+                " AND EXISTS (SELECT 1 FROM publication_content"
+                " WHERE publication_id=? AND content_id=?)",
+                (
+                    chat_id,
+                    root_id,
+                    second_id,
+                    f"updates/{root_id}",
+                    message_id,
+                    _iso(sent_at),
+                    root_id,
+                    content_id,
+                ),
+            ).rowcount
+            if changed != 2:
+                raise StateCheckpointError("Grouped Telegram receipt no longer owns both sent rows")
 
     def mark_publication(
         self,

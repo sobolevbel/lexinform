@@ -1,0 +1,20 @@
+{
+  "both_sent": true,
+  "cleaned": {
+    "gzip_delta": 18,
+    "other_sql_exact": true,
+    "sql_delta": 20
+  },
+  "exact_restores": 2,
+  "known_pins": 2,
+  "network_methods": [
+    "sendMessage"
+  ],
+  "post_prune_plan_absent": true,
+  "same_timestamp": true,
+  "sent": {
+    "gzip_delta": 15,
+    "other_sql_exact": true,
+    "sql_delta": 20
+  }
+}

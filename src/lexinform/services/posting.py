@@ -415,6 +415,7 @@ class Poster:
             identities,
             lambda: self._publisher.publish_updates(plan.group_text),
             checkpoint=self._checkpoint,
+            capture_grouped_telegram=True,
         )
         self._count_attention(identities, sent)
         result.count_post(sent is not None)

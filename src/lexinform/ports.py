@@ -522,6 +522,12 @@ class PublishResult(Protocol):
     def document_message_ids(self) -> list[int]: ...
 
 
+@runtime_checkable
+class TelegramReceiptResult(PublishResult, Protocol):
+    @property
+    def telegram_chat_id(self) -> int | None: ...
+
+
 class Publisher(Protocol):
     """Where the messages go: Telegram in production, stdout in a dry run."""
 
@@ -1258,6 +1264,16 @@ class BillRepository(Protocol):
     ) -> list[Publication]: ...
 
     def list_due_deliveries(self, channel_id: str, *, max_attempts: int) -> list[Publication]: ...
+
+    def pin_grouped_telegram_receipt(
+        self,
+        publication_ids: tuple[int, int],
+        *,
+        content_id: str,
+        chat_id: int,
+        message_id: int,
+        sent_at: datetime,
+    ) -> None: ...
 
     def mark_publication(
         self,

@@ -1,0 +1,14 @@
+{
+  "cleaned": {
+    "confirmed_rows": 2,
+    "exact_reader_restores": 2,
+    "matched_group_receipts": 1,
+    "sql_sha256": "8741bcd3ab1e79bbbfda0725b5d358b9c65d5f70bb84391d7c99852888be2e05"
+  },
+  "sent": {
+    "confirmed_rows": 2,
+    "exact_reader_restores": 2,
+    "matched_group_receipts": 1,
+    "sql_sha256": "54b09ed84562fe32048b232f115e44d9c0ddccf2fa98902e2f7fe12e3fb4ae1a"
+  }
+}

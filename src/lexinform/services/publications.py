@@ -1,13 +1,59 @@
 import logging
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from datetime import datetime
 
 from lexinform.content_sources import source_context_blocked as source_context_blocked
 from lexinform.errors import DeliveryUncertainError, ServiceUnavailableError, StateCheckpointError
-from lexinform.models import Publication, PublicationKind, PublicationStatus, card_edit_owner_id
-from lexinform.ports import BillRepository, Clock, PublishResult, StateCheckpoint
+from lexinform.models import (
+    ContentVersion,
+    Publication,
+    PublicationKind,
+    PublicationStatus,
+    card_edit_owner_id,
+)
+from lexinform.ports import (
+    BillRepository,
+    Clock,
+    PublishResult,
+    StateCheckpoint,
+    TelegramReceiptResult,
+)
 
 log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class _GroupedSend:
+    ids: tuple[int, int]
+    members: tuple[Publication, Publication]
+    version: ContentVersion
+
+
+def _grouped_send(repo: BillRepository, pub_ids: Sequence[int]) -> _GroupedSend | None:
+    if len(pub_ids) != 2:
+        return None
+    root_id, second_id = pub_ids
+    try:
+        version = repo.get_publication_content(root_id)
+    except ValueError:
+        return None
+    if version is None or version.reason != "original" or version.grouped_stage_evidence is None:
+        return None
+    if tuple(member.publication_id for member in version.grouped_stage_evidence.members) != (
+        root_id,
+        second_id,
+    ):
+        return None
+    root, second = repo.publication_by_id(root_id), repo.publication_by_id(second_id)
+    if (
+        root is None
+        or second is None
+        or root.status is not PublicationStatus.PENDING
+        or second.status is not PublicationStatus.PENDING
+    ):
+        return None
+    return _GroupedSend((root_id, second_id), (root, second), version)
 
 
 def send_publication(
@@ -28,6 +74,7 @@ def send_publications(
     send: Callable[[], PublishResult | int],
     *,
     checkpoint: StateCheckpoint | None = None,
+    capture_grouped_telegram: bool = False,
 ) -> int | None:
     """The caller persists pending work before sending; only definite failures spend attempts."""
     if any(
@@ -36,6 +83,7 @@ def send_publications(
         for publication in (repo.publication_by_id(pub_id),)
     ):
         return None
+    group = _grouped_send(repo, pub_ids) if capture_grouped_telegram else None
     if checkpoint is not None:
         checkpoint()
     try:
@@ -64,18 +112,54 @@ def send_publications(
         return None
     message_id = sent if isinstance(sent, int) else sent.message_id
     documents = None if isinstance(sent, int) else list(sent.document_message_ids)
-    with repo.atomic():
-        for pub_id in pub_ids:
-            repo.mark_publication(
-                pub_id,
-                PublicationStatus.SENT,
-                message_id=message_id,
-                document_message_ids=documents,
-                sent_at=clock.now(),
-            )
-            publication = repo.publication_by_id(pub_id)
-            assert publication is not None, "pending work is persisted before send"
-            complete_delivery(repo, publication, message_id=message_id, sent_at=clock.now())
+    chat_id = (
+        sent.telegram_chat_id
+        if group is not None and not documents and isinstance(sent, TelegramReceiptResult)
+        else None
+    )
+    try:
+        with repo.atomic():
+            if group is not None and (
+                tuple(repo.publication_by_id(identity) for identity in group.ids) != group.members
+                or repo.get_publication_content(group.ids[0]) != group.version
+            ):
+                raise StateCheckpointError("Grouped delivery ownership changed after send")
+            group_sent_at = clock.now() if group is not None else None
+            for pub_id in pub_ids:
+                repo.mark_publication(
+                    pub_id,
+                    PublicationStatus.SENT,
+                    message_id=message_id,
+                    document_message_ids=documents,
+                    sent_at=group_sent_at if group_sent_at is not None else clock.now(),
+                )
+                publication = repo.publication_by_id(pub_id)
+                assert publication is not None, "pending work is persisted before send"
+                complete_delivery(
+                    repo,
+                    publication,
+                    message_id=message_id,
+                    sent_at=group_sent_at if group_sent_at is not None else clock.now(),
+                )
+            if (
+                group is not None
+                and group_sent_at is not None
+                and type(chat_id) is int
+                and -(2**52) < chat_id < 0
+            ):
+                repo.pin_grouped_telegram_receipt(
+                    group.ids,
+                    content_id=group.version.content_id,
+                    chat_id=chat_id,
+                    message_id=message_id,
+                    sent_at=group_sent_at,
+                )
+    except StateCheckpointError:
+        raise
+    except Exception as exc:
+        if group is None:
+            raise
+        raise StateCheckpointError("Could not persist the acknowledged grouped delivery") from exc
     if checkpoint is not None:
         checkpoint()
     return message_id

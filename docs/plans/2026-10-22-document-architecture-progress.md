@@ -14438,3 +14438,21 @@ Unknown delivery stayed unconfirmed without a resend.
 | `25351cab6e03e282376d7459b92e9c593beb130d` | [CI 42322628870](https://github.com/sobolevbel/lexinform/actions/runs/42322628870) | [Deploy 42323345863](https://github.com/sobolevbel/lexinform/actions/runs/42323345863) |
 | `bfe4a71df6b0ee54aaf7f184be1e77b77d48f387` | [CI 42323485815](https://github.com/sobolevbel/lexinform/actions/runs/42323485815) | [Deploy 42323983761](https://github.com/sobolevbel/lexinform/actions/runs/42323983761) |
 | `dea043eb3e6cd931fb57f6f2148a0554d8187fc7` | [CI 42324075745](https://github.com/sobolevbel/lexinform/actions/runs/42324075745) | [Deploy 42324753283](https://github.com/sobolevbel/lexinform/actions/runs/42324753283) |
+
+<a id="j430"></a>
+
+### J430. Запись числовой цели исходного группового сообщения
+
+- Две подтверждённые исходные публикации получают общий числовой ID
+  чата в одной транзакции с `SENT`. Без пригодного ID обе квитанции
+  сохраняются без числовой цели.
+- Потеря подтверждения записи после принятой отправки оставляет
+  восстановленную группу в `unknown` без повтора. Проверен один
+  `sendMessage` без поиска alias, очистка и два точных восстановления.
+  После очистки изменение составляет 20 байт SQL и 18 байт gzip.
+  [Квалификация](../assets/audits/2026-11-07-group-telegram-chat-writer/qualification.json).
+- J429 дважды побайтно восстановил оба дампа J430 до и после очистки
+  и подтвердил общую числовую цель.
+  [Проверка отката](../assets/audits/2026-11-07-group-telegram-chat-writer/rollback.json).
+- Выпуск зависит от проверенной выкладки J429, минимальной версии
+  отката после записи новых квитанций. Групповая правка не отправляется.
