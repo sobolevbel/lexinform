@@ -20,6 +20,7 @@ from lexinform.input_receipts import (
     archive_member_matches,
     ordinary_rcl_archive_document,
     rcl_archive_self_amendment_url,
+    selected_archive_version_peer,
 )
 from lexinform.json_storage import canonical_json, read_json
 from lexinform.models import (
@@ -696,48 +697,15 @@ def _selected_archive_version(
             (receipt.source_observation_id, receipt.selected_version_trace_id),
         )
     )
-    decision = trace.version_decision
-    archive = trace.archive_members
-    if (
-        trace.requested_document != document
-        or not ordinary_rcl_archive_document(document.model_copy(update={"alternatives": ()}))
-        or not document.compare_versions
-        or len(document.alternatives) != 1
-        or document.alternatives[0].url == document.url
-        or trace.coverage != "complete"
-        or trace.result != "selected"
-        or trace.selection_state != selection.selection.state
-        or decision is None
-        or decision.compared_indices != (0, 1)
-        or decision.retained_indices != (0,)
-        or archive is None
-        or len(trace.dispositions) != 2
-    ):
-        raise ValueError("input_receipt_archive_version_mismatch")
-    winner, peer = trace.dispositions
-    if (
-        (winner.phase, winner.index, winner.outcome, winner.reason, winner.observed_sha256)
-        != ("version_comparison", 0, "selected", "version_choice", root)
-        or (peer.phase, peer.index, peer.outcome, peer.reason)
-        != ("version_comparison", 1, "policy_excluded", "version_preference")
-        or peer.observed_sha256 is None
-        or peer.observed_sha256 == root
-    ):
-        raise ValueError("input_receipt_archive_version_mismatch")
-    main = selection.selection.parts[0]
-    slot = receipt.source_parts[0].physical_index
-    if not any(
-        (row.phase, row.index, row.stage, row.outcome, row.reason)
-        == ("version_comparison", 0, "policy", "selected", "selected_main")
-        and (row.root_sha256, row.physical_part_index, row.leaf_sha256, row.text_sha256)
-        == (root, slot, main.sha256, main.text_sha256)
-        for row in archive.rows
-    ):
+    peer_sha = selected_archive_version_peer(
+        document, selection.selection, trace, root, receipt.source_parts[0].physical_index
+    )
+    if peer_sha is None:
         raise ValueError("input_receipt_archive_version_mismatch")
     _one(
         connection,
         "SELECT 1 FROM artifact_reads WHERE requested_url=? AND artifact_sha256=?",
-        (document.alternatives[0].url, peer.observed_sha256),
+        (document.alternatives[0].url, peer_sha),
     )
 
 

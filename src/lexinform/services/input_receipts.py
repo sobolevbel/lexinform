@@ -9,6 +9,7 @@ from lexinform.input_receipts import (
     ordinary_rcl_archive_document,
     primary_input_receipt,
     rcl_archive_self_amendment_url,
+    selected_archive_version_peer,
     supplement_input_receipt,
 )
 from lexinform.models import (
@@ -159,7 +160,15 @@ def capture_rcl_archive_input_receipt(
         return None
     archive = selection.parts
     amendment = None
-    if not ordinary_rcl_archive_document(source.document):
+    trace = source.candidate_trace
+    version_choice = (
+        source.document.compare_versions
+        and len(source.document.alternatives) == 1
+        and trace is not None
+        and trace.version_decision is not None
+        and not source.document.amendment_urls
+    )
+    if not version_choice and not ordinary_rcl_archive_document(source.document):
         amendment_url = rcl_archive_self_amendment_url(source.document)
         if amendment_url is None or len(archive) < 3:
             return None
@@ -263,6 +272,16 @@ def capture_rcl_archive_input_receipt(
         "segments": prepared.segments,
     }
     if amendment is None:
+        if version_choice and trace is not None:
+            peer_sha = selected_archive_version_peer(
+                source.document, selection, trace, root, parts[0].physical_index
+            )
+            if peer_sha is None or not any(
+                (read.requested_url, read.sha256) == (source.document.alternatives[0].url, peer_sha)
+                for read in source.reads
+            ):
+                return None
+            fields["selected_version_trace_id"] = trace.trace_id
         return RclArchiveInputReceipt.model_validate({**fields, "source_parts": tuple(parts)})
     final = prepared.segments[-1]
     if (final.part_index, final.source_start, final.source_end) != (

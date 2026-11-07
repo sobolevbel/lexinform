@@ -219,7 +219,9 @@ def test_archive_receipt_rejects_unproved_coverage(repo: SqliteBillRepository, f
         )
 
 
-@pytest.mark.parametrize("fault", [None, "text_only_cache", "hybrid", "body_mismatch"])
+@pytest.mark.parametrize(
+    "fault", [None, "text_only_cache", "hybrid", "body_mismatch", "unproved_version"]
+)
 def test_writer_uses_the_actual_projection_and_exact_archive_parent(fault: str | None) -> None:
     source, selection = captured_source()
     text = PAGE_BREAK.join(part.text for part in selection.parts)
@@ -242,6 +244,10 @@ def test_writer_uses_the_actual_projection_and_exact_archive_parent(fault: str |
         source = replace(source, extractions=())
     elif fault == "hybrid":
         document = source.document.model_copy(update={"amendment_urls": (URL + "?amendment",)})
+        source = replace(source, document=document)
+    elif fault == "unproved_version":
+        alternate = TextDocument(url=URL + "?alternate", kind="rcl")
+        document = source.document.model_copy(update={"alternatives": (alternate,)})
         source = replace(source, document=document)
     elif fault == "body_mismatch":
         source = replace(source, reads=())
