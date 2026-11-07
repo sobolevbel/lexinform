@@ -6339,12 +6339,29 @@ class SqliteBillRepository:
     ) -> int:
         """Operator action: forget a post so the normal path can send it again. Returns the
         number of rows removed (0 or 1)."""
-        cur = self._conn.execute(
-            "DELETE FROM publications"
-            " WHERE term = ? AND number = ? AND kind = ? AND channel_id = ?",
-            (term, number, kind.value, channel_id),
-        )
-        return int(cur.rowcount)
+        with self.atomic():
+            if kind is PublicationKind.NEW_BILL:
+                self._conn.execute(
+                    "INSERT INTO retired_stage_anchors"
+                    "(id,term,number,channel_id,message_id,sent_at)"
+                    " SELECT p.id,p.term,p.number,p.channel_id,p.message_id,p.sent_at"
+                    " FROM publications p WHERE p.term=? AND p.number=? AND p.channel_id=?"
+                    " AND p.kind='new_bill' AND p.status='sent' AND p.message_id>0"
+                    " AND p.sent_at IS NOT NULL AND EXISTS ("
+                    " SELECT 1 FROM content_versions v WHERE"
+                    " json_extract(v.version_json,"
+                    " '$.direct_stage_evidence.anchor_publication_id')=p.id"
+                    " OR EXISTS (SELECT 1 FROM json_each(v.version_json,"
+                    " '$.grouped_stage_evidence.members') member"
+                    " WHERE json_extract(member.value, '$.anchor_publication_id')=p.id))",
+                    (term, number, channel_id),
+                )
+            cur = self._conn.execute(
+                "DELETE FROM publications"
+                " WHERE term = ? AND number = ? AND kind = ? AND channel_id = ?",
+                (term, number, kind.value, channel_id),
+            )
+            return int(cur.rowcount)
 
     def card_aliases(self, channel_id: str, message_id: int) -> list[Publication]:
         rows = self._conn.execute(
