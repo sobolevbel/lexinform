@@ -1,0 +1,173 @@
+{
+  "base": "3df6d4302241f8982b2f1d7b9179f5245520d590",
+  "patch_sha256": {
+    "reader.patch": "115927cc88278ecad5aaab6355e26e6acd25ed1534cb75feff3b60030b8f592d",
+    "writer.patch": "e54f045b315077ebc7de1190e190f781f37d9d869313247e7649fca88a96f22a"
+  },
+  "pinned_3231": {
+    "lane": "reader",
+    "db_sha256": "2e0984ce23c4c0fa87cd21073cacf385728fe63cc884ac02d223af42c4b8c2aa",
+    "stage_types": [
+      "Start",
+      "ReadingReferral",
+      "Referral",
+      "Referral"
+    ],
+    "latest_render_event": "print_assigned",
+    "frozen_html_sha256": "e85f185811afd0ce7985e39cd0656a121b1e8cb8ee1c6773f9c1771693abe837",
+    "snapshot_and_html_bytes": 7458,
+    "state_commit": "4764779e91d9d8fe5609aba45de02f4a792479be",
+    "artifact": "out/corpus/da10-state-census.tlXr3m/state.db",
+    "root_publication": 157,
+    "status_change": 128,
+    "telegram_message": 115,
+    "parent_publication": 156,
+    "telegram_reply_to": 86,
+    "backfill": false,
+    "original_html_replayed_without_render": true,
+    "old_reader_rejects": "direct_stage_event_scope"
+  },
+  "prospective": {
+    "before": {
+      "single": {
+        "sql": 66505,
+        "gzip": 12831,
+        "ids": [
+          2
+        ],
+        "receipts": [
+          102
+        ],
+        "outgoing": [
+          [
+            101,
+            "bbe401e289cb5a661aa3a8525e34b2fcc18d152173c05bf3027d993a0b49b221"
+          ]
+        ],
+        "content_id": null,
+        "restores": 2
+      },
+      "multipart": {
+        "sql": 66883,
+        "gzip": 12867,
+        "ids": [
+          2,
+          3,
+          4
+        ],
+        "receipts": [
+          102,
+          103,
+          104
+        ],
+        "outgoing": [
+          [
+            101,
+            "b99e0664d6123dfb3bedd1421e061c6959a400b771eecd4cae42852258ce4919"
+          ],
+          [
+            102,
+            "daf8964a30dde4fb3937d0aee2407583c645bafdf6083e554af3523305c4f325"
+          ],
+          [
+            103,
+            "bc600af5528fcf8069b13b614a52be1240fce77b677fdb767f1fecd1ae1f64ec"
+          ]
+        ],
+        "content_id": null,
+        "restores": 2
+      }
+    },
+    "after": {
+      "single": {
+        "sql": 71442,
+        "gzip": 13541,
+        "ids": [
+          2
+        ],
+        "receipts": [
+          102
+        ],
+        "outgoing": [
+          [
+            101,
+            "bbe401e289cb5a661aa3a8525e34b2fcc18d152173c05bf3027d993a0b49b221"
+          ]
+        ],
+        "content_id": "content-v1:71372ed6795812c09a12d500e1169f2207fb3706422485988bb635100740b7a7",
+        "restores": 2
+      },
+      "multipart": {
+        "sql": 87115,
+        "gzip": 14949,
+        "ids": [
+          2,
+          3,
+          4
+        ],
+        "receipts": [
+          102,
+          103,
+          104
+        ],
+        "outgoing": [
+          [
+            101,
+            "b99e0664d6123dfb3bedd1421e061c6959a400b771eecd4cae42852258ce4919"
+          ],
+          [
+            102,
+            "daf8964a30dde4fb3937d0aee2407583c645bafdf6083e554af3523305c4f325"
+          ],
+          [
+            103,
+            "bc600af5528fcf8069b13b614a52be1240fce77b677fdb767f1fecd1ae1f64ec"
+          ]
+        ],
+        "content_id": "content-v1:4e0707692fdbad7d4825dd5200d03cd2ebbd5762e3997d1273c9bfdb21824193",
+        "restores": 2
+      }
+    },
+    "size_delta_bytes": {
+      "single": {
+        "sql": 4937,
+        "gzip": 710
+      },
+      "multipart": {
+        "sql": 20232,
+        "gzip": 2082
+      }
+    },
+    "multipart_fixture": "Normal watcher, renderer output deliberately lengthened, ordinary split/freeze/send with fake Telegram",
+    "reader_only_exact_restores_each_shape": 2,
+    "old_restore_rejects_both_atomically": "direct_stage_event_scope",
+    "existing_single_stage_parity": {
+      "one-stage": {
+        "sql": 69209,
+        "gzip": 13379,
+        "ids": [
+          2
+        ],
+        "receipts": [
+          102
+        ],
+        "outgoing": [
+          [
+            101,
+            "df3b77deacec6e9490cb621f6edbcaa20e1ea457837a54edbc24506ac1471298"
+          ]
+        ],
+        "content_id": "content-v1:53cd5898a9b8c41f8c552b131d5eb965374e9304f5c00302cca8febe547dd6ff",
+        "restores": 2
+      }
+    }
+  },
+  "focus": {
+    "pytest": 8,
+    "rerun_new_scenarios_with_late_amendments_supplements_and_wrong_owner": 2,
+    "mypy_files": 3,
+    "ruff_check": "pass",
+    "git_diff_check": "pass"
+  },
+  "bounds": "Existing single 8192-byte and multipart 128-KiB evidence caps, application/held/with-act and alias/anchor rules unchanged."
+}

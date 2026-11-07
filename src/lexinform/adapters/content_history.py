@@ -659,7 +659,7 @@ def verify_direct_stage_content(
             and len(change.new_stages) == 1
         )
     else:
-        scope = len(change.new_stages) == 1 and not amendment
+        scope = bool(change.new_stages) and not amendment
     if (
         (change.model_copy(update=suffix) if application else change) != current
         or (change.term, change.number) != (root.term, root.number)
