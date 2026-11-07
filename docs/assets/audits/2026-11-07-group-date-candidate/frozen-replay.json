@@ -1,0 +1,15 @@
+{
+  "fixture_sha256": "8741bcd3ab1e79bbbfda0725b5d358b9c65d5f70bb84391d7c99852888be2e05",
+  "original_html_sha256": "3f357c28e8ed12edeaeefaf1ccf65e95b28c00a46f9e3cf05f1a54585aeb9e5c",
+  "rebuilt_html_sha256": "09f423f4b238536d40fb2b6edf9366b1ac8cc80dfd2645e7301e20f0022415c0",
+  "whole_render_exact": false,
+  "member_fragment_exact": [
+    false,
+    false
+  ],
+  "changed_fragment_kinds": [
+    "member",
+    "road",
+    "tags"
+  ]
+}

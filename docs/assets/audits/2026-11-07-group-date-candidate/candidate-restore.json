@@ -1,0 +1,46 @@
+{
+  "fixture_sha256": "8741bcd3ab1e79bbbfda0725b5d358b9c65d5f70bb84391d7c99852888be2e05",
+  "unchanged_dump": true,
+  "controls": [
+    {
+      "member_index": 0,
+      "test_date_shift": -2,
+      "candidate_accepted": false
+    },
+    {
+      "member_index": 0,
+      "test_date_shift": -1,
+      "candidate_accepted": false
+    },
+    {
+      "member_index": 0,
+      "test_date_shift": 1,
+      "candidate_accepted": true
+    },
+    {
+      "member_index": 0,
+      "test_date_shift": 2,
+      "candidate_accepted": true
+    },
+    {
+      "member_index": 1,
+      "test_date_shift": -2,
+      "candidate_accepted": false
+    },
+    {
+      "member_index": 1,
+      "test_date_shift": -1,
+      "candidate_accepted": false
+    },
+    {
+      "member_index": 1,
+      "test_date_shift": 1,
+      "candidate_accepted": true
+    },
+    {
+      "member_index": 1,
+      "test_date_shift": 2,
+      "candidate_accepted": true
+    }
+  ]
+}

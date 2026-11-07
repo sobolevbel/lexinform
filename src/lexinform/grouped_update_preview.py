@@ -238,3 +238,27 @@ def _render_chunks(render: GroupedUpdateRender) -> tuple[tuple[bytes, bytes], ..
     ):
         return None
     return tuple(chunks)
+
+
+def replace_grouped_update_member(
+    baseline: GroupedUpdateRender, owner: UpdateOwner, entry: str
+) -> GroupedUpdateRender | None:
+    chunks = _render_chunks(baseline)
+    if chunks is None or not entry or owner not in baseline.members:
+        return None
+    fragments = [
+        UpdateFragment(
+            span.kind,
+            span.owners,
+            entry if (span.kind, span.owners) == ("member", (owner,)) else original.decode(),
+            "\n\n" if separator else "",
+        )
+        for span, (separator, original) in zip(baseline.ranges, chunks, strict=True)
+    ]
+    return grouped_update_render(
+        fragments,
+        baseline.members,
+        today=baseline.today,
+        language=baseline.language,
+        attention=baseline.attention,
+    )

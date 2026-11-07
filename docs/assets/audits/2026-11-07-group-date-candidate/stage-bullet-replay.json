@@ -1,0 +1,17 @@
+{
+  "fixture_sha256": "8741bcd3ab1e79bbbfda0725b5d358b9c65d5f70bb84391d7c99852888be2e05",
+  "controls": [
+    {
+      "member": 0,
+      "unique_exact_bullet_block": true,
+      "dated_stages_tested": 2,
+      "only_date_prefix_changed": true
+    },
+    {
+      "member": 1,
+      "unique_exact_bullet_block": true,
+      "dated_stages_tested": 2,
+      "only_date_prefix_changed": true
+    }
+  ]
+}

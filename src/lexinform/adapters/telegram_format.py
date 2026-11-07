@@ -3509,6 +3509,21 @@ class MessageFormatter:
             )
         return f"{name} ({code})" if name else code
 
+    def grouped_stage_bullet(self, stage: Stage, *, today: dt.date) -> str | None:
+        line = self._stage_line(stage, today)
+        return f"• {line}" if "\n" not in line and "\r" not in line else None
+
+    def grouped_referral_date_bullet(self, stage: Stage, *, today: dt.date) -> str | None:
+        if stage.stage_type != "Referral" or not stage.committee_code or stage.children:
+            return None
+        if stage.date is None or stage.date > today:
+            return None
+        line = self._stage_line(stage, today)
+        suffix = self._stage_line(stage.model_copy(update={"date": None}), today)
+        if "\n" in line or "\r" in line or line != f"{self.fmt_date(stage.date)}: {suffix}":
+            return None
+        return f"• {line}"
+
     def _stage_line(self, stage: Stage, today: dt.date) -> str:
         """One bullet of the "new stages" list; may span two lines (voting + club breakdown)."""
         lb = self._labels
