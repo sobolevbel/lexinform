@@ -14,6 +14,7 @@ from lexinform.models.digest_content import (
     DigestRenderedPlan,
     digest_event_owner_sha256,
 )
+from lexinform.services import digest as digest_module
 from lexinform.services.content_history import FORMATTER_VERSION, restore_content_delivery
 from lexinform.services.content_inspection import inspect_content_page
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
@@ -26,9 +27,10 @@ from tests.scenario.test_digest_remote_checkpoints import (
 )
 
 
-def test_native_budget_gap_and_rendered_history_after_cleanup(
+def test_native_rendered_history_fixture_survives_cleanup(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    monkeypatch.setattr(digest_module, "record_digest_content", lambda *args, **kwargs: None)
     world, event = pending_event()
     assert event.id is not None, "the tracked event has its durable source ID"
     service = service_for(world)

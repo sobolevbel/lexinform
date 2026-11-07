@@ -13,9 +13,14 @@ from lexinform.models import (
     Publication,
     PublicationStatus,
 )
-from lexinform.models.digest_content import DigestContentPlan
+from lexinform.models.digest_content import (
+    DigestContentPlan,
+    DigestRenderedPart,
+    DigestRenderedPlan,
+)
 from lexinform.ports import PublishResult
 from lexinform.services.content_inspection import inspect_content
+from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 from tests.checkpoint_state import saved_state
 from tests.scenario.test_card_remote_checkpoints import connect, git
 from tests.scenario.test_digest_remote_checkpoints import (
@@ -128,11 +133,11 @@ def test_digest_writer_unknown_part_restores_full_history_without_resend(
     assert calls == 2
 
 
-def test_digest_history_budget_yields_to_the_existing_freeze(
-    monkeypatch: pytest.MonkeyPatch,
-    caplog: pytest.LogCaptureFixture,
+@pytest.mark.parametrize("failure", ["none", "snapshot", "transport"])
+def test_digest_history_budget_retains_native_parts_through_cleanup(
+    monkeypatch: pytest.MonkeyPatch, failure: str
 ) -> None:
-    world, _source = pending_event()
+    world, event = pending_event()
     service = service_for(world)
     week = service.build(REF)
     assert week.cards, "the fixture includes the original published card"
@@ -140,16 +145,72 @@ def test_digest_history_budget_yields_to_the_existing_freeze(
         update={"cards": (week.cards[0].model_copy(update={"title": "x" * 70_000}),)}
     )
     monkeypatch.setattr(service, "build", lambda *args, **kwargs: large)
-    monkeypatch.setattr(
-        world.publisher,
-        "render_digest_parts",
-        lambda *args, **kwargs: (DigestPart(text="Bounded rendered digest"),),
-    )
+    (native,) = world.publisher.render_digest_parts(large)
+    assert utf16_length(native.text) <= MESSAGE_LIMIT and native.event_ids == (event.id,)
+    original_save = world.repo.save_content_snapshot
+    original_send = world.publisher.publish_prepared
+
+    def fail(snapshot: ContentSnapshot) -> None:
+        original_save(snapshot)
+        if '"profile":"digest-rendered-part-v1"' in snapshot.payload_json:
+            raise RuntimeError("injected part snapshot failure")
+
+    def send(publication: Publication) -> PublishResult:
+        assert publication.id is not None, "the digest effect has its physical ID"
+        with saved_state(world.repo.dump()) as checkpoint:
+            version = checkpoint.repo.get_publication_content(publication.id)
+            assert version is not None and version.digest_profile == "digest-rendered-v1"
+            pending = checkpoint.repo.publication_by_id(publication.id)
+            assert pending is not None and pending.status is PublicationStatus.PENDING
+        return original_send(publication)
+
+    monkeypatch.setattr(world.publisher, "publish_prepared", send)
+    if failure == "snapshot":
+        before = world.repo.dump()
+        with monkeypatch.context() as fault:
+            fault.setattr(world.repo, "save_content_snapshot", fail)
+            with pytest.raises(RuntimeError, match="injected part snapshot failure"):
+                service.publish(REF)
+        assert world.publisher.digest_send_attempts == 0
+        assert world.repo.dump() == before
+
+    failed_version = None
+    if failure == "transport":
+        world.publisher.fail_digest_attempt = 1
+        assert service.publish(REF).failed
+        failed = saved_digest(world)
+        assert failed.status is PublicationStatus.FAILED and failed.id is not None
+        failed_version = world.repo.get_publication_content(failed.id)
+        assert failed_version is not None
+        monkeypatch.setattr(service, "build", lambda *args, **kwargs: week)
+
     assert service.publish(REF).published
     root = saved_digest(world)
-    assert world.repo.get_publication_content(root.id or 0) is None
-    assert root.delivery is not None and root.delivery.rendered_text == "Bounded rendered digest"
-    assert f"publication={root.id} reason=budget" in caplog.text
+    assert root.id is not None and root.delivery is not None
+    assert root.delivery.rendered_text == native.text
+    version = world.repo.get_publication_content(root.id)
+    assert version is not None and version.digest_profile == "digest-rendered-v1"
+    if failed_version is not None:
+        assert version == failed_version
+    snapshot = world.repo.get_content_snapshot(version.plan_snapshot_id)
+    assert snapshot is not None
+    rendered = DigestRenderedPlan.model_validate_json(snapshot.payload_json)
+    assert rendered.upstream_semantics == "not_retained"
+    (ref,) = rendered.parts
+    part_snapshot = world.repo.get_content_snapshot(ref.snapshot_id)
+    assert part_snapshot is not None
+    part = DigestRenderedPart.model_validate_json(part_snapshot.payload_json)
+    assert (part.text, part.event_ids) == (native.text, native.event_ids)
+    expiry = world.clock.now() + timedelta(days=180)
+    world.repo.prune_history(before=expiry, memo_before=expiry)
+    exact = world.repo.dump()
+    with saved_state(exact) as first, saved_state(exact) as second:
+        assert first.repo.dump() == second.repo.dump() == exact
+        assert second.repo.get_publication_content(root.id) == version
+        assert second.repo.get_content_snapshot(ref.snapshot_id) == part_snapshot
+        assert [source.id for source in second.repo.digest_sources(root.id)] == [event.id]
+    assert not service.publish(REF).published
+    assert world.publisher.digest_send_attempts == (2 if failure == "transport" else 1)
 
 
 def test_repeated_digest_drafts_keep_distinct_content_and_delivery_refs(

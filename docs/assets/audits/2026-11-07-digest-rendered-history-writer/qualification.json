@@ -1,0 +1,43 @@
+{
+  "bounded_fixture": "Native formatter and fake transport with pending_event, 70,000-character title",
+  "controls": [
+    "Exact freeze before first effect and exact double restore after pruning",
+    "Failure after part insert rolls back including ownership; retry succeeds",
+    "Definite transport failure retries original content even with changed rebuild input",
+    "Sent rerun makes no additional effect"
+  ],
+  "normal_v1_byte_and_identity_parity": true,
+  "overflow_deltas": {
+    "after_cleanup": {
+      "gzip_bytes": 613,
+      "sql_bytes": 2176
+    },
+    "before_cleanup": {
+      "gzip_bytes": 612,
+      "sql_bytes": 2176
+    }
+  },
+  "pins": {
+    "baseline.json": "2fe8eb1c61f13b5f898fed0e6e91f2e72d49c93d896d5c6f5b80c565d32e2a8c",
+    "candidate.patch": "f9da5eb5a90752156c99bd42b76f148cf71b92ae649f7a0fe70330b42d3b91d9",
+    "native-pruned.sql": "f0d82bf47597aebe93a9ce97f80d627c196407b95a5d0238a92b66d832c3fa17",
+    "qualify.py": "af861c5fd606ed0e7213d3511c4dacb95dce8b30e4ff716a29373e311f0cdc5f",
+    "rollback.json": "fce258db30d8f9d2a6d22ead0e1807eb3c74e4b361815f99b83913c026a00f02",
+    "writer.json": "cef319ed4ba4b60e2722e91976b3d8dedd08c2f891b1c73af474656c24e21813"
+  },
+  "profile": "digest-rendered-v1",
+  "rollback_to_J457": {
+    "content_id": "content-v1:d7a7b555a726bd0257998dcc777ae03c74789033301e623d8fcf02f4a029e752",
+    "event_ids": [
+      2
+    ],
+    "exact_double_restore": true,
+    "html_sha256": "1f7dde2823eeb8b1673c2a7f503bbabe9aa5374b9a554ecc74897501a63f0f6c"
+  },
+  "tests": {
+    "final_native_controls": 3,
+    "focused_before_additional_transport_control": 69,
+    "mypy": "passed",
+    "ruff": "passed"
+  }
+}

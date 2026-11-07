@@ -59,7 +59,7 @@ from lexinform.adapters.content_source_refs import (
     validate_projected_applications,
     verify_content_source,
 )
-from lexinform.adapters.digest_content import verify_digest_content
+from lexinform.adapters.digest_content import ResolvedDigestRenderedContent, verify_digest_content
 from lexinform.adapters.document_work import (
     read_document_work,
     validate_document_work,
@@ -2261,16 +2261,32 @@ class SqliteBillRepository:
     def find_card_primary_evidence(self, bill: Bill) -> CardPrimaryEvidence | None:
         return card_primary_evidence_candidate(self._conn, bill)
 
-    def save_digest_content(self, snapshot: ContentSnapshot, version: ContentVersion) -> None:
-        if not self._conn.in_transaction or version.digest_profile != "digest-content-v1":
+    def save_digest_content(
+        self,
+        snapshot: ContentSnapshot,
+        version: ContentVersion,
+        *,
+        part_snapshots: tuple[ContentSnapshot, ...] = (),
+    ) -> None:
+        if not self._conn.in_transaction or version.digest_profile is None:
             raise ValueError("digest capture requires its original atomic freeze")
         if snapshot.snapshot_id != version.plan_snapshot_id:
             raise ValueError("digest capture snapshot differs from its version")
+        if len(part_snapshots) > 16 or bool(part_snapshots) != (
+            version.digest_profile == "digest-rendered-v1"
+        ):
+            raise ValueError("digest capture part snapshots differ from its profile")
         with self.atomic():
             self.save_content_snapshot(snapshot)
+            for part_snapshot in part_snapshots:
+                self.save_content_snapshot(part_snapshot)
             plan = verify_digest_content(self._conn, version)
             if plan is None:
                 raise ValueError("digest capture requires a known plan")
+            if isinstance(plan, ResolvedDigestRenderedContent) and tuple(
+                part.snapshot_id for part in plan.plan.parts
+            ) != tuple(part.snapshot_id for part in part_snapshots):
+                raise ValueError("digest capture requires its exact ordered part snapshots")
             for part in plan.parts:
                 row = self.publication_by_id(part.publication_id)
                 if (

@@ -914,7 +914,13 @@ class BillRepository(Protocol):
 
     def find_card_primary_evidence(self, bill: Bill) -> CardPrimaryEvidence | None: ...
 
-    def save_digest_content(self, snapshot: ContentSnapshot, version: ContentVersion) -> None: ...
+    def save_digest_content(
+        self,
+        snapshot: ContentSnapshot,
+        version: ContentVersion,
+        *,
+        part_snapshots: tuple[ContentSnapshot, ...] = (),
+    ) -> None: ...
 
     def save_content_version(self, version: ContentVersion) -> None: ...
 
