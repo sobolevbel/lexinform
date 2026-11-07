@@ -1067,6 +1067,16 @@ MIGRATIONS: tuple[str, ...] = (
     DROP TABLE saved_content_bindings;
     CREATE INDEX ix_publication_content_version ON publication_content(content_id);
     """,
+    """
+    CREATE TABLE retired_stage_anchors (
+        id INTEGER PRIMARY KEY CHECK (id > 0),
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        message_id INTEGER NOT NULL CHECK (message_id > 0),
+        sent_at TEXT NOT NULL
+    ) STRICT;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)

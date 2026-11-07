@@ -1,0 +1,45 @@
+{
+  "reader_writer_base": "0b70b4d4dda69f5f9647f235fa8491aec6955844",
+  "j486_repro_head": "9a4d8d5c plus J486 writer diff from recorded integration worktree",
+  "patch_sha256": {
+    "reader.patch": "659eac0f5e61bfd210aa7502a599753b051f6cc7c4cf50745e7d1df66995d793",
+    "writer.patch": "47b8eb3eec8e6468e01dc32eee106c38832f2596a02400232cef71f1a8c859c9"
+  },
+  "qualifications": {
+    "j482_migration_and_group_tests": 3,
+    "j486_focused_tests": 9,
+    "mypy_touched": 4,
+    "ruff_and_diff_check": "passed",
+    "exact_delivery_corpus": {
+      "delivery-confirm": "passed",
+      "delivery-retry": "passed",
+      "delivery-dismiss": "passed"
+    },
+    "old_j482_rejects_archived_group_atomically": "grouped_stage_parent_missing",
+    "reader_only_exact_restores": 2,
+    "negative_controls": [
+      "arbitrary SQL deletion without receipt",
+      "altered archived Telegram message ID"
+    ]
+  },
+  "size": {
+    "schema": 71,
+    "archive_size_delta": {
+      "sql": 97,
+      "gzip": 16
+    },
+    "pinned_legacy": {
+      "input": {
+        "sql": 27294696,
+        "gzip": 5461587
+      },
+      "migrated": {
+        "sql": 27296576,
+        "gzip": 5461815
+      },
+      "restores": 2
+    }
+  },
+  "pinned_legacy_input": "out/corpus/da10-state-census.tlXr3m/input.sql",
+  "scope": "Confirmed referenced NEW_BILL only, prospectively at repository delete. No repair/backfill for previously missing receipt. Old live anchor lookup semantics and JOINT_BILL unchanged. Reader-only rollback restores existing data but operator deletion requires the receipt writer to stay safe."
+}

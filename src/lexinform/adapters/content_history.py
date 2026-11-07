@@ -3,7 +3,7 @@
 import hashlib
 import sqlite3
 from datetime import datetime
-from typing import Literal
+from typing import Literal, NamedTuple
 
 from lexinform.adapters.computation_history import read_result_application
 from lexinform.adapters.content_applications import verify_content_applications
@@ -536,6 +536,46 @@ def _verify_card_content(
     return matches[0], primary
 
 
+class StageAnchorReceipt(NamedTuple):
+    term: int
+    number: str
+    channel_id: str
+    message_id: int
+    sent_at: datetime
+
+
+def _stage_anchor(connection: sqlite3.Connection, identity: int) -> StageAnchorReceipt | None:
+    live = _query(connection, "SELECT * FROM publications WHERE id=?", (identity,)).fetchone()
+    if live is not None:
+        anchor = read_content_publication(live)
+        if (
+            anchor.kind is not PublicationKind.NEW_BILL
+            or anchor.status is not PublicationStatus.SENT
+            or anchor.message_id is None
+            or anchor.message_id <= 0
+            or anchor.sent_at is None
+        ):
+            return None
+        return StageAnchorReceipt(
+            anchor.term, anchor.number, anchor.channel_id, anchor.message_id, anchor.sent_at
+        )
+    archived = _query(
+        connection, "SELECT * FROM retired_stage_anchors WHERE id=?", (identity,)
+    ).fetchone()
+    if archived is None:
+        return None
+    sent_at = datetime.fromisoformat(archived["sent_at"])
+    if sent_at.tzinfo is None or archived["message_id"] <= 0:
+        return None
+    return StageAnchorReceipt(
+        archived["term"],
+        archived["number"],
+        archived["channel_id"],
+        archived["message_id"],
+        sent_at,
+    )
+
+
 def verify_direct_stage_content(
     connection: sqlite3.Connection, version: ContentVersion, *, require_bound: bool = False
 ) -> OriginalDeliveryPlan | None:
@@ -545,23 +585,16 @@ def verify_direct_stage_content(
     root_row = _query(
         connection, "SELECT * FROM publications WHERE id=?", (version.root_publication_id,)
     ).fetchone()
-    anchor_row = _query(
-        connection, "SELECT * FROM publications WHERE id=?", (evidence.anchor_publication_id,)
-    ).fetchone()
+    anchor = _stage_anchor(connection, evidence.anchor_publication_id)
     event = _query(
         connection, "SELECT * FROM status_changes WHERE id=?", (version.status_change_id,)
     ).fetchone()
-    if root_row is None or anchor_row is None or event is None:
+    if root_row is None or anchor is None or event is None:
         raise ValueError("direct_stage_parent_missing")
-    root, anchor = read_content_publication(root_row), read_content_publication(anchor_row)
+    root = read_content_publication(root_row)
     if (
         root.kind is not PublicationKind.STATUS_UPDATE
         or root.status_change_id != version.status_change_id
-        or anchor.kind is not PublicationKind.NEW_BILL
-        or anchor.status is not PublicationStatus.SENT
-        or anchor.message_id is None
-        or anchor.message_id <= 0
-        or anchor.sent_at is None
         or anchor.sent_at > root.created_at
         or (anchor.term, anchor.number, anchor.channel_id)
         != (root.term, root.number, root.channel_id)
@@ -845,21 +878,15 @@ def verify_grouped_stage_content(
         raise ValueError("grouped_stage_frozen_plan")
     for index, member in enumerate(evidence.members):
         publication = by_id[member.publication_id]
-        anchor_row = _query(
-            connection, "SELECT * FROM publications WHERE id=?", (member.anchor_publication_id,)
-        ).fetchone()
+        anchor = _stage_anchor(connection, member.anchor_publication_id)
         event = _query(
             connection, "SELECT * FROM status_changes WHERE id=?", (member.status_change_id,)
         ).fetchone()
-        if anchor_row is None or event is None:
+        if anchor is None or event is None:
             raise ValueError("grouped_stage_parent_missing")
-        anchor = read_content_publication(anchor_row)
         if (
             publication.status_change_id != member.status_change_id
-            or anchor.kind is not PublicationKind.NEW_BILL
-            or anchor.status is not PublicationStatus.SENT
             or anchor.message_id != member.anchor_message_id
-            or anchor.sent_at is None
             or anchor.sent_at > publication.created_at
             or (anchor.term, anchor.number, anchor.channel_id)
             != (publication.term, publication.number, publication.channel_id)
