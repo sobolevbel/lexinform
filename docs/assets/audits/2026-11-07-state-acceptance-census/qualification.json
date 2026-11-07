@@ -1,0 +1,186 @@
+{
+  "reader": "0b70b4d4dda69f5f9647f235fa8491aec6955844",
+  "state": {
+    "previous": "4764779e91d9d8fe5609aba45de02f4a792479be",
+    "current": "ca2353d112dedb6a47962976a4bd29e6f19836a9"
+  },
+  "input_sha256": {
+    "current.sql": "7b78e09bd146db7ce66233e05e8d54f64037c34aa83fbfbdb0748b6c35de15db",
+    "previous.sql": "973e70b8a567a5f332b78fa1b44260495bea6524e54e270ee71c4cd486c876e4"
+  },
+  "census_sha256": {
+    "current.json": "c5a98d36d79552a8e98634e3d7443741612f709eeea06cd4f139730363558a62",
+    "previous.json": "6045c981d725fd8e028ad9e05a8e7fea49281bbda79f983803c9bd5d47d4a262"
+  },
+  "census_equal_except_database_sha": true,
+  "primary": {
+    "consumed_projection_unavailable": 4,
+    "exact_retained_cycle": 1,
+    "frozen_paid_reference_unavailable": 3,
+    "frozen_plan_unavailable": 27,
+    "frozen_render_context_unavailable": 13,
+    "prepared_receipt_unavailable": 1,
+    "publication_outside_direct_original_scope": 1,
+    "recorded_send_unavailable": 1
+  },
+  "secondary_count": 5,
+  "changed_sql_tables_added_removed": {
+    "runs": [
+      1,
+      0
+    ]
+  },
+  "publication_kind_status_counts": [
+    [
+      "act_application",
+      "sent",
+      1
+    ],
+    [
+      "act_published",
+      "sent",
+      4
+    ],
+    [
+      "agenda",
+      "queued",
+      1
+    ],
+    [
+      "agenda",
+      "sent",
+      28
+    ],
+    [
+      "agenda",
+      "skipped",
+      1
+    ],
+    [
+      "agenda_cancelled",
+      "sent",
+      3
+    ],
+    [
+      "amendments_revision",
+      "sent",
+      3
+    ],
+    [
+      "consultation_deadline",
+      "sent",
+      1
+    ],
+    [
+      "consultation_results",
+      "sent",
+      3
+    ],
+    [
+      "consultation_review",
+      "queued",
+      2
+    ],
+    [
+      "decision_deadline",
+      "sent",
+      3
+    ],
+    [
+      "digest",
+      "sent",
+      15
+    ],
+    [
+      "in_force",
+      "sent",
+      1
+    ],
+    [
+      "in_force",
+      "skipped",
+      2
+    ],
+    [
+      "joint_bill",
+      "sent",
+      2
+    ],
+    [
+      "message_part",
+      "sent",
+      55
+    ],
+    [
+      "new_bill",
+      "sent",
+      51
+    ],
+    [
+      "status_update",
+      "queued",
+      3
+    ],
+    [
+      "status_update",
+      "sent",
+      70
+    ],
+    [
+      "status_update",
+      "skipped",
+      1
+    ]
+  ],
+  "item_purpose_counts": [
+    [
+      "act_application",
+      5,
+      5,
+      5
+    ],
+    [
+      "amendments",
+      12,
+      12,
+      12
+    ],
+    [
+      "analysis",
+      30,
+      30,
+      30
+    ],
+    [
+      "consultation_review",
+      14,
+      14,
+      14
+    ],
+    [
+      "explanation",
+      1,
+      1,
+      1
+    ],
+    [
+      "name",
+      25,
+      25,
+      25
+    ],
+    [
+      "reanalysis",
+      39,
+      39,
+      39
+    ],
+    [
+      "supplement",
+      2,
+      2,
+      2
+    ]
+  ],
+  "operational_scope": "Read-only on two offline restores. No new or changed publication, content, batch, computation, application, memo or source observation records; no new lifecycle or expiry evidence."
+}
