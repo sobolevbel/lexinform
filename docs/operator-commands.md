@@ -94,6 +94,20 @@ the original row remains linked. Commands that change an explicitly named record
 
 ### Browsing retained editorial versions
 
+When `LEXINFORM_GROUPED_STAGE_DATE_EDITS_ENABLED` is enabled, an operator can preview one
+supported past committee referral date in a retained two-member stage update. The flag is off
+by default.
+
+```text
+/groupedit preview ROOT MEMBER EVENT CONTENT_ID BASE_SHA OLD_DATE NEW_DATE
+```
+
+Use full content IDs and SHA-256 hashes, with dates in `YYYY-MM-DD` format. The reply shows the
+exact changed bullet and a complete `/groupedit approve` command with the candidate hash and
+pinned numeric Telegram target. Approval needs a publishing run and the durable Git checkpoint.
+An uncertain edit or a reserved slot that could not be claimed stays inert. Operator confirmation
+and dismissal of grouped edits are pending a separate release.
+
 `/delivery ID history [PAGE]` reads one retained version per page, in its stored history order.
 The response names the original and confirmed current version, predecessor, frozen snapshot
 references, rendered checksum and known source/result references. Physical publication IDs,

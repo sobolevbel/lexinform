@@ -64,6 +64,7 @@ from lexinform.ports import (
     SourceHistoryPersistence,
     StateCheckpoint,
     TextExtractor,
+    VerifiedEditOutcome,
     WykazGateway,
 )
 from lexinform.pricing import input_limit_of, long_input_tier, price_of, scan_page_tokens
@@ -652,8 +653,26 @@ class Container:
                 language=self.settings.output_language,
                 checkpoint=self.state_checkpoint(dry_run=dry_run),
                 source_context_retry=self.poster(dry_run=dry_run).recover_source_context_retry,
+                grouped_stage_formatter=self.formatter
+                if self.settings.grouped_stage_date_edits_enabled
+                else None,
+                grouped_stage_editor=self._grouped_stage_editor(dry_run=dry_run),
             ),
         )
+
+    def _grouped_stage_editor(
+        self, *, dry_run: bool
+    ) -> Callable[[int, int, str], VerifiedEditOutcome] | None:
+        if (
+            dry_run
+            or not self.settings.grouped_stage_date_edits_enabled
+            or not self.settings.telegram_bot_token
+            or not self.settings.telegram_channel_id
+        ):
+            return None
+        if not isinstance(self.state_checkpoint(dry_run=False), GitBatchCheckpoint):
+            return None
+        return self.telegram_client().attempt_verified_edit
 
     def preview_publisher(self, channel_id: str, *, dry_run: bool) -> Publisher:
         """Unrecorded previews may leave only for a chat distinct from the reader channel."""

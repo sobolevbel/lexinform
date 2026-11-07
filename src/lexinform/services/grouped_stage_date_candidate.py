@@ -3,8 +3,6 @@
 from datetime import date
 from typing import Protocol
 
-from pydantic import BaseModel, ConfigDict, Field
-
 from lexinform.grouped_update_preview import (
     GroupedUpdateRender,
     UpdateOwner,
@@ -13,21 +11,10 @@ from lexinform.grouped_update_preview import (
 )
 from lexinform.json_storage import read_json
 from lexinform.models import PublicationStatus, Stage, StatusChange, told_stages
+from lexinform.models.grouped_stage_date import GroupedStageDateCorrection
 from lexinform.ports import BillRepository
 from lexinform.services.content_history import FORMATTER_VERSION
 from lexinform.services.content_inspection import inspect_content
-
-
-class GroupedStageDateCorrection(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid", strict=True)
-
-    root_publication_id: int = Field(gt=0)
-    member_publication_id: int = Field(gt=0)
-    status_change_id: int = Field(gt=0)
-    expected_content_id: str = Field(pattern=r"^content-v1:[0-9a-f]{64}$")
-    expected_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    expected_date: date
-    corrected_date: date
 
 
 class GroupedStageBulletRenderer(Protocol):

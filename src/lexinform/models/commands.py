@@ -30,6 +30,11 @@ from lexinform.models.enums import (
     PublicationKind,
     PublicationStatus,
 )
+from lexinform.models.grouped_stage_date import (
+    GroupedStageDateApproval,
+    GroupedStageDateCommand,
+    GroupedStageDateCorrection,
+)
 from lexinform.models.rcl import normalize_wykaz_number
 from lexinform.models.report import RunReport
 from lexinform.models.sejm import PrintInfo
@@ -337,6 +342,7 @@ class CommandName(StrEnum):
     RUNS = "runs"
     COST = "cost"
     STATUS = "status"
+    GROUPEDIT = "groupedit"
     DELIVERY = "delivery"
     NAME = "name"
     ATTENTION = "attention"
@@ -502,6 +508,9 @@ class Command(BaseModel):
     query: str | None = None
     options: dict[str, str] = Field(default_factory=dict)
     error: str | None = None
+    grouped_stage_date: GroupedStageDateCommand | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     delivery_id: int | None = None
     delivery_action: Literal["show", "history", "confirm", "retry", "dismiss"] = "show"
     delivery_history_page: int = Field(default=1, exclude_if=lambda value: value == 1)
@@ -878,6 +887,8 @@ def parse_command(text: str) -> Command | None:
         return Command(name=CommandName.HELP, error=f"unknown command /{head}")
     if name is CommandName.DELIVERY:
         return _parse_delivery(words[1:])
+    if name is CommandName.GROUPEDIT:
+        return _parse_groupedit(words[1:])
     if name in (CommandName.NAME, CommandName.ATTENTION):
         return _parse_editorial(name, words[1:])
     options, rest, error = _parse_options(name, words[1:])
@@ -908,6 +919,49 @@ def parse_command(text: str) -> Command | None:
     if rest and name is not CommandName.HELP:
         return _unknown_option(name, rest[0])
     return Command(name=name, options=options)
+
+
+def _parse_groupedit(words: list[str]) -> Command:
+    usage = (
+        "use /groupedit preview ROOT MEMBER EVENT CONTENT_ID BASE_SHA OLD_DATE NEW_DATE"
+        " or /groupedit approve ROOT MEMBER EVENT CONTENT_ID BASE_SHA OLD_DATE NEW_DATE"
+        " CANDIDATE_SHA CHAT_ID MESSAGE_ID"
+    )
+    invalid = Command(name=CommandName.GROUPEDIT, error=usage)
+    if not words or (words[0], len(words)) not in (("preview", 8), ("approve", 11)):
+        return invalid
+    _, root, member, event, content, baseline, old, new, *approval = words
+    if any(
+        re.fullmatch(r"[1-9][0-9]{0,18}", value) is None for value in (root, member, event)
+    ) or any(re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", value) is None for value in (old, new)):
+        return invalid
+    try:
+        correction = GroupedStageDateCorrection(
+            root_publication_id=int(root),
+            member_publication_id=int(member),
+            status_change_id=int(event),
+            expected_content_id=content,
+            expected_sha256=baseline,
+            expected_date=dt.date.fromisoformat(old),
+            corrected_date=dt.date.fromisoformat(new),
+        )
+        accepted = None
+        if approval:
+            candidate, chat, message = approval
+            if (
+                re.fullmatch(r"-[1-9][0-9]{0,15}", chat) is None
+                or re.fullmatch(r"[1-9][0-9]{0,18}", message) is None
+            ):
+                return invalid
+            accepted = GroupedStageDateApproval(
+                candidate_sha256=candidate, chat_id=int(chat), message_id=int(message)
+            )
+    except ValueError:
+        return invalid
+    return Command(
+        name=CommandName.GROUPEDIT,
+        grouped_stage_date=GroupedStageDateCommand(correction=correction, approval=accepted),
+    )
 
 
 def _parse_editorial(name: CommandName, words: list[str]) -> Command:

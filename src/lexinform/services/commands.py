@@ -7,6 +7,7 @@ and do *not* run it again. An outage ends the phase and leaves the command for t
 """
 
 import datetime as dt
+import html
 import logging
 import time
 from collections.abc import Callable
@@ -48,6 +49,7 @@ from lexinform.models import (
     parse_command,
     valid_mnemonic,
 )
+from lexinform.models.grouped_stage_date import GroupedStageDateCommand
 from lexinform.models.source_checks import observation_label, operator_observation
 from lexinform.ports import (
     BillRepository,
@@ -56,12 +58,18 @@ from lexinform.ports import (
     OperatorReplier,
     Publisher,
     StateCheckpoint,
+    VerifiedEditOutcome,
 )
 from lexinform.pricing import cost_usd
 from lexinform.services.amendments import AmendmentsService
 from lexinform.services.analysis import AnalysisService, TooExpensiveError, Waiting
 from lexinform.services.content_inspection import inspect_content, inspect_content_page
 from lexinform.services.digest import DigestResult, DigestService
+from lexinform.services.grouped_stage_date_approval import (
+    approve_grouped_stage_date,
+    preview_grouped_stage_date,
+)
+from lexinform.services.grouped_stage_date_candidate import GroupedStageBulletRenderer
 from lexinform.services.joint import primary_of
 from lexinform.services.lookup import BillLookup, BillNotFoundError
 from lexinform.services.publications import complete_delivery, source_context_blocked
@@ -178,6 +186,8 @@ class CommandService:
         language: str = "ru",
         checkpoint: StateCheckpoint | None = None,
         source_context_retry: Callable[[DeliveryResolution], bool] | None = None,
+        grouped_stage_formatter: GroupedStageBulletRenderer | None = None,
+        grouped_stage_editor: Callable[[int, int, str], VerifiedEditOutcome] | None = None,
     ) -> None:
         self._repo = repo
         self._inbox = inbox
@@ -196,6 +206,8 @@ class CommandService:
         self._status_bills = status_bills
         self._checkpoint = checkpoint
         self._source_context_retry = source_context_retry
+        self._grouped_stage_formatter = grouped_stage_formatter
+        self._grouped_stage_editor = grouped_stage_editor
 
     def handle_pending(
         self,
@@ -256,7 +268,9 @@ class CommandService:
         if earlier is not None:
             outcome = self._answer_of_an_earlier_run(earlier)
         else:
-            ran = self._run_now(incoming, spent, result, min_score=min_score, publish=publish)
+            ran = self._run_now(
+                incoming, spent, result, min_score=min_score, publish=publish, dry_run=dry_run
+            )
             if ran is None:
                 return False
             outcome = ran
@@ -288,12 +302,15 @@ class CommandService:
         *,
         min_score: int,
         publish: bool,
+        dry_run: bool,
     ) -> CommandOutcome | None:
         """Run the command and record that it ran; None when a source is down and the phase must
         stop. `spent` is filled as the command goes rather than returned: a command that raises
         halfway has still spent what it spent, and the report must say so."""
         try:
-            outcome = self._execute(incoming, spent, min_score=min_score, publish=publish)
+            outcome = self._execute(
+                incoming, spent, min_score=min_score, publish=publish, dry_run=dry_run
+            )
         except StateCheckpointError:
             raise
         except ServiceUnavailableError as exc:
@@ -384,6 +401,7 @@ class CommandService:
         *,
         min_score: int,
         publish: bool,
+        dry_run: bool,
     ) -> CommandOutcome:
         command = parse_command(incoming.text)
         if command is None:
@@ -392,6 +410,9 @@ class CommandService:
             return CommandOutcome(status=OutcomeStatus.HELP, note=command.error or "")
         if command.name is CommandName.STATUS:
             return self._status()
+        if command.name is CommandName.GROUPEDIT:
+            assert command.grouped_stage_date is not None, "the parser provides typed group input"
+            return self._groupedit(command.grouped_stage_date, publish=publish, dry_run=dry_run)
         if command.name is CommandName.DELIVERY:
             return self._delivery(command, incoming, publish=publish)
         if command.name is CommandName.RUNS:
@@ -1141,6 +1162,73 @@ class CommandService:
         if bill.rcl is not None:
             return "closed on RCL without reaching the Sejm"
         return _CLOSURE_NOTES[closure_event(bill)]
+
+    def _groupedit(
+        self, command: GroupedStageDateCommand, *, publish: bool, dry_run: bool
+    ) -> CommandOutcome:
+        formatter = self._grouped_stage_formatter
+        if formatter is None:
+            return CommandOutcome(status=OutcomeStatus.ERROR, note="grouped stage edits disabled")
+        correction = command.correction
+        root = self._repo.publication_by_id(correction.root_publication_id)
+        if root is None or root.channel_id != self._publishing.channel_id:
+            return CommandOutcome(
+                status=OutcomeStatus.NOT_FOUND, note="publication not found in this channel"
+            )
+        approval = command.approval
+        if approval is None:
+            preview = preview_grouped_stage_date(self._repo, formatter, correction)
+            if preview is None:
+                return CommandOutcome(
+                    status=OutcomeStatus.ERROR, note="grouped stage date preview unavailable"
+                )
+            copy = (
+                f"/groupedit approve {correction.root_publication_id}"
+                f" {correction.member_publication_id} {correction.status_change_id}"
+                f" {correction.expected_content_id} {correction.expected_sha256}"
+                f" {correction.expected_date} {correction.corrected_date}"
+                f" {preview.candidate_sha256} {preview.chat_id} {preview.message_id}"
+            )
+            note = (
+                f"− {html.unescape(preview.before_line)}\n"
+                f"+ {html.unescape(preview.after_line)}\n{copy}"
+            )
+            if len(note.encode()) > 2000:
+                return CommandOutcome(
+                    status=OutcomeStatus.ERROR, note="grouped stage date preview is too long"
+                )
+            return CommandOutcome(status=OutcomeStatus.SHOWN, note=note)
+        editor = self._grouped_stage_editor
+        if not publish or dry_run or self._checkpoint is None or editor is None:
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR,
+                note="grouped stage approval requires a publishing run and durable checkpoint",
+            )
+        result = approve_grouped_stage_date(
+            self._repo,
+            self._clock,
+            formatter,
+            editor,
+            self._checkpoint,
+            correction,
+            approved_sha256=approval.candidate_sha256,
+            chat_id=approval.chat_id,
+            message_id=approval.message_id,
+            enabled=True,
+        )
+        if result is None:
+            return CommandOutcome(status=OutcomeStatus.ERROR, note="grouped stage approval refused")
+        if result.status is PublicationStatus.SENT:
+            return CommandOutcome(
+                status=OutcomeStatus.DELIVERY,
+                message_id=approval.message_id,
+                note=f"grouped stage edit slot {result.publication_id} confirmed",
+            )
+        status = result.status.value if result.status is not None else "queued"
+        return CommandOutcome(
+            status=OutcomeStatus.ERROR,
+            note=f"grouped stage edit slot {result.publication_id} is {status}",
+        )
 
     def _delivery(
         self, command: Command, incoming: IncomingCommand, *, publish: bool

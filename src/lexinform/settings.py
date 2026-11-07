@@ -169,6 +169,11 @@ class Settings(BaseSettings):
         default=False, description="Include proven Word formulas in first OpenAI batch analyses."
     )
 
+    grouped_stage_date_edits_enabled: bool = Field(
+        default=False,
+        description="Enable operator preview and approval for supported grouped stage date edits.",
+    )
+
     consultation_reviews_enabled: bool = Field(
         default=False,
         description="Enable analysis and delivery of consultation document reviews; disabled"

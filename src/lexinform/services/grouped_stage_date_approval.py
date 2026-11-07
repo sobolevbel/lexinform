@@ -6,12 +6,12 @@ from dataclasses import dataclass
 from lexinform.grouped_update_preview import GroupedUpdateRender
 from lexinform.models import ContentVersion, PublicationKind, PublicationStatus
 from lexinform.models.content import GroupedStageRevisionEvidence
+from lexinform.models.grouped_stage_date import GroupedStageDateCorrection
 from lexinform.models.grouped_update_witness import GroupedRenderWitness
 from lexinform.ports import BillRepository, Clock, StateCheckpoint, VerifiedEditOutcome
 from lexinform.services.grouped_edit_dispatch import dispatch_reserved_grouped_edit
 from lexinform.services.grouped_stage_date_candidate import (
     GroupedStageBulletRenderer,
-    GroupedStageDateCorrection,
     build_grouped_stage_date_candidate,
 )
 from lexinform.services.grouped_update_preview import preview_retained_grouped_update
@@ -24,6 +24,8 @@ class GroupedStageDatePreview:
     chat_id: int
     message_id: int
     html: str
+    before_line: str
+    after_line: str
 
 
 @dataclass(frozen=True)
@@ -75,8 +77,18 @@ def _prepare(
             expected_content_id=correction.expected_content_id,
             expected_sha256=correction.expected_sha256,
         )
-        if preview is None or preview.html != candidate.text:
+        if preview is None or preview.html != candidate.text or base.rendered_text is None:
             return None
+        changes = [
+            (before, after)
+            for before, after in zip(
+                base.rendered_text.split("\n"), candidate.text.split("\n"), strict=True
+            )
+            if before != after
+        ]
+        if len(changes) != 1:
+            return None
+        ((before, after),) = changes
         return (
             GroupedStageDatePreview(
                 correction,
@@ -84,6 +96,8 @@ def _prepare(
                 root.telegram_chat_id,
                 root.message_id,
                 preview.html,
+                before,
+                after,
             ),
             base,
             candidate,

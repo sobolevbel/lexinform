@@ -4,8 +4,8 @@ import pytest
 
 from lexinform.adapters.telegram import TelegramEditReceipt
 from lexinform.models import ContentVersion, PublicationStatus, Stage
+from lexinform.models.grouped_stage_date import GroupedStageDateCorrection
 from lexinform.services.grouped_stage_date_candidate import (
-    GroupedStageDateCorrection,
     build_grouped_stage_date_candidate,
 )
 from tests.checkpoint_state import saved_state

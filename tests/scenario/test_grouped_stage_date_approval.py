@@ -5,13 +5,13 @@ import pytest
 from lexinform.adapters.telegram import TelegramEditReceipt
 from lexinform.errors import DeliveryUncertainError, StateCheckpointError
 from lexinform.models import PublicationStatus
+from lexinform.models.grouped_stage_date import GroupedStageDateCorrection
 from lexinform.ports import VerifiedEditOutcome
 from lexinform.services.content_inspection import inspect_content
 from lexinform.services.grouped_stage_date_approval import (
     approve_grouped_stage_date,
     preview_grouped_stage_date,
 )
-from lexinform.services.grouped_stage_date_candidate import GroupedStageDateCorrection
 from tests.checkpoint_state import saved_state
 from tests.scenario.test_group_remote_checkpoints import flush, queued_world
 from tests.scenario.test_grouped_telegram_receipt import CHAT_ID, MESSAGE_ID, telegram_send
