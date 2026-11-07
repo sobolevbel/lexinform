@@ -1,0 +1,8 @@
+{
+  "state": "ca2353d112dedb6a47962976a4bd29e6f19836a9",
+  "input_sha256": "7b78e09bd146db7ce66233e05e8d54f64037c34aa83fbfbdb0748b6c35de15db",
+  "schema": 72,
+  "retired_rows": 0,
+  "restore_exact": 2,
+  "foreign_key_violations": 0
+}

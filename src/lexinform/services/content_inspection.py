@@ -43,12 +43,13 @@ def _inspect_multipart_card(
     root_id = selected.root_publication_id
     root = repo.publication_by_id(root_id)
     original = repo.get_publication_content(root_id)
-    if root is None or original is None:
+    if original is None:
         return ContentHistoryView(integrity="unavailable")
-    latest = repo.card_refresh_parts(root_id)
+    latest = repo.card_refresh_parts(root_id) if root is not None else []
     current = None
     if (
         latest
+        and root is not None
         and root.message_id is not None
         and len(repo.card_aliases(root.channel_id, root.message_id)) == 1
         and all(row.status is PublicationStatus.SENT and row.message_id for row in latest)

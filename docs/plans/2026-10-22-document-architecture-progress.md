@@ -15427,3 +15427,14 @@ Unknown delivery stayed unconfirmed without a resend.
   Прирост контрольного дампа составил 97 байт SQL и 19 байт gzip.
   Миграция не нужна. Writer ждёт выкладки J490.
   [Квалификация](../assets/audits/2026-11-07-joint-anchor/qualification.json).
+
+<a id="j492"></a>
+
+### J492. Чтение квитанций исходных физических карточек
+
+- Reader проверяет сохранённые тип, ссылку, владельца, канал,
+  время и подтверждённый Telegram ID корневой публикации.
+  Карточка остаётся исторической после замены.
+- Миграция 72 добавляет пустую таблицу. Закреплённый state ca2353d1
+  дважды восстановился точно. Проверки целостности прошли.
+  [Квалификация](../assets/audits/2026-11-07-retired-card-root/qualification.json) · [Миграция](../assets/audits/2026-11-07-retired-card-root/pinned-migration.json).

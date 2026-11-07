@@ -1359,12 +1359,19 @@ def verify_act_published_content(
 
 
 def _original_delivery_owner_matches(
-    connection: sqlite3.Connection, bill: Bill, publication: Publication
+    connection: sqlite3.Connection, bill: Bill, publication: Publication, *, retired: bool = False
 ) -> bool:
     if publication.number != bill.number or publication.term < bill.term:
         return False
     if publication.term == bill.term:
         return True
+    if retired:
+        return (
+            bill.rcl is not None
+            and bill.rcl.id > 0
+            and bill.rcl.print_number is None
+            and rcl_number(bill.rcl.id) == bill.number
+        ) or (bill.wykaz is not None and wykaz_number(bill.wykaz.number) == bill.number)
     row = _query(
         connection,
         "SELECT rcl_json, wykaz_json FROM bills WHERE term=? AND number=?",
@@ -1386,6 +1393,45 @@ def _original_delivery_owner_matches(
             and wykaz_number(bill.wykaz.number) == bill.number
         )
     return False
+
+
+def _retired_card_root(connection: sqlite3.Connection, identity: int) -> Publication | None:
+    row = _query(
+        connection,
+        "SELECT r.*, b.content_id AS binding, v.root_publication_id AS root, v.version_json"
+        " FROM retired_card_roots r LEFT JOIN publication_content b ON b.publication_id=r.id"
+        " LEFT JOIN content_versions v ON v.content_id=r.content_id WHERE r.id=?",
+        (identity,),
+    ).fetchone()
+    if row is None:
+        return None
+    if row["binding"] != row["content_id"] or row["root"] != identity:
+        raise ValueError("retired_card_root_binding")
+    version = ContentVersion.model_validate_json(row["version_json"])
+    kind = PublicationKind(row["kind"])
+    evidence = version.original_delivery_evidence
+    if version.reason != "original" or (
+        evidence.kind != kind
+        if evidence is not None
+        else kind is not PublicationKind.NEW_BILL or version.card_context_profile is None
+    ):
+        raise ValueError("retired_card_root_profile")
+    created = datetime.fromisoformat(row["created_at"])
+    sent = datetime.fromisoformat(row["sent_at"])
+    if created.utcoffset() is None or sent.utcoffset() is None or sent < created:
+        raise ValueError("retired_card_root_time")
+    return Publication(
+        id=identity,
+        term=row["term"],
+        number=row["number"],
+        channel_id=row["channel_id"],
+        kind=kind,
+        ref=row["ref"],
+        created_at=created,
+        status=PublicationStatus.SENT,
+        sent_at=sent,
+        message_id=row["message_id"],
+    )
 
 
 def verify_original_delivery_content(
@@ -1462,18 +1508,35 @@ def verify_original_delivery_content(
             raise ValueError("joint_history_primary_receipt")
 
     parent: Publication | None = None
+    retired_root = False
     for index, part in enumerate(plan.parts, 1):
         row = _query(connection, "SELECT * FROM publications WHERE id=?", (part.id,)).fetchone()
-        if row is None:
+        publication = (
+            read_content_publication(row)
+            if row is not None
+            else _retired_card_root(connection, part.id)
+            if parent is None
+            and evidence.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL)
+            else None
+        )
+        if publication is None:
             raise ValueError("original_delivery_part_missing")
-        publication = read_content_publication(row)
+        if parent is None:
+            retired_root = row is None
         retained = publication.delivery
         if (
             publication.channel_id != evidence.channel_id
             or (
-                not _original_delivery_owner_matches(connection, bill, publication)
+                not _original_delivery_owner_matches(
+                    connection, bill, publication, retired=retired_root
+                )
                 if parent is None
-                else (publication.term, publication.number) != (parent.term, parent.number)
+                else (
+                    publication.term < parent.term
+                    or not _original_delivery_owner_matches(connection, bill, publication)
+                    if retired_root
+                    else (publication.term, publication.number) != (parent.term, parent.number)
+                )
             )
             or publication.status_change_id is not None
             or (
@@ -1581,9 +1644,14 @@ def _edition_bindings(connection: sqlite3.Connection, content_id: str) -> set[in
     }
 
 
-def _edition_publication(connection: sqlite3.Connection, identity: int) -> Publication:
+def _edition_publication(
+    connection: sqlite3.Connection, identity: int, *, retired_root: bool = False
+) -> Publication:
     row = _query(connection, "SELECT * FROM publications WHERE id=?", (identity,)).fetchone()
     if row is None:
+        retired = _retired_card_root(connection, identity) if retired_root else None
+        if retired is not None:
+            return retired
         raise ValueError("multipart_card_publication_missing")
     return read_content_publication(row)
 
@@ -1594,7 +1662,13 @@ def verify_multipart_card_revision(
     if version.multipart_card_revision is None:
         return None
     plan = _multipart_card_plan(connection, version)
-    owner = _edition_publication(connection, version.root_publication_id)
+    owner = _edition_publication(connection, version.root_publication_id, retired_root=True)
+    retired = (
+        _query(
+            connection, "SELECT 1 FROM publications WHERE id=?", (version.root_publication_id,)
+        ).fetchone()
+        is None
+    )
     if (
         owner.kind is not PublicationKind.NEW_BILL
         or owner.status is not PublicationStatus.SENT
@@ -1627,6 +1701,12 @@ def verify_multipart_card_revision(
         expected = original.bindings
     else:
         identity = verify_card_content(connection, previous, retained=True)
+        if (
+            identity is None
+            and previous.previous_version_id is None
+            and _retired_card_root(connection, version.root_publication_id) is not None
+        ):
+            identity = version.root_publication_id
         if identity is None:
             raise ValueError("multipart_card_predecessor_profile")
         expected = (identity,)
@@ -1634,7 +1714,10 @@ def verify_multipart_card_revision(
         connection, previous.content_id
     ) != set(expected):
         raise ValueError("multipart_card_predecessor_binding")
-    predecessors = [_edition_publication(connection, identity) for identity in expected]
+    predecessors = [
+        _edition_publication(connection, identity, retired_root=identity == owner.id)
+        for identity in expected
+    ]
     targets = tuple(row.message_id for row in predecessors)
     if (
         any(row.status is not PublicationStatus.SENT for row in predecessors)
@@ -1657,7 +1740,7 @@ def verify_multipart_card_revision(
     ):
         raise ValueError("multipart_card_semantic_scope")
     semantic = Bill.model_validate(read_json(bill.payload_json))
-    if not _original_delivery_owner_matches(connection, semantic, owner):
+    if not _original_delivery_owner_matches(connection, semantic, owner, retired=retired):
         raise ValueError("multipart_card_semantic_owner")
     if require_bound and _edition_bindings(connection, version.content_id) != set(plan.bindings):
         raise ValueError("multipart_card_binding_scope")
@@ -1675,8 +1758,13 @@ def verify_multipart_card_revision(
         if (
             row.kind is not PublicationKind.MESSAGE_PART
             or row.status_change_id is not None
-            or (row.term, row.number, row.channel_id)
-            != (owner.term, owner.number, owner.channel_id)
+            or row.channel_id != owner.channel_id
+            or (
+                row.term < owner.term
+                or not _original_delivery_owner_matches(connection, semantic, row)
+                if retired
+                else (row.term, row.number) != (owner.term, owner.number)
+            )
             or row.ref != f"{plan.ref_prefix}/{index}"
             or (index == 1 and row.created_at != version.recorded_at)
             or (
@@ -1766,6 +1854,13 @@ def validate_content_history(connection: sqlite3.Connection) -> None:
                     binding[0] != physical_identity for binding in bindings
                 ):
                     raise ValueError("card_content_binding_mismatch")
+        if "retired_card_roots" in tables:
+            for row in _query(connection, "SELECT id FROM retired_card_roots"):
+                if _query(
+                    connection, "SELECT 1 FROM publications WHERE id=?", (row[0],)
+                ).fetchone():
+                    raise ValueError("retired_card_root_live_collision")
+                _retired_card_root(connection, row[0])
         orphan = _query(
             connection,
             "SELECT 1 FROM delivery_resolutions AS d"

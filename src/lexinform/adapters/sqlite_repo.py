@@ -1077,6 +1077,20 @@ MIGRATIONS: tuple[str, ...] = (
         sent_at TEXT NOT NULL
     ) STRICT;
     """,
+    """
+    CREATE TABLE retired_card_roots (
+        id INTEGER PRIMARY KEY CHECK (id > 0),
+        content_id TEXT NOT NULL REFERENCES content_versions(content_id),
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN ('new_bill', 'joint_bill')),
+        ref TEXT,
+        created_at TEXT NOT NULL,
+        message_id INTEGER NOT NULL CHECK (message_id > 0),
+        sent_at TEXT NOT NULL
+    ) STRICT;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
