@@ -167,6 +167,10 @@ class AmendmentsService:
             if stage is None:
                 raise ValueError("В сообщении нет стадии с поправками")
             retained = original_amendment_input(self._repo, original)
+            if retained.reason == "original_scan_context_unavailable":
+                raise ValueError(
+                    "Исходный контекст скана поправок недоступен; исправление не запущено"
+                )
             source: AmendmentsSource | None
             if retained.snapshot is not None or retained.scan_witness is not None:
                 if change.amendments is None:

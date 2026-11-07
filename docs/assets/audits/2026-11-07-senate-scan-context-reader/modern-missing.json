@@ -1,0 +1,5 @@
+{
+  "failure_reason": "original_scan_context_unavailable",
+  "sql_exact": true,
+  "zero_source_calls": true
+}

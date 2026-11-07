@@ -1,0 +1,18 @@
+{
+  "after_cleanup": "legacy_input_unavailable",
+  "changed_question_sha256": "d323926d4d0a43b186fd7fdae1649b2e3cdee492c59c670314161f7e240e175c",
+  "changed_recommendation_bytes": 8640,
+  "changed_scan_sha256": "0d069206b10544d3f921a9a68ba8efdc07ad4b5fd8fd44aaec7f7b7fe50ca921",
+  "correction_status": "queued",
+  "download_count": 4,
+  "gateway_calls": [
+    "get_print:377"
+  ],
+  "original_question_sha256": "e63db249673bddda2ac727254629c559603606ab4b533b498986d73cde3f4e1c",
+  "original_recommendation_bytes": 7020,
+  "original_scan_sha256": "d562dcf64770bd36810c7dff14d4de63a65e430d25e2f4f2e3e25b4c68c3cabb",
+  "owner": "10/377",
+  "same_original_message_target": true,
+  "submitted_witness": false,
+  "validated_paid_result": "validated"
+}

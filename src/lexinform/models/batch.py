@@ -564,21 +564,23 @@ class DigestItemMeta(BaseModel):
         witness, binding = self.amendment_scan_input, self.input_binding
         if witness is None:
             return
-        context = witness.context_without_scan
+        context = witness.context_without_scan if witness.version != 3 else None
         if (
             purpose != "amendments"
             or binding is None
             or (binding.term, binding.number) != (term, number)
-            or context.number != number
+            or (context is not None and context.number != number)
             or witness.request_sha256 != self.request_sha256
-            or self.source_kind != context.source_kind
+            or self.source_kind
+            != (context.source_kind if context is not None else "senate_amendments")
             or witness.source_url != self.source_url
             or (
                 self.amendment_revision is not None
                 and self.amendment_revision.source_url != witness.source_url
             )
             or witness.scan_input != self.scan_input
-            or self.amendment_source != context.source_check
+            or (context is not None and self.amendment_source != context.source_check)
+            or (context is None and self.amendment_source is None)
             or self.amendment_input_ref is not None
             or self.prepared_input_receipt is not None
         ):

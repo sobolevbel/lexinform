@@ -43,13 +43,15 @@ def original_amendment_input(
         raise ValueError("invalid_amendment_input")
     witness = result.amendment_scan_input
     if witness is not None:
+        context_json = repo.get_amendment_scan_context(witness) if witness.version == 3 else None
+        context = witness.resolve_context(context_json)
         owner = (publication.term, publication.number)
         if (
             result.result_id not in root.computation_ids
             or (result.term, result.number) != owner
             or (change.term, change.number) != owner
             or record.request_sha256 != witness.request_sha256
-            or record.source_kind != witness.context_without_scan.source_kind
+            or record.source_kind != context.source_kind
             or record.source_url != witness.source_url
             or record.scan_input != witness.scan_input
         ):
@@ -59,11 +61,22 @@ def original_amendment_input(
             root_content_id=root.content_id,
             result_id=result.result_id,
             scan_witness=witness,
+            scan_context_json=context_json,
         )
     if result.amendment_input_ref is None:
+        binding = result.input_binding
+        known_scan = (
+            record.scan_input is not None
+            and record.request_sha256 is not None
+            and record.request_sha256 == result.request_sha256
+            and binding is not None
+            and (binding.term, binding.number) == (publication.term, publication.number)
+        )
         return AmendmentInputAvailability(
             state="unavailable",
-            reason="legacy_input_unavailable",
+            reason="original_scan_context_unavailable"
+            if known_scan
+            else "legacy_input_unavailable",
             root_content_id=root.content_id,
             result_id=result.result_id,
         )

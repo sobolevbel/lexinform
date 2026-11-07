@@ -12,6 +12,7 @@ from lexinform.models.amendment_inputs import (
     AmendmentInputSnapshot,
     AmendmentScanInputWitness,
 )
+from lexinform.models.analysis import AmendmentsContext, AmendmentsRecord
 from lexinform.models.batch import (
     AmendmentsQuestion,
     BatchIntent,
@@ -24,6 +25,7 @@ from lexinform.models.batch import (
 from lexinform.models.computation_inputs import ComputationInputBinding
 from lexinform.models.computations import ComputationResult
 from lexinform.models.input_receipts import amendment_context_sha256
+from lexinform.senate_documents import validate_senate_scan
 
 
 class AmendmentInputError(ValueError):
@@ -35,6 +37,41 @@ def _checked_text(digest: object, text: object) -> str:
     if not isinstance(text, str) or hashlib.sha256(text.encode()).hexdigest() != digest:
         raise AmendmentInputError()
     return text
+
+
+def _load_amendment_scan_context(
+    connection: sqlite3.Connection, witness: AmendmentScanInputWitness
+) -> tuple[str, AmendmentsContext]:
+    digest = witness.context_sha256
+    if witness.version != 3 or digest is None:
+        raise AmendmentInputError()
+    row = connection.execute(
+        "SELECT text FROM amendment_input_texts WHERE text_sha256=?", (digest,)
+    ).fetchone()
+    if row is None or not isinstance(row[0], str):
+        raise AmendmentInputError()
+    context_json = row[0]
+    try:
+        return context_json, witness.resolve_context(context_json)
+    except ValueError, TypeError, RecursionError:
+        raise AmendmentInputError() from None
+
+
+def read_amendment_scan_context(
+    connection: sqlite3.Connection, witness: AmendmentScanInputWitness
+) -> str:
+    return _load_amendment_scan_context(connection, witness)[0]
+
+
+def _validate_scan_context(
+    connection: sqlite3.Connection, meta: DigestItemMeta, number: str
+) -> None:
+    witness = meta.amendment_scan_input
+    if witness is None or witness.version != 3:
+        return
+    _, context = _load_amendment_scan_context(connection, witness)
+    if context.number != number or context.source_check != meta.amendment_source:
+        raise AmendmentInputError()
 
 
 def _shared_question(cursor: sqlite3.Cursor, manifest: str, text_sha256: str) -> str:
@@ -244,6 +281,7 @@ def amendment_input_issues(connection: sqlite3.Connection) -> Iterator[tuple[str
                         meta.require_amendment_scan_carrier(
                             row["call_kind"], row["term"], row["number"]
                         )
+                        _validate_scan_context(connection, meta, row["number"])
                     except ValueError:
                         yield "invalid_amendment_input", _reference(table, row["custom_id"])
                 if meta.amendment_input_ref is None:
@@ -381,8 +419,20 @@ def prune_amendment_inputs(connection: sqlite3.Connection) -> dict[str, int]:
         """
     ).rowcount
     texts = connection.execute(
-        "DELETE FROM amendment_input_texts WHERE text_sha256 NOT IN"
-        " (SELECT text_sha256 FROM amendment_input_snapshots WHERE text_sha256 IS NOT NULL)"
+        """
+        DELETE FROM amendment_input_texts WHERE text_sha256 NOT IN (
+          WITH refs(digest) AS (
+            SELECT text_sha256 FROM amendment_input_snapshots
+            UNION ALL
+            SELECT json_extract(meta_json,'$.amendment_scan_input.context_sha256')
+            FROM llm_batch_items
+            UNION ALL
+            SELECT json_extract(result_json,'$.amendment_scan_input.context_sha256')
+            FROM computation_results
+          )
+          SELECT digest FROM refs WHERE digest IS NOT NULL
+        )
+        """
     ).rowcount
     return {
         "amendment_item_refs": retired,
@@ -449,6 +499,7 @@ def capture_submitted_amendment_scan_input(
 def validate_item_input(connection: sqlite3.Connection, item: LlmBatchItem) -> None:
     if isinstance(item.meta, DigestItemMeta):
         item.meta.require_amendment_scan_carrier(item.call_kind, item.term, item.number)
+        _validate_scan_context(connection, item.meta, item.number)
         _direct_receipt(item.meta)
         validate_amendment_ref(
             connection,
@@ -470,6 +521,16 @@ def validate_result_input(connection: sqlite3.Connection, result: ComputationRes
     cursor = connection.cursor()
     cursor.row_factory = sqlite3.Row
     try:
+        context = None
+        if witness is not None and witness.version == 3:
+            _, context = _load_amendment_scan_context(connection, witness)
+            if (
+                context.number != result.number
+                or context.source_check is None
+                or not isinstance(result.record, AmendmentsRecord)
+            ):
+                raise AmendmentInputError()
+            validate_senate_scan(result.record.amendments.source_evidence, context.source_check)
         row = cursor.execute(
             "SELECT i.*,b.provider AS batch_provider FROM llm_batch_items i "
             "JOIN llm_batches b ON b.batch_id=i.batch_id "
@@ -487,6 +548,8 @@ def validate_result_input(connection: sqlite3.Connection, result: ComputationRes
                 or meta.input_binding != result.input_binding
                 or meta.request_sha256 != result.request_sha256
             ):
+                raise AmendmentInputError()
+            if context is not None and context.source_check != meta.amendment_source:
                 raise AmendmentInputError()
             _direct_receipt(meta)
     except ValueError, TypeError, IndexError, KeyError, RecursionError, sqlite3.Error:

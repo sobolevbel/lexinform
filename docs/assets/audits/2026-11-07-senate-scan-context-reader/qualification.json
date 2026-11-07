@@ -1,0 +1,27 @@
+{
+  "base": "c9621583",
+  "ceiling_basis": "Default native recommendation budget is 1.5 million characters. Worst escaped JSON strings for that recommendation need at most nine million bytes before the remaining fields. The independent finite bound allows normal default recommendation sizes and typical context fields. Larger custom or unusually large remaining fields are explicitly unavailable rather than reacquired. The 4 KiB witness envelope is preserved.",
+  "context_body_ceiling_bytes": 10000000,
+  "controls": [
+    "Pinned 10/377 scan and synthetic native DOCX recommendation",
+    "Previously accepted changed PDF and recommendation after paid result/cleanup",
+    "Exact v3 context restore with original PDF and no recommendation read",
+    "Changed PDF and missing context refused",
+    "Modern missing witness causes zero source calls and no SQL change",
+    "Legacy v2 full artifact byte parity for two local provider builders and exact restores"
+  ],
+  "focused_tests": 75,
+  "pins": {
+    "baseline.json": "56241c0a8cdd5a3827b86a7880678de985ad1821cfa3854402c446004457ed4f",
+    "candidate.patch": "118091c522b07f6735b856243c510d6c517e9e6fab434642a4abb46b419facb1",
+    "legacy-v2-before/writer-correction-writer.json": "5f368f7b57579f2542bf068da2b56ea4461babe7e2f58ec38c979303331371d3",
+    "legacy-v2-candidate/writer-correction-writer.json": "5f368f7b57579f2542bf068da2b56ea4461babe7e2f58ec38c979303331371d3",
+    "modern-missing-final.json": "d4756fc1feca0aa5a9a013cb857114535caaec060be556359f11f8c4ab5ce378",
+    "qualify.py": "3bc99c7593c0fd19160dee3d038d4236b6d700b7fb2b1bf271b5d6b8ecaf8aef",
+    "reader-final.json": "19db1b782f4abfd80cdbabcdb6457100be9e2552d9826529ff936c8a40c373ac",
+    "reproduce.py": "2ae277871eb7bee738e47aba6cc1a1b90ab67d1fc4e3ec1fec19b13dd77269b8"
+  },
+  "ruff": "pass",
+  "runtime_v3_writer": false,
+  "strict_mypy_files": 10
+}

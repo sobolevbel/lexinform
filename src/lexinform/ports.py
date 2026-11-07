@@ -122,7 +122,7 @@ from lexinform.models import (
     WordTextExtraction,
     WykazEntry,
 )
-from lexinform.models.amendment_inputs import AmendmentInputSnapshot
+from lexinform.models.amendment_inputs import AmendmentInputSnapshot, AmendmentScanInputWitness
 from lexinform.models.batch import BatchJob, BatchKind
 from lexinform.models.commands import GroupedEditDeliveryResolution
 from lexinform.models.content import CardPrimaryEvidence, SupplementContentEvidence
@@ -903,6 +903,8 @@ class BillRepository(Protocol):
     def save_amendment_input(self, snapshot: AmendmentInputSnapshot) -> None: ...
 
     def get_amendment_input(self, snapshot_id: str) -> AmendmentInputSnapshot | None: ...
+
+    def get_amendment_scan_context(self, witness: AmendmentScanInputWitness) -> str: ...
 
     def save_content_snapshot(self, snapshot: ContentSnapshot) -> None: ...
 

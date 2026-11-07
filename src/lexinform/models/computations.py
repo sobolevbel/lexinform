@@ -206,21 +206,22 @@ class ComputationResult(BaseModel):
             )
         witness = self.amendment_scan_input
         if witness is not None:
-            context = witness.context_without_scan
+            context = witness.context_without_scan if witness.version != 3 else None
             if (
                 self.amendment_input_ref is not None
                 or self.purpose != "amendments"
                 or not isinstance(self.record, AmendmentsRecord)
                 or self.input_binding is None
                 or (self.input_binding.term, self.input_binding.number) != (self.term, self.number)
-                or context.number != self.number
+                or (context is not None and context.number != self.number)
                 or witness.request_sha256 != self.request_sha256
                 or witness.source_url != self.record.source_url
-                or self.record.source_kind != context.source_kind
+                or self.record.source_kind
+                != (context.source_kind if context is not None else "senate_amendments")
                 or witness.scan_input != self.record.scan_input
             ):
                 raise ValueError("invalid_amendment_scan_input")
-            if context.source_check is not None:
+            if context is not None and context.source_check is not None:
                 validate_senate_scan(self.record.amendments.source_evidence, context.source_check)
         timing = self.local_timing_witness
         if timing is not None:

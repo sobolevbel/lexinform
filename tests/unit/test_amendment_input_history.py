@@ -765,5 +765,5 @@ def test_original_scan_resolution_never_infers_a_witness_from_a_manifest(
         assert retained.scan_witness == witness
     else:
         assert retained.state == "unavailable"
-        assert retained.reason == "legacy_input_unavailable"
+        assert retained.reason == "original_scan_context_unavailable"
         assert retained.scan_witness is None

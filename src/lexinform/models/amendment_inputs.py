@@ -13,6 +13,7 @@ from lexinform.models.input_receipts import AmendmentInputReceipt
 from lexinform.models.scan_input import MAX_SCAN_BYTES, MAX_SCAN_PAGES, ScanInputManifest
 
 MAX_AMENDMENT_SCAN_WITNESS_BYTES = 4 * 1024
+MAX_AMENDMENT_SCAN_CONTEXT_BYTES = 10_000_000
 
 
 class AmendmentInputSnapshot(BaseModel):
@@ -66,16 +67,42 @@ class AmendmentScanInputWitness(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
-    version: Literal[1, 2] = 1
+    version: Literal[1, 2, 3] = 1
     source_url: str = Field(max_length=MAX_AMENDMENT_SCAN_WITNESS_BYTES)
     request_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     question_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
-    context_json: str = Field(max_length=MAX_AMENDMENT_SCAN_WITNESS_BYTES)
+    context_json: str | None = Field(
+        default=None,
+        max_length=MAX_AMENDMENT_SCAN_WITNESS_BYTES,
+        exclude_if=lambda value: value is None,
+    )
+    context_sha256: str | None = Field(
+        default=None,
+        pattern=r"^[a-f0-9]{64}$",
+        exclude_if=lambda value: value is None,
+    )
     scan_input: ScanInputManifest
 
     @property
     def context_without_scan(self) -> AmendmentsContext:
-        value = read_json(self.context_json)
+        return self.resolve_context()
+
+    def resolve_context(self, retained_json: str | None = None) -> AmendmentsContext:
+        if self.version == 3:
+            if retained_json is None:
+                raise ValueError("invalid_amendment_scan_input")
+            data = retained_json.encode()
+            if (
+                len(data) > MAX_AMENDMENT_SCAN_CONTEXT_BYTES
+                or hashlib.sha256(data).hexdigest() != self.context_sha256
+            ):
+                raise ValueError("invalid_amendment_scan_input")
+            raw = retained_json
+        else:
+            if retained_json is not None or self.context_json is None:
+                raise ValueError("invalid_amendment_scan_input")
+            raw = self.context_json
+        value = read_json(raw)
         if not isinstance(value, dict) or "scan" in value:
             raise ValueError("invalid_amendment_scan_input")
         context = AmendmentsContext.model_validate(value)
@@ -83,8 +110,7 @@ class AmendmentScanInputWitness(BaseModel):
             context.text != ""
             or context.truncated
             or not self._matches_source(context)
-            or canonical_json(context.model_dump(mode="json", exclude={"scan"}))
-            != self.context_json
+            or canonical_json(context.model_dump(mode="json", exclude={"scan"})) != raw
         ):
             raise ValueError("invalid_amendment_scan_input")
         return context
@@ -120,17 +146,27 @@ class AmendmentScanInputWitness(BaseModel):
             or len(self.model_dump_json().encode()) > MAX_AMENDMENT_SCAN_WITNESS_BYTES
         ):
             raise ValueError("invalid_amendment_scan_input")
-        _ = self.context_without_scan
+        if self.version == 3:
+            if self.context_sha256 is None or self.context_json is not None:
+                raise ValueError("invalid_amendment_scan_input")
+        else:
+            if self.context_sha256 is not None:
+                raise ValueError("invalid_amendment_scan_input")
+            _ = self.context_without_scan
         return self
 
-    def restore_context(self, scan: ScannedDocument) -> AmendmentsContext:
+    def restore_context(
+        self, scan: ScannedDocument, *, retained_json: str | None = None
+    ) -> AmendmentsContext:
         if (
             scan.scan_input != self.scan_input
             or scan.media_type != "application/pdf"
             or scan.cover_letter_pages != 0
         ):
             raise ValueError("invalid_amendment_scan_input")
-        context = self.context_without_scan.model_copy(update={"scan": scan.verify_exact_input()})
+        context = self.resolve_context(retained_json).model_copy(
+            update={"scan": scan.verify_exact_input()}
+        )
         question = canonical_json({"kind": "amendments", "ctx": context.model_dump(mode="json")})
         if hashlib.sha256(question.encode()).hexdigest() != self.question_sha256:
             raise ValueError("invalid_amendment_scan_input")
@@ -175,7 +211,10 @@ class AmendmentInputAvailability(BaseModel):
     state: Literal["available", "requires_exact_scan", "unavailable"]
     reason: (
         Literal[
-            "root_history_unavailable", "root_amendment_unavailable", "legacy_input_unavailable"
+            "root_history_unavailable",
+            "root_amendment_unavailable",
+            "legacy_input_unavailable",
+            "original_scan_context_unavailable",
         ]
         | None
     ) = None
@@ -183,6 +222,7 @@ class AmendmentInputAvailability(BaseModel):
     result_id: str | None = None
     snapshot: AmendmentInputSnapshot | None = None
     reference: AmendmentInputRef | None = None
+    scan_context_json: str | None = Field(default=None, exclude=True, repr=False)
     scan_witness: AmendmentScanInputWitness | None = Field(
         default=None, exclude_if=lambda value: value is None
     )

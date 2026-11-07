@@ -23,6 +23,7 @@ from lexinform.adapters.amendment_inputs import (
     checked_computation_result,
     prune_amendment_inputs,
     read_amendment_input,
+    read_amendment_scan_context,
     validate_amendment_inputs,
     validate_intent_input,
     validate_item_input,
@@ -259,7 +260,7 @@ from lexinform.models import (
     rcl_num_key,
     valid_mnemonic,
 )
-from lexinform.models.amendment_inputs import AmendmentInputSnapshot
+from lexinform.models.amendment_inputs import AmendmentInputSnapshot, AmendmentScanInputWitness
 from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
 from lexinform.models.commands import (
     GroupedEditDeliveryResolution,
@@ -2239,6 +2240,9 @@ class SqliteBillRepository:
 
     def get_amendment_input(self, snapshot_id: str) -> AmendmentInputSnapshot | None:
         return read_amendment_input(self._conn, snapshot_id)
+
+    def get_amendment_scan_context(self, witness: AmendmentScanInputWitness) -> str:
+        return read_amendment_scan_context(self._conn, witness)
 
     def save_content_snapshot(self, snapshot: ContentSnapshot) -> None:
         snapshot = ContentSnapshot.model_validate_json(snapshot.model_dump_json())

@@ -1,0 +1,9 @@
+{
+  "changed_pdf_denied": true,
+  "context_bytes": 7976,
+  "exact_original_question": true,
+  "missing_context_parent_denied_atomically": true,
+  "recommendation_rereads": 0,
+  "two_clean_restores": true,
+  "witness_bytes": 639
+}

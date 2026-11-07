@@ -1403,7 +1403,7 @@ class AnalysisService:
                 raise ValueError("Разбор поправок превышает лимит стоимости документа")
         elif original_input is not None and original_input.scan_witness is not None:
             witness = original_input.scan_witness
-            original_context = witness.context_without_scan
+            original_context = witness.resolve_context(original_input.scan_context_json)
             if (
                 document.url != witness.source_url
                 or document.kind != original_context.source_kind
@@ -1416,7 +1416,9 @@ class AnalysisService:
                     scan = self._loader.load_scan(witness.source_url, cover_letter=False)
                     if scan is None:
                         raise ValueError(message)
-                    context = witness.restore_context(scan)
+                    context = witness.restore_context(
+                        scan, retained_json=original_input.scan_context_json
+                    )
                 except ServiceUnavailableError:
                     raise
                 except (DownloadError, FileNotFoundError, ValueError) as error:
