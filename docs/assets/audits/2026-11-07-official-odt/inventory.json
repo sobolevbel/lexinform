@@ -1,0 +1,153 @@
+{
+  "scope": "Explicit .odt attachment names in Sejm API print listings; archives are outside this search.",
+  "listings": [
+    {
+      "term": 8,
+      "url": "https://api.sejm.gov.pl/sejm/term8/prints",
+      "rows": 4362,
+      "sha256": "d8ca1ef96162bd9ee439e89b1a92888fc089f6f7906c13230de7f9e9834ac1ad"
+    },
+    {
+      "term": 9,
+      "url": "https://api.sejm.gov.pl/sejm/term9/prints",
+      "rows": 4142,
+      "sha256": "0e15dd9f6554a1f04be0354be3b1b219de8062d8a8381825336e779c4e97f618"
+    },
+    {
+      "term": 10,
+      "url": "https://api.sejm.gov.pl/sejm/term10/prints",
+      "rows": 3571,
+      "sha256": "8c2ee706bd743f4fb816d9ea4b5a88825ee27755674329acaf1c4321456e94b2"
+    }
+  ],
+  "attachments": [
+    {
+      "term": 8,
+      "number": "286",
+      "attachment": "286-uchwała.odt",
+      "notes": 0,
+      "separate_refs": 0,
+      "sha256": "e61dad76c2cebcfa72306573ecc4f6fe409dc215500c24c49e98f6bb4634721e"
+    },
+    {
+      "term": 8,
+      "number": "348",
+      "attachment": "348-ustawa.odt",
+      "notes": 1,
+      "separate_refs": 0,
+      "sha256": "c2677e87d2248c27c33890298e7e0d7207f54ad6f093d5755a0a5bc83371211e"
+    },
+    {
+      "term": 8,
+      "number": "729",
+      "attachment": "729-ustawa-1.odt",
+      "notes": 0,
+      "separate_refs": 0,
+      "sha256": "4b33303e6caee1deb3b9c2a9ba10194328943b6ba30aabaf98bff50f2654a04b"
+    },
+    {
+      "term": 8,
+      "number": "729",
+      "attachment": "729-ustawa-2.odt",
+      "notes": 0,
+      "separate_refs": 0,
+      "sha256": "125a49f2f7b81107b97adc72c789080361b4f4bef89fedd5465e1b448490c968"
+    },
+    {
+      "term": 8,
+      "number": "1197",
+      "attachment": "1197-ustawa.odt",
+      "notes": 0,
+      "separate_refs": 0,
+      "sha256": "35b204c0633a2d06a56d819488e5e9a2adf00ab798c93a04f2efbba20730e9f4"
+    },
+    {
+      "term": 8,
+      "number": "1249",
+      "attachment": "1249-ustawa.odt",
+      "notes": 1,
+      "separate_refs": 0,
+      "sha256": "91c0697729090b9fda66f6175303869376631c38e8fa438addc11117a8c2ed1d"
+    },
+    {
+      "term": 8,
+      "number": "1657",
+      "attachment": "1657-uchwała.odt",
+      "notes": 0,
+      "separate_refs": 0,
+      "sha256": "218c554fbaef37dd5f6235b704594d3bd1c12dc27b86c5af5d6a6422cc102d62"
+    },
+    {
+      "term": 8,
+      "number": "1967",
+      "attachment": "1967-ustawa.odt",
+      "notes": 0,
+      "separate_refs": 0,
+      "sha256": "01d0bfc39c0892f660b7f075d1f2fb86aceffe6d38f1991e732c395c7587921a"
+    },
+    {
+      "term": 8,
+      "number": "2252",
+      "attachment": "2252-ustawa.odt",
+      "notes": 0,
+      "separate_refs": 0,
+      "sha256": "9f72ab78dd2b235b52cef82ed6f34cf6f84592a41cf54365a08eeb147927ff7b"
+    },
+    {
+      "term": 8,
+      "number": "2410",
+      "attachment": "2410-uzasadnienie.odt",
+      "notes": 0,
+      "separate_refs": 0,
+      "sha256": "11e451a93966f9a7d4c6bff1389fda7e1e983423d45e3adf5b5629328bf8d9cf"
+    },
+    {
+      "term": 9,
+      "number": "412",
+      "attachment": "412-uchwała.odt",
+      "notes": 0,
+      "separate_refs": 0,
+      "sha256": "73ac94fb9b3b08d124ccae423cd2b21acc6e2f8ade5f6aed7ba1ebbd710844e2"
+    },
+    {
+      "term": 9,
+      "number": "2294",
+      "attachment": "2294-uchwała.odt",
+      "notes": 0,
+      "separate_refs": 0,
+      "sha256": "6e0835b46131ee3c9da4ce90e3a2f57713d7d3a7edad2cd2dab324fbd02ee1b5"
+    },
+    {
+      "term": 9,
+      "number": "2320",
+      "attachment": "2320-uchwała.odt",
+      "notes": 0,
+      "separate_refs": 0,
+      "sha256": "f230dd46730b636f20b85b566484f315916591039d97367932f4913f9a20011b"
+    },
+    {
+      "term": 9,
+      "number": "3210",
+      "attachment": "3210-uchwała.odt",
+      "notes": 0,
+      "separate_refs": 0,
+      "sha256": "ff3672f8f867bf2767a5b20de5d534e29534bb5323fdf3c2d9e9c6d98c688a7d"
+    },
+    {
+      "term": 10,
+      "number": "178",
+      "attachment": "178-uchwała.odt",
+      "notes": 0,
+      "separate_refs": 0,
+      "sha256": "8529db11efa0049921509c6e26fed300ac3b9c410d8c671e243ce35c0edf985a"
+    },
+    {
+      "term": 10,
+      "number": "1614",
+      "attachment": "1614-uchwała.odt",
+      "notes": 0,
+      "separate_refs": 0,
+      "sha256": "072d8e6cc811fbe7094369ed8ee40e36f05f363bc432318da272f35debf95722"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+[
+  {
+    "document": 740893,
+    "project": 12401655,
+    "url": "https://legislacja.rcl.gov.pl/docs//2/12401655/13153359/13153362/dokument740893.odt",
+    "sha256": "9ad997ba5f210a0a238573e807a9bfab8ea1571fe0ec1ee18c52a961467a0d9c",
+    "catalog_sha256": "339c08b4930dd803da39654581eb6c2046b6d25fe85e0a7e37c71eb79a584200",
+    "notes": 0,
+    "refs": 0
+  },
+  {
+    "document": 691342,
+    "project": 12389801,
+    "url": "https://legislacja.rcl.gov.pl/docs//2/12389801/13082801/13082804/dokument691342.odt",
+    "sha256": "89e448da806b40396e5626fa06ab10bacda06b0bec387e75752732ada8cd18bc",
+    "catalog_sha256": "ef79315d093c113f4996b8cee4d8a1101ea640463b3795b4e9aa36ae5059bf3e",
+    "notes": 0,
+    "refs": 0
+  },
+  {
+    "document": 684324,
+    "project": 12388205,
+    "url": "https://legislacja.rcl.gov.pl/docs//2/12388205/13074820/13074823/dokument684324.odt",
+    "sha256": "9492775b9d8dee10c2818fb62b6bbc1922f1df5fd40b7da4f7841e4527cf5eef",
+    "catalog_sha256": "1ba9b41fe786de4a9bf84b95c56ddd697e3779a587b6fdb60cc7c626ce3eb215",
+    "notes": 0,
+    "refs": 0
+  },
+  {
+    "document": 684340,
+    "project": 12388205,
+    "url": "https://legislacja.rcl.gov.pl/docs//2/12388205/13074820/13074823/dokument684340.odt",
+    "sha256": "743d88976846877fcc7d9c4a81ed0e1128822b1c2f5e70c71b1b518a1027143f",
+    "catalog_sha256": "1ba9b41fe786de4a9bf84b95c56ddd697e3779a587b6fdb60cc7c626ce3eb215",
+    "notes": 0,
+    "refs": 0
+  },
+  {
+    "document": 721275,
+    "project": 12395551,
+    "url": "https://legislacja.rcl.gov.pl/docs//2/12395551/13116051/13116054/dokument721275.odt",
+    "sha256": "7d7dfde6c55ff94589b6ba135631b1392b7db9fe94dbbc1bd09da447e4496e67",
+    "catalog_sha256": "8ce1727cbd87ba9b2c0253fcf0ab094032847f8ffa52dfa765fbef3bc9a35715",
+    "notes": 0,
+    "refs": 0
+  }
+]

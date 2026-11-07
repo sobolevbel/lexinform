@@ -1,0 +1,130 @@
+{
+  "scope": "Official original print attachment listings and original PDF bytes, replayed through SejmApiClient/SejmTextSource/TextLoader. Empty process stages explicitly isolate the original-print branch; no claim about later legislative stages. Separate native extraction verifies the original ODT bytes independently.",
+  "term8_prints_sha256": "d8ca1ef96162bd9ee439e89b1a92888fc089f6f7906c13230de7f9e9834ac1ad",
+  "cases": {
+    "348": {
+      "official_attachments": [
+        "348.pdf",
+        "348-uzasadnienie.docx",
+        "348-ustawa.odt"
+      ],
+      "api_paths": [
+        "/sejm/term8/processes/348",
+        "/sejm/term8/prints/348",
+        "/sejm/term8/prints"
+      ],
+      "normal_original_candidate": "https://api.sejm.gov.pl/sejm/term8/prints/348/348.pdf",
+      "normal_selected_pdf_sha256": "6761b4a77331c6637c67a539215e5c87193598d89bcd91fb381904a2ee8b865a",
+      "normal_selection_state": "unverified",
+      "normal_selected_odt": false,
+      "odt_sha256": "c2677e87d2248c27c33890298e7e0d7207f54ad6f093d5755a0a5bc83371211e",
+      "standalone_native_odt_evidence": {
+        "context": "official-term8-348-standalone-control",
+        "input_sha256": "c2677e87d2248c27c33890298e7e0d7207f54ad6f093d5755a0a5bc83371211e",
+        "physical_parts": 1,
+        "selected_parts": 1,
+        "selected_summary_omissions": 0,
+        "selection_sha256": "c8b12a7ae390179c4c4b49279c8786be6cd1b9e0253b16d85a1380652c7be001",
+        "selected_text_sha256": "5a0f5617f3bcbe1fdf48eebdcf00e1a0bd0e1f70e7daa96e3c3f41088403c5a1",
+        "physical_manifest_sha256": "431edff7a48878a236d30956efddc151221534b75e87f15459684318291f9107",
+        "odt_prefix_bytes": 1063,
+        "whole_summary_bytes": 7609,
+        "odt_leaves": [
+          {
+            "part_index": 0,
+            "input_sha256": "c2677e87d2248c27c33890298e7e0d7207f54ad6f093d5755a0a5bc83371211e",
+            "member_chain_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "selected": true,
+            "note_count": 1,
+            "call_count": 1,
+            "raw_xml_notes": 1,
+            "raw_xml_separate_refs": 0,
+            "captured_separate_refs": 0,
+            "associations": {
+              "embedded/embedded": 1
+            },
+            "verified_xml": {
+              "verified_note_paths": 1,
+              "verified_call_paths": 1,
+              "verified_plain_spans": 0
+            },
+            "raw_note_classes": {
+              "footnote": 1
+            },
+            "observed_emitted_spans": 2,
+            "retained_prefix": true,
+            "stored_events": 2,
+            "captured_events": 2,
+            "status_contents": "prefix_retained",
+            "text_view": "legacy-odt-body-v1",
+            "tracked_changes": "legacy-inline-unresolved",
+            "table_repetitions": "legacy-unexpanded",
+            "body_manifest_sha256": "207a1cd131a9df33d3351eaa93098a1a04923c213cf4f3f0f8396323eb112ddc"
+          }
+        ]
+      }
+    },
+    "1249": {
+      "official_attachments": [
+        "1249.pdf",
+        "1249-ustawa.odt",
+        "1249-autopoprawka.docx"
+      ],
+      "api_paths": [
+        "/sejm/term8/processes/1249",
+        "/sejm/term8/prints/1249",
+        "/sejm/term8/prints"
+      ],
+      "normal_original_candidate": "https://api.sejm.gov.pl/sejm/term8/prints/1249/1249.pdf",
+      "normal_selected_pdf_sha256": "6217c87e600d95c3280a864d45daee7b5e3cf8b4c55e77c90da61623b68dd9a1",
+      "normal_selection_state": "unverified",
+      "normal_selected_odt": false,
+      "odt_sha256": "91c0697729090b9fda66f6175303869376631c38e8fa438addc11117a8c2ed1d",
+      "standalone_native_odt_evidence": {
+        "context": "official-term8-1249-standalone-control",
+        "input_sha256": "91c0697729090b9fda66f6175303869376631c38e8fa438addc11117a8c2ed1d",
+        "physical_parts": 1,
+        "selected_parts": 1,
+        "selected_summary_omissions": 0,
+        "selection_sha256": "66ed3952e9304069132e6dbd482885261585943fec155a7fe9407eddc3bab3f9",
+        "selected_text_sha256": "4e40dd1dfab8e8e7aaf9511d550faa2b84c45675ba8ab9539296a751549dcabe",
+        "physical_manifest_sha256": "0839812ac4802b3a457b5bb90e8e374018ec9527b0c0eaba183b39915ee18ade",
+        "odt_prefix_bytes": 1063,
+        "whole_summary_bytes": 8518,
+        "odt_leaves": [
+          {
+            "part_index": 0,
+            "input_sha256": "91c0697729090b9fda66f6175303869376631c38e8fa438addc11117a8c2ed1d",
+            "member_chain_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "selected": true,
+            "note_count": 1,
+            "call_count": 1,
+            "raw_xml_notes": 1,
+            "raw_xml_separate_refs": 0,
+            "captured_separate_refs": 0,
+            "associations": {
+              "embedded/embedded": 1
+            },
+            "verified_xml": {
+              "verified_note_paths": 1,
+              "verified_call_paths": 1,
+              "verified_plain_spans": 0
+            },
+            "raw_note_classes": {
+              "footnote": 1
+            },
+            "observed_emitted_spans": 2,
+            "retained_prefix": true,
+            "stored_events": 2,
+            "captured_events": 2,
+            "status_contents": "prefix_retained",
+            "text_view": "legacy-odt-body-v1",
+            "tracked_changes": "legacy-inline-unresolved",
+            "table_repetitions": "legacy-unexpanded",
+            "body_manifest_sha256": "37c5269112ad99568d16afc76e3a8f1c4f65d2cdcd69203547beca802f21ca1a"
+          }
+        ]
+      }
+    }
+  }
+}
