@@ -14,6 +14,7 @@ from lexinform.adapters.candidate_trace_history import (
 from lexinform.adapters.computation_history import read_computation_result
 from lexinform.adapters.document_source_rows import DocumentSourceRows
 from lexinform.adapters.extraction_history import read_extraction_result
+from lexinform.adapters.llm_prompts import build_supplement_prompt
 from lexinform.errors import PreparedInputParentError
 from lexinform.input_receipts import (
     archive_member_matches,
@@ -54,7 +55,10 @@ from lexinform.models.input_receipts import (
     SejmSelfAmendmentInputReceipt,
 )
 from lexinform.models.scan_input import MAX_SCAN_BYTES, MAX_SCAN_PAGES
-from lexinform.models.supplement_inputs import SupplementScanInputWitness
+from lexinform.models.supplement_inputs import (
+    MAX_SUPPLEMENT_SCAN_WITNESS_BYTES,
+    SupplementScanInputWitness,
+)
 
 _QUESTION_TEXT_PROFILE = "question-text-v1"
 _PROVIDER_PAYLOAD_PROFILE = "question-text-json-v1"
@@ -965,6 +969,69 @@ def validate_word_formula_intent(connection: sqlite3.Connection, intent: BatchIn
         or not any(item.role == "word" for item in extraction.components)
     ):
         raise ValueError("Word formula input requires its selected native Word source")
+
+
+def capture_submitted_supplement_scan_input(
+    request: BatchRequest,
+    manifest: FrozenRequestManifest,
+    item: LlmBatchItem,
+    queued: BatchItemMeta | DigestItemMeta,
+) -> SupplementScanInputWitness | None:
+    question, meta = request.question, item.meta
+    if (
+        not isinstance(question, SupplementQuestion)
+        or not isinstance(meta, DigestItemMeta)
+        or not isinstance(queued, DigestItemMeta)
+        or meta
+        != queued.model_copy(
+            update={
+                "request_sha256": request.payload_sha256,
+                "frozen_request_manifest": meta.frozen_request_manifest,
+                "supplement_scan_input": meta.supplement_scan_input,
+            }
+        )
+        or meta.source_url is None
+        or meta.document_number is None
+    ):
+        return None
+    scan = question.ctx.scan
+    if scan is None or scan.scan_input is None:
+        return None
+    context_json = canonical_json(question.ctx.model_dump(mode="json", exclude={"scan"}))
+    if len(context_json.encode()) > MAX_SUPPLEMENT_SCAN_WITNESS_BYTES:
+        return None
+    validate_provider_scan_attachment(request, manifest.provider)
+    payload = request.payload_json
+    if payload is None:
+        return None
+    match read_json(payload):
+        case {
+            "body": {"input": [_, {"content": [_, {"type": "input_text", "text": str(prompt)}]}]}
+        }:
+            pass
+        case {"params": {"messages": [{"content": [_, {"type": "text", "text": str(prompt)}]}]}}:
+            pass
+        case _:
+            return None
+    if prompt != build_supplement_prompt(question.ctx):
+        return None
+    witness = SupplementScanInputWitness(
+        term=request.term,
+        document_number=meta.document_number,
+        source_url=meta.source_url,
+        request_sha256=manifest.request_sha256,
+        manifest_sha256=manifest.manifest_sha256,
+        question_sha256=hashlib.sha256(
+            canonical_json(question.model_dump(mode="json")).encode()
+        ).hexdigest(),
+        context_json=context_json,
+        scan_input=scan.scan_input,
+    )
+    candidate = meta.model_copy(
+        update={"frozen_request_manifest": manifest, "supplement_scan_input": witness}
+    )
+    candidate.require_supplement_scan_carrier(item.call_kind, item.term, item.number)
+    return witness
 
 
 def read_retained_supplement_scan_input(

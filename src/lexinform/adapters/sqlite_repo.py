@@ -72,6 +72,7 @@ from lexinform.adapters.extraction_history import (
 )
 from lexinform.adapters.input_receipts import (
     capture_frozen_request_manifest,
+    capture_submitted_supplement_scan_input,
     intent_metadata,
     parse_batch_request,
     serialize_intent_metadata,
@@ -4333,7 +4334,7 @@ class SqliteBillRepository:
         if meta.frozen_request_manifest is not None:
             if meta.frozen_request_manifest != manifest:
                 raise ValueError("Frozen request manifest differs from its submitting intent")
-            if item.call_kind != "consultation_review":
+            if item.call_kind not in ("consultation_review", "supplement"):
                 return meta.model_dump_json()
         if manifest is None:
             return meta.model_dump_json()
@@ -4345,7 +4346,19 @@ class SqliteBillRepository:
                 )
             if review_witness is not None or meta.review_input_witness is not None:
                 meta = meta.model_copy(update={"review_input_witness": review_witness})
-        if isinstance(meta, DigestItemMeta) and meta.scan_input is not None:
+        if (
+            isinstance(meta, DigestItemMeta)
+            and item.call_kind == "supplement"
+            and meta.scan_input is not None
+        ):
+            supplement_witness = None
+            with suppress(ValueError, TypeError, RecursionError, KeyError):
+                supplement_witness = capture_submitted_supplement_scan_input(
+                    request, manifest, item, intent_metadata(request, row["meta_json"])
+                )
+            if supplement_witness is not None or meta.supplement_scan_input is not None:
+                meta = meta.model_copy(update={"supplement_scan_input": supplement_witness})
+        elif isinstance(meta, DigestItemMeta) and meta.scan_input is not None:
             with suppress(ValueError, TypeError, RecursionError):
                 witness = capture_submitted_amendment_scan_input(
                     request, item, intent_metadata(request, row["meta_json"])
