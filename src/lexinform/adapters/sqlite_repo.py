@@ -2318,15 +2318,22 @@ class SqliteBillRepository:
         version: ContentVersion,
         *,
         primary: ContentSnapshot | None = None,
+        change: ContentSnapshot | None = None,
     ) -> None:
+        evidence = version.direct_stage_evidence
+        direct = evidence is not None and evidence.multipart is not None
+        original = version.original_delivery_evidence
         if (
             not self._conn.in_transaction
-            or version.original_delivery_evidence is None
+            or (original is None and not direct)
+            or (direct and original is not None)
+            or (change.snapshot_id if change else None) != version.change_snapshot_id
+            or direct != (change is not None)
             or version.bill_snapshot_id != bill.snapshot_id
             or version.plan_snapshot_id != snapshot.snapshot_id
         ):
             raise ValueError("original delivery history requires its atomic freeze")
-        joint = version.original_delivery_evidence.joint_primary
+        joint = original.joint_primary if original is not None else None
         if (primary.snapshot_id if primary else None) != (
             joint.bill_snapshot_id if joint else None
         ):
@@ -2336,7 +2343,10 @@ class SqliteBillRepository:
             self.save_content_snapshot(snapshot)
             if primary is not None:
                 self.save_content_snapshot(primary)
-            plan = verify_original_delivery_content(self._conn, version)
+            if change is not None:
+                self.save_content_snapshot(change)
+            verify = verify_direct_stage_content if direct else verify_original_delivery_content
+            plan = verify(self._conn, version)
             if plan is None:
                 raise ValueError("original delivery history requires physical parts")
             for identity in plan.bindings:
@@ -2354,7 +2364,7 @@ class SqliteBillRepository:
                 "INSERT INTO publication_content(publication_id,content_id) VALUES(?,?)",
                 [(identity, version.content_id) for identity in plan.bindings],
             )
-            verify_original_delivery_content(self._conn, version, require_bound=True)
+            verify(self._conn, version, require_bound=True)
 
     def save_digest_content(
         self,

@@ -927,6 +927,7 @@ class BillRepository(Protocol):
         version: ContentVersion,
         *,
         primary: ContentSnapshot | None = None,
+        change: ContentSnapshot | None = None,
     ) -> None: ...
 
     def save_digest_content(

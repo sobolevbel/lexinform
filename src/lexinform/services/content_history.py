@@ -45,6 +45,13 @@ from lexinform.models.content import (
     grouped_stage_content_budget,
 )
 from lexinform.models.grouped_update_witness import GroupedRenderWitness
+from lexinform.models.original_delivery_content import (
+    MAX_ORIGINAL_DELIVERY_BYTES,
+    MAX_ORIGINAL_DELIVERY_PARTS,
+    OriginalDeliveryPart,
+    OriginalDeliveryPlan,
+    original_delivery_context,
+)
 from lexinform.models.sejm import has_process
 from lexinform.ports import BillRepository, Clock
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
@@ -103,6 +110,11 @@ def record_publication_content(
         raise ValueError("Editorial history requires a saved physical publication")
     existing = repo.get_publication_content(publication.id)
     if existing is not None:
+        if (
+            existing.direct_stage_evidence is not None
+            and existing.direct_stage_evidence.multipart is not None
+        ):
+            return existing
         current = repo.publication_by_id(publication.id)
         if (
             existing.change_snapshot_id is not None
@@ -123,6 +135,15 @@ def record_publication_content(
     if prepared is None:
         return None
     version, snapshots = prepared
+    if (
+        version.direct_stage_evidence is not None
+        and version.direct_stage_evidence.multipart is not None
+    ):
+        bill_snapshot, change_snapshot, plan_snapshot = snapshots
+        repo.save_original_delivery_content(
+            bill_snapshot, plan_snapshot, version, change=change_snapshot
+        )
+        return version
     try:
         with repo.atomic():
             for snapshot in snapshots:
@@ -289,7 +310,7 @@ def prepare_publication_content(
         or not plan.bill_json
         or not plan.change_json
         or plan.publication_ids
-        or plan.continuation_ids
+        or (plan.continuation_ids and publication.kind is not PublicationKind.STATUS_UPDATE)
         or plan.continuation_root is not None
         or plan.absorbed_by is not None
         or repo.digest_owner(publication.id) is not None
@@ -339,7 +360,8 @@ def prepare_publication_content(
                 language=language,
             )
         if (
-            change.amendments is not None
+            plan.continuation_ids
+            or change.amendments is not None
             or len(change.supplements) != 1
             or change.id != publication.status_change_id
             or plan.continuation_index != 1
@@ -358,6 +380,8 @@ def prepare_publication_content(
         supplement = repo.find_supplement_content_evidence(change)
         if supplement is None:
             return None
+    if plan.continuation_ids:
+        return None
     bill = Bill.model_validate_json(plan.bill_json)
     computations = tuple(
         sorted(
@@ -627,11 +651,15 @@ def _prepare_direct_stage_content(
     language: str | None,
 ) -> tuple[ContentVersion, tuple[ContentSnapshot, ...]] | None:
     plan = publication.delivery
+    multipart = bool(plan and plan.continuation_ids)
+    shape = plan.model_copy(update={"continuation_ids": ()}) if multipart and plan else plan
+    ungrouped = publication.model_copy(update={"delivery": shape}) if multipart else publication
     if (
         publication.id is None
         or plan is None
         or plan.reply_to is None
-        or not direct_stage_plan_matches(plan)
+        or shape is None
+        or not direct_stage_plan_matches(shape)
         or plan.held_change_ids
         or plan.with_act
         or plan.render_origin is not None
@@ -649,7 +677,7 @@ def _prepare_direct_stage_content(
         or origin.delivery.destination != "direct"
         or (origin.delivery.bill_json, origin.delivery.change_json)
         != (plan.bill_json, plan.change_json)
-        or not _first_direct_application(repo, publication, origin)
+        or not _first_direct_application(repo, ungrouped, origin)
         or repo.get_status_change(change.id) != change
     ):
         return None
@@ -671,13 +699,38 @@ def _prepare_direct_stage_content(
         return None
     bill_snapshot = card_bill_snapshot(plan.bill_json)
     change_snapshot = ContentSnapshot(kind="change", payload_json=plan.change_json)
-    plan_snapshot = _plan_snapshot(plan)
+    if multipart:
+        if not bill.has_process or len(plan.continuation_ids) >= MAX_ORIGINAL_DELIVERY_PARTS:
+            return None
+        parts = [
+            OriginalDeliveryPart(
+                id=publication.id,
+                html=plan.rendered_text,
+                disable_notification=plan.disable_notification,
+            )
+        ]
+        for identity in plan.continuation_ids:
+            child = repo.publication_by_id(identity)
+            if child is None or child.delivery is None or child.delivery.held_change_ids:
+                return None
+            parts.append(
+                OriginalDeliveryPart(
+                    id=identity,
+                    html=child.delivery.rendered_text,
+                    disable_notification=child.delivery.disable_notification,
+                )
+            )
+        physical = OriginalDeliveryPlan(
+            root=original_delivery_context(plan).model_copy(update={"change_json": ""}),
+            parts=tuple(parts),
+        )
+        plan_snapshot = ContentSnapshot(kind="plan", payload_json=physical.model_dump_json())
+    else:
+        plan_snapshot = _plan_snapshot(plan)
     snapshots = (bill_snapshot, change_snapshot, plan_snapshot)
-    if (
-        sum(len(snapshot.payload_json.encode()) for snapshot in snapshots)
-        + len(plan.rendered_text.encode())
-        > MAX_DIRECT_STAGE_CONTENT_BYTES
-    ):
+    if sum(len(snapshot.payload_json.encode()) for snapshot in snapshots) + (
+        0 if multipart else len(plan.rendered_text.encode())
+    ) > (MAX_ORIGINAL_DELIVERY_BYTES if multipart else MAX_DIRECT_STAGE_CONTENT_BYTES):
         return None
     return (
         ContentVersion(
@@ -687,11 +740,12 @@ def _prepare_direct_stage_content(
             bill_snapshot_id=bill_snapshot.snapshot_id,
             change_snapshot_id=change_snapshot.snapshot_id,
             plan_snapshot_id=plan_snapshot.snapshot_id,
-            rendered_text=plan.rendered_text,
+            rendered_text=None if multipart else plan.rendered_text,
             formatter_version=formatter_version,
             status_change_id=change.id,
             direct_stage_evidence=DirectStageContentEvidence(
                 anchor_publication_id=anchor.id,
+                multipart="direct-stage-parts-v1" if multipart else None,
                 original_bill_sha256=hashlib.sha256(plan.bill_json.encode()).hexdigest(),
             ),
             recorded_at=clock.now(),
