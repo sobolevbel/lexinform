@@ -5,27 +5,12 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
+from lexinform.adapters.memo_retention import memo_retention_cte
 from tools.corpus_artifacts import write_json
 from tools.sqlite_snapshot import open_snapshot
 
 _MEMOS = """
-SELECT m.last_used_at, m.term, m.number, length(CAST(m.record_json AS BLOB)) AS bytes,
-  b.term IS NOT NULL AS has_bill,
-  b.status IN ('analyzed', 'linked', 'skipped_prefilter',
-               'skipped_text_prefilter', 'skipped_closed') AS settled,
-  b.awaiting_batch_since IS NOT NULL OR b.ready_analysis_json IS NOT NULL
-    OR b.review_work_json IS NOT NULL AS bill_work,
-  EXISTS (SELECT 1 FROM document_work w
-    WHERE (w.term,w.number)=(m.term,m.number) AND w.state!='complete') AS document_work,
-  EXISTS (SELECT 1 FROM publications p
-    WHERE (p.term,p.number)=(m.term,m.number)
-      AND p.status NOT IN ('sent','skipped')) AS publication,
-  EXISTS (SELECT 1 FROM llm_batch_intents i
-    WHERE (json_extract(i.request_json,'$.term'),json_extract(i.request_json,'$.number'))
-      =(m.term,m.number)) AS intent,
-  EXISTS (SELECT 1 FROM llm_batch_items i
-    WHERE (i.term,i.number)=(m.term,m.number)
-    AND (i.consumed_at IS NULL OR i.accounted_at IS NULL)) AS batch_item,
+SELECT m.*, length(CAST(m.record_json AS BLOB)) AS bytes,
   EXISTS (SELECT 1 FROM llm_batch_intents i
     WHERE m.key IN (json_extract(i.meta_json,'$.memo_key'),
                     json_extract(i.meta_json,'$.delivery_key'))) AS intent_key_ref,
@@ -35,7 +20,7 @@ SELECT m.last_used_at, m.term, m.number, length(CAST(m.record_json AS BLOB)) AS 
                   json_extract(i.meta_json,'$.delivery_key'))) AS batch_item_key_ref,
   EXISTS (SELECT 1 FROM computation_results r
     WHERE r.result_id=json_extract(m.record_json,'$.computation_id')) AS paid_id_ref
-FROM analysis_memo m LEFT JOIN bills b ON (b.term,b.number)=(m.term,m.number)
+FROM memo_retention m
 """
 
 
@@ -48,7 +33,15 @@ def census(database: Path, memo_before: datetime) -> dict[str, object]:
     orphan_references: Counter[str] = Counter()
     eligible = orphan_rows = orphan_record_bytes = 0
     with open_snapshot(database) as snapshot:
-        for row in snapshot.connection.execute(_MEMOS):
+        owner_moves = (
+            snapshot.connection.execute(
+                "SELECT 1 FROM sqlite_schema WHERE type='table' AND name='government_owner_moves'"
+            ).fetchone()
+            is not None
+        )
+        for row in snapshot.connection.execute(
+            memo_retention_cte(owner_moves=owner_moves) + _MEMOS, {"cutoff": None}
+        ):
             blockers = []
             used = row["last_used_at"]
             if used is None:

@@ -1,8 +1,20 @@
+import sqlite3
+from contextlib import closing
+from pathlib import Path
 from typing import Literal
 
 import pytest
+from tools.memo_retention_census import census
 
-from lexinform.models import ComputationResult, NameRecord, ResultApplication, RunMode
+from lexinform.models import (
+    ComputationResult,
+    NameRecord,
+    Publication,
+    PublicationKind,
+    PublicationStatus,
+    ResultApplication,
+    RunMode,
+)
 from lexinform.services.result_applications import record_retained_name_application
 from lexinform.services.tracking.rollover import TermRollover
 from lexinform.services.tracking_result import TrackingResult
@@ -221,3 +233,54 @@ def test_actual_primary_writer_transfers_selected_wykaz_name_without_rewriting_p
     editorial = [row for row in world.repo.list_result_applications(11, WYKAZ) if row.target]
     assert len(editorial) == 1 and editorial[0].result_id == paid.result_id
     assert world.repo.get_computation_result(paid.result_id) == paid
+
+
+def test_memo_cleanup_follows_two_exact_government_moves(tmp_path: Path) -> None:
+    world, paid = named_world()
+    original_memos = world.repo.load_analysis_memo()
+    assert original_memos
+    assert rollover(world).rehomed == 1
+    service = TermRollover(
+        world.repo, world.clock, world.container.poster(dry_run=False), channel_id=CHANNEL
+    )
+    second = TrackingResult()
+    assert service.close_term(11, 12, second, publish=False) and second.rehomed == 1
+    assert world.repo.load_analysis_memo() == original_memos
+    key = next(iter(original_memos))
+    world.repo.save_analysis_memo(
+        key, original_memos[key], term=10, number=RCL, used_at=world.clock.now()
+    )
+    world.repo.save_analysis_memo(
+        "late-old-owner", "{}", term=10, number=RCL, used_at=world.clock.now()
+    )
+    world.repo.save_analysis_memo("legacy-unknown", "{}", used_at=world.clock.now())
+    world.clock.advance(days=365)
+    cutoff = world.clock.now()
+    for term in (10, 12):
+        blocking = world.repo.create_publication(
+            Publication(
+                term=term,
+                number=RCL,
+                channel_id=CHANNEL,
+                kind=PublicationKind.HEARING_DEADLINE,
+                ref="memo-cleanup-blocker",
+                status=PublicationStatus.QUEUED,
+                created_at=cutoff,
+            )
+        )
+        assert world.repo.prune_history(before=cutoff, memo_before=cutoff)["analysis_memos"] == 0
+        world.repo.mark_publication(blocking, PublicationStatus.SKIPPED)
+    frozen = world.repo.dump()
+    snapshot = tmp_path / "memos.db"
+    with closing(sqlite3.connect(snapshot)) as db:
+        db.executescript(frozen)
+    assert census(snapshot, cutoff)["eligible_rows"] == len(original_memos) + 1
+    for _ in range(2):
+        world.repo.restore(frozen)
+        assert world.repo.dump() == frozen
+    assert world.repo.prune_history(before=cutoff, memo_before=cutoff)["analysis_memos"] == (
+        len(original_memos) + 1
+    )
+    assert world.repo.load_analysis_memo() == {"legacy-unknown": "{}"}
+    assert world.repo.get_computation_result(paid.result_id) == paid
+    assert world.repo.prune_history(before=cutoff, memo_before=cutoff)["analysis_memos"] == 0

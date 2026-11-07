@@ -1,0 +1,59 @@
+"""Shared SQLite eligibility for operational memo cleanup and inspection."""
+
+_OWNER_SEED = """
+    SELECT DISTINCT number, term, term FROM analysis_memo
+    WHERE (:cutoff IS NULL OR last_used_at < :cutoff) AND term IS NOT NULL AND number IS NOT NULL
+"""
+
+_OWNER_EDGES = """
+    UNION
+    SELECT o.number, o.origin, g.to_term FROM owners o
+    JOIN government_owner_moves g ON g.number=o.number AND g.from_term=o.term
+    UNION
+    SELECT o.number, o.origin, g.from_term FROM owners o
+    JOIN government_owner_moves g ON g.number=o.number AND g.to_term=o.term
+"""
+
+_MEMO_ROWS = """
+SELECT m.*,
+  b.term IS NOT NULL AS has_bill,
+  b.status IN ('analyzed', 'linked', 'skipped_prefilter',
+               'skipped_text_prefilter', 'skipped_closed') AS settled,
+  b.awaiting_batch_since IS NOT NULL OR b.ready_analysis_json IS NOT NULL
+    OR b.review_work_json IS NOT NULL AS bill_work,
+  EXISTS (SELECT 1 FROM owners o JOIN document_work w ON (w.term,w.number)=(o.term,o.number)
+    WHERE (o.origin,o.number)=(m.term,m.number) AND w.state!='complete') AS document_work,
+  EXISTS (SELECT 1 FROM owners o JOIN publications p ON (p.term,p.number)=(o.term,o.number)
+    WHERE (o.origin,o.number)=(m.term,m.number)
+      AND p.status NOT IN ('sent','skipped')) AS publication,
+  EXISTS (SELECT 1 FROM owners o JOIN llm_batch_intents i
+    ON (json_extract(i.request_json,'$.term'),json_extract(i.request_json,'$.number'))
+       =(o.term,o.number)
+    WHERE (o.origin,o.number)=(m.term,m.number)) AS intent,
+  EXISTS (SELECT 1 FROM owners o JOIN llm_batch_items i ON (i.term,i.number)=(o.term,o.number)
+    WHERE (o.origin,o.number)=(m.term,m.number)
+    AND (i.consumed_at IS NULL OR i.accounted_at IS NULL)) AS batch_item
+FROM analysis_memo m
+LEFT JOIN terminal t ON (t.origin,t.number)=(m.term,m.number)
+LEFT JOIN bills b ON (b.term,b.number)=(t.term,t.number)
+"""
+
+
+def memo_retention_cte(*, owner_moves: bool) -> str:
+    edges = _OWNER_EDGES if owner_moves else ""
+    terminal = (
+        "AND NOT EXISTS (SELECT 1 FROM government_owner_moves g"
+        " WHERE (g.number,g.from_term)=(o.number,o.term))"
+        if owner_moves
+        else ""
+    )
+    return f"""
+    WITH RECURSIVE owners(number, origin, term) AS ({_OWNER_SEED}{edges}),
+    terminal AS (
+      SELECT o.* FROM owners o JOIN bills b ON (b.term,b.number)=(o.term,o.number)
+      WHERE NOT EXISTS (SELECT 1 FROM owners other JOIN bills live
+          ON (live.term,live.number)=(other.term,other.number)
+          WHERE (other.origin,other.number)=(o.origin,o.number) AND other.term!=o.term)
+      {terminal}
+    ), memo_retention AS ({_MEMO_ROWS})
+    """

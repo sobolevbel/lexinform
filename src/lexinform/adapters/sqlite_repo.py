@@ -99,6 +99,7 @@ from lexinform.adapters.legacy_history import (
 from lexinform.adapters.legacy_history import (
     validate_legacy_projections as _validate_legacy_projections,
 )
+from lexinform.adapters.memo_retention import memo_retention_cte
 from lexinform.adapters.physical_history import (
     PHYSICAL_INVENTORY_MIGRATION,
     PhysicalInventoryReader,
@@ -279,6 +280,7 @@ from lexinform.models.content import (
 )
 from lexinform.models.legacy_results import canonical_legacy_json, legacy_json
 from lexinform.models.physical_inventory import PhysicalCapture, PhysicalMetadata
+from lexinform.models.rcl import rcl_number
 from lexinform.models.senate_inspection import SenateInspectionLink, SenateInspectionRecord
 from lexinform.models.sitting_content import (
     MAX_SITTING_HISTORY_BYTES,
@@ -290,6 +292,7 @@ from lexinform.models.sitting_content import (
 )
 from lexinform.models.source_catalog_attempts import SourceCatalogAttempt, SourceCatalogSnapshot
 from lexinform.models.source_omissions import SourceMetadataOmission
+from lexinform.models.wykaz import wykaz_number
 from lexinform.name_binding import bind_mnemonic
 from lexinform.ports import GroupedEditClaim, VerifiedEditOutcome, VerifiedEditRejection
 from lexinform.primary_projections import ProjectionOwner
@@ -5438,6 +5441,27 @@ class SqliteBillRepository:
                         " AND json_type(analysis_json, '$.modern_primary_ref') IS NOT NULL",
                         (row["analysis_json"], from_term, row["number"]),
                     )
+            if 0 < from_term < to_term:
+                for row in rows:
+                    number = row["number"]
+                    if number.startswith(RCL_PREFIX) and row["rcl_json"]:
+                        project = RclProject.model_validate_json(row["rcl_json"])
+                        canonical = rcl_number(project.id) if project.id > 0 else None
+                    elif number.startswith(WYKAZ_PREFIX) and row["wykaz_json"]:
+                        entry = WykazEntry.model_validate_json(row["wykaz_json"])
+                        canonical = wykaz_number(entry.number)
+                    else:
+                        canonical = None
+                    if canonical == number:
+                        moved = self._conn.execute(
+                            "INSERT INTO government_owner_moves(number,from_term,to_term)"
+                            " VALUES (?,?,?) ON CONFLICT(number,from_term) DO UPDATE"
+                            " SET to_term=excluded.to_term"
+                            " WHERE government_owner_moves.to_term=excluded.to_term",
+                            (number, from_term, to_term),
+                        )
+                        if moved.rowcount != 1:
+                            raise ValueError("Conflicting government owner move")
             for table in ("publications", "status_changes", "source_checks"):
                 self._conn.execute(
                     f"UPDATE {table} SET term = ? WHERE term = ? AND number IN ({placeholders})",
@@ -6822,28 +6846,18 @@ class SqliteBillRepository:
                 ).rowcount
                 if work is not None:
                     validate_revision_application_work(self._conn, work)
-            memos = self._conn.execute(
-                """
-                DELETE FROM analysis_memo AS m WHERE last_used_at < ?
-                  AND NOT EXISTS (SELECT 1 FROM document_work w
-                    WHERE w.term=m.term AND w.number=m.number AND w.state != 'complete')
-                  AND EXISTS (SELECT 1 FROM bills b WHERE b.term = m.term AND b.number = m.number
-                    AND b.status IN ('analyzed', 'linked', 'skipped_prefilter',
-                                     'skipped_text_prefilter', 'skipped_closed')
-                    AND b.awaiting_batch_since IS NULL AND b.ready_analysis_json IS NULL
-                    AND b.review_work_json IS NULL)
-                  AND NOT EXISTS (SELECT 1 FROM publications p
-                    WHERE p.term = m.term AND p.number = m.number
-                      AND p.status NOT IN ('sent', 'skipped'))
-                  AND NOT EXISTS (SELECT 1 FROM llm_batch_intents i
-                    WHERE json_extract(i.request_json, '$.term') = m.term
-                      AND json_extract(i.request_json, '$.number') = m.number)
-                  AND NOT EXISTS (SELECT 1 FROM llm_batch_items i
-                    WHERE i.term = m.term AND i.number = m.number
-                      AND (i.consumed_at IS NULL OR i.accounted_at IS NULL))
+            self._conn.execute(
+                memo_retention_cte(owner_moves=True)
+                + """
+                DELETE FROM analysis_memo WHERE key IN (
+                    SELECT key FROM memo_retention WHERE last_used_at < :cutoff
+                    AND has_bill AND settled AND NOT bill_work AND NOT document_work
+                    AND NOT publication AND NOT intent AND NOT batch_item
+                )
                 """,
-                (_iso(memo_before),),
-            ).rowcount
+                {"cutoff": _iso(memo_before)},
+            )
+            memos = self._conn.execute("SELECT changes()").fetchone()[0]
             items = self._conn.execute(
                 """
                 UPDATE llm_batch_items
