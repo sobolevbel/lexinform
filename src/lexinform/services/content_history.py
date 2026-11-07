@@ -682,7 +682,7 @@ def _prepare_direct_stage_content(
         or change.id is None
         or change.id != publication.status_change_id
         or (change.term, change.number) != (publication.term, publication.number)
-        or (not has_application and len(change.new_stages) != 1)
+        or (not has_application and not change.new_stages)
         or origin is None
         or origin.kind is not PublicationKind.STATUS_UPDATE
         or origin.delivery is None
