@@ -1,0 +1,62 @@
+{
+  "assembly_sha256": "ee3f079a806b99db97f783a54dc9ef66ad423aff89cae27d751ebc59c96ffc74",
+  "case": "RCL 12388203/4",
+  "context_text_sha256": "ef9b9f3e41e71ca66d8383dcc31ba70e11a06ce289bcd137bc55ad78b1dc92f8",
+  "observation_id": "source-observation-v1:78127bbca7394d90e251fbb0fcd1f2127557badcaa25bd9aea8a48ddc35723c9",
+  "parts": [
+    {
+      "chars": 45294,
+      "physical_index": 1,
+      "role": "bill",
+      "text_sha256": "9d3a838142cf78586dc023936dc29da385cf95cbf5789936dd191fbb4017d210"
+    },
+    {
+      "chars": 64260,
+      "physical_index": 2,
+      "role": "justification",
+      "text_sha256": "6e9fba1f55c2acbd0bbd5b5fc19f91848435079f9369baeb38039d409421013e"
+    },
+    {
+      "chars": 83973,
+      "physical_index": 0,
+      "role": "osr",
+      "text_sha256": "bf88799579a460059dfa5f477770e6fb359267133642a936717433565c2634dd"
+    }
+  ],
+  "pinned_trace_id": "candidate-trace-v1:7d0d6936289750423bfcc8b2efd6df38c39234b0c107e753731b103327d46ffb",
+  "pins": {
+    "678498.docx": "8b67bae28cf004b9c8786f12413e451c9422d94f1af82ea810fd84a5094f3946",
+    "720220.zip": "a0568587567b4923f58d406114d1b9ae567c2234291c892cf9dcc9e79dbf7301"
+  },
+  "providers": {
+    "anthropic": {
+      "controls": {
+        "losing_root": "input_receipt_parent_missing",
+        "missing_comparison_reference": "input_receipt_archive_scope_mismatch",
+        "removed_trace_binding_restore": "invalid_input_intent_snapshot",
+        "unbound_trace": "input_receipt_parent_missing"
+      },
+      "exact_queued_restores": 2,
+      "exact_submitted_restores": 2,
+      "gzip_delta": 584,
+      "request_sha256": "0a9f9c04839549bf7429cb9207d3be5a66a5e70db0c3a3045dded382d840403c",
+      "sql_delta": 2058
+    },
+    "openai": {
+      "controls": {
+        "losing_root": "input_receipt_parent_missing",
+        "missing_comparison_reference": "input_receipt_archive_scope_mismatch",
+        "removed_trace_binding_restore": "invalid_input_intent_snapshot",
+        "unbound_trace": "input_receipt_parent_missing"
+      },
+      "exact_queued_restores": 2,
+      "exact_submitted_restores": 2,
+      "gzip_delta": 582,
+      "request_sha256": "4674513ece978e5706e639855212586fce847223bccd79469f02cfec581e4311",
+      "sql_delta": 2058
+    }
+  },
+  "segment_count": 6,
+  "selection_id": "selection-v1:b9346ef5bc0cb08789ca541fd2329f6cd56b9df6bda2f1f27debcd237c05366e",
+  "winner_extraction_id": "extraction-v1:e8161c87e6131f4be15425e6c743735deaf7c384f66f5c6cfd68035552acf3fe"
+}

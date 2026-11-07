@@ -186,6 +186,23 @@ def test_wrong_archive_parents_leave_queue_unchanged(
     assert repo.dump() == before
 
 
+def test_archive_version_receipt_requires_a_trace_link_on_its_observation(
+    repo: SqliteBillRepository,
+) -> None:
+    intent, receipt = offered(repo)
+    qualified = receipt.model_copy(
+        update={"selected_version_trace_id": "candidate-trace-v1:" + "0" * 64}
+    )
+    offered_intent = intent.model_copy(
+        update={"meta": intent.meta.model_copy(update={"prepared_input_receipt": qualified})}
+    )
+    before = repo.dump()
+    with pytest.raises(PreparedInputParentError, match="input_receipt_parent_missing"):
+        repo.save_batch_intent(offered_intent)
+    assert repo.dump() == before
+    assert "selected_version_trace_id" not in receipt.model_dump()
+
+
 @pytest.mark.parametrize("fault", ["unknown", "gap", "checksum"])
 def test_archive_receipt_rejects_unproved_coverage(repo: SqliteBillRepository, fault: str) -> None:
     _, receipt = offered(repo)

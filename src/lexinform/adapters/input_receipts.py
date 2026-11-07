@@ -55,6 +55,7 @@ from lexinform.models.input_receipts import (
     SejmSelfAmendmentInputReceipt,
 )
 from lexinform.models.scan_input import MAX_SCAN_BYTES, MAX_SCAN_PAGES
+from lexinform.models.sejm import TextDocument
 from lexinform.models.supplement_inputs import (
     MAX_SUPPLEMENT_SCAN_WITNESS_BYTES,
     SupplementScanInputWitness,
@@ -634,9 +635,11 @@ def _archive_parents(
     document = observation.document
     parts = selection.selection.parts
     if isinstance(receipt, RclArchiveInputReceipt):
-        if not ordinary_rcl_archive_document(document):
+        if receipt.selected_version_trace_id is None and not ordinary_rcl_archive_document(
+            document
+        ):
             raise ValueError("input_receipt_archive_scope_mismatch")
-        _archive_parts_parent(
+        root = _archive_parts_parent(
             connection,
             selection.selection_id,
             receipt.extraction_id,
@@ -644,6 +647,8 @@ def _archive_parents(
             parts,
             receipt.source_parts,
         )
+        if receipt.selected_version_trace_id is not None:
+            _selected_archive_version(connection, receipt, document, selection, root)
         return
     amendment = rcl_archive_self_amendment_url(document)
     if amendment is None or parts[-1].url != amendment:
@@ -672,6 +677,67 @@ def _archive_parents(
         connection,
         "SELECT 1 FROM artifact_reads WHERE requested_url=? AND artifact_sha256=?",
         (amendment, parts[-1].sha256),
+    )
+
+
+def _selected_archive_version(
+    connection: sqlite3.Connection,
+    receipt: RclArchiveInputReceipt,
+    document: TextDocument,
+    selection: DocumentSelectionRecord,
+    root: str,
+) -> None:
+    trace = read_candidate_disposition_trace(
+        _one(
+            connection,
+            "SELECT t.* FROM source_candidate_traces l"
+            " JOIN candidate_disposition_traces t USING(trace_id)"
+            " WHERE l.observation_id=? AND l.trace_id=?",
+            (receipt.source_observation_id, receipt.selected_version_trace_id),
+        )
+    )
+    decision = trace.version_decision
+    archive = trace.archive_members
+    if (
+        trace.requested_document != document
+        or not ordinary_rcl_archive_document(document.model_copy(update={"alternatives": ()}))
+        or not document.compare_versions
+        or len(document.alternatives) != 1
+        or document.alternatives[0].url == document.url
+        or trace.coverage != "complete"
+        or trace.result != "selected"
+        or trace.selection_state != selection.selection.state
+        or decision is None
+        or decision.compared_indices != (0, 1)
+        or decision.retained_indices != (0,)
+        or archive is None
+        or len(trace.dispositions) != 2
+    ):
+        raise ValueError("input_receipt_archive_version_mismatch")
+    winner, peer = trace.dispositions
+    if (
+        (winner.phase, winner.index, winner.outcome, winner.reason, winner.observed_sha256)
+        != ("version_comparison", 0, "selected", "version_choice", root)
+        or (peer.phase, peer.index, peer.outcome, peer.reason)
+        != ("version_comparison", 1, "policy_excluded", "version_preference")
+        or peer.observed_sha256 is None
+        or peer.observed_sha256 == root
+    ):
+        raise ValueError("input_receipt_archive_version_mismatch")
+    main = selection.selection.parts[0]
+    slot = receipt.source_parts[0].physical_index
+    if not any(
+        (row.phase, row.index, row.stage, row.outcome, row.reason)
+        == ("version_comparison", 0, "policy", "selected", "selected_main")
+        and (row.root_sha256, row.physical_part_index, row.leaf_sha256, row.text_sha256)
+        == (root, slot, main.sha256, main.text_sha256)
+        for row in archive.rows
+    ):
+        raise ValueError("input_receipt_archive_version_mismatch")
+    _one(
+        connection,
+        "SELECT 1 FROM artifact_reads WHERE requested_url=? AND artifact_sha256=?",
+        (document.alternatives[0].url, peer.observed_sha256),
     )
 
 

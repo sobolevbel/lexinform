@@ -309,6 +309,12 @@ class RclArchiveInputReceipt(MultipartTextInputReceipt):
     source_observation_id: str = Field(pattern=r"^source-observation-v1:[0-9a-f]{64}$")
     extraction_id: str = Field(pattern=r"^extraction-v1:[0-9a-f]{64}$")
 
+    selected_version_trace_id: str | None = Field(
+        default=None,
+        pattern=r"^candidate-trace-v1:[0-9a-f]{64}$",
+        exclude_if=lambda value: value is None,
+    )
+
     @model_validator(mode="after")
     def archive_parts(self) -> Self:
         _require_archive_parts(self.source_parts)
