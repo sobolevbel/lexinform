@@ -2498,6 +2498,10 @@ class SqliteBillRepository:
             version.digest_profile is not None
             or version.sitting_profile is not None
             or version.original_delivery_evidence is not None
+            or (
+                version.direct_stage_evidence is not None
+                and version.direct_stage_evidence.multipart is not None
+            )
             or version.multipart_card_revision is not None
         ):
             raise ValueError("history requires atomic complete physical binding")
@@ -2924,6 +2928,14 @@ class SqliteBillRepository:
         version = self.get_content_version(row["content_id"])
         if version is None:
             raise ValueError("a publication content binding has lost its version")
+        if (
+            version.direct_stage_evidence is not None
+            and version.direct_stage_evidence.multipart is not None
+        ):
+            stage = verify_direct_stage_content(self._conn, version, require_bound=True)
+            if stage is None or publication_id not in stage.bindings:
+                raise ValueError("direct_stage_binding_scope")
+            return version
         if (
             version.direct_stage_evidence is not None
             or (version.grouped_stage_evidence is not None and version.reason == "original")

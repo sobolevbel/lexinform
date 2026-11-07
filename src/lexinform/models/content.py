@@ -103,6 +103,9 @@ class DirectStageContentEvidence(BaseModel):
     profile: Literal["direct-stage-content-v1"] = "direct-stage-content-v1"
     anchor_publication_id: int = Field(gt=0, lt=2**63, strict=True)
     original_bill_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    multipart: Literal["direct-stage-parts-v1"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 MAX_GROUPED_STAGE_CONTENT_BYTES = 16_384
@@ -349,8 +352,12 @@ class ContentVersion(BaseModel):
             or self.status_change_id is None
             or self.language not in ("ru", "en")
             or not self.formatter_version
-            or not self.rendered_text
-            or len(self.rendered_text.encode()) > MAX_DIRECT_STAGE_CONTENT_BYTES
+            or (
+                self.rendered_text is not None
+                if self.direct_stage_evidence.multipart is not None
+                else not self.rendered_text
+            )
+            or len((self.rendered_text or "").encode()) > MAX_DIRECT_STAGE_CONTENT_BYTES
             or self.source_scope is not None
             or self.source_observation_ids
             or self.computation_ids

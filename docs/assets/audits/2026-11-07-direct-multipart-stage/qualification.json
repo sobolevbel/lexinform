@@ -1,0 +1,27 @@
+{
+  "base_tree": "f0e11c5566a68f607ca22c198c5104d427b69b73",
+  "reader_tree": "5e485b1af27df83689664783f81f3ea2bc9f9361",
+  "base_reconstruction": "a2d72ec8 plus out/corpus j472-original-delivery-writer, j473-card-original-reader, j474-card-original-writer, j475-card-revision-reader, j476-card-revision-writer plan.patch in order",
+  "writer_scratch": "/tmp/lexinform-direct-multipart",
+  "reader_scratch": "/tmp/lexinform-direct-multipart-reader",
+  "proof": "Normal Poster.flush_updates for one prequeued ordinary Sejm stage with deliberately long fake renderer. Before fake send root and all continuation bindings are present. Original version remains exact after amendments appended to current event, cleanup and two reader-only restores. Child response loss retains pending history without current confirmation. Wrong anchor, absent binding, foreign channel and invalid receipt reject atomically. Missing anchor and forced budget omission still send.",
+  "limits": "32 parts and 128 KiB total snapshots. Excludes group, digest, edit, revision, held, with-act, non-Sejm, supplement or amendment at original freeze and more than one stage. Controlled fixture, no natural production multipart claim.",
+  "size": {
+    "cleanup_baseline_sql": 60959,
+    "cleanup_candidate_sql": 81414,
+    "sql_delta": 20455,
+    "cleanup_baseline_gzip": 12219,
+    "cleanup_candidate_gzip": 13963,
+    "gzip_delta": 1744
+  },
+  "checks": "26 focused cases, final 4 scenario cases repeated after pre-send assertion, strict mypy 7 files, Ruff and git diff --check",
+  "shared_files": "Grouped profile can overlap models/content.py, adapters/content_history.py, services/content_history.py, services/content_inspection.py. Direct pair also changes sqlite_repo.py and ports.py.",
+  "hashes": {
+    "reader-tree": "586f616cc2d4cc4c37d16037cb3c7e3178d335a37aaab7b32e2c44854fafb206",
+    "reader.patch": "269939e9777334161760f695068611cd19963cf1ece664be94c0a16603f362dd",
+    "sent.sql": "2b0f6f6be990dfdad41898fb663dd9cf91a4d758201478cb477b9a61e47f532d",
+    "baseline.sql": "d220dc83a2176a3ff2a2d4ac5d548acc38d3f9ac9bc69eb112140d07e3b8abf6",
+    "writer.patch": "8d9a0fecfeb60dbafac202c3fa67d95a6b5c254bb20950126214c366cd401672",
+    "unknown.sql": "de44c98f1303f0e788a53d00c4d1af8d9578197ba25ffb4371a74f7ef89b6cab"
+  }
+}

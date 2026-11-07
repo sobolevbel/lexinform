@@ -536,10 +536,12 @@ def _verify_card_content(
     return matches[0], primary
 
 
-def verify_direct_stage_content(connection: sqlite3.Connection, version: ContentVersion) -> None:
+def verify_direct_stage_content(
+    connection: sqlite3.Connection, version: ContentVersion, *, require_bound: bool = False
+) -> OriginalDeliveryPlan | None:
     evidence = version.direct_stage_evidence
     if evidence is None:
-        return
+        return None
     root_row = _query(
         connection, "SELECT * FROM publications WHERE id=?", (version.root_publication_id,)
     ).fetchone()
@@ -573,10 +575,14 @@ def verify_direct_stage_content(connection: sqlite3.Connection, version: Content
         raise ValueError("direct_stage_publication_scope")
     bindings = _query(
         connection,
-        "SELECT publication_id FROM publication_content WHERE content_id=? LIMIT 2",
+        "SELECT publication_id FROM publication_content WHERE content_id=?",
         (version.content_id,),
     ).fetchall()
-    if bindings and [binding[0] for binding in bindings] != [root.id]:
+    if (
+        evidence.multipart is None
+        and bindings
+        and [binding[0] for binding in bindings] != [root.id]
+    ):
         raise ValueError("direct_stage_binding_scope")
     reader = ContentSourceRows(connection)
     snapshots: dict[str, ContentSnapshot] = {}
@@ -585,10 +591,12 @@ def verify_direct_stage_content(connection: sqlite3.Connection, version: Content
         if snapshot is None or snapshot.kind != kind:
             raise ValueError("direct_stage_snapshot_missing")
         snapshots[identity] = snapshot
-    if (
-        sum(len(s.payload_json.encode()) for s in snapshots.values())
-        + len((version.rendered_text or "").encode())
-        > MAX_DIRECT_STAGE_CONTENT_BYTES
+    if sum(len(s.payload_json.encode()) for s in snapshots.values()) + len(
+        (version.rendered_text or "").encode()
+    ) > (
+        MAX_ORIGINAL_DELIVERY_BYTES
+        if evidence.multipart is not None
+        else MAX_DIRECT_STAGE_CONTENT_BYTES
     ):
         raise ValueError("direct_stage_content_bound")
     bill = snapshots[version.bill_context_id]
@@ -610,6 +618,28 @@ def verify_direct_stage_content(connection: sqlite3.Connection, version: Content
         or amendments_stage(change.new_stages) is not None
     ):
         raise ValueError("direct_stage_event_scope")
+    if evidence.multipart is not None:
+        physical = OriginalDeliveryPlan.model_validate_json(
+            snapshots[version.plan_snapshot_id].payload_json
+        )
+        if (
+            not owner.has_process
+            or len(physical.parts) < 2
+            or physical.bindings[0] != root.id
+            or (require_bound or bindings)
+            and {binding[0] for binding in bindings} != set(physical.bindings)
+            or physical.root.reply_to != anchor.message_id
+            or not direct_stage_plan_matches(
+                physical.root.model_copy(update={"continuation_ids": ()})
+            )
+            or physical.root.held_change_ids
+            or physical.root.with_act
+            or physical.root.render_origin is not None
+            or any(part.held_change_ids for part in physical.parts)
+        ):
+            raise ValueError("direct_stage_multipart_scope")
+        _verify_direct_stage_parts(connection, version, physical, root, owner, bill, change)
+        return physical
     plan = DeliveryPlan.model_validate_json(snapshots[version.plan_snapshot_id].payload_json)
     if plan.reply_to != anchor.message_id or not direct_stage_plan_matches(plan):
         raise ValueError("direct_stage_plan_scope")
@@ -624,6 +654,63 @@ def verify_direct_stage_content(connection: sqlite3.Connection, version: Content
         or not bindings
     ):
         raise ValueError("direct_stage_expired_delivery_scope")
+    return None
+
+
+def _verify_direct_stage_parts(
+    connection: sqlite3.Connection,
+    version: ContentVersion,
+    physical: OriginalDeliveryPlan,
+    root: Publication,
+    owner: Bill,
+    bill: ContentSnapshot,
+    change: StatusChange,
+) -> None:
+    evidence = version.direct_stage_evidence
+    assert evidence is not None, "direct stage parts have direct evidence"
+    parent = root
+    message_ids: set[int] = (
+        {physical.root.reply_to} if physical.root.reply_to is not None else set()
+    )
+    for index, part in enumerate(physical.parts, 1):
+        row = _query(connection, "SELECT * FROM publications WHERE id=?", (part.id,)).fetchone()
+        if row is None:
+            raise ValueError("direct_stage_part_missing")
+        publication = read_content_publication(row)
+        retained = publication.delivery
+        sent = (
+            publication.status is PublicationStatus.SENT
+            and publication.message_id is not None
+            and publication.message_id > 0
+            and publication.sent_at is not None
+        )
+        if (
+            (publication.term, publication.number, publication.channel_id)
+            != (root.term, root.number, root.channel_id)
+            or (publication.status is PublicationStatus.SENT and not sent)
+            or (retained is None and not sent)
+        ):
+            raise ValueError("direct_stage_part_scope")
+        if sent and publication.message_id is not None:
+            if publication.message_id in message_ids:
+                raise ValueError("direct_stage_duplicate_message")
+            message_ids.add(publication.message_id)
+        if index == 1:
+            if retained is not None and (
+                hashlib.sha256(retained.bill_json.encode()).hexdigest()
+                != evidence.original_bill_sha256
+                or card_bill_snapshot(retained.bill_json) != bill
+                or StatusChange.model_validate_json(retained.change_json) != change
+                or retained.rendered_text != part.html
+                or original_delivery_context(retained).model_copy(update={"change_json": ""})
+                != physical.root
+            ):
+                raise ValueError("direct_stage_frozen_delivery_mismatch")
+        else:
+            if publication.status_change_id is not None:
+                raise ValueError("direct_stage_part_scope")
+            _verify_original_delivery_child(version, part, index, publication, parent, owner)
+        parent = publication
 
 
 def verify_grouped_stage_content(
@@ -1608,7 +1695,7 @@ def validate_content_history(connection: sqlite3.Connection) -> None:
                 if previous is None or previous.root_publication_id != value.root_publication_id:
                     raise ValueError("content_predecessor_unavailable")
             verify_content_applications(connection, value)
-            verify_direct_stage_content(connection, value)
+            verify_direct_stage_content(connection, value, require_bound=True)
             verify_grouped_stage_content(connection, value, require_bound=True)
             verify_digest_content(connection, value, require_bound=True)
             verify_sitting_content(connection, value, require_bound=True)

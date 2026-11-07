@@ -1,0 +1,13 @@
+{
+  "base_tree": "ed403faa97a6f3fcdc09cc65cfc798c858dadcf5",
+  "reader_tree": "c71b6206c66561ce0e30949de260cd70302f42a0",
+  "writer_tree": "294886c475b306ceb62880ae30291330226a9873",
+  "scratch": "/tmp/lexinform-direct-after-group",
+  "composition": "J477 whitespace-only hunk deleting already absent blank line in content_versions.py omitted locally. All grouped runtime hunks preserved. Direct writer import conflict in services/content_history.py resolved with both imports and Ruff sorting.",
+  "checks": "Independent temporary index forward-applied reader/writer to exact trees. 28 focused tests including grouped expansion and direct histories, strict mypy 8 files and Ruff passed. Original paired retention proof remains separate in qualification.json.",
+  "hashes": {
+    "reader-after-group.patch": "97a9b2ac85becfbbb14aae26feee27be9b592845e79a886a65b91bb564582e9e",
+    "writer-after-group.patch": "112feffe14c52fd9415a1af98ab7b9590513a51efd8588cff14c855bf65fc45c",
+    "grouped-reader-base-whitespace-normalized.patch": "2c29a99505470cd87bd629b1c52a70605f4a4a46f7ef457a435dfee6499b7970"
+  }
+}
