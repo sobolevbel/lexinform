@@ -9,7 +9,12 @@ import pytest
 from lexinform.adapters.candidate_trace_history import CandidateTraceRowError
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import CandidateDispositionTrace, TextDocument
-from lexinform.models.candidate_trace import ArchiveVersionDecisionEvidence
+from lexinform.models.candidate_trace import (
+    ArchiveMemberDispositions,
+    ArchiveVersionDecisionEvidence,
+    PackedArchiveMemberDispositions,
+    archive_member_rows_sha256,
+)
 from lexinform.physical_observations import PhysicalObservationCollector
 from lexinform.services.document_history import DocumentSourceRead, record_source_read
 from lexinform.services.documents import TextLoader
@@ -130,8 +135,14 @@ def test_archive_comparison_rejects_a_validly_shaped_foreign_parent(
         trace, evidence, observation_id = captured(repo)
         members = trace.archive_members
         assert members is not None, "the original archive includes the fixture policy prefix"
-        main_only = members.model_copy(
-            update={"rows": members.rows[:1], "omitted_rows": (members.observed_rows or 0) - 1}
+        main_only = ArchiveMemberDispositions(
+            walk=members.walk,
+            retention="prefix",
+            observed_rows=members.observed_rows,
+            omitted_rows=(members.observed_rows or 0) - 1,
+            rows_sha256=members.rows_sha256,
+            unvisited=members.unvisited,
+            rows=members.rows[:1],
         )
         trace = trace.model_copy(update={"archive_members": main_only})
         if field == "capture_id":
@@ -173,7 +184,10 @@ def test_archive_comparison_rejects_inconsistent_rank_or_dates(
             attach(trace, evidence.model_copy(update=changes))
 
 
-def test_archive_comparison_cannot_reclassify_a_retained_member(tmp_path: Path) -> None:
+@pytest.mark.parametrize("representation", ["prefix", "packed"])
+def test_archive_comparison_cannot_reclassify_a_retained_member(
+    tmp_path: Path, representation: str
+) -> None:
     with closing(SqliteBillRepository(tmp_path / "archive.db")) as repo:
         repo.migrate()
         trace, evidence, _ = captured(repo)
@@ -183,9 +197,34 @@ def test_archive_comparison_cannot_reclassify_a_retained_member(tmp_path: Path) 
             row.model_copy(update={"reason": "rank_preference"}) if row == evidence.peer else row
             for row in members.rows
         )
-        changed = trace.model_copy(
-            update={"archive_members": members.model_copy(update={"rows": rows})}
+        changed_members: ArchiveMemberDispositions | PackedArchiveMemberDispositions
+        if representation == "packed":
+            assert isinstance(members, PackedArchiveMemberDispositions), (
+                "the native fixture retains all packed rows"
+            )
+            payload = members.model_dump(mode="json")
+            position = members.rows.index(evidence.peer)
+            # Packed v2 fixes rank_preference at reason code 3 in tuple position 7.
+            payload["packed_rows"][position][7] = 3
+            payload["rows_sha256"] = archive_member_rows_sha256(rows)
+            changed_members = PackedArchiveMemberDispositions.model_validate(payload)
+        else:
+            retained = tuple(row for row in rows if row.stage == "policy")
+            changed_members = ArchiveMemberDispositions(
+                walk=members.walk,
+                retention="prefix",
+                observed_rows=members.observed_rows,
+                omitted_rows=(members.observed_rows or 0) - len(retained),
+                rows_sha256=members.rows_sha256,
+                unvisited=members.unvisited,
+                rows=retained,
+            )
+        assert evidence.peer not in changed_members.rows
+        assert any(
+            row.reason == "rank_preference" and row.ordinals == evidence.peer.ordinals
+            for row in changed_members.rows
         )
+        changed = trace.model_copy(update={"archive_members": changed_members})
 
         with pytest.raises(ValueError, match="retained member policy"):
             attach(changed, evidence)

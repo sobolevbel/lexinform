@@ -5,7 +5,11 @@ from contextlib import suppress
 from dataclasses import dataclass
 from typing import Literal
 
-from lexinform.archive_dispositions import MAX_ARCHIVE_VALIDATION_BYTES, enrich_archive_trace
+from lexinform.archive_dispositions import (
+    MAX_ARCHIVE_VALIDATION_BYTES,
+    enrich_archive_trace,
+    pack_archive_trace,
+)
 from lexinform.archive_policy_capture import ArchivePolicyDecision
 from lexinform.models import ArchiveMemberDisposition, ArtifactIdentity, CandidateDispositionTrace
 from lexinform.models.candidate_trace import (
@@ -381,3 +385,6 @@ class ArchiveDispositionAccumulator:
             walk=self._walk,
             unvisited=self._unvisited,
         )
+
+    def pack(self, trace: CandidateDispositionTrace) -> CandidateDispositionTrace:
+        return pack_archive_trace(trace, self._rows)

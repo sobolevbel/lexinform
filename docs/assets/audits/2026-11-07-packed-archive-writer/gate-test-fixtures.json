@@ -1,0 +1,22 @@
+{
+  "diff_check": "passed",
+  "failed_gate_sha256": "faf7ff997402bb0ecc1824ace38046bfbeac9fa2d8eda2db2899a3521074ff79",
+  "findings": [
+    "18 observed rows now correctly fit complete packed v2 instead of a two-row v1 prefix.",
+    "Four foreign-parent tests incorrectly model_copy rows/omitted_rows onto packed v2; replaced with typed honest v1 prefix.",
+    "Reclassification test updated ignored rows property instead of actual packed_rows. Proper v2 wire mutation and full digest now rejected by unchanged validator."
+  ],
+  "fix_patch_sha256": "51424d5293dbbdab49bae750538197b96131406d3c9088f2e905000a492de37d",
+  "focused_tests": 150,
+  "full_gate_restarted": false,
+  "live_gate_before_edits": false,
+  "mypy": "2 files passed",
+  "preserved_controls": [
+    "68 observed rows exceed 32-row packed limit; retain two real policy rows and 66 explicit omissions with main ordinal 33.",
+    "Full decoded retained peer change rejected in both v1 prefix and v2 complete representations."
+  ],
+  "ruff": "passed",
+  "scope": "J451 test-fixture correction only; no production code change",
+  "scratch": "/private/tmp/lexinform-packed-archive-writer-integration.6XB17U",
+  "stage_patch_modified": false
+}

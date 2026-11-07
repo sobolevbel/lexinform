@@ -1,0 +1,155 @@
+{
+  "broad": {
+    "natural": {
+      "changed_sections": [
+        {
+          "case": "natural_668487/0",
+          "checked": 3,
+          "new_rows": 3,
+          "old_rows": 2,
+          "unknown": 0
+        },
+        {
+          "case": "natural_668487/1",
+          "checked": 3,
+          "new_rows": 3,
+          "old_rows": 2,
+          "unknown": 0
+        },
+        {
+          "case": "natural_698086/0",
+          "checked": 3,
+          "new_rows": 3,
+          "old_rows": 2,
+          "unknown": 0
+        },
+        {
+          "case": "natural_698086/1",
+          "checked": 3,
+          "new_rows": 3,
+          "old_rows": 2,
+          "unknown": 0
+        },
+        {
+          "case": "natural_709230/0",
+          "checked": 9,
+          "new_rows": 9,
+          "old_rows": 2,
+          "unknown": 0
+        },
+        {
+          "case": "natural_709230/1",
+          "checked": 9,
+          "new_rows": 9,
+          "old_rows": 2,
+          "unknown": 0
+        },
+        {
+          "case": "natural_752451/0",
+          "checked": 3,
+          "new_rows": 3,
+          "old_rows": 2,
+          "unknown": 0
+        },
+        {
+          "case": "natural_752451/1",
+          "checked": 3,
+          "new_rows": 3,
+          "old_rows": 2,
+          "unknown": 0
+        },
+        {
+          "case": "natural_768375/0",
+          "checked": 3,
+          "new_rows": 3,
+          "old_rows": 2,
+          "unknown": 0
+        },
+        {
+          "case": "natural_768375/1",
+          "checked": 3,
+          "new_rows": 3,
+          "old_rows": 2,
+          "unknown": 0
+        },
+        {
+          "case": "natural_795272/0",
+          "checked": 3,
+          "new_rows": 3,
+          "old_rows": 2,
+          "unknown": 0
+        },
+        {
+          "case": "natural_795272/1",
+          "checked": 3,
+          "new_rows": 3,
+          "old_rows": 2,
+          "unknown": 0
+        }
+      ],
+      "core_and_origins_exact": true,
+      "paired_observations": 34
+    },
+    "synthetic": {
+      "changed_sections": [
+        {
+          "case": "synthetic_duplicate_names/0",
+          "checked": 4,
+          "new_rows": 4,
+          "old_rows": 2,
+          "unknown": 0
+        },
+        {
+          "case": "synthetic_duplicate_names/1",
+          "checked": 4,
+          "new_rows": 4,
+          "old_rows": 2,
+          "unknown": 0
+        },
+        {
+          "case": "synthetic_nested_unknown/0",
+          "checked": 6,
+          "new_rows": 6,
+          "old_rows": 2,
+          "unknown": 0
+        },
+        {
+          "case": "synthetic_nested_unknown/1",
+          "checked": 6,
+          "new_rows": 6,
+          "old_rows": 2,
+          "unknown": 0
+        }
+      ],
+      "core_and_origins_exact": true,
+      "paired_observations": 8
+    }
+  },
+  "broad_archive_report_gzip_delta": 197,
+  "broad_archive_report_json_delta": -5118,
+  "broad_dump": {
+    "exact_restores_per_side": 2,
+    "gzip_delta": 179,
+    "other_sql_exact": true,
+    "reader_only_rollback_exact_restores": 2,
+    "sql_delta": -2407
+  },
+  "cohort_sha256": "f788bb15d668827d5fc6130df92084fca3099da90ef093bb98cd5a2b360d4859",
+  "j357": {
+    "after_trace_id": "candidate-trace-v1:4139f15e9de4709ca18b0ef5f98330788363477239762d914e140200d61d0586",
+    "assembly_sha256": "ee3f079a806b99db97f783a54dc9ef66ad423aff89cae27d751ebc59c96ffc74",
+    "before_trace_id": "candidate-trace-v1:7d0d6936289750423bfcc8b2efd6df38c39234b0c107e753731b103327d46ffb",
+    "case": "12388203/4",
+    "exact_restores_per_side": 2,
+    "gzip_delta": 72,
+    "new_rows": 11,
+    "old_rows": 2,
+    "other_sql_exact": true,
+    "reader_only_rollback_exact_restores": 2,
+    "row_sha256": "78fd90a07a697e766b9cc91a062a26eee18335fa5d717a2cb1fcd9365dfb927b",
+    "section_bytes": 1131,
+    "selection_id": "selection-v1:b9346ef5bc0cb08789ca541fd2329f6cd56b9df6bda2f1f27debcd237c05366e",
+    "sql_delta": 165
+  },
+  "read_inputs_sha256": "393d98ba8c549c16d751cd17a9a46e40e59d8463581a22118f3c21bc4409ef82"
+}

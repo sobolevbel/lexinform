@@ -3,9 +3,13 @@ from typing import cast
 
 import pytest
 
-from lexinform.archive_dispositions import enrich_archive_trace
-from lexinform.models import ArchiveMemberDisposition
-from lexinform.models.candidate_trace import archive_member_rows_sha256
+from lexinform.archive_dispositions import enrich_archive_trace, pack_archive_trace
+from lexinform.models import ArchiveMemberDisposition, CandidateDispositionTrace
+from lexinform.models.candidate_trace import (
+    ArchiveMemberDispositions,
+    PackedArchiveMemberDispositions,
+    archive_member_rows_sha256,
+)
 from tests.unit.test_archive_member_dispositions import legacy, row
 
 
@@ -234,3 +238,45 @@ def test_validation_bookkeeping_overflow_is_unknown_without_a_partial_hash_or_ta
     ), "the bounded archive helper guarantees this section for the controlled fixture"
     assert not members.rows and members.walk == members.unvisited == "unknown"
     assert 8 < len(seen) < len(actual)
+
+
+def test_pack_recovers_all_rows_only_after_legacy_truncation() -> None:
+    actual = rows(11, large=True)
+    legacy_prefix = enrich_archive_trace(legacy(), actual, walk="finished", unvisited="known")
+    packed = pack_archive_trace(legacy_prefix, actual)
+    assert isinstance(packed.archive_members, PackedArchiveMemberDispositions)
+    assert packed.archive_members.rows == actual
+    assert packed.archive_members.unvisited == "known"
+    assert packed.model_dump(exclude={"archive_members"}) == legacy_prefix.model_dump(
+        exclude={"archive_members"}
+    )
+    complete = enrich_archive_trace(legacy(), actual[:1], walk="finished", unvisited="known")
+    assert pack_archive_trace(complete, actual[:1]) is complete
+
+
+@pytest.mark.parametrize("fault", ["count", "section", "parent"])
+def test_pack_failure_preserves_legacy_prefix(fault: str) -> None:
+    actual = (
+        rows(33)
+        if fault == "count"
+        else tuple(
+            row(ordinal=index).model_copy(update={"leaf_sha256": f"{index + 1:064x}"})
+            for index in range(18)
+        )
+    )
+    if fault == "parent":
+        actual = rows(11)
+    original = enrich_archive_trace(legacy(), actual, walk="finished", unvisited="none_known")
+    if fault == "parent":
+        actual = (*actual[:-1], actual[-1].model_copy(update={"index": 1}))
+        members = original.archive_members
+        assert isinstance(members, ArchiveMemberDispositions) and members.retention == "prefix"
+        original = CandidateDispositionTrace.model_validate(
+            {
+                **original.model_dump(),
+                "archive_members": members.model_copy(
+                    update={"rows_sha256": archive_member_rows_sha256(actual)}
+                ),
+            }
+        )
+    assert pack_archive_trace(original, actual) is original

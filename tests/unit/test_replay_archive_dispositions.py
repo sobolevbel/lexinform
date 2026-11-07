@@ -19,6 +19,7 @@ from lexinform.models import CandidateDisposition, CandidateDispositionTrace, Te
 from lexinform.models.candidate_trace import (
     ArchiveMemberDisposition,
     ArchiveMemberDispositions,
+    PackedArchiveMemberDispositions,
     archive_member_rows_sha256,
 )
 from lexinform.models.physical_inventory import PhysicalContainerExecution, PhysicalRootOrder
@@ -53,9 +54,15 @@ def test_public_native_path_records_source_capture_and_ordered_cache_reuse_witho
     assert all(row["status"] == "recorded" for row in report["archive_members"].values())
     assert all(row["checked"] > 0 for row in report["archive_members"].values())
     assert any(
-        row["stage"] == "policy"
+        row.stage == "policy"
         for item in report["archive_members"].values()
-        for row in item["section"]["rows"]
+        for row in (
+            PackedArchiveMemberDispositions
+            if item["section"].get("schema_version") == 2
+            else ArchiveMemberDispositions
+        )
+        .model_validate(item["section"])
+        .rows
     )
     assert "Cudzoziemiec" not in json.dumps(report) and url not in json.dumps(report)
 

@@ -415,9 +415,8 @@ def test_capture_time_failure_marker_stays_walk_only_when_outer_parent_is_omitte
     assert not members.rows and result.requested_document is None
 
 
-def test_large_archive_prefix_retains_selected_main_and_real_exclusion_with_original_identity() -> (
-    None
-):
+@pytest.mark.parametrize("excluded_count", [8, 33])
+def test_archive_complete_or_prefix_retains_original_policy_identity(excluded_count: int) -> None:
     main_text = (
         "USTAWA\nz dnia 1 stycznia 2026 r.\no cudzoziemcach\nArt. 1. Cudzoziemiec otrzymuje 200 zł.\n"
         + "Cudzoziemiec składa wniosek. " * 20
@@ -435,7 +434,7 @@ def test_large_archive_prefix_retains_selected_main_and_real_exclusion_with_orig
         (
             *(
                 (f"excluded_{index}.docx", document("TABELA ZGODNOŚCI\n" + "Treść tabeli. " * 20))
-                for index in range(8)
+                for index in range(excluded_count)
             ),
             ("zz_project.docx", document(main_text)),
         )
@@ -447,15 +446,27 @@ def test_large_archive_prefix_retains_selected_main_and_real_exclusion_with_orig
         "the public native loader records this archive's actual policy decisions"
     )
     members = trace.archive_members
-    assert members.retention == "prefix" and members.observed_rows == 18
-    assert [item.stage for item in members.rows] == ["policy", "policy"]
-    assert members.rows[0].reason == "selected_main" and members.rows[0].ordinals == (8,)
+    observed = 2 * (excluded_count + 1)
+    assert members.observed_rows == observed
+    if excluded_count == 8:
+        assert members.retention == "complete" and members.omitted_rows == 0
+        assert len(members.model_dump_json().encode()) <= 1152
+        assert len(members.rows) == observed
+        assert [item.stage for item in members.rows[:9]] == ["policy"] * 9
+        assert [item.stage for item in members.rows[9:]] == ["walk"] * 9
+    else:
+        assert members.retention == "prefix" and members.omitted_rows == observed - 2
+        assert len(members.model_dump_json().encode()) <= 1024
+        assert [item.stage for item in members.rows] == ["policy", "policy"]
+    assert members.rows[0].reason == "selected_main" and members.rows[0].ordinals == (
+        excluded_count,
+    )
     assert members.rows[1].reason == "non_bill_body"
     assert members.rows[1].physical_part_index is not None
-    assert len(members.model_dump_json().encode()) <= 1024
     _, packets = physical(reader)
     verified = verify_members(trace, packets, {hashlib.sha256(data).hexdigest(): data})
-    assert verified["checked"] == 2 and verified["unknown"] == 0
+    assert verified["checked"] == len(members.rows) and verified["unknown"] == 0
+    assert trace.dispositions[0].observed_sha256 == hashlib.sha256(data).hexdigest()
     assert gateway.calls == ["download:" + URL]
 
 

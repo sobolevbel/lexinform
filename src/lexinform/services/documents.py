@@ -1144,6 +1144,12 @@ class TextLoader:
                     if archive_version_evidence is not None:
                         _trace_with_archive_evidence(enriched, archive_version_evidence)
                     trace = enriched
+        if trace is not None and attempts is not None:
+            with suppress(Exception):
+                packed = attempts.pack(trace)
+                if packed is not trace and archive_version_evidence is not None:
+                    _trace_with_archive_evidence(packed, archive_version_evidence)
+                trace = packed
         return selected, replace(
             loaded,
             archive_version_evidence=archive_version_evidence,

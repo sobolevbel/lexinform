@@ -1,6 +1,6 @@
 """Build bounded archive metadata without changing ordinary candidate selection traces."""
 
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
@@ -10,9 +10,15 @@ from lexinform.models import (
     CandidateDispositionTrace,
 )
 from lexinform.models.candidate_trace import (
+    _PACKED_OUTCOMES,
+    _PACKED_PHASES,
+    _PACKED_REASONS,
+    _PACKED_STAGES,
     MAX_ARCHIVE_MEMBER_ROWS,
     MAX_CANDIDATE_TRACE_BYTES,
+    MAX_PACKED_ARCHIVE_MEMBER_ROWS,
     ArchiveMemberRowChecker,
+    PackedArchiveMemberDispositions,
     archive_member_rows_sha256,
     validate_archive_member_parent,
 )
@@ -125,3 +131,54 @@ def enrich_archive_trace(
     except Exception:
         return original
     return original
+
+
+def pack_archive_trace(
+    trace: CandidateDispositionTrace, rows: Sequence[ArchiveMemberDisposition]
+) -> CandidateDispositionTrace:
+    legacy = trace.archive_members
+    if (
+        trace.coverage != "complete"
+        or not isinstance(legacy, ArchiveMemberDispositions)
+        or legacy.retention not in ("prefix", "omitted")
+        or legacy.rows_sha256 is None
+        or len(rows) != legacy.observed_rows
+        or len(rows) > MAX_PACKED_ARCHIVE_MEMBER_ROWS
+    ):
+        return trace
+    hashes: dict[str, int] = {}
+
+    def position(sha256: str | None) -> int | None:
+        return hashes.setdefault(sha256, len(hashes)) if sha256 is not None else None
+
+    try:
+        packed = PackedArchiveMemberDispositions(
+            schema_version=2,
+            walk=legacy.walk,
+            retention="complete",
+            observed_rows=len(rows),
+            rows_sha256=legacy.rows_sha256,
+            omitted_rows=0,
+            unvisited=legacy.unvisited,
+            packed_rows=tuple(
+                (
+                    _PACKED_STAGES.index(row.stage),
+                    _PACKED_PHASES.index(row.phase),
+                    row.index,
+                    position(row.root_sha256),
+                    row.ordinals,
+                    row.physical_part_index,
+                    _PACKED_OUTCOMES.index(row.outcome),
+                    _PACKED_REASONS.index(row.reason),
+                    position(row.leaf_sha256),
+                    position(row.text_sha256),
+                )
+                for row in rows
+            ),
+            hashes=tuple(hashes),
+        )
+        return CandidateDispositionTrace.model_validate(
+            {**trace.model_dump(), "archive_members": packed}
+        )
+    except ValueError:
+        return trace
