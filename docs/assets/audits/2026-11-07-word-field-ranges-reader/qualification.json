@@ -1,0 +1,36 @@
+{
+  "witnesses_sha256": "2f60f154780641c8daed338ac45b0510476736df520873048472e8b11b424e59",
+  "reference_sha256": "47af1a1bdc22a7a147e0b6655ed82564328f1adaf63709bf6bbd18ff5284f483",
+  "input_checkpoint_sha256": "29dfe8566f02ceb810a1a43e8ea9a7b0fd0d9f6fc54ffa7212c4dda23945cd6d",
+  "unique_inputs": 15,
+  "observed_ranges": 64,
+  "retained_ranges": 64,
+  "inputs_with_retention": 12,
+  "aggregate_record_growth": 12427,
+  "max_record_growth": 3655,
+  "checkpoint_samples": [
+    "3d3defbde8771cd42113d94223d16a86d8b2ffc689d9012abbf497754ea1bb1c",
+    "1261fb9112731c1eaeb28750c1a54b4317ee845cbd3eff69f8da210c7da7c450",
+    "23c2c274ca1bd6e7ca25c357fe623431b07c7831c605c5f2496f6fa6673c6d6d"
+  ],
+  "checkpoints": {
+    "before": {
+      "sql_bytes": 25798022,
+      "gzip_bytes": 5221123,
+      "sha256": "5361961eabae5444c56071c26382d8d13fe5d2d18e0f782b9df904c639bb79a9",
+      "exact_restores": 2
+    },
+    "after": {
+      "sql_bytes": 25804958,
+      "gzip_bytes": 5221320,
+      "sha256": "c7533187864ef140dc2484269c1154e35d532caa7c222d2e39f7145cb6a00bd0",
+      "exact_restores": 2
+    }
+  },
+  "baseline": "75128202842bae92682b8e827767f6e834040918",
+  "prior_reader": {
+    "legacy_restore_exact": true,
+    "new_checkpoint_rejected_atomically": true
+  },
+  "runner_sha256": "4369dbf817897cf083d086ad39675ca97965555afc71d8a7e343d22018955d54"
+}

@@ -23,6 +23,7 @@ from lexinform.models.odt_notes import (
     Path,
 )
 from lexinform.models.odt_notes import _width as odt_note_metadata_width
+from lexinform.models.word_field_ranges import MAX_WORD_FIELD_BYTES, WordFieldPrefix
 
 MAX_EXTRACTION_METADATA_BYTES = 16_384
 MAX_EXTRACTION_PART_SUMMARIES = 16
@@ -265,6 +266,10 @@ class ExtractedPartSummary(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    word_field_prefix: WordFieldPrefix | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     odt_note_status: OdtNoteStatus | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -307,6 +312,19 @@ class ExtractedPartSummary(BaseModel):
             or self.block_count is None
         ):
             raise ValueError("Word view status requires an actual Word legacy manifest summary")
+        if self.word_field_prefix is not None:
+            if not isinstance(self.word_field_prefix, WordFieldPrefix):
+                raise ValueError("Constructed Word field summary requires its typed prefix")
+            fields = WordFieldPrefix.model_validate(self.word_field_prefix)
+            if (
+                (self.format, self.coordinates, self.text_view)
+                != ("word", "word-blocks-v1", "legacy-word-body-v1")
+                or (fields.input_sha256, fields.manifest_sha256)
+                != (self.sha256, self.manifest_sha256)
+                or self.block_count is None
+                or len(fields.paragraphs) > self.block_count
+            ):
+                raise ValueError("Word field prefix requires its actual input and Word manifest")
         if self.odt_note_status is not None:
             if not isinstance(self.odt_note_status, OdtNoteStatus):
                 raise ValueError("Constructed ODT summary requires its typed note status")
@@ -424,6 +442,13 @@ class ExtractionResult(BaseModel):
         if len(self.selected_parts) > MAX_EXTRACTION_PART_SUMMARIES:
             raise ValueError("extraction summaries exceed their existing part limit")
         _odt_prefix_budget(self.selected_parts)
+        word_field_bytes = 0
+        for part in self.selected_parts:
+            if part.word_field_prefix is not None:
+                ExtractedPartSummary.model_validate(part)
+                word_field_bytes += len(part.word_field_prefix.model_dump_json().encode())
+        if word_field_bytes > MAX_WORD_FIELD_BYTES:
+            raise ValueError("Stored Word field prefixes exceed the aggregate byte limit")
         for part in self.selected_parts:
             if part.doc_notes is not None:
                 if not isinstance(part.doc_notes, DocNoteSummary):

@@ -14017,3 +14017,21 @@ in the checked scopes. A counterfactual in-memory comparison measured
 to those rows. The production cleanup policy remains unchanged.
 
 [Qualification](../assets/audits/2026-11-07-memo-retention-census/qualification.json).
+
+<a id="j406"></a>
+
+## J406 — read bounded Word paragraph field witnesses
+
+The extraction reader accepts an optional field prefix bound to the exact
+Word input and manifest. Each range belongs to one witnessed paragraph and
+has ordered paragraph-local coordinates, a relative XML path and a text
+hash. Legacy records retain their serialized bytes. The native writer
+continues to emit the previous format.
+
+After deduplicating the 20 pinned Word paths, all 64 ranges from 15 distinct
+inputs fit the existing extraction and bounded prefix limits. Three selected
+records increased the scratch SQL dump by 6,936 bytes and gzip by 197 bytes.
+Both forms survived two exact restores. The previous reader restored the
+legacy checkpoint and rejected the enriched checkpoint atomically.
+
+[Qualification](../assets/audits/2026-11-07-word-field-ranges-reader/qualification.json).
