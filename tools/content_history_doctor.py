@@ -29,9 +29,9 @@ from lexinform.models import (
     ContentVersion,
     ContentVersionSummary,
     DeliveryPlan,
-    DeliveryResolution,
     PublicationStatus,
 )
+from lexinform.models.commands import read_delivery_resolution
 from tools.corpus_artifacts import write_json
 from tools.sqlite_snapshot import open_snapshot
 
@@ -227,9 +227,7 @@ def _publication_bindings(
                     (identity,),
                 ):
                     try:
-                        decision = DeliveryResolution.model_validate_json(
-                            resolution["resolution_json"]
-                        )
+                        decision = read_delivery_resolution(resolution["resolution_json"])
                     except (
                         ValueError,
                         TypeError,

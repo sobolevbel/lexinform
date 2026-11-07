@@ -1,0 +1,6 @@
+{
+  "sql_sha256": "25eba6a0cc42380f910d7d2839dd6d66d307b8d009c8958dd71c4289d75ca46c",
+  "audit_sha256": "3df5694dcd426ef49a423ec098d7bca40b5bbef332f5688e42d023df34d7981d",
+  "restore_exact": true,
+  "legacy_confirmation": true
+}

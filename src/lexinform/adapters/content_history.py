@@ -41,6 +41,7 @@ from lexinform.models import (
     PublicationStatus,
     StatusChange,
 )
+from lexinform.models.commands import GroupedEditDeliveryResolution, read_delivery_resolution
 from lexinform.models.content import (
     MAX_DIRECT_STAGE_CONTENT_BYTES,
     MAX_GROUPED_STAGE_CONTENT_BYTES,
@@ -922,7 +923,59 @@ def _grouped_revision_slot(
         or slot.sent_at is not None
     ):
         raise ValueError("grouped_revision_receipt")
+    _verify_grouped_resolution_audit(connection, slot, version, root, bound=bool(bindings))
     return slot
+
+
+def _verify_grouped_resolution_audit(
+    connection: sqlite3.Connection,
+    slot: Publication,
+    version: ContentVersion,
+    root: Publication,
+    *,
+    bound: bool,
+) -> None:
+    rows = _query(
+        connection,
+        "SELECT command_update_id, resolution_json FROM delivery_resolutions"
+        " WHERE publication_id=? LIMIT 2",
+        (slot.id,),
+    ).fetchall()
+    if not rows and slot.status is not PublicationStatus.DISMISSED:
+        return
+    if len(rows) != 1 or not bound:
+        raise ValueError("grouped_resolution_binding")
+    row = rows[0]
+    audit = read_delivery_resolution(row["resolution_json"])
+    if not isinstance(audit, GroupedEditDeliveryResolution):
+        raise ValueError("grouped_resolution_profile")
+    if (
+        (audit.publication_id, audit.term, audit.number, audit.kind, audit.channel_id)
+        != (slot.id, slot.term, slot.number, slot.kind, slot.channel_id)
+        or audit.content_id != version.content_id
+        or audit.base_content_id != version.previous_version_id
+        or version.rendered_text is None
+        or audit.rendered_sha256 != hashlib.sha256(version.rendered_text.encode()).hexdigest()
+        or (audit.telegram_chat_id, audit.target_message_id)
+        != (root.telegram_chat_id, root.message_id)
+        or audit.status is not slot.status
+        or (audit.action == "confirm" and slot.sent_at != audit.resolved_at)
+        or (audit.observed_at or audit.resolved_at) < slot.created_at
+    ):
+        raise ValueError("grouped_resolution_attestation")
+    command = audit.command
+    durable = _query(
+        connection,
+        "SELECT chat_id, message_id, text, received_at FROM commands WHERE update_id=?",
+        (row["command_update_id"],),
+    ).fetchone()
+    if (
+        row["command_update_id"] != command.update_id
+        or durable is None
+        or tuple(durable)
+        != (command.chat_id, command.message_id, command.text, command.received_at.isoformat())
+    ):
+        raise ValueError("grouped_resolution_command")
 
 
 def validate_content_history(connection: sqlite3.Connection) -> None:
@@ -967,6 +1020,19 @@ def validate_content_history(connection: sqlite3.Connection) -> None:
                     binding[0] != physical_identity for binding in bindings
                 ):
                     raise ValueError("card_content_binding_mismatch")
+        orphan = _query(
+            connection,
+            "SELECT 1 FROM delivery_resolutions AS d"
+            " LEFT JOIN publication_content AS pc ON pc.publication_id=d.publication_id"
+            " LEFT JOIN content_versions AS v ON v.content_id=pc.content_id"
+            " WHERE CASE WHEN json_valid(d.resolution_json) THEN"
+            " json_type(d.resolution_json, '$.profile') IS NOT NULL OR"
+            " json_type(d.resolution_json, '$.resolution') IS NOT NULL ELSE 0 END"
+            " AND COALESCE(json_extract(v.version_json, '$.reason'), '')!='grouped_stage_revision'"
+            " LIMIT 1",
+        ).fetchone()
+        if orphan is not None:
+            raise ValueError("grouped_resolution_orphan")
         for table in ("content_snapshots", "content_versions", "publication_content"):
             if _query(connection, f"PRAGMA foreign_key_check({table})").fetchone() is not None:
                 raise ValueError("content_history_foreign_key")

@@ -258,6 +258,7 @@ from lexinform.models import (
 )
 from lexinform.models.amendment_inputs import AmendmentInputSnapshot
 from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
+from lexinform.models.commands import GroupedEditDeliveryResolution, read_delivery_resolution
 from lexinform.models.content import (
     CardPrimaryEvidence,
     SupplementContentEvidence,
@@ -5428,6 +5429,8 @@ class SqliteBillRepository:
         return self._row_to_publication(row) if row else None
 
     def resolve_delivery(self, resolution: DeliveryResolution) -> bool:
+        if isinstance(resolution, GroupedEditDeliveryResolution):
+            return False
         status = resolution.status.value
         with self.atomic():
             if self._conn.execute(
@@ -5755,7 +5758,17 @@ class SqliteBillRepository:
             " ORDER BY id",
             (publication_id, publication_id),
         ).fetchall()
-        return [DeliveryResolution.model_validate_json(row[0]) for row in rows]
+        decisions = [read_delivery_resolution(row[0]) for row in rows]
+        for decision in decisions:
+            if isinstance(decision, GroupedEditDeliveryResolution):
+                version = self.get_publication_content(publication_id)
+                if (
+                    version is None
+                    or version.reason != "grouped_stage_revision"
+                    or decision.publication_id != publication_id
+                ):
+                    raise ValueError("grouped_resolution_orphan")
+        return decisions
 
     def pin_grouped_telegram_receipt(
         self,

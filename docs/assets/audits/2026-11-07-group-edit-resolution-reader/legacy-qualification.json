@@ -1,0 +1,21 @@
+{
+  "delivery_audit_rows": 0,
+  "history": {
+    "missing_tables": [],
+    "schema_version": 69,
+    "scope": "Editorial versions and attempts; no body/URL export, revalidation or execution.",
+    "status": "recorded",
+    "summary": {
+      "binding_rows": 4,
+      "errors": 0,
+      "snapshot_rows": 12,
+      "version_rows": 4,
+      "warnings": 0
+    },
+    "version": 1
+  },
+  "input_sha256": "8603f3b5e785f696cf49a026af692f84d9d1f1283de5ce93ddcd24fcd28a3f72",
+  "restore_exact": true,
+  "restored_sha256": "a0310fcadc58b8df6f5425db4a673677be8b22525fa5ed09a6729730189216a4",
+  "state_commit": "607e9f30b4c01c0a06987e40d573f6c26d2e5fae"
+}

@@ -7,14 +7,16 @@ legislacja.rcl.gov.pl. Nothing here does I/O.
 """
 
 import datetime as dt
+import json
 import re
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Literal
+from typing import Literal, Self
 from urllib.parse import parse_qs, urlparse
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
+from lexinform.json_storage import read_json
 from lexinform.models.analysis import AnalysisRecord, TokenUsage
 from lexinform.models.batch import BatchKind, LlmBatch
 from lexinform.models.bill import Bill, Publication
@@ -91,6 +93,56 @@ class DeliveryResolution(BaseModel):
             "retry": PublicationStatus.QUEUED,
             "dismiss": PublicationStatus.DISMISSED,
         }[self.action]
+
+
+class GroupedEditDeliveryResolution(DeliveryResolution):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    action: Literal["confirm", "dismiss"]
+    resolved_at: AwareDatetime
+    content_id: str = Field(min_length=1, strict=True)
+    base_content_id: str = Field(min_length=1, strict=True)
+    rendered_sha256: str = Field(pattern=r"^[0-9a-f]{64}$", strict=True)
+    telegram_chat_id: int = Field(gt=-(2**52), lt=0, strict=True)
+    target_message_id: int = Field(gt=0, strict=True)
+    observed_at: AwareDatetime | None = None
+
+    @model_validator(mode="after")
+    def verify_attestation(self) -> Self:
+        received = self.command.received_at
+        if (
+            self.publication_ids != (self.publication_id,)
+            or self.kind is not PublicationKind.MESSAGE_PART
+            or not self.reason.strip()
+            or len(self.reason) > 500
+            or received.utcoffset() is None
+            or received > self.resolved_at
+        ):
+            raise ValueError("invalid grouped edit attestation")
+        if self.action == "confirm":
+            if (
+                self.message_id != self.target_message_id
+                or self.observed_at is None
+                or self.observed_at > received
+            ):
+                raise ValueError("invalid grouped edit observation")
+        elif self.message_id is not None or self.observed_at is not None:
+            raise ValueError("invalid grouped edit dismissal")
+        return self
+
+
+class GroupedEditResolutionEnvelope(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    profile: Literal["grouped-edit-resolution-v1"]
+    resolution: GroupedEditDeliveryResolution
+
+
+def read_delivery_resolution(raw: str) -> DeliveryResolution:
+    value = json.loads(raw)
+    if isinstance(value, dict) and ("profile" in value or "resolution" in value):
+        return GroupedEditResolutionEnvelope.model_validate(read_json(raw)).resolution
+    return DeliveryResolution.model_validate_json(raw)
 
 
 def card_edit_owner_id(root: Publication) -> int | None:
