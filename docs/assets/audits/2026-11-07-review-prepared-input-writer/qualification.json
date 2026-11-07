@@ -1,0 +1,86 @@
+{
+  "anthropic": {
+    "case_sha256": "cafe995d0bda7a6117d9e13263576a90564500887a9147f44e9d0742af58b802",
+    "cleaned": {
+      "gzip_delta": 406,
+      "other_sql_exact": true,
+      "sql_delta": 783
+    },
+    "exact_restores": 2,
+    "queued": {
+      "gzip_delta": 0,
+      "other_sql_exact": true,
+      "sql_delta": 0
+    },
+    "request_sha256": "cf71b6b7c58dcf283df4d19eeb55339d7a4126c5b3e8e32f3412084c0051bccc",
+    "submitted": {
+      "gzip_delta": 281,
+      "other_sql_exact": true,
+      "sql_delta": 783
+    },
+    "witness": {
+      "context_sha256": "0c9b170755fb31b4a9620b51dc709f279001fef8db65afc08044ba29cd34e657",
+      "documents": [
+        {
+          "chars": 62,
+          "identity_sha256": "5a53c682d9f75e6b09233808caf394c0986fbaaef997a3f5f160ff82bc60b1c4",
+          "role": "response",
+          "source_text_sha256": "e9c3e5a2e0ab8d2b8f6bb52a0c6982c919ae8db50be018339882248937b49595"
+        },
+        {
+          "chars": 187,
+          "identity_sha256": "6e1ee7b626a172361f6dc7c7d8a624a50acd13b094af23d66640bfa61b1424ee",
+          "role": "comparison_text",
+          "source_text_sha256": "9f7b344893750375254a8e079f5b9300b9795c6e7169be7e1a7849ae83ff4c9f"
+        }
+      ],
+      "manifest_sha256": "fdbdc675994b6ff5e513b9e1e6f769f4fdba69af034c1b842ba99f25283286d4",
+      "number": "3039",
+      "profile": "consultation-review-provider-text-v1",
+      "request_sha256": "cf71b6b7c58dcf283df4d19eeb55339d7a4126c5b3e8e32f3412084c0051bccc",
+      "term": 10
+    }
+  },
+  "openai": {
+    "case_sha256": "bda57370469b91ecd08ea4398b5afe7c98cedd74953d1f68c6697a6dbc1f9dc2",
+    "cleaned": {
+      "gzip_delta": 407,
+      "other_sql_exact": true,
+      "sql_delta": 783
+    },
+    "exact_restores": 2,
+    "queued": {
+      "gzip_delta": 0,
+      "other_sql_exact": true,
+      "sql_delta": 0
+    },
+    "request_sha256": "4e5ce3ee2ee4f7092a51e886f1323d3cddb313d6526f45c70072d74807236c74",
+    "submitted": {
+      "gzip_delta": 280,
+      "other_sql_exact": true,
+      "sql_delta": 783
+    },
+    "witness": {
+      "context_sha256": "0c9b170755fb31b4a9620b51dc709f279001fef8db65afc08044ba29cd34e657",
+      "documents": [
+        {
+          "chars": 62,
+          "identity_sha256": "5a53c682d9f75e6b09233808caf394c0986fbaaef997a3f5f160ff82bc60b1c4",
+          "role": "response",
+          "source_text_sha256": "e9c3e5a2e0ab8d2b8f6bb52a0c6982c919ae8db50be018339882248937b49595"
+        },
+        {
+          "chars": 187,
+          "identity_sha256": "6e1ee7b626a172361f6dc7c7d8a624a50acd13b094af23d66640bfa61b1424ee",
+          "role": "comparison_text",
+          "source_text_sha256": "9f7b344893750375254a8e079f5b9300b9795c6e7169be7e1a7849ae83ff4c9f"
+        }
+      ],
+      "manifest_sha256": "78491160c0a0739f7f46e804e6ea9cf6a1188980ba9d08811fcef5d6e9d170c0",
+      "number": "3039",
+      "profile": "consultation-review-provider-text-v1",
+      "request_sha256": "4e5ce3ee2ee4f7092a51e886f1323d3cddb313d6526f45c70072d74807236c74",
+      "term": 10
+    }
+  }
+}

@@ -101,6 +101,7 @@ from lexinform.adapters.primary_projections import (
     validate_primary_projections,
 )
 from lexinform.adapters.review_memos import validate_review_memo_row, validate_review_memos
+from lexinform.adapters.review_prepared_input import capture_submitted_review_input
 from lexinform.adapters.secondary_dependencies import (
     validate_secondary_dependencies,
     validate_secondary_dependency,
@@ -3956,9 +3957,18 @@ class SqliteBillRepository:
         if meta.frozen_request_manifest is not None:
             if meta.frozen_request_manifest != manifest:
                 raise ValueError("Frozen request manifest differs from its submitting intent")
-            return meta.model_dump_json()
+            if item.call_kind != "consultation_review":
+                return meta.model_dump_json()
         if manifest is None:
             return meta.model_dump_json()
+        if isinstance(meta, DigestItemMeta) and item.call_kind == "consultation_review":
+            review_witness = None
+            with suppress(ValueError, TypeError, RecursionError, KeyError):
+                review_witness = capture_submitted_review_input(
+                    request, manifest, intent_metadata(request, row["meta_json"]), meta
+                )
+            if review_witness is not None or meta.review_input_witness is not None:
+                meta = meta.model_copy(update={"review_input_witness": review_witness})
         if isinstance(meta, DigestItemMeta) and meta.scan_input is not None:
             with suppress(ValueError, TypeError, RecursionError):
                 witness = capture_submitted_amendment_scan_input(

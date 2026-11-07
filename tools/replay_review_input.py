@@ -4,90 +4,33 @@ import argparse
 from pathlib import Path
 from typing import Literal
 
-from pydantic import JsonValue
-
 from lexinform.adapters.input_receipts import capture_frozen_request_manifest, parse_batch_request
-from lexinform.json_storage import canonical_json, read_json
-from lexinform.models.batch import BatchRequest, DocumentReviewQuestion
-from lexinform.models.review_prepared_input import ReviewPreparedDocument, review_context_sha256
+from lexinform.adapters.review_prepared_input import verify_review_provider_fields
+from lexinform.models.batch import BatchRequest
 from tools.corpus_artifacts import digest, read_artifact, write_json
 
 Provider = Literal["openai", "anthropic"]
 
 
-def _user_prompt(payload: JsonValue, provider: Provider) -> tuple[str, str]:
-    if not isinstance(payload, dict):
-        raise ValueError("Frozen review payload must be an object")
-    container = "body" if provider == "openai" else "params"
-    body = payload.get(container)
-    if not isinstance(body, dict):
-        raise ValueError("Frozen review provider body is missing")
-    if provider == "openai":
-        if set(payload) != {"custom_id", "method", "url", "body"}:
-            raise ValueError("Unexpected OpenAI review envelope")
-        messages = body.get("input")
-        if not isinstance(messages, list) or len(messages) != 2:
-            raise ValueError("OpenAI review requires one system and one user message")
-        system, user = messages
-        if not isinstance(system, dict) or system.get("role") != "system":
-            raise ValueError("OpenAI review system message is missing")
-        pointer, block_type = "/body/input/1/content/0/text", "input_text"
-    else:
-        if set(payload) != {"custom_id", "params"}:
-            raise ValueError("Unexpected Anthropic review envelope")
-        messages = body.get("messages")
-        if not isinstance(messages, list) or len(messages) != 1:
-            raise ValueError("Anthropic review requires one user message")
-        (user,) = messages
-        pointer, block_type = "/params/messages/0/content/0/text", "text"
-    if not isinstance(user, dict) or user.get("role") != "user" or set(user) != {"role", "content"}:
-        raise ValueError("Frozen review user message is invalid")
-    blocks = user["content"]
-    if not isinstance(blocks, list) or len(blocks) != 1:
-        raise ValueError("Frozen review requires exactly one user text block")
-    (block,) = blocks
-    if (
-        not isinstance(block, dict)
-        or set(block) != {"type", "text"}
-        or block["type"] != block_type
-        or not isinstance(text := block["text"], str)
-    ):
-        raise ValueError("Frozen review user text block is invalid")
-    return pointer, text
-
-
 def verify_review_input(request: BatchRequest, provider: Provider) -> dict[str, object]:
-    question = request.question
-    if not isinstance(question, DocumentReviewQuestion):
-        raise ValueError("A frozen document review question is required")
-    context = question.ctx
-    if (request.number, question.kind) != (context.number, context.purpose):
-        raise ValueError("Frozen review question differs from its owner or purpose")
-    payload = request.payload_json
     manifest = capture_frozen_request_manifest(request, provider)
-    if payload is None or manifest is None:
+    if manifest is None:
         raise ValueError("Exact frozen provider request is unavailable")
-    pointer, prompt = _user_prompt(read_json(payload), provider)
-    canonical_context = canonical_json(context.model_dump(mode="json"))
-    if canonical_json(read_json(prompt)) != canonical_context:
-        raise ValueError("Frozen provider review context differs from its question")
-    documents = []
-    for index, document in enumerate(context.documents):
-        verified = ReviewPreparedDocument.from_document(document)
-        documents.append(
-            {
-                "pointer": f"/documents/{index}/text",
-                **verified.model_dump(exclude={"chars"}),
-                "span": [0, verified.chars],
-            }
-        )
+    fields = verify_review_provider_fields(request, manifest)
     return {
         "version": "review-provider-text-v1",
         "coordinates": "decoded-review-json-field-python-string",
         "request_manifest": manifest.model_dump(mode="json"),
-        "context_sha256": review_context_sha256(context),
-        "provider_prompt_pointer": pointer,
-        "documents": documents,
+        "context_sha256": fields.context_sha256,
+        "provider_prompt_pointer": fields.pointer,
+        "documents": [
+            {
+                "pointer": f"/documents/{index}/text",
+                **document.model_dump(exclude={"chars"}),
+                "span": [0, document.chars],
+            }
+            for index, document in enumerate(fields.documents)
+        ],
     }
 
 

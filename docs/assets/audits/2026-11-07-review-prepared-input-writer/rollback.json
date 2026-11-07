@@ -1,0 +1,30 @@
+{
+  "anthropic": {
+    "cleaned": {
+      "document_fields": 2,
+      "exact_round_trip": true,
+      "request_sha256": "cf71b6b7c58dcf283df4d19eeb55339d7a4126c5b3e8e32f3412084c0051bccc",
+      "sql_sha256": "76d85276afc646b853b9bf7eb916bddc7948b76cbdca306f3ea0c3c6a12b5e25"
+    },
+    "submitted": {
+      "document_fields": 2,
+      "exact_round_trip": true,
+      "request_sha256": "cf71b6b7c58dcf283df4d19eeb55339d7a4126c5b3e8e32f3412084c0051bccc",
+      "sql_sha256": "cc26da6c4b7c9fada6c83a58ad7d1e9bc01521593ae9fbc5d581b03b64f2e478"
+    }
+  },
+  "openai": {
+    "cleaned": {
+      "document_fields": 2,
+      "exact_round_trip": true,
+      "request_sha256": "4e5ce3ee2ee4f7092a51e886f1323d3cddb313d6526f45c70072d74807236c74",
+      "sql_sha256": "06828e169e737717ba5da83222178591cb3b28c2700cbac11f2c05ee5cfaa480"
+    },
+    "submitted": {
+      "document_fields": 2,
+      "exact_round_trip": true,
+      "request_sha256": "4e5ce3ee2ee4f7092a51e886f1323d3cddb313d6526f45c70072d74807236c74",
+      "sql_sha256": "23748dafd3fb88f2f80f56d88673f0693f1e095ff525d5cf4786aab946e59659"
+    }
+  }
+}
