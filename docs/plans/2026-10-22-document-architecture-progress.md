@@ -14171,3 +14171,19 @@ bytes in the scratch fixture. The compatible reader also restored the new
 checkpoint exactly.
 
 [Qualification](../assets/audits/2026-11-07-group-content-writer/qualification.json).
+
+<a id="j415"></a>
+
+## J415 — inspect shared stage history through either verified member
+
+Read-only content inspection resolves the second member to its canonical
+group version only when the stored group evidence explicitly names it.
+Both member views show the same history and preserve the shared delivery
+confirmation policy. The physical binding remains on the root.
+
+The paired J414 checkpoints showed matching root and member views with
+unchanged SQL. Legacy groups without evidence remain unavailable, and
+unknown delivery has no current version. A different publication ID
+cannot claim the group's history.
+
+[Qualification](../assets/audits/2026-11-07-group-content-inspection/qualification.json).

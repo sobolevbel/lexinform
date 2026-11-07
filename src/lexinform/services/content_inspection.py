@@ -38,6 +38,8 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
     assert publication.id is not None, "inspect_content requires a persisted publication identity"
     selected = repo.get_publication_content(publication.id)
     if selected is None:
+        selected = _grouped_member_content(repo, publication)
+    if selected is None:
         return None
     root_id = selected.root_publication_id
     versions = repo.list_content_versions(root_id)
@@ -138,6 +140,32 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
             "integrity": "unavailable" if confirmation.ambiguous else "valid",
         }
     )
+
+
+def _grouped_member_content(
+    repo: BillRepository, publication: Publication
+) -> ContentVersion | None:
+    if publication.kind is not PublicationKind.STATUS_UPDATE or publication.ref is None:
+        return None
+    prefix, _, identity = publication.ref.partition("/")
+    if (
+        prefix != "updates"
+        or not 1 <= len(identity) <= 19
+        or not (identity.isascii() and identity.isdecimal())
+    ):
+        return None
+    root_id = int(identity)
+    if not 0 < root_id < 2**63 or publication.ref != f"updates/{root_id}":
+        return None
+    if root_id == publication.id:
+        return None
+    root = repo.get_publication_content(root_id)
+    if root is None or root.grouped_stage_evidence is None:
+        return None
+    first, second = root.grouped_stage_evidence.members
+    if (first.publication_id, second.publication_id) != (root_id, publication.id):
+        return None
+    return root
 
 
 def _original_input_status(

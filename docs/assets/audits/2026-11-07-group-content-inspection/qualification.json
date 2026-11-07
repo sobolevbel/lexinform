@@ -1,0 +1,15 @@
+{
+  "legacy": {
+    "sql_sha256": "84b13107a88c198855f8276abdb3a8afe80efc442f4f7967ed2099c78de94d57",
+    "matching_views": true,
+    "root_only_binding": true,
+    "dump_unchanged": true
+  },
+  "grouped": {
+    "sql_sha256": "14989975bf32199daddb2eb7cf633958917f72f2c71a679a8a664a2b6323be55",
+    "matching_views": true,
+    "root_only_binding": true,
+    "dump_unchanged": true
+  },
+  "baseline": "f35a2ee4d742b52d028a3b3361efe40f50832a2b"
+}
