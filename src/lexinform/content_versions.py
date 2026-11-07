@@ -53,6 +53,15 @@ def content_delivery_mismatch(
     snapshots: Mapping[str, ContentSnapshot],
     plan: DeliveryPlan,
 ) -> ContentMismatch | None:
+    if version.grouped_stage_evidence is not None:
+        if plan.group_text != version.rendered_text:
+            return "text"
+        saved = snapshots.get(version.plan_snapshot_id)
+        if saved is None or saved.kind != "plan":
+            return "snapshot"
+        if DeliveryPlan.model_validate_json(saved.payload_json) != grouped_stage_context(plan):
+            return "context"
+        return None
     if plan.rendered_text != (version.rendered_text or ""):
         return "text"
     if version.change_snapshot_id is None and plan.change_json:
@@ -89,7 +98,7 @@ def content_delivery_mismatch(
 
 
 def content_snapshot_refs(version: ContentVersion) -> tuple[tuple[str, str], ...]:
-    return tuple(
+    refs = tuple(
         (kind, identity)
         for kind, identity in (
             ("bill", version.bill_snapshot_id),
@@ -97,6 +106,22 @@ def content_snapshot_refs(version: ContentVersion) -> tuple[tuple[str, str], ...
             ("plan", version.plan_snapshot_id),
         )
         if identity is not None
+    )
+
+    if version.grouped_stage_evidence is not None:
+        second = version.grouped_stage_evidence.members[1]
+        return (*refs, ("bill", second.bill_snapshot_id), ("change", second.change_snapshot_id))
+    return refs
+
+
+def grouped_stage_context(plan: DeliveryPlan) -> DeliveryPlan:
+    return plan.model_copy(
+        update={
+            "bill_json": "",
+            "change_json": "",
+            "group_text": "",
+            "update_group": (),
+        }
     )
 
 

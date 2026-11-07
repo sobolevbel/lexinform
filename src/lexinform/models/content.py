@@ -3,7 +3,7 @@
 import hashlib
 import json
 import re
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, PositiveInt, model_validator
 
@@ -76,6 +76,31 @@ class DirectStageContentEvidence(BaseModel):
     original_bill_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
+MAX_GROUPED_STAGE_CONTENT_BYTES = 16_384
+type GroupSqlId = Annotated[int, Field(gt=0, lt=2**63, strict=True)]
+type SnapshotId = Annotated[str, Field(pattern=r"^content-snapshot-v1:[0-9a-f]{64}$")]
+type Sha256 = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
+
+
+class GroupedStageMember(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    publication_id: GroupSqlId
+    anchor_publication_id: GroupSqlId
+    anchor_message_id: GroupSqlId
+    status_change_id: GroupSqlId
+    bill_snapshot_id: SnapshotId
+    change_snapshot_id: SnapshotId
+    original_bill_sha256: Sha256
+
+
+class GroupedStageContentEvidence(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    profile: Literal["grouped-stage-content-v1"] = "grouped-stage-content-v1"
+    members: tuple[GroupedStageMember, GroupedStageMember]
+
+
 class ContentVersion(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -101,6 +126,9 @@ class ContentVersion(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     direct_stage_evidence: DirectStageContentEvidence | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    grouped_stage_evidence: GroupedStageContentEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
@@ -196,6 +224,40 @@ class ContentVersion(BaseModel):
             raise ValueError(
                 "Direct stage evidence requires a bounded original without result claims"
             )
+        group = self.grouped_stage_evidence
+        if group is not None:
+            first, second = group.members
+            if (
+                self.reason != "original"
+                or self.language not in ("ru", "en")
+                or not self.formatter_version
+                or len(self.formatter_version) > 128
+                or not self.rendered_text
+                or len(self.rendered_text.encode()) > MAX_GROUPED_STAGE_CONTENT_BYTES
+                or self.card_context_profile is not None
+                or self.direct_stage_evidence is not None
+                or self.source_scope is not None
+                or self.source_observation_ids
+                or self.computation_ids
+                or self.application_ref_profile is not None
+                or self.application_ids
+                or (
+                    first.publication_id,
+                    first.status_change_id,
+                    first.bill_snapshot_id,
+                    first.change_snapshot_id,
+                )
+                != (
+                    self.root_publication_id,
+                    self.status_change_id,
+                    self.bill_snapshot_id,
+                    self.change_snapshot_id,
+                )
+                or first.publication_id == second.publication_id
+                or first.anchor_publication_id == second.anchor_publication_id
+                or first.status_change_id == second.status_change_id
+            ):
+                raise ValueError("Grouped stage history requires two distinct ordered originals")
         return self
 
     @property
@@ -225,6 +287,9 @@ class ContentVersionSummary(BaseModel):
     direct_stage_evidence: DirectStageContentEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    grouped_stage_evidence: GroupedStageContentEvidence | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -252,7 +317,11 @@ class ContentVersionSummary(BaseModel):
 
     @property
     def full_context_available(self) -> bool | None:
-        return False if self.card_context_profile is not None else None
+        return (
+            False
+            if self.card_context_profile is not None or self.grouped_stage_evidence is not None
+            else None
+        )
 
     @classmethod
     def from_version(cls, version: ContentVersion) -> Self:
@@ -288,6 +357,7 @@ class ContentVersionSummary(BaseModel):
             source_observation_ids=source_ids,
             source_scope=version.source_scope,
             card_context_profile=version.card_context_profile,
+            grouped_stage_evidence=version.grouped_stage_evidence,
             computation_ids=result_ids,
             application_ids=version.application_ids,
             application_ref_profile=version.application_ref_profile,

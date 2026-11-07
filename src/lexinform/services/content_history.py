@@ -39,6 +39,8 @@ FORMATTER_VERSION = "telegram-format-v2"
 def restore_content_delivery(repo: BillRepository, content: ContentVersion) -> DeliveryPlan:
     if content.card_context_profile is not None:
         raise ValueError("Compact card history does not retain the full original context")
+    if content.grouped_stage_evidence is not None:
+        raise ValueError("Compact grouped stage history does not retain correction context")
     if content.direct_stage_evidence is not None:
         raise ValueError("Compact direct stage history does not retain the full original context")
     snapshots: dict[str, ContentSnapshot] = {}

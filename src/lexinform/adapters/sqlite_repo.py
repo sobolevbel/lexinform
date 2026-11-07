@@ -48,6 +48,7 @@ from lexinform.adapters.content_history import (
     validate_content_history,
     verify_card_content,
     verify_direct_stage_content,
+    verify_grouped_stage_content,
 )
 from lexinform.adapters.content_source_refs import (
     ContentSourceRows,
@@ -2210,6 +2211,7 @@ class SqliteBillRepository:
         verify_content_applications(self._conn, version, retained=False)
         verify_card_content(self._conn, version)
         verify_direct_stage_content(self._conn, version)
+        verify_grouped_stage_content(self._conn, version)
         for kind, identity in content_snapshot_refs(version):
             snapshot = self.get_content_snapshot(identity)
             if snapshot is None or snapshot.kind != kind:
@@ -2255,6 +2257,7 @@ class SqliteBillRepository:
         verify_content_applications(self._conn, version)
         verify_card_content(self._conn, version, retained=True)
         verify_direct_stage_content(self._conn, version)
+        verify_grouped_stage_content(self._conn, version)
         return version
 
     def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]:
@@ -2288,13 +2291,23 @@ class SqliteBillRepository:
         plan = publication.delivery
         if (
             plan is None
-            or plan.rendered_text != (version.rendered_text or "")
+            or (
+                plan.group_text
+                if version.grouped_stage_evidence is not None
+                else plan.rendered_text
+            )
+            != (version.rendered_text or "")
             or (
                 publication_id != version.root_publication_id
                 and plan.revision_of != version.root_publication_id
             )
         ):
             raise ValueError("content must match the frozen physical publication")
+        if (
+            version.grouped_stage_evidence is not None
+            and publication_id != version.root_publication_id
+        ):
+            raise ValueError("grouped_stage_binding_scope")
         if version.change_snapshot_id is None:
             if verify_card_content(self._conn, version) != publication_id:
                 raise ValueError("card content must bind its known physical operation")
@@ -2348,9 +2361,8 @@ class SqliteBillRepository:
         if version is None:
             raise ValueError("a publication content binding has lost its version")
         if (
-            version.direct_stage_evidence is not None
-            and version.root_publication_id != publication_id
-        ):
+            version.direct_stage_evidence is not None or version.grouped_stage_evidence is not None
+        ) and version.root_publication_id != publication_id:
             raise ValueError("direct_stage_binding_scope")
         if version.change_snapshot_id is None:
             physical_id = verify_card_content(self._conn, version, retained=True)

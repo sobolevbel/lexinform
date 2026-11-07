@@ -21,6 +21,7 @@ from lexinform.content_versions import (
     content_delivery_mismatch,
     content_snapshot_refs,
     direct_stage_plan_matches,
+    grouped_stage_context,
 )
 from lexinform.errors import CardPrimaryEvidenceError
 from lexinform.json_storage import read_json
@@ -39,6 +40,7 @@ from lexinform.models import (
 )
 from lexinform.models.content import (
     MAX_DIRECT_STAGE_CONTENT_BYTES,
+    MAX_GROUPED_STAGE_CONTENT_BYTES,
     CardPrimaryEvidence,
     card_bill_snapshot,
 )
@@ -585,6 +587,165 @@ def verify_direct_stage_content(connection: sqlite3.Connection, version: Content
         raise ValueError("direct_stage_expired_delivery_scope")
 
 
+def verify_grouped_stage_content(connection: sqlite3.Connection, version: ContentVersion) -> None:
+    evidence = version.grouped_stage_evidence
+    if evidence is None:
+        return
+    ref = f"updates/{version.root_publication_id}"
+    selected = _query(
+        connection,
+        "SELECT * FROM publications WHERE ref=? AND kind='status_update' LIMIT 3",
+        (ref,),
+    ).fetchall()
+    by_id = {row["id"]: read_content_publication(row) for row in selected}
+    ids = tuple(member.publication_id for member in evidence.members)
+    if set(by_id) != set(ids):
+        raise ValueError("grouped_stage_membership")
+    root, second = (by_id[identity] for identity in ids)
+    if (
+        root.channel_id != second.channel_id
+        or (root.term, root.number) == (second.term, second.number)
+        or (root.status, root.message_id) != (second.status, second.message_id)
+        or root.document_message_ids
+        or second.document_message_ids
+    ):
+        raise ValueError("grouped_stage_receipt")
+    if root.status is PublicationStatus.SENT:
+        if (
+            root.message_id is None
+            or root.message_id <= 0
+            or root.sent_at is None
+            or second.sent_at is None
+        ):
+            raise ValueError("grouped_stage_receipt")
+    elif (
+        root.status
+        not in (
+            PublicationStatus.QUEUED,
+            PublicationStatus.PENDING,
+            PublicationStatus.FAILED,
+            PublicationStatus.UNKNOWN,
+        )
+        or root.message_id is not None
+        or root.sent_at is not None
+        or second.sent_at is not None
+    ):
+        raise ValueError("grouped_stage_receipt")
+    bindings = _query(
+        connection,
+        "SELECT publication_id FROM publication_content WHERE content_id=? LIMIT 2",
+        (version.content_id,),
+    ).fetchall()
+    if bindings and [binding[0] for binding in bindings] != [root.id]:
+        raise ValueError("grouped_stage_binding_scope")
+    reader = ContentSourceRows(connection)
+    snapshots: dict[str, ContentSnapshot] = {}
+    for kind, identity in content_snapshot_refs(version):
+        snapshot = reader.get_content_snapshot(identity)
+        if snapshot is None or snapshot.kind != kind:
+            raise ValueError("grouped_stage_snapshot_missing")
+        snapshots[identity] = snapshot
+    if (
+        sum(len(snapshot.payload_json.encode()) for snapshot in snapshots.values())
+        + len((version.rendered_text or "").encode())
+        > MAX_GROUPED_STAGE_CONTENT_BYTES
+    ):
+        raise ValueError("grouped_stage_content_bound")
+    compact = DeliveryPlan.model_validate_json(snapshots[version.plan_snapshot_id].payload_json)
+    if (
+        compact != grouped_stage_context(compact)
+        or compact.rendered_text
+        or compact.reply_to != evidence.members[0].anchor_message_id
+        or not direct_stage_plan_matches(compact)
+    ):
+        raise ValueError("grouped_stage_plan_scope")
+    plans = (root.delivery, second.delivery)
+    first_plan, second_plan = plans
+    if None in plans and (root.status is not PublicationStatus.SENT or not bindings):
+        raise ValueError("grouped_stage_expired_scope")
+    shared = first_plan or second_plan
+    if shared is not None and (
+        shared.group_text != version.rendered_text
+        or shared.today != compact.today
+        or tuple(item.publication_id for item in shared.update_group) != ids
+        or (
+            first_plan is not None
+            and content_delivery_mismatch(version, snapshots, first_plan) is not None
+        )
+        or (
+            second_plan is not None
+            and (
+                second_plan.group_text != shared.group_text
+                or second_plan.today != shared.today
+                or second_plan.update_group != shared.update_group
+            )
+        )
+    ):
+        raise ValueError("grouped_stage_frozen_plan")
+    for index, member in enumerate(evidence.members):
+        publication = by_id[member.publication_id]
+        anchor_row = _query(
+            connection, "SELECT * FROM publications WHERE id=?", (member.anchor_publication_id,)
+        ).fetchone()
+        event = _query(
+            connection, "SELECT * FROM status_changes WHERE id=?", (member.status_change_id,)
+        ).fetchone()
+        if anchor_row is None or event is None:
+            raise ValueError("grouped_stage_parent_missing")
+        anchor = read_content_publication(anchor_row)
+        if (
+            publication.status_change_id != member.status_change_id
+            or anchor.kind is not PublicationKind.NEW_BILL
+            or anchor.status is not PublicationStatus.SENT
+            or anchor.message_id != member.anchor_message_id
+            or anchor.sent_at is None
+            or anchor.sent_at > publication.created_at
+            or (anchor.term, anchor.number, anchor.channel_id)
+            != (publication.term, publication.number, publication.channel_id)
+            or _query(
+                connection,
+                "SELECT 1 FROM digest_event_links WHERE source_publication_id=?",
+                (publication.id,),
+            ).fetchone()
+            is not None
+        ):
+            raise ValueError("grouped_stage_publication_scope")
+        bill = snapshots[member.bill_snapshot_id]
+        owner = Bill.model_validate_json(bill.payload_json)
+        change = StatusChange.model_validate_json(snapshots[member.change_snapshot_id].payload_json)
+        current = read_status_change(event).model_copy(
+            update={"amendments": None, "supplements": []}
+        )
+        if (
+            card_bill_snapshot(bill.payload_json) != bill
+            or (owner.term, owner.number) != (publication.term, publication.number)
+            or (change.term, change.number, change.id)
+            != (publication.term, publication.number, member.status_change_id)
+            or change != current
+            or not change.new_stages
+            or amendments_stage(change.new_stages) is not None
+        ):
+            raise ValueError("grouped_stage_event_scope")
+        if shared is not None:
+            saved = shared.update_group[index]
+            if (
+                saved.card_message_id != member.anchor_message_id
+                or hashlib.sha256(saved.bill_json.encode()).hexdigest()
+                != member.original_bill_sha256
+                or card_bill_snapshot(saved.bill_json) != bill
+                or saved.change_json != snapshots[member.change_snapshot_id].payload_json
+            ):
+                raise ValueError("grouped_stage_frozen_member")
+            plan = plans[index]
+            if plan is not None and (
+                not direct_stage_plan_matches(grouped_stage_context(plan))
+                or plan.rendered_text
+                or (plan.bill_json, plan.change_json, plan.reply_to)
+                != (saved.bill_json, saved.change_json, member.anchor_message_id)
+            ):
+                raise ValueError("grouped_stage_frozen_member")
+
+
 def validate_content_history(connection: sqlite3.Connection) -> None:
     try:
         tables = {
@@ -615,6 +776,7 @@ def validate_content_history(connection: sqlite3.Connection) -> None:
                     raise ValueError("content_predecessor_unavailable")
             verify_content_applications(connection, value)
             verify_direct_stage_content(connection, value)
+            verify_grouped_stage_content(connection, value)
             physical_identity = verify_card_content(connection, value, retained=True)
             if value.change_snapshot_id is None:
                 bindings = _query(

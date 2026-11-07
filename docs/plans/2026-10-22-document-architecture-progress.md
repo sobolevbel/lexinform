@@ -14134,3 +14134,21 @@ the prefilter observation matched exactly, and two checkpoint restores
 preserved the complete saved state.
 
 [Qualification](../assets/audits/2026-11-07-admitted-support-alternative/qualification.json).
+
+<a id="j413"></a>
+
+## J413 — read two-member grouped stage content history
+
+The compatible reader binds one frozen render to the canonical publication
+root and two ordered stage updates. It validates both card anchors, event
+snapshots, group membership and the shared physical receipt. Unknown
+delivery retains its evidence without becoming current. Existing production
+writers and correction routing retain their current behavior.
+
+The fake Telegram lifecycle preserved the render after cleanup, including
+asymmetric expiry, and restored the checkpoint byte-for-byte twice. A
+reordered frozen group failed restore atomically. The staged shared version
+added 10,981 SQL bytes and 1,774 gzip bytes to the scratch checkpoint.
+The previous reader rejected that checkpoint without changing legacy state.
+
+[Qualification](../assets/audits/2026-11-07-group-content-reader/qualification.json).
