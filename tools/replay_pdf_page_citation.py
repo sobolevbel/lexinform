@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.models import AnalysisRecord, EvidenceCitation, PdfTextExtraction, ReviewDocument
 from lexinform.models.physical_inventory import Sha256
-from lexinform.pdf_projection import legacy_pdf_text
+from lexinform.pdf_projection import legacy_pdf_text, raw_pdf_page_span
 from lexinform.primary_claims import KeyChangeEvidence, validate_key_change_evidence
 from lexinform.sections import PAGE_BREAK
 from tools.corpus_artifacts import digest, read_artifact, write_json
@@ -20,6 +20,14 @@ from tools.replay_primary_claims import technical_answer
 from tools.replay_proposal_edition import PinnedInput
 
 _MAX_PDF_BYTES = 32_000_000
+
+
+class RawPageSpanPin(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    start: int = Field(ge=0, strict=True)
+    end: int = Field(gt=0, strict=True)
+    sha256: Sha256
 
 
 class PdfCitationCase(BaseModel):
@@ -36,6 +44,7 @@ class PdfCitationCase(BaseModel):
     quote_start: int = Field(ge=0, strict=True)
     quote_end: int = Field(gt=0, strict=True)
     page: int = Field(gt=0, strict=True)
+    raw_page_span: RawPageSpanPin | None = None
 
 
 def verify_pdf_page(
@@ -47,6 +56,7 @@ def verify_pdf_page(
     artifact_sha256: str,
     extraction_sha256: str,
     expected_page: int,
+    raw_page_span: RawPageSpanPin | None = None,
 ) -> dict[str, object]:
     checked = validate_key_change_evidence(record, evidence, (document,))
     if checked.observed_text_span is None:
@@ -86,6 +96,18 @@ def verify_pdf_page(
                 "normalized_page_text_sha256": digest(block.encode()),
                 "normalized_page_span": list(local),
             }
+            if raw_page_span is not None:
+                raw_span = raw_pdf_page_span(page.text, *local)
+                if raw_span != (raw_page_span.start, raw_page_span.end):
+                    raise ValueError("Raw PDF page span is ambiguous or differs from its pin")
+                raw_hash = digest(page.text[raw_span[0] : raw_span[1]].encode())
+                if raw_hash != raw_page_span.sha256:
+                    raise ValueError("Raw PDF page span hash differs from its pin")
+                found["raw_page_span"] = {
+                    "coordinates": "pdf-extractor-page-python-string",
+                    "span": list(raw_span),
+                    "text_sha256": raw_hash,
+                }
         offset += len(chunk) + len(PAGE_BREAK)
     if found is None:
         raise ValueError("Citation crosses a physical page boundary")
@@ -145,6 +167,7 @@ def replay(corpus: Path, case: PdfCitationCase) -> dict[str, object]:
             artifact_sha256=case.pdf.sha256,
             extraction_sha256=case.extraction_sha256,
             expected_page=case.page,
+            raw_page_span=case.raw_page_span,
         )
     if reads.changed_inputs() or before != source_fingerprints():
         raise ValueError("Replay inputs or code changed")

@@ -1,0 +1,47 @@
+{
+  "case_sha256": "d8fbd4add586cc9a9adecf6ce620d564edcc6f636594a84aa912c928933711a4",
+  "code_version": "b7873ec65c62936e7b4ba09a0bcc8349de6a0ac6",
+  "proof": {
+    "artifact_sha256": "c4568d7582962e62ac39d5d084936424f19edebae58b8925add7422d90360a5e",
+    "block_id": "pdf-page:1:0",
+    "claim_text_sha256": "1b32d3e306b9959e85050cf68beaf75da05cc5f24d20b4fb03e29c5671ff8970",
+    "coordinates": "legacy-pdf-single-page-python-string",
+    "evidence": {
+      "block_origins": "unmapped",
+      "observed_text_span": [
+        204,
+        331
+      ],
+      "paid_origins": "unmapped",
+      "quote_occurrences": 1,
+      "semantic": "semantic_not_assessed",
+      "source_complete": false,
+      "status": "quote_present"
+    },
+    "extraction_sha256": "7efc24e212af27c2d061b2a66642551f88c0be1eb43d52e648653a28658449bb",
+    "normalized_page_span": [
+      204,
+      331
+    ],
+    "normalized_page_text_sha256": "47c14daec69a7659f177a820fb30b4e155e8381f9bb507e73784da74aedda861",
+    "page": 1,
+    "quote_sha256": "e2847c736055a9a3b081f377a370f22605cb65df3fd4ad8bd7ac1d6d5d40089d",
+    "raw_page_span": {
+      "coordinates": "pdf-extractor-page-python-string",
+      "span": [
+        206,
+        334
+      ],
+      "text_sha256": "9f5ad04b3c7022ccf3c70e8831a68f0bb9a66dabf5afb39f321f5de077570291"
+    },
+    "raw_page_text_sha256": "d235550ba69574ab9feb6cbbaf4611e13f81509b609053c3437bba07713ba477",
+    "source_text_sha256": "368e0fea8034fee29af37345061b13321a49a3e53799631ca045bb51e4a07101"
+  },
+  "read_inputs": {
+    "documents/files/587739.pdf": "c4568d7582962e62ac39d5d084936424f19edebae58b8925add7422d90360a5e"
+  },
+  "scope": "Technical literal citation in one normalized PDF page text block.",
+  "source_pins_sha256": "9563c6dfade268c1db23b553e7f309214e80756976e78149276943672bac308d",
+  "status": "recorded",
+  "version": "primary-pdf-page-citation-v1"
+}

@@ -1,9 +1,10 @@
 import pytest
 from tools.corpus_artifacts import digest
-from tools.replay_pdf_page_citation import verify_pdf_page
+from tools.replay_pdf_page_citation import RawPageSpanPin, verify_pdf_page
 from tools.replay_primary_claims import technical_answer
 
 from lexinform.models import EvidenceCitation, PdfPageText, PdfTextExtraction, ReviewDocument
+from lexinform.pdf_projection import raw_pdf_page_span
 from lexinform.primary_claims import KeyChangeEvidence
 
 ARTIFACT = "a" * 64
@@ -17,6 +18,7 @@ def check(
     page: int = 2,
     artifact_pin: str = ARTIFACT,
     extraction_pin: str | None = None,
+    raw_span: RawPageSpanPin | None = None,
 ) -> dict[str, object]:
     extraction = PdfTextExtraction(
         input_sha256=ARTIFACT,
@@ -48,6 +50,7 @@ def check(
         artifact_sha256=artifact_pin,
         extraction_sha256=extraction_pin or extraction.manifest_sha256,
         expected_page=page,
+        raw_page_span=raw_span,
     )
 
 
@@ -94,3 +97,30 @@ def test_pdf_artifact_and_manifest_require_independent_pins(artifact_changed: bo
 def test_supplied_page_locator_must_match_the_observed_page() -> None:
     with pytest.raises(ValueError, match="expected physical page"):
         check(("Cover", QUOTE), page=1)
+
+
+def test_raw_extractor_span_is_opt_in_and_requires_exact_transform_and_pin() -> None:
+    raw_quote = "Art. 7.\r\nUstawa w\xa0życie.  \nKoniec."
+    prefix = "\n  Header\r\n"
+    page = prefix + raw_quote + "\n"
+    quote = "Art. 7.\nUstawa w życie.\nKoniec."
+    span = RawPageSpanPin(
+        start=len(prefix), end=len(prefix + raw_quote), sha256=digest(raw_quote.encode())
+    )
+    assert "raw_page_span" not in check(("Cover", page), quote=quote)
+    assert check(("Cover", page), quote=quote, raw_span=span)["raw_page_span"] == {
+        "coordinates": "pdf-extractor-page-python-string",
+        "span": [span.start, span.end],
+        "text_sha256": span.sha256,
+    }
+    with pytest.raises(ValueError, match="span hash differs"):
+        check(("Cover", page), quote=quote, raw_span=span.model_copy(update={"sha256": "0" * 64}))
+    with pytest.raises(ValueError, match="ambiguous or differs"):
+        check(("Cover", page), quote=quote, raw_span=span.model_copy(update={"start": 0}))
+
+
+def test_raw_page_span_will_not_split_a_collapsed_newline_run() -> None:
+    page = "first\n\n\nsecond"
+    assert raw_pdf_page_span(page, 0, len("first\n\nsecond")) == (0, len(page))
+    assert raw_pdf_page_span(page, 0, len("first\n")) is None
+    assert raw_pdf_page_span(page, len("first\n"), len("first\n\nsecond")) is None
