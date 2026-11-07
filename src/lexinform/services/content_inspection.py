@@ -52,15 +52,25 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
         digest_parts = repo.list_content_publications(selected.root_publication_id)
         if versions != [selected] or not digest_parts:
             return ContentHistoryView(integrity="unavailable")
+        physical_confirmed = all(row.status is PublicationStatus.SENT for row in digest_parts)
+        evidence = selected.original_delivery_evidence
+        if evidence is not None and evidence.kind is PublicationKind.NEW_BILL:
+            root = repo.publication_by_id(selected.root_publication_id)
+            physical_confirmed = (
+                physical_confirmed
+                and root is not None
+                and root.message_id is not None
+                and len(repo.card_aliases(root.channel_id, root.message_id)) == 1
+                and {row.id for row in repo.card_refresh_parts(selected.root_publication_id)}
+                == {row.id for row in digest_parts}
+            )
         return ContentHistoryView(
             root_publication_id=selected.root_publication_id,
             version_count=1,
             summaries=(ContentVersionSummary.from_version(selected),),
             inspected_id=selected.content_id,
             original_id=selected.content_id,
-            current_id=selected.content_id
-            if all(row.status is PublicationStatus.SENT for row in digest_parts)
-            else None,
+            current_id=selected.content_id if physical_confirmed else None,
         )
     root_id = selected.root_publication_id
     versions = repo.list_content_versions(root_id)

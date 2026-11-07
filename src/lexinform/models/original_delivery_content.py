@@ -1,4 +1,4 @@
-"""Frozen semantic context and ordered physical parts of an original direct notice."""
+"""Frozen semantic context and ordered physical parts of an original direct publication."""
 
 from typing import Literal, Self, get_args
 
@@ -22,6 +22,13 @@ OriginalNoticeKind = Literal[
     PublicationKind.HEARING_DEADLINE,
 ]
 ORIGINAL_NOTICE_KINDS: frozenset[PublicationKind] = frozenset(get_args(OriginalNoticeKind))
+OriginalPublicationKind = Literal[
+    OriginalNoticeKind,
+    PublicationKind.NEW_BILL,
+    PublicationKind.JOINT_BILL,
+]
+ORIGINAL_CARD_KINDS = frozenset((PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL))
+ORIGINAL_DELIVERY_KINDS = ORIGINAL_NOTICE_KINDS | ORIGINAL_CARD_KINDS
 DATED_NOTICES = frozenset(
     (
         PublicationKind.IN_FORCE,
@@ -32,24 +39,45 @@ DATED_NOTICES = frozenset(
 )
 
 
+class JointPrimaryEvidence(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    publication_id: PositiveInt
+    bill_snapshot_id: str = Field(pattern=r"^content-snapshot-v1:[0-9a-f]{64}$")
+
+
 class OriginalDeliveryEvidence(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    kind: OriginalNoticeKind
-    bill_context: Literal["editorial-notice-v1"]
+    kind: OriginalPublicationKind
+    bill_context: Literal["editorial-notice-v1", "editorial-card-original-v1"]
     channel_id: str = Field(min_length=1, max_length=256)
     ref: str | None = Field(default=None, max_length=512)
+    joint_primary: JointPrimaryEvidence | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    @model_validator(mode="after")
+    def topology(self) -> Self:
+        if (self.kind is PublicationKind.JOINT_BILL) != (self.joint_primary is not None) or (
+            self.kind in ORIGINAL_CARD_KINDS
+        ) != (self.bill_context == "editorial-card-original-v1"):
+            raise ValueError("original publication and semantic context differ")
+        return self
 
 
 class OriginalDeliveryPart(SittingContentPart):
     held_change_ids: tuple[PositiveInt, ...] = Field(default=(), exclude_if=lambda value: not value)
 
 
-def original_delivery_context(plan: DeliveryPlan) -> DeliveryPlan:
-    return plan.model_copy(update={"bill_json": "", "rendered_text": ""})
+def original_delivery_context(plan: DeliveryPlan, *, joint: bool = False) -> DeliveryPlan:
+    update: dict[str, object] = {"bill_json": "", "rendered_text": ""}
+    if joint:
+        update["primary_json"] = None
+    return plan.model_copy(update=update)
 
 
-def original_notice_context_matches(plan: DeliveryPlan) -> bool:
+def _original_direct_context_matches(plan: DeliveryPlan) -> bool:
     return (
         not plan.bill_json
         and not plan.change_json
@@ -69,8 +97,12 @@ def original_notice_context_matches(plan: DeliveryPlan) -> bool:
         and not plan.update_group
         and not plan.digest_ref
         and not plan.approve_label
-        and plan.reply_to is not None
-        and plan.reply_to > 0
+    )
+
+
+def original_notice_context_matches(plan: DeliveryPlan) -> bool:
+    return (
+        _original_direct_context_matches(plan) and plan.reply_to is not None and plan.reply_to > 0
     )
 
 
@@ -95,13 +127,21 @@ class OriginalDeliveryPlan(BaseModel):
             or (len(self.parts) > 1 and self.root.held_change_ids)
             or self.parts[0].held_change_ids
             or any(part.held_change_ids for part in self.parts[1:-1])
-            or not original_notice_context_matches(self.root)
+            or not _original_direct_context_matches(self.root)
         ):
             raise ValueError("invalid original delivery topology")
         return self
 
-    def validate_notice(self, kind: PublicationKind) -> None:
-        if kind not in ORIGINAL_NOTICE_KINDS:
+    def validate_original(self, kind: PublicationKind) -> None:
+        if kind is PublicationKind.NEW_BILL:
+            if self.root.reply_to is not None or self.root.primary_json or len(self.parts) < 2:
+                raise ValueError("original multipart card has invalid topology")
+            return
+        if kind is PublicationKind.JOINT_BILL:
+            if self.root.primary_json or not original_notice_context_matches(self.root):
+                raise ValueError("joint reply requires its original card target")
+            return
+        if kind not in ORIGINAL_NOTICE_KINDS or not original_notice_context_matches(self.root):
             raise ValueError("unsupported original notice")
         if kind in DATED_NOTICES and self.root.today is None:
             raise ValueError("dated notice requires its frozen date")

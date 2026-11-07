@@ -1,0 +1,161 @@
+{
+  "status": "qualified-offline",
+  "base": "J470 b840a57c plus exact J471 and J472 source/test plan patches",
+  "base_patch_sha256": {
+    "j471": "ba4b2f9c99163913116d697cbda01e2b6405a0faf5bd608f7b7e35bc7429ca5b",
+    "j472": "2edd05f1773473cc9f28cb53b76f55594d13c5ab955e55bf2189abc2b286bc60"
+  },
+  "worktrees": {
+    "writer": "/tmp/lexinform-card-original-history",
+    "reader": "/tmp/lexinform-card-original-reader",
+    "pre_reader": "/tmp/lexinform-card-original-old"
+  },
+  "patch_sha256": {
+    "reader.patch": "bcd0c41a9a83b16fd41667d5d33dab080783d584851cc864a5541dbdbbdf63bc",
+    "writer.patch": "c6055c36c6dc22064501d31179413e7257e93a9d2844aecd77bab7f4efb5366c"
+  },
+  "profile": "Extends shared original_delivery_evidence kinds with multipart NEW_BILL and JOINT_BILL. Ordered physical plan, projected Bill, frozen formatter/language and exact HTML. Joint includes a projected primary Bill snapshot and actual confirmed primary publication binding, matching original numeric reply and channel. Existing notice bytes and single-card IDs preserved.",
+  "scope": "Fresh ordinary original freeze. No historical backfill, aliases or revisions written. An unversioned later multipart edit retains the immutable original for inspection, with current absent.",
+  "cases": {
+    "multipart": {
+      "shape": "ordinary first card rendered in two parts from long fixture analysis",
+      "exact_ids": [
+        1,
+        2
+      ],
+      "exact_receipts": [
+        101,
+        102
+      ],
+      "exact_reply_targets": [
+        null,
+        101
+      ],
+      "exact_html_sha256": [
+        "da680209757daf69ec1a2a4f6476430dc85d157c7371703b5961f9fd71ad06b8",
+        "0d51e955cf4f7108968cc76351b7fc02984bae5e5ce30840ced635829112a713"
+      ],
+      "existing_primary_content_id_preserved": null,
+      "primary_publication_id": null,
+      "exact_restores_each_lane": 2,
+      "history_after_cleanup": true,
+      "baseline_history_after_cleanup": false,
+      "sql_bytes": {
+        "before": 62922,
+        "after": 91412,
+        "delta": 28490
+      },
+      "gzip_bytes": {
+        "before": 10293,
+        "after": 12961,
+        "delta": 2668
+      },
+      "dump_sha256": {
+        "before": "04e51ec4c01c1394070613c54a19b54bc356b64ef17c674a4120bf2da4ca0a99",
+        "after": "2586a15c9b9f3a9c32e25174233f48d534ce5bae691359bd61870272de7316da"
+      },
+      "added_rows": {
+        "content_snapshots": 2,
+        "content_versions": 1,
+        "publication_content": 2
+      },
+      "other_sql_row_differences": false
+    },
+    "joint": {
+      "shape": "ordinary joint reply after fake batch comparison",
+      "exact_ids": [
+        3
+      ],
+      "exact_receipts": [
+        103
+      ],
+      "exact_reply_targets": [
+        101
+      ],
+      "exact_html_sha256": [
+        "7ccd943dfbb39d5c3c9b9603c74856a2611a5adf463f956f397ee099fbcc5840"
+      ],
+      "existing_primary_content_id_preserved": "content-v1:f4191730d9ecd0e150c597ac2adc49bac1d3c4daf133ed1b02feca3ef48f1e8d",
+      "primary_publication_id": 1,
+      "exact_restores_each_lane": 2,
+      "history_after_cleanup": true,
+      "baseline_history_after_cleanup": false,
+      "sql_bytes": {
+        "before": 91655,
+        "after": 105857,
+        "delta": 14202
+      },
+      "gzip_bytes": {
+        "before": 14333,
+        "after": 15659,
+        "delta": 1326
+      },
+      "dump_sha256": {
+        "before": "7508163aceecaded7eb7beb5f85b0e3f2c7f48661949b8beefcc555482cb5606",
+        "after": "30853d38668aea8689eda3a312c5b8809a1f756c27762afb77aea58d590072d8"
+      },
+      "added_rows": {
+        "content_snapshots": 3,
+        "content_versions": 1,
+        "publication_content": 1
+      },
+      "other_sql_row_differences": false
+    }
+  },
+  "pinned_state": {
+    "commit": "4764779e91d9d8fe5609aba45de02f4a792479be",
+    "multipart_original": {
+      "number": "RCL/12408601",
+      "ids": [
+        237,
+        238
+      ],
+      "receipts": [
+        149,
+        150
+      ],
+      "child_reply": 149,
+      "html_sha256": [
+        "aaa8fc663d7cd3c4f18f2a424b181950204c71a9334958e147c56ccdb6db80eb",
+        "dc8f8300565125be7b5645b116cec768bcb7eec65fd59bc10c5a4e7d4596d960"
+      ],
+      "projection_bytes": 59215
+    },
+    "historical_unversioned_revision": {
+      "slots": [
+        241,
+        242
+      ],
+      "edit_targets": [
+        149,
+        150
+      ]
+    },
+    "pruned_joint_replies": [
+      40,
+      41
+    ],
+    "scope": "Read-only shape check on exact pinned DB; no historic binding synthesized. Two pruned joint rows have no retained payload to qualify exact original content."
+  },
+  "reader_controls": {
+    "old_notice_and_existing_card_profiles_exact_restore": true,
+    "new_exact_restores_each": 2,
+    "wrong_primary_receipt_direct_verifier_rejected": true,
+    "wrong_primary_receipt_dump_restore_atomic": true,
+    "old_reader_rejects_both_new_shapes_atomically": true
+  },
+  "recovery": "Multipart remote checkpoints retain all original slots; UNKNOWN and partial delivery have no current edition and no automatic replay of uncertain work. Saved parent resumes only unstarted slots. Audited joint retry retains exact content ID, HTML and reply target. Existing multipart edit sender/checkpoint coverage passes.",
+  "budget": "Reuses J472 working cap 128 KiB total projected Bill/primary/plan bytes and 32 physical parts. Projection budget omission leaves ordinary delivery intact. Actual pinned multipart card fits; incidence beyond pinned example not measured.",
+  "checks": {
+    "focused_tests": 97,
+    "mypy_files": 10,
+    "ruff": true,
+    "diff_checks": true,
+    "forward_patch_checks": true
+  },
+  "evidence": {
+    "paired_driver": "/tmp/card-original-history-evidence/qualify.py",
+    "reader_driver": "/tmp/card-original-history-evidence/check_reader.py",
+    "focused_log_sha256": "d762cdf73693e6f46758d1c403dd0e91b3348cb5770c7838df6889f908f5859e"
+  }
+}

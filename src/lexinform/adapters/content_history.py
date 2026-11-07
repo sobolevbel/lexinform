@@ -1262,7 +1262,7 @@ def verify_original_delivery_content(
     ):
         raise ValueError("original_delivery_snapshot_scope")
     plan = OriginalDeliveryPlan.model_validate(read_json(snapshot.payload_json))
-    plan.validate_notice(evidence.kind)
+    plan.validate_original(evidence.kind)
     if plan.bindings[0] != version.root_publication_id:
         raise ValueError("original_delivery_root_scope")
     if require_bound:
@@ -1278,6 +1278,37 @@ def verify_original_delivery_content(
     bill = Bill.model_validate(read_json(bill_snapshot.payload_json))
     if evidence.kind is PublicationKind.ACT_PUBLISHED and bill.act is None:
         raise ValueError("original_delivery_act_missing")
+    primary_snapshot = None
+    joint = evidence.joint_primary
+    if joint is not None:
+        primary_snapshot = reader.get_content_snapshot(joint.bill_snapshot_id)
+        primary_row = _query(
+            connection, "SELECT * FROM publications WHERE id=?", (joint.publication_id,)
+        ).fetchone()
+        if (
+            primary_snapshot is None
+            or primary_snapshot.kind != "bill"
+            or original_delivery_bill_snapshot(primary_snapshot.payload_json) != primary_snapshot
+            or primary_row is None
+            or len(primary_snapshot.payload_json.encode())
+            + len(bill_snapshot.payload_json.encode())
+            + len(snapshot.payload_json.encode())
+            > MAX_ORIGINAL_DELIVERY_BYTES
+        ):
+            raise ValueError("joint_history_primary_snapshot")
+        primary_bill = Bill.model_validate(read_json(primary_snapshot.payload_json))
+        primary = read_content_publication(primary_row)
+        if (
+            primary.kind is not PublicationKind.NEW_BILL
+            or primary.status is not PublicationStatus.SENT
+            or primary.message_id != plan.root.reply_to
+            or primary.channel_id != evidence.channel_id
+            or (primary.term, primary.number) != (primary_bill.term, primary_bill.number)
+            or primary.term != bill.term
+            or primary.number == bill.number
+        ):
+            raise ValueError("joint_history_primary_receipt")
+
     parent: Publication | None = None
     for index, part in enumerate(plan.parts, 1):
         row = _query(connection, "SELECT * FROM publications WHERE id=?", (part.id,)).fetchone()
@@ -1310,7 +1341,15 @@ def verify_original_delivery_content(
                     and (
                         original_delivery_bill_snapshot(retained.bill_json) != bill_snapshot
                         or retained.rendered_text != part.html
-                        or original_delivery_context(retained) != plan.root
+                        or original_delivery_context(retained, joint=joint is not None) != plan.root
+                        or (
+                            primary_snapshot is not None
+                            and (
+                                not retained.primary_json
+                                or original_delivery_bill_snapshot(retained.primary_json)
+                                != primary_snapshot
+                            )
+                        )
                     )
                 )
             ):

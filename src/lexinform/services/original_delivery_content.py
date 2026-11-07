@@ -72,7 +72,7 @@ def record_original_delivery_content(
             root=original_delivery_context(plan),
             parts=tuple(parts),
         )
-        original.validate_notice(origin.kind)
+        original.validate_original(origin.kind)
         bill = original_delivery_bill_snapshot(plan.bill_json)
         snapshot = ContentSnapshot(kind="plan", payload_json=original.model_dump_json())
         if (
