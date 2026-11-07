@@ -1,0 +1,18 @@
+{
+  "grouped": {
+    "witness": true,
+    "sql_sha256": "eecbab235ea5bc396af54e05ddec02eb6567cc9ff988b0b07ed3cc8298001f5d",
+    "unchanged_dump": true,
+    "baseline_sha256": "3f357c28e8ed12edeaeefaf1ccf65e95b28c00a46f9e3cf05f1a54585aeb9e5c",
+    "candidate_sha256": "48a6514633eacc2b52ffae42fc8486311cc344f36fb037e66e1c9ca6f24cf93e",
+    "stale_sha_rejected": true,
+    "unmodified_prefix_bytes": 488,
+    "unmodified_suffix_bytes": 1085
+  },
+  "legacy": {
+    "witness": false,
+    "sql_sha256": "14989975bf32199daddb2eb7cf633958917f72f2c71a679a8a664a2b6323be55",
+    "preview_rejected": true,
+    "unchanged_dump": true
+  }
+}

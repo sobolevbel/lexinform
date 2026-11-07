@@ -928,6 +928,7 @@ class BillRepository(Protocol):
         expected_content_id: str,
         expected_base_sha256: str,
         approved_sha256: str,
+        expected_chat_id: int | None = None,
     ) -> int | None: ...
 
     def claim_grouped_stage_edit(

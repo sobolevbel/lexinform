@@ -2390,8 +2390,15 @@ class SqliteBillRepository:
         expected_content_id: str,
         expected_base_sha256: str,
         approved_sha256: str,
+        expected_chat_id: int | None = None,
     ) -> int | None:
         """Reserve one approved inert edit against the confirmed shared target."""
+        if expected_chat_id is not None and (
+            self._conn.in_transaction
+            or type(expected_chat_id) is not int
+            or not -(2**52) < expected_chat_id < 0
+        ):
+            return None
         version = ContentVersion.model_validate_json(version.model_dump_json())
         evidence = version.grouped_stage_evidence
         ref = grouped_stage_revision_ref(version)
@@ -2414,6 +2421,13 @@ class SqliteBillRepository:
                 or root.message_id != evidence.revision.target_message_id
             ):
                 return None
+            if expected_chat_id is not None:
+                original = self.get_publication_content(version.root_publication_id)
+                if original is None or read_grouped_stage_telegram_target(self._conn, original) != (
+                    expected_chat_id,
+                    evidence.revision.target_message_id,
+                ):
+                    return None
             if self._grouped_stage_edit_conflict(root, ref):
                 return None
             current = self._confirmed_grouped_stage_base(root)
