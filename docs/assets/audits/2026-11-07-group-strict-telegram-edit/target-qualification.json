@@ -1,0 +1,8 @@
+{
+  "distinct_targets": 1,
+  "alias_targets": 1,
+  "alias_receipts": 70,
+  "sent_status_updates": 70,
+  "state_commit": "9a802a5514d3333de72c76454d115a7d91538e0d",
+  "scope": "Confirmed status updates in pinned SQLite snapshot. Channel identities are not printed."
+}

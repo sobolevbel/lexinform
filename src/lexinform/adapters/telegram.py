@@ -35,6 +35,34 @@ class TelegramError(RuntimeError):
         self.description = description
 
 
+@dataclass(frozen=True)
+class TelegramEditReceipt:
+    chat_id: int
+    message_id: int
+
+
+def _edit_payload(chat_id: str | int, message_id: int, html: str) -> dict[str, object]:
+    return {
+        "chat_id": chat_id,
+        "message_id": message_id,
+        "text": html,
+        "parse_mode": "HTML",
+        "link_preview_options": {"is_disabled": True},
+    }
+
+
+def _retry_delay(body: dict[str, Any], *, default: float) -> float:
+    parameters = body.get("parameters")
+    value = parameters.get("retry_after") if isinstance(parameters, dict) else None
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return default
+    try:
+        delay = float(value)
+    except OverflowError:
+        return default
+    return delay if math.isfinite(delay) and delay >= 0 else default
+
+
 class TelegramBotClient:
     """Telegram API client with shared pacing and bounded safe retries."""
 
@@ -97,18 +125,78 @@ class TelegramBotClient:
 
     def edit_message(self, chat_id: str, message_id: int, html: str) -> None:
         """Replace the text of a message the bot posted; an identical text is not an error."""
-        payload: dict[str, Any] = {
-            "chat_id": chat_id,
-            "message_id": message_id,
-            "text": html,
-            "parse_mode": "HTML",
-            "link_preview_options": {"is_disabled": True},
-        }
         try:
-            self._call("editMessageText", json=payload)
+            self._call("editMessageText", json=_edit_payload(chat_id, message_id, html))
         except TelegramError as exc:
             if "message is not modified" not in exc.description.lower():
                 raise
+
+    def edit_message_verified(
+        self, chat_id: int, message_id: int, html: str
+    ) -> TelegramEditReceipt:
+        """Make one explicit edit attempt against pinned numeric IDs and verify its receipt."""
+        if type(chat_id) is not int or chat_id == 0:
+            raise ValueError("A verified edit requires a pinned numeric Telegram chat ID")
+        if type(message_id) is not int or message_id <= 0:
+            raise ValueError("A verified edit requires a positive Telegram message ID")
+        if not html.strip():
+            raise ValueError("A verified edit requires nonempty HTML")
+        self._rate.wait(str(chat_id))
+        try:
+            response = self._client.post(
+                "/editMessageText", json=_edit_payload(chat_id, message_id, html)
+            )
+        except (httpx.RequestError, httpx.StreamError) as exc:
+            raise DeliveryUncertainError(
+                f"editMessageText: {type(exc).__name__}; edit outcome unknown"
+            ) from None
+        if response.status_code == 408 or response.status_code >= 500:
+            raise DeliveryUncertainError(
+                f"editMessageText: HTTP {response.status_code}; edit outcome unknown"
+            )
+        try:
+            body = response.json()
+        except ValueError:
+            raise DeliveryUncertainError("editMessageText: unreadable edit response") from None
+        if not isinstance(body, dict):
+            raise DeliveryUncertainError("editMessageText: malformed edit response")
+        if body.get("ok") is False:
+            code = body.get("error_code")
+            description = body.get("description")
+            if (
+                type(code) is not int
+                or not 400 <= code < 500
+                or code != response.status_code
+                or not isinstance(description, str)
+                or not description.strip()
+            ):
+                raise DeliveryUncertainError("editMessageText: malformed edit rejection")
+            if "message is not modified" in description.lower():
+                raise DeliveryUncertainError("editMessageText: unchanged response has no receipt")
+            if code == 429:
+                self._rate.defer(_retry_delay(body, default=5.0))
+                raise TelegramUnavailableError(f"HTTP {code}: {description}")
+            if code in (401, 403, 409) or "chat not found" in description.lower():
+                raise TelegramUnavailableError(f"HTTP {code}: {description}")
+            raise TelegramError(code, description)
+        result = body.get("result")
+        if body.get("ok") is not True or not response.is_success or not isinstance(result, dict):
+            raise DeliveryUncertainError("editMessageText: missing edited message receipt")
+        chat = result.get("chat")
+        returned_chat = chat.get("id") if isinstance(chat, dict) else None
+        returned_message = result.get("message_id")
+        if (
+            type(returned_chat) is not int
+            or returned_chat != chat_id
+            or type(returned_message) is not int
+            or returned_message != message_id
+        ):
+            raise DeliveryUncertainError("editMessageText: edit receipt differs from pinned target")
+        username = chat.get("username") if isinstance(chat, dict) else None
+        self._rate.identify(
+            str(chat_id), returned_chat, username if isinstance(username, str) else None
+        )
+        return TelegramEditReceipt(chat_id=returned_chat, message_id=returned_message)
 
     def delete_message(self, chat_id: str, message_id: int) -> None:
         """Remove a message the bot posted; one already gone is not an error."""

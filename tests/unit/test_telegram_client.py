@@ -1,8 +1,10 @@
 """The Telegram Bot API client and publisher against a mock transport."""
 
 import json
+import traceback
 from collections.abc import Callable
 from datetime import datetime
+from typing import cast
 
 import httpx2 as httpx
 import pytest
@@ -11,13 +13,14 @@ from lexinform.adapters.llm_prompts import PROMPT_VERSION
 from lexinform.adapters.telegram import (
     TelegramAcknowledger,
     TelegramBotClient,
+    TelegramEditReceipt,
     TelegramError,
     TelegramOperatorReplier,
     TelegramPublisher,
     TelegramRunNotifier,
 )
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.errors import TelegramUnavailableError
+from lexinform.errors import DeliveryUncertainError, TelegramUnavailableError
 from lexinform.models import (
     AnalysisRecord,
     Bill,
@@ -228,6 +231,135 @@ def test_edit_message_replaces_the_text_and_tolerates_an_unchanged_one() -> None
 
     assert bodies[0]["message_id"] == 12 and bodies[0]["text"] == "<b>x</b> #tag"
     assert bodies[0]["parse_mode"] == "HTML" and len(bodies) == 2
+
+
+def test_verified_edit_matches_returned_message_and_pinned_chat() -> None:
+    requests: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/botTOKEN/editMessageText"
+        requests.append(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "ok": True,
+                "result": {
+                    "message_id": 12,
+                    "chat": {"id": -100123, "username": "reader"},
+                    "text": "🙂 x & y",
+                },
+            },
+        )
+
+    receipt = _client(handler).edit_message_verified(-100123, 12, "<b>🙂 x</b> &amp; y")
+
+    assert receipt == TelegramEditReceipt(chat_id=-100123, message_id=12)
+    assert requests == [
+        {
+            "chat_id": -100123,
+            "message_id": 12,
+            "text": "<b>🙂 x</b> &amp; y",
+            "parse_mode": "HTML",
+            "link_preview_options": {"is_disabled": True},
+        }
+    ]
+
+
+@pytest.mark.parametrize(
+    ("status", "body"),
+    [
+        (200, {"ok": True, "result": {"message_id": 12, "chat": {"id": -100999}}}),
+        (200, {"ok": True, "result": {"message_id": 99, "chat": {"id": -100123}}}),
+        (200, {"ok": True, "result": {"message_id": 12, "chat": {"id": "-100123"}}}),
+        (200, {"ok": True, "result": {"message_id": "12", "chat": {"id": -100123}}}),
+        (200, {"ok": True, "result": {"message_id": 12, "chat": {"id": True}}}),
+        (200, {"ok": True, "result": {"message_id": 12}}),
+        (200, {"ok": True, "result": True}),
+        (200, {"ok": 1, "result": {"message_id": 12, "chat": {"id": -100123}}}),
+        (200, b"truncated"),
+        (400, {"ok": False, "error_code": 400, "description": "message is not modified"}),
+        (400, {"ok": False, "error_code": "400", "description": "Bad Request"}),
+        (400, b"unreadable"),
+        (408, {"ok": False, "error_code": 408, "description": "Request Timeout"}),
+        (502, {"ok": False, "error_code": 502, "description": "Bad Gateway"}),
+    ],
+)
+def test_verified_edit_leaves_ambiguous_responses_unknown_after_one_call(
+    status: int,
+    body: dict[str, object] | bytes,
+) -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return (
+            httpx.Response(status, content=body)
+            if isinstance(body, bytes)
+            else httpx.Response(status, json=body)
+        )
+
+    with pytest.raises(DeliveryUncertainError, match="editMessageText"):
+        _client(handler).edit_message_verified(-100123, 12, "<b>text</b>")
+
+    assert len(requests) == 1
+
+
+@pytest.mark.parametrize("error", [httpx.ReadTimeout, httpx.DecodingError])
+def test_verified_edit_does_not_retry_an_unreadable_response(
+    error: type[httpx.RequestError],
+) -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        raise error(f"response lost at {request.url}", request=request)
+
+    with pytest.raises(DeliveryUncertainError, match=error.__name__) as raised:
+        _client(handler).edit_message_verified(-100123, 12, "text")
+
+    assert len(requests) == 1
+    assert "TOKEN" not in "".join(traceback.format_exception(raised.value))
+
+
+@pytest.mark.parametrize(
+    ("status", "exception"), [(400, TelegramError), (429, TelegramUnavailableError)]
+)
+def test_verified_edit_preserves_definite_rejections_without_retrying(
+    status: int,
+    exception: type[Exception],
+) -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            status,
+            json={
+                "ok": False,
+                "error_code": status,
+                "description": "request rejected",
+                "parameters": {"retry_after": 2},
+            },
+        )
+
+    with pytest.raises(exception, match="request rejected"):
+        _client(handler).edit_message_verified(-100123, 12, "text")
+
+    assert len(requests) == 1
+
+
+@pytest.mark.parametrize(
+    ("chat_id", "message_id"), [(cast(int, "@reader"), 12), (0, 12), (True, 12), (-100123, 0)]
+)
+def test_verified_edit_refuses_unpinned_targets_before_network(
+    chat_id: int,
+    message_id: int,
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError("Unpinned edits must not reach the transport")
+
+    with pytest.raises(ValueError, match="verified edit requires"):
+        _client(handler).edit_message_verified(chat_id, message_id, "text")
 
 
 def test_api_error_carries_the_code() -> None:
