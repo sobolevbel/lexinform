@@ -1,0 +1,161 @@
+{
+  "status": "qualified-offline",
+  "base": "J470 b840a57c plus J471\u2013J476 source/test plan patches, shared J471 rehome helper adapted at J474",
+  "base_patch_sha256": {
+    "j471": "ba4b2f9c99163913116d697cbda01e2b6405a0faf5bd608f7b7e35bc7429ca5b",
+    "j472": "2edd05f1773473cc9f28cb53b76f55594d13c5ab955e55bf2189abc2b286bc60",
+    "j473": "43eea94f0f5d699b8ff98a2dd1c648e56f610ffdf45f8121952167ecccd3925e",
+    "j474": "90d6c2d7a35604bb8a298cf9e31e947185f40b96cf6f46a739ad4fd724028d93",
+    "j475": "29ab5293f50038984dc4f673d4ab20a17aa64d5acea504b45e4308b5fe35f159",
+    "j476": "633420f437e9cd7a280bfd1999a50367f3d4d429b1edf8c0cf783fa75d80d8ab"
+  },
+  "rehome_prerequisite": {
+    "sha256": "133ce984d7f721ced63b3fff068bf21e19e6c3fe2dbed5cdcc21f25f4e9a62db",
+    "local_adapter": "/tmp/multipart_rehome_adapter.py"
+  },
+  "worktrees": {
+    "writer": "/tmp/lexinform-extended-stage-history",
+    "reader": "/tmp/lexinform-extended-stage-reader",
+    "pre_reader": "/tmp/lexinform-extended-stage-old"
+  },
+  "patch_sha256": {
+    "reader.patch": "9b9250010372149dfbf3865c63a97a2484b397dbe82ed4f34d405270eecdc280",
+    "writer.patch": "3c19f0b36548bc361b7178890c3ceb3f57c00bd9af1ac62db828baccc4380661"
+  },
+  "scope": "Prospective ordinary Sejm process stage-update group, 3\u20135 distinct logical owners and one physical render/receipt. Existing grouped-stage-content-v1 ordered member vector expands, with unchanged two-member bytes, witness, revision, and 16 KiB working budget. No formatter, sender or delivery-selection change.",
+  "limits": {
+    "new_group_members": [
+      3,
+      5
+    ],
+    "new_group_budget_bytes": 40960,
+    "physical_messages": 1,
+    "excluded": [
+      "Unlinked government rollover owners: compact group Bill projection lacks canonical government source proof.",
+      "Six or more members, held/combined-act updates, amendments/supplements, unknown historical origin or unsupported anchor.",
+      "New correction/edit activation, multipart direct update, and historical backfill."
+    ]
+  },
+  "cases": {
+    "2": {
+      "logical_publication_ids": [
+        3,
+        4
+      ],
+      "physical_receipt": 103,
+      "physical_sends": 1,
+      "exact_html_sha256": "f0feccb804ebe612b1be5883dab5f5a312fd7cbc270376cbeb3b997d9d1191d3",
+      "before_content_id": "content-v1:17d11002e94d32abab8b1ae4002cb230a65d86ef5955aaa27a3d55fbe666b4a2",
+      "after_content_id": "content-v1:17d11002e94d32abab8b1ae4002cb230a65d86ef5955aaa27a3d55fbe666b4a2",
+      "exact_restores_per_lane": 2,
+      "sql_bytes": {
+        "before": 96247,
+        "after": 96247,
+        "delta": 0
+      },
+      "gzip_bytes": {
+        "before": 16204,
+        "after": 16204,
+        "delta": 0
+      },
+      "dump_sha256": {
+        "before": "83d4fecf4036a59ad3a39a5b20d7e3588a3af5b6a21986f9730b2ffadc9457d5",
+        "after": "83d4fecf4036a59ad3a39a5b20d7e3588a3af5b6a21986f9730b2ffadc9457d5"
+      },
+      "added_rows": {
+        "content_snapshots": 0,
+        "content_versions": 0,
+        "publication_content": 0
+      },
+      "other_sql_row_differences": false
+    },
+    "3": {
+      "logical_publication_ids": [
+        4,
+        5,
+        6
+      ],
+      "physical_receipt": 104,
+      "physical_sends": 1,
+      "exact_html_sha256": "114e6247f2df065fd8a0c387042774085f8a9b1433fb64115b4359a19b04d318",
+      "before_content_id": null,
+      "after_content_id": "content-v1:9369fcb1a57a42f74445764af31f63f43a30d029a33ce2a640230594a58c6fed",
+      "exact_restores_per_lane": 2,
+      "sql_bytes": {
+        "before": 108579,
+        "after": 122837,
+        "delta": 14258
+      },
+      "gzip_bytes": {
+        "before": 16331,
+        "after": 18658,
+        "delta": 2327
+      },
+      "dump_sha256": {
+        "before": "169dcb9d8a42f1aa88b01347633313456669627a32089cb14821fe2f13f3cb76",
+        "after": "d82a5effffebb5aefc48896f830d304baaa03921da8bc251c156ab559d92d64d"
+      },
+      "added_rows": {
+        "content_snapshots": 7,
+        "content_versions": 1,
+        "publication_content": 1
+      },
+      "other_sql_row_differences": false
+    },
+    "5": {
+      "logical_publication_ids": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "physical_receipt": 106,
+      "physical_sends": 1,
+      "exact_html_sha256": "fbb0ff8bd84de802c3c5d953ea5fe4016e2e579a5046aa1c57ffd2e6152c0cce",
+      "before_content_id": null,
+      "after_content_id": "content-v1:f23f205801bf71bc72c03f11bea9ba0d629150ba63365fc938071d147cb43246",
+      "exact_restores_per_lane": 2,
+      "sql_bytes": {
+        "before": 155085,
+        "after": 176674,
+        "delta": 21589
+      },
+      "gzip_bytes": {
+        "before": 20409,
+        "after": 23023,
+        "delta": 2614
+      },
+      "dump_sha256": {
+        "before": "be1ee8ab6ce83b1d38e244fc762070a7c55dabbbeace0963f3ca727f8b14630d",
+        "after": "4c164aa02170eb71fc17563a634546b60f4c809fb17b9bedf73acee7c921e194"
+      },
+      "added_rows": {
+        "content_snapshots": 11,
+        "content_versions": 1,
+        "publication_content": 1
+      },
+      "other_sql_row_differences": false
+    }
+  },
+  "reader_controls": {
+    "old_two_member_state_exact_restore_and_id": true,
+    "new_exact_restores_each": 2,
+    "wrong_member_receipt_rejected_atomically": true,
+    "old_reader_rejects_both_extended_shapes_atomically": true
+  },
+  "unknown_recovery": "One accepted/lost-response send, all three members remain UNKNOWN, no automatic repeat. Audited confirmation from a sibling assigns one common receipt and current immutable version. Audited dismissal keeps same frozen history with current unavailable. Two-member existing correction coverage retained.",
+  "pinned_scope": "State 4764779e contained two retained rows in one 2-member group and no retained 3\u20135 group. Qualification uses the ordinary production-profile Poster freeze with fake upstream data and actual renderer.",
+  "checks": {
+    "focused_tests": 64,
+    "mypy_files": 10,
+    "ruff": true,
+    "git_diff_checks": true,
+    "forward_patch_checks": true
+  },
+  "evidence": {
+    "paired_driver": "/tmp/extended-stage-history-evidence/qualify.py",
+    "reader_driver": "/tmp/extended-stage-history-evidence/check_reader.py",
+    "focused_log_sha256": "34c982ab8ec33aae74536357e32a30f63f182652e5b57271dbd81a2d50eebeef"
+  }
+}

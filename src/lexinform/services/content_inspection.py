@@ -263,8 +263,10 @@ def _grouped_member_content(
     root = repo.get_publication_content(root_id)
     if root is None or root.grouped_stage_evidence is None:
         return None
-    first, second = root.grouped_stage_evidence.members
-    if (first.publication_id, second.publication_id) != (root_id, publication.id):
+    first, *siblings = root.grouped_stage_evidence.members
+    if first.publication_id != root_id or all(
+        member.publication_id != publication.id for member in siblings
+    ):
         return None
     return root
 

@@ -56,6 +56,7 @@ from lexinform.models.content import (
     MAX_GROUPED_STAGE_CONTENT_BYTES,
     CardPrimaryEvidence,
     card_bill_snapshot,
+    grouped_stage_content_budget,
     original_delivery_bill_snapshot,
 )
 from lexinform.models.events import amendments_stage
@@ -73,6 +74,7 @@ from lexinform.models.original_delivery_content import (
 )
 from lexinform.models.primary_projections import PRIMARY_USAGE_FIELDS
 from lexinform.models.rcl import RclProject, rcl_number
+from lexinform.models.sejm import has_process
 from lexinform.models.sitting_content import (
     MAX_SITTING_HISTORY_BYTES,
     SittingContentPlan,
@@ -633,44 +635,51 @@ def verify_grouped_stage_content(
     if evidence.revision is not None:
         return _verify_grouped_stage_revision(connection, version, require_bound=require_bound)
     ref = f"updates/{version.root_publication_id}"
+    ids = tuple(member.publication_id for member in evidence.members)
     selected = _query(
         connection,
-        "SELECT * FROM publications WHERE ref=? AND kind='status_update' LIMIT 3",
-        (ref,),
+        "SELECT * FROM publications WHERE ref=? AND kind='status_update' LIMIT ?",
+        (ref, len(ids) + 1),
     ).fetchall()
     by_id = {row["id"]: read_content_publication(row) for row in selected}
-    ids = tuple(member.publication_id for member in evidence.members)
     if set(by_id) != set(ids):
         raise ValueError("grouped_stage_membership")
-    root, second = (by_id[identity] for identity in ids)
+    text = version.rendered_text or ""
+    if len(ids) > 2 and (not text.strip() or utf16_length(text) > MESSAGE_LIMIT):
+        raise ValueError("grouped_stage_physical_html")
+    publications = tuple(by_id[identity] for identity in ids)
+    root = publications[0]
     if (
-        root.channel_id != second.channel_id
-        or (root.term, root.number) == (second.term, second.number)
-        or (root.status, root.message_id, root.telegram_chat_id)
-        != (second.status, second.message_id, second.telegram_chat_id)
-        or root.document_message_ids
-        or second.document_message_ids
+        len({(row.term, row.number) for row in publications}) != len(ids)
+        or (len(ids) > 2 and any(not has_process(row.number) for row in publications))
+        or any(
+            (row.channel_id, row.status, row.message_id, row.telegram_chat_id)
+            != (root.channel_id, root.status, root.message_id, root.telegram_chat_id)
+            or row.document_message_ids
+            for row in publications
+        )
     ):
         raise ValueError("grouped_stage_receipt")
     if root.status is PublicationStatus.SENT:
         if (
             root.message_id is None
             or root.message_id <= 0
-            or root.sent_at is None
-            or second.sent_at is None
+            or any(row.sent_at is None for row in publications)
         ):
             raise ValueError("grouped_stage_receipt")
     elif (
-        root.status
-        not in (
-            PublicationStatus.QUEUED,
-            PublicationStatus.PENDING,
-            PublicationStatus.FAILED,
-            PublicationStatus.UNKNOWN,
+        (
+            root.status
+            not in (
+                PublicationStatus.QUEUED,
+                PublicationStatus.PENDING,
+                PublicationStatus.FAILED,
+                PublicationStatus.UNKNOWN,
+            )
+            and not (len(ids) > 2 and root.status is PublicationStatus.DISMISSED)
         )
         or root.message_id is not None
-        or root.sent_at is not None
-        or second.sent_at is not None
+        or any(row.sent_at is not None for row in publications)
     ):
         raise ValueError("grouped_stage_receipt")
     bindings = _query(
@@ -678,7 +687,9 @@ def verify_grouped_stage_content(
         "SELECT publication_id FROM publication_content WHERE content_id=? LIMIT 2",
         (version.content_id,),
     ).fetchall()
-    if bindings and [binding[0] for binding in bindings] != [root.id]:
+    if (bindings or (len(ids) > 2 and require_bound)) and [binding[0] for binding in bindings] != [
+        root.id
+    ]:
         raise ValueError("grouped_stage_binding_scope")
     reader = ContentSourceRows(connection)
     snapshots: dict[str, ContentSnapshot] = {}
@@ -687,11 +698,9 @@ def verify_grouped_stage_content(
         if snapshot is None or snapshot.kind != kind:
             raise ValueError("grouped_stage_snapshot_missing")
         snapshots[identity] = snapshot
-    if (
-        sum(len(snapshot.payload_json.encode()) for snapshot in snapshots.values())
-        + len((version.rendered_text or "").encode())
-        > MAX_GROUPED_STAGE_CONTENT_BYTES
-    ):
+    if sum(len(snapshot.payload_json.encode()) for snapshot in snapshots.values()) + len(
+        (version.rendered_text or "").encode()
+    ) > grouped_stage_content_budget(len(ids)):
         raise ValueError("grouped_stage_content_bound")
     compact = DeliveryPlan.model_validate_json(snapshots[version.plan_snapshot_id].payload_json)
     if (
@@ -705,14 +714,14 @@ def verify_grouped_stage_content(
     if witness is not None and (
         witness.today != compact.today
         or tuple((owner.term, owner.number) for owner in witness.members)
-        != ((root.term, root.number), (second.term, second.number))
+        != tuple((row.term, row.number) for row in publications)
     ):
         raise ValueError("grouped_stage_render_witness_scope")
-    plans = (root.delivery, second.delivery)
-    first_plan, second_plan = plans
+    plans = tuple(row.delivery for row in publications)
+    first_plan = plans[0]
     if None in plans and (root.status is not PublicationStatus.SENT or not bindings):
         raise ValueError("grouped_stage_expired_scope")
-    shared = first_plan or second_plan
+    shared = next((plan for plan in plans if plan is not None), None)
     if shared is not None and (
         shared.group_text != version.rendered_text
         or shared.today != compact.today
@@ -721,13 +730,14 @@ def verify_grouped_stage_content(
             first_plan is not None
             and content_delivery_mismatch(version, snapshots, first_plan) is not None
         )
-        or (
-            second_plan is not None
+        or any(
+            plan is not None
             and (
-                second_plan.group_text != shared.group_text
-                or second_plan.today != shared.today
-                or second_plan.update_group != shared.update_group
+                plan.group_text != shared.group_text
+                or plan.today != shared.today
+                or plan.update_group != shared.update_group
             )
+            for plan in plans[1:]
         )
     ):
         raise ValueError("grouped_stage_frozen_plan")
@@ -801,7 +811,7 @@ def read_grouped_stage_telegram_target(
     connection: sqlite3.Connection, version: ContentVersion
 ) -> tuple[int, int] | None:
     evidence = version.grouped_stage_evidence
-    if evidence is None or evidence.revision is not None:
+    if evidence is None or len(evidence.members) != 2 or evidence.revision is not None:
         return None
     root_id = verify_grouped_stage_content(connection, version, require_bound=True)
     row = _query(

@@ -125,8 +125,15 @@ def content_snapshot_refs(version: ContentVersion) -> tuple[tuple[str, str], ...
     if original is not None and original.joint_primary is not None:
         return (*refs, ("bill", original.joint_primary.bill_snapshot_id))
     if version.grouped_stage_evidence is not None:
-        second = version.grouped_stage_evidence.members[1]
-        return (*refs, ("bill", second.bill_snapshot_id), ("change", second.change_snapshot_id))
+        additional = tuple(
+            reference
+            for member in version.grouped_stage_evidence.members[1:]
+            for reference in (
+                ("bill", member.bill_snapshot_id),
+                ("change", member.change_snapshot_id),
+            )
+        )
+        return (*refs, *additional)
     return refs
 
 

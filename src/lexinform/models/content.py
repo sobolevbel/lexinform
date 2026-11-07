@@ -106,6 +106,18 @@ class DirectStageContentEvidence(BaseModel):
 
 
 MAX_GROUPED_STAGE_CONTENT_BYTES = 16_384
+MAX_EXTENDED_GROUPED_STAGE_MEMBERS = 5
+MAX_EXTENDED_GROUPED_STAGE_CONTENT_BYTES = 40_960
+
+
+def grouped_stage_content_budget(member_count: int) -> int:
+    return (
+        MAX_GROUPED_STAGE_CONTENT_BYTES
+        if member_count == 2
+        else MAX_EXTENDED_GROUPED_STAGE_CONTENT_BYTES
+    )
+
+
 type GroupSqlId = Annotated[int, Field(gt=0, lt=2**63, strict=True)]
 type SnapshotId = Annotated[str, Field(pattern=r"^content-snapshot-v1:[0-9a-f]{64}$")]
 type Sha256 = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
@@ -134,7 +146,9 @@ class GroupedStageContentEvidence(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     profile: Literal["grouped-stage-content-v1"] = "grouped-stage-content-v1"
-    members: tuple[GroupedStageMember, GroupedStageMember]
+    members: tuple[GroupedStageMember, ...] = Field(
+        min_length=2, max_length=MAX_EXTENDED_GROUPED_STAGE_MEMBERS
+    )
     render_witness: GroupedRenderWitness | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -142,6 +156,14 @@ class GroupedStageContentEvidence(BaseModel):
     revision: GroupedStageRevisionEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+
+    @model_validator(mode="after")
+    def correction_scope(self) -> Self:
+        if len(self.members) != 2 and (
+            self.render_witness is not None or self.revision is not None
+        ):
+            raise ValueError("group correction requires two members")
+        return self
 
 
 type ContentReason = Literal[
@@ -344,14 +366,15 @@ class ContentVersion(BaseModel):
         ):
             raise ValueError("Grouped stage revisions require explicit physical revision evidence")
         if group is not None:
-            first, second = group.members
+            first = group.members[0]
             if (
                 self.reason not in ("original", "grouped_stage_revision")
                 or self.language not in ("ru", "en")
                 or not self.formatter_version
                 or len(self.formatter_version) > 128
                 or not self.rendered_text
-                or len(self.rendered_text.encode()) > MAX_GROUPED_STAGE_CONTENT_BYTES
+                or len(self.rendered_text.encode())
+                > grouped_stage_content_budget(len(group.members))
                 or self.card_context_profile is not None
                 or self.direct_stage_evidence is not None
                 or self.source_scope is not None
@@ -371,15 +394,16 @@ class ContentVersion(BaseModel):
                     self.bill_snapshot_id,
                     self.change_snapshot_id,
                 )
-                or first.publication_id == second.publication_id
-                or first.anchor_publication_id == second.anchor_publication_id
-                or first.status_change_id == second.status_change_id
+                or any(
+                    len({getattr(member, field) for member in group.members}) != len(group.members)
+                    for field in ("publication_id", "anchor_publication_id", "status_change_id")
+                )
             ):
-                raise ValueError("Grouped stage history requires two distinct ordered originals")
+                raise ValueError("Grouped stage history requires distinct ordered originals")
             if group.revision is not None and (
                 group.render_witness is None
                 or group.revision.member_publication_id
-                not in (first.publication_id, second.publication_id)
+                not in tuple(member.publication_id for member in group.members)
             ):
                 raise ValueError("Grouped stage revisions require a witnessed member of the group")
             witness = group.render_witness
