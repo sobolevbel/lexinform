@@ -9,6 +9,7 @@ from lexinform.content_sources import (
     supported_source_context,
 )
 from lexinform.content_versions import (
+    act_published_plan_matches,
     card_physical_matches,
     direct_stage_plan_matches,
     grouped_stage_context,
@@ -30,8 +31,10 @@ from lexinform.models import (
     amendments_stage,
 )
 from lexinform.models.content import (
+    MAX_ACT_PUBLISHED_CONTENT_BYTES,
     MAX_DIRECT_STAGE_CONTENT_BYTES,
     MAX_GROUPED_STAGE_CONTENT_BYTES,
+    ActPublishedContentEvidence,
     DirectStageContentEvidence,
     GroupedStageContentEvidence,
     GroupedStageMember,
@@ -41,6 +44,7 @@ from lexinform.models.content import (
 )
 from lexinform.models.grouped_update_witness import GroupedRenderWitness
 from lexinform.ports import BillRepository, Clock
+from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 
 FORMATTER_VERSION = "telegram-format-v2"
 
@@ -261,6 +265,15 @@ def prepare_publication_content(
             language=language,
             formatter_version=formatter_version,
         )
+    if publication.kind is PublicationKind.ACT_PUBLISHED:
+        if repo.digest_owner(publication.id) is not None:
+            return None
+        return _prepare_act_published_content(
+            publication,
+            origin=application_origin,
+            language=language,
+            formatter_version=formatter_version,
+        )
     plan = publication.delivery
     if (
         publication.kind not in (PublicationKind.STATUS_UPDATE, PublicationKind.AMENDMENTS_REVISION)
@@ -368,6 +381,64 @@ def prepare_publication_content(
         recorded_at=clock.now(),
     )
     return version, (bill_snapshot, change_snapshot, plan_snapshot)
+
+
+def _prepare_act_published_content(
+    publication: Publication,
+    *,
+    origin: Publication | None,
+    language: str | None,
+    formatter_version: str | None,
+) -> tuple[ContentVersion, tuple[ContentSnapshot, ...]] | None:
+    plan = publication.delivery
+    if (
+        origin is None
+        or origin.id != publication.id
+        or origin.status is not PublicationStatus.QUEUED
+        or origin.attempts
+        or origin.delivery is None
+        or origin.delivery.rendered_text
+        or publication.id is None
+        or publication.status_change_id is not None
+        or plan is None
+        or not plan.rendered_text.strip()
+        or utf16_length(plan.rendered_text) > MESSAGE_LIMIT
+        or not plan.bill_json
+        or plan.change_json
+        or language not in ("ru", "en")
+        or not formatter_version
+        or len(formatter_version) > 128
+        or not 0 < len(publication.channel_id) <= 256
+        or len(publication.ref or "") > 512
+    ):
+        return None
+    bill = Bill.model_validate_json(plan.bill_json)
+    if bill.act is None or (bill.term, bill.number) != (publication.term, publication.number):
+        return None
+    bill_snapshot = editorial_bill_snapshot(plan.bill_json)
+    plan_snapshot = _plan_snapshot(plan)
+    if (
+        not act_published_plan_matches(DeliveryPlan.model_validate_json(plan_snapshot.payload_json))
+        or len(bill_snapshot.payload_json.encode())
+        + len(plan_snapshot.payload_json.encode())
+        + len(plan.rendered_text.encode())
+        > MAX_ACT_PUBLISHED_CONTENT_BYTES
+    ):
+        return None
+    version = ContentVersion(
+        root_publication_id=publication.id,
+        reason="original",
+        language=language,
+        formatter_version=formatter_version,
+        bill_snapshot_id=bill_snapshot.snapshot_id,
+        plan_snapshot_id=plan_snapshot.snapshot_id,
+        rendered_text=plan.rendered_text,
+        recorded_at=publication.created_at,
+        act_published_evidence=ActPublishedContentEvidence(
+            channel_id=publication.channel_id, ref=publication.ref
+        ),
+    )
+    return version, (bill_snapshot, plan_snapshot)
 
 
 def record_grouped_stage_content(

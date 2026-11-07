@@ -15,6 +15,7 @@ from lexinform.models import (
     Stage,
 )
 from lexinform.ports import PublishResult
+from lexinform.services.content_inspection import inspect_content
 from tests.checkpoint_state import StoredState, saved_state
 from tests.harness import CHANNEL, TERM, World, act, submission
 from tests.scenario.test_card_remote_checkpoints import (
@@ -277,13 +278,15 @@ def test_notice_parts_have_remote_frozen_membership_and_receipt_parents_before_a
     assert len(observed) == len(expected)
     fresh = restored(remote, world, tmp_path)
     assert all(row(fresh, identity).status is PublicationStatus.SENT for identity in observed)
+    assert all(fresh.repo.get_publication_content(identity) is None for identity in observed)
 
 
 @pytest.mark.parametrize("action", ["retry", "confirm 777"])
+@pytest.mark.parametrize("kind", [PublicationKind.HEARING_DEADLINE, PublicationKind.ACT_PUBLISHED])
 def test_lost_notice_runner_requires_audited_recovery_of_its_original_payload(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, action: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, action: str, kind: PublicationKind
 ) -> None:
-    case = queued(PublicationKind.HEARING_DEADLINE)
+    case = queued(kind)
     world = case.world
     remote = connect(world, tmp_path)
     original = world.publisher.publish_prepared
@@ -298,6 +301,11 @@ def test_lost_notice_runner_requires_audited_recovery_of_its_original_payload(
     fresh = restored(remote, world, tmp_path)
     fresh.repo.mark_stale_pending_as_unknown(now=fresh.clock.now())
     saved = plan(fresh, case.identity)
+    version = fresh.repo.get_publication_content(case.identity)
+    if kind is PublicationKind.ACT_PUBLISHED:
+        assert version is not None and version.rendered_text == saved.rendered_text
+        unknown_view = inspect_content(fresh.repo, row(fresh, case.identity))
+        assert unknown_view is not None and unknown_view.current_id is None
     before = len(fresh.publisher.sent)
     fresh.container.delivery_service(dry_run=False).run()
     assert len(fresh.publisher.sent) == before
@@ -324,6 +332,11 @@ def test_lost_notice_runner_requires_audited_recovery_of_its_original_payload(
     assert row(fresh, case.identity).status is PublicationStatus.SENT
     if action == "confirm 777":
         assert row(fresh, case.identity).message_id == 777
+    if kind is PublicationKind.ACT_PUBLISHED:
+        assert version is not None, "the original freeze retained its edition"
+        assert fresh.repo.get_publication_content(case.identity) == version
+        sent_view = inspect_content(fresh.repo, row(fresh, case.identity))
+        assert sent_view is not None and sent_view.current_id == version.content_id
 
 
 @pytest.mark.parametrize("outcome", ["definite", "outage", "unknown"])
