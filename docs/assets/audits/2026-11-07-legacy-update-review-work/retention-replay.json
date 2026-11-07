@@ -1,0 +1,32 @@
+{
+  "state_commit": "607e9f30b4c01c0a06987e40d573f6c26d2e5fae",
+  "clock": "2026-11-06T23:30:41+00:00",
+  "history_days": 90,
+  "memo_days": 180,
+  "days_after_pin": {
+    "0": {
+      "retained_nonempty_review_work_rows": 6,
+      "review_work_json_bytes": 7960564,
+      "gzip_bytes": 5401733,
+      "cleanup_counts": {
+        "delivery_payloads": 0,
+        "analysis_memos": 0,
+        "batch_payloads": 5
+      },
+      "second_prune_noop": true,
+      "restore_exact": true
+    },
+    "90": {
+      "retained_nonempty_review_work_rows": 0,
+      "review_work_json_bytes": 0,
+      "gzip_bytes": 2764151,
+      "cleanup_counts": {
+        "delivery_payloads": 180,
+        "analysis_memos": 0,
+        "batch_payloads": 5
+      },
+      "second_prune_noop": true,
+      "restore_exact": true
+    }
+  }
+}

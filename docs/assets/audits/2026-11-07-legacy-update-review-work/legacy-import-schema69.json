@@ -1,0 +1,14 @@
+{
+  "applied": true,
+  "baseline_gzip_bytes": 5461689,
+  "baseline_sql_bytes": 27294525,
+  "compact_gzip_bytes": 5595677,
+  "compact_sql_bytes": 27893656,
+  "exact_restores": 2,
+  "input_sql_sha256": "8603f3b5e785f696cf49a026af692f84d9d1f1283de5ce93ddcd24fcd28a3f72",
+  "manifest_sha256": "275af83ce77e0400944947523fbe5fb1b31ace82b2d588f0a05bd515b567a607",
+  "planning_no_mutation": true,
+  "schema": 69,
+  "second_apply_noop": true,
+  "state_commit": "607e9f30b4c01c0a06987e40d573f6c26d2e5fae"
+}

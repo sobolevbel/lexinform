@@ -1,0 +1,17 @@
+{
+  "scope": "Counterfactual scratch removal of nonempty review_work only from confirmed legacy status update delivery snapshots",
+  "state_commit": "607e9f30b4c01c0a06987e40d573f6c26d2e5fae",
+  "rows": 6,
+  "serialized_field_bytes": 7960564,
+  "baseline": {
+    "sql_bytes": 27292900,
+    "gzip_bytes": 5461518,
+    "sha256": "a10018f93f7baf2446b43e749f7fbac110f3cdf9f5d257438fe19f6214de382e"
+  },
+  "candidate": {
+    "sql_bytes": 19293318,
+    "gzip_bytes": 3478748,
+    "sha256": "fe3676dedf74e2fb946e7dd49c3c4623cf13dc5d7b08e48cfa9f06cf80ace380"
+  },
+  "scratch_restore_exact": true
+}
