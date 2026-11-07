@@ -6351,6 +6351,8 @@ class SqliteBillRepository:
                     " SELECT 1 FROM content_versions v WHERE"
                     " json_extract(v.version_json,"
                     " '$.direct_stage_evidence.anchor_publication_id')=p.id"
+                    " OR json_extract(v.version_json,"
+                    " '$.original_delivery_evidence.joint_primary.publication_id')=p.id"
                     " OR EXISTS (SELECT 1 FROM json_each(v.version_json,"
                     " '$.grouped_stage_evidence.members') member"
                     " WHERE json_extract(member.value, '$.anchor_publication_id')=p.id))",
