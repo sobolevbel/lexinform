@@ -1,0 +1,25 @@
+{
+  "base": "90c08e76c9059b5fa3f67e3632fea28644790bf6",
+  "patch_sha256": {
+    "reader.patch": "df8c1b4174bc768623e8167cdf6986ce5eb3921a22c1c38db0295534c60aec06",
+    "writer.patch": "522242141a610c4300040b5c23becf002a74c516f5bdbdd631df512bd1ff0421"
+  },
+  "baseline_failure": "ordinary JOINT_BILL then /republish primary 3038 -> invalid_content_history/joint_history_primary_snapshot",
+  "controls": {
+    "double_restore_reader_only": 2,
+    "old_reader_rejects_atomically": "joint_history_primary_snapshot",
+    "invalid_receipts": [
+      "absent",
+      "replacement card message ID",
+      "sent time after joint freeze"
+    ],
+    "targeted_tests": 6,
+    "mypy_files": 3,
+    "ruff_check_format_and_diff_check": "pass"
+  },
+  "size_per_receipt_bytes": {
+    "sql": 97,
+    "gzip": 19
+  },
+  "scope": "Existing compact retired_stage_anchors table; no schema changes/backfill. Exact previously bound JOINT history only; first freeze still needs live primary. Historical original content ID and old reply preserved. Own-root deletions are separate, reproducible as original_delivery_part_missing for multipart NEW_BILL and JOINT_BILL."
+}

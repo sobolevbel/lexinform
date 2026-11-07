@@ -544,7 +544,9 @@ class StageAnchorReceipt(NamedTuple):
     sent_at: datetime
 
 
-def _stage_anchor(connection: sqlite3.Connection, identity: int) -> StageAnchorReceipt | None:
+def _stage_anchor(
+    connection: sqlite3.Connection, identity: int, *, allow_retired: bool = True
+) -> StageAnchorReceipt | None:
     live = _query(connection, "SELECT * FROM publications WHERE id=?", (identity,)).fetchone()
     if live is not None:
         anchor = read_content_publication(live)
@@ -559,6 +561,8 @@ def _stage_anchor(connection: sqlite3.Connection, identity: int) -> StageAnchorR
         return StageAnchorReceipt(
             anchor.term, anchor.number, anchor.channel_id, anchor.message_id, anchor.sent_at
         )
+    if not allow_retired:
+        return None
     archived = _query(
         connection, "SELECT * FROM retired_stage_anchors WHERE id=?", (identity,)
     ).fetchone()
@@ -1423,14 +1427,24 @@ def verify_original_delivery_content(
     joint = evidence.joint_primary
     if joint is not None:
         primary_snapshot = reader.get_content_snapshot(joint.bill_snapshot_id)
-        primary_row = _query(
-            connection, "SELECT * FROM publications WHERE id=?", (joint.publication_id,)
-        ).fetchone()
+        primary = _stage_anchor(connection, joint.publication_id, allow_retired=False)
+        if primary is None and (
+            require_bound
+            or _query(
+                connection,
+                "SELECT 1 FROM publication_content WHERE publication_id=? AND content_id=?",
+                (version.root_publication_id, version.content_id),
+            ).fetchone()
+            is not None
+        ):
+            primary = _stage_anchor(connection, joint.publication_id)
+            if primary is not None and primary.sent_at > version.recorded_at:
+                raise ValueError("joint_history_primary_receipt")
         if (
             primary_snapshot is None
             or primary_snapshot.kind != "bill"
             or original_delivery_bill_snapshot(primary_snapshot.payload_json) != primary_snapshot
-            or primary_row is None
+            or primary is None
             or len(primary_snapshot.payload_json.encode())
             + len(bill_snapshot.payload_json.encode())
             + len(snapshot.payload_json.encode())
@@ -1438,11 +1452,8 @@ def verify_original_delivery_content(
         ):
             raise ValueError("joint_history_primary_snapshot")
         primary_bill = Bill.model_validate(read_json(primary_snapshot.payload_json))
-        primary = read_content_publication(primary_row)
         if (
-            primary.kind is not PublicationKind.NEW_BILL
-            or primary.status is not PublicationStatus.SENT
-            or primary.message_id != plan.root.reply_to
+            primary.message_id != plan.root.reply_to
             or primary.channel_id != evidence.channel_id
             or (primary.term, primary.number) != (primary_bill.term, primary_bill.number)
             or primary.term != bill.term
