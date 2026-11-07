@@ -1,0 +1,3 @@
+PYTHONPATH=/tmp/lexinform-j455-rrjCS3/src:/tmp/lexinform-j455-rrjCS3 /Users/sobaleu/projects/lexinform/.venv/bin/python out/corpus/block-input-writer/corpus-replay.py /tmp/lexinform-j456-proof-kT3NDm/corpus-before.json
+PYTHONPATH=/tmp/lexinform-j456-MUOE74/src:/tmp/lexinform-j456-MUOE74 /Users/sobaleu/projects/lexinform/.venv/bin/python out/corpus/block-input-writer/corpus-replay.py /tmp/lexinform-j456-proof-kT3NDm/corpus-after.json
+python3 out/corpus/block-input-writer/corpus-compare.py /tmp/lexinform-j456-proof-kT3NDm/corpus-before.json /tmp/lexinform-j456-proof-kT3NDm/corpus-after.json out/corpus/block-input-writer/corpus-qualification.json

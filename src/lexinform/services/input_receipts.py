@@ -1,6 +1,7 @@
 """Join prospective text receipts to parents from the actual captured read only."""
 
 from datetime import datetime
+from typing import cast
 
 from lexinform.document_editions import candidate_edition
 from lexinform.input_receipts import (
@@ -33,6 +34,7 @@ from lexinform.models import (
     SupplementQuestion,
     TextDocument,
 )
+from lexinform.models.block_input import PreparedBlockCompanion, PreparedBlockCopy
 from lexinform.models.documents import SenateAmendmentInputWitness
 from lexinform.models.input_receipts import (
     MAX_INPUT_RECEIPT_SEGMENTS,
@@ -503,7 +505,7 @@ def capture_secondary_input_receipt(
         if isinstance(request.question, AmendmentsQuestion)
         else supplement_input_receipt
     )
-    return builder(
+    captured = builder(
         request,
         selection,
         projection=projection,
@@ -511,6 +513,7 @@ def capture_secondary_input_receipt(
         body=body,
         extraction=extraction,
     )
+    return with_block_companion(captured, source, request.question.ctx.text) if captured else None
 
 
 def _senate_work_parents(
@@ -705,3 +708,98 @@ def enrich_supplement_input_intent(
     if not isinstance(original.meta, DigestItemMeta):
         raise ValueError("Supplement receipt enrichment requires secondary metadata")
     return _enrich_input_intent(original, receipt)
+
+
+def with_block_companion[
+    T: PrimaryInputReceipt
+    | MultipartTextInputReceipt
+    | SupplementInputReceipt
+    | AmendmentInputReceipt
+](receipt: T, source: SourceReadCapture | None, text: str) -> T:
+    try:
+        return _with_block_companion(receipt, source, text)
+    except Exception:
+        return receipt
+
+
+def _with_block_companion[
+    T: PrimaryInputReceipt
+    | MultipartTextInputReceipt
+    | SupplementInputReceipt
+    | AmendmentInputReceipt
+](receipt: T, source: SourceReadCapture | None, text: str) -> T:
+    if not isinstance(source, DocumentSourceRead) or receipt.block_companion is not None:
+        return receipt
+    rows: list[PreparedBlockCopy] = []
+    for segment in receipt.segments:
+        if segment.origin != "source" or segment.part_index is None or segment.source_start is None:
+            continue
+        index = segment.part_index
+        part = source.selection.selection.parts[index]
+        if isinstance(receipt, MultipartTextInputReceipt):
+            recorded = receipt.source_parts[index]
+            expected = (
+                receipt.extraction_id
+                if isinstance(
+                    receipt, (RclArchiveInputReceipt, RclArchiveSelfAmendmentInputReceipt)
+                )
+                and isinstance(recorded, ArchiveInputPart)
+                else recorded.extraction_id
+                if isinstance(recorded, LooseRclInputPart)
+                else None
+            )
+        else:
+            expected = receipt.extraction_id
+        matches = [
+            (extraction, summary)
+            for extraction in source.extractions
+            if extraction.result_id == expected
+            for summary in extraction.selected_parts
+            if archive_member_matches(part, summary, chars=summary.text_chars)
+            and summary.block_copy_witness is not None
+        ]
+        if len(matches) != 1:
+            continue
+        extraction, summary = matches[0]
+        witness = summary.block_copy_witness
+        assert witness is not None, "matches contains only retained block witnesses"
+        for run_index, run in enumerate(witness.runs):
+            start = segment.start + run.source_start - segment.source_start
+            end = start + run.source_end - run.source_start
+            if not segment.start <= start < end <= segment.end or (
+                input_text_sha256(text[start:end]) != run.text_sha256
+            ):
+                continue
+            rows.append(
+                PreparedBlockCopy(
+                    start=start,
+                    end=end,
+                    part_index=index,
+                    extraction_id=extraction.result_id,
+                    physical_index=summary.physical_index,
+                    witness_id=witness.witness_id,
+                    run_index=run_index,
+                    text_sha256=run.text_sha256,
+                )
+            )
+    if not rows:
+        return receipt
+    encoded = "[" + ",".join(row.model_dump_json() for row in rows) + "]"
+    rows_hash = input_text_sha256(encoded)
+    for length in range(min(32, len(rows)), 0, -1):
+        try:
+            companion = PreparedBlockCompanion(
+                retention="complete" if length == len(rows) else "prefix",
+                observed_rows=len(rows),
+                rows_sha256=rows_hash,
+                rows=tuple(rows[:length]),
+            )
+            return cast(
+                T,
+                type(receipt).model_validate(
+                    {**receipt.model_dump(), "block_companion": companion}
+                ),
+            )
+        except ValueError:
+            continue
+    return receipt

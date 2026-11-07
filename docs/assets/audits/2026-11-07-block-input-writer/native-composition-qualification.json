@@ -1,0 +1,39 @@
+{
+  "scratch": "/private/tmp/lexinform-j455-integrated-m5671f6v",
+  "head": "09f3876b2b58ff72ad0621a9d4f5fed687b5b691",
+  "previous_reader_tree": "246e97f09516bdee1fc7b170900d59d45e15c8a9",
+  "composed_reader_tree": "de3066d070b06f308076d68e96c1b73b181ffac1",
+  "composed_writer_tree": "d8069dca5d2287fc918784713f74d4c12723f8d5",
+  "writer_paths": [
+    "src/lexinform/adapters/document_text.py",
+    "src/lexinform/adapters/native_block_copies.py",
+    "src/lexinform/adapters/word_block_copies.py",
+    "src/lexinform/adapters/word_field_projection.py",
+    "src/lexinform/extraction_records.py",
+    "src/lexinform/models/word_view_capture.py",
+    "src/lexinform/pdf_projection.py",
+    "src/lexinform/services/analysis.py",
+    "src/lexinform/services/input_receipts.py",
+    "tests/unit/test_block_input_writer.py",
+    "tests/unit/test_native_block_writer.py",
+    "tests/unit/test_word_view_status.py"
+  ],
+  "patch_and_log_sha256": {
+    "native-block-reader/stage.patch": "f09908be5e76098f09e344033f28b2f58452349d2d906cc34a487886935f161a",
+    "native-block-reader/reader-extension.patch": "6114614c636c722c4b15a46f49d17bb0db2a815f36a8c65d53c11c156a453883",
+    "native-block-writer/extension.patch": "abb889629e71e4943d38e2c2b1c63a6fd04a5314ee0ca27d5ec3ab268b7c9add",
+    "native-block-writer/stage-composed.patch": "58a20fa192b3caed2834a7891082c83427583f1e5cf93c968eb2aeb9c7e84716",
+    "packed-archive-writer/test-fixture-fix.patch": "51424d5293dbbdab49bae750538197b96131406d3c9088f2e905000a492de37d",
+    "digest-history-lifecycle-fix/candidate.patch": "2f21c8eba90591933985aaa9dcbe0e224832027049a75e0d8e2ca0007b03160c",
+    "native-block-writer/composition-pytest.log": "4c8d2e46a81a8967e5515e040a285e9095ca5ea4ce468b17549c92e1bc18f4b5",
+    "native-block-writer/composition-mypy.log": "8e71d79dbad0b69ea084d2b82ffa1e884da682da321d892911c2549f0a4a4d72",
+    "native-block-writer/composition-ruff.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  "checks": {
+    "pytest": "215 passed (native, Word layout, digest and archive regressions)",
+    "mypy": "55 files passed",
+    "ruff": "passed",
+    "git_diff_check": "passed"
+  },
+  "scope": "Staged scratch composition only. Prior producer corpus qualification applies. Budget changes are separate."
+}

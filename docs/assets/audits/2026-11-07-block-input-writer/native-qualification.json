@@ -1,0 +1,264 @@
+{
+  "status": "qualified-offline",
+  "scratch": "/tmp/lexinform-j456-MUOE74",
+  "base_head_not_actual_dirty_tree": "b19663e04f0cfc98a57f41fec6a4e64aa3d37aa1",
+  "dirty": true,
+  "source_file_sha256": {
+    "src/lexinform/adapters/document_text.py": "7c4477ae37d47d1fd28b60a0f27fc383749e6c235fb54df8ff278961629db7a3",
+    "src/lexinform/pdf_projection.py": "213b138105c4b3f2e817d4c16cd08be9180ed326b75c073a6e3b61bdae838ac8",
+    "src/lexinform/adapters/native_block_copies.py": "7ace190e5f7cda6281c7f14d36b33b7b4388019c7344fad867db9c6545a04f75",
+    "tests/unit/test_native_block_writer.py": "8b3c4b89285f8edf266a7dbf41b128daec1c3b61c2a0c1e2c35fbe5133318ffb",
+    "src/lexinform/models/block_input.py": "be10be2b1114c8b808c11112cee5b39d115a6615350244fa292181bb4aca2e58",
+    "src/lexinform/models/extractions.py": "0ae66871857e885e10faf57fcebbdac438d9eeb1e5c79040a1d506b1d0644c9a",
+    "src/lexinform/extraction_records.py": "96eb0cc89aba78d4a5b5c070431a4cc22d3248019e84b95fb8c102c14304b0c8",
+    "src/lexinform/services/input_receipts.py": "cf57ff5d777038b86d6ecc8e39abfbc94c60cb7ed54858de14ce75f7fac0f39a"
+  },
+  "application_order": [
+    "Original J455 reader prerequisites",
+    "reader-prerequisite-final.patch (generic reader delta supplied by reader owner)",
+    "Existing original J456 writer patch (unchanged handoff)",
+    "extension.patch (this producer-only delta)"
+  ],
+  "existing_j456_stage_patch_sha256": "dd0521168ac1af9272cc5a99359b9c1891049ebced435371d1b1992126eb119e",
+  "patch_sha256": "abb889629e71e4943d38e2c2b1c63a6fd04a5314ee0ca27d5ec3ab268b7c9add",
+  "scope": "Native extraction-view copy evidence only. Word plain-XML producer and bytes preserved; no new service format branches, no second production raw read/XML parse, no provider/live/config/docs/queue/commit. Generic reader first is required before prospective writer.",
+  "prior_word": {
+    "cases": 59,
+    "core_native_manifests_read_counts_existing_word_runs_exact": true,
+    "all_read": true
+  },
+  "native": {
+    "roots": 7,
+    "cases": {
+      "documents/files/584479.zip": {
+        "text_selection_native_manifests_read_counts_exact": true,
+        "reads": {
+          "odt_body_reads": 0,
+          "pdf_extract_pages": 3,
+          "root_reads": 1,
+          "xml_parses": 57,
+          "zip_member_opens": 88
+        },
+        "witnesses": [],
+        "primary_companion_rows": 0,
+        "primary_companion_retention": null,
+        "request_sha256": null,
+        "exact_restores": 0,
+        "sql_delta": null
+      },
+      "documents/files/587739.pdf": {
+        "text_selection_native_manifests_read_counts_exact": true,
+        "reads": {
+          "odt_body_reads": 0,
+          "pdf_extract_pages": 1,
+          "root_reads": 1,
+          "xml_parses": 0,
+          "zip_member_opens": 0
+        },
+        "witnesses": [
+          {
+            "coordinates": "pdf-pages-v1",
+            "runs": 12,
+            "bytes": 3819
+          }
+        ],
+        "primary_companion_rows": 11,
+        "primary_companion_retention": "prefix",
+        "request_sha256": "0ee0435bf5cc1381f5863b7e71472855e04697e8f89c873ea57a29ac6529ce2d",
+        "exact_restores": 2,
+        "sql_delta": 7811
+      },
+      "documents/files/700362.zip": {
+        "text_selection_native_manifests_read_counts_exact": true,
+        "reads": {
+          "odt_body_reads": 0,
+          "pdf_extract_pages": 1,
+          "root_reads": 1,
+          "xml_parses": 7,
+          "zip_member_opens": 12
+        },
+        "witnesses": [],
+        "primary_companion_rows": 0,
+        "primary_companion_retention": null,
+        "request_sha256": null,
+        "exact_restores": 0,
+        "sql_delta": null
+      },
+      "documents/files/738682.zip": {
+        "text_selection_native_manifests_read_counts_exact": true,
+        "reads": {
+          "odt_body_reads": 2,
+          "pdf_extract_pages": 22,
+          "root_reads": 1,
+          "xml_parses": 2,
+          "zip_member_opens": 26
+        },
+        "witnesses": [
+          {
+            "coordinates": "pdf-pages-v1",
+            "runs": 12,
+            "bytes": 3815
+          }
+        ],
+        "primary_companion_rows": 0,
+        "primary_companion_retention": null,
+        "request_sha256": null,
+        "exact_restores": 0,
+        "sql_delta": null
+      },
+      "documents/files/744252.zip": {
+        "text_selection_native_manifests_read_counts_exact": true,
+        "reads": {
+          "odt_body_reads": 2,
+          "pdf_extract_pages": 1,
+          "root_reads": 1,
+          "xml_parses": 54,
+          "zip_member_opens": 87
+        },
+        "witnesses": [],
+        "primary_companion_rows": 0,
+        "primary_companion_retention": null,
+        "request_sha256": null,
+        "exact_restores": 0,
+        "sql_delta": null
+      },
+      "documents/files/763369.zip": {
+        "text_selection_native_manifests_read_counts_exact": true,
+        "reads": {
+          "odt_body_reads": 3,
+          "pdf_extract_pages": 2,
+          "root_reads": 1,
+          "xml_parses": 74,
+          "zip_member_opens": 112
+        },
+        "witnesses": [],
+        "primary_companion_rows": 0,
+        "primary_companion_retention": null,
+        "request_sha256": null,
+        "exact_restores": 0,
+        "sql_delta": null
+      },
+      "sejm/term10/files/1614__1614-uchwała.odt": {
+        "text_selection_native_manifests_read_counts_exact": true,
+        "reads": {
+          "odt_body_reads": 1,
+          "pdf_extract_pages": 0,
+          "root_reads": 1,
+          "xml_parses": 1,
+          "zip_member_opens": 1
+        },
+        "witnesses": [
+          {
+            "coordinates": "odt-blocks-v1",
+            "runs": 7,
+            "bytes": 2548
+          }
+        ],
+        "primary_companion_rows": 7,
+        "primary_companion_retention": "complete",
+        "request_sha256": "dae24e00be3fea03c114e255c1009bfc2175b5af94e835e7acafc47b4fa8cba3",
+        "exact_restores": 2,
+        "sql_delta": 5163
+      }
+    },
+    "witnesses": 3,
+    "runs": 31,
+    "independent_odt_raw_xml_verified_blocks": 7,
+    "sqlite_primary_profiles": 2,
+    "exact_restores_each": 2
+  },
+  "meaningful_controls": {
+    "count": 6,
+    "types": [
+      "date",
+      "amount",
+      "negation"
+    ],
+    "formats": [
+      "PDF extracted native page view",
+      "ODT raw ZIP/XML mutation"
+    ],
+    "scope": "Seeded synthetic phrases, not original legal text or new original PDF claims",
+    "artifact": "mutations.json"
+  },
+  "pinned_j440_quote": {
+    "normalized_source": [
+      204,
+      331
+    ],
+    "raw_original_mapping": [
+      206,
+      334
+    ],
+    "whole_literal_copy": false,
+    "equal_copy_intersections": [
+      {
+        "source": [
+          204,
+          305
+        ],
+        "raw_page": [
+          206,
+          307
+        ]
+      },
+      {
+        "source": [
+          306,
+          331
+        ],
+        "raw_page": [
+          309,
+          334
+        ]
+      }
+    ],
+    "unmapped_source": [
+      305,
+      306
+    ]
+  },
+  "bounds": {
+    "max_rows_per_witness": 32,
+    "max_witness_bytes": 4096,
+    "existing_extraction_metadata_max_bytes": 16384,
+    "existing_metadata_priority": true,
+    "pdf_raw_chars_limit": 1000000,
+    "pdf_page_limit": 2048,
+    "pdf_projected_runs_limit": 32,
+    "odt_supported_path_capture_limit": 32
+  },
+  "exclusions": [
+    "PDF normalized/replaced whitespace and page separators are not copied raw runs; no geometry claim.",
+    "Witness/companion byte caps may retain only prefixes; absence of a witness does not mean unreadable text.",
+    "ODT only projected paragraphs/headings whose complete inline subtree uses p/h/span/a/s/tab/line-break. Notes, date/other fields, changes, soft breaks, unknown inline and table rows excluded.",
+    "ODT is extraction-view proof, not literal XML character or full-view interpretation.",
+    "738682 archive selected PDF: its ODT leaves are not falsely treated as selected ODT positive;744252/763369 select Word.",
+    "584479/700362 routing controls have no selected native PDF/ODT witness.",
+    "Primary natural persisted proof uses existing pure primary receipt freeze seam and seeded offline identity, not actual production/provider requests.",
+    "Prior Word59 preserved; unsupported DOC/unlocated coordinates remain without witness."
+  ],
+  "checks": {
+    "focused_tests": 82,
+    "mypy_files": 4,
+    "ruff": true,
+    "diff_check": true,
+    "forward_and_reverse_patch_check": true
+  },
+  "artifacts": {
+    "reader-prerequisite-final.patch": "6114614c636c722c4b15a46f49d17bb0db2a815f36a8c65d53c11c156a453883",
+    "extension.patch": "abb889629e71e4943d38e2c2b1c63a6fd04a5314ee0ca27d5ec3ab268b7c9add",
+    "word-before.json": "b98deac4641f2df60c1d7ba22a88139d7e7dc4d6c949dcf6b935092841d21402",
+    "word-after.json": "b98deac4641f2df60c1d7ba22a88139d7e7dc4d6c949dcf6b935092841d21402",
+    "native-before-restored.json": "240b3f676c486609024aabc5a157c369d3e0563c1d495bc39bb2754be568e717",
+    "native-final-reader-restored.json": "67e445736376cafaae78519587408a6c0c36c1a8189a813420ec90bcdc9ba55b",
+    "native-replay.py": "b4bd14ea3978e219e401091d0e35048c19167f4222e0effc794d28b354163dc4",
+    "mutations.py": "0299fac54dbe97fa8632f68ec2ed0b9988d6c347e8915d9f1ffdbd7a156dfd49",
+    "mutations.json": "0790e304d2f0f37f0b35e8a565ba374c11260174983ba454d0dfe5c1886094fe",
+    "odt-independent.json": "10c8fcecd84a93c5c258dbbdf2362c021e4a690e0667ce59f879614429dba97f",
+    "verify-odt.py": "96609cb57a0b5d10ab46575fddfc5139d7a0b7730053b7340821c3ed8db0d214",
+    "unit-reader-final.log": "fd94e5afae53f5dcdb4b81dbda82c88967def4048a80a02647356de84fcbda1e",
+    "mypy-reader-final.log": "71144743c83babea384888a735db0c4daba3d4d7b7942b6839984bd5c21b52bb",
+    "ruff-final.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  }
+}

@@ -15,6 +15,7 @@ from lexinform.models import (
     SourceObservation,
     TextDocument,
 )
+from lexinform.models.block_input import MAX_BLOCK_INPUT_BYTES, MAX_BLOCK_INPUT_ROWS
 from lexinform.models.extractions import MAX_EXTRACTION_METADATA_BYTES
 from lexinform.services.document_history import DocumentSourceRead, record_source_read
 from lexinform.services.documents import TextLoader
@@ -53,7 +54,7 @@ def test_provenance_preserves_legacy_text_without_retaining_block_bodies() -> No
     assert ExtractionResult.model_validate_json(result.model_dump_json()) == result
 
 
-def test_thousands_of_blocks_change_counts_without_expanding_persisted_metadata() -> None:
+def test_thousands_of_blocks_preserve_metadata_and_witness_bounds() -> None:
     paragraphs = "</w:t></w:r></w:p><w:p><w:r><w:t>".join([TEXT] * 3000)
     reader = extractor()
     small = reader.extract_document_with_provenance(docx(TEXT)).result
@@ -61,7 +62,16 @@ def test_thousands_of_blocks_change_counts_without_expanding_persisted_metadata(
 
     assert large.selected_parts[0].block_count == 3000
     assert large.output_chars > 1_000_000
-    assert len(large.model_dump_json().encode()) - len(small.model_dump_json().encode()) < 32
+    exclude = {"selected_parts": {"__all__": {"block_copy_witness"}}}
+    assert (
+        len(large.model_dump_json(exclude=exclude).encode())
+        - len(small.model_dump_json(exclude=exclude).encode())
+        < 32
+    )
+    witness = large.selected_parts[0].block_copy_witness
+    assert witness is not None, "the native Word paragraphs supply copy evidence"
+    assert len(witness.runs) <= MAX_BLOCK_INPUT_ROWS
+    assert len(witness.model_dump_json().encode()) <= MAX_BLOCK_INPUT_BYTES
     assert len(large.model_dump_json().encode()) < MAX_EXTRACTION_METADATA_BYTES
     assert large.physical_manifest_sha256 != small.physical_manifest_sha256
 

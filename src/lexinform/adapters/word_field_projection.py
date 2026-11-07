@@ -75,7 +75,7 @@ def project_word_paragraph_span(
 def _legacy_paragraph_offsets(
     legacy: WordTextExtraction,
 ) -> tuple[str, dict[XmlPath, int], list[int]] | None:
-    layout = _paragraph_layout(legacy)
+    layout = legacy_word_layout(legacy)
     if layout is None:
         return None
     raw, offsets = layout
@@ -99,7 +99,7 @@ def _project_span(base: int, start: int, end: int, removed: list[int]) -> tuple[
     return start - removed_before, end - removed_before
 
 
-def _paragraph_layout(legacy: WordTextExtraction) -> tuple[str, dict[XmlPath, int]] | None:
+def legacy_word_layout(legacy: WordTextExtraction) -> tuple[str, dict[XmlPath, int]] | None:
     roots: list[WordTextBlock] = []
     ancestors: list[WordTextBlock] = []
     children: dict[XmlPath, list[WordTextBlock]] = {}

@@ -1,0 +1,6 @@
+{
+  "reader_tree": "246e97f09516bdee1fc7b170900d59d45e15c8a9",
+  "original_patch_sha256": "dd0521168ac1af9272cc5a99359b9c1891049ebced435371d1b1992126eb119e",
+  "composed_patch_sha256": "210827ace1fe049b351ec38453668e6b4c21308f7482f25a7558200b1a814205",
+  "scope": "Preserve J446 paragraph-span projection; share the same unchanged layout implementation via public legacy_word_layout."
+}

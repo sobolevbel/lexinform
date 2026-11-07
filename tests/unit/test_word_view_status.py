@@ -290,7 +290,10 @@ def test_textbox_count_yields_to_the_legacy_status_at_the_byte_cap(
     assert view is not None, "native Word extraction records its visited walk"
     assert view.observed_textbox_nodes == 0
     legacy_part = part.model_copy(
-        update={"word_view_status": view.model_copy(update={"observed_textbox_nodes": None})}
+        update={
+            "word_view_status": view.model_copy(update={"observed_textbox_nodes": None}),
+            "block_copy_witness": None,
+        }
     )
     legacy = actual.model_copy(update={"selected_parts": (legacy_part,)})
     monkeypatch.setattr(
@@ -425,7 +428,7 @@ def test_observed_removal_text_preserves_legacy_text_and_prior_metadata(
     assert view.observed_inline.removal_text_nodes == 2
     old_markers = view.observed_inline.model_copy(update={"removal_text_nodes": None})
     old_view = view.model_copy(update={"observed_inline": old_markers})
-    old_part = part.model_copy(update={"word_view_status": old_view})
+    old_part = part.model_copy(update={"word_view_status": old_view, "block_copy_witness": None})
     old_result = complete.result.model_copy(update={"selected_parts": (old_part,)})
     if limit == "status":
         monkeypatch.setattr(
@@ -442,4 +445,13 @@ def test_observed_removal_text_preserves_legacy_text_and_prior_metadata(
 
     assert observed.document == original
     assert "Still emitted" in original.text and "Omitted" not in original.text
-    assert observed.result == (complete.result if limit == "none" else old_result)
+    expected = complete.result if limit == "none" else old_result
+    if limit == "status":
+        expected = expected.model_copy(
+            update={
+                "selected_parts": (
+                    old_part.model_copy(update={"block_copy_witness": part.block_copy_witness}),
+                )
+            }
+        )
+    assert observed.result == expected

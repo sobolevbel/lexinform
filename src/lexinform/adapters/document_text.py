@@ -19,7 +19,7 @@ import sys
 import zipfile
 import zlib
 from collections.abc import Callable, Iterator
-from contextlib import AbstractContextManager, contextmanager, suppress
+from contextlib import AbstractContextManager, contextmanager, nullcontext, suppress
 from dataclasses import dataclass, field
 from functools import partial
 from typing import IO, Literal, Protocol
@@ -36,6 +36,12 @@ import lexinform.physical_root_assembly as physical_root_assembly
 import lexinform.physical_walk_capture as physical_walk_capture
 from lexinform.adapters.doc_notes import DocNoteExtraction
 from lexinform.adapters.doc_text import DocTextExtractor
+from lexinform.adapters.native_block_copies import (
+    NativeBlockCopies,
+    current_native_block_copies,
+    pdf_block_copies,
+)
+from lexinform.adapters.word_block_copies import PlainWordCopies, current_plain_word_copies
 from lexinform.adapters.word_field_ranges import WordFieldExtraction, WordFieldRanges
 from lexinform.archive_policy_capture import native_archive_policy_sink
 from lexinform.document_candidates import select_document_parts
@@ -46,9 +52,11 @@ from lexinform.extraction_records import (
     summarize_doc_note_projections,
     summarize_doc_notes,
     summarize_extraction,
+    summarize_word_block_copies,
     summarize_word_field_prefixes,
     summarize_word_observations,
 )
+from lexinform.models.block_input import MAX_BLOCK_INPUT_ROWS, BlockCopyWitness
 from lexinform.models.doc_notes import (
     MAX_DOC_NOTE_PARTS,
     DocNoteCapture,
@@ -284,7 +292,10 @@ class DocxTextExtractor:
                 legacy = self.extract_with_notes(data)
             return WordViewExtraction(legacy=legacy, status=None)
         notes = _WordNoteOrigins()
-        with collector.view_scope():
+        copies: PlainWordCopies | None = None
+        with suppress(Exception):
+            copies = PlainWordCopies()
+        with collector.view_scope(), copies.scope() if copies is not None else nullcontext():
             body = (
                 self._blocks(data, notes=notes)
                 if fields is None
@@ -295,7 +306,11 @@ class DocxTextExtractor:
             status = collector.finish_view_status(legacy)
         except Exception:
             status = None
-        return WordViewExtraction(legacy=legacy, status=status)
+        witness = None
+        if copies is not None:
+            with suppress(Exception):
+                witness = copies.finish(legacy)
+        return WordViewExtraction(legacy=legacy, status=status, block_copy_witness=witness)
 
     def extract_with_structure(
         self, data: bytes, *, max_events: int = 4096, max_bytes: int = 524288
@@ -720,6 +735,7 @@ class _WordMl:
         fields: WordFieldRanges | None = None,
     ) -> None:
         self._fields = fields
+        self._plain_copies = current_plain_word_copies()
         self._origins = origins
         self._ns = f"{{{namespace}}}"
         self._notes = notes or {}
@@ -959,6 +975,32 @@ class _WordMl:
                 continue
             if self._fields is not None and child_path is not None:
                 self._fields.visit_marker(el)
+            if self._plain_copies is not None and paragraph is not None:
+                plain = (
+                    el.tag == self.tag("t")
+                    and node.tag == self.tag("r")
+                    and child_path is not None
+                    and len(child_path) == len(paragraph) + 2
+                    and not in_removal
+                )
+                if el.tag in (
+                    self.tag("t"),
+                    self.tag("tab"),
+                    self.tag("br"),
+                    self.tag("cr"),
+                    self.tag("lastRenderedPageBreak"),
+                    self.tag("footnoteReference"),
+                    self.tag("endnoteReference"),
+                    self.tag("footnote"),
+                    self.tag("endnote"),
+                    self.tag("fldChar"),
+                    self.tag("instrText"),
+                ):
+                    try:
+                        self._plain_copies.fragment(paragraph, el.text or "", plain=plain)
+                    except Exception:
+                        with suppress(Exception):
+                            self._plain_copies.fail()
             if el.tag == self.tag("t"):
                 if self._fields is not None and child_path is not None and paragraph is not None:
                     self._fields.fragment(el, child_path, paragraph, len(parts))
@@ -1065,6 +1107,7 @@ class _OdtOrigins:
     legacy_blocks: list[str] = field(default_factory=list)
     ignored_nodes: list[OdtIgnoredNode] = field(default_factory=list)
     notes: OdtNoteCollector | None = None
+    copyable_paths: set[tuple[int, ...]] = field(default_factory=set)
 
     def record(
         self,
@@ -1123,6 +1166,10 @@ class OdtTextExtractor:
             legacy_blocks=tuple(origins.legacy_blocks),
             ignored_nodes=tuple(sorted(origins.ignored_nodes, key=lambda node: node.path)),
         )
+        copies = current_native_block_copies()
+        if copies is not None:
+            with suppress(Exception):
+                copies.finish_odt(extracted, origins.copyable_paths)
         observed = (
             odt_note_event(notes, partial(_finish_odt_notes, notes, extracted))
             if notes is not None
@@ -1185,6 +1232,24 @@ def _odt_blocks(
         if child.tag in (f"{_ODT_TEXT}p", f"{_ODT_TEXT}h"):
             text = _odt_paragraph(child, path=child_path, notes=origins.notes if origins else None)
             if origins is not None:
+                if (
+                    current_native_block_copies() is not None
+                    and len(origins.copyable_paths) < MAX_BLOCK_INPUT_ROWS
+                    and all(
+                        element.tag
+                        in {
+                            _ODT_TEXT + "p",
+                            _ODT_TEXT + "h",
+                            _ODT_TEXT + "span",
+                            _ODT_TEXT + "a",
+                            _ODT_TEXT + "s",
+                            _ODT_TEXT + "tab",
+                            _ODT_TEXT + "line-break",
+                        }
+                        for element in child.iter()
+                    )
+                ):
+                    origins.copyable_paths.add(child_path)
                 origins.record(
                     "heading" if child.tag == f"{_ODT_TEXT}h" else "paragraph",
                     child_path,
@@ -1348,6 +1413,7 @@ class _PhysicalOrigins:
     semantic_word_structure: bool = False
     word_view_status: list[WordPartViewStatus] | None = None
     word_field_prefixes: dict[int, WordFieldPrefix] | None = None
+    word_block_copies: dict[int, BlockCopyWitness] | None = None
     odt_notes: list[OdtPartNoteOrigins] | None = None
     doc_notes: list[DocPartNoteCapture] | None = None
     capture_doc_note_projection: bool = False
@@ -1522,6 +1588,8 @@ class DocumentTextExtractor:
     def extract_document_with_provenance(self, data: bytes) -> DocumentExtraction:
         views: list[WordPartViewStatus] = []
         word_fields: dict[int, WordFieldPrefix] = {}
+        word_copies: dict[int, BlockCopyWitness] = {}
+        native_copies = NativeBlockCopies()
         odt_notes: list[OdtPartNoteOrigins] = []
         doc_notes: list[DocPartNoteCapture] = []
         if (
@@ -1536,12 +1604,14 @@ class DocumentTextExtractor:
                 unlocated_text=[],
                 word_view_status=views,
                 word_field_prefixes=word_fields,
+                word_block_copies=word_copies,
                 odt_notes=odt_notes,
                 doc_notes=doc_notes,
                 capture_doc_note_projection=True,
                 capture_doc_note_cfspec=True,
             )
-            physical = self._extract_parts(data, origins)
+            with native_copies.scope():
+                physical = self._extract_parts(data, origins)
         else:
             physical = self.extract_parts(data)
         native_policy = (
@@ -1584,6 +1654,18 @@ class DocumentTextExtractor:
             result = summarize_doc_note_projections(result, linked)
             result = summarize_doc_note_cfspec(result, linked)
         result = summarize_word_field_prefixes(result, word_fields)
+        result = summarize_word_block_copies(result, word_copies)
+        native_witnesses: dict[int, BlockCopyWitness] = {}
+        for page in physical.pdf_pages:
+            with suppress(Exception):
+                witness = pdf_block_copies(page.extraction)
+                if witness is not None:
+                    native_witnesses[page.part_index] = witness
+        for body in physical.odt_blocks:
+            witness = native_copies.odt.get(body.extraction.input_sha256)
+            if witness is not None:
+                native_witnesses[body.part_index] = witness
+        result = summarize_word_block_copies(result, native_witnesses)
         capture = current_physical_walk_capture()
         if capture is not None:
             _physical_event(capture, lambda: capture.extraction(result))
@@ -1941,6 +2023,12 @@ class DocumentTextExtractor:
                 prefix = word_fields.prefix(view_result.legacy)
                 if prefix is not None:
                     origins.word_field_prefixes[len(parts) - 1] = prefix
+        if (
+            origins.word_block_copies is not None
+            and view_result is not None
+            and view_result.block_copy_witness is not None
+        ):
+            origins.word_block_copies[len(parts) - 1] = view_result.block_copy_witness
         if origins.word_structure is not None and structure_result is not None:
             origins.word_structure.append(
                 WordPartStructureExtraction(part_index=len(parts) - 1, extraction=structure_result)

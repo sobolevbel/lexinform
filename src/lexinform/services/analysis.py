@@ -221,6 +221,7 @@ from lexinform.services.input_receipts import (
     enrich_primary_input_intent,
     enrich_secondary_input_intent,
     senate_work_input_receipt,
+    with_block_companion,
 )
 from lexinform.services.joint import primary_of, revive_prefilter_skips
 from lexinform.services.revision_applications import AmendmentRevisionApplications
@@ -3413,6 +3414,8 @@ class AnalysisService:
                         loaded.source_read,
                         with_amendments=loaded.rcl_projection == "annexes_and_amendments",
                     )
+                if receipt is not None:
+                    receipt = with_block_companion(receipt, loaded.source_read, ctx.text)
             except Exception:
                 with suppress(Exception):
                     log.warning("Prepared input receipt omitted (capture_failed)")

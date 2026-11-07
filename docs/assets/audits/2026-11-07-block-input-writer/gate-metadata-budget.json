@@ -1,0 +1,10 @@
+{
+  "first_gate_sha256": "a7f7f7f0f44584180b9c7eefbfaabbf63da66aa0acbde957c543adcdba04bf54",
+  "original_test": "test_thousands_of_blocks_change_counts_without_expanding_persisted_metadata",
+  "observed_total_bytes": {
+    "one_block": 4031,
+    "3000_blocks": 7096
+  },
+  "fixture_correction": "Check the original 32-byte growth bound independently from the bounded witness. Check both witness caps and the global metadata cap.",
+  "production_code_changed": false
+}

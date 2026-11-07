@@ -12,6 +12,7 @@ from typing import Literal
 from pydantic import ValidationError
 
 from lexinform.document_candidates import select_document_parts
+from lexinform.models.block_input import BlockCopyWitness
 from lexinform.models.doc_notes import (
     MAX_DOC_NOTE_SUMMARY_BYTES,
     MAX_DOC_RETAINED_LINKS,
@@ -605,3 +606,24 @@ def _summarize_doc_note_evidence(
             parts = offered
             break
     return current
+
+
+def summarize_word_block_copies(
+    original: ExtractionResult, copies: dict[int, BlockCopyWitness]
+) -> ExtractionResult:
+    result = original
+    for index, part in enumerate(original.selected_parts):
+        witness = copies.get(part.physical_index)
+        if witness is None:
+            continue
+        parts = list(result.selected_parts)
+        parts[index] = part.model_copy(update={"block_copy_witness": witness})
+        try:
+            candidate = ExtractionResult.model_validate(
+                {**result.model_dump(), "selected_parts": parts}
+            )
+            if len(candidate.model_dump_json().encode()) <= MAX_EXTRACTION_METADATA_BYTES:
+                result = candidate
+        except ValueError:
+            continue
+    return result

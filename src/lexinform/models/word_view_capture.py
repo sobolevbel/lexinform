@@ -4,6 +4,7 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from lexinform.models.block_input import BlockCopyWitness
 from lexinform.models.documents import WordDetailedExtraction
 from lexinform.models.extractions import WordViewStatus
 
@@ -13,6 +14,9 @@ class WordViewExtraction(BaseModel):
 
     legacy: WordDetailedExtraction
     status: WordViewStatus | None
+    block_copy_witness: BlockCopyWitness | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @model_validator(mode="after")
     def finished_matches_known_legacy_walk(self) -> Self:
