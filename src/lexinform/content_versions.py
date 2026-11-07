@@ -105,6 +105,32 @@ def content_delivery_mismatch(
     return None
 
 
+def act_published_plan_matches(plan: DeliveryPlan) -> bool:
+    return (
+        not plan.bill_json
+        and not plan.change_json
+        and not plan.rendered_text
+        and not plan.group_text
+        and not plan.publication_ids
+        and not plan.continuation_ids
+        and plan.continuation_root is None
+        and plan.continuation_parent is None
+        and plan.continuation_index == 1
+        and plan.edit_message_id is None
+        and plan.revision_of is None
+        and plan.absorbed_by is None
+        and plan.destination == "direct"
+        and not plan.digest_event_ids
+        and not plan.digest_parts
+        and not plan.sitting_group
+        and not plan.update_group
+        and not plan.digest_ref
+        and not plan.approve_label
+        and plan.reply_to is not None
+        and plan.reply_to > 0
+    )
+
+
 def content_snapshot_refs(version: ContentVersion) -> tuple[tuple[str, str], ...]:
     refs = tuple(
         (kind, identity)

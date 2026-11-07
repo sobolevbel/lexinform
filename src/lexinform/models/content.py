@@ -121,6 +121,16 @@ type ContentReason = Literal[
 ]
 
 
+MAX_ACT_PUBLISHED_CONTENT_BYTES = 64 * 1024
+
+
+class ActPublishedContentEvidence(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    channel_id: str = Field(min_length=1, max_length=256)
+    ref: str | None = Field(default=None, max_length=512)
+
+
 class ContentVersion(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -159,6 +169,9 @@ class ContentVersion(BaseModel):
     sitting_profile: Literal["sitting-content-v1"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    act_published_evidence: ActPublishedContentEvidence | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -184,14 +197,16 @@ class ContentVersion(BaseModel):
 
     @model_validator(mode="after")
     def predecessor(self) -> Self:
-        if self.digest_profile is not None or self.sitting_profile is not None:
+        notice = self.act_published_evidence is not None
+        profiles = sum((self.digest_profile is not None, self.sitting_profile is not None, notice))
+        if profiles:
             if (
-                (self.digest_profile is not None and self.sitting_profile is not None)
+                profiles != 1
                 or self.reason != "original"
                 or self.previous_version_id is not None
-                or self.bill_snapshot_id is not None
+                or (self.bill_snapshot_id is not None) != notice
                 or self.change_snapshot_id is not None
-                or self.rendered_text is not None
+                or (self.rendered_text is not None) != notice
                 or self.language not in ("ru", "en")
                 or not self.formatter_version
                 or len(self.formatter_version) > 128
@@ -385,6 +400,9 @@ class ContentVersionSummary(BaseModel):
     sitting_profile: Literal["sitting-content-v1"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    act_published_evidence: ActPublishedContentEvidence | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -456,6 +474,7 @@ class ContentVersionSummary(BaseModel):
             card_context_profile=version.card_context_profile,
             digest_profile=version.digest_profile,
             sitting_profile=version.sitting_profile,
+            act_published_evidence=version.act_published_evidence,
             digest_exact_parts_available=True
             if version.digest_profile == "digest-rendered-v1"
             else None,

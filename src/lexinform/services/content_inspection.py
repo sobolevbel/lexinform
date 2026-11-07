@@ -42,7 +42,11 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
         selected = _grouped_member_content(repo, publication)
     if selected is None:
         return None
-    if selected.digest_profile is not None or selected.sitting_profile is not None:
+    if (
+        selected.digest_profile is not None
+        or selected.sitting_profile is not None
+        or selected.act_published_evidence is not None
+    ):
         versions = repo.list_content_versions(selected.root_publication_id)
         digest_parts = repo.list_content_publications(selected.root_publication_id)
         if versions != [selected] or not digest_parts:

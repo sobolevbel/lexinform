@@ -15,6 +15,7 @@ from lexinform.adapters.input_receipts import (
 )
 from lexinform.adapters.status_changes import read_status_change
 from lexinform.content_versions import (
+    act_published_plan_matches,
     card_confirmation_matches,
     card_physical_matches,
     card_plan_matches,
@@ -49,6 +50,7 @@ from lexinform.models.commands import (
     read_delivery_resolution,
 )
 from lexinform.models.content import (
+    MAX_ACT_PUBLISHED_CONTENT_BYTES,
     MAX_DIRECT_STAGE_CONTENT_BYTES,
     MAX_GROUPED_STAGE_CONTENT_BYTES,
     CardPrimaryEvidence,
@@ -68,6 +70,7 @@ from lexinform.models.sitting_content import (
 )
 from lexinform.primary_projections import primary_record_matches
 from lexinform.sitting_delivery import sitting_root_plan
+from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 
 
 def _query(
@@ -376,6 +379,7 @@ def _verify_card_content(
         value.change_snapshot_id is not None
         or value.digest_profile is not None
         or value.sitting_profile is not None
+        or value.act_published_evidence is not None
     ):
         return None, None
     root_row = _query(
@@ -1135,6 +1139,69 @@ def verify_sitting_content(
     return plan
 
 
+def verify_act_published_content(
+    connection: sqlite3.Connection, version: ContentVersion, *, require_bound: bool = False
+) -> None:
+    evidence = version.act_published_evidence
+    if evidence is None:
+        return
+    row = _query(
+        connection, "SELECT * FROM publications WHERE id=?", (version.root_publication_id,)
+    ).fetchone()
+    if row is None:
+        raise ValueError("act_history_publication_missing")
+    publication = read_content_publication(row)
+    if (
+        publication.kind is not PublicationKind.ACT_PUBLISHED
+        or publication.channel_id != evidence.channel_id
+        or publication.ref != evidence.ref
+        or publication.status_change_id is not None
+        or publication.created_at != version.recorded_at
+        or (
+            publication.status is PublicationStatus.SENT
+            and (publication.message_id is None or publication.message_id <= 0)
+        )
+        or (publication.delivery is None and publication.status is not PublicationStatus.SENT)
+    ):
+        raise ValueError("act_history_publication_scope")
+    if require_bound:
+        bindings = _query(
+            connection,
+            "SELECT publication_id FROM publication_content WHERE content_id=?",
+            (version.content_id,),
+        ).fetchall()
+        if [binding[0] for binding in bindings] != [version.root_publication_id]:
+            raise ValueError("act_history_binding_scope")
+    reader = ContentSourceRows(connection)
+    snapshots: dict[str, ContentSnapshot] = {}
+    for kind, identity in content_snapshot_refs(version):
+        snapshot = reader.get_content_snapshot(identity)
+        if snapshot is None or snapshot.kind != kind:
+            raise ValueError("act_history_snapshot_missing")
+        snapshots[identity] = snapshot
+    html = version.rendered_text or ""
+    if (
+        not html.strip()
+        or utf16_length(html) > MESSAGE_LIMIT
+        or sum(len(snapshot.payload_json.encode()) for snapshot in snapshots.values())
+        + len(html.encode())
+        > MAX_ACT_PUBLISHED_CONTENT_BYTES
+    ):
+        raise ValueError("act_history_budget")
+    bill = Bill.model_validate(read_json(snapshots[version.bill_context_id].payload_json))
+    plan = DeliveryPlan.model_validate(read_json(snapshots[version.plan_snapshot_id].payload_json))
+    if (
+        bill.act is None
+        or (bill.term, bill.number) != (publication.term, publication.number)
+        or not act_published_plan_matches(plan)
+        or (
+            publication.delivery is not None
+            and (content_delivery_mismatch(version, snapshots, publication.delivery) is not None)
+        )
+    ):
+        raise ValueError("act_history_frozen_plan")
+
+
 def validate_content_history(connection: sqlite3.Connection) -> None:
     try:
         tables = {
@@ -1168,6 +1235,7 @@ def validate_content_history(connection: sqlite3.Connection) -> None:
             verify_grouped_stage_content(connection, value, require_bound=True)
             verify_digest_content(connection, value, require_bound=True)
             verify_sitting_content(connection, value, require_bound=True)
+            verify_act_published_content(connection, value, require_bound=True)
             physical_identity = verify_card_content(connection, value, retained=True)
             if value.change_snapshot_id is None and value.digest_profile is None:
                 bindings = _query(

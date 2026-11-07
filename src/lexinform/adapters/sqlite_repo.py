@@ -50,6 +50,7 @@ from lexinform.adapters.content_history import (
     read_grouped_stage_telegram_target,
     recorded_command_matches,
     validate_content_history,
+    verify_act_published_content,
     verify_card_content,
     verify_direct_stage_content,
     verify_grouped_stage_content,
@@ -2329,6 +2330,7 @@ class SqliteBillRepository:
         verify_grouped_stage_content(self._conn, version)
         verify_digest_content(self._conn, version)
         verify_sitting_content(self._conn, version)
+        verify_act_published_content(self._conn, version)
         for kind, identity in content_snapshot_refs(version):
             snapshot = self.get_content_snapshot(identity)
             if snapshot is None or snapshot.kind != kind:
@@ -2377,6 +2379,7 @@ class SqliteBillRepository:
         verify_grouped_stage_content(self._conn, version)
         verify_digest_content(self._conn, version)
         verify_sitting_content(self._conn, version)
+        verify_act_published_content(self._conn, version)
         return version
 
     def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]:
@@ -2410,6 +2413,10 @@ class SqliteBillRepository:
         if version.digest_profile is not None or version.sitting_profile is not None:
             raise ValueError("history requires atomic complete physical binding")
         plan = publication.delivery
+        if version.act_published_evidence is not None:
+            if publication_id != version.root_publication_id or plan is None:
+                raise ValueError("act_history_binding_scope")
+            return version
         if version.reason == "grouped_stage_revision":
             if verify_grouped_stage_content(self._conn, version) != publication_id:
                 raise ValueError("grouped_revision_slot_binding")
@@ -2841,6 +2848,9 @@ class SqliteBillRepository:
             if plan is None or publication_id not in plan.bindings:
                 raise ValueError("sitting_history_binding_scope")
             return version
+        if version.act_published_evidence is not None:
+            verify_act_published_content(self._conn, version, require_bound=True)
+            return version
         if version.change_snapshot_id is None:
             physical_id = verify_card_content(self._conn, version, retained=True)
             if physical_id is not None and physical_id != publication_id:
@@ -2850,7 +2860,8 @@ class SqliteBillRepository:
     def list_content_publications(self, root_publication_id: int) -> list[Publication]:
         if self._conn.execute(
             "SELECT 1 FROM content_versions WHERE root_publication_id=? "
-            "AND change_snapshot_id IS NULL AND bill_snapshot_id IS NOT NULL",
+            "AND change_snapshot_id IS NULL AND bill_snapshot_id IS NOT NULL "
+            "AND json_type(version_json, '$.act_published_evidence') IS NULL",
             (root_publication_id,),
         ).fetchone():
             return [

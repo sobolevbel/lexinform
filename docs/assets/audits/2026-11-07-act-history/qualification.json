@@ -1,0 +1,79 @@
+{
+  "status": "qualified-offline",
+  "base_head": "3de02133a1956f5b0cd0ca302c1f97de8bf1ee05",
+  "base_source_patch": {
+    "path": "/tmp/act-history-evidence/j468-source.patch",
+    "sha256": "24419fe064afb4a103aa809788aac9d4cbec1356945a484f7e097ea3e4246a38"
+  },
+  "worktrees": {
+    "writer": "/tmp/lexinform-act-history",
+    "reader": "/tmp/lexinform-act-reader",
+    "pre_reader": "/tmp/lexinform-act-old"
+  },
+  "patch_sha256": {
+    "reader.patch": "b098438f87792f15bb8c00b4c71a6ddaa7c1071cfb14622b51993c2ebe600a20",
+    "writer.patch": "86870ed58f742226e258e14768c2b36d1de68dd3b5c08c0c112a1f24f3c96ac4"
+  },
+  "baseline": "Production-profile ordinary watcher reported one ACT_PUBLISHED send. After pruning the operational payload, the physical receipt survived but inspect_content returned None through two exact restores.",
+  "scope": "Prospective single-part direct ACT_PUBLISHED first freeze. Reuses Bill and DeliveryPlan snapshots, exact existing rendered text, physical publication identity, and original formatter/language. Optional explicit evidence binds kind/channel/ref. No StatusChange synthesized.",
+  "format": "Existing schema. Reader validates immutable snapshot parentage, exact binding, owner, single-message plan and matching live operational plan if retained. Former reader rejects the new profile atomically, so the compatible reader release must precede writer.",
+  "paired": {
+    "physical_id": 3,
+    "telegram_receipt": 102,
+    "reply_to": 101,
+    "exact_html_sha256": "8f3ce2ab54c79a46c9d69ac223fac566adfc22bb39838a03701c48f7fa3b017e",
+    "sql": {
+      "before": 72366,
+      "after": 80678,
+      "delta": 8312
+    },
+    "gzip": {
+      "before": 13953,
+      "after": 14564,
+      "delta": 611
+    },
+    "before_sql_sha256": "8e8779e63d139142379a95d8fa645c0fc603d8dc160663f757a2ee66de37420c",
+    "after_sql_sha256": "efc382e862504a074d14bda74ef31ec547ef8f337a00acfcc08bc74061352815",
+    "added_rows": {
+      "content_snapshots": 2,
+      "content_versions": 1,
+      "publication_content": 1
+    },
+    "other_delta": "Only runs.report_json phase_seconds. All physical publication and operational rows exact.",
+    "exact_restores_each_lane": 2,
+    "original_delivery_plan_exact_after_cleanup": true
+  },
+  "reader_qualification": {
+    "legacy_restore_exact": true,
+    "future_exact_restores": 2,
+    "missing_binding_restore_rejected_atomically": true,
+    "pre_reader_restore_rejected_atomically": true
+  },
+  "retry_qualification": "Remote pre-send snapshot includes the immutable version. Lost outcome restores as UNKNOWN with no current edition and no automatic send. Audited retry uses original frozen plan without re-render; audited confirm sends nothing. Both preserve the same immutable version and set it current once confirmed.",
+  "limits": {
+    "snapshot_and_html_bytes": 65536,
+    "physical_messages": 1,
+    "formats": "ru/en known formatter, original direct with existing reply target. Legacy attempts, digest-owned, revisions and multipart stay outside capture. Forced multipart checkpoint fixture verified physical delivery and absence of history. No backfill."
+  },
+  "pinned_state_scope": {
+    "state_commit": "4764779e91d9d8fe5609aba45de02f4a792479be",
+    "sent_act_rows": 4,
+    "pruned_unknown_payload": 3,
+    "retained_single_part": 1,
+    "retained_plan_estimated_bytes": 22823,
+    "retained_over_cap": 0,
+    "historical_backfill": 0
+  },
+  "checks": {
+    "focused_tests": 44,
+    "mypy_files": 8,
+    "ruff": true,
+    "git_diff_check": true,
+    "forward_patch_checks": true
+  },
+  "evidence": {
+    "paired_driver": "/tmp/act_history_probe.py",
+    "reader_driver": "/tmp/act-history-evidence/check_reader.py",
+    "focused_log_sha256": "1608100df9232057f7767b781fb8c2c84227e09fadc522b0bbd4eebb66a27e6d"
+  }
+}
