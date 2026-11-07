@@ -1,12 +1,15 @@
 """Verify a technical literal claim against a pinned, durable multipart primary intent."""
 
 import argparse
+import io
 import json
 import sqlite3
+import zipfile
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
+from xml.etree import ElementTree as ET
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -19,6 +22,7 @@ from lexinform.adapters.input_receipts import (
     validate_multipart_intent,
 )
 from lexinform.adapters.pdf_text import PypdfTextExtractor
+from lexinform.adapters.word_field_projection import project_word_paragraph_span
 from lexinform.models import BatchIntent, EvidenceCitation, ReviewDocument
 from lexinform.models.batch import AnalysisQuestion, BatchItemMeta
 from lexinform.models.input_receipts import RclArchiveInputReceipt, SejmSelfAmendmentInputReceipt
@@ -34,6 +38,20 @@ from tools.sqlite_snapshot import open_snapshot
 _MAX_BYTES = 32_000_000
 
 
+type XmlIndex = Annotated[int, Field(ge=0, strict=True)]
+
+
+class WordParagraphCitationPin(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    xml_sha256: Sha256
+    manifest_sha256: Sha256
+    block_sha256: Sha256
+    path: tuple[XmlIndex, XmlIndex]
+    start: int = Field(ge=0, strict=True)
+    end: int = Field(gt=0, strict=True)
+
+
 class MultipartCitationCase(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -47,6 +65,83 @@ class MultipartCitationCase(BaseModel):
     quote_start: int = Field(ge=0, strict=True)
     quote_end: int = Field(gt=0, strict=True)
     quote_sha256: Sha256
+    word_paragraph: WordParagraphCitationPin | None = None
+
+
+_W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+_WORD_PART = "word/document.xml"
+
+
+def _bounded_zip_member(raw: bytes, name: str) -> bytes:
+    with zipfile.ZipFile(io.BytesIO(raw)) as package:
+        entries = [entry for entry in package.infolist() if entry.filename == name]
+        if len(entries) != 1 or entries[0].file_size > _MAX_BYTES:
+            raise ValueError("Word proof requires one bounded exact ZIP member")
+        return package.read(entries[0])
+
+
+def _plain_run_prefix(paragraph: ET.Element) -> str:
+    chunks: list[str] = []
+    for node in paragraph:
+        if node.tag in (_W + "pPr", _W + "proofErr"):
+            continue
+        if node.tag != _W + "r":
+            break
+        for item in node:
+            if item.tag == _W + "rPr":
+                continue
+            if item.tag != _W + "t" or len(item):
+                return "".join(chunks)
+            chunks.append(item.text or "")
+    return "".join(chunks)
+
+
+def verify_word_paragraph_citation(
+    raw: bytes,
+    pin: WordParagraphCitationPin,
+    *,
+    text: str,
+    quote_span: tuple[int, int],
+) -> dict[str, object]:
+    xml = _bounded_zip_member(raw, _WORD_PART)
+    decoded = xml.decode("utf-8-sig")
+    if "<!DOCTYPE" in decoded or digest(xml) != pin.xml_sha256 or min(pin.path) < 0:
+        raise ValueError("Word citation XML or paragraph path differs from its pin")
+    root = ET.fromstring(decoded)
+    try:
+        body = root[pin.path[0]]
+        paragraph = body[pin.path[1]]
+    except IndexError as exc:
+        raise ValueError("Word citation paragraph path is absent") from exc
+    if root.tag != _W + "document" or body.tag != _W + "body" or paragraph.tag != _W + "p":
+        raise ValueError("Word citation requires a top-level XML paragraph")
+    extracted = DocxTextExtractor().extract_blocks(raw)
+    block = next((b for b in extracted.blocks if b.path == pin.path), None)
+    if (
+        extracted.input_sha256 != digest(raw)
+        or extracted.xml_sha256 != pin.xml_sha256
+        or extracted.manifest_sha256 != pin.manifest_sha256
+        or extracted.legacy_text != text
+        or block is None
+        or block.kind != "paragraph"
+        or block.text_sha256 != pin.block_sha256
+        or project_word_paragraph_span(extracted, pin.path, pin.start, pin.end) != quote_span
+    ):
+        raise ValueError("Word citation block or selected text coordinates differ from their pins")
+    prefix = _plain_run_prefix(paragraph)
+    if pin.end > len(prefix) or not block.text.startswith(prefix):
+        raise ValueError("Word citation crosses the independently verified plain XML run prefix")
+    return {
+        "xml_part": _WORD_PART,
+        "xml_sha256": pin.xml_sha256,
+        "manifest_sha256": pin.manifest_sha256,
+        "block_id": block.block_id,
+        "block_sha256": pin.block_sha256,
+        "coordinates": "word-xml-plain-run-prefix-python-string",
+        "block_span": list((pin.start, pin.end)),
+        "selected_text_span": list(quote_span),
+        "raw_run_prefix_sha256": digest(prefix.encode()),
+    }
 
 
 def _intent(db: sqlite3.Connection, case: MultipartCitationCase) -> BatchIntent:
@@ -154,7 +249,7 @@ def _verify(
         verified_multipart_selection=selected,
         multipart_part_index=part_index,
     )
-    return {
+    proof: dict[str, object] = {
         "profile": receipt.profile,
         **({"source_part_index": part_index} if part_index else {}),
         "request_sha256": case.request_sha256,
@@ -166,7 +261,19 @@ def _verify(
         "quote_sha256": case.quote_sha256,
         "claim_text_sha256": evidence.claim_text_sha256,
         "check": asdict(checked),
-    }, checked.status == "retained"
+    }
+    if case.word_paragraph is not None:
+        if checked.status != "retained" or len(part.members) > 1:
+            raise ValueError(
+                "Word citation requires an exactly retained direct file or one archive member"
+            )
+        member = _bounded_zip_member(data, part.members[0]) if part.members else data
+        if digest(member) != part.sha256:
+            raise ValueError("Word citation member bytes differ from the verified selection")
+        proof["word_paragraph"] = verify_word_paragraph_citation(
+            member, case.word_paragraph, text=text, quote_span=(case.quote_start, case.quote_end)
+        )
+    return proof, checked.status == "retained"
 
 
 def replay(
@@ -222,7 +329,15 @@ def main() -> None:
             MultipartCitationCase.model_validate_json(raw),
         )
         write_json(args.output, {**result, "case_sha256": args.case_sha256})
-    except (OSError, ValueError, KeyError, TypeError, sqlite3.Error) as exc:
+    except (
+        OSError,
+        ValueError,
+        KeyError,
+        TypeError,
+        sqlite3.Error,
+        zipfile.BadZipFile,
+        ET.ParseError,
+    ) as exc:
         parser.error(str(exc))
     raise SystemExit(0 if result["status"] == "recorded" else 2)
 

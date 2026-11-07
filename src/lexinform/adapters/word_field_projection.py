@@ -25,16 +25,10 @@ def project_word_field_ranges(
         return None
     if not extraction.ranges:
         return ()
-    layout = _paragraph_layout(legacy)
+    layout = _legacy_paragraph_offsets(legacy)
     if layout is None:
         return None
-    raw, offsets = layout
-    removed: list[int] = []
-    for match in _TIDY_PAGE_BREAK.finditer(raw):
-        removed.extend(index for index in range(*match.span()) if raw[index] == "\n")
-    text = legacy.legacy_text
-    if len(raw) - len(removed) != len(text):
-        return None
+    text, offsets, removed = layout
     paragraphs = {block.path: block for block in legacy.blocks if block.kind == "paragraph"}
     ranges = []
     for event in extraction.ranges:
@@ -49,20 +43,60 @@ def project_word_field_ranges(
             or len(event.path) <= len(event.paragraph_path)
         ):
             return None
-        start, end = base + event.start, base + event.end
-        removed_before = bisect_left(removed, start)
-        if bisect_left(removed, end) != removed_before:
-            return None
-        start -= removed_before
-        end -= removed_before
+        span = _project_span(base, event.start, event.end, removed)
         slice_text = paragraph.text[event.start : event.end]
         if (
-            text[start:end] != slice_text
+            span is None
+            or text[span[0] : span[1]] != slice_text
             or hashlib.sha256(slice_text.encode()).hexdigest() != event.text_sha256
         ):
             return None
+        start, end = span
         ranges.append(WordBodyFieldRange(event, start, end))
     return tuple(ranges)
+
+
+def project_word_paragraph_span(
+    legacy: WordTextExtraction, path: XmlPath, start: int, end: int
+) -> tuple[int, int] | None:
+    paragraph = next((b for b in legacy.blocks if b.path == path and b.kind == "paragraph"), None)
+    if paragraph is None or not 0 <= start < end <= len(paragraph.text):
+        return None
+    layout = _legacy_paragraph_offsets(legacy)
+    if layout is None:
+        return None
+    text, offsets, removed = layout
+    base = offsets.get(path)
+    if base is None or (span := _project_span(base, start, end, removed)) is None:
+        return None
+    return span if text[span[0] : span[1]] == paragraph.text[start:end] else None
+
+
+def _legacy_paragraph_offsets(
+    legacy: WordTextExtraction,
+) -> tuple[str, dict[XmlPath, int], list[int]] | None:
+    layout = _paragraph_layout(legacy)
+    if layout is None:
+        return None
+    raw, offsets = layout
+    removed = [
+        index
+        for match in _TIDY_PAGE_BREAK.finditer(raw)
+        for index in range(*match.span())
+        if raw[index] == "\n"
+    ]
+    text = legacy.legacy_text
+    if len(raw) - len(removed) != len(text):
+        return None
+    return text, offsets, removed
+
+
+def _project_span(base: int, start: int, end: int, removed: list[int]) -> tuple[int, int] | None:
+    start, end = base + start, base + end
+    removed_before = bisect_left(removed, start)
+    if bisect_left(removed, end) != removed_before:
+        return None
+    return start - removed_before, end - removed_before
 
 
 def _paragraph_layout(legacy: WordTextExtraction) -> tuple[str, dict[XmlPath, int]] | None:

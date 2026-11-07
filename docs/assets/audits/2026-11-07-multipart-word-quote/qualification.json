@@ -1,0 +1,78 @@
+{
+  "database_unchanged": true,
+  "default_proof_exact_to_J349": true,
+  "negative": {
+    "case_sha256": "74796194097164c018ad50433c9d42b6e1508519e8c65f7cbd512be69345edb6",
+    "default_literal_citation_retained": true,
+    "quote_span": [
+      157,
+      272
+    ],
+    "reason": "Word citation crosses the independently verified plain XML run prefix"
+  },
+  "positive": {
+    "case_sha256": "f5a4f7019baa7a647ca0080f01d63ddffa0f38d137c29025c3c74bf3f62456f7",
+    "code_version": "0dbd731654a11566e6d2b3afbad843335d78fb44",
+    "database_sha256": "22603a9be8b98d55cadef73684e50016355e539b8c3dcdbfeb77a130cbb9fb71",
+    "proof": {
+      "artifact_sha256": "659ac5e0b08f211d09ba3d6fc9054c972299f9450a2b1ec55db4ca91fce44a03",
+      "check": {
+        "block_origins": "unmapped",
+        "evidence": {
+          "block_origins": "unmapped",
+          "observed_text_span": [
+            157,
+            267
+          ],
+          "paid_origins": "unmapped",
+          "quote_occurrences": 1,
+          "semantic": "semantic_not_assessed",
+          "source_complete": false,
+          "status": "quote_present"
+        },
+        "input_span": [
+          157,
+          267
+        ],
+        "physical_origins": "unmapped",
+        "reason": "retained_source_span",
+        "semantic": "semantic_not_assessed",
+        "status": "retained"
+      },
+      "claim_text_sha256": "1b32d3e306b9959e85050cf68beaf75da05cc5f24d20b4fb03e29c5671ff8970",
+      "member_sha256": "aad76ba10e42eabcccec9b5207e2e89b8753bb12cde5097f209fc905de8e52b5",
+      "profile": "primary-rcl-archive-package-text-v1",
+      "quote_sha256": "c9f1c396f0a0910ecd55b7bf775702f603b1c096f70303ba93154f0d2672d640",
+      "request_sha256": "8059b6d8e02c4b092f5eb015d12eda81da57019f57b8f6e2ceb93bf4bca281ee",
+      "source_observation_id": "source-observation-v1:85424c7988fc8360355ff80c04abcc55a90acffd20f502f43cab1679b05077b9",
+      "source_selection_id": "selection-v1:dd28972539745a147426a45aa389f0057d1817ccc9e1eed189b5df98a30ced72",
+      "source_text_sha256": "6d7e8d4520299daff7cfd88da3d0806687e1519840fb4634880ad8fdaec53c61",
+      "word_paragraph": {
+        "block_id": "word-xml:word/document.xml:0/4",
+        "block_sha256": "0973972bd39e44c6b5e176a0c5e0dc0ea214e312e341592879f7c9dc69c0b36d",
+        "block_span": [
+          0,
+          110
+        ],
+        "coordinates": "word-xml-plain-run-prefix-python-string",
+        "manifest_sha256": "2778bb88cde7d573c334633d93dbb4424c990f310da5a28e5e934a38e0d35edb",
+        "raw_run_prefix_sha256": "c9f1c396f0a0910ecd55b7bf775702f603b1c096f70303ba93154f0d2672d640",
+        "selected_text_span": [
+          157,
+          267
+        ],
+        "xml_part": "word/document.xml",
+        "xml_sha256": "aab9822cd3f8965fc6d33d44a343c92020afffa3fe3a7984b2d98279b31bb47c"
+      }
+    },
+    "read_inputs": {
+      "documents/files/778150.zip": "659ac5e0b08f211d09ba3d6fc9054c972299f9450a2b1ec55db4ca91fce44a03"
+    },
+    "scope": "Literal text in a durable offline prepared context.",
+    "source_pins_sha256": "49050be937338ba08a18f33e13e3313aa8af39d229d7d1003c67ac9f5ad2fec1",
+    "status": "recorded",
+    "version": "primary-multipart-citation-v1"
+  },
+  "sejm_part_1_default_proof_exact": true,
+  "status": "passed"
+}
