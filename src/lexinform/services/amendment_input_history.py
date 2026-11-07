@@ -43,7 +43,9 @@ def original_amendment_input(
         raise ValueError("invalid_amendment_input")
     witness = result.amendment_scan_input
     if witness is not None:
-        context_json = repo.get_amendment_scan_context(witness) if witness.version == 3 else None
+        context_json = (
+            repo.get_amendment_scan_context(witness) if witness.external_context else None
+        )
         context = witness.resolve_context(context_json)
         owner = (publication.term, publication.number)
         if (

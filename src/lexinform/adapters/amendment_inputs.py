@@ -43,7 +43,7 @@ def _load_amendment_scan_context(
     connection: sqlite3.Connection, witness: AmendmentScanInputWitness
 ) -> tuple[str, AmendmentsContext]:
     digest = witness.context_sha256
-    if witness.version != 3 or digest is None:
+    if not witness.external_context or digest is None:
         raise AmendmentInputError()
     row = connection.execute(
         "SELECT text FROM amendment_input_texts WHERE text_sha256=?", (digest,)
@@ -66,7 +66,11 @@ def read_amendment_scan_context(
 def write_amendment_scan_context(
     connection: sqlite3.Connection, witness: AmendmentScanInputWitness, context_json: str
 ) -> None:
-    if not connection.in_transaction or witness.version != 3 or witness.context_sha256 is None:
+    if (
+        not connection.in_transaction
+        or not witness.external_context
+        or witness.context_sha256 is None
+    ):
         raise AmendmentInputError()
     connection.execute(
         "INSERT INTO amendment_input_texts VALUES (?,?) ON CONFLICT DO NOTHING",
@@ -80,7 +84,7 @@ def _validate_scan_context(
     connection: sqlite3.Connection, meta: DigestItemMeta, number: str
 ) -> None:
     witness = meta.amendment_scan_input
-    if witness is None or witness.version != 3:
+    if witness is None or not witness.external_context:
         return
     _, context = _load_amendment_scan_context(connection, witness)
     if context.number != number or context.source_check != meta.amendment_source:
@@ -385,7 +389,7 @@ def prune_amendment_inputs(connection: sqlite3.Connection) -> dict[str, int]:
           AND i.accounted_at IS NOT NULL AND batch.forgotten_at IS NOT NULL
           AND (
             json_type(i.meta_json, '$.amendment_input_ref')='object'
-            OR json_extract(i.meta_json, '$.amendment_scan_input.version')=3
+            OR json_extract(i.meta_json, '$.amendment_scan_input.version') IN (3,4)
           )
           AND json_extract(r.result_json, '$.validation')='error'
           AND b.status IN ('analyzed', 'linked', 'skipped_prefilter',
@@ -563,15 +567,12 @@ def validate_result_input(connection: sqlite3.Connection, result: ComputationRes
     cursor.row_factory = sqlite3.Row
     try:
         context = None
-        if witness is not None and witness.version == 3:
+        if witness is not None and witness.external_context:
             _, context = _load_amendment_scan_context(connection, witness)
-            if (
-                context.number != result.number
-                or context.source_check is None
-                or not isinstance(result.record, AmendmentsRecord)
-            ):
+            if context.number != result.number or not isinstance(result.record, AmendmentsRecord):
                 raise AmendmentInputError()
-            validate_senate_scan(result.record.amendments.source_evidence, context.source_check)
+            if context.source_check is not None:
+                validate_senate_scan(result.record.amendments.source_evidence, context.source_check)
         row = cursor.execute(
             "SELECT i.*,b.provider AS batch_provider FROM llm_batch_items i "
             "JOIN llm_batches b ON b.batch_id=i.batch_id "

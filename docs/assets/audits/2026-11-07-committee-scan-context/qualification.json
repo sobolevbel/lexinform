@@ -1,0 +1,55 @@
+{
+  "artifact_sha256": {
+    "baseline-cover.json": "52d1560f3f81978c52b83ad1536a9eb1282ff82f265d1da82c578f89a7a30332",
+    "baseline.json": "0fb8801ccaec00a86b35a70ff9a501943bbd6fa5d74353a8a2a95d3d4043fc59",
+    "reader-cover.json": "942b4f048183c44ec4503d5a8c02de42acd382dd48ab3f9a846b09c2598b0e61",
+    "reader.json": "6b17283dafd643eb102ea73fa49b213ec2f87d5b3524c8867897bc85b8a92c79",
+    "reader.patch": "81ee9cd318d208913c18e3ed23889953bded19a1d66ff4ad07584bc5a54d09d1",
+    "replay.py": "4386e1873e31f2139054dd81486bba327ce14fd42fb309f6a873d76b9719dd93",
+    "rollback.json": "5d00b95997bed4254f46a551fdc79fcdc1d521c2be00b716f44fc259fb321504",
+    "writer-cover.json": "2f4e4016f82d95f421ba576465548a97db4e7df3aa453c75958670dfc46bb0c4",
+    "writer-cover.sql": "707af81af50758e24de61312680e10cbce3e4b076ddb3ee3d14e19b45533fa0f",
+    "writer.json": "4378ae870c4d7ea503c6a5233ffa9f59e1c496d335a86419c14efb5928cb042f",
+    "writer.patch": "bcbab29e5063d21d64a260d293627d59cbd14880446c1e9b2010a2d95d12e201",
+    "writer.sql": "8850e67e75c3f1b68e6338ee77fa65589f15cba9e31d39b93b4b2bb75222ce1c"
+  },
+  "base": "37e1746f",
+  "controls": [
+    "Frozen payload exact for both cases",
+    "Changed PDF rejected",
+    "Missing shared context parent refused atomically",
+    "Exact rollback on v4 reader after cleanup",
+    "v3 refuses missing verified Senate source",
+    "v4 refuses triage prefix"
+  ],
+  "delta_sql_and_gzip_bytes": {
+    "-cover": {
+      "cleaned_size": [
+        2134,
+        241
+      ],
+      "submitted_size": [
+        1457,
+        236
+      ]
+    },
+    "full": {
+      "cleaned_size": [
+        2085,
+        235
+      ],
+      "submitted_size": [
+        1421,
+        229
+      ]
+    }
+  },
+  "focused_tests": {
+    "reader": 92,
+    "writer": 90
+  },
+  "mypy": "passed",
+  "profiles": "v4 committee scan with exact full PDF or native leading cover removal; exact whole question reconstruction after cleanup. Prior marker reader required before writer.",
+  "ruff": "passed",
+  "source": "Two synthetic three-page native pypdf fixtures. Four pinned J340 natural committee scan controls have zero text and are outside the newly demonstrated mixed profile."
+}

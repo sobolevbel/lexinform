@@ -206,7 +206,7 @@ class ComputationResult(BaseModel):
             )
         witness = self.amendment_scan_input
         if witness is not None:
-            context = witness.context_without_scan if witness.version != 3 else None
+            context = witness.context_without_scan if not witness.external_context else None
             if (
                 self.amendment_input_ref is not None
                 or self.purpose != "amendments"
@@ -217,7 +217,7 @@ class ComputationResult(BaseModel):
                 or witness.request_sha256 != self.request_sha256
                 or witness.source_url != self.record.source_url
                 or self.record.source_kind
-                != (context.source_kind if context is not None else "senate_amendments")
+                != (context.source_kind if context is not None else witness.source_kind)
                 or witness.scan_input != self.record.scan_input
             ):
                 raise ValueError("invalid_amendment_scan_input")

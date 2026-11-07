@@ -216,3 +216,46 @@ def test_senate_witness_requires_the_matching_source_check_and_version() -> None
         AmendmentScanInputWitness.model_validate(raw)
     with pytest.raises(ValueError, match="invalid_amendment_scan_input"):
         AmendmentScanInputWitness.model_validate({**witness.model_dump(), "version": 1})
+
+
+def test_external_committee_context_requires_its_exact_cover_window() -> None:
+    _, context, _ = original()
+    loader, scan = loaded_scan(cover_letter=True)
+    assert scan.scan_input is not None, "The native loader supplies the fixture manifest"
+    mixed = context.model_copy(update={"scan": scan, "text": "Sparse extracted text"})
+    body = canonical_json(mixed.model_dump(mode="json", exclude={"scan"}))
+    witness = AmendmentScanInputWitness(
+        version=4,
+        source_url=URL,
+        request_sha256=SHA,
+        question_sha256=hashlib.sha256(
+            canonical_json({"kind": "amendments", "ctx": mixed.model_dump(mode="json")}).encode()
+        ).hexdigest(),
+        context_sha256=hashlib.sha256(body.encode()).hexdigest(),
+        scan_input=scan.scan_input,
+    )
+
+    assert witness.restore_context(scan, retained_json=body) == mixed
+
+    prefix = loader.first_pages(scan, 2)
+    assert prefix is not None, "The original window can be shortened to a triage prefix"
+    with pytest.raises(ValueError, match="invalid_amendment_scan_input"):
+        AmendmentScanInputWitness.model_validate(
+            {**witness.model_dump(), "scan_input": prefix.scan_input}
+        )
+
+
+def test_external_senate_context_still_requires_its_verified_source() -> None:
+    witness, context, _ = original(senate=True)
+    foreign = context.model_copy(update={"source_check": None})
+    body = canonical_json(foreign.model_dump(mode="json", exclude={"scan"}))
+    external = AmendmentScanInputWitness.model_validate(
+        {
+            **witness.model_dump(exclude={"context_json"}),
+            "version": 3,
+            "context_sha256": hashlib.sha256(body.encode()).hexdigest(),
+        }
+    )
+
+    with pytest.raises(ValueError, match="invalid_amendment_scan_input"):
+        external.resolve_context(body)

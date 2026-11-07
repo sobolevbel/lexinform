@@ -1413,7 +1413,9 @@ class AnalysisService:
             message = "Исходный скан поправок изменился или недоступен; исправление не запущено"
             with optional_read_timing(self._loader, self._clock.now) as capture:
                 try:
-                    scan = self._loader.load_scan(witness.source_url, cover_letter=False)
+                    scan = self._loader.load_scan(
+                        witness.source_url, cover_letter=witness.cover_letter_removed
+                    )
                     if scan is None:
                         raise ValueError(message)
                     context = witness.restore_context(
