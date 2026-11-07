@@ -1,0 +1,149 @@
+{
+  "code_sha": "811b9d7b0d5e12488879de08da310800b52d636b",
+  "cohort_report_sha256": "24b3b097aa77d2e18cde6b4e4122da1ca5e3985456094686b7cd8acfb07d28c7",
+  "legacy_observations_unchanged": true,
+  "manifest_sha256": "2ce1ac6cb30dff66526502ab8bf213a70a90c4504a23220c8a649e2c4d21fd5b",
+  "mutation": {
+    "input_sha256": "e3ede8beca8095f90c0b1c5dcaf5203fa4c49da2e28d45a81238da9a335d17a9",
+    "operation": "Move XML node (16,2) from paragraph to body end; preserve original text tail",
+    "proof": {
+      "coordinates": "body-relative-xml-path-and-legacy-paragraph-python-string",
+      "emitted": [],
+      "ignored_paths": [
+        [
+          42
+        ],
+        [
+          64
+        ],
+        [
+          93
+        ],
+        [
+          116
+        ],
+        [
+          139
+        ],
+        [
+          165
+        ],
+        [
+          187
+        ],
+        [
+          213
+        ],
+        [
+          238
+        ],
+        [
+          266
+        ],
+        [
+          290
+        ],
+        [
+          307
+        ]
+      ],
+      "raw_count": 12,
+      "status": "verified",
+      "unverified_paths": []
+    },
+    "removed_only_form_feed": true,
+    "xml_sha256": "289020a28bf36c5b41790909623b14a1c5b3e7727bc54b80d37d3ffb5fd6b681"
+  },
+  "negative": {
+    "input_sha256": "072d8e6cc811fbe7094369ed8ee40e36f05f363bc432318da272f35debf95722",
+    "proof": {
+      "coordinates": "body-relative-xml-path-and-legacy-paragraph-python-string",
+      "emitted": [],
+      "ignored_paths": [
+        [
+          12
+        ]
+      ],
+      "raw_count": 1,
+      "status": "verified",
+      "unverified_paths": []
+    },
+    "root": "sejm/term10/files/1614__1614-uchwa\u0142a.odt"
+  },
+  "positive": {
+    "input_sha256": "68b7570bf2478bdb6a785ad56d99756cce52c2b8cc733453e0fc624ab38fe0a0",
+    "member": "6. rozporzadzenie w sprawie szkolen uzytkownik, koordynator, doradca wzajemny (8561788).odt",
+    "proof": {
+      "coordinates": "body-relative-xml-path-and-legacy-paragraph-python-string",
+      "emitted": [
+        {
+          "block_path": [
+            16
+          ],
+          "block_text_sha256": "ebcdea40e9fb0a752a86a103170433052eef1122c2266892e64a1dd1edf8e3ed",
+          "path": [
+            16,
+            2
+          ],
+          "span": [
+            172,
+            173
+          ]
+        }
+      ],
+      "ignored_paths": [
+        [
+          42
+        ],
+        [
+          64
+        ],
+        [
+          93
+        ],
+        [
+          116
+        ],
+        [
+          139
+        ],
+        [
+          165
+        ],
+        [
+          187
+        ],
+        [
+          213
+        ],
+        [
+          238
+        ],
+        [
+          266
+        ],
+        [
+          290
+        ]
+      ],
+      "raw_count": 12,
+      "status": "verified",
+      "unverified_paths": []
+    },
+    "root": "documents/files/738682.zip",
+    "xml_sha256": "3acb4a01b5df8a02437cd177fd1ac592edcc161cb706e5665284b73c8e47103f"
+  },
+  "read_inputs": {
+    "INDEX.json": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "documents/files/584479.zip": "1ba1b05f40686650520c6b8f36fb02ff383e04ea4015f827c8757b8f89e8e72c",
+    "documents/files/700362.zip": "9fd51f4645cc96c69dcd85e08badabc0bc69e90355de4ec7e146dca26957ca96",
+    "documents/files/738682.zip": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef",
+    "documents/files/744252.zip": "ee2670aa2e0aacc42c346fc05dfd66dd8de245dbecd2d0fc3d29dfe6772463c4",
+    "documents/files/763369.zip": "125c7670f637d5a0e3fc8acde9ecfab77977b81ab5c9d57fb1585266ae39a18b",
+    "sejm/term10/files/1614__1614-uchwa\u0142a.odt": "072d8e6cc811fbe7094369ed8ee40e36f05f363bc432318da272f35debf95722"
+  },
+  "scope": "Legacy ODT soft break emission and explicit ignored nodes; no rendered pagination.",
+  "source_sha256_count": 926,
+  "source_sha256_map_sha256": "4660156e4bc0cd5abf3876a82ddd4465ffed85d6acdd046ac2850ec71d2df43b",
+  "status": "passed"
+}

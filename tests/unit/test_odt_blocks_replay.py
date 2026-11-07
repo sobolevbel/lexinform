@@ -244,3 +244,41 @@ def test_code_change_during_replay_fails_qualification(
 
     assert run(root, cases, report, mode="library") == 1
     assert read_report(report)["changed_code"]
+
+
+def test_soft_page_breaks_bind_inline_span_and_report_ignored_body_marker() -> None:
+    before = odt_document(
+        "<text:p>ab<text:s text:c='2'/><text:span>ą<text:soft-page-break/>cd</text:span></text:p>"
+        "<text:soft-page-break/>"
+    )
+    after = odt_document(
+        "<text:p>ab<text:s text:c='2'/><text:span>ącd</text:span></text:p>"
+        "<text:soft-page-break/><text:soft-page-break/>"
+    )
+    base, normal = snapshot(before, "adapter")
+    opted, physical = snapshot(before, "adapter", soft_page_breaks=True)
+    assert base == opted and "soft_page_breaks" not in normal[0]
+    verified = physical[0]["soft_page_breaks"]
+    assert verified["status"] == "verified" and verified["raw_count"] == 2
+    assert verified["emitted"] == [
+        {
+            "path": (0, 1, 0),
+            "block_path": (0,),
+            "span": (5, 6),
+            "block_text_sha256": digest("ab  ą\fcd".encode()),
+        }
+    ]
+    assert verified["ignored_paths"] == [(1,)]
+    _, physical = snapshot(after, "adapter", soft_page_breaks=True)
+    verified = physical[0]["soft_page_breaks"]
+    assert verified["raw_count"] == 2 and not verified["emitted"]
+    assert verified["ignored_paths"] == [(1,), (2,)]
+
+
+def test_soft_page_breaks_leave_unsupported_inline_shape_unverified() -> None:
+    raw = odt_document("<text:p>text<text:unknown><text:soft-page-break/></text:unknown></text:p>")
+    _, physical = snapshot(raw, "adapter", soft_page_breaks=True)
+    result = physical[0]["soft_page_breaks"]
+    assert result["status"] == "partial"
+    assert result["unverified_paths"] == [(0, 0, 0)]
+    assert not result["emitted"]

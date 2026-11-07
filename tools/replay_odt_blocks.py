@@ -21,6 +21,7 @@ from lexinform.models import (
     OdtTextExtraction,
 )
 from lexinform.models.extractions import MAX_EXTRACTION_METADATA_BYTES, ExtractionResult
+from lexinform.sections import PAGE_BREAK
 from tools.corpus_artifacts import digest, observation_changes, read_artifact, write_json
 from tools.corpus_manifests import RawReplayManifest
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
@@ -129,6 +130,109 @@ def verify_manifest(data: bytes, extracted: OdtTextExtraction) -> dict[str, Any]
         "inline_notes": extracted.inline_notes,
         "tracked_changes": extracted.tracked_changes,
         "table_repetitions": extracted.table_repetitions,
+    }
+
+
+_SOFT_BREAK = TEXT + "soft-page-break"
+_INLINE_SPACING = {TEXT + "tab": "\t", TEXT + "line-break": "\n", _SOFT_BREAK: PAGE_BREAK}
+
+
+def _soft_break_paragraph(
+    paragraph: ET.Element,
+) -> tuple[str, list[tuple[tuple[int, ...], int]]] | None:
+    parts: list[str] = []
+    markers: list[tuple[tuple[int, ...], int]] = []
+    length = 0
+
+    def append(value: str) -> None:
+        nonlocal length
+        parts.append(value)
+        length += len(value)
+
+    def visit(node: ET.Element, path: tuple[int, ...]) -> bool:
+        if len(path) > 64:
+            return False
+        append(node.text or "")
+        for index, child in enumerate(node):
+            origin = (*path, index)
+            if child.tag in _INLINE_SPACING or child.tag == TEXT + "s":
+                if child.text or len(child):
+                    return False
+                if child.tag == TEXT + "s":
+                    count = child.get(TEXT + "c", "1")
+                    if len(count) > 4 or not count.isascii() or not count.isdecimal():
+                        return False
+                    value = int(count)
+                    if not 1 <= value <= 4096 or set(child.attrib) - {TEXT + "c"}:
+                        return False
+                    append(" " * value)
+                elif child.attrib:
+                    return False
+                else:
+                    if child.tag == _SOFT_BREAK:
+                        markers.append((origin, length))
+                    append(_INLINE_SPACING[child.tag])
+            elif child.tag not in (TEXT + "span", TEXT + "a") or not visit(child, origin):
+                return False
+            append(child.tail or "")
+        return True
+
+    if not visit(paragraph, ()):
+        return None
+    return "".join(parts), markers
+
+
+def verify_soft_page_breaks(data: bytes, extracted: OdtTextExtraction) -> dict[str, Any]:
+    if extracted.body_state != "read":
+        return {"status": "unavailable"}
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        if archive.getinfo("content.xml").file_size > 32_000_000:
+            raise ValueError("ODT XML exceeds the reader's bound")
+        xml = archive.read("content.xml")
+    if digest(data) != extracted.input_sha256 or digest(xml) != extracted.xml_sha256:
+        raise ValueError("ODT soft break proof refers to different input bytes")
+    body = ET.fromstring(xml).find(f"{OFFICE}body/{OFFICE}text")
+    if body is None:
+        raise ValueError("ODT soft break proof has no readable body")
+    raw_paths: set[tuple[int, ...]] = set()
+    pending: list[tuple[tuple[int, ...], ET.Element]] = [((), body)]
+    while pending:
+        path, node = pending.pop()
+        if node.tag == _SOFT_BREAK:
+            raw_paths.add(path)
+        pending.extend(((*path, index), child) for index, child in enumerate(node))
+    omitted = {node.path for node in extracted.ignored_nodes if node.tag == _SOFT_BREAK}
+    if not omitted <= raw_paths:
+        raise ValueError("Ignored ODT soft break path differs from XML")
+    emitted = {}
+    for block in extracted.blocks:
+        if block.kind not in ("paragraph", "heading"):
+            continue
+        node = xml_node(body, block.path)
+        if not any(element.tag == _SOFT_BREAK for element in node.iter()):
+            continue
+        replayed = _soft_break_paragraph(node)
+        if replayed is None:
+            continue
+        text, markers = replayed
+        if text != block.text:
+            raise ValueError("ODT soft break paragraph differs from the legacy block")
+        for relative, offset in markers:
+            emitted[(*block.path, *relative)] = {
+                "block_path": block.path,
+                "block_text_sha256": digest(text.encode()),
+                "span": (offset, offset + 1),
+            }
+    if emitted.keys() & omitted or not emitted.keys() <= raw_paths:
+        raise ValueError("ODT soft break dispositions disagree with XML")
+    unverified = raw_paths - emitted.keys() - omitted
+    return {
+        "status": "partial" if unverified else "verified",
+        "coordinates": "body-relative-xml-path-and-legacy-paragraph-python-string",
+        "raw_count": len(raw_paths),
+        "emitted": [{"path": path, **witness} for path, witness in sorted(emitted.items())],
+        "ignored_paths": sorted(omitted),
+        "unverified_paths": sorted(unverified),
     }
 
 
@@ -318,7 +422,12 @@ def verify_default_status(data: bytes, native: OdtNotedParts) -> dict[str, Any]:
 
 
 def snapshot(
-    data: bytes, mode: Mode, *, note_origins: bool = False, note_status: bool = False
+    data: bytes,
+    mode: Mode,
+    *,
+    note_origins: bool = False,
+    note_status: bool = False,
+    soft_page_breaks: bool = False,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     observer = BlockObserver() if mode == "adapter" else LibraryObserver()
     routing = RoutingOnly()
@@ -341,11 +450,21 @@ def snapshot(
             manifest = link.extraction
             if manifest.input_sha256 != part.sha256 or manifest.legacy_text != part.text:
                 raise ValueError("ODT manifest has an invalid physical part binding")
+            extra = (
+                {
+                    "soft_page_breaks": verify_soft_page_breaks(
+                        observer.payloads[part.sha256], manifest
+                    )
+                }
+                if soft_page_breaks
+                else {}
+            )
             physical.append(
                 {
                     "part_index": link.part_index,
                     "members": part.members,
                     **verify_manifest(observer.payloads[part.sha256], manifest),
+                    **extra,
                 }
             )
     if note_origins or note_status:
@@ -385,6 +504,7 @@ def run(
     reference_sha256: str | None = None,
     note_origins: bool = False,
     note_status: bool = False,
+    soft_page_breaks: bool = False,
 ) -> int:
     root, target = corpus.resolve(strict=True), output.resolve()
     if output.is_symlink() or target.exists() or target.is_relative_to(root):
@@ -408,8 +528,8 @@ def run(
             raise ValueError("Reference ODT population differs")
     elif reference is not None or reference_sha256 is not None:
         raise ValueError("Library baseline does not accept a reference")
-    if (note_origins or note_status) and mode != "adapter":
-        raise ValueError("ODT note qualification requires explicit adapter mode")
+    if (note_origins or note_status or soft_page_breaks) and mode != "adapter":
+        raise ValueError("ODT physical qualification requires explicit adapter mode")
     before = source_fingerprints()
     result: dict[str, Any] = {
         "suite": "odt-blocks-v1",
@@ -443,6 +563,8 @@ def run(
             "actual index/input/body/status, required metadata and old physical identity. "
             "No real SDK/provider request, representative note-rich or production coverage claim."
         )
+    if soft_page_breaks:
+        result["soft_page_breaks_opt_in"] = True
     reads = CorpusReads(root)
     successful = 0
     with reads.guard():
@@ -456,13 +578,16 @@ def run(
                 data = path.read_bytes()
                 if digest(data) != case.sha256:
                     raise ValueError("ODT input SHA mismatch")
-                core, physical = (
-                    snapshot(data, mode, note_status=True)
-                    if note_status
-                    else snapshot(data, mode, note_origins=True)
-                    if note_origins
-                    else snapshot(data, mode)
-                )
+                options = {
+                    name: True
+                    for name, enabled in (
+                        ("note_status", note_status),
+                        ("note_origins", note_origins and not note_status),
+                        ("soft_page_breaks", soft_page_breaks),
+                    )
+                    if enabled
+                }
+                core, physical = snapshot(data, mode, **options)
                 result["observations"][case.path] = core
                 result["physical"][case.path] = physical
                 successful += sum(attempt["error_type"] is None for attempt in core["attempts"])
@@ -494,6 +619,7 @@ def main() -> None:
     parser.add_argument("--reference-sha256")
     parser.add_argument("--note-origins", action="store_true")
     parser.add_argument("--note-status", action="store_true")
+    parser.add_argument("--soft-page-breaks", action="store_true")
     args = parser.parse_args()
     logging.basicConfig(level=logging.ERROR)
     raise SystemExit(
@@ -506,6 +632,7 @@ def main() -> None:
             reference_sha256=args.reference_sha256,
             note_origins=args.note_origins,
             note_status=args.note_status,
+            soft_page_breaks=args.soft_page_breaks,
         )
     )
 
