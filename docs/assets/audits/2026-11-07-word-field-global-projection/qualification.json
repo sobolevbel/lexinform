@@ -1,0 +1,10 @@
+{
+  "baseline": "b292a0637fa0247c6a335606cf5d3ff37e42dcb0",
+  "verified_cli_report_sha256": "eef1421d65f0a1ca65011ccccc1e769fb0b31be94e1b4eeee4b86f5878c6e5d3",
+  "probe_sha256": "47af1a1bdc22a7a147e0b6655ed82564328f1adaf63709bf6bbd18ff5284f483",
+  "counts": {
+    "exact_ranges": 69,
+    "inputs": 20,
+    "inputs_with_ranges": 17
+  }
+}

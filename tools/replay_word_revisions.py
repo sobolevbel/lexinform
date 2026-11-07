@@ -12,6 +12,7 @@ from xml.etree import ElementTree as ET
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
+from lexinform.adapters.word_field_projection import project_word_field_ranges
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 
@@ -89,7 +90,11 @@ def _probe(
         if native is not None:
             if native.state != "unknown" or native.ranges:
                 raise ValueError("Native Word ranges claimed an unbalanced field sequence")
-            report["native_field_ranges"] = {"state": "unknown", "verified_ranges": 0}
+            report["native_field_ranges"] = {
+                "state": "unknown",
+                "verified_ranges": 0,
+                "verified_body_ranges": None,
+            }
         report["field_sequence"] = "unbalanced"
         return report
 
@@ -119,16 +124,29 @@ def _probe(
     }
     if native is not None:
         paths = dict(_element_paths(root))
-        expected = []
-        restored = mutated
+        emitted = []
         for marker, (node, group, text) in original_nodes.items():
-            if mutated.count(marker) > 1:
+            position = mutated.find(marker)
+            if position < 0:
+                continue
+            if mutated.find(marker, position + len(marker)) >= 0:
                 raise ValueError("Word field marker has ambiguous output")
-            if marker in mutated:
-                if text:
-                    expected.append((paths[node], group, digest(text.encode())))
-                restored = restored.replace(marker, text, 1)
-        if restored != original:
+            emitted.append((position, marker, node, group, text))
+        restored: list[str] = []
+        expected = []
+        expected_body = []
+        cursor = output_position = 0
+        for position, marker, node, group, text in sorted(emitted, key=lambda item: item[0]):
+            between = mutated[cursor:position]
+            restored.extend((between, text))
+            output_position += len(between)
+            if text:
+                key = (paths[node], group, digest(text.encode()))
+                expected.append(key)
+                expected_body.append((*key, output_position, output_position + len(text)))
+            output_position += len(text)
+            cursor = position + len(marker)
+        if "".join((*restored, mutated[cursor:])) != original:
             raise ValueError("Restoring the Word field markers changed the original text")
         observed = [(item.path, item.group, item.text_sha256) for item in native.ranges]
         if native.legacy.legacy_text != original or sorted(observed) != sorted(expected):
@@ -142,7 +160,19 @@ def _probe(
                 or digest(paragraph.text[item.start : item.end].encode()) != item.text_sha256
             ):
                 raise ValueError("Word field range differs from its legacy paragraph")
-        report["native_field_ranges"] = {"state": native.state, "verified_ranges": len(observed)}
+        projected = project_word_field_ranges(native)
+        if projected is not None and sorted(
+            (item.source.path, item.source.group, item.source.text_sha256, item.start, item.end)
+            for item in projected
+        ) != sorted(expected_body):
+            raise ValueError(
+                "Word field body coordinates differ from independently emitted markers"
+            )
+        report["native_field_ranges"] = {
+            "state": native.state,
+            "verified_ranges": len(observed),
+            "verified_body_ranges": len(projected) if projected is not None else None,
+        }
     return report
 
 

@@ -64,6 +64,7 @@ def test_field_replay_distinguishes_physical_text_and_unbalanced_markers(
         assert observed["native_field_ranges"] == {
             "state": "checked" if balanced else "unknown",
             "verified_ranges": 3 if balanced else 0,
+            "verified_body_ranges": 3 if balanced else None,
         }
     else:
         assert "native_field_ranges" not in observed

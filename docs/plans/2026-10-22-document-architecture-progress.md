@@ -14069,3 +14069,19 @@ providers' confirmation paths, with a byte-identical SQLite dump after the
 rollback. Matching preattached manifests were accepted.
 
 [Qualification](../assets/audits/2026-11-07-frozen-manifest-submission/qualification.json).
+
+<a id="j409"></a>
+
+## J409 — project verified Word field ranges into the legacy body
+
+The opt-in projection reconstructs paragraph, cell and row joins from the
+actual block layout. It verifies parent text and projects positions through
+the same page-break cleanup. Unsupported topology, partial capture and a
+range that intersects removed characters remain unknown.
+
+The independent marker replay and native projection matched all 69 ranges
+across 20 pinned paths, including the 43 inside table paragraphs. The
+replay CLI checks whole-body coordinates separately from paragraph slices.
+Default text and stored range coordinates remain unchanged.
+
+[Qualification](../assets/audits/2026-11-07-word-field-global-projection/qualification.json).

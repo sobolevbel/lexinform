@@ -743,7 +743,8 @@ separators, instruction text and simple-field body text. The report preserves
 unbalanced field sequences as a separate case without text classification.
 Add `--verify-field-ranges` to match emitted markers to native XML paths and
 text hashes, reconstruct the unchanged output, and check the actual
-paragraph-local slices. A mismatch fails the replay.
+paragraph-local slices and supported whole-body coordinates. Unsupported
+whole-body mappings are reported separately. A mismatch fails the replay.
 
 ### Retained delivery census
 
