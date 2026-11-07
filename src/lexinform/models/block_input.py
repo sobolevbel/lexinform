@@ -137,6 +137,7 @@ class PreparedBlockCopy(BaseModel):
     witness_id: str = Field(pattern=r"^block-copy-v1:[0-9a-f]{64}$")
     run_index: Position
     text_sha256: Sha256
+    intersection: Literal["clipped-v1"] | None = Field(default=None, exclude_if=lambda v: v is None)
 
     @model_validator(mode="after")
     def nonempty(self) -> Self:

@@ -1,0 +1,225 @@
+{
+  "after_cleanup": "Immutable parent and canonical geometry remain verifiable. The emitted slice SHA is retained, without independent raw substring verification from the full-run SHA.",
+  "base": "18b5b7c43c806e157995a3bfd8b6f4fa76ac11ab",
+  "checks": {
+    "git_diff_check": "passed",
+    "mypy": "3 files passed",
+    "pytest": "103 passed across block_input_reader, block_input_writer, native_block_input_reader, native_block_writer, input_receipts",
+    "ruff": "passed"
+  },
+  "clipped_source_run": [
+    418,
+    488
+  ],
+  "companion": {
+    "observed_rows": 1,
+    "profile": "prepared-block-copies-v1",
+    "retention": "complete",
+    "rows": [
+      {
+        "end": 488,
+        "extraction_id": "extraction-v1:71d1ad1f694742a5647149a192b93b3b5aeb12f6022f33466b1fd38558f62540",
+        "intersection": "clipped-v1",
+        "part_index": 0,
+        "physical_index": 0,
+        "run_index": 5,
+        "start": 418,
+        "text_sha256": "52d52c1c329711961b6c7a86cca2ecb32b85650403c25882bfc0836a0a991701",
+        "witness_id": "block-copy-v1:cc03529a65409b71449f77d57fed31465714821ea58fa42c0577f9848a194de9"
+      }
+    ],
+    "rows_sha256": "86933d48a2e9cd1b31285ff28f77ab133448cbc83c01e0368c51a2968dc0c1c8"
+  },
+  "controlled_cap": 1024,
+  "doctor_checks": true,
+  "full_parent_run": [
+    418,
+    492
+  ],
+  "gzip_companion_delta": 225,
+  "hashes": {
+    "baseline.sql": "b7ba599f78a4c1d77052ff3f6fc1db8109b9fd0825c8a5a17a6b0a5dd3aa917f",
+    "qualify.py": "e8cc6e0cc05631b30229f0376bea7999ea0ac35a89c1f4afe5080d453eb53483",
+    "stage.patch": "b89f1a961880469e00e271aa92e2c4220e9dd2fbfa24c4ad28c7c24bdd3f96fe",
+    "staged.sql": "dc196541dfe1069f8a382b82f4c0e03682ce16c08ba3bcd9a8d76f5219125e96"
+  },
+  "invalid_parent_restore_atomic": true,
+  "native_page_manifest_sha256": "7efc24e212af27c2d061b2a66642551f88c0be1eb43d52e648653a28658449bb",
+  "negative_controls": [
+    "underclaimed",
+    "hash",
+    "foreign",
+    "unmarked",
+    "escaping",
+    "generated",
+    "impossible_page"
+  ],
+  "normalized_quote_span": [
+    204,
+    331
+  ],
+  "old_word_witness_id_exact": "block-copy-v1:93d3a2c98d5695cb9245acf5498627fdcb272ed613296b2ba65876b34c786090",
+  "page_count": 14,
+  "raw_page_run": [
+    423,
+    493
+  ],
+  "request_unchanged": true,
+  "restores": 2,
+  "runtime_emission": false,
+  "scope": "Controlled opt-in reader trial with real pinned PDF, normal trim and keyword budget at cap 1024, synthetic owner/URL. Default cap does not clip this input.",
+  "source_loss": [
+    488,
+    492
+  ],
+  "source_pin": {
+    "claim": "Controlled claim, no provider call.",
+    "document_id": "rcl-document:587739",
+    "extraction_sha256": "7efc24e212af27c2d061b2a66642551f88c0be1eb43d52e648653a28658449bb",
+    "locator": "Art. 1",
+    "page": 1,
+    "pdf": {
+      "path": "documents/files/587739.pdf",
+      "sha256": "c4568d7582962e62ac39d5d084936424f19edebae58b8925add7422d90360a5e"
+    },
+    "quote_end": 331,
+    "quote_sha256": "e2847c736055a9a3b081f377a370f22605cb65df3fd4ad8bd7ac1d6d5d40089d",
+    "quote_start": 204,
+    "source_text_sha256": "368e0fea8034fee29af37345061b13321a49a3e53799631ca045bb51e4a07101"
+  },
+  "sql_companion_delta": 560,
+  "unlocated_DOC": "unsupported/unmapped",
+  "witness": {
+    "coordinates": "pdf-pages-v1",
+    "manifest_sha256": "7efc24e212af27c2d061b2a66642551f88c0be1eb43d52e648653a28658449bb",
+    "notes_manifest_sha256": null,
+    "part_sha256": "c4568d7582962e62ac39d5d084936424f19edebae58b8925add7422d90360a5e",
+    "profile": "native-block-copies-v1",
+    "runs": [
+      {
+        "block_chars": 1552,
+        "block_end": 142,
+        "block_id": "pdf-page:1:0",
+        "block_start": 0,
+        "block_text_sha256": "d235550ba69574ab9feb6cbbaf4611e13f81509b609053c3437bba07713ba477",
+        "source_end": 142,
+        "source_start": 0,
+        "text_sha256": "0eabbc5604c878da0e0eab8424f61a46ab770e5388cf2221f6b9ec505afc27df"
+      },
+      {
+        "block_chars": 1552,
+        "block_end": 177,
+        "block_id": "pdf-page:1:0",
+        "block_start": 144,
+        "block_text_sha256": "d235550ba69574ab9feb6cbbaf4611e13f81509b609053c3437bba07713ba477",
+        "source_end": 176,
+        "source_start": 143,
+        "text_sha256": "11a096268f104b60ba181739b179ddf600ef5b4bfbf34c5f4affdf07dc945066"
+      },
+      {
+        "block_chars": 1552,
+        "block_end": 307,
+        "block_id": "pdf-page:1:0",
+        "block_start": 179,
+        "block_text_sha256": "d235550ba69574ab9feb6cbbaf4611e13f81509b609053c3437bba07713ba477",
+        "source_end": 305,
+        "source_start": 177,
+        "text_sha256": "34753c7ef3294b8c46be336998d3d1570f90358d4d07383cf2b2a4941313e21c"
+      },
+      {
+        "block_chars": 1552,
+        "block_end": 379,
+        "block_id": "pdf-page:1:0",
+        "block_start": 309,
+        "block_text_sha256": "d235550ba69574ab9feb6cbbaf4611e13f81509b609053c3437bba07713ba477",
+        "source_end": 376,
+        "source_start": 306,
+        "text_sha256": "c78fb4ec6916585f14bb56ae3f43969060d1ae76c48f71923dab055edcd06668"
+      },
+      {
+        "block_chars": 1552,
+        "block_end": 421,
+        "block_id": "pdf-page:1:0",
+        "block_start": 381,
+        "block_text_sha256": "d235550ba69574ab9feb6cbbaf4611e13f81509b609053c3437bba07713ba477",
+        "source_end": 417,
+        "source_start": 377,
+        "text_sha256": "f2b04cb286921beafb840c3c7666bc28b2267d663e9bdcf183c6954fd6e423ba"
+      },
+      {
+        "block_chars": 1552,
+        "block_end": 497,
+        "block_id": "pdf-page:1:0",
+        "block_start": 423,
+        "block_text_sha256": "d235550ba69574ab9feb6cbbaf4611e13f81509b609053c3437bba07713ba477",
+        "source_end": 492,
+        "source_start": 418,
+        "text_sha256": "1def4b591789a786c1173e1c925f3f9051370b4e9a089607f484880ed23fe95c"
+      },
+      {
+        "block_chars": 1552,
+        "block_end": 618,
+        "block_id": "pdf-page:1:0",
+        "block_start": 499,
+        "block_text_sha256": "d235550ba69574ab9feb6cbbaf4611e13f81509b609053c3437bba07713ba477",
+        "source_end": 612,
+        "source_start": 493,
+        "text_sha256": "c8da2b2b730f2ce898fbcdeec4d4993dc2c8f245a7e0c5f192bebe1166e175cc"
+      },
+      {
+        "block_chars": 1552,
+        "block_end": 727,
+        "block_id": "pdf-page:1:0",
+        "block_start": 620,
+        "block_text_sha256": "d235550ba69574ab9feb6cbbaf4611e13f81509b609053c3437bba07713ba477",
+        "source_end": 720,
+        "source_start": 613,
+        "text_sha256": "1515b4f129361a5958c03f028c3593c71d1340e415a001a96bf55f92f4cd61f6"
+      },
+      {
+        "block_chars": 1552,
+        "block_end": 816,
+        "block_id": "pdf-page:1:0",
+        "block_start": 729,
+        "block_text_sha256": "d235550ba69574ab9feb6cbbaf4611e13f81509b609053c3437bba07713ba477",
+        "source_end": 808,
+        "source_start": 721,
+        "text_sha256": "e469f4b6f227d9fb1451637b8e27465911234aff0d232c71253ce1bfa2bf89ca"
+      },
+      {
+        "block_chars": 1552,
+        "block_end": 897,
+        "block_id": "pdf-page:1:0",
+        "block_start": 818,
+        "block_text_sha256": "d235550ba69574ab9feb6cbbaf4611e13f81509b609053c3437bba07713ba477",
+        "source_end": 888,
+        "source_start": 809,
+        "text_sha256": "a245f35225adafdf3ade3112bfcfd82d9f60773a00f66a0c41cad0b0975cb892"
+      },
+      {
+        "block_chars": 1552,
+        "block_end": 977,
+        "block_id": "pdf-page:1:0",
+        "block_start": 899,
+        "block_text_sha256": "d235550ba69574ab9feb6cbbaf4611e13f81509b609053c3437bba07713ba477",
+        "source_end": 967,
+        "source_start": 889,
+        "text_sha256": "49b26be3cf132e6ac7dd0e9d339ffaf2ac060aa86b21169a9dd781127a611b24"
+      },
+      {
+        "block_chars": 1552,
+        "block_end": 1149,
+        "block_id": "pdf-page:1:0",
+        "block_start": 979,
+        "block_text_sha256": "d235550ba69574ab9feb6cbbaf4611e13f81509b609053c3437bba07713ba477",
+        "source_end": 1138,
+        "source_start": 968,
+        "text_sha256": "4a75b7be4ddc0cf213a88b6555fddf289f4460bad19b4e065698707a2de66369"
+      }
+    ],
+    "text_chars": 26182,
+    "text_sha256": "368e0fea8034fee29af37345061b13321a49a3e53799631ca045bb51e4a07101",
+    "text_view": "pdf-whitespace-v1"
+  },
+  "writer_emission": false
+}

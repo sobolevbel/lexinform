@@ -201,3 +201,31 @@ def test_repeated_block_parent_identity_cannot_conflict(repo: SqliteBillReposito
     )
     with pytest.raises(ValidationError, match="repeated block IDs"):
         BlockCopyWitness.model_validate({**witness.model_dump(), "runs": (row, shifted)})
+
+
+@pytest.mark.parametrize("fault", ["whole", "partial", "emitted_hash", "foreign_run"])
+def test_clipped_marker_requires_the_exact_intersection_and_frozen_bytes(
+    repo: SqliteBillRepository, fault: str
+) -> None:
+    intent, _ = prepared(repo)
+    assert isinstance(intent.request.question, AnalysisQuestion)
+    raw = json.loads(intent.model_dump_json())
+    companion = raw["meta"]["prepared_input_receipt"]["block_companion"]
+    values = companion["rows"][0]
+    values["intersection"] = "clipped-v1"
+    if fault == "partial":
+        values["end"] -= 1
+        text = intent.request.question.ctx.text
+        values["text_sha256"] = hashlib.sha256(text[: values["end"]].encode()).hexdigest()
+    elif fault == "emitted_hash":
+        values["text_sha256"] = "0" * 64
+    elif fault == "foreign_run":
+        values["run_index"] += 1
+    row = PreparedBlockCopy.model_validate(values)
+    companion["rows_sha256"] = hashlib.sha256(
+        ("[" + row.model_dump_json() + "]").encode()
+    ).hexdigest()
+    before = repo.dump()
+    with pytest.raises(ValueError, match="block companion"):
+        repo.save_batch_intent(BatchIntent.model_validate(raw))
+    assert repo.dump() == before

@@ -804,14 +804,20 @@ def _block_parents(
         ):
             raise ValueError("block companion extraction parent mismatch")
         run = witness.runs[row.run_index]
-        if row.text_sha256 != run.text_sha256:
-            raise ValueError("block companion copy hash mismatch")
         segment = next(s for s in receipt.segments if s.start <= row.start < row.end <= s.end)
-        if segment.source_start is None or (run.source_start, run.source_end) != (
+        if segment.source_start is None:
+            raise ValueError("block companion source range mismatch")
+        source_end = segment.source_start + segment.end - segment.start
+        start = max(segment.source_start, run.source_start)
+        end = min(source_end, run.source_end)
+        clipped = (start, end) != (run.source_start, run.source_end)
+        if clipped != (row.intersection == "clipped-v1") or (start, end) != (
             segment.source_start + row.start - segment.start,
             segment.source_start + row.end - segment.start,
         ):
             raise ValueError("block companion source range mismatch")
+        if not clipped and row.text_sha256 != run.text_sha256:
+            raise ValueError("block companion copy hash mismatch")
 
 
 def _multipart_parents(
