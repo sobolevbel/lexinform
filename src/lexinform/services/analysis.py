@@ -3254,7 +3254,9 @@ class AnalysisService:
         text, truncated, source = loaded.text, loaded.truncated, loaded.source
         if purpose == "explanation" and source not in FULL_TEXT_SOURCES:
             raise ValueError("Текст проекта пока недоступен; повторите /explain после загрузки")
-        if previous is not None and source not in FULL_TEXT_SOURCES:
+        if previous is not None and (
+            source not in FULL_TEXT_SOURCES or loaded.selection.has_normative_pdf_page_failure
+        ):
             return _Prepared(
                 bill,
                 located,
@@ -3262,7 +3264,11 @@ class AnalysisService:
                 source,
                 previous,
                 first=False,
-                unreadable_reason=f"no usable full text (source: {source})",
+                unreadable_reason=(
+                    "PDF page extraction failed in the new text"
+                    if loaded.selection.has_normative_pdf_page_failure
+                    else f"no usable full text (source: {source})"
+                ),
             )
         digest = loaded.digest
         law = loaded.law

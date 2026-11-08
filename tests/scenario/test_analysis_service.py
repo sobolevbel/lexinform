@@ -4,8 +4,16 @@ import pytest
 
 from lexinform.adapters.llm_prompts import build_user_prompt
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import AnalysisRecord, BillStatus, DocumentPart, DocumentSelection, Mp, Triage
-from lexinform.models.documents import ExtractedDocument
+from lexinform.models import (
+    AnalysisRecord,
+    BillStatus,
+    DocumentPart,
+    DocumentSelection,
+    Mp,
+    TextDocument,
+    Triage,
+)
+from lexinform.models.documents import DocumentRole, ExtractedDocument
 from lexinform.services.analysis import text_digest
 from tests.fakes import FakeTextExtractor
 from tests.harness import World, print_url
@@ -582,3 +590,38 @@ def test_triage_cannot_reject_text_with_a_failed_pdf_page(page_failure: bool) ->
     else:
         assert len(world.llm.triage_contexts) == 1
         assert not world.llm.contexts
+
+
+@pytest.mark.parametrize("failed_role", [None, "bill", "osr"])
+def test_reanalysis_keeps_previous_record_when_new_normative_pdf_read_fails(
+    failed_role: DocumentRole | None,
+) -> None:
+    class EditionPdf(FakeTextExtractor):
+        def extract_document(self, data: bytes) -> ExtractedDocument:
+            text = self.extract(data)
+            if data == b"%PDF-next" and failed_role is not None:
+                failed = DocumentPart(
+                    role=failed_role, losses=("PDF text extraction failed on 1 page(s)",)
+                )
+                return ExtractedDocument(text=text, selection=DocumentSelection(parts=(failed,)))
+            return ExtractedDocument(text=text)
+
+    new_text = "USTAWA\nArt. 1. Opłata za zezwolenie na pobyt wynosi 600 zł. " * 15
+    world = World(extractor=EditionPdf(FOREIGNER_TEXT, by_content={b"%PDF-next": new_text}))
+    world.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    world.run()
+    before = world.bill("3039")
+    url = "https://api.test/next-edition.pdf"
+    world.gateway.files[url] = b"%PDF-next"
+
+    record = world.analysis.reanalyze_bill(before, TextDocument(url=url, kind="print"))
+
+    if failed_role == "bill":
+        assert record is None
+        assert world.bill("3039").analysis == before.analysis
+        assert len(world.llm.contexts) == 1
+        assert not world.llm.change_contexts
+    else:
+        assert record is not None, "the replacement is readable even with an optional OSR gap"
+        assert record.source_url == url
+        assert len(world.llm.contexts) == 2

@@ -23,6 +23,9 @@ DocumentRole = Literal[
 ]
 
 
+PDF_PAGE_FAILURE_PREFIX = "PDF text extraction failed on "
+
+
 class DocumentPart(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -39,6 +42,10 @@ class DocumentPart(BaseModel):
     text_end: int | None = None
     text_sha256: str = ""
     losses: tuple[str, ...] = ()
+
+    @property
+    def has_pdf_page_failure(self) -> bool:
+        return any(loss.startswith(PDF_PAGE_FAILURE_PREFIX) for loss in self.losses)
 
     @property
     def source_sha256(self) -> str:
@@ -119,9 +126,6 @@ DocumentLimitation = Literal[
 ]
 
 
-PDF_PAGE_FAILURE_PREFIX = "PDF text extraction failed on "
-
-
 class DocumentSelection(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -162,8 +166,14 @@ class DocumentSelection(BaseModel):
 
     @property
     def has_pdf_page_failure(self) -> bool:
+        return any(part.has_pdf_page_failure for part in self.parts)
+
+    @property
+    def has_normative_pdf_page_failure(self) -> bool:
         return any(
-            loss.startswith(PDF_PAGE_FAILURE_PREFIX) for part in self.parts for loss in part.losses
+            part.has_pdf_page_failure
+            for part in self.parts
+            if part.role not in ("justification", "osr")
         )
 
     @model_validator(mode="before")
