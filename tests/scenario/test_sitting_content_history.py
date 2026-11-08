@@ -1,7 +1,12 @@
+import sqlite3
+from contextlib import closing
 from datetime import timedelta
+from pathlib import Path
 
 import pytest
+from tools.content_history_doctor import audit
 
+from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import ContentSnapshot, ContentVersion, PublicationKind, PublicationStatus
 from lexinform.models.sitting_content import SittingContentPlan
 from lexinform.services.content_inspection import inspect_content
@@ -41,7 +46,9 @@ def short_sittings(*, grouped: bool) -> tuple[World, tuple[int, ...], int]:
 
 
 @pytest.mark.parametrize("profile", ["short", "group", "multipart"])
-def test_sitting_content_survives_normal_delivery_cleanup_and_restore(profile: str) -> None:
+def test_sitting_content_survives_normal_delivery_cleanup_and_restore(
+    profile: str, tmp_path: Path
+) -> None:
     logical: tuple[int, ...]
     if profile == "multipart":
         case = queued()
@@ -57,6 +64,31 @@ def test_sitting_content_survives_normal_delivery_cleanup_and_restore(profile: s
     sent = tuple(message.text for message in world.publisher.sent[before:])
     assert len(sent) == (len(bound) if profile == "multipart" else 1)
     assert all(pub.status is PublicationStatus.SENT and pub.message_id for pub in original)
+    database = tmp_path / "sitting.db"
+    with closing(SqliteBillRepository(database)) as repo:
+        repo.migrate()
+        repo.restore(world.repo.dump())
+    report = audit(database, publication_id=bound[0])
+    assert report["status"] == "recorded" and not report["findings"]
+    (history,) = report["histories"]
+    assert history["current_content_id"] is not None
+    if profile == "multipart":
+        with closing(sqlite3.connect(database)) as db, db:
+            db.execute(
+                "UPDATE publications SET status='queued', message_id=NULL, sent_at=NULL WHERE id=?",
+                (bound[-1],),
+            )
+        pending = audit(database, publication_id=bound[0])
+        assert pending["status"] == "recorded" and not pending["findings"]
+        assert pending["histories"][0]["current_content_id"] is None
+
+        with closing(sqlite3.connect(database)) as db, db:
+            db.execute("DELETE FROM publication_content WHERE publication_id=?", (bound[-1],))
+        corrupted = audit(database, publication_id=bound[0])
+        assert corrupted["status"] == "failed"
+        assert "invalid_sitting_content_history" in {row["code"] for row in corrupted["findings"]}
+        assert corrupted["histories"][0]["current_content_id"] is None
+
     cutoff = world.clock.now() + timedelta(days=999)
     world.repo.prune_history(before=cutoff, memo_before=cutoff)
     sql = world.repo.dump()

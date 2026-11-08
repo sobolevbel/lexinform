@@ -1,0 +1,142 @@
+{
+  "before": [
+    {
+      "snapshot": "j507-review-and-checkpoints/8e7a715b.db",
+      "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+      "status": "failed",
+      "findings": [
+        {
+          "code": "card_content_physical_unavailable",
+          "ref": "content-v1:58385aa2e899f3875db95f8d958e62135380548c9d600de8e568fd2e8717ca7d",
+          "level": "warning"
+        },
+        {
+          "code": "invalid_content_frozen_context",
+          "ref": "288",
+          "level": "error"
+        }
+      ],
+      "summary": {
+        "binding_rows": 5,
+        "errors": 1,
+        "snapshot_rows": 14,
+        "version_rows": 5,
+        "warnings": 1
+      },
+      "sitting_current_content_id": null,
+      "sitting_publications": [
+        {
+          "publication_id": 288,
+          "available": true,
+          "operator_decisions": [],
+          "status": "sent",
+          "message_id": 169,
+          "attempts": 0,
+          "kind": "agenda"
+        }
+      ]
+    },
+    {
+      "snapshot": "state-7598f545010b8a9a33dd13c35d0487c7396fcd8a/checkpoint.db",
+      "database_sha256": "1dc2af02598e4add20a7ae623149b44b584333205a7bf4e0a0a7633349f1c34e",
+      "status": "failed",
+      "findings": [
+        {
+          "code": "card_content_physical_unavailable",
+          "ref": "content-v1:58385aa2e899f3875db95f8d958e62135380548c9d600de8e568fd2e8717ca7d",
+          "level": "warning"
+        },
+        {
+          "code": "invalid_content_frozen_context",
+          "ref": "288",
+          "level": "error"
+        }
+      ],
+      "summary": {
+        "binding_rows": 5,
+        "errors": 1,
+        "snapshot_rows": 14,
+        "version_rows": 5,
+        "warnings": 1
+      },
+      "sitting_current_content_id": null,
+      "sitting_publications": [
+        {
+          "publication_id": 288,
+          "available": true,
+          "operator_decisions": [],
+          "status": "sent",
+          "message_id": 169,
+          "attempts": 0,
+          "kind": "agenda"
+        }
+      ]
+    }
+  ],
+  "after": [
+    {
+      "snapshot": "j507-review-and-checkpoints/8e7a715b.db",
+      "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+      "status": "recorded",
+      "findings": [],
+      "summary": {
+        "binding_rows": 5,
+        "errors": 0,
+        "snapshot_rows": 14,
+        "version_rows": 5,
+        "warnings": 0
+      },
+      "runtime_current_ids": {
+        "231": "content-v1:fe5a2b3074b4f63c69fbb033f64042f9bf623b2e8c5c4f67227249716c062eb0",
+        "288": "content-v1:58385aa2e899f3875db95f8d958e62135380548c9d600de8e568fd2e8717ca7d",
+        "293": "content-v1:398305b905812ebf7b2ffec1c8e02104509902d6f9a2556505319c7624d0080f",
+        "294": "content-v1:e344e5dd14fceb1e60093ec1853463dcb32a7ed6e28a287f253ef2d867e73b38",
+        "295": "content-v1:e6134465ef8724f01d3d1db3d861694a780e4fb727a66a5026b89e7b5fbc9f0b"
+      },
+      "sitting_current_content_id": "content-v1:58385aa2e899f3875db95f8d958e62135380548c9d600de8e568fd2e8717ca7d",
+      "sitting_publications": [
+        {
+          "publication_id": 288,
+          "available": true,
+          "operator_decisions": [],
+          "status": "sent",
+          "message_id": 169,
+          "attempts": 0,
+          "kind": "agenda"
+        }
+      ]
+    },
+    {
+      "snapshot": "state-7598f545010b8a9a33dd13c35d0487c7396fcd8a/checkpoint.db",
+      "database_sha256": "1dc2af02598e4add20a7ae623149b44b584333205a7bf4e0a0a7633349f1c34e",
+      "status": "recorded",
+      "findings": [],
+      "summary": {
+        "binding_rows": 5,
+        "errors": 0,
+        "snapshot_rows": 14,
+        "version_rows": 5,
+        "warnings": 0
+      },
+      "runtime_current_ids": {
+        "231": "content-v1:fe5a2b3074b4f63c69fbb033f64042f9bf623b2e8c5c4f67227249716c062eb0",
+        "288": "content-v1:58385aa2e899f3875db95f8d958e62135380548c9d600de8e568fd2e8717ca7d",
+        "293": "content-v1:398305b905812ebf7b2ffec1c8e02104509902d6f9a2556505319c7624d0080f",
+        "294": "content-v1:e344e5dd14fceb1e60093ec1853463dcb32a7ed6e28a287f253ef2d867e73b38",
+        "295": "content-v1:e6134465ef8724f01d3d1db3d861694a780e4fb727a66a5026b89e7b5fbc9f0b"
+      },
+      "sitting_current_content_id": "content-v1:58385aa2e899f3875db95f8d958e62135380548c9d600de8e568fd2e8717ca7d",
+      "sitting_publications": [
+        {
+          "publication_id": 288,
+          "available": true,
+          "operator_decisions": [],
+          "status": "sent",
+          "message_id": 169,
+          "attempts": 0,
+          "kind": "agenda"
+        }
+      ]
+    }
+  ]
+}

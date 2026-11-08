@@ -16,6 +16,7 @@ from lexinform.adapters.content_history import (
     verify_card_content,
     verify_direct_stage_content,
     verify_grouped_stage_content,
+    verify_sitting_content,
 )
 from lexinform.adapters.content_source_refs import verify_content_source
 from lexinform.adapters.digest_content import ResolvedDigestRenderedContent, verify_digest_content
@@ -140,10 +141,15 @@ def _read_history(
         except ValueError:
             findings.add("invalid_digest_content_history", version.content_id)
         try:
+            verify_sitting_content(db, version, require_bound=True)
+        except ValueError:
+            findings.add("invalid_sitting_content_history", version.content_id)
+        try:
             physical_id = verify_card_content(db, version, retained=True)
             if (
                 version.change_snapshot_id is None
                 and version.digest_profile is None
+                and version.sitting_profile is None
                 and physical_id is None
             ):
                 findings.add("card_content_physical_unavailable", version.content_id, warning=True)
@@ -193,16 +199,17 @@ def _publication_bindings(
                 "available": publication is not None,
                 "operator_decisions": [],
             }
+            if publication is not None:
+                physical.update(
+                    {key: publication[key] for key in ("status", "message_id", "attempts", "kind")}
+                )
             if publication is None:
                 findings.add("content_publication_unavailable", str(identity), warning=True)
-            else:
+            elif bound.sitting_profile is None:
                 if publication["delivery_json"] is not None and bound.digest_profile is None:
                     code = _frozen_content_issue(publication["delivery_json"], bound, snapshots)
                     if code is not None:
                         findings.add(code, str(identity))
-                physical.update(
-                    {key: publication[key] for key in ("status", "message_id", "attempts", "kind")}
-                )
                 root = db.execute(
                     "SELECT * FROM publications WHERE id=?", (bound.root_publication_id,)
                 ).fetchone()
@@ -234,7 +241,11 @@ def _publication_bindings(
                     and publication["message_id"] != root["message_id"]
                 ):
                     findings.add("content_message_target_mismatch", str(identity))
-            if bound.change_snapshot_id is None and bound.digest_profile is None:
+            if (
+                bound.change_snapshot_id is None
+                and bound.digest_profile is None
+                and bound.sitting_profile is None
+            ):
                 try:
                     physical_id = verify_card_content(db, bound, retained=True)
                     if physical_id is not None and physical_id != identity:
@@ -309,7 +320,7 @@ def _history_rows(
                     physical.get("status") == "sent" and physical.get("message_id") is not None
                     for physical in bindings[version.content_id]
                 )
-                if version.digest_profile is not None
+                if version.digest_profile is not None or version.sitting_profile is not None
                 else any(
                     physical.get("status") == "sent" and physical.get("message_id") is not None
                     for physical in bindings[version.content_id]
@@ -383,7 +394,11 @@ def audit(database: Path, *, publication_id: int | None = None) -> dict[str, Any
             bindings = {}
         cards: dict[int, str | None] = {}
         for value in versions.values():
-            if value.change_snapshot_id is None and value.digest_profile is None:
+            if (
+                value.change_snapshot_id is None
+                and value.digest_profile is None
+                and value.sitting_profile is None
+            ):
                 try:
                     cards[value.root_publication_id] = card_current_content(
                         db, value.root_publication_id
