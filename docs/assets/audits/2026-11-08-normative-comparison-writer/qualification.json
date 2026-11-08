@@ -1,0 +1,697 @@
+{
+  "baseline_commit": "90d6503dd82ec285147d547fad04c0d6e1ef3aad",
+  "input_pins": {
+    "documents/files/667159.pdf": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8",
+    "documents/files/300517.pdf": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514",
+    "controlled_zip": "759bf57913f51eeec3ec607e8fd4268cc161ba919aefa259de64b66c8b393a38"
+  },
+  "scope": "Controlled source declarations using pinned real PDFs. ZIP and loose members are byte-identical; legal affiliation is not asserted.",
+  "baseline": {
+    "missing_annex_first": {
+      "ordered_roots": [
+        "https://source.test/bare.pdf",
+        "https://source.test/complete.pdf"
+      ],
+      "requested_annexes": [
+        [],
+        [
+          "https://source.test/annex.pdf"
+        ]
+      ],
+      "calls": [
+        "https://source.test/bare.pdf",
+        "https://source.test/complete.pdf"
+      ],
+      "selected_url": "https://source.test/bare.pdf",
+      "state": "unverified",
+      "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+      "parts": [
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_result": "selected",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "selected",
+          "reason": "version_choice",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_preference",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_reason": "version_choice"
+    },
+    "missing_annex_second": {
+      "ordered_roots": [
+        "https://source.test/complete.pdf",
+        "https://source.test/bare.pdf"
+      ],
+      "requested_annexes": [
+        [
+          "https://source.test/annex.pdf"
+        ],
+        []
+      ],
+      "calls": [
+        "https://source.test/complete.pdf",
+        "https://source.test/bare.pdf",
+        "https://source.test/annex.pdf"
+      ],
+      "selected_url": "https://source.test/complete.pdf",
+      "state": "unverified",
+      "text_sha256": "36be2c13bf8103b3cfdea8bd97703b58e804e3c65d74ab1b13aa46f489c7b856",
+      "parts": [
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "role": "normative_annex",
+          "sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+        }
+      ],
+      "trace_result": "selected",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "selected",
+          "reason": "version_choice",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_preference",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_reason": "version_choice"
+    },
+    "equal_loose": {
+      "ordered_roots": [
+        "https://source.test/complete.pdf",
+        "https://source.test/other.pdf"
+      ],
+      "requested_annexes": [
+        [
+          "https://source.test/annex.pdf"
+        ],
+        [
+          "https://source.test/annex.pdf"
+        ]
+      ],
+      "calls": [
+        "https://source.test/complete.pdf",
+        "https://source.test/other.pdf",
+        "https://source.test/annex.pdf"
+      ],
+      "selected_url": "https://source.test/complete.pdf",
+      "state": "unverified",
+      "text_sha256": "36be2c13bf8103b3cfdea8bd97703b58e804e3c65d74ab1b13aa46f489c7b856",
+      "parts": [
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "role": "normative_annex",
+          "sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+        }
+      ],
+      "trace_result": "selected",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "selected",
+          "reason": "version_choice",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_preference",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_reason": "version_choice"
+    },
+    "zip_first": {
+      "ordered_roots": [
+        "https://source.test/package.zip",
+        "https://source.test/complete.pdf"
+      ],
+      "requested_annexes": [
+        [],
+        [
+          "https://source.test/annex.pdf"
+        ]
+      ],
+      "calls": [
+        "https://source.test/package.zip",
+        "https://source.test/complete.pdf"
+      ],
+      "selected_url": "https://source.test/package.zip",
+      "state": "ambiguous",
+      "text_sha256": null,
+      "parts": [
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "role": "normative_annex",
+          "sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+        },
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_result": "ambiguous",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "policy_excluded",
+          "reason": "version_conflict",
+          "observed_sha256": "759bf57913f51eeec3ec607e8fd4268cc161ba919aefa259de64b66c8b393a38"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_conflict",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_reason": "version_conflict"
+    },
+    "loose_first": {
+      "ordered_roots": [
+        "https://source.test/complete.pdf",
+        "https://source.test/package.zip"
+      ],
+      "requested_annexes": [
+        [
+          "https://source.test/annex.pdf"
+        ],
+        []
+      ],
+      "calls": [
+        "https://source.test/complete.pdf",
+        "https://source.test/package.zip"
+      ],
+      "selected_url": "https://source.test/complete.pdf",
+      "state": "ambiguous",
+      "text_sha256": null,
+      "parts": [
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "role": "normative_annex",
+          "sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+        }
+      ],
+      "trace_result": "ambiguous",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "policy_excluded",
+          "reason": "version_conflict",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_conflict",
+          "observed_sha256": "759bf57913f51eeec3ec607e8fd4268cc161ba919aefa259de64b66c8b393a38"
+        }
+      ],
+      "trace_reason": "version_conflict"
+    },
+    "zip_without_loose_annex": {
+      "ordered_roots": [
+        "https://source.test/package.zip",
+        "https://source.test/bare.pdf"
+      ],
+      "requested_annexes": [
+        [],
+        []
+      ],
+      "calls": [
+        "https://source.test/package.zip",
+        "https://source.test/bare.pdf"
+      ],
+      "selected_url": "https://source.test/package.zip",
+      "state": "ambiguous",
+      "text_sha256": null,
+      "parts": [
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "role": "normative_annex",
+          "sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+        },
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_result": "ambiguous",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "policy_excluded",
+          "reason": "version_conflict",
+          "observed_sha256": "759bf57913f51eeec3ec607e8fd4268cc161ba919aefa259de64b66c8b393a38"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_conflict",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_reason": "version_conflict"
+    },
+    "unavailable_annex": {
+      "ordered_roots": [
+        "https://source.test/package.zip",
+        "https://source.test/complete.pdf"
+      ],
+      "requested_annexes": [
+        [],
+        [
+          "https://source.test/annex.pdf"
+        ]
+      ],
+      "calls": [
+        "https://source.test/package.zip",
+        "https://source.test/complete.pdf"
+      ],
+      "selected_url": "https://source.test/package.zip",
+      "state": "ambiguous",
+      "text_sha256": null,
+      "parts": [
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "role": "normative_annex",
+          "sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+        },
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_result": "ambiguous",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "policy_excluded",
+          "reason": "version_conflict",
+          "observed_sha256": "759bf57913f51eeec3ec607e8fd4268cc161ba919aefa259de64b66c8b393a38"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_conflict",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_reason": "version_conflict"
+    }
+  },
+  "candidate": {
+    "missing_annex_first": {
+      "ordered_roots": [
+        "https://source.test/bare.pdf",
+        "https://source.test/complete.pdf"
+      ],
+      "requested_annexes": [
+        [],
+        [
+          "https://source.test/annex.pdf"
+        ]
+      ],
+      "calls": [
+        "https://source.test/bare.pdf",
+        "https://source.test/complete.pdf",
+        "https://source.test/annex.pdf"
+      ],
+      "selected_url": "https://source.test/bare.pdf",
+      "state": "ambiguous",
+      "text_sha256": null,
+      "parts": [
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "role": "normative_annex",
+          "sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+        }
+      ],
+      "trace_result": "ambiguous",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "policy_excluded",
+          "reason": "version_conflict",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_conflict",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_reason": "version_conflict"
+    },
+    "missing_annex_second": {
+      "ordered_roots": [
+        "https://source.test/complete.pdf",
+        "https://source.test/bare.pdf"
+      ],
+      "requested_annexes": [
+        [
+          "https://source.test/annex.pdf"
+        ],
+        []
+      ],
+      "calls": [
+        "https://source.test/complete.pdf",
+        "https://source.test/annex.pdf",
+        "https://source.test/bare.pdf"
+      ],
+      "selected_url": "https://source.test/complete.pdf",
+      "state": "ambiguous",
+      "text_sha256": null,
+      "parts": [
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "role": "normative_annex",
+          "sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+        },
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_result": "ambiguous",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "policy_excluded",
+          "reason": "version_conflict",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_conflict",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_reason": "version_conflict"
+    },
+    "equal_loose": {
+      "ordered_roots": [
+        "https://source.test/complete.pdf",
+        "https://source.test/other.pdf"
+      ],
+      "requested_annexes": [
+        [
+          "https://source.test/annex.pdf"
+        ],
+        [
+          "https://source.test/annex.pdf"
+        ]
+      ],
+      "calls": [
+        "https://source.test/complete.pdf",
+        "https://source.test/annex.pdf",
+        "https://source.test/other.pdf"
+      ],
+      "selected_url": "https://source.test/complete.pdf",
+      "state": "unverified",
+      "text_sha256": "36be2c13bf8103b3cfdea8bd97703b58e804e3c65d74ab1b13aa46f489c7b856",
+      "parts": [
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "role": "normative_annex",
+          "sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+        }
+      ],
+      "trace_result": "selected",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "selected",
+          "reason": "version_choice",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_preference",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_reason": "version_choice"
+    },
+    "zip_first": {
+      "ordered_roots": [
+        "https://source.test/package.zip",
+        "https://source.test/complete.pdf"
+      ],
+      "requested_annexes": [
+        [],
+        [
+          "https://source.test/annex.pdf"
+        ]
+      ],
+      "calls": [
+        "https://source.test/package.zip",
+        "https://source.test/complete.pdf",
+        "https://source.test/annex.pdf"
+      ],
+      "selected_url": "https://source.test/package.zip",
+      "state": "unverified",
+      "text_sha256": "c8336b57d7ebc7c38eec698086422dced3fba83af75e74944fe15f04e148b7dc",
+      "parts": [
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "role": "normative_annex",
+          "sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+        }
+      ],
+      "trace_result": "selected",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "selected",
+          "reason": "version_choice",
+          "observed_sha256": "759bf57913f51eeec3ec607e8fd4268cc161ba919aefa259de64b66c8b393a38"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_preference",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_reason": "version_choice"
+    },
+    "loose_first": {
+      "ordered_roots": [
+        "https://source.test/complete.pdf",
+        "https://source.test/package.zip"
+      ],
+      "requested_annexes": [
+        [
+          "https://source.test/annex.pdf"
+        ],
+        []
+      ],
+      "calls": [
+        "https://source.test/complete.pdf",
+        "https://source.test/annex.pdf",
+        "https://source.test/package.zip"
+      ],
+      "selected_url": "https://source.test/complete.pdf",
+      "state": "unverified",
+      "text_sha256": "36be2c13bf8103b3cfdea8bd97703b58e804e3c65d74ab1b13aa46f489c7b856",
+      "parts": [
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "role": "normative_annex",
+          "sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+        }
+      ],
+      "trace_result": "selected",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "selected",
+          "reason": "version_choice",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_preference",
+          "observed_sha256": "759bf57913f51eeec3ec607e8fd4268cc161ba919aefa259de64b66c8b393a38"
+        }
+      ],
+      "trace_reason": "version_choice"
+    },
+    "zip_without_loose_annex": {
+      "ordered_roots": [
+        "https://source.test/package.zip",
+        "https://source.test/bare.pdf"
+      ],
+      "requested_annexes": [
+        [],
+        []
+      ],
+      "calls": [
+        "https://source.test/package.zip",
+        "https://source.test/bare.pdf"
+      ],
+      "selected_url": "https://source.test/package.zip",
+      "state": "ambiguous",
+      "text_sha256": null,
+      "parts": [
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        },
+        {
+          "role": "normative_annex",
+          "sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+        },
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_result": "ambiguous",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "policy_excluded",
+          "reason": "version_conflict",
+          "observed_sha256": "759bf57913f51eeec3ec607e8fd4268cc161ba919aefa259de64b66c8b393a38"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_conflict",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_reason": "version_conflict"
+    },
+    "unavailable_annex": {
+      "ordered_roots": [
+        "https://source.test/package.zip",
+        "https://source.test/complete.pdf"
+      ],
+      "requested_annexes": [
+        [],
+        [
+          "https://source.test/annex.pdf"
+        ]
+      ],
+      "calls": [
+        "https://source.test/package.zip",
+        "https://source.test/complete.pdf",
+        "https://source.test/annex.pdf"
+      ],
+      "selected_url": "https://source.test/package.zip",
+      "state": "waiting",
+      "text_sha256": null,
+      "parts": [],
+      "trace_result": "waiting",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "unclassified",
+          "reason": "version_comparison_deferred",
+          "observed_sha256": "759bf57913f51eeec3ec607e8fd4268cc161ba919aefa259de64b66c8b393a38"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "unclassified",
+          "reason": "normative_part_read_incomplete",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "trace_reason": "version_input_incomplete"
+    }
+  },
+  "unchanged_native_archives_excluding_policy_label": 16,
+  "native_comparison_sha256": "e813562d9d8caba0d5d3d60f613d61d07eee4b626fa3a0a7ef2504f540564feb",
+  "j630_reader_restored_waiting_dump_byte_identically": true
+}

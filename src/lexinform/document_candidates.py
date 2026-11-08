@@ -2,7 +2,7 @@
 
 import re
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Self
 
 from lexinform.archive_policy_capture import (
@@ -49,6 +49,23 @@ class DocumentCandidate:
     text: str | None
     parts: tuple[DocumentPart, ...] = ()
     observed_parts: tuple[DocumentPart, ...] = ()
+    annex_identities: tuple[tuple[int, str], ...] = ()
+
+    def with_normative_parts(self) -> Self:
+        body = tuple(
+            part.text for part in self.parts if part.role in ("bill", "normative_continuation")
+        )
+        return replace(
+            self,
+            text=PAGE_BREAK.join(body) if body else self.text,
+            annex_identities=tuple(
+                sorted(
+                    normative_annex_key(part.text)
+                    for part in self.parts
+                    if part.role == "normative_annex"
+                )
+            ),
+        )
 
     @property
     def is_bill(self) -> bool:
@@ -98,6 +115,12 @@ def select_candidate_versions(
         for index in bill_indices
         for part in (candidates.entries[index].observed_parts or candidates.entries[index].parts)
     )
+    annex_identities = {
+        candidates.entries[bill_indices[index]].annex_identities
+        for index in comparison.matching_indices
+    }
+    if len(annex_identities) > 1:
+        comparison = replace(comparison, matching_indices=())
     if not comparison.matching_indices:
         parts = tuple(part for index in bill_indices for part in candidates.entries[index].parts)
         return AmbiguousCandidates(

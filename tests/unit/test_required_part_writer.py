@@ -239,7 +239,7 @@ def test_alternative_and_required_indices_are_actual_not_inferred() -> None:
     assert len(gateway.calls) == 3
 
 
-def test_ambiguous_version_never_fabricates_required_read_evidence() -> None:
+def test_incomplete_version_never_fabricates_required_read_evidence() -> None:
     newer = MAIN + "-new"
     inputs = {MAIN: BODY.encode(), newer: BODY.replace("30 dni", "40 dni").encode()}
     gateway = FakeSejmGateway(files=inputs)
@@ -259,9 +259,10 @@ def test_ambiguous_version_never_fabricates_required_read_evidence() -> None:
             compare_versions=True,
         )
     )
-    assert loaded.selection.state == "ambiguous"
+    assert loaded.selection.state == "waiting"
     assert loaded.candidate_trace is not None and loaded.candidate_trace.required_exclusions is None
-    assert len(gateway.calls) == 2
+    assert loaded.candidate_trace.dispositions[0].reason == "normative_part_read_incomplete"
+    assert gateway.calls == [f"download:{url}" for url in (MAIN, REQUIRED, newer)]
 
 
 def test_direct_other_loader_and_inherited_thread_scope_do_not_pollute_parent(

@@ -1494,10 +1494,15 @@ class TextLoader:
         candidate_indices: list[int] = []
         incomplete: dict[int, DocumentSelection] = {}
         unpack_blocked: set[int] = set()
+        normative_blocked: set[int] = set()
         conflicts: dict[int, DocumentSelection] = {}
         observed: dict[int, tuple[DocumentPart, ...]] = {}
         decisions: list[CandidateDisposition] = []
-        for index, candidate in enumerate((document, *document.alternatives)):
+        sources = (document, *document.alternatives)
+        compare_packages = len(sources) > 1 and any(
+            item.required_urls or item.normative_urls for item in sources
+        )
+        for index, candidate in enumerate(sources):
             if candidate.official_link_conflict:
                 decisions.append(
                     CandidateDisposition(
@@ -1531,6 +1536,34 @@ class TextLoader:
                 candidate.url, file.text, file.selection.parts, file.selection.observed_parts
             )
             is_bill = item.is_bill
+            if compare_packages and is_bill and index not in incomplete:
+                if candidate.required_urls or candidate.normative_urls:
+                    normative = candidate.model_copy(
+                        update={"extra_urls": (), "amendment_urls": ()}
+                    )
+                    try:
+                        composed = self.read_document(normative)
+                    except ServiceUnavailableError:
+                        raise
+                    except Exception:
+                        composed = LoadedFile(None, selection=DocumentSelection(state="waiting"))
+                    if composed.text is None or composed.selection.state in (
+                        "waiting",
+                        "ambiguous",
+                    ):
+                        if file.sha256 is not None:
+                            incomplete[index] = composed.selection
+                            normative_blocked.add(index)
+                        is_bill = False
+                    else:
+                        item = DocumentCandidate(
+                            candidate.url,
+                            composed.text,
+                            composed.selection.parts,
+                            tuple(dict.fromkeys((*item.observed_parts, *composed.selection.parts))),
+                        )
+                if is_bill:
+                    item = item.with_normative_parts()
             if (
                 file.selection.state == "ambiguous"
                 and "draft_version_conflict" in file.selection.limitations
@@ -1596,6 +1629,8 @@ class TextLoader:
                         "reason": (
                             "archive_member_unpack_failed"
                             if item.index in unpack_blocked
+                            else "normative_part_read_incomplete"
+                            if item.index in normative_blocked
                             else "pdf_page_extraction_failed"
                             if item.index in incomplete
                             else "version_comparison_deferred"
@@ -1611,9 +1646,21 @@ class TextLoader:
                 parts=tuple(part for failed in incomplete.values() for part in failed.parts),
                 observed_parts=tuple(part for parts in observed.values() for part in parts),
                 rejected=(
-                    ("Archive draft could not be unpacked during version comparison",)
-                    if unpack_blocked
-                    else ("PDF page extraction failed during version comparison",)
+                    *(
+                        ("Archive draft could not be unpacked during version comparison",)
+                        if unpack_blocked
+                        else ()
+                    ),
+                    *(
+                        ("A declared normative part could not be read during version comparison",)
+                        if normative_blocked
+                        else ()
+                    ),
+                    *(
+                        ("PDF page extraction failed during version comparison",)
+                        if incomplete.keys() - unpack_blocked - normative_blocked
+                        else ()
+                    ),
                 ),
             )
             return (
@@ -1631,6 +1678,7 @@ class TextLoader:
         )
         if (
             composition is not None
+            and not compare_packages
             and 2 <= len(prepared) <= MAX_VERSION_DECISION_ROWS
             and all(item.parts for item in prepared)
             and (

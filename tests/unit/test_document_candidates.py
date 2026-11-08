@@ -308,3 +308,41 @@ def test_outer_comparison_records_matching_archive_and_standalone_versions() -> 
         retained_indices=(0, 1),
         outcome="matching_policy_identity",
     )
+
+
+@pytest.mark.parametrize(("available", "result"), [(True, "selected"), (False, "waiting")])
+def test_outer_comparison_reads_declared_annex_before_choosing(
+    available: bool, result: str
+) -> None:
+    packed_url, loose_url, annex_url = (
+        "https://api.test/a.zip",
+        "https://api.test/b.docx",
+        "https://api.test/annex.docx",
+    )
+    body = docx(BILL + "Art. 2. Przepis stosuje się w postępowaniu. " * 12)
+    annex = docx("Załącznik do ustawy " + "Wykaz opłat wynosi 200 zł. " * 20)
+    files = {
+        packed_url: archive({"projekt.docx": body, "załącznik do ustawy.docx": annex}),
+        loose_url: body,
+    }
+    if available:
+        files[annex_url] = annex
+    gateway = FakeSejmGateway(files=files)
+    loader = TextLoader({"api.test": gateway.download}, extractor(), max_bytes=100_000)
+    document = TextDocument(
+        url=packed_url,
+        kind="rcl",
+        compare_versions=True,
+        alternatives=(TextDocument(url=loose_url, kind="rcl", normative_urls=(annex_url,)),),
+    )
+
+    _, file = loader.select_document(document)
+
+    trace = file.candidate_trace
+    assert trace is not None and trace.result == result and trace.version_decision is None
+    assert f"download:{annex_url}" in gateway.calls
+    if available:
+        assert [part.role for part in file.selection.parts] == ["bill", "normative_annex"]
+    else:
+        assert file.text is None
+        assert trace.dispositions[1].reason == "normative_part_read_incomplete"
