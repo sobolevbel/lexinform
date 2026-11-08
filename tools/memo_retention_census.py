@@ -64,6 +64,7 @@ def census(database: Path, memo_before: datetime) -> dict[str, object]:
                     "batch_item",
                     "intent_key_ref",
                     "batch_item_key_ref",
+                    "review_key_ref",
                 )
                 if row[key]
             )

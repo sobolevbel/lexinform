@@ -6,7 +6,8 @@ from pathlib import Path
 from tools.memo_retention_census import census
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
-from lexinform.models import BillStatus, DigestItemMeta, LlmBatch, LlmBatchItem
+from lexinform.models import BillStatus, DigestItemMeta, LlmBatch, LlmBatchItem, ReviewContext
+from lexinform.models.reviews import ReviewWork
 from tests.harness import summary
 from tests.unit.test_state_retention import NOW, OLD
 
@@ -106,3 +107,41 @@ def test_census_matches_cleanup_eligibility_and_reports_ownerless_refs(tmp_path:
     assert repo.prune_history(before=cutoff, memo_before=cutoff)["analysis_memos"] == 2
     assert {"cross-owner", "pending-item"}.isdisjoint(repo.load_analysis_memo())
     repo.close()
+
+
+def test_prepared_review_protects_exact_memo_in_another_term(tmp_path: Path) -> None:
+    path = tmp_path / "reviews.db"
+    number = "RCL/123"
+    original = summary(number, "Projekt ustawy")
+    current = original.model_copy(update={"term": original.term + 1})
+    context = ReviewContext(
+        number=number, title=original.title, purpose="consultation_review", documents=()
+    )
+    key = context.memo_key(current.term)
+    assert key == context.memo_key(original.term)
+    work = ReviewWork(
+        memo_key=key,
+        purpose=context.purpose,
+        context=context,
+        since=OLD,
+        baseline_day=OLD.date(),
+    )
+    cutoff = NOW - timedelta(days=180)
+    with closing(SqliteBillRepository(path)) as repo:
+        repo.migrate()
+        repo.upsert_summary(original, now=OLD)
+        repo.upsert_summary(current, now=OLD)
+        repo.set_status(original.term, number, BillStatus.ANALYZED)
+        repo.save_analysis_memo(key, "{}", term=original.term, number=number, used_at=OLD)
+        repo.save_review_work(current.term, number, (work,))
+
+    report = census(path, cutoff)
+    assert report["exclusions"] == {"review_key_ref": 1}
+    assert report["eligible_rows"] == 0
+
+    with closing(SqliteBillRepository(path)) as repo:
+        assert repo.prune_history(before=cutoff, memo_before=cutoff)["analysis_memos"] == 0
+        assert key in repo.load_analysis_memo()
+
+        repo.save_review_work(current.term, number, (work.model_copy(update={"context": None}),))
+        assert repo.prune_history(before=cutoff, memo_before=cutoff)["analysis_memos"] == 1

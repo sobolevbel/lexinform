@@ -24,6 +24,10 @@ _PENDING_MEMO_KEYS = """
     UNION ALL
     SELECT 'item', json_extract(meta_json,'$.delivery_key') FROM llm_batch_items
     WHERE consumed_at IS NULL OR accounted_at IS NULL
+    UNION ALL
+    SELECT 'review', json_extract(work.value,'$.memo_key')
+    FROM bills b JOIN json_each(b.review_work_json) work
+    WHERE work.type='object' AND json_type(work.value,'$.context')='object'
 """
 
 _MEMO_ROWS = """
@@ -47,7 +51,8 @@ SELECT m.*,
     AND (i.consumed_at IS NULL OR i.accounted_at IS NULL)) AS batch_item,
   COALESCE(m.key IN (SELECT key FROM pending_memo_keys WHERE source='intent'), 0) AS intent_key_ref,
   COALESCE(m.key IN (SELECT key FROM pending_memo_keys WHERE source='item'), 0)
-    AS batch_item_key_ref
+    AS batch_item_key_ref,
+  COALESCE(m.key IN (SELECT key FROM pending_memo_keys WHERE source='review'), 0) AS review_key_ref
 FROM analysis_memo m
 LEFT JOIN terminal t ON (t.origin,t.number)=(m.term,m.number)
 LEFT JOIN bills b ON (b.term,b.number)=(t.term,t.number)

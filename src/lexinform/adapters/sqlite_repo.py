@@ -6839,7 +6839,7 @@ class SqliteBillRepository:
                     SELECT key FROM memo_retention WHERE last_used_at < :cutoff
                     AND has_bill AND settled AND NOT bill_work AND NOT document_work
                     AND NOT publication AND NOT intent AND NOT batch_item
-                    AND NOT intent_key_ref AND NOT batch_item_key_ref
+                    AND NOT intent_key_ref AND NOT batch_item_key_ref AND NOT review_key_ref
                 )
                 """,
                 {"cutoff": _iso(memo_before)},
