@@ -136,7 +136,8 @@ def matching_review(
             or binding is None
             or (binding.term, binding.number, binding.reuse_key)
             != (term, context.number, reference.key)
-            or result.review_input != reference
+            or result.review_input is None
+            or result.review_input.without_source_observations() != reference
             or not isinstance(record, ReviewResultRecord)
             or record.review.purpose != context.purpose
             or record.computation_id != result.result_id

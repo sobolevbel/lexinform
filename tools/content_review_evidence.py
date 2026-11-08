@@ -1,9 +1,11 @@
 """Resolve recorded review application evidence without altering editorial history."""
 
 import sqlite3
+from datetime import datetime
 
 from lexinform.adapters.computation_history import read_result_application
 from lexinform.adapters.content_source_refs import ContentSourceRows
+from lexinform.adapters.document_source_rows import DocumentSourceRows
 from lexinform.models import Bill, ContentSnapshot, ContentVersion, PublicationKind
 from lexinform.models.computations import ReviewInputReference, ReviewResultRecord
 from lexinform.models.content import validate_review_notice
@@ -32,7 +34,7 @@ def review_application_evidence(
         return {"status": "unavailable", "reason": "paid_input_unavailable"}
     paid = result.record
     reference = ReviewInputReference.from_context(frozen.context, term=result.term)
-    expected = result.review_input
+    expected = result.review_input.without_source_observations()
     if evidence.kind is PublicationKind.CONSULTATION_REVIEW:
         expected = expected.model_copy(
             update={
@@ -83,10 +85,37 @@ def review_application_evidence(
     application = read_result_application(rows[0])
     if application.created_at.utcoffset() is None or application.created_at > version.recorded_at:
         return {"status": "invalid", "reason": "projection_time_conflict"}
+    observations: tuple[tuple[int, str], ...] = ()
+    if any(doc.source_observation_id for doc in result.review_input.documents):
+        batch = db.execute(
+            "SELECT submitted_at FROM llm_batches WHERE batch_id=? AND provider=?",
+            (result.batch_id, result.provider),
+        ).fetchone()
+        try:
+            if batch is None:
+                raise ValueError("review source observation requires its submitted batch")
+            submitted = datetime.fromisoformat(batch[0])
+            if submitted.utcoffset() is None:
+                raise ValueError("review source observation requires a dated batch")
+            observations = DocumentSourceRows(db).review_source_observations(
+                result.review_input, before=submitted
+            )
+        except ValueError:
+            return {"status": "invalid", "reason": "review_source_observation_conflict"}
     return {
         "status": "recorded",
         "application_id": rows[0]["id"],
         "result_id": result.result_id,
         "request_sha256": result.request_sha256,
         "recorded_source_count": len(reference.documents),
+        **(
+            {
+                "source_observations": [
+                    {"document_index": index, "observation_id": identity}
+                    for index, identity in observations
+                ]
+            }
+            if observations
+            else {}
+        ),
     }

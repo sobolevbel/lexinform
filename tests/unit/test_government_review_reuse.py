@@ -16,16 +16,21 @@ from lexinform.models import (
     BillStatus,
     ContentSnapshot,
     ContentVersion,
+    DocumentPart,
     DocumentReviewRecord,
+    DocumentSelection,
+    DocumentSelectionRecord,
     PublicationKind,
     ReviewContext,
     ReviewSource,
+    SourceObservation,
     TextDocument,
 )
 from lexinform.models.batch import BatchRequest
 from lexinform.models.content import original_delivery_bill_snapshot
 from lexinform.models.original_delivery_content import OriginalDeliveryEvidence
 from lexinform.models.reviews import ReviewPurpose
+from lexinform.review_memos import matching_review
 from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisOptions, AnalysisService, Waiting
 from lexinform.services.computation_reuse import retained_review
@@ -430,7 +435,34 @@ def test_frozen_review_evidence_resolves_only_its_exact_application(
     number = "RCL/123"
     with closing(SqliteBillRepository(path)) as repo:
         case = prepared(repo, number, purpose)
+        first, *remaining = case.catalog.source.documents
+        first = first.model_copy(update={"file_sha256": "c" * 64})
+        case.catalog.source = case.catalog.source.model_copy(
+            update={"documents": (first, *remaining)}
+        )
         _, record = case.apply(10)
+        assert record.computation_id is not None, "the fixture completes a paid review"
+        paid = repo.get_computation_result(record.computation_id)
+        assert paid is not None and paid.review_input is not None, "the paid review pins its input"
+        source = record.context.documents[0]
+        selection = DocumentSelectionRecord(
+            selection=DocumentSelection(
+                parts=(
+                    DocumentPart(
+                        url=source.url, sha256=source.file_sha256 or "", text_sha256=source.sha256
+                    ),
+                )
+            )
+        )
+        observation = SourceObservation(
+            term=10,
+            number=number,
+            purpose="review",
+            document=TextDocument(url=source.url, kind="rcl"),
+            selection_id=selection.selection_id,
+            recorded_at=NOW,
+        )
+        repo.save_source_observation(selection, observation)
         bill = repo.get(10, number)
         assert bill is not None, "application retains the current Bill"
         ref = record.context.memo_key(bill.term)
@@ -481,4 +513,28 @@ def test_frozen_review_evidence_resolves_only_its_exact_application(
         assert audit_projection(db, edited) == {
             "status": "invalid",
             "reason": "paid_review_conflict",
+        }
+
+    input_reference = paid.review_input
+    document, *remaining_refs = input_reference.documents
+    linked = document.model_copy(update={"source_observation_id": observation.observation_id})
+    bound_input = input_reference.model_copy(update={"documents": (linked, *remaining_refs)})
+    bound_result = paid.model_copy(update={"review_input": bound_input})
+    assert matching_review((bound_result,), 10, record.context) is not None
+    with closing(sqlite3.connect(path)) as db, db:
+        db.row_factory = sqlite3.Row
+        db.execute(
+            "UPDATE computation_results SET result_json=? WHERE result_id=?",
+            (bound_result.model_dump_json(), bound_result.result_id),
+        )
+        assert review_application_evidence(db, version, projected) == {
+            **matched,
+            "source_observations": [
+                {"document_index": 0, "observation_id": observation.observation_id}
+            ],
+        }
+        db.execute("DELETE FROM source_observations")
+        assert review_application_evidence(db, version, projected) == {
+            "status": "invalid",
+            "reason": "review_source_observation_conflict",
         }

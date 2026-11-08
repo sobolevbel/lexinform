@@ -46,6 +46,11 @@ class ReviewSourceReference(BaseModel):
     draft_date: dt.date | None = None
     body: str = ""
     forum: ReviewForum = "unknown"
+    source_observation_id: str | None = Field(
+        default=None,
+        pattern=r"^source-observation-v1:[0-9a-f]{64}$",
+        exclude_if=lambda value: value is None,
+    )
 
 
 class ReviewInputReference(BaseModel):
@@ -63,6 +68,17 @@ class ReviewInputReference(BaseModel):
     promulgation_date: dt.date | None = None
     canonical_date: dt.date | None = None
     comparison_sha256: str | None = None
+
+    def without_source_observations(self) -> Self:
+        if not any(doc.source_observation_id for doc in self.documents):
+            return self
+        return self.model_copy(
+            update={
+                "documents": tuple(
+                    doc.model_copy(update={"source_observation_id": None}) for doc in self.documents
+                )
+            }
+        )
 
     @classmethod
     def from_context(

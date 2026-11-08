@@ -1,8 +1,10 @@
 """Read scoped document selection and observation identities from SQLite."""
 
 import sqlite3
+from datetime import datetime
 
 from lexinform.models import DocumentSelectionRecord, SourceObservation
+from lexinform.models.computations import ReviewInputReference
 
 
 class DocumentSourceRows:
@@ -51,6 +53,39 @@ class DocumentSourceRows:
                 (selection_id, term, number),
             )
         ]
+
+    def review_source_observations(
+        self, reference: ReviewInputReference, *, before: datetime
+    ) -> tuple[tuple[int, str], ...]:
+        confirmed = []
+        for index, document in enumerate(reference.documents):
+            identity = document.source_observation_id
+            if identity is None:
+                continue
+            observation = self.get_source_observation(identity)
+            if (
+                observation is None
+                or (observation.term, observation.number, observation.purpose)
+                != (reference.term, reference.number, "review")
+                or observation.document.url != document.url
+                or observation.recorded_at > before
+                or not document.file_sha256
+                or not document.sha256
+            ):
+                raise ValueError("review_source_observation_conflict")
+            record = self.get_document_selection(observation.selection_id)
+            if (
+                record is None
+                or sum(
+                    (part.url, part.source_sha256, part.text_sha256)
+                    == (document.url, document.file_sha256, document.sha256)
+                    for part in record.selection.parts
+                )
+                != 1
+            ):
+                raise ValueError("review_source_observation_conflict")
+            confirmed.append((index, identity))
+        return tuple(confirmed)
 
     @staticmethod
     def _source_observation(row: sqlite3.Row) -> SourceObservation:
