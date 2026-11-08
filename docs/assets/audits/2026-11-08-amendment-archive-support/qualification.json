@@ -1,0 +1,1912 @@
+{
+  "archive_controls": {
+    "581610": {
+      "input": [
+        [
+          [
+            "OSR projektu ustawy - 17.10 czysty (1526847).doc"
+          ],
+          "osr",
+          "84c9eca5ab7de4ee41a1560aba52cefe71d292dcbde965c62dd8960e9edbefc7"
+        ],
+        [
+          [
+            "Uzasadnienie do autopoprawki projektu ustawy o srodkach nadzwyczajnych (1526849).docx"
+          ],
+          "justification",
+          "cf3d2127bbdfe7796cc72eaeab097f2171fd6d2ede8e90d0b8900d4199747f3c"
+        ]
+      ],
+      "physical_state": "unsupported",
+      "retained": null,
+      "waiting": true
+    },
+    "605416": {
+      "input": [
+        [
+          [
+            "Uzasadnienie., roz. ws wniosków o wyrównanie (2387908).docx"
+          ],
+          "justification",
+          "a392ab3e606f6299a46dfbd30fd3550f06f40d9c97ee39a17f9360d147918a6b"
+        ]
+      ],
+      "physical_state": "unsupported",
+      "retained": null,
+      "waiting": true
+    },
+    "650834": {
+      "input": [
+        [
+          [
+            "27_11_2023_autopoprawka - OSR.docm"
+          ],
+          "osr",
+          "936be84dfaf94cbd914eb71447f73cd82a8d889cd58b3874f3e85372d223ea01"
+        ],
+        [
+          [
+            "27_11_2023_autopoprawka - uzasadnienie.docm"
+          ],
+          "justification",
+          "d0b0ad1b1619b93ca9b6a631b7025e01e1a67981fbea239f04f2b4f188bb1c20"
+        ]
+      ],
+      "physical_state": "unsupported",
+      "retained": null,
+      "waiting": true
+    },
+    "651743": {
+      "input": [
+        [
+          [
+            "RM OSR do autopoprawki do ustawy okołobudżetowej na rok 2024.docm"
+          ],
+          "osr",
+          "e9b6bf10fda0566eaf892d2a943d4be576ed5fe3bbfcb2efaaf2312638ec0234"
+        ],
+        [
+          [
+            "RM Uzasadnienie do autopoprawki do ustawy okołobudżetowej na ro 2024.docm"
+          ],
+          "justification",
+          "af10236dcc65a538e4da9dd8ca04a9c05355b28ffa3a38df80515ef15ded1ea3"
+        ]
+      ],
+      "physical_state": "unsupported",
+      "retained": null,
+      "waiting": true
+    },
+    "662379": {
+      "input": [
+        [
+          [
+            "Autopopr.pdf"
+          ],
+          "bill",
+          "aae8affe5ce8f03f09b48ffb78500fbfcd4c1a1786221c4e0c8203ee08fe747b"
+        ],
+        [
+          [
+            "Uzasadnienie do autopoprawki.docx"
+          ],
+          "justification",
+          "8ef3911badef760fd97ef21143065a77c52f0e6ddd8b451b673963f57b18763c"
+        ]
+      ],
+      "physical_state": "unverified",
+      "retained": [
+        "aae8affe5ce8f03f09b48ffb78500fbfcd4c1a1786221c4e0c8203ee08fe747b"
+      ],
+      "waiting": false
+    },
+    "684485": {
+      "input": [
+        [
+          [
+            "OSR MRIT - 25.09.2024.docx"
+          ],
+          "osr",
+          "3fab1c703ccb133ab2aba056b7f3faba731db6748e999fb1fa267be5e300a234"
+        ],
+        [
+          [
+            "UZASADNIENIE  AUTOPOPRAWKI (6208582).DOCX"
+          ],
+          "justification",
+          "4b6fbfa64e2434da46ac031c3f528b6fcd6c68a8423f0abb9059693c8e530caa"
+        ]
+      ],
+      "physical_state": "unsupported",
+      "retained": null,
+      "waiting": true
+    },
+    "692249": {
+      "input": [
+        [
+          [
+            "OSR_04 11 2024_Autopoprawka (6463359).docx"
+          ],
+          "osr",
+          "45779aca7b6c6dcb28ac91ee377f506b31094fc4d1179eb8ae065427e30322ce"
+        ]
+      ],
+      "physical_state": "unsupported",
+      "retained": null,
+      "waiting": true
+    },
+    "692630": {
+      "input": [
+        [
+          [
+            "OSR_18 11 2024_Autopoprawka na RM (6556939).docx"
+          ],
+          "osr",
+          "daf5c03fbebe97f71f3a564b679005112e1a7fce1c1825ee2aed58197f5f4992"
+        ]
+      ],
+      "physical_state": "unsupported",
+      "retained": null,
+      "waiting": true
+    },
+    "701779": {
+      "input": [
+        [
+          [
+            "ODNIESIENIE DO UWAG MF.DOCX"
+          ],
+          "bill",
+          "9d8b17f9ade8e6e7769b5b19bdfebc69239402fd075a3a58d5b2ef5c9305dc81"
+        ],
+        [
+          [
+            "OSR PO UWAGACH MF.DOC"
+          ],
+          "osr",
+          "5ba66790e6062a4603a0eefb6fe4743299ee3d5616c54f8a29c5180dab0c2cd6"
+        ]
+      ],
+      "physical_state": "unverified",
+      "retained": [
+        "9d8b17f9ade8e6e7769b5b19bdfebc69239402fd075a3a58d5b2ef5c9305dc81"
+      ],
+      "waiting": false
+    },
+    "712887": {
+      "input": [
+        [
+          [
+            "Uzasadnienie 11-04-2025 tekst jednolity  (7523403).pdf"
+          ],
+          "justification",
+          "19ec55e0ebec4ad50e43fc8e5a6076a3d6e834a56dee6e26340d37d59d2effa6"
+        ]
+      ],
+      "physical_state": "unsupported",
+      "retained": null,
+      "waiting": true
+    },
+    "723035": {
+      "input": [
+        [
+          [
+            "OSR rozwody pozasądowe DER24 - 17.docx"
+          ],
+          "osr",
+          "43d01500e2f62f427df18636a87061200165faf8ad5d5c288f77475634ea9f25"
+        ]
+      ],
+      "physical_state": "unsupported",
+      "retained": null,
+      "waiting": true
+    },
+    "724420": {
+      "input": [
+        [
+          [
+            "Odpowiedź MS na uwagi RCL - etap SKRM (4).pdf"
+          ],
+          "bill",
+          "7e9649b9a2f7d84297e745fcdafcd56282988d4cb958399cccfcb15e3bac8674"
+        ],
+        [
+          [
+            "OSR licytacje elektroniczne 24.docx"
+          ],
+          "osr",
+          "56022f930b2c92cf0345a9e774fff6f109f77cecbff61affff57414ad37e2694"
+        ]
+      ],
+      "physical_state": "unverified",
+      "retained": [
+        "7e9649b9a2f7d84297e745fcdafcd56282988d4cb958399cccfcb15e3bac8674"
+      ],
+      "waiting": false
+    },
+    "744253": {
+      "input": [
+        [
+          [
+            "autopoprawka UD196 (8787423).docm"
+          ],
+          "justification",
+          "844783212adc8202b2228bb8256676eba891a01ce9accab61f6e7fee98d4ee93"
+        ]
+      ],
+      "physical_state": "unsupported",
+      "retained": [
+        "844783212adc8202b2228bb8256676eba891a01ce9accab61f6e7fee98d4ee93"
+      ],
+      "waiting": false
+    },
+    "747256": {
+      "input": [
+        [
+          [
+            "skorygowany OSR  UST_ZM_język polski OSR SKRM_6_11_25 - z uzupełnieniem.docx"
+          ],
+          "osr",
+          "1fc52eab630583cce0d2634d9afe5bccf56d591206e397d8e98c61a271cf5ddc"
+        ]
+      ],
+      "physical_state": "unsupported",
+      "retained": null,
+      "waiting": true
+    },
+    "754701": {
+      "input": [
+        [
+          [
+            "6. Uzasadnienie dla etatów REMIT (do OSR UC84) (9167887).pdf"
+          ],
+          "justification",
+          "6661ef7e7527fb6a8141c56406c10bda49f90a0e1ed951f2e50d060d0b538115"
+        ]
+      ],
+      "physical_state": "unsupported",
+      "retained": null,
+      "waiting": true
+    },
+    "775942": {
+      "input": [
+        [
+          [
+            "MFiG do SKRM odpowiedź na uwagi RCL  dot proj ustawy UD336. docx.pdf"
+          ],
+          "bill",
+          "475a173f8a16b8e57745dc3d85478e514d8582302786e732c9cb126f14f24ae8"
+        ],
+        [
+          [
+            "OSR do proj nowelizacji ustawy UD336  po uwagach KOSR 11 05 2026.doc"
+          ],
+          "osr",
+          "618146f5d6ac97a011643537cb64d4188fd08f0323d608f84a6dae80b7319da2"
+        ]
+      ],
+      "physical_state": "unverified",
+      "retained": [
+        "475a173f8a16b8e57745dc3d85478e514d8582302786e732c9cb126f14f24ae8"
+      ],
+      "waiting": false
+    },
+    "787041": {
+      "input": [
+        [
+          [
+            "07.zip",
+            "OSR.docx"
+          ],
+          "osr",
+          "4b9afae03969f2e1cba47df9407465e9f3d809fe62d60f02174ac5684c2ac908"
+        ],
+        [
+          [
+            "07.zip",
+            "Uzasadnienie.docx"
+          ],
+          "justification",
+          "71b353835471ff0cf617f1efcc3f2c381b5d47a185318a09eb7ee17efa1eac45"
+        ]
+      ],
+      "physical_state": "unsupported",
+      "retained": null,
+      "waiting": true
+    },
+    "791156": {
+      "input": [
+        [
+          [
+            "MF OSR - UC105.docx"
+          ],
+          "osr",
+          "2568fed65d45e4326251067e23e06eaa8dac9a7788223736ba1e64c309f03ad7"
+        ]
+      ],
+      "physical_state": "unsupported",
+      "retained": null,
+      "waiting": true
+    }
+  },
+  "archive_report_sha256": "94080f62230e5d33d60e82afaa9882a4318d30558a43175e5bd402163c211308",
+  "baseline_commit": "49f859ed",
+  "baseline_report_sha256": "7d658268167787899987ca23720a7df87d11cfd3519d61603a3ce9b70640fef0",
+  "candidate_report_sha256": "b621d89ed664f6296da98f3b2b325f79435ddcc8dfd9500b365228bb4d244665",
+  "case_count": 142,
+  "changed_count": 52,
+  "changes": {
+    "12350601/10": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12350601/12811982/12811983/dokument636773.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12350601/12811982/12811983/dokument636802.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12350601/12811982/12811983/dokument636773.zip"
+      }
+    },
+    "12350601/9": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12350601/12811982/12811983/dokument636773.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12350601/12811982/12811983/dokument636802.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12350601/12811982/12811983/dokument636773.zip"
+      }
+    },
+    "12359600/12": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12359600/12878100/12878101/dokument642029.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12359600/12878100/12878101/dokument642032.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12359600/12878100/12878101/dokument642029.zip"
+      }
+    },
+    "12359600/14": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12359600/12878100/12878101/dokument642029.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12359600/12878100/12878101/dokument642032.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12359600/12878100/12878101/dokument642029.zip"
+      }
+    },
+    "12365005/10": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12365005/12918258/12918260/dokument618466.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12365005/12918258/12918260/dokument618478.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12365005/12918258/12918260/dokument618466.zip"
+      }
+    },
+    "12365005/9": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12365005/12918258/12918260/dokument618466.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12365005/12918258/12918260/dokument618478.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12365005/12918258/12918260/dokument618466.zip"
+      }
+    },
+    "12365060/12": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12365060/12918826/12918827/dokument581356.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [],
+            "role": "self_amendment",
+            "sha256": "0e4ca93755b7e927affbc9a40afd1366aab125546d38808eb36e0410c54dd9a2",
+            "text_sha256": "3713677b28031eea554192d3cdc92ad6bcb12a6696b428d179a1d6f9d6dfb01c",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12365060/12918826/12918827/dokument581357.docx"
+          },
+          {
+            "member": [
+              "OSR projektu ustawy - 17.10 czysty (1526847).doc"
+            ],
+            "role": "self_amendment",
+            "sha256": "84c9eca5ab7de4ee41a1560aba52cefe71d292dcbde965c62dd8960e9edbefc7",
+            "text_sha256": "5a0e7e507b02d45b2cbb2a07a3e0bba5ef19ca4b52697d09ec0cd75ba6784602",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12365060/12918826/12918827/dokument581610.zip"
+          },
+          {
+            "member": [
+              "Uzasadnienie do autopoprawki projektu ustawy o srodkach nadzwyczajnych (1526849).docx"
+            ],
+            "role": "self_amendment",
+            "sha256": "cf3d2127bbdfe7796cc72eaeab097f2171fd6d2ede8e90d0b8900d4199747f3c",
+            "text_sha256": "5f993afc580d7d016ec3aff5ae013f4f444896916e85373a9cbbfc2fa105127b",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12365060/12918826/12918827/dokument581610.zip"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "9fbdc12f6474077b43c236b34ff127dceeae2535d9ed4b4e51881e43224ae895",
+        "rejected": [
+          "('OSR projektu rozporzadzenia w sprawie wzoru oswiadczenia 12.10.2022 (1497475).docx',): supporting draft regulation",
+          "('OSR_rozporzadzenie revenue cap (1497477).doc',): supporting draft regulation",
+          "('Odwrócona tabela zgodnosci_rozporzadzenie 2022_1854(1) (1497487).docx',): compliance_table",
+          "('Projekt rozporzadzenia w sprawie wzoru oswiadczenia 12.10.2022 (1497489).docx',): regulation",
+          "('Projekt rozporzadzenia ws limitów cen (1497481).docx',): regulation",
+          "('Projekt rozporzadzenia ws limitów cen_uzasadnienie (1497471).docx',): supporting draft regulation",
+          "('Tabela zgodnosci_rozporzadzenie 2022_1854(1) (1497473).docx',): compliance_table",
+          "('Uzasadnienie rozporzadzenia w sprawie wzoru oswiadczenia 12.10.2022 (1497479).docx',): supporting draft regulation"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12365060/12918826/12918827/dokument581356.zip"
+      }
+    },
+    "12365060/14": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12365060/12918826/12918827/dokument581356.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [],
+            "role": "self_amendment",
+            "sha256": "0e4ca93755b7e927affbc9a40afd1366aab125546d38808eb36e0410c54dd9a2",
+            "text_sha256": "3713677b28031eea554192d3cdc92ad6bcb12a6696b428d179a1d6f9d6dfb01c",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12365060/12918826/12918827/dokument581357.docx"
+          },
+          {
+            "member": [
+              "OSR projektu ustawy - 17.10 czysty (1526847).doc"
+            ],
+            "role": "self_amendment",
+            "sha256": "84c9eca5ab7de4ee41a1560aba52cefe71d292dcbde965c62dd8960e9edbefc7",
+            "text_sha256": "5a0e7e507b02d45b2cbb2a07a3e0bba5ef19ca4b52697d09ec0cd75ba6784602",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12365060/12918826/12918827/dokument581610.zip"
+          },
+          {
+            "member": [
+              "Uzasadnienie do autopoprawki projektu ustawy o srodkach nadzwyczajnych (1526849).docx"
+            ],
+            "role": "self_amendment",
+            "sha256": "cf3d2127bbdfe7796cc72eaeab097f2171fd6d2ede8e90d0b8900d4199747f3c",
+            "text_sha256": "5f993afc580d7d016ec3aff5ae013f4f444896916e85373a9cbbfc2fa105127b",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12365060/12918826/12918827/dokument581610.zip"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "9fbdc12f6474077b43c236b34ff127dceeae2535d9ed4b4e51881e43224ae895",
+        "rejected": [
+          "('OSR projektu rozporzadzenia w sprawie wzoru oswiadczenia 12.10.2022 (1497475).docx',): supporting draft regulation",
+          "('OSR_rozporzadzenie revenue cap (1497477).doc',): supporting draft regulation",
+          "('Odwrócona tabela zgodnosci_rozporzadzenie 2022_1854(1) (1497487).docx',): compliance_table",
+          "('Projekt rozporzadzenia w sprawie wzoru oswiadczenia 12.10.2022 (1497489).docx',): regulation",
+          "('Projekt rozporzadzenia ws limitów cen (1497481).docx',): regulation",
+          "('Projekt rozporzadzenia ws limitów cen_uzasadnienie (1497471).docx',): supporting draft regulation",
+          "('Tabela zgodnosci_rozporzadzenie 2022_1854(1) (1497473).docx',): compliance_table",
+          "('Uzasadnienie rozporzadzenia w sprawie wzoru oswiadczenia 12.10.2022 (1497479).docx',): supporting draft regulation"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12365060/12918826/12918827/dokument581356.zip"
+      }
+    },
+    "12368459/12": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12368459/12944913/12944917/dokument605407.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [
+              "Uzasadnienie., roz. ws wniosków o wyrównanie (2387908).docx"
+            ],
+            "role": "self_amendment",
+            "sha256": "a392ab3e606f6299a46dfbd30fd3550f06f40d9c97ee39a17f9360d147918a6b",
+            "text_sha256": "e4faacea319bb8950e96b4d339e5514d5973b4addd93924fac2f6c00687cf5c1",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12368459/12944913/12944917/dokument605416.zip"
+          },
+          {
+            "member": [
+              "Uzasadnienie., roz. ws wniosków o wyrównanie (2387908).docx"
+            ],
+            "role": "self_amendment",
+            "sha256": "a392ab3e606f6299a46dfbd30fd3550f06f40d9c97ee39a17f9360d147918a6b",
+            "text_sha256": "e4faacea319bb8950e96b4d339e5514d5973b4addd93924fac2f6c00687cf5c1",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12368459/12944913/12944917/dokument605416.zip"
+          }
+        ],
+        "new_state": "ambiguous",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12368459/12944913/12944917/dokument605407.zip: conflicting bill version",
+          "https://legislacja.rcl.gov.pl/docs//2/12368459/12944913/12944917/dokument605417.zip: conflicting bill version"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12368459/12944913/12944917/dokument605407.zip"
+      }
+    },
+    "12368459/14": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12368459/12944913/12944917/dokument605407.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [
+              "Uzasadnienie., roz. ws wniosków o wyrównanie (2387908).docx"
+            ],
+            "role": "self_amendment",
+            "sha256": "a392ab3e606f6299a46dfbd30fd3550f06f40d9c97ee39a17f9360d147918a6b",
+            "text_sha256": "e4faacea319bb8950e96b4d339e5514d5973b4addd93924fac2f6c00687cf5c1",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12368459/12944913/12944917/dokument605416.zip"
+          },
+          {
+            "member": [
+              "Uzasadnienie., roz. ws wniosków o wyrównanie (2387908).docx"
+            ],
+            "role": "self_amendment",
+            "sha256": "a392ab3e606f6299a46dfbd30fd3550f06f40d9c97ee39a17f9360d147918a6b",
+            "text_sha256": "e4faacea319bb8950e96b4d339e5514d5973b4addd93924fac2f6c00687cf5c1",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12368459/12944913/12944917/dokument605416.zip"
+          }
+        ],
+        "new_state": "ambiguous",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12368459/12944913/12944917/dokument605407.zip: conflicting bill version",
+          "https://legislacja.rcl.gov.pl/docs//2/12368459/12944913/12944917/dokument605417.zip: conflicting bill version"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12368459/12944913/12944917/dokument605407.zip"
+      }
+    },
+    "12376009/12": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12376009/13000549/13000550/dokument651745.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [
+              "27_11_2023_autopoprawka - OSR.docm"
+            ],
+            "role": "self_amendment",
+            "sha256": "936be84dfaf94cbd914eb71447f73cd82a8d889cd58b3874f3e85372d223ea01",
+            "text_sha256": "58613ffa3df3c4b3c1877cd527b3fd03909fc0c7186d8a42fe6575e907d2adb9",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12376009/13000549/13000550/dokument650834.zip"
+          },
+          {
+            "member": [
+              "27_11_2023_autopoprawka - uzasadnienie.docm"
+            ],
+            "role": "self_amendment",
+            "sha256": "d0b0ad1b1619b93ca9b6a631b7025e01e1a67981fbea239f04f2b4f188bb1c20",
+            "text_sha256": "2ffd89dfd3ac2e3be25c001cc7917a70193e6774b89b1a45007f43d0f11fd019",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12376009/13000549/13000550/dokument650834.zip"
+          },
+          {
+            "member": [
+              "RM OSR do autopoprawki do ustawy okołobudżetowej na rok 2024.docm"
+            ],
+            "role": "self_amendment",
+            "sha256": "e9b6bf10fda0566eaf892d2a943d4be576ed5fe3bbfcb2efaaf2312638ec0234",
+            "text_sha256": "de5116bba6c4553e557932e02bf253fd79294ec5fbe0cc9d89a6482ff7084eea",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12376009/13000549/13000550/dokument651743.zip"
+          },
+          {
+            "member": [
+              "RM Uzasadnienie do autopoprawki do ustawy okołobudżetowej na ro 2024.docm"
+            ],
+            "role": "self_amendment",
+            "sha256": "af10236dcc65a538e4da9dd8ca04a9c05355b28ffa3a38df80515ef15ded1ea3",
+            "text_sha256": "ee62da1a2ae1b2608a63405babaa8f5c305224114839e12ca4275fb785555a2b",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12376009/13000549/13000550/dokument651743.zip"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "1f59c4858a168e67d94c2f388952b1b058d2b1a29785e8c652f73f6e096bb541",
+        "rejected": [
+          "('TO po RM raport z konsultacji.doc',): consultation_report"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12376009/13000549/13000550/dokument647716.zip"
+      }
+    },
+    "12376009/14": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12376009/13000549/13000550/dokument651745.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [
+              "27_11_2023_autopoprawka - OSR.docm"
+            ],
+            "role": "self_amendment",
+            "sha256": "936be84dfaf94cbd914eb71447f73cd82a8d889cd58b3874f3e85372d223ea01",
+            "text_sha256": "58613ffa3df3c4b3c1877cd527b3fd03909fc0c7186d8a42fe6575e907d2adb9",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12376009/13000549/13000550/dokument650834.zip"
+          },
+          {
+            "member": [
+              "27_11_2023_autopoprawka - uzasadnienie.docm"
+            ],
+            "role": "self_amendment",
+            "sha256": "d0b0ad1b1619b93ca9b6a631b7025e01e1a67981fbea239f04f2b4f188bb1c20",
+            "text_sha256": "2ffd89dfd3ac2e3be25c001cc7917a70193e6774b89b1a45007f43d0f11fd019",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12376009/13000549/13000550/dokument650834.zip"
+          },
+          {
+            "member": [
+              "RM OSR do autopoprawki do ustawy okołobudżetowej na rok 2024.docm"
+            ],
+            "role": "self_amendment",
+            "sha256": "e9b6bf10fda0566eaf892d2a943d4be576ed5fe3bbfcb2efaaf2312638ec0234",
+            "text_sha256": "de5116bba6c4553e557932e02bf253fd79294ec5fbe0cc9d89a6482ff7084eea",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12376009/13000549/13000550/dokument651743.zip"
+          },
+          {
+            "member": [
+              "RM Uzasadnienie do autopoprawki do ustawy okołobudżetowej na ro 2024.docm"
+            ],
+            "role": "self_amendment",
+            "sha256": "af10236dcc65a538e4da9dd8ca04a9c05355b28ffa3a38df80515ef15ded1ea3",
+            "text_sha256": "ee62da1a2ae1b2608a63405babaa8f5c305224114839e12ca4275fb785555a2b",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12376009/13000549/13000550/dokument651743.zip"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "1f59c4858a168e67d94c2f388952b1b058d2b1a29785e8c652f73f6e096bb541",
+        "rejected": [
+          "('TO po RM raport z konsultacji.doc',): consultation_report"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12376009/13000549/13000550/dokument647716.zip"
+      }
+    },
+    "12381402/12": {
+      "after": {
+        "amendment_members": [
+          {
+            "member": [
+              "Autopopr.pdf"
+            ],
+            "role": "self_amendment",
+            "sha256": "aae8affe5ce8f03f09b48ffb78500fbfcd4c1a1786221c4e0c8203ee08fe747b",
+            "text_sha256": "4e55c4f9fa13ee42cdacca092fc4182d0fdd8ffe90904a1429d56b6c2e8cf3a2",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument662379.zip"
+          }
+        ],
+        "new_state": "unverified",
+        "new_text_sha256": "2a96073780477876d74bb106d610a1fe4d2344363211da73a4359a64ea06762d",
+        "rejected": [
+          "('Projekt rozp. PRM - art. 29 ust. 6 zarządzania mieniem państwowym - MATERIAŁ INFORMACYJNY.docx',): regulation"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument659611.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [
+              "Autopopr.pdf"
+            ],
+            "role": "self_amendment",
+            "sha256": "aae8affe5ce8f03f09b48ffb78500fbfcd4c1a1786221c4e0c8203ee08fe747b",
+            "text_sha256": "4e55c4f9fa13ee42cdacca092fc4182d0fdd8ffe90904a1429d56b6c2e8cf3a2",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument662379.zip"
+          },
+          {
+            "member": [
+              "Uzasadnienie do autopoprawki.docx"
+            ],
+            "role": "self_amendment",
+            "sha256": "8ef3911badef760fd97ef21143065a77c52f0e6ddd8b451b673963f57b18763c",
+            "text_sha256": "49a030a4e3f875f3b91322c45f6e9fdb0a012ed03874f41c7f29c15bc6725546",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument662379.zip"
+          }
+        ],
+        "new_state": "unverified",
+        "new_text_sha256": "2a96073780477876d74bb106d610a1fe4d2344363211da73a4359a64ea06762d",
+        "rejected": [
+          "('Projekt rozp. PRM - art. 29 ust. 6 zarządzania mieniem państwowym - MATERIAŁ INFORMACYJNY.docx',): regulation"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument659611.zip"
+      }
+    },
+    "12381402/14": {
+      "after": {
+        "amendment_members": [
+          {
+            "member": [
+              "Autopopr.pdf"
+            ],
+            "role": "self_amendment",
+            "sha256": "aae8affe5ce8f03f09b48ffb78500fbfcd4c1a1786221c4e0c8203ee08fe747b",
+            "text_sha256": "4e55c4f9fa13ee42cdacca092fc4182d0fdd8ffe90904a1429d56b6c2e8cf3a2",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument662379.zip"
+          }
+        ],
+        "new_state": "unverified",
+        "new_text_sha256": "2a96073780477876d74bb106d610a1fe4d2344363211da73a4359a64ea06762d",
+        "rejected": [
+          "('Projekt rozp. PRM - art. 29 ust. 6 zarządzania mieniem państwowym - MATERIAŁ INFORMACYJNY.docx',): regulation"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument659611.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [
+              "Autopopr.pdf"
+            ],
+            "role": "self_amendment",
+            "sha256": "aae8affe5ce8f03f09b48ffb78500fbfcd4c1a1786221c4e0c8203ee08fe747b",
+            "text_sha256": "4e55c4f9fa13ee42cdacca092fc4182d0fdd8ffe90904a1429d56b6c2e8cf3a2",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument662379.zip"
+          },
+          {
+            "member": [
+              "Uzasadnienie do autopoprawki.docx"
+            ],
+            "role": "self_amendment",
+            "sha256": "8ef3911badef760fd97ef21143065a77c52f0e6ddd8b451b673963f57b18763c",
+            "text_sha256": "49a030a4e3f875f3b91322c45f6e9fdb0a012ed03874f41c7f29c15bc6725546",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument662379.zip"
+          }
+        ],
+        "new_state": "unverified",
+        "new_text_sha256": "2a96073780477876d74bb106d610a1fe4d2344363211da73a4359a64ea06762d",
+        "rejected": [
+          "('Projekt rozp. PRM - art. 29 ust. 6 zarządzania mieniem państwowym - MATERIAŁ INFORMACYJNY.docx',): regulation"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument659611.zip"
+      }
+    },
+    "12383357/11": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12383357/13047167/13047168/dokument682702.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12383357/13047167/13047168/dokument684631.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12383357/13047167/13047168/dokument682702.zip"
+      }
+    },
+    "12383815/10": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12383815/13050521/13050522/dokument701938.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12383815/13050521/13050522/dokument703205.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12383815/13050521/13050522/dokument701938.zip"
+      }
+    },
+    "12383815/9": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12383815/13050521/13050522/dokument701938.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12383815/13050521/13050522/dokument703205.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12383815/13050521/13050522/dokument701938.zip"
+      }
+    },
+    "12385350/12": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12385350/13059153/13059154/dokument713069.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12385350/13059153/13059154/dokument714569.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12385350/13059153/13059154/dokument713069.zip"
+      }
+    },
+    "12385350/14": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12385350/13059153/13059154/dokument713069.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12385350/13059153/13059154/dokument714569.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12385350/13059153/13059154/dokument713069.zip"
+      }
+    },
+    "12385656/10": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12385656/13061295/13061296/dokument750408.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [],
+            "role": "self_amendment",
+            "sha256": "0fb1cdcaee9e770444df72b532599d828b15f1661e9d4aa6f8f631454c8be08e",
+            "text_sha256": "1f1ba36e7ec79ecd8663316ae432ae4b8bb92bc52152d9d4ed83aad2b0f426af",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12385656/13061295/13061296/dokument751777.pdf"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "10d0483a4bad060f952d23fe6668baf0bc4b2aa56774b770f70eacf8aba25562",
+        "rejected": [
+          "('MNiSW_Pismo NOWY TEKST na SKRM.pdf',): letter"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12385656/13061295/13061296/dokument750408.zip"
+      }
+    },
+    "12385656/9": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12385656/13061295/13061296/dokument750408.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [],
+            "role": "self_amendment",
+            "sha256": "0fb1cdcaee9e770444df72b532599d828b15f1661e9d4aa6f8f631454c8be08e",
+            "text_sha256": "1f1ba36e7ec79ecd8663316ae432ae4b8bb92bc52152d9d4ed83aad2b0f426af",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12385656/13061295/13061296/dokument751777.pdf"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "10d0483a4bad060f952d23fe6668baf0bc4b2aa56774b770f70eacf8aba25562",
+        "rejected": [
+          "('MNiSW_Pismo NOWY TEKST na SKRM.pdf',): letter"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12385656/13061295/13061296/dokument750408.zip"
+      }
+    },
+    "12387102/10": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12387102/13069575/13069576/dokument686110.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12387102/13069575/13069576/dokument694393.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12387102/13069575/13069576/dokument686110.zip"
+      }
+    },
+    "12387102/9": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12387102/13069575/13069576/dokument686110.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12387102/13069575/13069576/dokument694393.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12387102/13069575/13069576/dokument686110.zip"
+      }
+    },
+    "12388101/10": {
+      "after": {
+        "amendment_members": [
+          {
+            "member": [
+              "ODNIESIENIE DO UWAG MF.DOCX"
+            ],
+            "role": "self_amendment",
+            "sha256": "9d8b17f9ade8e6e7769b5b19bdfebc69239402fd075a3a58d5b2ef5c9305dc81",
+            "text_sha256": "f07579db85a537429d170788e9e44b7dd48e80f2a1fd97af38bd9fd232f902a2",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12388101/13074332/13074333/dokument701779.zip"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "ca8bca3b9651bef002661f8ebe214e74ca163ec1809dae4be2257c82177f9f48",
+        "rejected": [
+          "('AKT WYK (6937574).ZIP', 'OSR do projektu rozp..DOC'): supporting draft regulation",
+          "('AKT WYK (6937574).ZIP', 'projekt rozporzÑdzenia.DOCX'): regulation",
+          "('AKT WYK (6937574).ZIP', 'uzasadnienie do projektu rozp.DOCX'): supporting draft regulation",
+          "('ODWROCONA TABELA ZGODNOSCI (6937578).DOCX',): compliance_table",
+          "('PROTOKOL ROZBIEZNOSCI (6937572).DOCX',): discrepancies",
+          "('RAPORT Z KONSULTACJI (6937576).DOCX',): consultation_report",
+          "('TABELA ZGODNOSCI (6937582).DOCX',): compliance_table"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12388101/13074332/13074333/dokument700161.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [
+              "ODNIESIENIE DO UWAG MF.DOCX"
+            ],
+            "role": "self_amendment",
+            "sha256": "9d8b17f9ade8e6e7769b5b19bdfebc69239402fd075a3a58d5b2ef5c9305dc81",
+            "text_sha256": "f07579db85a537429d170788e9e44b7dd48e80f2a1fd97af38bd9fd232f902a2",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12388101/13074332/13074333/dokument701779.zip"
+          },
+          {
+            "member": [
+              "OSR PO UWAGACH MF.DOC"
+            ],
+            "role": "self_amendment",
+            "sha256": "5ba66790e6062a4603a0eefb6fe4743299ee3d5616c54f8a29c5180dab0c2cd6",
+            "text_sha256": "77f9b8470b45a211d3473c989089a9732dda87b743cbf32a3936407999f98039",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12388101/13074332/13074333/dokument701779.zip"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "ca8bca3b9651bef002661f8ebe214e74ca163ec1809dae4be2257c82177f9f48",
+        "rejected": [
+          "('AKT WYK (6937574).ZIP', 'OSR do projektu rozp..DOC'): supporting draft regulation",
+          "('AKT WYK (6937574).ZIP', 'projekt rozporzÑdzenia.DOCX'): regulation",
+          "('AKT WYK (6937574).ZIP', 'uzasadnienie do projektu rozp.DOCX'): supporting draft regulation",
+          "('ODWROCONA TABELA ZGODNOSCI (6937578).DOCX',): compliance_table",
+          "('PROTOKOL ROZBIEZNOSCI (6937572).DOCX',): discrepancies",
+          "('RAPORT Z KONSULTACJI (6937576).DOCX',): consultation_report",
+          "('TABELA ZGODNOSCI (6937582).DOCX',): compliance_table"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12388101/13074332/13074333/dokument700161.zip"
+      }
+    },
+    "12388101/9": {
+      "after": {
+        "amendment_members": [
+          {
+            "member": [
+              "ODNIESIENIE DO UWAG MF.DOCX"
+            ],
+            "role": "self_amendment",
+            "sha256": "9d8b17f9ade8e6e7769b5b19bdfebc69239402fd075a3a58d5b2ef5c9305dc81",
+            "text_sha256": "f07579db85a537429d170788e9e44b7dd48e80f2a1fd97af38bd9fd232f902a2",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12388101/13074332/13074333/dokument701779.zip"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "ca8bca3b9651bef002661f8ebe214e74ca163ec1809dae4be2257c82177f9f48",
+        "rejected": [
+          "('AKT WYK (6937574).ZIP', 'OSR do projektu rozp..DOC'): supporting draft regulation",
+          "('AKT WYK (6937574).ZIP', 'projekt rozporzÑdzenia.DOCX'): regulation",
+          "('AKT WYK (6937574).ZIP', 'uzasadnienie do projektu rozp.DOCX'): supporting draft regulation",
+          "('ODWROCONA TABELA ZGODNOSCI (6937578).DOCX',): compliance_table",
+          "('PROTOKOL ROZBIEZNOSCI (6937572).DOCX',): discrepancies",
+          "('RAPORT Z KONSULTACJI (6937576).DOCX',): consultation_report",
+          "('TABELA ZGODNOSCI (6937582).DOCX',): compliance_table"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12388101/13074332/13074333/dokument700161.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [
+              "ODNIESIENIE DO UWAG MF.DOCX"
+            ],
+            "role": "self_amendment",
+            "sha256": "9d8b17f9ade8e6e7769b5b19bdfebc69239402fd075a3a58d5b2ef5c9305dc81",
+            "text_sha256": "f07579db85a537429d170788e9e44b7dd48e80f2a1fd97af38bd9fd232f902a2",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12388101/13074332/13074333/dokument701779.zip"
+          },
+          {
+            "member": [
+              "OSR PO UWAGACH MF.DOC"
+            ],
+            "role": "self_amendment",
+            "sha256": "5ba66790e6062a4603a0eefb6fe4743299ee3d5616c54f8a29c5180dab0c2cd6",
+            "text_sha256": "77f9b8470b45a211d3473c989089a9732dda87b743cbf32a3936407999f98039",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12388101/13074332/13074333/dokument701779.zip"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "ca8bca3b9651bef002661f8ebe214e74ca163ec1809dae4be2257c82177f9f48",
+        "rejected": [
+          "('AKT WYK (6937574).ZIP', 'OSR do projektu rozp..DOC'): supporting draft regulation",
+          "('AKT WYK (6937574).ZIP', 'projekt rozporzÑdzenia.DOCX'): regulation",
+          "('AKT WYK (6937574).ZIP', 'uzasadnienie do projektu rozp.DOCX'): supporting draft regulation",
+          "('ODWROCONA TABELA ZGODNOSCI (6937578).DOCX',): compliance_table",
+          "('PROTOKOL ROZBIEZNOSCI (6937572).DOCX',): discrepancies",
+          "('RAPORT Z KONSULTACJI (6937576).DOCX',): consultation_report",
+          "('TABELA ZGODNOSCI (6937582).DOCX',): compliance_table"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12388101/13074332/13074333/dokument700161.zip"
+      }
+    },
+    "12388701/10": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12388701/13077247/13077248/dokument685887.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12388701/13077247/13077248/dokument686539.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12388701/13077247/13077248/dokument685887.zip"
+      }
+    },
+    "12388701/9": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12388701/13077247/13077248/dokument685887.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12388701/13077247/13077248/dokument686539.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12388701/13077247/13077248/dokument685887.zip"
+      }
+    },
+    "12389302/10": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12389302/13079840/13079841/dokument723093.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12389302/13079840/13079841/dokument725433.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12389302/13079840/13079841/dokument723093.zip"
+      }
+    },
+    "12389302/9": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12389302/13079840/13079841/dokument723093.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12389302/13079840/13079841/dokument725433.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12389302/13079840/13079841/dokument723093.zip"
+      }
+    },
+    "12390302/12": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12390302/13086686/13086687/dokument692707.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [
+              "OSR_04 11 2024_Autopoprawka (6463359).docx"
+            ],
+            "role": "self_amendment",
+            "sha256": "45779aca7b6c6dcb28ac91ee377f506b31094fc4d1179eb8ae065427e30322ce",
+            "text_sha256": "c9d1631f6c03c76b139a0561a2e6b09cce329973ce0c5b056911b6c8db69f51d",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12390302/13086686/13086687/dokument692249.zip"
+          },
+          {
+            "member": [
+              "OSR_18 11 2024_Autopoprawka na RM (6556939).docx"
+            ],
+            "role": "self_amendment",
+            "sha256": "daf5c03fbebe97f71f3a564b679005112e1a7fce1c1825ee2aed58197f5f4992",
+            "text_sha256": "5e58811d4722c1971ac7a588d5e5632d8bfc9e3b8fb02233fa29fad95c8c2ca7",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12390302/13086686/13086687/dokument692630.zip"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "66d26ce793f3ada0c10bf8f61284b3eda579a566a8c999c6377c5e0a5eedd4af",
+        "rejected": [],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12390302/13086686/13086687/dokument689698.zip"
+      }
+    },
+    "12390302/14": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12390302/13086686/13086687/dokument692707.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [
+              "OSR_04 11 2024_Autopoprawka (6463359).docx"
+            ],
+            "role": "self_amendment",
+            "sha256": "45779aca7b6c6dcb28ac91ee377f506b31094fc4d1179eb8ae065427e30322ce",
+            "text_sha256": "c9d1631f6c03c76b139a0561a2e6b09cce329973ce0c5b056911b6c8db69f51d",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12390302/13086686/13086687/dokument692249.zip"
+          },
+          {
+            "member": [
+              "OSR_18 11 2024_Autopoprawka na RM (6556939).docx"
+            ],
+            "role": "self_amendment",
+            "sha256": "daf5c03fbebe97f71f3a564b679005112e1a7fce1c1825ee2aed58197f5f4992",
+            "text_sha256": "5e58811d4722c1971ac7a588d5e5632d8bfc9e3b8fb02233fa29fad95c8c2ca7",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12390302/13086686/13086687/dokument692630.zip"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "66d26ce793f3ada0c10bf8f61284b3eda579a566a8c999c6377c5e0a5eedd4af",
+        "rejected": [],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12390302/13086686/13086687/dokument689698.zip"
+      }
+    },
+    "12390959/12": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12390959/13091063/13091064/dokument724868.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12390959/13091063/13091064/dokument727375.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12390959/13091063/13091064/dokument724868.zip"
+      }
+    },
+    "12390959/14": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12390959/13091063/13091064/dokument724868.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12390959/13091063/13091064/dokument727375.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12390959/13091063/13091064/dokument724868.zip"
+      }
+    },
+    "12391202/10": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12391202/13092490/13092491/dokument743072.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12391202/13092490/13092491/dokument745801.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12391202/13092490/13092491/dokument743072.zip"
+      }
+    },
+    "12391202/9": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12391202/13092490/13092491/dokument743072.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12391202/13092490/13092491/dokument745801.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12391202/13092490/13092491/dokument743072.zip"
+      }
+    },
+    "12392802/12": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12392802/13102736/13102737/dokument717873.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12392802/13102736/13102737/dokument721360.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12392802/13102736/13102737/dokument717873.zip"
+      }
+    },
+    "12392802/14": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12392802/13102736/13102737/dokument717873.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12392802/13102736/13102737/dokument721360.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12392802/13102736/13102737/dokument717873.zip"
+      }
+    },
+    "12396004/9": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12396004/13118176/13118177/dokument712454.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [],
+            "role": "self_amendment",
+            "sha256": "35e2649aecad76c73763123ff8f4795fafb376abf8aeaad174aab3c1ee39210b",
+            "text_sha256": "ae29d3025d7dfb8391e9a7c9834f18f36146a7e2ad38e0656d36368a88a0fbd8",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12396004/13118176/13118177/dokument712856.pdf"
+          },
+          {
+            "member": [
+              "Uzasadnienie 11-04-2025 tekst jednolity  (7523403).pdf"
+            ],
+            "role": "self_amendment",
+            "sha256": "19ec55e0ebec4ad50e43fc8e5a6076a3d6e834a56dee6e26340d37d59d2effa6",
+            "text_sha256": "e8e47e488f9ed57eb335b4641f1feebbf12bae13617a8965ed3c741990234756",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12396004/13118176/13118177/dokument712887.zip"
+          },
+          {
+            "member": [],
+            "role": "self_amendment",
+            "sha256": "a36f49ed847f35f025880f48f93605e042405ca25570a0d746f7a90d744d573b",
+            "text_sha256": "84e80bac2eaae98a208abce764d290204e33a31059573433831b49fdc1cb199d",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12396004/13118176/13118177/dokument712985.pdf"
+          }
+        ],
+        "new_state": "unverified",
+        "new_text_sha256": "55008ef9670f45fef578615a00bf7a15a0d6f5a518407d63385024657501b9ad",
+        "rejected": [
+          "('Tabela uwag nie uwzglednionych 10-04-2025 (7509540).docx',): remarks_table"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12396004/13118176/13118177/dokument712454.zip"
+      }
+    },
+    "12396008/10": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12396008/13118368/13118369/dokument725440.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12396008/13118368/13118369/dokument725441.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12396008/13118368/13118369/dokument725440.zip"
+      }
+    },
+    "12396008/9": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12396008/13118368/13118369/dokument725440.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12396008/13118368/13118369/dokument725441.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12396008/13118368/13118369/dokument725440.zip"
+      }
+    },
+    "12397656/10": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12397656/13127392/13127393/dokument736041.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [],
+            "role": "self_amendment",
+            "sha256": "fcc7a78a028e8ebca7545bc2dcf256c9be09cfe0dea815a6c0a8fe43260edf75",
+            "text_sha256": "a77e164fb06acd6751a1ec3e7ebf82dfc666072486033ee3d877e0cce2fc1410",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12397656/13127392/13127393/dokument737898.pdf"
+          },
+          {
+            "member": [],
+            "role": "self_amendment",
+            "sha256": "ce47466f1d6d41558d22290550439a36b85a5c0ee7f7aae633cae4388c95a9a9",
+            "text_sha256": "a5552bae124f1b98fc3a8e8367a61bdb9f205db7511660ec00c7f45fdee23024",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12397656/13127392/13127393/dokument737899.pdf"
+          }
+        ],
+        "new_state": "unverified",
+        "new_text_sha256": "1c326e7b5eb073ff12916c79c36f94099c2a050b1b17dc9a8005afc3f1d65262",
+        "rejected": [
+          "('Projekt rozporzadzenia MS 20.docx',): regulation",
+          "('Projekt rozporzadzenia MSWiA w porozumieniu z MC wersja 20.docx',): regulation",
+          "('Raport z konsultacji projektu ustawy UDER24 20 08 2025 (8409921).docx',): consultation_report",
+          "('TABELA - Protokól rozbieznosci DER24 23.docx',): discrepancies",
+          "('TABELA - zestawienie nieuwzglednionych uwag zgloszonych w ramach opiniowania przez  KWRiST do projektu UDER24 (8409922).docx',): remarks_table",
+          "('TABELA - zestawienie uwag zgloszonych w ramach konsultacji publicznych i opiniowania UDER24 (8409920).docx',): remarks_table"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12397656/13127392/13127393/dokument736041.zip"
+      }
+    },
+    "12397656/9": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12397656/13127392/13127393/dokument736041.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [],
+            "role": "self_amendment",
+            "sha256": "fcc7a78a028e8ebca7545bc2dcf256c9be09cfe0dea815a6c0a8fe43260edf75",
+            "text_sha256": "a77e164fb06acd6751a1ec3e7ebf82dfc666072486033ee3d877e0cce2fc1410",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12397656/13127392/13127393/dokument737898.pdf"
+          },
+          {
+            "member": [],
+            "role": "self_amendment",
+            "sha256": "ce47466f1d6d41558d22290550439a36b85a5c0ee7f7aae633cae4388c95a9a9",
+            "text_sha256": "a5552bae124f1b98fc3a8e8367a61bdb9f205db7511660ec00c7f45fdee23024",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12397656/13127392/13127393/dokument737899.pdf"
+          }
+        ],
+        "new_state": "unverified",
+        "new_text_sha256": "1c326e7b5eb073ff12916c79c36f94099c2a050b1b17dc9a8005afc3f1d65262",
+        "rejected": [
+          "('Projekt rozporzadzenia MS 20.docx',): regulation",
+          "('Projekt rozporzadzenia MSWiA w porozumieniu z MC wersja 20.docx',): regulation",
+          "('Raport z konsultacji projektu ustawy UDER24 20 08 2025 (8409921).docx',): consultation_report",
+          "('TABELA - Protokól rozbieznosci DER24 23.docx',): discrepancies",
+          "('TABELA - zestawienie nieuwzglednionych uwag zgloszonych w ramach opiniowania przez  KWRiST do projektu UDER24 (8409922).docx',): remarks_table",
+          "('TABELA - zestawienie uwag zgloszonych w ramach konsultacji publicznych i opiniowania UDER24 (8409920).docx',): remarks_table"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12397656/13127392/13127393/dokument736041.zip"
+      }
+    },
+    "12399000/12": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12399000/13136450/13136451/dokument724851.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12399000/13136450/13136451/dokument736009.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12399000/13136450/13136451/dokument724851.zip"
+      }
+    },
+    "12399000/14": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12399000/13136450/13136451/dokument724851.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12399000/13136450/13136451/dokument736009.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12399000/13136450/13136451/dokument724851.zip"
+      }
+    },
+    "12399200/12": {
+      "after": {
+        "amendment_members": [
+          {
+            "member": [
+              "Odpowiedź MS na uwagi RCL - etap SKRM (4).pdf"
+            ],
+            "role": "self_amendment",
+            "sha256": "7e9649b9a2f7d84297e745fcdafcd56282988d4cb958399cccfcb15e3bac8674",
+            "text_sha256": "b0f12c11d16367ddabe633a269b88f2c694fe3cdd3489b186e543bdba7c9e091",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12399200/13138389/13138390/dokument724420.zip"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "5bda54c3b0d4916453a4f165d28eac3e764e076e2f32b2e4ca44b522704a9d34",
+        "rejected": [],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12399200/13138400/13138401/dokument724629.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [
+              "Odpowiedź MS na uwagi RCL - etap SKRM (4).pdf"
+            ],
+            "role": "self_amendment",
+            "sha256": "7e9649b9a2f7d84297e745fcdafcd56282988d4cb958399cccfcb15e3bac8674",
+            "text_sha256": "b0f12c11d16367ddabe633a269b88f2c694fe3cdd3489b186e543bdba7c9e091",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12399200/13138389/13138390/dokument724420.zip"
+          },
+          {
+            "member": [
+              "OSR licytacje elektroniczne 24.docx"
+            ],
+            "role": "self_amendment",
+            "sha256": "56022f930b2c92cf0345a9e774fff6f109f77cecbff61affff57414ad37e2694",
+            "text_sha256": "d0b320be2834e493561f6a946d20ed4d2e504e006aa7520bd6c2b2ca059becf1",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12399200/13138389/13138390/dokument724420.zip"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "5bda54c3b0d4916453a4f165d28eac3e764e076e2f32b2e4ca44b522704a9d34",
+        "rejected": [],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12399200/13138400/13138401/dokument724629.zip"
+      }
+    },
+    "12399200/14": {
+      "after": {
+        "amendment_members": [
+          {
+            "member": [
+              "Odpowiedź MS na uwagi RCL - etap SKRM (4).pdf"
+            ],
+            "role": "self_amendment",
+            "sha256": "7e9649b9a2f7d84297e745fcdafcd56282988d4cb958399cccfcb15e3bac8674",
+            "text_sha256": "b0f12c11d16367ddabe633a269b88f2c694fe3cdd3489b186e543bdba7c9e091",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12399200/13138389/13138390/dokument724420.zip"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "5bda54c3b0d4916453a4f165d28eac3e764e076e2f32b2e4ca44b522704a9d34",
+        "rejected": [],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12399200/13138400/13138401/dokument724629.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [
+              "Odpowiedź MS na uwagi RCL - etap SKRM (4).pdf"
+            ],
+            "role": "self_amendment",
+            "sha256": "7e9649b9a2f7d84297e745fcdafcd56282988d4cb958399cccfcb15e3bac8674",
+            "text_sha256": "b0f12c11d16367ddabe633a269b88f2c694fe3cdd3489b186e543bdba7c9e091",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12399200/13138389/13138390/dokument724420.zip"
+          },
+          {
+            "member": [
+              "OSR licytacje elektroniczne 24.docx"
+            ],
+            "role": "self_amendment",
+            "sha256": "56022f930b2c92cf0345a9e774fff6f109f77cecbff61affff57414ad37e2694",
+            "text_sha256": "d0b320be2834e493561f6a946d20ed4d2e504e006aa7520bd6c2b2ca059becf1",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12399200/13138389/13138390/dokument724420.zip"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "5bda54c3b0d4916453a4f165d28eac3e764e076e2f32b2e4ca44b522704a9d34",
+        "rejected": [],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12399200/13138400/13138401/dokument724629.zip"
+      }
+    },
+    "12399200/9": {
+      "after": {
+        "amendment_members": [
+          {
+            "member": [
+              "Odpowiedź MS na uwagi RCL - etap SKRM (4).pdf"
+            ],
+            "role": "self_amendment",
+            "sha256": "7e9649b9a2f7d84297e745fcdafcd56282988d4cb958399cccfcb15e3bac8674",
+            "text_sha256": "b0f12c11d16367ddabe633a269b88f2c694fe3cdd3489b186e543bdba7c9e091",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12399200/13138389/13138390/dokument724420.zip"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "b19b63611788dd5545b9571bf5b0c5d351ede5ab646e53f91f90962fe68eb99b",
+        "rejected": [],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12399200/13138389/13138390/dokument723551.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [
+              "Odpowiedź MS na uwagi RCL - etap SKRM (4).pdf"
+            ],
+            "role": "self_amendment",
+            "sha256": "7e9649b9a2f7d84297e745fcdafcd56282988d4cb958399cccfcb15e3bac8674",
+            "text_sha256": "b0f12c11d16367ddabe633a269b88f2c694fe3cdd3489b186e543bdba7c9e091",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12399200/13138389/13138390/dokument724420.zip"
+          },
+          {
+            "member": [
+              "OSR licytacje elektroniczne 24.docx"
+            ],
+            "role": "self_amendment",
+            "sha256": "56022f930b2c92cf0345a9e774fff6f109f77cecbff61affff57414ad37e2694",
+            "text_sha256": "d0b320be2834e493561f6a946d20ed4d2e504e006aa7520bd6c2b2ca059becf1",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12399200/13138389/13138390/dokument724420.zip"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "b19b63611788dd5545b9571bf5b0c5d351ede5ab646e53f91f90962fe68eb99b",
+        "rejected": [],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12399200/13138389/13138390/dokument723551.zip"
+      }
+    },
+    "12405554/12": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12405554/13177419/13177420/dokument794760.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "unverified",
+        "new_text_sha256": "59a6be253839ad99cc6a6c74680b9dab41e4b2b8063c1cf71b631998ed2620c3",
+        "rejected": [],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12405554/13177419/13177420/dokument788456.zip"
+      }
+    },
+    "12405554/14": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12405554/13177419/13177420/dokument794760.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "unverified",
+        "new_text_sha256": "59a6be253839ad99cc6a6c74680b9dab41e4b2b8063c1cf71b631998ed2620c3",
+        "rejected": [],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12405554/13177419/13177420/dokument788456.zip"
+      }
+    },
+    "12405803/9": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12405803/13178895/13178896/dokument788234.zip"
+      },
+      "before": {
+        "amendment_members": [
+          {
+            "member": [
+              "MF OSR - UC105.docx"
+            ],
+            "role": "self_amendment",
+            "sha256": "2568fed65d45e4326251067e23e06eaa8dac9a7788223736ba1e64c309f03ad7",
+            "text_sha256": "605df846a5685071ff972270fccea7dde152bd7d393a0bc14a42be09a1acadc9",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12405803/13178895/13178896/dokument791156.zip"
+          }
+        ],
+        "new_state": "selected",
+        "new_text_sha256": "3ddc0dd5d8cc67969798b37569947a2c4b8b02d96909746350f5829ceddac1e6",
+        "rejected": [
+          "('5. MF - SKRM - AKT WYKONAWCZY.zip', '10.07.2026_PROJEKT rozporzadzenia/10.07.2026_OSR rozporzadzenie art 225 ust 7.docx'): supporting draft regulation",
+          "('5. MF - SKRM - AKT WYKONAWCZY.zip', '10.07.2026_PROJEKT rozporzadzenia/10.07.2026_PROJEKT rozporządzenia art 225 ust 7.docm'): regulation",
+          "('5. MF - SKRM - AKT WYKONAWCZY.zip', '10.07.2026_PROJEKT rozporzadzenia/10.07.2026_UZASADNIENIE rozporzadzenie art 225 ust 7.docx'): supporting draft regulation",
+          "('5. MF - SKRM - AKT WYKONAWCZY.zip', '10.07.2026_PROJEKT rozporzadzenia/Załącznik nr 1.docx'): annex",
+          "('6. MF - SKRM - Tabela zgodnosci - UC105.docx',): compliance_table",
+          "('7. MF - SKRM - Raport z konsultacji - UC105.docx',): consultation_report",
+          "('8. MF - SKRM - Zalacznik do raportu z konsultacji - UC105.docx',): remarks_table",
+          "('9. MF - SKRM - Zestawienie uwag nieuwzglednionych - opiniowanie - UC105.docx',): remarks_table"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12405803/13178895/13178896/dokument788234.zip"
+      }
+    },
+    "12407350/9": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12407350/13188189/13188190/dokument791977.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12407350/13188189/13188190/dokument793832.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12407350/13188189/13188190/dokument791977.zip"
+      }
+    },
+    "12412454/9": {
+      "after": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12412454/13215491/13215492/dokument787723.zip"
+      },
+      "before": {
+        "amendment_members": [],
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "rejected": [
+          "https://legislacja.rcl.gov.pl/docs//2/12412454/13215491/13215492/dokument789848.zip: self-amendment unavailable"
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12412454/13215491/13215492/dokument787723.zip"
+      }
+    }
+  },
+  "input_manifest_sha256": "76bcf0e6121cd22db8c1de4dd817cfff0a82cb0cd56258b56d875c8d80e4b3ef",
+  "retained_texts_identical": true,
+  "senate_projection_equal": true,
+  "state_transitions": {
+    "ambiguous -> waiting": 2,
+    "selected -> selected": 5,
+    "selected -> waiting": 9,
+    "unverified -> unverified": 2,
+    "unverified -> waiting": 5,
+    "waiting -> waiting": 29
+  }
+}

@@ -143,7 +143,7 @@ def test_rcl_archive_uses_only_a_verified_original(same_text: bool, include_supp
     _, before = loader.select_document(document)
     selected, after = loader.select_document(document, rcl_project=project)
 
-    assert before.selection.state == ("unverified" if include_support else "waiting")
+    assert before.selection.state == "waiting"
     assert selected == document
     if same_text:
         assert after.text == loader.read(base).text

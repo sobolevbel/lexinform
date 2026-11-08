@@ -15,6 +15,7 @@ from lexinform.models.candidate_trace import NormativeAnnexGapReason, ReturnedPa
 from lexinform.models.document_reads import LoadedFile
 from lexinform.models.documents import DocumentPart, DocumentSelection
 from lexinform.models.sejm import TextDocument
+from lexinform.rcl_amendments import has_rcl_self_amendment_text
 from lexinform.sections import APPENDIX_KINDS, PAGE_BREAK, Kind, carries_the_document, document_kind
 
 
@@ -152,17 +153,30 @@ def finish_normative(bundle: BundleAssembly) -> BundleAssembly:
 
 
 def amendment_part(
-    bundle: BundleAssembly, url: str, file: LoadedFile
+    bundle: BundleAssembly, url: str, file: LoadedFile, *, rcl: bool
 ) -> BundleAssembly | RequiredPartFailure:
     if (reason := _returned_part_gap(file)) is not None:
         return RequiredPartFailure(
             _blocked("waiting", f"{url}: self-amendment unavailable"), reason
         )
+    parts = tuple(
+        part
+        for part in file.selection.parts
+        if not rcl
+        or not part.members
+        or part.role not in ("justification", "osr")
+        or has_rcl_self_amendment_text(part.text)
+    )
+    if file.selection.parts and not parts:
+        return RequiredPartFailure(
+            _blocked("waiting", f"{url}: archive only returned self-amendment support"),
+            "returned_no_text",
+        )
     return replace(
         bundle,
         evidence=(
             *bundle.evidence,
-            *(p.model_copy(update={"role": "self_amendment"}) for p in file.selection.parts),
+            *(p.model_copy(update={"role": "self_amendment"}) for p in parts),
         ),
     )
 

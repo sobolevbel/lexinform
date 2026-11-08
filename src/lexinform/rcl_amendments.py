@@ -55,6 +55,17 @@ def rcl_self_amendment_print_number(text: str) -> str | None:
     return match[1] if match else None
 
 
+def _has_article_formula(text: str, start: int) -> bool:
+    normative = _SUPPORT.split(text[start:], maxsplit=1)[0]
+    return _ARTICLE_FORMULA.search(normative) is not None
+
+
+def has_rcl_self_amendment_text(text: str) -> bool:
+    """Recognize proposed article text before any separate supporting section."""
+    opening = _opening_target(text)
+    return opening is not None and _has_article_formula(text, opening[1])
+
+
 def _addresses_project(part: DocumentPart, project_title: str, project_number: str | None) -> bool:
     opening = _opening_target(part.text)
     if opening is None:
@@ -74,8 +85,7 @@ def _addresses_project(part: DocumentPart, project_title: str, project_number: s
             return False
     elif _title(title) != project_title:
         return False
-    normative = _SUPPORT.split(part.text[body_start:], maxsplit=1)[0]
-    return _ARTICLE_FORMULA.search(normative) is not None
+    return _has_article_formula(part.text, body_start)
 
 
 def rcl_self_amendment_part(

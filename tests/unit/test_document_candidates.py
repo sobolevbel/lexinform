@@ -407,3 +407,30 @@ def test_outer_comparison_keeps_self_amendments_separate(mode: str, expected: st
                     file_sha256=hashlib.sha256(files[proposal]).hexdigest(),
                 ),
             )
+
+
+def test_incomplete_rcl_amendment_package_blocks_unclassified_fallback() -> None:
+    unclassified = "https://api.test/unclassified.docx"
+    base = "https://api.test/base.docx"
+    proposal = "https://api.test/proposal.zip"
+    gateway = FakeSejmGateway(
+        files={
+            unclassified: docx("Inny tekst bez nagłówka ustawy. " * 30),
+            base: docx(BILL + "Art. 2. Przepis stosuje się w postępowaniu. " * 12),
+            proposal: archive({"uzasadnienie.docx": docx("UZASADNIENIE\n" + "Opis. " * 60)}),
+        }
+    )
+    loader = TextLoader({"api.test": gateway.download}, extractor(), max_bytes=100_000)
+    request = TextDocument(
+        url=unclassified,
+        kind="rcl",
+        compare_versions=True,
+        alternatives=(TextDocument(url=base, kind="rcl", amendment_urls=(proposal,)),),
+    )
+
+    _, file = loader.select_document(request)
+
+    assert file.text is None and file.selection.state == "waiting"
+    trace = file.candidate_trace
+    assert trace is not None and trace.result == "waiting"
+    assert trace.dispositions[1].reason == "normative_part_read_incomplete"

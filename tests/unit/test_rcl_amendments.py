@@ -2,6 +2,8 @@ import datetime as dt
 
 import pytest
 
+from lexinform.document_composition import BundleAssembly, RequiredPartFailure, amendment_part
+from lexinform.models.document_reads import LoadedFile
 from lexinform.models.documents import DocumentPart, DocumentSelection
 from lexinform.models.sejm import ProcessSummary
 from lexinform.rcl_amendments import (
@@ -123,3 +125,28 @@ def test_resolves_only_one_complete_base_for_the_explicit_print(
         )
         == expected
     )
+
+
+@pytest.mark.parametrize("mixed", [False, True])
+def test_rcl_archive_does_not_relabel_standalone_support(mixed: bool) -> None:
+    support = DocumentPart(members=("osr.docx",), role="osr", text="OCENA SKUTKÓW REGULACJI")
+    proposal = member(body=f"{BODY}\nUZASADNIENIE\nWniosek.").model_copy(
+        update={"role": "justification"}
+    )
+    parts = (support, proposal) if mixed else (support,)
+    file = LoadedFile(
+        "\n".join(part.text for part in parts),
+        selection=DocumentSelection(state="unsupported", parts=parts),
+    )
+    bundle = BundleAssembly(LoadedFile("bill"), ("bill",), (), ())
+
+    result = amendment_part(bundle, "https://rcl.test/amendment.zip", file, rcl=True)
+
+    if mixed:
+        assert isinstance(result, BundleAssembly)
+        assert result.evidence == (proposal.model_copy(update={"role": "self_amendment"}),)
+        assert result.texts == bundle.texts
+    else:
+        assert isinstance(result, RequiredPartFailure)
+        assert result.blocked.selection.state == "waiting"
+        assert result.reason == "returned_no_text"

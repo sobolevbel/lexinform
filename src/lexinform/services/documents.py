@@ -55,7 +55,10 @@ from lexinform.document_downloads import (
     read_exclusion_reason,
 )
 from lexinform.document_editions import candidate_edition
-from lexinform.document_selection import DOCUMENT_SELECTION_POLICY_VERSION
+from lexinform.document_selection import (
+    DOCUMENT_SELECTION_POLICY_VERSION,
+    RCL_AMENDMENT_ARCHIVE_POLICY_VERSION,
+)
 from lexinform.errors import AttachmentTooLargeError, DownloadError, ServiceUnavailableError
 from lexinform.local_timing import observe_read_timing
 from lexinform.metadata_omissions import MetadataUrlOmissionCollector
@@ -1129,7 +1132,7 @@ class TextLoader:
         bundle = finish_normative(bundle)
         for position, url in enumerate(document.amendment_urls):
             file = self._read_composed_part(document, address, "amendment", position, url)
-            amended = amendment_part(bundle, url, file)
+            amended = amendment_part(bundle, url, file, rcl=document.kind == "rcl")
             if isinstance(amended, RequiredPartFailure):
                 if attempt is not None:
                     gap_capture, gap_phase, gap_index = attempt
@@ -1524,12 +1527,15 @@ class TextLoader:
                     gaps = gaps[:-1]
                 else:
                     break
+        policy_version = DOCUMENT_SELECTION_POLICY_VERSION
+        if document.kind == "rcl" and any(
+            candidate.amendment_urls for candidate in (document, *document.alternatives)
+        ):
+            policy_version = RCL_AMENDMENT_ARCHIVE_POLICY_VERSION
         return selected, replace(
             loaded,
             archive_version_evidence=archive_version_evidence,
-            selection=loaded.selection.model_copy(
-                update={"policy_version": DOCUMENT_SELECTION_POLICY_VERSION}
-            ),
+            selection=loaded.selection.model_copy(update={"policy_version": policy_version}),
             candidate_trace=trace,
         )
 
@@ -1813,7 +1819,12 @@ class TextLoader:
                 ),
             )
             return document, LoadedFile(None, selection=selection), "ambiguous", "version_conflict"
-        if incomplete and len(incomplete.keys() | set(candidate_indices)) > 1:
+        hold_rcl_package = (
+            document.kind == "rcl"
+            and not candidate_indices
+            and any(sources[index].amendment_urls for index in normative_blocked)
+        )
+        if incomplete and (len(incomplete.keys() | set(candidate_indices)) > 1 or hold_rcl_package):
             dispositions.extend(
                 item.model_copy(
                     update={
