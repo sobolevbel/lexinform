@@ -98,6 +98,8 @@ def test_census_uses_canonical_primary_rows_and_exports_only_claim_addresses(
             "verified_in_current": 0,
             "verified_in_checkpoint": 0,
             "unsupported_claim_sets": 1,
+            "verified_metadata_only": 0,
+            "metadata_only": [],
             "unavailable": 1,
             "ready": [],
         },

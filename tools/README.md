@@ -384,6 +384,7 @@ earlier snapshots. A review sheet (`--review-result RESULT_ID`) and its answers 
 one such pair. A matching prepared-input receipt can verify submitted text from an
 older batch that has no provider request manifest. A pinned OpenAI submission checkpoint can
 also verify the exact text against the saved request when no receipt was recorded.
+Coverage lists verified metadata-only requests separately from text available for review.
 
 Create a review sheet and use the intake command below with `--template` in place of
 `--answers` to prepare a blank answer file. Fill the review fields and remove unanswered

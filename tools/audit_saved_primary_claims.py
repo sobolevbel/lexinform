@@ -251,7 +251,8 @@ def _checkpoint_intent_text(
             or saved.request_sha256 not in (None, paid.request_sha256)
             or saved.input_chars != current.input_chars
             or question.ctx.scan is not None
-            or question.ctx.text_source == "metadata_only"
+            or current.text_source != question.ctx.text_source
+            or saved.text_source != current.text_source
         ):
             raise ReviewTextUnavailableError(
                 "Input checkpoint differs from the exact saved text intent"
@@ -259,7 +260,7 @@ def _checkpoint_intent_text(
         text = question.ctx.text
         manifest = capture_frozen_request_manifest(request, paid.provider)
         if (
-            not text.strip()
+            (text != "" if current.text_source == "metadata_only" else not text.strip())
             or len(text) != current.input_chars
             or saved.text != text
             or current.text
@@ -292,7 +293,7 @@ def _checkpoint_intent_text(
         return text
 
 
-def saved_claim_review(
+def _saved_review_input(
     database: Path,
     *,
     database_sha256: str,
@@ -364,6 +365,24 @@ def saved_claim_review(
     )
 
 
+def saved_claim_review(
+    database: Path,
+    *,
+    database_sha256: str,
+    result_id: str,
+    input_checkpoint: ReviewInputCheckpoint | None = None,
+) -> SavedClaimReview:
+    review = _saved_review_input(
+        database,
+        database_sha256=database_sha256,
+        result_id=result_id,
+        input_checkpoint=input_checkpoint,
+    )
+    if not review.text:
+        raise ReviewTextUnavailableError("The verified request used metadata only")
+    return review
+
+
 def _review_text_coverage(
     database: Path,
     database_sha256: str,
@@ -376,6 +395,7 @@ def _review_text_coverage(
     if any(not checkpoint.unchanged() for checkpoint in checkpoints):
         raise ValueError("An input checkpoint differs from its pin")
     ready = []
+    metadata_only = []
     unsupported_claim_sets = 0
     for answer in answers:
         if not 1 <= len(answer["claims"]) <= 128:
@@ -383,7 +403,7 @@ def _review_text_coverage(
             continue
         for checkpoint in (None, *checkpoints):
             try:
-                review = saved_claim_review(
+                review = _saved_review_input(
                     database,
                     database_sha256=database_sha256,
                     result_id=answer["result_id"],
@@ -391,15 +411,16 @@ def _review_text_coverage(
                 )
             except ReviewTextUnavailableError:
                 continue
-            ready.append(
-                {
-                    "result_id": answer["result_id"],
-                    "checkpoint_sha256": review.input_checkpoint_sha256,
-                    "request_sha256": review.request_sha256,
-                    "text_sha256": review.text_sha256,
-                    "claim_slots": len(answer["claims"]),
-                }
-            )
+            evidence = {
+                "result_id": answer["result_id"],
+                "checkpoint_sha256": review.input_checkpoint_sha256,
+                "request_sha256": review.request_sha256,
+                "claim_slots": len(answer["claims"]),
+            }
+            if review.text:
+                ready.append({**evidence, "text_sha256": review.text_sha256})
+            else:
+                metadata_only.append(evidence)
             break
     if not ReviewInputCheckpoint(database, database_sha256).unchanged() or any(
         not checkpoint.unchanged() for checkpoint in checkpoints
@@ -410,7 +431,9 @@ def _review_text_coverage(
         "verified_in_current": sum(row["checkpoint_sha256"] is None for row in ready),
         "verified_in_checkpoint": sum(row["checkpoint_sha256"] is not None for row in ready),
         "unsupported_claim_sets": unsupported_claim_sets,
-        "unavailable": len(answers) - len(ready) - unsupported_claim_sets,
+        "unavailable": len(answers) - len(ready) - len(metadata_only) - unsupported_claim_sets,
+        "verified_metadata_only": len(metadata_only),
+        "metadata_only": metadata_only,
         "ready": ready,
     }
 
