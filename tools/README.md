@@ -378,10 +378,15 @@ stay `conflict`. A reserved case becomes `holdout` only when humans agree on
 
 ### Saved primary claim judgments
 
-Create a review sheet with `tools.audit_saved_primary_claims --review-result RESULT_ID`.
-Create a blank, pinned answer template with the same command and `--template` in place
-of `--answers`. Fill the review fields and remove unanswered slots before recording the
-completed JSON. The empty template is rejected by intake.
+Use `tools.audit_saved_primary_claims --review-coverage` to find saved answers with
+verified input text. Add up to eight `--input-checkpoint PATH SHA256` pairs to search
+earlier snapshots. A review sheet (`--review-result RESULT_ID`) and its answers accept
+one such pair. A matching prepared-input receipt can verify submitted text from an
+older batch that has no provider request manifest.
+
+Create a review sheet and use the intake command below with `--template` in place of
+`--answers` to prepare a blank answer file. Fill the review fields and remove unanswered
+slots before recording the completed JSON.
 
 ```bash
 uv run --offline --frozen python -m tools.record_primary_claim_review \

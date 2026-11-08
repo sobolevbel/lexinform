@@ -203,7 +203,6 @@ def _checkpoint_text(
             or saved.request_sha256 != current.request_sha256
             or saved.input_chars != current.input_chars
             or saved.prepared_input_receipt != current.prepared_input_receipt
-            or saved.frozen_request_manifest is None
             or saved.frozen_request_manifest != current.frozen_request_manifest
             or current.text
             and current.text != saved.text

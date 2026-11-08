@@ -1,0 +1,39 @@
+{
+  "current_snapshot_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+  "cases": [
+    {
+      "state": "a468e59a821a9ee31c00c8b87ddd0baede3cafe5",
+      "sql_sha256": "3fddf947c552365c583a74cae8639a37ecc62832645c2942b17f702163d43070",
+      "db_sha256": "9c55eb7078890e0899b77f4bfcfdb131dbc0dfa2a07f38ac606ef080a58c83a3",
+      "result_id": "result-v1:a9049cf312bc1c654aa03e9114fe98db7a82da64d5d752c1f48c44cae232a4cb",
+      "chars": 454398,
+      "text_sha256": "cc4172086103785acbfdd444bed2ccf4eb0a31144f5cff9850b357b0aa0576a8",
+      "receipt_sha256": "cc4172086103785acbfdd444bed2ccf4eb0a31144f5cff9850b357b0aa0576a8",
+      "same_receipt": true,
+      "same_request": true,
+      "same_binding": true,
+      "same_generation": true,
+      "both_without_manifest": true,
+      "review_text_verified": true
+    },
+    {
+      "state": "99db4e27620a4e481b49f8ce297cb38a8027926d",
+      "sql_sha256": "56748669f070c12416ede7592a7b4428b51a6917d6822bb1e6146e457b1e415a",
+      "db_sha256": "d4181d75d36df48469b9f74ca72e1fd04fc4c57bdb2012b14cee50ee5560fd20",
+      "result_id": "result-v1:c70ea61d48af19826e0a9909ef21fb44b5dc0ac082e9386348a75c730870200f",
+      "chars": 14838,
+      "text_sha256": "67593c91cfcbe74e4d7f1c584d00127b04e0b46c9bb1fb25219c2363ad3848f6",
+      "receipt_sha256": "67593c91cfcbe74e4d7f1c584d00127b04e0b46c9bb1fb25219c2363ad3848f6",
+      "same_receipt": true,
+      "same_request": true,
+      "same_binding": true,
+      "same_generation": true,
+      "both_without_manifest": true,
+      "review_text_verified": true
+    }
+  ],
+  "without_checkpoint_rejected": true,
+  "wrong_pin_rejected": true,
+  "same_length_modified_text_rejected": true,
+  "provider_payload_bytes": "unverified"
+}
