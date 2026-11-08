@@ -7,6 +7,7 @@ from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.document_editions import candidate_edition
 from lexinform.models import (
     ArtifactMetadata,
+    ArtifactReadIdentity,
     ArtifactReadReceipt,
     DocumentPart,
     DocumentSelection,
@@ -19,6 +20,11 @@ from lexinform.models.candidate_trace import (
     CandidateDisposition,
     CandidateDispositionTrace,
     RclOriginalProposal,
+)
+from lexinform.services.document_history import (
+    DocumentSourceRead,
+    RclProposalRead,
+    record_source_read,
 )
 from tests.unit.test_input_receipts import NOW
 from tests.unit.test_physical_extraction import docx, extractor
@@ -33,7 +39,15 @@ PROPOSAL_MEMBER = "4" * 64
 
 @pytest.mark.parametrize(
     "mode",
-    ["valid", "wrong_declared_part", "wrong_member", "wrong_edition", "wrong_original_read"],
+    [
+        "valid",
+        "wrong_declared_part",
+        "wrong_member",
+        "wrong_edition",
+        "wrong_original_read",
+        "writer",
+        "writer_wrong_member",
+    ],
 )
 def test_rcl_proposal_trace_binds_retained_parents(mode: str) -> None:
     document = TextDocument(
@@ -97,7 +111,9 @@ def test_rcl_proposal_trace_binds_retained_parents(mode: str) -> None:
         base_sha256=BASE,
         base_member_sha256=BASE_MEMBER,
         proposal_sha256=PROPOSAL,
-        proposal_member_sha256="d" * 64 if mode == "wrong_member" else PROPOSAL_MEMBER,
+        proposal_member_sha256="d" * 64
+        if mode in ("wrong_member", "writer_wrong_member")
+        else PROPOSAL_MEMBER,
         comparison_text_sha256=hashlib.sha256(b"USTAWA\nArt. 1. Termin wynosi 30 dni.").hexdigest(),
         edition_id="edition-v1:" + "e" * 64 if mode == "wrong_edition" else edition.edition_id,
     )
@@ -117,6 +133,44 @@ def test_rcl_proposal_trace_binds_retained_parents(mode: str) -> None:
     )
     with closing(SqliteBillRepository(":memory:")) as repo:
         repo.migrate()
+        if mode.startswith("writer"):
+            read = DocumentSourceRead(
+                document,
+                record,
+                artifacts=tuple(
+                    ArtifactReadIdentity(requested_url=url, sha256=sha, byte_size=100)
+                    for url, sha in ((BASE_URL, BASE), (PROPOSAL_URL, PROPOSAL))
+                ),
+                candidate_trace=legacy,
+                rcl_proposal=RclProposalRead(
+                    trace,
+                    ArtifactReadIdentity(
+                        requested_url=proof.original_url,
+                        sha256=original.artifact_sha256,
+                        byte_size=len(original_bytes),
+                    ),
+                    original,
+                ),
+            )
+            observation_id = record_source_read(
+                repo, read, term=10, number=source.number, purpose="analysis", recorded_at=NOW
+            )
+            assert observation_id == source.observation_id
+            assert repo.get_candidate_disposition_trace(legacy.trace_id) == legacy
+            if mode == "writer_wrong_member":
+                assert repo.get_candidate_disposition_trace(trace.trace_id) is None
+                assert repo.get_artifact_metadata(original.artifact_sha256) is None
+                assert repo.get_extraction_result(original.result_id) is None
+                return
+            dump = repo.dump()
+            record_source_read(
+                repo, read, term=10, number=source.number, purpose="analysis", recorded_at=NOW
+            )
+            assert repo.dump() == dump
+            repo.restore(dump)
+            assert repo.dump() == dump
+            assert repo.get_candidate_disposition_trace(trace.trace_id) == trace
+            return
         repo.save_source_observation(record, source)
         repo.save_selection_edition(record.selection_id, edition)
         for index, sha in enumerate((BASE, PROPOSAL)):

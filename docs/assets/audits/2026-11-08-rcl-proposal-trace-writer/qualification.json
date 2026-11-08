@@ -1,0 +1,34 @@
+{
+  "input_report_sha256": "17cc747d5cdf49c5b29a706fde762c9e55d7715f75db48e3b10161d5826b47ec",
+  "observation_id": "source-observation-v1:309d601e3e025133555c23af16a92da5c8545bdf16c5add7c7f97567b996c2fc",
+  "proof": {
+    "amendment_index": 0,
+    "base_member_sha256": "fba401578906b2d8d8acfb02b385f0c321dba69c24d362d5eca464c013056b49",
+    "base_sha256": "4d2c1be3c8c1a48811e50f58c516b517f115965ab95bf6014756bef42dbb0843",
+    "comparison_text_sha256": "01b13b9995e38d7ee985b8fc083ace73af221faff855287ef8c1cd3556f0d8dd",
+    "edition_id": "edition-v1:cb73b60da423a2f659265181531e4e93f6fdfd6a29e35efe22ce1d176ade4740",
+    "index": 0,
+    "original_extraction_id": "extraction-v1:1cce5c4a50c9ff39a4816e8dd299c000d39706c236a633d87e00795a06a82086",
+    "original_print": "672",
+    "profile": "rcl-original-proposal-v1",
+    "project_id": 12389752,
+    "proposal_member_sha256": "ad902c7054a417e7af6c85c49742e5f60c16d6edbfd44b5a0dd7cb80ee072c4f",
+    "proposal_sha256": "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab",
+    "rm_number": "RM-0610-73-24",
+    "term": 10
+  },
+  "qualification": "actual_history_writer_with_capture_constructed_from_pinned_originals",
+  "restore_retry_equal": true,
+  "retention_equal": true,
+  "selection_id": "selection-v1:d3bc94a9518081df2051052a905311954953f807338847593141fbecb7ba74f0",
+  "sizes": {
+    "legacy": {
+      "gzip": 7869,
+      "sql": 42892
+    },
+    "relation": {
+      "gzip": 10914,
+      "sql": 53096
+    }
+  }
+}

@@ -69,6 +69,13 @@ class PrintRepresentationRead:
 
 
 @dataclass(frozen=True)
+class RclProposalRead:
+    trace: CandidateDispositionTrace
+    original: ArtifactReadIdentity
+    extraction: ExtractionResult
+
+
+@dataclass(frozen=True)
 class DocumentSourceRead:
     document: TextDocument
     selection: DocumentSelectionRecord
@@ -79,6 +86,7 @@ class DocumentSourceRead:
     sejm_origin: SejmAdoptionOrigin | SejmProposalOrigin | None = None
     committee_draft: DocumentSelectionRecord | None = None
     representation: PrintRepresentationRead | None = None
+    rcl_proposal: RclProposalRead | None = None
     defer_archive_trace: Callable[[str], None] | None = field(
         default=None, repr=False, compare=False
     )
@@ -219,6 +227,8 @@ def record_source_read(
     )
     if source.representation is not None:
         _record_print_representation(repo, source, observation, source.representation)
+    if source.rcl_proposal is not None:
+        _record_rcl_proposal(repo, source, observation, source.rcl_proposal)
     if source.committee_draft is not None:
         record_document_source(
             repo,
@@ -326,6 +336,32 @@ def _record_print_representation(
             repo.save_candidate_disposition_trace(observation.observation_id, trace)
     except ValueError:
         log.debug("Sejm print representation proof failed validation")
+
+
+def _record_rcl_proposal(
+    repo: BillRepository,
+    source: DocumentSourceRead,
+    observation: SourceObservation,
+    evidence: RclProposalRead,
+) -> None:
+    proof = evidence.trace.rcl_original_proposal
+    if (
+        proof is None
+        or evidence.trace.model_copy(update={"rcl_original_proposal": None})
+        != source.candidate_trace
+        or evidence.original.requested_url != proof.original_url
+        or evidence.extraction.result_id != proof.original_extraction_id
+        or evidence.extraction.artifact_sha256 != evidence.original.sha256
+    ):
+        return
+    try:
+        with repo.atomic():
+            record_artifacts(repo, (evidence.original,), recorded_at=observation.recorded_at)
+            record_artifact_reads(repo, (evidence.original,), recorded_at=observation.recorded_at)
+            repo.save_extraction_result(evidence.extraction, recorded_at=observation.recorded_at)
+            repo.save_candidate_disposition_trace(observation.observation_id, evidence.trace)
+    except ValueError:
+        log.debug("RCL original proposal proof failed validation")
 
 
 def record_document_source(
