@@ -17,7 +17,7 @@ from lexinform.models.sejm import Stage, TextDocument, sejm_adopted_text_url
 from lexinform.sections import APPENDIX_KINDS, Kind
 
 MAX_CANDIDATE_TRACE_BYTES = 4_096
-CandidateTraceResult = Literal["selected", "ambiguous", "fallback"]
+CandidateTraceResult = Literal["selected", "ambiguous", "fallback", "waiting"]
 ReadExclusionReason = Literal[
     "missing_response", "refused_response", "pre_send_rejected", "read_error"
 ]
@@ -30,6 +30,7 @@ NormativeAnnexGapReason = Literal[
 CandidateTraceReason = Literal[
     "version_choice",
     "version_conflict",
+    "version_input_incomplete",
     "first_acceptable_candidate",
     "all_rejected",
 ]
@@ -56,6 +57,8 @@ class CandidateDisposition(BaseModel):
         "non_bill_body",
         "scan_without_text",
         "ambiguous_extraction",
+        "pdf_page_extraction_failed",
+        "version_comparison_deferred",
         "version_preference",
         "version_conflict",
         "appendix_kind",
@@ -75,6 +78,12 @@ class CandidateDisposition(BaseModel):
             "unattempted",
         ):
             raise ValueError("an unattempted or failed candidate has no observed complete body")
+        if self.reason in ("pdf_page_extraction_failed", "version_comparison_deferred") and (
+            self.phase != "version_comparison"
+            or self.outcome != "unclassified"
+            or self.observed_sha256 is None
+        ):
+            raise ValueError("a deferred comparison disposition requires the observed body")
         return self
 
 
@@ -1042,6 +1051,13 @@ class CandidateDispositionTrace(BaseModel):
 
     @model_validator(mode="after")
     def bounded_complete_trace(self) -> Self:
+        waiting = self.result == "waiting"
+        if waiting != (self.reason == "version_input_incomplete") or (
+            waiting and self.selection_state != "waiting"
+        ):
+            raise ValueError(
+                "an incomplete version comparison requires a waiting result and selection"
+            )
         if self.coverage == "complete":
             if self.requested_document is None or self.omitted_dispositions:
                 raise ValueError("a complete trace requires its full original request")
@@ -1077,6 +1093,20 @@ class CandidateDispositionTrace(BaseModel):
             selected = tuple(item for item in self.dispositions if item.outcome == "selected")
             if (self.result == "selected") != (len(selected) == 1):
                 raise ValueError("candidate result differs from its selected disposition")
+            if waiting and (
+                fallback
+                or selected
+                or not any(
+                    item.reason == "pdf_page_extraction_failed" for item in self.dispositions
+                )
+                or any(item.outcome == "policy_excluded" for item in self.dispositions)
+            ):
+                raise ValueError("a waiting comparison requires its failed read without a winner")
+            if not waiting and any(
+                item.reason in ("pdf_page_extraction_failed", "version_comparison_deferred")
+                for item in self.dispositions
+            ):
+                raise ValueError("deferred comparison rows require a waiting comparison")
             if self.result == "ambiguous" and (fallback or self.reason != "version_conflict"):
                 raise ValueError("version ambiguity cannot claim a fallback decision")
             if self.result == "ambiguous" and self.selection_state != "ambiguous":
