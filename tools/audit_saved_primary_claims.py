@@ -4,12 +4,14 @@ import argparse
 import sqlite3
 from collections import Counter
 from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from html import escape
 from pathlib import Path
 from typing import TypedDict
 
 from lexinform.adapters.computation_history import ComputationRowError, read_computation_result
+from lexinform.adapters.extraction_history import read_extraction_result
 from lexinform.adapters.input_receipts import (
     capture_frozen_request_manifest,
     intent_metadata,
@@ -21,6 +23,7 @@ from lexinform.json_storage import read_json
 from lexinform.models import AnalysisRecord, BatchItemMeta, ComputationResult, ReviewDocument
 from lexinform.models.batch import AnalysisQuestion, batch_item_meta
 from lexinform.models.claim_evidence import PrimaryClaimCitation
+from lexinform.models.input_receipts import MultipartTextInputReceipt, PrimaryInputReceipt
 from lexinform.primary_claims import validate_retained_claim_citation
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.sqlite_snapshot import live_journal, open_snapshot, snapshot_files
@@ -374,13 +377,18 @@ def _receipt_checkpoint_text(
         return _checkpoint_intent_text(checkpoint, paid, current)
 
 
-def _saved_review_input(
+@contextmanager
+def _open_saved_review_input(
     database: Path,
     *,
     database_sha256: str,
     result_id: str,
     input_checkpoint: ReviewInputCheckpoint | None = None,
-) -> SavedClaimReview:
+) -> Iterator[
+    tuple[
+        SavedClaimReview, sqlite3.Connection, PrimaryInputReceipt | MultipartTextInputReceipt | None
+    ]
+]:
     with open_snapshot(database) as snapshot:
         if snapshot.sha256 != database_sha256:
             raise ValueError("Review snapshot SHA-256 differs from its pin")
@@ -423,22 +431,42 @@ def _saved_review_input(
                     "Review requires the exact retained submitted text"
                 )
         validate_input_snapshots(db)
+        assert paid.request_sha256 is not None, "an exact request binding requires a request hash"
+        yield (
+            SavedClaimReview(
+                record,
+                paid.number,
+                paid.request_sha256,
+                text_sha256,
+                text,
+                input_checkpoint.sha256 if input_checkpoint is not None else None,
+                paid.claim_citations,
+            ),
+            db,
+            receipt,
+        )
         if (
             not snapshot.unchanged()
             or input_checkpoint is not None
             and not input_checkpoint.unchanged()
         ):
             raise ValueError("Input database changed during review preparation")
-    assert paid.request_sha256 is not None, "an exact request binding requires a request hash"
-    return SavedClaimReview(
-        record,
-        paid.number,
-        paid.request_sha256,
-        text_sha256,
-        text,
-        input_checkpoint.sha256 if input_checkpoint is not None else None,
-        paid.claim_citations,
-    )
+
+
+def _saved_review_input(
+    database: Path,
+    *,
+    database_sha256: str,
+    result_id: str,
+    input_checkpoint: ReviewInputCheckpoint | None = None,
+) -> SavedClaimReview:
+    with _open_saved_review_input(
+        database,
+        database_sha256=database_sha256,
+        result_id=result_id,
+        input_checkpoint=input_checkpoint,
+    ) as (review, _, _):
+        return review
 
 
 def saved_claim_review(
@@ -471,27 +499,87 @@ def submitted_review_document(saved: SavedClaimReview, identity: str) -> ReviewD
     )
 
 
-def retained_citation_report(review: SavedClaimReview) -> dict[str, object]:
-    source = submitted_review_document(review, "submitted-context")
-    rows = []
-    for evidence in review.claim_citations:
-        checked = validate_retained_claim_citation(review.record, evidence, (source,))
-        rows.append(
-            {
-                "field": evidence.field,
-                "index": evidence.index,
-                "claim_sha256": evidence.claim_text_sha256,
-                "status": checked.status,
-                "submitted_text_span": checked.observed_text_span,
-            }
-        )
+def _retained_block(
+    db: sqlite3.Connection,
+    receipt: PrimaryInputReceipt | MultipartTextInputReceipt | None,
+    text: str,
+    span: tuple[int, int],
+) -> dict[str, object]:
+    if receipt is None or receipt.block_companion is None:
+        return {"status": "block_copy_unavailable"}
+    left, right = span
+    copy = next(
+        (row for row in receipt.block_companion.rows if row.start <= left < right <= row.end),
+        None,
+    )
+    if copy is None:
+        return {"status": "span_outside_single_copy"}
+    if digest(text[copy.start : copy.end].encode()) != copy.text_sha256:
+        raise ValueError("Retained block copy differs from the exact submitted text")
+    row = db.execute(
+        "SELECT * FROM extraction_results WHERE extraction_id=?", (copy.extraction_id,)
+    ).fetchone()
+    if row is None:
+        raise ValueError("Retained block extraction is unavailable")
+    extraction = read_extraction_result(row)
+    part = next(p for p in extraction.selected_parts if p.physical_index == copy.physical_index)
+    witness = part.block_copy_witness
+    assert witness is not None, "input snapshot validation requires a linked block witness"
+    run = witness.runs[copy.run_index]
+    segment = next(s for s in receipt.segments if s.start <= copy.start < copy.end <= s.end)
+    assert segment.source_start is not None, "input snapshot validation requires a source segment"
+    source_left = segment.source_start + left - segment.start
+    block_left = run.block_start + source_left - run.source_start
     return {
-        "request_sha256": review.request_sha256,
-        "text_sha256": review.text_sha256,
-        "status": "checked" if rows else "legacy_missing",
-        "semantic": "semantic_not_assessed",
-        "citations": rows,
+        "status": "verified_copy",
+        "extraction_id": copy.extraction_id,
+        "physical_index": copy.physical_index,
+        "block_id": run.block_id,
+        "block_text_sha256": run.block_text_sha256,
+        "block_span": [block_left, block_left + right - left],
+        "intersection": copy.intersection,
     }
+
+
+def retained_citation_report(
+    database: Path,
+    *,
+    database_sha256: str,
+    result_id: str,
+    input_checkpoint: ReviewInputCheckpoint | None = None,
+) -> dict[str, object]:
+    with _open_saved_review_input(
+        database,
+        database_sha256=database_sha256,
+        result_id=result_id,
+        input_checkpoint=input_checkpoint,
+    ) as (review, db, receipt):
+        if not review.text:
+            raise ReviewTextUnavailableError("The verified request used metadata only")
+        source = submitted_review_document(review, "submitted-context")
+        rows = []
+        for evidence in review.claim_citations:
+            checked = validate_retained_claim_citation(review.record, evidence, (source,))
+            span = checked.observed_text_span
+            rows.append(
+                {
+                    "field": evidence.field,
+                    "index": evidence.index,
+                    "claim_sha256": evidence.claim_text_sha256,
+                    "status": checked.status,
+                    "submitted_text_span": span,
+                    "block": _retained_block(db, receipt, review.text, span)
+                    if span is not None
+                    else {"status": "not_checked"},
+                }
+            )
+        return {
+            "request_sha256": review.request_sha256,
+            "text_sha256": review.text_sha256,
+            "status": "checked" if rows else "legacy_missing",
+            "semantic": "semantic_not_assessed",
+            "citations": rows,
+        }
 
 
 def _review_text_coverage(
@@ -647,13 +735,13 @@ def main() -> None:
             if args.check_retained_citations:
                 if args.include_practical_impact:
                     raise ValueError("Retained citation checks do not generate a review sheet")
-                review = saved_claim_review(
+                report = retained_citation_report(
                     args.database,
                     database_sha256=args.database_sha256,
                     result_id=args.review_result,
                     input_checkpoint=input_checkpoint,
                 )
-                write_json(args.output, retained_citation_report(review))
+                write_json(args.output, report)
             else:
                 page = review_page(
                     args.database,

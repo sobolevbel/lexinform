@@ -389,7 +389,9 @@ Coverage lists verified metadata-only requests separately from text available fo
 Pass `--review-result RESULT_ID --database-sha256 SHA256 --check-retained-citations`
 with a new JSON output to check stored citations against the exact retained submitted
 text. The report gives statuses and literal spans without exporting the text or judging
-whether a citation supports the claim.
+whether a citation supports the claim. A citation inside one verified retained copy also
+gets the native block ID and its span. For a clipped copy the report identifies only
+the retained portion.
 
 Use `tools.review_saved_comparison --database PATH --database-sha256 SHA256
 --result-id RESULT_ID --output PATH.html` to open both verified submitted texts for a

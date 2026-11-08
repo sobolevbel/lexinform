@@ -1,0 +1,220 @@
+{
+  "results": {
+    "clipped/after_cleanup": {
+      "database_sha256": "854f79690926dfbabb9de5e49336b3dd3391747ad087b792f69cbfd3287b82e0",
+      "report": {
+        "citations": [
+          {
+            "block": {
+              "block_id": "odt-xml:content.xml:body:1/2",
+              "block_span": [
+                4,
+                118
+              ],
+              "block_text_sha256": "e436250d1f103a2371893961f566b445352eda761baeaa34caee5405a255339f",
+              "extraction_id": "extraction-v1:b596f5acebd47012d2b4289fb0681af2b2428cfefe000f0721ed4b02c61db908",
+              "intersection": "clipped-v1",
+              "physical_index": 0,
+              "status": "verified_copy"
+            },
+            "claim_sha256": "28aba747389f64387f292bc04ed3277cec5bc2a3e5d904a8f47531f0b534ab70",
+            "field": "practical_impact",
+            "index": null,
+            "status": "quote_present",
+            "submitted_text_span": [
+              439,
+              553
+            ]
+          }
+        ],
+        "request_sha256": "a5b1d8e96cd03a42d9e639a4ac0805714c79548def9993bcbb3f038227b6248d",
+        "semantic": "semantic_not_assessed",
+        "status": "checked",
+        "text_sha256": "7cf10b818546594d33079aca358ef7f323843a1d96c76f04f2941b0ac75ebbca"
+      },
+      "result_id": "result-v1:2ef436e430e89469995a208ca8ea17ef5b9dc010f9504881ed0ea3ca108f7361"
+    },
+    "clipped/before_cleanup": {
+      "database_sha256": "d769aac75f02923a50dae05f588e895b5f3c18e19ed33a4e20978057375a45b0",
+      "report": {
+        "citations": [
+          {
+            "block": {
+              "block_id": "odt-xml:content.xml:body:1/2",
+              "block_span": [
+                4,
+                118
+              ],
+              "block_text_sha256": "e436250d1f103a2371893961f566b445352eda761baeaa34caee5405a255339f",
+              "extraction_id": "extraction-v1:b596f5acebd47012d2b4289fb0681af2b2428cfefe000f0721ed4b02c61db908",
+              "intersection": "clipped-v1",
+              "physical_index": 0,
+              "status": "verified_copy"
+            },
+            "claim_sha256": "28aba747389f64387f292bc04ed3277cec5bc2a3e5d904a8f47531f0b534ab70",
+            "field": "practical_impact",
+            "index": null,
+            "status": "quote_present",
+            "submitted_text_span": [
+              439,
+              553
+            ]
+          }
+        ],
+        "request_sha256": "a5b1d8e96cd03a42d9e639a4ac0805714c79548def9993bcbb3f038227b6248d",
+        "semantic": "semantic_not_assessed",
+        "status": "checked",
+        "text_sha256": "7cf10b818546594d33079aca358ef7f323843a1d96c76f04f2941b0ac75ebbca"
+      },
+      "result_id": "result-v1:2ef436e430e89469995a208ca8ea17ef5b9dc010f9504881ed0ea3ca108f7361"
+    },
+    "full/after_cleanup": {
+      "database_sha256": "0e95dd2865f44831e108990e76de92e75e8455e656298a268ae7c4318441a0fc",
+      "report": {
+        "citations": [
+          {
+            "block": {
+              "block_id": "odt-xml:content.xml:body:1/2",
+              "block_span": [
+                4,
+                118
+              ],
+              "block_text_sha256": "e436250d1f103a2371893961f566b445352eda761baeaa34caee5405a255339f",
+              "extraction_id": "extraction-v1:b596f5acebd47012d2b4289fb0681af2b2428cfefe000f0721ed4b02c61db908",
+              "intersection": null,
+              "physical_index": 0,
+              "status": "verified_copy"
+            },
+            "claim_sha256": "28aba747389f64387f292bc04ed3277cec5bc2a3e5d904a8f47531f0b534ab70",
+            "field": "practical_impact",
+            "index": null,
+            "status": "quote_present",
+            "submitted_text_span": [
+              439,
+              553
+            ]
+          }
+        ],
+        "request_sha256": "da89499b4025d9e8b4221fc0ee1944492c5556c99e98869c4084a4c19043abd4",
+        "semantic": "semantic_not_assessed",
+        "status": "checked",
+        "text_sha256": "5b95eca431c27418431e9c9ab78951ecbb787316637383893c68ae5fd2b4e0aa"
+      },
+      "result_id": "result-v1:b8ef15d5b3b6760d623f9b8642dae7a49874ce91f80567e16dd0015db526e28a"
+    },
+    "full/before_cleanup": {
+      "database_sha256": "ceab8ba308c28a4c2d495496a6dde2a633ff7d64f1e4acd67c4b06396201a340",
+      "report": {
+        "citations": [
+          {
+            "block": {
+              "block_id": "odt-xml:content.xml:body:1/2",
+              "block_span": [
+                4,
+                118
+              ],
+              "block_text_sha256": "e436250d1f103a2371893961f566b445352eda761baeaa34caee5405a255339f",
+              "extraction_id": "extraction-v1:b596f5acebd47012d2b4289fb0681af2b2428cfefe000f0721ed4b02c61db908",
+              "intersection": null,
+              "physical_index": 0,
+              "status": "verified_copy"
+            },
+            "claim_sha256": "28aba747389f64387f292bc04ed3277cec5bc2a3e5d904a8f47531f0b534ab70",
+            "field": "practical_impact",
+            "index": null,
+            "status": "quote_present",
+            "submitted_text_span": [
+              439,
+              553
+            ]
+          }
+        ],
+        "request_sha256": "da89499b4025d9e8b4221fc0ee1944492c5556c99e98869c4084a4c19043abd4",
+        "semantic": "semantic_not_assessed",
+        "status": "checked",
+        "text_sha256": "5b95eca431c27418431e9c9ab78951ecbb787316637383893c68ae5fd2b4e0aa"
+      },
+      "result_id": "result-v1:b8ef15d5b3b6760d623f9b8642dae7a49874ce91f80567e16dd0015db526e28a"
+    }
+  },
+  "scope": "Archived official ODT bytes through the same fake batch as J602 and separate synthetic boundary controls",
+  "source_sha256": "743d88976846877fcc7d9c4a81ed0e1128822b1c2f5e70c71b1b518a1027143f",
+  "synthetic_controls": {
+    "crossing": {
+      "citations": [
+        {
+          "block": {
+            "status": "span_outside_single_copy"
+          },
+          "claim_sha256": "28aba747389f64387f292bc04ed3277cec5bc2a3e5d904a8f47531f0b534ab70",
+          "field": "practical_impact",
+          "index": null,
+          "status": "quote_present",
+          "submitted_text_span": [
+            7,
+            64
+          ]
+        }
+      ],
+      "request_sha256": "ff20123520241ee4f6ca1324f956179c469b402a9b88fd768e18c30b57c34d9c",
+      "semantic": "semantic_not_assessed",
+      "status": "checked",
+      "text_sha256": "85df6d12444a8cf7436b2e1447b315524bd7a5a502d163e67b62b5a1079e5a6f"
+    },
+    "exact": {
+      "citations": [
+        {
+          "block": {
+            "block_id": "odt-xml:content.xml:body:1",
+            "block_span": [
+              0,
+              36
+            ],
+            "block_text_sha256": "5903f170f683c37bbd3f664e537fed95d7d24b19c8b7710a568dd5db7f803370",
+            "extraction_id": "extraction-v1:d6fa8345880267911d6cb8a8a84bfa823d96f615b8c5f952a9952ea866d73a4c",
+            "intersection": null,
+            "physical_index": 0,
+            "status": "verified_copy"
+          },
+          "claim_sha256": "28aba747389f64387f292bc04ed3277cec5bc2a3e5d904a8f47531f0b534ab70",
+          "field": "practical_impact",
+          "index": null,
+          "status": "quote_present",
+          "submitted_text_span": [
+            7,
+            43
+          ]
+        }
+      ],
+      "request_sha256": "ff20123520241ee4f6ca1324f956179c469b402a9b88fd768e18c30b57c34d9c",
+      "semantic": "semantic_not_assessed",
+      "status": "checked",
+      "text_sha256": "85df6d12444a8cf7436b2e1447b315524bd7a5a502d163e67b62b5a1079e5a6f"
+    },
+    "legacy": {
+      "citations": [],
+      "request_sha256": "ff20123520241ee4f6ca1324f956179c469b402a9b88fd768e18c30b57c34d9c",
+      "semantic": "semantic_not_assessed",
+      "status": "legacy_missing",
+      "text_sha256": "85df6d12444a8cf7436b2e1447b315524bd7a5a502d163e67b62b5a1079e5a6f"
+    },
+    "wrong-source-hash": {
+      "citations": [
+        {
+          "block": {
+            "status": "not_checked"
+          },
+          "claim_sha256": "28aba747389f64387f292bc04ed3277cec5bc2a3e5d904a8f47531f0b534ab70",
+          "field": "practical_impact",
+          "index": null,
+          "status": "source_hash_mismatch",
+          "submitted_text_span": null
+        }
+      ],
+      "request_sha256": "ff20123520241ee4f6ca1324f956179c469b402a9b88fd768e18c30b57c34d9c",
+      "semantic": "semantic_not_assessed",
+      "status": "checked",
+      "text_sha256": "85df6d12444a8cf7436b2e1447b315524bd7a5a502d163e67b62b5a1079e5a6f"
+    }
+  }
+}
