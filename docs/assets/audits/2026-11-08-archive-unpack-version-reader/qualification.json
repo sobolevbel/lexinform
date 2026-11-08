@@ -1,0 +1,25 @@
+{
+  "scope": "Reader control assembled from pinned archive corruption replay; no production trace is claimed.",
+  "prior_sql_sha256": "7d2827f577095783a92bed373db8f9254a5205389e6e32ff804aeef79ea604bf",
+  "new_sql_sha256": "6bc40885cdb7563a21d8a15a93184e46aae63a0807bfec49197bc957eca13162",
+  "trace_id": "candidate-trace-v1:e411c7eca36e2b2fb7ad8f543e9e1f6b8d8b5ab8b5d965fa0698a8ec7ef4d3be",
+  "archive_sha256": "cbd49afab3a9eba97792d6d8e00936f36c383557e6944c9f0f1d65113fd2881e",
+  "alternative_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8",
+  "old_and_new_dumps_roundtrip_byte_identically": true,
+  "baseline_commit": "316c38a155d21bdb0f1161666bcf9ed94adf9862",
+  "previous_reader_rejected_new_reason": true,
+  "cohort_sha256": "f788bb15d668827d5fc6130df92084fca3099da90ef093bb98cd5a2b360d4859",
+  "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "archive_checks": {
+    "natural": {
+      "core_sha256": "feef6ac77c88a80537202d1a2153540b6cc05131ba146d1edd3c13b44582beda",
+      "member_report_sha256": "c8a8d4840765fc647c460e3e4f1890c8d8d95720bc7a84fafb5998db1ca3911c",
+      "checked_rows": 92
+    },
+    "synthetic": {
+      "core_sha256": "701ef06a730f92888556bb126d74edcb20d7cae37d76b61593f1ffbb19a9efce",
+      "member_report_sha256": "92d5d2f3fa77054554f690cb98e84534dc15a407cf9003d6116aebf63146bdf9",
+      "checked_rows": 22
+    }
+  }
+}

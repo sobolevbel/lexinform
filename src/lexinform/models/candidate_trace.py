@@ -34,6 +34,8 @@ CandidateTraceReason = Literal[
     "first_acceptable_candidate",
     "all_rejected",
 ]
+_INCOMPLETE_VERSION_READ_REASONS = ("pdf_page_extraction_failed", "archive_member_unpack_failed")
+_DEFERRED_VERSION_REASONS = (*_INCOMPLETE_VERSION_READ_REASONS, "version_comparison_deferred")
 
 
 class CandidateDisposition(BaseModel):
@@ -58,6 +60,7 @@ class CandidateDisposition(BaseModel):
         "scan_without_text",
         "ambiguous_extraction",
         "pdf_page_extraction_failed",
+        "archive_member_unpack_failed",
         "version_comparison_deferred",
         "version_preference",
         "version_conflict",
@@ -78,7 +81,7 @@ class CandidateDisposition(BaseModel):
             "unattempted",
         ):
             raise ValueError("an unattempted or failed candidate has no observed complete body")
-        if self.reason in ("pdf_page_extraction_failed", "version_comparison_deferred") and (
+        if self.reason in _DEFERRED_VERSION_REASONS and (
             self.phase != "version_comparison"
             or self.outcome != "unclassified"
             or self.observed_sha256 is None
@@ -1162,14 +1165,13 @@ class CandidateDispositionTrace(BaseModel):
                 fallback
                 or selected
                 or not any(
-                    item.reason == "pdf_page_extraction_failed" for item in self.dispositions
+                    item.reason in _INCOMPLETE_VERSION_READ_REASONS for item in self.dispositions
                 )
                 or any(item.outcome == "policy_excluded" for item in self.dispositions)
             ):
                 raise ValueError("a waiting comparison requires its failed read without a winner")
             if not waiting and any(
-                item.reason in ("pdf_page_extraction_failed", "version_comparison_deferred")
-                for item in self.dispositions
+                item.reason in _DEFERRED_VERSION_REASONS for item in self.dispositions
             ):
                 raise ValueError("deferred comparison rows require a waiting comparison")
             if self.result == "ambiguous" and (fallback or self.reason != "version_conflict"):

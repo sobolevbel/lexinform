@@ -1,6 +1,6 @@
 import datetime as dt
 from contextlib import closing
-from typing import Any
+from typing import Any, Literal
 
 import pytest
 
@@ -15,7 +15,11 @@ from lexinform.models import (
 )
 
 
-def waiting_trace() -> CandidateDispositionTrace:
+def waiting_trace(
+    reason: Literal[
+        "pdf_page_extraction_failed", "archive_member_unpack_failed"
+    ] = "pdf_page_extraction_failed",
+) -> CandidateDispositionTrace:
     document = TextDocument(
         url="https://official.test/earlier.pdf",
         kind="rcl",
@@ -36,7 +40,7 @@ def waiting_trace() -> CandidateDispositionTrace:
                 phase="version_comparison",
                 index=1,
                 outcome="unclassified",
-                reason="pdf_page_extraction_failed",
+                reason=reason,
                 observed_sha256="b" * 64,
             ),
         ),
@@ -59,8 +63,11 @@ def test_deferred_comparison_rejects_inconsistent_outcomes(changes: dict[str, An
         CandidateDispositionTrace.model_validate({**waiting_trace().model_dump(), **changes})
 
 
-def test_deferred_comparison_requires_a_failed_read_and_its_hash() -> None:
-    trace = waiting_trace()
+@pytest.mark.parametrize("reason", ["pdf_page_extraction_failed", "archive_member_unpack_failed"])
+def test_deferred_comparison_requires_a_failed_read_and_its_hash(
+    reason: Literal["pdf_page_extraction_failed", "archive_member_unpack_failed"],
+) -> None:
+    trace = waiting_trace(reason)
     raw = trace.model_dump()
     first, failed = raw["dispositions"]
     with pytest.raises(ValueError, match="failed read without a winner"):
@@ -73,8 +80,11 @@ def test_deferred_comparison_requires_a_failed_read_and_its_hash() -> None:
         )
 
 
-def test_deferred_comparison_survives_dump_restore() -> None:
-    trace = waiting_trace()
+@pytest.mark.parametrize("reason", ["pdf_page_extraction_failed", "archive_member_unpack_failed"])
+def test_deferred_comparison_survives_dump_restore(
+    reason: Literal["pdf_page_extraction_failed", "archive_member_unpack_failed"],
+) -> None:
+    trace = waiting_trace(reason)
     assert trace.requested_document is not None, "the waiting trace retains its request"
     selection = DocumentSelectionRecord.from_selection(DocumentSelection(state="waiting"))
     observation = SourceObservation(
