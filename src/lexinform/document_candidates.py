@@ -276,8 +276,10 @@ def _select_parts(
         if part.members[:-1] == main.members[:-1]
         and part.members[-1].rpartition("/")[0] == main_folder
     )
-    if incomplete_peers or (
-        len(confirmed) > 1 and any(part.has_pdf_page_failure for _, part in confirmed)
+    if (
+        main.has_pdf_page_failure
+        or incomplete_peers
+        or (len(confirmed) > 1 and any(part.has_pdf_page_failure for _, part in confirmed))
     ):
         incomplete_indices = {index for index, _ in incomplete_peers}
         readable_peers = confirmed or [(main_index, main)]

@@ -160,14 +160,17 @@ def test_unreadable_only_named_draft_waits_after_explicit_page_failure(
         assert not loaded.text
 
 
-def test_partially_read_named_draft_has_one_unclassified_physical_slot() -> None:
+@pytest.mark.parametrize("recognised", [False, True])
+def test_partially_read_named_draft_has_one_physical_slot(recognised: bool) -> None:
+    text = law() if recognised else "Treść załączonego pliku. " * 20
+
     class Pdf(FakeTextExtractor):
         def extract_pages(self, data: bytes) -> PdfTextExtraction:
             return PdfTextExtraction(
                 input_sha256=hashlib.sha256(data).hexdigest(),
                 pypdf_version="fixture",
                 pages=(
-                    PdfPageText(number=1, text="Treść załączonego pliku. " * 20),
+                    PdfPageText(number=1, text=text),
                     PdfPageText(number=2, error_type="ValueError"),
                 ),
             )
@@ -180,5 +183,6 @@ def test_partially_read_named_draft_has_one_unclassified_physical_slot() -> None
 
     assert loaded.selection.state == "waiting" and not loaded.text
     (part,) = loaded.selection.parts
-    assert part.role == "unknown" and part.has_pdf_page_failure
-    assert loaded.selection.observed_parts == (part,)
+    assert part.role == ("bill" if recognised else "unknown") and part.has_pdf_page_failure
+    (observed,) = loaded.selection.observed_parts
+    assert observed.sha256 == part.sha256
