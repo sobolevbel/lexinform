@@ -119,13 +119,18 @@ def select_document_parts(
     max_part_chars: int | None,
     decision_sink: Callable[[ArchivePolicyDecision], None] | None = None,
 ) -> ExtractedDocument:
+    failed_pdf_pages = {
+        item.part_index: sum(page.error_type is not None for page in item.extraction.pages)
+        for item in extracted.pdf_pages
+    }
     parts: list[DocumentPart] = []
-    for part in extracted.parts:
+    for index, part in enumerate(extracted.parts):
         kind = document_kind(part.text) if part.text.strip() else "unknown"
+        losses = _legacy_losses(part)
+        if failures := failed_pdf_pages.get(index, 0):
+            losses += (f"PDF text extraction failed on {failures} page(s)",)
         parts.append(
-            part.model_copy(
-                update={"role": _ROLE_OF_KIND.get(kind, "unknown"), "losses": _legacy_losses(part)}
-            )
+            part.model_copy(update={"role": _ROLE_OF_KIND.get(kind, "unknown"), "losses": losses})
         )
     rejected = list(extracted.rejected)
     if len(parts) == 1 and not parts[0].members:

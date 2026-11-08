@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.archive_disposition_observations import complete_standalone_root
+from lexinform.document_selection import bill_selection
 from lexinform.models import (
     DocumentPart,
     ExtractedParts,
@@ -190,4 +191,32 @@ def test_complete_pdf_requires_agreement_with_the_reported_page_count(reported_p
     )
     assert complete_standalone_root(observed, hashlib.sha256(data).hexdigest()) == (
         reported_pages == 2
+    )
+
+
+@pytest.mark.parametrize("error_type", [None, "RuntimeError"])
+def test_legal_coverage_exception_cannot_hide_a_failed_edge_page(error_type: str | None) -> None:
+    class EdgePdf(FakeTextExtractor):
+        def extract_pages(self, data: bytes) -> PdfTextExtraction:
+            return PdfTextExtraction(
+                input_sha256=hashlib.sha256(data).hexdigest(),
+                pypdf_version="fixture",
+                pages=(
+                    PdfPageText(number=1, text="USTAWA\nArt. 1. Zmiana przepisów."),
+                    PdfPageText(number=2, text="Art. 2. Ustawa wchodzi w życie."),
+                    PdfPageText(number=3, text="UZASADNIENIE\nOpis projektu."),
+                    PdfPageText(number=4, error_type=error_type),
+                ),
+            )
+
+    reader = extractor(EdgePdf(page_count=4))
+
+    observed = reader.extract_document_with_provenance(b"%PDF-1.7 fixture")
+
+    (part,) = observed.document.selection.parts
+    assert part.losses == (("PDF text extraction failed on 1 page(s)",) if error_type else ())
+    assert "UZASADNIENIE" in observed.document.text
+    selection = bill_selection(observed.document.selection, source_basis=())
+    assert any(fact.value == "body_through_commencement" for fact in selection.facts) == (
+        error_type is None
     )
