@@ -1,0 +1,65 @@
+{
+  "scope": "Offline Senate PDF-only path with pinned subject and adoption metadata; fixture prior bill and fake provider.",
+  "artifact_sha256": "dc01ca7d4833391225026ec2339036b200498c737429a9bba0f0d837bcad080d",
+  "stage_catalog_sha256": "6da4db2d9968e45f95394e4f436e0600c91530334c1d051e12fbbe8723420e0e",
+  "bill": "1112",
+  "senate_print": "1248",
+  "request_sha256": "f9c309897738a88fa9ad203912b87aa8679b74c1d16d4c80110ec46e103beaa2",
+  "ranges": [
+    {
+      "page": 3,
+      "request_span": [
+        0,
+        1415
+      ],
+      "normalized_page_span": [
+        0,
+        1415
+      ],
+      "normalized_page_sha256": "6b9fef46e61b894e3c3712331790cc081df710bf3224de95680b35fdbb8b0733"
+    },
+    {
+      "page": 4,
+      "request_span": [
+        1417,
+        2154
+      ],
+      "normalized_page_span": [
+        0,
+        737
+      ],
+      "normalized_page_sha256": "444e64c496c98365381b75457a720f80095b6c64b14d7e4d4562cb3d9a180643"
+    },
+    {
+      "page": 5,
+      "request_span": [
+        2158,
+        4337
+      ],
+      "normalized_page_span": [
+        0,
+        2179
+      ],
+      "normalized_page_sha256": "b2d8fc12309a420493d70e26ebd128704c2f6a36a07b4e8b68cb306348228f92"
+    },
+    {
+      "page": 6,
+      "request_span": [
+        4339,
+        4561
+      ],
+      "normalized_page_span": [
+        0,
+        222
+      ],
+      "normalized_page_sha256": "af6ba0bf96442e3db39504022753ab898f7ce22c353de171f8a6d162c6cde36d"
+    }
+  ],
+  "after_provider_cleanup": "not_retained",
+  "pruned": {
+    "delivery_payloads": 0,
+    "analysis_memos": 0,
+    "batch_payloads": 1
+  },
+  "snapshot_unchanged": true
+}
