@@ -1,0 +1,220 @@
+{
+  "baseline": "54e40f13de13437ab2b320a99894f7ad10006bab",
+  "scope": "Offline direct original card, manually injected existing scoped reference for reader qualification only; no automatic writer.",
+  "native_input_sha256": {
+    "INDEX.json": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "corpus/12405004.json": "51e19ff88e4891ae8f941d7c3b79b9cbec828444849f17a41f8569036adbc07c",
+    "documents/files/785848.zip": "8cf0d27204698815494901291edd868d5cb13a78375543f22233390e53cc1e4d",
+    "documents/files/787193.pdf": "0c381654988d4754cec27034267b7ba775e8abba66fd1d0716cb0db463f66f5c"
+  },
+  "native_report": {
+    "source_kind": "rcl",
+    "source_observation_id": "source-observation-v1:dc3199a51ef325aad7be27d6536814caef70912aa3c9e153ee19cb8455451062",
+    "source_selection_id": "selection-v1:d9c427b8dd7e168bb3e909354f6ad7dc34b9d8a48249888a0e9d41e512d308a6",
+    "artifact_sha256": "8cf0d27204698815494901291edd868d5cb13a78375543f22233390e53cc1e4d",
+    "extraction_id": "extraction-v1:8f86034c4b63c57cf7ae15d109f960fe2d9b295f29cd8ff426fb01867d705d1a",
+    "source_parts": [
+      {
+        "role": "bill",
+        "physical_index": 3
+      },
+      {
+        "role": "normative_annex",
+        "physical_index": 9
+      },
+      {
+        "role": "justification",
+        "physical_index": 8
+      },
+      {
+        "role": "osr",
+        "physical_index": 1
+      },
+      {
+        "role": "self_amendment",
+        "artifact_sha256": "0c381654988d4754cec27034267b7ba775e8abba66fd1d0716cb0db463f66f5c",
+        "extraction_id": "extraction-v1:f0cdc79fd4a92ed21eb9291ca54e9d97d2e3ff1b0da9ac411ee354af2b951454"
+      }
+    ],
+    "normalized_pdf_page_ranges": [
+      {
+        "part_index": 2,
+        "page": 1,
+        "request_span": [
+          38452,
+          41720
+        ],
+        "normalized_page_span": [
+          0,
+          3268
+        ],
+        "normalized_page_sha256": "663b7fd92498a420c28f0638e6e1173631633b2737f58588467296ac6fee0131"
+      },
+      {
+        "part_index": 2,
+        "page": 2,
+        "request_span": [
+          41721,
+          45348
+        ],
+        "normalized_page_span": [
+          0,
+          3627
+        ],
+        "normalized_page_sha256": "d7385d3baf3c7256348ff5d37199360ad4a29644e3af4299d151f6a293cb2949"
+      },
+      {
+        "part_index": 2,
+        "page": 3,
+        "request_span": [
+          45350,
+          48753
+        ],
+        "normalized_page_span": [
+          0,
+          3403
+        ],
+        "normalized_page_sha256": "4b57c772465a252c752b6ea207daed593ca2abcec27f24518152f86a00ec7a9a"
+      },
+      {
+        "part_index": 2,
+        "page": 4,
+        "request_span": [
+          48755,
+          52182
+        ],
+        "normalized_page_span": [
+          0,
+          3427
+        ],
+        "normalized_page_sha256": "c42adf26d611db42868da8e70a7dba60374e71def7c02600185a6ed048268f9d"
+      },
+      {
+        "part_index": 2,
+        "page": 5,
+        "request_span": [
+          52184,
+          55374
+        ],
+        "normalized_page_span": [
+          0,
+          3190
+        ],
+        "normalized_page_sha256": "f108f5bca41540aeb915876d83febf1244a42f816f8cb928b1ad7518215a2b5a"
+      },
+      {
+        "part_index": 2,
+        "page": 6,
+        "request_span": [
+          55375,
+          58486
+        ],
+        "normalized_page_span": [
+          0,
+          3111
+        ],
+        "normalized_page_sha256": "d88a46e2848940c0e22f1fc7a2317299e379ad3dbb49f2d6c2a7082ff4f318f6"
+      },
+      {
+        "part_index": 2,
+        "page": 7,
+        "request_span": [
+          58488,
+          60344
+        ],
+        "normalized_page_span": [
+          0,
+          1856
+        ],
+        "normalized_page_sha256": "a369914d41a5cd3c6131527be31874791092495f1d519f38fb40fb33a0fffaeb"
+      },
+      {
+        "part_index": 4,
+        "page": 1,
+        "request_span": [
+          84634,
+          87615
+        ],
+        "normalized_page_span": [
+          0,
+          2981
+        ],
+        "normalized_page_sha256": "873be3d49fdd3651a3558155d16604e7b1d7c26d48055c423e9e1e290b7e1abc"
+      },
+      {
+        "part_index": 4,
+        "page": 2,
+        "request_span": [
+          87617,
+          90271
+        ],
+        "normalized_page_span": [
+          0,
+          2654
+        ],
+        "normalized_page_sha256": "45a3676c1253b262b34b370a8e68b7bb5134c6af2bff92f991bf4bbb220d5116"
+      }
+    ],
+    "purpose": "analysis",
+    "result_id": "result-v1:8cf74308cf3013d8341773ae38d2891e948c20d49d0b0a2e87105010cea2e6ec",
+    "request_sha256": "dab9f701a852887984b37e2567ccaa6d53e411689c8cfca98f691bea698bd7ef",
+    "collection_application_id": 1,
+    "projection_application_id": 2,
+    "content_version_id": "content-v1:3fbc9e86a6c17cae9e3933a20d896a5ea7444e82619d4bd4b01bf6d5f2de658c",
+    "recorded_sent_at": "2026-10-17T00:00:00+00:00",
+    "frozen_render_sha256": "0d465e98b7e628d58dcac35aaa53c45598911d69939185ca7a5540a8753212aa"
+  },
+  "native_gzip_delta_bytes": 75,
+  "checkpoint_without_page_maps": {
+    "root": 1,
+    "attached": true,
+    "report": {
+      "source_kind": "rcl",
+      "source_observation_id": "source-observation-v1:dc3199a51ef325aad7be27d6536814caef70912aa3c9e153ee19cb8455451062",
+      "source_selection_id": "selection-v1:d9c427b8dd7e168bb3e909354f6ad7dc34b9d8a48249888a0e9d41e512d308a6",
+      "artifact_sha256": "8cf0d27204698815494901291edd868d5cb13a78375543f22233390e53cc1e4d",
+      "extraction_id": "extraction-v1:630d2369ae7e53622e732226244a66ead20ff2eb38ef05668b368585ffd6141d",
+      "source_parts": [
+        {
+          "role": "bill",
+          "physical_index": 3
+        },
+        {
+          "role": "normative_annex",
+          "physical_index": 9
+        },
+        {
+          "role": "justification",
+          "physical_index": 8
+        },
+        {
+          "role": "osr",
+          "physical_index": 1
+        },
+        {
+          "role": "self_amendment",
+          "artifact_sha256": "0c381654988d4754cec27034267b7ba775e8abba66fd1d0716cb0db463f66f5c",
+          "extraction_id": "extraction-v1:1fa277af4f9dfc48293bc6d6e105924a4c162d0b9234ca0e6524402ee97adc5a"
+        }
+      ],
+      "purpose": "analysis",
+      "result_id": "result-v1:2792ab0f83f898e029929076eb71c999ecea7612a78e5bd0664b62e1f63edbad",
+      "request_sha256": "dab9f701a852887984b37e2567ccaa6d53e411689c8cfca98f691bea698bd7ef",
+      "collection_application_id": 1,
+      "projection_application_id": 2,
+      "content_version_id": "content-v1:4b5f54fc88214774cb71cc16953cd7976f54aa969be7ec18a1a5467fa3469fd5",
+      "recorded_sent_at": "2026-10-18T00:00:00+00:00",
+      "frozen_render_sha256": "0d465e98b7e628d58dcac35aaa53c45598911d69939185ca7a5540a8753212aa"
+    },
+    "source_sha256": "4364225340fb59a41cdb3d09b826421ff37356363ba6e0d89f46e44c320ed20f",
+    "render_sha256": "0d465e98b7e628d58dcac35aaa53c45598911d69939185ca7a5540a8753212aa"
+  },
+  "wrong_reference_keeps_original_unmarked_render": true,
+  "verified": [
+    "Native request, inputs, cost, render and normalized checkpoint remained equal.",
+    "Seven source ranges match a ZIP member and two match the separate PDF.",
+    "Independent source extraction verifies all normalized page hashes and exact request substrings.",
+    "No map was inferred from the older checkpoint.",
+    "After payload cleanup and double restore, checkpoint equality and source byte identity held."
+  ]
+}

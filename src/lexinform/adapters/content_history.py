@@ -65,6 +65,7 @@ from lexinform.models.events import amendments_stage, has_single_amendments_stag
 from lexinform.models.input_receipts import (
     LooseRclInputReceipt,
     RclArchiveInputReceipt,
+    RclArchiveSelfAmendmentInputReceipt,
     SejmSelfAmendmentInputReceipt,
 )
 from lexinform.models.multipart_card_history import MAX_MULTIPART_CARD_BYTES, MultipartCardPlan
@@ -273,6 +274,7 @@ def _verify_card_primary_evidence(
                 PrimaryInputReceipt,
                 LooseRclInputReceipt,
                 RclArchiveInputReceipt,
+                RclArchiveSelfAmendmentInputReceipt,
                 SejmSelfAmendmentInputReceipt,
             ),
         )
@@ -314,14 +316,28 @@ def _verify_card_primary_evidence(
         if receipt.source_observation_id != reference.source_observation_id:
             raise CardPrimaryEvidenceError("card_primary_source_scope")
         parts = validate_multipart_item(connection, item)
-        if isinstance(receipt, RclArchiveInputReceipt):
+        if isinstance(receipt, (RclArchiveInputReceipt, RclArchiveSelfAmendmentInputReceipt)):
+            archive_parts = (
+                receipt.archive_parts
+                if isinstance(receipt, RclArchiveSelfAmendmentInputReceipt)
+                else receipt.source_parts
+            )
+            source_parts: list[dict[str, object]] = [
+                {"role": recorded.role, "physical_index": recorded.physical_index}
+                for recorded in archive_parts
+            ]
+            if isinstance(receipt, RclArchiveSelfAmendmentInputReceipt):
+                source_parts.append(
+                    {
+                        "role": receipt.amendment_part.role,
+                        "artifact_sha256": selection.selection.parts[-1].source_sha256,
+                        "extraction_id": receipt.amendment_part.extraction_id,
+                    }
+                )
             physical = {
                 "artifact_sha256": selection.selection.parts[0].source_sha256,
                 "extraction_id": receipt.extraction_id,
-                "source_parts": [
-                    {"role": recorded.role, "physical_index": recorded.physical_index}
-                    for recorded in receipt.source_parts
-                ],
+                "source_parts": source_parts,
             }
         else:
             physical = {
