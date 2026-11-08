@@ -90,8 +90,13 @@ def test_failed_pdf_inside_an_archive_defers_selection_of_the_draft(
         assert downloads == expected_downloads * 2
 
 
+@pytest.mark.parametrize("confirmed", [False, True])
 @pytest.mark.parametrize("same_folder", [False, True])
-def test_unreadable_named_pdf_only_defers_its_own_archive_family(same_folder: bool) -> None:
+def test_unreadable_named_pdf_only_defers_its_own_archive_family(
+    same_folder: bool, confirmed: bool
+) -> None:
+    readable = law() if confirmed else "Treść załączonego pliku. " * 20
+
     class Pdf(FakeTextExtractor):
         def extract_pages(self, data: bytes) -> PdfTextExtraction:
             failed = data == b"%PDF-new"
@@ -101,7 +106,7 @@ def test_unreadable_named_pdf_only_defers_its_own_archive_family(same_folder: bo
                 pages=(
                     PdfPageText(
                         number=1,
-                        text="" if failed else law(),
+                        text="" if failed else readable,
                         error_type="ValueError" if failed else None,
                     ),
                 ),
@@ -121,7 +126,7 @@ def test_unreadable_named_pdf_only_defers_its_own_archive_family(same_folder: bo
         assert loaded.selection.parts[-1].role == "unknown"
         assert loaded.selection.parts[-1].has_pdf_page_failure
     else:
-        assert "1 września" in loaded.text
+        assert readable.strip() in loaded.text
 
 
 @pytest.mark.parametrize(

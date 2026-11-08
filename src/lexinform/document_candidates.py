@@ -276,13 +276,11 @@ def _select_parts(
         if part.members[:-1] == main.members[:-1]
         and part.members[-1].rpartition("/")[0] == main_folder
     )
-    if confirmed and (
-        incomplete_peers
-        or (len(confirmed) > 1 and any(part.has_pdf_page_failure for _, part in confirmed))
+    if incomplete_peers or (
+        len(confirmed) > 1 and any(part.has_pdf_page_failure for _, part in confirmed)
     ):
-        failures = {
-            index for index, part in (*confirmed, *incomplete_peers) if part.has_pdf_page_failure
-        }
+        waiting_parts = (*(confirmed or [(main_index, main)]), *incomplete_peers)
+        failures = {index for index, part in waiting_parts if part.has_pdf_page_failure}
         for _, index, _ in candidates:
             note(
                 index,
@@ -298,7 +296,7 @@ def _select_parts(
                 selection=DocumentSelection(
                     observed_parts=tuple(parts),
                     state="waiting",
-                    parts=tuple(part for _, part in (*confirmed, *incomplete_peers)),
+                    parts=tuple(part for _, part in waiting_parts),
                     rejected=(
                         *rejected,
                         "PDF page extraction failed during archive version comparison",
