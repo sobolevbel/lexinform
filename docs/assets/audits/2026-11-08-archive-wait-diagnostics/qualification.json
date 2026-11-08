@@ -1,0 +1,54 @@
+{
+  "before": [
+    {
+      "database_sha256": "2f2206f8a43d286396122309684272b832771697a3c7e54e21b000bfacd2da00",
+      "archive_wait": null,
+      "external_wait": null
+    },
+    {
+      "database_sha256": "0b1d7849d4512886c7a70d81c51b472c8b06c1c8a65c180858865b642e69e5e4",
+      "archive_wait": null,
+      "external_wait": null
+    },
+    {
+      "database_sha256": "b0f7f3d1b7cea70737faefc7ef82d90cb9c495505cdf52a686edc32768e45cdb",
+      "archive_wait": null,
+      "external_wait": null
+    },
+    {
+      "database_sha256": "1dc2af02598e4add20a7ae623149b44b584333205a7bf4e0a0a7633349f1c34e",
+      "archive_wait": null,
+      "external_wait": null
+    }
+  ],
+  "after": [
+    {
+      "database_sha256": "2f2206f8a43d286396122309684272b832771697a3c7e54e21b000bfacd2da00",
+      "archive_wait": {
+        "denominator": "retained_archive_member_policy_rows",
+        "retained_pdf_failure_rows": 1,
+        "retained_deferred_rows": 1
+      },
+      "external_wait": null
+    },
+    {
+      "database_sha256": "0b1d7849d4512886c7a70d81c51b472c8b06c1c8a65c180858865b642e69e5e4",
+      "archive_wait": {
+        "denominator": "retained_archive_member_policy_rows",
+        "retained_pdf_failure_rows": 1,
+        "retained_deferred_rows": 1
+      },
+      "external_wait": null
+    },
+    {
+      "database_sha256": "b0f7f3d1b7cea70737faefc7ef82d90cb9c495505cdf52a686edc32768e45cdb",
+      "archive_wait": null,
+      "external_wait": null
+    },
+    {
+      "database_sha256": "1dc2af02598e4add20a7ae623149b44b584333205a7bf4e0a0a7633349f1c34e",
+      "archive_wait": null,
+      "external_wait": null
+    }
+  ]
+}

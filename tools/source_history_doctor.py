@@ -393,6 +393,7 @@ def candidate_trace_inventory(
     supporting_reasons: Counter[str] = Counter()
     supporting_positions: Counter[str] = Counter()
     version_wait: Counter[str] = Counter()
+    archive_wait: Counter[str] = Counter()
     supporting_omitted = 0
     admitted_roles: Counter[str] = Counter()
     admitted_traces = admitted_omitted = 0
@@ -417,6 +418,14 @@ def candidate_trace_inventory(
                         admitted_roles.update(item.role for item in trace.admitted_support.rows)
                         admitted_omitted += trace.admitted_support.omitted
                     if include_gaps:
+                        members = trace.archive_members
+                        if members is not None:
+                            archive_wait.update(
+                                member.reason
+                                for member in members.rows
+                                if member.reason
+                                in ("archive_pdf_page_failure", "archive_comparison_deferred")
+                            )
                         if trace.result == "waiting":
                             version_wait["deferred_comparisons"] += 1
                             version_wait["deferred_without_dispositions"] += (
@@ -499,6 +508,17 @@ def candidate_trace_inventory(
                     }
                 }
                 if version_wait["deferred_comparisons"]
+                else {}
+            ),
+            **(
+                {
+                    "archive_comparison_wait": {
+                        "denominator": "retained_archive_member_policy_rows",
+                        "retained_pdf_failure_rows": archive_wait["archive_pdf_page_failure"],
+                        "retained_deferred_rows": archive_wait["archive_comparison_deferred"],
+                    }
+                }
+                if archive_wait
                 else {}
             ),
             "normative_annex": _gap_counts(valid, annex_reasons),
