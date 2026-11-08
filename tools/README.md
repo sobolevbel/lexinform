@@ -480,6 +480,8 @@ uv run --offline --frozen python -m tools.audit_rcl_amendment_archives CORPUS NE
 
 The report records catalog and candidate references, input hashes, extraction outcomes and
 mechanical text signals. It does not store extracted bodies or assign legal roles.
+Pass `--project-targets` to report which physical member, if any, has a unique explicit
+project target and proposed article text. This option leaves the ordinary selection unchanged.
 
 ```bash
 mkdir -p out/corpus

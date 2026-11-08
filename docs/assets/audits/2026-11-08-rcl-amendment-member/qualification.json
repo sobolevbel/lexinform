@@ -1,0 +1,191 @@
+{
+  "alternate_owner_and_duplicate_checks": 13,
+  "archive_project_pairs": 90,
+  "census_sha256": "357ba4f39429562eaf0f4f25efb0c1c76b0aa36b015e6be324fd68c56e57063e",
+  "controls": {
+    "666361/12382350": {
+      "archive_sha256": "76b9e8cbe7bf2c91ab5d588ffa207dbaa538b4d46e3c47cf62ee6fdb98e0ef04",
+      "member": null,
+      "member_sha256": null,
+      "member_text_sha256": null,
+      "old_archive_state": "unverified",
+      "project_sha256": "eac521e8f9058d566e0906aa96c7cea0f42e25278ae3fc0928ee1dfa64e5917d"
+    },
+    "666362/12382351": {
+      "archive_sha256": "76b9e8cbe7bf2c91ab5d588ffa207dbaa538b4d46e3c47cf62ee6fdb98e0ef04",
+      "member": null,
+      "member_sha256": null,
+      "member_text_sha256": null,
+      "old_archive_state": "unverified",
+      "project_sha256": "db6569288d0aacc4d1f7ff4be2f89a4e6ae435c21a5e28edfc3029390752897e"
+    },
+    "699840/12383101": {
+      "archive_sha256": "b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44",
+      "member": null,
+      "member_sha256": null,
+      "member_text_sha256": null,
+      "old_archive_state": "unsupported",
+      "project_sha256": "0b7108f840429adc30d0991d981c6d92848d705a0ce58a22a8a81cebad23512a"
+    },
+    "716022/12392400": {
+      "archive_sha256": "8e605ee701789fbb78e2fff2bbb06b97f04fd3b5a08d681775cc4aa2608ac1a4",
+      "member": null,
+      "member_sha256": null,
+      "member_text_sha256": null,
+      "old_archive_state": "unsupported",
+      "project_sha256": "8904f1446bccb9579877673f8df6f49e37407b7e6d65331469a99d19057a4b5a"
+    },
+    "727951/12386961": {
+      "archive_sha256": "2cfea628c9047b66e6f80e4e649b54d7ea38fa0ad49413fb01466cc29f02b9cd",
+      "member": null,
+      "member_sha256": null,
+      "member_text_sha256": null,
+      "old_archive_state": "unsupported",
+      "project_sha256": "0451cc828ec50a19d1e753d4bc588a076f76cbec6a43e9dd31ddbd485c791359"
+    },
+    "727952/12386961": {
+      "archive_sha256": "1fb4aba0e2eaab8bd90669d87b9a5060fe21b3eea422782b1695f4fa4fea3d75",
+      "member": null,
+      "member_sha256": null,
+      "member_text_sha256": null,
+      "old_archive_state": "unsupported",
+      "project_sha256": "0451cc828ec50a19d1e753d4bc588a076f76cbec6a43e9dd31ddbd485c791359"
+    }
+  },
+  "member_order_checks": 90,
+  "policy_source_sha256": "e0607ee38071ae5ed814c30badb0f36f4cf406420750f785a7562051705ec188",
+  "proposals": {
+    "438407/12330353": {
+      "archive_sha256": "bd6f91bda54885653fda2d506d6dbb1d63bca6c79d81608ad8e1c39bc69baa66",
+      "member": [
+        "Autopoprawka do projektu ustawy UC16 03.02.2020.pdf"
+      ],
+      "member_sha256": "76d778f4dbdc380fb8491175003e1aad53ae0d73cba749a5c3c0ee8f0c87cc00",
+      "member_text_sha256": "0df2cab808e60a8cf22f9dd73de36b54883b072eabc3c100ae1f4f45b592fa0b",
+      "old_archive_state": "unsupported",
+      "project_sha256": "44284e3cd3e5c4820507c2c973a01a0fb2f436b98a8e1f04ae40709ddbf460c6"
+    },
+    "581610/12365060": {
+      "archive_sha256": "8ff54ea2261bc6c8926276c26d0d120518b49225dbf1f27ee5289867ed0746be",
+      "member": [
+        "AUTOPOPRAWKA do rzadowego projektu ustawy o srodkach nadzwyczajnych (1526851).docx"
+      ],
+      "member_sha256": "c52b71c2e5074115066e1b49a30d2ac145453abb4d59cb3ef2431e004ab05e10",
+      "member_text_sha256": "18bb04b84c2ef900a5b4e74e367a5b67b8f9d7118c0a3867cea70fc92abb9be5",
+      "old_archive_state": "unsupported",
+      "project_sha256": "170ef4c517d827d78cf3bb77c4ea97b6bfc2a272d2bf2a107edd129fdfaa31ed"
+    },
+    "642032/12359600": {
+      "archive_sha256": "7113f3b86425ff36460606ff499571540f6b2a2b79a4f2efb8a76430c3f49dc3",
+      "member": [
+        "Zalacznik - poprawka do UD207 (Prosument Wirtualny) (2075739).docx"
+      ],
+      "member_sha256": "47dc6df054db7982b90890fcf931f12edc161ac39d0f06fd55ff3684f8275dd3",
+      "member_text_sha256": "08c226e1f22b1454ca8d92364ed819c5b87a6e88e49e7c1b4246c87f59bfa337",
+      "old_archive_state": "unsupported",
+      "project_sha256": "a91fee048f31d2e3fd48d4746993cf144b1c32ff3d6c4708f1e3899f34d520a1"
+    },
+    "651743/12376009": {
+      "archive_sha256": "4ae72259304dec97f26a7586b61e3b67d10a8fe11ad9803a631fb652755c231b",
+      "member": [
+        "RM Autopoprawka do ustawy okołobudżetowej na rok 2024.docm"
+      ],
+      "member_sha256": "498efb41d2ac5d64aae69382c7fbe33c0c6714a1d98c0a023bb7114019cabdee",
+      "member_text_sha256": "098a79fd07fe8f6dca3e89692f80e6625f4947aefc7c46bd56a88e2bb8691738",
+      "old_archive_state": "unsupported",
+      "project_sha256": "1d4d5580df120a8eea2417d87a1026e7abef005c414f7decd7377a4c0e4b9f32"
+    },
+    "662379/12381402": {
+      "archive_sha256": "eb0c09584449a49d0cc5b2d5fbbb4510d20201744a9cd976c051fd7bf56a1b93",
+      "member": [
+        "Autopoprawka do zmiany ustawy o działach administracji rządowej.docx"
+      ],
+      "member_sha256": "7ca9109ded7bf21d728cd8968183b88aee13763be31e50fa0c0b337b73354ac2",
+      "member_text_sha256": "5d26c225bb744b52f2cf351c41809278716dc11a73b13150bd1c3ec9ddfbe777",
+      "old_archive_state": "unverified",
+      "project_sha256": "5c7509bf7823e782fb2168d540ca4d809231bd55ff585ab0119bb58b553a85d5"
+    },
+    "684485/12389752": {
+      "archive_sha256": "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab",
+      "member": [
+        "AUTOPOPRAWKA DO PROJEKTU USTAWY POWODZIOWEJ (6208584).DOCX"
+      ],
+      "member_sha256": "ad902c7054a417e7af6c85c49742e5f60c16d6edbfd44b5a0dd7cb80ee072c4f",
+      "member_text_sha256": "0f929ceecf488e871ee83326cd4fcf5bff7e388504b37114d7db65696882fdb4",
+      "old_archive_state": "unsupported",
+      "project_sha256": "796824f7d7072e35618c613b43fba8a2b0c580f57e507d20948bbc002853939d"
+    },
+    "692249/12390302": {
+      "archive_sha256": "de773a45c728e502732ba6c6625bf2ad4ba500f1ba667d787313bffae363ba7c",
+      "member": [
+        "Autopoprawka druk nr 764 (6463360).docx"
+      ],
+      "member_sha256": "f544b91cba6c2922b37b042465abdead89f1d06d24fc8210d3f4a8b2ca0eafa3",
+      "member_text_sha256": "8d30561af1c3ee307fdf19156bcaeb170bb866556a40fbc3608f4e10d725826f",
+      "old_archive_state": "unsupported",
+      "project_sha256": "586171c365b43281f493a3b02e828a79c5d4403d22c5dbf31b920660655fa7df"
+    },
+    "692630/12390302": {
+      "archive_sha256": "f2b7e44c066780bf3e97685c021bd631f0fffe244f0a04682d9ce1bc517c7d94",
+      "member": [
+        "Autopoprawka druk nr 764 RM docm (6556940).docm"
+      ],
+      "member_sha256": "02d24dcdf6554b509955ca57ac6c0506e3676a7975292494f0f1d0a08dd865b6",
+      "member_text_sha256": "5d9e39330bc40f509618a32252c36a624b174d16f1fddd7ce490f4b51e6a4554",
+      "old_archive_state": "unsupported",
+      "project_sha256": "586171c365b43281f493a3b02e828a79c5d4403d22c5dbf31b920660655fa7df"
+    },
+    "694393/12387102": {
+      "archive_sha256": "2115fe2b9796cf5b0d21e157de1a7f9b11d5932749a9a978c05cbff691a902c9",
+      "member": [
+        "autopoprawka do UD86 (6652131).docx"
+      ],
+      "member_sha256": "396ac723fa7b1326e000ef0e27e235698bf34cd2ae7c558d8d605c672403300f",
+      "member_text_sha256": "af4bedd9e50d1e40141c89db04b4816081714b81480cc869b0c8dc99eb115a1c",
+      "old_archive_state": "unsupported",
+      "project_sha256": "48ea05411752517fcf844e65bbde6529c7830612264c25d0aa6c802b6eaf3964"
+    },
+    "721360/12392802": {
+      "archive_sha256": "83d09f0a5ec86a4e75f12e34f9963f4537bcc96a376770783aedffdae9ee6e8e",
+      "member": [
+        "Autopoprawka do projektu ustawy o uchyleniu ustawy o CIE druk sejmowy nr 1307 v 9.docx"
+      ],
+      "member_sha256": "cc3463060220cdc91fe7c1e8f7f618c7f6ab416cffb84d198f55fbeeba319a49",
+      "member_text_sha256": "e024560a4b88c04b68e7f441424fce5a18c374fb4a44298289b871c0b2c78fbf",
+      "old_archive_state": "unsupported",
+      "project_sha256": "2b5ce8f8122065a593c0596cadd295eccd60e79246e242dd3baf2f7a90cfa29a"
+    },
+    "736009/12399000": {
+      "archive_sha256": "0b4cb30ba5db9787d10ad1db9cb374e1810789582a8522f3af5d8638d97d2977",
+      "member": [
+        "Autopoprawka do druku 1437 na RM - uwzglednia uwage RCL - 3 przecinki (8491666).docx"
+      ],
+      "member_sha256": "4340c7c533ab2dc31bd4ce472168ddb2fb327e37e22a3c17305a0e2d65a770c3",
+      "member_text_sha256": "e2b7d1744df43825382d9e29d69c2a754294f4d892e3ff32d6889fc9a4a1cc3f",
+      "old_archive_state": "unsupported",
+      "project_sha256": "3f9b943f9e0fa4bd2e5508c9fc1da5ea7a9d19746b70b61e5e0441fc4aeb571d"
+    },
+    "744253/12396201": {
+      "archive_sha256": "6736b24a8f55fdbbe62eb51da02b3c0dd588bdd0af119129956a72a62dd1b1f9",
+      "member": [
+        "autopoprawka UD196 (8787423).docm"
+      ],
+      "member_sha256": "844783212adc8202b2228bb8256676eba891a01ce9accab61f6e7fee98d4ee93",
+      "member_text_sha256": "de26e263d15665d35eb817d1dd23e3da389a5cb2e360238794a97141dce9107c",
+      "old_archive_state": "unsupported",
+      "project_sha256": "75f94db34f633816e2902aa777d6c7e4c69a634ae3242d4975568628ef993ff9"
+    },
+    "791156/12405803": {
+      "archive_sha256": "244648bbae0ab5c7d6312cc61d0bd56fc62deebc3241adfb2bd319006b800255",
+      "member": [
+        "MF Autopoprawka UC105.pdf"
+      ],
+      "member_sha256": "14575b345bddaa8e981772152cf748f0d7eac28a1ef53bce14721c70ab90e3ac",
+      "member_text_sha256": "be774189dd2c5e493523d603e7dce97faec3a95408a5d8763beac03cd89b196a",
+      "old_archive_state": "unsupported",
+      "project_sha256": "f8cf3d46cec7761116cd89d5cad94905874869d26f56f6f113060b9e4b217587"
+    }
+  },
+  "report_sha256": "841f5f6a3bb4c55fcfcb04120a17d097369f31e4ee9555351d4713bb9ee4b352",
+  "unchanged_ordinary_projection": true
+}
