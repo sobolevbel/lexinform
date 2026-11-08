@@ -1,0 +1,20 @@
+{
+  "baseline_revision": "60184f21",
+  "decoded_results_sha256": "a7d6356b819152f761b8e2fc57f9807e99c355f60ec411ea94634a3964af424b",
+  "legacy_reports_equal": true,
+  "mode": "read-only immutable SQLite snapshot",
+  "outcomes": {
+    "amendments": 4,
+    "analysis": 8,
+    "reanalysis": 6,
+    "supplement": 1
+  },
+  "provider_schema_sha256": "923496cdb1a85da40daa9095034d1bd41c38993f899b811dee4f7ca22fc9548f",
+  "snapshot_sha256": "33b2f30f063f89f92adf847f0f8496da11fc9dbd1cd6b4935642ab43acad88b3",
+  "synthetic_round_trip": {
+    "byte_identical_dump_after_restore": true,
+    "single_citation_gzip_delta_bytes": 162,
+    "single_citation_sql_delta_bytes": 317
+  },
+  "writer_activated": false
+}

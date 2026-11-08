@@ -17,6 +17,7 @@ from lexinform.models.analysis import (
     TokenUsage,
 )
 from lexinform.models.batch import BatchKind, BatchProvider, LocalTimingWitness
+from lexinform.models.claim_evidence import PrimaryClaimCitation
 from lexinform.models.computation_inputs import ComputationInputBinding
 from lexinform.models.enums import BillStatus
 from lexinform.models.reviews import (
@@ -213,6 +214,9 @@ class ComputationResult(BaseModel):
     amendment_scan_input: AmendmentScanInputWitness | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    claim_citations: tuple[PrimaryClaimCitation, ...] = Field(
+        default=(), max_length=32, exclude_if=lambda value: not value
+    )
     validation: Literal["validated", "error"]
     record: ComputationRecord | None
     model: str | None
@@ -308,6 +312,17 @@ class ComputationResult(BaseModel):
             raise ValueError("the retained record must refer to its computation")
         if self.record is not None and self.record.request_sha256 != self.request_sha256:
             raise ValueError("the retained record must refer to its original request")
+        if self.claim_citations:
+            if not isinstance(self.record, AnalysisRecord) or self.request_sha256 is None:
+                raise ValueError(
+                    "claim citations require a validated primary result and request hash"
+                )
+            if len({citation.model_dump_json() for citation in self.claim_citations}) != len(
+                self.claim_citations
+            ):
+                raise ValueError("duplicate retained claim citation")
+            for citation in self.claim_citations:
+                citation.require_claim(self.record.analysis)
         return self
 
 
