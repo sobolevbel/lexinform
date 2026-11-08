@@ -119,6 +119,9 @@ DocumentLimitation = Literal[
 ]
 
 
+PDF_PAGE_FAILURE_PREFIX = "PDF text extraction failed on "
+
+
 class DocumentSelection(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -155,6 +158,12 @@ class DocumentSelection(BaseModel):
                     part.model_copy(update={"text": ""}) for part in self.observed_parts
                 ),
             }
+        )
+
+    @property
+    def has_pdf_page_failure(self) -> bool:
+        return any(
+            loss.startswith(PDF_PAGE_FAILURE_PREFIX) for part in self.parts for loss in part.losses
         )
 
     @model_validator(mode="before")

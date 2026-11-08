@@ -18,6 +18,7 @@ from lexinform.document_versions import (
 )
 from lexinform.models.candidate_trace import ArchiveMemberPolicyReason
 from lexinform.models.documents import (
+    PDF_PAGE_FAILURE_PREFIX,
     DocumentPart,
     DocumentSelection,
     ExtractedDocument,
@@ -128,7 +129,7 @@ def select_document_parts(
         kind = document_kind(part.text) if part.text.strip() else "unknown"
         losses = _legacy_losses(part)
         if failures := failed_pdf_pages.get(index, 0):
-            losses += (f"PDF text extraction failed on {failures} page(s)",)
+            losses += (f"{PDF_PAGE_FAILURE_PREFIX}{failures} page(s)",)
         parts.append(
             part.model_copy(update={"role": _ROLE_OF_KIND.get(kind, "unknown"), "losses": losses})
         )

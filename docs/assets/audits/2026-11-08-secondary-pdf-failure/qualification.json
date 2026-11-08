@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "path": "769080.pdf",
+      "sha256": "8849709070e4264a5ed1373b2d0fbe3fa39d4b42341c5fd998f699ccc7fb032c",
+      "context_sha256": "0c21141e1c53192f19f7eb4b370772733b654001736f150241856f3fa88522d0",
+      "truncated": false,
+      "source_selection_sha256": "0f567164018fb05e2f74ce921ca8e20807668e2e9c385a62f6d4da40e1523265"
+    },
+    {
+      "path": "3220.pdf",
+      "sha256": "e7cc9390ca6cdfd69f0a0fccc6c6c035019195dd550d22adb03f2912a60fba0d",
+      "context_sha256": "5b01ffba6b9a868841dbc42652d0df2e8e0350ca344fa96cb495b96707cd3f37",
+      "truncated": false,
+      "source_selection_sha256": "c3e25f40b99ed3ee789ecaee34e9b1f47dacfad32d1c89e84fecacae026fd2a4"
+    }
+  ],
+  "unchanged_contexts": true
+}

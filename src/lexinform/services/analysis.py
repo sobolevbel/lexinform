@@ -2559,6 +2559,8 @@ class AnalysisService:
     def _load_amendments_text_inner(self, bill: Bill, document: TextDocument) -> _Loaded:
         if document.kind != "senate_amendments":
             loaded = self._load_secondary_text(bill, document)
+            if loaded.selection.has_pdf_page_failure:
+                raise ValueError("Не удалось прочитать все страницы поправок комиссии")
             if loaded.truncated:
                 raise ValueError("Полный текст поправок комиссии не помещается в бюджет текста")
             return loaded
@@ -4190,7 +4192,7 @@ class AnalysisService:
             budgeted = self._budget.apply(text, self._keywords.spans(text))
             return _Loaded(
                 budgeted.text,
-                budgeted.truncated,
+                budgeted.truncated or file.selection.has_pdf_page_failure,
                 "pdf",
                 law=law_digest(text),
                 whole=text,

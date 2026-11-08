@@ -1,9 +1,13 @@
 """Documents filed to a print after its submission: what is told, what is not, and once."""
 
+from hashlib import sha256
+
 import pytest
 
+from lexinform.adapters.doc_text import DocTextExtractor
+from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import DeliveryPlan
+from lexinform.models import DeliveryPlan, PdfPageText, PdfTextExtraction, TextDocument
 from tests.fakes import FakeTextExtractor, make_digest
 from tests.harness import COMMITTEE_STAGES, World
 
@@ -290,3 +294,46 @@ def test_scanned_digest_survives_a_failed_observation_checkpoint(
     assert (recovered.updates, repeated.updates) == (1, 0)
     assert len(w.llm.supplement_contexts) == 1
     assert w.publisher.updates[0][1].supplements[0].digest == make_digest()
+
+
+@pytest.mark.parametrize("page_error", [None, "RuntimeError"])
+def test_secondary_requests_distinguish_a_pdf_page_failure_from_a_blank(
+    page_error: str | None,
+) -> None:
+    class PdfWithFiledPage(FakeTextExtractor):
+        def extract_pages(self, data: bytes) -> PdfTextExtraction:
+            first = (
+                "UZASADNIENIE\nOpis projektu. " * 40
+                if data == b"%PDF-filed"
+                else "USTAWA\nArt. 1. Zmiana przepisów o cudzoziemcach. " * 40
+            )
+            return PdfTextExtraction(
+                input_sha256=sha256(data).hexdigest(),
+                pypdf_version="fixture",
+                pages=(
+                    PdfPageText(number=1, text=first),
+                    PdfPageText(number=2, error_type=page_error if data == b"%PDF-filed" else None),
+                ),
+            )
+
+    reader = DocumentTextExtractor(
+        PdfWithFiledPage(page_count=2), DocxTextExtractor(), DocTextExtractor()
+    )
+    world = World(extractor=reader)
+    world.add_bill("3039", TITLE)
+    world.run()
+    url = world.file_to_print("3039", GOVERNMENT_POSITION)
+    world.clock.advance(days=1)
+
+    report = world.run()
+
+    assert report.updates == 1
+    (supplement,) = world.llm.supplement_contexts
+    assert supplement.text and supplement.truncated == (page_error is not None)
+    committee = TextDocument(url=url, kind="committee_amendments")
+    bill = world.bill("3039")
+    if page_error is not None:
+        with pytest.raises(ValueError, match="все страницы поправок комиссии"):
+            world.analysis.amendment_work_input(bill, committee)
+    else:
+        assert world.analysis.amendment_work_input(bill, committee) is not None
