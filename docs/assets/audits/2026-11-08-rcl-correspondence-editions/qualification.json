@@ -1,0 +1,202 @@
+{
+  "archive_report_sha256": "d33e0d9ae9cdbeb04ab14e3d98a8020102cf004185492130464937fe31f7e6cb",
+  "full_report_sha256": "77e76589aeb75bb4d37f7cc164191e1dbabf48b4476ce9ace6c541987df8dcce",
+  "input_sha256": {
+    "corpus/12388101.json": "1e7913d5b9724ee26b74e6a384dad96fc9c18e7263087f5c9550e31ded35402f",
+    "corpus/12392400.json": "8904f1446bccb9579877673f8df6f49e37407b7e6d65331469a99d19057a4b5a",
+    "corpus/12399200.json": "05bd6dc62fd5b2e992b325aade0822871d326bd1f08118467e7bb5aa957b72d7",
+    "documents/files/700161.zip": "289a146c31ee4cb38aaa40c0f9bf26519c485b87c0424f0705cec59de98ca583",
+    "documents/files/701779.zip": "ed6b9a51588af8348d724ade5a4e49349d968d9c64ed51ef1ba43e31a15b6ffe",
+    "documents/files/703271.pdf": "db894964b55e3c36dd3fefae63f5e68dc7e0fae7d7632456a88b3bf1da8fe6e3",
+    "documents/files/709229.zip": "59998147f6cbb36540bb4e0794bd68ad4fe2eb72c516c7ebb89d55defc97e15b",
+    "documents/files/715437.zip": "693b0fefd5e098f4df7daac8e57144ab976f2251f809f609f4e797341b922af6",
+    "documents/files/716022.zip": "8e605ee701789fbb78e2fff2bbb06b97f04fd3b5a08d681775cc4aa2608ac1a4",
+    "documents/files/723551.zip": "8d64f9ab64d61c7c70a30789813912abc82014f8eaa5aa9f0b368c3065e3e851",
+    "documents/files/724420.zip": "c4b2686b8693bcbdf1e0ddfed3a93c4af89890fbda2a6a2c4372a2d8298b99e6",
+    "documents/files/724629.zip": "8e3e3092bff58adc83f1b1b8c54a0d90c79ec454512b94aefa55e7b39534ecff",
+    "documents/files/727902.zip": "540652f16d46c4d892d6f6b6b844495d0be88bf1ab2bdd4e4019ef71d677f171",
+    "documents/files/733043.zip": "e8ed8ec6e5bfbf3c3de2b29b28cfde6e3d6e5eb746d574478c2c92e4de1d1a7c",
+    "documents/files/734029.pdf": "2ea96f4296771ce69ca433f6e5ba47d101e47db41a26b6d2cb96a0399cb13a76",
+    "documents/files/734039.pdf": "653fbd05008ff197f55d6fabf55408665af1c78ff19948c1640a8a357ec7d718",
+    "documents/files/735247.zip": "f6de7e216cdaec994ed1cc19eb38e64b7a99e5bbd17abf69f419c7c850960128",
+    "documents/files/735406.pdf": "6816307f27f363dbf093bc980d8f4e6a1a4891ced3b08f6f3fc756595fa3d341",
+    "documents/files/738682.zip": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef",
+    "documents/files/744252.zip": "ee2670aa2e0aacc42c346fc05dfd66dd8de245dbecd2d0fc3d29dfe6772463c4",
+    "documents/files/745002.docx": "ec18abd5623429525e7b01cac1158a984bb6108de2fab14b119c533ed5084c50"
+  },
+  "observations": {
+    "701779": {
+      "12388101": {
+        "700161": {
+          "body_count": 1,
+          "matches": [],
+          "selection": "unverified",
+          "sha256": "289a146c31ee4cb38aaa40c0f9bf26519c485b87c0424f0705cec59de98ca583",
+          "stages": [
+            9,
+            10
+          ]
+        },
+        "703271": {
+          "body_count": 0,
+          "matches": [],
+          "selection": "unverified",
+          "sha256": "db894964b55e3c36dd3fefae63f5e68dc7e0fae7d7632456a88b3bf1da8fe6e3",
+          "stages": [
+            9,
+            10
+          ]
+        },
+        "709229": {
+          "body_count": 1,
+          "matches": [
+            {
+              "member": [
+                "PROJEKT USTAWY Z DNIA 14 MARCA.DOCX"
+              ],
+              "member_sha256": "47ce335c3a507d2cc3eb35184654d8ac6957ae19869b963b5b17b9dd557e7e73",
+              "quote_sha256": "3a49d5be310de67f74a3484cc64ae84e7fe60b0bf1d9a52d7934269104315581"
+            }
+          ],
+          "selection": "unverified",
+          "sha256": "59998147f6cbb36540bb4e0794bd68ad4fe2eb72c516c7ebb89d55defc97e15b",
+          "stages": [
+            12,
+            14
+          ]
+        },
+        "727902": {
+          "body_count": 1,
+          "matches": [],
+          "selection": "unverified",
+          "sha256": "540652f16d46c4d892d6f6b6b844495d0be88bf1ab2bdd4e4019ef71d677f171",
+          "stages": [
+            12,
+            14
+          ]
+        }
+      }
+    },
+    "716022": {
+      "12392400": {
+        "715437": {
+          "body_count": 1,
+          "matches": [],
+          "selection": "unverified",
+          "sha256": "693b0fefd5e098f4df7daac8e57144ab976f2251f809f609f4e797341b922af6",
+          "stages": [
+            9,
+            10
+          ]
+        },
+        "733043": {
+          "body_count": 1,
+          "matches": [],
+          "selection": "unverified",
+          "sha256": "e8ed8ec6e5bfbf3c3de2b29b28cfde6e3d6e5eb746d574478c2c92e4de1d1a7c",
+          "stages": [
+            9,
+            10
+          ]
+        },
+        "734029": {
+          "body_count": 0,
+          "matches": [],
+          "selection": "unverified",
+          "sha256": "2ea96f4296771ce69ca433f6e5ba47d101e47db41a26b6d2cb96a0399cb13a76",
+          "stages": [
+            9,
+            10
+          ]
+        },
+        "734039": {
+          "body_count": 0,
+          "matches": [],
+          "selection": "unverified",
+          "sha256": "653fbd05008ff197f55d6fabf55408665af1c78ff19948c1640a8a357ec7d718",
+          "stages": [
+            9,
+            10
+          ]
+        },
+        "735247": {
+          "body_count": 1,
+          "matches": [],
+          "selection": "unverified",
+          "sha256": "f6de7e216cdaec994ed1cc19eb38e64b7a99e5bbd17abf69f419c7c850960128",
+          "stages": [
+            9,
+            10
+          ]
+        },
+        "735406": {
+          "body_count": 0,
+          "matches": [],
+          "selection": "unverified",
+          "sha256": "6816307f27f363dbf093bc980d8f4e6a1a4891ced3b08f6f3fc756595fa3d341",
+          "stages": [
+            9,
+            10
+          ]
+        },
+        "738682": {
+          "body_count": 0,
+          "matches": [],
+          "selection": "unsupported",
+          "sha256": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef",
+          "stages": [
+            9,
+            10
+          ]
+        },
+        "744252": {
+          "body_count": 1,
+          "matches": [],
+          "selection": "unverified",
+          "sha256": "ee2670aa2e0aacc42c346fc05dfd66dd8de245dbecd2d0fc3d29dfe6772463c4",
+          "stages": [
+            12,
+            14
+          ]
+        },
+        "745002": {
+          "body_count": 0,
+          "matches": [],
+          "selection": "unverified",
+          "sha256": "ec18abd5623429525e7b01cac1158a984bb6108de2fab14b119c533ed5084c50",
+          "stages": [
+            12,
+            14
+          ]
+        }
+      }
+    },
+    "724420": {
+      "12399200": {
+        "723551": {
+          "body_count": 1,
+          "matches": [],
+          "selection": "unverified",
+          "sha256": "8d64f9ab64d61c7c70a30789813912abc82014f8eaa5aa9f0b368c3065e3e851",
+          "stages": [
+            9
+          ]
+        },
+        "724629": {
+          "body_count": 1,
+          "matches": [],
+          "selection": "unverified",
+          "sha256": "8e3e3092bff58adc83f1b1b8c54a0d90c79ec454512b94aefa55e7b39534ecff",
+          "stages": [
+            12,
+            14
+          ]
+        }
+      }
+    }
+  },
+  "source_sha256": {
+    "tools/replay_rcl_correspondence.py": "6a5eb00ccaf8814c1991a091b177b0a04fb222add49cf2c99b261cba36812299",
+    "uv.lock": "1a0652e062f5c9a0442427c7762982b35415c4cbb50841f792c37dc7955804a0"
+  }
+}

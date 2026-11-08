@@ -486,6 +486,17 @@ Pass `--archive-admission` to replay which members the current amendment composi
 The same option lists explicit quoted article replacements in replies as offsets and hashes
 into the extracted member. Missing quote boundaries and competing article references stay unresolved.
 
+Search the selected bill bodies for correspondence quotes from the archive admission report.
+
+```sh
+uv run --offline --frozen python -m tools.replay_rcl_correspondence \
+  CORPUS ARCHIVE_ADMISSION_REPORT.json NEW_REPORT.json
+```
+
+The replay checks the archive and letter hashes before using quote offsets. It searches
+the associated project from the first linked stage onward. Matches show literal inclusion
+after whitespace collapse. The report does not decide amendment applicability.
+
 Replay the explicit print targets from the pinned J642 edition report and J641 member report:
 
 ```sh
