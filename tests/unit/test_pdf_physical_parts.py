@@ -4,6 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
+from lexinform.archive_disposition_observations import complete_standalone_root
 from lexinform.models import (
     DocumentPart,
     ExtractedParts,
@@ -179,10 +180,14 @@ def test_complete_pdf_requires_agreement_with_the_reported_page_count(reported_p
 
     reader = extractor(TextPdf(page_count=reported_pages))
 
-    observed = reader.extract_document_with_provenance(b"%PDF-1.7 fixture")
+    data = b"%PDF-1.7 fixture"
+    observed = reader.extract_document_with_provenance(data)
 
     assert observed.document.text == "first\fsecond"
     assert observed.complete_pdf_pages == (2 if reported_pages == 2 else None)
     assert observed.first_pdf_page == (
         PdfPageText(number=1, text="first") if reported_pages == 2 else None
+    )
+    assert complete_standalone_root(observed, hashlib.sha256(data).hexdigest()) == (
+        reported_pages == 2
     )

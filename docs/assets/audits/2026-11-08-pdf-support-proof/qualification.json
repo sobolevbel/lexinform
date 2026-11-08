@@ -1,0 +1,201 @@
+{
+  "cases": 40,
+  "changes": [
+    {
+      "path": "sejm/term10/files/1000__1000.pdf",
+      "sha256": "3015b94279b3bb2f45a609154420c1c48e7b9f5a89c24d14b76295197b41bc53",
+      "physical_pages": 13,
+      "pages_without_text": [
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ]
+    },
+    {
+      "path": "sejm/term10/files/1459__1459.pdf",
+      "sha256": "e1cca6035517ad0ac380e0946add7fd7c266ace9ef020ecf6427677a67bf5e5d",
+      "physical_pages": 16,
+      "pages_without_text": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ]
+    },
+    {
+      "path": "sejm/term10/files/1813__1813.pdf",
+      "sha256": "d25bc462e6995d4f567a6c17f1dbb39e538f95f36a8e8605a04cc80a072251c6",
+      "physical_pages": 17,
+      "pages_without_text": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ]
+    },
+    {
+      "path": "sejm/term10/files/206__206.pdf",
+      "sha256": "cd276b6b5438c3a472dd5b744427c467cb45a632600bab8cd3f2ce8fbf7c2d25",
+      "physical_pages": 18,
+      "pages_without_text": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "path": "sejm/term10/files/258__258.pdf",
+      "sha256": "86c6e8fee79d85c1f0c64b810148b16c34890346c89950553b61bbc56ee5b439",
+      "physical_pages": 27,
+      "pages_without_text": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27
+      ]
+    },
+    {
+      "path": "sejm/term10/files/2772__2772.pdf",
+      "sha256": "dacb36f4b0f626e331f3e0723bda8e805ab6ae2d66bdbc4aceaf207ddb7e2330",
+      "physical_pages": 12,
+      "pages_without_text": [
+        9,
+        10,
+        11,
+        12
+      ]
+    },
+    {
+      "path": "sejm/term10/files/748__748.pdf",
+      "sha256": "3dc92bec9f49cb8cde6db440afe8cdd8999732337e429d8d77fc8f672dea3bfe",
+      "physical_pages": 32,
+      "pages_without_text": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32
+      ]
+    },
+    {
+      "path": "sejm/term10/files/868__868.pdf",
+      "sha256": "9f760b7f8d3bc84a73812e2f7573ecef7e6b8e5e8e8694cf79d39596aa7afd6f",
+      "physical_pages": 26,
+      "pages_without_text": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26
+      ]
+    },
+    {
+      "path": "sejm/term10/files/999__999.pdf",
+      "sha256": "aa2bf42e8ec1285241932fc33e1411a78c54559481a7d698a89036892b62af52",
+      "physical_pages": 20,
+      "pages_without_text": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ]
+    }
+  ],
+  "all_selections_unchanged": true,
+  "loose_rcl": {
+    "source_sha256s": [
+      "763ac6cd72dbe3e6e45dc93c6f0e3935108d0b4188d750307babf0cb97a89085",
+      "1df0a054620d8dc2bdfeb38bf61b41734b91bc2d4c1bb10d664274a550e88af9",
+      "8849709070e4264a5ed1373b2d0fbe3fa39d4b42341c5fd998f699ccc7fb032c"
+    ],
+    "selection_sha256": "54e224c4ca60f780ef37bc3844fdca42c4e895a09b7b5bf20525ce9c05fefb05",
+    "trace": {
+      "phase": "fallback",
+      "index": 0,
+      "rows": [
+        {
+          "extra_index": 0,
+          "role": "justification",
+          "file_sha256": "1df0a054620d8dc2bdfeb38bf61b41734b91bc2d4c1bb10d664274a550e88af9",
+          "text_sha256": "024ef7a3efd75d5c64a39559503a84ce9183008c6f93142369719d2b2fba0c4b"
+        },
+        {
+          "extra_index": 1,
+          "role": "osr",
+          "file_sha256": "8849709070e4264a5ed1373b2d0fbe3fa39d4b42341c5fd998f699ccc7fb032c",
+          "text_sha256": "7cfd3b14744a034f650c41ff6ea6480bd4186e42ed406fab76b3db0bdb4951fe"
+        }
+      ],
+      "omitted": 0
+    }
+  }
+}

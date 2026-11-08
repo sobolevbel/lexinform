@@ -72,6 +72,11 @@ def complete_standalone_root(
             )
         )
         and summary.error_count == 0
+        and (
+            summary.format != "pdf"
+            or extraction.complete_pdf_pages is not None
+            and extraction.complete_pdf_pages == part.pages
+        )
         and sha256 == summary.sha256 == part.sha256 == part.source_sha256
         and summary.text_sha256 == result.output_text_sha256 == part.text_sha256
         and part.text_start == 0
