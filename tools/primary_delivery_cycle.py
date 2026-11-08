@@ -23,6 +23,7 @@ from lexinform.adapters.input_receipts import (
 )
 from lexinform.models import (
     AmendmentsRecord,
+    AnalysisRecord,
     BatchItemMeta,
     BatchResult,
     Bill,
@@ -32,6 +33,7 @@ from lexinform.models import (
     PrimaryInputReceipt,
     ResultApplication,
     ResultApplicationTarget,
+    SourceObservation,
     StatusChange,
     SupplementRecord,
     TokenUsage,
@@ -111,6 +113,80 @@ def _direct_plan(row: sqlite3.Row) -> DeliveryPlan:
     return plan
 
 
+def _primary_scan_source(
+    db: sqlite3.Connection, paid: ComputationResult, meta: BatchItemMeta
+) -> tuple[SourceObservation, dict[str, object]]:
+    scan, manifest = meta.selection.scan_input, meta.frozen_request_manifest
+    if scan is None or manifest is None or not meta.source_url:
+        raise CycleNotObservedError("primary_scan_input_unavailable")
+    record = paid.record
+    if (
+        paid.validation != "validated"
+        or not isinstance(record, AnalysisRecord)
+        or record.text_source != "scan"
+        or record.selection.without_text() != meta.selection.without_text()
+        or record.text_sha256 != scan.source_sha256
+        or record.input_chars != meta.input_chars
+        or manifest.provider != paid.provider
+        or manifest.prompt_version != record.prompt_version
+    ):
+        raise ValueError("retained primary scan differs from its paid request")
+    manifest.require_request(paid.purpose, paid.request_sha256)
+    if len(meta.selection.parts) != 1 or scan.transformations not in ((), ("cover_letter",)):
+        raise CycleNotObservedError("primary_scan_outside_direct_pdf_scope")
+    part = meta.selection.parts[0]
+    last_page = scan.first_page + scan.page_count - 1
+    cover_pages = len(scan.transformations)
+    if (
+        part.members
+        or (part.url, part.source_sha256, part.pages, part.page_start, part.page_end)
+        != (meta.source_url, scan.source_sha256, scan.source_pages, scan.first_page, last_page)
+        or scan.first_page != 1 + cover_pages
+        or last_page != scan.source_pages
+        or not cover_pages
+        and (scan.input_sha256, scan.input_bytes) != (scan.source_sha256, scan.source_bytes)
+    ):
+        raise ValueError("retained scan does not identify its direct physical page window")
+    rows = db.execute(
+        """
+        SELECT o.observation_id, a.byte_size AS artifact_bytes, r.byte_size AS read_bytes
+        FROM source_observations o
+        JOIN selection_artifacts sa USING (selection_id)
+        JOIN artifacts a ON a.sha256=sa.artifact_sha256
+        JOIN artifact_reads r ON r.artifact_sha256=a.sha256 AND r.requested_url=o.source_url
+        WHERE o.term=? AND o.number=? AND o.purpose='analysis' AND o.source_kind=?
+          AND o.source_url=? AND sa.part_scope='parts' AND sa.part_index=0 AND a.sha256=?
+        LIMIT 2
+        """,
+        (paid.term, paid.number, meta.source_kind, meta.source_url, scan.source_sha256),
+    ).fetchall()
+    if len(rows) != 1:
+        raise CycleNotObservedError("unique_primary_scan_source_unavailable")
+    (row,) = rows
+    reader = DocumentSourceRows(db)
+    source = reader.get_source_observation(row["observation_id"])
+    if source is None or (selection := reader.get_document_selection(source.selection_id)) is None:
+        raise ValueError("retained scan source is missing its selected document")
+    if (
+        row["artifact_bytes"] != scan.source_bytes
+        or row["read_bytes"] != scan.source_bytes
+        or len(selection.selection.parts) != 1
+    ):
+        raise ValueError("retained scan source differs from its artifact")
+    original = selection.selection.parts[0]
+    if original.members or (original.url, original.source_sha256, original.pages) != (
+        meta.source_url,
+        scan.source_sha256,
+        scan.source_pages,
+    ):
+        raise ValueError("retained scan source differs from its selection")
+    return source, {
+        "artifact_sha256": scan.source_sha256,
+        "recorded_scan_input": scan.model_dump(mode="json"),
+        "retained_provider_request_manifest_sha256": manifest.manifest_sha256,
+    }
+
+
 def _inspect(db: sqlite3.Connection, publication_id: int) -> dict[str, object]:
     row = db.execute("SELECT * FROM publications WHERE id=?", (publication_id,)).fetchone()
     if row is None:
@@ -152,29 +228,45 @@ def _inspect(db: sqlite3.Connection, publication_id: int) -> dict[str, object]:
     if (item.term, item.number, item.call_kind) != (paid.term, paid.number, paid.purpose):
         raise ValueError("consumed item differs from its paid input owner")
     meta = item.meta
-    if not isinstance(meta, BatchItemMeta) or meta.prepared_input_receipt is None:
+    if not isinstance(meta, BatchItemMeta):
         raise CycleNotObservedError("prepared_receipt_unavailable")
     receipt = meta.prepared_input_receipt
-    if not isinstance(receipt, PrimaryInputReceipt):
+    if receipt is None and (meta.text_source != "scan" or meta.selection.scan_input is None):
+        raise CycleNotObservedError("prepared_receipt_unavailable")
+    if receipt is not None and not isinstance(receipt, PrimaryInputReceipt):
         raise CycleNotObservedError("receipt_outside_single_part_scope")
-    if receipt.source_selection_id is None:
-        raise CycleNotObservedError("receipt_source_selection_unavailable")
     if (
         meta.input_binding != paid.input_binding
         or meta.generation != paid.generation
         or meta.request_sha256 != paid.request_sha256
-        or receipt.request_sha256 != paid.request_sha256
-        or meta.input_chars != receipt.text_chars
-        or record.input_chars != receipt.text_chars
     ):
         raise ValueError("consumed item differs from its exact paid request")
+    physical: dict[str, object]
+    if receipt is None:
+        source, physical = _primary_scan_source(db, paid, meta)
+    else:
+        if receipt.source_selection_id is None:
+            raise CycleNotObservedError("receipt_source_selection_unavailable")
+        if (
+            receipt.request_sha256 != paid.request_sha256
+            or meta.input_chars != receipt.text_chars
+            or record.input_chars != receipt.text_chars
+        ):
+            raise ValueError("consumed item differs from its exact paid request")
+        sources = reader.source_observations_for_selection(
+            bill.term, bill.number, receipt.source_selection_id
+        )
+        if len(sources) != 1:
+            raise CycleNotObservedError("unique_source_observation_unavailable")
+        (source,) = sources
+        ranges = retained_pdf_page_ranges(db, receipt)
+        physical = {
+            "artifact_sha256": receipt.artifact_sha256,
+            "extraction_id": receipt.extraction_id,
+        }
+        if ranges:
+            physical["normalized_pdf_page_ranges"] = ranges
     validate_input_snapshots(db)
-    sources = reader.source_observations_for_selection(
-        bill.term, bill.number, receipt.source_selection_id
-    )
-    if len(sources) != 1:
-        raise CycleNotObservedError("unique_source_observation_unavailable")
-    source = sources[0]
     if (source.document.kind, source.document.url) != (meta.source_kind, meta.source_url):
         raise CycleNotObservedError("frozen_source_context_unavailable")
     collection_id, collection = _application(db, paid, "collection")
@@ -214,14 +306,11 @@ def _inspect(db: sqlite3.Connection, publication_id: int) -> dict[str, object]:
         or not paid.collected_at <= item.consumed_at <= projection.created_at
     ):
         raise ValueError("recorded source, computation and delivery chronology disagree")
-    ranges = retained_pdf_page_ranges(db, receipt)
     return {
-        **({"normalized_pdf_page_ranges": ranges} if ranges else {}),
+        **physical,
         "source_kind": source.document.kind,
         "source_observation_id": source.observation_id,
-        "source_selection_id": receipt.source_selection_id,
-        "artifact_sha256": receipt.artifact_sha256,
-        "extraction_id": receipt.extraction_id,
+        "source_selection_id": source.selection_id,
         "purpose": paid.purpose,
         "result_id": paid.result_id,
         "request_sha256": paid.request_sha256,
@@ -539,7 +628,13 @@ def _inspect_card(
     db: sqlite3.Connection, publication_id: int, *, include_compact: bool
 ) -> tuple[str, dict[str, object]]:
     try:
-        return "exact_retained_cycle", _inspect(db, publication_id)
+        cycle = _inspect(db, publication_id)
+        reason = (
+            "exact_retained_scan_cycle"
+            if "recorded_scan_input" in cycle
+            else "exact_retained_cycle"
+        )
+        return reason, cycle
     except CycleNotObservedError as exc:
         if include_compact and str(exc) == "frozen_plan_unavailable":
             compact = read_expired_card_primary_cycle(db, publication_id)

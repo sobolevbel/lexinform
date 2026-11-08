@@ -1,0 +1,221 @@
+{
+  "scope": "Sejm original print PDFs and titles pinned from corpus. Fake legislative process, fake provider exchange and fake send; real extraction and OpenAI and Anthropic request builders.",
+  "cases": {
+    "24": {
+      "pins": {
+        "sejm/term10/files/24__24.pdf": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/files/25__25.pdf": "11c7c5bed9e2df7b13671052b16981d015a7471db8c3d81a4e53100b9c3ad97b"
+      },
+      "baseline_reason": "prepared_receipt_unavailable",
+      "candidate": {
+        "version": 1,
+        "status": "recorded",
+        "reason": "exact_retained_scan_cycle",
+        "database_sha256": "370d173a261d5e63e730b391ba1536435b57c34b6fb840b963d4c7f29a6e3509",
+        "publication_id": 1,
+        "scope": "One historical database-recorded direct card send.",
+        "exclusions": [
+          "Current Telegram content",
+          "live verification",
+          "source-family acceptance"
+        ],
+        "cycle": {
+          "artifact_sha256": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+          "recorded_scan_input": {
+            "version": 1,
+            "source_sha256": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+            "source_bytes": 1498776,
+            "source_pages": 28,
+            "input_sha256": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+            "input_bytes": 1498776,
+            "first_page": 1,
+            "page_count": 28,
+            "transformations": []
+          },
+          "retained_provider_request_manifest_sha256": "477456e772eb63f85550fe27d4d1a43cf60e8a12ac79b0fe07d227290eb63068",
+          "source_kind": "print",
+          "source_observation_id": "source-observation-v1:7c801001ced646295812daa16f33f851ca32dece2345157a73ecbff2e6d82d41",
+          "source_selection_id": "selection-v1:0c0bf414ee64806c3d011f10b460c417d42feb76f7cb37a1c070988d4812fa6a",
+          "purpose": "analysis",
+          "result_id": "result-v1:daca843d216e7ee376256a6624609a8b8d24a8a7a7fb499520a1ac97b87ac933",
+          "request_sha256": "207b2ba4ca88495d1cca52e6fed11f725b95ca7119a0bc747d48792dab7df48d",
+          "collection_application_id": 1,
+          "projection_application_id": 2,
+          "recorded_sent_at": "2026-09-07T06:00:00+00:00",
+          "frozen_render_sha256": "ceca71765d9ab758e6a96ecd3e19913b54bb1c9a674a23ce892612f70df99038"
+        }
+      },
+      "physical_pages_rechecked": true
+    },
+    "25": {
+      "pins": {
+        "sejm/term10/files/24__24.pdf": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+        "sejm/term10/files/25__25.pdf": "11c7c5bed9e2df7b13671052b16981d015a7471db8c3d81a4e53100b9c3ad97b"
+      },
+      "baseline_reason": "prepared_receipt_unavailable",
+      "candidate": {
+        "version": 1,
+        "status": "recorded",
+        "reason": "exact_retained_scan_cycle",
+        "database_sha256": "022a6970c26e29deee8956f845c05c1d68f0d302096a6451215934acb717421d",
+        "publication_id": 1,
+        "scope": "One historical database-recorded direct card send.",
+        "exclusions": [
+          "Current Telegram content",
+          "live verification",
+          "source-family acceptance"
+        ],
+        "cycle": {
+          "artifact_sha256": "11c7c5bed9e2df7b13671052b16981d015a7471db8c3d81a4e53100b9c3ad97b",
+          "recorded_scan_input": {
+            "version": 1,
+            "source_sha256": "11c7c5bed9e2df7b13671052b16981d015a7471db8c3d81a4e53100b9c3ad97b",
+            "source_bytes": 3296038,
+            "source_pages": 47,
+            "input_sha256": "11c7c5bed9e2df7b13671052b16981d015a7471db8c3d81a4e53100b9c3ad97b",
+            "input_bytes": 3296038,
+            "first_page": 1,
+            "page_count": 47,
+            "transformations": []
+          },
+          "retained_provider_request_manifest_sha256": "d35b2cbd7017fa8fe2284f471d65e2e0220428d9caa7ac9cc5e5aef976261cba",
+          "source_kind": "print",
+          "source_observation_id": "source-observation-v1:b0e1ee214cf903b6f688ed5119ffdfadfe26557db38f3eb76f08f60787614ead",
+          "source_selection_id": "selection-v1:9ae4e4fdd08e89b365d3bcaa5bfcd3770ca77a494cca5a9ce482b5913a112c39",
+          "purpose": "analysis",
+          "result_id": "result-v1:0ba2647bf3bc599c079e1f271033744ec78fefaf405ac89a031f748b4efb8b09",
+          "request_sha256": "28b5aa07f9b0b653c69209850b8c8e97827bc162b8069b97a7d0d97b50422c69",
+          "collection_application_id": 1,
+          "projection_application_id": 2,
+          "recorded_sent_at": "2026-09-07T06:00:00+00:00",
+          "frozen_render_sha256": "a9f6713a2f6e4bb8bedadf4016413b5890024b163074aee84fe2db76d724536b"
+        }
+      },
+      "physical_pages_rechecked": true
+    },
+    "604": {
+      "pins": {
+        "sejm/term10/files/604__604.pdf": "2a9dc5be4d5ba5133037be5541fc0c0a41ca780520cca66a712fd66d01a428b0",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72"
+      },
+      "baseline_reason": "prepared_receipt_unavailable",
+      "candidate": {
+        "version": 1,
+        "status": "recorded",
+        "reason": "exact_retained_scan_cycle",
+        "database_sha256": "ddc0fd3f25c068c39c6bfd0a83d40461127431086b3e77639e09821e5ab378c2",
+        "publication_id": 1,
+        "scope": "One historical database-recorded direct card send.",
+        "exclusions": [
+          "Current Telegram content",
+          "live verification",
+          "source-family acceptance"
+        ],
+        "cycle": {
+          "artifact_sha256": "2a9dc5be4d5ba5133037be5541fc0c0a41ca780520cca66a712fd66d01a428b0",
+          "recorded_scan_input": {
+            "version": 1,
+            "source_sha256": "2a9dc5be4d5ba5133037be5541fc0c0a41ca780520cca66a712fd66d01a428b0",
+            "source_bytes": 2243206,
+            "source_pages": 37,
+            "input_sha256": "ddb60d55d4d4da82e0bf7e547f74c2118267b268ad33a4478c50673dde9d5b72",
+            "input_bytes": 2143856,
+            "first_page": 2,
+            "page_count": 36,
+            "transformations": [
+              "cover_letter"
+            ]
+          },
+          "retained_provider_request_manifest_sha256": "aaf858d321bb266f78349479538199e6f812e2dda77795fbe58e3128db42d3a8",
+          "source_kind": "print",
+          "source_observation_id": "source-observation-v1:a7c2ab049c27d5fd68e96cfb0ed964ffd931e7b86edffe475c71c83bb3c17440",
+          "source_selection_id": "selection-v1:17a066187b11dad79459f1cf61654212a3efdb5c1b1d0bd08d920896e2a3690a",
+          "purpose": "analysis",
+          "result_id": "result-v1:22dc4a061d1bd78346746d71538364b102539eb1cf4c5acdfbbcba25858de2e8",
+          "request_sha256": "8c729bbd824305689afe981e01f883e2ad92f370955273491c305c97dfbc9089",
+          "collection_application_id": 1,
+          "projection_application_id": 2,
+          "recorded_sent_at": "2026-09-07T06:00:00+00:00",
+          "frozen_render_sha256": "eed3119910a7d4d628e25fe2d0fa6459dabab08760f79cb9e23e5d32d1a7b828"
+        }
+      },
+      "physical_pages_rechecked": true
+    }
+  },
+  "cover_provider_prune": {
+    "removed": {
+      "delivery_payloads": 0,
+      "analysis_memos": 0,
+      "batch_payloads": 1
+    },
+    "snapshot_sha256": "a7fb4978047f5f9100d04a251633fc37e7dc5ddf270fe72912e654c73cd48819",
+    "exact_restores": 2,
+    "cycle_unchanged": true
+  },
+  "faults": {
+    "missing_source_read": {
+      "status": "not_observed",
+      "reason": "unique_primary_scan_source_unavailable"
+    },
+    "changed_artifact_size": {
+      "status": "invalid",
+      "reason": "invalid_snapshot_evidence"
+    },
+    "changed_page_start": {
+      "status": "invalid",
+      "reason": "invalid_snapshot_evidence"
+    },
+    "missing_request_manifest": {
+      "status": "not_observed",
+      "reason": "primary_scan_input_unavailable"
+    }
+  },
+  "saved_state_control": {
+    "revision": "8e7a715b56871e6843742760b6e8cc8923a5b42d",
+    "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+    "unchanged": true
+  },
+  "baseline": "d718190553c61aa144d68808208a7923271e5ec8",
+  "anthropic_cover_control": {
+    "version": 1,
+    "status": "recorded",
+    "reason": "exact_retained_scan_cycle",
+    "database_sha256": "a2d21da114d4edcbf6a894f097799562511a7f97a15e4162b52ce0b2e40ceb3b",
+    "publication_id": 1,
+    "scope": "One historical database-recorded direct card send.",
+    "exclusions": [
+      "Current Telegram content",
+      "live verification",
+      "source-family acceptance"
+    ],
+    "cycle": {
+      "artifact_sha256": "2a9dc5be4d5ba5133037be5541fc0c0a41ca780520cca66a712fd66d01a428b0",
+      "recorded_scan_input": {
+        "version": 1,
+        "source_sha256": "2a9dc5be4d5ba5133037be5541fc0c0a41ca780520cca66a712fd66d01a428b0",
+        "source_bytes": 2243206,
+        "source_pages": 37,
+        "input_sha256": "ddb60d55d4d4da82e0bf7e547f74c2118267b268ad33a4478c50673dde9d5b72",
+        "input_bytes": 2143856,
+        "first_page": 2,
+        "page_count": 36,
+        "transformations": [
+          "cover_letter"
+        ]
+      },
+      "retained_provider_request_manifest_sha256": "5595922f465b9586731f7c2a14470b8e1f57c778c97a57986d21f02cd6498b6d",
+      "source_kind": "print",
+      "source_observation_id": "source-observation-v1:a7c2ab049c27d5fd68e96cfb0ed964ffd931e7b86edffe475c71c83bb3c17440",
+      "source_selection_id": "selection-v1:17a066187b11dad79459f1cf61654212a3efdb5c1b1d0bd08d920896e2a3690a",
+      "purpose": "analysis",
+      "result_id": "result-v1:2c7cd8b92503018a5aaac2ac54574237569fc1e06cc46fe41ed25171c7a1493d",
+      "request_sha256": "a05134d133be4f1097ff4f324bbc67a217ecf57e2cba6081360d1c91fd373860",
+      "collection_application_id": 1,
+      "projection_application_id": 2,
+      "recorded_sent_at": "2026-09-07T06:00:00+00:00",
+      "frozen_render_sha256": "eed3119910a7d4d628e25fe2d0fa6459dabab08760f79cb9e23e5d32d1a7b828"
+    }
+  }
+}

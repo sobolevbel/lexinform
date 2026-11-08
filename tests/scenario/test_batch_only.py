@@ -1,14 +1,25 @@
+import io
+import sqlite3
 from collections.abc import Callable
+from contextlib import closing
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
+from pypdf import PdfReader, PdfWriter
+from tools.primary_delivery_cycle import audit
 
+from lexinform.adapters.doc_text import DocTextExtractor
+from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
+from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.errors import LlmContextExceededError
 from lexinform.models import OutcomeStatus, TextDocument
 from lexinform.models.report import CallKind
 from lexinform.services.analysis import AnalysisService, Waiting
-from tests.harness import World
+from tests.conftest import FIXTURES
+from tests.harness import World, print_url
 from tests.scenario.test_analysis_overflow import OverflowBatch
+from tests.unit.test_scan_payload_reader import offline_openai_backend
 
 _Ask = Callable[[], object]
 
@@ -34,6 +45,48 @@ def test_manual_commands_queue_all_models_and_only_triage_is_synchronous(
     w.run()
     assert w.bill("3039").analysis is not None
     assert len(w.publisher.new_bills) == 1
+
+
+def test_retained_primary_scan_cycle_reports_the_submitted_page_window(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original = PdfReader(FIXTURES / "print_3039.pdf")
+    pdf = PdfWriter()
+    pdf.add_page(original.pages[0])
+    for _ in range(7):
+        pdf.add_blank_page(width=612, height=792)
+    raw = io.BytesIO()
+    pdf.write(raw)
+    world = World(
+        extractor=DocumentTextExtractor(
+            PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor()
+        ),
+        batch_only=True,
+        analysis_model="gpt-5.1",
+        single_message_cards=True,
+    )
+    world.add_bill("4200", "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach")
+    world.gateway.files[print_url("4200")] = raw.getvalue()
+    monkeypatch.setattr(world.batch, "prepare_request", offline_openai_backend().prepare_request)
+    world.run()
+    world.batch.resolve()
+    world.run()
+    database = tmp_path / "checkpoint.db"
+    with closing(sqlite3.connect(database)) as connection:
+        connection.executescript(world.repo.dump())
+        (publication_id,) = connection.execute(
+            "SELECT id FROM publications WHERE kind='new_bill' AND status='sent'"
+        ).fetchone()
+
+    report = audit(database, publication_id)
+
+    assert report["reason"] == "exact_retained_scan_cycle"
+    cycle = report["cycle"]
+    assert isinstance(cycle, dict), "the recorded report contains the physical input"
+    scan = cycle["recorded_scan_input"]
+    assert isinstance(scan, dict), "the physical input carries the submitted page window"
+    assert (scan["first_page"], scan["page_count"]) == (2, 7)
+    assert scan["source_sha256"] != scan["input_sha256"]
 
 
 SECONDARY_KINDS: list[CallKind] = ["joint", "supplement", "amendments"]
