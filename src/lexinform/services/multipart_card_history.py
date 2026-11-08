@@ -3,7 +3,11 @@
 import logging
 
 from lexinform.models import Bill, ContentSnapshot, ContentVersion, Publication
-from lexinform.models.content import original_delivery_bill_snapshot
+from lexinform.models.content import (
+    MultipartCardRevisionProfile,
+    original_delivery_bill_snapshot,
+    pack_original_bill_snapshot,
+)
 from lexinform.models.multipart_card_history import (
     MAX_MULTIPART_CARD_BYTES,
     MAX_MULTIPART_CARD_PARTS,
@@ -56,19 +60,22 @@ def record_multipart_card_revision(
         )
         context = original_delivery_bill_snapshot(bill.model_dump_json())
         snapshot = ContentSnapshot(kind="plan", payload_json=plan.model_dump_json())
-        if (
-            len(context.payload_json.encode()) + len(snapshot.payload_json.encode())
-            > MAX_MULTIPART_CARD_BYTES
-        ):
-            log.warning("multipart card history omitted: publication=%s reason=bytes", root.id)
-            return
+        context_budget = MAX_MULTIPART_CARD_BYTES - len(snapshot.payload_json.encode())
+        profile: MultipartCardRevisionProfile = "card-multipart-revision-v1"
+        if len(context.payload_json.encode()) > context_budget:
+            packed = pack_original_bill_snapshot(context) if context_budget > 0 else None
+            if packed is None or len(packed.payload_json.encode()) > context_budget:
+                log.warning("multipart card history omitted: publication=%s reason=bytes", root.id)
+                return
+            context = packed
+            profile = "card-multipart-revision-packed-v1"
         version = ContentVersion(
             root_publication_id=previous.root_publication_id,
             previous_version_id=previous.content_id,
             reason="card_revision",
             bill_snapshot_id=context.snapshot_id,
             plan_snapshot_id=snapshot.snapshot_id,
-            multipart_card_revision="card-multipart-revision-v1",
+            multipart_card_revision=profile,
             formatter_version=FORMATTER_VERSION,
             language=language,
             recorded_at=root.created_at,

@@ -15,7 +15,7 @@ from lexinform.models.enums import PublicationKind, PublicationStatus
 from lexinform.models.grouped_update_witness import GroupedRenderWitness
 from lexinform.models.original_delivery_content import OriginalDeliveryEvidence
 from lexinform.models.reviews import DocumentReviewRecord
-from lexinform.packed_content import MAX_PACKED_BASE64_CHARS, unpack_content
+from lexinform.packed_content import MAX_PACKED_BASE64_CHARS, pack_content, unpack_content
 
 
 class ContentSnapshot(BaseModel):
@@ -88,6 +88,18 @@ class PackedOriginalBill(BaseModel):
     profile: Literal["original-bill-zlib-v1"] = "original-bill-zlib-v1"
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     packed: str = Field(min_length=1, max_length=MAX_PACKED_BASE64_CHARS)
+
+
+def pack_original_bill_snapshot(snapshot: ContentSnapshot) -> ContentSnapshot | None:
+    raw = snapshot.payload_json.encode()
+    packed = pack_content(raw)
+    if packed is None:
+        return None
+    envelope = PackedOriginalBill(sha256=hashlib.sha256(raw).hexdigest(), packed=packed)
+    payload = envelope.model_dump_json()
+    if len(payload.encode()) >= len(raw):
+        return None
+    return ContentSnapshot(kind="bill", payload_json=payload)
 
 
 def original_bill_context(

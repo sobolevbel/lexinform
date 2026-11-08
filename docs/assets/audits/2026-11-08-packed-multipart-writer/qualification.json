@@ -1,0 +1,122 @@
+{
+  "reader": "417a69119ba32bb23471d9f24b355212586975bf",
+  "scope": "Four offline multipart edit controls, with fake delivery and synthetic nonrendered context. No production processing or model requests.",
+  "restore": "The reader revision restored and dumped all four candidate SQL snapshots byte-for-byte after operational cleanup.",
+  "physical_delivery": "Identical ordered HTML and message IDs in each baseline/candidate pair.",
+  "baseline": {
+    "ordinary": {
+      "profile": "card-multipart-revision-v1",
+      "html_sha256": "d805db799758d9fd5419ab93406407116ea09ac1cceff6f6921b9eeb56678a35",
+      "message_ids": [
+        101,
+        102,
+        103
+      ],
+      "context_bytes": 21561,
+      "stored_context_bytes": 21561,
+      "sql_sha256": "b2a6d1aa2621feb087fc6dd643832212a3bfbf19341c1a11deca88420148c604",
+      "sql_bytes": 177237,
+      "gzip_bytes": 16975
+    },
+    "compressible": {
+      "profile": null,
+      "html_sha256": "d805db799758d9fd5419ab93406407116ea09ac1cceff6f6921b9eeb56678a35",
+      "message_ids": [
+        101,
+        102,
+        103
+      ],
+      "context_bytes": null,
+      "stored_context_bytes": null,
+      "sql_sha256": "bb45db090a78626c500975cf58f881807aa40253df12924e0bfacaaed335a1e8",
+      "sql_bytes": 134655,
+      "gzip_bytes": 13896
+    },
+    "over_decoded_limit": {
+      "profile": null,
+      "html_sha256": "d805db799758d9fd5419ab93406407116ea09ac1cceff6f6921b9eeb56678a35",
+      "message_ids": [
+        101,
+        102,
+        103
+      ],
+      "context_bytes": null,
+      "stored_context_bytes": null,
+      "sql_sha256": "bb45db090a78626c500975cf58f881807aa40253df12924e0bfacaaed335a1e8",
+      "sql_bytes": 134655,
+      "gzip_bytes": 13896
+    },
+    "over_packed_limit": {
+      "profile": null,
+      "html_sha256": "d805db799758d9fd5419ab93406407116ea09ac1cceff6f6921b9eeb56678a35",
+      "message_ids": [
+        101,
+        102,
+        103
+      ],
+      "context_bytes": null,
+      "stored_context_bytes": null,
+      "sql_sha256": "bb45db090a78626c500975cf58f881807aa40253df12924e0bfacaaed335a1e8",
+      "sql_bytes": 134655,
+      "gzip_bytes": 13896
+    }
+  },
+  "candidate": {
+    "ordinary": {
+      "profile": "card-multipart-revision-v1",
+      "html_sha256": "d805db799758d9fd5419ab93406407116ea09ac1cceff6f6921b9eeb56678a35",
+      "message_ids": [
+        101,
+        102,
+        103
+      ],
+      "context_bytes": 21561,
+      "stored_context_bytes": 21561,
+      "sql_sha256": "b2a6d1aa2621feb087fc6dd643832212a3bfbf19341c1a11deca88420148c604",
+      "sql_bytes": 177237,
+      "gzip_bytes": 16975
+    },
+    "compressible": {
+      "profile": "card-multipart-revision-packed-v1",
+      "html_sha256": "d805db799758d9fd5419ab93406407116ea09ac1cceff6f6921b9eeb56678a35",
+      "message_ids": [
+        101,
+        102,
+        103
+      ],
+      "context_bytes": 171559,
+      "stored_context_bytes": 3559,
+      "sql_sha256": "73fb653e61b3eb702110613f61ec6fa67d20690a272ee38245af31464a92388e",
+      "sql_bytes": 159242,
+      "gzip_bytes": 18063
+    },
+    "over_decoded_limit": {
+      "profile": null,
+      "html_sha256": "d805db799758d9fd5419ab93406407116ea09ac1cceff6f6921b9eeb56678a35",
+      "message_ids": [
+        101,
+        102,
+        103
+      ],
+      "context_bytes": null,
+      "stored_context_bytes": null,
+      "sql_sha256": "bb45db090a78626c500975cf58f881807aa40253df12924e0bfacaaed335a1e8",
+      "sql_bytes": 134655,
+      "gzip_bytes": 13896
+    },
+    "over_packed_limit": {
+      "profile": null,
+      "html_sha256": "d805db799758d9fd5419ab93406407116ea09ac1cceff6f6921b9eeb56678a35",
+      "message_ids": [
+        101,
+        102,
+        103
+      ],
+      "context_bytes": null,
+      "stored_context_bytes": null,
+      "sql_sha256": "bb45db090a78626c500975cf58f881807aa40253df12924e0bfacaaed335a1e8",
+      "sql_bytes": 134655,
+      "gzip_bytes": 13896
+    }
+  }
+}

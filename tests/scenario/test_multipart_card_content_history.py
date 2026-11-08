@@ -1,7 +1,6 @@
 import sqlite3
 from contextlib import closing
 from datetime import timedelta
-from hashlib import sha256
 from pathlib import Path
 from typing import Literal
 
@@ -9,10 +8,9 @@ import pytest
 from tools.content_history_doctor import audit
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
-from lexinform.models import ContentSnapshot, ContentVersion, PublicationKind
-from lexinform.models.content import PackedOriginalBill
+from lexinform.models import PublicationKind
+from lexinform.models.content import original_bill_context
 from lexinform.models.multipart_card_history import MultipartCardPlan
-from lexinform.packed_content import pack_content
 from lexinform.services.card_edits import edit_card
 from lexinform.services.content_inspection import inspect_content
 from tests.checkpoint_state import saved_state
@@ -28,39 +26,27 @@ def test_multipart_revision_preserves_ordered_history_after_cleanup(
     shape: Literal["single_many", "many_same"],
     packed: bool,
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    if packed:
-        save_revision = SqliteBillRepository.save_multipart_card_revision
-
-        def save_packed(
-            repo: SqliteBillRepository,
-            bill: ContentSnapshot,
-            plan: ContentSnapshot,
-            version: ContentVersion,
-        ) -> None:
-            raw = bill.payload_json.encode()
-            encoded = pack_content(raw)
-            assert encoded is not None, "the fixture fits the packed limit"
-            envelope = PackedOriginalBill(sha256=sha256(raw).hexdigest(), packed=encoded)
-            context = ContentSnapshot(kind="bill", payload_json=envelope.model_dump_json())
-            packed_version = ContentVersion.model_validate(
-                {
-                    **version.model_dump(),
-                    "bill_snapshot_id": context.snapshot_id,
-                    "multipart_card_revision": "card-multipart-revision-packed-v1",
-                }
-            )
-            save_revision(repo, context, plan, packed_version)
-
-        monkeypatch.setattr(SqliteBillRepository, "save_multipart_card_revision", save_packed)
     case = prepare("off", shape)
     world = case.world
     owner = case.baseline
     assert owner.id is not None and case.previous[0].id is not None
     predecessor = world.repo.get_publication_content(case.previous[0].id)
     assert predecessor is not None, "the first freeze retained its version"
-    refresh(world)
+    if packed:
+        bill = world.bill("3039").model_copy(update={"last_error": "e" * 150_000})
+        edited = edit_card(
+            world.repo,
+            world.clock,
+            world.publisher,
+            bill,
+            owner,
+            world.gateway.get_print(TERM, "3039"),
+            channel_id=CHANNEL,
+        )
+        assert edited.completed
+    else:
+        refresh(world)
     slots = edition(world)
     first = slots[0]
     assert first.id is not None
@@ -104,6 +90,12 @@ def test_multipart_revision_preserves_ordered_history_after_cleanup(
             assert durable.repo.dump() == sql
             view = inspect_content(durable.repo, owner)
             assert view is not None and view.current_id == version.content_id
+            if packed:
+                stored = durable.repo.get_content_snapshot(version.bill_context_id)
+                assert stored is not None, "the packed context survives cleanup"
+                context = original_bill_context(stored, packed=True)
+                assert len(context.payload_json.encode()) > 128 * 1024
+                assert len(stored.payload_json.encode()) < 4 * 1024
             snapshot = durable.repo.get_content_snapshot(version.plan_snapshot_id)
             assert snapshot is not None, "the version retains the physical edit vector"
             plan = MultipartCardPlan.model_validate_json(snapshot.payload_json)
@@ -175,7 +167,18 @@ def test_government_multipart_revision_retains_frozen_term_after_rollover() -> N
 
 def test_multipart_revision_over_budget_preserves_normal_physical_edits() -> None:
     case = prepare("off", "many_grow")
-    refresh(case.world)
+    world = case.world
+    bill = world.bill("3039").model_copy(update={"last_error": "e" * 525_000})
+    edited = edit_card(
+        world.repo,
+        world.clock,
+        world.publisher,
+        bill,
+        case.baseline,
+        world.gateway.get_print(TERM, "3039"),
+        channel_id=CHANNEL,
+    )
+    assert edited.completed
     slots = edition(case.world)
     assert tuple(row.delivery.rendered_text for row in slots if row.delivery) == case.texts
     assert all(row.message_id is not None for row in slots)

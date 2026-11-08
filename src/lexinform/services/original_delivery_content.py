@@ -1,12 +1,11 @@
 """Capture eligible original notices inside their first physical freeze."""
 
-import hashlib
 import logging
 
 from lexinform.models import Bill, ContentSnapshot, ContentVersion, Publication, PublicationKind
 from lexinform.models.content import (
-    PackedOriginalBill,
     original_delivery_bill_snapshot,
+    pack_original_bill_snapshot,
     validate_review_notice,
 )
 from lexinform.models.enums import PublicationStatus
@@ -22,22 +21,9 @@ from lexinform.models.original_delivery_content import (
     OriginalDeliveryPlan,
     original_delivery_context,
 )
-from lexinform.packed_content import pack_content
 from lexinform.ports import BillRepository
 
 log = logging.getLogger(__name__)
-
-
-def _packed_bill_snapshot(snapshot: ContentSnapshot) -> ContentSnapshot | None:
-    raw = snapshot.payload_json.encode()
-    packed = pack_content(raw)
-    if packed is None:
-        return None
-    envelope = PackedOriginalBill(sha256=hashlib.sha256(raw).hexdigest(), packed=packed)
-    payload = envelope.model_dump_json()
-    if len(payload.encode()) >= len(raw):
-        return None
-    return ContentSnapshot(kind="bill", payload_json=payload)
 
 
 def record_original_delivery_content(
@@ -133,12 +119,12 @@ def record_original_delivery_content(
         primary_bytes = len(primary_snapshot.payload_json.encode()) if primary_snapshot else 0
         packed_bill = None
         if len(bill.payload_json.encode()) + primary_bytes > bill_budget:
-            replacement = _packed_bill_snapshot(bill)
+            replacement = pack_original_bill_snapshot(bill)
             if replacement is not None:
                 bill = replacement
                 packed_bill = True
             if primary_snapshot is not None and joint_primary is not None:
-                replacement = _packed_bill_snapshot(primary_snapshot)
+                replacement = pack_original_bill_snapshot(primary_snapshot)
                 if replacement is not None:
                     primary_snapshot = replacement
                     primary_bytes = len(replacement.payload_json.encode())
