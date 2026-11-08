@@ -241,6 +241,11 @@ class ActPublishedContentEvidence(BaseModel):
     ref: str | None = Field(default=None, max_length=512)
 
 
+MultipartCardRevisionProfile = Literal[
+    "card-multipart-revision-v1", "card-multipart-revision-packed-v1"
+]
+
+
 class ContentVersion(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -285,7 +290,7 @@ class ContentVersion(BaseModel):
     original_delivery_evidence: OriginalDeliveryEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
-    multipart_card_revision: Literal["card-multipart-revision-v1"] | None = Field(
+    multipart_card_revision: MultipartCardRevisionProfile | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(
@@ -552,7 +557,7 @@ class ContentVersionSummary(BaseModel):
     original_delivery_evidence: OriginalDeliveryEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
-    multipart_card_revision: Literal["card-multipart-revision-v1"] | None = Field(
+    multipart_card_revision: MultipartCardRevisionProfile | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     source_scope: Literal["frozen_primary_context/analysis"] | None = Field(

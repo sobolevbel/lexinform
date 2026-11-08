@@ -1,6 +1,7 @@
 import sqlite3
 from contextlib import closing
 from datetime import timedelta
+from hashlib import sha256
 from pathlib import Path
 from typing import Literal
 
@@ -8,8 +9,10 @@ import pytest
 from tools.content_history_doctor import audit
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
-from lexinform.models import PublicationKind
+from lexinform.models import ContentSnapshot, ContentVersion, PublicationKind
+from lexinform.models.content import PackedOriginalBill
 from lexinform.models.multipart_card_history import MultipartCardPlan
+from lexinform.packed_content import pack_content
 from lexinform.services.card_edits import edit_card
 from lexinform.services.content_inspection import inspect_content
 from tests.checkpoint_state import saved_state
@@ -18,11 +21,39 @@ from tests.scenario.test_card_edit_multipart import edition, prepare, refresh
 from tests.scenario.test_single_card_revision_producer import change
 
 
-@pytest.mark.parametrize("shape", ["single_many", "many_same"])
+@pytest.mark.parametrize(
+    ("shape", "packed"), [("single_many", False), ("many_same", False), ("many_same", True)]
+)
 def test_multipart_revision_preserves_ordered_history_after_cleanup(
     shape: Literal["single_many", "many_same"],
+    packed: bool,
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    if packed:
+        save_revision = SqliteBillRepository.save_multipart_card_revision
+
+        def save_packed(
+            repo: SqliteBillRepository,
+            bill: ContentSnapshot,
+            plan: ContentSnapshot,
+            version: ContentVersion,
+        ) -> None:
+            raw = bill.payload_json.encode()
+            encoded = pack_content(raw)
+            assert encoded is not None, "the fixture fits the packed limit"
+            envelope = PackedOriginalBill(sha256=sha256(raw).hexdigest(), packed=encoded)
+            context = ContentSnapshot(kind="bill", payload_json=envelope.model_dump_json())
+            packed_version = ContentVersion.model_validate(
+                {
+                    **version.model_dump(),
+                    "bill_snapshot_id": context.snapshot_id,
+                    "multipart_card_revision": "card-multipart-revision-packed-v1",
+                }
+            )
+            save_revision(repo, context, plan, packed_version)
+
+        monkeypatch.setattr(SqliteBillRepository, "save_multipart_card_revision", save_packed)
     case = prepare("off", shape)
     world = case.world
     owner = case.baseline
@@ -35,7 +66,9 @@ def test_multipart_revision_preserves_ordered_history_after_cleanup(
     assert first.id is not None
     version = world.repo.get_publication_content(first.id)
     assert version is not None and version.previous_version_id == predecessor.content_id
-    assert version.multipart_card_revision == "card-multipart-revision-v1"
+    assert version.multipart_card_revision == (
+        "card-multipart-revision-packed-v1" if packed else "card-multipart-revision-v1"
+    )
     database = tmp_path / "multipart-card.db"
     with closing(SqliteBillRepository(database)) as repo:
         repo.migrate()

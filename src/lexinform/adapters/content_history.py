@@ -1957,19 +1957,20 @@ def verify_multipart_card_revision(
     snapshot = reader.get_content_snapshot(version.plan_snapshot_id)
     if (
         bill is None
-        or bill.kind != "bill"
-        or original_delivery_bill_snapshot(bill.payload_json) != bill
         or snapshot is None
         or len(bill.payload_json.encode()) + len(snapshot.payload_json.encode())
         > MAX_MULTIPART_CARD_BYTES
     ):
         raise ValueError("multipart_card_semantic_scope")
-    semantic = Bill.model_validate(read_json(bill.payload_json))
+    context = original_bill_context(
+        bill, packed=version.multipart_card_revision == "card-multipart-revision-packed-v1"
+    )
+    semantic = Bill.model_validate(read_json(context.payload_json))
     if not _original_delivery_owner_matches(connection, semantic, owner, retired=retired):
         raise ValueError("multipart_card_semantic_owner")
     if require_bound and _edition_bindings(connection, version.content_id) != set(plan.bindings):
         raise ValueError("multipart_card_binding_scope")
-    compact = card_bill_snapshot(bill.payload_json)
+    compact = card_bill_snapshot(context.payload_json)
     parent = owner
     for index, slot in enumerate(plan.slots, 1):
         row = _edition_publication(connection, slot.id)
