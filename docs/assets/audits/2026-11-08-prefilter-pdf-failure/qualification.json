@@ -1,0 +1,154 @@
+{
+  "before": [
+    {
+      "file": "669532.pdf",
+      "sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+      "pages": 6,
+      "original": {
+        "status": "skipped_text_prefilter",
+        "hits": 0,
+        "unanswered": 0,
+        "rejected": [
+          "10/4100"
+        ]
+      },
+      "blank": {
+        "status": "skipped_text_prefilter",
+        "hits": 0,
+        "unanswered": 0,
+        "rejected": [
+          "10/4100"
+        ]
+      },
+      "failure": {
+        "status": "skipped_text_prefilter",
+        "hits": 0,
+        "unanswered": 0,
+        "rejected": [
+          "10/4100"
+        ]
+      }
+    },
+    {
+      "file": "667159.pdf",
+      "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8",
+      "pages": 25,
+      "original": {
+        "status": "analysis_pending",
+        "hits": 1,
+        "unanswered": 0,
+        "rejected": []
+      },
+      "blank": {
+        "status": "analysis_pending",
+        "hits": 1,
+        "unanswered": 0,
+        "rejected": []
+      },
+      "failure": {
+        "status": "analysis_pending",
+        "hits": 1,
+        "unanswered": 0,
+        "rejected": []
+      }
+    },
+    {
+      "file": "716051.pdf",
+      "sha256": "57fd6ccef59e7d024691a8f2164fad5cc8878765b87e1f018d03d3b549bd8d9f",
+      "pages": 74,
+      "original": {
+        "status": "analysis_pending",
+        "hits": 1,
+        "unanswered": 0,
+        "rejected": []
+      },
+      "blank": {
+        "status": "analysis_pending",
+        "hits": 1,
+        "unanswered": 0,
+        "rejected": []
+      },
+      "failure": {
+        "status": "analysis_pending",
+        "hits": 1,
+        "unanswered": 0,
+        "rejected": []
+      }
+    }
+  ],
+  "after": [
+    {
+      "file": "669532.pdf",
+      "sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+      "pages": 6,
+      "original": {
+        "status": "skipped_text_prefilter",
+        "hits": 0,
+        "unanswered": 0,
+        "rejected": [
+          "10/4100"
+        ]
+      },
+      "blank": {
+        "status": "skipped_text_prefilter",
+        "hits": 0,
+        "unanswered": 0,
+        "rejected": [
+          "10/4100"
+        ]
+      },
+      "failure": {
+        "status": "text_prefilter_pending",
+        "hits": 0,
+        "unanswered": 1,
+        "rejected": []
+      }
+    },
+    {
+      "file": "667159.pdf",
+      "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8",
+      "pages": 25,
+      "original": {
+        "status": "analysis_pending",
+        "hits": 1,
+        "unanswered": 0,
+        "rejected": []
+      },
+      "blank": {
+        "status": "analysis_pending",
+        "hits": 1,
+        "unanswered": 0,
+        "rejected": []
+      },
+      "failure": {
+        "status": "analysis_pending",
+        "hits": 1,
+        "unanswered": 0,
+        "rejected": []
+      }
+    },
+    {
+      "file": "716051.pdf",
+      "sha256": "57fd6ccef59e7d024691a8f2164fad5cc8878765b87e1f018d03d3b549bd8d9f",
+      "pages": 74,
+      "original": {
+        "status": "analysis_pending",
+        "hits": 1,
+        "unanswered": 0,
+        "rejected": []
+      },
+      "blank": {
+        "status": "analysis_pending",
+        "hits": 1,
+        "unanswered": 0,
+        "rejected": []
+      },
+      "failure": {
+        "status": "analysis_pending",
+        "hits": 1,
+        "unanswered": 0,
+        "rejected": []
+      }
+    }
+  ]
+}

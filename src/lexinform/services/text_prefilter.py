@@ -68,6 +68,7 @@ class PrefilterLoad:
     unanswered: bool = False
     selection_state: str = ""
     source_read: SourceReadCapture | None = None
+    pdf_page_failure: bool = False
 
     @property
     def is_scan(self) -> bool:
@@ -131,17 +132,17 @@ class TextPrefilterService:
                 except Exception as exc:
                     result.failed += 1
                     loaded = self.problem(bill, exc)
-                if loaded.unanswered:
+                status = self._record_decision(bill, loaded)
+                if status is BillStatus.TEXT_PREFILTER_PENDING:
                     result.unanswered += 1
                 elif loaded.is_scan:
                     result.scans += 1
                 elif loaded.text is None:
                     result.unreadable += 1
                     result.unreadable_bills.append(f"{bill.term}/{bill.number}")
-                accepted = self.decide(bill, loaded)
-                if accepted and not loaded.is_scan:
+                if status is BillStatus.ANALYSIS_PENDING and not loaded.is_scan:
                     result.hits += 1
-                elif not accepted and loaded.text is not None:
+                elif status is BillStatus.SKIPPED_TEXT_PREFILTER and loaded.text is not None:
                     result.rejected.append(f"{bill.term}/{bill.number}")
         log.info(
             "text prefilter: checked=%d hits=%d scans=%d unreadable=%d unanswered=%d failed=%d",
@@ -174,6 +175,9 @@ class TextPrefilterService:
         return PrefilterLoad(None, f"text prefilter failed: {type(exc).__name__}: {exc}")
 
     def decide(self, bill: Bill, loaded: PrefilterLoad) -> bool:
+        return self._record_decision(bill, loaded) is BillStatus.ANALYSIS_PENDING
+
+    def _record_decision(self, bill: Bill, loaded: PrefilterLoad) -> BillStatus:
         """Record the source decision and its outcome together on the calling thread."""
         with self._repo.atomic():
             if loaded.source_read is not None:
@@ -187,7 +191,7 @@ class TextPrefilterService:
                 )
             return self._decide(bill, loaded)
 
-    def _decide(self, bill: Bill, loaded: PrefilterLoad) -> bool:
+    def _decide(self, bill: Bill, loaded: PrefilterLoad) -> BillStatus:
         """Keep keyword misses, unavailable files and unreadable documents distinct."""
         if loaded.selection_state in ("unsupported", "ambiguous"):
             status = (
@@ -196,7 +200,7 @@ class TextPrefilterService:
                 else BillStatus.DOCUMENT_UNSUPPORTED
             )
             self._repo.set_status(bill.term, bill.number, status, reason=loaded.problem)
-            return False
+            return status
         if loaded.unanswered:
             self._repo.set_status(
                 bill.term,
@@ -205,7 +209,7 @@ class TextPrefilterService:
                 reason=loaded.problem,
             )
             log.info("druk %s stays pending: %s", bill.number, loaded.problem)
-            return False
+            return BillStatus.TEXT_PREFILTER_PENDING
         if loaded.is_scan:
             self._repo.set_status(
                 bill.term,
@@ -219,11 +223,18 @@ class TextPrefilterService:
                 loaded.pages,
                 bill.summary.title,
             )
-            return True
+            return BillStatus.ANALYSIS_PENDING
         counts = self._prefilter.match_counts(loaded.text) if loaded.text else {}
         accepted = accept_text_hits(
             counts, min_distinct=self._min_distinct, min_occurrences=self._min_occurrences
         )
+        if not accepted and loaded.pdf_page_failure:
+            failure_reason = "text prefilter: PDF page extraction failed; keyword search incomplete"
+            self._repo.set_status(
+                bill.term, bill.number, BillStatus.TEXT_PREFILTER_PENDING, reason=failure_reason
+            )
+            log.info("druk %s stays pending: %s", bill.number, failure_reason)
+            return BillStatus.TEXT_PREFILTER_PENDING
         hits = [f"{TEXT_HIT_PREFIX}{name}" for name in counts]
         status = BillStatus.ANALYSIS_PENDING if accepted else BillStatus.SKIPPED_TEXT_PREFILTER
         reason = None if accepted else loaded.problem or _miss(counts, self._min_distinct)
@@ -250,7 +261,7 @@ class TextPrefilterService:
                 bill.summary.title,
                 reason,
             )
-        return accepted
+        return status
 
     def load(self, bill: Bill) -> PrefilterLoad:
         """Missing Orka files stay pending; downloaded files that cannot be read are skipped."""
@@ -307,7 +318,11 @@ class TextPrefilterService:
             return PrefilterLoad(None, _no_document(file), pages=file.pages)
         assert file.text is not None, "prefilter_admission admits text only for a present body"
         amendments = [part.text for part in file.selection.parts if part.role == "self_amendment"]
-        return PrefilterLoad("\n\n".join((file.text, *amendments)), None)
+        return PrefilterLoad(
+            "\n\n".join((file.text, *amendments)),
+            None,
+            pdf_page_failure=file.selection.has_pdf_page_failure,
+        )
 
 
 def _miss(counts: dict[str, int], min_distinct: int) -> str:

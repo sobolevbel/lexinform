@@ -5,9 +5,10 @@ import logging
 import pytest
 
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import BillStatus, RunReport
+from lexinform.models import BillStatus, DocumentPart, DocumentSelection, RunReport
+from lexinform.models.documents import ExtractedDocument
 from tests.fakes import FakeTextExtractor
-from tests.harness import RPW, World, submission, submission_url
+from tests.harness import RPW, World, print_url, submission, submission_url
 
 FOREIGNER_TEXT = (
     "Art. 1. W ustawie o cudzoziemcach wprowadza się zmiany. "
@@ -237,3 +238,36 @@ def test_a_missing_rpw_file_is_retried_when_it_appears(workers: int) -> None:
 
     assert (retried.text_prefilter_hits, retried.analyzed, retried.published) == (1, 1, 1)
     assert w.bill(RPW).status is BillStatus.ANALYZED
+
+
+def test_pdf_page_failure_leaves_a_keyword_miss_pending_until_the_file_is_read() -> None:
+    class PartialPdf(FakeTextExtractor):
+        def extract_document(self, data: bytes) -> ExtractedDocument:
+            if data == b"%PDF":
+                return ExtractedDocument(
+                    text="Art. 1. Przepisy podatkowe. " * 50,
+                    selection=DocumentSelection(
+                        parts=(DocumentPart(losses=("PDF text extraction failed on 1 page(s)",)),)
+                    ),
+                )
+            return ExtractedDocument(text=FOREIGNER_TEXT)
+
+    world = World(extractor=PartialPdf(page_count=1))
+    world.add_bill("4100", "Projekt ustawy o podatku")
+
+    first = world.run()
+
+    assert first.text_prefilter_unanswered == 1
+    assert first.prefilter_rejected == []
+    assert world.bill("4100").status is BillStatus.TEXT_PREFILTER_PENDING
+    assert world.llm.contexts == []
+
+    restarted = World(extractor=PartialPdf(page_count=1))
+    restarted.repo.restore(world.repo.dump())
+    restarted.add_bill("4100", "Projekt ustawy o podatku")
+    restarted.gateway.files[print_url("4100")] = b"%PDF-readable"
+    restarted.clock.advance(days=1)
+    second = restarted.run()
+
+    assert second.text_prefilter_hits == 1
+    assert restarted.bill("4100").status is BillStatus.ANALYZED
