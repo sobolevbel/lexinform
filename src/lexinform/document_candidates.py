@@ -279,7 +279,12 @@ def _select_parts(
     if incomplete_peers or (
         len(confirmed) > 1 and any(part.has_pdf_page_failure for _, part in confirmed)
     ):
-        waiting_parts = (*(confirmed or [(main_index, main)]), *incomplete_peers)
+        incomplete_indices = {index for index, _ in incomplete_peers}
+        readable_peers = confirmed or [(main_index, main)]
+        waiting_parts = (
+            *((index, part) for index, part in readable_peers if index not in incomplete_indices),
+            *incomplete_peers,
+        )
         failures = {index for index, part in waiting_parts if part.has_pdf_page_failure}
         for _, index, _ in candidates:
             note(

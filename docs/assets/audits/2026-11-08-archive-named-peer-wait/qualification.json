@@ -210,5 +210,19 @@
         "injected_pages": 0
       }
     }
+  },
+  "cached_rcl_replay": {
+    "cases": 4276,
+    "counts": {
+      "ambiguous": 123,
+      "no_candidate": 205,
+      "selected": 2273,
+      "unsupported": 669,
+      "unverified": 925,
+      "waiting": 81
+    },
+    "missing_inputs": 1383,
+    "unchanged": true,
+    "report_sha256": "eb248462d738eb6d8213546e988565817fb4789a32ace448a57a03fb5b483f66"
   }
 }
