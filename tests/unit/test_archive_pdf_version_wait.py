@@ -3,6 +3,7 @@ import hashlib
 import pytest
 
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
+from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.models import PdfPageText, PdfTextExtraction, TextDocument
 from lexinform.physical_observations import PhysicalObservationCollector
 from lexinform.services.documents import TextLoader
@@ -218,6 +219,21 @@ def test_cover_letter_in_partially_read_draft_defers_selection(
     if state == "waiting":
         (part,) = loaded.selection.parts
         assert part.has_pdf_page_failure and part.role == "unknown"
+
+
+@pytest.mark.parametrize(
+    ("name", "state"), [("projekt.pdf", "waiting"), ("pismo.pdf", "unsupported")]
+)
+def test_archive_pdf_page_tree_failure_is_distinct_from_blank_pages(name: str, state: str) -> None:
+    reader = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), FakeTextExtractor())
+
+    loaded = reader.extract_document_with_provenance(
+        archive({name: b"%PDF-1.7\ninvalid page tree"})
+    ).document
+
+    assert loaded.selection.state == state and not loaded.text
+    (observed,) = loaded.selection.observed_parts
+    assert observed.has_pdf_page_failure and observed.pages == 0
 
 
 @pytest.mark.parametrize("failed_folder", ["b", "other"])

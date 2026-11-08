@@ -120,16 +120,16 @@ def select_document_parts(
     max_part_chars: int | None,
     decision_sink: Callable[[ArchivePolicyDecision], None] | None = None,
 ) -> ExtractedDocument:
-    failed_pdf_pages = {
-        item.part_index: sum(page.error_type is not None for page in item.extraction.pages)
-        for item in extracted.pdf_pages
-    }
+    pdf_extractions = {item.part_index: item.extraction for item in extracted.pdf_pages}
     parts: list[DocumentPart] = []
     for index, part in enumerate(extracted.parts):
         kind = document_kind(part.text) if part.text.strip() else "unknown"
         losses = _legacy_losses(part)
-        if failures := failed_pdf_pages.get(index, 0):
-            losses += (f"{PDF_PAGE_FAILURE_PREFIX}{failures} page(s)",)
+        if (pdf := pdf_extractions.get(index)) is not None:
+            if failures := sum(page.error_type is not None for page in pdf.pages):
+                losses += (f"{PDF_PAGE_FAILURE_PREFIX}{failures} page(s)",)
+            if part.members and pdf.error_type is not None:
+                losses += (f"{PDF_PAGE_FAILURE_PREFIX}an unreadable page tree",)
         parts.append(
             part.model_copy(update={"role": _ROLE_OF_KIND.get(kind, "unknown"), "losses": losses})
         )

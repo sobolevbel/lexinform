@@ -1,0 +1,126 @@
+{
+  "baseline_commit": "f6bc15d136ba8729e8a844cb00ca0ebe5acd72d6",
+  "source": "documents/files/667159.pdf",
+  "pdf_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8",
+  "truncated_bytes": 128,
+  "changed_cases": [
+    "named_failure",
+    "named_truncated"
+  ],
+  "baseline": {
+    "named_failure": {
+      "archive_sha256": "ef05f56cde564c811d2449a677d46e7c7471d76858702e144221990aeeac75b6",
+      "state": "unsupported",
+      "reads": [
+        "https://source.test/partial.zip"
+      ],
+      "output_text_sha256": null,
+      "observed_parts": 1,
+      "parts": []
+    },
+    "support_failure": {
+      "archive_sha256": "19650b6018d7eb673594deb3296d874a174f0e32a269d6d8b19918a76ea111de",
+      "state": "unsupported",
+      "reads": [
+        "https://source.test/partial.zip"
+      ],
+      "output_text_sha256": null,
+      "observed_parts": 1,
+      "parts": []
+    },
+    "named_truncated": {
+      "archive_sha256": "6ca261dd52b37cf64e9428a5103ca65b4762dc1a570104337724e9e90cc4b198",
+      "state": "unsupported",
+      "reads": [
+        "https://source.test/partial.zip"
+      ],
+      "output_text_sha256": null,
+      "observed_parts": 1,
+      "parts": []
+    },
+    "named_original": {
+      "archive_sha256": "ef05f56cde564c811d2449a677d46e7c7471d76858702e144221990aeeac75b6",
+      "state": "unverified",
+      "reads": [
+        "https://source.test/partial.zip"
+      ],
+      "output_text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+      "observed_parts": 1,
+      "parts": [
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8",
+          "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+          "page_failure": false
+        }
+      ]
+    }
+  },
+  "candidate": {
+    "named_failure": {
+      "archive_sha256": "ef05f56cde564c811d2449a677d46e7c7471d76858702e144221990aeeac75b6",
+      "state": "waiting",
+      "reads": [
+        "https://source.test/partial.zip"
+      ],
+      "output_text_sha256": null,
+      "observed_parts": 1,
+      "parts": [
+        {
+          "role": "unknown",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8",
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "page_failure": true
+        }
+      ]
+    },
+    "support_failure": {
+      "archive_sha256": "19650b6018d7eb673594deb3296d874a174f0e32a269d6d8b19918a76ea111de",
+      "state": "unsupported",
+      "reads": [
+        "https://source.test/partial.zip"
+      ],
+      "output_text_sha256": null,
+      "observed_parts": 1,
+      "parts": []
+    },
+    "named_truncated": {
+      "archive_sha256": "6ca261dd52b37cf64e9428a5103ca65b4762dc1a570104337724e9e90cc4b198",
+      "state": "waiting",
+      "reads": [
+        "https://source.test/partial.zip"
+      ],
+      "output_text_sha256": null,
+      "observed_parts": 1,
+      "parts": [
+        {
+          "role": "unknown",
+          "sha256": "0390777a6df9136f18f2006d161b9282297879f4c20a3a39b299878346ffbe30",
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "page_failure": true
+        }
+      ]
+    },
+    "named_original": {
+      "archive_sha256": "ef05f56cde564c811d2449a677d46e7c7471d76858702e144221990aeeac75b6",
+      "state": "unverified",
+      "reads": [
+        "https://source.test/partial.zip"
+      ],
+      "output_text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+      "observed_parts": 1,
+      "parts": [
+        {
+          "role": "bill",
+          "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8",
+          "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+          "page_failure": false
+        }
+      ]
+    }
+  },
+  "policy_version": "document-selection-v11",
+  "unchanged_native_archives_excluding_policy_label": 16,
+  "native_comparison_sha256": "e813562d9d8caba0d5d3d60f613d61d07eee4b626fa3a0a7ef2504f540564feb",
+  "previous_reader_restored_waiting_dump_and_preserved_page_failure": true
+}
