@@ -42,6 +42,7 @@ class CandidateTraceRowError(ValueError):
             "candidate_trace_archive_conflict_parent_mismatch",
             "candidate_trace_admitted_support_parent_mismatch",
             "candidate_trace_composed_support_parent_mismatch",
+            "candidate_trace_duplicate_support_parent_mismatch",
             "candidate_trace_admitted_normative_parent_mismatch",
         ],
     ) -> None:
@@ -457,6 +458,7 @@ def _admitted_selection(
     code: Literal[
         "candidate_trace_admitted_support_parent_mismatch",
         "candidate_trace_composed_support_parent_mismatch",
+        "candidate_trace_duplicate_support_parent_mismatch",
         "candidate_trace_admitted_normative_parent_mismatch",
     ],
 ) -> tuple[TextDocument, tuple[DocumentPart, ...]]:
@@ -494,6 +496,42 @@ def _validate_admitted_support_link(
             or parts[0].members
             or (parts[0].role, parts[0].sha256, parts[0].text_sha256)
             != (row.role, row.file_sha256, row.text_sha256)
+        ):
+            raise CandidateTraceRowError(code)
+
+
+def _validate_duplicate_support_link(
+    connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
+) -> None:
+    exclusions = trace.supporting_exclusions
+    if exclusions is None:
+        return
+    duplicates = [row for row in exclusions.rows if row.reason == "duplicate_standalone"]
+    if not duplicates:
+        return
+    code: Literal["candidate_trace_duplicate_support_parent_mismatch"] = (
+        "candidate_trace_duplicate_support_parent_mismatch"
+    )
+    candidate, parts = _admitted_selection(
+        connection, trace, observation_id, duplicates[0].index, code
+    )
+    for row in duplicates:
+        position = row.duplicate_of_part
+        if position is None or position >= len(parts):
+            raise CandidateTraceRowError(code)
+        part = parts[position]
+        earlier_urls = {
+            candidate.url,
+            *candidate.required_urls,
+            *candidate.normative_urls,
+            *candidate.amendment_urls,
+            *candidate.extra_urls[: row.extra_index],
+        }
+        if (
+            part.members
+            or (part.sha256, part.text_sha256) != (row.file_sha256, row.duplicate_text_sha256)
+            or part.url not in earlier_urls
+            or any(item.url == candidate.extra_urls[row.extra_index] for item in parts)
         ):
             raise CandidateTraceRowError(code)
 
@@ -557,6 +595,7 @@ def validate_candidate_trace_link(
 ) -> None:
     _validate_admitted_support_link(connection, trace, observation_id)
     _validate_composed_support_link(connection, trace, observation_id)
+    _validate_duplicate_support_link(connection, trace, observation_id)
     _validate_admitted_normative_link(connection, trace, observation_id)
     _validate_archive_version_link(connection, trace, observation_id)
     _validate_archive_conflict_link(connection, trace, observation_id)
@@ -662,10 +701,15 @@ def validate_candidate_trace_links(
         "candidate_trace_archive_conflict_parent_mismatch",
         "candidate_trace_admitted_support_parent_mismatch",
         "candidate_trace_composed_support_parent_mismatch",
+        "candidate_trace_duplicate_support_parent_mismatch",
         "candidate_trace_admitted_normative_parent_mismatch",
     ]
     if trace.admitted_normative_annexes is not None:
         code = "candidate_trace_admitted_normative_parent_mismatch"
+    elif trace.supporting_exclusions is not None and any(
+        row.reason == "duplicate_standalone" for row in trace.supporting_exclusions.rows
+    ):
+        code = "candidate_trace_duplicate_support_parent_mismatch"
     elif trace.composed_support is not None:
         code = "candidate_trace_composed_support_parent_mismatch"
     elif trace.admitted_support is not None:

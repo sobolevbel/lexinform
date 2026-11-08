@@ -493,6 +493,7 @@ class RequiredPartExclusions(BaseModel):
 
 MAX_SUPPORTING_EXCLUSIONS = 8
 SupportingExclusionReason = Literal[
+    "duplicate_standalone",
     "draft_regulation",
     "returned_no_text",
     "download_size_limit",
@@ -509,8 +510,23 @@ class SupportingPartExclusion(BaseModel):
     reason: SupportingExclusionReason
     file_sha256: Sha256 | None = Field(default=None, exclude_if=lambda value: value is None)
 
+    duplicate_of_part: Position | None = Field(default=None, exclude_if=lambda value: value is None)
+    duplicate_text_sha256: Sha256 | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     @model_validator(mode="after")
     def observed_body(self) -> Self:
+        if self.reason == "duplicate_standalone":
+            if (
+                self.file_sha256 is None
+                or self.duplicate_of_part is None
+                or self.duplicate_text_sha256 is None
+            ):
+                raise ValueError("A duplicate supporting file requires its body and retained part")
+            return self
+        if self.duplicate_of_part is not None or self.duplicate_text_sha256 is not None:
+            raise ValueError("Only duplicate support can point to a retained part")
         if (
             self.reason not in ("draft_regulation", "returned_no_text")
             and self.file_sha256 is not None
@@ -1319,6 +1335,19 @@ def validate_supporting_exclusions(
         for row in exclusions.rows
     ):
         raise ValueError("Supporting exclusion exceeds its admitted extra URL namespace")
+    candidate = (request, *request.alternatives)[first.index]
+    other_urls = {
+        candidate.url,
+        *candidate.required_urls,
+        *candidate.normative_urls,
+        *candidate.amendment_urls,
+    }
+    if any(
+        row.reason == "duplicate_standalone"
+        and (extras.count(extras[row.extra_index]) != 1 or extras[row.extra_index] in other_urls)
+        for row in exclusions.rows
+    ):
+        raise ValueError("Duplicate support requires an unambiguous extra URL")
 
 
 def _selected_admission_candidate(

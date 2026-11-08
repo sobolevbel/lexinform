@@ -1,0 +1,87 @@
+{
+  "scope": "Byte-equality inventory of earlier distinct URLs in current RCL candidate catalogs; equality alone does not prove runtime deduplication.",
+  "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "checked_extra_positions": 530,
+  "missing_local_inputs": 31,
+  "equal_body_pairs": [],
+  "legacy_state_report_byte_identical": true,
+  "reader_control": {
+    "case": "RCL/12405602",
+    "synthetic_alias_of_pinned_file": true,
+    "file_sha256": "a21d3f2a426ba8b4bddbc10946510b5b16ac727ea758d29078e5b1a81f43f73d",
+    "text_sha256": "9020baf14911406152544ddaf81c4c8157b9ee7a1416cfd47900d0b6d6221054",
+    "retained_index": 2,
+    "duplicate_extra_index": 2,
+    "dump_restored_byte_identically": true
+  },
+  "earlier_stage_inventory": {
+    "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "unique_extra_contexts_checked": 2520,
+    "unique_extra_contexts_unavailable": 2339,
+    "equal_body_pairs": [
+      {
+        "number": "RCL/12384253",
+        "stage_cutoff": 6,
+        "earlier": "documents/files/682029.pdf",
+        "duplicate": "documents/files/682028.pdf",
+        "sha256": "1feb0ac322b6ce339d83a2fbe027bb737bb0da1903d38b86e26ab6a62b8bb72b"
+      }
+    ]
+  },
+  "natural_replay": {
+    "number": "RCL/12384253",
+    "stage_cutoff": 6,
+    "state": "selected",
+    "reads": [
+      [
+        "dokument685700.pdf",
+        0
+      ],
+      [
+        "dokument682026.pdf",
+        1
+      ],
+      [
+        "dokument682029.pdf",
+        1
+      ],
+      [
+        "dokument682025.pdf",
+        1
+      ],
+      [
+        "dokument682028.pdf",
+        1
+      ]
+    ],
+    "selected_parts": [
+      {
+        "name": "dokument682029.pdf",
+        "role": "bill",
+        "sha256": "1feb0ac322b6ce339d83a2fbe027bb737bb0da1903d38b86e26ab6a62b8bb72b",
+        "text_sha256": "924cd5d5644e1c5b4d47833db0f5749faed5b83f9acc7a82a3fc152450c187d6",
+        "members": 0
+      },
+      {
+        "name": "dokument682025.pdf",
+        "role": "justification",
+        "sha256": "d282a1335f2349123486eb47656d230e974c1c058750ac7f2e3f0775e7ed2b7b",
+        "text_sha256": "afcfd891848d878d3e51a93f2876dd97066781e0f4d0daa724d9734b9380103a",
+        "members": 0
+      }
+    ],
+    "selected_extras": [
+      "dokument682025.pdf",
+      "dokument682028.pdf"
+    ],
+    "pins": {
+      "corpus/12384253.json": "1677c3923a7d00382ed02601742f01532181fb4e53374cffdd74d7d65aeef0ea",
+      "documents/files/682026.pdf": "3b6edf9d2a62901b04b98a6dd3d64ca28533828b9bb028d6db0e831550374b59",
+      "documents/files/682029.pdf": "1feb0ac322b6ce339d83a2fbe027bb737bb0da1903d38b86e26ab6a62b8bb72b",
+      "documents/files/682025.pdf": "d282a1335f2349123486eb47656d230e974c1c058750ac7f2e3f0775e7ed2b7b",
+      "documents/files/682028.pdf": "1feb0ac322b6ce339d83a2fbe027bb737bb0da1903d38b86e26ab6a62b8bb72b"
+    },
+    "selection_id": "selection-v1:20a08ab0f7bec64d09f37c851b7d02b3d8feb311a1ee8adeedd112ca449f776d",
+    "text_sha256": "8458f3cc4290a57712b971d1139270a51edcb88a1363d658b6e266760f1db678"
+  }
+}
