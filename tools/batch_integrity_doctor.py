@@ -13,7 +13,7 @@ from lexinform.models import BatchIntent, LlmBatchItem
 from lexinform.models.batch import batch_item_meta
 from tools.batch_receipts import audit_receipts
 from tools.corpus_artifacts import write_json
-from tools.sqlite_snapshot import open_snapshot
+from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 _APPLICATION = {"id", "result_id", "term", "number", "generation", "phase", "application_json"}
 _INTENT = {"custom_id", "provider", "request_json", "meta_json", "state", "created_at"}
@@ -259,7 +259,7 @@ def audit(database: Path, *, include_batch_receipts: bool = False) -> dict[str, 
 
 
 def run(database: Path, output: Path, *, include_batch_receipts: bool = False) -> int:
-    if database.resolve() == output.resolve():
+    if output.resolve() in snapshot_files(database):
         raise ValueError("Report must be separate from the input database")
     report = audit(database, include_batch_receipts=include_batch_receipts)
     output.parent.mkdir(parents=True, exist_ok=True)

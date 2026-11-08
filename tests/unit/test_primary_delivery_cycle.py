@@ -436,25 +436,26 @@ def test_secondary_request_prefix_keeps_exact_suffix_and_rejects_prefix_conflict
     assert target.read_bytes() == before
 
 
-def test_prefix_cli_cannot_write_database_sidecar(
-    secondary_snapshot: tuple[Path, int, int], monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("suffix", ["-wal", "-shm", "-journal"])
+@pytest.mark.parametrize("mode", ["primary", "compact", "secondary", "prefix", "census"])
+def test_cli_cannot_write_database_sidecar(
+    secondary_snapshot: tuple[Path, int, int],
+    monkeypatch: pytest.MonkeyPatch,
+    mode: str,
+    suffix: str,
 ) -> None:
     target, publication, application = secondary_snapshot
-    sidecar = Path(str(target) + "-wal")
+    sidecar = Path(str(target) + suffix)
+    args = ["--publication-id", str(publication)] if mode != "census" else ["--census"]
+    if mode == "compact":
+        args.append("--include-compact")
+    if mode in ("secondary", "prefix"):
+        args.extend(("--secondary-application-id", str(application)))
+    if mode == "prefix":
+        args.append("--include-request-prefix")
     monkeypatch.setattr(
         "sys.argv",
-        [
-            "primary_delivery_cycle",
-            "--database",
-            str(target),
-            "--publication-id",
-            str(publication),
-            "--secondary-application-id",
-            str(application),
-            "--include-request-prefix",
-            "--output",
-            str(sidecar),
-        ],
+        ["primary_delivery_cycle", "--database", str(target), "--output", str(sidecar), *args],
     )
 
     with pytest.raises(SystemExit) as error:

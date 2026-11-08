@@ -15,7 +15,7 @@ from lexinform.adapters.input_receipts import parse_batch_request
 from lexinform.models.batch import DigestItemMeta, FrozenRequestManifest, batch_item_meta
 from tools.corpus_artifacts import write_json
 from tools.saved_records import SavedRecordIssue, is_saved_answer, saved_columns, saved_records
-from tools.sqlite_snapshot import open_snapshot
+from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 _SHA = re.compile(r"[0-9a-f]{64}")
 _REQUIRED = {"llm_batch_intents", "llm_batch_items", "llm_batches", "bills", "analysis_memo"}
@@ -231,7 +231,7 @@ def audit(database: Path) -> dict[str, Any]:
 
 
 def run(database: Path, output: Path) -> int:
-    if output.resolve() == database.resolve():
+    if output.resolve() in snapshot_files(database):
         raise ValueError("Report must be separate from the input database")
     report = audit(database)
     output.parent.mkdir(parents=True, exist_ok=True)

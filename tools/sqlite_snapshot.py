@@ -9,6 +9,12 @@ from pathlib import Path
 from tools.corpus_artifacts import digest, read_artifact
 
 
+def snapshot_files(database: Path) -> set[Path]:
+    """Return the snapshot and SQLite sidecar names reserved beside it."""
+    path = database.resolve()
+    return {Path(str(path) + suffix) for suffix in ("", "-wal", "-shm", "-journal")}
+
+
 def live_journal(path: Path) -> bool:
     return any(
         sidecar.exists() and sidecar.stat().st_size > 0

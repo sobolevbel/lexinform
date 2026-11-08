@@ -1,0 +1,69 @@
+{
+  "baseline": "9df521cf425454cf63c392d2c7c7c272659daa8d",
+  "scope": "Offline copy of the RCL 12405004 multipart card before plan cleanup, from J519.",
+  "snapshot_sha256": "d99eb2345b22c07dcde428b971dba212b9af0cd6bd9224f1c5946a4fcf3c5021",
+  "ordinary_report_sha256": "6fca9559e9cf029a54fedfe819d034b4378c79af9c07b275e916bc7bde09e332",
+  "baseline_wrote_report_to_wal_name": true,
+  "candidate_rejected_wal_name": true,
+  "snapshot_bytes_unchanged": true,
+  "separate_output_unchanged": true,
+  "checked_cli_modes": [
+    "primary",
+    "compact",
+    "secondary",
+    "prefix",
+    "census"
+  ],
+  "checked_sqlite_sidecars": [
+    "-wal",
+    "-shm",
+    "-journal"
+  ],
+  "state_control": {
+    "state_revision": "8e7a715b56871e6843742760b6e8cc8923a5b42d",
+    "snapshot_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+    "reports": {
+      "audit_saved_primary_claims": {
+        "exit_code": 0,
+        "sha256": "1e332b4abf37e7ff856e673342248465d384deec95670377c8b97401f7368ac1"
+      },
+      "batch_integrity_doctor": {
+        "exit_code": 0,
+        "sha256": "8926fba890a8083f39f4185ba0807ab97e6d19758ea331072df95079c36a4588"
+      },
+      "computation_doctor": {
+        "exit_code": 0,
+        "sha256": "2c9c90f929a84375b1918a7dcf1a18cb342ad70437a61310c4af076969650e50"
+      },
+      "content_history_doctor": {
+        "exit_code": 1,
+        "sha256": "7626cb420ad35def3b38328d9399cb5aade45406e0dd56cfa4e73ccce432268a"
+      },
+      "document_read_profile": {
+        "exit_code": 0,
+        "sha256": "95c456da0cb9cf3cd19e506b79c3329701f7e16a7aeacd9a039ed69e1e803f3e"
+      },
+      "legacy_history": {
+        "exit_code": 0,
+        "sha256": "2cfdf526ebaecf999e398f16e67db3501b7dee66246426f17f43d0a8031797a0"
+      },
+      "request_doctor": {
+        "exit_code": 0,
+        "sha256": "aef9e0633ae662275d593d6f3839d48300762a6ef889ed725d52ba3bf0507a93"
+      },
+      "retained_integrity_doctor": {
+        "exit_code": 0,
+        "sha256": "22b778e1a389d1cd6d2a3030df8cbfa68d473788f3556f389d562dd727a43a3c"
+      },
+      "source_history_doctor": {
+        "exit_code": 0,
+        "sha256": "bb7678e78eed7e5fbf6fa3fc802a9693c5e16a115bde4765ef16d9f10b7a91b1"
+      },
+      "work_doctor": {
+        "exit_code": 0,
+        "sha256": "5f97e78f02e250a283ba1910905406efd9711011c1bcbc7522caedc39b999cc5"
+      }
+    },
+    "before_after_equal": true
+  }
+}

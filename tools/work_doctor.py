@@ -21,7 +21,7 @@ from lexinform.saved_clock import saved_clock_age
 from tools.corpus_artifacts import write_json
 from tools.observed_latency import observed_latency
 from tools.observed_timing import observed_timing
-from tools.sqlite_snapshot import open_snapshot
+from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 _REQUIRED = {"bills", "document_work", "status_changes", "publications", "analysis_memo"}
 
@@ -482,7 +482,7 @@ def run(
     observed_at: datetime | None = None,
     include_timing_witnesses: bool = False,
 ) -> int:
-    if output.resolve() == database.resolve():
+    if output.resolve() in snapshot_files(database):
         raise ValueError("Report must be separate from the input database")
     report = audit(
         database, observed_at=observed_at, include_timing_witnesses=include_timing_witnesses

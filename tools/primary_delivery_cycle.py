@@ -40,7 +40,7 @@ from lexinform.models.batch import batch_item_meta
 from lexinform.models.primary_projections import PRIMARY_USAGE_FIELDS
 from lexinform.primary_projections import primary_record_matches
 from tools.corpus_artifacts import write_json
-from tools.sqlite_snapshot import open_snapshot
+from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 _SUPPLEMENTS = TypeAdapter(list[SupplementRecord])
 
@@ -718,19 +718,13 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
-        database = args.database.resolve()
-        protected = {database}
         if args.census and (
             args.include_request_prefix
             or args.include_compact
             or args.secondary_application_id is not None
         ):
             raise ValueError("Census uses its own primary and secondary evidence modes")
-        if args.include_request_prefix or args.census:
-            protected.update(
-                Path(str(database) + suffix) for suffix in ("-wal", "-shm", "-journal")
-            )
-        if args.output.resolve() in protected:
+        if args.output.resolve() in snapshot_files(args.database):
             raise ValueError("Report must be separate from the input database")
         report = (
             census(args.database)

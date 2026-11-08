@@ -34,7 +34,7 @@ from lexinform.models import (
 )
 from lexinform.models.commands import read_delivery_resolution
 from tools.corpus_artifacts import write_json
-from tools.sqlite_snapshot import open_snapshot
+from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 _TABLES = {"content_snapshots", "content_versions", "publication_content"}
 
@@ -420,7 +420,7 @@ def audit(database: Path, *, publication_id: int | None = None) -> dict[str, Any
 
 
 def run(database: Path, output: Path, *, publication_id: int | None = None) -> int:
-    if output.resolve() == database.resolve():
+    if output.resolve() in snapshot_files(database):
         raise ValueError("Report must be separate from the input database")
     report = audit(database, publication_id=publication_id)
     output.parent.mkdir(parents=True, exist_ok=True)

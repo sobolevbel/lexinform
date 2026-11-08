@@ -38,7 +38,7 @@ from lexinform.models import (
 from lexinform.models.revision_work import decode_document_work
 from lexinform.name_binding import mnemonic_matches_result
 from tools.corpus_artifacts import write_json
-from tools.sqlite_snapshot import open_snapshot
+from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 _LEGACY = {
     "legacy_analysis_bodies": {"body_sha256", "body_json"},
@@ -505,7 +505,7 @@ def audit(database: Path) -> dict[str, Any]:
 
 
 def run(database: Path, output: Path) -> int:
-    if database.resolve() == output.resolve():
+    if output.resolve() in snapshot_files(database):
         raise ValueError("Report must be separate from database")
     report = audit(database)
     output.parent.mkdir(parents=True, exist_ok=True)

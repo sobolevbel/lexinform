@@ -33,7 +33,7 @@ from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 from tools.replay_primary_claims import technical_answer
 from tools.replay_proposal_edition import PinnedInput
-from tools.sqlite_snapshot import open_snapshot
+from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 _MAX_BYTES = 32_000_000
 
@@ -313,11 +313,7 @@ def main() -> None:
     args = parser.parse_args()
     try:
         output, database = args.output.resolve(), args.database.resolve()
-        protected = {
-            database,
-            *(Path(str(database) + suffix) for suffix in ("-wal", "-shm", "-journal")),
-        }
-        if output in protected or output.is_relative_to(args.corpus.resolve()):
+        if output in snapshot_files(database) or output.is_relative_to(args.corpus.resolve()):
             raise ValueError("Replay output must be outside the corpus and snapshot files")
         raw = read_artifact(args.case)
         if digest(raw) != args.case_sha256:

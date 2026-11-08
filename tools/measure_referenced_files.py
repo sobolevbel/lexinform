@@ -19,7 +19,7 @@ from tools.saved_records import (
     saved_columns,
     saved_records,
 )
-from tools.sqlite_snapshot import open_snapshot
+from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _CATALOGUE = {
@@ -201,7 +201,8 @@ def run(database: Path, inventory: Path, output: Path) -> int:
     inventory_contents(manifest)
     target = output.resolve()
     if (
-        target in (database.resolve(), inventory.resolve())
+        target in snapshot_files(database)
+        or target == inventory.resolve()
         or output.exists()
         or output.is_symlink()
     ):

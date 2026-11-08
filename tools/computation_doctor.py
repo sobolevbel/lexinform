@@ -39,7 +39,7 @@ from tools.saved_records import (
     saved_columns,
     saved_records,
 )
-from tools.sqlite_snapshot import open_snapshot
+from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 _RESULT_ID = re.compile(r"result-v1:[0-9a-f]{64}")
 _REQUIRED = {*RESULT_TABLES, "llm_batches", "computation_results", "result_applications"}
@@ -461,7 +461,7 @@ def run(
     include_supplement_deliveries: bool = False,
     include_projection_receipts: bool = False,
 ) -> int:
-    if output.resolve() == database.resolve():
+    if output.resolve() in snapshot_files(database):
         raise ValueError("Report must be separate from the input database")
     report = audit(
         database,

@@ -44,7 +44,7 @@ from tools.artifact_metadata import (
     recorded_artifacts,
 )
 from tools.corpus_artifacts import write_json
-from tools.sqlite_snapshot import open_snapshot
+from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 _TABLES = {"document_selections", "source_observations"}
 _ARTIFACT_TABLES = {"artifacts", "selection_artifacts"}
@@ -802,7 +802,7 @@ def run(
     include_candidate_gaps: bool = False,
     include_selection_limitations: bool = False,
 ) -> int:
-    if output.resolve() == database.resolve():
+    if output.resolve() in snapshot_files(database):
         raise ValueError("Report must be separate from the input database")
     report = audit(
         database,

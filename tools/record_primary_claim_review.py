@@ -13,7 +13,7 @@ from lexinform.models.physical_inventory import Sha256
 from lexinform.models.reviews import citation_document_in
 from tools.audit_saved_primary_claims import _claim_slots, saved_claim_review
 from tools.corpus_artifacts import digest, read_artifact, write_json
-from tools.sqlite_snapshot import live_journal
+from tools.sqlite_snapshot import live_journal, snapshot_files
 
 _CLAIM_DOCUMENT_ID = "submitted-context"
 _MAX_ANSWERS_BYTES = 262_144
@@ -75,8 +75,7 @@ def validate_judgment(item: ClaimJudgment, claim: str, source: ReviewDocument) -
 
 def _review_output(database: Path, output: Path) -> Path:
     db = database.resolve(strict=True)
-    protected = {db, *(Path(str(db) + suffix) for suffix in ("-wal", "-shm", "-journal"))}
-    if output.resolve() in protected or output.is_symlink() or output.exists():
+    if output.resolve() in snapshot_files(db) or output.is_symlink() or output.exists():
         raise ValueError("Review output must be new and separate from the input snapshot")
     return db
 

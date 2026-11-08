@@ -20,7 +20,7 @@ from lexinform.models.batch import batch_item_meta
 from lexinform.name_binding import mnemonic_matches_result
 from tools.corpus_artifacts import write_json
 from tools.primary_delivery_cycle import CycleNotObservedError, _direct_plan
-from tools.sqlite_snapshot import open_snapshot
+from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 
 def _inspect(db: sqlite3.Connection, publication_id: int) -> dict[str, object]:
@@ -179,12 +179,7 @@ def main() -> None:
     args = parser.parse_args()
     output = args.output.resolve()
     database = args.database.resolve()
-    if output in (
-        database,
-        Path(str(database) + "-wal"),
-        Path(str(database) + "-shm"),
-        Path(str(database) + "-journal"),
-    ):
+    if output in snapshot_files(database):
         parser.error("Output must be separate from the SQLite snapshot and its sidecars")
     write_json(output, audit(database, args.publication_id))
 

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from lexinform.adapters.memo_retention import memo_retention_cte
 from tools.corpus_artifacts import write_json
-from tools.sqlite_snapshot import open_snapshot
+from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 _MEMOS = """
 SELECT m.*, length(CAST(m.record_json AS BLOB)) AS bytes,
@@ -96,7 +96,7 @@ def main() -> None:
     args = parser.parse_args()
     database = args.database.resolve()
     output = args.output.resolve()
-    if output in {Path(str(database) + suffix) for suffix in ("", "-wal", "-shm", "-journal")}:
+    if output in snapshot_files(database):
         parser.error("Output must be separate from the SQLite snapshot and its sidecars")
     write_json(output, census(database, args.memo_before))
 

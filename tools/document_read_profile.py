@@ -17,7 +17,7 @@ from tools.artifact_metadata import (
 )
 from tools.corpus_artifacts import write_json
 from tools.saved_records import SavedTable, saved_columns
-from tools.sqlite_snapshot import open_snapshot
+from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 _REPORTS = {"runs": SavedTable(("id",), ("report_json",))}
 _METRIC_FIELDS = {"schema_version", "cache_hits", "distinct_bodies", "distinct_body_bytes", "hosts"}
@@ -253,7 +253,7 @@ def audit(database: Path) -> dict[str, Any]:
 
 
 def run(database: Path, output: Path) -> int:
-    if output.resolve() == database.resolve():
+    if output.resolve() in snapshot_files(database):
         raise ValueError("Report must be separate from the input database")
     report = audit(database)
     output.parent.mkdir(parents=True, exist_ok=True)

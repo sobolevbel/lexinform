@@ -13,7 +13,7 @@ from lexinform.adapters.input_receipts import validate_input_snapshots
 from lexinform.models import AnalysisRecord, BatchItemMeta
 from lexinform.models.batch import batch_item_meta
 from tools.corpus_artifacts import digest, write_json
-from tools.sqlite_snapshot import open_snapshot
+from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 
 def _claim_slots(record: AnalysisRecord) -> Iterator[tuple[str, int | None, str]]:
@@ -109,7 +109,7 @@ def audit(database: Path) -> dict[str, object]:
 
 
 def run(database: Path, output: Path) -> int:
-    if output.resolve() == database.resolve():
+    if output.resolve() in snapshot_files(database):
         raise ValueError("Report must be separate from the input database")
     report = audit(database)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -230,6 +230,8 @@ def main() -> None:
         else:
             if not args.database_sha256 or args.output.suffix != ".html":
                 raise ValueError("Review needs a database SHA-256 pin and a new .html output")
+            if args.output.resolve() in snapshot_files(args.database):
+                raise ValueError("Report must be separate from the input database")
             page = review_page(
                 args.database, database_sha256=args.database_sha256, result_id=args.review_result
             )
