@@ -10,8 +10,9 @@ from lexinform.adapters.computation_history import read_computation_result
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_source_rows import DocumentSourceRows
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
+from lexinform.adapters.input_receipts import intent_metadata, parse_batch_request
 from lexinform.adapters.pdf_text import PypdfTextExtractor
-from lexinform.models import DocumentPart
+from lexinform.models import BatchItemMeta, ComputationResult, DocumentPart
 from lexinform.sections import PAGE_BREAK, trim_print
 from lexinform.text_projection import TextProjection
 from tools.audit_saved_primary_claims import (
@@ -127,10 +128,55 @@ def _quote_source(
     raise ValueError("Quote crosses an extracted part boundary")
 
 
+def _saved_pdf_selection(
+    checkpoint: ReviewInputCheckpoint,
+    paid: ComputationResult,
+    current: BatchItemMeta,
+    source: PinnedSource,
+    raw: bytes,
+) -> tuple[DocumentPart, ...]:
+    selected = current.selection.parts
+    if (
+        current.source_kind not in ("print", "committee_report", "text_after3")
+        or current.text_source != "pdf"
+        or len(selected) != 1
+        or selected[0].members
+        or selected[0].url != current.source_url
+        or selected[0].sha256 != source.sha256
+        or not raw.startswith(b"%PDF-")
+    ):
+        raise ValueError("Saved request does not identify this standalone Sejm PDF")
+    with open_snapshot(checkpoint.database) as snapshot:
+        if snapshot.sha256 != checkpoint.sha256:
+            raise ValueError("Input checkpoint SHA-256 differs from its pin")
+        row = snapshot.connection.execute(
+            "SELECT request_json,meta_json FROM llm_batch_intents"
+            " WHERE custom_id=? AND provider=? AND state='submitting'",
+            (paid.custom_id, paid.provider),
+        ).fetchone()
+        if row is None:
+            raise ValueError("Saved PDF requires its historical submission intent")
+        request = parse_batch_request(row["request_json"])
+        previous = intent_metadata(request, row["meta_json"])
+        if (
+            request.payload_sha256 != paid.request_sha256
+            or not isinstance(previous, BatchItemMeta)
+            or (previous.source_kind, previous.source_url, previous.text_source)
+            != (current.source_kind, current.source_url, current.text_source)
+            or tuple(map(_identity, previous.selection.parts)) != tuple(map(_identity, selected))
+            or tuple(part.url for part in previous.selection.parts)
+            != tuple(part.url for part in selected)
+        ):
+            raise ValueError("Saved PDF selection differs from the historical intent")
+        if not snapshot.unchanged():
+            raise ValueError("Input checkpoint changed during PDF replay")
+    return selected
+
+
 def _replay_source(
     database: Path,
     checkpoint: ReviewInputCheckpoint,
-    observation_id: str,
+    observation_id: str | None,
     sources: tuple[PinnedSource, ...],
     text: SubmittedText,
     *,
@@ -149,59 +195,67 @@ def _replay_source(
         ).fetchone()
         paid = read_computation_result(row)
         meta = _primary_batch_meta(db, paid)
-        reader = DocumentSourceRows(db)
-        observation = reader.get_source_observation(observation_id)
-        submitted = db.execute(
-            "SELECT submitted_at FROM llm_batches WHERE batch_id=? AND provider=?",
-            (paid.batch_id, paid.provider),
-        ).fetchone()
-        submitted_at = (
-            datetime.fromisoformat(submitted["submitted_at"])
-            if submitted is not None and isinstance(submitted["submitted_at"], str)
-            else None
-        )
-        if (
-            observation is None
-            or submitted_at is None
-            or submitted_at.utcoffset() is None
-            or observation.recorded_at > submitted_at
-            or observation.purpose != "analysis"
-            or (observation.term, observation.number) != (paid.term, paid.number)
-            or observation.document.kind != "rcl"
-            or (observation.document.kind, observation.document.url)
-            != (meta.source_kind, meta.source_url)
-        ):
-            raise ValueError("Observation differs from the historical request owner or source")
-        selection = reader.get_document_selection(observation.selection_id)
-        if selection is None:
-            raise ValueError("Historical source selection is unavailable")
-        selected = selection.selection.parts
-        if (
-            not selected
-            or (
-                any(not 1 <= len(part.members) <= 2 for part in selected)
-                if archive
-                else len(selected) != len(sources) or any(part.members for part in selected)
+        if observation_id is None:
+            if archive or len(sources) != 1:
+                raise ValueError("Saved Sejm PDF replay requires one direct file")
+            selected = _saved_pdf_selection(checkpoint, paid, meta, sources[0], bodies[0])
+            expected_hashes = [sources[0].sha256]
+            selection_id = None
+        else:
+            reader = DocumentSourceRows(db)
+            observation = reader.get_source_observation(observation_id)
+            submitted = db.execute(
+                "SELECT submitted_at FROM llm_batches WHERE batch_id=? AND provider=?",
+                (paid.batch_id, paid.provider),
+            ).fetchone()
+            submitted_at = (
+                datetime.fromisoformat(submitted["submitted_at"])
+                if submitted is not None and isinstance(submitted["submitted_at"], str)
+                else None
             )
-            or tuple(map(_identity, selected)) != tuple(map(_identity, meta.selection.parts))
-        ):
-            raise ValueError("Recorded selection differs from the historical request parts")
-        references = db.execute(
-            "SELECT part_index,artifact_sha256 FROM selection_artifacts"
-            " WHERE selection_id=? AND part_scope='parts' ORDER BY part_index",
-            (selection.selection_id,),
-        )
-        expected_hashes = (
-            [sources[0].sha256] * len(selected)
-            if archive
-            else [source.sha256 for source in sources]
-        )
-        if list(map(tuple, references)) != list(enumerate(expected_hashes)):
-            raise ValueError(
-                "Selected parts do not share the pinned archive"
-                if archive
-                else "Selected parts differ from the ordered file pins"
+            if (
+                observation is None
+                or submitted_at is None
+                or submitted_at.utcoffset() is None
+                or observation.recorded_at > submitted_at
+                or observation.purpose != "analysis"
+                or (observation.term, observation.number) != (paid.term, paid.number)
+                or observation.document.kind != "rcl"
+                or (observation.document.kind, observation.document.url)
+                != (meta.source_kind, meta.source_url)
+            ):
+                raise ValueError("Observation differs from the historical request owner or source")
+            selection = reader.get_document_selection(observation.selection_id)
+            if selection is None:
+                raise ValueError("Historical source selection is unavailable")
+            selected = selection.selection.parts
+            if (
+                not selected
+                or (
+                    any(not 1 <= len(part.members) <= 2 for part in selected)
+                    if archive
+                    else len(selected) != len(sources) or any(part.members for part in selected)
+                )
+                or tuple(map(_identity, selected)) != tuple(map(_identity, meta.selection.parts))
+            ):
+                raise ValueError("Recorded selection differs from the historical request parts")
+            references = db.execute(
+                "SELECT part_index,artifact_sha256 FROM selection_artifacts"
+                " WHERE selection_id=? AND part_scope='parts' ORDER BY part_index",
+                (selection.selection_id,),
             )
+            expected_hashes = (
+                [sources[0].sha256] * len(selected)
+                if archive
+                else [source.sha256 for source in sources]
+            )
+            if list(map(tuple, references)) != list(enumerate(expected_hashes)):
+                raise ValueError(
+                    "Selected parts do not share the pinned archive"
+                    if archive
+                    else "Selected parts differ from the ordered file pins"
+                )
+            selection_id = selection.selection_id
         extracted, part_texts = _extract_source_text(selected, bodies, archive=archive)
         trimmed = trim_print(extracted)
         if len(trimmed.text) != text.chars or digest(trimmed.text.encode()) != text.text_sha256:
@@ -225,7 +279,8 @@ def _replay_source(
     )
     return {
         "observation_id": observation_id,
-        "selection_id": selection.selection_id,
+        "selection_id": selection_id,
+        **({"source_binding": "saved_submission_selection"} if observation_id is None else {}),
         **(
             {"archive_sha256": sources[0].sha256, "archive_bytes": len(bodies[0])}
             if archive
@@ -305,7 +360,7 @@ def replay_result_sources(
     database_sha256: str,
     result_id: str,
     checkpoint: ReviewInputCheckpoint,
-    observation_id: str,
+    observation_id: str | None,
     sources: tuple[PinnedSource, ...],
     *,
     archive: bool = False,
@@ -338,7 +393,9 @@ def main() -> None:
     target.add_argument("--result-id")
     parser.add_argument("--database-sha256")
     parser.add_argument("--checkpoint", nargs=2, metavar=("PATH", "SHA256"), required=True)
-    parser.add_argument("--observation-id", required=True)
+    origin = parser.add_mutually_exclusive_group(required=True)
+    origin.add_argument("--observation-id")
+    origin.add_argument("--saved-single-pdf", action="store_true")
     physical = parser.add_mutually_exclusive_group(required=True)
     physical.add_argument("--archive", type=Path)
     physical.add_argument("--part", nargs=2, action="append", metavar=("PATH", "SHA256"))
@@ -352,6 +409,8 @@ def main() -> None:
         quote = (
             QuotePin(int(args.quote[0]), int(args.quote[1]), args.quote[2]) if args.quote else None
         )
+        if args.saved_single_pdf and (args.result_id is None or args.archive is not None):
+            raise ValueError("Saved Sejm PDF replay requires a result ID and one direct file")
         if quote is not None and args.result_id is None:
             raise ValueError("Quote replay requires a result ID")
         sources: tuple[PinnedSource, ...]

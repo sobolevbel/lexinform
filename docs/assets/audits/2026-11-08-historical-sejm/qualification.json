@@ -1,0 +1,86 @@
+{
+  "cases": [
+    {
+      "file": "3220.pdf",
+      "state": "17dc57ee",
+      "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+      "request": {
+        "result_id": "result-v1:a86f266384e5076b0d5d36ee67af54d5d21a2d09579244b9200dd9d811d3afc9",
+        "request_sha256": "eb7f731acb125e5ae05ececb010b03f43447a2e91edd0b9826c208084e8db2cf",
+        "text_sha256": "a82f55ab2df72eb51c415f0672848b47d535688397e649c4419250fab586708c",
+        "text_chars": 49161,
+        "input_checkpoint_sha256": "8c21e5781d5d89b911bfb0376ca5fc1a90893755f8e51c908287c26bd3d65c57"
+      },
+      "physical_source_replay": {
+        "observation_id": null,
+        "selection_id": null,
+        "source_binding": "saved_submission_selection",
+        "file_sha256s": [
+          "e7cc9390ca6cdfd69f0a0fccc6c6c035019195dd550d22adb03f2912a60fba0d"
+        ],
+        "file_bytes": [
+          419982
+        ],
+        "selected_parts": [
+          {
+            "role": "bill",
+            "members": [],
+            "sha256": "e7cc9390ca6cdfd69f0a0fccc6c6c035019195dd550d22adb03f2912a60fba0d",
+            "text_sha256": "a82f55ab2df72eb51c415f0672848b47d535688397e649c4419250fab586708c"
+          }
+        ],
+        "extracted_text_sha256": "a82f55ab2df72eb51c415f0672848b47d535688397e649c4419250fab586708c",
+        "dropped_sections": [],
+        "trimmed_text_segments": [
+          {
+            "start": 0,
+            "end": 49161,
+            "source_start": 0
+          }
+        ]
+      }
+    },
+    {
+      "file": "3157_u3.pdf",
+      "state": "902e84b3",
+      "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+      "request": {
+        "result_id": "result-v1:184f3d2e1a51b254cce761e69ab3ab3aa0a118601f3c0ea9569d23c374e85297",
+        "request_sha256": "c5813beb590fdb03b3a24f26d6f2fe41064c7c93e1b735b45e7b118abf5efe05",
+        "text_sha256": "3e4a0ea990a2cfba91d534077a98ae64f1500afd31ccf734e6b17e3a87278786",
+        "text_chars": 75147,
+        "input_checkpoint_sha256": "bfa694eb9874501feb1e515e8264e6a61d732f0ba7534f00e081caaf675847c0"
+      },
+      "physical_source_replay": {
+        "observation_id": null,
+        "selection_id": null,
+        "source_binding": "saved_submission_selection",
+        "file_sha256s": [
+          "2f5f6ffbaf8d771a53c1e5c1cd485eb396c5952653c54a57c6b468beb15681a4"
+        ],
+        "file_bytes": [
+          295292
+        ],
+        "selected_parts": [
+          {
+            "role": "bill",
+            "members": [],
+            "sha256": "2f5f6ffbaf8d771a53c1e5c1cd485eb396c5952653c54a57c6b468beb15681a4",
+            "text_sha256": "3e4a0ea990a2cfba91d534077a98ae64f1500afd31ccf734e6b17e3a87278786"
+          }
+        ],
+        "extracted_text_sha256": "3e4a0ea990a2cfba91d534077a98ae64f1500afd31ccf734e6b17e3a87278786",
+        "dropped_sections": [],
+        "trimmed_text_segments": [
+          {
+            "start": 0,
+            "end": 75147,
+            "source_start": 0
+          }
+        ]
+      }
+    }
+  ],
+  "foreign_pdf_rejected": true,
+  "orka_original_available": false
+}
