@@ -1,0 +1,36 @@
+{
+  "cohort_sha256": "f788bb15d668827d5fc6130df92084fca3099da90ef093bb98cd5a2b360d4859",
+  "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "successful_member_decodes_by_method": {
+    "0": 34,
+    "8": 138,
+    "9": 24
+  },
+  "baseline_commit": "5fd83caf3fa861703f2d33944e9229d3574fa5a3",
+  "candidate_commit": "05c18c29",
+  "frozen_driver_sha256": "4eea367f98858d8add00a1ea043f5eed4707b0ed83c42b5f02ae9f4f64dc6319",
+  "ordinal_reader_sha256": "cc8c81b786a80c34c9e0d72047de4f2e7dc361eab088e1dd50d19a72c5b8ba78",
+  "scope": "Compare current writer-on revisions on the original pinned cohort and synthetic controls. Verify typed physical associations and raw ordinal bytes with the existing bounded independent reader.",
+  "comparisons": {
+    "natural": {
+      "core_equal": true,
+      "archive_member_reports_equal": true,
+      "code_recipe_origins_equal": false,
+      "trace_slots": 34,
+      "checked_rows": 92,
+      "unknown_rows": 0,
+      "core_sha256": "6c4532dcb006c3f2bc149ec759d566d301f81f16ee772e229a6e01fc0e218514",
+      "member_report_sha256": "c8a8d4840765fc647c460e3e4f1890c8d8d95720bc7a84fafb5998db1ca3911c"
+    },
+    "synthetic": {
+      "core_equal": true,
+      "archive_member_reports_equal": true,
+      "code_recipe_origins_equal": false,
+      "trace_slots": 8,
+      "checked_rows": 22,
+      "unknown_rows": 0,
+      "core_sha256": "69076919c561121743d7069c54c29edcebd0c08eb09f5082e2bc356471774c3b",
+      "member_report_sha256": "92d5d2f3fa77054554f690cb98e84534dc15a407cf9003d6116aebf63146bdf9"
+    }
+  }
+}
