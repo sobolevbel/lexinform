@@ -34,7 +34,11 @@ CandidateTraceReason = Literal[
     "first_acceptable_candidate",
     "all_rejected",
 ]
-_INCOMPLETE_VERSION_READ_REASONS = ("pdf_page_extraction_failed", "archive_member_unpack_failed")
+_INCOMPLETE_VERSION_READ_REASONS = (
+    "pdf_page_extraction_failed",
+    "archive_member_unpack_failed",
+    "normative_part_read_incomplete",
+)
 _DEFERRED_VERSION_REASONS = (*_INCOMPLETE_VERSION_READ_REASONS, "version_comparison_deferred")
 
 
@@ -61,6 +65,7 @@ class CandidateDisposition(BaseModel):
         "ambiguous_extraction",
         "pdf_page_extraction_failed",
         "archive_member_unpack_failed",
+        "normative_part_read_incomplete",
         "version_comparison_deferred",
         "version_preference",
         "version_conflict",
@@ -1174,6 +1179,13 @@ class CandidateDispositionTrace(BaseModel):
                 item.reason in _DEFERRED_VERSION_REASONS for item in self.dispositions
             ):
                 raise ValueError("deferred comparison rows require a waiting comparison")
+            sources = (self.requested_document, *self.requested_document.alternatives)
+            if any(
+                item.reason == "normative_part_read_incomplete"
+                and not (sources[item.index].required_urls or sources[item.index].normative_urls)
+                for item in self.dispositions
+            ):
+                raise ValueError("an incomplete normative read requires a declared part")
             if self.result == "ambiguous" and (fallback or self.reason != "version_conflict"):
                 raise ValueError("version ambiguity cannot claim a fallback decision")
             if self.result == "ambiguous" and self.selection_state != "ambiguous":

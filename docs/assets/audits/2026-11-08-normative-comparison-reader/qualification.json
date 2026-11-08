@@ -1,0 +1,25 @@
+{
+  "scope": "Reader control uses a pinned main PDF and an explicitly unavailable declared annex; no production trace is claimed.",
+  "prior_sql_sha256": "e56922e3c84828cf3ccd70536e98d76c34720cfc650efe831e5ee770852ece76",
+  "new_sql_sha256": "186bd4382f0a0803903706edfd7c55673f198fc8e11d1512dcc05af1c4000b7a",
+  "trace_id": "candidate-trace-v1:293db923674c01f9382aa29f72b5f0f9e91054591a368f6aa37458a27ecdb129",
+  "main_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8",
+  "declared_annex_url": "https://source.test/annex.pdf",
+  "old_and_new_dumps_roundtrip_byte_identically": true,
+  "baseline_commit": "47454e8fbd9046159c847f986295b6ddafaf1125",
+  "previous_reader_rejected_new_reason": true,
+  "cohort_sha256": "f788bb15d668827d5fc6130df92084fca3099da90ef093bb98cd5a2b360d4859",
+  "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "archive_checks": {
+    "natural": {
+      "core_sha256": "f8cda903e3f3d5d3e3acf19a0b4f7c0ca0549172f0bd4a6c9ee4c40060bb43ae",
+      "member_report_sha256": "c8a8d4840765fc647c460e3e4f1890c8d8d95720bc7a84fafb5998db1ca3911c",
+      "checked_rows": 92
+    },
+    "synthetic": {
+      "core_sha256": "4d4356f8865688ec70b5348a0e679429669d416bc05567a37704cabd2461e4f4",
+      "member_report_sha256": "92d5d2f3fa77054554f690cb98e84534dc15a407cf9003d6116aebf63146bdf9",
+      "checked_rows": 22
+    }
+  }
+}

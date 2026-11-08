@@ -14,17 +14,32 @@ from lexinform.models import (
     TextDocument,
 )
 
+IncompleteReason = Literal[
+    "pdf_page_extraction_failed", "archive_member_unpack_failed", "normative_part_read_incomplete"
+]
+INCOMPLETE_REASONS: tuple[IncompleteReason, ...] = (
+    "pdf_page_extraction_failed",
+    "archive_member_unpack_failed",
+    "normative_part_read_incomplete",
+)
+
 
 def waiting_trace(
-    reason: Literal[
-        "pdf_page_extraction_failed", "archive_member_unpack_failed"
-    ] = "pdf_page_extraction_failed",
+    reason: IncompleteReason = "pdf_page_extraction_failed",
 ) -> CandidateDispositionTrace:
     document = TextDocument(
         url="https://official.test/earlier.pdf",
         kind="rcl",
         compare_versions=True,
-        alternatives=(TextDocument(url="https://official.test/newer.pdf", kind="rcl"),),
+        alternatives=(
+            TextDocument(
+                url="https://official.test/newer.pdf",
+                kind="rcl",
+                normative_urls=("https://official.test/annex.pdf",)
+                if reason == "normative_part_read_incomplete"
+                else (),
+            ),
+        ),
     )
     return CandidateDispositionTrace.from_decisions(
         document,
@@ -63,10 +78,8 @@ def test_deferred_comparison_rejects_inconsistent_outcomes(changes: dict[str, An
         CandidateDispositionTrace.model_validate({**waiting_trace().model_dump(), **changes})
 
 
-@pytest.mark.parametrize("reason", ["pdf_page_extraction_failed", "archive_member_unpack_failed"])
-def test_deferred_comparison_requires_a_failed_read_and_its_hash(
-    reason: Literal["pdf_page_extraction_failed", "archive_member_unpack_failed"],
-) -> None:
+@pytest.mark.parametrize("reason", INCOMPLETE_REASONS)
+def test_deferred_comparison_requires_a_failed_read_and_its_hash(reason: IncompleteReason) -> None:
     trace = waiting_trace(reason)
     raw = trace.model_dump()
     first, failed = raw["dispositions"]
@@ -80,10 +93,23 @@ def test_deferred_comparison_requires_a_failed_read_and_its_hash(
         )
 
 
-@pytest.mark.parametrize("reason", ["pdf_page_extraction_failed", "archive_member_unpack_failed"])
-def test_deferred_comparison_survives_dump_restore(
-    reason: Literal["pdf_page_extraction_failed", "archive_member_unpack_failed"],
-) -> None:
+def test_normative_read_failure_requires_a_declared_part() -> None:
+    trace = waiting_trace("normative_part_read_incomplete")
+    request = waiting_trace().requested_document
+    assert request is not None, "the reader fixture retains both candidate URLs"
+
+    with pytest.raises(ValueError, match="requires a declared part"):
+        CandidateDispositionTrace.from_decisions(
+            request,
+            trace.dispositions,
+            result="waiting",
+            reason="version_input_incomplete",
+            selection_state="waiting",
+        )
+
+
+@pytest.mark.parametrize("reason", INCOMPLETE_REASONS)
+def test_deferred_comparison_survives_dump_restore(reason: IncompleteReason) -> None:
     trace = waiting_trace(reason)
     assert trace.requested_document is not None, "the waiting trace retains its request"
     selection = DocumentSelectionRecord.from_selection(DocumentSelection(state="waiting"))
