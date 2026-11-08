@@ -1,5 +1,6 @@
 """Select the existing legal package from physical parts without file or network I/O."""
 
+import hashlib
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
@@ -50,6 +51,7 @@ class DocumentCandidate:
     parts: tuple[DocumentPart, ...] = ()
     observed_parts: tuple[DocumentPart, ...] = ()
     annex_identities: tuple[tuple[int, str], ...] = ()
+    amendment_identities: tuple[str, ...] = ()
 
     def with_normative_parts(self) -> Self:
         body = tuple(
@@ -64,6 +66,11 @@ class DocumentCandidate:
                     for part in self.parts
                     if part.role == "normative_annex"
                 )
+            ),
+            amendment_identities=tuple(
+                hashlib.sha256(part.text.encode()).hexdigest()
+                for part in self.parts
+                if part.role == "self_amendment"
             ),
         )
 
@@ -115,11 +122,12 @@ def select_candidate_versions(
         for index in bill_indices
         for part in (candidates.entries[index].observed_parts or candidates.entries[index].parts)
     )
-    annex_identities = {
-        candidates.entries[bill_indices[index]].annex_identities
+    attachment_identities = {
+        (candidate.annex_identities, candidate.amendment_identities)
         for index in comparison.matching_indices
+        for candidate in (candidates.entries[bill_indices[index]],)
     }
-    if len(annex_identities) > 1:
+    if len(attachment_identities) > 1:
         comparison = replace(comparison, matching_indices=())
     if not comparison.matching_indices:
         parts = tuple(part for index in bill_indices for part in candidates.entries[index].parts)

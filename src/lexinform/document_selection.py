@@ -19,7 +19,7 @@ from lexinform.models.documents import (
 from lexinform.sections import PAGE_BREAK, document_kind, trim_print
 from lexinform.text_projection import SourcePiece, TextProjection, project_pieces
 
-DOCUMENT_SELECTION_POLICY_VERSION = "document-selection-v19"
+DOCUMENT_SELECTION_POLICY_VERSION = "document-selection-v20"
 
 
 def bill_selection(

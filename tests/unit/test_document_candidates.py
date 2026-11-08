@@ -346,3 +346,39 @@ def test_outer_comparison_reads_declared_annex_before_choosing(
     else:
         assert file.text is None
         assert trace.dispositions[1].reason == "normative_part_read_incomplete"
+
+
+@pytest.mark.parametrize(
+    ("mode", "expected"),
+    [("same", "selected"), ("missing", "ambiguous"), ("unavailable", "waiting")],
+)
+def test_outer_comparison_keeps_self_amendments_separate(mode: str, expected: str) -> None:
+    first, second, proposal = (
+        "https://api.test/first.docx",
+        "https://api.test/second.docx",
+        "https://api.test/proposal.docx",
+    )
+    body = docx(BILL + "Art. 2. Przepis stosuje się w postępowaniu. " * 12)
+    proposal_text = "AUTOPOPRAWKA " + "Kwota zmienia się na 300 zł. " * 20
+    files = {first: body, second: body}
+    if mode != "unavailable":
+        files[proposal] = docx(proposal_text)
+    gateway = FakeSejmGateway(files=files)
+    loader = TextLoader({"api.test": gateway.download}, extractor(), max_bytes=100_000)
+    document = TextDocument(
+        url=first,
+        kind="rcl",
+        compare_versions=True,
+        amendment_urls=(proposal,) if mode == "same" else (),
+        alternatives=(TextDocument(url=second, kind="rcl", amendment_urls=(proposal,)),),
+    )
+
+    _, file = loader.select_document(document)
+
+    trace = file.candidate_trace
+    assert trace is not None and trace.result == expected
+    if mode == "same":
+        assert file.text is not None and proposal_text not in file.text
+        assert [part.role for part in file.selection.parts] == ["bill", "self_amendment"]
+    elif mode == "unavailable":
+        assert trace.dispositions[1].reason == "normative_part_read_incomplete"

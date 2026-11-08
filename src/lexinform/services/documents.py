@@ -1500,7 +1500,7 @@ class TextLoader:
         decisions: list[CandidateDisposition] = []
         sources = (document, *document.alternatives)
         compare_packages = len(sources) > 1 and any(
-            item.required_urls or item.normative_urls for item in sources
+            item.required_urls or item.normative_urls or item.amendment_urls for item in sources
         )
         for index, candidate in enumerate(sources):
             if candidate.official_link_conflict:
@@ -1537,10 +1537,8 @@ class TextLoader:
             )
             is_bill = item.is_bill
             if compare_packages and is_bill and index not in incomplete:
-                if candidate.required_urls or candidate.normative_urls:
-                    normative = candidate.model_copy(
-                        update={"extra_urls": (), "amendment_urls": ()}
-                    )
+                if candidate.required_urls or candidate.normative_urls or candidate.amendment_urls:
+                    normative = candidate.model_copy(update={"extra_urls": ()})
                     try:
                         composed = self.read_document(normative)
                     except ServiceUnavailableError:
