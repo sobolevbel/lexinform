@@ -207,6 +207,7 @@ class Container:
                 extractor,
                 max_bytes=max_bytes,
                 physical_factory=PhysicalObservationCollector,
+                sejm=self.gateway,
                 capture_word_formulas=(
                     partial(capture_word_formula_source, docx)
                     if self.settings.word_formula_inputs_enabled and self.extractor is None

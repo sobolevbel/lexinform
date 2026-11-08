@@ -5,12 +5,14 @@ from typing import Annotated, Literal, Self, get_args
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from lexinform.models.artifacts import ArtifactReadIdentity
 from lexinform.models.candidate_trace import (
     ArchiveVersionConflictEvidence,
     ArchiveVersionDecisionEvidence,
     CandidateDispositionTrace,
 )
 from lexinform.models.documents import DocumentSelection, PdfPageText
+from lexinform.models.extractions import ExtractionResult
 from lexinform.word_formula_placement import WordFormulaSource
 
 
@@ -157,6 +159,13 @@ class DocumentDownloadDiagnostics(BaseModel):
 
 
 @dataclass(frozen=True)
+class RclProposalRead:
+    trace: CandidateDispositionTrace
+    original: ArtifactReadIdentity
+    extraction: ExtractionResult
+
+
+@dataclass(frozen=True)
 class LoadedFile:
     """A downloaded file's existing text, scan and physical-selection snapshot."""
 
@@ -166,6 +175,7 @@ class LoadedFile:
     sha256: str | None = None
     selection: DocumentSelection = DocumentSelection()
     candidate_trace: CandidateDispositionTrace | None = None
+    rcl_proposal: RclProposalRead | None = field(default=None, compare=False, repr=False)
     first_pdf_page: PdfPageText | None = field(default=None, compare=False, repr=False)
     complete_pdf_pages: int | None = field(default=None, compare=False, repr=False)
     word_formula_source: WordFormulaSource | None = field(default=None, compare=False, repr=False)

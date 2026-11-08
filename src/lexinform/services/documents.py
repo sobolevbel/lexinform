@@ -8,6 +8,7 @@ Downloads are routed by host to the client of that system, so its outage semanti
 """
 
 import base64
+import datetime as dt
 import hashlib
 import logging
 import threading
@@ -53,8 +54,9 @@ from lexinform.document_downloads import (
     download_failure,
     read_exclusion_reason,
 )
+from lexinform.document_editions import candidate_edition
 from lexinform.document_selection import DOCUMENT_SELECTION_POLICY_VERSION
-from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
+from lexinform.errors import AttachmentTooLargeError, DownloadError, ServiceUnavailableError
 from lexinform.local_timing import observe_read_timing
 from lexinform.metadata_omissions import MetadataUrlOmissionCollector
 from lexinform.metadata_urls import MetadataUrlDecision, metadata_url_decision
@@ -93,6 +95,7 @@ from lexinform.models.candidate_trace import (
     ComposedSupport,
     ComposedSupportPart,
     NormativeAnnexGap,
+    RclOriginalProposal,
     RequiredPartGap,
     SupportingExclusionReason,
     SupportingPartExclusion,
@@ -101,9 +104,10 @@ from lexinform.models.candidate_trace import (
     VersionPackageInput,
     composed_support_sha256,
 )
-from lexinform.models.document_reads import DocumentPhysicalDiagnostics
+from lexinform.models.document_reads import DocumentPhysicalDiagnostics, RclProposalRead
 from lexinform.models.document_reads import LoadedFile as LoadedFile
 from lexinform.models.extractions import DocumentExtraction
+from lexinform.models.rcl import RclProject, rcl_num_key
 from lexinform.models.scan_input import MAX_SCAN_BYTES, MAX_SCAN_PAGES
 from lexinform.models.source_omissions import SourceOmissionOwner
 from lexinform.observation_order import ObservationOrder
@@ -116,9 +120,11 @@ from lexinform.physical_walk_capture import PhysicalWalkObservation, suspend_phy
 from lexinform.ports import (
     Downloader,
     ProvenanceTextExtractor,
+    SejmGateway,
     StructuredTextExtractor,
     TextExtractor,
 )
+from lexinform.rcl_amendments import rcl_amendment_base_index, rcl_self_amendment_part
 from lexinform.required_part_capture import RequiredPartCapture
 from lexinform.sections import Kind, scan_page_window
 from lexinform.services.document_history import (
@@ -126,6 +132,7 @@ from lexinform.services.document_history import (
     PhysicalSourceRead,
     SourceReadCapture,
 )
+from lexinform.services.rcl_amendment_original import read_rcl_amendment_original
 from lexinform.services.source_catalog_attempts import SourceCatalogObservation
 from lexinform.services.source_omissions import (
     SourceOmissionCollector,
@@ -454,9 +461,11 @@ class TextLoader:
         capture_word_formulas: Callable[[bytes, DocumentExtraction], WordFormulaSource | None]
         | None = None,
         physical_factory: Callable[[ObservationOrder], PhysicalObservationCollector] | None = None,
+        sejm: SejmGateway | None = None,
     ) -> None:
         self._downloaders = dict(downloaders)
         self._extractor = extractor
+        self._sejm = sejm
         self._max_bytes = max_bytes
         self._cache: dict[str, _CachedDocument] = {}
         self._cache_size = cache_size
@@ -878,6 +887,9 @@ class TextLoader:
             reads=physical.reads,
             extractions=physical.extractions,
             candidate_trace=trace,
+            rcl_proposal=file.rcl_proposal
+            if requested == resolved or not record_requested_document
+            else None,
             defer_archive_trace=defer_archive_trace,
         )
 
@@ -1194,7 +1206,161 @@ class TextLoader:
             raise
 
     def select_document(
-        self, document: TextDocument, *, retain_routine_trace: bool = False
+        self,
+        document: TextDocument,
+        *,
+        retain_routine_trace: bool = False,
+        rcl_project: RclProject | None = None,
+    ) -> tuple[TextDocument, LoadedFile]:
+        selected, loaded = self._select_document_once(
+            document, retain_routine_trace=retain_routine_trace
+        )
+        if (
+            rcl_project is not None
+            and selected == document
+            and loaded.selection.state in ("waiting", "unverified", "selected")
+        ):
+            with suppress(ValueError):
+                recovered = self._recover_rcl_amendment(document, rcl_project)
+                if recovered is not None:
+                    return recovered
+        return selected, loaded
+
+    def _recover_rcl_amendment(
+        self, document: TextDocument, project: RclProject
+    ) -> tuple[TextDocument, LoadedFile] | None:
+        sejm = self._sejm
+        if (
+            sejm is None
+            or project.sejm_term is None
+            or not rcl_num_key(project.rm_number or "")
+            or document.kind != "rcl"
+            or not document.compare_versions
+            or document.official_link_conflict
+            or len(document.version_basis) != 2
+            or not document.version_basis[0].startswith(f"rcl/{project.id}/stage/")
+            or document.required_urls
+            or document.normative_urls
+            or document.extra_urls
+            or len(document.amendment_urls) != 1
+        ):
+            return None
+        (url,) = document.amendment_urls
+        if (
+            not urlparse(url).path.casefold().endswith(".zip")
+            or len(document.alternatives) > 1
+            or any(item.url != url or item.official_link_conflict for item in document.alternatives)
+        ):
+            return None
+        try:
+            archive = self.read(url)
+            base = self.read(document.url)
+            _, _, archive_extraction = self.file_origins(url, archive)
+            if (
+                archive.selection.state != "unsupported"
+                or archive_extraction is None
+                or archive_extraction.rejected_count
+                or archive_extraction.physical_part_count != len(archive.selection.observed_parts)
+                or base.archive_unpack_blocked
+            ):
+                return None
+            part = rcl_self_amendment_part(
+                archive.selection.observed_parts,
+                project_title=project.title,
+                wykaz_number=project.wykaz_number,
+            )
+            if part is None or base.sha256 is None or archive.sha256 is None:
+                return None
+            original = read_rcl_amendment_original(sejm, self.read, project=project, proposal=part)
+            if original is None:
+                return None
+            process, word = original
+            if (
+                rcl_amendment_base_index(
+                    part,
+                    project_rm_number=project.rm_number,
+                    print_process=process,
+                    original=word.selection,
+                    candidates=(base.selection,),
+                )
+                != 0
+            ):
+                return None
+            _, read, extraction = self.file_origins(word.selection.parts[0].url, word)
+            if read is None or extraction is None:
+                return None
+        except DownloadError, ValueError, OSError:
+            return None
+        if base.text is None:
+            return None
+        selection = base.selection.model_copy(
+            update={
+                "policy_version": "document-selection-v21",
+                "version": document.version_basis,
+                "parts": (
+                    *base.selection.parts,
+                    part.model_copy(update={"role": "self_amendment"}),
+                ),
+            }
+        )
+        decisions = [
+            CandidateDisposition(
+                phase="version_comparison",
+                index=0,
+                outcome="selected",
+                reason="version_choice",
+                observed_sha256=base.sha256,
+            )
+        ]
+        if document.alternatives:
+            decisions.append(
+                CandidateDisposition(
+                    phase="version_comparison",
+                    index=1,
+                    outcome="non_bill" if archive.text is not None else "unclassified",
+                    reason="non_bill_body" if archive.text is not None else "no_readable_body",
+                    observed_sha256=archive.sha256,
+                )
+            )
+        trace = CandidateDispositionTrace.from_decisions(
+            document,
+            tuple(decisions),
+            result="selected",
+            reason="version_choice",
+            selection_state=selection.state,
+        )
+        record = DocumentSelectionRecord.from_selection(selection)
+        edition = candidate_edition(record, recorded_at=dt.datetime(1970, 1, 1, tzinfo=dt.UTC))
+        bill_part = next((p for p in selection.parts if p.role == "bill"), None)
+        if edition is None or bill_part is None or not bill_part.members:
+            return None
+        proof = RclOriginalProposal(
+            index=0,
+            amendment_index=0,
+            project_id=project.id,
+            rm_number=rcl_num_key(project.rm_number or ""),
+            term=process.term,
+            original_print=process.number,
+            original_extraction_id=extraction.result_id,
+            base_sha256=base.sha256,
+            base_member_sha256=bill_part.sha256,
+            proposal_sha256=archive.sha256,
+            proposal_member_sha256=part.sha256,
+            comparison_text_sha256=hashlib.sha256(bill_part.text.strip().encode()).hexdigest(),
+            edition_id=edition.edition_id,
+        )
+        enriched = CandidateDispositionTrace.model_validate(
+            {**trace.model_dump(), "rcl_original_proposal": proof}
+        )
+        return document, replace(
+            base,
+            selection=selection,
+            candidate_trace=trace,
+            rcl_proposal=RclProposalRead(enriched, read, extraction),
+        )
+
+    def _select_document_once(
+        self, document: TextDocument, *, retain_routine_trace: bool
     ) -> tuple[TextDocument, LoadedFile]:
         dispositions: list[CandidateDisposition] = []
         attempts: ArchiveDispositionAccumulator | None = None

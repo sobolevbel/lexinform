@@ -21,11 +21,8 @@ from lexinform.models.candidate_trace import (
     CandidateDispositionTrace,
     RclOriginalProposal,
 )
-from lexinform.services.document_history import (
-    DocumentSourceRead,
-    RclProposalRead,
-    record_source_read,
-)
+from lexinform.models.document_reads import RclProposalRead
+from lexinform.services.document_history import DocumentSourceRead, record_source_read
 from tests.unit.test_input_receipts import NOW
 from tests.unit.test_physical_extraction import docx, extractor
 

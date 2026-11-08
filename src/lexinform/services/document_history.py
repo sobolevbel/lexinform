@@ -34,6 +34,7 @@ from lexinform.models.candidate_trace import (
 )
 from lexinform.models.document_editions import DocumentEdition
 from lexinform.models.document_history import SourceObservationIdentity
+from lexinform.models.document_reads import RclProposalRead
 from lexinform.models.sejm import SejmAdoptionOrigin, SejmProposalOrigin, SejmRepresentationOrigin
 from lexinform.models.source_omissions import (
     BillOmissionOwner,
@@ -66,13 +67,6 @@ class PrintRepresentationRead:
     extraction: ExtractionResult
     core_sha256: str
     core_chars: int
-
-
-@dataclass(frozen=True)
-class RclProposalRead:
-    trace: CandidateDispositionTrace
-    original: ArtifactReadIdentity
-    extraction: ExtractionResult
 
 
 @dataclass(frozen=True)

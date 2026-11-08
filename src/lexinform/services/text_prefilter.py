@@ -292,7 +292,7 @@ class TextPrefilterService:
             term=bill.term, number=bill.number, purpose="prefilter"
         )
         with self._loader.source_omission_scope(owner, located.document):
-            resolved, file = self._loader.select_document(located.document)
+            resolved, file = self._loader.select_document(located.document, rcl_project=bill.rcl)
             return replace(
                 self._read(file),
                 source_read=self._loader.capture_source_read(

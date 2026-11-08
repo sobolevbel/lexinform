@@ -105,6 +105,7 @@ from lexinform.models import (
     ProcessSummary,
     Publication,
     PublicationKind,
+    RclProject,
     ReadyAnalysis,
     ResultApplication,
     ReviewContext,
@@ -3116,6 +3117,7 @@ class AnalysisService:
             loaded = self._load_source(
                 document,
                 sejm_origin=sejm_origin,
+                rcl_project=bill.rcl,
                 owner=SourceReferenceOmissionOwner(
                     term=bill.term, number=bill.number, purpose="analysis"
                 ),
@@ -3638,6 +3640,7 @@ class AnalysisService:
         try:
             loaded = self._load_source(
                 document,
+                rcl_project=bill.rcl,
                 owner=SourceReferenceOmissionOwner(
                     term=bill.term, number=bill.number, purpose="analysis"
                 ),
@@ -4061,6 +4064,7 @@ class AnalysisService:
         owner: SourceReferenceOmissionOwner | None = None,
         sejm_origin: SejmSourceOrigin | None = None,
         retain_routine_trace: bool = False,
+        rcl_project: RclProject | None = None,
     ) -> _Loaded:
         if owner is None or document is None:
             return self._load_source_inner(
@@ -4068,6 +4072,7 @@ class AnalysisService:
                 trim=trim,
                 sejm_origin=sejm_origin,
                 retain_routine_trace=retain_routine_trace,
+                rcl_project=rcl_project,
             )
         with self._loader.source_omission_scope(owner, document):
             loaded = self._load_source_inner(
@@ -4075,6 +4080,7 @@ class AnalysisService:
                 trim=trim,
                 sejm_origin=sejm_origin,
                 retain_routine_trace=retain_routine_trace,
+                rcl_project=rcl_project,
             )
         if isinstance(sejm_origin, SejmRepresentationOrigin):
             return self._read_print_representation(loaded, sejm_origin)
@@ -4124,21 +4130,24 @@ class AnalysisService:
         trim: bool = True,
         sejm_origin: SejmSourceOrigin | None = None,
         retain_routine_trace: bool = False,
+        rcl_project: RclProject | None = None,
     ) -> _Loaded:
         """Prepare admitted text or pages, propagating failures and blocked selections."""
         if document is None:
             return _Loaded("", False, "metadata_only")
         requested = document
         try:
-            document, file = (
-                self._loader.select_document(document, retain_routine_trace=True)
-                if (
-                    sejm_origin is not None
-                    and not isinstance(sejm_origin, SejmCommitteeDraftOrigin)
-                )
-                or retain_routine_trace
-                else self._loader.select_document(document)
+            retain_trace = retain_routine_trace or (
+                sejm_origin is not None and not isinstance(sejm_origin, SejmCommitteeDraftOrigin)
             )
+            if rcl_project is not None:
+                document, file = self._loader.select_document(
+                    document, retain_routine_trace=retain_trace, rcl_project=rcl_project
+                )
+            elif retain_trace:
+                document, file = self._loader.select_document(document, retain_routine_trace=True)
+            else:
+                document, file = self._loader.select_document(document)
         except ServiceUnavailableError:
             raise
         except OrkaUnreachableError as exc:
