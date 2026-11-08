@@ -7,6 +7,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from html import escape
 from pathlib import Path
+from typing import TypedDict
 
 from lexinform.adapters.computation_history import ComputationRowError, read_computation_result
 from lexinform.adapters.input_receipts import validate_input_snapshots
@@ -30,13 +31,23 @@ def _claim_slots(record: AnalysisRecord) -> Iterator[tuple[str, int | None, str]
         yield "changes_since_previous", index, value
 
 
-def audit(database: Path) -> dict[str, object]:
+class ClaimAnswer(TypedDict):
+    result_id: str
+    purpose: str
+    claims: list[dict[str, object]]
+
+
+def audit(
+    database: Path,
+    *,
+    review_checkpoints: tuple[ReviewInputCheckpoint, ...] | None = None,
+) -> dict[str, object]:
     rows: Counter[str] = Counter(validated_primary=0, failed_primary=0, other_purposes=0, invalid=0)
     claims: Counter[str] = Counter(
         key_changes=0, affected_groups=0, effective_date=0, changes_since_previous=0
     )
     invalid: Counter[str] = Counter()
-    answers: list[dict[str, object]] = []
+    answers: list[ClaimAnswer] = []
     blank_slots = 0
     empty_answers = 0
     with open_snapshot(database) as snapshot:
@@ -105,13 +116,30 @@ def audit(database: Path) -> dict[str, object]:
         "blank_claim_slots": blank_slots,
         "answers_without_nonblank_claims": empty_answers,
         "answers": answers,
+        **(
+            {
+                "review_text_coverage": _review_text_coverage(
+                    database, snapshot.sha256, answers, review_checkpoints
+                )
+            }
+            if review_checkpoints is not None and available and not invalid
+            else {}
+        ),
     }
 
 
-def run(database: Path, output: Path) -> int:
-    if output.resolve() in snapshot_files(database):
+def run(
+    database: Path,
+    output: Path,
+    *,
+    review_checkpoints: tuple[ReviewInputCheckpoint, ...] | None = None,
+) -> int:
+    protected = snapshot_files(database)
+    for checkpoint in review_checkpoints or ():
+        protected.update(snapshot_files(checkpoint.database))
+    if output.resolve() in protected:
         raise ValueError("Report must be separate from the input database")
-    report = audit(database)
+    report = audit(database, review_checkpoints=review_checkpoints)
     output.parent.mkdir(parents=True, exist_ok=True)
     write_json(output, report)
     return 1 if report["status"] == "failed" else 2 if report["status"] == "not_run" else 0
@@ -126,6 +154,10 @@ class ReviewInputCheckpoint:
         return digest(read_artifact(self.database)) == self.sha256 and not live_journal(
             self.database.resolve()
         )
+
+
+class ReviewTextUnavailableError(ValueError):
+    pass
 
 
 @dataclass(frozen=True)
@@ -151,10 +183,10 @@ def _primary_batch_meta(db: sqlite3.Connection, paid: ComputationResult) -> Batc
         paid.number,
         paid.purpose,
     ):
-        raise ValueError("Review requires the exact saved batch item")
+        raise ReviewTextUnavailableError("Review requires the exact saved batch item")
     meta = batch_item_meta(item["call_kind"], item["meta_json"])
     if not isinstance(meta, BatchItemMeta):
-        raise ValueError("Review requires primary batch metadata")
+        raise ReviewTextUnavailableError("Review requires primary batch metadata")
     return meta
 
 
@@ -176,7 +208,9 @@ def _checkpoint_text(
             or current.text
             and current.text != saved.text
         ):
-            raise ValueError("Input checkpoint differs from the exact current request receipt")
+            raise ReviewTextUnavailableError(
+                "Input checkpoint differs from the exact current request receipt"
+            )
         validate_input_snapshots(snapshot.connection)
         if not snapshot.unchanged():
             raise ValueError("Input checkpoint changed during review preparation")
@@ -216,7 +250,7 @@ def saved_claim_review(
             or receipt.text_chars != meta.input_chars
             or receipt.text_chars != record.input_chars
         ):
-            raise ValueError("Review requires the exact retained submitted text")
+            raise ReviewTextUnavailableError("Review requires the exact retained submitted text")
         text = (
             meta.text
             if input_checkpoint is None
@@ -227,7 +261,7 @@ def saved_claim_review(
             or receipt.text_chars != len(text)
             or receipt.text_sha256 != digest(text.encode())
         ):
-            raise ValueError("Review requires the exact retained submitted text")
+            raise ReviewTextUnavailableError("Review requires the exact retained submitted text")
         validate_input_snapshots(db)
         if (
             not snapshot.unchanged()
@@ -243,6 +277,57 @@ def saved_claim_review(
         text,
         input_checkpoint.sha256 if input_checkpoint is not None else None,
     )
+
+
+def _review_text_coverage(
+    database: Path,
+    database_sha256: str,
+    answers: list[ClaimAnswer],
+    checkpoints: tuple[ReviewInputCheckpoint, ...],
+) -> dict[str, object]:
+    pins = [checkpoint.sha256 for checkpoint in checkpoints]
+    if len(pins) > 8 or len(set(pins)) != len(pins) or database_sha256 in pins:
+        raise ValueError("Use at most eight distinct earlier checkpoint pins")
+    if any(not checkpoint.unchanged() for checkpoint in checkpoints):
+        raise ValueError("An input checkpoint differs from its pin")
+    ready = []
+    unsupported_claim_sets = 0
+    for answer in answers:
+        if not 1 <= len(answer["claims"]) <= 128:
+            unsupported_claim_sets += 1
+            continue
+        for checkpoint in (None, *checkpoints):
+            try:
+                review = saved_claim_review(
+                    database,
+                    database_sha256=database_sha256,
+                    result_id=answer["result_id"],
+                    input_checkpoint=checkpoint,
+                )
+            except ReviewTextUnavailableError:
+                continue
+            ready.append(
+                {
+                    "result_id": answer["result_id"],
+                    "checkpoint_sha256": review.input_checkpoint_sha256,
+                    "request_sha256": review.request_sha256,
+                    "text_sha256": review.text_sha256,
+                    "claim_slots": len(answer["claims"]),
+                }
+            )
+            break
+    if not ReviewInputCheckpoint(database, database_sha256).unchanged() or any(
+        not checkpoint.unchanged() for checkpoint in checkpoints
+    ):
+        raise ValueError("A pinned input changed during the review coverage check")
+    return {
+        "checkpoint_sha256s": pins,
+        "verified_in_current": sum(row["checkpoint_sha256"] is None for row in ready),
+        "verified_in_checkpoint": sum(row["checkpoint_sha256"] is not None for row in ready),
+        "unsupported_claim_sets": unsupported_claim_sets,
+        "unavailable": len(answers) - len(ready) - unsupported_claim_sets,
+        "ready": ready,
+    }
 
 
 def review_page(
@@ -302,19 +387,25 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--review-result", help="write a local HTML review sheet for one result")
     parser.add_argument("--database-sha256", help="required snapshot pin for --review-result")
-    parser.add_argument("--input-checkpoint", nargs=2, metavar=("PATH", "SHA256"))
+    parser.add_argument("--review-coverage", action="store_true")
+    parser.add_argument("--input-checkpoint", nargs=2, action="append", metavar=("PATH", "SHA256"))
     args = parser.parse_args()
-    input_checkpoint = (
-        ReviewInputCheckpoint(Path(args.input_checkpoint[0]), args.input_checkpoint[1])
-        if args.input_checkpoint
-        else None
+    checkpoints = tuple(
+        ReviewInputCheckpoint(Path(path), sha256) for path, sha256 in args.input_checkpoint or ()
     )
     try:
         if args.review_result is None:
-            if args.database_sha256 is not None or input_checkpoint is not None:
-                raise ValueError("Snapshot pins are only used for review sheets")
-            code = run(args.database, args.output)
+            if args.database_sha256 is not None or (checkpoints and not args.review_coverage):
+                raise ValueError("Snapshot pins require a review sheet or review coverage")
+            code = run(
+                args.database,
+                args.output,
+                review_checkpoints=checkpoints if args.review_coverage else None,
+            )
         else:
+            if args.review_coverage or len(checkpoints) > 1:
+                raise ValueError("A review sheet accepts at most one input checkpoint")
+            input_checkpoint = next(iter(checkpoints), None)
             if not args.database_sha256 or args.output.suffix != ".html":
                 raise ValueError("Review needs a database SHA-256 pin and a new .html output")
             protected = snapshot_files(args.database)

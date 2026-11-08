@@ -1,0 +1,28 @@
+{
+  "scope": "Saved primary results in the pinned current state. Checkpoint selection follows the supplied order.",
+  "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+  "review_text_coverage": {
+    "checkpoint_sha256s": [
+      "c09738cc489b93265bc58b7f8e328edde954c5912acff6ab4e0891c94ec1d52f",
+      "eadc7a3063c612a3b76b0c544769a3952f68b8c7603aa596b5bba399012287c7",
+      "13fd9312c27cc9b127f52e6757179d7d02a8dbf2ff1b9802c31cdaee317b7cfd",
+      "570d29a6c0b609620d508db177885c38f7157cee700ef403cb2e20aa6fe8fb41",
+      "5ee32f1eae088dd16d34c070d74051a866f4044606829fcf03c7e56c9aae3687"
+    ],
+    "ready": [
+      {
+        "checkpoint_sha256": "5ee32f1eae088dd16d34c070d74051a866f4044606829fcf03c7e56c9aae3687",
+        "claim_slots": 4,
+        "request_sha256": "5f229284bf6f5a533ac93e7d11a5bb2d8e063d6ed451fc1366bd027aa13b574a",
+        "result_id": "result-v1:ef9d048e4a113196bb189a106eb5452ec8642fa5046f16244b83ebedefd3b290",
+        "text_sha256": "dcd8198dc98d25a31e5d107d1d4a1cabc7db4fd6feb6fa8894b7d99083974c57"
+      }
+    ],
+    "unavailable": 13,
+    "unsupported_claim_sets": 0,
+    "verified_in_checkpoint": 1,
+    "verified_in_current": 0
+  },
+  "default_report_unchanged": true,
+  "wrong_pin_rejected": true
+}

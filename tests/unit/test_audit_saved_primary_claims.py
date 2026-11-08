@@ -3,7 +3,7 @@ from contextlib import closing
 from pathlib import Path
 
 import pytest
-from tools.audit_saved_primary_claims import audit, review_page, run
+from tools.audit_saved_primary_claims import ReviewInputCheckpoint, audit, review_page, run
 from tools.corpus_artifacts import digest
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
@@ -90,6 +90,21 @@ def test_census_uses_canonical_primary_rows_and_exports_only_claim_addresses(
     )
     assert claim.strip() not in output.read_text()
     assert "private provider error" not in output.read_text()
+
+    assert audit(database, review_checkpoints=()) == {
+        **report,
+        "review_text_coverage": {
+            "checkpoint_sha256s": [],
+            "verified_in_current": 0,
+            "verified_in_checkpoint": 0,
+            "unsupported_claim_sets": 1,
+            "unavailable": 1,
+            "ready": [],
+        },
+    }
+    wrong_pin = ReviewInputCheckpoint(database, "0" * 64)
+    with pytest.raises(ValueError, match="differs from its pin"):
+        audit(database, review_checkpoints=(wrong_pin,))
 
 
 def test_legacy_missing_ledger_and_invalid_rows_have_distinct_outcomes(tmp_path: Path) -> None:
