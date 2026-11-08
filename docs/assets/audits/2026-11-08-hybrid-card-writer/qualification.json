@@ -1,0 +1,257 @@
+{
+  "checks": [
+    "Automatic eligible reference was present before fake send.",
+    "Requests, selection, source hashes, render and normalized retained rows matched.",
+    "All nine page ranges matched independent extraction.",
+    "The reader-only implementation restored the writer dump twice, byte for byte."
+  ],
+  "baseline_sql_sha256": "851285dbf237467f3cc86927fc85a767c3888dbccf1f88b4e027ef220946b5b8",
+  "candidate_sql_sha256": "66d36dbe97d1051ac6ab0a0ba8602f862736dc52a5944128c755a1f48ae1772d",
+  "sql_delta_bytes": 206,
+  "gzip_delta_bytes": 75,
+  "pins": {
+    "INDEX.json": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "corpus/12405004.json": "51e19ff88e4891ae8f941d7c3b79b9cbec828444849f17a41f8569036adbc07c",
+    "documents/files/785848.zip": "8cf0d27204698815494901291edd868d5cb13a78375543f22233390e53cc1e4d",
+    "documents/files/787193.pdf": "0c381654988d4754cec27034267b7ba775e8abba66fd1d0716cb0db463f66f5c"
+  },
+  "report": {
+    "source_kind": "rcl",
+    "source_observation_id": "source-observation-v1:dc3199a51ef325aad7be27d6536814caef70912aa3c9e153ee19cb8455451062",
+    "source_selection_id": "selection-v1:d9c427b8dd7e168bb3e909354f6ad7dc34b9d8a48249888a0e9d41e512d308a6",
+    "artifact_sha256": "8cf0d27204698815494901291edd868d5cb13a78375543f22233390e53cc1e4d",
+    "extraction_id": "extraction-v1:8f86034c4b63c57cf7ae15d109f960fe2d9b295f29cd8ff426fb01867d705d1a",
+    "source_parts": [
+      {
+        "role": "bill",
+        "physical_index": 3
+      },
+      {
+        "role": "normative_annex",
+        "physical_index": 9
+      },
+      {
+        "role": "justification",
+        "physical_index": 8
+      },
+      {
+        "role": "osr",
+        "physical_index": 1
+      },
+      {
+        "role": "self_amendment",
+        "artifact_sha256": "0c381654988d4754cec27034267b7ba775e8abba66fd1d0716cb0db463f66f5c",
+        "extraction_id": "extraction-v1:f0cdc79fd4a92ed21eb9291ca54e9d97d2e3ff1b0da9ac411ee354af2b951454"
+      }
+    ],
+    "normalized_pdf_page_ranges": [
+      {
+        "part_index": 2,
+        "page": 1,
+        "request_span": [
+          38452,
+          41720
+        ],
+        "normalized_page_span": [
+          0,
+          3268
+        ],
+        "normalized_page_sha256": "663b7fd92498a420c28f0638e6e1173631633b2737f58588467296ac6fee0131"
+      },
+      {
+        "part_index": 2,
+        "page": 2,
+        "request_span": [
+          41721,
+          45348
+        ],
+        "normalized_page_span": [
+          0,
+          3627
+        ],
+        "normalized_page_sha256": "d7385d3baf3c7256348ff5d37199360ad4a29644e3af4299d151f6a293cb2949"
+      },
+      {
+        "part_index": 2,
+        "page": 3,
+        "request_span": [
+          45350,
+          48753
+        ],
+        "normalized_page_span": [
+          0,
+          3403
+        ],
+        "normalized_page_sha256": "4b57c772465a252c752b6ea207daed593ca2abcec27f24518152f86a00ec7a9a"
+      },
+      {
+        "part_index": 2,
+        "page": 4,
+        "request_span": [
+          48755,
+          52182
+        ],
+        "normalized_page_span": [
+          0,
+          3427
+        ],
+        "normalized_page_sha256": "c42adf26d611db42868da8e70a7dba60374e71def7c02600185a6ed048268f9d"
+      },
+      {
+        "part_index": 2,
+        "page": 5,
+        "request_span": [
+          52184,
+          55374
+        ],
+        "normalized_page_span": [
+          0,
+          3190
+        ],
+        "normalized_page_sha256": "f108f5bca41540aeb915876d83febf1244a42f816f8cb928b1ad7518215a2b5a"
+      },
+      {
+        "part_index": 2,
+        "page": 6,
+        "request_span": [
+          55375,
+          58486
+        ],
+        "normalized_page_span": [
+          0,
+          3111
+        ],
+        "normalized_page_sha256": "d88a46e2848940c0e22f1fc7a2317299e379ad3dbb49f2d6c2a7082ff4f318f6"
+      },
+      {
+        "part_index": 2,
+        "page": 7,
+        "request_span": [
+          58488,
+          60344
+        ],
+        "normalized_page_span": [
+          0,
+          1856
+        ],
+        "normalized_page_sha256": "a369914d41a5cd3c6131527be31874791092495f1d519f38fb40fb33a0fffaeb"
+      },
+      {
+        "part_index": 4,
+        "page": 1,
+        "request_span": [
+          84634,
+          87615
+        ],
+        "normalized_page_span": [
+          0,
+          2981
+        ],
+        "normalized_page_sha256": "873be3d49fdd3651a3558155d16604e7b1d7c26d48055c423e9e1e290b7e1abc"
+      },
+      {
+        "part_index": 4,
+        "page": 2,
+        "request_span": [
+          87617,
+          90271
+        ],
+        "normalized_page_span": [
+          0,
+          2654
+        ],
+        "normalized_page_sha256": "45a3676c1253b262b34b370a8e68b7bb5134c6af2bff92f991bf4bbb220d5116"
+      }
+    ],
+    "purpose": "analysis",
+    "result_id": "result-v1:8cf74308cf3013d8341773ae38d2891e948c20d49d0b0a2e87105010cea2e6ec",
+    "request_sha256": "dab9f701a852887984b37e2567ccaa6d53e411689c8cfca98f691bea698bd7ef",
+    "collection_application_id": 1,
+    "projection_application_id": 2,
+    "content_version_id": "content-v1:3fbc9e86a6c17cae9e3933a20d896a5ea7444e82619d4bd4b01bf6d5f2de658c",
+    "recorded_sent_at": "2026-10-17T00:00:00+00:00",
+    "frozen_render_sha256": "0d465e98b7e628d58dcac35aaa53c45598911d69939185ca7a5540a8753212aa"
+  },
+  "baseline": "0662396599ecae173b184927f03af36a995add35",
+  "additional_case": {
+    "project": "12392400/9",
+    "pins": {
+      "INDEX.json": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+      "corpus/12392400.json": "8904f1446bccb9579877673f8df6f49e37407b7e6d65331469a99d19057a4b5a",
+      "documents/files/738682.zip": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef",
+      "documents/files/715437.zip": "693b0fefd5e098f4df7daac8e57144ab976f2251f809f609f4e797341b922af6",
+      "documents/files/716022.zip": "8e605ee701789fbb78e2fff2bbb06b97f04fd3b5a08d681775cc4aa2608ac1a4",
+      "documents/files/733043.zip": "e8ed8ec6e5bfbf3c3de2b29b28cfde6e3d6e5eb746d574478c2c92e4de1d1a7c",
+      "documents/files/734029.pdf": "2ea96f4296771ce69ca433f6e5ba47d101e47db41a26b6d2cb96a0399cb13a76",
+      "documents/files/734039.pdf": "653fbd05008ff197f55d6fabf55408665af1c78ff19948c1640a8a357ec7d718",
+      "documents/files/735247.zip": "f6de7e216cdaec994ed1cc19eb38e64b7a99e5bbd17abf69f419c7c850960128",
+      "documents/files/735406.pdf": "6816307f27f363dbf093bc980d8f4e6a1a4891ced3b08f6f3fc756595fa3d341"
+    },
+    "report": {
+      "source_kind": "rcl",
+      "source_observation_id": "source-observation-v1:58b2ed0363d42f92fb1eb352571859b92db3b3c3c9bc21344a61a5ccb100d146",
+      "source_selection_id": "selection-v1:54a5a5aaa4d8c0c33c675bd965476d2b52d4b0b03ec12c837c41a8a6fec5adec",
+      "artifact_sha256": "f6de7e216cdaec994ed1cc19eb38e64b7a99e5bbd17abf69f419c7c850960128",
+      "extraction_id": "extraction-v1:0beca0ccea2cc655ad3d7ef9bc028c719dcb56c90f41abf8fffee2710a9c067a",
+      "source_parts": [
+        {
+          "role": "bill",
+          "physical_index": 0
+        },
+        {
+          "role": "justification",
+          "physical_index": 2
+        },
+        {
+          "role": "osr",
+          "physical_index": 1
+        },
+        {
+          "role": "self_amendment",
+          "artifact_sha256": "6816307f27f363dbf093bc980d8f4e6a1a4891ced3b08f6f3fc756595fa3d341",
+          "extraction_id": "extraction-v1:ccf31729b30d4768dcad837c1f7311d6e30e7513af75af7e06d3e2ba817d2a7b"
+        }
+      ],
+      "normalized_pdf_page_ranges": [
+        {
+          "part_index": 3,
+          "page": 1,
+          "request_span": [
+            413670,
+            415508
+          ],
+          "normalized_page_span": [
+            0,
+            1838
+          ],
+          "normalized_page_sha256": "4163509f9a20c4cfec1a6a139907080df03222bf0a4ada383058fc6212bf3f34"
+        },
+        {
+          "part_index": 3,
+          "page": 2,
+          "request_span": [
+            415510,
+            417407
+          ],
+          "normalized_page_span": [
+            0,
+            1897
+          ],
+          "normalized_page_sha256": "1aaaa68f5ea2e268c19016cbdabbd4d79b1865292a8afaaa471f0058b98e0b17"
+        }
+      ],
+      "purpose": "analysis",
+      "result_id": "result-v1:ec89106233bb6959728f5e1f463897721f5046aee26e220ab971a0180218d530",
+      "request_sha256": "3cb2727ddb96edfd1c02a177774cd093753210242b8ae1aa34563031ebab13dc",
+      "collection_application_id": 1,
+      "projection_application_id": 2,
+      "content_version_id": "content-v1:6a3c3e2c8cce68df1409303210a86ea952ccc219894b4b02f491c858d5b2d405",
+      "recorded_sent_at": "2026-10-17T00:00:00+00:00",
+      "frozen_render_sha256": "a7bafc4a9210b61e11070535659e9928a7fc9b02b0fe5918d309f99f2cad5c17"
+    },
+    "baseline_sql_sha256": "37fab601575cdea1f3613769a58376a6b64c3763d234397882085acc272d845c",
+    "candidate_sql_sha256": "2857dc4c384c3591bf7ac214c406675965f3121822dff16fb2bfb474989f75c7",
+    "sql_delta_bytes": 206,
+    "gzip_delta_bytes": 80
+  }
+}
