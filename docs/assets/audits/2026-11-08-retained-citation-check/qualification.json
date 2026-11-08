@@ -1,0 +1,69 @@
+{
+  "historical_control": {
+    "checkpoint_sha256": "bfa694eb9874501feb1e515e8264e6a61d732f0ba7534f00e081caaf675847c0",
+    "coverage_matches_j612": true,
+    "coverage_report_sha256": "733aed965d50e73be5400ec31165d947f612ad4f17e0ef449f84ef67bd81e155",
+    "database_sha256": "33b2f30f063f89f92adf847f0f8496da11fc9dbd1cd6b4935642ab43acad88b3",
+    "report": {
+      "citations": [],
+      "request_sha256": "c5813beb590fdb03b3a24f26d6f2fe41064c7c93e1b735b45e7b118abf5efe05",
+      "semantic": "semantic_not_assessed",
+      "status": "legacy_missing",
+      "text_sha256": "3e4a0ea990a2cfba91d534077a98ae64f1500afd31ccf734e6b17e3a87278786"
+    },
+    "result_id": "result-v1:184f3d2e1a51b254cce761e69ab3ab3aa0a118601f3c0ea9569d23c374e85297"
+  },
+  "observations": {
+    "exact": {
+      "database_sha256": "5de72cf5f8a02ebe39ea06bfeb6ccc157e6c2a50102192e4c8a6b864eaacf51b",
+      "report": {
+        "citations": [
+          {
+            "claim_sha256": "28aba747389f64387f292bc04ed3277cec5bc2a3e5d904a8f47531f0b534ab70",
+            "field": "practical_impact",
+            "index": null,
+            "status": "quote_present",
+            "submitted_text_span": [
+              7,
+              43
+            ]
+          }
+        ],
+        "request_sha256": "ff20123520241ee4f6ca1324f956179c469b402a9b88fd768e18c30b57c34d9c",
+        "semantic": "semantic_not_assessed",
+        "status": "checked",
+        "text_sha256": "85df6d12444a8cf7436b2e1447b315524bd7a5a502d163e67b62b5a1079e5a6f"
+      }
+    },
+    "legacy": {
+      "database_sha256": "ff97b5d7b46a215b33d7a759733a02da33e0b0685fd38ecafa042e791a2386bf",
+      "report": {
+        "citations": [],
+        "request_sha256": "ff20123520241ee4f6ca1324f956179c469b402a9b88fd768e18c30b57c34d9c",
+        "semantic": "semantic_not_assessed",
+        "status": "legacy_missing",
+        "text_sha256": "85df6d12444a8cf7436b2e1447b315524bd7a5a502d163e67b62b5a1079e5a6f"
+      }
+    },
+    "wrong-source-hash": {
+      "database_sha256": "96847877bf937eeffdbec800af31fb8428668c1d0e6d4d5c869c604b03a7fbc2",
+      "report": {
+        "citations": [
+          {
+            "claim_sha256": "28aba747389f64387f292bc04ed3277cec5bc2a3e5d904a8f47531f0b534ab70",
+            "field": "practical_impact",
+            "index": null,
+            "status": "source_hash_mismatch",
+            "submitted_text_span": null
+          }
+        ],
+        "request_sha256": "ff20123520241ee4f6ca1324f956179c469b402a9b88fd768e18c30b57c34d9c",
+        "semantic": "semantic_not_assessed",
+        "status": "checked",
+        "text_sha256": "85df6d12444a8cf7436b2e1447b315524bd7a5a502d163e67b62b5a1079e5a6f"
+      }
+    }
+  },
+  "result_id": "result-v1:acc449004a1b61d54aaeb7a08be75572a9e54ee1964ea487374dcaaeeeffd3e7",
+  "scope": "isolated synthetic batch with exact retained request text"
+}

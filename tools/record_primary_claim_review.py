@@ -16,6 +16,7 @@ from tools.audit_saved_primary_claims import (
     SavedClaimReview,
     _claim_slots,
     saved_claim_review,
+    submitted_review_document,
 )
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.review_saved_comparison import review_pair
@@ -119,18 +120,6 @@ def validate_judgment(
         raise ValueError("A supported judgment requires an explicit literal citation")
 
 
-def _review_document(saved: SavedClaimReview, identity: str) -> ReviewDocument:
-    return ReviewDocument(
-        identity=identity,
-        url="",
-        role="project_text",
-        text=saved.text,
-        sha256=saved.text_sha256,
-        normalized_sha256=saved.text_sha256,
-        complete=False,
-    )
-
-
 def _review_inputs(
     database: Path,
     database_sha256: str,
@@ -157,7 +146,7 @@ def _review_inputs(
             text_sha256=before.text_sha256,
             input_checkpoint_sha256=before.input_checkpoint_sha256,
         )
-        return baseline, _review_document(before, _BASELINE_DOCUMENT_ID), after
+        return baseline, submitted_review_document(before, _BASELINE_DOCUMENT_ID), after
     if baseline_checkpoint is not None:
         raise ValueError("A baseline checkpoint requires comparison mode")
     return (
@@ -261,7 +250,7 @@ def record(
     baseline_pin, baseline_source, saved = _review_inputs(
         db, database_sha256, result_id, input_checkpoint, baseline_checkpoint, comparison=comparison
     )
-    source = _review_document(saved, _CLAIM_DOCUMENT_ID)
+    source = submitted_review_document(saved, _CLAIM_DOCUMENT_ID)
     slots = {
         (field, index): text
         for field, index, text in _claim_slots(

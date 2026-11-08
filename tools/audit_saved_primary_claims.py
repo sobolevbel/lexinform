@@ -18,8 +18,10 @@ from lexinform.adapters.input_receipts import (
 )
 from lexinform.adapters.llm_prompts import build_user_prompt
 from lexinform.json_storage import read_json
-from lexinform.models import AnalysisRecord, BatchItemMeta, ComputationResult
+from lexinform.models import AnalysisRecord, BatchItemMeta, ComputationResult, ReviewDocument
 from lexinform.models.batch import AnalysisQuestion, batch_item_meta
+from lexinform.models.claim_evidence import PrimaryClaimCitation
+from lexinform.primary_claims import validate_retained_claim_citation
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.sqlite_snapshot import live_journal, open_snapshot, snapshot_files
 
@@ -202,6 +204,7 @@ class SavedClaimReview:
     text_sha256: str
     text: str
     input_checkpoint_sha256: str | None = None
+    claim_citations: tuple[PrimaryClaimCitation, ...] = ()
 
 
 def _primary_batch_meta(db: sqlite3.Connection, paid: ComputationResult) -> BatchItemMeta:
@@ -434,6 +437,7 @@ def _saved_review_input(
         text_sha256,
         text,
         input_checkpoint.sha256 if input_checkpoint is not None else None,
+        paid.claim_citations,
     )
 
 
@@ -453,6 +457,41 @@ def saved_claim_review(
     if not review.text:
         raise ReviewTextUnavailableError("The verified request used metadata only")
     return review
+
+
+def submitted_review_document(saved: SavedClaimReview, identity: str) -> ReviewDocument:
+    return ReviewDocument(
+        identity=identity,
+        url="",
+        role="project_text",
+        text=saved.text,
+        sha256=saved.text_sha256,
+        normalized_sha256=saved.text_sha256,
+        complete=False,
+    )
+
+
+def retained_citation_report(review: SavedClaimReview) -> dict[str, object]:
+    source = submitted_review_document(review, "submitted-context")
+    rows = []
+    for evidence in review.claim_citations:
+        checked = validate_retained_claim_citation(review.record, evidence, (source,))
+        rows.append(
+            {
+                "field": evidence.field,
+                "index": evidence.index,
+                "claim_sha256": evidence.claim_text_sha256,
+                "status": checked.status,
+                "submitted_text_span": checked.observed_text_span,
+            }
+        )
+    return {
+        "request_sha256": review.request_sha256,
+        "text_sha256": review.text_sha256,
+        "status": "checked" if rows else "legacy_missing",
+        "semantic": "semantic_not_assessed",
+        "citations": rows,
+    }
 
 
 def _review_text_coverage(
@@ -573,6 +612,7 @@ def main() -> None:
     parser.add_argument("--review-coverage", action="store_true")
     parser.add_argument("--block-copy-coverage", action="store_true")
     parser.add_argument("--include-practical-impact", action="store_true")
+    parser.add_argument("--check-retained-citations", action="store_true")
     parser.add_argument("--input-checkpoint", nargs=2, action="append", metavar=("PATH", "SHA256"))
     args = parser.parse_args()
     checkpoints = tuple(
@@ -580,8 +620,8 @@ def main() -> None:
     )
     try:
         if args.review_result is None:
-            if args.include_practical_impact:
-                raise ValueError("Practical impact requires a result review sheet")
+            if args.include_practical_impact or args.check_retained_citations:
+                raise ValueError("The selected operation requires a saved result")
             if args.database_sha256 is not None or (checkpoints and not args.review_coverage):
                 raise ValueError("Snapshot pins require a review sheet or review coverage")
             code = run(
@@ -594,22 +634,36 @@ def main() -> None:
             if args.review_coverage or args.block_copy_coverage or len(checkpoints) > 1:
                 raise ValueError("A review sheet accepts at most one input checkpoint")
             input_checkpoint = next(iter(checkpoints), None)
-            if not args.database_sha256 or args.output.suffix != ".html":
-                raise ValueError("Review needs a database SHA-256 pin and a new .html output")
+            extension = ".json" if args.check_retained_citations else ".html"
+            if not args.database_sha256 or args.output.suffix != extension:
+                raise ValueError(
+                    f"Review needs a database SHA-256 pin and a new {extension} output"
+                )
             protected = snapshot_files(args.database)
             if input_checkpoint is not None:
                 protected.update(snapshot_files(input_checkpoint.database))
             if args.output.resolve() in protected:
                 raise ValueError("Report must be separate from the input database")
-            page = review_page(
-                args.database,
-                database_sha256=args.database_sha256,
-                result_id=args.review_result,
-                input_checkpoint=input_checkpoint,
-                include_practical_impact=args.include_practical_impact,
-            )
-            with args.output.open("x", encoding="utf-8") as stream:
-                stream.write(page)
+            if args.check_retained_citations:
+                if args.include_practical_impact:
+                    raise ValueError("Retained citation checks do not generate a review sheet")
+                review = saved_claim_review(
+                    args.database,
+                    database_sha256=args.database_sha256,
+                    result_id=args.review_result,
+                    input_checkpoint=input_checkpoint,
+                )
+                write_json(args.output, retained_citation_report(review))
+            else:
+                page = review_page(
+                    args.database,
+                    database_sha256=args.database_sha256,
+                    result_id=args.review_result,
+                    input_checkpoint=input_checkpoint,
+                    include_practical_impact=args.include_practical_impact,
+                )
+                with args.output.open("x", encoding="utf-8") as stream:
+                    stream.write(page)
             code = 0
     except (OSError, sqlite3.Error, ValueError) as exc:
         parser.error(str(exc))

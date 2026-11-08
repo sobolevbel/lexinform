@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import ClassVar, Literal
 
 from lexinform.models.analysis import AnalysisRecord
+from lexinform.models.claim_evidence import PrimaryClaimCitation
 from lexinform.models.reviews import (
     DocumentRole,
     EvidenceCitation,
@@ -214,6 +215,23 @@ def validate_proposed_change_evidence(
         )
     checked = ClaimEvidenceCheck(failure)
     return ProposedChangeEvidenceCheck(checked, checked)
+
+
+def validate_retained_claim_citation(
+    record: AnalysisRecord,
+    evidence: PrimaryClaimCitation,
+    documents: tuple[ReviewDocument, ...],
+) -> ClaimEvidenceCheck:
+    """Require one literal occurrence in a supplied, hash-matched source."""
+    try:
+        evidence.require_claim(record.analysis)
+    except ValueError:
+        return ClaimEvidenceCheck("claim_hash_mismatch")
+    return _literal_quote(
+        _validate_citation(
+            evidence.citation, evidence.source_text_sha256, documents, "project_text"
+        )
+    )
 
 
 def _validate_edition_citation(

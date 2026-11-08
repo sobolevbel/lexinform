@@ -7,6 +7,7 @@ import pytest
 
 from lexinform.document_fingerprints import text_digest
 from lexinform.models.analysis import Analysis, AnalysisRecord
+from lexinform.models.claim_evidence import PrimaryClaimCitation
 from lexinform.models.enums import Category
 from lexinform.models.reviews import (
     DocumentRole,
@@ -27,6 +28,7 @@ from lexinform.primary_claims import (
     validate_key_change_evidence,
     validate_proposed_change_evidence,
     validate_proposed_commencement_evidence,
+    validate_retained_claim_citation,
 )
 
 CLAIM = "С 1 января 2027 года срок для студентов — 30 дней."
@@ -695,3 +697,33 @@ def test_proposed_change_preserves_failed_side_without_borrowing_other_quote(
     assert not checked.both_literal_quotes_observed
     assert checked.before.status == "quote_present" and checked.after.status == status
     assert checked.after.semantic == "semantic_not_assessed"
+
+
+@pytest.mark.parametrize(
+    ("text", "role", "expected"),
+    [
+        (QUOTE, "project_text", "quote_present"),
+        (QUOTE.replace("30 dni", "30  dni"), "project_text", "citation_mismatch"),
+        (QUOTE + "\n" + QUOTE, "project_text", "quote_ambiguous"),
+        (QUOTE, "response", "source_role_mismatch"),
+    ],
+)
+def test_retained_claim_requires_unique_literal_quote(
+    text: str, role: DocumentRole, expected: str
+) -> None:
+    answer = record()
+    document = source(text, role=role)
+    legacy = evidence(document)
+    retained = PrimaryClaimCitation(
+        field="key_changes",
+        index=legacy.index,
+        claim_text_sha256=legacy.claim_text_sha256,
+        source_text_sha256=legacy.source_text_sha256,
+        citation=legacy.citation,
+    )
+
+    checked = validate_retained_claim_citation(answer, retained, (document,))
+
+    assert checked.status == expected
+    assert checked.observed_text_span == ((0, len(QUOTE)) if expected == "quote_present" else None)
+    assert checked.semantic == "semantic_not_assessed"
