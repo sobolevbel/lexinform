@@ -1,0 +1,41 @@
+{
+  "cases": {
+    "current": {
+      "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+      "supporting_positions": {
+        "denominator": "selected_candidate_extra_url_positions",
+        "selected_traces_with_request": 14,
+        "selected_traces_without_request": 0,
+        "declared_positions": 8,
+        "admitted_positions": 2,
+        "excluded_positions": 0,
+        "unknown_positions": 6
+      }
+    },
+    "controlled_missing": {
+      "database_sha256": "01c6a643962d9d7c5b5a77402361e1913f6a32cc07ead61b2c4f99e5ce77a0dc",
+      "supporting_positions": {
+        "denominator": "selected_candidate_extra_url_positions",
+        "selected_traces_with_request": 1,
+        "selected_traces_without_request": 0,
+        "declared_positions": 2,
+        "admitted_positions": 0,
+        "excluded_positions": 2,
+        "unknown_positions": 0
+      }
+    },
+    "required_block": {
+      "database_sha256": "b0f7f3d1b7cea70737faefc7ef82d90cb9c495505cdf52a686edc32768e45cdb",
+      "supporting_positions": {
+        "denominator": "selected_candidate_extra_url_positions",
+        "selected_traces_with_request": 1,
+        "selected_traces_without_request": 0,
+        "declared_positions": 2,
+        "admitted_positions": 0,
+        "excluded_positions": 0,
+        "unknown_positions": 2
+      }
+    }
+  },
+  "other_report_sections_unchanged": true
+}

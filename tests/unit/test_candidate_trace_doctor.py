@@ -362,6 +362,7 @@ def test_gap_census_preserves_legacy_schema_unavailability(tmp_path: Path) -> No
         "invalid_trace_rows",
         "normative_annex",
         "required_part",
+        "supporting_positions",
     ):
         assert census[field] is None
     assert "candidate_traces" not in report

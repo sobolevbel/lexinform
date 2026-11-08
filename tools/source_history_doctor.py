@@ -30,6 +30,7 @@ from lexinform.adapters.sqlite_repo import RclLetterUseRowError, read_rcl_letter
 from lexinform.document_editions import candidate_edition
 from lexinform.models import (
     ArtifactMetadata,
+    CandidateDispositionTrace,
     DocumentEdition,
     DocumentSelectionRecord,
     SelectionArtifactReference,
@@ -307,6 +308,27 @@ _CANDIDATE_COLUMNS = {
 }
 
 
+def _supporting_positions(trace: CandidateDispositionTrace) -> Counter[str]:
+    if trace.result != "selected":
+        return Counter()
+    request = trace.requested_document
+    if request is None:
+        return Counter(selected_traces_without_request=1)
+    (selected,) = (row for row in trace.dispositions if row.outcome == "selected")
+    declared = len((request, *request.alternatives)[selected.index].extra_urls)
+    admitted = len(trace.admitted_support.rows) if trace.admitted_support is not None else 0
+    excluded = (
+        len(trace.supporting_exclusions.rows) if trace.supporting_exclusions is not None else 0
+    )
+    return Counter(
+        selected_traces_with_request=1,
+        declared_positions=declared,
+        admitted_positions=admitted,
+        excluded_positions=excluded,
+        unknown_positions=declared - admitted - excluded,
+    )
+
+
 def candidate_trace_inventory(
     connection: sqlite3.Connection, *, include_gaps: bool = False
 ) -> dict[str, Any]:
@@ -353,6 +375,7 @@ def candidate_trace_inventory(
     required_reasons: Counter[str] = Counter()
     amendment_reasons: Counter[str] = Counter()
     supporting_reasons: Counter[str] = Counter()
+    supporting_positions: Counter[str] = Counter()
     supporting_omitted = 0
     admitted_roles: Counter[str] = Counter()
     admitted_traces = admitted_omitted = 0
@@ -377,6 +400,7 @@ def candidate_trace_inventory(
                         admitted_roles.update(item.role for item in trace.admitted_support.rows)
                         admitted_omitted += trace.admitted_support.omitted
                     if include_gaps:
+                        supporting_positions.update(_supporting_positions(trace))
                         if trace.normative_annex_gap is not None:
                             annex_reasons[trace.normative_annex_gap.reason] += 1
                         if trace.required_part_gap is not None:
@@ -435,6 +459,22 @@ def candidate_trace_inventory(
             "invalid_trace_rows": total - valid if total is not None else None,
             "normative_annex": _gap_counts(valid, annex_reasons),
             "required_part": _gap_counts(valid, required_reasons),
+            "supporting_positions": {
+                "denominator": "selected_candidate_extra_url_positions",
+                **{
+                    key: supporting_positions[key]
+                    for key in (
+                        "selected_traces_with_request",
+                        "selected_traces_without_request",
+                        "declared_positions",
+                        "admitted_positions",
+                        "excluded_positions",
+                        "unknown_positions",
+                    )
+                },
+            }
+            if total is not None
+            else None,
             **(
                 {"amendment_part": _gap_counts(valid, amendment_reasons)}
                 if amendment_reasons

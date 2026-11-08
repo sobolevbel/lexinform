@@ -106,11 +106,21 @@ def test_admitted_support_reader_preserves_legacy_and_binds_selection(control: s
         assert "admitted_support" not in candidate_trace_inventory(snapshot)
     with closing(sqlite3.connect(":memory:")) as snapshot:
         snapshot.executescript(updated)
-        report = candidate_trace_inventory(snapshot)
+        report = candidate_trace_inventory(snapshot, include_gaps=True)
 
     assert report["findings"] == []
     assert report["admitted_support"] == {
         "trace_rows_with_evidence": 1,
         "retained_parts_by_role": {"justification": 1},
         "omitted_parts": 0,
+    }
+
+    assert report["gap_coverage"]["supporting_positions"] == {
+        "denominator": "selected_candidate_extra_url_positions",
+        "selected_traces_with_request": 2,
+        "selected_traces_without_request": 0,
+        "declared_positions": 2,
+        "admitted_positions": 1,
+        "excluded_positions": 0,
+        "unknown_positions": 1,
     }
