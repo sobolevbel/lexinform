@@ -24,7 +24,7 @@ from lexinform.models.documents import (
     ExtractedDocument,
     ExtractedParts,
 )
-from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, text_rank, text_role
+from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, names_a_bill, text_rank, text_role
 from lexinform.sections import (
     APPENDIX_KINDS,
     PAGE_BREAK,
@@ -141,7 +141,16 @@ def select_document_parts(
             selection=DocumentSelection(parts=(part,), rejected=tuple(rejected)),
         )
     return _select_parts(
-        parts, rejected, max_part_chars=max_part_chars, decision_sink=decision_sink
+        parts,
+        rejected,
+        unreadable_drafts=tuple(
+            failure.members
+            for failure in extracted.unreadable_members
+            if _member_role(base := failure.members[-1].rsplit("/", 1)[-1]) == "bill"
+            and names_a_bill(base)
+        ),
+        max_part_chars=max_part_chars,
+        decision_sink=decision_sink,
     )
 
 
@@ -160,6 +169,7 @@ def _select_parts(
     parts: list[DocumentPart],
     rejected: list[str],
     *,
+    unreadable_drafts: tuple[tuple[str, ...], ...],
     max_part_chars: int | None,
     decision_sink: Callable[[ArchivePolicyDecision], None] | None = None,
 ) -> ExtractedDocument:
@@ -237,7 +247,7 @@ def _select_parts(
         )
         candidates.append((rank, index, part.model_copy(update={"role": "bill"})))
         note(index, "policy_excluded", "rank_preference")
-    if not candidates and incomplete_named_bills:
+    if not candidates and (incomplete_named_bills or unreadable_drafts):
         for index, _ in incomplete_named_bills:
             note(index, "unclassified", "archive_pdf_page_failure")
         for index, _ in (*annexes, *supporting):
@@ -248,7 +258,14 @@ def _select_parts(
                     observed_parts=tuple(parts),
                     state="waiting",
                     parts=tuple(part for _, part in incomplete_named_bills),
-                    rejected=(*rejected, "PDF page extraction failed in an archive draft"),
+                    rejected=(
+                        *rejected,
+                        *(
+                            ("PDF page extraction failed in an archive draft",)
+                            if incomplete_named_bills
+                            else ()
+                        ),
+                    ),
                 )
             )
         )
@@ -282,11 +299,16 @@ def _select_parts(
         for index, part in incomplete_named_bills
         if (part.members[:-1], part.members[-1].rpartition("/")[0]) in comparison_families
     )
-    if (
+    unreadable_peer = any(
+        (members[:-1], members[-1].rpartition("/")[0]) in comparison_families
+        for members in unreadable_drafts
+    )
+    pdf_failure = (
         main.has_pdf_page_failure
-        or incomplete_peers
+        or bool(incomplete_peers)
         or (len(confirmed) > 1 and any(part.has_pdf_page_failure for _, part in confirmed))
-    ):
+    )
+    if pdf_failure or unreadable_peer:
         incomplete_indices = {index for index, _ in incomplete_peers}
         waiting_parts = (
             *((index, part) for index, part in comparison_peers if index not in incomplete_indices),
@@ -311,7 +333,11 @@ def _select_parts(
                     parts=tuple(part for _, part in waiting_parts),
                     rejected=(
                         *rejected,
-                        "PDF page extraction failed during archive version comparison",
+                        *(
+                            ("PDF page extraction failed during archive version comparison",)
+                            if pdf_failure
+                            else ()
+                        ),
                     ),
                 )
             )

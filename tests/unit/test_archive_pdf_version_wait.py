@@ -15,6 +15,41 @@ ROOT = "https://source.test/versions.zip"
 ALTERNATIVE = "https://source.test/older.pdf"
 
 
+@pytest.mark.parametrize(
+    ("name", "waiting"),
+    [
+        ("draft/projekt-nowy.pdf", True),
+        ("other/projekt-nowy.pdf", False),
+        ("draft/pismo.pdf", False),
+        ("draft/material.pdf", False),
+    ],
+)
+def test_archive_fallback_keeps_a_failed_draft_in_its_family(name: str, waiting: bool) -> None:
+    failed = b"%PDF-failed"
+    data = archive({"draft/projekt.pdf": b"%PDF-readable", name: failed})
+    data = data.replace(failed, b"%PDF-broken", 1)
+    reader = DocumentTextExtractor(
+        FakeTextExtractor(law(), page_count=1), DocxTextExtractor(), FakeTextExtractor()
+    )
+    reads: list[str] = []
+
+    def download(url: str, *, max_bytes: int | None = None) -> bytes:
+        reads.append(url)
+        return data if url == ROOT else b"%PDF-readable"
+
+    loader = TextLoader({"source.test": download}, reader, max_bytes=100_000)
+    document = TextDocument(
+        url=ROOT, kind="rcl", alternatives=(TextDocument(url=ALTERNATIVE, kind="rcl"),)
+    )
+
+    selected, file = loader.select_document(document)
+
+    assert selected.url == ROOT and reads == [ROOT]
+    assert (file.selection.state == "waiting") == waiting
+    assert (file.text is None) == waiting
+    assert all(part.members[-1] != name for part in file.selection.parts)
+
+
 @pytest.mark.parametrize("failed", [False, True])
 @pytest.mark.parametrize("compare_versions", [False, True])
 def test_failed_pdf_inside_an_archive_defers_selection_of_the_draft(

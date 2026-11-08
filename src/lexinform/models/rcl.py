@@ -179,7 +179,7 @@ class RclStage(BaseModel):
                 r"(?:^|[-_])\s*(?:zaproszen|protok[oó][łl]|uwagi|stanowisk)", doc.name, re.I
             )
             and (
-                (_names_a_bill(doc.name) and re.search(r"\bprojekt\b", doc.name, re.I))
+                (names_a_bill(doc.name) and re.search(r"\bprojekt\b", doc.name, re.I))
                 or text_role(doc.name) in {"justification", "osr"}
             )
         )
@@ -394,14 +394,12 @@ def _bill_of_last_resort(documents: list[RclDocument]) -> RclDocument | None:
     and three file it as a numbered appendix, which the appendix rule drops. Reached only where
     the answer would otherwise be nothing, so it changes no project with a recognised bill.
     """
-    candidates = [d for d in documents if text_role(d.name) != "osr" and _names_a_bill(d.name)]
+    candidates = [d for d in documents if text_role(d.name) != "osr" and names_a_bill(d.name)]
     return min(candidates, key=_version_rank) if candidates else None
 
 
-def _names_a_bill(name: str) -> bool:
-    """Whether a name not taken for the bill still says it carries one. The appendix mark is
-    ignored, because the bill can be an appendix; everything else `text_role` refuses stands — a
-    tabela zgodności, a pismo or an autopoprawka is not the bill, whatever else its name says."""
+def names_a_bill(name: str) -> bool:
+    """Recognize explicit bill names even when the file is marked as an appendix."""
     lowered = name.lower()
     return bool(_BILL_RE.search(lowered)) and not _NOT_A_TEXT_RE.search(
         _APPENDIX_RE.sub(" ", lowered)
